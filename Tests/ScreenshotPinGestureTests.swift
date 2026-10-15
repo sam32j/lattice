@@ -6,6 +6,9 @@ import AppKit
 /// The production view receives controlled native events on a real, unordered
 /// panel. These checks exercise window geometry, not physical input devices.
 enum ScreenshotPinGestureTests {
+    final class LockableView: ScreenshotPinGestureView {
+        override var isPositionLocked: Bool { true }
+    }
     final class Gesture: NSEvent {
         var scroll: CGFloat = 0
         var pinch: CGFloat = 0
@@ -29,6 +32,7 @@ enum ScreenshotPinGestureTests {
 
     @MainActor private static func runOnMain(_ suite: TestSuite) {
         _ = NSApplication.shared
+        ScreenshotPinControlsTests.run(suite)
         guard let screen = NSScreen.main else {
             suite.expect(false, "native pin gesture tests require a display")
             return
@@ -134,7 +138,7 @@ enum ScreenshotPinGestureTests {
         window.setFrame(initial, display: false)
         wheel.flags = .option
         for _ in 0..<30 { view.scrollWheel(with: wheel) }
-        suite.expectClose(window.alphaValue, 0.2, "opacity cannot become too faint to find")
+        suite.expectClose(window.alphaValue, 0.1, "opacity supports the approved ten percent minimum")
         wheel.scroll = 1
         for _ in 0..<30 { view.scrollWheel(with: wheel) }
         suite.expectClose(window.alphaValue, 1, "opacity cannot exceed fully opaque")
@@ -180,5 +184,19 @@ enum ScreenshotPinGestureTests {
         detached.magnify(with: pinch)
         suite.expect(detached.window == nil, "closing a pin leaves late gestures harmless")
         suite.expect(!window.isVisible, "gesture checks never show a panel")
+
+        let locked = LockableView(frame: .zero)
+        window.contentView = locked
+        window.setFrame(initial, display: false)
+        wheel.flags = []
+        wheel.scroll = 1
+        pinch.pinch = 0.5
+        locked.scrollWheel(with: wheel)
+        locked.magnify(with: pinch)
+        suite.expect(window.frame == initial, "a position lock blocks wheel and pinch resizing")
+        wheel.flags = .option
+        window.alphaValue = 0.5
+        locked.scrollWheel(with: wheel)
+        suite.expect(window.alphaValue > 0.5, "locking position still permits opacity changes")
     }
 }
