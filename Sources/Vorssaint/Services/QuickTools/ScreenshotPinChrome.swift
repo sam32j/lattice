@@ -82,9 +82,12 @@ final class ScreenshotPinChrome {
     }
 
     private func configure(_ button: NSButton, symbol: String, label: String, action: Selector) {
+        button.cell = PinControlButtonCell()
         button.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
+        button.title = ""
         button.isBordered = false
         button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: label)
+        button.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
         button.imagePosition = .imageOnly
         button.contentTintColor = .white
         button.setAccessibilityLabel(label)
@@ -94,16 +97,27 @@ final class ScreenshotPinChrome {
     }
 
     private func circle(_ button: NSButton, x: CGFloat) -> NSView {
-        let glass = NSVisualEffectView(frame: CGRect(x: x, y: 0, width: 30, height: 30))
-        glass.material = .hudWindow
-        glass.blendingMode = .behindWindow
-        glass.state = .active
-        glass.appearance = NSAppearance(named: .darkAqua)
-        glass.wantsLayer = true
-        glass.layer?.cornerRadius = 15
-        glass.layer?.masksToBounds = true
-        glass.addSubview(button)
-        return glass
+        let frame = CGRect(x: x, y: 0, width: 30, height: 30)
+        if #available(macOS 26.0, *) {
+            let glass = NSGlassEffectView(frame: frame)
+            glass.style = .regular
+            glass.cornerRadius = 15
+            glass.appearance = NSAppearance(named: .darkAqua)
+            if #available(macOS 27.0, *) { glass.effectIsInteractive = true }
+            glass.contentView = button
+            return glass
+        } else {
+            let frost = NSVisualEffectView(frame: frame)
+            frost.material = .hudWindow
+            frost.blendingMode = .behindWindow
+            frost.state = .active
+            frost.appearance = NSAppearance(named: .darkAqua)
+            frost.wantsLayer = true
+            frost.layer?.cornerRadius = 15
+            frost.layer?.masksToBounds = true
+            frost.addSubview(button)
+            return frost
+        }
     }
 
     @objc private func closePin() { pin?.closePin() }
@@ -113,6 +127,14 @@ final class ScreenshotPinChrome {
 
 private final class PinControlButton: NSButton {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+}
+
+private final class PinControlButtonCell: NSButtonCell {
+    override func imageRect(forBounds rect: NSRect) -> NSRect {
+        let size = super.imageRect(forBounds: rect).size
+        return NSRect(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2,
+                      width: size.width, height: size.height)
+    }
 }
 
 private final class PinControlPanel: OverlayPanel {

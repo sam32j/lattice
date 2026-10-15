@@ -5,6 +5,8 @@ import AppKit
 
 final class ScreenshotPinContentView: ScreenshotPinGestureView {
     private weak var pin: ScreenshotPinWindow?
+    override var acceptsFirstResponder: Bool { true }
+    override var needsPanelToBecomeKey: Bool { true }
     override var isPositionLocked: Bool { pin?.isPositionLocked ?? true }
     override var pinOpacity: CGFloat {
         get { pin?.chosenOpacity ?? 1 }
@@ -32,6 +34,7 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
         guard let pin, !pin.isClosed else { return }
         if event.clickCount == 2 { pin.closePin(); return }
         pin.makeKey()
+        pin.makeFirstResponder(self)
         if !pin.isPositionLocked { pin.performDrag(with: event) }
     }
 

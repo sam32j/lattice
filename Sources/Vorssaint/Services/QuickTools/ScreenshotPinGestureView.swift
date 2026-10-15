@@ -5,6 +5,8 @@ import AppKit
 
 /// Native gestures shared by pinned screenshot content and its window tests.
 class ScreenshotPinGestureView: NSView {
+    private var lastZoomFrame: CGRect?
+    private var logicalZoomWidth: CGFloat = 0
     var isPositionLocked: Bool { false }
     var pinOpacity: CGFloat {
         get { window?.alphaValue ?? 1 }
@@ -44,6 +46,10 @@ class ScreenshotPinGestureView: NSView {
         guard !isPositionLocked, let window, factor.isFinite, factor > 0, factor != 1,
               point.x.isFinite, point.y.isFinite else { return }
         let frame = window.frame
+        // AppKit rounds window frames to whole points. Keep the requested
+        // width between packets so a gentle pinch neither disappears nor
+        // becomes a whole-point jump for every tiny trackpad increment.
+        let baseWidth = lastZoomFrame == frame ? logicalZoomWidth : frame.width
         let anchor = window.convertPoint(toScreen: point)
         guard let screen = NSScreen.screens.first(where: { $0.frame.contains(anchor) }) ?? window.screen,
               frame.width > 0, frame.height > 0 else { return }
@@ -58,7 +64,7 @@ class ScreenshotPinGestureView: NSView {
         guard maximum > 0 else { return }
         // A very elongated image may not fit both its minimum and the display;
         // keep it reachable on screen in that case.
-        let scale = min(max(factor, minimum), maximum)
+        let scale = min(max(baseWidth / frame.width * factor, minimum), maximum)
         // Floating-point multiplication can exceed the fitted edge by a tiny
         // fraction; AppKit rounds that out to an extra point off screen.
         let width = min(limits.width, frame.width * scale)
@@ -66,8 +72,9 @@ class ScreenshotPinGestureView: NSView {
         let next = CGRect(x: min(max(anchor.x - point.x * scale, limits.minX), limits.maxX - width),
                           y: min(max(anchor.y - point.y / frame.height * height, limits.minY), limits.maxY - height),
                           width: width, height: height)
-        guard next != frame else { return }
-        window.setFrame(next, display: true)
-        didZoom()
+        if next != frame { window.setFrame(next, display: true) }
+        logicalZoomWidth = width
+        lastZoomFrame = window.frame
+        if window.frame != frame { didZoom() }
     }
 }
