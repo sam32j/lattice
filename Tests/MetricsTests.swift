@@ -79,6 +79,7 @@ struct MetricsTests {
                 ReleaseDigestTests.run(suite)
             }),
             ("repository", { RepositoryFeatureTests.run(suite) }),
+            ("screenshot-pins", { ScreenshotPinGestureTests.run(suite) }),
             ("screenshots", {
                 ScreenshotCanvasSupportTests.run(suite)
                 ScreenshotImageLayerTests.run(suite)
