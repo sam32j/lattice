@@ -12,6 +12,8 @@ Approved by Samuel on 2026-10-15. Builds on ea225d27 and preserves scroll zoom, 
 - Dragging the image moves an unlocked pin. Dragging the file pill offers the original full-resolution PNG to destination apps. Successful ordinary drops close the pin; Option-drops and cancelled/rejected drops retain it.
 - Geometry and rounded clipping affect display only. A file promise creates exports only on demand; close must not invalidate an in-flight destination request.
 
+Pins now have a 140×90-point minimum (subject to display fit) so corner controls and the file handle stay reachable. Aspect ratio and pointer-anchored gesture calculations are retained.
+
 ## Architecture and alternatives
 
 Use AppKit: an image panel with small native child panels for controls and feedback. Separate input surfaces keep controls functional when the image ignores events and prevent UI opacity from following image opacity. Extract the current nested content/window responsibilities into focused modules. Reuse current image rendering, copy/save helpers, localization and preference conventions. No dependencies or new permission requirements.

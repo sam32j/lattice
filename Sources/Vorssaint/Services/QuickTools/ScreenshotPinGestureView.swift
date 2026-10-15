@@ -5,6 +5,13 @@ import AppKit
 
 /// Native gestures shared by pinned screenshot content and its window tests.
 class ScreenshotPinGestureView: NSView {
+    var isPositionLocked: Bool { false }
+    var pinOpacity: CGFloat {
+        get { window?.alphaValue ?? 1 }
+        set { window?.alphaValue = newValue }
+    }
+    func didZoom() {}
+
     override func scrollWheel(with event: NSEvent) {
         guard let window, !window.ignoresMouseEvents, event.momentumPhase.isEmpty else { return }
         var delta = event.scrollingDeltaY
@@ -18,7 +25,8 @@ class ScreenshotPinGestureView: NSView {
         let preciseDelta = min(24, max(-24, delta))
         if event.modifierFlags.contains(.option) {
             let change = event.hasPreciseScrollingDeltas ? preciseDelta * 0.005 : (delta > 0 ? 0.05 : -0.05)
-            window.alphaValue = min(1, max(0.2, window.alphaValue + change))
+            let next = min(1, max(0.1, pinOpacity + change))
+            if next != pinOpacity { pinOpacity = next }
             return
         }
         let factor = event.hasPreciseScrollingDeltas ? 1 + preciseDelta * 0.014 : (delta > 0 ? 1.03 : 1 / 1.03)
@@ -33,7 +41,7 @@ class ScreenshotPinGestureView: NSView {
     }
 
     private func zoom(by factor: CGFloat, at point: CGPoint) {
-        guard let window, factor.isFinite, factor > 0, factor != 1,
+        guard !isPositionLocked, let window, factor.isFinite, factor > 0, factor != 1,
               point.x.isFinite, point.y.isFinite else { return }
         let frame = window.frame
         let anchor = window.convertPoint(toScreen: point)
@@ -60,5 +68,6 @@ class ScreenshotPinGestureView: NSView {
                           width: width, height: height)
         guard next != frame else { return }
         window.setFrame(next, display: true)
+        didZoom()
     }
 }

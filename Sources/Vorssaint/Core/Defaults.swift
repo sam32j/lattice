@@ -1877,6 +1877,7 @@ enum Defaults {
         DefaultsKey.screenshotCopyToClipboard: false,
         DefaultsKey.screenshotAddToShelf: false,
         DefaultsKey.screenshotPreviewPosition: ScreenshotSupport.QuickPreviewPosition.automatic.rawValue,
+        DefaultsKey.screenshotPinRoundedCorners: true,
         DefaultsKey.screenshotPreviewTakesFocus: true,
         DefaultsKey.screenshotUploadShortcutEnabled: false,
         DefaultsKey.screenshotUploadShortcut: GlobalShortcut.screenshotUploadDefault.storageValue,
