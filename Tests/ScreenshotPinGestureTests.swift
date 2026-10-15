@@ -71,6 +71,18 @@ enum ScreenshotPinGestureTests {
         suite.expectClose(window.alphaValue, 0.75, "pinching leaves opacity unchanged")
 
         window.setFrame(initial, display: false)
+        pinch.pinch = 0.001
+        for _ in 0..<100 { view.magnify(with: pinch) }
+        suite.expectClose(window.frame.width, 221.02,
+                          "gentle pinch packets accumulate instead of disappearing in window rounding", tol: 1)
+
+        window.setFrame(initial, display: false)
+        pinch.pinch = -0.001
+        for _ in 0..<100 { view.magnify(with: pinch) }
+        suite.expectClose(window.frame.width, 180.96,
+                          "gentle inward pinches shrink the pin continuously", tol: 1)
+
+        window.setFrame(initial, display: false)
         pinch.pinch = -0.99
         view.magnify(with: pinch)
         suite.expectClose(window.frame.width, 120, "zoom respects both dimensions of the 90 by 60 minimum", tol: 0.6)

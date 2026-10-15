@@ -46,6 +46,9 @@ enum ScreenshotPinWindowTests {
         let pinch = ScreenshotPinGestureTests.Gesture()
         pinch.pinch = 0.5
         let surface = pin.contentView as? ScreenshotPinGestureView
+        suite.expect(surface != nil && pin.makeFirstResponder(surface) && pin.firstResponder === surface
+                     && surface?.needsPanelToBecomeKey == true,
+                     "the pin image requests nonactivating panel focus and can become first responder")
         surface?.scrollWheel(with: wheel)
         surface?.magnify(with: pinch)
         if let arrow = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0,

@@ -20,6 +20,12 @@ enum ScreenshotPinChromeTests {
             abs(child.frame.minX - origin.x - 20) < 1 && abs(child.frame.minY - origin.y - 10) < 1
         }, "all child surfaces track pin movement without drifting")
         let buttons = children.flatMap { buttons(in: $0.contentView) }
+        suite.expect(buttons.count == 3 && buttons.allSatisfy { button in
+            guard let cell = button.cell else { return false }
+            let icon = cell.imageRect(forBounds: button.bounds)
+            return abs(icon.midX - button.bounds.midX) < 0.01
+                && abs(icon.midY - button.bounds.midY) < 0.01
+        }, "close, lock and cursor symbols are centered in their circular hit targets")
         let strings = ScreenshotPinStrings.localized(L10n.shared.language)
         let cursor = buttons.first { $0.accessibilityLabel() == strings.clickThrough }
         cursor?.performClick(nil)
