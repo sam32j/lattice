@@ -6,8 +6,8 @@ import AppKit
 /// Only these small panels receive input when the image is click-through.
 final class ScreenshotPinChrome {
     private weak var pin: ScreenshotPinWindow?
-    private let closePanel = PinControlPanel(size: CGSize(width: 30, height: 30))
-    private let modePanel = PinControlPanel(size: CGSize(width: 64, height: 30))
+    private let closePanel = PinControlPanel(size: CGSize(width: 46, height: 46))
+    private let modePanel = PinControlPanel(size: CGSize(width: 80, height: 46))
     private let dragPanel = PinControlPanel(size: CGSize(width: 100, height: 26))
     private let feedbackPanel = PinControlPanel(size: CGSize(width: 76, height: 28))
     private let feedback = ScreenshotPinFeedbackView(frame: CGRect(x: 0, y: 0, width: 76, height: 28))
@@ -19,11 +19,11 @@ final class ScreenshotPinChrome {
         self.pin = pin
         let close = PinControlButton()
         configure(close, symbol: "xmark", label: L10n.shared.s.menuClose, action: #selector(closePin))
-        closePanel.contentView?.addSubview(circle(close, x: 0))
+        closePanel.contentView?.addSubview(circle(close, x: 8))
         configure(lockButton, symbol: "lock.open", label: "", action: #selector(toggleLock))
         configure(cursorButton, symbol: "cursorarrow", label: "", action: #selector(toggleClickThrough))
-        modePanel.contentView?.addSubview(circle(lockButton, x: 0))
-        modePanel.contentView?.addSubview(circle(cursorButton, x: 34))
+        modePanel.contentView?.addSubview(circle(lockButton, x: 8))
+        modePanel.contentView?.addSubview(circle(cursorButton, x: 42))
         feedbackPanel.contentView = feedback
         dragPanel.contentView = ScreenshotPinDragView(pin: pin)
         feedbackPanel.ignoresMouseEvents = true
@@ -42,8 +42,8 @@ final class ScreenshotPinChrome {
 
     func layout() {
         guard let pin else { return }
-        closePanel.setFrameOrigin(CGPoint(x: pin.frame.minX + 8, y: pin.frame.maxY - 38))
-        modePanel.setFrameOrigin(CGPoint(x: pin.frame.maxX - 72, y: pin.frame.maxY - 38))
+        closePanel.setFrameOrigin(CGPoint(x: pin.frame.minX, y: pin.frame.maxY - 46))
+        modePanel.setFrameOrigin(CGPoint(x: pin.frame.maxX - 80, y: pin.frame.maxY - 46))
         dragPanel.setFrameOrigin(CGPoint(x: pin.frame.midX - 50, y: pin.frame.minY + 8))
         feedbackPanel.setFrameOrigin(CGPoint(x: pin.frame.midX - 38, y: pin.frame.midY - 14))
     }
@@ -82,7 +82,10 @@ final class ScreenshotPinChrome {
     }
 
     private func configure(_ button: NSButton, symbol: String, label: String, action: Selector) {
-        button.cell = PinControlButtonCell()
+        let cell = PinControlButtonCell()
+        cell.highlightsBy = []
+        cell.showsStateBy = []
+        button.cell = cell
         button.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
         button.title = ""
         button.isBordered = false
@@ -97,14 +100,20 @@ final class ScreenshotPinChrome {
     }
 
     private func circle(_ button: NSButton, x: CGFloat) -> NSView {
-        let frame = CGRect(x: x, y: 0, width: 30, height: 30)
+        // Liquid Glass draws beyond its nominal frame. The transparent panel
+        // gutter keeps its rounded edge and shadow away from the window clip.
+        let frame = CGRect(x: x, y: 8, width: 30, height: 30)
         if #available(macOS 26.0, *) {
             let glass = NSGlassEffectView(frame: frame)
             glass.style = .regular
             glass.cornerRadius = 15
             glass.appearance = NSAppearance(named: .darkAqua)
-            if #available(macOS 27.0, *) { glass.effectIsInteractive = true }
-            glass.contentView = button
+            if #available(macOS 27.0, *) { glass.effectIsInteractive = false }
+            // A button's alignment insets otherwise cause the glass view to
+            // enlarge its frame beyond the circular 30-point target.
+            let content = NSView(frame: button.frame)
+            content.addSubview(button)
+            glass.contentView = content
             return glass
         } else {
             let frost = NSVisualEffectView(frame: frame)

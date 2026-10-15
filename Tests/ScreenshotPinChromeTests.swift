@@ -21,6 +21,20 @@ enum ScreenshotPinChromeTests {
         }, "all child surfaces track pin movement without drifting")
         let buttons = children.flatMap { buttons(in: $0.contentView) }
         suite.expect(buttons.count == 3 && buttons.allSatisfy { button in
+            guard let cell = button.cell as? NSButtonCell else { return false }
+            return cell.highlightsBy.isEmpty && cell.showsStateBy.isEmpty
+        }, "pressing a pin button does not recolor or displace its symbol")
+        if #available(macOS 27.0, *) {
+            let glass = children.flatMap { $0.contentView?.subviews ?? [] }.compactMap { $0 as? NSGlassEffectView }
+            suite.expect(glass.count == 3 && glass.allSatisfy { !$0.effectIsInteractive },
+                         "glass circles retain their backdrop without an obscuring interactive press highlight")
+        }
+        suite.expect(buttons.count == 3 && buttons.allSatisfy { button in
+            guard let root = button.window?.contentView else { return false }
+            let target = button.convert(button.bounds, to: root).insetBy(dx: -8, dy: -8)
+            return root.bounds.contains(target)
+        }, "circular glass controls have transparent room around every edge to prevent clipping")
+        suite.expect(buttons.count == 3 && buttons.allSatisfy { button in
             guard let cell = button.cell else { return false }
             let icon = cell.imageRect(forBounds: button.bounds)
             return abs(icon.midX - button.bounds.midX) < 0.01
