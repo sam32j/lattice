@@ -27,34 +27,16 @@ enum WallpaperStore {
     // lives with the app, not in the system wallpaper store
     static var backupURL: URL {
         let fallback = URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
-            .appendingPathComponent("Library/Application Support/com.vorssaint.utils",
+            .appendingPathComponent("Library/Application Support/io.github.sam32j.lattice",
                                     isDirectory: true)
         let container = PrivateFileStore.containerURL ?? fallback
-        return container.appendingPathComponent("WallpaperIndex.vorssaint-bak",
+        return container.appendingPathComponent("WallpaperIndex.lattice-bak",
                                                 isDirectory: false)
     }
 
-    // leftover from when the bak lived next to Index.plist
-    private static var legacySystemBackupURL: URL {
-        indexURL.deletingLastPathComponent()
-            .appendingPathComponent("Index.plist.vorssaint-bak", isDirectory: false)
-    }
-
-    // move a pristine system-side bak into App Support once (older builds)
+    // Lattice has no legacy system-side backup. Keep the upstream backup intact.
     static func migrateLegacyBackupIfNeeded() {
-        let backup = backupURL
-        let legacy = legacySystemBackupURL
-        guard !FileManager.default.fileExists(atPath: backup.path),
-              FileManager.default.fileExists(atPath: legacy.path)
-        else { return }
-        let parent = backup.deletingLastPathComponent()
-        _ = PrivateFileStore.createDirectory(at: parent)
-        do {
-            try FileManager.default.copyItem(at: legacy, to: backup)
-            try? FileManager.default.removeItem(at: legacy)
-        } catch {
-            // leave legacy in place for a later apply/migrate
-        }
+        // Intentionally no migration from another distribution's data.
     }
 
     @discardableResult
@@ -121,10 +103,6 @@ enum WallpaperStore {
         let backup = backupURL
         if FileManager.default.fileExists(atPath: backup.path) {
             try? FileManager.default.removeItem(at: backup)
-        }
-        let legacy = legacySystemBackupURL
-        if FileManager.default.fileExists(atPath: legacy.path) {
-            try? FileManager.default.removeItem(at: legacy)
         }
     }
 }
