@@ -83,7 +83,7 @@ User reported three remaining items:
 - [x] Verify complete test suites (`screenshot-pins`: 100 checks, `screenshots`: 1155 checks, `overlays`: 29 checks).
 - [x] Build, sign, selftest, and deliver one and only working build at `/Users/samuel/Developer/Codex/VS/artifacts/Vorssaint Beta.app` and `/Applications/Vorssaint Beta.app`.
   - Artifact ZIP: `/Users/samuel/Developer/Codex/VS/artifacts/Vorssaint-Beta-latest.zip`
-  - SHA256: `bf12d1b1aa409c076ca6781f436c63db6461b3d058ac893cf3adc027fc7fabc3`
+  - SHA256: `e277652d803683442dad1591821673858bf909bbcdc73a0146d872471795f22b`
   - Deep strict codesign passed; selftest passed.
 
 
