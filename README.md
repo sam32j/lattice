@@ -1,66 +1,29 @@
-# Lattice downstream distribution
-
-This fork is **Lattice**, Samuel Ji's independently branded distribution of
-Vorssaint. Its default branch is `dev-build/main`; `main` tracks upstream.
-Releases use `vX.Y.Z-d.N` and the app checks this fork's releases.
-
-See [Lattice setup, signing, versions and recovery](docs/LATTICE.md) for the
-downstream workflow and build instructions. Publication stays disabled until
-the fork's own Developer ID signing and notarization are configured.
-
-The original upstream documentation follows for attribution and feature
-reference. Official branding, download links, donation links and signing claims
-in that documentation describe the upstream project.
-
----
-
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/logo-dark.svg">
-    <img src="docs/assets/readme/logo.svg" width="220" alt="Vorssaint logo">
-  </picture>
+  <img src="docs/assets/readme/lattice-icon.png" width="128" alt="Lattice logo">
 </p>
 
-<h1 align="center">Vorssaint</h1>
+<h1 align="center">Lattice</h1>
 
 <p align="center">
+  <strong>A personalized downstream build of <a href="https://github.com/vorssaint/vorssaint-utils">Vorssaint</a></strong><br>
   One menu bar icon doing the job of a dozen paid Mac apps.<br>
   Install only what you use.
 </p>
 
 <p align="center">
-  <a href="https://vorssaint.com">Website</a> ·
+  <a href="#about-lattice">About</a> ·
+  <a href="#install-only-what-you-use">Features</a> ·
   <a href="#install">Install</a> ·
-  <a href="#everything-it-does">Features</a> ·
   <a href="#private-by-default">Privacy</a> ·
-  <a href="CHANGELOG.md">Changelog</a> ·
-  <a href="mailto:hello@vorssaint.com">Contact</a> ·
-  <a href="https://discord.gg/M6BwWH4BJp">Discord</a>
+  <a href="docs/LATTICE.md">Downstream Specs</a> ·
+  <a href="#upstream--acknowledgements">Upstream & Acknowledgements</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/vorssaint/vorssaint-utils/releases"><img src="https://img.shields.io/github/v/release/vorssaint/vorssaint-utils?label=release&color=4c8dff" alt="Latest release"></a>
-  <a href="https://github.com/vorssaint/vorssaint-utils/releases"><img src="https://img.shields.io/github/downloads/vorssaint/vorssaint-utils/total?color=4c8dff" alt="Downloads"></a>
-  <a href="https://github.com/vorssaint/vorssaint-utils/actions/workflows/ci.yml"><img src="https://github.com/vorssaint/vorssaint-utils/actions/workflows/ci.yml/badge.svg?branch=main&event=push" alt="CI status"></a>
+  <a href="https://github.com/sam32j/lattice/tree/dev-build/main"><img src="https://img.shields.io/badge/branch-dev--build%2Fmain-blue" alt="Default branch"></a>
   <a href="#what-you-need"><img src="https://img.shields.io/badge/macOS-14%2B%20Apple%20Silicon-black" alt="macOS 14 and newer, Apple Silicon"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue" alt="License GPL 3.0 or later"></a>
-</p>
-
-<p align="center">
-  <a href="https://buymeacoffee.com/vorssaint">
-    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" width="217" height="60" alt="Buy Me a Coffee">
-  </a>
-</p>
-
-<p align="center">
-  For anything private, email
-  <a href="mailto:hello@vorssaint.com"><strong>hello@vorssaint.com</strong></a>.
-</p>
-
-<p align="center">
-  <a href="https://trendshift.io/repositories/53716?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-53716" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/53716" alt="vorssaint/vorssaint-utils | Trendshift" width="250" height="55"></a>
-  <a href="https://trendshift.io/repositories/53716?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-53716" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/53716/weekly?language=Swift" alt="vorssaint/vorssaint-utils | Trendshift weekly ranking" width="250" height="55"></a>
-  <a href="https://trendshift.io/repositories/53716?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-53716" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/53716/monthly?language=Swift" alt="vorssaint/vorssaint-utils | Trendshift monthly ranking" width="250" height="55"></a>
+  <a href="https://github.com/vorssaint/vorssaint-utils"><img src="https://img.shields.io/badge/upstream-vorssaint--utils-brightgreen" alt="Upstream vorssaint-utils"></a>
 </p>
 
 <p align="center">
@@ -71,6 +34,17 @@ in that documentation describe the upstream project.
 </p>
 
 Per app volume, a real system monitor, a better app switcher, window snapping, Dock previews, clipboard history, text snippets, a file shelf, an uninstaller. The utilities Mac users usually buy one by one, together behind a single menu bar icon, with no account, no telemetry and no subscription.
+
+## About Lattice
+
+**Lattice** is Samuel Ji's ([@sam32j](https://github.com/sam32j)) independently branded, personalized downstream distribution of [Vorssaint](https://github.com/vorssaint/vorssaint-utils).
+
+- **Personalized & Isolated:** Features an independent identity (`io.github.sam32j.lattice`), custom geometric icon artwork, isolated application preferences and data, and a separate release train.
+- **Automated Synchronization:** Tracks upstream stable releases with automated rebase and reconciliation workflows, preserving personal enhancements while staying up-to-date with upstream capabilities.
+- **Branch Strategy:** The default branch is `dev-build/main` (containing downstream enhancements); `main` tracks upstream.
+- **Documentation:** See [docs/LATTICE.md](docs/LATTICE.md) for full architecture notes on downstream signing, releases, and disaster recovery.
+
+---
 
 ## Install only what you use
 
@@ -182,29 +156,31 @@ Reorder or hide panel sections, choose a compact layout, and export settings to 
 - **Keep awake.** Keep your Mac working on a timer, with the lid closed, or while selected apps, power or external displays are present.
 - **Displays.** Control individual displays and brightness, with hardware control where supported, half or quarter steps for the brightness keys, optional extra dimming below a monitor's minimum, and software dimming as a fallback.
 - **Extra brightness.** Use a MacBook Pro XDR display's HDR headroom to go beyond its normal maximum brightness.
-- **Bluetooth on sleep.** Disconnect Bluetooth during sleep and restore it on wake only if Vorssaint turned it off.
+- **Bluetooth on sleep.** Disconnect Bluetooth during sleep and restore it on wake only if Lattice turned it off.
 
 ## Install
 
-With [Homebrew](https://brew.sh):
+### Build from source
 
 ```sh
-brew install --cask vorssaint
+git clone https://github.com/sam32j/lattice.git
+cd lattice
+./build.sh --dev            # build the separate Developer variant
+./build.sh --dev --install  # install and launch it
 ```
 
-Or grab the disk image from the [releases page](https://github.com/vorssaint/vorssaint-utils/releases) and drag Vorssaint into Applications.
+Xcode Command Line Tools are the only requirement.
 
-Builds are signed with an Apple Developer ID and notarized, so macOS opens them without a fuss and your permissions survive updates.
+### Releases
+
+Lattice releases use the `vX.Y.Z-d.N` scheme and will be published on [GitHub Releases](https://github.com/sam32j/lattice/releases) once fork-level Developer ID signing and notarization are configured.
+
+> [!NOTE]
+> If you are looking for official upstream builds of Vorssaint with maintainer Developer ID signatures, install upstream via Homebrew (`brew install --cask vorssaint`) or download from [vorssaint/vorssaint-utils](https://github.com/vorssaint/vorssaint-utils/releases).
 
 ## Uninstall
 
-With Homebrew:
-
-```sh
-brew uninstall --cask vorssaint
-```
-
-To remove Vorssaint completely, including its settings and permissions:
+To remove Lattice completely, including its isolated settings, data, and helper permissions:
 
 ```sh
 ./Tools/uninstall.sh
@@ -212,7 +188,7 @@ To remove Vorssaint completely, including its settings and permissions:
 
 ## Private by default
 
-Vorssaint is local-first, with no account, analytics or tracking. The network is touched only by things you can see: update checks, the speed test, Homebrew actions, optional online lyric lookup, temporary screenshot or recording links and feedback you explicitly send. The full story is in the [privacy notes](docs/PRIVACY.md).
+Lattice is local-first, with no account, analytics or tracking. The network is touched only by things you can see: update checks, the speed test, Homebrew actions, optional online lyric lookup, temporary screenshot or recording links and feedback you explicitly send. The full story is in the [privacy notes](docs/PRIVACY.md).
 
 Permissions get the same treatment. Every one is optional, the app explains each in plain words, shows which features actually use it, and even tells you when a permission you granted is no longer needed by anything, with a shortcut to revoke it.
 
@@ -226,45 +202,36 @@ See the [permissions guide](docs/PERMISSIONS.md) for which features need access 
 
 - A Mac with Apple Silicon
 - macOS 14 Sonoma or newer
-
-### Build it yourself
-
-```sh
-git clone https://github.com/vorssaint/vorssaint-utils.git
-cd vorssaint-utils
-./build.sh --dev            # build the separate Developer variant
-./build.sh --dev --install  # install and launch it
-```
-
-Xcode Command Line Tools are the only requirement. The [contributing guide](CONTRIBUTING.md) covers the layout and conventions. Official builds come only from the maintainer: the GPL covers the source, while the Vorssaint name, icon and look are covered by [TRADEMARKS.md](TRADEMARKS.md), so forks need their own identity.
+- Xcode Command Line Tools (for building from source)
 
 ## When something misbehaves
 
-See [troubleshooting](docs/TROUBLESHOOTING.md) for launch problems, permissions and missing previews, or [support](SUPPORT.md) for help.
+See [troubleshooting](docs/TROUBLESHOOTING.md) for launch problems, permissions and missing previews, or upstream [support](SUPPORT.md) for help.
 
 ## Documentation
 
+- [Lattice Downstream Specs](docs/LATTICE.md), architecture, versioning and sync workflow
 - [Privacy](docs/PRIVACY.md), what does and does not leave your Mac
 - [Permissions](docs/PERMISSIONS.md), every macOS permission in plain words
 - [Troubleshooting](docs/TROUBLESHOOTING.md), the common fixes
 - [Contributing](CONTRIBUTING.md), build, layout and conventions
-- [Support](SUPPORT.md), where to get help
 - [Security](SECURITY.md), how to report a vulnerability
 
-## Community
+## Upstream & Acknowledgements
 
-Vorssaint went from first commit to the front of GitHub trending in three days, top of the Swift charts, and issues and pull requests have shaped every release since. Bug reports, feature ideas and translations are all welcome, starting from the [contributing guide](CONTRIBUTING.md).
+Lattice is built upon the exceptional work of the open-source upstream project [Vorssaint](https://github.com/vorssaint/vorssaint-utils). Full attribution and gratitude go to:
 
-Vorssaint is free and will stay that way. If it earned its place in your menu bar, a star helps other people find it, and a [coffee](https://buymeacoffee.com/vorssaint) keeps the maintainer awake, with or without the Keep awake feature.
+- **[Vorssaint](https://github.com/vorssaint/vorssaint-utils)** — created and maintained by [@vorssaint](https://github.com/vorssaint) ([vorssaint.com](https://vorssaint.com)).
+- **Original App Icon** — designed by [@divisionseven](https://github.com/divisionseven) for Vorssaint.
+- **The Upstream Contributors** — the open-source community that created and tested these capabilities.
 
-## Acknowledgements
-
-- App icon designed by [@divisionseven](https://github.com/divisionseven)
+If you enjoy this software, please support the upstream project:
+- ⭐️ Star the upstream repository: [vorssaint/vorssaint-utils](https://github.com/vorssaint/vorssaint-utils)
+- ☕️ Support the upstream maintainer: [Buy Me a Coffee](https://buymeacoffee.com/vorssaint)
+- 💬 Join the upstream [Discord](https://discord.gg/M6BwWH4BJp)
 
 ## License
 
-[GPL 3.0 or later](LICENSE), copyright 2026 Vorssaint. The license covers the source code; the Vorssaint name, logo and look are covered separately in [TRADEMARKS.md](TRADEMARKS.md).
+[GPL 3.0 or later](LICENSE), Copyright (C) 2026 Vorssaint and contributors. Downstream modifications and branding Copyright (C) 2026 Samuel Ji.
 
-<p align="center">
-  <sub>Made by <a href="https://x.com/vorssaint">@vorssaint</a></sub>
-</p>
+Per [TRADEMARKS.md](TRADEMARKS.md), this fork uses independent branding ("Lattice"), custom icon artwork, and isolated bundle identifiers (`io.github.sam32j.lattice`) to avoid confusion with official upstream releases.
