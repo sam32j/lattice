@@ -102,7 +102,7 @@ enum SwitcherScrollContract {
                     drainGeneration = 1
                     DispatchQueue.main.async { drainGeneration = 2 }
                 }
-                let deadline = Date().addingTimeInterval(0.5)
+                let deadline = Date().addingTimeInterval(1.5)
                 repeat {
                     hosting.layoutSubtreeIfNeeded()
                     if drainGeneration == 2 && condition() { return }

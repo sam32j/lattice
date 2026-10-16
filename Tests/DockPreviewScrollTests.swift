@@ -121,12 +121,14 @@ enum DockPreviewScrollTests {
             buttonActions.removeAll()
             window.close()
         }
-        func settle() {
-            let deadline = Date().addingTimeInterval(0.25)
+        func settle(until condition: () -> Bool = { true }) {
+            let deadline = Date().addingTimeInterval(1.5)
             repeat {
                 hosting.layoutSubtreeIfNeeded()
+                if condition() { return }
                 RunLoop.current.run(until: min(deadline, Date().addingTimeInterval(0.01)))
             } while Date() < deadline
+            hosting.layoutSubtreeIfNeeded()
         }
         func findScroll(_ view: NSView) -> NSScrollView? {
             if let scroll = view as? NSScrollView { return scroll }
@@ -160,10 +162,13 @@ enum DockPreviewScrollTests {
                     return
                 }
                 action()
-                settle()
-                let clip = scroll.contentView.bounds
                 let start = DockPreviewSupport.panelPadding
                     + CGFloat(expectedIndex) * (extent + DockPreviewSupport.cardSpacing)
+                settle(until: {
+                    let clip = scroll.contentView.bounds
+                    return start >= clip.minX - 0.5 && start + extent <= clip.maxX + 0.5
+                })
+                let clip = scroll.contentView.bounds
                 suite.expect(model.selectedWindowID == model.windows[expectedIndex].windowID,
                              "\(name): navigation selects window \(expectedIndex + 1)")
                 suite.expect(start >= clip.minX - 0.5 && start + extent <= clip.maxX + 0.5,
