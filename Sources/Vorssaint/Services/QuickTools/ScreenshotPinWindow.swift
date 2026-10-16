@@ -77,11 +77,18 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         super.sendEvent(event)
     }
 
-    func showPin() {
+    func attachChrome() {
         guard !isClosed else { return }
-        orderFrontRegardless()
         chrome.attach()
         updateHover(at: NSEvent.mouseLocation)
+    }
+
+    func showPin(orderFront: Bool = true) {
+        guard !isClosed else { return }
+        if orderFront {
+            orderFrontRegardless()
+        }
+        attachChrome()
     }
 
     func refreshAppearance() {
@@ -151,15 +158,19 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     }
 
     private(set) var isHiddenForDrag = false
+    private var wasVisibleBeforeDrag = false
 
     func setHiddenForDrag(_ hidden: Bool) {
         guard !isClosed, hidden != isHiddenForDrag else { return }
         isHiddenForDrag = hidden
         if hidden {
+            wasVisibleBeforeDrag = isVisible
             orderOut(nil)
             chrome.setControlsVisible(false)
         } else {
-            orderFrontRegardless()
+            if wasVisibleBeforeDrag {
+                orderFrontRegardless()
+            }
             chrome.layout()
             chrome.setControlsVisible(isHovered)
         }
