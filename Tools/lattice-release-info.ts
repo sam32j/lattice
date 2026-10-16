@@ -17,8 +17,8 @@ try {
   const commit = git("rev-parse", "HEAD");
   if (process.env.LATTICE_SOURCE_SHA && process.env.LATTICE_SOURCE_SHA !== commit)
     throw new Error("Release source moved since sync");
-  const live = git("ls-remote", "origin", "refs/heads/dev-build/main").split(/\s/)[0];
-  if (commit !== live) throw new Error("Only the current dev-build/main commit may release");
+  const live = git("ls-remote", "origin", "refs/heads/lattice/main").split(/\s/)[0];
+  if (commit !== live) throw new Error("Only the current lattice/main commit may release");
   git("diff", "--exit-code", "HEAD");
   git("fetch", "--no-tags", "https://github.com/vorssaint/vorssaint-utils.git",
     `refs/tags/${meta.upstreamTag}:refs/tags/upstream/release`);

@@ -6,7 +6,7 @@ import { mkdtempSync, rmSync, writeFileSync, appendFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const personal = "dev-build/main";
+const personal = "lattice/main";
 const root = mkdtempSync(join(tmpdir(), "lattice-sync-"));
 const cwd = join(root, "checkout");
 const env = { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_EDITOR: "true" };
