@@ -501,6 +501,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/ScreenshotCapturePolicy.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotSupport.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotCanvasSupport.swift
+        Sources/Vorssaint/Services/QuickTools/ScreenshotPinPinchTracker.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinGestureView.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinFeedbackView.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinWindow.swift

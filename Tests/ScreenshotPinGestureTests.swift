@@ -210,5 +210,20 @@ enum ScreenshotPinGestureTests {
         window.alphaValue = 0.5
         locked.scrollWheel(with: wheel)
         suite.expect(window.alphaValue > 0.5, "locking position still permits opacity changes")
+
+        // Test ScreenshotPinPinchTracker touch distance calculations
+        let tracker = ScreenshotPinPinchTracker()
+        let initialPinch = tracker.update(p1: CGPoint(x: 0.4, y: 0.5), p2: CGPoint(x: 0.6, y: 0.5), active: true)
+        suite.expect(initialPinch == nil, "first touch packet registers baseline distance without zooming")
+        let zoomOut = tracker.update(p1: CGPoint(x: 0.35, y: 0.5), p2: CGPoint(x: 0.65, y: 0.5), active: true)
+        suite.expectClose(zoomOut ?? 0, 1.5, "spreading fingers increases distance and computes scale factor", tol: 0.01)
+        let zoomIn = tracker.update(p1: CGPoint(x: 0.4, y: 0.5), p2: CGPoint(x: 0.6, y: 0.5), active: true)
+        suite.expectClose(zoomIn ?? 0, 0.2 / 0.3, "pinching fingers decreases distance and computes scale factor", tol: 0.01)
+        let endPinch = tracker.update(p1: .zero, p2: .zero, active: false)
+        suite.expect(endPinch == nil, "releasing fingers ends the pinch and resets tracker")
+        let nextTouch = tracker.update(p1: CGPoint(x: 0.4, y: 0.5), p2: CGPoint(x: 0.6, y: 0.5), active: true)
+        suite.expect(nextTouch == nil, "new gesture after release requires new baseline")
+        let jumpTouch = tracker.update(p1: CGPoint(x: 0.01, y: 0.01), p2: CGPoint(x: 0.99, y: 0.99), active: true)
+        suite.expect(jumpTouch == nil, "extreme sudden distance jump (>2x) is ignored as spurious")
     }
 }

@@ -58,6 +58,7 @@ final class ScreenshotPinDragView: NSVisualEffectView, NSDraggingSource {
         let item = NSDraggingItem(pasteboardWriter: provider)
         let preview = NSImage(cgImage: pin.image, size: CGSize(width: pin.frame.width, height: pin.frame.height))
         item.setDraggingFrame(CGRect(x: bounds.midX - 60, y: bounds.midY - 30, width: 120, height: 60), contents: preview)
+        NotificationCenter.default.post(name: .screenshotPinDragDidBegin, object: pin)
         beginDraggingSession(with: [item], event: event, source: self)
     }
 
@@ -73,6 +74,7 @@ final class ScreenshotPinDragView: NSVisualEffectView, NSDraggingSource {
     func completeDrag(operation: NSDragOperation, modifiers: NSEvent.ModifierFlags) {
         mouseDownEvent = nil
         keptAtStart = false
+        NotificationCenter.default.post(name: .screenshotPinDragDidEnd, object: pin)
         if operation.contains(.copy), !modifiers.contains(.option) { pin?.closePin() }
     }
 }

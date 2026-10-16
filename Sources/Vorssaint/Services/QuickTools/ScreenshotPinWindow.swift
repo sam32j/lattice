@@ -59,6 +59,23 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     }
 
     override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+
+    override func magnify(with event: NSEvent) {
+        surface.magnify(with: event)
+    }
+
+    func handleGestureEvent(_ event: NSEvent) {
+        guard !isClosed, !isPositionLocked, !ignoresMouseEvents else { return }
+        surface.handleGestureEvent(event)
+    }
+
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .gesture {
+            surface.handleGestureEvent(event)
+        }
+        super.sendEvent(event)
+    }
 
     func showPin() {
         guard !isClosed else { return }
@@ -80,6 +97,10 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         isHovered = hovered
         updateImageOpacity()
         chrome.setControlsVisible(hovered)
+        if hovered && !ignoresMouseEvents && !isKeyWindow {
+            makeKey()
+            makeFirstResponder(surface)
+        }
     }
 
     func setOpacity(_ value: CGFloat) {
@@ -129,6 +150,21 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         isPositionLocked ? frame.size : frameSize
     }
 
+    private(set) var isHiddenForDrag = false
+
+    func setHiddenForDrag(_ hidden: Bool) {
+        guard !isClosed, hidden != isHiddenForDrag else { return }
+        isHiddenForDrag = hidden
+        if hidden {
+            orderOut(nil)
+            chrome.setControlsVisible(false)
+        } else {
+            orderFrontRegardless()
+            chrome.layout()
+            chrome.setControlsVisible(isHovered)
+        }
+    }
+
     override func keyDown(with event: NSEvent) {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let step: CGFloat = flags.contains(.shift) ? 12 : 1
@@ -143,4 +179,11 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         default: break
         }
     }
+}
+
+extension Notification.Name {
+    static let screenshotPinDragDidBegin = Notification.Name("screenshotPinDragDidBegin")
+    static let screenshotPinDragDidEnd = Notification.Name("screenshotPinDragDidEnd")
+    static let screenshotPinWindowDragDidBegin = Notification.Name("screenshotPinWindowDragDidBegin")
+    static let screenshotPinWindowDragDidEnd = Notification.Name("screenshotPinWindowDragDidEnd")
 }

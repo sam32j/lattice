@@ -35,14 +35,42 @@ class ScreenshotPinGestureView: NSView {
         zoom(by: factor, at: event.locationInWindow)
     }
 
+    var lastGestureMagnificationTime: TimeInterval = 0
+    private let pinchTracker = ScreenshotPinPinchTracker()
+
+    override var acceptsTouchEvents: Bool {
+        get { true }
+        set {}
+    }
+    override var allowedTouchTypes: NSTouch.TouchTypeMask {
+        get { [.indirect, .direct] }
+        set {}
+    }
+
+    func handleGestureEvent(_ event: NSEvent) {
+        guard let window, !window.ignoresMouseEvents, !isPositionLocked else { return }
+        if event.type == .gesture, let factor = pinchTracker.process(event: event) {
+            lastGestureMagnificationTime = ProcessInfo.processInfo.systemUptime
+            zoom(by: factor, at: event.locationInWindow)
+        } else if event.type == .magnify {
+            magnify(with: event)
+        }
+    }
+
+    override func touchesBegan(with event: NSEvent) { handleGestureEvent(event) }
+    override func touchesMoved(with event: NSEvent) { handleGestureEvent(event) }
+    override func touchesEnded(with event: NSEvent) { pinchTracker.reset() }
+    override func touchesCancelled(with event: NSEvent) { pinchTracker.reset() }
+
     override func magnify(with event: NSEvent) {
+        guard ProcessInfo.processInfo.systemUptime - lastGestureMagnificationTime > 0.02 else { return }
         guard let window, !window.ignoresMouseEvents else { return }
         let amount = event.magnification
         guard amount.isFinite, amount != 0, amount > -1 else { return }
         zoom(by: 1 + amount, at: event.locationInWindow)
     }
 
-    private func zoom(by factor: CGFloat, at point: CGPoint) {
+    func zoom(by factor: CGFloat, at point: CGPoint) {
         guard !isPositionLocked, let window, factor.isFinite, factor > 0, factor != 1,
               point.x.isFinite, point.y.isFinite else { return }
         let frame = window.frame
