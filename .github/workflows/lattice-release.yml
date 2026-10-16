@@ -1,4 +1,4 @@
-name: Lattice release
+name: Release
 
 on:
   workflow_call:

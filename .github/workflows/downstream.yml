@@ -1,4 +1,4 @@
-name: Lattice downstream
+name: Sync
 
 on:
   schedule:
