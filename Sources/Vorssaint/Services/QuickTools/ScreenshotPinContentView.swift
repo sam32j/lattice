@@ -23,6 +23,9 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
         layer?.masksToBounds = true
         layer?.borderWidth = 1
         layer?.borderColor = CGColor(gray: 0.5, alpha: 0.4)
+        let pinchRecognizer = NSMagnificationGestureRecognizer(target: self, action: #selector(handlePinchGesture(_:)))
+        pinchRecognizer.delaysMagnificationEvents = false
+        addGestureRecognizer(pinchRecognizer)
     }
 
     @available(*, unavailable)
@@ -33,9 +36,23 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
     override func mouseDown(with event: NSEvent) {
         guard let pin, !pin.isClosed else { return }
         if event.clickCount == 2 { pin.closePin(); return }
+        NSApp.activate(ignoringOtherApps: true)
         pin.makeKey()
         pin.makeFirstResponder(self)
-        if !pin.isPositionLocked { pin.performDrag(with: event) }
+        if !pin.isPositionLocked {
+            NotificationCenter.default.post(name: .screenshotPinWindowDragDidBegin, object: pin)
+            pin.performDrag(with: event)
+            NotificationCenter.default.post(name: .screenshotPinWindowDragDidEnd, object: pin)
+        }
+    }
+
+    @objc private func handlePinchGesture(_ gesture: NSMagnificationGestureRecognizer) {
+        guard let pin, !pin.isClosed, !pin.isPositionLocked, !pin.ignoresMouseEvents else { return }
+        lastGestureMagnificationTime = ProcessInfo.processInfo.systemUptime
+        let delta = gesture.magnification
+        guard delta.isFinite, delta != 0, delta > -1 else { return }
+        zoom(by: 1 + delta, at: gesture.location(in: self))
+        gesture.magnification = 0
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {

@@ -8,13 +8,21 @@ final class ScreenshotPinController {
     static let shared = ScreenshotPinController()
     private var pins: [ScreenshotPinWindow] = []
     private var escapeMonitor: Any?
+    private var gestureMonitor: Any?
     private var hoverTimer: Timer?
     private var preferenceObserver: NSObjectProtocol?
+    private var dragObservers: [NSObjectProtocol] = []
     private init() {}
 
     var protectedWindowIDs: Set<CGWindowID> {
         Set(pins.flatMap { [$0] + ($0.childWindows ?? []) }
             .compactMap { $0.isVisible && $0.windowNumber > 0 ? CGWindowID($0.windowNumber) : nil })
+    }
+
+    func setPinsHiddenForDrag(_ hidden: Bool, except: ScreenshotPinWindow? = nil) {
+        for pin in pins where pin !== except {
+            pin.setHiddenForDrag(hidden)
+        }
     }
 
     func pin(image: CGImage, scale: CGFloat) {
@@ -40,6 +48,7 @@ final class ScreenshotPinController {
 
     private func refreshMonitoring() {
         refreshEscapeMonitor()
+        refreshGestureMonitor()
         if !pins.isEmpty, hoverTimer == nil {
             let timer = Timer(timeInterval: 0.05, repeats: true) { [weak self] _ in
                 let location = NSEvent.mouseLocation
@@ -57,6 +66,43 @@ final class ScreenshotPinController {
             hoverTimer = nil
             if let preferenceObserver { NotificationCenter.default.removeObserver(preferenceObserver) }
             preferenceObserver = nil
+        }
+        if !pins.isEmpty && dragObservers.isEmpty {
+            let center = NotificationCenter.default
+            dragObservers = [
+                center.addObserver(forName: .screenshotPinDragDidBegin, object: nil, queue: .main) { [weak self] _ in
+                    self?.setPinsHiddenForDrag(true)
+                },
+                center.addObserver(forName: .screenshotPinDragDidEnd, object: nil, queue: .main) { [weak self] _ in
+                    self?.setPinsHiddenForDrag(false)
+                },
+                center.addObserver(forName: .screenshotPinWindowDragDidBegin, object: nil, queue: .main) { [weak self] note in
+                    self?.setPinsHiddenForDrag(true, except: note.object as? ScreenshotPinWindow)
+                },
+                center.addObserver(forName: .screenshotPinWindowDragDidEnd, object: nil, queue: .main) { [weak self] _ in
+                    self?.setPinsHiddenForDrag(false)
+                }
+            ]
+        } else if pins.isEmpty && !dragObservers.isEmpty {
+            let center = NotificationCenter.default
+            dragObservers.forEach { center.removeObserver($0) }
+            dragObservers.removeAll()
+        }
+    }
+
+    private func refreshGestureMonitor() {
+        if !pins.isEmpty, gestureMonitor == nil {
+            gestureMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.gesture, .magnify]) { [weak self] event in
+                guard let self else { return }
+                let location = NSEvent.mouseLocation
+                guard let pin = self.pins.first(where: {
+                    $0.frame.contains(location) && !$0.isClosed && !$0.isPositionLocked && !$0.ignoresMouseEvents
+                }) else { return }
+                pin.handleGestureEvent(event)
+            }
+        } else if pins.isEmpty, let monitor = gestureMonitor {
+            NSEvent.removeMonitor(monitor)
+            gestureMonitor = nil
         }
     }
 

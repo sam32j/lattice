@@ -25,9 +25,13 @@ enum ScreenshotPinChromeTests {
             return cell.highlightsBy.isEmpty && cell.showsStateBy.isEmpty
         }, "pressing a pin button does not recolor or displace its symbol")
         if #available(macOS 27.0, *) {
-            let glass = children.flatMap { $0.contentView?.subviews ?? [] }.compactMap { $0 as? NSGlassEffectView }
-            suite.expect(glass.count == 3 && glass.allSatisfy { !$0.effectIsInteractive },
-                         "glass circles retain their backdrop without an obscuring interactive press highlight")
+            let glass = children.flatMap { descendants(in: $0.contentView) }.filter { NSStringFromClass(type(of: $0)) == "NSGlassEffectView" }
+            suite.expect(glass.count == 3 && glass.allSatisfy { $0.value(forKey: "effectIsInteractive") as? Bool == false },
+                         "native glass disables press highlight while preserving distortion")
+            suite.expect(glass.count == 3 && glass.allSatisfy { ($0.value(forKey: "_contentLensing") as? Int) == 1 },
+                         "native glass enables liquid content lensing distortion")
+            suite.expect(glass.count == 3 && glass.allSatisfy { $0.value(forKey: "tintColor") is NSColor },
+                         "native glass applies subtle dark tint for icon legibility")
         }
         suite.expect(buttons.count == 3 && buttons.allSatisfy { button in
             guard let root = button.window?.contentView else { return false }
@@ -37,9 +41,17 @@ enum ScreenshotPinChromeTests {
         suite.expect(buttons.count == 3 && buttons.allSatisfy { button in
             guard let cell = button.cell else { return false }
             let icon = cell.imageRect(forBounds: button.bounds)
-            return abs(icon.midX - button.bounds.midX) < 0.01
+            let cursor = button.accessibilityLabel() == ScreenshotPinStrings.localized(L10n.shared.language).clickThrough
+            let offset: CGFloat = cursor ? 2 / (button.window?.backingScaleFactor ?? 1) : 0
+            return abs(icon.midX - button.bounds.midX - offset) < 0.01
                 && abs(icon.midY - button.bounds.midY) < 0.01
-        }, "close, lock and cursor symbols are centered in their circular hit targets")
+        }, "control symbols are centered with the cursor's two-pixel optical adjustment")
+        for button in buttons {
+            guard let window = button.window else { continue }
+            let centerInWindow = button.convert(NSPoint(x: button.bounds.midX, y: button.bounds.midY), to: nil)
+            let hit = window.contentView?.hitTest(centerInWindow)
+            suite.expect(hit === button, "hit testing center of button returns the button, got: \(String(describing: hit))")
+        }
         let strings = ScreenshotPinStrings.localized(L10n.shared.language)
         let cursor = buttons.first { $0.accessibilityLabel() == strings.clickThrough }
         cursor?.performClick(nil)
@@ -52,10 +64,27 @@ enum ScreenshotPinChromeTests {
         buttons.first { $0.accessibilityLabel() == L10n.shared.s.menuClose }?.performClick(nil)
         suite.expect(pin.isClosed && (pin.childWindows ?? []).isEmpty && children.allSatisfy { !$0.isVisible },
                      "the visible close button detaches and hides every child surface")
+
+        // Test temporary drag hide
+        let pin2 = ScreenshotPinWindow(image: image, scale: 2)
+        pin2.showPin()
+        defer { pin2.closePin() }
+        suite.expect(pin2.isVisible, "pin2 is initially visible")
+        pin2.setHiddenForDrag(true)
+        suite.expect(!pin2.isVisible, "setHiddenForDrag(true) temporarily hides the pin window")
+        suite.expect(pin2.isHiddenForDrag, "pin2 records hidden-for-drag state")
+        pin2.setHiddenForDrag(false)
+        suite.expect(pin2.isVisible, "setHiddenForDrag(false) restores pin visibility")
+        suite.expect(!pin2.isHiddenForDrag, "pin2 is no longer in hidden-for-drag state")
     }
 
     private static func buttons(in view: NSView?) -> [NSButton] {
         guard let view else { return [] }
         return (view as? NSButton).map { [$0] } ?? view.subviews.flatMap { buttons(in: $0) }
+    }
+
+    private static func descendants(in view: NSView?) -> [NSView] {
+        guard let view else { return [] }
+        return [view] + view.subviews.flatMap { descendants(in: $0) }
     }
 }

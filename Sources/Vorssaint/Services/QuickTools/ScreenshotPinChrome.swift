@@ -36,7 +36,10 @@ final class ScreenshotPinChrome {
         guard !attached, let pin else { return }
         attached = true
         layout()
-        for panel in panels { pin.addChildWindow(panel, ordered: .above) }
+        for panel in panels {
+            pin.addChildWindow(panel, ordered: .above)
+            panel.contentView?.layoutSubtreeIfNeeded()
+        }
         setControlsVisible(pin.isHovered)
     }
 
@@ -46,6 +49,7 @@ final class ScreenshotPinChrome {
         modePanel.setFrameOrigin(CGPoint(x: pin.frame.maxX - 80, y: pin.frame.maxY - 46))
         dragPanel.setFrameOrigin(CGPoint(x: pin.frame.midX - 50, y: pin.frame.minY + 8))
         feedbackPanel.setFrameOrigin(CGPoint(x: pin.frame.midX - 38, y: pin.frame.midY - 14))
+        for panel in panels { panel.contentView?.layoutSubtreeIfNeeded() }
     }
 
     func setControlsVisible(_ visible: Bool) {
@@ -83,6 +87,7 @@ final class ScreenshotPinChrome {
 
     private func configure(_ button: NSButton, symbol: String, label: String, action: Selector) {
         let cell = PinControlButtonCell()
+        cell.horizontalOffsetInPixels = button === cursorButton ? 2 : 0
         cell.highlightsBy = []
         cell.showsStateBy = []
         button.cell = cell
@@ -103,20 +108,23 @@ final class ScreenshotPinChrome {
         // Liquid Glass draws beyond its nominal frame. The transparent panel
         // gutter keeps its rounded edge and shadow away from the window clip.
         let frame = CGRect(x: x, y: 8, width: 30, height: 30)
-        if #available(macOS 26.0, *) {
-            let glass = NSGlassEffectView(frame: frame)
-            glass.style = .regular
-            glass.cornerRadius = 15
+        let container = NSView(frame: frame)
+        container.wantsLayer = true
+        let material: NSView
+        // Look up this public AppKit class at runtime so builds made with the
+        // supported macOS 15 SDK also use Liquid Glass on newer systems.
+        if #available(macOS 26.0, *), let glassClass = NSClassFromString("NSGlassEffectView") as? NSView.Type {
+            let glass = glassClass.init(frame: container.bounds)
+            glass.setValue(0, forKey: "style")
+            glass.setValue(15, forKey: "cornerRadius")
             glass.appearance = NSAppearance(named: .darkAqua)
-            if #available(macOS 27.0, *) { glass.effectIsInteractive = false }
-            // A button's alignment insets otherwise cause the glass view to
-            // enlarge its frame beyond the circular 30-point target.
-            let content = NSView(frame: button.frame)
-            content.addSubview(button)
-            glass.contentView = content
-            return glass
+            glass.setValue(1, forKey: "_contentLensing")
+            glass.setValue(NSColor.black.withAlphaComponent(0.25), forKey: "tintColor")
+            if #available(macOS 27.0, *) { glass.setValue(false, forKey: "effectIsInteractive") }
+            glass.setValue(true, forKey: "_placesContentAboveGlass")
+            material = glass
         } else {
-            let frost = NSVisualEffectView(frame: frame)
+            let frost = NSVisualEffectView(frame: container.bounds)
             frost.material = .hudWindow
             frost.blendingMode = .behindWindow
             frost.state = .active
@@ -124,9 +132,30 @@ final class ScreenshotPinChrome {
             frost.wantsLayer = true
             frost.layer?.cornerRadius = 15
             frost.layer?.masksToBounds = true
-            frost.addSubview(button)
-            return frost
+            material = frost
         }
+        material.autoresizingMask = [.width, .height]
+        container.addSubview(material)
+
+        let sheen = CALayer()
+        sheen.frame = container.bounds
+        sheen.cornerRadius = 15
+        sheen.masksToBounds = true
+        sheen.backgroundColor = NSColor.clear.cgColor
+        container.layer?.addSublayer(sheen)
+
+        button.frame = container.bounds
+        button.autoresizingMask = [.width, .height]
+        container.addSubview(button)
+
+        if let controlBtn = button as? PinControlButton {
+            controlBtn.circleContainer = container
+            controlBtn.glassView = material
+            controlBtn.highlightLayer = sheen
+        }
+
+        container.layoutSubtreeIfNeeded()
+        return container
     }
 
     @objc private func closePin() { pin?.closePin() }
@@ -135,13 +164,88 @@ final class ScreenshotPinChrome {
 }
 
 private final class PinControlButton: NSButton {
+    weak var circleContainer: NSView?
+    weak var glassView: NSView?
+    weak var highlightLayer: CALayer?
+
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        bounds.contains(point) ? self : nil
+    }
+
+    private var trackingArea: NSTrackingArea?
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let trackingArea { removeTrackingArea(trackingArea) }
+        let area = NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self, userInfo: nil)
+        addTrackingArea(area)
+        self.trackingArea = area
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        super.mouseEntered(with: event)
+        updateSheen(hover: true, pressed: false)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        super.mouseExited(with: event)
+        updateSheen(hover: false, pressed: false)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        guard isEnabled else { return }
+        updateSheen(hover: true, pressed: true)
+        var inside = true
+        window?.trackEvents(matching: [.leftMouseUp, .leftMouseDragged], timeout: .infinity, mode: .eventTracking) { [weak self] e, stop in
+            guard let self, let e else { return }
+            let pt = self.convert(e.locationInWindow, from: nil)
+            let inBounds = self.bounds.contains(pt)
+            if inBounds != inside {
+                inside = inBounds
+                self.updateSheen(hover: inside, pressed: inside)
+            }
+            if e.type == .leftMouseUp {
+                stop.pointee = true
+            }
+        }
+        let pt = convert(window?.mouseLocationOutsideOfEventStream ?? .zero, from: nil)
+        updateSheen(hover: bounds.contains(pt), pressed: false)
+        if inside {
+            sendAction(action, to: target)
+        }
+    }
+
+    private func updateSheen(hover: Bool, pressed: Bool) {
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = pressed ? 0.08 : 0.16
+            ctx.timingFunction = CAMediaTimingFunction(name: pressed ? .easeOut : .easeInEaseOut)
+            ctx.allowsImplicitAnimation = true
+            let alpha: CGFloat = pressed ? 0.28 : (hover ? 0.12 : 0.0)
+            highlightLayer?.backgroundColor = NSColor(white: 1.0, alpha: alpha).cgColor
+            if let layer = circleContainer?.layer {
+                if pressed {
+                    let cx = layer.bounds.midX
+                    let cy = layer.bounds.midY
+                    var t = CATransform3DMakeTranslation(cx, cy, 0)
+                    t = CATransform3DScale(t, 1.10, 1.10, 1)
+                    layer.transform = CATransform3DTranslate(t, -cx, -cy, 0)
+                } else {
+                    layer.transform = CATransform3DIdentity
+                }
+            }
+            if #available(macOS 26.0, *) {
+                glassView?.setValue(pressed ? 2 : 1, forKey: "_contentLensing")
+            }
+        }
+    }
 }
 
 private final class PinControlButtonCell: NSButtonCell {
+    var horizontalOffsetInPixels: CGFloat = 0
     override func imageRect(forBounds rect: NSRect) -> NSRect {
         let size = super.imageRect(forBounds: rect).size
-        return NSRect(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2,
+        let scale = controlView?.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 1
+        return NSRect(x: rect.midX - size.width / 2 + horizontalOffsetInPixels / scale, y: rect.midY - size.height / 2,
                       width: size.width, height: size.height)
     }
 }
