@@ -10,7 +10,7 @@ try {
     throw new Error("Configure your own Developer ID signingTeamID before releasing Lattice");
   const meta = JSON.parse(readFileSync("Downstream/release.json", "utf8"));
   if (!/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(meta.upstreamTag)
-      || !/^[0-9a-f]{40}$/.test(meta.upstreamCommit) || meta.baseCommit !== meta.upstreamCommit
+      || !/^[0-9a-f]{40}$/.test(meta.upstreamCommit) || !/^[0-9a-f]{40}$/.test(meta.baseCommit)
       || !Number.isSafeInteger(meta.revision) || meta.revision < 1)
     throw new Error("Release requires an exact published upstream stable base and a positive downstream revision");
   const git = (...args: string[]) => execFileSync("git", args, { encoding: "utf8" }).trim();
@@ -24,7 +24,8 @@ try {
     `refs/tags/${meta.upstreamTag}:refs/tags/upstream/release`);
   if (git("rev-parse", "refs/tags/upstream/release^{commit}") !== meta.upstreamCommit)
     throw new Error("Upstream release tag moved");
-  git("merge-base", "--is-ancestor", meta.upstreamCommit, commit);
+  git("merge-base", "--is-ancestor", meta.upstreamCommit, meta.baseCommit);
+  git("merge-base", "--is-ancestor", meta.baseCommit, commit);
   const version = `${meta.upstreamTag.slice(1)}-d.${meta.revision}`, tag = `v${version}`;
   if (git("ls-remote", "origin", `refs/tags/${tag}`)) throw new Error("Release tag already exists; do not replace published versions");
   const output = { team, version, tag, commit, upstream: meta.upstreamTag };

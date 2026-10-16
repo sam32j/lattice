@@ -91,6 +91,30 @@ test("a stable tag behind the preserved snapshot holds releases without dropping
   expect(git(f.fork, "show", "lattice/main:snapshot")).toBe("unreleased but already adopted");
 });
 
+test("allowSnapshotRelease permits release on unreleased snapshot and resets upon future upstream release", () => {
+  const f = fixture();
+  writeFileSync(join(f.upstream, "snapshot"), "unreleased but permitted\n");
+  git(f.upstream, "add", "."); git(f.upstream, "commit", "-m", "unreleased snapshot");
+  git(f.personal, "fetch", f.upstream, "main"); git(f.personal, "merge", "--no-edit", "FETCH_HEAD");
+  const path = join(f.personal, "Downstream/release.json");
+  const metadata = JSON.parse(readFileSync(path, "utf8"));
+  metadata.baseCommit = git(f.upstream, "rev-parse", "HEAD");
+  metadata.allowSnapshotRelease = true;
+  writeFileSync(path, JSON.stringify(metadata)); git(f.personal, "add", ".");
+  git(f.personal, "commit", "-m", "permit snapshot release"); git(f.personal, "push", "origin", "HEAD");
+  const result = f.run("v1.0.0");
+  expect(result.exitCode).toBe(0);
+  expect(JSON.parse(result.stdout.toString()).ready).toBe(true);
+
+  f.advance();
+  const nextResult = f.run("v1.1.0");
+  expect(nextResult.exitCode).toBe(0);
+  expect(JSON.parse(nextResult.stdout.toString()).ready).toBe(true);
+  const updatedMeta = JSON.parse(git(f.fork, "show", "lattice/main:Downstream/release.json"));
+  expect(updatedMeta.upstreamTag).toBe("v1.1.0");
+  expect(updatedMeta.allowSnapshotRelease).toBeUndefined();
+});
+
 test("rewriting a recorded upstream tag stops before either remote changes", () => {
   const f = fixture(); f.advance(); git(f.upstream, "tag", "-f", "v1.0.0");
   const result = f.run(); expect(result.exitCode).toBe(1);

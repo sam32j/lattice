@@ -48,7 +48,8 @@ try {
     throw new Error("Recorded upstream tag was rewritten; manual review required");
   let ready = false, nextPersonal = oldPersonal;
   git(cwd, "checkout", "--detach", oldPersonal);
-  if (release === metadata.baseCommit) {
+  const allowSnapshot = Boolean(metadata.allowSnapshotRelease);
+  if (release === metadata.baseCommit || (allowSnapshot && release === metadata.upstreamCommit && ancestor(metadata.upstreamCommit, metadata.baseCommit))) {
     if (tag !== metadata.upstreamTag || release !== metadata.upstreamCommit)
       throw new Error("Stable release does not match recorded provenance");
     ready = true;
@@ -62,6 +63,7 @@ try {
     }
     metadata.baseCommit = release; metadata.upstreamCommit = release;
     metadata.upstreamTag = tag; metadata.revision = 1;
+    delete metadata.allowSnapshotRelease;
     writeFileSync(join(cwd, "Downstream/release.json"), JSON.stringify(metadata, null, 2) + "\n");
     git(cwd, "add", "Downstream/release.json");
     git(cwd, "commit", "-m", `chore(downstream): base Lattice on ${tag}`);
