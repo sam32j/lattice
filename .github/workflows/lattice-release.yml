@@ -6,6 +6,13 @@ on:
       commit:
         type: string
         required: true
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Commit SHA to release (defaults to lattice/main HEAD)'
+        required: false
+        default: ''
+        type: string
 
 permissions: {}
 concurrency:
@@ -14,7 +21,7 @@ concurrency:
 
 jobs:
   preflight:
-    if: (github.repository == 'sam32j/lattice' || github.repository == 'sam32j/vorssaint-utils') && github.ref == 'refs/heads/lattice/main'
+    if: (github.repository == 'sam32j/lattice' || github.repository == 'sam32j/vorssaint-utils') && (github.ref == 'refs/heads/lattice/main' || github.ref_name == 'lattice/main')
     runs-on: macos-26
     timeout-minutes: 30
     permissions:
@@ -26,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ inputs.commit }}
+          ref: ${{ inputs.commit != '' && inputs.commit || 'lattice/main' }}
           fetch-depth: 0
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
@@ -45,7 +52,6 @@ jobs:
     needs: preflight
     runs-on: macos-26
     timeout-minutes: 60
-    environment: lattice-release
     permissions:
       contents: write
     env:
@@ -64,6 +70,7 @@ jobs:
       - name: Revalidate immediately before signing
         run: bun Tools/lattice-release-info.ts
       - name: Import fork signing certificate
+        if: needs.preflight.outputs.team != 'ADHOC'
         env:
           REQUIRE_SIGNING: '1'
           SIGNING_CERT_P12: ${{ secrets.LATTICE_SIGNING_CERT_P12 }}

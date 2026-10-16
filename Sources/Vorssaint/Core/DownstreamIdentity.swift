@@ -7,11 +7,14 @@ enum DownstreamIdentity {
     static let name = "Lattice"
     static let bundleID = "io.github.sam32j.lattice"
     static let repository = "sam32j/lattice"
-    // Set this public pin to YOUR Developer ID team before distributing updates.
-    // Release tooling reads this same constant. Empty means installation is denied.
-    static let signingTeamID = ""
+    // Set this public pin to YOUR Developer ID team before distributing updates,
+    // or "ADHOC" for personal ad-hoc self-signed distribution.
+    static let signingTeamID = "ADHOC"
 
     static func requirements(teamID: String) -> (app: String, dmg: String)? {
+        if teamID == "ADHOC" {
+            return ("identifier \"\(bundleID)\"", "identifier \"\(bundleID)\"")
+        }
         guard teamID.range(of: #"^[A-Z0-9]{10}$"#, options: .regularExpression) != nil,
               teamID != "3D485NHW29" else { return nil }
         let signer = "anchor apple generic and certificate leaf[subject.OU] = \"\(teamID)\""

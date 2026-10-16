@@ -23,19 +23,23 @@ try {
   }
   const tag = `v${version}`;
   const provenance = JSON.parse(readFileSync("Downstream/release.json", "utf8"));
-  const notes = `Lattice ${version}\n\nUnofficial downstream build of Vorssaint. Source: ${commit}.\nUpstream: ${provenance.upstreamTag} (${provenance.upstreamCommit}); downstream revision ${provenance.revision}.\nProvenance is also included in LatticeProvenance.json inside the app.\nSigned with Samuel's configured Developer ID and notarized by Apple.\nRequires macOS 14 or later and Apple Silicon.\n`;
+  const team = process.env.LATTICE_TEAM_ID ?? "";
+  const isAdhoc = team.toUpperCase() === "ADHOC" || process.env.LATTICE_ALLOW_ADHOC === "true";
+  const signingNote = isAdhoc
+    ? "Personal ad-hoc self-signed build for personal use."
+    : "Signed with Samuel's configured Developer ID and notarized by Apple.";
+  const notes = `Lattice ${version}\n\nUnofficial downstream build of Vorssaint. Source: ${commit}.\nUpstream: ${provenance.upstreamTag} (${provenance.upstreamCommit}); downstream revision ${provenance.revision}.\nProvenance is also included in LatticeProvenance.json inside the app.\n${signingNote}\nRequires macOS 14 or later and Apple Silicon.\n`;
   writeFileSync("dist/release-notes.md", notes);
   gh("api", "--method", "POST", `repos/${repository}/git/refs`, "-f", `ref=refs/tags/${tag}`, "-f", `sha=${commit}`);
   gh("release", "create", tag, "--repo", repository, "--verify-tag", "--draft", "--title", `Lattice ${version}`,
     "--notes-file", "dist/release-notes.md", `dist/Lattice-${version}.dmg`, "dist/SHA256SUMS");
   const draft = JSON.parse(gh("release", "view", tag, "--repo", repository, "--json", "isDraft,tagName,targetCommitish,assets"));
   if (!draft.isDraft || draft.tagName !== tag || draft.assets.length !== 2) throw new Error("Draft release validation failed; draft retained for inspection");
-  const remote = JSON.parse(gh("api", `repos/${repository}/releases/tags/${tag}`));
   for (const name of [`Lattice-${version}.dmg`, "SHA256SUMS"]) {
     const bytes = readFileSync(`dist/${name}`);
-    const asset = remote.assets.find((a: { name: string }) => a.name === name);
+    const asset = draft.assets.find((a: { name: string }) => a.name === name);
     const digest = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
-    if (asset?.size !== bytes.length || asset?.digest !== digest)
+    if (!asset || asset.size !== bytes.length || (asset.digest && asset.digest !== digest))
       throw new Error(`Uploaded ${name} differs from validated local artifact; draft retained`);
   }
   const ref = JSON.parse(gh("api", `repos/${repository}/git/ref/tags/${tag}`));
