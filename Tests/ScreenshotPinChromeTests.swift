@@ -48,20 +48,20 @@ enum ScreenshotPinChromeTests {
         }, "control symbols are centered with the cursor's two-pixel optical adjustment")
         for button in buttons {
             guard let window = button.window else { continue }
-            let centerInWindow = button.convert(NSPoint(x: button.bounds.midX, y: button.bounds.midY), to: nil)
+            let centerInWindow = button.convert(NSPoint(x: button.bounds.midX, y: button.bounds.midY), to: nil as NSView?)
             let hit = window.contentView?.hitTest(centerInWindow)
             suite.expect(hit === button, "hit testing center of button returns the button, got: \(String(describing: hit))")
         }
         let strings = ScreenshotPinStrings.localized(L10n.shared.language)
         let cursor = buttons.first { $0.accessibilityLabel() == strings.clickThrough }
-        cursor?.performClick(nil)
+        cursor?.performClick(nil as Any?)
         suite.expect(cursor != nil && pin.ignoresMouseEvents && controls.allSatisfy { !$0.ignoresMouseEvents },
                      "cursor button enables image click-through while controls stay interactive")
-        cursor?.performClick(nil)
+        cursor?.performClick(nil as Any?)
         suite.expect(!pin.ignoresMouseEvents, "the same cursor button turns click-through off")
-        buttons.first { $0.accessibilityLabel() == strings.lock }?.performClick(nil)
+        buttons.first { $0.accessibilityLabel() == strings.lock }?.performClick(nil as Any?)
         suite.expect(pin.isPositionLocked, "the visible lock button locks position and dimensions")
-        buttons.first { $0.accessibilityLabel() == L10n.shared.s.menuClose }?.performClick(nil)
+        buttons.first { $0.accessibilityLabel() == L10n.shared.s.menuClose }?.performClick(nil as Any?)
         suite.expect(pin.isClosed && (pin.childWindows ?? []).isEmpty && children.allSatisfy { !$0.isVisible },
                      "the visible close button detaches and hides every child surface")
 
