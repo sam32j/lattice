@@ -40,8 +40,7 @@ else
 fi
 
 if (( IS_ADHOC )); then
-    codesign --force --sign - "$DMG"
-    codesign --verify --strict "$DMG"
+    echo "  leaving DMG container unsigned for ad-hoc release (app inside is verified)"
 else
     IDENTITY="$(security find-identity -v -p codesigning | grep 'Developer ID Application' | grep -F "($TEAM)" | head -1 | sed -E 's/.*"(.*)".*/\1/' || true)"
     IS_DEVID=1
@@ -53,13 +52,15 @@ else
         IS_DEVID=0
     fi
     [[ -n "$IDENTITY" ]] || exit 1
-    codesign --force --timestamp --sign "$IDENTITY" "$DMG"
-    codesign --verify --strict -R="anchor apple generic and certificate leaf[subject.OU] = \"$TEAM\"" "$DMG"
     if (( IS_DEVID )) && [[ -n "${NOTARY_KEY_ID:-}" ]]; then
+        codesign --force --timestamp --sign "$IDENTITY" "$DMG"
+        codesign --verify --strict -R="anchor apple generic and certificate leaf[subject.OU] = \"$TEAM\"" "$DMG"
         REQUIRE_NOTARIZATION=1 ./Tools/notarize.sh "$DMG"
         xcrun stapler validate "$APP"
         xcrun stapler validate "$DMG"
         spctl -a -t exec "$APP"
+    else
+        echo "  leaving DMG container unsigned to avoid Gatekeeper mount modal (app inside is signed with $IDENTITY)"
     fi
 fi
 (cd dist && shasum -a 256 "Lattice-$VERSION.dmg" > SHA256SUMS)
