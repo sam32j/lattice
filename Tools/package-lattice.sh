@@ -21,7 +21,7 @@ fi
 codesign --verify --deep --strict -R="$REQ" "$APP"
 [[ "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Contents/Info.plist")" == "$VERSION" ]] || exit 1
 
-if (( ! IS_ADHOC )); then
+if (( ! IS_ADHOC )) && [[ -n "${NOTARY_KEY_ID:-}" ]]; then
     REQUIRE_NOTARIZATION=1 ./Tools/notarize.sh "$APP"
 fi
 
@@ -43,14 +43,24 @@ if (( IS_ADHOC )); then
     codesign --force --sign - "$DMG"
     codesign --verify --strict "$DMG"
 else
-    IDENTITY="$(security find-identity -v -p codesigning | grep 'Developer ID Application' | grep -F "($TEAM)" | head -1 | sed -E 's/.*"(.*)".*/\1/')"
+    IDENTITY="$(security find-identity -v -p codesigning | grep 'Developer ID Application' | grep -F "($TEAM)" | head -1 | sed -E 's/.*"(.*)".*/\1/' || true)"
+    IS_DEVID=1
+    if [[ -z "$IDENTITY" ]]; then
+        IDENTITY="$(security find-identity -v -p codesigning | grep 'Apple Development:' | grep -F "($TEAM)" | head -1 | sed -E 's/.*"(.*)".*/\1/' || true)"
+        if [[ -z "$IDENTITY" ]]; then
+            IDENTITY="$(security find-identity -v -p codesigning | grep 'Apple Development:' | head -1 | sed -E 's/.*"(.*)".*/\1/' || true)"
+        fi
+        IS_DEVID=0
+    fi
     [[ -n "$IDENTITY" ]] || exit 1
     codesign --force --timestamp --sign "$IDENTITY" "$DMG"
     codesign --verify --strict -R="anchor apple generic and certificate leaf[subject.OU] = \"$TEAM\"" "$DMG"
-    REQUIRE_NOTARIZATION=1 ./Tools/notarize.sh "$DMG"
-    xcrun stapler validate "$APP"
-    xcrun stapler validate "$DMG"
-    spctl -a -t exec "$APP"
+    if (( IS_DEVID )) && [[ -n "${NOTARY_KEY_ID:-}" ]]; then
+        REQUIRE_NOTARIZATION=1 ./Tools/notarize.sh "$DMG"
+        xcrun stapler validate "$APP"
+        xcrun stapler validate "$DMG"
+        spctl -a -t exec "$APP"
+    fi
 fi
 (cd dist && shasum -a 256 "Lattice-$VERSION.dmg" > SHA256SUMS)
 

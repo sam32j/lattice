@@ -9,7 +9,7 @@ enum DownstreamIdentity {
     static let repository = "sam32j/lattice"
     // Set this public pin to YOUR Developer ID team before distributing updates,
     // or "ADHOC" for personal ad-hoc self-signed distribution.
-    static let signingTeamID = "ADHOC"
+    static let signingTeamID = "7L763852RV"
 
     static func requirements(teamID: String) -> (app: String, dmg: String)? {
         if teamID == "ADHOC" {
