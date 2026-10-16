@@ -6,7 +6,7 @@ import Foundation
 enum DownstreamIdentity {
     static let name = "Lattice"
     static let bundleID = "io.github.sam32j.lattice"
-    static let repository = "sam32j/vorssaint-utils"
+    static let repository = "sam32j/lattice"
     // Set this public pin to YOUR Developer ID team before distributing updates.
     // Release tooling reads this same constant. Empty means installation is denied.
     static let signingTeamID = ""

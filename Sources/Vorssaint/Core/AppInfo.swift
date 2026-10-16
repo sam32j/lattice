@@ -7,7 +7,7 @@ import Foundation
 enum AppInfo {
     static let name = DownstreamIdentity.name
     static let copyright = "© 2026 Vorssaint"
-    static let websiteURL = URL(string: "https://github.com/sam32j/vorssaint-utils")!
+    static let websiteURL = URL(string: "https://github.com/sam32j/lattice")!
     static let repositoryURL = websiteURL
     static let coffeeURL = URL(string: "https://buymeacoffee.com/vorssaint")!
     static let discordURL = URL(string: "https://discord.gg/M6BwWH4BJp")!
