@@ -116,6 +116,66 @@ enum RecentCaptureStoreTests {
             suite.expect(!linkedIndex.loadIfNeeded() && !linkedIndex.persist()
                     && (try? String(contentsOf: unrelated, encoding: .utf8)) == "keep",
                    "a symbolic index never grants permission to overwrite its target")
+
+            // Date subfolder, separate thumbnail dir, symlinked root, and GC
+            let thumbRoot = manager.temporaryDirectory
+                .appendingPathComponent("RecentCaptureThumbTests-\(UUID().uuidString)", isDirectory: true)
+            defer { try? manager.removeItem(at: thumbRoot) }
+
+            let symlinkRoot = manager.temporaryDirectory
+                .appendingPathComponent("RecentCaptureSymlinkTests-\(UUID().uuidString)")
+            try? manager.removeItem(at: link)
+            try manager.removeItem(at: index)
+            try manager.createSymbolicLink(at: symlinkRoot, withDestinationURL: root)
+            defer { try? manager.removeItem(at: symlinkRoot) }
+
+            let dateStore = RecentCaptureStore(directoryURL: symlinkRoot, thumbnailDirectoryURL: thumbRoot)
+            suite.expect(dateStore.loadIfNeeded(), "a symlinked capture directory loads successfully")
+
+            let subfolderCaptureID = UUID()
+            let dayString = "2026-10-16"
+            let subfolderCaptureName = "\(dayString)/\(subfolderCaptureID.uuidString).png"
+            let subfolderThumbName = "\(subfolderCaptureID.uuidString)-thumbnail.png"
+            let subfolderCaptureURL = root.appendingPathComponent(subfolderCaptureName)
+            let subfolderThumbURL = thumbRoot.appendingPathComponent(subfolderThumbName)
+
+            try RecentCaptureStore.write(png, to: subfolderCaptureURL)
+            try RecentCaptureStore.write(png, to: subfolderThumbURL)
+            suite.expect(manager.fileExists(atPath: subfolderCaptureURL.path)
+                    && manager.fileExists(atPath: subfolderThumbURL.path),
+                   "writing with a subfolder creates parent date directory automatically")
+
+            let dateEntry = RecentCaptureEntry(
+                id: subfolderCaptureID, kind: .screenshot, createdAt: Date(timeIntervalSince1970: 10),
+                screenshotName: subfolderCaptureName, recordingPath: nil,
+                thumbnailName: subfolderThumbName, scale: 2,
+                anchorX: 0, anchorY: 0, anchorWidth: 10, anchorHeight: 10)
+            dateStore.entries = [dateEntry]
+            suite.expect(dateStore.persist(), "persisting entries with date subfolder succeeds")
+
+            let reloadedDateStore = RecentCaptureStore(directoryURL: root, thumbnailDirectoryURL: thumbRoot)
+            suite.expect(reloadedDateStore.loadIfNeeded() && reloadedDateStore.entries == [dateEntry],
+                   "date subfolder entries are preserved across reloads")
+
+            // Test GC / orphan cleanup in date subfolders and empty date folder pruning
+            dateStore.entries = []
+            suite.expect(dateStore.persist()
+                    && !manager.fileExists(atPath: subfolderCaptureURL.path)
+                    && !manager.fileExists(atPath: subfolderThumbURL.path)
+                    && !manager.fileExists(atPath: root.appendingPathComponent(dayString).path),
+                   "orphan cleanup in date subfolder deletes unreferenced capture and removes empty date directory")
+
+            suite.expect(RecentCaptureStore.isDateFolderName("2026-10-16")
+                    && !RecentCaptureStore.isDateFolderName("2026-1-1")
+                    && !RecentCaptureStore.isDateFolderName("2026-13-01")
+                    && !RecentCaptureStore.isDateFolderName("invalid"),
+                   "isDateFolderName validates 4-digit year, 2-digit month and 2-digit day")
+            suite.expect(RecentCaptureStore.isSafeRelativePath("2026-10-16/\(UUID().uuidString).png")
+                    && RecentCaptureStore.isSafeRelativePath("\(UUID().uuidString).png")
+                    && !RecentCaptureStore.isSafeRelativePath("/\(UUID().uuidString).png")
+                    && !RecentCaptureStore.isSafeRelativePath("../\(UUID().uuidString).png")
+                    && !RecentCaptureStore.isSafeRelativePath("2026-10-16/../secret.png"),
+                   "isSafeRelativePath validates safe relative paths and blocks directory traversal")
         } catch {
             suite.expect(false, "capture history storage fixtures: \(error)")
         }

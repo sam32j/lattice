@@ -22,7 +22,8 @@ final class RecentCaptureService: ObservableObject {
                                       qos: .utility)
     private let generationLock = NSLock()
     private let thumbnailCache = NSCache<NSString, NSImage>()
-    private lazy var store = RecentCaptureStore(directoryURL: root)
+    private lazy var store = RecentCaptureStore(directoryURL: capturesRoot,
+                                                thumbnailDirectoryURL: thumbnailRoot)
     private var clearGeneration = 0
     private var panel: NSPanel?
     private var panelKeyMonitor: Any?
@@ -192,14 +193,30 @@ final class RecentCaptureService: ObservableObject {
         panelActivationObserver = nil
     }
 
-    private var root: URL? {
-        guard let base = manager.urls(for: .cachesDirectory, in: .userDomainMask).first,
-              let bundleID = Bundle.main.bundleIdentifier
+    private var capturesRoot: URL? {
+        guard let base = manager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         else { return nil }
         return base
-            .appendingPathComponent(bundleID, isDirectory: true)
+            .appendingPathComponent("io.github.sam32j.lattice", isDirectory: true)
             .appendingPathComponent("RecentCaptures", isDirectory: true)
     }
+
+    private var thumbnailRoot: URL? {
+        guard let base = manager.urls(for: .cachesDirectory, in: .userDomainMask).first
+        else { return nil }
+        return base
+            .appendingPathComponent("io.github.sam32j.lattice", isDirectory: true)
+            .appendingPathComponent("RecentCaptures", isDirectory: true)
+    }
+
+    private static let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 
     func reload() {
         queue.async { [weak self] in
@@ -213,12 +230,14 @@ final class RecentCaptureService: ObservableObject {
 
     func recordScreenshot(_ capture: ScreenshotSelectionController.Capture) {
         let id = UUID()
-        let screenshotName = "\(id.uuidString).png"
+        let createdAt = Date()
+        let day = Self.dayFormatter.string(from: createdAt)
+        let screenshotName = "\(day)/\(id.uuidString).png"
         let thumbnailName = "\(id.uuidString)-thumbnail.png"
         let entry = RecentCaptureEntry(
             id: id,
             kind: .screenshot,
-            createdAt: Date(),
+            createdAt: createdAt,
             screenshotName: screenshotName,
             recordingPath: nil,
             thumbnailName: thumbnailName,
@@ -231,7 +250,7 @@ final class RecentCaptureService: ObservableObject {
         let scale = capture.scale
 
         queue.async { [weak self] in
-            guard let self, let root = self.root else { return }
+            guard let self, let root = self.capturesRoot else { return }
             guard self.store.loadIfNeeded() else { return }
             do {
                 guard let full = ScreenshotRenderer.pngData(from: image, scale: scale),
@@ -239,12 +258,14 @@ final class RecentCaptureService: ObservableObject {
                       let small = ScreenshotRenderer.pngData(from: smallImage, scale: 1)
                 else { return }
                 try RecentCaptureStore.write(full, to: root.appendingPathComponent(screenshotName))
-                do {
-                    try RecentCaptureStore.write(small, to: root.appendingPathComponent(thumbnailName))
-                } catch {
-                    try? self.manager.removeItem(at: root.appendingPathComponent(screenshotName))
-                    try? self.manager.removeItem(at: root.appendingPathComponent(thumbnailName))
-                    throw error
+                if let storeRoot = self.thumbnailRoot {
+                    do {
+                        try RecentCaptureStore.write(small, to: storeRoot.appendingPathComponent(thumbnailName))
+                    } catch {
+                        try? self.manager.removeItem(at: root.appendingPathComponent(screenshotName))
+                        try? self.manager.removeItem(at: storeRoot.appendingPathComponent(thumbnailName))
+                        throw error
+                    }
                 }
                 self.prepend(entry)
             } catch {
@@ -276,18 +297,19 @@ final class RecentCaptureService: ObservableObject {
                                 generation: Int) {
         queue.async { [weak self] in
             guard let self, self.currentClearGeneration() == generation,
-                  let root = self.root, RecentCaptureStore.isRegularFile(url) else { return }
+                  RecentCaptureStore.isRegularFile(url) else { return }
             guard self.store.loadIfNeeded() else { return }
             var storedThumbnail: String?
             if let thumbnail,
+               let thumbnailRoot = self.thumbnailRoot,
                let data = ScreenshotRenderer.pngData(from: thumbnail, scale: 1),
-               (try? RecentCaptureStore.write(data, to: root.appendingPathComponent(thumbnailName))) != nil {
+               (try? RecentCaptureStore.write(data, to: thumbnailRoot.appendingPathComponent(thumbnailName))) != nil {
                 storedThumbnail = thumbnailName
             }
             guard self.currentClearGeneration() == generation else {
-                if let storedThumbnail {
+                if let storedThumbnail, let thumbnailRoot = self.thumbnailRoot {
                     try? self.manager.removeItem(
-                        at: root.appendingPathComponent(storedThumbnail))
+                        at: thumbnailRoot.appendingPathComponent(storedThumbnail))
                 }
                 return
             }
@@ -333,12 +355,26 @@ final class RecentCaptureService: ObservableObject {
     }
 
     func thumbnail(for entry: RecentCaptureEntry) -> NSImage? {
-        guard let name = entry.thumbnailName, Self.isSafeName(name), let root else { return nil }
+        guard let name = entry.thumbnailName, Self.isSafeName(name) else { return nil }
         let key = name as NSString
         if let cached = thumbnailCache.object(forKey: key) { return cached }
-        guard let image = NSImage(contentsOf: root.appendingPathComponent(name)) else { return nil }
-        thumbnailCache.setObject(image, forKey: key)
-        return image
+        if let thumbnailRoot,
+           let image = NSImage(contentsOf: thumbnailRoot.appendingPathComponent(name)) {
+            thumbnailCache.setObject(image, forKey: key)
+            return image
+        }
+        if entry.kind == .screenshot,
+           let capture = loadScreenshot(entry),
+           let smallCG = Self.thumbnail(from: capture.image) {
+            let image = NSImage(cgImage: smallCG, size: NSSize(width: smallCG.width, height: smallCG.height))
+            thumbnailCache.setObject(image, forKey: key)
+            if let thumbnailRoot,
+               let data = ScreenshotRenderer.pngData(from: smallCG, scale: 1) {
+                try? RecentCaptureStore.write(data, to: thumbnailRoot.appendingPathComponent(name))
+            }
+            return image
+        }
+        return nil
     }
 
     func open(_ entry: RecentCaptureEntry) {
@@ -381,12 +417,12 @@ final class RecentCaptureService: ObservableObject {
         -> ScreenshotSelectionController.Capture? {
         guard entry.kind == .screenshot,
               let name = entry.screenshotName,
-              Self.isSafeName(name),
-              let root,
+              Self.isSafeRelativePath(name),
+              let capturesRoot,
               let scale = entry.scale,
               scale.isFinite, scale > 0,
               let source = CGImageSourceCreateWithURL(
-                root.appendingPathComponent(name) as CFURL,
+                capturesRoot.appendingPathComponent(name) as CFURL,
                 [kCGImageSourceShouldCache: false] as CFDictionary),
               let image = CGImageSourceCreateImageAtIndex(
                 source, 0,
@@ -402,12 +438,17 @@ final class RecentCaptureService: ObservableObject {
     }
 
     private func pruneMissingEntries() {
+        let days = CleanerPolicy.sanitizedScreenshotAgeDays(
+            UserDefaults.standard.integer(forKey: DefaultsKey.cleanerScreenshotAgeDays))
+        let cutoff = days > 0 ? Date().addingTimeInterval(-Double(days) * 86_400) : nil
         var kept: [RecentCaptureEntry] = []
         for entry in store.entries where entryExists(entry) {
+            if let cutoff, entry.createdAt < cutoff {
+                continue
+            }
             kept.append(entry)
         }
-        let keepIDs = cappedIDs(for: kept)
-        store.entries = kept.filter { keepIDs.contains($0.id) }
+        store.entries = kept
     }
 
     private func prepend(_ entry: RecentCaptureEntry) {
@@ -417,8 +458,7 @@ final class RecentCaptureService: ObservableObject {
         }
         store.entries.append(entry)
         store.entries.sort { $0.createdAt > $1.createdAt }
-        let keepIDs = cappedIDs(for: store.entries)
-        store.entries.removeAll { !keepIDs.contains($0.id) }
+        pruneMissingEntries()
         store.persist()
         publish()
     }
@@ -426,27 +466,16 @@ final class RecentCaptureService: ObservableObject {
     private func entryExists(_ entry: RecentCaptureEntry) -> Bool {
         switch entry.kind {
         case .screenshot:
-            guard let name = entry.screenshotName, Self.isSafeName(name), let root else { return false }
-            return RecentCaptureStore.isRegularFile(root.appendingPathComponent(name))
+            guard let name = entry.screenshotName, Self.isSafeRelativePath(name), let capturesRoot else { return false }
+            return RecentCaptureStore.isRegularFile(capturesRoot.appendingPathComponent(name))
         case .recording:
             guard let url = entry.recordingURL else { return false }
             return RecentCaptureStore.isRegularFile(url)
         }
     }
 
-    private func cappedIDs(for entries: [RecentCaptureEntry]) -> Set<UUID> {
-        var screenshotBytes: [UUID: Int64] = [:]
-        if let root {
-            for entry in entries where entry.kind == .screenshot {
-                guard let name = entry.screenshotName, Self.isSafeName(name),
-                      let size = try? root.appendingPathComponent(name).resourceValues(
-                        forKeys: [.fileSizeKey]).fileSize
-                else { continue }
-                screenshotBytes[entry.id] = Int64(size)
-            }
-        }
-        return Set(ScreenshotSupport.cappedRecentCaptureIDs(
-            entries.map(\.id), screenshotBytes: screenshotBytes))
+    private static func isSafeRelativePath(_ name: String) -> Bool {
+        RecentCaptureStore.isSafeRelativePath(name)
     }
 
     private func publish() {
