@@ -62,7 +62,7 @@ jobs:
 
   release:
     needs: sync
-    if: needs.sync.outputs.ready == 'true' && needs.sync.outputs.pending == 'true' && vars.LATTICE_RELEASES_ENABLED == 'true'
+    if: needs.sync.outputs.ready == 'true' && needs.sync.outputs.pending == 'true'
     permissions:
       contents: write
     uses: ./.github/workflows/lattice-release.yml
