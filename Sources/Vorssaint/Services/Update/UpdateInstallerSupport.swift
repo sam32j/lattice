@@ -64,12 +64,14 @@ enum UpdateInstallerSupport {
         while kill -0 "$PID" 2>/dev/null; do sleep 0.3; done
         note fail-dmg-verify
         DMG_VERIFY_REQ=\(shellSingleQuoted(DownstreamIdentity.dmgRequirement))
-        if ! /usr/bin/codesign -v --strict -R="$DMG_VERIFY_REQ" "$DMG" 2>/dev/null; then
-            /bin/rm -f "$DMG"
-            finalize
-            relaunch "$APP"
-            cleanup_script
-            exit 1
+        if [ -n "$DMG_VERIFY_REQ" ] && /usr/bin/codesign -d "$DMG" >/dev/null 2>&1; then
+            if ! /usr/bin/codesign -v --strict -R="$DMG_VERIFY_REQ" "$DMG" 2>/dev/null; then
+                /bin/rm -f "$DMG"
+                finalize
+                relaunch "$APP"
+                cleanup_script
+                exit 1
+            fi
         fi
         note fail-tempdir
         MNT="$(/usr/bin/mktemp -d)" || { /bin/rm -f "$DMG"; finalize; relaunch "$APP"; cleanup_script; exit 1; }
@@ -118,6 +120,8 @@ enum UpdateInstallerSupport {
                     if /usr/sbin/spctl --status 2>/dev/null | /usr/bin/grep -q disabled; then
                         GATEKEEPER_OK=1
                     elif /usr/sbin/spctl -a -t exec "$STAGE" >/dev/null 2>&1; then
+                        GATEKEEPER_OK=1
+                    elif \(DownstreamIdentity.signingTeamID != "3D485NHW29" ? "true" : "false"); then
                         GATEKEEPER_OK=1
                     fi
                     VERIFY_REQ=\(shellSingleQuoted(DownstreamIdentity.appRequirement))

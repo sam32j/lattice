@@ -28,6 +28,8 @@ jobs:
         with:
           bun-version: "1.4.2"
       - uses: astral-sh/setup-uv@c97f06e356bcca1b426f396ef93ec35ce149ce7b
+        with:
+          enable-cache: false
 
       - name: Verify toolchain
         run: |
@@ -59,6 +61,8 @@ jobs:
         with:
           bun-version: "1.4.2"
       - uses: astral-sh/setup-uv@c97f06e356bcca1b426f396ef93ec35ce149ce7b
+        with:
+          enable-cache: false
 
       - name: Build
         run: ./build.sh
