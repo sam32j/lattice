@@ -58,7 +58,7 @@ enum CleanerSupport {
     static func isProtectedBundleID(_ id: String) -> Bool {
         let lowered = id.lowercased()
         let wrapped = "." + lowered + "."
-        if wrapped.contains(".com.apple.") || wrapped.contains(".com.vorssaint.")
+        if wrapped.contains(".com.apple.") || wrapped.contains(".com.vorssaint.") || wrapped.contains(".io.github.sam32j.lattice.")
             || wrapped.contains(".developer.apple.") || wrapped.contains(".is.workflow.") {
             return true
         }

@@ -8,6 +8,12 @@ import Foundation
 /// Semantic Versioning 2.0.0, handling stable and pre-release (beta, rc, alpha) channels.
 enum UpdateServiceSupport {
 
+    /// Downstream revisions of stable upstream releases are stable in our feed.
+    static func isDownstreamVersion(_ raw: String) -> Bool {
+        raw.range(of: #"^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-d\.[1-9][0-9]*$"#,
+                  options: .regularExpression) != nil
+    }
+
     static func sha256Matches(_ data: Data, expectedHex: String) -> Bool {
         guard expectedHex.utf8.count == SHA256.byteCount * 2 else { return false }
         let actual = SHA256.hash(data: data)
@@ -152,6 +158,12 @@ enum UpdateServiceSupport {
         let eligible = candidates.filter { candidate in
             guard !candidate.isDraft else { return false }
             guard candidate.dmgURL != nil else { return false }
+
+            if isDownstreamVersion(currentVersion) {
+                guard isDownstreamVersion(candidate.tagName) else { return false }
+                guard includeBetas || !candidate.isPrerelease else { return false }
+                return isNewer(candidate.tagName, than: currentVersion)
+            }
 
             let parsed = SemanticVersion(raw: candidate.tagName)
             let isBeta = candidate.isPrerelease || (parsed?.isPrerelease ?? false)

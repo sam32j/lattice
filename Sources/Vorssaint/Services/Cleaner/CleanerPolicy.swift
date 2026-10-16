@@ -61,6 +61,7 @@ enum CleanerPolicy {
     /// each learned the hard way by the cleaners that came before.
     private static let hiddenCachePrefixes = [
         "com.vorssaint",
+        "io.github.sam32j.lattice",
         "CloudKit", "com.apple.bird",
         "com.apple.coreaudio", "com.apple.audio.", "coreaudiod",
         "com.apple.systempreferences", "com.apple.controlcenter",

@@ -43,16 +43,16 @@ for arg in "$@"; do
 done
 
 if (( DEV )); then
-    APP_NAME="Vorssaint (Developer)"
-    EXECUTABLE="VorssaintDeveloper"
-    APP_BUNDLE_ID="com.vorssaint.utils.dev"
+    APP_NAME="Lattice (Developer)"
+    EXECUTABLE="LatticeDeveloper"
+    APP_BUNDLE_ID="io.github.sam32j.lattice.dev"
     BUILD_VARIANT_FLAGS=(-D VORSSAINT_DEVELOPMENT)
     APP_OPTIMIZATION_FLAGS=(-Onone)
     BUILD_CONFIGURATION="debug"
 else
-    APP_NAME="Vorssaint"
-    EXECUTABLE="Vorssaint"
-    APP_BUNDLE_ID="com.vorssaint.utils"
+    APP_NAME="Lattice"
+    EXECUTABLE="Lattice"
+    APP_BUNDLE_ID="io.github.sam32j.lattice"
     BUILD_VARIANT_FLAGS=()
     APP_OPTIMIZATION_FLAGS=(-O)
     BUILD_CONFIGURATION="release"
@@ -64,12 +64,14 @@ NOW_PLAYING_ADAPTER_ID="$APP_BUNDLE_ID.now-playing"
 NOW_PLAYING_ADAPTER="libVorssaintNowPlaying.dylib"
 TARGET="arm64-apple-macosx14.0"
 ENTITLEMENTS="Resources/Vorssaint.entitlements"
-LEGACY_IDENTITY="Vorssaint Utils Signing"
+LEGACY_IDENTITY="Lattice Local Signing"
 
 developer_id_identity() {
+    local team
+    team="$(sed -n 's/.*static let signingTeamID = "\([A-Z0-9]*\)".*/\1/p' Sources/Vorssaint/Core/DownstreamIdentity.swift)"
+    [[ "$team" =~ '^[A-Z0-9]{10}$' && "$team" != '3D485NHW29' ]] || return 0
     security find-identity -v -p codesigning 2>/dev/null \
-        | grep 'Developer ID Application' \
-        | head -1 \
+        | grep 'Developer ID Application' | grep -F "($team)" | head -1 \
         | sed -E 's/.*"(.*)".*/\1/' || true
 }
 
@@ -78,10 +80,7 @@ developer_id_identity() {
 # every self-signed one; ask codesign itself with a throwaway copy of /bin/echo.
 legacy_identity_installed() {
     local probe signed=1
-    # A locked keychain still lists its identities but cannot sign with them,
-    # and this one is locked after every reboot; unlock it before asking.
-    security unlock-keychain -p vorssaint-signing \
-        "$HOME/Library/Keychains/vorssaint-signing.keychain-db" 2>/dev/null || true
+    # Probe only the separately named Lattice local identity.
     probe="$(mktemp)"
     cp /bin/echo "$probe"
     /usr/bin/codesign --force --strip-disallowed-xattrs --sign "$LEGACY_IDENTITY" "$probe" \
@@ -90,26 +89,8 @@ legacy_identity_installed() {
     return $signed
 }
 
-# Any build that lands in /Applications needs a stable signature, not just the
-# Developer one: macOS ties Accessibility and Screen Recording grants to the
-# exact binary hash, so an ad-hoc rebuild orphans them while System Settings
-# keeps showing them as granted, and no new prompt ever appears. A plain
-# --install strands them under the released bundle id, on the app the user
-# actually relies on. When no identity is installed, create the stable local one
-# up front instead of falling through to ad-hoc — setup-signing.sh is free,
-# offline and idempotent. Gating on the install rather than the variant keeps
-# this off CI, where neither ci.yml nor release.yml passes --install.
-if (( DEV || INSTALL )) && [[ -z "$(developer_id_identity)" ]] \
-    && ! legacy_identity_installed; then
-    echo "▸ No signing identity installed; creating the stable local one…"
-    if ! ./Tools/setup-signing.sh; then
-        echo "  ⚠ Tools/setup-signing.sh failed; signing ad-hoc instead." >&2
-        echo "    Accessibility and Screen Recording grants will not survive rebuilds:" >&2
-        echo "    System Settings will show them as granted while the app is not trusted." >&2
-        echo "    After fixing the identity, clear the stale grant once with:" >&2
-        echo "      tccutil reset Accessibility $APP_BUNDLE_ID" >&2
-    fi
-fi
+# Lattice never creates or unlocks upstream signing keychains.
+# Local builds may sign ad-hoc; the release job requires our configured Developer ID.
 
 codesign_with_timestamp_retry() {
     local attempt
@@ -246,7 +227,7 @@ discard_test_preferences() {
 # Standalone automated tests: pure contracts plus isolated disk, subprocess,
 # keyboard-data and media fixtures. No application windows or device capture.
 if (( TEST )); then
-    python3 Tests/generate_sources.py
+    uv run --no-project --quiet --python "$(command -v python3)" python3 Tests/generate_sources.py
     TEST_OBJECT_DIR="build/objects/tests"
     mkdir -p "$TEST_OBJECT_DIR"
     TEST_SOURCES=(
@@ -398,6 +379,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Recorder/RecorderBlurRegion.swift
         Sources/Vorssaint/Services/Recorder/RecorderEditDocument.swift
         Sources/Vorssaint/Core/AppInfo.swift
+        Sources/Vorssaint/Core/DownstreamIdentity.swift
         Sources/Vorssaint/Core/GlobalShortcut.swift
         Sources/Vorssaint/Core/SymbolicHotKeys.swift
         Sources/Vorssaint/Services/SystemShortcutTakeoverSupport.swift
@@ -624,6 +606,7 @@ swiftc "${APP_OPTIMIZATION_FLAGS[@]}" -incremental -enable-batch-mode -j "$(sysc
 
 echo "▸ Compiling protected fan helper…"
 swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${BUILD_VARIANT_FLAGS[@]}" \
+    Sources/Vorssaint/Core/DownstreamIdentity.swift \
     Sources/Vorssaint/Services/FanControl/FanControlSupport.swift \
     Sources/Vorssaint/Services/FanControl/FanControlXPC.swift \
     Sources/Vorssaint/Services/SystemMonitor/SMCClient.swift \
@@ -644,12 +627,15 @@ swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" -emit-library \
     -o "build/$NOW_PLAYING_ADAPTER"
 
 echo "▸ Generating app icon…"
-swift Tools/MakeIcon.swift build/AppIcon.iconset
+swift Tools/MakeLatticeIcon.swift build/AppIcon.iconset
 xattr -c -r build/AppIcon.iconset build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png 2>/dev/null || true
 ACTOOL_BIN="$(xcrun --find actool 2>/dev/null || true)"
 ICON_TMP="$(mktemp -d)"
 ADAPTIVE_SKIP=""
-if [[ -z "$ACTOOL_BIN" ]]; then
+if [[ "$APP_NAME" == Lattice* ]]; then
+    rm -f build/Assets.car
+    ADAPTIVE_SKIP="Lattice uses its independent iconset"
+elif [[ -z "$ACTOOL_BIN" ]]; then
     ADAPTIVE_SKIP="actool not found (adaptive icons need Xcode 26+)"
 else
     echo "▸ Compiling adaptive icon catalog…"
@@ -693,7 +679,8 @@ cp CHANGELOG.md "$STAGE/Contents/Resources/CHANGELOG.md"
 for lproj in Resources/*.lproj(N); do
     cp -R "$lproj" "$STAGE/Contents/Resources/"
 done
-if (( DEV )); then
+./Tools/lattice-bundle-metadata.sh "$STAGE"
+if true; then
     # A distinct identity so the Developer build installs and runs next to the
     # official app, with its own permissions, preferences and login item.
     /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $APP_BUNDLE_ID" "$STAGE/Contents/Info.plist"
@@ -803,7 +790,7 @@ sign_bundle() {
     elif legacy_identity_installed; then
         echo "  signing with legacy self-signed identity: $LEGACY_IDENTITY"
     else
-        echo "  signing ad-hoc (no identity installed — run Tools/setup-signing.sh)"
+        echo "  signing ad-hoc (no configured Lattice Developer ID or local identity)"
     fi
     [[ -f "$helper" ]] && codesign_fan_helper "$helper"
     [[ -f "$adapter" ]] && codesign_now_playing_adapter "$adapter"
@@ -909,18 +896,7 @@ fi
 if (( INSTALL )); then
     echo "▸ Installing into /Applications…"
     stop_process "$EXECUTABLE"
-    # Only an official install replaces the pre-rename official apps. The
-    # Developer variant must coexist with them just as it does with Vorssaint.
-    if (( ! DEV )); then
-        for legacy in "Vorss:Vorss" "Vorssaint Utils:VorssaintUtils"; do
-            name="${legacy%%:*}"; proc="${legacy##*:}"
-            if [[ -d "/Applications/$name.app" ]]; then
-                stop_process "$proc"
-                rm -rf "/Applications/$name.app"
-                echo "  (legacy $name.app removed)"
-            fi
-        done
-    fi
+    # Lattice and its Developer variant replace only their own bundles.
     INSTALL_DEST="/Applications/$APP_NAME.app"
     rm -rf "$INSTALL_DEST"
     ditto --noextattr --noqtn "$STAGE" "$INSTALL_DEST"
