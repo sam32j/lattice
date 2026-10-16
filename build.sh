@@ -227,7 +227,11 @@ discard_test_preferences() {
 # Standalone automated tests: pure contracts plus isolated disk, subprocess,
 # keyboard-data and media fixtures. No application windows or device capture.
 if (( TEST )); then
-    uv run --no-project --quiet --python "$(command -v python3)" python3 Tests/generate_sources.py
+    if command -v uv >/dev/null 2>&1; then
+        uv run --no-project --quiet --python "$(command -v python3)" python3 Tests/generate_sources.py
+    else
+        python3 Tests/generate_sources.py
+    fi
     TEST_OBJECT_DIR="build/objects/tests"
     mkdir -p "$TEST_OBJECT_DIR"
     TEST_SOURCES=(

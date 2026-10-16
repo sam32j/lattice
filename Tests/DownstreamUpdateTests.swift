@@ -5,7 +5,7 @@ import Foundation
 
 enum DownstreamUpdateTests {
     static func run(_ suite: TestSuite) {
-        let dmg = URL(string: "https://github.com/sam32j/vorssaint-utils/releases/download/v3.4.1-d.2/Lattice.dmg")!
+        let dmg = URL(string: "https://github.com/sam32j/lattice/releases/download/v3.4.1-d.2/Lattice.dmg")!
         let releases = ["v3.4.1-d.2", "v3.4.1-d.10", "v3.5.0", "v3.5.0-beta.1"].map {
             UpdateServiceSupport.ReleaseCandidate(tagName: $0, isPrerelease: false,
                 isDraft: false, dmgURL: dmg, dmgExpectedBytes: 100, body: nil)

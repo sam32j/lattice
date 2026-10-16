@@ -3,7 +3,7 @@
 import { execFileSync } from "node:child_process";
 import { writeFileSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-const repository = "sam32j/vorssaint-utils";
+const repository = "sam32j/lattice";
 const gh = (...args: string[]) => execFileSync("gh", args, { encoding: "utf8" }).trim();
 try {
   const version = process.env.LATTICE_VERSION ?? "", commit = process.env.LATTICE_SOURCE_SHA ?? "";

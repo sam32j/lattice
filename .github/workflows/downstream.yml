@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '23 */6 * * *'
   workflow_dispatch:
+  push:
+    branches:
+      - dev-build/main
+    paths:
+      - 'Downstream/release.json'
 
 permissions: {}
 concurrency:
@@ -12,7 +17,7 @@ concurrency:
 
 jobs:
   sync:
-    if: github.repository == 'sam32j/vorssaint-utils' && github.ref == 'refs/heads/dev-build/main'
+    if: (github.repository == 'sam32j/lattice' || github.repository == 'sam32j/vorssaint-utils') && github.ref == 'refs/heads/dev-build/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -38,7 +43,7 @@ jobs:
           gh auth setup-git
           TAG="$(gh api repos/vorssaint/vorssaint-utils/releases/latest --jq '.tag_name')"
           bun Tools/sync-downstream.ts \
-            --fork https://github.com/sam32j/vorssaint-utils.git \
+            --fork https://github.com/sam32j/lattice.git \
             --upstream https://github.com/vorssaint/vorssaint-utils.git \
             --upstream-tag "$TAG"
       - name: Check whether this release already exists
