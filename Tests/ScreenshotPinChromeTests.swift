@@ -19,13 +19,13 @@ enum ScreenshotPinChromeTests {
         suite.expect(zip(initialOrigins, children).allSatisfy { origin, child in
             abs(child.frame.minX - origin.x - 20) < 1 && abs(child.frame.minY - origin.y - 10) < 1
         }, "all child surfaces track pin movement without drifting")
-        let buttons = children.flatMap { buttons(in: $0.contentView) }
+        let buttons = children.flatMap { Self.buttons(in: $0.contentView) }
         suite.expect(buttons.count == 3 && buttons.allSatisfy { button in
             guard let cell = button.cell as? NSButtonCell else { return false }
             return cell.highlightsBy.isEmpty && cell.showsStateBy.isEmpty
         }, "pressing a pin button does not recolor or displace its symbol")
         if #available(macOS 27.0, *) {
-            let glass = children.flatMap { descendants(in: $0.contentView) }.filter { NSStringFromClass(type(of: $0)) == "NSGlassEffectView" }
+            let glass = children.flatMap { Self.descendants(in: $0.contentView) }.filter { NSStringFromClass(type(of: $0)) == "NSGlassEffectView" }
             suite.expect(glass.count == 3 && glass.allSatisfy { $0.value(forKey: "effectIsInteractive") as? Bool == false },
                          "native glass disables press highlight while preserving distortion")
             suite.expect(glass.count == 3 && glass.allSatisfy { ($0.value(forKey: "_contentLensing") as? Int) == 1 },
@@ -80,11 +80,11 @@ enum ScreenshotPinChromeTests {
 
     private static func buttons(in view: NSView?) -> [NSButton] {
         guard let view else { return [] }
-        return (view as? NSButton).map { [$0] } ?? view.subviews.flatMap { buttons(in: $0) }
+        return (view as? NSButton).map { [$0] } ?? view.subviews.flatMap { Self.buttons(in: $0) }
     }
 
     private static func descendants(in view: NSView?) -> [NSView] {
         guard let view else { return [] }
-        return [view] + view.subviews.flatMap { descendants(in: $0) }
+        return [view] + view.subviews.flatMap { Self.descendants(in: $0) }
     }
 }
