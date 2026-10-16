@@ -21,7 +21,7 @@ function fixture() {
   const base = git(upstream, "rev-parse", "HEAD");
   const fork = join(root, "fork.git"); git(root, "clone", "--bare", upstream, fork);
   const personal = join(root, "personal"); git(root, "clone", fork, personal);
-  git(personal, "checkout", "-b", "dev-build/main");
+  git(personal, "checkout", "-b", "lattice/main");
   mkdirSync(join(personal, "Downstream"));
   writeFileSync(join(personal, "Downstream/release.json"), JSON.stringify({
     upstreamTag: "v1.0.0", upstreamCommit: base, baseCommit: base, revision: 1,
@@ -45,8 +45,8 @@ test("sync preserves personal content, advances tracking main and records a stab
   const f = fixture(); f.advance(); const result = f.run();
   expect(result.stderr.toString()).toBe(""); expect(result.exitCode).toBe(0);
   expect(git(f.fork, "rev-parse", "main")).toBe(git(f.upstream, "rev-parse", "main"));
-  expect(git(f.fork, "show", "dev-build/main:personal")).toBe("keep my customizations");
-  const metadata = JSON.parse(git(f.fork, "show", "dev-build/main:Downstream/release.json"));
+  expect(git(f.fork, "show", "lattice/main:personal")).toBe("keep my customizations");
+  const metadata = JSON.parse(git(f.fork, "show", "lattice/main:Downstream/release.json"));
   expect(metadata.upstreamTag).toBe("v1.1.0"); expect(metadata.revision).toBe(1);
   expect(metadata.baseCommit).toBe(git(f.upstream, "rev-parse", "main"));
 });
@@ -55,7 +55,7 @@ test("a rebase conflict changes neither remote branch", () => {
   const f = fixture(); f.advance(true); const result = f.run();
   expect(result.exitCode).toBe(1); expect(result.stderr.toString()).toContain("Rebase stopped");
   expect(git(f.fork, "rev-parse", "main")).toBe(f.base);
-  expect(git(f.fork, "rev-parse", "dev-build/main")).toBe(f.before);
+  expect(git(f.fork, "rev-parse", "lattice/main")).toBe(f.before);
 });
 
 test("diverged tracking main is never overwritten", () => {
@@ -66,13 +66,13 @@ test("diverged tracking main is never overwritten", () => {
   git(f.personal, "push", "origin", "main"); const main = git(f.personal, "rev-parse", "HEAD");
   expect(f.run().exitCode).toBe(1);
   expect(git(f.fork, "rev-parse", "main")).toBe(main);
-  expect(git(f.fork, "rev-parse", "dev-build/main")).toBe(f.before);
+  expect(git(f.fork, "rev-parse", "lattice/main")).toBe(f.before);
 });
 
 test("an unchanged upstream release makes no personal commit", () => {
   const f = fixture(); const result = f.run("v1.0.0");
   expect(result.exitCode).toBe(0);
-  expect(git(f.fork, "rev-parse", "dev-build/main")).toBe(f.before);
+  expect(git(f.fork, "rev-parse", "lattice/main")).toBe(f.before);
   expect(JSON.parse(result.stdout.toString()).changed).toBe(false);
 });
 
@@ -87,8 +87,8 @@ test("a stable tag behind the preserved snapshot holds releases without dropping
   git(f.personal, "commit", "-m", "record adopted snapshot"); git(f.personal, "push", "origin", "HEAD");
   const before = git(f.personal, "rev-parse", "HEAD"); const result = f.run("v1.0.0");
   expect(result.exitCode).toBe(0); expect(JSON.parse(result.stdout.toString()).ready).toBe(false);
-  expect(git(f.fork, "rev-parse", "dev-build/main")).toBe(before);
-  expect(git(f.fork, "show", "dev-build/main:snapshot")).toBe("unreleased but already adopted");
+  expect(git(f.fork, "rev-parse", "lattice/main")).toBe(before);
+  expect(git(f.fork, "show", "lattice/main:snapshot")).toBe("unreleased but already adopted");
 });
 
 test("rewriting a recorded upstream tag stops before either remote changes", () => {
@@ -96,11 +96,11 @@ test("rewriting a recorded upstream tag stops before either remote changes", () 
   const result = f.run(); expect(result.exitCode).toBe(1);
   expect(result.stderr.toString()).toContain("rewritten");
   expect(git(f.fork, "rev-parse", "main")).toBe(f.base);
-  expect(git(f.fork, "rev-parse", "dev-build/main")).toBe(f.before);
+  expect(git(f.fork, "rev-parse", "lattice/main")).toBe(f.before);
 });
 
 test("a missing personal branch is never silently recreated", () => {
-  const f = fixture(); f.advance(); git(f.fork, "update-ref", "-d", "refs/heads/dev-build/main");
+  const f = fixture(); f.advance(); git(f.fork, "update-ref", "-d", "refs/heads/lattice/main");
   expect(f.run().exitCode).toBe(1); expect(git(f.fork, "rev-parse", "main")).toBe(f.base);
 });
 
@@ -116,11 +116,11 @@ test("a concurrent personal push rejects the entire atomic ref update", () => {
   const bin = join(f.root, "bin"); mkdirSync(bin);
   const wrapper = join(bin, "git");
   writeFileSync(wrapper, `#!/bin/sh\ncase " $* " in *" push --atomic "*)
-"$REAL_GIT" --git-dir="$RACE_FORK" update-ref refs/heads/dev-build/main "$RACE_SHA" "$RACE_OLD" || exit 88;; esac
+"$REAL_GIT" --git-dir="$RACE_FORK" update-ref refs/heads/lattice/main "$RACE_SHA" "$RACE_OLD" || exit 88;; esac
 exec "$REAL_GIT" "$@"\n`); chmodSync(wrapper, 0o755);
   const result = f.run("v1.1.0", { PATH: `${bin}:${process.env.PATH}`, REAL_GIT: realGit,
     RACE_FORK: f.fork, RACE_SHA: concurrent, RACE_OLD: f.before });
   expect(result.exitCode).toBe(1);
   expect(git(f.fork, "rev-parse", "main")).toBe(f.base);
-  expect(git(f.fork, "rev-parse", "dev-build/main")).toBe(concurrent);
+  expect(git(f.fork, "rev-parse", "lattice/main")).toBe(concurrent);
 });

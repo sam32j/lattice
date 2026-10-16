@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   preflight:
-    if: (github.repository == 'sam32j/lattice' || github.repository == 'sam32j/vorssaint-utils') && github.ref == 'refs/heads/dev-build/main'
+    if: (github.repository == 'sam32j/lattice' || github.repository == 'sam32j/vorssaint-utils') && (github.ref == 'refs/heads/lattice/main' || github.ref == 'refs/heads/dev-build/main')
     runs-on: macos-26
     timeout-minutes: 30
     permissions:

@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sam32j/lattice/tree/dev-build/main"><img src="https://img.shields.io/badge/branch-dev--build%2Fmain-blue" alt="Default branch"></a>
+  <a href="https://github.com/sam32j/lattice/tree/lattice/main"><img src="https://img.shields.io/badge/branch-lattice%2Fmain-blue" alt="Default branch"></a>
   <a href="#what-you-need"><img src="https://img.shields.io/badge/macOS-14%2B%20Apple%20Silicon-black" alt="macOS 14 and newer, Apple Silicon"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue" alt="License GPL 3.0 or later"></a>
   <a href="https://github.com/vorssaint/vorssaint-utils"><img src="https://img.shields.io/badge/upstream-vorssaint--utils-brightgreen" alt="Upstream vorssaint-utils"></a>
@@ -34,7 +34,7 @@ Per app volume, a real system monitor, a better app switcher, window snapping, D
 
 - **Personalized & Isolated:** Features an independent identity (`io.github.sam32j.lattice`), custom geometric icon artwork, isolated application preferences and data, and a separate release train.
 - **Automated Synchronization:** Tracks upstream stable releases with automated rebase and reconciliation workflows, preserving personal enhancements while staying up-to-date with upstream capabilities.
-- **Branch Strategy:** The default branch is `dev-build/main` (containing downstream enhancements); `main` tracks upstream.
+- **Branch Strategy:** The default branch is `lattice/main` (containing downstream enhancements); `main` tracks upstream.
 - **Documentation:** See [docs/LATTICE.md](docs/LATTICE.md) for full architecture notes on downstream signing, releases, and disaster recovery.
 
 ---

@@ -8,7 +8,7 @@ const gh = (...args: string[]) => execFileSync("gh", args, { encoding: "utf8" })
 try {
   const version = process.env.LATTICE_VERSION ?? "", commit = process.env.LATTICE_SOURCE_SHA ?? "";
   if (!/^\d+\.\d+\.\d+-d\.[1-9]\d*$/.test(version) || !/^[a-f0-9]{40}$/.test(commit)) throw new Error("Invalid release inputs");
-  const live = JSON.parse(gh("api", `repos/${repository}/git/ref/heads/dev-build/main`));
+  const live = JSON.parse(gh("api", `repos/${repository}/git/ref/heads/lattice/main`));
   if (live.object.sha !== commit) throw new Error("Default branch moved after validation");
   const parts = (v: string) => v.replace(/^v/, "").split(/\.|-d\./).map(Number);
   const newer = (a: string, b: string) => {

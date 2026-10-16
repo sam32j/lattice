@@ -1,13 +1,13 @@
 # Lattice downstream distribution
 
 Approved 2026-10-16: independent Lattice identity, `io.github.sam32j.lattice`,
-downstream tags `vX.Y.Z-d.N`, and `dev-build/main` as the personalized/default
+downstream tags `vX.Y.Z-d.N`, and `lattice/main` as the personalized/default
 branch. Keep `main` separate for upstream tracking. Preserve existing screenshot
 customizations from `067c3fd23b45162e4b9d26bd07601c6ac2c6ae03`.
 
 ## Branch and release flow
 
-The scheduled workflow lives on the default `dev-build/main` branch. `main`
+The scheduled workflow lives on the default `lattice/main` branch. `main`
 fast-forwards to upstream main without local patches. A temporary checkout
 rebases personal commits onto the published stable upstream release commit.
 Record the precise upstream base, tag and downstream revision. Do not release

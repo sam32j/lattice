@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - dev-build/main
+      - lattice/main
     paths:
       - 'Downstream/release.json'
 
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   sync:
-    if: (github.repository == 'sam32j/lattice' || github.repository == 'sam32j/vorssaint-utils') && github.ref == 'refs/heads/dev-build/main'
+    if: (github.repository == 'sam32j/lattice' || github.repository == 'sam32j/vorssaint-utils') && (github.ref == 'refs/heads/lattice/main' || github.ref == 'refs/heads/dev-build/main')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

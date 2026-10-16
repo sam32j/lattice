@@ -8,7 +8,7 @@ feed. Original copyright/license notices remain as attribution.
 ## Branches and upstream updates
 
 - `main`: upstream main only, updated by fast-forward. Never put personal changes here.
-- `dev-build/main`: the default branch, with personal changes and downstream automation.
+- `lattice/main`: the default branch, with personal changes and downstream automation.
 - `downstream-backups/<old-commit>`: immutable recovery refs created atomically before a successful automated rebase.
 - Existing screenshot submission branches and upstream PRs remain separate.
 
@@ -42,14 +42,14 @@ Upstream-only tags cannot be selected by an installed downstream build.
 base and downstream revision. Builds stamp the full version, provenance and
 upstream build number plus downstream revision into the bundle. For a new
 personal release on the same upstream base, increase `revision`, commit and push
-to `dev-build/main`, then run **Lattice downstream**. New upstream releases reset
+to `lattice/main`, then run **Lattice downstream**. New upstream releases reset
 the downstream revision to 1. Never move an existing tag or replace its assets.
 
 Publication is disabled until the repository variable
 `LATTICE_RELEASES_ENABLED` is explicitly set to `true`. Before enabling it:
 
 1. Set `DownstreamIdentity.signingTeamID` to your own Developer ID team and review/commit the public pin. The upstream team is rejected.
-2. Create the protected GitHub environment `lattice-release`, restrict it to `dev-build/main`, and configure required reviewers as desired.
+2. Create the protected GitHub environment `lattice-release`, restrict it to `lattice/main`, and configure required reviewers as desired.
 3. Add environment secrets `LATTICE_SIGNING_CERT_P12` (base64 Developer ID Application certificate and private key), `LATTICE_SIGNING_CERT_PASSWORD`, `LATTICE_NOTARY_API_KEY_P8` (base64), `LATTICE_NOTARY_KEY_ID`, and `LATTICE_NOTARY_ISSUER_ID`.
 4. Confirm the adopted upstream base exactly equals the published stable tag. The preserved initial snapshot is deliberately ineligible.
 5. Enable publication and dispatch the workflow. It tests before importing signing secrets, revalidates the source, builds, selftests, verifies the exact signer/bundle, notarizes the app and DMG, checks uploaded asset digests, then publishes.
