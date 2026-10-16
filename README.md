@@ -1,3 +1,19 @@
+# Lattice downstream distribution
+
+This fork is **Lattice**, Samuel Ji's independently branded distribution of
+Vorssaint. Its default branch is `dev-build/main`; `main` tracks upstream.
+Releases use `vX.Y.Z-d.N` and the app checks this fork's releases.
+
+See [Lattice setup, signing, versions and recovery](docs/LATTICE.md) for the
+downstream workflow and build instructions. Publication stays disabled until
+the fork's own Developer ID signing and notarization are configured.
+
+The original upstream documentation follows for attribution and feature
+reference. Official branding, download links, donation links and signing claims
+in that documentation describe the upstream project.
+
+---
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/logo-dark.svg">

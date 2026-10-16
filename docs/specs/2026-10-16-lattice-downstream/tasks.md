@@ -4,7 +4,7 @@
 
 **Architecture:** `main` tracks upstream; `dev-build/main` owns personal patches and automation. Disposable rebases and atomic leased pushes protect remote history. Signed/notarized releases use Lattice identity and downstream revision tags.
 
-**Tech Stack:** Swift/AppKit, Bash/zsh, Python standard-library integration tests through uv, GitHub Actions, codesign/notarytool.
+**Tech Stack:** Swift/AppKit, Bash/zsh, Bun integration tests with real Git repositories, uv for existing Python utilities, GitHub Actions, codesign/notarytool.
 ---
 
 ## Baseline and acceptance
@@ -13,7 +13,7 @@
 - [x] Preserve original untracked files and all screenshot commits in isolated worktree.
 - [x] Approve identity, version scheme and branch/default layout.
 - [x] Existing updates suite: 869 checks passed on source `067c3fd2` using Xcode beta.
-- [ ] Agree test interfaces through pending choice dialog before writing tests.
+- [x] User approved sync/updater/artifact test interfaces before writing tests.
 - [ ] Complete independent review, final checks and approved remote branch/default setup.
 
 The starting upstream snapshot `794608a5` already contains 46 commits after
@@ -39,11 +39,11 @@ new `Tests/DownstreamUpdateTests.swift`.
 
 ## Task 2: Transactional sync command
 
-**Files:** new `Tools/sync-downstream.sh`, `Tests/test_downstream_sync.py`,
+**Files:** new `Tools/sync-downstream.ts`, `Tests/downstream-sync.test.ts`,
 `Downstream/release.json`.
 
 1. Test a clean upstream advance and preservation of a personal file using temporary bare repositories.
-2. Run `uv run --no-project python Tests/test_downstream_sync.py`; observe missing-command failure.
+2. Run `bun test Tests/downstream-sync.test.ts`; observe missing-command failure.
 3. Implement disposable worktree rebase and explicit old-SHA leases on atomic main/personal pushes.
 4. Add and exercise conflict, diverged-main, missing-branch, concurrent-push and already-current cases, one behavior at a time.
 5. Hold release when the stable tag predates the recorded upstream base; reject rewritten provenance.
@@ -52,7 +52,7 @@ new `Tests/DownstreamUpdateTests.swift`.
 ## Task 3: Fork workflows and release gates
 
 **Files:** new `.github/workflows/downstream.yml`,
-`.github/workflows/lattice-release.yml`, `Tools/release-lattice.sh`,
+`.github/workflows/lattice-release.yml`, `Tools/lattice-release-info.ts`, `Tools/package-lattice.sh`, `Tools/publish-lattice.ts`,
 `docs/LATTICE.md`; narrowly adjust existing CI/issue workflow fork guards where necessary.
 
 1. Schedule sync on the approved default branch with concurrency and least permissions.
@@ -70,3 +70,14 @@ new `Tests/DownstreamUpdateTests.swift`.
 3. Record evidence and material limits here.
 4. Push `dev-build/main` without changing upstream PR branches, then set it as fork default as approved.
 5. Verify remote branch/default state and original checkout preservation. No downloadable release until distribution credentials and a release decision are present.
+
+
+## Review and verification evidence
+
+- Independent review requested changes for sudoers filename loading, own-cache protection, developer screenshot endpoint identity, and legacy wallpaper backup isolation. All four were fixed and re-reviewed; reviewer verdict ready after focused checks.
+- Regression tests reproduced four failing assertions before correction; final focused updates/cleaner/wallpaper suites passed 975 checks.
+- Bun integration tests: 11 passed, including conflict, diverged tracking main, rewritten tag, missing branch, unchanged release, preserved post-release snapshot, concurrent push, missing signing and invalid release provenance.
+- Official actionlint v1.7.12 accepted modified/new workflows. Shell syntax and diff whitespace checks passed.
+- Optimized app build, selftest and strict deep ad-hoc signature passed. Bundle identity/version/build inspected: io.github.sam32j.lattice, 3.4.1-d.1, 101.1. Icon inspected visually.
+- Starting revision 067c3fd2 full suite: 15 failures out of 116475 checks. These are migration/default-registration assertions in app-management, updates, switcher-model and features. Final full-suite comparison pending below.
+- Signing team pin is empty; no Developer ID distribution credentials are configured. Release tooling refuses publication, and update/helper authentication fails closed. No app was installed and no release was published.
