@@ -9,8 +9,10 @@ try {
   if (!team || !/^[A-Z0-9]{10}$/.test(team) || team === "3D485NHW29")
     throw new Error("Configure your own Developer ID signingTeamID before releasing Lattice");
   const meta = JSON.parse(readFileSync("Downstream/release.json", "utf8"));
+  const allowSnapshot = Boolean(meta.allowSnapshotRelease);
   if (!/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(meta.upstreamTag)
       || !/^[0-9a-f]{40}$/.test(meta.upstreamCommit) || !/^[0-9a-f]{40}$/.test(meta.baseCommit)
+      || (!allowSnapshot && meta.baseCommit !== meta.upstreamCommit)
       || !Number.isSafeInteger(meta.revision) || meta.revision < 1)
     throw new Error("Release requires an exact published upstream stable base and a positive downstream revision");
   const git = (...args: string[]) => execFileSync("git", args, { encoding: "utf8" }).trim();

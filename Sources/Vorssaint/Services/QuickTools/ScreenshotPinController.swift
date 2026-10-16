@@ -15,8 +15,20 @@ final class ScreenshotPinController {
     private init() {}
 
     var protectedWindowIDs: Set<CGWindowID> {
-        Set(pins.flatMap { [$0] + ($0.childWindows ?? []) }
-            .compactMap { $0.isVisible && $0.windowNumber > 0 ? CGWindowID($0.windowNumber) : nil })
+        var ids = Set<CGWindowID>()
+        for pin in pins {
+            if pin.isVisible && pin.windowNumber > 0 {
+                ids.insert(CGWindowID(pin.windowNumber))
+            }
+            if let children = pin.childWindows {
+                for child in children {
+                    if child.isVisible && child.windowNumber > 0 {
+                        ids.insert(CGWindowID(child.windowNumber))
+                    }
+                }
+            }
+        }
+        return ids
     }
 
     func setPinsHiddenForDrag(_ hidden: Bool, except: ScreenshotPinWindow? = nil) {
