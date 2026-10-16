@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev-build/main]
   pull_request:
 
 permissions:
@@ -24,6 +24,11 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: "1.4.2"
+      - uses: astral-sh/setup-uv@c97f06e356bcca1b426f396ef93ec35ce149ce7b
+
       - name: Verify toolchain
         run: |
           swiftc --version | grep -F "Apple Swift version 6.0.3"
@@ -33,7 +38,10 @@ jobs:
         run: ./build.sh
 
       - name: Selftest
-        run: ./build/Vorssaint --selftest
+        run: ./build/Lattice --selftest
+
+      - name: Downstream workflow tests
+        run: bun test Tests/downstream-sync.test.ts Tests/lattice-release.test.ts
 
       - name: Unit tests
         run: ./build.sh --test
@@ -47,14 +55,22 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: "1.4.2"
+      - uses: astral-sh/setup-uv@c97f06e356bcca1b426f396ef93ec35ce149ce7b
+
       - name: Build
         run: ./build.sh
 
       - name: Selftest
-        run: ./build/Vorssaint --selftest
+        run: ./build/Lattice --selftest
 
       - name: Package DMG
         run: ./Tools/make-dmg.sh
+
+      - name: Downstream workflow tests
+        run: bun test Tests/downstream-sync.test.ts Tests/lattice-release.test.ts
 
       - name: Unit tests
         run: ./build.sh --test
