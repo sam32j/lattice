@@ -14,7 +14,8 @@
 - [x] Approve identity, version scheme and branch/default layout.
 - [x] Existing updates suite: 869 checks passed on source `067c3fd2` using Xcode beta.
 - [x] User approved sync/updater/artifact test interfaces before writing tests.
-- [ ] Complete independent review, final checks and approved remote branch/default setup.
+- [x] Complete independent review and final checks.
+- [ ] Complete approved remote branch/default setup and live sync verification.
 
 The starting upstream snapshot `794608a5` already contains 46 commits after
 stable `v3.4.1` (`aea106cb`). Do not drop those commits. Initial builds must
@@ -79,5 +80,7 @@ new `Tests/DownstreamUpdateTests.swift`.
 - Bun integration tests: 11 passed, including conflict, diverged tracking main, rewritten tag, missing branch, unchanged release, preserved post-release snapshot, concurrent push, missing signing and invalid release provenance.
 - Official actionlint v1.7.12 accepted modified/new workflows. Shell syntax and diff whitespace checks passed.
 - Optimized app build, selftest and strict deep ad-hoc signature passed. Bundle identity/version/build inspected: io.github.sam32j.lattice, 3.4.1-d.1, 101.1. Icon inspected visually.
-- Starting revision 067c3fd2 full suite: 15 failures out of 116475 checks. These are migration/default-registration assertions in app-management, updates, switcher-model and features. Final full-suite comparison pending below.
+- Starting revision 067c3fd2 full suite: 15 failures out of 116475 checks. These are migration/default-registration assertions in app-management, updates, switcher-model and features. Final full suite: 15 failures out of 116482 checks, with exactly the same failure messages and no new regressions.
 - Signing team pin is empty; no Developer ID distribution credentials are configured. Release tooling refuses publication, and update/helper authentication fails closed. No app was installed and no release was published.
+
+Final source/build verification: 88fce11f; optimized Lattice selftest and strict deep ad-hoc signature passed. Final bundle version 3.4.1-d.1/build101.1, upstream base 794608a5. Original screenshot pin implementation files are unchanged relative to 067c3fd2. Final full-suite result is not a passing suite: its 15 existing migration/default-registration failures block release preflight until repaired. GitHub release secrets/environments/publication toggle were inspected and are absent.
