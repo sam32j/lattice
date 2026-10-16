@@ -1,0 +1,43 @@
+name: Verify Signing Secret
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  verify:
+    runs-on: macos-26
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Import fork signing certificate
+        env:
+          REQUIRE_SIGNING: '1'
+          SIGNING_CERT_P12: ${{ secrets.LATTICE_SIGNING_CERT_P12 }}
+          SIGNING_CERT_PASSWORD: ${{ secrets.LATTICE_SIGNING_CERT_PASSWORD }}
+        run: |
+          ./Tools/ci-setup-signing.sh
+      - name: Verify identity and test signature
+        run: |
+          echo "▸ Checking imported code signing identities in Keychain:"
+          security find-identity -v -p codesigning
+          
+          echo "▸ Testing codesign on a sample binary:"
+          probe="$(mktemp)"
+          cp /bin/echo "$probe"
+          
+          IDENTITY="$(security find-identity -v -p codesigning | grep -E 'Developer ID Application|Apple Development' | head -1 | sed -E 's/.*"(.*)".*/\1/')"
+          if [[ -z "$IDENTITY" ]]; then
+            echo "✗ No valid Apple Development or Developer ID identity found in Keychain!" >&2
+            exit 1
+          fi
+          
+          echo "Signing test probe with: $IDENTITY"
+          codesign --force --sign "$IDENTITY" "$probe"
+          codesign --verify --strict -R='anchor apple generic and certificate leaf[subject.OU] = "7L763852RV"' "$probe"
+          rm -f "$probe"
+          
+          echo "✓ Success! Your GitHub Secret is valid, imports cleanly, and codesigning is ready for release builds."

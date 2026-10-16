@@ -75,11 +75,19 @@ developer_id_identity() {
         | sed -E 's/.*"(.*)".*/\1/' || true
 }
 
+apple_development_identity() {
+    security find-identity -v -p codesigning 2>/dev/null \
+        | grep 'Apple Development:' | head -1 \
+        | sed -E 's/.*"(.*)".*/\1/' || true
+}
+
 # A find-identity listing also names certificates codesign then rejects (an
 # expired one fails the build with errSecInternalComponent), and -v excludes
 # every self-signed one; ask codesign itself with a throwaway copy of /bin/echo.
 legacy_identity_installed() {
     local probe signed=1
+    security unlock-keychain -p lattice-signing \
+        "$HOME/Library/Keychains/lattice-signing.keychain-db" 2>/dev/null || true
     # Probe only the separately named Lattice local identity.
     probe="$(mktemp)"
     cp /bin/echo "$probe"
@@ -89,8 +97,34 @@ legacy_identity_installed() {
     return $signed
 }
 
-# Lattice never creates or unlocks upstream signing keychains.
-# Local builds may sign ad-hoc; the release job requires our configured Developer ID.
+resolved_signing_identity() {
+    local id
+    id="$(developer_id_identity)"
+    if [[ -n "$id" ]]; then
+        print -r -- "$id"
+        return 0
+    fi
+    id="$(apple_development_identity)"
+    if [[ -n "$id" ]]; then
+        print -r -- "$id"
+        return 0
+    fi
+    if legacy_identity_installed; then
+        print -r -- "$LEGACY_IDENTITY"
+        return 0
+    fi
+    return 1
+}
+
+# Any build that lands in /Applications or runs under --dev benefits from a stable
+# signature, so macOS retains Accessibility and Screen Recording permissions
+# across rebuilds without re-prompting.
+if (( DEV || INSTALL )) && [[ -z "$(resolved_signing_identity || true)" ]]; then
+    echo "▸ No signing identity installed; creating stable local signing identity…"
+    if ! ./Tools/setup-signing.sh; then
+        echo "  ⚠ Tools/setup-signing.sh failed; falling back to ad-hoc signing." >&2
+    fi
+fi
 
 codesign_with_timestamp_retry() {
     local attempt
@@ -134,24 +168,26 @@ finalize_installed_bundle_after_child() {
     local bundle="$1"
     local helper="$bundle/Contents/Library/LaunchServices/$FAN_HELPER_ID"
     local adapter="$bundle/Contents/Frameworks/$NOW_PLAYING_ADAPTER"
-    local devid
-    devid="$(developer_id_identity)"
+    local identity
+    identity="$(resolved_signing_identity || true)"
 
     echo "▸ Finalizing installed signature…"
     sleep 3
-    if [[ -n "$devid" ]]; then
-        [[ -f "$helper" ]] && codesign_with_timestamp_retry --force --strip-disallowed-xattrs \
-            --options runtime --timestamp --identifier "$FAN_HELPER_ID" --sign "$devid" "$helper"
-        [[ -f "$adapter" ]] && codesign_with_timestamp_retry --force --strip-disallowed-xattrs \
-            --options runtime --timestamp --identifier "$NOW_PLAYING_ADAPTER_ID" --sign "$devid" "$adapter"
-        codesign_with_timestamp_retry --force --strip-disallowed-xattrs --options runtime --timestamp \
-            --entitlements "$ENTITLEMENTS" --sign "$devid" "$bundle"
-    elif legacy_identity_installed; then
-        [[ -f "$helper" ]] && /usr/bin/codesign --force --strip-disallowed-xattrs \
-            --identifier "$FAN_HELPER_ID" --sign "$LEGACY_IDENTITY" "$helper"
-        [[ -f "$adapter" ]] && /usr/bin/codesign --force --strip-disallowed-xattrs \
-            --identifier "$NOW_PLAYING_ADAPTER_ID" --sign "$LEGACY_IDENTITY" "$adapter"
-        /usr/bin/codesign --force --strip-disallowed-xattrs --sign "$LEGACY_IDENTITY" "$bundle"
+    if [[ -n "$identity" ]]; then
+        if [[ "$identity" == "$LEGACY_IDENTITY" ]]; then
+            [[ -f "$helper" ]] && /usr/bin/codesign --force --strip-disallowed-xattrs \
+                --identifier "$FAN_HELPER_ID" --sign "$identity" "$helper"
+            [[ -f "$adapter" ]] && /usr/bin/codesign --force --strip-disallowed-xattrs \
+                --identifier "$NOW_PLAYING_ADAPTER_ID" --sign "$identity" "$adapter"
+            /usr/bin/codesign --force --strip-disallowed-xattrs --sign "$identity" "$bundle"
+        else
+            [[ -f "$helper" ]] && codesign_with_timestamp_retry --force --strip-disallowed-xattrs \
+                --options runtime --timestamp --identifier "$FAN_HELPER_ID" --sign "$identity" "$helper"
+            [[ -f "$adapter" ]] && codesign_with_timestamp_retry --force --strip-disallowed-xattrs \
+                --options runtime --timestamp --identifier "$NOW_PLAYING_ADAPTER_ID" --sign "$identity" "$adapter"
+            codesign_with_timestamp_retry --force --strip-disallowed-xattrs --options runtime --timestamp \
+                --entitlements "$ENTITLEMENTS" --sign "$identity" "$bundle"
+        fi
     else
         [[ -f "$helper" ]] && /usr/bin/codesign --force --strip-disallowed-xattrs \
             --identifier "$FAN_HELPER_ID" --sign - "$helper"
@@ -631,7 +667,9 @@ swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" -emit-library \
     -o "build/$NOW_PLAYING_ADAPTER"
 
 echo "▸ Generating app icon…"
-swift Tools/MakeLatticeIcon.swift build/AppIcon.iconset
+ICON_FLAGS=()
+(( DEV )) && ICON_FLAGS+=(--dev)
+swift Tools/MakeLatticeIcon.swift build/AppIcon.iconset "${ICON_FLAGS[@]}"
 xattr -c -r build/AppIcon.iconset build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png 2>/dev/null || true
 ACTOOL_BIN="$(xcrun --find actool 2>/dev/null || true)"
 ICON_TMP="$(mktemp -d)"
@@ -744,43 +782,34 @@ xattr -c -r "$STAGE" 2>/dev/null || true
 #      as a fallback so contributors without a Developer ID still get a constant
 #      designated requirement across their local builds.
 #   3. Ad-hoc — fresh clone with no identity at all.
-DEVID="$(developer_id_identity)"
-codesign_app() {
+SIGN_IDENTITY="$(resolved_signing_identity || true)"
+sign_target() {
     local target="$1"
-    if [[ -n "$DEVID" ]]; then
-        codesign_with_timestamp_retry --force --strip-disallowed-xattrs --options runtime --timestamp \
-            --entitlements "$ENTITLEMENTS" --sign "$DEVID" "$target"
-    elif legacy_identity_installed; then
-        codesign --force --strip-disallowed-xattrs --sign "$LEGACY_IDENTITY" "$target"
+    local id_arg="${2:-}"
+    if [[ -n "$SIGN_IDENTITY" ]]; then
+        if [[ "$SIGN_IDENTITY" == "$LEGACY_IDENTITY" ]]; then
+            /usr/bin/codesign --force --strip-disallowed-xattrs ${=id_arg} --sign "$SIGN_IDENTITY" "$target"
+        else
+            codesign_with_timestamp_retry --force --strip-disallowed-xattrs --options runtime --timestamp \
+                ${=id_arg} --sign "$SIGN_IDENTITY" "$target" 2>/dev/null \
+                || /usr/bin/codesign --force --strip-disallowed-xattrs --options runtime \
+                    ${=id_arg} --sign "$SIGN_IDENTITY" "$target"
+        fi
     else
-        codesign --force --strip-disallowed-xattrs --sign - "$target"
+        /usr/bin/codesign --force --strip-disallowed-xattrs ${=id_arg} --sign - "$target"
     fi
+}
+
+codesign_app() {
+    sign_target "$1" "--entitlements $ENTITLEMENTS"
 }
 
 codesign_fan_helper() {
-    local target="$1"
-    if [[ -n "$DEVID" ]]; then
-        codesign_with_timestamp_retry --force --strip-disallowed-xattrs --options runtime --timestamp \
-            --identifier "$FAN_HELPER_ID" --sign "$DEVID" "$target"
-    elif legacy_identity_installed; then
-        codesign --force --strip-disallowed-xattrs --identifier "$FAN_HELPER_ID" \
-            --sign "$LEGACY_IDENTITY" "$target"
-    else
-        codesign --force --strip-disallowed-xattrs --identifier "$FAN_HELPER_ID" --sign - "$target"
-    fi
+    sign_target "$1" "--identifier $FAN_HELPER_ID"
 }
 
 codesign_now_playing_adapter() {
-    local target="$1"
-    if [[ -n "$DEVID" ]]; then
-        codesign_with_timestamp_retry --force --strip-disallowed-xattrs --options runtime --timestamp \
-            --identifier "$NOW_PLAYING_ADAPTER_ID" --sign "$DEVID" "$target"
-    elif legacy_identity_installed; then
-        codesign --force --strip-disallowed-xattrs --identifier "$NOW_PLAYING_ADAPTER_ID" \
-            --sign "$LEGACY_IDENTITY" "$target"
-    else
-        codesign --force --strip-disallowed-xattrs --identifier "$NOW_PLAYING_ADAPTER_ID" --sign - "$target"
-    fi
+    sign_target "$1" "--identifier $NOW_PLAYING_ADAPTER_ID"
 }
 
 sign_bundle() {
@@ -789,9 +818,13 @@ sign_bundle() {
     local helper="$bundle/Contents/Library/LaunchServices/$FAN_HELPER_ID"
     local adapter="$bundle/Contents/Frameworks/$NOW_PLAYING_ADAPTER"
 
-    if [[ -n "$DEVID" ]]; then
-        echo "  signing with Developer ID (hardened runtime): $DEVID"
-    elif legacy_identity_installed; then
+    local devid
+    devid="$(developer_id_identity)"
+    if [[ -n "$devid" ]]; then
+        echo "  signing with Developer ID (hardened runtime): $devid"
+    elif [[ -n "$SIGN_IDENTITY" && "$SIGN_IDENTITY" != "$LEGACY_IDENTITY" ]]; then
+        echo "  signing with Apple Development identity (hardened runtime): $SIGN_IDENTITY"
+    elif [[ "$SIGN_IDENTITY" == "$LEGACY_IDENTITY" ]]; then
         echo "  signing with legacy self-signed identity: $LEGACY_IDENTITY"
     else
         echo "  signing ad-hoc (no configured Lattice Developer ID or local identity)"
