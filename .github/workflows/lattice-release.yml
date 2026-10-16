@@ -1,0 +1,83 @@
+name: Lattice release
+
+on:
+  workflow_call:
+    inputs:
+      commit:
+        type: string
+        required: true
+
+permissions: {}
+concurrency:
+  group: lattice-release
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    if: github.repository == 'sam32j/vorssaint-utils' && github.ref == 'refs/heads/dev-build/main'
+    runs-on: macos-26
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      team: ${{ steps.info.outputs.team }}
+      version: ${{ steps.info.outputs.version }}
+      commit: ${{ steps.info.outputs.commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: '1.4.2'
+      - uses: astral-sh/setup-uv@c97f06e356bcca1b426f396ef93ec35ce149ce7b
+      - name: Validate source, upstream base, version and signing pin
+        id: info
+        env:
+          LATTICE_SOURCE_SHA: ${{ inputs.commit }}
+        run: bun Tools/lattice-release-info.ts
+      - run: bun test Tests/downstream-sync.test.ts Tests/lattice-release.test.ts
+      - run: ./build.sh --test
+
+  release:
+    needs: preflight
+    runs-on: macos-26
+    timeout-minutes: 60
+    environment: lattice-release
+    permissions:
+      contents: write
+    env:
+      LATTICE_TEAM_ID: ${{ needs.preflight.outputs.team }}
+      LATTICE_VERSION: ${{ needs.preflight.outputs.version }}
+      LATTICE_SOURCE_SHA: ${{ needs.preflight.outputs.commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.preflight.outputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: '1.4.2'
+      - name: Revalidate immediately before signing
+        run: bun Tools/lattice-release-info.ts
+      - name: Import fork signing certificate
+        env:
+          REQUIRE_SIGNING: '1'
+          SIGNING_CERT_P12: ${{ secrets.LATTICE_SIGNING_CERT_P12 }}
+          SIGNING_CERT_PASSWORD: ${{ secrets.LATTICE_SIGNING_CERT_PASSWORD }}
+        run: ./Tools/ci-setup-signing.sh
+      - run: ./build.sh
+      - run: ./build/Lattice --selftest
+      - name: Package, sign, notarize and verify
+        env:
+          NOTARY_API_KEY_P8: ${{ secrets.LATTICE_NOTARY_API_KEY_P8 }}
+          NOTARY_KEY_ID: ${{ secrets.LATTICE_NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.LATTICE_NOTARY_ISSUER_ID }}
+        run: ./Tools/package-lattice.sh
+      - name: Publish complete fork release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun Tools/publish-lattice.ts
