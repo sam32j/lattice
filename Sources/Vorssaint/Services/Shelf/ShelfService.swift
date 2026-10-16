@@ -244,9 +244,9 @@ final class ShelfService: ObservableObject {
     private var promiseTransfers: [UUID: (target: UUID?, transfer: ShelfFilePromiseTransfer, additions: [Item])] = [:]
 
     private let tempDir: URL = {
-        let id = Bundle.main.bundleIdentifier ?? "com.vorssaint.utils"
+        let id = Bundle.main.bundleIdentifier ?? DownstreamIdentity.bundleID
         let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("VorssaintShelf", isDirectory: true)
+            .appendingPathComponent("LatticeShelf", isDirectory: true)
             .appendingPathComponent(id, isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
