@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, lattice/main, dev-build/main]
+    branches: [main, lattice/main]
   pull_request:
 
 permissions:
