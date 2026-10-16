@@ -38,9 +38,9 @@ enum ScreenshotPinGestureTests {
             return
         }
         let limits = screen.visibleFrame
-        let initial = CGRect(x: limits.midX - 100, y: limits.midY - 50,
-                             width: 200, height: 100)
-        let window = NSPanel(contentRect: initial,
+        let initialRect = CGRect(x: floor(limits.midX) - 100, y: floor(limits.midY) - 50,
+                                 width: 200, height: 100)
+        let window = NSPanel(contentRect: initialRect,
                              styleMask: [.borderless, .nonactivatingPanel, .resizable],
                              backing: .buffered, defer: true)
         window.isReleasedWhenClosed = false
@@ -48,6 +48,7 @@ enum ScreenshotPinGestureTests {
         window.minSize = CGSize(width: 90, height: 60)
         let view = ScreenshotPinGestureView(frame: .zero)
         window.contentView = view
+        let initial = window.frame
         defer { window.close() }
 
         let wheel = Gesture()

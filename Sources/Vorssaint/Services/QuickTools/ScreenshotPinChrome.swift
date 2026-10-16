@@ -104,6 +104,26 @@ final class ScreenshotPinChrome {
         button.action = action
     }
 
+    static func safeSetKVC(_ object: AnyObject?, value: Any?, key: String) {
+        guard let target = object as? NSObject else { return }
+        let sel1 = NSSelectorFromString("set\(key.prefix(1).uppercased() + key.dropFirst()):")
+        let sel2 = NSSelectorFromString("set\(key):")
+        if target.responds(to: sel1) || target.responds(to: sel2) {
+            target.setValue(value, forKey: key)
+            return
+        }
+        var currentCls: AnyClass? = object_getClass(target)
+        while let cls = currentCls {
+            if class_getProperty(cls, key) != nil ||
+               class_getInstanceVariable(cls, key) != nil ||
+               class_getInstanceVariable(cls, "_" + key) != nil {
+                target.setValue(value, forKey: key)
+                return
+            }
+            currentCls = class_getSuperclass(cls)
+        }
+    }
+
     private func circle(_ button: NSButton, x: CGFloat) -> NSView {
         // Liquid Glass draws beyond its nominal frame. The transparent panel
         // gutter keeps its rounded edge and shadow away from the window clip.
@@ -115,13 +135,13 @@ final class ScreenshotPinChrome {
         // supported macOS 15 SDK also use Liquid Glass on newer systems.
         if #available(macOS 26.0, *), let glassClass = NSClassFromString("NSGlassEffectView") as? NSView.Type {
             let glass = glassClass.init(frame: container.bounds)
-            glass.setValue(0, forKey: "style")
-            glass.setValue(15, forKey: "cornerRadius")
+            Self.safeSetKVC(glass, value: 0, key: "style")
+            Self.safeSetKVC(glass, value: 15, key: "cornerRadius")
             glass.appearance = NSAppearance(named: .darkAqua)
-            glass.setValue(1, forKey: "_contentLensing")
-            glass.setValue(NSColor.black.withAlphaComponent(0.25), forKey: "tintColor")
-            if #available(macOS 27.0, *) { glass.setValue(false, forKey: "effectIsInteractive") }
-            glass.setValue(true, forKey: "_placesContentAboveGlass")
+            Self.safeSetKVC(glass, value: 1, key: "_contentLensing")
+            Self.safeSetKVC(glass, value: NSColor.black.withAlphaComponent(0.25), key: "tintColor")
+            if #available(macOS 27.0, *) { Self.safeSetKVC(glass, value: false, key: "effectIsInteractive") }
+            Self.safeSetKVC(glass, value: true, key: "_placesContentAboveGlass")
             material = glass
         } else {
             let frost = NSVisualEffectView(frame: container.bounds)
@@ -233,8 +253,8 @@ private final class PinControlButton: NSButton {
                     layer.transform = CATransform3DIdentity
                 }
             }
-            if #available(macOS 26.0, *) {
-                glassView?.setValue(pressed ? 2 : 1, forKey: "_contentLensing")
+            if #available(macOS 26.0, *), let glassView {
+                ScreenshotPinChrome.safeSetKVC(glassView, value: pressed ? 2 : 1, key: "_contentLensing")
             }
         }
     }
