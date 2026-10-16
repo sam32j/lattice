@@ -15,7 +15,7 @@
 - [x] Existing updates suite: 869 checks passed on source `067c3fd2` using Xcode beta.
 - [x] User approved sync/updater/artifact test interfaces before writing tests.
 - [x] Complete independent review and final checks.
-- [ ] Complete approved remote branch/default setup and live sync verification.
+- [x] Complete approved remote branch/default setup and live sync verification.
 
 The starting upstream snapshot `794608a5` already contains 46 commits after
 stable `v3.4.1` (`aea106cb`). Do not drop those commits. Initial builds must
@@ -84,3 +84,11 @@ new `Tests/DownstreamUpdateTests.swift`.
 - Signing team pin is empty; no Developer ID distribution credentials are configured. Release tooling refuses publication, and update/helper authentication fails closed. No app was installed and no release was published.
 
 Final source/build verification: 88fce11f; optimized Lattice selftest and strict deep ad-hoc signature passed. Final bundle version 3.4.1-d.1/build101.1, upstream base 794608a5. Original screenshot pin implementation files are unchanged relative to 067c3fd2. Final full-suite result is not a passing suite: its 15 existing migration/default-registration failures block release preflight until repaired. GitHub release secrets/environments/publication toggle were inspected and are absent.
+
+Live rollout verified: pushed `dev-build/main`, set it as fork default, and ran
+[Lattice downstream run 38852131584](https://github.com/sam32j/vorssaint-utils/actions/runs/38852131584).
+The run succeeded, advanced fork main to upstream `3fbcd4ed`, preserved the
+personal branch head `6ef7eedd`, and skipped publication because the stable
+release predates the preserved snapshot. The six-hour workflow is active.
+GitHub Releases remains empty. Original checkout remains on
+`fix/pinned-screenshot-polish` with the same two untracked release-note paths.
