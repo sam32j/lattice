@@ -75,15 +75,17 @@ enum RecorderFeatureTests {
         suite.expect(AppFeature.screenRecorder.energyProfile == .idle,
                "the recorder costs nothing between recordings")
         suite.expect(FeatureVisibilitySupport.features(for: .screenshot)
-                == [.screenshot, .screenRecorder, .screenOCR, .colorPicker]
-                && pageVisible(.screenshot, available: [.screenRecorder])
+                == [.screenshot, .screenOCR, .colorPicker]
+                && FeatureVisibilitySupport.features(for: .screenRecorder) == [.screenRecorder]
+                && pageVisible(.screenRecorder, available: [.screenRecorder])
                 && pageVisible(.screenshot, available: [.screenOCR])
                 && pageVisible(.screenshot, available: [.colorPicker])
                 && !pageVisible(.screenshot, available: []),
-               "every installed screen tool keeps the one Screen capture page")
-        suite.expect([AppFeature.screenshot, .screenRecorder, .screenOCR, .colorPicker]
-                .allSatisfy { $0.settingsDestination.page == .screenshot },
-               "every screen tool opens its mode inside the centralized Settings page")
+               "screen recorder has its own page and screenshot hosts ocr and color picker")
+        suite.expect([AppFeature.screenshot, .screenOCR, .colorPicker]
+                .allSatisfy { $0.settingsDestination.page == .screenshot }
+                && AppFeature.screenRecorder.settingsDestination.page == .screenRecorder,
+               "screenshot, ocr, and color picker open screenshot settings; screen recorder opens screen recorder settings")
         suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.recorderShortcutEnabled)
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.recorderShortcut)
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.screenOCRShortcutEnabled)

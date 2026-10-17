@@ -1503,6 +1503,7 @@ def main():
           + "extension ScreenshotOCRControlTests {\n"
           + declaration(preview, "final class ScreenshotQuickPreviewModel:")
           + declaration(preview, "private struct ScreenshotQuickPreviewView:").replace("private struct", "struct", 1)
+          + declaration(preview, "private struct QuickPreviewCenterActions:").replace("private struct", "struct", 1)
           + declaration(preview, "private struct ScreenshotPreviewActionStyle:").replace("private struct", "struct", 1)
           + declaration("Sources/Vorssaint/UI/Notch/NotchComponents.swift", "struct NotchButtonStyle:")
           + "enum ScreenshotQuickPreviewController {\n"
@@ -1610,6 +1611,7 @@ def main():
           + declaration(selection, "    func setNotchCaptureControlsHeight(")
           + declaration(selection, "    func refreshFullScreenControlVisibility()")
           + declaration(selection, "    private func pointerIsOverFullScreenControl(").replace("private func", "func", 1)
+          + declaration(selection, "    private func pointerIsOverTab(").replace("private func", "func", 1)
           + declaration(selection, "    private func updatePointerHover(").replace("private func", "func", 1)
           + declaration(selection, "    private func fullScreenControlHoverChanged(").replace("private func", "func", 1)
           + declaration(selection, "    private func resetFullScreenControlHover(").replace("private func", "func", 1)
@@ -1632,14 +1634,19 @@ def main():
           + "var keyMonitor: Any?\nvar closed = false\nvar shownInNotch = true\nlet presentationID = UUID()\n"
           + "var actions: [Action] = []\nfunc perform(_ action: Action) { actions.append(action) }\n"
           + "func close() { closed = true }\nfunc attach(_ panel: NSPanel) { installKeyMonitor(for: panel) }\n"
+          + "func copyText() {}\n"
           + declaration(preview, "    private func installKeyMonitor(for panel:")
           + "}\nfinal class Selection {\n"
-          + "final class Options { var controlsInNotch = true; var hasFocusedControl = false }\n"
+          + "enum ScreenCaptureTool { case area, recording, window, fullScreen }\n"
+          + "final class AudioToggle { var enabled = false; func toggle() { enabled.toggle() } }\n"
+          + "final class AudioSelection { var systemAudio = AudioToggle(); var microphone = AudioToggle() }\n"
+          + "final class Options { var controlsInNotch = true; var hasFocusedControl = false; var recorderAudio = AudioSelection() }\n"
           + "enum Outcome { case cancelled }\nvar screenCaptureOptions: Options? = Options()\n"
+          + "var activeTool = ScreenCaptureTool.area\n"
           + "var keyMonitor: Any?\nvar globalKeyMonitor: Any?\nvar spaceIsDown = false\n"
           + "var acceptsWindowClick = true\nvar loupeAcceptsKeyboardActions = false\n"
           + "var actions: [String] = []\nvar draggingPanel: ScreenshotOverlayPanel?\n"
-          + "var isPickingColor = false\nvar acceptsCaptureInput = true\n"
+          + "var isPickingColor = false\nvar acceptsCaptureInput = true\nvar hasSelectedWindows = false\nfunc clearSelectedWindows() {}\nfunc confirmSelectedWindows() {}\n"
           + "var panels: [ScreenshotOverlayPanel] = []\nvar currentPointerLocation: CGPoint?\n"
           + 'func finish(_ outcome: Outcome) { actions.append("cancel") }\n'
           + 'func captureFullDisplayUnderMouse() { actions.append("fullDisplay") }\n'
@@ -1648,6 +1655,7 @@ def main():
           + 'func repeatLastRegion() { actions.append("repeat") }\n'
           + "func selectCaptureTool(for event: NSEvent) -> Bool { false }\n"
           + "static func isScrollingCaptureKey(_ event: NSEvent) -> Bool { false }\n"
+          + "static func isMicrophoneKey(_ event: NSEvent) -> Bool { false }\n"
           + "static func isLoupeKey(_ event: NSEvent) -> Bool { false }\n"
           + "static func isCopyColorKey(_ event: NSEvent) -> Bool { false }\n"
           + "static func isNudgeKey(_ event: NSEvent) -> Bool { false }\n"

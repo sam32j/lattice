@@ -45,11 +45,13 @@ enum ScreenshotSelectionRefreshContract {
         final class Host {
             var isHidden = false
             var frame = CGRect.zero
+            var isHovered = false
         }
         weak var controller: Chooser?
         weak var panel: ScreenshotOverlayPanel?
         var windows: [ScreenshotSupport.PickableWindow] = []
         var fullScreenHost = Host()
+        var guideHost = Host()
         var isCapturePending = false
         var isDragging = false
         var loupeImage: CGImage?
@@ -170,6 +172,10 @@ enum ScreenshotSelectionRefreshContract {
         var sourceRefreshPending = false
         var sourceGeneration = 0, finished = false, scrollingCaptureEnabled = false,
             loupeEnabled = false, selectionInProgress = false
+        var selectedWindows: [CGWindowID: (window: ScreenshotSupport.PickableWindow, panel: ScreenshotOverlayPanel)] = [:]
+        var hasSelectedWindows: Bool { !selectedWindows.isEmpty }
+        func clearSelectedWindows() { selectedWindows.removeAll() }
+        func confirmSelectedWindows() {}
         var panels: [ScreenshotOverlayPanel]
         var outcome: Outcome?
         var currentPointerLocation: CGPoint? = CGPoint(x: 23, y: 61)

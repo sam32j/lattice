@@ -457,7 +457,7 @@ enum UpdateFeatureTests {
         let expectedFeatureSearchDestinations: [(AppFeature, FeatureSettingsDestination)] = [
             (.homebrew, FeatureSettingsDestination(.homebrew)),
             (.cameraPreview, FeatureSettingsDestination(.quickTools, sectionAnchor: .cameraPreview)),
-            (.screenRecorder, FeatureSettingsDestination(.screenshot, sectionAnchor: .screenRecorder)),
+            (.screenRecorder, FeatureSettingsDestination(.screenRecorder, sectionAnchor: .screenRecorder)),
             (.micMute, FeatureSettingsDestination(.quickTools, sectionAnchor: .micMute)),
             (.diskImageInstaller, FeatureSettingsDestination(.features)),
         ]
