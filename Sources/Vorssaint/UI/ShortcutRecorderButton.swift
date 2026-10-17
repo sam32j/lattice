@@ -525,3 +525,389 @@ struct ShortcutRowLabel: View {
         }
     }
 }
+
+// MARK: - Compact Shortcut Preference Row
+
+struct CompactShortcutPreferenceRow: View {
+    let title: String
+    let role: GlobalShortcutRole
+    let enabledKey: String
+    var onChange: () -> Void = {}
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .lineLimit(1)
+            Spacer()
+            CompactShortcutRecorder(role: role, enabledKey: enabledKey, onChange: onChange)
+        }
+    }
+}
+
+@MainActor
+final class CompactShortcutCoordinator: ObservableObject {
+    static let shared = CompactShortcutCoordinator()
+    @Published var activeRole: GlobalShortcutRole?
+
+    func startRecording(role: GlobalShortcutRole) {
+        if activeRole != role {
+            if activeRole != nil {
+                ShortcutCapture.end()
+            }
+            activeRole = role
+            ShortcutCapture.begin()
+        }
+    }
+
+    func stopRecording(role: GlobalShortcutRole? = nil) {
+        if let role {
+            if activeRole == role {
+                activeRole = nil
+                ShortcutCapture.end()
+            }
+        } else {
+            if activeRole != nil {
+                activeRole = nil
+                ShortcutCapture.end()
+            }
+        }
+    }
+}
+
+struct CompactShortcutRecorder: View {
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var coordinator = CompactShortcutCoordinator.shared
+    let role: GlobalShortcutRole
+    let enabledKey: String
+    var onChange: () -> Void = {}
+
+    @AppStorage private var isEnabled: Bool
+    @AppStorage private var rawValue: String
+    private var isRecording: Bool { coordinator.activeRole == role }
+    @State private var pressedModifiers: GlobalShortcutModifiers = []
+    @State private var errorText: String?
+    @State private var isHovering = false
+    @State private var shakeAttempts: CGFloat = 0
+
+    private let recorderWidth: CGFloat = 140
+    private let recorderHeight: CGFloat = 26
+
+    init(role: GlobalShortcutRole,
+         enabledKey: String,
+         onChange: @escaping () -> Void = {}) {
+        self.role = role
+        self.enabledKey = enabledKey
+        self.onChange = onChange
+        _isEnabled = AppStorage(wrappedValue: false, enabledKey)
+        _rawValue = AppStorage(wrappedValue: role.defaultShortcut.storageValue, role.storageKey)
+    }
+
+    private var shortcut: GlobalShortcut {
+        GlobalShortcut(storageValue: rawValue) ?? role.defaultShortcut
+    }
+
+    private var isModifiedFromDefault: Bool {
+        !isEnabled || (shortcut != role.defaultShortcut)
+    }
+
+    var body: some View {
+        ZStack {
+            Button {
+                if isRecording {
+                    coordinator.stopRecording(role: role)
+                } else {
+                    errorText = nil
+                    pressedModifiers = []
+                    coordinator.startRecording(role: role)
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    if let errorText {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Color.red)
+                        Text(errorText)
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .foregroundStyle(Color.red)
+                            .lineLimit(1)
+                    } else if isRecording {
+                        if !pressedModifiers.isEmpty {
+                            Text(pressedModifiers.keyCaps.joined(separator: " "))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.accentColor)
+                        } else {
+                            Text(l10n.s.shortcutPressKeys)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                    } else if isEnabled {
+                        Text(shortcut.displayString)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .padding(.trailing, isModifiedFromDefault ? 40 : 22)
+                            .padding(.leading, 8)
+                    } else {
+                        // Disabled / empty state
+                        Spacer()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if !isRecording && errorText == nil {
+                HStack(spacing: 4) {
+                    Spacer()
+                    if isModifiedFromDefault {
+                        Button(action: resetToDefault) {
+                            Image(systemName: "arrow.uturn.backward")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 16, height: 16)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help(l10n.s.shortcutReset)
+                    }
+                    if isEnabled {
+                        Button(action: clearShortcut) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 16, height: 16)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Disable shortcut")
+                    }
+                }
+                .padding(.trailing, 6)
+            }
+        }
+        .frame(width: recorderWidth, height: recorderHeight)
+        .modifier(CompactRecorderShakeEffect(animatableData: shakeAttempts))
+        .background(
+            backgroundColor,
+            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(
+                    borderColor,
+                    lineWidth: (isRecording || errorText != nil) ? 1.5 : (isHovering ? 0.8 : 0.5)
+                )
+        )
+        .onHover { hovering in
+            isHovering = hovering
+        }
+        .onChange(of: coordinator.activeRole) { _, newRole in
+            if newRole != role {
+                pressedModifiers = []
+            }
+        }
+        .onDisappear {
+            coordinator.stopRecording(role: role)
+        }
+        .background {
+            if isRecording {
+                KeyCaptureBridgeView(
+                    onKeyDown: { event in
+                        handleKeyEvent(event)
+                    },
+                    onFlagsChanged: { event in
+                        handleFlagsChanged(event)
+                    }
+                )
+            }
+        }
+    }
+
+    private var backgroundColor: Color {
+        if errorText != nil {
+            return Color.red.opacity(0.12)
+        } else if isRecording {
+            return Color.accentColor.opacity(0.12)
+        } else if isHovering {
+            return Color.primary.opacity(0.06)
+        } else {
+            return Color.primary.opacity(0.03)
+        }
+    }
+
+    private var borderColor: Color {
+        if errorText != nil {
+            return Color.red
+        } else if isRecording {
+            return Color.accentColor
+        } else if isHovering {
+            return Color.primary.opacity(0.25)
+        } else {
+            return Color.primary.opacity(0.12)
+        }
+    }
+
+    private func showError(_ text: String = "Shortcut Unavailable") {
+        errorText = text
+        NSSound.beep()
+        withAnimation(.default) {
+            shakeAttempts += 1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            if self.errorText == text {
+                self.errorText = nil
+            }
+        }
+    }
+
+    private func resetToDefault() {
+        let targetShortcut = role.defaultShortcut
+        if let conflicting = GlobalShortcutRole.conflict(for: targetShortcut, excluding: role) {
+            let conflictingDefault = conflicting.defaultShortcut
+            if conflictingDefault != targetShortcut &&
+               GlobalShortcutRole.conflict(for: conflictingDefault, excluding: conflicting) == nil {
+                UserDefaults.standard.set(conflictingDefault.storageValue, forKey: conflicting.storageKey)
+            } else {
+                for key in conflicting.requiredEnableKeys {
+                    UserDefaults.standard.set(false, forKey: key)
+                }
+            }
+            SystemShortcutTakeover.setTakeOver(conflicting.storageKey, false)
+            syncPreferences(for: conflicting)
+        }
+        rawValue = targetShortcut.storageValue
+        isEnabled = true
+        errorText = nil
+        SystemShortcutTakeover.setTakeOver(role.storageKey, false)
+        onChange()
+    }
+
+    private func syncPreferences(for role: GlobalShortcutRole) {
+        switch role {
+        case .screenshot, .screenshotFullScreen, .screenshotLastCapture, .screenshotUpload, .screenshotClipboard:
+            ScreenshotService.shared.syncWithPreferences()
+        case .screenOCR:
+            ScreenTextService.shared.syncWithPreferences()
+        case .colorPicker:
+            ScreenCaptureService.shared.syncWithPreferences()
+        case .recentCaptures:
+            RecentCaptureService.shared.syncWithPreferences()
+        case .screenRecorder:
+            ScreenRecorderService.shared.syncWithPreferences()
+        case .clipboard:
+            ClipboardHistoryService.shared.syncWithPreferences()
+        case .commandBar:
+            CommandBarService.shared.syncWithPreferences()
+        case .shelf:
+            ShelfService.shared.syncWithPreferences()
+        default:
+            break
+        }
+    }
+
+    private func clearShortcut() {
+        isEnabled = false
+        errorText = nil
+        onChange()
+    }
+
+    private func handleFlagsChanged(_ event: NSEvent) {
+        pressedModifiers = GlobalShortcutModifiers(eventFlags: event.modifierFlags)
+    }
+
+    private func handleKeyEvent(_ event: NSEvent) {
+        if event.keyCode == UInt16(kVK_Escape) {
+            coordinator.stopRecording(role: role)
+            return
+        }
+        let modifiers = GlobalShortcutModifiers(eventFlags: event.modifierFlags)
+        if GlobalShortcut.clearsShortcut(keyCode: Int64(event.keyCode), modifiers: modifiers) {
+            clearShortcut()
+            coordinator.stopRecording(role: role)
+            return
+        }
+        let captured = GlobalShortcut(keyCode: Int64(event.keyCode), modifiers: modifiers)
+        guard captured.isValid else {
+            showError("Shortcut Unavailable")
+            return
+        }
+        if let _ = GlobalShortcutRole.conflict(for: captured, excluding: role) {
+            showError("Shortcut Unavailable")
+            return
+        }
+        rawValue = captured.storageValue
+        isEnabled = true
+        errorText = nil
+        coordinator.stopRecording(role: role)
+        onChange()
+    }
+}
+
+private struct CompactRecorderShakeEffect: GeometryEffect {
+    var amount: CGFloat = 6
+    var shakesPerUnit: CGFloat = 3
+    var animatableData: CGFloat
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        ProjectionTransform(CGAffineTransform(translationX:
+            amount * sin(animatableData * .pi * shakesPerUnit),
+            y: 0))
+    }
+}
+
+private struct KeyCaptureBridgeView: NSViewRepresentable {
+    var onKeyDown: (NSEvent) -> Void
+    var onFlagsChanged: (NSEvent) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onKeyDown: onKeyDown, onFlagsChanged: onFlagsChanged)
+    }
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        context.coordinator.install()
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.onKeyDown = onKeyDown
+        context.coordinator.onFlagsChanged = onFlagsChanged
+    }
+
+    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+        coordinator.remove()
+    }
+
+    @MainActor
+    final class Coordinator {
+        var onKeyDown: (NSEvent) -> Void
+        var onFlagsChanged: (NSEvent) -> Void
+        private var monitor: Any?
+
+        init(onKeyDown: @escaping (NSEvent) -> Void, onFlagsChanged: @escaping (NSEvent) -> Void) {
+            self.onKeyDown = onKeyDown
+            self.onFlagsChanged = onFlagsChanged
+        }
+
+        func install() {
+            guard monitor == nil else { return }
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
+                if event.type == .flagsChanged {
+                    self?.onFlagsChanged(event)
+                    return nil
+                } else if event.type == .keyDown {
+                    self?.onKeyDown(event)
+                    return nil
+                }
+                return event
+            }
+        }
+
+        func remove() {
+            if let monitor {
+                NSEvent.removeMonitor(monitor)
+                self.monitor = nil
+            }
+        }
+    }
+}
