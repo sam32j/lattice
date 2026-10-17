@@ -725,17 +725,17 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                 tool: tool, points: [point], color: color, stroke: stroke)
             annotations.append(annotation)
             draftID = annotation.id
-        case .rect, .ellipse, .highlight, .pixelate, .redact:
+        case .rect, .ellipse, .highlight, .pixelate, .redact, .text:
             if tool == .pixelate { ensureBlurSample(blurStyle, level: blurLevel) }
             registerUndo()
             dragRegistered = true
             let annotation = ScreenshotSupport.Annotation(
                 tool: tool, rect: CGRect(origin: point, size: .zero),
-                color: color, stroke: stroke, blurLevel: blurLevel,
-                blurStyle: blurStyle, blurTextOnly: blurTextOnly)
+                color: color, stroke: stroke, textSize: textSize,
+                blurLevel: blurLevel, blurStyle: blurStyle, blurTextOnly: blurTextOnly)
             annotations.append(annotation)
             draftID = annotation.id
-        case .text, .sticker, .counter:
+        case .sticker, .counter:
             break
         }
     }
@@ -808,9 +808,9 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             updateDraft { $0.points = [dragStart, point] }
         case .freehand:
             updateDraft { $0.points.append(point) }
-        case .rect, .ellipse, .highlight, .pixelate, .redact:
+        case .rect, .ellipse, .highlight, .pixelate, .redact, .text:
             updateDraft { $0.rect = ScreenshotSupport.selectionRect(from: dragStart, to: point) }
-        case .text, .sticker, .counter:
+        case .sticker, .counter:
             break
         }
     }
@@ -869,17 +869,35 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         }
         switch tool {
         case .text:
-            guard isTap else { return }
-            if selectExistingAnnotation(at: point) { return }
-            registerUndo()
-            var annotation = ScreenshotSupport.Annotation(
-                tool: .text, color: color, stroke: stroke, textSize: textSize)
-            annotation.rect = ScreenshotRenderer.textBounds("", at: point, textSize: textSize,
-                                                            scale: scale)
-            annotations.append(annotation)
-            newTextID = annotation.id
-            selectedID = annotation.id
-            editingTextID = annotation.id
+            if isTap {
+                if let draftID, let draftIndex = annotations.firstIndex(where: { $0.id == draftID }) {
+                    annotations.remove(at: draftIndex)
+                    if dragRegistered, !undoStack.isEmpty { undoStack.removeLast() }
+                }
+                if selectExistingAnnotation(at: point) { return }
+                registerUndo()
+                let clampedX = max(0, min(point.x, imageSize.width - 40))
+                let clampedY = max(0, min(point.y, imageSize.height - 24))
+                var annotation = ScreenshotSupport.Annotation(
+                    tool: .text, color: color, stroke: stroke, textSize: textSize, isBounded: false)
+                annotation.rect = CGRect(x: clampedX, y: clampedY, width: 0, height: 0)
+                annotations.append(annotation)
+                newTextID = annotation.id
+                selectedID = annotation.id
+                editingTextID = annotation.id
+            } else {
+                guard let draftID, let draftIndex = annotations.firstIndex(where: { $0.id == draftID }) else { return }
+                let rect = annotations[draftIndex].rect
+                if rect.width < 15 || rect.height < 15 {
+                    annotations.remove(at: draftIndex)
+                    if dragRegistered, !undoStack.isEmpty { undoStack.removeLast() }
+                    return
+                }
+                annotations[draftIndex].isBounded = true
+                newTextID = draftID
+                selectedID = draftID
+                editingTextID = draftID
+            }
         case .sticker:
             guard isTap else { return }
             if selectExistingAnnotation(at: point) { return }
@@ -1099,11 +1117,13 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             return
         }
         annotations[index].text = trimmed
+        let boundingWidth = annotations[index].isBounded ? max(40, annotations[index].rect.width) : nil
         annotations[index].rect = ScreenshotRenderer.textBounds(
             trimmed,
             at: annotations[index].rect.origin,
             textSize: annotations[index].textSize,
-            scale: scale)
+            scale: scale,
+            boundingWidth: boundingWidth)
         newTextID = nil
     }
 
