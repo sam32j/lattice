@@ -54,6 +54,7 @@ final class ScreenshotSelectionController {
         otherProtectedWindowIDs().union(protectedWindowIDs)
     }
     private var keyMonitor: Any?
+    private var flagsMonitor: Any?
     private var globalKeyMonitor: Any?
     private var completion: ((Outcome) -> Void)?
     private var freeze: Bool
@@ -76,6 +77,7 @@ final class ScreenshotSelectionController {
     }
     fileprivate let requiresDraggedRegion: Bool
     private var finished = false
+    private var cursorPushed = false
     /// Read by the overlays so a late event finds a session that is over.
     fileprivate var isOver: Bool { finished }
     fileprivate var spaceIsDown = false
@@ -204,9 +206,9 @@ final class ScreenshotSelectionController {
         defaults.set(Double(loupeZoom), forKey: DefaultsKey.screenshotLoupeLastZoom)
     }
 
-    private var activeTool: ScreenCaptureTool? { screenCaptureOptions?.selectedTool }
+    fileprivate var activeTool: ScreenCaptureTool? { screenCaptureOptions?.selectedTool }
 
-    private var activeMode: Mode {
+    fileprivate var activeMode: Mode {
         switch activeTool {
         case .recording: return .geometry
         case .color: return .color
@@ -284,15 +286,33 @@ final class ScreenshotSelectionController {
         // resigning a full-screen key panel can flash the surrounding chrome.
         screenCaptureOptions?.onPresentationReady?()
         guard !finished else { return }
+        NSApp.activate(ignoringOtherApps: true)
         panels.forEach { $0.orderFrontRegardless() }
-        if screenCaptureOptions?.controlsInNotch != true { keyPanelUnderMouse()?.makeKey() }
+        if let keyPanel = keyPanelUnderMouse() ?? panels.first {
+            keyPanel.makeKeyAndOrderFront(nil)
+        }
+        panels.forEach { panel in
+            panel.invalidateCursorRects(for: panel.overlayView)
+            panel.resetCursorRects()
+        }
         if isPickingColor
             || UserDefaults.standard.bool(forKey: DefaultsKey.screenshotLoupeStartsOn) {
             // Opt-in: the session opens with the magnifier already up,
             // instead of waiting for the Z toggle.
             toggleLoupe()
         }
+        if !cursorPushed {
+            NSCursor.crosshair.push()
+            cursorPushed = true
+        }
         NSCursor.crosshair.set()
+        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            guard let self else { return event }
+            if !event.modifierFlags.contains(.shift), self.hasSelectedWindows {
+                self.confirmSelectedWindows()
+            }
+            return event
+        }
     }
 
     private func screenCaptureToolDidChange() {
@@ -308,6 +328,7 @@ final class ScreenshotSelectionController {
                 adoptCapturePolicy(nextPolicy)
             }
         }
+        selectedWindows.removeAll()
         scrollingCaptureEnabled = false
         loupeEnabled = isPickingColor
         screenCaptureOptions?.offersRepeatLastRegion = offersRepeatLastRegion
@@ -432,18 +453,31 @@ final class ScreenshotSelectionController {
                 self.finish(.cancelled)
             case kVK_Return, kVK_ANSI_KeypadEnter:
                 self.confirmSelectionWithKeyboard()
+            case _ where Self.matchesShortcutKey(event, character: "f", physicalKeyCode: kVK_ANSI_F):
+                guard !self.hasSelectedWindows else { return event }
+                self.captureFullDisplayUnderMouse()
             case kVK_Space:
                 if let panel = self.panelUnderMouse(), panel.overlayView.isDragging {
                     // Holding Space moves the in-progress selection.
                     self.spaceIsDown = true
                 } else { return event }
             case _ where Self.isRepeatRegionKey(event):
+                guard !self.hasSelectedWindows else { return event }
                 self.repeatLastRegion()
-            case _ where self.selectCaptureTool(for: event):
-                break
             case _ where Self.isScrollingCaptureKey(event):
-                self.toggleScrollingCapture()
+                guard !self.hasSelectedWindows else { return event }
+                if self.activeTool == .recording {
+                    self.screenCaptureOptions?.recorderAudio.systemAudio.toggle()
+                } else {
+                    self.toggleScrollingCapture()
+                }
+            case _ where Self.isMicrophoneKey(event):
+                guard !self.hasSelectedWindows else { return event }
+                if self.activeTool == .recording {
+                    self.screenCaptureOptions?.recorderAudio.microphone.toggle()
+                }
             case _ where Self.isLoupeKey(event):
+                guard !self.hasSelectedWindows else { return event }
                 self.toggleLoupe()
             case _ where Self.isCopyColorKey(event):
                 guard self.loupeAcceptsKeyboardActions else { return event }
@@ -453,6 +487,7 @@ final class ScreenshotSelectionController {
                 self.nudgePointer(keyCode: Int(event.keyCode),
                                   fast: event.modifierFlags.contains(.shift))
             default:
+                if selectCaptureTool(for: event) { return nil }
                 return event
             }
             return nil
@@ -464,13 +499,12 @@ final class ScreenshotSelectionController {
     }
 
     private func selectCaptureTool(for event: NSEvent) -> Bool {
-        guard event.modifierFlags.intersection([.command, .control, .option]).isEmpty,
-              let tool = ScreenCaptureTool.matchingShortcut(event.charactersIgnoringModifiers),
-              let screenCaptureOptions,
-              screenCaptureOptions.availableTools.contains(tool)
-        else { return false }
-        screenCaptureOptions.select(tool)
-        return true
+        if Self.matchesShortcutKey(event, character: "r", physicalKeyCode: kVK_ANSI_R) {
+            guard !hasSelectedWindows else { return true }
+            toggleCaptureAndRecordMode()
+            return true
+        }
+        return false
     }
 
     /// The loupe toggle follows the typed character, with the physical slot
@@ -484,17 +518,43 @@ final class ScreenshotSelectionController {
         matchesShortcutKey(event, character: "s", physicalKeyCode: kVK_ANSI_S)
     }
 
-    private static func isRepeatRegionKey(_ event: NSEvent) -> Bool {
-        matchesShortcutKey(event, character: "r", physicalKeyCode: kVK_ANSI_R)
+    private static func isMicrophoneKey(_ event: NSEvent) -> Bool {
+        matchesShortcutKey(event, character: "m", physicalKeyCode: kVK_ANSI_M)
     }
 
-    private func toggleScrollingCapture() {
+    private static func isRepeatRegionKey(_ event: NSEvent) -> Bool {
+        matchesShortcutKey(event, character: "x", physicalKeyCode: kVK_ANSI_X)
+    }
+
+
+    private static func isCopyColorKey(_ event: NSEvent) -> Bool {
+        event.keyCode == UInt16(kVK_Tab)
+    }
+
+    fileprivate func performRepeatLastRegion() {
+        if offersRepeatLastRegion {
+            repeatLastRegion()
+        }
+    }
+
+    fileprivate func toggleCaptureAndRecordMode() {
+        guard let screenCaptureOptions else { return }
+        let nextTool: ScreenCaptureTool = screenCaptureOptions.selectedTool == .recording ? .screenshot : .recording
+        if screenCaptureOptions.availableTools.contains(nextTool) {
+            screenCaptureOptions.select(nextTool)
+        }
+    }
+
+    fileprivate func toggleScrollingCapture() {
         guard offersScrollingCapture else { return }
         scrollingCaptureEnabled.toggle()
-        panels.forEach { $0.overlayView.refreshPointerState() }
+        panels.forEach {
+            $0.overlayView.refreshCaptureGuide()
+            $0.overlayView.refreshPointerState()
+        }
     }
 
-    private func toggleLoupe() {
+    fileprivate func toggleLoupe() {
         loupeEnabled.toggle()
         // Live mode has no frozen shot to sample. Pixels are fetched only
         // when the loupe actually turns on, and fresh each time, so it
@@ -502,6 +562,10 @@ final class ScreenshotSelectionController {
         // frame and idle sessions never pay for a capture.
         if loupeEnabled, !freeze {
             loadLiveLoupeImages()
+        }
+        panels.forEach {
+            $0.overlayView.refreshCaptureGuide()
+            $0.overlayView.needsDisplay = true
         }
     }
 
@@ -514,12 +578,6 @@ final class ScreenshotSelectionController {
                                                      isContinuous: isContinuous)
     }
 
-    /// C copies the color under the pointer in the configured picker format
-    /// without ending the session, so a whole palette can be read off one
-    /// frozen screen. Only meaningful while the loupe shows which pixel.
-    private static func isCopyColorKey(_ event: NSEvent) -> Bool {
-        matchesShortcutKey(event, character: "c", physicalKeyCode: kVK_ANSI_C)
-    }
 
     /// Accept either the character promised by the shortcut hint or its
     /// physical ANSI key. The latter keeps shortcuts reachable on layouts
@@ -602,6 +660,66 @@ final class ScreenshotSelectionController {
         panelUnderMouse()
     }
 
+    fileprivate var selectedWindows: [CGWindowID: (window: ScreenshotSupport.PickableWindow, panel: ScreenshotOverlayPanel)] = [:]
+    var hasSelectedWindows: Bool { !selectedWindows.isEmpty }
+
+    fileprivate func toggleSelectedWindow(_ window: ScreenshotSupport.PickableWindow, on panel: ScreenshotOverlayPanel) {
+        guard activeMode != .geometry else { return }
+        if selectedWindows[window.windowID] != nil {
+            selectedWindows.removeValue(forKey: window.windowID)
+        } else {
+            selectedWindows[window.windowID] = (window, panel)
+        }
+        panels.forEach {
+            $0.overlayView.refreshCaptureGuide()
+            $0.overlayView.needsDisplay = true
+        }
+    }
+
+    fileprivate func clearSelectedWindows() {
+        selectedWindows.removeAll()
+        panels.forEach {
+            $0.overlayView.refreshCaptureGuide()
+            $0.overlayView.needsDisplay = true
+        }
+    }
+
+    fileprivate func confirmSelectedWindows() {
+        guard acceptsCaptureInput, !selectedWindows.isEmpty else { return }
+        let windowEntries = Array(selectedWindows.values)
+        guard let firstPanel = windowEntries.first?.panel else { return }
+        markCapturePending()
+
+        let windowIDs = windowEntries.map(\.window.windowID)
+        let scale = firstPanel.pixelScale
+
+        var unionViewFrame = windowEntries[0].window.frame
+        for entry in windowEntries.dropFirst() {
+            if entry.panel === firstPanel {
+                unionViewFrame = unionViewFrame.union(entry.window.frame)
+            } else {
+                let cocoa = ScreenshotSupport.cocoaRect(fromFlippedView: entry.window.frame, screenFrame: entry.panel.screenFrame)
+                let view = ScreenshotSupport.flippedViewRect(fromCocoa: cocoa, screenFrame: firstPanel.screenFrame)
+                unionViewFrame = unionViewFrame.union(view)
+            }
+        }
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard let capture = await ScreenshotCaptureEngine.captureMultipleWindows(
+                windowIDs, scale: scale) else {
+                self.finish(.failed)
+                return
+            }
+            self.finish(.captured(Capture(
+                image: capture.image,
+                scale: capture.scale,
+                anchorRect: ScreenshotSupport.cocoaRect(
+                    fromFlippedView: unionViewFrame,
+                    screenFrame: firstPanel.screenFrame))))
+        }
+    }
+
     // MARK: - Confirmations (called by the views)
 
     private func confirmSelectionWithKeyboard() {
@@ -612,6 +730,8 @@ final class ScreenshotSelectionController {
             let point = CGPoint(x: location.x - panel.screenFrame.minX,
                                 y: panel.screenFrame.maxY - location.y)
             confirmColor(at: point, on: panel)
+        } else if hasSelectedWindows {
+            confirmSelectedWindows()
         } else if acceptsWindowClick {
             captureFullDisplayUnderMouse()
         }
@@ -820,6 +940,10 @@ final class ScreenshotSelectionController {
         // screen marked as taken and every capture feature dead until the app
         // is restarted. The wrong flag is always the one that lets a capture
         // start, never the one that blocks it.
+        if cursorPushed {
+            NSCursor.pop()
+            cursorPushed = false
+        }
         if !finished {
             Self.isSessionOnScreen = false
             if Self.activeSession === self { Self.activeSession = nil }
@@ -829,12 +953,17 @@ final class ScreenshotSelectionController {
     private func finish(_ outcome: Outcome) {
         guard !finished else { return }
         finished = true
+        selectedWindows.removeAll()
         Self.isSessionOnScreen = false
         if Self.activeSession === self { Self.activeSession = nil }
         screenCaptureOptions?.onSelectionChange = nil
         if let keyMonitor {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
+        }
+        if let flagsMonitor {
+            NSEvent.removeMonitor(flagsMonitor)
+            self.flagsMonitor = nil
         }
         if let globalKeyMonitor {
             NSEvent.removeMonitor(globalKeyMonitor)
@@ -846,6 +975,10 @@ final class ScreenshotSelectionController {
         markCapturePending()
         panels.forEach { $0.orderOut(nil) }
         panels.removeAll()
+        if cursorPushed {
+            NSCursor.pop()
+            cursorPushed = false
+        }
         NSCursor.arrow.set()
         let completion = completion
         self.completion = nil
@@ -893,23 +1026,24 @@ private final class ScreenshotOverlayPanel: OverlayPanel {
         self.frozenImage = frozenImage
         pixelScale = screen.backingScaleFactor
         super.init(contentRect: screen.frame,
-                   styleMask: [.borderless, .nonactivatingPanel],
+                   styleMask: [.borderless],
                    backing: .buffered,
                    defer: false)
         isReleasedWhenClosed = false
         isOpaque = frozenImage != nil
-        backgroundColor = frozenImage == nil ? .clear : .black
+        backgroundColor = frozenImage == nil ? NSColor(white: 0, alpha: 0.005) : .black
         hasShadow = false
         level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         hidesOnDeactivate = false
         acceptsMouseMovedEvents = true
+        ignoresMouseEvents = false
         animationBehavior = .none
 
         // The frozen still sits in its own view UNDER the chrome: a backing
         // layer configured before the view joins a window can lose its
         // contents, and the chrome's dim must paint over the image anyway.
-        let container = NSView(frame: CGRect(origin: .zero, size: screen.frame.size))
+        let container = ScreenshotOverlayContainerView(frame: CGRect(origin: .zero, size: screen.frame.size))
         let imageView = NSImageView(frame: container.bounds)
         imageView.image = frozenImage.map { NSImage(cgImage: $0, size: screen.frame.size) }
         imageView.imageScaling = .scaleAxesIndependently
@@ -936,12 +1070,27 @@ private final class ScreenshotOverlayPanel: OverlayPanel {
     func update(frozenImage: CGImage?, windows: [ScreenshotSupport.PickableWindow]) {
         self.frozenImage = frozenImage
         isOpaque = frozenImage != nil
-        backgroundColor = frozenImage == nil ? .clear : .black
+        backgroundColor = frozenImage == nil ? NSColor(white: 0, alpha: 0.005) : .black
         backdropView.image = frozenImage.map { NSImage(cgImage: $0, size: screenFrame.size) }
         overlayView.update(frozenImage: frozenImage, windows: windows)
     }
 
     override var canBecomeKey: Bool { true }
+    override func becomeKey() {
+        super.becomeKey()
+        NSCursor.crosshair.set()
+    }
+}
+
+private class ScreenshotOverlayContainerView: NSView {
+    override func resetCursorRects() {
+        discardCursorRects()
+        addCursorRect(bounds, cursor: .crosshair)
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        NSCursor.crosshair.set()
+    }
 }
 
 // MARK: - View
@@ -962,6 +1111,7 @@ private final class ScreenshotOverlayView: NSView {
     private let strings: ScreenshotFeatureStrings
     private let purpose: String?
     private let screenCaptureOptions: ScreenCaptureSelectionOptions?
+    private let guideModel = CaptureGuideViewModel()
     private let guideHost: PassThroughHostingView<CaptureGuideView>
     private let fullScreenHost: PassThroughHostingView<FullScreenCaptureButton>
     private var notchCaptureControlsHeight: CGFloat?
@@ -975,7 +1125,7 @@ private final class ScreenshotOverlayView: NSView {
     private var hoverPoint: CGPoint = .zero
     private var pointerIsInside = false
     private var hoveredWindow: ScreenshotSupport.PickableWindow?
-    private let highlightWindows = UserDefaults.standard.bool(forKey: DefaultsKey.screenshotHighlightWindows)
+    private let highlightWindows = true
     /// The value just copied with C, shown briefly in the loupe's info bar
     /// because the regular HUD sits under these shielding-level panels.
     private var copiedValue: String?
@@ -1032,16 +1182,36 @@ private final class ScreenshotOverlayView: NSView {
         self.strings = strings
         self.purpose = purpose
         self.screenCaptureOptions = screenCaptureOptions
-        let host = PassThroughHostingView(rootView: CaptureGuideView(
+        guideModel.offersScrollingCapture = controller.offersScrollingCapture
+        guideModel.offersRepeatLastRegion = controller.offersRepeatLastRegion
+        guideModel.requiresDraggedRegion = controller.requiresDraggedRegion
+        guideModel.scrollingCaptureEnabled = controller.scrollingCaptureEnabled
+        guideModel.loupeEnabled = controller.loupeEnabled
+        guideModel.selectedWindowsCount = controller.selectedWindows.count
+        let host = PassThroughHostingView(interactiveRootView: CaptureGuideView(
             strings: strings,
             purpose: purpose,
-            offersScrollingCapture: controller.offersScrollingCapture,
-            offersRepeatLastRegion: controller.offersRepeatLastRegion,
-            requiresDraggedRegion: controller.requiresDraggedRegion,
-            scrollingCaptureEnabled: controller.scrollingCaptureEnabled,
-            loupeEnabled: controller.loupeEnabled,
-            screenCaptureOptions: screenCaptureOptions))
-        host.passesThrough = screenCaptureOptions == nil
+            model: guideModel,
+            screenCaptureOptions: screenCaptureOptions,
+            onFullScreen: { [weak controller, weak panel] in
+                guard let controller, let panel else { return }
+                controller.captureFullScreenFromControl(on: panel)
+            },
+            onToggleScrolling: { [weak controller] in
+                controller?.toggleScrollingCapture()
+            },
+            onToggleLoupe: { [weak controller] in
+                controller?.toggleLoupe()
+            },
+            onRepeatLastRegion: { [weak controller] in
+                controller?.performRepeatLastRegion()
+            },
+            onToggleMode: { [weak controller] in
+                controller?.toggleCaptureAndRecordMode()
+            },
+            onCancel: { [weak controller] in
+                controller?.cancel()
+            }))
         guideHost = host
         let hoverRelay = FullScreenControlHoverRelay()
         let fullScreen = PassThroughHostingView(interactiveRootView: FullScreenCaptureButton(
@@ -1051,15 +1221,21 @@ private final class ScreenshotOverlayView: NSView {
             },
             hoverChanged: { hoverRelay.update($0) }))
         fullScreenHost = fullScreen
+        fullScreenHost.isHidden = true
         super.init(frame: frame)
+        guideModel.onHoverChanged = { [weak self] isHovered in
+            guard let self else { return }
+            self.guideHost.isHovered = isHovered
+            self.updatePointerHover(self.hoverPoint)
+            self.needsDisplay = true
+        }
         hoverRelay.changed = { [weak self] in self?.fullScreenControlHoverChanged($0) }
         let tracking = NSTrackingArea(rect: .zero,
                                       options: [.activeAlways, .mouseMoved, .mouseEnteredAndExited,
-                                                .inVisibleRect],
+                                                .cursorUpdate, .inVisibleRect],
                                       owner: self)
         addTrackingArea(tracking)
         addSubview(guideHost)
-        addSubview(fullScreenHost)
         refreshGuideVisibility()
         refreshFullScreenControlVisibility()
     }
@@ -1068,24 +1244,28 @@ private final class ScreenshotOverlayView: NSView {
     required init?(coder: NSCoder) { nil }
 
     override func resetCursorRects() {
+        discardCursorRects()
         addCursorRect(bounds, cursor: .crosshair)
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        NSCursor.crosshair.set()
     }
 
     override func layout() {
         super.layout()
-        let width = min(screenCaptureOptions == nil ? 680 : 620,
-                        max(280, bounds.width - 32))
-        let height: CGFloat = screenCaptureOptions != nil
+        let width = min(620, max(280, bounds.width - 32))
+        let targetHeight: CGFloat = screenCaptureOptions != nil
             ? (screenCaptureOptions?.showsCaptureMenu == false ? 82 : 146)
             : 72
         guideHost.frame = CGRect(x: bounds.midX - width / 2,
-                                 y: bounds.maxY - height - 32,
+                                 y: bounds.maxY - targetHeight - 32,
                                  width: width,
-                                 height: height)
+                                 height: targetHeight)
         let availableWidth = max(1, bounds.width - 32)
-        let fitting = fullScreenHost.fittingSize
-        let fullScreenWidth = min(max(fitting.width, 1), availableWidth)
-        let fullScreenHeight = max(fitting.height, 32)
+        let fullScreenFitting = fullScreenHost.fittingSize
+        let fullScreenWidth = min(max(fullScreenFitting.width, 1), availableWidth)
+        let fullScreenHeight = max(fullScreenFitting.height, 32)
         let topInset = ScreenshotSupport.fullScreenCaptureControlTopInset(
             screenChromeHeight: panel?.topChromeHeight ?? 0,
             notchControlsHeight: notchCaptureControlsHeight)
@@ -1140,15 +1320,14 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     func refreshCaptureGuide() {
-        guideHost.rootView = CaptureGuideView(
-            strings: strings,
-            purpose: purpose,
-            offersScrollingCapture: controller?.offersScrollingCapture ?? false,
-            offersRepeatLastRegion: controller?.offersRepeatLastRegion ?? false,
-            requiresDraggedRegion: controller?.requiresDraggedRegion ?? false,
-            scrollingCaptureEnabled: controller?.scrollingCaptureEnabled ?? false,
-            loupeEnabled: controller?.loupeEnabled ?? false,
-            screenCaptureOptions: screenCaptureOptions)
+        guard let controller else { return }
+        guideModel.offersScrollingCapture = controller.offersScrollingCapture
+        guideModel.offersRepeatLastRegion = controller.offersRepeatLastRegion
+        guideModel.requiresDraggedRegion = controller.requiresDraggedRegion
+        guideModel.scrollingCaptureEnabled = controller.scrollingCaptureEnabled
+        guideModel.loupeEnabled = controller.loupeEnabled
+        guideModel.selectedWindowsCount = controller.selectedWindows.count
+        needsLayout = true
     }
 
     func captureToolDidChange() {
@@ -1166,6 +1345,7 @@ private final class ScreenshotOverlayView: NSView {
     // MARK: Mouse
 
     override func mouseMoved(with event: NSEvent) {
+        NSCursor.crosshair.set()
         pointerHasMoved = true
         controller?.currentPointerLocation = nil
         updatePointerHover(convert(event.locationInWindow, from: nil))
@@ -1174,9 +1354,18 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     override func mouseEntered(with event: NSEvent) {
+        NSCursor.crosshair.set()
         refreshPointerState()
         refreshGuideVisibility()
         refreshFullScreenControlVisibility()
+    }
+
+    override func flagsChanged(with event: NSEvent) {
+        if !event.modifierFlags.contains(.shift), let controller, controller.hasSelectedWindows {
+            controller.confirmSelectedWindows()
+            return
+        }
+        super.flagsChanged(with: event)
     }
 
     // System chrome can take pointer ownership without the pointer leaving
@@ -1215,6 +1404,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        NSCursor.crosshair.set()
         guard acceptsPointerInput else { return }
         controller?.currentPointerLocation = nil
         let point = convert(event.locationInWindow, from: nil)
@@ -1228,6 +1418,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
+        NSCursor.crosshair.set()
         guard acceptsPointerInput, let controller, let origin = dragOrigin else { return }
         controller.currentPointerLocation = nil
         let point = convert(event.locationInWindow, from: nil)
@@ -1273,17 +1464,32 @@ private final class ScreenshotOverlayView: NSView {
         if clicked {
             if controller.acceptsWindowClick,
                let target = ScreenshotSupport.window(at: point, in: windows) {
-                controller.confirmWindow(target.windowID, frame: target.frame, on: panel)
+                if controller.activeMode != .geometry && controller.activeTool != .recording && event.modifierFlags.contains(.shift) {
+                    controller.toggleSelectedWindow(target, on: panel)
+                } else if controller.hasSelectedWindows {
+                    if controller.selectedWindows[target.windowID] != nil {
+                        controller.confirmSelectedWindows()
+                    } else {
+                        controller.clearSelectedWindows()
+                        controller.confirmWindow(target.windowID, frame: target.frame, on: panel)
+                    }
+                } else {
+                    controller.confirmWindow(target.windowID, frame: target.frame, on: panel)
+                }
+            } else if controller.hasSelectedWindows {
+                // Clicked blank area without Shift
             }
             selection = .zero
             needsDisplay = true
             controller.setSelectionInProgress(false)
+            refreshGuideVisibility()
             return
         }
         guard selection.width >= 2, selection.height >= 2 else {
             selection = .zero
             controller.setSelectionInProgress(false)
             needsDisplay = true
+            refreshGuideVisibility()
             return
         }
         controller.confirmRegion(selection, on: panel)
@@ -1295,10 +1501,8 @@ private final class ScreenshotOverlayView: NSView {
             return
         }
         let global = controller?.currentPointerLocation ?? NSEvent.mouseLocation
-        guideHost.isHidden = !ScreenshotSupport.captureGuideIsVisible(
-            pointerOnDisplay: NSMouseInRect(global, panel.screenFrame, false),
-            selectionInProgress: controller?.selectionInProgress ?? true,
-            capturePending: isCapturePending)
+        let pointerOnDisplay = NSMouseInRect(global, panel.screenFrame, false)
+        guideHost.isHidden = !pointerOnDisplay || isCapturePending
     }
 
     func setNotchCaptureControlsHeight(_ height: CGFloat?) {
@@ -1334,11 +1538,16 @@ private final class ScreenshotOverlayView: NSView {
         !fullScreenHost.isHidden && fullScreenHost.frame.contains(point)
     }
 
+    private func pointerIsOverTab(_ point: CGPoint) -> Bool {
+        !guideHost.isHidden && guideHost.frame.contains(point) && guideHost.isHovered
+    }
+
     private func updatePointerHover(_ point: CGPoint) {
         pointerIsInside = true
         hoverPoint = point
+        let overControls = pointerIsOverFullScreenControl(point) || pointerIsOverTab(point)
         hoveredWindow = highlightWindows && controller?.acceptsWindowClick == true
-                && !pointerIsOverFullScreenControl(point)
+                && !overControls
             ? ScreenshotSupport.window(at: point, in: windows)
             : nil
     }
@@ -1378,6 +1587,10 @@ private final class ScreenshotOverlayView: NSView {
         let notchChooser = screenCaptureOptions?.controlsInNotch == true
         let dimAlpha = ScreenshotSupport.selectionDimAlpha(notchControls: notchChooser,
                                                           isFrozen: frozenImage != nil, isDragging: isDragging)
+        if frozenImage == nil {
+            context.setFillColor(CGColor(gray: 0, alpha: 0.005))
+            context.fill(bounds)
+        }
         context.setFillColor(CGColor(gray: 0, alpha: dimAlpha))
         if selection.width > 0, selection.height > 0 {
             context.beginPath()
@@ -1388,32 +1601,77 @@ private final class ScreenshotOverlayView: NSView {
                                    transform: nil))
             context.fillPath(using: .evenOdd)
             drawSelectionChrome(context, pixelScale: panel.pixelScale)
-        } else if dragOrigin == nil, hoveredWindow != nil {
-            if let hovered = hoveredWindow {
-                context.beginPath()
-                context.addRect(bounds)
+        } else if dragOrigin == nil, (hoveredWindow != nil || controller.hasSelectedWindows) {
+            context.beginPath()
+            context.addRect(bounds)
+            if controller.hasSelectedWindows {
+                for (_, entry) in controller.selectedWindows where entry.panel === panel {
+                    context.addRect(entry.window.frame)
+                }
+            }
+            if let hovered = hoveredWindow, controller.selectedWindows[hovered.windowID] == nil {
                 context.addRect(hovered.frame)
-                context.fillPath(using: .evenOdd)
-                if !notchChooser || pointerHasMoved { drawWindowHighlight(context, rect: hovered.frame) }
-            } else {
-                context.fill(bounds)
+            }
+            context.fillPath(using: .evenOdd)
+
+            var activePunchedIDs = Set(controller.selectedWindows.values.filter { $0.panel === panel }.map { $0.window.windowID })
+            if let hovered = hoveredWindow, controller.selectedWindows[hovered.windowID] == nil {
+                activePunchedIDs.insert(hovered.windowID)
+            }
+            for targetID in activePunchedIDs {
+                let windowsInFront = windows.prefix(while: { $0.windowID != targetID })
+                for foreground in windowsInFront where !activePunchedIDs.contains(foreground.windowID) {
+                    context.setFillColor(CGColor(gray: 0, alpha: dimAlpha))
+                    context.fill(foreground.frame)
+                }
+            }
+            if controller.hasSelectedWindows {
+                for (_, entry) in controller.selectedWindows where entry.panel === panel {
+                    drawWindowCheckmark(context, for: entry.window)
+                }
             }
         } else {
             context.fill(bounds)
         }
 
-        if controller.loupeEnabled, !controller.spaceIsDown,
-           pointerIsInside, let loupeImage {
+        if controller.loupeEnabled, !controller.spaceIsDown, pointerIsInside {
             let point = isDragging ? lastDragPoint : hoverPoint
-            drawCaptureLoupe(context,
-                             image: loupeImage,
-                             near: point,
-                             zoom: controller.loupeZoom)
+            drawAuxiliaryCrosshair(context, at: point)
+            if let loupeImage {
+                drawCaptureLoupe(context,
+                                 image: loupeImage,
+                                 near: point,
+                                 zoom: controller.loupeZoom)
+            }
         }
 
         if let ghostRect, dragOrigin == nil, selection == .zero {
             drawGhost(context, rect: ghostRect)
         }
+    }
+
+    private func drawAuxiliaryCrosshair(_ context: CGContext, at point: CGPoint) {
+        context.saveGState()
+
+        // Subtle dark under-stroke for contrast on light backgrounds
+        context.setStrokeColor(CGColor(gray: 0, alpha: 0.35))
+        context.setLineWidth(2)
+        context.move(to: CGPoint(x: bounds.minX, y: point.y))
+        context.addLine(to: CGPoint(x: bounds.maxX, y: point.y))
+        context.move(to: CGPoint(x: point.x, y: bounds.minY))
+        context.addLine(to: CGPoint(x: point.x, y: bounds.maxY))
+        context.strokePath()
+
+        // 1pt bright line over top
+        context.setStrokeColor(CGColor(srgbRed: 0.35, green: 0.65, blue: 1.0, alpha: 0.95))
+        context.setLineWidth(1)
+        context.move(to: CGPoint(x: bounds.minX, y: point.y))
+        context.addLine(to: CGPoint(x: bounds.maxX, y: point.y))
+        context.move(to: CGPoint(x: point.x, y: bounds.minY))
+        context.addLine(to: CGPoint(x: point.x, y: bounds.maxY))
+        context.strokePath()
+
+        context.restoreGState()
     }
 
     private func drawSelectionChrome(_ context: CGContext, pixelScale: CGFloat) {
@@ -1439,17 +1697,17 @@ private final class ScreenshotOverlayView: NSView {
         context.setLineWidth(1)
         context.strokePath()
 
-        let pixelWidth = Int((selection.width * pixelScale).rounded())
-        let pixelHeight = Int((selection.height * pixelScale).rounded())
-        drawBadge("\(pixelWidth) × \(pixelHeight)",
+        let width = Int(selection.width.rounded())
+        let height = Int(selection.height.rounded())
+        drawBadge("\(width) × \(height)",
                   near: CGPoint(x: selection.midX, y: selection.maxY + 10))
     }
 
     private func drawWindowHighlight(_ context: CGContext, rect: CGRect) {
         let path = CGPath(roundedRect: rect.insetBy(dx: 1.25, dy: 1.25),
-                          cornerWidth: 9,
-                          cornerHeight: 9,
-                          transform: nil)
+                           cornerWidth: 9,
+                           cornerHeight: 9,
+                           transform: nil)
         context.addPath(path)
         context.setFillColor(CGColor(srgbRed: 0.35, green: 0.62, blue: 1, alpha: 0.14))
         context.fillPath()
@@ -1457,6 +1715,48 @@ private final class ScreenshotOverlayView: NSView {
         context.setStrokeColor(CGColor(srgbRed: 0.35, green: 0.62, blue: 1, alpha: 0.95))
         context.setLineWidth(2.5)
         context.strokePath()
+    }
+
+    private func drawWindowCheckmark(_ context: CGContext, for window: ScreenshotSupport.PickableWindow) {
+        let frame = window.frame
+        let windowsInFront = windows.prefix(while: { $0.windowID != window.windowID })
+        let candidates: [CGPoint] = [
+            CGPoint(x: frame.minX + 24, y: frame.minY + 24),
+            CGPoint(x: frame.maxX - 24, y: frame.minY + 24),
+            CGPoint(x: frame.minX + 24, y: frame.maxY - 24),
+            CGPoint(x: frame.maxX - 24, y: frame.maxY - 24),
+            CGPoint(x: frame.midX, y: frame.midY)
+        ]
+        var badgeCenter = candidates[0]
+        for candidate in candidates {
+            if !windowsInFront.contains(where: { $0.frame.contains(candidate) }) {
+                badgeCenter = candidate
+                break
+            }
+        }
+
+        context.saveGState()
+        context.setShadow(offset: CGSize(width: 0, height: 2), blur: 6, color: CGColor(gray: 0, alpha: 0.4))
+        let badgeRect = CGRect(x: badgeCenter.x - 12, y: badgeCenter.y - 12, width: 24, height: 24)
+        context.setFillColor(CGColor(srgbRed: 0.04, green: 0.52, blue: 1.0, alpha: 1.0))
+        context.fillEllipse(in: badgeRect)
+
+        context.setStrokeColor(CGColor(gray: 1, alpha: 0.95))
+        context.setLineWidth(1.5)
+        context.strokeEllipse(in: badgeRect)
+        context.restoreGState()
+
+        context.saveGState()
+        context.setStrokeColor(CGColor(gray: 1, alpha: 1.0))
+        context.setLineWidth(2.2)
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        context.beginPath()
+        context.move(to: CGPoint(x: badgeCenter.x - 5, y: badgeCenter.y))
+        context.addLine(to: CGPoint(x: badgeCenter.x - 1.5, y: badgeCenter.y + 3.5))
+        context.addLine(to: CGPoint(x: badgeCenter.x + 5, y: badgeCenter.y - 3.5))
+        context.strokePath()
+        context.restoreGState()
     }
 
     private func drawGhost(_ context: CGContext, rect: CGRect) {
@@ -1487,11 +1787,14 @@ private final class ScreenshotOverlayView: NSView {
         guard let sample = image.cropping(to: source) else { return }
 
         let side = ScreenshotSupport.captureLoupeFrameSide
-        let infoHeight: CGFloat = 24
-        let infoGap: CGFloat = 6
+        let gap: CGFloat = 6
+        let coordHeight: CGFloat = 22
+        let colorHeight: CGFloat = 24
+        let totalHeight = side + gap + coordHeight + gap + colorHeight
+
         let block = captureLoupeFrame(
             near: point,
-            size: CGSize(width: side, height: side + infoGap + infoHeight))
+            size: CGSize(width: side, height: totalHeight))
         let frame = CGRect(x: block.minX, y: block.minY, width: side, height: side)
         let path = CGPath(roundedRect: frame,
                           cornerWidth: 9,
@@ -1512,10 +1815,7 @@ private final class ScreenshotOverlayView: NSView {
         context.draw(sample, in: flippedFrame)
         context.restoreGState()
 
-        // A ring around the target pixel rather than lines through it: the
-        // ring sits just outside the pixel so the sample keeps its own color
-        // (issue #755), and the pixel grid underneath makes each
-        // magnified cell read as the single screen pixel it is.
+        // Reticle
         let target = ScreenshotSupport.captureLoupeTargetPixelRect(
             around: pixelPoint,
             source: source,
@@ -1523,8 +1823,6 @@ private final class ScreenshotOverlayView: NSView {
         let ring = target.insetBy(dx: -1, dy: -1)
         let reticle = CGMutablePath()
         reticle.addRect(ring)
-        // Arms still carry the eye in from the frame edges, which is what the
-        // selection tools aim with, and stop before they reach the pixel.
         let arms = [
             (CGPoint(x: ring.midX, y: frame.minY), CGPoint(x: ring.midX, y: ring.minY)),
             (CGPoint(x: ring.midX, y: ring.maxY), CGPoint(x: ring.midX, y: frame.maxY)),
@@ -1560,13 +1858,22 @@ private final class ScreenshotOverlayView: NSView {
         context.strokePath()
         context.restoreGState()
 
-        drawLoupeInfo(context,
-                      in: CGRect(x: frame.minX,
-                                 y: frame.maxY + infoGap,
-                                 width: frame.width,
-                                 height: infoHeight),
-                      image: image,
-                      pixelPoint: pixelPoint)
+        // 2. Coordinate box stacked vertically
+        let coordRect = CGRect(x: block.minX,
+                               y: frame.maxY + gap,
+                               width: side,
+                               height: coordHeight)
+        drawLoupeCoordinateBox(context, in: coordRect, at: point)
+
+        // 3. Color box stacked vertically (fixed width)
+        let colorRect = CGRect(x: block.minX,
+                               y: coordRect.maxY + gap,
+                               width: side,
+                               height: colorHeight)
+        drawLoupeColorBox(context,
+                          in: colorRect,
+                          image: image,
+                          pixelPoint: pixelPoint)
     }
 
     /// Pixel grid: a faint line between every pair of sampled
@@ -1600,16 +1907,59 @@ private final class ScreenshotOverlayView: NSView {
         return (QuickToolsSupport.sampledColor(in: image, x: x, y: y), point)
     }
 
-    /// Readout bar under the magnifier: a swatch of the pixel under the
-    /// pointer, its value in the same format C would copy, and its position
-    /// in display pixels.
-    private func drawLoupeInfo(_ context: CGContext,
-                               in rect: CGRect,
-                               image: CGImage,
-                               pixelPoint: CGPoint) {
+    private func drawLoupeCoordinateBox(_ context: CGContext, in rect: CGRect, at point: CGPoint) {
+        let path = CGPath(roundedRect: rect, cornerWidth: 6, cornerHeight: 6, transform: nil)
+        context.saveGState()
+        context.addPath(path)
+        context.setFillColor(CGColor(gray: 0.08, alpha: 0.90))
+        context.fillPath()
+        context.addPath(path)
+        context.setStrokeColor(CGColor(gray: 1, alpha: 0.14))
+        context.setLineWidth(1)
+        context.strokePath()
+        context.restoreGState()
+
+        let text = "X: \(Int(point.x))   Y: \(Int(point.y))"
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 10.5, weight: .semibold),
+            .foregroundColor: NSColor.white,
+        ]
+        let textSize = text.size(withAttributes: attributes)
+        text.draw(at: CGPoint(x: rect.midX - textSize.width / 2,
+                              y: rect.midY - textSize.height / 2),
+                  withAttributes: attributes)
+    }
+
+    private func drawLoupeColorBox(_ context: CGContext,
+                                   in rect: CGRect,
+                                   image: CGImage,
+                                   pixelPoint: CGPoint) {
+        let path = CGPath(roundedRect: rect, cornerWidth: 7, cornerHeight: 7, transform: nil)
+        context.saveGState()
+        context.addPath(path)
+        context.setFillColor(CGColor(gray: 0.08, alpha: 0.90))
+        context.fillPath()
+        context.addPath(path)
+        context.setStrokeColor(CGColor(gray: 1, alpha: 0.14))
+        context.setLineWidth(1)
+        context.strokePath()
+        context.restoreGState()
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 10.5, weight: .semibold),
+            .foregroundColor: NSColor.white,
+        ]
+
+        if let copiedValue {
+            let text = "✓ \(copiedValue)"
+            let size = text.size(withAttributes: attributes)
+            text.draw(at: CGPoint(x: rect.midX - size.width / 2,
+                                  y: rect.midY - size.height / 2),
+                      withAttributes: attributes)
+            return
+        }
+
         let sample = loupePixelColor(in: image, at: pixelPoint)
-        let x = Int(sample.point.x)
-        let y = Int(sample.point.y)
         var swatch: NSColor?
         var value = ""
         if let color = sample.color,
@@ -1617,39 +1967,26 @@ private final class ScreenshotOverlayView: NSView {
             swatch = srgb
             value = ColorSamplerService.shared.formattedValue(color) ?? ""
         }
-        let text: String
-        if let copiedValue {
-            text = "✓ \(copiedValue)"
-        } else {
-            text = value.isEmpty ? "\(x), \(y)" : "\(value)   \(x), \(y)"
-        }
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 10.5, weight: .semibold),
-            .foregroundColor: NSColor.white,
-        ]
-        let textSize = text.size(withAttributes: attributes)
-        let swatchSide: CGFloat = swatch == nil ? 0 : 12
-        let swatchGap: CGFloat = swatch == nil ? 0 : 7
-        let contentWidth = swatchSide + swatchGap + textSize.width
-        let barWidth = min(max(contentWidth + 20, rect.width), bounds.width - 12)
-        var bar = CGRect(x: rect.midX - barWidth / 2,
-                         y: rect.minY,
-                         width: barWidth,
-                         height: rect.height)
-        bar.origin.x = min(max(bar.origin.x, bounds.minX + 6),
-                           bounds.maxX - bar.width - 6)
-        let path = CGPath(roundedRect: bar, cornerWidth: 7, cornerHeight: 7,
-                          transform: nil)
-        context.saveGState()
-        context.addPath(path)
-        context.setFillColor(CGColor(gray: 0, alpha: 0.72))
-        context.fillPath()
-        context.restoreGState()
 
-        var cursor = bar.minX + (bar.width - contentWidth) / 2
+        let valueSize = value.size(withAttributes: attributes)
+        let swatchSide: CGFloat = swatch == nil ? 0 : 12
+        let swatchGap: CGFloat = 6
+        let tabText = "tab"
+        let tabAttributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 9, weight: .semibold),
+            .foregroundColor: NSColor(white: 0.9, alpha: 0.95),
+        ]
+        let tabTextSize = tabText.size(withAttributes: tabAttributes)
+        let tabBadgeWidth = tabTextSize.width + 6
+        let tabBadgeHeight: CGFloat = 13
+        let gapToTab: CGFloat = 8
+
+        let contentWidth = swatchSide + swatchGap + valueSize.width + gapToTab + tabBadgeWidth
+        var cursor = rect.midX - contentWidth / 2
+
         if let swatch {
             let swatchRect = CGRect(x: cursor,
-                                    y: bar.midY - swatchSide / 2,
+                                    y: rect.midY - swatchSide / 2,
                                     width: swatchSide,
                                     height: swatchSide)
             context.saveGState()
@@ -1661,8 +1998,25 @@ private final class ScreenshotOverlayView: NSView {
             context.restoreGState()
             cursor += swatchSide + swatchGap
         }
-        text.draw(at: CGPoint(x: cursor, y: bar.midY - textSize.height / 2),
-                  withAttributes: attributes)
+
+        value.draw(at: CGPoint(x: cursor, y: rect.midY - valueSize.height / 2),
+                   withAttributes: attributes)
+        cursor += valueSize.width + gapToTab
+
+        let tabBadgeRect = CGRect(x: cursor,
+                                  y: rect.midY - tabBadgeHeight / 2,
+                                  width: tabBadgeWidth,
+                                  height: tabBadgeHeight)
+        let tabPath = CGPath(roundedRect: tabBadgeRect, cornerWidth: 3, cornerHeight: 3, transform: nil)
+        context.saveGState()
+        context.addPath(tabPath)
+        context.setFillColor(CGColor(gray: 1, alpha: 0.16))
+        context.fillPath()
+        context.restoreGState()
+
+        tabText.draw(at: CGPoint(x: tabBadgeRect.midX - tabTextSize.width / 2,
+                                 y: tabBadgeRect.midY - tabTextSize.height / 2),
+                     withAttributes: tabAttributes)
     }
 
     private func captureLoupeFrame(near point: CGPoint, size: CGSize) -> CGRect {
@@ -1713,6 +2067,7 @@ private final class FullScreenControlHoverRelay {
 private final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
     var passesThrough = true
     var acceptsFirstClick = false
+    var isHovered = false
     /// Capture actions remain clickable while the Dynamic Island panel owns
     /// key focus. Keep that policy attached to the interactive host itself so
     /// a caller cannot accidentally forget one half of the setup.
@@ -1725,7 +2080,18 @@ private final class PassThroughHostingView<Content: View>: NSHostingView<Content
         acceptsFirstClick || super.acceptsFirstMouse(for: event)
     }
     override func hitTest(_ point: NSPoint) -> NSView? {
-        passesThrough ? nil : super.hitTest(point)
+        guard !passesThrough else { return nil }
+        if !isHovered {
+            return nil
+        }
+        return super.hitTest(point)
+    }
+    override func resetCursorRects() {
+        discardCursorRects()
+        addCursorRect(bounds, cursor: .crosshair)
+    }
+    override func cursorUpdate(with event: NSEvent) {
+        NSCursor.crosshair.set()
     }
 }
 
@@ -1747,6 +2113,7 @@ private struct FullScreenCaptureButton: View {
                 .contentShape(Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
+        .focusable(false)
         .foregroundStyle(.primary)
         .background(CaptureChromeBackdrop(
             material: .regularMaterial,
@@ -1798,25 +2165,46 @@ private struct CaptureChromeBackdrop<S: Shape>: View {
     }
 }
 
+final class CaptureGuideViewModel: ObservableObject {
+    @Published var offersScrollingCapture = false
+    @Published var offersRepeatLastRegion = false
+    @Published var requiresDraggedRegion = false
+    @Published var scrollingCaptureEnabled = false
+    @Published var loupeEnabled = false
+    @Published var selectedWindowsCount = 0
+    var onHoverChanged: ((Bool) -> Void)?
+    @Published var isHovered = false {
+        didSet {
+            if oldValue != isHovered {
+                onHoverChanged?(isHovered)
+            }
+        }
+    }
+}
+
 private struct CaptureGuideView: View {
     let strings: ScreenshotFeatureStrings
     let purpose: String?
-    let offersScrollingCapture: Bool
-    let offersRepeatLastRegion: Bool
-    let requiresDraggedRegion: Bool
-    let scrollingCaptureEnabled: Bool
-    let loupeEnabled: Bool
+    @ObservedObject var model: CaptureGuideViewModel
     let screenCaptureOptions: ScreenCaptureSelectionOptions?
+    let onFullScreen: () -> Void
+    let onToggleScrolling: () -> Void
+    let onToggleLoupe: () -> Void
+    let onRepeatLastRegion: () -> Void
+    let onToggleMode: () -> Void
+    let onCancel: () -> Void
 
     var body: some View {
         if let screenCaptureOptions {
             UnifiedCaptureGuideContent(strings: strings,
                                        options: screenCaptureOptions,
-                                       offersScrollingCapture: offersScrollingCapture,
-                                       offersRepeatLastRegion: offersRepeatLastRegion,
-                                       scrollingCaptureEnabled: scrollingCaptureEnabled,
-                                       loupeEnabled: loupeEnabled)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                       model: model,
+                                       onFullScreen: onFullScreen,
+                                       onToggleScrolling: onToggleScrolling,
+                                       onToggleLoupe: onToggleLoupe,
+                                       onRepeatLastRegion: onRepeatLastRegion,
+                                       onToggleMode: onToggleMode,
+                                       onCancel: onCancel)
                 .allowsHitTesting(true)
         } else {
             standardGuide
@@ -1824,53 +2212,67 @@ private struct CaptureGuideView: View {
     }
 
     private var standardGuide: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "viewfinder")
-                .font(.system(size: 17, weight: .semibold))
-                .symbolRenderingMode(.hierarchical)
+        HStack(spacing: 8) {
+            Button(action: onCancel) {
+                HStack(spacing: 5) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("esc")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                }
                 .foregroundStyle(.secondary)
-                .frame(width: 28, height: 28)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
+                .padding(.horizontal, 10)
+                .frame(height: 30)
+                .background(CaptureChromeBackdrop(
+                    material: .regularMaterial,
+                    shape: RoundedRectangle(cornerRadius: 14, style: .continuous)))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
+                }
+                .shadow(color: .black.opacity(0.18), radius: 12, y: 5)
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+
+            HStack(spacing: 7) {
                 Text(subtitle)
-                    .font(.system(size: 11))
+                    .font(.system(size: 10.5, weight: .medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                CaptureKeyHint(key: "X",
+                               icon: "rectangle.dashed",
+                               isEnabled: model.offersRepeatLastRegion,
+                               action: model.offersRepeatLastRegion ? onRepeatLastRegion : nil)
+                CaptureKeyHint(key: "F", icon: "rectangle.inset.filled", action: onFullScreen)
+                if model.offersScrollingCapture {
+                    CaptureKeyHint(key: "S",
+                                   icon: "rectangle.stack",
+                                   isActive: model.scrollingCaptureEnabled,
+                                   action: onToggleScrolling)
+                }
+                CaptureKeyHint(key: "Z",
+                               icon: "plus.magnifyingglass",
+                               isActive: model.loupeEnabled,
+                               action: onToggleLoupe)
             }
-            Spacer(minLength: 8)
-            HStack(spacing: 7) {
-                if !requiresDraggedRegion && !scrollingCaptureEnabled {
-                    CaptureKeyHint(key: "↩", icon: "rectangle.inset.filled")
-                }
-                if offersScrollingCapture {
-                    CaptureKeyHint(key: scrollingCaptureEnabled ? "S on" : "S",
-                                   icon: "rectangle.stack")
-                }
-                CaptureKeyHint(key: loupeEnabled ? "Z on" : "Z",
-                               icon: "plus.magnifyingglass")
-                if loupeEnabled {
-                    CaptureKeyHint(key: "C", icon: "doc.on.doc")
-                }
-                if offersRepeatLastRegion {
-                    CaptureKeyHint(key: "R", icon: "rectangle.dashed")
-                }
-                CaptureKeyHint(key: "esc", icon: "xmark")
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .background(CaptureChromeBackdrop(material: .ultraThinMaterial,
+                                              shape: Capsule(style: .continuous)))
+            .overlay {
+                Capsule(style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
             }
+            .shadow(color: .black.opacity(0.16), radius: 10, y: 4)
+            .contentShape(Capsule(style: .continuous))
+            .onTapGesture {}
         }
-        .padding(.horizontal, 14)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(CaptureChromeBackdrop(
-            material: .regularMaterial,
-            shape: RoundedRectangle(cornerRadius: 16, style: .continuous)))
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
+        .onHover { hovering in
+            model.isHovered = hovering
         }
-        .shadow(color: .black.opacity(0.22), radius: 18, y: 7)
-        .allowsHitTesting(false)
+        .allowsHitTesting(true)
     }
 
     private var title: String {
@@ -1879,73 +2281,136 @@ private struct CaptureGuideView: View {
     }
 
     private var subtitle: String {
-        let base = requiresDraggedRegion || scrollingCaptureEnabled
-            ? strings.scrollingCaptureSelectionHint
-            : purpose?.isEmpty == false
-            ? strings.hintDrag + "  ·  " + strings.hintClick
-            : strings.hintClick
-        guard offersScrollingCapture else { return base }
-        let scrolling = scrollingCaptureEnabled
-            ? strings.scrollingCaptureHintOn
-            : strings.scrollingCaptureHintOff
-        return base + "  ·  " + scrolling
+        if model.selectedWindowsCount > 0 {
+            return "\(model.selectedWindowsCount) window\(model.selectedWindowsCount == 1 ? "" : "s") selected  ·  Release Shift to capture"
+        }
+        return strings.hintDrag + "  ·  " + strings.hintClick
     }
-
 }
 
 private struct UnifiedCaptureGuideContent: View {
     let strings: ScreenshotFeatureStrings
     @ObservedObject var options: ScreenCaptureSelectionOptions
     @ObservedObject private var l10n = L10n.shared
-    let offersScrollingCapture: Bool
-    let offersRepeatLastRegion: Bool
-    let scrollingCaptureEnabled: Bool
-    let loupeEnabled: Bool
-    @State private var hoveredTool: ScreenCaptureTool?
+    @ObservedObject var model: CaptureGuideViewModel
+    let onFullScreen: () -> Void
+    let onToggleScrolling: () -> Void
+    let onToggleLoupe: () -> Void
+    let onRepeatLastRegion: () -> Void
+    let onToggleMode: () -> Void
+    let onCancel: () -> Void
+
+    @State private var isTopHovered = false
+    @State private var isEscapeHovered = false
+    @State private var isGuideHovered = false
+    @State private var isModeHovered = false
+
+    private func updateHover() {
+        model.isHovered = isTopHovered || isEscapeHovered || isGuideHovered || isModeHovered
+    }
+
+    private var isMultiWindowMode: Bool { model.selectedWindowsCount > 0 }
 
     var body: some View {
         VStack(spacing: 8) {
-            if options.showsCaptureMenu {
-                HStack(spacing: 8) {
-                    captureModePalette
-                    escapeHint
+            Spacer(minLength: 0)
+            topControlBar
+                .onHover { hovering in
+                    isTopHovered = hovering
+                    updateHover()
                 }
-            }
             HStack(spacing: 8) {
+                escapeHint
+                    .onHover { hovering in
+                        isEscapeHovered = hovering
+                        updateHover()
+                    }
                 contextualGuide
-                if !options.showsCaptureMenu {
-                    escapeHint
-                }
+                    .onHover { hovering in
+                        isGuideHovered = hovering
+                        updateHover()
+                    }
+                modeSwitchHint
+                    .onHover { hovering in
+                        isModeHovered = hovering
+                        updateHover()
+                    }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var topControlBar: some View {
+        if options.selectedTool == .recording {
             RecorderSelectionAudioControls(options: options.recorderAudio)
                 .opacity(options.selectedTool == .recording ? 1 : 0)
                 .allowsHitTesting(options.selectedTool == .recording)
                 .accessibilityHidden(options.selectedTool != .recording)
+        } else if model.offersScrollingCapture && options.selectedTool == .screenshot {
+            scrollToggleBar
         }
     }
 
+    private var scrollToggleBar: some View {
+        let isEnabled = !isMultiWindowMode
+        return Button(action: onToggleScrolling) {
+            HStack(spacing: 6) {
+                Image(systemName: "rectangle.stack")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("Scroll")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .foregroundStyle(
+                !isEnabled
+                    ? Color.secondary.opacity(0.4)
+                    : (model.scrollingCaptureEnabled ? Color.white : Color.primary)
+            )
+            .padding(.horizontal, 12)
+            .frame(height: 26)
+            .background(
+                !isEnabled
+                    ? Color.primary.opacity(0.02)
+                    : (model.scrollingCaptureEnabled ? Color.accentColor : Color.primary.opacity(0.06)),
+                in: Capsule(style: .continuous)
+            )
+            .overlay {
+                if isEnabled && model.scrollingCaptureEnabled {
+                    Capsule(style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .disabled(!isEnabled)
+        .padding(3)
+        .background(CaptureChromeBackdrop(material: .regularMaterial,
+                                          shape: Capsule(style: .continuous)))
+        .overlay {
+            Capsule(style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.16), radius: 10, y: 4)
+    }
+
     private var contextualGuide: some View {
-        HStack(spacing: 7) {
-            Text(subtitle)
-                .font(.system(size: 10.5, weight: .medium))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-            CaptureKeyHint(key: "1–4", icon: "keyboard")
+        let isEnabled = !isMultiWindowMode
+        return HStack(spacing: 7) {
+            subtitleView
             if options.selectedTool != .color {
-                CaptureKeyHint(key: "↩", icon: "rectangle.inset.filled")
-                if offersScrollingCapture, options.selectedTool == .screenshot {
-                    CaptureKeyHint(key: scrollingCaptureEnabled ? "S on" : "S",
-                                   icon: "rectangle.stack")
-                }
-                CaptureKeyHint(key: loupeEnabled ? "Z on" : "Z",
-                               icon: "plus.magnifyingglass")
-                if loupeEnabled {
-                    CaptureKeyHint(key: "C", icon: "doc.on.doc")
-                }
-                if offersRepeatLastRegion {
-                    CaptureKeyHint(key: "R", icon: "rectangle.dashed")
-                }
+                CaptureKeyHint(key: "X",
+                               icon: "rectangle.dashed",
+                               isEnabled: model.offersRepeatLastRegion && isEnabled,
+                               action: model.offersRepeatLastRegion && isEnabled ? onRepeatLastRegion : nil)
+                CaptureKeyHint(key: "F",
+                               icon: "rectangle.inset.filled",
+                               isEnabled: isEnabled,
+                               action: isEnabled ? onFullScreen : nil)
+                CaptureKeyHint(key: "Z",
+                               icon: "plus.magnifyingglass",
+                               isActive: model.loupeEnabled,
+                               isEnabled: isEnabled,
+                               action: isEnabled ? onToggleLoupe : nil)
             }
         }
         .padding(.horizontal, 10)
@@ -1957,110 +2422,112 @@ private struct UnifiedCaptureGuideContent: View {
                 .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.16), radius: 10, y: 4)
+        .contentShape(Capsule(style: .continuous))
+        .onTapGesture {
+            // Absorb clicks on the bar text / background so it doesn't start a drag or hide the tab
+        }
     }
 
     private var escapeHint: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "xmark")
-                .font(.system(size: 10, weight: .bold))
-            Text("esc")
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-        }
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 10)
-        .frame(height: options.showsCaptureMenu ? 56 : 30)
-        .background(CaptureChromeBackdrop(
-            material: .regularMaterial,
-            shape: RoundedRectangle(cornerRadius: 14, style: .continuous)))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.18), radius: 12, y: 5)
-    }
-
-    private var captureModePalette: some View {
-        HStack(spacing: 2) {
-            ForEach(options.availableTools, id: \.self) { tool in
-                captureModeButton(tool)
+        Button(action: onCancel) {
+            HStack(spacing: 5) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                Text("esc")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
             }
-        }
-        .padding(4)
-        .background(CaptureChromeBackdrop(
-            material: .regularMaterial,
-            shape: RoundedRectangle(cornerRadius: 14, style: .continuous)))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.18), radius: 12, y: 5)
-    }
-
-    private func captureModeButton(_ tool: ScreenCaptureTool) -> some View {
-        let selected = options.selectedTool == tool
-        let hovered = hoveredTool == tool
-        let title = tool.settingsTitle(l10n.s, language: l10n.language)
-        return Button {
-            withAnimation(.easeOut(duration: 0.16)) {
-                options.select(tool)
-            }
-        } label: {
-            VStack(spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(tool.shortcutKey)
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .foregroundStyle(selected ? Color.white : Color.primary)
-                        .frame(width: 19, height: 19)
-                        .background(selected ? Color.accentColor : Color.primary.opacity(0.11),
-                                    in: RoundedRectangle(cornerRadius: 5, style: .continuous))
-                    Image(systemName: tool.systemImageName)
-                        .font(.system(size: 13, weight: .semibold))
-                        .symbolRenderingMode(.hierarchical)
-                }
-                Text(title)
-                    .font(.system(size: 10, weight: selected ? .semibold : .medium))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
-            }
-            .foregroundStyle(selected ? Color.primary : Color.primary.opacity(0.78))
-            .frame(width: 116, height: 48)
-            .background(selected ? Color.accentColor.opacity(0.16)
-                        : Color.primary.opacity(hovered ? 0.08 : 0.035),
-                        in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .background(CaptureChromeBackdrop(
+                material: .regularMaterial,
+                shape: RoundedRectangle(cornerRadius: 14, style: .continuous)))
             .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(Color.accentColor.opacity(selected ? 0.48 : 0), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .shadow(color: .black.opacity(0.18), radius: 12, y: 5)
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.12)) {
-                hoveredTool = hovering ? tool : nil
-            }
-        }
-        .help("\(title) (\(tool.shortcutKey))")
-        .accessibilityLabel(title)
-        .accessibilityValue(tool.shortcutKey)
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .focusable(false)
     }
 
-    private var subtitle: String {
+    private var modeSwitchHint: some View {
+        let isRecording = options.selectedTool == .recording
+        let iconName = isRecording ? "camera.viewfinder" : "record.circle"
+        let isEnabled = !isMultiWindowMode
+        return Button(action: onToggleMode) {
+            HStack(spacing: 5) {
+                Image(systemName: iconName)
+                    .font(.system(size: 11, weight: .semibold))
+                Text("R")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+            }
+            .foregroundStyle(isEnabled ? Color.secondary : Color.secondary.opacity(0.35))
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .background(CaptureChromeBackdrop(
+                material: .regularMaterial,
+                shape: RoundedRectangle(cornerRadius: 14, style: .continuous)))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(isEnabled ? 0.10 : 0.04), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(isEnabled ? 0.18 : 0.05), radius: 12, y: 5)
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .disabled(!isEnabled)
+    }
+
+    @ViewBuilder
+    private var subtitleView: some View {
         switch options.selectedTool {
         case .screenshot:
-            let base = strings.hintDrag + "  ·  " + strings.hintClick
-            guard offersScrollingCapture else { return base }
-            return base + "  ·  "
-                + (scrollingCaptureEnabled
-                   ? strings.scrollingCaptureHintOn
-                   : strings.scrollingCaptureHintOff)
+            if model.selectedWindowsCount > 0 {
+                Text("\(model.selectedWindowsCount) window\(model.selectedWindowsCount == 1 ? "" : "s") selected  ·  Release Shift to capture")
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            } else {
+                HStack(spacing: 4) {
+                    Text(strings.hintDrag)
+                        .foregroundColor(.secondary)
+                    Text("·")
+                        .foregroundColor(.secondary.opacity(0.5))
+                    Text(strings.hintClick)
+                        .foregroundColor(model.scrollingCaptureEnabled ? .secondary.opacity(0.35) : .secondary)
+                }
+                .font(.system(size: 10.5, weight: .medium))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+            }
         case .recording:
-            return FeatureStrings.recorder(l10n.language).selectionPurpose
-                + "  ·  " + strings.hintDrag + "  ·  " + strings.hintClick
+            let clickText = l10n.language == .enUS ? "Click to record window" : strings.hintClick
+            HStack(spacing: 4) {
+                Text(strings.hintDrag)
+                    .foregroundColor(.secondary)
+                Text("·")
+                    .foregroundColor(.secondary.opacity(0.5))
+                Text(clickText)
+                    .foregroundColor(.secondary)
+            }
+            .font(.system(size: 10.5, weight: .medium))
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
         case .text:
-            return l10n.s.ocrCaption
+            Text(l10n.s.ocrCaption)
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
         case .color:
-            return l10n.s.colorPickerCaption
+            Text(l10n.s.colorPickerCaption)
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
         }
     }
 }
@@ -2068,19 +2535,50 @@ private struct UnifiedCaptureGuideContent: View {
 private struct CaptureKeyHint: View {
     let key: String
     let icon: String
+    var isActive: Bool = false
+    var isEnabled: Bool = true
+    var action: (() -> Void)? = nil
+    @State private var isHovered = false
 
     var body: some View {
-        HStack(spacing: 5) {
+        let content = HStack(spacing: 5) {
             Image(systemName: icon)
                 .font(.system(size: 10, weight: .semibold))
             Text(key)
                 .font(.system(size: 10, weight: .semibold, design: .rounded))
         }
-        .foregroundStyle(.secondary)
+        .foregroundStyle(
+            !isEnabled
+                ? Color.secondary.opacity(0.4)
+                : (isActive ? Color.white : (isHovered && action != nil ? Color.primary : Color.secondary))
+        )
         .padding(.horizontal, 8)
-        .frame(height: 26)
-        .background(Color.primary.opacity(0.06),
-                    in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .frame(height: 24)
+        .background(
+            !isEnabled
+                ? Color.primary.opacity(0.02)
+                : (isActive
+                    ? Color.accentColor
+                    : Color.primary.opacity(isHovered && action != nil ? 0.12 : 0.06)),
+            in: Capsule(style: .continuous)
+        )
+        .overlay {
+            if isEnabled && isActive {
+                Capsule(style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
+            }
+        }
+
+        if isEnabled, let action {
+            Button(action: action) {
+                content
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .onHover { isHovered = $0 }
+        } else {
+            content
+        }
     }
 }
 
@@ -2091,18 +2589,64 @@ private struct RecorderSelectionAudioControls: View {
     private var strings: RecorderFeatureStrings { FeatureStrings.recorder(l10n.language) }
 
     var body: some View {
-        HStack(spacing: 8) {
-            Toggle(isOn: $options.systemAudio) {
-                Label(strings.systemAudioTrackLabel, systemImage: "speaker.wave.2.fill")
+        HStack(spacing: 6) {
+            Button {
+                options.systemAudio.toggle()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text(strings.systemAudioTrackLabel)
+                        .font(.system(size: 10.5, weight: .medium))
+                }
+                .foregroundStyle(options.systemAudio ? Color.white : Color.secondary)
+                .padding(.horizontal, 10)
+                .frame(height: 26)
+                .background(
+                    options.systemAudio
+                        ? Color.accentColor
+                        : Color.primary.opacity(0.06),
+                    in: Capsule(style: .continuous)
+                )
+                .overlay {
+                    if options.systemAudio {
+                        Capsule(style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
+                    }
+                }
             }
-            Toggle(isOn: $options.microphone) {
-                Label(strings.microphoneTrackLabel, systemImage: "mic.fill")
+            .buttonStyle(.plain)
+            .focusable(false)
+
+            Button {
+                options.microphone.toggle()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text(strings.microphoneTrackLabel)
+                        .font(.system(size: 10.5, weight: .medium))
+                }
+                .foregroundStyle(options.microphone ? Color.white : Color.secondary)
+                .padding(.horizontal, 10)
+                .frame(height: 26)
+                .background(
+                    options.microphone
+                        ? Color.accentColor
+                        : Color.primary.opacity(0.06),
+                    in: Capsule(style: .continuous)
+                )
+                .overlay {
+                    if options.microphone {
+                        Capsule(style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
+                    }
+                }
             }
+            .buttonStyle(.plain)
+            .focusable(false)
         }
-        .toggleStyle(.button)
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .padding(4)
+        .padding(3)
         .background(CaptureChromeBackdrop(material: .regularMaterial,
                                           shape: Capsule(style: .continuous)))
         .overlay {
