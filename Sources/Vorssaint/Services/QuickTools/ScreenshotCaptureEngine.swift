@@ -238,6 +238,91 @@ enum ScreenshotCaptureEngine {
         return try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
     }
 
+    /// Captures multiple selected windows together into a single composited image,
+    /// cropping to the union bounds of the windows.
+    static func captureMultipleWindows(_ windowIDs: [CGWindowID],
+                                       scale: CGFloat) async -> (image: CGImage, scale: CGFloat)? {
+        guard !windowIDs.isEmpty else { return nil }
+        if windowIDs.count == 1, let single = windowIDs.first {
+            return await captureWindow(single, scale: scale)
+        }
+
+        let onScreen = onScreenWindows()
+        // If all windows belong to one display, attempt ScreenCaptureKit filter
+        if let content = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true) {
+            let scWindows = windowIDs.compactMap { id in content.windows.first { $0.windowID == id } }
+            if scWindows.count == windowIDs.count {
+                var unionBounds = scWindows[0].frame
+                for w in scWindows.dropFirst() {
+                    unionBounds = unionBounds.union(w.frame)
+                }
+                let hits = content.displays.filter { $0.frame.intersects(unionBounds) }
+                if hits.count == 1,
+                   let display = hits.first {
+                    let filter = SCContentFilter(display: display, including: scWindows)
+                    let configuration = SCStreamConfiguration()
+                    let pixelScale = CGFloat(filter.pointPixelScale)
+                    let sourceRect = CGRect(
+                        x: max(0, unionBounds.minX - display.frame.minX),
+                        y: max(0, unionBounds.minY - display.frame.minY),
+                        width: min(unionBounds.width, CGFloat(display.width)),
+                        height: min(unionBounds.height, CGFloat(display.height)))
+                    configuration.sourceRect = sourceRect
+                    configuration.width = max(1, Int((sourceRect.width * pixelScale).rounded()))
+                    configuration.height = max(1, Int((sourceRect.height * pixelScale).rounded()))
+                    configuration.showsCursor = false
+                    configuration.colorSpaceName = CGColorSpace.sRGB
+                    if let displayImage = try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration) {
+                        return (displayImage, pixelScale)
+                    }
+                }
+            }
+        }
+
+        // Fallback: Composite each window onto a shared canvas
+        var windowFrames: [CGWindowID: CGRect] = [:]
+        for id in windowIDs {
+            if let target = onScreen.first(where: { $0.id == id }) {
+                windowFrames[id] = target.frame
+            } else if let b = windowBounds(id) {
+                windowFrames[id] = b
+            }
+        }
+        guard !windowFrames.isEmpty else { return nil }
+        var unionBounds = windowFrames.values.first!
+        for frame in windowFrames.values.dropFirst() {
+            unionBounds = unionBounds.union(frame)
+        }
+
+        let sortedIDs = onScreen.filter { windowIDs.contains($0.id) }.reversed().map(\.id)
+        let orderedIDs = sortedIDs.isEmpty ? windowIDs : sortedIDs
+
+        var layers: [(image: CGImage, frame: CGRect)] = []
+        for id in orderedIDs {
+            guard let frame = windowFrames[id] else { continue }
+            if let (img, _) = await captureWindow(id, scale: scale) {
+                layers.append((img, frame))
+            } else if let img = await WindowPreviewProvider.captureViaWindowServer(id) {
+                layers.append((img, frame))
+            }
+        }
+        guard !layers.isEmpty else { return nil }
+
+        let width = max(1, Int((unionBounds.width * scale).rounded()))
+        let height = max(1, Int((unionBounds.height * scale).rounded()))
+        guard let context = CGContext(data: nil, width: width, height: height,
+                                      bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.interpolationQuality = .high
+        for layer in layers {
+            context.draw(layer.image, in: ScreenshotCapturePolicy.compositeRect(
+                for: layer.frame, in: unionBounds, scale: scale))
+        }
+        return context.makeImage().map { ($0, scale) }
+    }
+
     /// On-screen windows front to back, as the attached-window decision needs
     /// them. Ordinary layer-zero windows only, so a menu or the Dock cannot
     /// read as something stacked on the clicked window.
