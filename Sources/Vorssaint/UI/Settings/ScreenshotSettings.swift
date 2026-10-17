@@ -81,6 +81,7 @@ struct ScreenshotSettings: View {
                                              enabledKey: DefaultsKey.screenshotUploadShortcutEnabled) {
                     ScreenshotService.shared.syncWithPreferences()
                 }
+                .disabled(!sharingEnabled)
                 CompactShortcutPreferenceRow(title: l10n.s.ocrName,
                                              role: .screenOCR,
                                              enabledKey: DefaultsKey.screenOCRShortcutEnabled) {
