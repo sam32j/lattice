@@ -32,11 +32,27 @@ enum ScreenshotRenderer {
     static func textBounds(_ text: String,
                            at origin: CGPoint,
                            textSize: Int,
-                           scale: CGFloat) -> CGRect {
+                           scale: CGFloat,
+                           boundingWidth: CGFloat? = nil) -> CGRect {
         let font = NSFont.systemFont(ofSize: fontSize(for: textSize, scale: scale), weight: .semibold)
-        let measured = (text.isEmpty ? " " : text).size(withAttributes: [.font: font])
+        let sample = text.isEmpty ? " " : text
+        if let boundingWidth, boundingWidth > 30 {
+            let rect = (sample as NSString).boundingRect(
+                with: CGSize(width: boundingWidth - 4, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                attributes: [.font: font])
+            return CGRect(origin: origin,
+                          size: CGSize(width: boundingWidth, height: max(ceil(rect.height) + 4, ceil(font.pointSize) + 4)))
+        }
+        let lines = sample.components(separatedBy: "\n")
+        let maxLineWidth = lines.map { ($0 as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
+        let rect = (sample as NSString).boundingRect(
+            with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font])
+        let width = max(ceil(maxLineWidth) + 6, ceil(rect.width) + 6)
         return CGRect(origin: origin,
-                      size: CGSize(width: ceil(measured.width) + 4, height: ceil(measured.height)))
+                      size: CGSize(width: width, height: max(ceil(rect.height) + 2, ceil(font.pointSize) + 4)))
     }
 
     // MARK: - Annotation pass
@@ -86,8 +102,17 @@ enum ScreenshotRenderer {
                              shadowsEnabled: annotationShadowsEnabled)
             case .text:
                 if annotation.id != editingID {
-                    drawText(annotation, in: context, scale: scale,
-                             shadowsEnabled: annotationShadowsEnabled)
+                    if annotation.text.isEmpty {
+                        context.saveGState()
+                        context.setStrokeColor(color(annotation.color))
+                        context.setLineWidth(1 * scale)
+                        context.setLineDash(phase: 0, lengths: [4 * scale, 4 * scale])
+                        context.stroke(annotation.rect)
+                        context.restoreGState()
+                    } else {
+                        drawText(annotation, in: context, scale: scale,
+                                 shadowsEnabled: annotationShadowsEnabled)
+                    }
                 }
             case .sticker:
                 drawSticker(annotation, in: context, scale: scale,
@@ -221,8 +246,14 @@ enum ScreenshotRenderer {
         // NSAttributedString draws in an unflipped space; flip locally.
         let previous = NSGraphicsContext.current
         NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: true)
-        annotation.text.draw(at: CGPoint(x: annotation.rect.minX + 2, y: annotation.rect.minY),
-                             withAttributes: attributes)
+        let rect = CGRect(x: annotation.rect.minX + 2,
+                          y: annotation.rect.minY,
+                          width: max(annotation.rect.width, 10),
+                          height: max(annotation.rect.height, 10))
+        (annotation.text as NSString).draw(
+            with: rect,
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: attributes)
         NSGraphicsContext.current = previous
         context.restoreGState()
     }
