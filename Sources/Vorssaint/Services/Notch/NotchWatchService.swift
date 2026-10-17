@@ -325,6 +325,7 @@ final class NotchWatchService: ObservableObject {
             switch ScreenTextService.outcome(for: source, detectQRCodes: false, removeLineBreaks: false,
                                              fallbackLanguages: languages) {
             case .text(let text): return (area, text)
+            case .both(_, let text): return (area, text)
             case .qr, .empty: return (area, "")
             }
         }.value
