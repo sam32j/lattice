@@ -5,35 +5,7 @@ import AppKit
 import Carbon.HIToolbox
 import SwiftUI
 
-@MainActor
-final class ToolShortcutCoordinator: ObservableObject {
-    static let shared = ToolShortcutCoordinator()
-    @Published var activeTool: ScreenshotSupport.Tool?
-
-    func startRecording(tool: ScreenshotSupport.Tool) {
-        if activeTool != tool {
-            if activeTool != nil {
-                ShortcutCapture.end()
-            }
-            activeTool = tool
-            ShortcutCapture.begin()
-        }
-    }
-
-    func stopRecording(tool: ScreenshotSupport.Tool? = nil) {
-        if let tool {
-            if activeTool == tool {
-                activeTool = nil
-                ShortcutCapture.end()
-            }
-        } else {
-            if activeTool != nil {
-                activeTool = nil
-                ShortcutCapture.end()
-            }
-        }
-    }
-}
+typealias ToolShortcutCoordinator = CompactShortcutCoordinator
 
 /// Controls for screenshot annotation tool shortcut assignments.
 struct ScreenshotToolOrderControls: View {
@@ -258,7 +230,10 @@ private struct ToolShortcutRecorder: View {
                     onKeyDown: { event in
                         handleKeyEvent(event)
                     },
-                    onFlagsChanged: { _ in }
+                    onFlagsChanged: { _ in },
+                    onExit: {
+                        coordinator.stopRecording(tool: tool)
+                    }
                 )
             }
         }
