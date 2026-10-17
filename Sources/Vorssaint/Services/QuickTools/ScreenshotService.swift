@@ -450,6 +450,13 @@ final class ScreenshotService: ObservableObject {
         preview?.close()
         RecentCaptureService.shared.recordScreenshot(capture)
         let defaults = UserDefaults.standard
+        if defaults.bool(forKey: DefaultsKey.screenshotPlayShutterSound) {
+            if let sound = NSSound(contentsOfFile: "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/SystemSounds/system/Screen Capture.aif", byReference: true) {
+                sound.play()
+            } else {
+                NSSound(named: "Shutter")?.play()
+            }
+        }
         if defaults.bool(forKey: DefaultsKey.screenshotCopyToClipboard) {
             autoCopy(capture)
         }
@@ -538,6 +545,17 @@ final class ScreenshotService: ObservableObject {
                        completedActions: [],
                        dismissInterval: ScreenshotSupport.recoveryPreviewDismissInterval,
                        latestCapture: nil)
+    }
+
+    /// Re-opens the Quick View preview window from a pinned image.
+    func reopenPreview(image: CGImage, scale: CGFloat) {
+        let capture = ScreenshotSelectionController.Capture(
+            image: image,
+            scale: scale,
+            anchorRect: CGRect(origin: .zero, size: CGSize(width: CGFloat(image.width) / scale,
+                                                           height: CGFloat(image.height) / scale))
+        )
+        restorePreview(capture)
     }
 
     private func presentPreview(_ capture: ScreenshotSelectionController.Capture,

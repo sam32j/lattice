@@ -115,6 +115,7 @@ final class ScreenCaptureService: ObservableObject {
     /// button merely picks the initial mode; the person can switch before
     /// selecting anything.
     func capture(initial preferred: ScreenCaptureTool? = nil, fromShortcut: Bool = false) {
+        NSApp.activate(ignoringOtherApps: true)
         let recorder = ScreenRecorderService.shared
         if preferred == .recording, AppFeature.screenRecorder.isAvailable,
            recorder.stopOrCancelActiveCapture() {

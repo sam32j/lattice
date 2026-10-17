@@ -1420,8 +1420,8 @@ enum ScreenshotSupport {
         /// Tools that create an annotation by dragging a rectangle.
         var dragsRect: Bool {
             switch self {
-            case .rect, .ellipse, .highlight, .pixelate, .redact: return true
-            case .select, .arrow, .line, .freehand, .text, .sticker, .counter, .crop:
+            case .rect, .ellipse, .highlight, .pixelate, .redact, .text: return true
+            case .select, .arrow, .line, .freehand, .sticker, .counter, .crop:
                 return false
             }
         }
@@ -1800,6 +1800,7 @@ enum ScreenshotSupport {
         var arrowStyle: ArrowStyleID
         var scribbleSeed: UInt64
         var number: Int
+        var isBounded: Bool
 
         init(id: UUID = UUID(),
              tool: Tool,
@@ -1814,7 +1815,8 @@ enum ScreenshotSupport {
              blurTextOnly: Bool = false,
              arrowStyle: ArrowStyleID = .filled,
              scribbleSeed: UInt64? = nil,
-             number: Int = 0) {
+             number: Int = 0,
+             isBounded: Bool = false) {
             self.id = id
             self.tool = tool
             self.rect = rect
@@ -1832,6 +1834,7 @@ enum ScreenshotSupport {
                     ? ScreenshotSupport.randomScribbleSeed()
                     : 0)
             self.number = number
+            self.isBounded = isBounded
         }
     }
 
