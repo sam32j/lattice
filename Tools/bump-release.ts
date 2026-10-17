@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Samuel Ji
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 const dryRun = process.argv.includes("--dry-run");
@@ -47,14 +47,45 @@ try {
   const conventionalRegex = /^(feat|fix|perf|refactor|docs|style|test|ci|chore)(?:\(([^)]+)\))?: (.+)$/;
 
   for (const entry of commitEntries) {
-    const [sha, subject, body] = entry.split("\x01");
+    const [sha, subject, body = ""] = entry.split("\x01");
     const match = subject.match(conventionalRegex);
     if (!match) continue;
 
     const [, type, scope, rawDesc] = match;
     const desc = rawDesc.charAt(0).toUpperCase() + rawDesc.slice(1);
     const scopePrefix = scope ? `**${formatScope(scope)}**: ` : "";
-    const item = `- ${scopePrefix}${desc}`;
+    let item = `- ${scopePrefix}${desc}`;
+
+    // Extract sub-bullets from commit body if present
+    const subBullets: string[] = [];
+    const bodyLines = body.split("\n").map(l => l.trim()).filter(Boolean);
+    for (const line of bodyLines) {
+      if (/^(Co-authored-by|Signed-off-by|Reviewed-by|Closes|Fixes|Refs|PR):/i.test(line)) {
+        continue;
+      }
+      let content = line;
+      const bulletMatch = content.match(/^[-*•]\s+(.+)$/);
+      if (bulletMatch) {
+        content = bulletMatch[1].trim();
+      } else {
+        continue;
+      }
+
+      const nestedMatch = content.match(conventionalRegex);
+      if (nestedMatch) {
+        const [, , nestedScope, nestedDesc] = nestedMatch;
+        const formattedNestedDesc = nestedDesc.charAt(0).toUpperCase() + nestedDesc.slice(1);
+        const nestedScopePrefix = nestedScope ? `**${formatScope(nestedScope)}**: ` : "";
+        subBullets.push(`  - ${nestedScopePrefix}${formattedNestedDesc}`);
+      } else {
+        const formatted = content.charAt(0).toUpperCase() + content.slice(1);
+        subBullets.push(`  - ${formatted}`);
+      }
+    }
+
+    if (subBullets.length > 0) {
+      item += "\n" + subBullets.join("\n");
+    }
 
     switch (type) {
       case "feat":
@@ -115,6 +146,15 @@ try {
   console.log(`Generated release notes for Lattice ${nextVersion}:`);
   console.log("--------------------------------------------------");
   console.log(newSection);
+
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    try {
+      appendFileSync(
+        process.env.GITHUB_STEP_SUMMARY,
+        `### Release Notes (${nextVersion})\n\n${newSection}\n`
+      );
+    } catch {}
+  }
 
   if (dryRun) {
     console.log("Dry run: no files modified.");
