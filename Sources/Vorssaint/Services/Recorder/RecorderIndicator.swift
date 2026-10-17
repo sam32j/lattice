@@ -18,6 +18,8 @@ final class RecorderIndicator {
     private var regionGuide: NSPanel?
     private let onPause: () -> Void
     private let onStop: () -> Void
+    private let onDiscard: (() -> Void)?
+    private let onStart: (() -> Void)?
 
     /// The window the capture has to leave out. Everything else this app puts
     /// on screen, the panel, the settings, the command bar, belongs in the
@@ -29,9 +31,14 @@ final class RecorderIndicator {
         }
     }
 
-    init(onPause: @escaping () -> Void, onStop: @escaping () -> Void) {
+    init(onPause: @escaping () -> Void,
+         onStop: @escaping () -> Void,
+         onDiscard: (() -> Void)? = nil,
+         onStart: (() -> Void)? = nil) {
         self.onPause = onPause
         self.onStop = onStop
+        self.onDiscard = onDiscard
+        self.onStart = onStart
     }
 
     /// Keeps the chosen area visible without trapping clicks. The panel is
@@ -86,6 +93,8 @@ final class RecorderIndicator {
         pill.stopTooltip = stopTooltip
         pill.onPause = { [weak self] in self?.onPause() }
         pill.onStop = { [weak self] in self?.onStop() }
+        pill.onDiscard = { [weak self] in self?.onDiscard?() }
+        pill.onStart = { [weak self] in self?.onStart?() }
 
         let panel = OverlayPanel(contentRect: CGRect(origin: .zero, size: PillView.size),
                                  styleMask: [.borderless, .nonactivatingPanel],
@@ -112,6 +121,10 @@ final class RecorderIndicator {
 
         self.panel = panel
         self.pill = pill
+    }
+
+    func setWaitingForStart() {
+        pill?.setWaitingForStart()
     }
 
     func update(elapsed: String) {
@@ -165,18 +178,22 @@ final class RecorderIndicator {
     // MARK: - The pill
 
     private final class PillView: NSView {
-        static let size = CGSize(width: 150, height: 32)
+        static let size = CGSize(width: 182, height: 32)
 
         var onPause: (() -> Void)?
         var onStop: (() -> Void)?
+        var onDiscard: (() -> Void)?
+        var onStart: (() -> Void)?
         var pauseTooltip = ""
         var resumeTooltip = ""
         var stopTooltip = ""
+        var isWaitingForStart = false
 
         private let dot = CALayer()
         private let label = NSTextField(labelWithString: "0:00")
         private let pauseButton = IndicatorButton()
         private let stopButton = IndicatorButton()
+        private let trashButton = IndicatorButton()
 
         override init(frame frameRect: NSRect) {
             super.init(frame: frameRect)
@@ -200,13 +217,38 @@ final class RecorderIndicator {
                       action: #selector(pausePressed))
             configure(stopButton,
                       symbol: "stop.fill",
-                      frame: CGRect(x: 116, y: 3, width: 30, height: 26),
+                      frame: CGRect(x: 114, y: 3, width: 30, height: 26),
                       action: #selector(stopPressed))
             stopButton.contentTintColor = .systemRed
+
+            configure(trashButton,
+                      symbol: "trash",
+                      frame: CGRect(x: 146, y: 3, width: 30, height: 26),
+                      action: #selector(trashPressed))
+            trashButton.contentTintColor = .white
         }
 
         @available(*, unavailable)
         required init?(coder: NSCoder) { nil }
+
+        func setWaitingForStart() {
+            isWaitingForStart = true
+            dot.removeAnimation(forKey: "pulse")
+            dot.opacity = 0.4
+            label.stringValue = "0:00"
+            pauseButton.image = symbolImage("play.fill")
+            pauseButton.toolTip = "Start recording"
+            pauseButton.setAccessibilityLabel("Start recording")
+        }
+
+        func setStarted() {
+            isWaitingForStart = false
+            dot.opacity = 1
+            addPulse()
+            pauseButton.image = symbolImage("pause.fill")
+            pauseButton.toolTip = pauseTooltip
+            pauseButton.setAccessibilityLabel(pauseTooltip)
+        }
 
         func setTime(_ text: String) {
             guard label.stringValue != text else { return }
@@ -281,15 +323,31 @@ final class RecorderIndicator {
             dot.add(pulse, forKey: "pulse")
         }
 
-        @objc private func pausePressed() { onPause?() }
+        @objc private func pausePressed() {
+            if isWaitingForStart {
+                setStarted()
+                onStart?()
+            } else {
+                onPause?()
+            }
+        }
+
         @objc private func stopPressed() { onStop?() }
+        @objc private func trashPressed() { onDiscard?() }
 
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            pauseButton.toolTip = pauseTooltip
-            pauseButton.setAccessibilityLabel(pauseTooltip)
+            if isWaitingForStart {
+                pauseButton.toolTip = "Start recording"
+                pauseButton.setAccessibilityLabel("Start recording")
+            } else {
+                pauseButton.toolTip = pauseTooltip
+                pauseButton.setAccessibilityLabel(pauseTooltip)
+            }
             stopButton.toolTip = stopTooltip
             stopButton.setAccessibilityLabel(stopTooltip)
+            trashButton.toolTip = "Delete recording"
+            trashButton.setAccessibilityLabel("Delete recording")
         }
     }
 
