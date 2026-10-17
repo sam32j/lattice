@@ -49,14 +49,28 @@ final class ScreenTextService: ObservableObject {
     /// previews expose QR results separately, so this path deliberately runs
     /// text recognition even when the image also contains a code.
     func copyText(from image: CGImage) {
-        recognize(image, detectQRCodes: false)
+        recognize(image, detectQRCodes: UserDefaults.standard.bool(forKey: DefaultsKey.screenOCRDetectQRCodes))
     }
 
     /// What a captured region turned out to hold.
     enum Outcome: Equatable {
         case qr(BarcodeDetector.Reading)
         case text(String)
+        case both(BarcodeDetector.Reading, text: String)
         case empty
+
+        static func readingPayload(from reading: BarcodeDetector.Reading) -> String {
+            if let str = reading as Any as? String {
+                return str
+            }
+            let mirror = Mirror(reflecting: reading)
+            for child in mirror.children where child.label == "payload" {
+                if let str = child.value as? String {
+                    return str
+                }
+            }
+            return "\(reading)"
+        }
     }
 
     private func recognize(_ image: CGImage, detectQRCodes: Bool) {
@@ -81,11 +95,16 @@ final class ScreenTextService: ObservableObject {
                 let strings = L10n.shared.s
                 switch outcome {
                 case .qr(let reading):
-                    // Show what the code holds instead of copying it blindly;
-                    // the panel offers copy and, for a link, open.
-                    QRResultController.shared.show(reading: reading)
+                    let payload = Outcome.readingPayload(from: reading)
+                    Self.copyToPasteboard(payload)
+                    QuickToolHUD.show(icon: "text.viewfinder", message: strings.ocrCopied)
                 case .text(let text):
                     Self.copyToPasteboard(text)
+                    QuickToolHUD.show(icon: "text.viewfinder", message: strings.ocrCopied)
+                case .both(let reading, let text):
+                    let payload = Outcome.readingPayload(from: reading)
+                    let combined = text.contains(payload) ? text : "\(text)\n\n\(payload)"
+                    Self.copyToPasteboard(combined)
                     QuickToolHUD.show(icon: "text.viewfinder", message: strings.ocrCopied)
                 case .empty:
                     QuickToolHUD.show(icon: "text.viewfinder", message: strings.ocrNoText)
@@ -114,17 +133,13 @@ final class ScreenTextService: ObservableObject {
         return context.makeImage() ?? image
     }
 
-    /// Decides what a captured region holds. A QR code wins over the text:
-    /// it is the thing the user pointed at, and the scan is a fast pass that
-    /// falls through to text recognition when no code is found. Pure enough
-    /// to exercise directly on a known image.
+    /// Decides what a captured region holds. Scans for both QR codes and text:
+    /// when both are found, both are recognized. Pure enough to exercise directly on a known image.
     static func outcome(for image: CGImage,
                         detectQRCodes: Bool,
                         removeLineBreaks: Bool,
                         fallbackLanguages: [String] = ["en-US"]) -> Outcome {
-        if detectQRCodes, let reading = BarcodeDetector.read(image) {
-            return .qr(reading)
-        }
+        let reading = detectQRCodes ? BarcodeDetector.read(image) : nil
 
         var lines = recognizedLines(in: image,
                                     level: .accurate,
@@ -140,7 +155,15 @@ final class ScreenTextService: ObservableObject {
         }
         let text = QuickToolsSupport.joinedRecognizedText(lines,
                                                          removingLineBreaks: removeLineBreaks)
-        return text.isEmpty ? .empty : .text(text)
+        if let reading, !text.isEmpty {
+            return .both(reading, text: text)
+        } else if let reading {
+            return .qr(reading)
+        } else if !text.isEmpty {
+            return .text(text)
+        } else {
+            return .empty
+        }
     }
 
     private static func recognizedLines(

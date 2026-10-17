@@ -354,6 +354,11 @@ struct ClipboardEntryPreviewSidebar: View {
             if case .text(let recognized) = outcome {
                 ScreenTextService.copyToPasteboard(recognized)
                 QuickToolHUD.show(icon: "text.viewfinder", message: strings.ocrCopied)
+            } else if case .both(let reading, let recognized) = outcome {
+                let payload = ScreenTextService.Outcome.readingPayload(from: reading)
+                let combined = recognized.contains(payload) ? recognized : "\(recognized)\n\n\(payload)"
+                ScreenTextService.copyToPasteboard(combined)
+                QuickToolHUD.show(icon: "text.viewfinder", message: strings.ocrCopied)
             } else {
                 QuickToolHUD.show(icon: "text.viewfinder", message: strings.ocrNoText)
             }
