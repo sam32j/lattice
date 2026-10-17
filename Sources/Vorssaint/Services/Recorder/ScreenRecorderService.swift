@@ -388,13 +388,35 @@ final class ScreenRecorderService: ObservableObject {
         guard prepareForSelection() else { return }
         let indicator = RecorderIndicator(
             onPause: { [weak self] in self?.togglePause() },
-            onStop: { [weak self] in self?.stop() })
+            onStop: { [weak self] in self?.stop() },
+            onDiscard: { [weak self] in self?.stopAndDiscard() },
+            onStart: { [weak self] in
+                self?.startDelayedSelection(region: region, wantsMicrophone: audioOptions.microphone)
+            })
         indicator.showRegionGuide(for: region)
         self.indicator = indicator
+        let immediate = UserDefaults.standard.object(
+            forKey: DefaultsKey.recorderImmediateStartAfterSelection) as? Bool ?? true
+        if immediate {
+            pendingStartGeneration &+= 1
+            let generation = pendingStartGeneration
+            prepareCountdown(for: region, wantsMicrophone: audioOptions.microphone,
+                             generation: generation)
+        } else {
+            let screen = NSScreen.screens.first { $0.displayID == region.displayID }
+            indicator.show(on: screen,
+                           tooltip: strings.indicatorTooltip,
+                           pauseTooltip: strings.pauseButton,
+                           resumeTooltip: strings.resumeButton,
+                           stopTooltip: strings.stopButton)
+            indicator.setWaitingForStart()
+        }
+    }
+
+    private func startDelayedSelection(region: RecorderSupport.Region, wantsMicrophone: Bool) {
         pendingStartGeneration &+= 1
         let generation = pendingStartGeneration
-        prepareCountdown(for: region, wantsMicrophone: audioOptions.microphone,
-                         generation: generation)
+        prepareCountdown(for: region, wantsMicrophone: wantsMicrophone, generation: generation)
     }
 
     private func prepareCountdown(for region: RecorderSupport.Region,
@@ -582,6 +604,9 @@ final class ScreenRecorderService: ObservableObject {
     private func recordingDidStart() {
         isRecording = true
         isPaused = false
+        if UserDefaults.standard.bool(forKey: DefaultsKey.recorderPlaySound) {
+            NSSound(contentsOfFile: "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/SystemSounds/system/begin_record.caf", byReference: true)?.play()
+        }
         elapsedSeconds = Int(session?.elapsed(at: CACurrentMediaTime()) ?? 0)
         indicator?.update(elapsed: RecorderSupport.elapsedLabel(seconds: elapsedSeconds))
         sleepActivity = ProcessInfo.processInfo.beginActivity(
@@ -650,6 +675,9 @@ final class ScreenRecorderService: ObservableObject {
             if isPreparingRecording { invalidatePendingStart() }
             return
         }
+        if UserDefaults.standard.bool(forKey: DefaultsKey.recorderPlaySound) {
+            NSSound(contentsOfFile: "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/SystemSounds/system/end_record.caf", byReference: true)?.play()
+        }
         isFinishing = true
         invalidatePendingStart()
         endRecordingSurfaces()
@@ -665,6 +693,29 @@ final class ScreenRecorderService: ObservableObject {
                 RecorderTakeStore.shared.delete(session.take)
                 QuickToolHUD.show(icon: "record.circle", message: self.strings.recordFailed)
             }
+            self.sweepTakes()
+        }
+    }
+
+    func stopAndDiscard() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in self?.stopAndDiscard() }
+            return
+        }
+        guard let session, !isFinishing else {
+            invalidatePendingStart()
+            return
+        }
+        isFinishing = true
+        invalidatePendingStart()
+        endRecordingSurfaces()
+
+        Task { @MainActor [weak self] in
+            _ = await session.stop()
+            guard let self else { return }
+            self.session = nil
+            self.isFinishing = false
+            RecorderTakeStore.shared.delete(session.take)
             self.sweepTakes()
         }
     }
