@@ -411,13 +411,12 @@ enum ScreenshotSelectionRefreshContract {
                 && !hiddenHoverView.hasDeferredNotchCaptureControlsHeight,
                "hiding a hovered full-screen action clears hover and applies deferred island geometry")
         for other in [ScreenCaptureTool.screenshot, .text, .color] {
-            for (from, to) in [
-                (ScreenCaptureTool.recording, other), (other, ScreenCaptureTool.recording),
-            ] {
-                let c = Chooser(from)
+            // From recording (live) to other (frozen)
+            do {
+                let c = Chooser(.recording)
                 c.currentPointerLocation = CGPoint(x: 50, y: 50)
                 let request = ScreenshotCaptureEngine.requests.count
-                c.select(to)
+                c.select(other)
                 expect(c.panels.allSatisfy { $0.overlayView.fullScreenHost.isHidden },
                        "changing capture tool hides the full-screen action until the refreshed source is ready")
                 expect(c.screenCaptureOptions?.offersRepeatLastRegion == c.offersRepeatLastRegion,
@@ -441,21 +440,42 @@ enum ScreenshotSelectionRefreshContract {
                 ScreenshotCaptureEngine.complete(request, displays: [1, 2])
                 await drain()
                 expect(c.acceptsCaptureInput, "successful refresh restores capture input")
-                expect(c.panels[0].overlayView.fullScreenHost.isHidden == (to != .screenshot)
+                expect(c.panels[0].overlayView.fullScreenHost.isHidden == (other != .screenshot)
                         && c.panels[1].overlayView.fullScreenHost.isHidden,
                        "a ready source restores the full-screen action only for screenshots on the pointer display")
                 expect(
-                    c.panels.allSatisfy { $0.frozenImage!.excluded.contains(11) == (to == .recording) },
+                    c.panels.allSatisfy { $0.frozenImage != nil && !$0.frozenImage!.excluded.contains(11) },
                     "both displays use the selected tool visibility")
                 expect(
-                    c.panels.allSatisfy { $0.windows.isEmpty == (to == .recording) },
+                    c.panels.allSatisfy { !$0.windows.isEmpty },
                     "selectable windows follow the refreshed pixels")
-                if to == .color {
+                if other == .color {
                     c.confirmColor(at: .zero, on: c.panels[0])
                 } else {
                     c.captureFullDisplayUnderMouse()
                 }
                 expect(c.outcome != nil, "a ready source can be confirmed normally")
+            }
+
+            // From other (frozen) to recording (live)
+            do {
+                let c = Chooser(other)
+                c.currentPointerLocation = CGPoint(x: 50, y: 50)
+                let request = ScreenshotCaptureEngine.requests.count
+                c.select(.recording)
+                await drain()
+                expect(
+                    ScreenshotCaptureEngine.requests.count == request,
+                    "switching to recording never captures a frozen source")
+                expect(c.acceptsCaptureInput, "live recording immediately accepts capture input")
+                expect(
+                    c.panels.allSatisfy { $0.frozenImage == nil },
+                    "live recording displays no frozen image")
+                expect(
+                    c.panels.allSatisfy { $0.windows.isEmpty },
+                    "recording keeps content windows out")
+                c.captureFullDisplayUnderMouse()
+                expect(c.outcome != nil, "live recording can be confirmed normally")
             }
         }
         for available: [CGDirectDisplayID] in [[], [1]] {
@@ -503,27 +523,22 @@ enum ScreenshotSelectionRefreshContract {
         ScreenshotCaptureEngine.complete(r3, displays: [])
         await drain()
         expect(
-            !rapid.finished && !rapid.acceptsCaptureInput,
-            "outdated failure cannot close or unlock the current refresh")
-        ScreenshotCaptureEngine.complete(r3 + 1, displays: [1, 2])
-        await drain()
+            !rapid.finished && rapid.acceptsCaptureInput,
+            "outdated failure cannot close or unlock the current live recording")
         expect(
-            rapid.acceptsCaptureInput
-                && rapid.panels.allSatisfy { $0.frozenImage!.excluded.contains(11) && $0.windows.isEmpty },
-            "latest source restores input with current visibility")
+            rapid.panels.allSatisfy { $0.frozenImage == nil && $0.windows.isEmpty },
+            "latest live recording keeps screen unfrozen with current visibility")
         let reverse = Chooser(.recording)
         let rr = ScreenshotCaptureEngine.requests.count
         reverse.select(.screenshot)
         await drain()
         reverse.select(.recording)
         await drain()
-        ScreenshotCaptureEngine.complete(rr + 1, displays: [1, 2])
-        await drain()
         ScreenshotCaptureEngine.complete(rr, displays: [1, 2])
         await drain()
         expect(
-            reverse.panels.allSatisfy { $0.frozenImage!.excluded.contains(11) },
-            "old success arriving last cannot overwrite current pixels")
+            reverse.panels.allSatisfy { $0.frozenImage == nil },
+            "old success arriving last cannot overwrite live capture")
         let cancelled = Chooser(.recording)
         let r4 = ScreenshotCaptureEngine.requests.count
         cancelled.select(.screenshot)
@@ -532,7 +547,7 @@ enum ScreenshotSelectionRefreshContract {
         ScreenshotCaptureEngine.complete(r4, displays: [1, 2])
         await drain()
         expect(
-            !cancelled.acceptsCaptureInput && cancelled.panels[0].frozenImage!.excluded.contains(11),
+            !cancelled.acceptsCaptureInput,
             "cancelled selection ignores delayed refresh")
         let same = Chooser(.screenshot)
         let count = ScreenshotCaptureEngine.requests.count
@@ -543,13 +558,11 @@ enum ScreenshotSelectionRefreshContract {
             ScreenshotCaptureEngine.requests.count == count && same.acceptsCaptureInput,
             "equal source tools reuse pixels without pausing capture")
         let follow = Chooser(.screenshot)
-        let rf = ScreenshotCaptureEngine.requests.count
         follow.select(.recording)
         await drain()
+        let rf = ScreenshotCaptureEngine.requests.count
         ReviewDefaults.current.values["hide"] = true
         follow.select(.text)
-        await drain()
-        ScreenshotCaptureEngine.complete(rf + 1, displays: [1, 2])
         await drain()
         ScreenshotCaptureEngine.complete(rf, displays: [1, 2])
         await drain()
@@ -585,8 +598,6 @@ enum ScreenshotSelectionRefreshContract {
         loupe.loadLiveLoupeImages()
         await drain()
         loupe.select(.recording)
-        await drain()
-        ScreenshotCaptureEngine.complete(loupeRequest + 1, displays: [1, 2])
         await drain()
         ScreenshotCaptureEngine.complete(loupeRequest, displays: [1, 2])
         await drain()

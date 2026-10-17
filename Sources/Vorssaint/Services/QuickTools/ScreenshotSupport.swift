@@ -150,8 +150,17 @@ enum ScreenshotSupport {
                                      screenshotIncludePointer: Bool,
                                      screenshotHideVorssaintWindows: Bool)
         -> UnifiedCapturePolicy {
-        UnifiedCapturePolicy(
-            freeze: tool == .screenshot ? screenshotFreeze : true,
+        let freeze: Bool
+        switch tool {
+        case .screenshot:
+            freeze = screenshotFreeze
+        case .recording:
+            freeze = false
+        case .text, .color:
+            freeze = true
+        }
+        return UnifiedCapturePolicy(
+            freeze: freeze,
             includePointer: tool == .screenshot && screenshotIncludePointer,
             hideVorssaintWindows: tool != .recording && screenshotHideVorssaintWindows,
             keepsContentWindowsOut: tool == .recording || screenshotHideVorssaintWindows,
