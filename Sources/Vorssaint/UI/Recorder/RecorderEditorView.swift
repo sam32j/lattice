@@ -159,7 +159,7 @@ struct RecorderEditorView: View {
             .disabled(model.isExporting)
             .screenshotSafeHelp("⌘S")
         }
-        .padding(.leading, 116)
+        .padding(.leading, 96)
         .padding(.trailing, 14)
         .frame(height: 54)
         .background(.ultraThinMaterial)
