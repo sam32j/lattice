@@ -4,6 +4,93 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [3.5.0](https://github.com/sam32j/lattice/compare/v3.4.1...v3.5.0) (2026-10-17)
+
+
+### Added
+
+* **ci:** support personal Apple Development signing and add verification workflow ([cd09832](https://github.com/sam32j/lattice/commit/cd09832336ffca82e9f13d72d5c2867eabc151ce))
+* **downstream:** brand Lattice and isolate update trust and app data ([cc08393](https://github.com/sam32j/lattice/commit/cc0839330ac25979305edf1d1b97117e713f1d5b))
+* **downstream:** rebrand app identity, bundle identifier, and stage configuration to Lattice ([23d6a12](https://github.com/sam32j/lattice/commit/23d6a12201b9243aec18dd5df2e9b5b41fa3806f))
+* **downstream:** support allowSnapshotRelease for one-time release before next upstream cycle ([c9061f8](https://github.com/sam32j/lattice/commit/c9061f82687ef1bf7b1c93890a3e9c877c3b83a4))
+* **downstream:** sync upstream with conflict stops and atomic leases ([050124c](https://github.com/sam32j/lattice/commit/050124cd12920bf9aea085bda0317a6997544957))
+* **notch:** Show current input source in Dynamic Island while switching ([#2898](https://github.com/sam32j/lattice/issues/2898)) ([f6149ab](https://github.com/sam32j/lattice/commit/f6149ab06f510e7c9036337c1a63983e3bb03680)), closes [#2783](https://github.com/sam32j/lattice/issues/2783)
+* **release:** support automated ad-hoc self-signed releases for Lattice ([81c16e8](https://github.com/sam32j/lattice/commit/81c16e86a0c37676860ec940ca6406adf08b7033))
+* **screenshot:** add floating pin controls and file dragging ([e7f884e](https://github.com/sam32j/lattice/commit/e7f884e694e980bbec5f5d4e87035a8f17ab4758))
+* **screenshot:** add zoom and opacity gestures to pinned captures ([ea225d2](https://github.com/sam32j/lattice/commit/ea225d279fd138bdaa50a3f0cce6e79b2a7d9e48))
+* **screenshot:** copy text from quick preview ([#3010](https://github.com/sam32j/lattice/issues/3010)) ([514a245](https://github.com/sam32j/lattice/commit/514a2456168166ad3c44b78d5a22023cb94b60ef)), closes [#778](https://github.com/sam32j/lattice/issues/778)
+* **switcher:** add a maximum columns setting ([#2619](https://github.com/sam32j/lattice/issues/2619)) ([87389ff](https://github.com/sam32j/lattice/commit/87389ffef43ed80c99475582a301d7bd5c43c2ff)), closes [#2618](https://github.com/sam32j/lattice/issues/2618)
+
+
+### Fixed
+
+* **agents:** estimate the claude session renewal inside the gap between readings ([#3023](https://github.com/sam32j/lattice/issues/3023)) ([1a60d70](https://github.com/sam32j/lattice/commit/1a60d70c2f902ea8d61ffd0317c22800ab1eb8cb)), closes [#2831](https://github.com/sam32j/lattice/issues/2831)
+* **agents:** read OpenCode v2 usage database ([#3066](https://github.com/sam32j/lattice/issues/3066)) ([ed36904](https://github.com/sam32j/lattice/commit/ed369042b7e7b76d6ea374302a9e4163842abe4f)), closes [#2993](https://github.com/sam32j/lattice/issues/2993)
+* **app-updates:** compare numeric version suffixes numerically ([#2803](https://github.com/sam32j/lattice/issues/2803)) ([58fa0df](https://github.com/sam32j/lattice/commit/58fa0df9933f41b98cc321eb0d8f82ee461c128f))
+* **app-updates:** open update destinations asynchronously ([#2887](https://github.com/sam32j/lattice/issues/2887)) ([6794d46](https://github.com/sam32j/lattice/commit/6794d469de2de75b099e4faffee2b1c44df8effa))
+* **ci:** simplify protectedWindowIDs for Swift 6 type-check and enforce exact base in release test ([9b8d414](https://github.com/sam32j/lattice/commit/9b8d4140c7a8bdbc248c7bff2d864e361ef9e805))
+* **clipboard:** cancel transient pastes after a newer copy ([#2689](https://github.com/sam32j/lattice/issues/2689)) ([98c3bba](https://github.com/sam32j/lattice/commit/98c3bbab1d9ab12cf090a8133b9ae8e050764c62))
+* **clipboard:** make sensitive text filtering opt-in ([794608a](https://github.com/sam32j/lattice/commit/794608a58d8a88608d3c3cb2e4f22373cf52bfdc))
+* **command-bar:** count days until 29 february to the next leap year ([#2869](https://github.com/sam32j/lattice/issues/2869)) ([98b7d89](https://github.com/sam32j/lattice/commit/98b7d89d9d5d475cd1674b64b5948b8d8f7f0d0e))
+* **command-bar:** find Xcode's tools like Instruments and Device Hub ([#3043](https://github.com/sam32j/lattice/issues/3043)) ([7ef7430](https://github.com/sam32j/lattice/commit/7ef74300aee21fabde7f15765751f7f457f4d395)), closes [#2854](https://github.com/sam32j/lattice/issues/2854)
+* **command-bar:** keep an app hidden after its own shortcut puts it away ([#2875](https://github.com/sam32j/lattice/issues/2875)) ([370852f](https://github.com/sam32j/lattice/commit/370852fe14bd8865f6eb367c2dc08c24201a9b60))
+* **disk-image-installer:** skip Homebrew disk images ([#2909](https://github.com/sam32j/lattice/issues/2909)) ([a7e912d](https://github.com/sam32j/lattice/commit/a7e912d5aeada01bd4e8f23cc7e3e57357c51707))
+* **display:** ignore DDC replies for another control ([#2966](https://github.com/sam32j/lattice/issues/2966)) ([317f1f3](https://github.com/sam32j/lattice/commit/317f1f37dcb1144a16e9f3779285757f948f5b8b))
+* **dock:** resolve each icon of an app running as several processes ([#2649](https://github.com/sam32j/lattice/issues/2649)) ([d796a58](https://github.com/sam32j/lattice/commit/d796a58f1cbe5f4256a0d95079713680a00b59b0)), closes [#2048](https://github.com/sam32j/lattice/issues/2048)
+* **downstream:** align workflows and update endpoints with sam32j/lattice ([0100df3](https://github.com/sam32j/lattice/commit/0100df30d66f0c0e4ee0357fff0753166b95f9f5))
+* **middle-click:** stay suspended while Cleaning Mode is up ([#3018](https://github.com/sam32j/lattice/issues/3018)) ([a2aee82](https://github.com/sam32j/lattice/commit/a2aee82dcf1c7924b0d93a4aafd6537e7cff695c))
+* **mixer:** make app volume sliders follow perceived loudness ([#3052](https://github.com/sam32j/lattice/issues/3052)) ([a79072b](https://github.com/sam32j/lattice/commit/a79072b7eb975ec77743766b498e2f626912f8ec))
+* **monitor:** give the apple m4 pro its own cpu sensor set ([#2465](https://github.com/sam32j/lattice/issues/2465)) ([455d220](https://github.com/sam32j/lattice/commit/455d22069a36f4319bab4587c0d44c44868c83d2)), closes [#2460](https://github.com/sam32j/lattice/issues/2460)
+* **mouse:** give side clicks back to apps without Back and Forward ([#2894](https://github.com/sam32j/lattice/issues/2894)) ([d4db893](https://github.com/sam32j/lattice/commit/d4db8939ceb8432bc8c2d10ca3d9348b83204036)), closes [#2351](https://github.com/sam32j/lattice/issues/2351)
+* **mouse:** press Back and Forward before the menu re-enables them ([#2893](https://github.com/sam32j/lattice/issues/2893)) ([147684e](https://github.com/sam32j/lattice/commit/147684e9be89b1f12878630824a78fee431db54f))
+* **notch:** hide the keyboard focus ring when the island opens ([#3012](https://github.com/sam32j/lattice/issues/3012)) ([2debc72](https://github.com/sam32j/lattice/commit/2debc724346b78e4fd61cf7298a5573e31656769)), closes [#2632](https://github.com/sam32j/lattice/issues/2632)
+* **notch:** keep volume keys moving on outputs with coarse steps ([#3042](https://github.com/sam32j/lattice/issues/3042)) ([8db464d](https://github.com/sam32j/lattice/commit/8db464dfb552a4ff1a4f308111582093dfee4b9d)), closes [#2900](https://github.com/sam32j/lattice/issues/2900)
+* **notch:** prioritize music over idle companion ([#3076](https://github.com/sam32j/lattice/issues/3076)) ([fb962d6](https://github.com/sam32j/lattice/commit/fb962d6deaeeec3d69a6b723dc1422fadfecf10f))
+* **notch:** recover lyrics across catalog and artist metadata variants ([#2963](https://github.com/sam32j/lattice/issues/2963)) ([e124c91](https://github.com/sam32j/lattice/commit/e124c91f439b588de033ba0900e2f3e670ba7103))
+* **notch:** show the active output icon in volume feedback ([#2951](https://github.com/sam32j/lattice/issues/2951)) ([f4997b1](https://github.com/sam32j/lattice/commit/f4997b1a77d8e8be6a3a60e5558a4abe3f0a8b08)), closes [#2664](https://github.com/sam32j/lattice/issues/2664)
+* **permissions:** keep suspended taps from restarting themselves ([#3019](https://github.com/sam32j/lattice/issues/3019)) ([5e54c4f](https://github.com/sam32j/lattice/commit/5e54c4f97c2f939c312f639395b04829d80b6990))
+* **recorder:** fall back to h.264 when the hevc encoder rejects the frame size ([#2673](https://github.com/sam32j/lattice/issues/2673)) ([2cf7af4](https://github.com/sam32j/lattice/commit/2cf7af43fc56f9492a4a7325485c7a413ffa5a4d))
+* **recorder:** keep a window recording's sound to the app that owns it ([#3060](https://github.com/sam32j/lattice/issues/3060)) ([cbe9149](https://github.com/sam32j/lattice/commit/cbe91493ed1f2a434c548a40448222fb09dc157f))
+* **recorder:** stream gif exports with bounded memory ([#2996](https://github.com/sam32j/lattice/issues/2996)) ([3ee0d52](https://github.com/sam32j/lattice/commit/3ee0d523bdd98f156f7313a61421140b7ef5e237))
+* **release:** leave DMG container unsigned without notarization to prevent Gatekeeper mount modal ([0cbb839](https://github.com/sam32j/lattice/commit/0cbb8394cba1c8ebfb24ee3373ca28ad7a021a02))
+* **screenshot:** center liquid glass scale-up bloom, direct pinch tracking, and drag hiding ([e2acd8d](https://github.com/sam32j/lattice/commit/e2acd8d2ba66ea3a210cd69796284071e390b710))
+* **screenshot:** keep glass pin controls unclipped and legible ([42b3a10](https://github.com/sam32j/lattice/commit/42b3a10bb6cddc7c8c0e5e07b14eb07b4d448109))
+* **screenshot:** polish pin controls and preserve gentle pinch zoom ([f3e1cba](https://github.com/sam32j/lattice/commit/f3e1cba7cbf7dae465513a80ef54191eb8399334))
+* **settings:** preserve feature hub scroll position ([#3031](https://github.com/sam32j/lattice/issues/3031)) ([99c1433](https://github.com/sam32j/lattice/commit/99c143334cddd2f180159c77b1a00e46e93d3b48))
+* **settings:** restore feature install and uninstall buttons ([98666d8](https://github.com/sam32j/lattice/commit/98666d8c609a660263b3fe08ab0441ea4691ec3d))
+* **switcher:** keep fullscreen windows available across spaces ([#2962](https://github.com/sam32j/lattice/issues/2962)) ([1f97a85](https://github.com/sam32j/lattice/commit/1f97a8515c2178f39105ce71775b7c650c844a45)), closes [#2961](https://github.com/sam32j/lattice/issues/2961)
+* **switcher:** say why replacing ⌘Tab locks apps with no open window ([#3041](https://github.com/sam32j/lattice/issues/3041)) ([7e2a5fe](https://github.com/sam32j/lattice/commit/7e2a5fe1b21a89057e256944814d1c0d39f225bb)), closes [#2356](https://github.com/sam32j/lattice/issues/2356) [#3013](https://github.com/sam32j/lattice/issues/3013)
+* **tests:** adapt settle timeouts in DockPreview and Switcher scroll tests ([4358272](https://github.com/sam32j/lattice/commit/43582725e7466699c63bc7f48cdcd31a807f78e4))
+* **tests:** disambiguate buttons and descendants with Self in ScreenshotPinChromeTests ([64245a8](https://github.com/sam32j/lattice/commit/64245a854c0f30d7d592c213ed36d120f50f4492))
+* **tests:** guard KVC on NSGlassEffectView and align gesture test initial frame ([5baa9cd](https://github.com/sam32j/lattice/commit/5baa9cd9442e69d6591e4047a268b56bb2e8ee9f))
+* **tests:** provide contextual types for nil in convert and performClick for Swift 6 ([148a5be](https://github.com/sam32j/lattice/commit/148a5be1d903a21628ad4eae0b601ff6a4e197b3))
+* **tests:** type fullscreen fixture window IDs explicitly ([1a16004](https://github.com/sam32j/lattice/commit/1a16004cbb5253829ef695afa333825f5d99d1bb))
+
+
+### Changed
+
+* **command-bar:** score rows without per-keystroke string churn ([#2986](https://github.com/sam32j/lattice/issues/2986)) ([aea835f](https://github.com/sam32j/lattice/commit/aea835fb2f54f8446cbca2192b3563a57013fc87))
+* **command-bar:** share the accessibility selection reader ([#2979](https://github.com/sam32j/lattice/issues/2979)) ([f5cca05](https://github.com/sam32j/lattice/commit/f5cca0593a27a5b3a92662e6c7ea922bb029962a))
+* **command-bar:** skip redundant rebuilds while the bar opens ([#2987](https://github.com/sam32j/lattice/issues/2987)) ([48d1983](https://github.com/sam32j/lattice/commit/48d198373883545bba0050e7ebf16105e8b93491))
+
+
+### Documentation
+
+* **changelog:** credit the first proposal of the mixer loudness curve ([75d94b4](https://github.com/sam32j/lattice/commit/75d94b49f01bc90b4f66163e6d3ea632e86b18eb))
+* **changelog:** record reviewed clipboard and app fixes ([cbb2b77](https://github.com/sam32j/lattice/commit/cbb2b77d539b07b6122d86978fe633a111288e50))
+* **changelog:** record reviewed contributor updates ([4a50852](https://github.com/sam32j/lattice/commit/4a508524412d5bb9db104f1a65ea11b94332d023))
+* **changelog:** record reviewed contributor updates ([286b4e7](https://github.com/sam32j/lattice/commit/286b4e798620e70a41aa518df100f2399c9f2c87))
+* **changelog:** record reviewed contributor updates ([fe24c17](https://github.com/sam32j/lattice/commit/fe24c1766d568b132c1c78c554cc422381a3a17d))
+* **changelog:** record reviewed island and input fixes ([0b8e944](https://github.com/sam32j/lattice/commit/0b8e94404621849ef7da24523e5c16a9815a1bee))
+* **downstream:** complete Lattice rebranding in README and acknowledge upstream ([06ca0a7](https://github.com/sam32j/lattice/commit/06ca0a751704df300efb0b9b2d50fdd7f144ed20))
+* **downstream:** explain Lattice setup recovery and verification limits ([a997c3b](https://github.com/sam32j/lattice/commit/a997c3b5a58578c25c85a102307fa7b9e4045c3b))
+* **downstream:** plan Lattice implementation and verification ([d1b4b52](https://github.com/sam32j/lattice/commit/d1b4b52b4f950e1a9ae08cd09b30e31611667e2e))
+* **downstream:** record approved Lattice distribution design ([5591f0e](https://github.com/sam32j/lattice/commit/5591f0ee4409f229881e4af8b55b3510589ccfd5))
+* **downstream:** record final baseline comparison and reviewed build ([6ef7eed](https://github.com/sam32j/lattice/commit/6ef7eedd6642ec96fb4fc5acbd71a8510e2a2e7a))
+* **downstream:** record successful live fork synchronization ([d781ad1](https://github.com/sam32j/lattice/commit/d781ad1099e2493c731c5e567e9c4d0ca99423d9))
+* **downstream:** remove screenshots exposing upstream icons from README ([3e34b8b](https://github.com/sam32j/lattice/commit/3e34b8bab2da231dbaf4fd9d62af59a8fe8c33cc))
+* **specs:** update task artifact checksum after branch rebase ([067c3fd](https://github.com/sam32j/lattice/commit/067c3fd23b45162e4b9d26bd07601c6ac2c6ae03))
+
 ## [Unreleased]
 
 ### Summary
