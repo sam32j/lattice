@@ -1417,70 +1417,119 @@ enum ScreenshotSupport {
             dragsRect || self == .sticker
         }
 
-        /// Saved ids first, then any tools added by a later version in the
-        /// canonical order. Invalid and duplicate ids never reach the UI.
-        static func ordered(from raw: String?) -> [Tool] {
-            var seen = Set<Tool>()
-            var result: [Tool] = []
-            for id in (raw ?? "").split(separator: ",") {
-                guard let tool = Tool(rawValue: String(id)),
-                      seen.insert(tool).inserted
-                else { continue }
-                result.append(tool)
+        var defaultShortcut: GlobalShortcut? {
+            switch self {
+            case .select: return GlobalShortcut(keyCode: Int64(kVK_ANSI_1), modifiers: [])
+            case .arrow: return GlobalShortcut(keyCode: Int64(kVK_ANSI_2), modifiers: [])
+            case .line: return GlobalShortcut(keyCode: Int64(kVK_ANSI_3), modifiers: [])
+            case .ellipse: return GlobalShortcut(keyCode: Int64(kVK_ANSI_4), modifiers: [])
+            case .rect: return GlobalShortcut(keyCode: Int64(kVK_ANSI_5), modifiers: [])
+            case .redact: return GlobalShortcut(keyCode: Int64(kVK_ANSI_6), modifiers: [])
+            case .freehand: return GlobalShortcut(keyCode: Int64(kVK_ANSI_7), modifiers: [])
+            case .highlight: return GlobalShortcut(keyCode: Int64(kVK_ANSI_8), modifiers: [])
+            case .text: return GlobalShortcut(keyCode: Int64(kVK_ANSI_9), modifiers: [])
+            case .crop: return GlobalShortcut(keyCode: Int64(kVK_ANSI_0), modifiers: [])
+            case .pixelate, .counter, .sticker: return nil
             }
-            for tool in allCases where seen.insert(tool).inserted {
-                result.append(tool)
-            }
-            return result
+        }
+
+        static func ordered(from raw: String? = nil) -> [Tool] {
+            allCases
         }
 
         static func shortcutTool(number: Int,
                                  orderRaw: String? = nil,
                                  enabled: Bool) -> Tool? {
             guard enabled else { return nil }
-            let order = ordered(from: orderRaw)
-            if number == 0 {
-                return order.indices.contains(9) ? order[9] : nil
-            }
-            guard (1...9).contains(number) else { return nil }
-            let index = number - 1
-            return order.indices.contains(index) ? order[index] : nil
+            let index = number == 0 ? 9 : number - 1
+            guard index >= 0 && index < shortcutLimit && allCases.indices.contains(index) else { return nil }
+            return allCases[index]
         }
 
         static func shortcutNumber(for tool: Tool,
                                    orderRaw: String? = nil,
                                    enabled: Bool) -> Int? {
             guard enabled,
-                  let index = ordered(from: orderRaw).firstIndex(of: tool),
+                  let index = allCases.firstIndex(of: tool),
                   index < shortcutLimit
             else { return nil }
             return index == 9 ? 0 : index + 1
         }
 
-        static func bindings(from raw: String?) -> [Tool: GlobalShortcut] {
-            var result: [Tool: GlobalShortcut] = [:]
+        static func customBindings(from raw: String?) -> [Tool: GlobalShortcut?] {
+            var result: [Tool: GlobalShortcut?] = [:]
             for entry in (raw ?? "").split(separator: ",") {
                 let pair = entry.split(separator: "=", maxSplits: 1)
-                guard pair.count == 2, let tool = Tool(rawValue: String(pair[0])),
-                      let shortcut = GlobalShortcut(storageValue: String(pair[1]), requiringModifier: false),
-                      !isReservedEditorKey(shortcut) else { continue }
-                result[tool] = shortcut
-            }
-            // Edited backups can contain duplicate bindings. Keep one owner,
-            // in rail-default order, so routing and the displayed keys agree.
-            var seen = Set<GlobalShortcut>()
-            for tool in allCases {
-                if let shortcut = result[tool], !seen.insert(shortcut).inserted {
-                    result[tool] = nil
+                guard pair.count == 2, let tool = Tool(rawValue: String(pair[0])) else { continue }
+                let value = String(pair[1])
+                if value == "none" || value.isEmpty {
+                    result[tool] = .some(nil)
+                } else if let shortcut = GlobalShortcut(storageValue: value, requiringModifier: false),
+                          !isReservedEditorKey(shortcut) {
+                    for (prevTool, prevShortcut) in result {
+                        if prevShortcut == shortcut {
+                            result.removeValue(forKey: prevTool)
+                        }
+                    }
+                    result[tool] = .some(shortcut)
                 }
             }
             return result
         }
 
-        /// A layout or Caps Lock change can make a saved symbol type a rail
-        /// digit. Suspend it in that context without erasing the saved choice.
+        static func customBindingsStorage(_ bindings: [Tool: GlobalShortcut?]) -> String {
+            allCases.compactMap { tool -> String? in
+                guard let value = bindings[tool] else { return nil }
+                if let shortcut = value {
+                    return "\(tool.rawValue)=\(shortcut.storageValue)"
+                } else {
+                    return "\(tool.rawValue)=none"
+                }
+            }.joined(separator: ",")
+        }
+
+        static func effectiveShortcut(for tool: Tool, bindingsRaw: String?) -> GlobalShortcut? {
+            let custom = customBindings(from: bindingsRaw)
+            if let entry = custom[tool] {
+                return entry
+            }
+            if let defaultShortcut = tool.defaultShortcut {
+                let claimed = allCases.contains(where: {
+                    $0 != tool && (custom[$0] ?? nil) == defaultShortcut
+                })
+                if claimed { return nil }
+            }
+            return tool.defaultShortcut
+        }
+
+        static func effectiveShortcuts(from bindingsRaw: String?) -> [Tool: GlobalShortcut] {
+            var result: [Tool: GlobalShortcut] = [:]
+            for tool in allCases {
+                if let shortcut = effectiveShortcut(for: tool, bindingsRaw: bindingsRaw) {
+                    result[tool] = shortcut
+                }
+            }
+            return result
+        }
+
+        static func isModified(tool: Tool, bindingsRaw: String?) -> Bool {
+            let custom = customBindings(from: bindingsRaw)
+            guard let entry = custom[tool] else { return false }
+            return entry != tool.defaultShortcut
+        }
+
+        static func bindings(from raw: String?) -> [Tool: GlobalShortcut] {
+            var result: [Tool: GlobalShortcut] = [:]
+            for (tool, value) in customBindings(from: raw) {
+                if let shortcut = value {
+                    result[tool] = shortcut
+                }
+            }
+            return result
+        }
+
         static func activeBindings(from raw: String?, capsLockOn: Bool = false) -> [Tool: GlobalShortcut] {
-            bindings(from: raw).filter { shortcutDigit($0.value, capsLockOn: capsLockOn) == nil }
+            effectiveShortcuts(from: raw)
         }
 
         static func bindingsStorage(_ bindings: [Tool: GlobalShortcut]) -> String {
@@ -1506,16 +1555,36 @@ enum ScreenshotSupport {
                                  number: Int? = nil, orderRaw: String? = nil,
                                  bindingsRaw: String?, enabled: Bool, capsLockOn: Bool = false) -> Tool? {
             guard enabled else { return nil }
-            let bindings = activeBindings(from: bindingsRaw, capsLockOn: capsLockOn)
-            // The event's printed digit is authoritative, including input
-            // methods whose output differs from the underlying keycap table.
-            if !modifiers.hasPrimaryModifier, let number, (0...9).contains(number) {
-                guard let tool = shortcutTool(number: number, orderRaw: orderRaw, enabled: true),
-                      bindings[tool] == nil else { return nil }
+            let custom = customBindings(from: bindingsRaw)
+            let shortcut = GlobalShortcut(keyCode: keyCode, modifiers: modifiers)
+
+            // 1. Direct custom binding match (including single letters, symbols like &, modified keys)
+            if let tool = allCases.first(where: { (custom[$0] ?? nil) == shortcut }) {
                 return tool
             }
-            let shortcut = GlobalShortcut(keyCode: keyCode, modifiers: modifiers)
-            return allCases.first(where: { bindings[$0] == shortcut })
+
+            // 2. Printed digit routing (number 0..9)
+            if !modifiers.hasPrimaryModifier, let number, (0...9).contains(number) {
+                let targetSlot = number == 0 ? 10 : number
+                if let tool = allCases.first(where: {
+                    guard let s = custom[$0] ?? nil else { return false }
+                    return shortcutDigit(s, capsLockOn: capsLockOn) == targetSlot
+                }) {
+                    return tool
+                }
+                if let defaultTool = shortcutTool(number: number, enabled: true),
+                   custom[defaultTool] == nil {
+                    return defaultTool
+                }
+            }
+
+            // 3. Fallback to default shortcut for unmodified tools
+            if let tool = allCases.first(where: {
+                custom[$0] == nil && $0.defaultShortcut == shortcut
+            }) {
+                return tool
+            }
+            return nil
         }
 
         /// The rail slot a recorded key names, read from what the key types
@@ -1529,32 +1598,21 @@ enum ScreenshotSupport {
             let typed = GlobalShortcut.layoutKeyLabel(for: shortcut.keyCode, usesCommand: false,
                                                       usesShift: shifted, capsLockOn: capsLockOn)
                 ?? (shifted || capsLockOn ? nil : shortcut.displayString)
-            guard let typed, let digit = Int(typed), (1...shortcutLimit).contains(digit)
+            guard let typed, let digit = Int(typed), (0...9).contains(digit)
             else { return nil }
-            return digit
+            return digit == 0 ? 10 : digit
         }
 
-        /// What the rail badge and the recorder show for a tool: its own
-        /// binding's caps, or the position digit of an unbound tool in the
-        /// first nine.
         static func shortcutLabel(for tool: Tool, orderRaw: String? = nil,
                                   bindingsRaw: String?, enabled: Bool, capsLockOn: Bool = false) -> String? {
             guard enabled else { return nil }
-            if let binding = activeBindings(from: bindingsRaw, capsLockOn: capsLockOn)[tool] {
-                return binding.displayString
+            let custom = customBindings(from: bindingsRaw)
+            if let entry = custom[tool] {
+                return entry?.displayString
             }
-            return shortcutNumber(for: tool, orderRaw: orderRaw, enabled: true).map(String.init)
+            return shortcutNumber(for: tool, enabled: true).map(String.init)
         }
 
-        /// Why a recorded key cannot become a binding, or nil when it can.
-        /// Digits never get here: they move the tool instead. The outside
-        /// checks are the same three every shortcut field runs, passed in by
-        /// the field so the order and the early return are testable without
-        /// defaults or the WindowServer. Recording silences those owners, so
-        /// the key records fine and then fires them once the field lets go:
-        /// macOS and the app's global taps answer before the editor's window
-        /// monitor ever sees the press. The system table is asked last
-        /// because it is the one read that leaves the process.
         enum BindingRejection: Equatable {
             case reserved
             case tool(Tool)
@@ -1570,46 +1628,24 @@ enum ScreenshotSupport {
             systemConflict: (GlobalShortcut) -> Bool
         ) -> BindingRejection? {
             if isReservedEditorKey(shortcut) { return .reserved }
-            let bindings = bindings(from: bindingsRaw)
-            if let other = allCases.first(where: { $0 != tool && bindings[$0] == shortcut }) {
-                return .tool(other)
+            let custom = customBindings(from: bindingsRaw)
+            for other in allCases where other != tool {
+                if let otherShortcut = custom[other] ?? nil, otherShortcut == shortcut {
+                    return .tool(other)
+                }
+            }
+            if let digit = shortcutDigit(shortcut) {
+                let slotNumber = digit == 10 ? 0 : digit
+                if let defaultOwner = shortcutTool(number: slotNumber, enabled: true),
+                   defaultOwner != tool {
+                    if custom[defaultOwner] == nil {
+                        return .tool(defaultOwner)
+                    }
+                }
             }
             if let role = roleConflict(shortcut) { return .role(role) }
             if let title = windowLayoutConflict(shortcut) { return .windowLayout(title) }
             return systemConflict(shortcut) ? .system : nil
-        }
-
-        /// A recorded digit moves the tool; clearing moves it below the first
-        /// nine. Other bindings stay attached to their tools through reorders.
-        static func assigningBinding(_ shortcut: GlobalShortcut?, digit: Int? = nil,
-                                     to tool: Tool, orderRaw: String?, bindingsRaw: String?)
-            -> (orderRaw: String, bindingsRaw: String) {
-            var bindings = bindings(from: bindingsRaw)
-            bindings[tool] = digit == nil ? shortcut : nil
-            let order = shortcut == nil || digit != nil
-                ? assigningShortcut(digit, to: tool, orderRaw: orderRaw)
-                : ordered(from: orderRaw)
-            return (order.map(\.rawValue).joined(separator: ","), bindingsStorage(bindings))
-        }
-
-        /// Assigning a number is the same operation as moving the tool into
-        /// that numbered rail slot. Choosing no shortcut moves it just below
-        /// the first nine, where it remains available without a key.
-        static func assigningShortcut(_ number: Int?,
-                                      to tool: Tool,
-                                      orderRaw: String?) -> [Tool] {
-            var order = ordered(from: orderRaw)
-            guard let current = order.firstIndex(of: tool) else { return order }
-            if number == nil, current >= shortcutLimit { return order }
-            order.remove(at: current)
-            let destination: Int
-            if let number, (1...shortcutLimit).contains(number) {
-                destination = min(number - 1, order.count)
-            } else {
-                destination = min(shortcutLimit, order.count)
-            }
-            order.insert(tool, at: destination)
-            return order
         }
     }
 

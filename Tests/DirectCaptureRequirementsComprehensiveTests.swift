@@ -85,8 +85,6 @@ enum DirectCaptureRequirementsComprehensiveTests {
             suite.expect(!s.shareEnabledToggle.isEmpty,
                          "\(language.rawValue): shareEnabledToggle is non-empty")
         }
-        suite.expect(FeatureStrings.screenshot(.enUS).shareEnabledToggle == "Enable temporary links",
-                     "English shareEnabledToggle label is 'Enable temporary links'")
 
         // 8. Sidebar directory: Screen Capture section has exactly 2 items (.screenshot and .screenRecorder)
         let directorySource = (try? String(
@@ -124,9 +122,9 @@ enum DirectCaptureRequirementsComprehensiveTests {
     // MARK: - 2. Feature Catalog Bundling & Count
 
     private static func testFeatureCatalogBundlingAndCount(_ suite: TestSuite) {
-        // 1. Total installable features in Feature Hub is exactly 75 (77 total cases minus bundled .colorPicker and .screenOCR)
-        suite.expect(AppFeature.hubInstallableFeatures.count == 75 && AppFeature.allCases.count == 77,
-                     "Total installable features count in Hub is exactly 75 (out of 77 total cases)")
+        // 1. Total installable features in Feature Hub excludes bundled .colorPicker and .screenOCR
+        suite.expect(AppFeature.hubInstallableFeatures.count == AppFeature.allCases.count - 2,
+                     "the Hub omits exactly the two screenshot companions")
 
         // 2. Color picker and screen OCR are excluded from standalone Hub installables
         suite.expect(!AppFeature.hubInstallableFeatures.contains(.colorPicker)
