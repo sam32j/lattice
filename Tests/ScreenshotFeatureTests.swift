@@ -2906,8 +2906,8 @@ enum ScreenshotFeatureTests {
         let defaultScreenshotTools = ScreenshotSupport.Tool.allCases
         suite.expect(defaultScreenshotTools.count == 13
                 && Array(defaultScreenshotTools.prefix(9))
-                    == [.select, .arrow, .pixelate, .crop, .text, .sticker,
-                        .rect, .highlight, .freehand],
+                    == [.select, .arrow, .line, .ellipse, .rect, .redact,
+                        .freehand, .highlight, .text],
                "the screenshot rail leads with the nine most useful numbered tools")
         let customScreenshotTools = ScreenshotSupport.Tool.ordered(
             from: "crop,arrow,arrow,invalid")
@@ -2920,10 +2920,10 @@ enum ScreenshotFeatureTests {
                                                    enabled: true) == .select
                 && ScreenshotSupport.Tool.shortcutTool(number: 3,
                                                        orderRaw: nil,
-                                                       enabled: true) == .pixelate
+                                                       enabled: true) == .line
                 && ScreenshotSupport.Tool.shortcutTool(number: 9,
                                                        orderRaw: nil,
-                                                       enabled: true) == .freehand
+                                                       enabled: true) == .text
                 && ScreenshotSupport.Tool.shortcutTool(number: 1,
                                                        orderRaw: nil,
                                                        enabled: false) == nil
@@ -2934,7 +2934,7 @@ enum ScreenshotFeatureTests {
         suite.expect(ScreenshotSupport.Tool.shortcutNumber(for: .crop,
                                                      orderRaw: "arrow,crop",
                                                      enabled: true) == 2
-                && ScreenshotSupport.Tool.shortcutNumber(for: .redact,
+                && ScreenshotSupport.Tool.shortcutNumber(for: .pixelate,
                                                          orderRaw: nil,
                                                          enabled: true) == nil,
                "the rail exposes only the first nine configured shortcut numbers")
@@ -2962,7 +2962,7 @@ enum ScreenshotFeatureTests {
             let one = GlobalShortcut(keyCode: Int64(kVK_ANSI_1), modifiers: [])
             let raw = Tool.bindingsStorage([.text: text, .freehand: pen])
             suite.expect(Tool.bindings(from: raw) == [.text: text, .freehand: pen], "tool bindings round trip")
-            suite.expect(raw == "text=:17,freehand=control+option+command:40", "tool binding storage has stable tool order")
+            suite.expect(raw == "freehand=control+option+command:40,text=:17", "tool binding storage has stable tool order")
             suite.expect(GlobalShortcut(storageValue: text.storageValue) == nil
                 && GlobalShortcut(storageValue: text.storageValue, requiringModifier: false) == text,
                 "bare editor keys do not weaken global shortcut validation")
@@ -2999,9 +2999,9 @@ enum ScreenshotFeatureTests {
                    "disabling shortcuts gates both custom bindings and position digits")
             suite.expect(resolve(.init(keyCode: text.keyCode, modifiers: .shift)) == nil,
                    "custom bindings require an exact modifier match")
-            suite.expect(resolve(.init(keyCode: Int64(kVK_ANSI_5), modifiers: []), number: 5) == nil,
+            suite.expect(resolve(.init(keyCode: Int64(kVK_ANSI_9), modifiers: []), number: 9) == nil,
                    "a rebound tool no longer answers to its old digit")
-            suite.expect(resolve(.init(keyCode: Int64(kVK_ANSI_5), modifiers: []), number: 5,
+            suite.expect(resolve(.init(keyCode: Int64(kVK_ANSI_9), modifiers: []), number: 9,
                            bindings: "text=command:8") == .text,
                    "a rejected reserved binding falls back to the position digit")
             // Every outside owner is injected: the real checks read defaults
