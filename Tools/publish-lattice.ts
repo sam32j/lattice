@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Samuel Ji
 import { execFileSync } from "node:child_process";
-import { writeFileSync, readFileSync } from "node:fs";
+import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 const repository = "sam32j/lattice";
 const gh = (...args: string[]) => execFileSync("gh", args, { encoding: "utf8" }).trim();
@@ -28,7 +28,22 @@ try {
   const signingNote = isAdhoc
     ? "Personal ad-hoc self-signed build for personal use."
     : "Signed with Samuel's configured Developer ID and notarized by Apple.";
-  const notes = `Lattice ${version}\n\nUnofficial downstream build of Vorssaint. Source: ${commit}.\nUpstream: ${provenance.upstreamTag} (${provenance.upstreamCommit}); downstream revision ${provenance.revision}.\nProvenance is also included in LatticeProvenance.json inside the app.\n${signingNote}\nRequires macOS 14 or later and Apple Silicon.\n`;
+  let changelogNotes = "";
+  if (existsSync("Downstream/CHANGELOG.md")) {
+    const raw = readFileSync("Downstream/CHANGELOG.md", "utf8");
+    const lines = raw.split("\n");
+    const startIndex = lines.findIndex(l => l.startsWith(`## [${version}]`));
+    if (startIndex >= 0) {
+      const sectionLines: string[] = [];
+      for (const line of lines.slice(startIndex + 1)) {
+        if (line.startsWith("## [")) break;
+        sectionLines.push(line);
+      }
+      changelogNotes = sectionLines.join("\n").trim();
+    }
+  }
+  const featureHeader = changelogNotes ? `${changelogNotes}\n\n` : "";
+  const notes = `${featureHeader}### Provenance\nLattice ${version}\n\nUnofficial downstream build of Vorssaint. Source: ${commit}.\nUpstream: ${provenance.upstreamTag} (${provenance.upstreamCommit}); downstream revision ${provenance.revision}.\nProvenance is also included in LatticeProvenance.json inside the app.\n${signingNote}\nRequires macOS 14 or later and Apple Silicon.\n`;
   writeFileSync("dist/release-notes.md", notes);
   gh("api", "--method", "POST", `repos/${repository}/git/refs`, "-f", `ref=refs/tags/${tag}`, "-f", `sha=${commit}`);
   gh("release", "create", tag, "--repo", repository, "--verify-tag", "--draft", "--title", `Lattice ${version}`,

@@ -148,3 +148,18 @@ exec "$REAL_GIT" "$@"\n`); chmodSync(wrapper, 0o755);
   expect(git(f.fork, "rev-parse", "main")).toBe(f.base);
   expect(git(f.fork, "rev-parse", "lattice/main")).toBe(concurrent);
 });
+
+test("sync automatically resolves README.md conflicts by preserving downstream README", () => {
+  const f = fixture();
+  writeFileSync(join(f.upstream, "README.md"), "# Upstream Readme\nupstream content\n");
+  git(f.upstream, "add", "README.md");
+  git(f.upstream, "commit", "-m", "upstream readme change");
+  git(f.upstream, "tag", "v1.1.0");
+  writeFileSync(join(f.personal, "README.md"), "# Lattice Readme\nopinionated personal content\n");
+  git(f.personal, "add", "README.md");
+  git(f.personal, "commit", "-m", "downstream personal readme");
+  git(f.personal, "push", "origin", "HEAD");
+  const result = f.run("v1.1.0");
+  expect(result.exitCode).toBe(0);
+  expect(git(f.fork, "show", "lattice/main:README.md")).toBe("# Lattice Readme\nopinionated personal content");
+});

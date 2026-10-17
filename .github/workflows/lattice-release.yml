@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   preflight:
-    if: (github.repository == 'sam32j/lattice' || github.repository == 'sam32j/vorssaint-utils') && (github.ref == 'refs/heads/lattice/main' || github.ref_name == 'lattice/main')
+    if: (github.repository == 'sam32j/lattice' || github.repository == 'sam32j/vorssaint-utils') && (github.event_name == 'workflow_call' || github.ref == 'refs/heads/lattice/main' || github.ref_name == 'lattice/main')
     runs-on: macos-26
     timeout-minutes: 30
     permissions:
@@ -47,7 +47,7 @@ jobs:
         env:
           LATTICE_SOURCE_SHA: ${{ inputs.commit }}
         run: bun Tools/lattice-release-info.ts
-      - run: bun test Tests/downstream-sync.test.ts Tests/lattice-release.test.ts
+      - run: bun test Tests/downstream-sync.test.ts Tests/lattice-release.test.ts Tests/bump-release.test.ts
       - run: ./build.sh --test
 
   release:

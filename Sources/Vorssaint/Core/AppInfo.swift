@@ -19,6 +19,11 @@ enum AppInfo {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
     }
 
+    /// The upstream release version this downstream build is based upon.
+    static var upstreamVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "LatticeUpstreamTag") as? String ?? "3.4.1"
+    }
+
     /// True for the local "Vorssaint (Developer)" build (bundle id ends in `.dev`).
     /// It is never published and never auto-updates; all work is tested here first.
     static var isDeveloperBuild: Bool {
