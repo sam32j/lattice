@@ -82,3 +82,19 @@ test("bump-release respects --dry-run without modifying files", () => {
   const changelog = readFileSync(join(f.root, "Downstream/CHANGELOG.md"), "utf8");
   expect(changelog).not.toContain("## [3.4.1-d.2]");
 });
+
+test("bump-release parses commit body bullet points as nested sub-bullets", () => {
+  const f = fixture();
+  writeFileSync(join(f.root, "file1.txt"), "hello");
+  git(f.root, "add", ".");
+  git(f.root, "commit", "-m", "feat(quick-preview): revamp preview layout\n\n- Dedicated action cards for save and shelf\n- Instant dual text and QR extraction\nCo-authored-by: Bob <bob@example.com>");
+
+  const result = f.run();
+  expect(result.exitCode).toBe(0);
+
+  const changelog = readFileSync(join(f.root, "Downstream/CHANGELOG.md"), "utf8");
+  expect(changelog).toContain("- **Quick Preview**: Revamp preview layout");
+  expect(changelog).toContain("  - Dedicated action cards for save and shelf");
+  expect(changelog).toContain("  - Instant dual text and QR extraction");
+  expect(changelog).not.toContain("Co-authored-by");
+});
