@@ -548,14 +548,40 @@ struct CompactShortcutPreferenceRow: View {
 final class CompactShortcutCoordinator: ObservableObject {
     static let shared = CompactShortcutCoordinator()
     @Published var activeRole: GlobalShortcutRole?
+    @Published var activeTool: ScreenshotSupport.Tool?
+    private var exitObservers: [NSObjectProtocol] = []
 
     func startRecording(role: GlobalShortcutRole) {
         if activeRole != role {
-            if activeRole != nil {
+            if activeRole != nil || activeTool != nil {
                 ShortcutCapture.end()
             }
+            activeTool = nil
             activeRole = role
             ShortcutCapture.begin()
+            observeExits()
+        } else if activeTool != nil {
+            ShortcutCapture.end()
+            activeTool = nil
+            ShortcutCapture.begin()
+            observeExits()
+        }
+    }
+
+    func startRecording(tool: ScreenshotSupport.Tool) {
+        if activeTool != tool {
+            if activeRole != nil || activeTool != nil {
+                ShortcutCapture.end()
+            }
+            activeRole = nil
+            activeTool = tool
+            ShortcutCapture.begin()
+            observeExits()
+        } else if activeRole != nil {
+            ShortcutCapture.end()
+            activeRole = nil
+            ShortcutCapture.begin()
+            observeExits()
         }
     }
 
@@ -564,13 +590,65 @@ final class CompactShortcutCoordinator: ObservableObject {
             if activeRole == role {
                 activeRole = nil
                 ShortcutCapture.end()
+                removeExits()
             }
         } else {
             if activeRole != nil {
                 activeRole = nil
                 ShortcutCapture.end()
+                removeExits()
             }
         }
+    }
+
+    func stopRecording(tool: ScreenshotSupport.Tool? = nil) {
+        if let tool {
+            if activeTool == tool {
+                activeTool = nil
+                ShortcutCapture.end()
+                removeExits()
+            }
+        } else {
+            if activeTool != nil {
+                activeTool = nil
+                ShortcutCapture.end()
+                removeExits()
+            }
+        }
+    }
+
+    func stopRecordingAll() {
+        guard activeRole != nil || activeTool != nil else { return }
+        activeRole = nil
+        activeTool = nil
+        ShortcutCapture.end()
+        removeExits()
+    }
+
+    private func observeExits() {
+        removeExits()
+        let center = NotificationCenter.default
+        exitObservers.append(center.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.stopRecordingAll()
+                }
+        })
+        exitObservers.append(center.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.stopRecordingAll()
+                }
+        })
+    }
+
+    private func removeExits() {
+        for observer in exitObservers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        exitObservers.removeAll()
     }
 }
 
@@ -717,6 +795,9 @@ struct CompactShortcutRecorder: View {
                     },
                     onFlagsChanged: { event in
                         handleFlagsChanged(event)
+                    },
+                    onExit: {
+                        coordinator.stopRecording(role: role)
                     }
                 )
             }
@@ -845,20 +926,23 @@ struct CompactRecorderShakeEffect: GeometryEffect {
 struct KeyCaptureBridgeView: NSViewRepresentable {
     var onKeyDown: (NSEvent) -> Void
     var onFlagsChanged: (NSEvent) -> Void
+    var onExit: (() -> Void)? = nil
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onKeyDown: onKeyDown, onFlagsChanged: onFlagsChanged)
+        Coordinator(onKeyDown: onKeyDown, onFlagsChanged: onFlagsChanged, onExit: onExit)
     }
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
-        context.coordinator.install()
+        context.coordinator.install(view: view)
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
         context.coordinator.onKeyDown = onKeyDown
         context.coordinator.onFlagsChanged = onFlagsChanged
+        context.coordinator.onExit = onExit
+        context.coordinator.install(view: nsView)
     }
 
     static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
@@ -869,31 +953,59 @@ struct KeyCaptureBridgeView: NSViewRepresentable {
     final class Coordinator {
         var onKeyDown: (NSEvent) -> Void
         var onFlagsChanged: (NSEvent) -> Void
-        private var monitor: Any?
+        var onExit: (() -> Void)?
+        private var keyMonitor: Any?
+        private var clickMonitor: Any?
 
-        init(onKeyDown: @escaping (NSEvent) -> Void, onFlagsChanged: @escaping (NSEvent) -> Void) {
+        init(onKeyDown: @escaping (NSEvent) -> Void,
+             onFlagsChanged: @escaping (NSEvent) -> Void,
+             onExit: (() -> Void)? = nil) {
             self.onKeyDown = onKeyDown
             self.onFlagsChanged = onFlagsChanged
+            self.onExit = onExit
         }
 
-        func install() {
-            guard monitor == nil else { return }
-            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
-                if event.type == .flagsChanged {
-                    self?.onFlagsChanged(event)
-                    return nil
-                } else if event.type == .keyDown {
-                    self?.onKeyDown(event)
-                    return nil
+        func install(view: NSView) {
+            if keyMonitor == nil {
+                keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
+                    if event.type == .flagsChanged {
+                        self?.onFlagsChanged(event)
+                        return nil
+                    } else if event.type == .keyDown {
+                        self?.onKeyDown(event)
+                        return nil
+                    }
+                    return event
                 }
-                return event
+            }
+            if clickMonitor == nil, onExit != nil {
+                clickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self, weak view] event in
+                    guard let self, let onExit = self.onExit else { return event }
+                    guard let view, let window = view.window else {
+                        onExit()
+                        return event
+                    }
+                    if event.window !== window {
+                        onExit()
+                        return event
+                    }
+                    let setterFrame = view.convert(view.bounds, to: nil)
+                    if !setterFrame.contains(event.locationInWindow) {
+                        onExit()
+                    }
+                    return event
+                }
             }
         }
 
         func remove() {
-            if let monitor {
-                NSEvent.removeMonitor(monitor)
-                self.monitor = nil
+            if let keyMonitor {
+                NSEvent.removeMonitor(keyMonitor)
+                self.keyMonitor = nil
+            }
+            if let clickMonitor {
+                NSEvent.removeMonitor(clickMonitor)
+                self.clickMonitor = nil
             }
         }
     }
