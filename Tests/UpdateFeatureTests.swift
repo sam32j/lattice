@@ -1335,6 +1335,35 @@ enum UpdateFeatureTests {
         suite.expect(ReleaseNotes.rawNotes(for: "dev", changelog: unreleasedChangelog).contains("Feature pending release."),
                "rawNotes for dev falls back to the unreleased block")
 
+        let downstreamChangelog = """
+        # Lattice Changelog
+
+        ## [3.4.1-d.2] - 2026-10-17
+
+        ### Added
+        - Delayed start mode.
+
+        ### Fixed
+        - Undo crash fix.
+
+        ### Provenance
+        Lattice 3.4.1-d.2
+        Unofficial downstream build.
+        """
+        let latticeNotes = ReleaseNotes.notes(for: "3.4.1-d.2", changelog: downstreamChangelog)
+        suite.expect(latticeNotes.version == "3.4.1-d.2" && latticeNotes.date == "2026-10-17",
+               "downstream release notes version and date are parsed")
+        suite.expect(latticeNotes.sections.count == 2,
+               "downstream release notes keep user-facing sections and filter internal provenance")
+        suite.expect(latticeNotes.sections.first?.title == "Added"
+                    && latticeNotes.sections.first?.bulletItems == ["Delayed start mode."],
+               "downstream Added section is parsed")
+        suite.expect(latticeNotes.sections.last?.title == "Fixed"
+                    && latticeNotes.sections.last?.bulletItems == ["Undo crash fix."],
+               "downstream Fixed section is parsed")
+        suite.expect(ReleaseNotes.allVersions(changelog: downstreamChangelog) == ["3.4.1-d.2"],
+               "allVersions lists downstream revision versions")
+
         // MARK: App updates
 
         suite.expect(AppUpdatesSupport.compare("1.130.0", "1.129.0") == .orderedDescending
