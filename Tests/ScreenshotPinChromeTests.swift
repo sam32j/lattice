@@ -6,9 +6,12 @@ import AppKit
 enum ScreenshotPinChromeTests {
     @MainActor static func run(_ suite: TestSuite, image: CGImage) {
         let pin = ScreenshotPinWindow(image: image, scale: 2)
+        pin.setFrameOrigin(CGPoint(x: -20000, y: -20000))
         pin.showPin(orderFront: false)
         defer { pin.closePin() }
+        suite.expect(!pin.isVisible, "pin with orderFront: false is not visible")
         pin.updateHover(at: CGPoint(x: pin.frame.midX, y: pin.frame.midY))
+        suite.expect(!pin.isVisible, "hovering non-visible pin does not order it front")
         let children = pin.childWindows ?? []
         suite.expect(children.count == 4,
                      "showing a pin attaches its three control surfaces and feedback surface")
@@ -67,13 +70,16 @@ enum ScreenshotPinChromeTests {
 
         // Test temporary drag hide
         let pin2 = ScreenshotPinWindow(image: image, scale: 2)
+        pin2.setFrameOrigin(CGPoint(x: -20000, y: -20000))
         pin2.showPin(orderFront: false)
         defer { pin2.closePin() }
+        suite.expect(!pin2.isVisible, "pin2 is not visible")
         suite.expect(!pin2.isHiddenForDrag, "pin2 is initially not hidden for drag")
         pin2.setHiddenForDrag(true)
         suite.expect(pin2.isHiddenForDrag, "setHiddenForDrag(true) sets hidden-for-drag state")
         pin2.setHiddenForDrag(false)
         suite.expect(!pin2.isHiddenForDrag, "setHiddenForDrag(false) clears hidden-for-drag state")
+        suite.expect(!pin2.isVisible, "pin2 remains not visible after clearing drag-hide")
     }
 
     private static func buttons(in view: NSView?) -> [NSButton] {

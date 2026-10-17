@@ -48,12 +48,41 @@ def availability_declaration(path, prefix):
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     recorder = "Sources/Vorssaint/Services/Recorder/ScreenRecorderService.swift"
+    editor = "Sources/Vorssaint/Services/Recorder/RecorderEditorController.swift"
+    write("RecordingStash.swift", "import Foundation\nextension RecordingStashTests {\n"
+          + "final class Service: State {\n"
+          + declaration("Sources/Vorssaint/Services/QuickTools/RecentCaptureService.swift",
+                        "    func stashRecording(")
+          + "}\n}\n")
+    annotation_editor = "Sources/Vorssaint/UI/Screenshot/ScreenshotEditorView.swift"
+    write("ScreenshotTextEditor.swift", "import AppKit\nimport SwiftUI\nextension ScreenshotTextEditorTests {\n"
+          + declaration(annotation_editor, "struct ScreenshotAnnotationTextEditor:")
+          + declaration(annotation_editor, "private final class EditorTextView:")
+          + "}\n")
+    write("RecorderSaveState.swift", "import Foundation\nextension RecorderSaveStateTests {\n"
+          + "final class Model: ModelState {\n"
+          + declaration(editor, "    var isModified:")
+          + declaration(editor, "    func markSaved(")
+          + declaration(editor, "    func export(")
+          + "}\nfinal class Controller: ControllerState {\n"
+          + declaration(editor, "    private func run(").replace("private func", "func", 1)
+          + "}\n}\n")
+    write("RecorderCloseSafety.swift", "import Foundation\nextension RecorderCloseSafetyTests {\n"
+          + "final class Controller: State {\n"
+          + declaration(editor, "    func discard()")
+          + declaration(editor, "    func windowShouldClose(")
+          + declaration(editor, "    private var originalIsPreserved:")
+          + declaration(editor, "    private var hasPreservedOutput:")
+          + declaration(editor, "    private var needsCloseConfirmation:")
+          + "}\n}\n")
     write("RecorderPreparation.swift", "import Foundation\nextension RecorderPreparationTests {\n"
           + "final class Service: Fixture {\n"
           + "".join(declaration(recorder, prefix).replace("private func", "func", 1)
                     for prefix in ["    private func beginRecording(", "    private func pendingStartIsAuthorized(",
                                    "    private func invalidatePendingStart()", "    var hasActiveCapture:",
-                                   "    func stopOrCancelActiveCapture()", "    func prepareForSelection()"])
+                                   "    func stopOrCancelActiveCapture()", "    func prepareForSelection()",
+                                   "    func record(_ region:", "    private func startDelayedSelection(",
+                                   "    func stop(reason:"])
           + "}\n}\n")
     write("SwitcherFullscreenScope.swift", "import AppKit\nimport ApplicationServices\nimport CoreGraphics\n"
           + "extension SwitcherFullscreenScopeTests.Enumerator {\n"

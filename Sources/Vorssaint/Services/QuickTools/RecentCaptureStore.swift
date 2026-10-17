@@ -107,6 +107,34 @@ final class RecentCaptureStore {
         return true
     }
 
+    /// Called on the history queue, so cleanup cannot observe the copied movie
+    /// until its index entry is committed. A failed commit leaves the source intact.
+    func importRecording(from sourceURL: URL, entry: RecentCaptureEntry) -> Bool {
+        guard loadIfNeeded(), entry.kind == .recording,
+              let path = entry.recordingPath, Self.isSafeRelativePath(path),
+              Self.isRegularFile(sourceURL), let directoryURL else { return false }
+        let root = directoryURL.resolvingSymlinksInPath()
+        let destination = root.appendingPathComponent(path)
+        let parent = destination.deletingLastPathComponent()
+        guard parent.resolvingSymlinksInPath().path == parent.path else { return false }
+        let previous = entries
+        var copied = false
+        do {
+            try prepareRoot(parent)
+            try manager.copyItem(at: sourceURL, to: destination)
+            copied = true
+            try manager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
+            entries.append(entry)
+            entries.sort { $0.createdAt > $1.createdAt }
+            guard persist() else { throw CocoaError(.fileWriteUnknown) }
+            return true
+        } catch {
+            entries = previous
+            if copied { try? manager.removeItem(at: destination) }
+            return false
+        }
+    }
+
     private func prepareRoot(_ root: URL) throws {
         let resolved = root.resolvingSymlinksInPath()
         try manager.createDirectory(at: resolved, withIntermediateDirectories: true,
@@ -136,71 +164,56 @@ final class RecentCaptureStore {
     private func removeOrphanedFiles() {
         guard let directoryURL else { return }
         let resolvedDir = directoryURL.resolvingSymlinksInPath()
-        // Sweep capture directory (both root legacy files and date subfolders)
         let referencedScreenshots = Set(entries.compactMap { $0.screenshotName })
         let referencedRecordings = Set(entries.compactMap { $0.recordingPath })
         let referencedCaptures = referencedScreenshots.union(referencedRecordings)
         let referencedThumbnails = Set(entries.compactMap { $0.thumbnailName })
 
-        if let items = try? manager.contentsOfDirectory(
-            at: resolvedDir,
-            includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey],
-            options: [.skipsHiddenFiles]) {
-            for item in items {
-                let name = item.lastPathComponent
-                if name == "history.json" { continue }
-                guard let values = try? item.resourceValues(forKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]),
-                      values.isSymbolicLink != true else { continue }
+        // Sweep legacy root files and dated captures without following symlinks.
+        for item in contents(of: resolvedDir) {
+            let name = item.lastPathComponent
+            guard let values = try? item.resourceValues(forKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]),
+                  values.isSymbolicLink != true else { continue }
 
-                if values.isRegularFile == true {
-                    if Self.isCaptureFileName(name) {
-                        if !referencedCaptures.contains(name) && !referencedThumbnails.contains(name) {
-                            try? manager.removeItem(at: item)
-                        }
-                    }
-                } else if values.isDirectory == true, Self.isDateFolderName(name) {
-                    if let dayFiles = try? manager.contentsOfDirectory(
-                        at: item,
-                        includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey],
-                        options: [.skipsHiddenFiles]) {
-                        for dayFile in dayFiles {
-                            let fileName = dayFile.lastPathComponent
-                            let relativePath = "\(name)/\(fileName)"
-                            guard Self.isRegularFile(dayFile),
-                                  Self.isCaptureFileName(fileName) else { continue }
-                            if !referencedCaptures.contains(relativePath) {
-                                try? manager.removeItem(at: dayFile)
-                            }
-                        }
-                    }
-                    if let remaining = try? manager.contentsOfDirectory(atPath: item.path), remaining.isEmpty {
-                        try? manager.removeItem(at: item)
-                    }
+            if values.isRegularFile == true {
+                if Self.isCaptureFileName(name),
+                   !referencedCaptures.contains(name), !referencedThumbnails.contains(name) {
+                    try? manager.removeItem(at: item)
+                }
+            } else if values.isDirectory == true, Self.isDateFolderName(name) {
+                for file in contents(of: item) {
+                    let fileName = file.lastPathComponent
+                    guard Self.isRegularFile(file), Self.isCaptureFileName(fileName),
+                          !referencedCaptures.contains("\(name)/\(fileName)") else { continue }
+                    try? manager.removeItem(at: file)
+                }
+                if let remaining = try? manager.contentsOfDirectory(atPath: item.path), remaining.isEmpty {
+                    try? manager.removeItem(at: item)
                 }
             }
         }
 
-        // Sweep thumbnail directory if separate
-        if let thumbDir = thumbnailDirectoryURL?.resolvingSymlinksInPath(), thumbDir != resolvedDir {
-            if let thumbFiles = try? manager.contentsOfDirectory(
-                at: thumbDir,
-                includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey],
-                options: [.skipsHiddenFiles]) {
-                for file in thumbFiles {
-                    let name = file.lastPathComponent
-                    guard Self.isRegularFile(file),
-                          Self.isCaptureFileName(name),
-                          name.contains("-thumbnail") else { continue }
-                    if !referencedThumbnails.contains(name) {
-                        try? manager.removeItem(at: file)
-                    }
-                }
-            }
+        guard let thumbDir = thumbnailDirectoryURL?.resolvingSymlinksInPath(), thumbDir != resolvedDir
+        else { return }
+        for file in contents(of: thumbDir) {
+            let name = file.lastPathComponent
+            guard Self.isRegularFile(file), Self.isCaptureFileName(name),
+                  name.contains("-thumbnail"), !referencedThumbnails.contains(name) else { continue }
+            try? manager.removeItem(at: file)
         }
     }
 
+    private func contents(of directory: URL) -> [URL] {
+        (try? manager.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey],
+            options: [.skipsHiddenFiles])) ?? []
+    }
+
     static func isRegularFile(_ url: URL) -> Bool {
-        guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+        var currentURL = url
+        currentURL.removeAllCachedResourceValues()
+        guard let values = try? currentURL.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
         else { return false }
         return values.isRegularFile == true && values.isSymbolicLink != true
     }

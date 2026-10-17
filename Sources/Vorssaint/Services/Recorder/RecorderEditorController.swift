@@ -49,8 +49,8 @@ final class RecorderEditorModel: ObservableObject, BackdropEditing {
         return document != initialDocument
     }
 
-    func markSaved() {
-        initialDocument = document
+    func markSaved(_ savedDocument: RecorderEditDocument) {
+        initialDocument = savedDocument
     }
 
     /// Undo keeps whole documents. They are a few dozen bytes each, so the
@@ -1346,7 +1346,10 @@ final class RecorderEditorModel: ObservableObject, BackdropEditing {
             guard let self else { return }
             self.isExporting = false
             self.exporter = nil
-            if failure == nil, rememberDestination { self.lastExportedURL = destination }
+            if failure == nil {
+                self.markSaved(document)
+                if rememberDestination { self.lastExportedURL = destination }
+            }
             completion(failure)
         }
     }
@@ -1476,11 +1479,22 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
     private let model: RecorderEditorModel
     private var window: NSWindow?
     private var keyMonitor: Any?
-    /// True once at least one file has been written from this recording. A
-    /// recording that produced something can be closed without a question; one
-    /// that produced nothing asks first, because closing throws it away.
-    private var exported = false
+    /// Track copied outputs too, since they do not set lastExportedURL.
+    private var preservedExportURL: URL?
     private var confirmedClose = false
+    private let preservedRecordingURL: URL?
+
+    private var originalIsPreserved: Bool {
+        preservedRecordingURL.map(RecentCaptureStore.isRegularFile) == true
+    }
+
+    private var hasPreservedOutput: Bool {
+        originalIsPreserved || preservedExportURL.map(RecentCaptureStore.isRegularFile) == true
+    }
+
+    private var needsCloseConfirmation: Bool {
+        model.isModified || !hasPreservedOutput
+    }
 
     /// The recording this window owns, so the sweep can tell a folder somebody
     /// is still working in from one a crash left behind.
@@ -1494,7 +1508,8 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
         FeatureStrings.recorderShare(L10n.shared.language)
     }
 
-    init(take: RecorderTakeStore.Take) {
+    init(take: RecorderTakeStore.Take, preservedRecordingURL: URL? = nil) {
+        self.preservedRecordingURL = preservedRecordingURL
         model = RecorderEditorModel(take: take)
         super.init()
     }
@@ -1692,8 +1707,7 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
             case nil:
                 // The window stays: exports are slow and plural, and a person
                 // who just made a video often wants the GIF of it too.
-                self.exported = true
-                self.model.markSaved()
+                self.preservedExportURL = destination
                 RecentCaptureService.shared.recordRecording(at: destination)
                 if let onSuccess {
                     onSuccess(destination)
@@ -1712,11 +1726,9 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
         }
     }
 
-    /// Discarding an unedited recording closes immediately without asking,
-    /// since the original is already safely stashed in Recent Captures.
-    /// If there are unsaved edits, it asks for confirmation before discarding them.
+    /// Closing without a prompt requires preserved output and no unsaved edits.
     func discard() {
-        if !model.isModified {
+        if !needsCloseConfirmation {
             confirmedClose = true
             window?.close()
             return
@@ -1731,8 +1743,9 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
         guard let window else { return }
         model.pause()
         let alert = NSAlert()
-        alert.messageText = "Discard unsaved edits?"
-        alert.informativeText = "The original recording is saved in Recent Captures, but any changes you made will be lost."
+        alert.messageText = strings.discardTitle
+        alert.informativeText = hasPreservedOutput
+            ? strings.discardSavedMessage : strings.discardMessage
         alert.alertStyle = .warning
         alert.addButton(withTitle: strings.discardButton)
         alert.addButton(withTitle: strings.cancelButton)
@@ -1753,7 +1766,7 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
             model.cancelExport()
         }
         guard !confirmedClose else { return true }
-        guard model.isModified else { return true }
+        guard needsCloseConfirmation else { return true }
         askBeforeLosingTheRecording { [weak self] in
             self?.confirmedClose = true
             self?.window?.close()
