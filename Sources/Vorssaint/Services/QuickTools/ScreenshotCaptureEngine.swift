@@ -228,6 +228,9 @@ enum ScreenshotCaptureEngine {
         configuration.captureResolution = .best
         configuration.showsCursor = false
         configuration.colorSpaceName = CGColorSpace.sRGB
+        // A desktop-independent window may extend beyond its source display.
+        // Requested dimensions alone do not restore pixels clipped there.
+        configuration.ignoreGlobalClipSingleWindow = true
         let filter = SCContentFilter(desktopIndependentWindow: window)
         let capture = try? await SCScreenshotManager.captureImage(contentFilter: filter,
                                                                   configuration: configuration)
@@ -266,7 +269,10 @@ enum ScreenshotCaptureEngine {
         var layers: [(image: CGImage, frame: CGRect)] = []
         for id in orderedIDs {
             guard let frame = windowFrames[id],
-                  let capture = await captureWindow(id, scale: scale, includeAttachedWindows: false)
+                  let capture = await captureWindow(id, scale: scale, includeAttachedWindows: false),
+                  SwitcherSupport.captureCoversWindow(imageWidth: capture.image.width,
+                                                      imageHeight: capture.image.height,
+                                                      windowSize: frame.size)
             else { return nil }
             layers.append((capture.image, frame))
         }
