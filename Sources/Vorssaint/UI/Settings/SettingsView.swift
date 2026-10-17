@@ -776,26 +776,59 @@ struct AboutSettings: View {
 
 struct ReleaseNotesSettings: View {
     @ObservedObject private var l10n = L10n.shared
-    private let notes = ReleaseNotes.current
+    @State private var selectedScope: Scope = .lattice
+
+    enum Scope: String, CaseIterable {
+        case lattice = "Lattice Features"
+        case upstream = "Upstream Base"
+    }
+
+    private var hasLatticeChangelog: Bool {
+        ReleaseNotes.bundledLatticeChangelog() != nil
+    }
+
+    private var activeNotes: ReleaseNotes {
+        if !hasLatticeChangelog {
+            return ReleaseNotes.currentUpstream
+        }
+        switch selectedScope {
+        case .lattice:
+            return ReleaseNotes.currentLattice
+        case .upstream:
+            return ReleaseNotes.currentUpstream
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(l10n.s.obWhatsNewTitle)
-                    .font(.title2.bold())
-                Text(versionLine)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(l10n.s.obWhatsNewTitle)
+                        .font(.title2.bold())
+                    Text(versionLine)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if hasLatticeChangelog {
+                    Spacer()
+                    Picker("", selection: $selectedScope) {
+                        ForEach(Scope.allCases, id: \.self) { scope in
+                            Text(scope.rawValue).tag(scope)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 240)
+                }
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    if notes.sections.isEmpty {
+                    if activeNotes.sections.isEmpty {
                         fallbackNote
                     } else {
-                        ForEach(Array(notes.sections.enumerated()), id: \.offset) { _, section in
+                        ForEach(Array(activeNotes.sections.enumerated()), id: \.offset) { _, section in
                             releaseSection(section)
                         }
                     }
@@ -809,6 +842,7 @@ struct ReleaseNotesSettings: View {
     }
 
     private var versionLine: String {
+        let notes = activeNotes
         if let date = notes.date {
             return "v\(notes.version) · \(date)"
         }

@@ -699,6 +699,9 @@ cp Resources/com.vorssaint.utils.fan-control.plist \
     "$STAGE/Contents/Library/LaunchDaemons/$FAN_HELPER_ID.plist"
 cp Resources/Info.plist "$STAGE/Contents/Info.plist"
 cp CHANGELOG.md "$STAGE/Contents/Resources/CHANGELOG.md"
+if [[ -f Downstream/CHANGELOG.md ]]; then
+    cp Downstream/CHANGELOG.md "$STAGE/Contents/Resources/LatticeChangelog.md"
+fi
 for lproj in Resources/*.lproj(N); do
     cp -R "$lproj" "$STAGE/Contents/Resources/"
 done

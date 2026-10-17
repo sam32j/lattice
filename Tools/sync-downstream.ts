@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Samuel Ji
 // Run with bun. All rebasing happens in a disposable clone, never the caller's checkout.
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync, appendFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync, appendFileSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -48,6 +48,8 @@ try {
     throw new Error("Recorded upstream tag was rewritten; manual review required");
   let ready = false, nextPersonal = oldPersonal;
   git(cwd, "checkout", "--detach", oldPersonal);
+  const readmePath = join(cwd, "README.md");
+  const latticeReadme = existsSync(readmePath) ? readFileSync(readmePath) : undefined;
   const allowSnapshot = Boolean(metadata.allowSnapshotRelease);
   if (release === metadata.baseCommit || (allowSnapshot && release === metadata.upstreamCommit && ancestor(metadata.upstreamCommit, metadata.baseCommit))) {
     if (tag !== metadata.upstreamTag || release !== metadata.upstreamCommit)
@@ -58,8 +60,33 @@ try {
       git(cwd, "rebase", "--rebase-merges", "--reapply-cherry-picks", "--empty=keep",
         "--onto", release, metadata.baseCommit);
     } catch {
-      const conflicts = git(cwd, "diff", "--name-only", "--diff-filter=U");
-      throw new Error(`Rebase stopped; remote branches untouched. Resolve conflicts manually:\n${conflicts}`);
+      let resolved = false;
+      if (latticeReadme !== undefined) {
+        while (true) {
+          const unmerged = git(cwd, "diff", "--name-only", "--diff-filter=U").split("\n").filter(Boolean);
+          if (unmerged.length === 0) {
+            resolved = true;
+            break;
+          }
+          if (unmerged.length === 1 && unmerged[0] === "README.md") {
+            writeFileSync(join(cwd, "README.md"), latticeReadme);
+            git(cwd, "add", "README.md");
+            try {
+              git(cwd, "rebase", "--continue");
+              resolved = true;
+              break;
+            } catch {
+              continue;
+            }
+          } else {
+            break;
+          }
+        }
+      }
+      if (!resolved) {
+        const conflicts = git(cwd, "diff", "--name-only", "--diff-filter=U");
+        throw new Error(`Rebase stopped; remote branches untouched. Resolve conflicts manually:\n${conflicts}`);
+      }
     }
     metadata.baseCommit = release; metadata.upstreamCommit = release;
     metadata.upstreamTag = tag; metadata.revision = 1;

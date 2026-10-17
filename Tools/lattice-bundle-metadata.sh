@@ -20,6 +20,7 @@ perl -pi -e 's/Vorssaint/Lattice/g' "$INFO"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $UPSTREAM_BUILD.$REVISION" "$INFO"
 /usr/libexec/PlistBuddy -c "Set :NSHumanReadableCopyright Lattice contributors; based on Vorssaint, GPL-3.0-or-later" "$INFO"
 /usr/libexec/PlistBuddy -c "Add :LatticeUpstreamBase string $BASE" "$INFO"
+/usr/libexec/PlistBuddy -c "Add :LatticeUpstreamTag string ${TAG#v}" "$INFO"
 /usr/libexec/PlistBuddy -c "Add :LatticeDownstreamRevision integer $REVISION" "$INFO"
 cp "$META" "$APP/Contents/Resources/LatticeProvenance.json"
 for STRINGS in "$APP"/Contents/Resources/*.lproj/InfoPlist.strings(N); do
