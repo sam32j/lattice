@@ -60,16 +60,7 @@ final class ScreenTextService: ObservableObject {
         case empty
 
         static func readingPayload(from reading: BarcodeDetector.Reading) -> String {
-            if let str = reading as Any as? String {
-                return str
-            }
-            let mirror = Mirror(reflecting: reading)
-            for child in mirror.children where child.label == "payload" {
-                if let str = child.value as? String {
-                    return str
-                }
-            }
-            return "\(reading)"
+            reading.payload
         }
     }
 

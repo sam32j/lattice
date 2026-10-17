@@ -110,7 +110,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
             updateImageOpacity()
             chrome.setControlsVisible(hovered)
         }
-        if hovered && !ignoresMouseEvents && (!NSApp.isActive || !isKeyWindow) {
+        if isVisible && !isHiddenForDrag && hovered && !ignoresMouseEvents && (!NSApp.isActive || !isKeyWindow) {
             NSApp.activate(ignoringOtherApps: true)
             makeKeyAndOrderFront(nil)
             makeFirstResponder(surface)

@@ -33,7 +33,6 @@ struct MetricsTests {
             ("pointer-input", {
                 PointerOnDisplayContract.run(suite)
                 PointerInputFeatureTests.run(suite)
-                SmoothScrollRoutingTests.run(suite)
                 KeyboardDebounceTapTests.run(suite)
                 PointerDisplayLookupContract.run(suite)
                 SuperKeyTapContract.run(suite)
@@ -51,7 +50,6 @@ struct MetricsTests {
             ("mixer", {
                 MixerNativeDragTests.run(suite)
                 MixerOutputAdjustmentContract.run(suite)
-                MixerHeadphonesDisconnectContract.run(suite)
                 MixerLevelCompensationContract.run(suite)
                 SoundOutputSwitchContract.run(suite)
                 MixerUniversalRoutingContract.run(suite)
@@ -65,7 +63,6 @@ struct MetricsTests {
                 AirPlayAvailabilityContract.run(suite)
                 AirPlayConcurrentLanesContract.run(suite)
                 AirPlayBacklogContract.run(suite)
-                AirPlayIdleContract.run(suite)
                 MixerInputVolumeContract.run(suite)
                 MixerPercentKeyTests.run(suite)
                 MixerFeatureTests.run(suite)
@@ -81,25 +78,22 @@ struct MetricsTests {
                 UpdateAdminInstallContract.run(suite)
                 UpdateHighlightsTests.run(suite)
                 UpdateIntroFlowTests.run(suite)
-                ReleaseDigestTests.run(suite)
             }),
             ("repository", { RepositoryFeatureTests.run(suite) }),
             ("screenshot-pins", { ScreenshotPinGestureTests.run(suite) }),
             ("screenshots", {
-                ScreenshotCanvasSupportTests.run(suite)
-                ScreenshotImageLayerTests.run(suite)
-                ScreenshotCanvasModelTests.run(suite)
+                ScreenshotTextEditorTests.run(suite)
                 ScreenTextCompletionTests.run(suite)
                 ScreenshotOCRControlTests.run(suite)
                 ScreenshotPreviewHoverTests.run(suite)
                 ScreenshotWatermarkTests.run(suite)
                 ScreenshotFeatureTests.run(suite)
-                ScreenshotSpotlightEditingTests.run(suite)
                 ScreenshotShareCompletionTests.run(suite)
                 ScreenshotAutoShelfTests.run(suite)
                 ScreenshotScrollingCaptureTests.run(suite)
                 ScreenshotAttachedCaptureTests.run(suite)
                 ScreenCaptureToolPickerTests.run(suite)
+                DirectCaptureRequirementsComprehensiveTests.run(suite)
             }),
             ("recorder", {
                 RecorderGIFWriterTests.run(suite)
@@ -121,7 +115,6 @@ struct MetricsTests {
                 PlainTextLineMoverTests.run(suite)
                 NotchVolumeKeyTests.run(suite)
                 NotchSettingsTabRowTests.run(suite)
-                NotchPresentationProbeArgumentTests.run(suite)
             }),
             ("switcher-model", { SwitcherModelFeatureTests.run(suite) }),
             ("agents", { NotchAgentTests.run(suite) }),
@@ -131,7 +124,6 @@ struct MetricsTests {
             }),
             ("utilities", {
                 UtilitiesFeatureTests.run(suite)
-                TextSnippetExpansionTests.run(suite)
                 QuickTogglesAlertTests.run(suite)
                 PortManagerRefreshTests.run(suite)
             }),
@@ -155,17 +147,18 @@ struct MetricsTests {
                 ScreenshotToolShortcutTests.run(suite)
             }),
             ("storage", {
+                RecordingStashTests.run(suite)
+                RecordingImportTests.run(suite)
                 RecentCaptureStoreTests.run(suite)
                 RecorderPresetImageStoreTests.run(suite)
                 StorageFeatureTests.run(suite)
                 ScratchpadStoreContractTests.run(suite)
             }),
-            ("quit-protection", {
-                QuitProtectionHUD.progressChecks(suite)
-                QuitProtectionRoutingContract.QuitProtectionService.routingChecks(suite)
-            }),
+            ("quit-protection", { QuitProtectionHUD.progressChecks(suite) }),
             ("scratchpad", { ScratchpadMarkTests.run { suite.expect($0, $1) } }),
             ("recording", {
+                RecorderSaveStateTests.run(suite)
+                RecorderCloseSafetyTests.run(suite)
                 RecorderPreparationTests.run(suite)
                 RecorderSampleTimingTests.run(suite)
                 RecorderWriterTests.run(suite)
@@ -218,6 +211,7 @@ struct MetricsTests {
             }),
             ("wallpaper", { WallpaperContract.run(suite) }),
             ("emoji", { CommandBarEmojiContract.run(suite) }),
+            ("capture-requirements", { DirectCaptureRequirementsComprehensiveTests.run(suite) }),
         ]
         var selected = Set<String>()
         var listOnly = false

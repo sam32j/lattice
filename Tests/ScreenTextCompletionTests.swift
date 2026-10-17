@@ -8,7 +8,12 @@ import Foundation
 /// or system pasteboard is touched.
 enum ScreenTextCompletionTests {
     typealias CGImage = Int
-    enum BarcodeDetector { typealias Reading = String }
+    enum BarcodeDetector {
+        struct Reading: Equatable, ExpressibleByStringLiteral {
+            let payload: String
+            init(stringLiteral value: String) { payload = value }
+        }
+    }
     enum ScreenshotSelectionController {
         struct Capture { let image: CGImage }
     }
@@ -220,5 +225,15 @@ enum ScreenTextCompletionTests {
                      && NSPasteboard.general.value == "https://example.com"
                      && QuickToolHUD.messages == ["copied"],
                      "unified OCR honors QR detection and copies directly without modal")
+
+        reset()
+        State.outcomes[2] = .both("https://lattice.app", text: "Recognized Screen Title")
+        let dual = ScreenTextService()
+        dual.copyText(from: 2)
+        finish()
+        suite.expect(State.requests.first?.qr == true
+                     && NSPasteboard.general.value == "Recognized Screen Title\n\nhttps://lattice.app"
+                     && QuickToolHUD.messages == ["copied"],
+                     "OCR with both text and QR code recognizes both and joins them on pasteboard without modal")
     }
 }

@@ -286,6 +286,7 @@ final class ScreenRecorderService: ObservableObject {
     private var pendingStartGeneration = 0
     private var isAwaitingMicrophone = false
     private var isPreparingRecording = false
+    private var isWaitingForStart = false
     private var sleepActivity: NSObjectProtocol?
     /// Set while a stop is being finalized, so a second press of the shortcut
     /// cannot start a recording on top of one still closing its file.
@@ -330,10 +331,11 @@ final class ScreenRecorderService: ObservableObject {
 
     @discardableResult
     func openEditor(with take: RecorderTakeStore.Take,
-                    owner: AppFeature = .screenRecorder) -> Bool {
+                    owner: AppFeature = .screenRecorder,
+                    preservedRecordingURL: URL? = nil) -> Bool {
         guard owner.isAvailable else { return false }
         WindowActivationPolicy.retain()
-        let editor = RecorderEditorController(take: take)
+        let editor = RecorderEditorController(take: take, preservedRecordingURL: preservedRecordingURL)
         editors.append(editor)
         if owner == .mediaTools { mediaOwnedEditorIDs.insert(ObjectIdentifier(editor)) }
         editor.show()
@@ -364,7 +366,7 @@ final class ScreenRecorderService: ObservableObject {
 
     var hasActiveCapture: Bool {
         isRecording || session != nil || countdown != nil || isAwaitingMicrophone
-            || isPreparingRecording || isFinishing
+            || isPreparingRecording || isWaitingForStart || isFinishing
     }
 
     func stopOrCancelActiveCapture() -> Bool {
@@ -376,7 +378,7 @@ final class ScreenRecorderService: ObservableObject {
             invalidatePendingStart()
             return true
         }
-        if isAwaitingMicrophone || isPreparingRecording {
+        if isAwaitingMicrophone || isPreparingRecording || isWaitingForStart {
             invalidatePendingStart()
             return true
         }
@@ -386,7 +388,7 @@ final class ScreenRecorderService: ObservableObject {
     func prepareForSelection() -> Bool {
         guard AppFeature.screenRecorder.isAvailable, !isFinishing,
               session == nil, countdown == nil, !isAwaitingMicrophone,
-              !isPreparingRecording else { return false }
+              !isPreparingRecording, !isWaitingForStart else { return false }
         guard Permissions.shared.screenRecording else {
             Permissions.shared.requestScreenRecording()
             return false
@@ -405,23 +407,25 @@ final class ScreenRecorderService: ObservableObject {
     func record(_ region: RecorderSupport.Region,
                 audioOptions: RecorderSelectionAudioOptions) {
         guard prepareForSelection() else { return }
+        pendingStartGeneration &+= 1
+        let generation = pendingStartGeneration
         let indicator = RecorderIndicator(
             onPause: { [weak self] in self?.togglePause() },
             onStop: { [weak self] in self?.stop() },
             onDiscard: { [weak self] in self?.stopAndDiscard() },
             onStart: { [weak self] in
-                self?.startDelayedSelection(region: region, wantsMicrophone: audioOptions.microphone)
+                self?.startDelayedSelection(region: region, wantsMicrophone: audioOptions.microphone,
+                                            generation: generation)
             })
         indicator.showRegionGuide(for: region)
         self.indicator = indicator
         let immediate = UserDefaults.standard.object(
             forKey: DefaultsKey.recorderImmediateStartAfterSelection) as? Bool ?? true
         if immediate {
-            pendingStartGeneration &+= 1
-            let generation = pendingStartGeneration
             prepareCountdown(for: region, wantsMicrophone: audioOptions.microphone,
                              generation: generation)
         } else {
+            isWaitingForStart = true
             let screen = NSScreen.screens.first { $0.displayID == region.displayID }
             indicator.show(on: screen,
                            tooltip: strings.indicatorTooltip,
@@ -432,9 +436,10 @@ final class ScreenRecorderService: ObservableObject {
         }
     }
 
-    private func startDelayedSelection(region: RecorderSupport.Region, wantsMicrophone: Bool) {
-        pendingStartGeneration &+= 1
-        let generation = pendingStartGeneration
+    private func startDelayedSelection(region: RecorderSupport.Region, wantsMicrophone: Bool,
+                                       generation: Int) {
+        guard isWaitingForStart, pendingStartIsAuthorized(generation) else { return }
+        isWaitingForStart = false
         prepareCountdown(for: region, wantsMicrophone: wantsMicrophone, generation: generation)
     }
 
@@ -614,6 +619,7 @@ final class ScreenRecorderService: ObservableObject {
         pendingStartGeneration &+= 1
         isAwaitingMicrophone = false
         isPreparingRecording = false
+        isWaitingForStart = false
         countdown?.cancel()
         countdown = nil
         indicator?.hide()
@@ -691,7 +697,9 @@ final class ScreenRecorderService: ObservableObject {
             return
         }
         guard let session, !isFinishing else {
-            if isPreparingRecording { invalidatePendingStart() }
+            if isPreparingRecording || isWaitingForStart || countdown != nil || isAwaitingMicrophone {
+                invalidatePendingStart()
+            }
             return
         }
         if UserDefaults.standard.bool(forKey: DefaultsKey.recorderPlaySound) {
@@ -756,11 +764,17 @@ final class ScreenRecorderService: ObservableObject {
     /// sound and format are decided, or goes straight to a file for whoever
     /// only wanted the raw recording.
     private func deliver(_ take: RecorderTakeStore.Take, reason: String?) {
-        RecentCaptureService.shared.stashRecording(from: take.videoURL)
-        if reason == nil, UserDefaults.standard.bool(forKey: DefaultsKey.recorderOpenEditor) {
-            if openEditor(with: take) { return }
+        RecentCaptureService.shared.stashRecording(from: take.videoURL) { [weak self] preservedURL in
+            guard let self else { return }
+            if reason == nil, UserDefaults.standard.bool(forKey: DefaultsKey.recorderOpenEditor),
+               self.openEditor(with: take, preservedRecordingURL: preservedURL) {
+                if preservedURL == nil {
+                    QuickToolHUD.show(icon: "record.circle", message: self.strings.exportFailed)
+                }
+                return
+            }
+            self.saveDirect(take, reason: reason)
         }
-        saveDirect(take, reason: reason)
     }
 
     private func saveDirect(_ take: RecorderTakeStore.Take, reason: String?) {
