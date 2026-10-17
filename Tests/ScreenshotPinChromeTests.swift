@@ -73,13 +73,18 @@ enum ScreenshotPinChromeTests {
         pin2.setFrameOrigin(CGPoint(x: -20000, y: -20000))
         pin2.showPin(orderFront: false)
         defer { pin2.closePin() }
-        suite.expect(!pin2.isVisible, "pin2 is not visible")
+        pin2.orderFrontRegardless()
+        let visibleChrome = (pin2.childWindows ?? []).filter { !$0.ignoresMouseEvents }
+        suite.expect(pin2.isVisible && visibleChrome.allSatisfy(\.isVisible),
+                     "a shown pin and its chrome are visible before drag hiding")
         suite.expect(!pin2.isHiddenForDrag, "pin2 is initially not hidden for drag")
         pin2.setHiddenForDrag(true)
-        suite.expect(pin2.isHiddenForDrag, "setHiddenForDrag(true) sets hidden-for-drag state")
+        suite.expect(pin2.isHiddenForDrag && !pin2.isVisible && visibleChrome.allSatisfy { !$0.isVisible },
+                     "drag hiding removes the shown pin and its child chrome")
         pin2.setHiddenForDrag(false)
         suite.expect(!pin2.isHiddenForDrag, "setHiddenForDrag(false) clears hidden-for-drag state")
-        suite.expect(!pin2.isVisible, "pin2 remains not visible after clearing drag-hide")
+        suite.expect(pin2.isVisible && visibleChrome.allSatisfy(\.isVisible),
+                     "clearing drag hiding restores the pin and its child chrome")
     }
 
     private static func buttons(in view: NSView?) -> [NSButton] {

@@ -43,7 +43,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         let size = CGSize(width: native.width * factor, height: native.height * factor)
         super.init(contentRect: CGRect(x: screen.midX - size.width / 2, y: screen.midY - size.height / 2,
                                       width: size.width, height: size.height),
-                   styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
+                   styleMask: [.borderless, .resizable, .nonactivatingPanel], backing: .buffered, defer: false)
         isReleasedWhenClosed = false
         level = .floating
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
@@ -109,11 +109,6 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
             isHovered = hovered
             updateImageOpacity()
             chrome.setControlsVisible(hovered)
-        }
-        if isVisible && !isHiddenForDrag && hovered && !ignoresMouseEvents && (!NSApp.isActive || !isKeyWindow) {
-            NSApp.activate(ignoringOtherApps: true)
-            makeKeyAndOrderFront(nil)
-            makeFirstResponder(surface)
         }
     }
 

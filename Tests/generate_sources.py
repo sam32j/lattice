@@ -54,6 +54,49 @@ def main():
           + declaration("Sources/Vorssaint/Services/QuickTools/RecentCaptureService.swift",
                         "    func stashRecording(")
           + "}\n}\n")
+    write("CaptureRetention.swift", "import Foundation\nextension CaptureRetentionTests {\nfinal class Service: State {\n"
+          + declaration("Sources/Vorssaint/Services/QuickTools/RecentCaptureService.swift",
+                        "    private func pruneMissingEntries()").replace("private func", "func", 1)
+              .replace("UserDefaults.standard", "defaults")
+          + "}\n}\n")
+    runtime = "Sources/Vorssaint/App/FeatureRuntime.swift"
+    runtime_methods = "".join(declaration(runtime, prefix).replace("private func", "func", 1)
+        for prefix in ["    private func mayFlip(", "    func setAvailable(",
+                       "    func replaceAvailable(", "    func setAllAvailable("])
+    runtime_methods = runtime_methods.replace("feature.isHardwareSupported", "true").replace("UserDefaults.standard", "defaults").replace("in: .standard", "in: defaults")
+    runtime_methods = re.sub(r"(?<![A-Za-z])((?:AppFeature\.)?[A-Za-z]+)\.isAvailable(?![A-Za-z(])",
+                             r"\1.isAvailable(in: defaults)", runtime_methods)
+    write("FeatureAvailabilityTransition.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests {\nfinal class Runtime: State {\n"
+          + runtime_methods + "}\n}\n")
+    text_model = "Sources/Vorssaint/Services/QuickTools/ScreenshotEditorController.swift"
+    write("ScreenshotTextDraft.swift", "import AppKit\nextension ScreenshotTextDraftTests {\nfinal class Model: State {\n"
+          + "".join(declaration(text_model, prefix).replace("private func", "func", 1)
+              for prefix in ["    private func registerUndo()", "    private func applyStyleToSelection()",
+                             "    func beginDrag(", "    func endDrag(", "    func commitText("])
+          + "}\nfinal class Controller: ControllerState {\n"
+          + declaration(text_model, "    func windowShouldClose(")
+          + "}\n}\n")
+    write("RecorderDelivery.swift", "import Foundation\nextension RecorderDeliveryTests {\nfinal class Service: State {\n"
+          + "".join(declaration(recorder, prefix).replace("private func", "func", 1)
+                .replace("UserDefaults.standard.bool(forKey: DefaultsKey.recorderOpenEditor)", "opensEditor")
+              for prefix in ["    private func deliver(", "    private func sweepTakes()"])
+          + "}\n}\n")
+    shortcut = "Sources/Vorssaint/UI/ShortcutRecorderButton.swift"
+    write("CompactShortcutValidation.swift", "import Foundation\nextension CompactShortcutValidationTests {\nfinal class Recorder: State {\n"
+          + "".join(declaration(shortcut, prefix, scope="struct CompactShortcutRecorder: View {")
+              .replace("private func", "func", 1)
+              .replace("GlobalShortcutRole.conflict(for: shortcut, excluding: role)", "conflictingRole")
+              .replace("shortcut.conflictsWithSystemShortcut(for: role)", "systemConflict")
+              for prefix in ["    private func validationDecision(", "    private func resetToDefault()"])
+          + "}\n}\n")
+    directory = "Sources/Vorssaint/UI/Settings/SettingsDirectory.swift"
+    write("SettingsSidebarIdentity.swift", "import Foundation\n" + declaration(directory, "struct SettingsDirectoryItem:")
+          + "extension SettingsSidebarIdentityTests {\nfinal class Directory: State {\n"
+          + declaration(directory, "    static func sidebarSections(")
+              .replace("SuperKeyService.shared.source", ".capsLock")
+              .replace("BrightnessService.keyboardLightIsSupported", "false")
+              .replace("feature.hubTitle(s, hub: hub)", "feature.rawValue")
+          + "}\n}\n")
     annotation_editor = "Sources/Vorssaint/UI/Screenshot/ScreenshotEditorView.swift"
     write("ScreenshotTextEditor.swift", "import AppKit\nimport SwiftUI\nextension ScreenshotTextEditorTests {\n"
           + declaration(annotation_editor, "struct ScreenshotAnnotationTextEditor:")
@@ -321,6 +364,13 @@ def main():
           + "}\n")
     write("ScreenshotAttachedCapture.swift", "import AppKit\nimport ScreenCaptureKit\n"
           + "extension ScreenshotAttachedCaptureTests {\nenum Engine {\n"
+          + "static func onScreenWindows() -> [ScreenshotCapturePolicy.CaptureWindow] {\n"
+          + "frames.sorted { $0.key > $1.key }.map { .init(id: $0.key, ownerPID: 1, frame: $0.value) }\n}\n"
+          + "static func windowBounds(_ id: CGWindowID) -> CGRect? { frames[id] }\n"
+          + "static func captureWindow(_ id: CGWindowID, scale: CGFloat, includeAttachedWindows: Bool = true) async -> (image: CGImage, scale: CGFloat)? {\n"
+          + "WindowPreviewProvider.images[id].map { ($0, scale) }\n}\n"
+          + declaration("Sources/Vorssaint/Services/QuickTools/ScreenshotCaptureEngine.swift",
+                        "    static func captureMultipleWindows(")
           + declaration("Sources/Vorssaint/Services/QuickTools/ScreenshotCaptureEngine.swift",
                         "    private static func composeAttached(").replace("private static", "static", 1)
           + "}\n}\n")
@@ -1619,6 +1669,7 @@ def main():
         "    fileprivate func captureFullScreenFromControl(",
         "    private func captureFullDisplay(",
         "    private func repeatLastRegion()",
+        "    fileprivate func confirmSelectedWindows()",
         "    fileprivate func confirmWindow(",
         "    fileprivate func confirmRegion(",
         "    fileprivate func confirmColor(",

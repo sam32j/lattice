@@ -27,6 +27,7 @@ struct ScreenRecorderSettings: View {
         RecorderSupport.GIFSize.medium.rawValue
     @AppStorage(DefaultsKey.recorderGIFFrameRate) private var gifFrameRate = 12
     @AppStorage(DefaultsKey.recorderSharingEnabled) private var sharingEnabled = true
+    @AppStorage(DefaultsKey.recentRecordingLimit) private var recentRecordingLimit = 0
     @State private var showingSharedLinks = false
     @State private var showingSharePrivacy = false
 
@@ -41,6 +42,8 @@ struct ScreenRecorderSettings: View {
     private var screenshotStrings: ScreenshotFeatureStrings {
         FeatureStrings.screenshot(l10n.language)
     }
+
+    private var workflow: CaptureWorkflowStrings { .localized(l10n.language) }
 
     var body: some View {
         Form {
@@ -77,10 +80,10 @@ struct ScreenRecorderSettings: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                Toggle("Record immediately after selection", isOn: $immediateStart)
-                Toggle("Play record sound", isOn: $playRecordSound)
+                Toggle(workflow.immediate, isOn: $immediateStart)
+                Toggle(workflow.recordSound, isOn: $playRecordSound)
             } header: {
-                Text(recordingSubgroupTitle)
+                Text(workflow.recording)
             }
 
             Section {
@@ -127,11 +130,20 @@ struct ScreenRecorderSettings: View {
                     }
                 }
             } header: {
-                Text(audioEditorSubgroupTitle)
+                Text(workflow.audioEditor)
             }
 
             Section {
                 folderRow
+                Picker(workflow.recentRecordings, selection: $recentRecordingLimit) {
+                    Text("5").tag(5)
+                    Text("10").tag(10)
+                    Text(workflow.unlimited).tag(0)
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: recentRecordingLimit) { _, _ in
+                    RecentCaptureService.shared.reload()
+                }
 
                 VStack(alignment: .leading, spacing: 3) {
                     Picker(strings.qualityLabel, selection: $qualityRaw) {
@@ -162,7 +174,7 @@ struct ScreenRecorderSettings: View {
                 }
                 .pickerStyle(.segmented)
             } header: {
-                Text(exportSubgroupTitle)
+                Text(workflow.export)
             }
 
             Section {
@@ -216,31 +228,6 @@ struct ScreenRecorderSettings: View {
         }
         .sheet(isPresented: $showingSharePrivacy) {
             RecorderSharePrivacyView()
-        }
-    }
-
-
-    private var recordingSubgroupTitle: String {
-        switch l10n.language {
-        case .zhHans: return "录制"
-        case .zhTW, .zhHK: return "錄製"
-        default: return "Recording"
-        }
-    }
-
-    private var audioEditorSubgroupTitle: String {
-        switch l10n.language {
-        case .zhHans: return "音频与编辑"
-        case .zhTW, .zhHK: return "音訊與編輯"
-        default: return "Audio & Editor"
-        }
-    }
-
-    private var exportSubgroupTitle: String {
-        switch l10n.language {
-        case .zhHans: return "存储与导出"
-        case .zhTW, .zhHK: return "儲存與匯出"
-        default: return "Save & Export"
         }
     }
 

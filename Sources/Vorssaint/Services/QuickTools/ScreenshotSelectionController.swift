@@ -73,7 +73,7 @@ final class ScreenshotSelectionController {
     /// Old pixels and window choices remain visible during refresh, but cannot
     /// be used by either pointer actions or keyboard confirmations.
     fileprivate var acceptsCaptureInput: Bool {
-        !finished && !sourceRefreshPending
+        !finished && !sourceRefreshPending && !panels.contains { $0.overlayView.isCapturePending }
     }
     fileprivate let requiresDraggedRegion: Bool
     private var finished = false
@@ -286,7 +286,6 @@ final class ScreenshotSelectionController {
         // resigning a full-screen key panel can flash the surrounding chrome.
         screenCaptureOptions?.onPresentationReady?()
         guard !finished else { return }
-        NSApp.activate(ignoringOtherApps: true)
         panels.forEach { $0.orderFrontRegardless() }
         if let keyPanel = keyPanelUnderMouse() ?? panels.first {
             keyPanel.makeKeyAndOrderFront(nil)
@@ -1026,7 +1025,7 @@ private final class ScreenshotOverlayPanel: OverlayPanel {
         self.frozenImage = frozenImage
         pixelScale = screen.backingScaleFactor
         super.init(contentRect: screen.frame,
-                   styleMask: [.borderless],
+                   styleMask: [.borderless, .nonactivatingPanel],
                    backing: .buffered,
                    defer: false)
         isReleasedWhenClosed = false
@@ -1360,13 +1359,6 @@ private final class ScreenshotOverlayView: NSView {
         refreshFullScreenControlVisibility()
     }
 
-    override func flagsChanged(with event: NSEvent) {
-        if !event.modifierFlags.contains(.shift), let controller, controller.hasSelectedWindows {
-            controller.confirmSelectedWindows()
-            return
-        }
-        super.flagsChanged(with: event)
-    }
 
     // System chrome can take pointer ownership without the pointer leaving
     // this display. Re-evaluate the real location so the chooser does not
@@ -2282,7 +2274,7 @@ private struct CaptureGuideView: View {
 
     private var subtitle: String {
         if model.selectedWindowsCount > 0 {
-            return "\(model.selectedWindowsCount) window\(model.selectedWindowsCount == 1 ? "" : "s") selected  ·  Release Shift to capture"
+            return CaptureWorkflowStrings.localized(L10n.shared.language).selectedWindows(model.selectedWindowsCount)
         }
         return strings.hintDrag + "  ·  " + strings.hintClick
     }
@@ -2357,7 +2349,7 @@ private struct UnifiedCaptureGuideContent: View {
             HStack(spacing: 6) {
                 Image(systemName: "rectangle.stack")
                     .font(.system(size: 11, weight: .semibold))
-                Text("Scroll")
+                Text(CaptureWorkflowStrings.localized(l10n.language).scroll)
                     .font(.system(size: 11, weight: .medium))
             }
             .foregroundStyle(
@@ -2485,7 +2477,7 @@ private struct UnifiedCaptureGuideContent: View {
         switch options.selectedTool {
         case .screenshot:
             if model.selectedWindowsCount > 0 {
-                Text("\(model.selectedWindowsCount) window\(model.selectedWindowsCount == 1 ? "" : "s") selected  ·  Release Shift to capture")
+                Text(CaptureWorkflowStrings.localized(L10n.shared.language).selectedWindows(model.selectedWindowsCount))
                     .font(.system(size: 10.5, weight: .medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -2504,7 +2496,7 @@ private struct UnifiedCaptureGuideContent: View {
                 .minimumScaleFactor(0.75)
             }
         case .recording:
-            let clickText = l10n.language == .enUS ? "Click to record window" : strings.hintClick
+            let clickText = CaptureWorkflowStrings.localized(l10n.language).recordWindow
             HStack(spacing: 4) {
                 Text(strings.hintDrag)
                     .foregroundColor(.secondary)

@@ -22,6 +22,7 @@ enum ScreenshotPinGestureTests {
         override var hasPreciseScrollingDeltas: Bool { precise }
         override var modifierFlags: NSEvent.ModifierFlags { flags }
         override var momentumPhase: NSEvent.Phase { momentum }
+        override var phase: NSEvent.Phase { [] }
         override var locationInWindow: NSPoint { point }
         override var cgEvent: CGEvent? { backingEvent }
     }
@@ -32,6 +33,16 @@ enum ScreenshotPinGestureTests {
 
     @MainActor private static func runOnMain(_ suite: TestSuite) {
         _ = NSApplication.shared
+        var source = ScreenshotPinGestureSource()
+        suite.expect(source.accepts(.touches) && !source.accepts(.magnify) && source.accepts(.touches),
+                     "raw pinch packets own a gesture and suppress duplicate magnify packets")
+        source.finish(.touches)
+        source.begin(.magnify)
+        suite.expect(source.accepts(.magnify) && !source.accepts(.touches),
+                     "a new gesture can start with magnify and suppress duplicate raw packets")
+        source.finish(.magnify)
+        source.begin(.touches)
+        suite.expect(source.accepts(.touches), "ending a pinch releases stream ownership immediately")
         ScreenshotPinControlsTests.run(suite)
         guard let screen = NSScreen.main else {
             suite.expect(false, "native pin gesture tests require a display")
@@ -50,6 +61,20 @@ enum ScreenshotPinGestureTests {
         window.contentView = view
         let initial = window.frame
         defer { window.close() }
+
+        view.applyPinch(by: 1.1, at: .zero, source: .touches, phase: .began)
+        view.applyPinch(by: 1, at: .zero, source: .touches, phase: .ended)
+        let rawEnd = window.frame
+        view.applyPinch(by: 1.1, at: .zero, source: .magnify, phase: .ended)
+        suite.expect(window.frame == rawEnd, "a trailing magnify end packet never repeats an ended raw pinch")
+        view.applyPinch(by: 1.1, at: .zero, source: .magnify, phase: .began)
+        let magnifyStart = window.frame
+        view.applyPinch(by: 1, at: .zero, source: .touches, phase: .ended)
+        view.applyPinch(by: 1.1, at: .zero, source: .touches, phase: .changed)
+        suite.expect(window.frame == magnifyStart, "a nonowning raw stream cannot end or take over an active magnify pinch")
+        view.applyPinch(by: 1, at: .zero, source: .magnify, phase: .ended)
+        view.applyPinch(by: 1, at: .zero, source: .magnify, phase: .began)
+        window.setFrame(initial, display: false)
 
         let wheel = Gesture()
         wheel.scroll = 1

@@ -722,6 +722,7 @@ enum DefaultsKey {
     static let recorderShortcutEnabled = "recorderShortcutEnabled"
     static let recorderShortcut = "recorderShortcut"
     static let recorderCountdown = "recorderCountdown"
+    static let recentRecordingLimit = "recentRecordingLimit"
     static let recorderPlaySound = "recorderPlaySound"
     static let recorderImmediateStartAfterSelection = "recorderImmediateStartAfterSelection"
     static let recorderQuality = "recorderQuality"
@@ -1838,6 +1839,7 @@ enum Defaults {
         DefaultsKey.recorderShortcutEnabled: false,
         DefaultsKey.recorderShortcut: GlobalShortcut.screenRecorderDefault.storageValue,
         DefaultsKey.recorderCountdown: 3,
+        DefaultsKey.recentRecordingLimit: 0,
         DefaultsKey.recorderPlaySound: true,
         DefaultsKey.recorderImmediateStartAfterSelection: true,
         DefaultsKey.recorderQuality: RecorderSupport.Quality.balanced.rawValue,
@@ -2357,8 +2359,8 @@ enum Defaults {
     /// shortcut of its own, so the combination keeps opening the chooser.
     /// A tool whose shortcut is switched off but was customized still counts
     /// as having its own, so its saved combination is never overwritten.
-    /// Availability is read from the passed defaults — the same key
-    /// `isAvailable` reads from the standard ones — to stay testable.
+    /// Availability uses the passed defaults and the parent-derived rule for
+    /// bundled screenshot tools.
     static func migrateOrphanedCaptureShortcut(in defaults: UserDefaults) {
         guard !defaults.bool(forKey: DefaultsKey.orphanedCaptureShortcutMigrated) else {
             return
@@ -2367,7 +2369,7 @@ enum Defaults {
             defaults.set(true, forKey: DefaultsKey.orphanedCaptureShortcutMigrated)
         }
         guard defaults.bool(forKey: DefaultsKey.screenshotShortcutEnabled),
-              !defaults.bool(forKey: AppFeature.screenshot.availabilityKey)
+              !AppFeature.screenshot.isAvailable(in: defaults)
         else { return }
         let shortcut = defaults.string(forKey: DefaultsKey.screenshotShortcut)
             ?? GlobalShortcut.screenshotDefault.storageValue
@@ -2385,7 +2387,7 @@ enum Defaults {
              GlobalShortcut.colorPickerDefault.storageValue),
         ]
         guard let target = candidates.first(where: {
-            defaults.bool(forKey: $0.feature.availabilityKey)
+            $0.feature.isAvailable(in: defaults)
                 && !defaults.bool(forKey: $0.enabled)
                 && (defaults.string(forKey: $0.shortcut) ?? $0.unset) == $0.unset
         }) else { return }

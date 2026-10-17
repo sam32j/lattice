@@ -56,6 +56,8 @@ struct ScreenshotSettings: View {
         FeatureStrings.screenshot(l10n.language)
     }
 
+    private var workflow: CaptureWorkflowStrings { .localized(l10n.language) }
+
     var body: some View {
         Form {
             Section {
@@ -129,9 +131,9 @@ struct ScreenshotSettings: View {
                 .pickerStyle(.segmented)
                 Toggle(strings.pointerToggle, isOn: $includePointer)
                 Toggle(strings.lastRegionToggle, isOn: $showLastRegion)
-                Toggle("Play shutter sound", isOn: $playShutterSound)
+                Toggle(workflow.shutter, isOn: $playShutterSound)
             } header: {
-                Text(selectionSubgroupTitle)
+                Text(workflow.selection)
             }
 
             Section {
@@ -158,7 +160,7 @@ struct ScreenshotSettings: View {
                         .foregroundStyle(.secondary)
                 }
             } header: {
-                Text(magnifierSubgroupTitle)
+                Text(workflow.magnifier)
             }
 
             Section {
@@ -167,7 +169,7 @@ struct ScreenshotSettings: View {
                 previewFocusRow
                 Toggle(ScreenshotPinStrings.localized(l10n.language).rounded, isOn: $pinRoundedCorners)
             } header: {
-                Text(previewSubgroupTitle)
+                Text(workflow.preview)
             }
 
             Section {
@@ -200,7 +202,7 @@ struct ScreenshotSettings: View {
                     }
                 }
             } header: {
-                Text(destinationSubgroupTitle)
+                Text(workflow.destination)
             }
 
             Section {
@@ -305,39 +307,6 @@ struct ScreenshotSettings: View {
         }
         .sheet(isPresented: $showingSharePrivacy) {
             ScreenshotSharePrivacyView()
-        }
-    }
-
-
-    private var selectionSubgroupTitle: String {
-        switch l10n.language {
-        case .zhHans: return "选取与捕获"
-        case .zhTW, .zhHK: return "選取與擷取"
-        default: return "Selection & Capture"
-        }
-    }
-
-    private var magnifierSubgroupTitle: String {
-        switch l10n.language {
-        case .zhHans: return "放大镜"
-        case .zhTW, .zhHK: return "放大鏡"
-        default: return "Magnifier"
-        }
-    }
-
-    private var previewSubgroupTitle: String {
-        switch l10n.language {
-        case .zhHans: return "预览与固定"
-        case .zhTW, .zhHK: return "預覽與固定"
-        default: return "Preview & Pin"
-        }
-    }
-
-    private var destinationSubgroupTitle: String {
-        switch l10n.language {
-        case .zhHans: return "存储与目的地"
-        case .zhTW, .zhHK: return "儲存與目的地"
-        default: return "Save & Destination"
         }
     }
 

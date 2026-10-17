@@ -50,7 +50,7 @@ enum ScreenshotAttachedCaptureTests {
     }
 
     private static let bounds = CGRect(x: 1200, y: 100, width: 80, height: 60)
-    private static let frames: [CGWindowID: CGRect] = [
+    static let frames: [CGWindowID: CGRect] = [
         1: bounds,
         2: CGRect(x: 1210, y: 108, width: 40, height: 24),
         3: CGRect(x: 1220, y: 116, width: 20, height: 8)
@@ -93,6 +93,18 @@ enum ScreenshotAttachedCaptureTests {
             suite.expect(WindowPreviewProvider.calls == [1, 2, 3] && SCScreenshotManager.requests.isEmpty,
                          "whole layers keep their native scale and need no independent recapture")
         }
+
+        for scale: CGFloat in [1, 2] {
+            reset(scale: scale)
+            let multi = await Engine.captureMultipleWindows([1, 2, 3], scale: scale)
+            expectPixels(multi, scale: scale, suite)
+            suite.expect(SCScreenshotManager.requests.isEmpty,
+                         "multi-window capture composites independent buffers without packed-display filtering")
+        }
+        reset()
+        WindowPreviewProvider.images[2] = nil
+        let partial = await Engine.captureMultipleWindows([1, 2, 3], scale: 1)
+        suite.expect(partial == nil, "a missing selected window fails instead of silently delivering partial pixels")
 
         reset(scale: 2)
         SCScreenshotManager.images = WindowPreviewProvider.images

@@ -50,7 +50,7 @@ final class ScreenshotPinController {
         pin.onClickThroughChanged = { [weak self] in self?.refreshEscapeMonitor() }
         pin.onReopenPreview = { [weak pin] in
             guard let pin else { return }
-            ScreenshotService.shared.reopenPreview(image: pin.image, scale: pin.captureScale)
+            ScreenshotService.shared.reopenPreview(image: pin.image, scale: pin.captureScale, anchorRect: pin.frame)
         }
         let offset = CGFloat(pins.count % 5) * 26
         pin.setFrameOrigin(CGPoint(x: pin.frame.minX + offset, y: pin.frame.minY - offset))
@@ -138,7 +138,7 @@ final class ScreenshotPinController {
                     return nil
                 }
                 pin.handleGestureEvent(event)
-                return event
+                return nil
             }
         }
     }
