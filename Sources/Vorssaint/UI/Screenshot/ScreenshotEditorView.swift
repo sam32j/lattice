@@ -1810,28 +1810,15 @@ struct ScreenshotAnnotationTextEditor: NSViewRepresentable {
 
         let textView = EditorTextView()
         textView.delegate = context.coordinator
-        textView.onCommit = onCommit
-        textView.font = .systemFont(ofSize: fontSize, weight: .semibold)
-        textView.textColor = textColor
-        textView.insertionPointColor = textColor
         textView.drawsBackground = false
         textView.isRichText = false
         textView.allowsUndo = true
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.string = text
-        textView.isHorizontallyResizable = !isBounded
         textView.isVerticallyResizable = true
-
-        if isBounded {
-            textView.textContainer?.containerSize = NSSize(width: width, height: CGFloat.greatestFiniteMagnitude)
-            textView.textContainer?.widthTracksTextView = true
-        } else {
-            textView.textContainer?.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-            textView.textContainer?.widthTracksTextView = false
-        }
-
         scrollView.documentView = textView
+        configure(textView)
         DispatchQueue.main.async {
             textView.window?.makeFirstResponder(textView)
             if !textView.string.isEmpty {
@@ -1843,12 +1830,25 @@ struct ScreenshotAnnotationTextEditor: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? EditorTextView else { return }
+        context.coordinator.parent = self
         if textView.string != text {
             textView.string = text
         }
+        configure(textView)
+    }
+
+    private func configure(_ textView: EditorTextView) {
+        textView.onCommit = onCommit
         textView.font = .systemFont(ofSize: fontSize, weight: .semibold)
         textView.textColor = textColor
         textView.insertionPointColor = textColor
+        textView.isHorizontallyResizable = !isBounded
+        textView.textContainer?.widthTracksTextView = false
+        textView.setFrameSize(NSSize(width: width, height: textView.frame.height))
+        textView.textContainer?.containerSize = NSSize(
+            width: isBounded ? width : .greatestFiniteMagnitude,
+            height: .greatestFiniteMagnitude)
+        textView.textContainer?.widthTracksTextView = isBounded
     }
 
     static func dismantleNSView(_ nsView: NSScrollView, coordinator: Coordinator) {

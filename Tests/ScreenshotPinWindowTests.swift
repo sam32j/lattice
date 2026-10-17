@@ -14,6 +14,7 @@ enum ScreenshotPinWindowTests {
         defer { preferences.removePersistentDomain(forName: namespace) }
         let pin = ScreenshotPinWindow(image: image, scale: 2, preferences: preferences)
         defer { pin.closePin() }
+        suite.expect(!pin.isVisible, "pin window is not visible upon initialization")
         pin.setOpacity(0.1)
         suite.expectClose(pin.alphaValue, 1, "pin controls retain an opaque window at ten percent image opacity")
         suite.expectClose(pin.displayedImageOpacity, 0.1, "only the image becomes ten percent opaque")
@@ -29,6 +30,7 @@ enum ScreenshotPinWindowTests {
         pin.setOpacity(0.9)
         pin.setClickThrough(true)
         pin.updateHover(at: CGPoint(x: pin.frame.midX, y: pin.frame.midY))
+        suite.expect(!pin.isVisible, "pin window remains invisible during hover testing")
         suite.expect(pin.ignoresMouseEvents, "click-through releases the image's mouse events")
         suite.expectClose(pin.displayedImageOpacity, 0.25, "hovering a click-through pin dims the image")
         pin.updateHover(at: CGPoint(x: pin.frame.maxX + 10, y: pin.frame.maxY + 10))

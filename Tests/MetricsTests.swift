@@ -82,6 +82,7 @@ struct MetricsTests {
             ("repository", { RepositoryFeatureTests.run(suite) }),
             ("screenshot-pins", { ScreenshotPinGestureTests.run(suite) }),
             ("screenshots", {
+                ScreenshotTextEditorTests.run(suite)
                 ScreenTextCompletionTests.run(suite)
                 ScreenshotOCRControlTests.run(suite)
                 ScreenshotPreviewHoverTests.run(suite)
@@ -92,6 +93,7 @@ struct MetricsTests {
                 ScreenshotScrollingCaptureTests.run(suite)
                 ScreenshotAttachedCaptureTests.run(suite)
                 ScreenCaptureToolPickerTests.run(suite)
+                DirectCaptureRequirementsComprehensiveTests.run(suite)
             }),
             ("recorder", {
                 RecorderGIFWriterTests.run(suite)
@@ -145,6 +147,8 @@ struct MetricsTests {
                 ScreenshotToolShortcutTests.run(suite)
             }),
             ("storage", {
+                RecordingStashTests.run(suite)
+                RecordingImportTests.run(suite)
                 RecentCaptureStoreTests.run(suite)
                 RecorderPresetImageStoreTests.run(suite)
                 StorageFeatureTests.run(suite)
@@ -153,6 +157,8 @@ struct MetricsTests {
             ("quit-protection", { QuitProtectionHUD.progressChecks(suite) }),
             ("scratchpad", { ScratchpadMarkTests.run { suite.expect($0, $1) } }),
             ("recording", {
+                RecorderSaveStateTests.run(suite)
+                RecorderCloseSafetyTests.run(suite)
                 RecorderPreparationTests.run(suite)
                 RecorderSampleTimingTests.run(suite)
                 RecorderWriterTests.run(suite)
@@ -205,6 +211,7 @@ struct MetricsTests {
             }),
             ("wallpaper", { WallpaperContract.run(suite) }),
             ("emoji", { CommandBarEmojiContract.run(suite) }),
+            ("capture-requirements", { DirectCaptureRequirementsComprehensiveTests.run(suite) }),
         ]
         var selected = Set<String>()
         var listOnly = false

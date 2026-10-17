@@ -13,8 +13,10 @@ enum RecorderPreparationTests {
     }
     struct UserDefaults {
         static let standard = Self()
+        static var immediate = false
         func integer(forKey key: String) -> Int { 30 }
         func bool(forKey key: String) -> Bool { false }
+        func object(forKey key: String) -> Any? { Self.immediate }
     }
     struct Permissions {
         static let shared = Self()
@@ -31,7 +33,28 @@ enum RecorderPreparationTests {
     }
     final class Indicator {
         var hidden = false
+        var onStart: (() -> Void)?
+        var onStop: (() -> Void)?
+        init(onPause: @escaping () -> Void = {}, onStop: @escaping () -> Void = {},
+             onDiscard: (() -> Void)? = nil, onStart: (() -> Void)? = nil) {
+            self.onStart = onStart
+            self.onStop = onStop
+        }
         func hide() { hidden = true }
+        func showRegionGuide(for region: RecorderSupport.Region) {}
+        func show(on screen: NSScreen?, tooltip: String, pauseTooltip: String,
+                  resumeTooltip: String, stopTooltip: String) {}
+        func setWaitingForStart() {}
+    }
+    typealias RecorderIndicator = Indicator
+    struct NSScreen {
+        static let screens: [NSScreen] = []
+        let displayID: UInt32
+    }
+    struct RecorderSelectionAudioOptions { var microphone = false }
+    final class NSSound {
+        init?(contentsOfFile: String, byReference: Bool) {}
+        func play() {}
     }
     final class RecorderTakeStore {
         struct Take: Equatable {
@@ -61,11 +84,14 @@ enum RecorderPreparationTests {
     }
     final class RecorderSession {
         let writer: RecorderWriter
+        let take: RecorderTakeStore.Take
         init(take: RecorderTakeStore.Take, region: RecorderSupport.Region,
              writer: RecorderWriter, pauseClock: RecorderPauseClock,
              capturesSystemAudio: Bool, capturesMicrophone: Bool) {
             self.writer = writer
+            self.take = take
         }
+        func stop() async -> Bool { false }
     }
     class Fixture {
         var session: RecorderSession?
@@ -74,17 +100,33 @@ enum RecorderPreparationTests {
         var isFinishing = false
         var isAwaitingMicrophone = false
         var isPreparingRecording = false
+        var isWaitingForStart = false
         var countdown: DispatchWorkItem?
         var pendingStartGeneration = 1
         var starts = 0
-        struct Strings { let recordFailed = "failed" }
+        var countdownRequests = 0
+        struct Strings {
+            let recordFailed = "failed"
+            let indicatorTooltip = "recording"
+            let pauseButton = "pause"
+            let resumeButton = "resume"
+            let stopButton = "stop"
+        }
         let strings = Strings()
         func startPreparedRecording(_ session: RecorderSession, frameRate: Int,
                                     capturesSystemAudio: Bool, generation: Int) {
             self.session = session
             starts += 1
         }
-        func stop() {}
+        func togglePause() {}
+        func stopAndDiscard() {}
+        func prepareCountdown(for region: RecorderSupport.Region, wantsMicrophone: Bool, generation: Int) {
+            countdownRequests += 1
+            countdown = DispatchWorkItem {}
+        }
+        func endRecordingSurfaces() {}
+        func deliver(_ take: RecorderTakeStore.Take, reason: String?) {}
+        func sweepTakes() {}
         func reportNoSpace() {}
     }
 
@@ -93,12 +135,47 @@ enum RecorderPreparationTests {
             pixelRect: CGRect(x: 0, y: 0, width: 64, height: 64), anchorRect: .zero, scale: 1)
         func reset() {
             AppFeature.available = true
+            UserDefaults.immediate = false
             RecorderWriter.replies = []
             RecorderTakeStore.shared.made = []
             RecorderTakeStore.shared.deleted = []
             QuickToolHUD.messages = 0
         }
         defer { reset() }
+
+        let waiting = Service()
+        waiting.record(region, audioOptions: RecorderSelectionAudioOptions())
+        suite.expect(waiting.hasActiveCapture && !waiting.prepareForSelection(),
+                     "a delayed recording reserves capture and rejects a second selection")
+        let waitingIndicator = waiting.indicator!
+        waitingIndicator.onStop?()
+        suite.expect(!waiting.hasActiveCapture && waitingIndicator.hidden && waiting.prepareForSelection(),
+                     "Stop cancels delayed recording and releases its indicator and admission")
+
+        let toggled = Service()
+        toggled.record(region, audioOptions: RecorderSelectionAudioOptions())
+        let toggledIndicator = toggled.indicator!
+        suite.expect(toggled.stopOrCancelActiveCapture() && toggledIndicator.hidden && !toggled.hasActiveCapture,
+                     "the shared capture toggle cancels a waiting recording")
+
+        let delayed = Service()
+        delayed.record(region, audioOptions: RecorderSelectionAudioOptions())
+        let oldStart = delayed.indicator!.onStart
+        delayed.invalidatePendingStart()
+        delayed.record(region, audioOptions: RecorderSelectionAudioOptions())
+        oldStart?()
+        suite.expect(delayed.countdownRequests == 0,
+                     "an obsolete indicator cannot start a replacement recording")
+        delayed.indicator?.onStart?()
+        delayed.indicator?.onStart?()
+        suite.expect(delayed.countdownRequests == 1,
+                     "a waiting recording accepts its Start action exactly once")
+
+        UserDefaults.immediate = true
+        let immediate = Service()
+        immediate.record(region, audioOptions: RecorderSelectionAudioOptions())
+        suite.expect(immediate.countdownRequests == 1 && immediate.hasActiveCapture,
+                     "immediate recording still enters countdown directly")
 
         reset()
         let accepted = Service()

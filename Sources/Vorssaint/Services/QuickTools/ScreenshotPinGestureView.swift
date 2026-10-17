@@ -35,7 +35,6 @@ class ScreenshotPinGestureView: NSView {
         zoom(by: factor, at: event.locationInWindow)
     }
 
-    var lastGestureMagnificationTime: TimeInterval = 0
     private let pinchTracker = ScreenshotPinPinchTracker()
 
     override var acceptsTouchEvents: Bool {
@@ -50,7 +49,6 @@ class ScreenshotPinGestureView: NSView {
     func handleGestureEvent(_ event: NSEvent) {
         guard let window, !window.ignoresMouseEvents, !isPositionLocked else { return }
         if event.type == .gesture, let factor = pinchTracker.process(event: event) {
-            lastGestureMagnificationTime = ProcessInfo.processInfo.systemUptime
             zoom(by: factor, at: event.locationInWindow)
         } else if event.type == .magnify {
             magnify(with: event)
@@ -66,7 +64,6 @@ class ScreenshotPinGestureView: NSView {
         guard let window, !window.ignoresMouseEvents, !isPositionLocked else { return }
         let amount = event.magnification
         guard amount.isFinite, amount != 0, amount > -1 else { return }
-        lastGestureMagnificationTime = ProcessInfo.processInfo.systemUptime
         zoom(by: 1 + amount, at: event.locationInWindow)
     }
 

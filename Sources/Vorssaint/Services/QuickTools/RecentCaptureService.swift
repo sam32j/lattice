@@ -274,36 +274,39 @@ final class RecentCaptureService: ObservableObject {
         }
     }
 
-    func stashRecording(from sourceURL: URL) {
-        guard RecentCaptureStore.isRegularFile(sourceURL),
-              let capturesRoot else { return }
+    func stashRecording(from sourceURL: URL, completion: @escaping (URL?) -> Void) {
         let id = UUID()
         let createdAt = Date()
         let day = Self.dayFormatter.string(from: createdAt)
-        let dayFolder = capturesRoot.appendingPathComponent(day, isDirectory: true)
         let ext = sourceURL.pathExtension.isEmpty ? "mov" : sourceURL.pathExtension
-        let fileName = "\(id.uuidString).\(ext)"
-        let destinationURL = dayFolder.appendingPathComponent(fileName)
-        let relativePath = "\(day)/\(fileName)"
+        let relativePath = "\(day)/\(id.uuidString).\(ext)"
         let thumbnailName = "\(id.uuidString)-thumbnail.png"
         let generation = currentClearGeneration()
+        let entry = RecentCaptureEntry(
+            id: id, kind: .recording, createdAt: createdAt,
+            screenshotName: nil, recordingPath: relativePath, thumbnailName: nil, scale: nil,
+            anchorX: nil, anchorY: nil, anchorWidth: nil, anchorHeight: nil)
 
-        do {
-            try manager.createDirectory(at: dayFolder, withIntermediateDirectories: true)
-            try manager.copyItem(at: sourceURL, to: destinationURL)
-        } catch {
-            return
-        }
-
-        Task { @MainActor [weak self] in
-            let thumbnail = await Self.recordingThumbnail(at: destinationURL)
-            self?.storeRecording(at: destinationURL,
-                                 recordingPath: relativePath,
-                                 id: id,
-                                 createdAt: createdAt,
-                                 thumbnailName: thumbnailName,
-                                 thumbnail: thumbnail,
-                                 generation: generation)
+        queue.async { [weak self] in
+            guard let self, self.currentClearGeneration() == generation,
+                  let root = self.capturesRoot,
+                  self.store.importRecording(from: sourceURL, entry: entry) else {
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
+            let destination = root.appendingPathComponent(relativePath)
+            self.publish()
+            DispatchQueue.main.async { [weak self] in
+                completion(destination)
+                // Thumbnail work cannot leave an unindexed movie exposed to cleanup.
+                Task { @MainActor [weak self] in
+                    let thumbnail = await Self.recordingThumbnail(at: destination)
+                    self?.storeRecording(at: destination, recordingPath: relativePath,
+                                         id: id, createdAt: createdAt,
+                                         thumbnailName: thumbnailName, thumbnail: thumbnail,
+                                         generation: generation)
+                }
+            }
         }
     }
 
