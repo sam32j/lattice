@@ -115,9 +115,9 @@ enum ScreenTextCompletionTests {
         suite.expect(NSPasteboard.general.value == "capture 42" && QuickToolHUD.messages == ["copied"],
                      "an unchanged clipboard receives the recognized text and success feedback")
         suite.expect(State.requests.count == 1 && State.requests[0].image == 42
-                     && !State.requests[0].qr && State.requests[0].joinLines
+                     && State.requests[0].qr && State.requests[0].joinLines
                      && State.requests[0].languages == ["en-US"],
-                     "preview OCR uses the captured image and language/line preferences, bypassing QR")
+                     "preview OCR uses the captured image and language/line preferences")
 
         reset()
         State.scaledImages[60] = 24
@@ -194,7 +194,7 @@ enum ScreenTextCompletionTests {
                     else { service.receiveUnifiedCapture(.init(image: 7)) }
                     finish()
                     suite.expect(State.requests.count == 1
-                                 && State.requests[0].qr == (preview ? false : detectQR)
+                                 && State.requests[0].qr == detectQR
                                  && State.requests[0].joinLines == joinLines,
                                  "OCR respects QR=\(detectQR), joinLines=\(joinLines), preview=\(preview)")
                     suite.expect(NSPasteboard.general.value == "capture 7",
@@ -217,8 +217,8 @@ enum ScreenTextCompletionTests {
         unified.receiveUnifiedCapture(.init(image: 1))
         finish()
         suite.expect(State.requests.first?.qr == true
-                     && QRResultController.shared.readings == ["https://example.com"]
-                     && NSPasteboard.general.value == "original",
-                     "unified OCR still honors QR detection and presents its result without copying")
+                     && NSPasteboard.general.value == "https://example.com"
+                     && QuickToolHUD.messages == ["copied"],
+                     "unified OCR honors QR detection and copies directly without modal")
     }
 }

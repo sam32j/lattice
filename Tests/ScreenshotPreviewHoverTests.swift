@@ -8,7 +8,7 @@ import Foundation
 enum ScreenshotPreviewHoverTests {
     typealias DispatchQueue = NotchScreenRefreshContract.DispatchQueue
 
-    enum Action: Hashable { case edit, copy, save }
+    enum Action: Hashable { case edit, copy, save, pin }
 
     final class Model {
         var disabledActions: Set<Action> = []

@@ -198,10 +198,10 @@ enum NotchCaptureKeyboardTests {
         let overlay = Contract.ScreenshotOverlayPanel()
         for destination in [panel, overlay] {
             for flags in 0..<16 {
-                for (character, key, matches) in [("r", kVK_ANSI_X, true),
-                                                   ("R", kVK_ANSI_X, true),
-                                                   ("x", kVK_ANSI_R, true),
-                                                   ("x", kVK_ANSI_X, false)] {
+                for (character, key, matches) in [("x", kVK_ANSI_R, true),
+                                                   ("X", kVK_ANSI_R, true),
+                                                   ("r", kVK_ANSI_X, true),
+                                                   ("r", kVK_ANSI_R, false)] {
                     selection.actions = []
                     let accepts = matches && flags & 7 == 0
                     let event = Event(window: destination, keyCode: UInt16(key),
