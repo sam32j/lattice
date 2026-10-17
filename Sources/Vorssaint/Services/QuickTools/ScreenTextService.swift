@@ -184,10 +184,23 @@ final class ScreenTextService: ObservableObject {
         }
     }
 
+    private static let successSound = NSSound(contentsOfFile: "/System/Library/Sounds/Pop.aiff", byReference: true)
+
+    static func playSuccessSound() {
+        if let successSound {
+            successSound.stop()
+            successSound.play()
+        } else {
+            NSSound.beep()
+        }
+    }
+
     static func copyToPasteboard(_ value: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.declareVorssaintSource()
         pasteboard.setString(value, forType: .string)
+        playSuccessSound()
     }
 }
+
