@@ -184,7 +184,7 @@ final class ScreenTextService: ObservableObject {
         }
     }
 
-    private static let successSound = NSSound(contentsOfFile: "/System/Library/Sounds/Pop.aiff", byReference: true)
+    private static let successSound = NSSound(contentsOfFile: "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/SystemSounds/system/acknowledgment_sent.caf", byReference: true)
 
     static func playSuccessSound() {
         if let successSound {

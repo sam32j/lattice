@@ -19,12 +19,8 @@ struct ScreenshotToolOrderControls: View {
         FeatureStrings.screenshot(l10n.language)
     }
 
-    private var movementStrings: ClipboardFeatureStrings {
-        FeatureStrings.clipboard(l10n.language)
-    }
-
     private var orderedTools: [ScreenshotSupport.Tool] {
-        ScreenshotSupport.Tool.ordered(from: orderRaw)
+        ScreenshotSupport.Tool.allCases
     }
 
     var body: some View {
@@ -44,7 +40,7 @@ struct ScreenshotToolOrderControls: View {
                 ForEach(orderedTools, id: \.self) { tool in
                     toolRow(tool)
                     if tool != orderedTools.last {
-                        Divider().padding(.leading, 36)
+                        Divider().padding(.leading, 28)
                     }
                 }
             }
@@ -72,32 +68,19 @@ struct ScreenshotToolOrderControls: View {
                 }
                 .disabled(orderRaw == ScreenshotSupport.Tool.defaultOrderStorage && bindingsRaw.isEmpty)
             }
-            .padding(.top, 4)
         }
         .onChange(of: l10n.language) { _, _ in errorText = nil }
-        .onAppear { keyboard.start() }
+        .onAppear {
+            keyboard.start()
+            if orderRaw != ScreenshotSupport.Tool.defaultOrderStorage {
+                orderRaw = ScreenshotSupport.Tool.defaultOrderStorage
+            }
+        }
         .onDisappear { keyboard.stop() }
     }
 
-    private func slotBadge(for index: Int) -> String {
-        if index < 9 {
-            return "\(index + 1)"
-        } else if index == 9 {
-            return "0"
-        } else {
-            return "–"
-        }
-    }
-
     private func toolRow(_ tool: ScreenshotSupport.Tool) -> some View {
-        let index = orderedTools.firstIndex(of: tool) ?? 0
-
-        return HStack(spacing: 7) {
-            Text(slotBadge(for: index))
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundStyle(index < ScreenshotSupport.Tool.shortcutLimit ? Color.secondary : Color.secondary.opacity(0.3))
-                .frame(width: 14, alignment: .center)
-
+        HStack(spacing: 7) {
             Image(systemName: tool.screenshotSymbolName)
                 .foregroundStyle(.secondary)
                 .frame(width: 20)
@@ -130,92 +113,9 @@ struct ScreenshotToolOrderControls: View {
 
             shortcutRecorder(for: tool)
                 .opacity(shortcutsEnabled ? 1 : 0.48)
-
-            Button {
-                move(tool, to: 0)
-            } label: {
-                Image(systemName: "arrow.up.to.line")
-                    .font(.system(size: 10, weight: .semibold))
-                    .frame(width: 20, height: 22)
-            }
-            .buttonStyle(.borderless)
-            .disabled(index == 0)
-            .help("Move to Top")
-            .accessibilityLabel("Move \(tool.screenshotTitle(strings)) to Top")
-
-            Button {
-                if NSEvent.modifierFlags.contains(.option) {
-                    move(tool, to: 0)
-                } else {
-                    move(tool, by: -1)
-                }
-            } label: {
-                Image(systemName: "chevron.up")
-                    .frame(width: 20, height: 22)
-            }
-            .buttonStyle(.borderless)
-            .disabled(index == 0)
-            .help("Move Up (⌥-click for Top)")
-            .accessibilityLabel(movementStrings.moveUp)
-
-            Button {
-                if NSEvent.modifierFlags.contains(.option) {
-                    move(tool, to: orderedTools.count - 1)
-                } else {
-                    move(tool, by: 1)
-                }
-            } label: {
-                Image(systemName: "chevron.down")
-                    .frame(width: 20, height: 22)
-            }
-            .buttonStyle(.borderless)
-            .disabled(index == orderedTools.count - 1)
-            .help("Move Down (⌥-click for Bottom)")
-            .accessibilityLabel(movementStrings.moveDown)
         }
         .frame(minHeight: 26)
         .contentShape(Rectangle())
-        .contextMenu {
-            Button {
-                move(tool, to: 0)
-            } label: {
-                Label("Move to Top", systemImage: "arrow.up.to.line")
-            }
-            .disabled(index == 0)
-
-            Button {
-                move(tool, by: -1)
-            } label: {
-                Label(movementStrings.moveUp, systemImage: "chevron.up")
-            }
-            .disabled(index == 0)
-
-            Button {
-                move(tool, by: 1)
-            } label: {
-                Label(movementStrings.moveDown, systemImage: "chevron.down")
-            }
-            .disabled(index == orderedTools.count - 1)
-
-            Button {
-                move(tool, to: orderedTools.count - 1)
-            } label: {
-                Label("Move to Bottom", systemImage: "arrow.down.to.line")
-            }
-            .disabled(index == orderedTools.count - 1)
-
-            Divider()
-
-            Menu("Move to Slot") {
-                ForEach(0..<orderedTools.count, id: \.self) { targetIndex in
-                    let label = targetIndex < 9 ? "Slot \(targetIndex + 1) (Key \(targetIndex + 1))" : (targetIndex == 9 ? "Slot 10 (Key 0)" : "Slot \(targetIndex + 1)")
-                    Button(label) {
-                        move(tool, to: targetIndex)
-                    }
-                    .disabled(targetIndex == index)
-                }
-            }
-        }
     }
 
     private func shortcutRecorder(for tool: ScreenshotSupport.Tool) -> some View {
@@ -248,35 +148,9 @@ struct ScreenshotToolOrderControls: View {
             .accessibilityLabel(tool.screenshotTitle(strings))
     }
 
-    private func move(_ tool: ScreenshotSupport.Tool, by offset: Int) {
-        var order = orderedTools
-        guard let index = order.firstIndex(of: tool) else { return }
-        let destination = index + offset
-        guard order.indices.contains(destination) else { return }
-        withAnimation(.easeInOut(duration: 0.14)) {
-            order.swapAt(index, destination)
-            persist(order)
-        }
-    }
-
-    private func move(_ tool: ScreenshotSupport.Tool, to destination: Int) {
-        var order = orderedTools
-        guard let index = order.firstIndex(of: tool), index != destination else { return }
-        guard order.indices.contains(destination) else { return }
-        withAnimation(.easeInOut(duration: 0.16)) {
-            order.remove(at: index)
-            order.insert(tool, at: destination)
-            persist(order)
-        }
-    }
-
-    /// A digit moves the tool and skips every conflict check. Anything else
-    /// has to be free before it is saved; a rejection leaves the previous
-    /// binding in place and says who owns the key.
     private func assign(_ shortcut: GlobalShortcut?, to tool: ScreenshotSupport.Tool,
                         capsLockOn: Bool = false) {
-        let digit = shortcut.flatMap { ScreenshotSupport.Tool.shortcutDigit($0, capsLockOn: capsLockOn) }
-        if let shortcut, digit == nil, let rejection = ScreenshotSupport.Tool.bindingRejection(
+        if let shortcut, let rejection = ScreenshotSupport.Tool.bindingRejection(
             for: shortcut, excluding: tool, bindingsRaw: bindingsRaw,
             roleConflict: { GlobalShortcutRole.conflict(for: $0, excluding: nil) },
             windowLayoutConflict: { WindowLayoutService.shared.shortcutConflictTitle($0) },
@@ -297,15 +171,10 @@ struct ScreenshotToolOrderControls: View {
             errorText = tool.screenshotTitle(strings) + " · " + shortcut.displayString + "\n" + reason
             return
         }
-        let assignment = ScreenshotSupport.Tool.assigningBinding(
-            shortcut, digit: digit, to: tool, orderRaw: orderRaw, bindingsRaw: bindingsRaw)
-        orderRaw = assignment.orderRaw
-        bindingsRaw = assignment.bindingsRaw
+        var bindings = ScreenshotSupport.Tool.bindings(from: bindingsRaw)
+        bindings[tool] = shortcut
+        bindingsRaw = ScreenshotSupport.Tool.bindingsStorage(bindings)
         errorText = nil
-    }
-
-    private func persist(_ order: [ScreenshotSupport.Tool]) {
-        orderRaw = order.map(\.rawValue).joined(separator: ",")
     }
 }
 

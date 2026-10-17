@@ -70,7 +70,7 @@ static func run(_ suite: TestSuite) {
         suite.expect(Tool.bindings(from: original.bindingsRaw)[.text] == ampersand
                && Tool.activeBindings(from: original.bindingsRaw)[.text] == nil,
                "keyboard changes suspend digit-shaped bindings without deleting them")
-        suite.expect(Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: original.bindingsRaw, enabled: true) == "5"
+        suite.expect(Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: original.bindingsRaw, enabled: true) == "9"
                && Tool.shortcutTool(keyCode: ampersand.keyCode, modifiers: [], number: 1,
                                     orderRaw: nil, bindingsRaw: original.bindingsRaw, enabled: true) == .select,
                "suspended binding leaves position badges and printed-digit routing consistent")
@@ -99,7 +99,7 @@ static func run(_ suite: TestSuite) {
                "the editor selects the new first tool using the locked digit")
         suite.expect(Tool.activeBindings(from: original.bindingsRaw, capsLockOn: true)[.text] == nil
                && Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: original.bindingsRaw,
-                                     enabled: true, capsLockOn: true) == "5"
+                                     enabled: true, capsLockOn: true) == "9"
                && Tool.activeBindings(from: original.bindingsRaw, capsLockOn: false)[.text] == ampersand,
                "Caps Lock temporarily changes availability and labels, never storage")
         suite.expect(Tool.shortcutTool(keyCode: ampersand.keyCode, modifiers: [], number: 1,
@@ -113,7 +113,7 @@ static func run(_ suite: TestSuite) {
         suite.expect(Tool.shortcutTool(keyCode: text.keyCode, modifiers: [], number: 1,
                                 orderRaw: nil, bindingsRaw: textBinding, enabled: true) == .select,
                "an input method's actual printed digit wins over an underlying physical letter")
-        suite.expect(Tool.shortcutTool(keyCode: Int64(kVK_ANSI_5), modifiers: [], number: 5,
+        suite.expect(Tool.shortcutTool(keyCode: Int64(kVK_ANSI_9), modifiers: [], number: 9,
                                 orderRaw: nil, bindingsRaw: textBinding, enabled: true) == nil,
                "an active custom binding keeps its tool's old position shortcut off")
     }

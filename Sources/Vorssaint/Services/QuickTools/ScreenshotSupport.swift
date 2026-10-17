@@ -1392,10 +1392,10 @@ enum ScreenshotSupport {
     }
 
     enum Tool: String, CaseIterable {
-        // Case order is the default rail order and therefore the default
-        // mapping for keys 1 through 9. Put the common actions first.
-        case select, arrow, pixelate, crop, text, sticker, rect, highlight,
-             freehand, line, ellipse, counter, redact
+        // Case order is the fixed rail order and therefore the default
+        // mapping for keys 1 through 9, and 0.
+        case select, arrow, line, ellipse, rect, redact,
+             freehand, highlight, text, crop, pixelate, counter, sticker
 
         static let shortcutLimit = 10
 
