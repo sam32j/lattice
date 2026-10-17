@@ -830,7 +830,7 @@ struct CompactShortcutRecorder: View {
     }
 }
 
-private struct CompactRecorderShakeEffect: GeometryEffect {
+struct CompactRecorderShakeEffect: GeometryEffect {
     var amount: CGFloat = 6
     var shakesPerUnit: CGFloat = 3
     var animatableData: CGFloat
@@ -842,7 +842,7 @@ private struct CompactRecorderShakeEffect: GeometryEffect {
     }
 }
 
-private struct KeyCaptureBridgeView: NSViewRepresentable {
+struct KeyCaptureBridgeView: NSViewRepresentable {
     var onKeyDown: (NSEvent) -> Void
     var onFlagsChanged: (NSEvent) -> Void
 

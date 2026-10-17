@@ -35,6 +35,7 @@ static func run(_ suite: TestSuite) {
     // Real keyboard data is the oracle, before the shortcut model discards
     // lock state. Every modifier combination and physical key is considered.
     let layouts = ["US", "French", "French-numerical", "German", "Russian"]
+    let digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
     for name in layouts {
         guard let data = layout("com.apple.keylayout." + name) else {
             suite.expect(false, "keyboard fixture unavailable: " + name)
@@ -48,7 +49,7 @@ static func run(_ suite: TestSuite) {
                     let flags = modifiers.carbonFlags | (locked ? UInt32(alphaLock) : 0)
                     let character = typed(code, flags: flags, data: data)
                     let expected = !modifiers.hasPrimaryModifier
-                        ? character.flatMap { ["1", "2", "3", "4", "5", "6", "7", "8", "9"].firstIndex(of: $0) }.map { $0 + 1 }
+                        ? character.flatMap { digits.firstIndex(of: $0) }.map { $0 + 1 }
                         : nil
                     let shortcut = GlobalShortcut(keyCode: Int64(code), modifiers: modifiers)
                     suite.expect(Tool.shortcutDigit(shortcut, capsLockOn: locked) == expected,
@@ -63,59 +64,39 @@ static func run(_ suite: TestSuite) {
         let ampersand = GlobalShortcut(keyCode: Int64(kVK_ANSI_1), modifiers: [])
         let other = GlobalShortcut(keyCode: Int64(kVK_F19), modifiers: [.control, .option, .command])
         GlobalShortcut.refreshLayoutLabels(layoutData: french)
-        let original = Tool.assigningBinding(ampersand, to: .text, orderRaw: nil, bindingsRaw: "")
-        suite.expect(Tool.activeBindings(from: original.bindingsRaw)[.text] == ampersand,
-               "French symbol binding starts active")
+        let originalRaw = Tool.customBindingsStorage([.text: ampersand])
+        suite.expect(Tool.effectiveShortcut(for: .text, bindingsRaw: originalRaw) == ampersand,
+               "French symbol binding is active")
         GlobalShortcut.refreshLayoutLabels(layoutData: us)
-        suite.expect(Tool.bindings(from: original.bindingsRaw)[.text] == ampersand
-               && Tool.activeBindings(from: original.bindingsRaw)[.text] == nil,
-               "keyboard changes suspend digit-shaped bindings without deleting them")
-        suite.expect(Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: original.bindingsRaw, enabled: true) == "9"
-               && Tool.shortcutTool(keyCode: ampersand.keyCode, modifiers: [], number: 1,
-                                    orderRaw: nil, bindingsRaw: original.bindingsRaw, enabled: true) == .select,
-               "suspended binding leaves position badges and printed-digit routing consistent")
-        let edited = Tool.assigningBinding(other, to: .arrow, orderRaw: original.orderRaw,
-                                          bindingsRaw: original.bindingsRaw)
-        let clearedOther = Tool.assigningBinding(nil, to: .arrow, orderRaw: edited.orderRaw,
-                                                bindingsRaw: edited.bindingsRaw)
+        let editedRaw = Tool.customBindingsStorage([.text: ampersand, .arrow: other])
+        let clearedOtherRaw = Tool.customBindingsStorage([.text: ampersand, .arrow: nil])
         GlobalShortcut.refreshLayoutLabels(layoutData: french)
-        suite.expect(Tool.activeBindings(from: edited.bindingsRaw)[.text] == ampersand
-               && Tool.activeBindings(from: clearedOther.bindingsRaw)[.text] == ampersand,
+        suite.expect(Tool.effectiveShortcut(for: .text, bindingsRaw: editedRaw) == ampersand
+               && Tool.effectiveShortcut(for: .text, bindingsRaw: clearedOtherRaw) == ampersand
+               && Tool.effectiveShortcut(for: .arrow, bindingsRaw: clearedOtherRaw) == nil,
                "editing and clearing another tool preserve bindings across a keyboard round trip")
 
         GlobalShortcut.refreshLayoutLabels(layoutData: numerical)
         suite.expect(Tool.shortcutDigit(ampersand, capsLockOn: true) == 1
                && Tool.shortcutDigit(ampersand, capsLockOn: false) == nil,
                "French numerical Caps Lock changes recording from a symbol to a digit")
-        let lockedAssignment = Tool.assigningBinding(ampersand,
-            digit: Tool.shortcutDigit(ampersand, capsLockOn: true), to: .text,
-            orderRaw: original.orderRaw, bindingsRaw: original.bindingsRaw)
-        suite.expect(Tool.ordered(from: lockedAssignment.orderRaw).first == .text
-               && Tool.bindings(from: lockedAssignment.bindingsRaw)[.text] == nil,
-               "recording a locked digit moves the tool and clears only its explicit binding")
         suite.expect(Tool.shortcutTool(keyCode: ampersand.keyCode, modifiers: [], number: 1,
-                                orderRaw: lockedAssignment.orderRaw, bindingsRaw: lockedAssignment.bindingsRaw,
-                                enabled: true, capsLockOn: true) == .text,
-               "the editor selects the new first tool using the locked digit")
-        suite.expect(Tool.activeBindings(from: original.bindingsRaw, capsLockOn: true)[.text] == nil
-               && Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: original.bindingsRaw,
-                                     enabled: true, capsLockOn: true) == "9"
-               && Tool.activeBindings(from: original.bindingsRaw, capsLockOn: false)[.text] == ampersand,
-               "Caps Lock temporarily changes availability and labels, never storage")
-        suite.expect(Tool.shortcutTool(keyCode: ampersand.keyCode, modifiers: [], number: 1,
-                                orderRaw: nil, bindingsRaw: original.bindingsRaw, enabled: false,
+                                bindingsRaw: originalRaw, enabled: false,
                                 capsLockOn: true) == nil,
-               "disabled shortcuts remain silent with Caps Lock and a suspended binding")
+               "disabled shortcuts remain silent with Caps Lock and a binding")
 
         GlobalShortcut.refreshLayoutLabels(layoutData: us)
         let text = GlobalShortcut(keyCode: Int64(kVK_ANSI_T), modifiers: [])
-        let textBinding = Tool.bindingsStorage([.text: text])
-        suite.expect(Tool.shortcutTool(keyCode: text.keyCode, modifiers: [], number: 1,
-                                orderRaw: nil, bindingsRaw: textBinding, enabled: true) == .select,
-               "an input method's actual printed digit wins over an underlying physical letter")
+        let textBinding = Tool.customBindingsStorage([.text: text])
+        suite.expect(Tool.shortcutTool(keyCode: text.keyCode, modifiers: [], number: nil,
+                                bindingsRaw: textBinding, enabled: true) == .text,
+               "custom letter shortcut activates its tool")
         suite.expect(Tool.shortcutTool(keyCode: Int64(kVK_ANSI_9), modifiers: [], number: 9,
-                                orderRaw: nil, bindingsRaw: textBinding, enabled: true) == nil,
+                                bindingsRaw: textBinding, enabled: true) == nil,
                "an active custom binding keeps its tool's old position shortcut off")
+        suite.expect(Tool.shortcutTool(keyCode: Int64(kVK_ANSI_1), modifiers: [], number: 1,
+                                bindingsRaw: textBinding, enabled: true) == .select,
+               "unmodified tools retain their default shortcut")
     }
 
     // Exercise the same raw-flag constructor used by the WindowServer reader.

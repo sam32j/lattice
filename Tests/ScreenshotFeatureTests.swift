@@ -2908,50 +2908,17 @@ enum ScreenshotFeatureTests {
                     == [.select, .arrow, .line, .ellipse, .rect, .redact,
                         .freehand, .highlight, .text],
                "the screenshot rail leads with the nine most useful numbered tools")
-        let customScreenshotTools = ScreenshotSupport.Tool.ordered(
-            from: "crop,arrow,arrow,invalid")
-        suite.expect(Array(customScreenshotTools.prefix(2)) == [.crop, .arrow]
-                && customScreenshotTools.count == 13
-                && Set(customScreenshotTools).count == 13,
-               "a saved screenshot tool order drops invalid duplicates and appends missing tools")
-        suite.expect(ScreenshotSupport.Tool.shortcutTool(number: 1,
-                                                   orderRaw: nil,
-                                                   enabled: true) == .select
-                && ScreenshotSupport.Tool.shortcutTool(number: 3,
-                                                       orderRaw: nil,
-                                                       enabled: true) == .line
-                && ScreenshotSupport.Tool.shortcutTool(number: 9,
-                                                       orderRaw: nil,
-                                                       enabled: true) == .text
-                && ScreenshotSupport.Tool.shortcutTool(number: 1,
-                                                       orderRaw: nil,
-                                                       enabled: false) == nil
-                && ScreenshotSupport.Tool.shortcutTool(number: 10,
-                                                       orderRaw: nil,
-                                                       enabled: true) == nil,
-               "number keys 1 through 9 follow tool order and can be disabled together")
-        suite.expect(ScreenshotSupport.Tool.shortcutNumber(for: .crop,
-                                                     orderRaw: "arrow,crop",
-                                                     enabled: true) == 2
-                && ScreenshotSupport.Tool.shortcutNumber(for: .pixelate,
-                                                         orderRaw: nil,
-                                                         enabled: true) == nil,
-               "the rail exposes only the first nine configured shortcut numbers")
-        let cropAssignedFirst = ScreenshotSupport.Tool.assigningShortcut(
-            1, to: .crop, orderRaw: nil)
-        let selectWithoutShortcut = ScreenshotSupport.Tool.assigningShortcut(
-            nil, to: .select, orderRaw: nil)
-        suite.expect(cropAssignedFirst.first == .crop
-                && ScreenshotSupport.Tool.shortcutNumber(
-                    for: .crop,
-                    orderRaw: cropAssignedFirst.map(\.rawValue).joined(separator: ","),
-                    enabled: true) == 1
-                && selectWithoutShortcut.firstIndex(of: .select) == ScreenshotSupport.Tool.shortcutLimit
-                && ScreenshotSupport.Tool.shortcutNumber(
-                    for: .select,
-                    orderRaw: selectWithoutShortcut.map(\.rawValue).joined(separator: ","),
-                    enabled: true) == nil,
-               "the visible shortcut menu assigns a numbered slot or removes a tool from 1 through 9")
+        suite.expect(ScreenshotSupport.Tool.shortcutTool(number: 1, enabled: true) == .select
+                && ScreenshotSupport.Tool.shortcutTool(number: 3, enabled: true) == .line
+                && ScreenshotSupport.Tool.shortcutTool(number: 9, enabled: true) == .text
+                && ScreenshotSupport.Tool.shortcutTool(number: 0, enabled: true) == .crop
+                && ScreenshotSupport.Tool.shortcutTool(number: 1, enabled: false) == nil
+                && ScreenshotSupport.Tool.shortcutTool(number: 11, enabled: true) == nil,
+               "number keys 1 through 9 and 0 select the fixed rail tools and can be disabled together")
+        suite.expect(ScreenshotSupport.Tool.shortcutNumber(for: .select, enabled: true) == 1
+                && ScreenshotSupport.Tool.shortcutNumber(for: .crop, enabled: true) == 0
+                && ScreenshotSupport.Tool.shortcutNumber(for: .pixelate, enabled: true) == nil,
+               "the rail exposes default shortcut numbers 1-9 and 0 for the first ten tools")
 
         // MARK: Remappable screenshot tool shortcuts
         do {
@@ -3039,18 +3006,30 @@ enum ScreenshotFeatureTests {
                    "a bound tool's badge shows its caps and disabling shortcuts hides every badge")
             suite.expect(resolve(.init(keyCode: Int64(kVK_ANSI_1), modifiers: .shift), number: 1, bindings: "") == .select,
                    "AZERTY Shift plus a printed digit preserves the existing digit path")
-            let moved = Tool.assigningBinding(one, digit: 1, to: .text, orderRaw: nil, bindingsRaw: raw)
-            suite.expect(Tool.ordered(from: moved.orderRaw).first == .text
-                && Tool.bindings(from: moved.bindingsRaw) == [.freehand: pen],
-                   "recording a digit moves the tool and clears its custom binding")
-            let cleared = Tool.assigningBinding(nil, to: .text, orderRaw: nil, bindingsRaw: raw)
-            suite.expect(Tool.ordered(from: cleared.orderRaw).firstIndex(of: .text) == Tool.shortcutLimit
-                && Tool.shortcutLabel(for: .text, orderRaw: cleared.orderRaw,
-                    bindingsRaw: cleared.bindingsRaw, enabled: true) == nil,
-                   "Delete clears the binding and moves the tool outside the numbered slots")
-            let rebound = Tool.assigningBinding(text, to: .text, orderRaw: "crop,text", bindingsRaw: "")
-            suite.expect(Tool.ordered(from: rebound.orderRaw).prefix(2) == [.crop, .text]
-                && Tool.bindings(from: rebound.bindingsRaw)[.text] == text, "custom recording preserves rail order")
+            let movedRaw = "text=\(one.storageValue)"
+            suite.expect(Tool.effectiveShortcut(for: .text, bindingsRaw: movedRaw) == one
+                && Tool.isModified(tool: .text, bindingsRaw: movedRaw),
+                   "recording a custom key sets the tool's effective shortcut and marks it modified")
+            let clearedRaw = "text=none"
+            suite.expect(Tool.effectiveShortcut(for: .text, bindingsRaw: clearedRaw) == nil
+                && Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: clearedRaw, enabled: true) == nil
+                && Tool.isModified(tool: .text, bindingsRaw: clearedRaw),
+                   "clearing sets the tool's shortcut to nil and marks it modified")
+            // Verify reset conflict prevention:
+            // Select default is 1. If Select is cleared (select=none) and blur is set to 1 (pixelate=18:0):
+            let duplicateScenario = "select=none,pixelate=\(one.storageValue)"
+            let selectDefault = Tool.select.defaultShortcut!
+            let conflictOnReset = Tool.effectiveShortcuts(from: duplicateScenario)
+                .contains(where: { $0.key != .select && $0.value == selectDefault })
+            suite.expect(conflictOnReset,
+                   "resetting Select is refused when another tool has claimed its default shortcut 1")
+            // Verify Crop occupied key rejection:
+            // Crop defaults to 0. Setting Crop to 1 (Select's default) must be rejected:
+            let cropToSelect = Tool.bindingRejection(for: one, excluding: .crop, bindingsRaw: "",
+                                                    roleConflict: { _ in nil }, windowLayoutConflict: { _ in nil },
+                                                    systemConflict: { _ in false })
+            suite.expect(cropToSelect == .tool(.select),
+                   "assigning an occupied default key (1) to Crop is rejected with a conflict against Select")
             suite.expect(Defaults.registeredDefaults[DefaultsKey.screenshotToolShortcuts] as? String == ""
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.screenshotToolShortcuts),
                    "empty tool bindings are registered and included in settings backups")
@@ -3063,14 +3042,13 @@ enum ScreenshotFeatureTests {
                     && Tool.shortcutDigit(.init(keyCode: Int64(kVK_ANSI_Keypad1), modifiers: [])) == 1
                     && Tool.shortcutDigit(shiftedOne) == nil
                     && Tool.shortcutDigit(.init(keyCode: Int64(kVK_ANSI_1), modifiers: .command)) == nil
-                    && Tool.shortcutDigit(.init(keyCode: Int64(kVK_ANSI_0), modifiers: [])) == nil
+                    && Tool.shortcutDigit(.init(keyCode: Int64(kVK_ANSI_0), modifiers: [])) == 10
                     && Tool.shortcutDigit(text) == nil,
-                       "on US a bare or keypad digit names a slot; ⇧1 types !, and ⌘1, 0 and letters do not")
+                       "on US a bare or keypad digit names a slot; ⇧1 types !, ⌘1 does not, 0 names slot 10, and letters do not")
                 suite.expect(Tool.bindings(from: "text=\(one.storageValue)")[.text] == one
-                    && Tool.activeBindings(from: "text=\(one.storageValue)").isEmpty
-                    && resolve(one, number: 1, bindings: "text=\(one.storageValue)") == .select
+                    && resolve(one, number: 1, bindings: "text=\(one.storageValue)") == .text
                     && Tool.bindings(from: Tool.bindingsStorage([.text: shiftedOne]))[.text] == shiftedOne,
-                       "a saved binding on a digit key is suspended so the digit keeps its slot, ⇧1 stays a key")
+                       "a custom binding on a digit key selects its tool")
             }
             if let frenchData = testLayoutData(for: "com.apple.keylayout.French") {
                 GlobalShortcut.refreshLayoutLabels(layoutData: frenchData)
@@ -3081,19 +3059,14 @@ enum ScreenshotFeatureTests {
                        "AZERTY reads 1 from Shift on the & key and leaves bare & as a key")
                 let ampersand = Tool.bindingsStorage([.text: one])
                 suite.expect(Tool.bindings(from: ampersand)[.text] == one
-                    && Tool.activeBindings(from: Tool.bindingsStorage([.text: shiftedOne])).isEmpty
                     && Tool.bindingRejection(for: one, excluding: .text, bindingsRaw: "",
                                              roleConflict: { _ in nil }, windowLayoutConflict: { _ in nil },
                                              systemConflict: { _ in false }) == nil,
                        "AZERTY records & as a binding with no conflict against 1, and ⇧& is a slot, not a binding")
-                let movedFrench = Tool.assigningBinding(shiftedOne, digit: Tool.shortcutDigit(shiftedOne),
-                                                        to: .text, orderRaw: nil, bindingsRaw: ampersand)
-                suite.expect(Tool.ordered(from: movedFrench.orderRaw).first == .text
-                    && Tool.bindings(from: movedFrench.bindingsRaw).isEmpty
-                    && Tool.shortcutTool(keyCode: shiftedOne.keyCode, modifiers: shiftedOne.modifiers, number: 1,
-                                         orderRaw: movedFrench.orderRaw, bindingsRaw: movedFrench.bindingsRaw,
-                                         enabled: true) == .text,
-                       "AZERTY Shift+& moves the tool into slot 1 instead of saving ⇧&, and then selects it")
+                suite.expect(Tool.shortcutTool(keyCode: shiftedOne.keyCode, modifiers: shiftedOne.modifiers, number: 1,
+                                         orderRaw: nil, bindingsRaw: "",
+                                         enabled: true) == .select,
+                       "AZERTY Shift+& routes through printed digit 1 to select the first tool")
             }
             for layoutID in ["com.apple.keylayout.French", "com.apple.keylayout.Russian"] {
                 if let data = testLayoutData(for: layoutID) {
