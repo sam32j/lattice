@@ -1053,13 +1053,12 @@ enum ScreenshotFeatureTests {
                 == [.screenshot, .recording, .text, .color],
                "the capture chooser keeps a stable order for every installed mode")
         let captureSettingsSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Settings/ScreenCaptureSettings.swift",
+            contentsOfFile: "Sources/Vorssaint/UI/Settings/ScreenshotSettings.swift",
             encoding: .utf8)) ?? ""
-        suite.expect(captureSettingsSource.contains("selectedTool")
-                && captureSettingsSource.contains("ScreenCaptureToolPicker(tools: availableTools")
-                && captureSettingsSource.contains("ToolShortcutRows(tool: currentTool")
-                && captureSettingsSource.contains("RecentCapturesShortcutRows()"),
-               "the capture page keeps tool and shared-history shortcuts in the top section")
+        suite.expect(captureSettingsSource.contains("CompactShortcutPreferenceRow")
+                && captureSettingsSource.contains("ocrName")
+                && captureSettingsSource.contains("colorPickerName"),
+               "the screenshot settings page keeps tool and feature shortcuts")
         let recentCaptureServiceSource = (try? String(
             contentsOfFile: "Sources/Vorssaint/Services/QuickTools/RecentCaptureService.swift",
             encoding: .utf8)) ?? ""

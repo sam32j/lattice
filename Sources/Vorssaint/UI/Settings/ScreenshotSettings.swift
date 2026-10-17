@@ -2,9 +2,6 @@
 // Copyright (C) 2026 Vorssaint
 
 import SwiftUI
-
-typealias ScreenshotCaptureSettings = ScreenshotSettings
-
 /// Screenshot Settings page.
 struct ScreenshotSettings: View {
     @ObservedObject private var l10n = L10n.shared
@@ -30,8 +27,6 @@ struct ScreenshotSettings: View {
     @AppStorage(DefaultsKey.screenshotDownscale) private var downscale = false
     @AppStorage(DefaultsKey.screenshotDelay) private var delay = 0
     @AppStorage(DefaultsKey.screenshotDefaultAction) private var defaultActionRaw = ""
-    @AppStorage(DefaultsKey.screenshotToolOrder) private var toolOrderRaw =
-        ScreenshotSupport.Tool.defaultOrderStorage
     @AppStorage(DefaultsKey.screenshotToolShortcutsEnabled) private var toolShortcutsEnabled = true
     @AppStorage(DefaultsKey.screenshotCopyToClipboard) private var copyToClipboard = false
     @AppStorage(DefaultsKey.screenshotAddToShelf) private var addToShelf = false
@@ -206,8 +201,7 @@ struct ScreenshotSettings: View {
             }
 
             Section {
-                ScreenshotToolOrderControls(orderRaw: $toolOrderRaw,
-                                            shortcutsEnabled: $toolShortcutsEnabled,
+                ScreenshotToolOrderControls(shortcutsEnabled: $toolShortcutsEnabled,
                                             showsTitle: false)
             } header: {
                 Text(strings.toolShortcutsTitle)

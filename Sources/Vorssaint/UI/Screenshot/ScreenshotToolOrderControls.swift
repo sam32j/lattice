@@ -7,7 +7,6 @@ import SwiftUI
 /// Reusable controls for screenshot tool order and shortcut assignments.
 struct ScreenshotToolOrderControls: View {
     @ObservedObject private var l10n = L10n.shared
-    @Binding var orderRaw: String
     @Binding var shortcutsEnabled: Bool
     var showsTitle = true
     @AppStorage(DefaultsKey.screenshotToolShortcuts) private var bindingsRaw = ""
@@ -62,19 +61,15 @@ struct ScreenshotToolOrderControls: View {
             HStack {
                 Spacer()
                 Button(l10n.s.shortcutReset) {
-                    orderRaw = ScreenshotSupport.Tool.defaultOrderStorage
                     bindingsRaw = ""
                     errorText = nil
                 }
-                .disabled(orderRaw == ScreenshotSupport.Tool.defaultOrderStorage && bindingsRaw.isEmpty)
+                .disabled(bindingsRaw.isEmpty)
             }
         }
         .onChange(of: l10n.language) { _, _ in errorText = nil }
         .onAppear {
             keyboard.start()
-            if orderRaw != ScreenshotSupport.Tool.defaultOrderStorage {
-                orderRaw = ScreenshotSupport.Tool.defaultOrderStorage
-            }
         }
         .onDisappear { keyboard.stop() }
     }
@@ -125,7 +120,7 @@ struct ScreenshotToolOrderControls: View {
         // as its empty state so nothing else (Delete, reset) treats it as a
         // recorded key.
         let label = ScreenshotSupport.Tool.shortcutLabel(
-            for: tool, orderRaw: orderRaw, bindingsRaw: bindingsRaw, enabled: true,
+            for: tool, orderRaw: nil, bindingsRaw: bindingsRaw, enabled: true,
             capsLockOn: keyboard.capsLockOn)
         return ShortcutRecorderButton(
             shortcut: binding ?? .keepAwakeDefault,
