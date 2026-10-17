@@ -262,10 +262,7 @@ final class ScreenshotQuickPreviewController {
         guard !model.disabledActions.contains(requested) else { return }
         dismissWork?.cancel()
         dismissWork = nil
-        if requested == .edit {
-            // Release the island's non-activating key panel before promoting
-            // the app and constructing another SwiftUI window. Defer past the
-            // button's current update rather than nesting editor layout in it.
+        if requested == .edit || requested == .pin {
             let action = action
             close()
             DispatchQueue.main.async { _ = action(requested) }
@@ -399,7 +396,7 @@ final class ScreenshotQuickPreviewController {
     }
 
     fileprivate static func size(showingLink: Bool) -> CGSize {
-        CGSize(width: 350, height: showingLink ? 268 : 210)
+        CGSize(width: 340, height: showingLink ? 216 : 158)
     }
 
     private func previewFrame(for size: CGSize) -> CGRect {
@@ -483,10 +480,24 @@ final class ScreenshotQuickPreviewController {
                 }
             }
             guard flags.isDisjoint(with: [.command, .control, .option]) else { return event }
-            switch key {
-            case kVK_Return, kVK_ANSI_KeypadEnter, kVK_ANSI_E:
+            let letter = event.charactersIgnoringModifiers?.lowercased()
+            if key == kVK_Space || letter == " " {
+                self.perform(.copy)
+                return nil
+            }
+            if letter == "p" || key == kVK_ANSI_P {
+                self.perform(.pin)
+                return nil
+            }
+            if letter == "o" || key == kVK_ANSI_O {
+                self.copyText()
+                return nil
+            }
+            if letter == "e" || key == kVK_ANSI_E || key == kVK_Return || key == kVK_ANSI_KeypadEnter {
                 self.perform(.edit)
                 return nil
+            }
+            switch key {
             case kVK_Delete, kVK_ForwardDelete:
                 self.perform(.discard)
                 return nil
@@ -547,6 +558,7 @@ private struct ScreenshotQuickPreviewView: View {
         return view
     }
     @AppStorage(DefaultsKey.screenshotSharingEnabled) private var sharingEnabled = true
+    @State private var isViewportHovered = false
 
     var body: some View {
         if actionsOnly { actionBar }
@@ -563,6 +575,7 @@ private struct ScreenshotQuickPreviewView: View {
             }
             .modifier(ScreenshotPreviewActionStyle(embedded: embedded))
             .controlSize(.small)
+            .focusable(false)
             .screenshotSafeHelp("\(strings.discardConfirm)  (⌫)")
             .accessibilityLabel(strings.discardConfirm)
             if model.qr != nil {
@@ -591,6 +604,7 @@ private struct ScreenshotQuickPreviewView: View {
                 }
                 .modifier(ScreenshotPreviewActionStyle(embedded: true))
                 .controlSize(.small)
+                .focusable(false)
                 .background(ShelfSharePickerAnchor(anchor: shareAnchor))
                 .screenshotSafeHelp(strings.shareButton)
                 .accessibilityLabel(strings.shareButton)
@@ -607,6 +621,7 @@ private struct ScreenshotQuickPreviewView: View {
                 }
                 .modifier(ScreenshotPreviewActionStyle(embedded: true))
                 .controlSize(.small)
+                .focusable(false)
                 .screenshotSafeHelp(strings.pinButton)
                 .accessibilityLabel(strings.pinButton)
             }
@@ -617,6 +632,7 @@ private struct ScreenshotQuickPreviewView: View {
             .accessibilityLabel(strings.editButton)
             .modifier(ScreenshotPreviewActionStyle(embedded: embedded, prominent: true))
             .controlSize(.small)
+            .focusable(false)
             .screenshotSafeHelp("\(strings.editButton)  (⏎)")
         }
     }
@@ -625,29 +641,108 @@ private struct ScreenshotQuickPreviewView: View {
         Button(action: dismiss) {
             Image(systemName: "xmark")
                 .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white)
                 .frame(width: 24, height: 24)
                 .background(.regularMaterial, in: Circle())
                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        .focusable(false)
         .padding(6)
         .screenshotSafeHelp("\(strings.done)  (⎋)")
         .accessibilityLabel(strings.done)
     }
 
-    private var thumbnailButtons: some View {
+    private var viewportTopLeadingButtons: some View {
         HStack(spacing: 5) {
+            if showsDismissButton {
+                thumbnailDismissButton
+            }
             if featureRuntime.isAvailable(.screenOCR) {
                 thumbnailButton(symbol: "text.viewfinder", title: strings.copyTextButton,
                                 action: copyText)
             }
-            thumbnailButton(symbol: "square.and.arrow.up", title: strings.shareButton,
-                            action: systemShare)
-                .background(ShelfSharePickerAnchor(anchor: shareAnchor))
             thumbnailButton(symbol: "pin", title: strings.pinButton) { perform(.pin) }
         }
         .padding(6)
+    }
+
+    private var viewportTopTrailingButtons: some View {
+        HStack(spacing: 5) {
+            if sharingEnabled, model.sharedRecord == nil {
+                viewportLinkMenu
+            }
+            thumbnailButton(symbol: "square.and.arrow.up", title: strings.shareButton,
+                            action: systemShare)
+                .background(ShelfSharePickerAnchor(anchor: shareAnchor))
+        }
+        .padding(6)
+    }
+
+    private var viewportLinkMenu: some View {
+        Menu {
+            shareDurations
+        } label: {
+            Group {
+                if model.sharing {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Image(systemName: "link")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .frame(width: 24, height: 24)
+            .background(.regularMaterial, in: Circle())
+            .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+            .contentShape(Circle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .disabled(model.sharing)
+        .focusable(false)
+        .screenshotSafeHelp(strings.shareSectionTitle)
+        .accessibilityLabel(strings.shareSectionTitle)
+    }
+
+    private var viewportBottomLeadingButtons: some View {
+        HStack(spacing: 5) {
+            if model.qr != nil {
+                thumbnailButton(symbol: "qrcode", title: L10n.shared.s.qrResultTitle, action: showQR)
+            }
+            thumbnailButton(symbol: "pencil", title: "\(strings.editButton)  (E)") {
+                perform(.edit)
+            }
+        }
+        .padding(6)
+    }
+
+    private var viewportBottomTrailingButtons: some View {
+        Button(action: { perform(.discard) }) {
+            Image(systemName: "trash")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.red)
+                .frame(width: 24, height: 24)
+                .background(.regularMaterial, in: Circle())
+                .overlay(Circle().strokeBorder(Color.red.opacity(0.35), lineWidth: 1))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .screenshotSafeHelp("\(strings.discardConfirm)  (⌫)")
+        .accessibilityLabel(strings.discardConfirm)
+        .padding(6)
+    }
+
+    private var viewportCenterOverlay: some View {
+        QuickPreviewCenterActions(
+            strings: strings,
+            disabledActions: model.disabledActions,
+            onCopy: { perform(.copy) },
+            onSave: { perform(.save) }
+        )
     }
 
     private func thumbnailButton(symbol: String,
@@ -656,54 +751,75 @@ private struct ScreenshotQuickPreviewView: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white)
                 .frame(width: 24, height: 24)
                 .background(.regularMaterial, in: Circle())
                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        .focusable(false)
         .screenshotSafeHelp(title)
         .accessibilityLabel(title)
     }
 
     private var preview: some View {
         VStack(spacing: 10) {
-            Button {
-                perform(.edit)
-            } label: {
+            ZStack {
                 Image(decorative: image, scale: 1)
                     .resizable()
                     .interpolation(.high)
-                    .scaledToFit()
+                    .scaledToFill()
                     .frame(maxWidth: 320, maxHeight: 138)
                     .frame(width: embedded ? nil : 320, height: 138)
+                    .clipped()
                     .background(Color.black.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 9, style: .continuous)
                             .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
                     )
+                    .onDrag(dragItem)
+
+                if !embedded {
+                    VStack {
+                        HStack {
+                            viewportTopLeadingButtons
+                            Spacer()
+                            viewportTopTrailingButtons
+                        }
+                        Spacer()
+                        HStack {
+                            viewportBottomLeadingButtons
+                            Spacer()
+                            viewportBottomTrailingButtons
+                        }
+                    }
+                } else if showsDismissButton {
+                    VStack {
+                        HStack {
+                            thumbnailDismissButton
+                            Spacer()
+                        }
+                        Spacer()
+                    }
+                }
+
+                if !embedded && isViewportHovered {
+                    viewportCenterOverlay
+                        .transition(.opacity.animation(.easeInOut(duration: 0.15)))
+                }
             }
-            .buttonStyle(.plain)
-            .onDrag(dragItem)
-            .screenshotSafeHelp(strings.editButton)
-            .accessibilityLabel(strings.editButton)
-            .overlay(alignment: .topLeading) {
-                if showsDismissButton { thumbnailDismissButton }
-            }
-            .overlay(alignment: .topTrailing) {
-                // The floating action row already fills its fixed width in
-                // longer languages, so Copy text, share and pin ride on the
-                // thumbnail there instead of squeezing Save, Copy and Edit.
-                if !embedded { thumbnailButtons }
+            .frame(width: embedded ? nil : 320, height: 138)
+            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .onHover { inside in
+                isViewportHovered = inside
             }
 
             if let record = model.sharedRecord {
                 sharedLinkRow(record)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
-
-            if !embedded { actionBar }
         }
         .padding(10)
         .frame(width: embedded ? nil : ScreenshotQuickPreviewController.size(showingLink: false).width,
@@ -790,6 +906,7 @@ private struct ScreenshotQuickPreviewView: View {
         }
         .modifier(ScreenshotPreviewActionStyle(embedded: embedded))
         .controlSize(.small)
+        .focusable(false)
         .tint(.accentColor)
         .screenshotSafeHelp(L10n.shared.s.qrResultTitle)
         .accessibilityLabel(L10n.shared.s.qrResultTitle)
@@ -802,6 +919,7 @@ private struct ScreenshotQuickPreviewView: View {
         }
         .modifier(ScreenshotPreviewActionStyle(embedded: true))
         .controlSize(.small)
+        .focusable(false)
         .screenshotSafeHelp(strings.copyTextButton)
         .accessibilityLabel(strings.copyTextButton)
     }
@@ -889,3 +1007,80 @@ private struct ScreenshotPreviewActionStyle: ViewModifier {
         }
     }
 }
+
+private struct QuickPreviewCenterActions: View {
+    let strings: ScreenshotFeatureStrings
+    let disabledActions: Set<ScreenshotQuickPreviewController.Action>
+    let onCopy: () -> Void
+    let onSave: () -> Void
+    @State private var isCopyHovered = false
+    @State private var isSaveHovered = false
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Button(action: onCopy) {
+                HStack(spacing: 5) {
+                    Image(systemName: "doc.on.doc")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text(strings.copyButton)
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .foregroundStyle(.white)
+                .frame(minWidth: 84)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    isCopyHovered ? Color.accentColor.opacity(0.85) : Color.accentColor,
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.white.opacity(isCopyHovered ? 0.35 : 0.15), lineWidth: 1)
+                )
+                .scaleEffect(isCopyHovered ? 1.04 : 1.0)
+                .animation(.easeInOut(duration: 0.12), value: isCopyHovered)
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .disabled(disabledActions.contains(.copy))
+            .onHover { isCopyHovered = $0 }
+            .screenshotSafeHelp("\(strings.copyButton)  (⌘C / Space)")
+
+            Button(action: onSave) {
+                HStack(spacing: 5) {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text(strings.saveButton)
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .foregroundStyle(.white)
+                .frame(minWidth: 84)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    isSaveHovered ? Color.white.opacity(0.25) : Color.black.opacity(0.45),
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.white.opacity(isSaveHovered ? 0.35 : 0.15), lineWidth: 1)
+                )
+                .scaleEffect(isSaveHovered ? 1.04 : 1.0)
+                .animation(.easeInOut(duration: 0.12), value: isSaveHovered)
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .disabled(disabledActions.contains(.save))
+            .onHover { isSaveHovered = $0 }
+            .screenshotSafeHelp("\(strings.saveButton)  (⌘S)")
+        }
+        .padding(5)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.22), radius: 8, y: 3)
+    }
+}
+
