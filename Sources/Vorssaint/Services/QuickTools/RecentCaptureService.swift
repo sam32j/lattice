@@ -274,6 +274,39 @@ final class RecentCaptureService: ObservableObject {
         }
     }
 
+    func stashRecording(from sourceURL: URL) {
+        guard RecentCaptureStore.isRegularFile(sourceURL),
+              let capturesRoot else { return }
+        let id = UUID()
+        let createdAt = Date()
+        let day = Self.dayFormatter.string(from: createdAt)
+        let dayFolder = capturesRoot.appendingPathComponent(day, isDirectory: true)
+        let ext = sourceURL.pathExtension.isEmpty ? "mov" : sourceURL.pathExtension
+        let fileName = "\(id.uuidString).\(ext)"
+        let destinationURL = dayFolder.appendingPathComponent(fileName)
+        let relativePath = "\(day)/\(fileName)"
+        let thumbnailName = "\(id.uuidString)-thumbnail.png"
+        let generation = currentClearGeneration()
+
+        do {
+            try manager.createDirectory(at: dayFolder, withIntermediateDirectories: true)
+            try manager.copyItem(at: sourceURL, to: destinationURL)
+        } catch {
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            let thumbnail = await Self.recordingThumbnail(at: destinationURL)
+            self?.storeRecording(at: destinationURL,
+                                 recordingPath: relativePath,
+                                 id: id,
+                                 createdAt: createdAt,
+                                 thumbnailName: thumbnailName,
+                                 thumbnail: thumbnail,
+                                 generation: generation)
+        }
+    }
+
     func recordRecording(at url: URL) {
         guard RecentCaptureStore.isRegularFile(url) else { return }
         let id = UUID()
@@ -283,13 +316,18 @@ final class RecentCaptureService: ObservableObject {
 
         Task { @MainActor [weak self] in
             let thumbnail = await Self.recordingThumbnail(at: url)
-            self?.storeRecording(at: url, id: id, createdAt: createdAt,
-                                 thumbnailName: thumbnailName, thumbnail: thumbnail,
+            self?.storeRecording(at: url,
+                                 recordingPath: url.standardizedFileURL.path,
+                                 id: id,
+                                 createdAt: createdAt,
+                                 thumbnailName: thumbnailName,
+                                 thumbnail: thumbnail,
                                  generation: generation)
         }
     }
 
     private func storeRecording(at url: URL,
+                                recordingPath: String,
                                 id: UUID,
                                 createdAt: Date,
                                 thumbnailName: String,
@@ -318,7 +356,7 @@ final class RecentCaptureService: ObservableObject {
                 kind: .recording,
                 createdAt: createdAt,
                 screenshotName: nil,
-                recordingPath: url.standardizedFileURL.path,
+                recordingPath: recordingPath,
                 thumbnailName: storedThumbnail,
                 scale: nil,
                 anchorX: nil,
