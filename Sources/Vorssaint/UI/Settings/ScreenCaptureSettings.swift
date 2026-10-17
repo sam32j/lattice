@@ -144,7 +144,6 @@ private struct ToolShortcutRows: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var service = ScreenCaptureService.shared
     @AppStorage private var enabled: Bool
-    @AppStorage private var showsCaptureMenu: Bool
 
     private let tool: ScreenCaptureTool
     private let keys: ScreenCaptureTool.DedicatedShortcut
@@ -153,7 +152,6 @@ private struct ToolShortcutRows: View {
         self.tool = tool
         self.keys = keys
         _enabled = AppStorage(wrappedValue: false, keys.enabledKey)
-        _showsCaptureMenu = AppStorage(wrappedValue: true, tool.showCaptureMenuOnShortcutKey)
     }
 
     var body: some View {
@@ -164,9 +162,6 @@ private struct ToolShortcutRows: View {
         ShortcutPreferenceRow(role: keys.role, isEnabled: enabled) {
             service.syncWithPreferences()
         }
-        Toggle(FeatureStrings.screenshot(l10n.language).showCaptureMenuOnShortcut,
-               isOn: $showsCaptureMenu)
-            .disabled(!enabled)
         if enabled, service.toolShortcutRegistrationFailures.contains(tool) {
             Text(l10n.s.shortcutUnavailable)
                 .font(.caption)
@@ -183,22 +178,28 @@ private struct ScreenTextCaptureSettings: View {
 
     var body: some View {
         Section {
-            Button {
-                ScreenTextService.shared.capture()
-            } label: {
-                Label(l10n.s.ocrName, systemImage: "text.viewfinder")
+            VStack(alignment: .leading, spacing: 3) {
+                Button {
+                    ScreenTextService.shared.capture()
+                } label: {
+                    Label(l10n.s.ocrName, systemImage: "text.viewfinder")
+                }
+                Text(l10n.s.ocrCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Text(l10n.s.ocrCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Toggle(l10n.s.ocrRemoveLineBreaksToggle, isOn: $removesLineBreaks)
-            Text(l10n.s.ocrRemoveLineBreaksCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Toggle(l10n.s.ocrQRToggle, isOn: $detectsQRCodes)
-            Text(l10n.s.ocrQRCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 3) {
+                Toggle(l10n.s.ocrRemoveLineBreaksToggle, isOn: $removesLineBreaks)
+                Text(l10n.s.ocrRemoveLineBreaksCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Toggle(l10n.s.ocrQRToggle, isOn: $detectsQRCodes)
+                Text(l10n.s.ocrQRCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             if !permissions.screenRecording {
                 PermissionRow(kind: .screenRecording)
             }
@@ -216,14 +217,16 @@ private struct ColorCaptureSettings: View {
 
     var body: some View {
         Section {
-            Button {
-                ColorSamplerService.shared.pick()
-            } label: {
-                Label(l10n.s.colorPickerPickNow, systemImage: "eyedropper")
+            VStack(alignment: .leading, spacing: 3) {
+                Button {
+                    ColorSamplerService.shared.pick()
+                } label: {
+                    Label(l10n.s.colorPickerPickNow, systemImage: "eyedropper")
+                }
+                Text(l10n.s.colorPickerCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Text(l10n.s.colorPickerCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
             Picker(l10n.s.colorPickerFormatLabel, selection: $format) {
                 ForEach(ColorCopyFormat.allCases) { format in
                     Text(format.label).tag(format.rawValue)

@@ -249,7 +249,7 @@ private struct PurposeStep: View {
                         Text(groupTitle(group))
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
-                        ForEach(AppFeature.features(in: group), id: \.self) { feature in
+                        ForEach(AppFeature.hubFeatures(in: group), id: \.self) { feature in
                             featureCard(feature)
                         }
                     }
