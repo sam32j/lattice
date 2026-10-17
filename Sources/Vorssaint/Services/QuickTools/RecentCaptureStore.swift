@@ -23,7 +23,13 @@ struct RecentCaptureEntry: Codable, Equatable, Identifiable {
 
     var recordingURL: URL? {
         guard let recordingPath else { return nil }
-        return URL(fileURLWithPath: recordingPath)
+        if recordingPath.hasPrefix("/") {
+            return URL(fileURLWithPath: recordingPath)
+        }
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("io.github.sam32j.lattice", isDirectory: true)
+            .appendingPathComponent("RecentCaptures", isDirectory: true)
+        return base?.appendingPathComponent(recordingPath)
     }
 }
 
@@ -62,11 +68,11 @@ final class RecentCaptureStore {
                 // A missing index with existing captures is also an unreadable
                 // history, not permission to erase those captures on the next save.
                 let files = (try? manager.contentsOfDirectory(atPath: resolvedDir.path)) ?? []
-                let hasRootCaptures = files.contains(where: ScreenshotSupport.isRecentCaptureCacheFileName)
+                let hasRootCaptures = files.contains(where: Self.isCaptureFileName)
                 let hasDateFolderCaptures = files.contains { item in
                     Self.isDateFolderName(item) &&
                     ((try? manager.contentsOfDirectory(atPath: resolvedDir.appendingPathComponent(item).path)) ?? [])
-                        .contains(where: ScreenshotSupport.isRecentCaptureCacheFileName)
+                        .contains(where: Self.isCaptureFileName)
                 }
                 guard !hasRootCaptures && !hasDateFolderCaptures else {
                     return false
@@ -130,10 +136,12 @@ final class RecentCaptureStore {
     private func removeOrphanedFiles() {
         guard let directoryURL else { return }
         let resolvedDir = directoryURL.resolvingSymlinksInPath()
+        // Sweep capture directory (both root legacy files and date subfolders)
         let referencedScreenshots = Set(entries.compactMap { $0.screenshotName })
+        let referencedRecordings = Set(entries.compactMap { $0.recordingPath })
+        let referencedCaptures = referencedScreenshots.union(referencedRecordings)
         let referencedThumbnails = Set(entries.compactMap { $0.thumbnailName })
 
-        // Sweep capture directory (both root legacy files and date subfolders)
         if let items = try? manager.contentsOfDirectory(
             at: resolvedDir,
             includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey],
@@ -145,8 +153,8 @@ final class RecentCaptureStore {
                       values.isSymbolicLink != true else { continue }
 
                 if values.isRegularFile == true {
-                    if ScreenshotSupport.isRecentCaptureCacheFileName(name) {
-                        if !referencedScreenshots.contains(name) && !referencedThumbnails.contains(name) {
+                    if Self.isCaptureFileName(name) {
+                        if !referencedCaptures.contains(name) && !referencedThumbnails.contains(name) {
                             try? manager.removeItem(at: item)
                         }
                     }
@@ -159,8 +167,8 @@ final class RecentCaptureStore {
                             let fileName = dayFile.lastPathComponent
                             let relativePath = "\(name)/\(fileName)"
                             guard Self.isRegularFile(dayFile),
-                                  ScreenshotSupport.isRecentCaptureCacheFileName(fileName) else { continue }
-                            if !referencedScreenshots.contains(relativePath) {
+                                  Self.isCaptureFileName(fileName) else { continue }
+                            if !referencedCaptures.contains(relativePath) {
                                 try? manager.removeItem(at: dayFile)
                             }
                         }
@@ -181,7 +189,7 @@ final class RecentCaptureStore {
                 for file in thumbFiles {
                     let name = file.lastPathComponent
                     guard Self.isRegularFile(file),
-                          ScreenshotSupport.isRecentCaptureCacheFileName(name),
+                          Self.isCaptureFileName(name),
                           name.contains("-thumbnail") else { continue }
                     if !referencedThumbnails.contains(name) {
                         try? manager.removeItem(at: file)
@@ -208,16 +216,29 @@ final class RecentCaptureStore {
         return true
     }
 
+    static func isCaptureFileName(_ name: String) -> Bool {
+        guard name == URL(fileURLWithPath: name).lastPathComponent else { return false }
+        let lower = name.lowercased()
+        if lower.hasSuffix(".png") {
+            return ScreenshotSupport.isRecentCaptureCacheFileName(name)
+        }
+        if lower.hasSuffix(".mov") || lower.hasSuffix(".mp4") {
+            let stem = String(name.dropLast(4))
+            return UUID(uuidString: stem) != nil
+        }
+        return false
+    }
+
     static func isSafeRelativePath(_ path: String) -> Bool {
         guard !path.isEmpty, !path.hasPrefix("/"), !path.contains("..") else { return false }
         let parts = path.split(separator: "/", omittingEmptySubsequences: false)
         if parts.count == 1 {
             let name = String(parts[0])
-            return ScreenshotSupport.isRecentCaptureCacheFileName(name)
+            return isCaptureFileName(name)
         } else if parts.count == 2 {
             let dir = String(parts[0])
             let name = String(parts[1])
-            return isDateFolderName(dir) && ScreenshotSupport.isRecentCaptureCacheFileName(name)
+            return isDateFolderName(dir) && isCaptureFileName(name)
         }
         return false
     }

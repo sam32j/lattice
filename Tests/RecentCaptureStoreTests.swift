@@ -176,6 +176,48 @@ enum RecentCaptureStoreTests {
                     && !RecentCaptureStore.isSafeRelativePath("../\(UUID().uuidString).png")
                     && !RecentCaptureStore.isSafeRelativePath("2026-10-16/../secret.png"),
                    "isSafeRelativePath validates safe relative paths and blocks directory traversal")
+
+            // Test stashed recording entry and path resolution
+            let videoUUID = UUID()
+            let stashedVideoRelativePath = "2026-10-16/\(videoUUID.uuidString).mov"
+            let stashedEntry = RecentCaptureEntry(
+                id: videoUUID, kind: .recording, createdAt: Date(timeIntervalSince1970: 20),
+                screenshotName: nil, recordingPath: stashedVideoRelativePath,
+                thumbnailName: "\(videoUUID.uuidString)-thumbnail.png", scale: nil,
+                anchorX: nil, anchorY: nil, anchorWidth: nil, anchorHeight: nil)
+            suite.expect(stashedEntry.recordingURL?.path.contains("RecentCaptures/2026-10-16/\(videoUUID.uuidString).mov") == true,
+                   "recordingURL resolves relative date-folder recording paths against RecentCaptures")
+            let absoluteEntry = RecentCaptureEntry(
+                id: videoUUID, kind: .recording, createdAt: Date(timeIntervalSince1970: 20),
+                screenshotName: nil, recordingPath: "/tmp/test.mov",
+                thumbnailName: nil, scale: nil, anchorX: nil, anchorY: nil, anchorWidth: nil, anchorHeight: nil)
+            suite.expect(absoluteEntry.recordingURL?.path == "/tmp/test.mov",
+                   "recordingURL preserves absolute paths for external or legacy recordings")
+
+            // Test isCaptureFileName for videos
+            suite.expect(RecentCaptureStore.isCaptureFileName("\(UUID().uuidString).mov")
+                    && RecentCaptureStore.isCaptureFileName("\(UUID().uuidString).mp4")
+                    && RecentCaptureStore.isCaptureFileName("\(UUID().uuidString).png")
+                    && RecentCaptureStore.isCaptureFileName("\(UUID().uuidString)-thumbnail.png")
+                    && !RecentCaptureStore.isCaptureFileName("invalid.mov")
+                    && !RecentCaptureStore.isCaptureFileName("not-a-uuid.mp4"),
+                   "isCaptureFileName validates UUID movie and screenshot names")
+            suite.expect(RecentCaptureStore.isSafeRelativePath("2026-10-16/\(UUID().uuidString).mov")
+                    && RecentCaptureStore.isSafeRelativePath("2026-10-16/\(UUID().uuidString).mp4")
+                    && !RecentCaptureStore.isSafeRelativePath("2026-10-16/\(UUID().uuidString).txt"),
+                   "isSafeRelativePath validates relative paths for stashed video recordings")
+
+            // Test video stashing and orphan cleanup in date subfolder
+            let stashedVideoURL = root.appendingPathComponent(stashedVideoRelativePath)
+            try RecentCaptureStore.write(Data("stashed movie content".utf8), to: stashedVideoURL)
+            dateStore.entries = [stashedEntry]
+            suite.expect(dateStore.persist() && manager.fileExists(atPath: stashedVideoURL.path),
+                   "persisting stashed recording entry preserves the stashed movie file")
+            dateStore.entries = []
+            suite.expect(dateStore.persist()
+                    && !manager.fileExists(atPath: stashedVideoURL.path)
+                    && !manager.fileExists(atPath: root.appendingPathComponent("2026-10-16").path),
+                   "orphan cleanup removes unreferenced stashed movie and prunes empty date directory")
         } catch {
             suite.expect(false, "capture history storage fixtures: \(error)")
         }

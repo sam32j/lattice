@@ -42,6 +42,16 @@ final class RecorderEditorModel: ObservableObject, BackdropEditing {
     @Published var document: RecorderEditDocument {
         didSet { documentDidChange(from: oldValue) }
     }
+    private var initialDocument: RecorderEditDocument?
+
+    var isModified: Bool {
+        guard let initialDocument else { return false }
+        return document != initialDocument
+    }
+
+    func markSaved() {
+        initialDocument = document
+    }
 
     /// Undo keeps whole documents. They are a few dozen bytes each, so the
     /// stack can be deep without the cost the screenshot editor pays for
@@ -104,6 +114,7 @@ final class RecorderEditorModel: ObservableObject, BackdropEditing {
         player.isMuted = false
         pointerTrack = RecorderPointerTrack.decoded(try? Data(contentsOf: take.pointerURL))
         typingTrack = RecorderTypingTrack.decoded(try? Data(contentsOf: take.typingURL))
+        initialDocument = document
         loadEditPresets()
         loadBackdropPresets()
         observeTime()
@@ -142,6 +153,7 @@ final class RecorderEditorModel: ObservableObject, BackdropEditing {
             self.loadAudioWaveforms(audioTracks)
             self.document = self.document.sanitized(duration: self.duration)
             self.generateZoomsIfNeeded()
+            self.initialDocument = self.document
             self.loadThumbnails()
             self.rebuildComposition()
         }
@@ -1412,6 +1424,47 @@ final class RecorderEditorModel: ObservableObject, BackdropEditing {
     }
 }
 
+/// An editor window that vertically centers the traffic light buttons within the 54pt top toolbar.
+final class RecorderEditorWindow: NSWindow {
+    override func layoutIfNeeded() {
+        super.layoutIfNeeded()
+        adjustTrafficLightPosition()
+    }
+
+    private func adjustTrafficLightPosition() {
+        guard !styleMask.contains(.fullScreen),
+              let closeButton = standardWindowButton(.closeButton),
+              let titlebarView = closeButton.superview,
+              let containerView = titlebarView.superview else {
+            return
+        }
+        let targetHeight: CGFloat = 54
+        var containerFrame = containerView.frame
+        if containerFrame.size.height != targetHeight {
+            containerFrame.origin.y = frame.size.height - targetHeight
+            containerFrame.size.height = targetHeight
+            containerView.frame = containerFrame
+        }
+        var titlebarFrame = titlebarView.frame
+        if titlebarFrame.size.height != targetHeight {
+            titlebarFrame.origin.y = 0
+            titlebarFrame.size.height = targetHeight
+            titlebarView.frame = titlebarFrame
+        }
+
+        let buttonHeight = closeButton.frame.height
+        let targetY = ((targetHeight - buttonHeight) / 2).rounded()
+
+        for buttonType in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
+            if let button = standardWindowButton(buttonType) {
+                var f = button.frame
+                f.origin.y = targetY
+                button.frame = f
+            }
+        }
+    }
+}
+
 /// Owns the editor window. Same shape as the screenshot editor so the two
 /// read as the same product: one dark surface, a band of actions at the top,
 /// and the work in the middle.
@@ -1445,7 +1498,7 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
     func show() {
         let content = RecorderEditorView(model: model, controller: self)
         let host = NSHostingController(rootView: content)
-        let window = NSWindow(contentViewController: host)
+        let window = RecorderEditorWindow(contentViewController: host)
         window.title = strings.editorTitle
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
@@ -1636,6 +1689,7 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
                 // The window stays: exports are slow and plural, and a person
                 // who just made a video often wants the GIF of it too.
                 self.exported = true
+                self.model.markSaved()
                 RecentCaptureService.shared.recordRecording(at: destination)
                 if let onSuccess {
                     onSuccess(destination)
@@ -1654,9 +1708,15 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
         }
     }
 
-    /// Throwing the recording away, or closing a window that never produced a
-    /// file, is the same act: the recording only exists here.
+    /// Discarding an unedited recording closes immediately without asking,
+    /// since the original is already safely stashed in Recent Captures.
+    /// If there are unsaved edits, it asks for confirmation before discarding them.
     func discard() {
+        if !model.isModified {
+            confirmedClose = true
+            window?.close()
+            return
+        }
         askBeforeLosingTheRecording { [weak self] in
             self?.confirmedClose = true
             self?.window?.close()
@@ -1667,8 +1727,8 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
         guard let window else { return }
         model.pause()
         let alert = NSAlert()
-        alert.messageText = strings.discardTitle
-        alert.informativeText = exported ? strings.discardSavedMessage : strings.discardMessage
+        alert.messageText = "Discard unsaved edits?"
+        alert.informativeText = "The original recording is saved in Recent Captures, but any changes you made will be lost."
         alert.alertStyle = .warning
         alert.addButton(withTitle: strings.discardButton)
         alert.addButton(withTitle: strings.cancelButton)
@@ -1680,14 +1740,16 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
 
     // MARK: - Window
 
-    /// A recording that was never saved asks before it disappears. One that
-    /// was saved closes straight away: the file it produced is what matters,
-    /// and the master behind it has no life of its own.
+    /// A recording that was never modified, or whose edits were saved, closes
+    /// immediately: the raw recording is already stashed in Recent Captures,
+    /// and any saved file has already been exported. Unsaved edits ask before
+    /// they are lost.
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         if model.isExporting {
             model.cancelExport()
         }
-        guard !exported, !confirmedClose else { return true }
+        guard !confirmedClose else { return true }
+        guard model.isModified else { return true }
         askBeforeLosingTheRecording { [weak self] in
             self?.confirmedClose = true
             self?.window?.close()
