@@ -9,9 +9,31 @@ struct ReleaseNotes {
     let sections: [ReleaseNoteSection]
 
     static var current: ReleaseNotes {
-        let direct = notes(for: AppInfo.version)
+        let lattice = currentLattice
+        if !lattice.sections.isEmpty { return lattice }
+        return currentUpstream
+    }
+
+    /// Release notes specific to the Lattice downstream distribution.
+    static var currentLattice: ReleaseNotes {
+        guard let changelog = bundledLatticeChangelog() else {
+            return ReleaseNotes(version: AppInfo.version, date: nil, sections: [])
+        }
+        let direct = notes(for: AppInfo.version, changelog: changelog)
         if !direct.sections.isEmpty { return direct }
-        let unreleased = notes(for: "Unreleased")
+        let all = allVersions(changelog: changelog)
+        if let latest = all.first {
+            let latestNotes = notes(for: latest, changelog: changelog)
+            if !latestNotes.sections.isEmpty { return latestNotes }
+        }
+        return direct
+    }
+
+    /// Release notes from the upstream Vorssaint foundation.
+    static var currentUpstream: ReleaseNotes {
+        let direct = notes(for: AppInfo.upstreamVersion, changelog: bundledChangelog())
+        if !direct.sections.isEmpty { return direct }
+        let unreleased = notes(for: "Unreleased", changelog: bundledChangelog())
         if !unreleased.sections.isEmpty { return unreleased }
         return direct
     }
@@ -62,7 +84,12 @@ struct ReleaseNotes {
         return cleaned.isEmpty ? nil : cleaned
     }
 
-    private static func bundledChangelog() -> String? {
+    static func bundledLatticeChangelog() -> String? {
+        guard let url = Bundle.main.url(forResource: "LatticeChangelog", withExtension: "md") else { return nil }
+        return try? String(contentsOf: url, encoding: .utf8)
+    }
+
+    static func bundledChangelog() -> String? {
         guard let url = Bundle.main.url(forResource: "CHANGELOG", withExtension: "md") else { return nil }
         return try? String(contentsOf: url, encoding: .utf8)
     }
@@ -172,7 +199,7 @@ struct ReleaseNotes {
 
     private static func shouldDisplaySection(_ title: String) -> Bool {
         let normalized = title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return normalized != "website" && normalized != "links"
+        return normalized != "website" && normalized != "links" && normalized != "provenance"
     }
 
     private static func isDistributionFooter(_ line: String) -> Bool {
