@@ -130,7 +130,9 @@ final class RecentCaptureStore {
             return true
         } catch {
             entries = previous
-            if copied { try? manager.removeItem(at: destination) }
+            if copied, destination.path.hasPrefix(root.path) {
+                try? manager.removeItem(at: destination)
+            }
             return false
         }
     }
