@@ -34,6 +34,9 @@ enum SettingsSidebarSupport {
         let pageItem = SettingsSidebarItem(id: .page(page),
                                            destination: FeatureSettingsDestination(page),
                                            title: title, icon: icon)
+        if page == .screenshot || page == .screenRecorder {
+            return [pageItem]
+        }
         var rows = includePage ? [pageItem] : []
         var seenFeatures: Set<AppFeature> = []
         for feature in preferredFeatures + AppFeature.allCases {

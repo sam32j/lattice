@@ -371,7 +371,7 @@ struct FeatureHubSettings: View {
     /// Groups start open; LazyVStack builds distant groups as they enter view.
     /// Closing a group removes its feature rows until the user reopens it.
     private func groupCard(_ group: FeatureGroup) -> some View {
-        let members = AppFeature.features(in: group)
+        let members = AppFeature.hubFeatures(in: group)
         let installed = members.filter(\.isAvailable).count
         return SettingsCard {
             DisclosureGroup(isExpanded: Binding(

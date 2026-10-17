@@ -223,7 +223,12 @@ extension AppFeature {
     }
 
     func isAvailable(in defaults: UserDefaults) -> Bool {
-        defaults.bool(forKey: availabilityKey)
+        switch self {
+        case .colorPicker, .screenOCR:
+            return AppFeature.screenshot.isAvailable(in: defaults)
+        default:
+            return defaults.bool(forKey: availabilityKey)
+        }
     }
 
     /// The feature's own enable keys; any one being true means the feature is
@@ -408,6 +413,15 @@ extension AppFeature {
         allCases.filter { $0.group == group }
     }
 
+    static func hubFeatures(in group: FeatureGroup) -> [AppFeature] {
+        features(in: group).filter { $0 != .colorPicker && $0 != .screenOCR }
+    }
+
+    /// All features shown and counted as installable features in the Hub.
+    static var hubInstallableFeatures: [AppFeature] {
+        FeatureGroup.allCases.flatMap { hubFeatures(in: $0) }
+    }
+
     /// The Dynamic Island's extensions: everything else in its group. They
     /// do nothing without the island, so uninstalling it offers to take them
     /// along.
@@ -422,7 +436,9 @@ extension AppFeature {
     }
 
     var initialInstallGroup: [AppFeature] {
-        self == .notch ? [self] + Self.dynamicIslandInitialExtensions : [self]
+        if self == .notch { return [self] + Self.dynamicIslandInitialExtensions }
+        if self == .screenshot { return [.screenshot, .colorPicker, .screenOCR] }
+        return [self]
     }
 
     /// Switches the Features page may offer to uninstall once they turn out

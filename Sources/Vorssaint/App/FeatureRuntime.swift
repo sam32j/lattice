@@ -71,7 +71,7 @@ final class FeatureRuntime: ObservableObject {
 
     func isAvailable(_ feature: AppFeature) -> Bool { feature.isAvailable }
 
-    var availableCount: Int { AppFeature.allCases.filter(\.isAvailable).count }
+    var availableCount: Int { AppFeature.hubInstallableFeatures.filter(\.isAvailable).count }
 
     /// How many features this Mac can end up with. Counting against the whole
     /// catalog instead would leave the hub's install-all button forever one
@@ -79,7 +79,7 @@ final class FeatureRuntime: ObservableObject {
     /// An install that predates the check still counts, so the tally can
     /// never read more installed than installable.
     var installableCount: Int {
-        AppFeature.allCases.filter { $0.isHardwareSupported || $0.isAvailable }.count
+        AppFeature.hubInstallableFeatures.filter { $0.isHardwareSupported || $0.isAvailable }.count
     }
 
     /// The one gate every install passes, whichever surface asks: the hub
@@ -106,12 +106,20 @@ final class FeatureRuntime: ObservableObject {
     func setAvailable(_ features: [AppFeature], _ available: Bool,
                       enablingFirstInstalls: Bool = true) {
         var changed = false
-        let firstIslandInstall = available && features.contains(.notch)
+        var requestedList = features
+        if features.contains(.screenshot) {
+            for companion in [AppFeature.colorPicker, AppFeature.screenOCR] {
+                if !requestedList.contains(companion) {
+                    requestedList.append(companion)
+                }
+            }
+        }
+        let firstIslandInstall = available && requestedList.contains(.notch)
             && mayFlip(.notch, to: true)
             && !UserDefaults.standard.bool(forKey: DefaultsKey.notchInitialExtensionsInstalled)
         let requested = firstIslandInstall
-            ? features + AppFeature.dynamicIslandInitialExtensions.filter { !features.contains($0) }
-            : features
+            ? requestedList + AppFeature.dynamicIslandInitialExtensions.filter { !requestedList.contains($0) }
+            : requestedList
         let savedValues = savedPreferences()
         for feature in requested where mayFlip(feature, to: available) {
             if available && enablingFirstInstalls {

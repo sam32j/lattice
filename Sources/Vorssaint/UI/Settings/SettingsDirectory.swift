@@ -37,7 +37,7 @@ struct SettingsDirectoryItem: Identifiable {
 enum SettingsDirectory {
     /// Shared pages whose tools cover the page without a separate overview row.
     private static let toolOnlyPages: Set<SettingsPage> = [
-        .energy, .mouse, .switcher, .dock, .clipboard, .cutPaste, .quickTools, .screenshot,
+        .energy, .mouse, .switcher, .dock, .clipboard, .cutPaste, .quickTools,
     ]
 
     /// Keep the directory's destinations, but show the most useful groups
@@ -116,6 +116,7 @@ enum SettingsDirectory {
         let featured = [
             SettingsSidebarSection(id: 0, title: categories.essentials,
                                    items: Array(core.prefix(3)) + island + Array(core.dropFirst(3))),
+            SettingsSidebarSection(id: 5, title: FeatureStrings.screenshot(language).screenCaptureTitle, items: rows(5)),
             SettingsSidebarSection(id: 4, title: categories.utilities, items: byGroup.utilities),
             SettingsSidebarSection(id: 6, title: hub.groupSound, items: sound + byGroup.sound),
             SettingsSidebarSection(id: 7, title: hub.groupEnergyDisplay, items: energy),
@@ -123,7 +124,7 @@ enum SettingsDirectory {
             SettingsSidebarSection(id: 8, title: hub.groupMouseKeyboard, items: byGroup.mouseKeyboard),
             SettingsSidebarSection(id: 2, title: categories.files, items: rows(2) + byGroup.files),
         ]
-        let remaining = grouped.filter { ![0, 1, 2, 4].contains($0.id) }
+        let remaining = grouped.filter { ![0, 1, 2, 4, 5].contains($0.id) }
         return [featured[0]] + featured.dropFirst().filter { !$0.items.isEmpty } + remaining
     }
 
@@ -406,11 +407,6 @@ enum SettingsDirectory {
                                         (.scratchpad, [FeatureStrings.scratchpad(language).pageTitle]),
                                         (.cleaningMode, [s.cleaningMenuItem, s.cleaningKeepScreenVisibleToggle]),
                                        ]),
-                SettingsDirectoryItem(page: .screenshot,
-                                       title: FeatureStrings.screenshot(language).screenCaptureTitle,
-                                       icon: "camera.viewfinder",
-                                       featureKeywords: SettingsSearchSupport
-                                        .screenCaptureFeatureKeywords(s, language: language)),
                 SettingsDirectoryItem(page: .urlCleaner, title: s.urlCleanerName, icon: "link"),
                 SettingsDirectoryItem(page: .keyDebounce, title: s.keyDebounceName, icon: "keyboard"),
                 SettingsDirectoryItem(page: .superKey,
@@ -434,6 +430,30 @@ enum SettingsDirectory {
                                                  FeatureStrings.radialMenu(language).kindMedia,
                                                  FeatureStrings.radialMenu(language).kindSubmenu,
                                                  FeatureStrings.radialMenu(language).mouseTriggerRequirement]),
+            ]),
+            (FeatureStrings.screenshot(language).screenCaptureTitle, [
+                SettingsDirectoryItem(page: .screenshot,
+                                      title: FeatureStrings.screenshot(language).pageTitle,
+                                      icon: "camera.viewfinder",
+                                      featureKeywords: [
+                                        (.screenshot, [FeatureStrings.screenshot(language).pageTitle,
+                                                       FeatureStrings.screenshot(language).fullScreenShortcutTitle,
+                                                       FeatureStrings.screenshot(language).editLastCapture,
+                                                       FeatureStrings.screenshot(language).editClipboardImage,
+                                                       FeatureStrings.screenshot(language).uploadLastCapture,
+                                                       FeatureStrings.recentCaptures(language).title,
+                                                       s.colorPickerName,
+                                                       s.ocrName]),
+                                      ]),
+                SettingsDirectoryItem(page: .screenRecorder,
+                                      title: FeatureStrings.recorder(language).pageTitle,
+                                      icon: "record.circle",
+                                      featureKeywords: [
+                                        (.screenRecorder, [FeatureStrings.recorder(language).pageTitle,
+                                                           FeatureStrings.recorder(language).systemAudioToggle,
+                                                           FeatureStrings.recorder(language).microphoneToggle,
+                                                           FeatureStrings.recentCaptures(language).title]),
+                                      ]),
             ]),
             (categories.app, [
                 SettingsDirectoryItem(page: .shortcuts, title: s.shortcutsPageTitle, icon: "command",

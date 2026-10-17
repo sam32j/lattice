@@ -8,7 +8,7 @@ import Foundation
 /// below and the unit tests can reason about pages without pulling UI in.
 enum SettingsPage: Hashable {
     case general, features, energy, monitor
-    case mouse, switcher, dock, keyDebounce, superKey, cutPaste, autoQuit, quitProtection, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, quickTools, textSnippets, screenshot, radialMenu, commandBar, killProcess, portManager, notch, notchMascot
+    case mouse, switcher, dock, keyDebounce, superKey, cutPaste, autoQuit, quitProtection, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, quickTools, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, portManager, notch, notchMascot
     case shortcuts, advanced, about, releaseNotes, support
 }
 
@@ -72,8 +72,10 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
         case .clipboardHistory, .pastePlain: return .clipboard
         case .quickLauncher, .quickToggles, .micMute, .cameraPreview, .wallpaper, .scratchpad, .cleaningMode:
             return .quickTools
-        case .screenshot, .screenRecorder, .colorPicker, .screenOCR:
+        case .screenshot, .colorPicker, .screenOCR:
             return .screenshot
+        case .screenRecorder:
+            return .screenRecorder
         case .keyboardBrightnessShortcuts: return .shortcuts
         case .fanControl: return .monitor
         case .windowMaximizer: return .windowLayout
@@ -375,7 +377,7 @@ extension AppFeature {
             return FeatureSettingsDestination(.quickTools, sectionAnchor: .scratchpad)
         case .commandBar: return FeatureSettingsDestination(.commandBar)
         case .screenRecorder:
-            return FeatureSettingsDestination(.screenshot, sectionAnchor: .screenRecorder)
+            return FeatureSettingsDestination(.screenRecorder, sectionAnchor: .screenRecorder)
 
         case .monitorCPU, .monitorGPU, .monitorMemory, .monitorNetwork, .monitorDisk, .monitorPower, .connectedDevices:
             return FeatureSettingsDestination(.monitor)
@@ -422,7 +424,8 @@ enum FeatureVisibilitySupport {
         case .keyDebounce: return [.keyboardDebounce]
         case .superKey: return [.superKey]
         case .textSnippets: return [.textSnippets]
-        case .screenshot: return [.screenshot, .screenRecorder, .screenOCR, .colorPicker]
+        case .screenshot: return [.screenshot, .screenOCR, .colorPicker]
+        case .screenRecorder: return [.screenRecorder]
         case .notch: return [.notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch, .notchMascot]
         case .notchMascot: return [.notchMascot]
         case .radialMenu: return [.radialMenu]
