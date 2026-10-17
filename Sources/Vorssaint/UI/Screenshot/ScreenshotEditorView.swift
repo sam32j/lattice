@@ -83,6 +83,13 @@ struct ScreenshotEditorView: View {
         }
         .onAppear { keyboard.start() }
         .onDisappear { keyboard.stop() }
+        .onChange(of: model.editingTextID) { _, newID in
+            if let newID, let annotation = model.annotations.first(where: { $0.id == newID }) {
+                editingText = annotation.text
+            } else {
+                editingText = ""
+            }
+        }
         .sheet(item: $sharedRecord) { record in
             ScreenshotEditorSharedLinkView(record: record,
                                            strings: strings,
@@ -448,8 +455,8 @@ struct ScreenshotEditorView: View {
                     return
                 }
                 model.endDrag(at: point, isTap: isTap)
-                if model.editingTextID != nil {
-                    editingText = ""
+                if let editingID = model.editingTextID {
+                    editingText = model.annotations.first(where: { $0.id == editingID })?.text ?? ""
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                         textFieldFocused = true
                     }
@@ -563,7 +570,8 @@ struct ScreenshotEditorView: View {
 
     private func drawSelectionChrome(_ cg: CGContext) {
         guard let selectedID = model.selectedID,
-              let selected = model.annotations.first(where: { $0.id == selectedID })
+              let selected = model.annotations.first(where: { $0.id == selectedID }),
+              selectedID != model.editingTextID
         else { return }
         let scale = model.scale
         cg.setStrokeColor(CGColor(srgbRed: 0.04, green: 0.52, blue: 1, alpha: 0.9))
@@ -638,32 +646,77 @@ struct ScreenshotEditorView: View {
             let fontSize = max(11, ScreenshotRenderer.fontSize(for: annotation.textSize,
                                                                scale: model.scale) * zoom)
             let pad = model.backdropPaddingPixels
-            TextField(strings.textPlaceholder, text: $editingText)
-                .textFieldStyle(.plain)
-                .font(.system(size: fontSize, weight: .semibold))
-                .foregroundStyle(Color(nsColor: ScreenshotRenderer.nsColor(annotation.color)))
-                .focused($textFieldFocused)
-                .frame(minWidth: 130)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(.black.opacity(0.35),
-                            in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .strokeBorder(Color.accentColor.opacity(0.7), lineWidth: 1)
-                )
-                .offset(x: (annotation.rect.minX + pad) * zoom - 6,
-                        y: (annotation.rect.minY + pad) * zoom - 3)
-                .onAppear {
-                    editingText = annotation.text
-                    DispatchQueue.main.async { textFieldFocused = true }
+            let isBounded = annotation.isBounded
+            let availableWidth = max(40, (model.imageSize.width - annotation.rect.minX) * zoom)
+            let availableHeight = max(28, (model.imageSize.height - annotation.rect.minY) * zoom)
+            let nsColor = ScreenshotRenderer.nsColor(annotation.color)
+            let font = NSFont.systemFont(ofSize: fontSize, weight: .semibold)
+            let sample = editingText.isEmpty ? (strings.textPlaceholder.isEmpty ? "Text" : strings.textPlaceholder) : editingText
+
+            Group {
+                if isBounded {
+                    let minBoxWidth: CGFloat = 40
+                    let boxWidth = min(max(annotation.rect.width * zoom, minBoxWidth), availableWidth)
+                    let contentWidth = max(20, boxWidth - 12)
+                    let textRect = (sample as NSString).boundingRect(
+                        with: CGSize(width: contentWidth, height: .greatestFiniteMagnitude),
+                        options: [.usesLineFragmentOrigin, .usesFontLeading],
+                        attributes: [.font: font])
+                    let lineHeight = max(font.ascender - font.descender + font.leading, fontSize * 1.2)
+                    let trailingNewlines = editingText.reversed().prefix(while: { $0 == "\n" }).count
+                    let extraNewlineHeight = CGFloat(trailingNewlines) * lineHeight
+                    let contentHeight = ceil(textRect.height) + extraNewlineHeight
+                    let boxHeight = min(max(contentHeight + 14, annotation.rect.height * zoom, 28), availableHeight)
+
+                    ScreenshotAnnotationTextEditor(
+                        text: $editingText,
+                        fontSize: fontSize,
+                        textColor: nsColor,
+                        isBounded: true,
+                        width: contentWidth,
+                        onCommit: {
+                            model.commitText(editingID, text: editingText)
+                        }
+                    )
+                    .frame(width: contentWidth, height: max(1, boxHeight - 6), alignment: .topLeading)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                } else {
+                    let lines = sample.components(separatedBy: "\n")
+                    let maxLineWidth = lines.map { ($0 as NSString).size(withAttributes: [.font: font]).width }.max() ?? 40
+                    let lineHeight = max(font.ascender - font.descender + font.leading, fontSize * 1.2)
+                    let trailingNewlines = editingText.reversed().prefix(while: { $0 == "\n" }).count
+                    let totalLines = max(1, lines.count + trailingNewlines)
+                    let totalHeight = CGFloat(totalLines) * lineHeight
+                    let dynamicWidth = min(max(maxLineWidth + 24, 60), availableWidth)
+                    let dynamicHeight = min(max(totalHeight + 14, 28), availableHeight)
+
+                    ScreenshotAnnotationTextEditor(
+                        text: $editingText,
+                        fontSize: fontSize,
+                        textColor: nsColor,
+                        isBounded: false,
+                        width: dynamicWidth,
+                        onCommit: {
+                            model.commitText(editingID, text: editingText)
+                        }
+                    )
+                    .frame(width: dynamicWidth, height: max(1, dynamicHeight - 6), alignment: .topLeading)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
                 }
-                .onSubmit {
-                    model.commitText(editingID, text: editingText)
-                }
-                .onExitCommand {
-                    model.commitText(editingID, text: editingText)
-                }
+            }
+            .background(.black.opacity(0.35),
+                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(Color.accentColor.opacity(0.7), lineWidth: 1)
+            )
+            .offset(x: (annotation.rect.minX + pad) * zoom,
+                    y: (annotation.rect.minY + pad) * zoom)
+            .onAppear {
+                editingText = annotation.text
+            }
         }
     }
 
@@ -1947,3 +2000,125 @@ extension View {
         }
     }
 }
+
+struct ScreenshotAnnotationTextEditor: NSViewRepresentable {
+    @Binding var text: String
+    let fontSize: CGFloat
+    let textColor: NSColor
+    let isBounded: Bool
+    let width: CGFloat
+    let onCommit: () -> Void
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.drawsBackground = false
+        scrollView.borderType = .noBorder
+        scrollView.hasVerticalScroller = false
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+
+        let textView = EditorTextView()
+        textView.delegate = context.coordinator
+        textView.onCommit = onCommit
+        textView.font = .systemFont(ofSize: fontSize, weight: .semibold)
+        textView.textColor = textColor
+        textView.insertionPointColor = textColor
+        textView.drawsBackground = false
+        textView.isRichText = false
+        textView.allowsUndo = true
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticDashSubstitutionEnabled = false
+        textView.string = text
+        textView.isHorizontallyResizable = !isBounded
+        textView.isVerticallyResizable = true
+
+        if isBounded {
+            textView.textContainer?.containerSize = NSSize(width: width, height: CGFloat.greatestFiniteMagnitude)
+            textView.textContainer?.widthTracksTextView = true
+        } else {
+            textView.textContainer?.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+            textView.textContainer?.widthTracksTextView = false
+        }
+
+        scrollView.documentView = textView
+        DispatchQueue.main.async {
+            textView.window?.makeFirstResponder(textView)
+            if !textView.string.isEmpty {
+                textView.selectAll(nil)
+            }
+        }
+        return scrollView
+    }
+
+    func updateNSView(_ nsView: NSScrollView, context: Context) {
+        guard let textView = nsView.documentView as? EditorTextView else { return }
+        if textView.string != text {
+            textView.string = text
+        }
+        textView.font = .systemFont(ofSize: fontSize, weight: .semibold)
+        textView.textColor = textColor
+        textView.insertionPointColor = textColor
+    }
+
+    static func dismantleNSView(_ nsView: NSScrollView, coordinator: Coordinator) {
+        if let textView = nsView.documentView as? EditorTextView {
+            textView.isolatedUndoManager.removeAllActions()
+            textView.delegate = nil
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: ScreenshotAnnotationTextEditor
+
+        init(_ parent: ScreenshotAnnotationTextEditor) {
+            self.parent = parent
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            parent.text = textView.string
+        }
+    }
+}
+
+private final class EditorTextView: NSTextView {
+    var onCommit: (() -> Void)?
+    let isolatedUndoManager = UndoManager()
+
+    override var acceptsFirstResponder: Bool { true }
+    override var undoManager: UndoManager? { isolatedUndoManager }
+
+    deinit {
+        isolatedUndoManager.removeAllActions()
+    }
+
+    override func keyDown(with event: NSEvent) {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if event.keyCode == 36 || event.keyCode == 76 { // Return / Enter
+            if flags.contains(.command) {
+                onCommit?()
+                return
+            }
+            insertNewline(nil)
+            return
+        }
+        if event.keyCode == 53 { // Esc
+            onCommit?()
+            return
+        }
+        super.keyDown(with: event)
+    }
+
+    override func flagsChanged(with event: NSEvent) {
+        super.flagsChanged(with: event)
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if flags.contains([.command, .shift]) {
+            onCommit?()
+        }
+    }
+}
+
