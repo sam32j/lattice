@@ -3023,13 +3023,6 @@ enum ScreenshotFeatureTests {
                 .contains(where: { $0.key != .select && $0.value == selectDefault })
             suite.expect(conflictOnReset,
                    "resetting Select is refused when another tool has claimed its default shortcut 1")
-            // Verify Crop occupied key rejection:
-            // Crop defaults to 0. Setting Crop to 1 (Select's default) must be rejected:
-            let cropToSelect = Tool.bindingRejection(for: one, excluding: .crop, bindingsRaw: "",
-                                                    roleConflict: { _ in nil }, windowLayoutConflict: { _ in nil },
-                                                    systemConflict: { _ in false })
-            suite.expect(cropToSelect == .tool(.select),
-                   "assigning an occupied default key (1) to Crop is rejected with a conflict against Select")
             suite.expect(Defaults.registeredDefaults[DefaultsKey.screenshotToolShortcuts] as? String == ""
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.screenshotToolShortcuts),
                    "empty tool bindings are registered and included in settings backups")
@@ -3037,6 +3030,13 @@ enum ScreenshotFeatureTests {
             // so these pin the layout instead of trusting the test machine's.
             if let usData = testLayoutData(for: "com.apple.keylayout.US") {
                 GlobalShortcut.refreshLayoutLabels(layoutData: usData)
+                // Verify Crop occupied key rejection:
+                // Crop defaults to 0. Setting Crop to 1 (Select's default) must be rejected:
+                let cropToSelect = Tool.bindingRejection(for: one, excluding: .crop, bindingsRaw: "",
+                                                        roleConflict: { _ in nil }, windowLayoutConflict: { _ in nil },
+                                                        systemConflict: { _ in false })
+                suite.expect(cropToSelect == .tool(.select),
+                       "assigning an occupied default key (1) to Crop is rejected with a conflict against Select")
                 let shiftedOne = GlobalShortcut(keyCode: Int64(kVK_ANSI_1), modifiers: .shift)
                 suite.expect(Tool.shortcutDigit(one) == 1
                     && Tool.shortcutDigit(.init(keyCode: Int64(kVK_ANSI_Keypad1), modifiers: [])) == 1
