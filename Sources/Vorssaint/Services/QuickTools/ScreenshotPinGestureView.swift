@@ -63,22 +63,33 @@ class ScreenshotPinGestureView: NSView {
     override func touchesCancelled(with event: NSEvent) { pinchTracker.reset() }
 
     override func magnify(with event: NSEvent) {
-        guard ProcessInfo.processInfo.systemUptime - lastGestureMagnificationTime > 0.02 else { return }
-        guard let window, !window.ignoresMouseEvents else { return }
+        guard let window, !window.ignoresMouseEvents, !isPositionLocked else { return }
         let amount = event.magnification
         guard amount.isFinite, amount != 0, amount > -1 else { return }
+        lastGestureMagnificationTime = ProcessInfo.processInfo.systemUptime
         zoom(by: 1 + amount, at: event.locationInWindow)
     }
 
-    func zoom(by factor: CGFloat, at point: CGPoint) {
-        guard !isPositionLocked, let window, factor.isFinite, factor > 0, factor != 1,
-              point.x.isFinite, point.y.isFinite else { return }
+    func zoom(by factor: CGFloat, at point: CGPoint? = nil) {
+        guard !isPositionLocked, let window, factor.isFinite, factor > 0, factor != 1 else { return }
+        let windowPoint: CGPoint
+        let anchor: CGPoint
+        if let p = point {
+            guard p.x.isFinite, p.y.isFinite else { return }
+            windowPoint = p
+            anchor = window.convertPoint(toScreen: p)
+        } else {
+            anchor = NSEvent.mouseLocation
+            guard anchor.x.isFinite, anchor.y.isFinite else { return }
+            windowPoint = window.convertPoint(fromScreen: anchor)
+        }
+        guard anchor.x.isFinite, anchor.y.isFinite,
+              windowPoint.x.isFinite, windowPoint.y.isFinite else { return }
         let frame = window.frame
         // AppKit rounds window frames to whole points. Keep the requested
         // width between packets so a gentle pinch neither disappears nor
         // becomes a whole-point jump for every tiny trackpad increment.
         let baseWidth = lastZoomFrame == frame ? logicalZoomWidth : frame.width
-        let anchor = window.convertPoint(toScreen: point)
         guard let screen = NSScreen.screens.first(where: { $0.frame.contains(anchor) }) ?? window.screen,
               frame.width > 0, frame.height > 0 else { return }
         let limits = screen.visibleFrame
@@ -97,8 +108,8 @@ class ScreenshotPinGestureView: NSView {
         // fraction; AppKit rounds that out to an extra point off screen.
         let width = min(limits.width, frame.width * scale)
         let height = min(limits.height, imageHeight * scale)
-        let next = CGRect(x: min(max(anchor.x - point.x * scale, limits.minX), limits.maxX - width),
-                          y: min(max(anchor.y - point.y / frame.height * height, limits.minY), limits.maxY - height),
+        let next = CGRect(x: min(max(anchor.x - windowPoint.x * scale, limits.minX), limits.maxX - width),
+                          y: min(max(anchor.y - (windowPoint.y / frame.height) * height, limits.minY), limits.maxY - height),
                           width: width, height: height)
         if next != frame { window.setFrame(next, display: true) }
         logicalZoomWidth = width
