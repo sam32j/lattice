@@ -3,18 +3,14 @@
 
 import SwiftUI
 
-/// Screenshot-specific sections inside the shared screen-capture page.
-struct ScreenshotCaptureSettings: View {
+typealias ScreenshotCaptureSettings = ScreenshotSettings
+
+/// Screenshot Settings page.
+struct ScreenshotSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var service = ScreenshotService.shared
     @ObservedObject private var sharing = ScreenshotShareService.shared
-    @AppStorage(DefaultsKey.screenshotFullScreenShortcutEnabled)
-    private var fullScreenShortcutEnabled = false
-    @AppStorage(DefaultsKey.screenshotLastCaptureShortcutEnabled)
-    private var lastCaptureShortcutEnabled = false
-    @AppStorage(DefaultsKey.screenshotClipboardShortcutEnabled)
-    private var clipboardShortcutEnabled = false
     @AppStorage(DefaultsKey.screenshotFreeze) private var freeze = true
     @AppStorage(DefaultsKey.screenshotHideVorssaintWindows) private var hideVorssaintWindows = true
     @AppStorage(DefaultsKey.screenshotSaveFolder) private var saveFolder = ""
@@ -24,6 +20,7 @@ struct ScreenshotCaptureSettings: View {
     @AppStorage(DefaultsKey.screenshotFileNumberNext) private var nextNumber = 1
     @AppStorage(DefaultsKey.screenshotIncludePointer) private var includePointer = false
     @AppStorage(DefaultsKey.screenshotShowLastRegion) private var showLastRegion = true
+    @AppStorage(DefaultsKey.screenshotPlayShutterSound) private var playShutterSound = true
     @AppStorage(DefaultsKey.screenshotHighlightWindows) private var highlightWindows = true
     @AppStorage(DefaultsKey.screenshotLoupeStartsOn) private var loupeStartsOn = false
     @AppStorage(DefaultsKey.screenshotLoupeRememberZoom) private var rememberLoupeZoom = false
@@ -46,8 +43,12 @@ struct ScreenshotCaptureSettings: View {
     @AppStorage(DefaultsKey.screenshotPreviewDuration) private var previewDuration =
         ScreenshotSupport.defaultConfirmationPreviewDuration
     @AppStorage(DefaultsKey.screenshotSharingEnabled) private var sharingEnabled = true
-    @AppStorage(DefaultsKey.screenshotUploadShortcutEnabled) private var uploadShortcutEnabled = false
     @AppStorage(DefaultsKey.screenshotUploadDuration) private var uploadDuration = ScreenshotShareDuration.oneHour.rawValue
+    @AppStorage(DefaultsKey.screenshotPinRoundedCorners) private var pinRoundedCorners = true
+    @AppStorage(DefaultsKey.screenOCRRemoveLineBreaks) private var removesLineBreaks = false
+    @AppStorage(DefaultsKey.screenOCRDetectQRCodes) private var detectsQRCodes = true
+    @AppStorage(DefaultsKey.colorPickerFormat) private var colorFormat = "hex"
+    @AppStorage(DefaultsKey.colorPickerBareHex) private var usesBareHex = false
     @State private var showingSharedLinks = false
     @State private var showingSharePrivacy = false
 
@@ -56,80 +57,65 @@ struct ScreenshotCaptureSettings: View {
     }
 
     var body: some View {
-        Group {
+        Form {
             Section {
-                HStack(spacing: 10) {
-                    Button {
-                        ScreenshotService.shared.capture()
-                    } label: {
-                        Label(strings.captureButton, systemImage: "camera.viewfinder")
-                            .frame(maxWidth: .infinity)
-                    }
-                    Button {
-                        ScreenshotService.shared.captureScrolling()
-                    } label: {
-                        Label(strings.scrollingCaptureButton, systemImage: "rectangle.stack")
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                Text(strings.panelCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Toggle(strings.fullScreenShortcutTitle, isOn: $fullScreenShortcutEnabled)
-                    .onChange(of: fullScreenShortcutEnabled) { _, _ in
-                        ScreenshotService.shared.syncWithPreferences()
-                    }
-                ShortcutPreferenceRow(role: .screenshotFullScreen,
-                                      isEnabled: fullScreenShortcutEnabled) {
+                CompactShortcutPreferenceRow(title: strings.pageTitle,
+                                             role: .screenshot,
+                                             enabledKey: DefaultsKey.screenshotShortcutEnabled) {
                     ScreenshotService.shared.syncWithPreferences()
                 }
-                if fullScreenShortcutEnabled, service.fullScreenShortcutRegistrationFailed {
-                    Text(l10n.s.shortcutUnavailable)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-                Toggle(strings.editLastCapture, isOn: $lastCaptureShortcutEnabled)
-                    .onChange(of: lastCaptureShortcutEnabled) { _, _ in
-                        ScreenshotService.shared.syncWithPreferences()
-                    }
-                ShortcutPreferenceRow(role: .screenshotLastCapture,
-                                      isEnabled: lastCaptureShortcutEnabled) {
+                CompactShortcutPreferenceRow(title: strings.fullScreenShortcutTitle,
+                                             role: .screenshotFullScreen,
+                                             enabledKey: DefaultsKey.screenshotFullScreenShortcutEnabled) {
                     ScreenshotService.shared.syncWithPreferences()
                 }
-                if lastCaptureShortcutEnabled,
-                   service.lastCaptureShortcutRegistrationFailed {
-                    Text(l10n.s.shortcutUnavailable)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-                Toggle(strings.editClipboardImage, isOn: $clipboardShortcutEnabled)
-                    .onChange(of: clipboardShortcutEnabled) { _, _ in
-                        ScreenshotService.shared.syncWithPreferences()
-                    }
-                ShortcutPreferenceRow(role: .screenshotClipboard,
-                                      isEnabled: clipboardShortcutEnabled) {
+                CompactShortcutPreferenceRow(title: strings.editLastCapture,
+                                             role: .screenshotLastCapture,
+                                             enabledKey: DefaultsKey.screenshotLastCaptureShortcutEnabled) {
                     ScreenshotService.shared.syncWithPreferences()
                 }
-                if clipboardShortcutEnabled, service.clipboardShortcutRegistrationFailed {
-                    Text(l10n.s.shortcutUnavailable)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                CompactShortcutPreferenceRow(title: strings.editClipboardImage,
+                                             role: .screenshotClipboard,
+                                             enabledKey: DefaultsKey.screenshotClipboardShortcutEnabled) {
+                    ScreenshotService.shared.syncWithPreferences()
+                }
+                CompactShortcutPreferenceRow(title: strings.uploadLastCapture,
+                                             role: .screenshotUpload,
+                                             enabledKey: DefaultsKey.screenshotUploadShortcutEnabled) {
+                    ScreenshotService.shared.syncWithPreferences()
+                }
+                CompactShortcutPreferenceRow(title: l10n.s.ocrName,
+                                             role: .screenOCR,
+                                             enabledKey: DefaultsKey.screenOCRShortcutEnabled) {
+                    ScreenTextService.shared.syncWithPreferences()
+                }
+                CompactShortcutPreferenceRow(title: l10n.s.colorPickerName,
+                                             role: .colorPicker,
+                                             enabledKey: DefaultsKey.colorPickerShortcutEnabled) {
+                    ScreenCaptureService.shared.syncWithPreferences()
+                }
+                CompactShortcutPreferenceRow(title: FeatureStrings.recentCaptures(l10n.language).title,
+                                             role: .recentCaptures,
+                                             enabledKey: DefaultsKey.recentCapturesShortcutEnabled) {
+                    RecentCaptureService.shared.syncWithPreferences()
                 }
                 if !permissions.screenRecording {
                     PermissionRow(kind: .screenRecording)
                 }
             } header: {
-                Text(strings.pageTitle)
+                Text(l10n.s.shortcutsPageTitle)
             }
             .settingsFormSectionAnchor(.screenshot)
 
             Section {
-                Toggle(strings.freezeToggle, isOn: $freeze)
-                Text(strings.freezeCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Toggle(isOn: $freeze) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(strings.freezeToggle)
+                        Text(strings.freezeCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 Toggle(strings.hideVorssaintWindowsToggle, isOn: $hideVorssaintWindows)
                 Picker(strings.delayLabel, selection: $delay) {
                     ForEach(ScreenshotSupport.allowedDelays, id: \.self) { seconds in
@@ -143,22 +129,24 @@ struct ScreenshotCaptureSettings: View {
                 .pickerStyle(.segmented)
                 Toggle(strings.pointerToggle, isOn: $includePointer)
                 Toggle(strings.lastRegionToggle, isOn: $showLastRegion)
-                Toggle(strings.highlightWindowsToggle, isOn: $highlightWindows)
-                Text(strings.highlightWindowsCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                DisclosureGroup {
-                    Toggle(strings.loupeStartsOnToggle, isOn: $loupeStartsOn)
-                    Toggle(strings.loupeRememberZoomToggle, isOn: $rememberLoupeZoom)
-                    if !rememberLoupeZoom {
-                        Picker(strings.loupeDefaultZoomLabel, selection: $loupeDefaultZoom) {
-                            ForEach(ScreenshotSupport.captureLoupeDefaultZooms, id: \.self) { zoom in
-                                Text(zoom.formatted(
-                                    .number.precision(.fractionLength(0...1))) + "×")
-                                    .tag(zoom)
-                            }
+                Toggle("Play shutter sound", isOn: $playShutterSound)
+            } header: {
+                Text(selectionSubgroupTitle)
+            }
+
+            Section {
+                Toggle(strings.loupeStartsOnToggle, isOn: $loupeStartsOn)
+                Toggle(strings.loupeRememberZoomToggle, isOn: $rememberLoupeZoom)
+                if !rememberLoupeZoom {
+                    Picker(strings.loupeDefaultZoomLabel, selection: $loupeDefaultZoom) {
+                        ForEach(ScreenshotSupport.captureLoupeDefaultZooms, id: \.self) { zoom in
+                            Text(zoom.formatted(
+                                .number.precision(.fractionLength(0...1))) + "×")
+                                .tag(zoom)
                         }
                     }
+                }
+                VStack(alignment: .leading, spacing: 3) {
                     Picker(strings.loupeWheelZoomLabel,
                            selection: $steppedLoupeZoomByDefault) {
                         Text(strings.loupeZoomFast).tag(false)
@@ -168,31 +156,51 @@ struct ScreenshotCaptureSettings: View {
                     Text(strings.loupeZoomOptionCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    previewPositionRow
-                    previewFocusRow
-                    defaultActionRow
-                } label: {
-                    Text(FeatureStrings.recorder(l10n.language).moreOptions)
                 }
+            } header: {
+                Text(magnifierSubgroupTitle)
             }
 
             Section {
-                Toggle(strings.autoCopyToggle, isOn: autoCopyBinding)
-                Text(strings.autoCopyCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Toggle(strings.addToShelfToggle, isOn: addToShelfBinding)
-                    .disabled(!shelfIsOn)
-                Text(strings.addToShelfCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                defaultActionRow
+                previewPositionRow
+                previewFocusRow
+                Toggle(ScreenshotPinStrings.localized(l10n.language).rounded, isOn: $pinRoundedCorners)
+            } header: {
+                Text(previewSubgroupTitle)
+            }
+
+            Section {
+                Toggle(isOn: autoCopyBinding) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(strings.autoCopyToggle)
+                        Text(strings.autoCopyCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Toggle(isOn: addToShelfBinding) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(strings.addToShelfToggle)
+                        Text(strings.addToShelfCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .disabled(!shelfIsOn)
                 folderRow
                 subfolderRow
                 fileNameRow
-                Toggle(strings.downscaleToggle, isOn: $downscale)
-                Text(strings.downscaleCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Toggle(isOn: $downscale) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(strings.downscaleToggle)
+                        Text(strings.downscaleCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text(destinationSubgroupTitle)
             }
 
             Section {
@@ -204,62 +212,132 @@ struct ScreenshotCaptureSettings: View {
             }
 
             Section {
-                Toggle(strings.shareEnabledToggle, isOn: $sharingEnabled)
-                    .onChange(of: sharingEnabled) { _, _ in service.syncWithPreferences() }
-                if sharingEnabled {
-                    Toggle(strings.uploadLastCapture, isOn: $uploadShortcutEnabled)
-                        .onChange(of: uploadShortcutEnabled) { _, _ in service.syncWithPreferences() }
-                    ShortcutPreferenceRow(role: .screenshotUpload,
-                                          isEnabled: uploadShortcutEnabled) {
-                        service.syncWithPreferences()
+                Toggle(isOn: $sharingEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(strings.shareEnabledToggle)
+                        if sharingEnabled {
+                            Text(strings.shareCaption)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
+                }
+                .onChange(of: sharingEnabled) { _, _ in service.syncWithPreferences() }
+                if sharingEnabled {
                     Picker(strings.uploadExpiry, selection: $uploadDuration) {
                         ForEach(ScreenshotShareDuration.allCases) { duration in
                             Text(duration.title(strings)).tag(duration.rawValue)
                         }
                     }
-                    if uploadShortcutEnabled {
-                        if service.uploadShortcutRegistrationFailed {
-                            Text(l10n.s.shortcutUnavailable)
-                                .font(.caption)
-                                .foregroundStyle(.orange)
+                    if !sharing.records.isEmpty {
+                        Button {
+                            showingSharedLinks = true
+                        } label: {
+                            HStack {
+                                Label(strings.sharedLinksTitle, systemImage: "link")
+                                Spacer()
+                                Text("\(sharing.records.count)")
+                                    .foregroundStyle(.secondary)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
+                        .buttonStyle(.plain)
                     }
-                    Text(strings.shareCaption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Button {
-                    showingSharePrivacy = true
-                } label: {
-                    Label(strings.sharePrivacyButton, systemImage: "hand.raised")
-                }
-                if !sharing.records.isEmpty {
-                    Button {
-                        showingSharedLinks = true
-                    } label: {
-                        HStack {
-                            Label(strings.sharedLinksTitle, systemImage: "link")
-                            Spacer()
-                            Text("\(sharing.records.count)")
-                                .foregroundStyle(.secondary)
-                            Image(systemName: "chevron.right")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
-                    .buttonStyle(.plain)
                 }
             } header: {
-                Text(strings.shareSectionTitle)
+                HStack {
+                    Text(strings.shareSectionTitle)
+                    Spacer()
+                    Button {
+                        showingSharePrivacy = true
+                    } label: {
+                        Label(strings.sharePrivacyButton, systemImage: "hand.raised")
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
             }
+
+            Section {
+                Toggle(isOn: $removesLineBreaks) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(l10n.s.ocrRemoveLineBreaksToggle)
+                        Text(l10n.s.ocrRemoveLineBreaksCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Toggle(isOn: $detectsQRCodes) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(l10n.s.ocrQRToggle)
+                        Text(l10n.s.ocrQRCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text(l10n.s.ocrName)
+            }
+            .settingsFormSectionAnchor(.screenOCR)
+
+            Section {
+                Picker(l10n.s.colorPickerFormatLabel, selection: $colorFormat) {
+                    ForEach(ColorCopyFormat.allCases) { format in
+                        Text(format.label).tag(format.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
+                if colorFormat == ColorCopyFormat.hex.rawValue {
+                    Toggle(l10n.s.colorPickerBareHexToggle, isOn: $usesBareHex)
+                }
+            } header: {
+                Text(l10n.s.colorPickerName)
+            }
+            .settingsFormSectionAnchor(.colorPicker)
         }
+        .formStyle(.grouped)
         .onAppear { sharing.refresh() }
         .sheet(isPresented: $showingSharedLinks) {
             ScreenshotSharedLinksView()
         }
         .sheet(isPresented: $showingSharePrivacy) {
             ScreenshotSharePrivacyView()
+        }
+    }
+
+
+    private var selectionSubgroupTitle: String {
+        switch l10n.language {
+        case .zhHans: return "选取与捕获"
+        case .zhTW, .zhHK: return "選取與擷取"
+        default: return "Selection & Capture"
+        }
+    }
+
+    private var magnifierSubgroupTitle: String {
+        switch l10n.language {
+        case .zhHans: return "放大镜"
+        case .zhTW, .zhHK: return "放大鏡"
+        default: return "Magnifier"
+        }
+    }
+
+    private var previewSubgroupTitle: String {
+        switch l10n.language {
+        case .zhHans: return "预览与固定"
+        case .zhTW, .zhHK: return "預覽與固定"
+        default: return "Preview & Pin"
+        }
+    }
+
+    private var destinationSubgroupTitle: String {
+        switch l10n.language {
+        case .zhHans: return "存储与目的地"
+        case .zhTW, .zhHK: return "儲存與目的地"
+        default: return "Save & Destination"
         }
     }
 
@@ -330,11 +408,13 @@ struct ScreenshotCaptureSettings: View {
     }
 
     private var previewFocusRow: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Toggle(strings.previewFocusToggle, isOn: $previewTakesFocus)
-            Text(strings.previewFocusCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        Toggle(isOn: $previewTakesFocus) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(strings.previewFocusToggle)
+                Text(strings.previewFocusCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
