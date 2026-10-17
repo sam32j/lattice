@@ -18,6 +18,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     var onSave: (() -> Void)?
     var onCloseAll: (() -> Void)?
     var onClickThroughChanged: (() -> Void)?
+    var onReopenPreview: (() -> Void)?
     private lazy var chrome = ScreenshotPinChrome(pin: self)
     private lazy var surface = ScreenshotPinContentView(image: image, pin: self)
 
@@ -42,14 +43,14 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         let size = CGSize(width: native.width * factor, height: native.height * factor)
         super.init(contentRect: CGRect(x: screen.midX - size.width / 2, y: screen.midY - size.height / 2,
                                       width: size.width, height: size.height),
-                   styleMask: [.borderless, .nonactivatingPanel, .resizable], backing: .buffered, defer: false)
+                   styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
         isReleasedWhenClosed = false
         level = .floating
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
-        isMovableByWindowBackground = false
+        isMovableByWindowBackground = true
         hidesOnDeactivate = false
         contentAspectRatio = CGSize(width: image.width, height: image.height)
         minSize = CGSize(width: 140, height: 90)
@@ -86,9 +87,13 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     func showPin(orderFront: Bool = true) {
         guard !isClosed else { return }
         if orderFront {
+            NSApp.activate(ignoringOtherApps: true)
+            makeKeyAndOrderFront(nil)
             orderFrontRegardless()
+            makeFirstResponder(surface)
         }
         attachChrome()
+        updateHover(at: NSEvent.mouseLocation)
     }
 
     func refreshAppearance() {
@@ -100,12 +105,14 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     func updateHover(at point: CGPoint) {
         guard !isClosed else { return }
         let hovered = frame.contains(point)
-        guard hovered != isHovered else { return }
-        isHovered = hovered
-        updateImageOpacity()
-        chrome.setControlsVisible(hovered)
-        if hovered && !ignoresMouseEvents && !isKeyWindow {
-            makeKey()
+        if hovered != isHovered {
+            isHovered = hovered
+            updateImageOpacity()
+            chrome.setControlsVisible(hovered)
+        }
+        if hovered && !ignoresMouseEvents && (!NSApp.isActive || !isKeyWindow) {
+            NSApp.activate(ignoringOtherApps: true)
+            makeKeyAndOrderFront(nil)
             makeFirstResponder(surface)
         }
     }
@@ -127,6 +134,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     func setPositionLocked(_ enabled: Bool) {
         guard !isClosed else { return }
         isPositionLocked = enabled
+        isMovableByWindowBackground = !enabled
         if enabled { styleMask.remove(.resizable) } else { styleMask.insert(.resizable) }
         chrome.refreshButtons()
     }
