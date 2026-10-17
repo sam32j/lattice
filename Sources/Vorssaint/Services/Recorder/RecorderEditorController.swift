@@ -1454,7 +1454,7 @@ final class RecorderEditorWindow: NSWindow {
 
         let buttonHeight = closeButton.frame.height
         let targetY = ((targetHeight - buttonHeight) / 2).rounded()
-        var currentX: CGFloat = 40.0
+        var currentX: CGFloat = 20.0
         let buttonSpacing: CGFloat = 9.0
 
         for buttonType in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
