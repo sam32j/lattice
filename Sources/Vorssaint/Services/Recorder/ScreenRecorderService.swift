@@ -705,6 +705,7 @@ final class ScreenRecorderService: ObservableObject {
     /// sound and format are decided, or goes straight to a file for whoever
     /// only wanted the raw recording.
     private func deliver(_ take: RecorderTakeStore.Take, reason: String?) {
+        RecentCaptureService.shared.stashRecording(from: take.videoURL)
         if reason == nil, UserDefaults.standard.bool(forKey: DefaultsKey.recorderOpenEditor) {
             if openEditor(with: take) { return }
         }
@@ -721,7 +722,6 @@ final class ScreenRecorderService: ObservableObject {
             openEditor(with: take)
             return
         }
-        RecentCaptureService.shared.recordRecording(at: destination)
         let folder = destination.deletingLastPathComponent().lastPathComponent
         QuickToolHUD.show(icon: "record.circle",
                           message: reason ?? String(format: strings.savedHUDFormat, folder))
