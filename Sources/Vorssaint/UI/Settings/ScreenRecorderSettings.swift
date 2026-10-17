@@ -2,9 +2,6 @@
 // Copyright (C) 2026 Vorssaint
 
 import SwiftUI
-
-typealias ScreenRecordingCaptureSettings = ScreenRecorderSettings
-
 /// Settings for the screen recorder: how a recording starts, what it captures
 /// and where the file lands.
 struct ScreenRecorderSettings: View {
