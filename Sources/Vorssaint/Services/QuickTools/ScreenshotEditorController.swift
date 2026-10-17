@@ -1655,10 +1655,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     func copySelectedText() {
         let text = model.selectedText
         guard !text.isEmpty else { return }
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.declareVorssaintSource()
-        pasteboard.setString(text, forType: .string)
+        ScreenTextService.copyToPasteboard(text)
         QuickToolHUD.show(icon: "text.viewfinder", message: L10n.shared.s.ocrCopied)
     }
 

@@ -2947,7 +2947,7 @@ enum ScreenshotFeatureTests {
                     for: .crop,
                     orderRaw: cropAssignedFirst.map(\.rawValue).joined(separator: ","),
                     enabled: true) == 1
-                && selectWithoutShortcut.firstIndex(of: .select) == 9
+                && selectWithoutShortcut.firstIndex(of: .select) == ScreenshotSupport.Tool.shortcutLimit
                 && ScreenshotSupport.Tool.shortcutNumber(
                     for: .select,
                     orderRaw: selectWithoutShortcut.map(\.rawValue).joined(separator: ","),
@@ -3027,12 +3027,13 @@ enum ScreenshotFeatureTests {
                 && rejection(pen, excluding: .freehand, layout: "Left", system: true) == .windowLayout("Left"),
                    "editor keys and tools answer first and the system table is read last")
             for (index, tool) in Tool.allCases.enumerated() {
-                suite.expect(Tool.shortcutTool(keyCode: -1, modifiers: [], number: index + 1,
+                let numberArg = index < 9 ? index + 1 : (index == 9 ? 0 : index + 1)
+                suite.expect(Tool.shortcutTool(keyCode: -1, modifiers: [], number: numberArg,
                         orderRaw: nil, bindingsRaw: "", enabled: true)
-                    == Tool.shortcutTool(number: index + 1, orderRaw: nil, enabled: true),
+                    == Tool.shortcutTool(number: numberArg, orderRaw: nil, enabled: true),
                        "empty bindings preserve position behavior for \(tool)")
                 suite.expect((Tool.shortcutLabel(for: tool, orderRaw: nil, bindingsRaw: "", enabled: true) != nil)
-                    == (index < Tool.shortcutLimit), "only the first nine tools get default badges")
+                    == (index < Tool.shortcutLimit), "only the first ten tools get default badges")
             }
             suite.expect(Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: raw, enabled: true) == text.displayString
                 && Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: raw, enabled: false) == nil,
