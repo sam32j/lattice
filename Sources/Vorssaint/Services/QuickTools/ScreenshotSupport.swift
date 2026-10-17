@@ -1435,7 +1435,7 @@ enum ScreenshotSupport {
         }
 
         static func shortcutTool(number: Int,
-                                 orderRaw: String?,
+                                 orderRaw: String? = nil,
                                  enabled: Bool) -> Tool? {
             guard enabled else { return nil }
             let order = ordered(from: orderRaw)
@@ -1448,7 +1448,7 @@ enum ScreenshotSupport {
         }
 
         static func shortcutNumber(for tool: Tool,
-                                   orderRaw: String?,
+                                   orderRaw: String? = nil,
                                    enabled: Bool) -> Int? {
             guard enabled,
                   let index = ordered(from: orderRaw).firstIndex(of: tool),
@@ -1503,7 +1503,7 @@ enum ScreenshotSupport {
         }
 
         static func shortcutTool(keyCode: Int64, modifiers: GlobalShortcutModifiers,
-                                 number: Int? = nil, orderRaw: String?,
+                                 number: Int? = nil, orderRaw: String? = nil,
                                  bindingsRaw: String?, enabled: Bool, capsLockOn: Bool = false) -> Tool? {
             guard enabled else { return nil }
             let bindings = activeBindings(from: bindingsRaw, capsLockOn: capsLockOn)
@@ -1537,7 +1537,7 @@ enum ScreenshotSupport {
         /// What the rail badge and the recorder show for a tool: its own
         /// binding's caps, or the position digit of an unbound tool in the
         /// first nine.
-        static func shortcutLabel(for tool: Tool, orderRaw: String?,
+        static func shortcutLabel(for tool: Tool, orderRaw: String? = nil,
                                   bindingsRaw: String?, enabled: Bool, capsLockOn: Bool = false) -> String? {
             guard enabled else { return nil }
             if let binding = activeBindings(from: bindingsRaw, capsLockOn: capsLockOn)[tool] {

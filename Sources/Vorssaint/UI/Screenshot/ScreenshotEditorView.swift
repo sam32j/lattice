@@ -25,8 +25,6 @@ struct ScreenshotEditorView: View {
     @State private var sharing = false
     @State private var sharedRecord: ScreenshotShareRecord?
     @State private var shareAnchor = ShelfSharePickerAnchor.Anchor()
-    @AppStorage(DefaultsKey.screenshotToolOrder) private var toolOrderRaw =
-        ScreenshotSupport.Tool.defaultOrderStorage
     @AppStorage(DefaultsKey.screenshotToolShortcuts) private var bindingsRaw = ""
     @AppStorage(DefaultsKey.screenshotToolShortcutsEnabled) private var toolShortcutsEnabled = true
     @AppStorage(DefaultsKey.screenshotSharingEnabled) private var sharingEnabled = true
@@ -665,7 +663,7 @@ struct ScreenshotEditorView: View {
     // MARK: - Tool rail
 
     private var orderedTools: [ScreenshotSupport.Tool] {
-        ScreenshotSupport.Tool.ordered(from: toolOrderRaw)
+        ScreenshotSupport.Tool.allCases
     }
 
     private var toolRail: some View {
@@ -694,8 +692,7 @@ struct ScreenshotEditorView: View {
             .screenshotSafeHelp(strings.toolShortcutsTitle)
             .accessibilityLabel(strings.toolShortcutsTitle)
             .popover(isPresented: $toolOptionsShown, arrowEdge: .leading) {
-                ScreenshotToolOrderControls(orderRaw: $toolOrderRaw,
-                                            shortcutsEnabled: $toolShortcutsEnabled)
+                ScreenshotToolOrderControls(shortcutsEnabled: $toolShortcutsEnabled)
                     .padding(14)
                     .frame(width: 340)
             }
@@ -713,7 +710,7 @@ struct ScreenshotEditorView: View {
         let isActive = model.tool == tool
         let isHovered = hoveredTool == tool
         let shortcutLabel = ScreenshotSupport.Tool.shortcutLabel(
-            for: tool, orderRaw: toolOrderRaw, bindingsRaw: bindingsRaw, enabled: toolShortcutsEnabled,
+            for: tool, orderRaw: nil, bindingsRaw: bindingsRaw, enabled: toolShortcutsEnabled,
             capsLockOn: keyboard.capsLockOn)
         return Button {
             commitEditingTextIfNeeded()

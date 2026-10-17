@@ -516,7 +516,6 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinDragView.swift
         Sources/Vorssaint/Core/ScreenshotPinPreferences.swift
         Sources/Vorssaint/Core/ScreenshotPinStrings.swift
-        Sources/Vorssaint/UI/Settings/ScreenCaptureToolPicker.swift
         Sources/Vorssaint/UI/Settings/MonitorToken.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotRenderer.swift
         Sources/Vorssaint/Services/QuickTools/RecentCaptureRetention.swift

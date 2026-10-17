@@ -1368,13 +1368,12 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             return true
         }
 
-        let orderRaw = UserDefaults.standard.string(forKey: DefaultsKey.screenshotToolOrder)
         let bindingsRaw = UserDefaults.standard.string(forKey: DefaultsKey.screenshotToolShortcuts)
         let enabled = UserDefaults.standard.bool(forKey: DefaultsKey.screenshotToolShortcutsEnabled)
         let number = event.characters?.first.flatMap { Int(String($0)) }
         if let tool = ScreenshotSupport.Tool.shortcutTool(
             keyCode: Int64(key), modifiers: GlobalShortcutModifiers(eventFlags: flags),
-            number: number, orderRaw: orderRaw, bindingsRaw: bindingsRaw, enabled: enabled,
+            number: number, bindingsRaw: bindingsRaw, enabled: enabled,
             capsLockOn: flags.contains(.capsLock)) {
             model.tool = tool
             return true

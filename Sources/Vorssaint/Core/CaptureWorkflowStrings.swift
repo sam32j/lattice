@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Samuel Ji
+
 import Foundation
 
 /// Labels shared by capture settings and the chooser. The counted guide uses a
