@@ -1,0 +1,26 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - lattice/main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.LATTICE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+          target-branch: lattice/main
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
