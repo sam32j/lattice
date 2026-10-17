@@ -295,6 +295,8 @@ final class RecentCaptureService: ObservableObject {
                 return
             }
             let destination = root.appendingPathComponent(relativePath)
+            self.pruneMissingEntries()
+            self.store.persist()
             self.publish()
             DispatchQueue.main.async { [weak self] in
                 completion(destination)
@@ -482,14 +484,9 @@ final class RecentCaptureService: ObservableObject {
         let days = CleanerPolicy.sanitizedScreenshotAgeDays(
             UserDefaults.standard.integer(forKey: DefaultsKey.cleanerScreenshotAgeDays))
         let cutoff = days > 0 ? Date().addingTimeInterval(-Double(days) * 86_400) : nil
-        var kept: [RecentCaptureEntry] = []
-        for entry in store.entries where entryExists(entry) {
-            if let cutoff, entry.createdAt < cutoff {
-                continue
-            }
-            kept.append(entry)
-        }
-        store.entries = kept
+        store.entries = RecentCaptureRetention.entries(
+            store.entries.filter { entryExists($0) }, screenshotCutoff: cutoff,
+            recordingLimit: UserDefaults.standard.integer(forKey: DefaultsKey.recentRecordingLimit))
     }
 
     private func prepend(_ entry: RecentCaptureEntry) {

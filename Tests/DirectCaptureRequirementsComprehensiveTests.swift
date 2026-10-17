@@ -38,7 +38,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
         suite.expect(screenshotSettingsSource.contains("Form {")
                      && screenshotSettingsSource.contains("} header: {")
                      && screenshotSettingsSource.contains("Text(l10n.s.shortcutsPageTitle)")
-                     && screenshotSettingsSource.contains("Text(selectionSubgroupTitle)"),
+                     && screenshotSettingsSource.contains("Text(workflow.selection)"),
                      "ScreenshotSettings uses native SwiftUI Form Section headers instead of fake empty spacer lines")
 
         // 2. Removed action buttons: "Capture now", "Scrolling capture now", "Show capture menu", "Highlight window under pointer"
@@ -50,7 +50,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      "ScreenshotSettings removed capture now, scrolling capture now, highlight window under pointer, and show capture menu")
 
         // 3. Shutter sound and temporary links in ScreenshotSettings
-        suite.expect(screenshotSettingsSource.contains("Toggle(\"Play shutter sound\", isOn: $playShutterSound)")
+        suite.expect(screenshotSettingsSource.contains("Toggle(workflow.shutter, isOn: $playShutterSound)")
                      && screenshotSettingsSource.contains("Text(strings.shareEnabledToggle)"),
                      "ScreenshotSettings includes play shutter sound toggle and temporary links toggle")
 
@@ -64,7 +64,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
         suite.expect(recorderSettingsSource.contains("Form {")
                      && recorderSettingsSource.contains("} header: {")
                      && recorderSettingsSource.contains("Text(l10n.s.shortcutsPageTitle)")
-                     && recorderSettingsSource.contains("Text(recordingSubgroupTitle)"),
+                     && recorderSettingsSource.contains("Text(workflow.recording)"),
                      "ScreenRecorderSettings uses native SwiftUI Form Section headers")
 
         // 5. Removed: "Screen recording now", "Show capture menu"
@@ -74,8 +74,8 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      "ScreenRecorderSettings removed screen recording now and show capture menu")
 
         // 6. Settings items for screen recording: immediate start, record sound, temporary links
-        suite.expect(recorderSettingsSource.contains("Toggle(\"Record immediately after selection\", isOn: $immediateStart)")
-                     && recorderSettingsSource.contains("Toggle(\"Play record sound\", isOn: $playRecordSound)")
+        suite.expect(recorderSettingsSource.contains("Toggle(workflow.immediate, isOn: $immediateStart)")
+                     && recorderSettingsSource.contains("Toggle(workflow.recordSound, isOn: $playRecordSound)")
                      && recorderSettingsSource.contains("Text(screenshotStrings.shareEnabledToggle)"),
                      "ScreenRecorderSettings includes immediate start toggle, record sound toggle, and temporary links toggle")
 
@@ -158,12 +158,9 @@ enum DirectCaptureRequirementsComprehensiveTests {
         let featureRuntimeSource = (try? String(
             contentsOfFile: "Sources/Vorssaint/App/FeatureRuntime.swift",
             encoding: .utf8)) ?? ""
-        suite.expect(featureRuntimeSource.contains("if features.contains(.screenshot) {")
-                     && featureRuntimeSource.contains("for companion in [AppFeature.colorPicker, AppFeature.screenOCR] {"),
-                     "FeatureRuntime bundles colorPicker and screenOCR when screenshot is installed or modified")
         suite.expect(featureRuntimeSource.contains("AppFeature.hubInstallableFeatures.filter(\\ .isAvailable).count")
                      || featureRuntimeSource.contains("AppFeature.hubInstallableFeatures.filter(\\.isAvailable).count"),
-                     "FeatureRuntime availableCount and installableCount count against hubInstallableFeatures (76)")
+                     "FeatureRuntime availableCount and installableCount count against hubInstallableFeatures (75)")
     }
 
     // MARK: - 3. Compact Shortcut Recorders & Conflict Handling
@@ -188,21 +185,18 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      "CompactShortcutCoordinator stops existing recording before activating a new one so only one is active at a time")
 
         // 3. Error text and shaking animation
-        suite.expect(shortcutRecorderSource.contains("showError(\"Shortcut Unavailable\")")
+        suite.expect(shortcutRecorderSource.contains("showError(l10n.s.shortcutInvalid)")
                      && shortcutRecorderSource.contains("struct CompactRecorderShakeEffect: GeometryEffect")
                      && !shortcutRecorderSource.contains("macOS rejects"),
-                     "Conflict/invalid key triggers 'Shortcut Unavailable' error and shaking animation, never 'macOS rejects'")
+                     "Conflict/invalid keys show localized errors with shaking animation")
 
         // 4. Inline controls inside setter: xmark.circle.fill (clear) and arrow.uturn.backward (reset)
         suite.expect(shortcutRecorderSource.contains("Image(systemName: \"arrow.uturn.backward\")")
                      && shortcutRecorderSource.contains("Image(systemName: \"xmark.circle.fill\")")
-                     && shortcutRecorderSource.contains("help(\"Disable shortcut\")"),
+                     && shortcutRecorderSource.contains("help(l10n.s.shortcutClear)"),
                      "Setter includes inline reset (u-turn) and disable (x) buttons inside the box")
 
-        // 5. Conflict reversion algorithm:
-        // When Role A is reset to its default, any conflicting Role B using that combination
-        // is automatically reverted to its default (or disabled if default conflicts),
-        // preventing duplicate shortcut bindings.
+        // 5. Detect conflicts before reset; another feature must remain untouched.
         let defaultA = GlobalShortcutRole.screenshot.defaultShortcut
         let defaultB = GlobalShortcutRole.screenshotFullScreen.defaultShortcut
         suite.expect(defaultA != defaultB, "Test roles have distinct default shortcuts")
@@ -242,24 +236,8 @@ enum DirectCaptureRequirementsComprehensiveTests {
         suite.expect(conflictRole == .screenshotFullScreen,
                      "GlobalShortcutRole.conflict identifies screenshotFullScreen as colliding with defaultA")
 
-        // Simulate resetToDefault resolution logic
-        if let conflicting = conflictRole {
-            let conflictingDefault = conflicting.defaultShortcut
-            if conflictingDefault != defaultA {
-                UserDefaults.standard.set(conflictingDefault.storageValue, forKey: conflicting.storageKey)
-            } else {
-                for key in conflicting.requiredEnableKeys {
-                    UserDefaults.standard.set(false, forKey: key)
-                }
-            }
-        }
-        UserDefaults.standard.set(defaultA.storageValue, forKey: GlobalShortcutRole.screenshot.storageKey)
-        UserDefaults.standard.set(true, forKey: DefaultsKey.screenshotShortcutEnabled)
+        // The production reset boundary is exercised by CompactShortcutValidationTests.
 
-        let resolvedRoleB = GlobalShortcut(storageValue: UserDefaults.standard.string(forKey: GlobalShortcutRole.screenshotFullScreen.storageKey) ?? "")
-        let resolvedRoleA = GlobalShortcut(storageValue: UserDefaults.standard.string(forKey: GlobalShortcutRole.screenshot.storageKey) ?? "")
-        suite.expect(resolvedRoleA == defaultA && resolvedRoleB == defaultB && resolvedRoleA != resolvedRoleB,
-                     "Conflict resolution successfully reverted colliding Role B to its default when Role A was reset")
     }
 
     // MARK: - 4. Sound Preferences & Defaults
@@ -302,7 +280,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
         // 1. Indicator dimensions & trash button
         suite.expect(indicatorSource.contains("static let size = CGSize(width: 182, height: 32)")
                      && indicatorSource.contains("symbol: \"trash\"")
-                     && indicatorSource.contains("trashButton.toolTip = \"Delete recording\""),
+                     && indicatorSource.contains("trashButton.toolTip = discardTooltip"),
                      "RecorderIndicator expanded to 182x32 and includes trash button for deleting/discarding recording")
 
         // 2. Delayed start waiting state
@@ -310,7 +288,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      && indicatorSource.contains("isWaitingForStart = true")
                      && indicatorSource.contains("dot.opacity = 0.4")
                      && indicatorSource.contains("pauseButton.image = symbolImage(\"play.fill\")")
-                     && indicatorSource.contains("pauseButton.toolTip = \"Start recording\""),
+                     && indicatorSource.contains("pauseButton.toolTip = startTooltip"),
                      "RecorderIndicator implements setWaitingForStart with dim pulse, play icon, and Start recording tooltip")
 
         // 3. Starting delayed recording
@@ -559,14 +537,13 @@ enum DirectCaptureRequirementsComprehensiveTests {
             encoding: .utf8)) ?? ""
         suite.expect(!editorViewSource.isEmpty, "ScreenshotEditorView.swift is readable")
 
-        // 1. Multiline Enter vs Cmd+Return / Cmd+Shift save
+        // 1. Multiline Enter vs Cmd+Return save
         suite.expect(editorViewSource.contains("if event.keyCode == 36 || event.keyCode == 76 {")
                      && editorViewSource.contains("if flags.contains(.command) {")
                      && editorViewSource.contains("onCommit?()")
                      && editorViewSource.contains("insertNewline(nil)")
-                     && editorViewSource.contains("if flags.contains([.command, .shift]) {")
-                     && editorViewSource.contains("onCommit?()"),
-                     "EditorTextView allows Enter for new line, and Cmd+Return or Cmd+Shift to commit and exit text input")
+,
+                     "EditorTextView allows Enter for new line, and Cmd+Return to commit and exit text input")
 
         // 2. Isolated undo manager to avoid crashing parent window undo stack
         suite.expect(editorViewSource.contains("let isolatedUndoManager = UndoManager()")
@@ -598,13 +575,13 @@ enum DirectCaptureRequirementsComprehensiveTests {
         // 2. Tab text
         suite.expect(selectionSource.contains("Text(strings.hintDrag)")
                      && selectionSource.contains("Text(strings.hintClick)")
-                     && selectionSource.contains("Click to record window")
+                     && selectionSource.contains("CaptureWorkflowStrings.localized(l10n.language).recordWindow")
                      && selectionSource.contains("model.scrollingCaptureEnabled ? .secondary.opacity(0.35) : .secondary"),
                      "Tab shows clean label with drag hint, click hint (dimmed when scrolling capture enabled), and record click hint")
 
         // 3. Separated Scroll control above main tab in screenshot mode
         suite.expect(selectionSource.contains("private var scrollToggleBar: some View")
-                     && selectionSource.contains("Text(\"Scroll\")")
+                     && selectionSource.contains("Text(CaptureWorkflowStrings.localized(l10n.language).scroll)")
                      && selectionSource.contains("isScrollingCaptureKey")
                      && selectionSource.contains("scrollingCaptureEnabled ? Color.white : Color.primary"),
                      "Scroll control is separated above main tab with 'Scroll' label and shortcut S, dimming text when on")

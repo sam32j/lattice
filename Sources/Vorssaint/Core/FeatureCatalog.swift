@@ -619,7 +619,7 @@ extension AppFeature {
     static func activeFeatures(using permission: AppPermission,
                                defaults: UserDefaults = .standard) -> [AppFeature] {
         activeFeatures(using: permission,
-                       isAvailable: { defaults.bool(forKey: $0.availabilityKey) },
+                       isAvailable: { $0.isAvailable(in: defaults) },
                        boolFor: { defaults.bool(forKey: $0) },
                        stringFor: { defaults.string(forKey: $0) },
                        dataFor: { defaults.data(forKey: $0) })

@@ -170,13 +170,14 @@ enum ScreenshotCaptureEngine {
     /// stacked on the window is drawn at the scale its layers were captured
     /// at, which on mixed displays can differ from the one asked for.
     static func captureWindow(_ windowID: CGWindowID,
-                              scale: CGFloat) async -> (image: CGImage, scale: CGFloat)? {
+                              scale: CGFloat,
+                              includeAttachedWindows: Bool = true) async -> (image: CGImage, scale: CGFloat)? {
         // A sheet or dialog the app stacked on the window is a window of its
         // own, and neither single-window route draws it (issue #1098). The
         // window list answers this without waiting on shareable content, so
         // the ordinary capture keeps the faster route.
         let onScreen = onScreenWindows()
-        if let target = onScreen.first(where: { $0.id == windowID }),
+        if includeAttachedWindows, let target = onScreen.first(where: { $0.id == windowID }),
            let geometricPlan = ScreenshotCapturePolicy.attachedCapturePlan(
                target: target, frontToBack: onScreen) {
             var plan: ScreenshotCapturePolicy.AttachedCapturePlan? = geometricPlan
@@ -243,38 +244,8 @@ enum ScreenshotCaptureEngine {
         }
 
         let onScreen = onScreenWindows()
-        // If all windows belong to one display, attempt ScreenCaptureKit filter
-        if let content = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true) {
-            let scWindows = windowIDs.compactMap { id in content.windows.first { $0.windowID == id } }
-            if scWindows.count == windowIDs.count {
-                var unionBounds = scWindows[0].frame
-                for w in scWindows.dropFirst() {
-                    unionBounds = unionBounds.union(w.frame)
-                }
-                let hits = content.displays.filter { $0.frame.intersects(unionBounds) }
-                if hits.count == 1,
-                   let display = hits.first {
-                    let filter = SCContentFilter(display: display, including: scWindows)
-                    let configuration = SCStreamConfiguration()
-                    let pixelScale = CGFloat(filter.pointPixelScale)
-                    let sourceRect = CGRect(
-                        x: max(0, unionBounds.minX - display.frame.minX),
-                        y: max(0, unionBounds.minY - display.frame.minY),
-                        width: min(unionBounds.width, CGFloat(display.width)),
-                        height: min(unionBounds.height, CGFloat(display.height)))
-                    configuration.sourceRect = sourceRect
-                    configuration.width = max(1, Int((sourceRect.width * pixelScale).rounded()))
-                    configuration.height = max(1, Int((sourceRect.height * pixelScale).rounded()))
-                    configuration.showsCursor = false
-                    configuration.colorSpaceName = CGColorSpace.sRGB
-                    if let displayImage = try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration) {
-                        return (displayImage, pixelScale)
-                    }
-                }
-            }
-        }
-
-        // Fallback: Composite each window onto a shared canvas
+        // Capture each window independently: multi-window filters can pack pixels
+        // at the output origin instead of preserving desktop coordinates.
         var windowFrames: [CGWindowID: CGRect] = [:]
         for id in windowIDs {
             if let target = onScreen.first(where: { $0.id == id }) {
@@ -283,25 +254,22 @@ enum ScreenshotCaptureEngine {
                 windowFrames[id] = b
             }
         }
-        guard !windowFrames.isEmpty else { return nil }
+        guard windowFrames.count == windowIDs.count else { return nil }
         var unionBounds = windowFrames.values.first!
         for frame in windowFrames.values.dropFirst() {
             unionBounds = unionBounds.union(frame)
         }
 
         let sortedIDs = onScreen.filter { windowIDs.contains($0.id) }.reversed().map(\.id)
-        let orderedIDs = sortedIDs.isEmpty ? windowIDs : sortedIDs
+        let orderedIDs = sortedIDs + windowIDs.filter { !sortedIDs.contains($0) }
 
         var layers: [(image: CGImage, frame: CGRect)] = []
         for id in orderedIDs {
-            guard let frame = windowFrames[id] else { continue }
-            if let (img, _) = await captureWindow(id, scale: scale) {
-                layers.append((img, frame))
-            } else if let img = await WindowPreviewProvider.captureViaWindowServer(id) {
-                layers.append((img, frame))
-            }
+            guard let frame = windowFrames[id],
+                  let capture = await captureWindow(id, scale: scale, includeAttachedWindows: false)
+            else { return nil }
+            layers.append((capture.image, frame))
         }
-        guard !layers.isEmpty else { return nil }
 
         let width = max(1, Int((unionBounds.width * scale).rounded()))
         let height = max(1, Int((unionBounds.height * scale).rounded()))

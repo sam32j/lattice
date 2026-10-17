@@ -679,7 +679,7 @@ struct CompactShortcutRecorder: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .help("Disable shortcut")
+                        .help(l10n.s.shortcutClear)
                     }
                 }
                 .padding(.trailing, 6)
@@ -747,7 +747,7 @@ struct CompactShortcutRecorder: View {
         }
     }
 
-    private func showError(_ text: String = "Shortcut Unavailable") {
+    private func showError(_ text: String) {
         errorText = text
         NSSound.beep()
         withAnimation(.default) {
@@ -762,47 +762,40 @@ struct CompactShortcutRecorder: View {
 
     private func resetToDefault() {
         let targetShortcut = role.defaultShortcut
-        if let conflicting = GlobalShortcutRole.conflict(for: targetShortcut, excluding: role) {
-            let conflictingDefault = conflicting.defaultShortcut
-            if conflictingDefault != targetShortcut &&
-               GlobalShortcutRole.conflict(for: conflictingDefault, excluding: conflicting) == nil {
-                UserDefaults.standard.set(conflictingDefault.storageValue, forKey: conflicting.storageKey)
-            } else {
-                for key in conflicting.requiredEnableKeys {
-                    UserDefaults.standard.set(false, forKey: key)
-                }
-            }
-            SystemShortcutTakeover.setTakeOver(conflicting.storageKey, false)
-            syncPreferences(for: conflicting)
-        }
+        // Reset never rewrites another feature's shortcut or enable switches.
+        guard case .save(let clearTakeOver)? = validationDecision(targetShortcut) else { return }
         rawValue = targetShortcut.storageValue
         isEnabled = true
         errorText = nil
-        SystemShortcutTakeover.setTakeOver(role.storageKey, false)
+        if clearTakeOver { SystemShortcutTakeover.setTakeOver(role.storageKey, false) }
         onChange()
     }
 
-    private func syncPreferences(for role: GlobalShortcutRole) {
-        switch role {
-        case .screenshot, .screenshotFullScreen, .screenshotLastCapture, .screenshotUpload, .screenshotClipboard:
-            ScreenshotService.shared.syncWithPreferences()
-        case .screenOCR:
-            ScreenTextService.shared.syncWithPreferences()
-        case .colorPicker:
-            ScreenCaptureService.shared.syncWithPreferences()
-        case .recentCaptures:
-            RecentCaptureService.shared.syncWithPreferences()
-        case .screenRecorder:
-            ScreenRecorderService.shared.syncWithPreferences()
-        case .clipboard:
-            ClipboardHistoryService.shared.syncWithPreferences()
-        case .commandBar:
-            CommandBarService.shared.syncWithPreferences()
-        case .shelf:
-            ShelfService.shared.syncWithPreferences()
-        default:
-            break
+    private func validationDecision(_ shortcut: GlobalShortcut) -> RecorderTakeOverDecision? {
+        guard shortcut.isValid else {
+            showError(l10n.s.shortcutInvalid)
+            return nil
         }
+        if let conflict = GlobalShortcutRole.conflict(for: shortcut, excluding: role) {
+            showError(String(format: l10n.s.shortcutConflictFormat, conflict.title(l10n.s)))
+            return nil
+        }
+        let conflictsWithMacOS = role.supportsTakeOver
+            ? SystemShortcutTakeover.conflictsWithMacOS(shortcut, for: role)
+            : shortcut.conflictsWithSystemShortcut(for: role)
+        if conflictsWithMacOS && !role.supportsTakeOver {
+            showError(String(format: l10n.s.shortcutConflictFormat, "macOS"))
+            return nil
+        }
+        let decision = SystemShortcutTakeoverSupport.recorderDecision(
+            shortcut: shortcut, conflictsWithMacOS: conflictsWithMacOS,
+            takenOver: SystemShortcutTakeover.isTakenOver(role.storageKey),
+            current: GlobalShortcut(storageValue: rawValue))
+        if case .offer = decision {
+            showError(String(format: l10n.s.shortcutConflictFormat, "macOS"))
+            return nil
+        }
+        return decision
     }
 
     private func clearShortcut() {
@@ -827,15 +820,9 @@ struct CompactShortcutRecorder: View {
             return
         }
         let captured = GlobalShortcut(keyCode: Int64(event.keyCode), modifiers: modifiers)
-        guard captured.isValid else {
-            showError("Shortcut Unavailable")
-            return
-        }
-        if let _ = GlobalShortcutRole.conflict(for: captured, excluding: role) {
-            showError("Shortcut Unavailable")
-            return
-        }
+        guard case .save(let clearTakeOver)? = validationDecision(captured) else { return }
         rawValue = captured.storageValue
+        if clearTakeOver { SystemShortcutTakeover.setTakeOver(role.storageKey, false) }
         isEnabled = true
         errorText = nil
         coordinator.stopRecording(role: role)

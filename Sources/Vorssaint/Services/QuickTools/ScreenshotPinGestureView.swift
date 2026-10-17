@@ -36,6 +36,7 @@ class ScreenshotPinGestureView: NSView {
     }
 
     private let pinchTracker = ScreenshotPinPinchTracker()
+    private var pinchSource = ScreenshotPinGestureSource()
 
     override var acceptsTouchEvents: Bool {
         get { true }
@@ -48,8 +49,12 @@ class ScreenshotPinGestureView: NSView {
 
     func handleGestureEvent(_ event: NSEvent) {
         guard let window, !window.ignoresMouseEvents, !isPositionLocked else { return }
-        if event.type == .gesture, let factor = pinchTracker.process(event: event) {
-            zoom(by: factor, at: event.locationInWindow)
+        if event.type == .gesture {
+            let touches = event.allTouches()
+            let phase: NSEvent.Phase = touches.allSatisfy { $0.phase == .ended || $0.phase == .cancelled }
+                ? .ended : touches.contains { $0.phase == .began } ? .began : .changed
+            applyPinch(by: pinchTracker.process(event: event) ?? 1, at: event.locationInWindow,
+                       source: .touches, phase: phase)
         } else if event.type == .magnify {
             magnify(with: event)
         }
@@ -57,14 +62,23 @@ class ScreenshotPinGestureView: NSView {
 
     override func touchesBegan(with event: NSEvent) { handleGestureEvent(event) }
     override func touchesMoved(with event: NSEvent) { handleGestureEvent(event) }
-    override func touchesEnded(with event: NSEvent) { pinchTracker.reset() }
-    override func touchesCancelled(with event: NSEvent) { pinchTracker.reset() }
+    override func touchesEnded(with event: NSEvent) { pinchTracker.reset(); pinchSource.finish(.touches) }
+    override func touchesCancelled(with event: NSEvent) { pinchTracker.reset(); pinchSource.finish(.touches) }
 
     override func magnify(with event: NSEvent) {
+        applyPinch(by: 1 + event.magnification, at: event.locationInWindow,
+                   source: .magnify, phase: event.phase)
+    }
+
+    func applyPinch(by factor: CGFloat, at point: CGPoint,
+                    source: ScreenshotPinGestureSource.Source, phase: NSEvent.Phase) {
         guard let window, !window.ignoresMouseEvents, !isPositionLocked else { return }
-        let amount = event.magnification
-        guard amount.isFinite, amount != 0, amount > -1 else { return }
-        zoom(by: 1 + amount, at: event.locationInWindow)
+        if phase.contains(.began) { pinchSource.begin(source) }
+        defer {
+            if phase.contains(.ended) || phase.contains(.cancelled) { pinchSource.finish(source) }
+        }
+        guard factor.isFinite, factor > 0, factor != 1, pinchSource.accepts(source) else { return }
+        zoom(by: factor, at: point)
     }
 
     func zoom(by factor: CGFloat, at point: CGPoint? = nil) {

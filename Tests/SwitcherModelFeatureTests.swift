@@ -368,13 +368,10 @@ enum SwitcherModelFeatureTests {
             migrationDefaults.set(true, forKey: AppFeature.screenRecorder.availabilityKey)
             migrationDefaults.set(true, forKey: AppFeature.screenOCR.availabilityKey)
             Defaults.migrateOrphanedCaptureShortcut(in: migrationDefaults)
-            suite.expect(migrationDefaults.bool(forKey: DefaultsKey.screenOCRShortcutEnabled)
-                   && migrationDefaults.string(forKey: DefaultsKey.screenOCRShortcut)
-                        == "control+option:42"
-                   && !migrationDefaults.bool(forKey: DefaultsKey.screenshotShortcutEnabled)
-                   && migrationDefaults.string(forKey: DefaultsKey.recorderShortcut)
-                        == "command:12",
-                   "an orphaned capture shortcut moves to the first available tool without its own")
+            suite.expect(!migrationDefaults.bool(forKey: DefaultsKey.screenOCRShortcutEnabled)
+                   && migrationDefaults.bool(forKey: DefaultsKey.screenshotShortcutEnabled)
+                   && migrationDefaults.string(forKey: DefaultsKey.recorderShortcut) == "command:12",
+                   "an orphaned shortcut never moves to a hidden companion or overwrites a recorder shortcut")
             migrationDefaults.set(true, forKey: DefaultsKey.screenshotShortcutEnabled)
             migrationDefaults.set(false, forKey: DefaultsKey.screenOCRShortcutEnabled)
             Defaults.migrateOrphanedCaptureShortcut(in: migrationDefaults)
@@ -393,23 +390,27 @@ enum SwitcherModelFeatureTests {
             migrationDefaults.removeObject(forKey: DefaultsKey.screenshotShortcut)
             migrationDefaults.removeObject(forKey: DefaultsKey.screenOCRShortcut)
             migrationDefaults.set(false, forKey: AppFeature.screenshot.availabilityKey)
+            migrationDefaults.removeObject(forKey: DefaultsKey.recorderShortcut)
+            migrationDefaults.set(false, forKey: DefaultsKey.recorderShortcutEnabled)
             Defaults.migrateOrphanedCaptureShortcut(in: migrationDefaults)
-            suite.expect(migrationDefaults.bool(forKey: DefaultsKey.screenOCRShortcutEnabled)
-                   && migrationDefaults.string(forKey: DefaultsKey.screenOCRShortcut)
+            suite.expect(migrationDefaults.bool(forKey: DefaultsKey.recorderShortcutEnabled)
+                   && migrationDefaults.string(forKey: DefaultsKey.recorderShortcut)
                         == GlobalShortcut.screenshotDefault.storageValue
                    && !migrationDefaults.bool(forKey: DefaultsKey.screenshotShortcutEnabled),
                    "a never-customized capture combination moves as the default combination")
             migrationDefaults.removeObject(forKey: DefaultsKey.orphanedCaptureShortcutMigrated)
             migrationDefaults.set(true, forKey: DefaultsKey.screenshotShortcutEnabled)
             migrationDefaults.set(false, forKey: DefaultsKey.screenOCRShortcutEnabled)
+            migrationDefaults.set(false, forKey: DefaultsKey.recorderShortcutEnabled)
+            migrationDefaults.set("control+option:42", forKey: DefaultsKey.recorderShortcut)
             migrationDefaults.set(true, forKey: AppFeature.colorPicker.availabilityKey)
             Defaults.migrateOrphanedCaptureShortcut(in: migrationDefaults)
-            suite.expect(migrationDefaults.bool(forKey: DefaultsKey.colorPickerShortcutEnabled)
-                   && migrationDefaults.string(forKey: DefaultsKey.colorPickerShortcut)
-                        == GlobalShortcut.screenshotDefault.storageValue
+            suite.expect(!migrationDefaults.bool(forKey: DefaultsKey.colorPickerShortcutEnabled)
+                   && migrationDefaults.string(forKey: DefaultsKey.recorderShortcut) == "control+option:42"
+                   && !migrationDefaults.bool(forKey: DefaultsKey.recorderShortcutEnabled)
                    && !migrationDefaults.bool(forKey: DefaultsKey.screenOCRShortcutEnabled)
-                   && !migrationDefaults.bool(forKey: DefaultsKey.screenshotShortcutEnabled),
-                   "a switched-off but customized shortcut is kept and the next tool takes over")
+                   && migrationDefaults.bool(forKey: DefaultsKey.screenshotShortcutEnabled),
+                   "a customized disabled recorder shortcut is preserved without assigning hidden companions")
             migrationDefaults.removePersistentDomain(forName: shortcutSuite)
         } else {
             suite.expect(false, "test suite defaults are available")

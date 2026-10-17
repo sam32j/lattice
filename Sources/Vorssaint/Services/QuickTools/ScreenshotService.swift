@@ -548,12 +548,11 @@ final class ScreenshotService: ObservableObject {
     }
 
     /// Re-opens the Quick View preview window from a pinned image.
-    func reopenPreview(image: CGImage, scale: CGFloat) {
+    func reopenPreview(image: CGImage, scale: CGFloat, anchorRect: CGRect) {
         let capture = ScreenshotSelectionController.Capture(
             image: image,
             scale: scale,
-            anchorRect: CGRect(origin: .zero, size: CGSize(width: CGFloat(image.width) / scale,
-                                                           height: CGFloat(image.height) / scale))
+            anchorRect: anchorRect
         )
         restorePreview(capture)
     }

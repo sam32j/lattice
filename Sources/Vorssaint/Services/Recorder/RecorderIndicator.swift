@@ -81,7 +81,9 @@ final class RecorderIndicator {
               tooltip: String,
               pauseTooltip: String,
               resumeTooltip: String,
-              stopTooltip: String) {
+              stopTooltip: String,
+              startTooltip: String,
+              discardTooltip: String) {
         guard panel == nil else { return }
         let host = screen ?? NSScreen.main ?? NSScreen.screens.first
         guard let host else { return }
@@ -91,6 +93,8 @@ final class RecorderIndicator {
         pill.pauseTooltip = pauseTooltip
         pill.resumeTooltip = resumeTooltip
         pill.stopTooltip = stopTooltip
+        pill.startTooltip = startTooltip
+        pill.discardTooltip = discardTooltip
         pill.onPause = { [weak self] in self?.onPause() }
         pill.onStop = { [weak self] in self?.onStop() }
         pill.onDiscard = { [weak self] in self?.onDiscard?() }
@@ -187,6 +191,8 @@ final class RecorderIndicator {
         var pauseTooltip = ""
         var resumeTooltip = ""
         var stopTooltip = ""
+        var startTooltip = ""
+        var discardTooltip = ""
         var isWaitingForStart = false
 
         private let dot = CALayer()
@@ -237,8 +243,8 @@ final class RecorderIndicator {
             dot.opacity = 0.4
             label.stringValue = "0:00"
             pauseButton.image = symbolImage("play.fill")
-            pauseButton.toolTip = "Start recording"
-            pauseButton.setAccessibilityLabel("Start recording")
+            pauseButton.toolTip = startTooltip
+            pauseButton.setAccessibilityLabel(startTooltip)
         }
 
         func setStarted() {
@@ -338,16 +344,16 @@ final class RecorderIndicator {
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             if isWaitingForStart {
-                pauseButton.toolTip = "Start recording"
-                pauseButton.setAccessibilityLabel("Start recording")
+                pauseButton.toolTip = startTooltip
+                pauseButton.setAccessibilityLabel(startTooltip)
             } else {
                 pauseButton.toolTip = pauseTooltip
                 pauseButton.setAccessibilityLabel(pauseTooltip)
             }
             stopButton.toolTip = stopTooltip
             stopButton.setAccessibilityLabel(stopTooltip)
-            trashButton.toolTip = "Delete recording"
-            trashButton.setAccessibilityLabel("Delete recording")
+            trashButton.toolTip = discardTooltip
+            trashButton.setAccessibilityLabel(discardTooltip)
         }
     }
 

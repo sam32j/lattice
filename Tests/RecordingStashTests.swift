@@ -22,6 +22,7 @@ enum RecordingStashTests {
         }
         func currentClearGeneration() -> Int { generation }
         func publish() {}
+        func pruneMissingEntries() {}
         static func recordingThumbnail(at url: URL) async -> CGImage? {
             thumbnailStarted?()
             return nil

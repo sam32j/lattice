@@ -113,9 +113,9 @@ final class ScreenCaptureService: ObservableObject {
 
     /// Opens the same chooser from every feature surface. A feature-specific
     /// button merely picks the initial mode; the person can switch before
-    /// selecting anything.
+    /// selecting anything with the tool buttons. R toggles screenshot/recording;
+    /// numeric keys do not change chooser tools.
     func capture(initial preferred: ScreenCaptureTool? = nil, fromShortcut: Bool = false) {
-        NSApp.activate(ignoringOtherApps: true)
         let recorder = ScreenRecorderService.shared
         if preferred == .recording, AppFeature.screenRecorder.isAvailable,
            recorder.stopOrCancelActiveCapture() {

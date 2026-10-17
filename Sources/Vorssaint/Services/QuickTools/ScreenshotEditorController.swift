@@ -608,7 +608,7 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                 || arrowStyleChanged
                 || textSizeChanged
         else { return }
-        registerUndo()
+        if newTextID != selectedID { registerUndo() }
         annotations[index].color = color
         if usesStroke { annotations[index].stroke = stroke }
         if annotations[index].tool == .arrow {
@@ -623,7 +623,8 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                 annotations[index].text,
                 at: annotations[index].rect.origin,
                 textSize: textSize,
-                scale: scale)
+                scale: scale,
+                boundingWidth: annotations[index].isBounded ? max(40, annotations[index].rect.width) : nil)
         }
     }
 
@@ -727,13 +728,16 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             draftID = annotation.id
         case .rect, .ellipse, .highlight, .pixelate, .redact, .text:
             if tool == .pixelate { ensureBlurSample(blurStyle, level: blurLevel) }
-            registerUndo()
-            dragRegistered = true
+            if tool != .text {
+                registerUndo()
+                dragRegistered = true
+            }
             let annotation = ScreenshotSupport.Annotation(
                 tool: tool, rect: CGRect(origin: point, size: .zero),
                 color: color, stroke: stroke, textSize: textSize,
                 blurLevel: blurLevel, blurStyle: blurStyle, blurTextOnly: blurTextOnly)
             annotations.append(annotation)
+            if tool == .text { isDirty = true }
             draftID = annotation.id
         case .sticker, .counter:
             break
@@ -872,16 +876,17 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             if isTap {
                 if let draftID, let draftIndex = annotations.firstIndex(where: { $0.id == draftID }) {
                     annotations.remove(at: draftIndex)
-                    if dragRegistered, !undoStack.isEmpty { undoStack.removeLast() }
+                    refreshUndoFlags()
+                    refreshDirtyState()
                 }
                 if selectExistingAnnotation(at: point) { return }
-                registerUndo()
                 let clampedX = max(0, min(point.x, imageSize.width - 40))
                 let clampedY = max(0, min(point.y, imageSize.height - 24))
                 var annotation = ScreenshotSupport.Annotation(
                     tool: .text, color: color, stroke: stroke, textSize: textSize, isBounded: false)
                 annotation.rect = CGRect(x: clampedX, y: clampedY, width: 0, height: 0)
                 annotations.append(annotation)
+                isDirty = true
                 newTextID = annotation.id
                 selectedID = annotation.id
                 editingTextID = annotation.id
@@ -890,7 +895,8 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                 let rect = annotations[draftIndex].rect
                 if rect.width < 15 || rect.height < 15 {
                     annotations.remove(at: draftIndex)
-                    if dragRegistered, !undoStack.isEmpty { undoStack.removeLast() }
+                    refreshUndoFlags()
+                    refreshDirtyState()
                     return
                 }
                 annotations[draftIndex].isBounded = true
@@ -1096,11 +1102,6 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         if isNew, trimmed.isEmpty {
             annotations.remove(at: index)
             if selectedID == id { selectedID = nil }
-            while let last = undoStack.last,
-                  last.annotations.contains(where: { $0.id == id }) {
-                undoStack.removeLast()
-            }
-            if !undoStack.isEmpty { undoStack.removeLast() }
             newTextID = nil
             refreshUndoFlags()
             refreshDirtyState()
@@ -1110,7 +1111,14 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             newTextID = nil
             return
         }
-        if !isNew { registerUndo() }
+        if isNew {
+            // The live draft is not an edit until nonempty text commits.
+            let draft = annotations.remove(at: index)
+            registerUndo()
+            annotations.insert(draft, at: index)
+        } else {
+            registerUndo()
+        }
         guard !trimmed.isEmpty else {
             annotations.remove(at: index)
             if selectedID == id { selectedID = nil }

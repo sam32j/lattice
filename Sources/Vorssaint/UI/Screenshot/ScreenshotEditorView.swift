@@ -1904,12 +1904,5 @@ private final class EditorTextView: NSTextView {
         super.keyDown(with: event)
     }
 
-    override func flagsChanged(with event: NSEvent) {
-        super.flagsChanged(with: event)
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        if flags.contains([.command, .shift]) {
-            onCommit?()
-        }
-    }
 }
 
