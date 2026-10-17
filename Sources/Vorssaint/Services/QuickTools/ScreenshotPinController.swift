@@ -9,6 +9,7 @@ final class ScreenshotPinController {
     private var pins: [ScreenshotPinWindow] = []
     private var escapeMonitor: Any?
     private var gestureMonitor: Any?
+    private var localGestureMonitor: Any?
     private var hoverTimer: Timer?
     private var preferenceObserver: NSObjectProtocol?
     private var dragObservers: [NSObjectProtocol] = []
@@ -47,6 +48,10 @@ final class ScreenshotPinController {
         pin.onSave = { [weak pin] in pin.map { Self.save($0) } }
         pin.onCloseAll = { [weak self] in self?.closeAll() }
         pin.onClickThroughChanged = { [weak self] in self?.refreshEscapeMonitor() }
+        pin.onReopenPreview = { [weak pin] in
+            guard let pin else { return }
+            ScreenshotService.shared.reopenPreview(image: pin.image, scale: pin.captureScale)
+        }
         let offset = CGFloat(pins.count % 5) * 26
         pin.setFrameOrigin(CGPoint(x: pin.frame.minX + offset, y: pin.frame.minY - offset))
         pins.append(pin)
@@ -103,18 +108,47 @@ final class ScreenshotPinController {
     }
 
     private func refreshGestureMonitor() {
-        if !pins.isEmpty, gestureMonitor == nil {
-            gestureMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.gesture, .magnify]) { [weak self] event in
-                guard let self else { return }
-                let location = NSEvent.mouseLocation
-                guard let pin = self.pins.first(where: {
-                    $0.frame.contains(location) && !$0.isClosed && !$0.isPositionLocked && !$0.ignoresMouseEvents
-                }) else { return }
-                pin.handleGestureEvent(event)
+        if !pins.isEmpty {
+            if gestureMonitor == nil {
+                gestureMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.gesture, .magnify]) { [weak self] event in
+                    guard let self else { return }
+                    let location = NSEvent.mouseLocation
+                    guard let pin = self.pins.first(where: {
+                        $0.frame.contains(location) && !$0.isClosed && !$0.isPositionLocked && !$0.ignoresMouseEvents
+                    }) else { return }
+                    if !NSApp.isActive || !pin.isKeyWindow {
+                        NSApp.activate(ignoringOtherApps: true)
+                        pin.makeKeyAndOrderFront(nil)
+                        pin.makeFirstResponder(pin.contentView)
+                    }
+                    pin.handleGestureEvent(event)
+                }
             }
-        } else if pins.isEmpty, let monitor = gestureMonitor {
-            NSEvent.removeMonitor(monitor)
-            gestureMonitor = nil
+            if localGestureMonitor == nil {
+                localGestureMonitor = NSEvent.addLocalMonitorForEvents(matching: [.gesture, .magnify]) { [weak self] event in
+                    guard let self else { return event }
+                    let location = NSEvent.mouseLocation
+                    if let pin = self.pins.first(where: {
+                        $0.frame.contains(location) && !$0.isClosed && !$0.isPositionLocked && !$0.ignoresMouseEvents
+                    }) {
+                        if event.type == .magnify {
+                            pin.magnify(with: event)
+                            return nil
+                        }
+                        pin.handleGestureEvent(event)
+                    }
+                    return event
+                }
+            }
+        } else {
+            if let monitor = gestureMonitor {
+                NSEvent.removeMonitor(monitor)
+                gestureMonitor = nil
+            }
+            if let monitor = localGestureMonitor {
+                NSEvent.removeMonitor(monitor)
+                localGestureMonitor = nil
+            }
         }
     }
 

@@ -49,7 +49,6 @@ final class ScreenshotPinChrome {
         modePanel.setFrameOrigin(CGPoint(x: pin.frame.maxX - 80, y: pin.frame.maxY - 46))
         dragPanel.setFrameOrigin(CGPoint(x: pin.frame.midX - 50, y: pin.frame.minY + 8))
         feedbackPanel.setFrameOrigin(CGPoint(x: pin.frame.midX - 38, y: pin.frame.midY - 14))
-        for panel in panels { panel.contentView?.layoutSubtreeIfNeeded() }
     }
 
     func setControlsVisible(_ visible: Bool) {
