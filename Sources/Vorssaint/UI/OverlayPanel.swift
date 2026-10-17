@@ -9,5 +9,13 @@ import AppKit
 /// overlays they leave alone are undescribed windows. It stays an accessible
 /// window for assistive technology.
 class OverlayPanel: NSPanel {
+    override init(contentRect: NSRect,
+                   styleMask style: NSWindow.StyleMask,
+                   backing backingStoreType: NSWindow.BackingStoreType,
+                   defer flag: Bool) {
+        super.init(contentRect: contentRect, styleMask: style, backing: backingStoreType, defer: flag)
+        animationBehavior = .none
+    }
+
     override func accessibilitySubrole() -> NSAccessibility.Subrole? { .unknown }
 }
