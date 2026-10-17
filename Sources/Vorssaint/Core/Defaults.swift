@@ -703,6 +703,7 @@ enum DefaultsKey {
     static let screenshotPreviewEnabled = "screenshotPreviewEnabled"
     static let screenshotPreviewDuration = "screenshotPreviewDuration"
     static let screenshotSharingEnabled = "screenshotSharingEnabled"
+    static let screenshotPlayShutterSound = "screenshotPlayShutterSound"
     // Developer-only endpoint for an isolated test tunnel. The official app
     // ignores it, and settings backups must never carry it to another Mac.
     static let screenshotSharingDeveloperEndpoint = "screenshotSharingDeveloperEndpoint"
@@ -713,6 +714,8 @@ enum DefaultsKey {
     static let recorderShortcutEnabled = "recorderShortcutEnabled"
     static let recorderShortcut = "recorderShortcut"
     static let recorderCountdown = "recorderCountdown"
+    static let recorderPlaySound = "recorderPlaySound"
+    static let recorderImmediateStartAfterSelection = "recorderImmediateStartAfterSelection"
     static let recorderQuality = "recorderQuality"
     static let recorderFrameRate = "recorderFrameRate"
     static let recorderSystemAudio = "recorderSystemAudio"
@@ -1809,6 +1812,8 @@ enum Defaults {
         DefaultsKey.recorderShortcutEnabled: false,
         DefaultsKey.recorderShortcut: GlobalShortcut.screenRecorderDefault.storageValue,
         DefaultsKey.recorderCountdown: 3,
+        DefaultsKey.recorderPlaySound: true,
+        DefaultsKey.recorderImmediateStartAfterSelection: true,
         DefaultsKey.recorderQuality: RecorderSupport.Quality.balanced.rawValue,
         DefaultsKey.recorderFrameRate: 60,
         DefaultsKey.recorderSystemAudio: true,
@@ -1885,6 +1890,7 @@ enum Defaults {
         DefaultsKey.screenshotPreviewEnabled: true,
         DefaultsKey.screenshotPreviewDuration: ScreenshotSupport.defaultConfirmationPreviewDuration,
         DefaultsKey.screenshotSharingEnabled: true,
+        DefaultsKey.screenshotPlayShutterSound: true,
         DefaultsKey.panelUtilityScreenshot: true,
         DefaultsKey.windowLayoutShortcutsEnabled: false,
         DefaultsKey.windowDirectionalEnabled: false,
