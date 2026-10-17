@@ -82,6 +82,11 @@ struct MetricsTests {
             ("repository", { RepositoryFeatureTests.run(suite) }),
             ("screenshot-pins", { ScreenshotPinGestureTests.run(suite) }),
             ("screenshots", {
+                SettingsSidebarIdentityTests.run(suite)
+                CompactShortcutValidationTests.run(suite)
+                ScreenshotTextDraftTests.run(suite)
+                FeatureAvailabilityTransitionTests.run(suite)
+                CaptureRetentionTests.run(suite)
                 ScreenshotTextEditorTests.run(suite)
                 ScreenTextCompletionTests.run(suite)
                 ScreenshotOCRControlTests.run(suite)
@@ -159,6 +164,7 @@ struct MetricsTests {
             ("recording", {
                 RecorderSaveStateTests.run(suite)
                 RecorderCloseSafetyTests.run(suite)
+                RecorderDeliveryTests.run(suite)
                 RecorderPreparationTests.run(suite)
                 RecorderSampleTimingTests.run(suite)
                 RecorderWriterTests.run(suite)

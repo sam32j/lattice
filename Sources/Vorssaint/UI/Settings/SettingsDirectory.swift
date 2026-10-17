@@ -118,10 +118,10 @@ enum SettingsDirectory {
                                    items: Array(core.prefix(3)) + island + Array(core.dropFirst(3))),
             SettingsSidebarSection(id: 5, title: FeatureStrings.screenshot(language).screenCaptureTitle, items: rows(5)),
             SettingsSidebarSection(id: 4, title: categories.utilities, items: byGroup.utilities),
-            SettingsSidebarSection(id: 6, title: hub.groupSound, items: sound + byGroup.sound),
-            SettingsSidebarSection(id: 7, title: hub.groupEnergyDisplay, items: energy),
+            SettingsSidebarSection(id: 1006, title: hub.groupSound, items: sound + byGroup.sound),
+            SettingsSidebarSection(id: 1007, title: hub.groupEnergyDisplay, items: energy),
             SettingsSidebarSection(id: 1, title: hub.groupWindowsDock, items: byGroup.windowsDock),
-            SettingsSidebarSection(id: 8, title: hub.groupMouseKeyboard, items: byGroup.mouseKeyboard),
+            SettingsSidebarSection(id: 1008, title: hub.groupMouseKeyboard, items: byGroup.mouseKeyboard),
             SettingsSidebarSection(id: 2, title: categories.files, items: rows(2) + byGroup.files),
         ]
         let remaining = grouped.filter { ![0, 1, 2, 4, 5].contains($0.id) }

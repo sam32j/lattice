@@ -43,7 +43,8 @@ enum RecorderPreparationTests {
         func hide() { hidden = true }
         func showRegionGuide(for region: RecorderSupport.Region) {}
         func show(on screen: NSScreen?, tooltip: String, pauseTooltip: String,
-                  resumeTooltip: String, stopTooltip: String) {}
+                  resumeTooltip: String, stopTooltip: String,
+                  startTooltip: String, discardTooltip: String) {}
         func setWaitingForStart() {}
     }
     typealias RecorderIndicator = Indicator
@@ -105,14 +106,7 @@ enum RecorderPreparationTests {
         var pendingStartGeneration = 1
         var starts = 0
         var countdownRequests = 0
-        struct Strings {
-            let recordFailed = "failed"
-            let indicatorTooltip = "recording"
-            let pauseButton = "pause"
-            let resumeButton = "resume"
-            let stopButton = "stop"
-        }
-        let strings = Strings()
+        let strings = FeatureStrings.recorder(.enUS)
         func startPreparedRecording(_ session: RecorderSession, frameRate: Int,
                                     capturesSystemAudio: Bool, generation: Int) {
             self.session = session

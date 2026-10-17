@@ -48,3 +48,28 @@ final class ScreenshotPinPinchTracker {
         lastDistance = nil
     }
 }
+
+/// AppKit can describe one pinch through both raw touches and magnify events.
+/// The first stream with a usable delta owns the gesture until it ends.
+struct ScreenshotPinGestureSource {
+    enum Source { case touches, magnify }
+    private var owner: Source?
+    private var ended = false
+
+    mutating func begin(_ source: Source) {
+        if ended || owner == source {
+            owner = nil
+            ended = false
+        }
+    }
+
+    mutating func accepts(_ source: Source) -> Bool {
+        guard !ended else { return false }
+        if owner == nil { owner = source }
+        return owner == source
+    }
+
+    mutating func finish(_ source: Source) {
+        if owner == source { ended = true }
+    }
+}

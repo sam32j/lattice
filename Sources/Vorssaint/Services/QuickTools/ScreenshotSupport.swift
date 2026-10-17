@@ -15,20 +15,6 @@ enum ScreenCaptureTool: String, CaseIterable {
     case text
     case color
 
-    var shortcutKey: String {
-        switch self {
-        case .screenshot: return "1"
-        case .recording: return "2"
-        case .text: return "3"
-        case .color: return "4"
-        }
-    }
-
-    static func matchingShortcut(_ characters: String?) -> ScreenCaptureTool? {
-        guard let characters else { return nil }
-        return allCases.first { $0.shortcutKey == characters }
-    }
-
     var feature: AppFeature {
         switch self {
         case .screenshot: return .screenshot

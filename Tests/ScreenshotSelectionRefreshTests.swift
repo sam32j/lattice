@@ -125,6 +125,11 @@ enum ScreenshotSelectionRefreshContract {
         }
         /// The scale a window capture reports, like a composite recaptured
         /// on a 2x display; `nil` echoes the scale asked for.
+        static var multiWindowCaptures = 0
+        static func captureMultipleWindows(_ ids: [CGWindowID], scale: CGFloat) async -> (image: CGImage, scale: CGFloat)? {
+            multiWindowCaptures += 1
+            return (CGImage(excluded: []), scale)
+        }
         static var windowCaptureScale: CGFloat?
         static func captureWindow(_ id: CGWindowID, scale: CGFloat) async -> (image: CGImage, scale: CGFloat)? {
             (CGImage(excluded: []), windowCaptureScale ?? scale)
@@ -175,7 +180,6 @@ enum ScreenshotSelectionRefreshContract {
         var selectedWindows: [CGWindowID: (window: ScreenshotSupport.PickableWindow, panel: ScreenshotOverlayPanel)] = [:]
         var hasSelectedWindows: Bool { !selectedWindows.isEmpty }
         func clearSelectedWindows() { selectedWindows.removeAll() }
-        func confirmSelectedWindows() {}
         var panels: [ScreenshotOverlayPanel]
         var outcome: Outcome?
         var currentPointerLocation: CGPoint? = CGPoint(x: 23, y: 61)
@@ -254,6 +258,15 @@ enum ScreenshotSelectionRefreshContract {
         ScreenshotCaptureEngine.requests = []
         let previousRegion = Chooser.lastRegion
         defer { Chooser.lastRegion = previousRegion }
+        let multi = Chooser(.screenshot)
+        let panel = multi.panels[0]
+        multi.selectedWindows = [11: (.init(windowID: 11, frame: panel.screenFrame), panel)]
+        ScreenshotCaptureEngine.multiWindowCaptures = 0
+        multi.confirmSelectedWindows()
+        multi.confirmSelectedWindows()
+        await Task.yield()
+        expect(ScreenshotCaptureEngine.multiWindowCaptures == 1,
+               "duplicate Shift-release confirmations launch exactly one multi-window capture")
         let color = Chooser(.color)
         color.confirmSelectionWithKeyboard()
         if case .color(let picked) = color.outcome {

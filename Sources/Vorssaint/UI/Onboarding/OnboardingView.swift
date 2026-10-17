@@ -237,7 +237,7 @@ private struct PurposeStep: View {
                     .tracking(1)
                 Spacer()
                 Text(String(format: hub.activeCountFormat,
-                            selectedFeatures.count, FeatureRuntime.shared.installableCount))
+                            selectedFeatures.intersection(AppFeature.hubInstallableFeatures).count, FeatureRuntime.shared.installableCount))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -342,6 +342,9 @@ private struct PurposeStep: View {
             selectedPreset = nil
             if selected {
                 selectedFeatures.remove(feature)
+                if feature == .screenshot {
+                    selectedFeatures.subtract([.colorPicker, .screenOCR])
+                }
                 if feature == .notch {
                     selectedFeatures.subtract(AppFeature.dynamicIslandExtensions)
                 }

@@ -53,6 +53,15 @@ enum ScreenshotTextEditorTests {
         updated.didChangeText()
         suite.expect(firstText == "first" && nextText == "edited next",
                      "native typing updates the current annotation binding instead of the previous one")
+        if let modifiers = NSEvent.keyEvent(with: .flagsChanged, location: .zero,
+                                           modifierFlags: [.command, .shift], timestamp: 0,
+                                           windowNumber: window.windowNumber, context: nil,
+                                           characters: "", charactersIgnoringModifiers: "",
+                                           isARepeat: false, keyCode: 56) {
+            updated.flagsChanged(with: modifiers)
+        }
+        suite.expect(firstCommits == 0 && nextCommits == 0,
+                     "holding Command and Shift keeps the annotation open for editing shortcuts")
         if let escape = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [],
                                         timestamp: 0, windowNumber: window.windowNumber, context: nil,
                                         characters: "\u{1b}", charactersIgnoringModifiers: "\u{1b}",

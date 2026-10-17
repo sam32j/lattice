@@ -1097,13 +1097,6 @@ enum ScreenshotFeatureTests {
                     selected: .screenshot,
                     isAvailable: { _ in false }),
                "a capture result is routed only while its selected feature remains installed")
-        suite.expect(ScreenCaptureTool.allCases.map(\.shortcutKey) == ["1", "2", "3", "4"]
-                && ScreenCaptureTool.matchingShortcut("1") == .screenshot
-                && ScreenCaptureTool.matchingShortcut("2") == .recording
-                && ScreenCaptureTool.matchingShortcut("3") == .text
-                && ScreenCaptureTool.matchingShortcut("4") == .color
-                && ScreenCaptureTool.matchingShortcut("5") == nil,
-               "number keys select the same capture mode shown in the chooser")
         let liveScreenshotPolicy = ScreenshotSupport.unifiedCapturePolicy(
             for: .screenshot,
             screenshotFreeze: false,

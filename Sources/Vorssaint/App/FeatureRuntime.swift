@@ -96,8 +96,8 @@ final class FeatureRuntime: ObservableObject {
         return !available || feature.isHardwareSupported
     }
 
-    /// Flipping availability runs each feature's binding immediately, in the
-    /// order given: off tears every resource down on the spot, while a first
+    /// Availability is written as a batch before bindings run, so companions
+    /// observe the same parent state. Off tears resources down, while a first
     /// install turns on the feature's main control. Saved choices survive a
     /// reinstall. One row, the "all" buttons and the Dynamic Island leaving
     /// with its extensions all pass through here, with one revision bump.
@@ -105,7 +105,6 @@ final class FeatureRuntime: ObservableObject {
     /// intrusive features nobody picked, such as focus follows mouse.
     func setAvailable(_ features: [AppFeature], _ available: Bool,
                       enablingFirstInstalls: Bool = true) {
-        var changed = false
         var requestedList = features
         if features.contains(.screenshot) {
             for companion in [AppFeature.colorPicker, AppFeature.screenOCR] {
@@ -121,7 +120,8 @@ final class FeatureRuntime: ObservableObject {
             ? requestedList + AppFeature.dynamicIslandInitialExtensions.filter { !requestedList.contains($0) }
             : requestedList
         let savedValues = savedPreferences()
-        for feature in requested where mayFlip(feature, to: available) {
+        let changed = requested.filter { mayFlip($0, to: available) }
+        for feature in changed {
             if available && enablingFirstInstalls {
                 feature.enableOnFirstInstall(in: .standard, savedValues: savedValues)
             }
@@ -130,13 +130,12 @@ final class FeatureRuntime: ObservableObject {
                 loadedThisSession.insert(feature)
                 offerableThisSession.remove(feature)
             }
-            Self.bindings[feature]?()
-            changed = true
         }
+        for feature in changed { Self.bindings[feature]?() }
         if firstIslandInstall && AppFeature.notch.isAvailable {
             UserDefaults.standard.set(true, forKey: DefaultsKey.notchInitialExtensionsInstalled)
         }
-        if changed { finishAvailabilityChange() }
+        if !changed.isEmpty { finishAvailabilityChange() }
     }
 
     /// Applies a hub preset: its features become the installed set, with
@@ -151,12 +150,18 @@ final class FeatureRuntime: ObservableObject {
     /// availability layer as the hub, so unselected features disappear without
     /// losing any of their settings.
     func replaceAvailable(with selected: Set<AppFeature>, enabling keys: [String] = []) {
+        var selected = selected
+        if selected.contains(.screenshot) {
+            selected.formUnion([.colorPicker, .screenOCR])
+        } else {
+            selected.subtract([.colorPicker, .screenOCR])
+        }
         for key in keys {
             UserDefaults.standard.set(true, forKey: key)
         }
         let savedValues = savedPreferences()
-        for feature in AppFeature.allCases
-        where mayFlip(feature, to: selected.contains(feature)) {
+        let changed = AppFeature.allCases.filter { mayFlip($0, to: selected.contains($0)) }
+        for feature in changed {
             let joins = selected.contains(feature)
             if joins {
                 feature.enableOnFirstInstall(in: .standard, savedValues: savedValues)
@@ -166,14 +171,13 @@ final class FeatureRuntime: ObservableObject {
                 loadedThisSession.insert(feature)
                 offerableThisSession.remove(feature)
             }
-            Self.bindings[feature]?()
         }
+        for feature in changed { Self.bindings[feature]?() }
         // Features that stayed installed still need a sync: their enable
-        // keys may have just flipped on. Syncs are idempotent, so a repeat
-        // for the ones handled above costs nothing. A selected feature the
-        // gate refused is not installed, so it is skipped like any other
+        // keys may have just flipped on. Changed features were synced above.
+        // A selected feature the gate refused is skipped like any other
         // unavailable one and its service never comes to life.
-        for feature in selected where feature.isAvailable {
+        for feature in selected where feature.isAvailable && !changed.contains(feature) {
             Self.bindings[feature]?()
         }
         if selected.contains(.notch) && AppFeature.notch.isAvailable {

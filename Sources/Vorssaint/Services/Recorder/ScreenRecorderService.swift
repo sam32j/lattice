@@ -258,6 +258,7 @@ final class ScreenRecorderService: ObservableObject {
     @Published private(set) var isPaused = false
     @Published private(set) var elapsedSeconds = 0
     private var session: RecorderSession?
+    private var pendingDeliveryTakeIDs = Set<UUID>()
     private var indicator: RecorderIndicator?
     private var editors: [RecorderEditorController] = []
     private var mediaOwnedEditorIDs: Set<ObjectIdentifier> = []
@@ -412,7 +413,9 @@ final class ScreenRecorderService: ObservableObject {
                            tooltip: strings.indicatorTooltip,
                            pauseTooltip: strings.pauseButton,
                            resumeTooltip: strings.resumeButton,
-                           stopTooltip: strings.stopButton)
+                           stopTooltip: strings.stopButton,
+                           startTooltip: strings.startButton,
+                           discardTooltip: strings.discardButton)
             indicator.setWaitingForStart()
         }
     }
@@ -553,7 +556,9 @@ final class ScreenRecorderService: ObservableObject {
                        tooltip: strings.indicatorTooltip,
                        pauseTooltip: strings.pauseButton,
                        resumeTooltip: strings.resumeButton,
-                       stopTooltip: strings.stopButton)
+                       stopTooltip: strings.stopButton,
+                       startTooltip: strings.startButton,
+                       discardTooltip: strings.discardButton)
         indicator.update(elapsed: RecorderSupport.elapsedLabel(seconds: 0))
         self.indicator = indicator
 
@@ -745,9 +750,16 @@ final class ScreenRecorderService: ObservableObject {
     /// sound and format are decided, or goes straight to a file for whoever
     /// only wanted the raw recording.
     private func deliver(_ take: RecorderTakeStore.Take, reason: String?) {
+        // A low-space stop must not make another full-sized history copy.
+        guard reason == nil else {
+            saveDirect(take, reason: reason)
+            return
+        }
+        pendingDeliveryTakeIDs.insert(take.id)
         RecentCaptureService.shared.stashRecording(from: take.videoURL) { [weak self] preservedURL in
             guard let self else { return }
-            if reason == nil, UserDefaults.standard.bool(forKey: DefaultsKey.recorderOpenEditor),
+            defer { self.pendingDeliveryTakeIDs.remove(take.id) }
+            if UserDefaults.standard.bool(forKey: DefaultsKey.recorderOpenEditor),
                self.openEditor(with: take, preservedRecordingURL: preservedURL) {
                 if preservedURL == nil {
                     QuickToolHUD.show(icon: "record.circle", message: self.strings.exportFailed)
@@ -828,7 +840,7 @@ final class ScreenRecorderService: ObservableObject {
     private func sweepTakes() {
         // Read on the main thread, where the editors live, and handed over as
         // a value: a recording with a window on screen is never swept.
-        var owned = Set(editors.map(\.takeID))
+        var owned = Set(editors.map(\.takeID)).union(pendingDeliveryTakeIDs)
         if let session { owned.insert(session.take.id) }
         DispatchQueue.global(qos: .utility).async {
             RecorderTakeStore.shared.sweep(keeping: owned)
