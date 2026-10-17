@@ -1397,7 +1397,7 @@ enum ScreenshotSupport {
         case select, arrow, pixelate, crop, text, sticker, rect, highlight,
              freehand, line, ellipse, counter, redact
 
-        static let shortcutLimit = 9
+        static let shortcutLimit = 10
 
         static var defaultOrderStorage: String {
             allCases.map(\.rawValue).joined(separator: ",")
@@ -1437,8 +1437,12 @@ enum ScreenshotSupport {
         static func shortcutTool(number: Int,
                                  orderRaw: String?,
                                  enabled: Bool) -> Tool? {
-            guard enabled, (1...shortcutLimit).contains(number) else { return nil }
+            guard enabled else { return nil }
             let order = ordered(from: orderRaw)
+            if number == 0 {
+                return order.indices.contains(9) ? order[9] : nil
+            }
+            guard (1...9).contains(number) else { return nil }
             let index = number - 1
             return order.indices.contains(index) ? order[index] : nil
         }
@@ -1450,7 +1454,7 @@ enum ScreenshotSupport {
                   let index = ordered(from: orderRaw).firstIndex(of: tool),
                   index < shortcutLimit
             else { return nil }
-            return index + 1
+            return index == 9 ? 0 : index + 1
         }
 
         static func bindings(from raw: String?) -> [Tool: GlobalShortcut] {
@@ -1505,7 +1509,7 @@ enum ScreenshotSupport {
             let bindings = activeBindings(from: bindingsRaw, capsLockOn: capsLockOn)
             // The event's printed digit is authoritative, including input
             // methods whose output differs from the underlying keycap table.
-            if !modifiers.hasPrimaryModifier, let number, (1...shortcutLimit).contains(number) {
+            if !modifiers.hasPrimaryModifier, let number, (0...9).contains(number) {
                 guard let tool = shortcutTool(number: number, orderRaw: orderRaw, enabled: true),
                       bindings[tool] == nil else { return nil }
                 return tool

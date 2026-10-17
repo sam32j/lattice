@@ -44,18 +44,24 @@ struct ScreenshotToolOrderControls: View {
                 ForEach(orderedTools, id: \.self) { tool in
                     toolRow(tool)
                     if tool != orderedTools.last {
-                        Divider().padding(.leading, 28)
+                        Divider().padding(.leading, 36)
                     }
                 }
             }
 
-            Text(errorText ?? (recordingTool == nil ? " "
-                : ShortcutRecordingCaption.text(l10n.s, canClear: true)))
-                .font(.caption)
-                .foregroundStyle(errorText == nil ? Color.secondary : .orange)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, minHeight: 32, alignment: .topLeading)
-                .accessibilityHidden(errorText == nil && recordingTool == nil)
+            if let errorText {
+                Text(errorText)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            } else if recordingTool != nil {
+                Text(ShortcutRecordingCaption.text(l10n.s, canClear: true))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
 
             HStack {
                 Spacer()
@@ -66,16 +72,32 @@ struct ScreenshotToolOrderControls: View {
                 }
                 .disabled(orderRaw == ScreenshotSupport.Tool.defaultOrderStorage && bindingsRaw.isEmpty)
             }
+            .padding(.top, 4)
         }
         .onChange(of: l10n.language) { _, _ in errorText = nil }
         .onAppear { keyboard.start() }
         .onDisappear { keyboard.stop() }
     }
 
+    private func slotBadge(for index: Int) -> String {
+        if index < 9 {
+            return "\(index + 1)"
+        } else if index == 9 {
+            return "0"
+        } else {
+            return "–"
+        }
+    }
+
     private func toolRow(_ tool: ScreenshotSupport.Tool) -> some View {
         let index = orderedTools.firstIndex(of: tool) ?? 0
 
         return HStack(spacing: 7) {
+            Text(slotBadge(for: index))
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundStyle(index < ScreenshotSupport.Tool.shortcutLimit ? Color.secondary : Color.secondary.opacity(0.3))
+                .frame(width: 14, alignment: .center)
+
             Image(systemName: tool.screenshotSymbolName)
                 .foregroundStyle(.secondary)
                 .frame(width: 20)
@@ -110,27 +132,90 @@ struct ScreenshotToolOrderControls: View {
                 .opacity(shortcutsEnabled ? 1 : 0.48)
 
             Button {
-                move(tool, by: -1)
+                move(tool, to: 0)
+            } label: {
+                Image(systemName: "arrow.up.to.line")
+                    .font(.system(size: 10, weight: .semibold))
+                    .frame(width: 20, height: 22)
+            }
+            .buttonStyle(.borderless)
+            .disabled(index == 0)
+            .help("Move to Top")
+            .accessibilityLabel("Move \(tool.screenshotTitle(strings)) to Top")
+
+            Button {
+                if NSEvent.modifierFlags.contains(.option) {
+                    move(tool, to: 0)
+                } else {
+                    move(tool, by: -1)
+                }
             } label: {
                 Image(systemName: "chevron.up")
                     .frame(width: 20, height: 22)
             }
             .buttonStyle(.borderless)
             .disabled(index == 0)
+            .help("Move Up (⌥-click for Top)")
             .accessibilityLabel(movementStrings.moveUp)
 
             Button {
-                move(tool, by: 1)
+                if NSEvent.modifierFlags.contains(.option) {
+                    move(tool, to: orderedTools.count - 1)
+                } else {
+                    move(tool, by: 1)
+                }
             } label: {
                 Image(systemName: "chevron.down")
                     .frame(width: 20, height: 22)
             }
             .buttonStyle(.borderless)
             .disabled(index == orderedTools.count - 1)
+            .help("Move Down (⌥-click for Bottom)")
             .accessibilityLabel(movementStrings.moveDown)
         }
         .frame(minHeight: 26)
         .contentShape(Rectangle())
+        .contextMenu {
+            Button {
+                move(tool, to: 0)
+            } label: {
+                Label("Move to Top", systemImage: "arrow.up.to.line")
+            }
+            .disabled(index == 0)
+
+            Button {
+                move(tool, by: -1)
+            } label: {
+                Label(movementStrings.moveUp, systemImage: "chevron.up")
+            }
+            .disabled(index == 0)
+
+            Button {
+                move(tool, by: 1)
+            } label: {
+                Label(movementStrings.moveDown, systemImage: "chevron.down")
+            }
+            .disabled(index == orderedTools.count - 1)
+
+            Button {
+                move(tool, to: orderedTools.count - 1)
+            } label: {
+                Label("Move to Bottom", systemImage: "arrow.down.to.line")
+            }
+            .disabled(index == orderedTools.count - 1)
+
+            Divider()
+
+            Menu("Move to Slot") {
+                ForEach(0..<orderedTools.count, id: \.self) { targetIndex in
+                    let label = targetIndex < 9 ? "Slot \(targetIndex + 1) (Key \(targetIndex + 1))" : (targetIndex == 9 ? "Slot 10 (Key 0)" : "Slot \(targetIndex + 1)")
+                    Button(label) {
+                        move(tool, to: targetIndex)
+                    }
+                    .disabled(targetIndex == index)
+                }
+            }
+        }
     }
 
     private func shortcutRecorder(for tool: ScreenshotSupport.Tool) -> some View {
@@ -170,6 +255,17 @@ struct ScreenshotToolOrderControls: View {
         guard order.indices.contains(destination) else { return }
         withAnimation(.easeInOut(duration: 0.14)) {
             order.swapAt(index, destination)
+            persist(order)
+        }
+    }
+
+    private func move(_ tool: ScreenshotSupport.Tool, to destination: Int) {
+        var order = orderedTools
+        guard let index = order.firstIndex(of: tool), index != destination else { return }
+        guard order.indices.contains(destination) else { return }
+        withAnimation(.easeInOut(duration: 0.16)) {
+            order.remove(at: index)
+            order.insert(tool, at: destination)
             persist(order)
         }
     }
