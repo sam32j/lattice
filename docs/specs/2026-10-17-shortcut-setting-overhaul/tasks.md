@@ -23,7 +23,7 @@ Add expectations that the reusable compact field owns fixed dimensions, inline a
 
 **Step 2: Run the focused test and verify failure**
 
-Run: `./build.sh --test-suite=CompactShortcutValidationTests`
+Run: `./build.sh --test-suite=screenshots`
 
 Expected: FAIL because the shared compact field and extracted source do not exist.
 
@@ -33,7 +33,7 @@ Move compact-only types out of `ShortcutRecorderButton.swift`. Introduce a reusa
 
 **Step 4: Run the focused test and verify success**
 
-Run: `./build.sh --test-suite=CompactShortcutValidationTests`
+Run: `./build.sh --test-suite=screenshots`
 
 Expected: PASS.
 
@@ -64,7 +64,7 @@ Cover enabled and disabled values, reset and clear behavior, self-conflict exclu
 
 **Step 2: Run the focused test and verify failure**
 
-Run: `./build.sh --test-suite=CompactShortcutValidationTests`
+Run: `./build.sh --test-suite=screenshots`
 
 Expected: FAIL on parity expectations that still depend on the legacy row.
 
@@ -74,9 +74,9 @@ Preserve its public initializer, labels, captions, Super Key alternative, status
 
 **Step 4: Run focused regressions**
 
-Run: `./build.sh --test-suite=CompactShortcutValidationTests`
+Run: `./build.sh --test-suite=screenshots`
 
-Run: `./build.sh --test-suite=UtilitiesFeatureTests`
+Run: `./build.sh --test-suite=utilities`
 
 Expected: PASS.
 
@@ -104,11 +104,11 @@ Cover dynamic identity, current-owner exclusion, modifier-only directional captu
 
 **Step 2: Run affected suites and verify failure**
 
-Run: `./build.sh --test-suite=WindowLayoutFeatureTests`
+Run: `./build.sh --test-suite=window-layout`
 
-Run: `./build.sh --test-suite=CommandBarFeatureTests`
+Run: `./build.sh --test-suite=command-bar`
 
-Run: `./build.sh --test-suite=PointerInputFeatureTests`
+Run: `./build.sh --test-suite=pointer-input`
 
 Expected: FAIL on new compact-adapter expectations.
 
@@ -118,7 +118,7 @@ Give each dynamic owner a stable recording identity and callbacks for current va
 
 **Step 4: Run all affected suites**
 
-Run the three commands from Step 2 plus `./build.sh --test-suite=UtilitiesFeatureTests`.
+Run the three commands from Step 2 plus `./build.sh --test-suite=utilities`.
 
 Expected: PASS.
 
@@ -141,9 +141,9 @@ Assert that tool shortcuts use the shared compact field at the narrow width, ret
 
 **Step 2: Run screenshot-focused tests and verify failure**
 
-Run: `./build.sh --test-suite=ScreenshotToolShortcutTests`
+Run: `./build.sh --test-suite=keyboard`
 
-Run: `./build.sh --test-suite=ScreenshotFeatureTests`
+Run: `./build.sh --test-suite=screenshots`
 
 Expected: FAIL on shared-field and compact-copy expectations.
 
@@ -153,7 +153,7 @@ Replace duplicated field chrome with `CompactShortcutField`, keep tool key seman
 
 **Step 4: Run screenshot-focused regressions**
 
-Run both commands from Step 2 and `./build.sh --test-suite=DirectCaptureRequirementsComprehensiveTests`.
+Run both commands from Step 2 and `./build.sh --test-suite=capture-requirements`.
 
 Expected: PASS.
 

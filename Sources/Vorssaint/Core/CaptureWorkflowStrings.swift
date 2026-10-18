@@ -36,7 +36,7 @@ struct CaptureWorkflowStrings {
                 recordSound: "Play record sound", recentRecordings: "Recent recordings", unlimited: "Unlimited",
                 scroll: "Scroll", recordWindow: "Click to record window",
                 selectedWindowsFormat: "Selected windows: %d · Release Shift to capture",
-                shortcutUnavailable: "Shortcut Unavailable")
+                shortcutUnavailable: "Unavailable")
         case .ptBR:
             return .init(selection: "Seleção e captura", magnifier: "Lupa", preview: "Prévia e fixação",
                 destination: "Salvar e destino", shutter: "Reproduzir som do obturador", recording: "Gravação",

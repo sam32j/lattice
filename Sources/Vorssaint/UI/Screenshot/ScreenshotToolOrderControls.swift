@@ -147,8 +147,6 @@ private struct ToolShortcutRecorder: View {
     let shakeAttempts: CGFloat
     let onError: () -> Void
 
-    @State private var isHovering = false
-
     private var isRecording: Bool { coordinator.activeTool == tool }
 
     private var currentShortcut: GlobalShortcut? {
@@ -160,67 +158,19 @@ private struct ToolShortcutRecorder: View {
     }
 
     private let recorderWidth: CGFloat = 86
-    private let recorderHeight: CGFloat = 26
-
     var body: some View {
-        ZStack {
-            Button {
-                if !isEnabled { return }
-                if isRecording {
-                    coordinator.stopRecording(tool: tool)
-                } else {
-                    coordinator.startRecording(tool: tool)
-                }
-            } label: {
-                HStack(spacing: 3) {
-                    if isError {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(Color.red)
-                        Text(workflow.shortcutUnavailable)
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundStyle(Color.red)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.65)
-                    } else if isRecording {
-                        Text(l10n.s.shortcutPressKeys)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color.accentColor)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                    } else if let currentShortcut {
-                        Text(currentShortcut.displayString)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                    } else {
-                        Text(l10n.s.shortcutNone)
-                            .font(.system(size: 11, weight: .regular))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .frame(width: recorderWidth, height: recorderHeight)
-        .modifier(CompactRecorderShakeEffect(animatableData: shakeAttempts))
-        .background(
-            backgroundColor,
-            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(
-                    borderColor,
-                    lineWidth: (isRecording || isError) ? 1.5 : (isHovering ? 0.8 : 0.5)
-                )
-        )
-        .onHover { hovering in
-            isHovering = hovering
-        }
+        CompactShortcutField(
+            shortcut: currentShortcut,
+            isEnabled: isEnabled,
+            isRecording: isRecording,
+            pressedModifiers: [],
+            errorText: isError ? workflow.shortcutUnavailable : nil,
+            emptyTitle: l10n.s.shortcutNone,
+            width: recorderWidth,
+            shakeAttempts: shakeAttempts,
+            onToggleRecording: toggleRecording,
+            onClear: nil,
+            onReset: nil)
         .onDisappear {
             coordinator.stopRecording(tool: tool)
         }
@@ -239,27 +189,12 @@ private struct ToolShortcutRecorder: View {
         }
     }
 
-    private var backgroundColor: Color {
-        if isError {
-            return Color.red.opacity(0.12)
-        } else if isRecording {
-            return Color.accentColor.opacity(0.12)
-        } else if isHovering {
-            return Color.primary.opacity(0.06)
+    private func toggleRecording() {
+        guard isEnabled else { return }
+        if isRecording {
+            coordinator.stopRecording(tool: tool)
         } else {
-            return Color.primary.opacity(0.03)
-        }
-    }
-
-    private var borderColor: Color {
-        if isError {
-            return Color.red
-        } else if isRecording {
-            return Color.accentColor
-        } else if isHovering {
-            return Color.primary.opacity(0.25)
-        } else {
-            return Color.primary.opacity(0.12)
+            coordinator.startRecording(tool: tool)
         }
     }
 

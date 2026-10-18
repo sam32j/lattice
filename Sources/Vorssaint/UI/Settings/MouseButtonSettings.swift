@@ -130,28 +130,19 @@ struct MouseButtonShortcutsSection: View {
             HStack(spacing: 8) {
                 Text(MouseButtonShortcutSupport.buttonName(for: button, strings: text))
                 Spacer()
-                ShortcutRecorderButton(shortcut: shortcut ?? GlobalShortcut.keepAwakeDefault,
-                                       isEnabled: true,
-                                       waitingTitle: l10n.s.shortcutPressKeys,
-                                       emptyTitle: shortcut == nil ? text.setShortcutButton : nil,
-                                       notCapturedAction: { setRecordError(l10n.s.shortcutNotCaptured, button) },
-                                       recordingChanged: { recording in
-                                           recordingButton = recording ? button : nil
-                                           if recording { setRecordError(nil, button) }
-                                       },
-                                       invalidAction: { setRecordError(l10n.s.shortcutInvalid, button) },
-                                       captureAction: { save(button: button, shortcut: $0) })
-                    .frame(width: 108)
-                Button {
-                    remove(button)
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .frame(width: 22, height: 22)
-                }
-                .buttonStyle(.plain)
-                .help(text.removeButton)
-                .accessibilityLabel(text.removeButton)
+                CompactShortcutBindingRecorder(
+                    recordingID: "mouse-button-\(button)",
+                    shortcut: shortcut,
+                    isEnabled: true,
+                    emptyTitle: text.setShortcutButton,
+                    canClear: shortcut != nil,
+                    errorText: Binding(
+                        get: { recordErrorButton == button ? recordError : nil },
+                        set: { setRecordError($0, button) }),
+                    onClear: { remove(button) },
+                    onReset: {},
+                    onCapture: { save(button: button, shortcut: $0) },
+                    onRecordingChange: { recordingButton = $0 ? button : nil })
             }
             if let recordError, recordErrorButton == button {
                 Text(recordError)

@@ -81,11 +81,11 @@ def main():
                 .replace("UserDefaults.standard.bool(forKey: DefaultsKey.recorderOpenEditor)", "opensEditor")
               for prefix in ["    private func deliver(", "    private func sweepTakes()"])
           + "}\n}\n")
-    shortcut = "Sources/Vorssaint/UI/ShortcutRecorderButton.swift"
+    shortcut = "Sources/Vorssaint/UI/CompactShortcutRecorder.swift"
     write("CompactShortcutValidation.swift", "import Foundation\nextension CompactShortcutValidationTests {\nfinal class Recorder: State {\n"
           + "".join(declaration(shortcut, prefix, scope="struct CompactShortcutRecorder: View {")
               .replace("private func", "func", 1)
-              .replace("GlobalShortcutRole.conflict(for: shortcut, excluding: role)", "conflictingRole")
+              .replace("GlobalShortcutRole.conflict(\n            for: shortcut, excluding: role,\n            includeInactive: includeInactiveConflicts)", "conflictingRole")
               .replace("shortcut.conflictsWithSystemShortcut(for: role)", "systemConflict")
               for prefix in ["    private func validationDecision(", "    private func resetToDefault()"])
           + "}\n}\n")

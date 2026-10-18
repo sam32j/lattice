@@ -383,46 +383,18 @@ private struct CentralWindowLayoutShortcutRow: View {
                 )
                 Spacer()
                 VStack(alignment: .trailing, spacing: 4) {
-                    HStack(spacing: 8) {
-                        ShortcutRecorderButton(
-                            shortcut: pendingTakeOver ?? shortcut ?? action.defaultShortcut ?? .windowLayoutLeftDefault,
-                            isEnabled: true,
-                            waitingTitle: l10n.s.shortcutPressKeys,
-                            emptyTitle: pendingTakeOver == nil && shortcut == nil ? l10n.s.shortcutNone : nil,
-                            clearAction: clear,
-                            notCapturedAction: { errorText = l10n.s.shortcutNotCaptured },
-                            recordingChanged: { recording in
-                                isRecording = recording
-                                if recording {
-                                    errorText = nil
-                                    pendingTakeOver = nil
-                                }
-                            },
-                            invalidAction: { errorText = l10n.s.shortcutInvalid },
-                            captureAction: save
-                        )
-                        .frame(width: 108)
-                        Button {
-                            clear()
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(shortcut == nil)
-                        .help(l10n.s.shortcutClear)
-                        .accessibilityLabel(l10n.s.shortcutClear)
-                        Button(l10n.s.shortcutReset) {
-                            rawValue = action.defaultShortcut?.storageValue
-                                ?? WindowLayoutAction.clearedShortcutStorageValue
-                            errorText = nil
-                            pendingTakeOver = nil
-                            SystemShortcutTakeover.setTakeOver(action.shortcutKey, false)
-                            WindowLayoutService.shared.syncWithPreferences()
-                        }
-                        .disabled(shortcut == action.defaultShortcut)
-                    }
+                    CompactShortcutBindingRecorder(
+                        recordingID: "central-window-layout-\(String(describing: action))",
+                        shortcut: pendingTakeOver ?? shortcut,
+                        isEnabled: true,
+                        emptyTitle: l10n.s.shortcutNone,
+                        canClear: shortcut != nil,
+                        canReset: shortcut != action.defaultShortcut,
+                        errorText: $errorText,
+                        onClear: clear,
+                        onReset: reset,
+                        onCapture: save,
+                        onRecordingChange: { isRecording = $0 })
                     if let alternative = superKeyAlternative {
                         Text(String(format: text.superKeyAlternativeFormat, alternative))
                             .font(.caption2)
@@ -477,6 +449,15 @@ private struct CentralWindowLayoutShortcutRow: View {
 
     private func clear() {
         rawValue = WindowLayoutAction.clearedShortcutStorageValue
+        errorText = nil
+        pendingTakeOver = nil
+        SystemShortcutTakeover.setTakeOver(action.shortcutKey, false)
+        WindowLayoutService.shared.syncWithPreferences()
+    }
+
+    private func reset() {
+        rawValue = action.defaultShortcut?.storageValue
+            ?? WindowLayoutAction.clearedShortcutStorageValue
         errorText = nil
         pendingTakeOver = nil
         SystemShortcutTakeover.setTakeOver(action.shortcutKey, false)

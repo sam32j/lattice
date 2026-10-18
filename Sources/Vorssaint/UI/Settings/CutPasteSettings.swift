@@ -78,31 +78,16 @@ struct CutPasteSettings: View {
                     HStack(spacing: 8) {
                         Text(renameText.shortcutLabel)
                         Spacer()
-                        ShortcutRecorderButton(
+                        CompactShortcutBindingRecorder(
+                            recordingID: "finder-rename",
                             shortcut: pendingRenameTakeOver ?? renameShortcut,
                             isEnabled: renameEnabled,
-                            waitingTitle: l10n.s.shortcutPressKeys,
-                            notCapturedAction: { renameError = l10n.s.shortcutNotCaptured },
-                            recordingChanged: { recording in
-                                recordingRename = recording
-                                if recording {
-                                    renameError = nil
-                                    pendingRenameTakeOver = nil
-                                }
-                            },
-                            invalidAction: { renameError = l10n.s.shortcutInvalid },
-                            captureAction: saveRenameShortcut
-                        )
-                        .frame(width: 108)
-                        .disabled(!renameEnabled)
-                        Button(l10n.s.shortcutReset) {
-                            renameShortcutRaw = GlobalShortcut.finderRenameDefault.storageValue
-                            renameError = nil
-                            pendingRenameTakeOver = nil
-                            SystemShortcutTakeover.setTakeOver(DefaultsKey.finderRenameShortcut, false)
-                            FinderRenameService.shared.syncWithPreferences()
-                        }
-                        .disabled(!renameEnabled || renameShortcut == .finderRenameDefault)
+                            canReset: renameShortcut != .finderRenameDefault,
+                            errorText: $renameError,
+                            onClear: {},
+                            onReset: resetRenameShortcut,
+                            onCapture: saveRenameShortcut,
+                            onRecordingChange: { recordingRename = $0 })
                     }
                     if let renameError {
                         Text(renameError)
@@ -184,6 +169,14 @@ struct CutPasteSettings: View {
             renameError = nil
             if clearTakeOver { SystemShortcutTakeover.setTakeOver(DefaultsKey.finderRenameShortcut, false) }
         }
+        FinderRenameService.shared.syncWithPreferences()
+    }
+
+    private func resetRenameShortcut() {
+        renameShortcutRaw = GlobalShortcut.finderRenameDefault.storageValue
+        renameError = nil
+        pendingRenameTakeOver = nil
+        SystemShortcutTakeover.setTakeOver(DefaultsKey.finderRenameShortcut, false)
         FinderRenameService.shared.syncWithPreferences()
     }
 }

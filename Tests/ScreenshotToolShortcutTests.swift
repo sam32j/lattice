@@ -32,6 +32,13 @@ static func run(_ suite: TestSuite) {
     }
     defer { GlobalShortcut.refreshLayoutLabels() }
 
+    let workflowSource = (try? String(
+        contentsOfFile: "Sources/Vorssaint/Core/CaptureWorkflowStrings.swift",
+        encoding: .utf8)) ?? ""
+    suite.expect(workflowSource.contains("shortcutUnavailable: \"Unavailable\"")
+                 && !workflowSource.contains("shortcutUnavailable: \"Shortcut Unavailable\""),
+           "the narrow screenshot tool setter uses the compact Unavailable error")
+
     // Real keyboard data is the oracle, before the shortcut model discards
     // lock state. Every modifier combination and physical key is considered.
     let layouts = ["US", "French", "French-numerical", "German", "Russian"]
