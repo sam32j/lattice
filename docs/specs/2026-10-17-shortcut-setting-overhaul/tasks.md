@@ -201,4 +201,3 @@ Request a review of `origin/lattice/main...HEAD` plus uncommitted changes, with 
 **Step 6: Commit verification fixes if needed**
 
 Run: `git commit -m "fix(shortcuts): address overhaul review"`
-

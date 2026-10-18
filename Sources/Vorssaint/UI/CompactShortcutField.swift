@@ -141,4 +141,3 @@ struct CompactShortcutField: View {
         .accessibilityLabel(help)
     }
 }
-
