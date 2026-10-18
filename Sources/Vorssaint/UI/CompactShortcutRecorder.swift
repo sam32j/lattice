@@ -231,4 +231,3 @@ struct CompactRecorderShakeEffect: GeometryEffect {
             y: 0))
     }
 }
-

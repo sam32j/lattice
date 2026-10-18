@@ -128,4 +128,3 @@ struct ShortcutRowLabel: View {
         }
     }
 }
-
