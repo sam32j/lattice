@@ -138,14 +138,6 @@ struct ShortcutsSettings: View {
                             .disclosureIndent()
                     }
                 } else {
-                    if feature == .brightness, roles.allSatisfy(\.isKeyboardBrightness) {
-                        KeyboardBrightnessShortcutToggle(isEnabled: $keyboardBrightnessShortcutsEnabled)
-                            .disclosureIndent()
-                    }
-                    if feature == .brightness, !roles.contains(where: \.isKeyboardBrightness) {
-                        DisplayBrightnessShortcutControls(showsShortcutRows: false)
-                            .disclosureIndent()
-                    }
                     ForEach(roles) { role in
                         roleRow(role, showsFeatureContext: false)
                             .disclosureIndent()
@@ -219,7 +211,7 @@ struct ShortcutsSettings: View {
                          reservesClearButtonSpace: Bool = false) -> some View {
         let title = role.title(l10n.s)
         let featureTitle = role.feature.hubTitle(l10n.s, hub: hub)
-        let active = role.requiredEnableKeys.allSatisfy {
+        let active = role.savedShortcut.isValid && role.requiredEnableKeys.allSatisfy {
             UserDefaults.standard.bool(forKey: $0)
         }
         return ShortcutPreferenceRow(
@@ -278,25 +270,6 @@ struct ShortcutsSettings: View {
         case .tools: return hub.groupTools
         case .dynamicIsland: return FeatureStrings.notch(l10n.language).title
         case .monitor: return hub.groupMonitor
-        }
-    }
-}
-
-private struct KeyboardBrightnessShortcutToggle: View {
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var brightness = BrightnessService.shared
-    @Binding var isEnabled: Bool
-
-    var body: some View {
-        Toggle(FeatureStrings.brightness(l10n.language).keyboardBrightnessShortcuts,
-               isOn: $isEnabled)
-            .onChange(of: isEnabled) { _, _ in
-                brightness.syncWithPreferences()
-            }
-        if isEnabled, brightness.keyboardBrightnessShortcutRegistrationFailed {
-            Text(l10n.s.shortcutUnavailable)
-                .font(.caption)
-                .foregroundStyle(.orange)
         }
     }
 }
@@ -417,6 +390,7 @@ private struct CentralWindowLayoutShortcutRow: View {
                     shortcut: pendingTakeOver,
                     onAccept: {
                         rawValue = pendingTakeOver.storageValue
+                        UserDefaults.standard.set(true, forKey: DefaultsKey.windowLayoutShortcutsEnabled)
                         SystemShortcutTakeover.setTakeOver(action.shortcutKey, true)
                         self.pendingTakeOver = nil
                         WindowLayoutService.shared.syncWithPreferences()
@@ -460,6 +434,7 @@ private struct CentralWindowLayoutShortcutRow: View {
             ?? WindowLayoutAction.clearedShortcutStorageValue
         errorText = nil
         pendingTakeOver = nil
+        UserDefaults.standard.set(true, forKey: DefaultsKey.windowLayoutShortcutsEnabled)
         SystemShortcutTakeover.setTakeOver(action.shortcutKey, false)
         WindowLayoutService.shared.syncWithPreferences()
     }
@@ -489,6 +464,7 @@ private struct CentralWindowLayoutShortcutRow: View {
             return
         case .save(let clearTakeOver):
             rawValue = shortcut.storageValue
+            UserDefaults.standard.set(true, forKey: DefaultsKey.windowLayoutShortcutsEnabled)
             errorText = nil
             if clearTakeOver { SystemShortcutTakeover.setTakeOver(action.shortcutKey, false) }
         }

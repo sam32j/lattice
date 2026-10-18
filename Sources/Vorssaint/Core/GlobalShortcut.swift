@@ -239,6 +239,11 @@ struct GlobalShortcut: Equatable, Hashable {
                                                       modifiers: [.control, .option, .command])
 
     static func saved(for key: String, fallback: GlobalShortcut) -> GlobalShortcut {
+        // Absence preserves the installation default. An explicitly empty
+        // binding stays unassigned, including roles that share an enable flag.
+        if UserDefaults.standard.string(forKey: key) == "" {
+            return GlobalShortcut(keyCode: 65535, modifiers: [])
+        }
         if let raw = UserDefaults.standard.string(forKey: key),
            let shortcut = GlobalShortcut(storageValue: raw) {
             return shortcut
@@ -1011,7 +1016,8 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     static func activeRoles(isOn: (String) -> Bool,
                             isAvailable: (AppFeature) -> Bool = { _ in true }) -> [GlobalShortcutRole] {
         allCases.filter { role in
-            role.isAvailable(using: isAvailable) && role.requiredEnableKeys.allSatisfy(isOn)
+            role.isAvailable(using: isAvailable) && role.savedShortcut.isValid
+                && role.requiredEnableKeys.allSatisfy(isOn)
         }
     }
 

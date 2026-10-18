@@ -64,10 +64,12 @@ struct CompactShortcutRecorder: View {
         !isEnabled || shortcut != role.defaultShortcut
     }
 
+    private var hasShortcut: Bool { isEnabled && !rawValue.isEmpty }
+
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
             CompactShortcutField(
-                shortcut: isEnabled ? (pendingTakeOver ?? shortcut) : nil,
+                shortcut: hasShortcut ? (pendingTakeOver ?? shortcut) : nil,
                 isEnabled: isAvailable,
                 isRecording: isRecording,
                 pressedModifiers: pressedModifiers,
@@ -76,8 +78,8 @@ struct CompactShortcutRecorder: View {
                 width: 140,
                 shakeAttempts: shakeAttempts,
                 onToggleRecording: toggleRecording,
-                onClear: isAvailable && isEnabled ? clearShortcut : nil,
-                onReset: isAvailable && isModifiedFromDefault ? resetToDefault : nil)
+                onClear: isAvailable && hasShortcut ? clearShortcut : nil,
+                onReset: isAvailable && (!hasShortcut || isModifiedFromDefault) ? resetToDefault : nil)
             if let pendingTakeOver {
                 SystemShortcutTakeOverOffer(
                     shortcut: pendingTakeOver,
@@ -186,7 +188,17 @@ struct CompactShortcutRecorder: View {
     }
 
     private func clearShortcut() {
-        isEnabled = false
+        rawValue = ""
+        switch role {
+        case .switcher, .switcherWindow, .displayBrightnessDecrease,
+             .displayBrightnessIncrease, .keyboardBrightnessDecrease,
+             .keyboardBrightnessIncrease:
+            break
+        default:
+            isEnabled = false
+        }
+        pendingTakeOver = nil
+        SystemShortcutTakeover.setTakeOver(role.storageKey, false)
         errorText = nil
         onChange()
     }

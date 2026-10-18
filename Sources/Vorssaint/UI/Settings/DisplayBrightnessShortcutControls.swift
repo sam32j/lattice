@@ -11,28 +11,7 @@ struct DisplayBrightnessShortcutControls: View {
     var showsSettingsRow = false
 
     var body: some View {
-        let strings = FeatureStrings.brightness(l10n.language)
-        Group {
-            if showsSettingsRow {
-                SettingsRow(symbol: "keyboard", title: strings.displayBrightnessShortcuts,
-                            caption: strings.displayBrightnessShortcutCaption) {
-                    Toggle(strings.displayBrightnessShortcuts, isOn: $enabled)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                }
-            } else {
-                Toggle(isOn: $enabled) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(strings.displayBrightnessShortcuts)
-                        Text(strings.displayBrightnessShortcutCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-        }
-        .onChange(of: enabled) { _, _ in brightness.syncWithPreferences() }
-        if showsShortcutRows, enabled {
+        if showsShortcutRows {
             ForEach([GlobalShortcutRole.displayBrightnessDecrease, .displayBrightnessIncrease]) { role in
                 ShortcutPreferenceRow(role: role, isEnabled: enabled, label: role.title(l10n.s),
                                       includeInactiveConflicts: true,

@@ -8,7 +8,6 @@ struct ShortcutPreferenceRow: View {
     @ObservedObject private var superKey = SuperKeyService.shared
 
     private let role: GlobalShortcutRole
-    private let isEnabled: Bool
     private let label: String?
     private let symbolName: String?
     private let contextLabel: String?
@@ -23,7 +22,7 @@ struct ShortcutPreferenceRow: View {
     @AppStorage private var rawValue: String
 
     init(role: GlobalShortcutRole,
-         isEnabled: Bool = true,
+         isEnabled _: Bool = true,
          label: String? = nil,
          symbolName: String? = nil,
          contextLabel: String? = nil,
@@ -36,7 +35,6 @@ struct ShortcutPreferenceRow: View {
          additionalConflict: @escaping (GlobalShortcut) -> String? = { _ in nil },
          onChange: @escaping () -> Void) {
         self.role = role
-        self.isEnabled = isEnabled
         self.label = label
         self.symbolName = symbolName
         self.contextLabel = contextLabel
@@ -63,8 +61,10 @@ struct ShortcutPreferenceRow: View {
             VStack(alignment: .trailing, spacing: 4) {
                 CompactShortcutRecorder(
                     role: role,
-                    enabledKey: role.requiredEnableKeys.last ?? "",
-                    isAvailable: isEnabled,
+                    enabledKey: role == .screenshotUpload
+                        ? DefaultsKey.screenshotUploadShortcutEnabled
+                        : role.requiredEnableKeys.last ?? "",
+                    isAvailable: true,
                     includeInactiveConflicts: includeInactiveConflicts,
                     additionalConflict: additionalConflict,
                     onChange: onChange)
