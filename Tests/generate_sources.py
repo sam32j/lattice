@@ -196,7 +196,7 @@ def main():
           + declaration("Sources/Vorssaint/UI/Notch/NotchView.swift", "    func title(_ language: AppLanguage)",
                         scope="extension NotchModule: PanelOrderItem {")
           + "}\n")
-    write("ScrollingCaptureLoop.swift", "import AppKit\nimport CoreGraphics\n"
+    write("ScrollingCaptureLoop.swift", "import AppKit\nimport CoreGraphics\nimport Vision\n"
           + "extension ScreenshotScrollingCaptureTests {\n"
           + declaration("Sources/Vorssaint/Services/QuickTools/ScreenshotScrollingCapture.swift",
                         "enum ScreenshotScrollingCapture {").replace(

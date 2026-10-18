@@ -72,9 +72,7 @@ final class ScreenshotService: ObservableObject {
         if let number = QuickToolHUD.currentWindowNumber, number > 0 {
             ids.insert(CGWindowID(number))
         }
-        if let number = QuickToolHUD.currentScrollingWindowNumber, number > 0 {
-            ids.insert(CGWindowID(number))
-        }
+        ids.formUnion(QuickToolHUD.scrollingWindowIDs)
         return ids
     }
 
@@ -375,6 +373,7 @@ final class ScreenshotService: ObservableObject {
         let finishSignal = ScreenshotScrollingCapture.FinishSignal()
         scrollingFinishSignal = finishSignal
         QuickToolHUD.showScrollingCapture(
+            region: region,
             message: strings.scrollingCaptureProgressHUD,
             finishTitle: strings.done,
             cancelTitle: strings.cancel,
@@ -396,6 +395,9 @@ final class ScreenshotService: ObservableObject {
                 finishSignal: finishSignal,
                 onProgress: { height in
                     QuickToolHUD.updateScrollingCapture(height: height)
+                },
+                onFrame: { image, height in
+                    QuickToolHUD.updateScrollingCapture(image: image, height: height)
                 })
             guard self.scrollingCaptureID == captureID else { return }
             self.scrollingCaptureID = nil
