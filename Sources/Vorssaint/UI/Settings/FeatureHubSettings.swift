@@ -2,6 +2,17 @@
 // Copyright (C) 2026 Vorssaint
 
 import SwiftUI
+import AppKit
+
+/// Preserves the selected tab, scroll position, and last clicked feature
+/// when navigating away from the Feature Hub and returning.
+@MainActor
+final class FeatureHubNavigationState: ObservableObject {
+    static let shared = FeatureHubNavigationState()
+    var tab: FeatureHubSettings.Tab = .features
+    var scrollOffset: CGFloat = 0
+    var lastNavigatedFeature: AppFeature?
+}
 
 /// The Features hub. Install or uninstall each feature, grouped in plain
 /// language: uninstalling removes it from the whole app (Settings, panel,
@@ -14,7 +25,7 @@ struct FeatureHubSettings: View {
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var router = SettingsRouter.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var tab: Tab = .features
+    @State private var tab: Tab = FeatureHubNavigationState.shared.tab
     @State private var confirmingPreset: FeaturePreset?
     /// Tracks the feature-target request currently being revealed, so a
     /// delayed retry from an older request cannot act after a newer one has
@@ -36,7 +47,7 @@ struct FeatureHubSettings: View {
     /// Below this, the offer would be more to read than it saves.
     private static let neverUsedMinimum = 3
 
-    private enum Tab { case features, permissions }
+    enum Tab { case features, permissions }
 
     private var hub: FeatureHubStrings { FeatureStrings.hub(l10n.language) }
 
@@ -44,8 +55,12 @@ struct FeatureHubSettings: View {
         ScrollViewReader { proxy in
             content
                 .onAppear {
+                    tab = FeatureHubNavigationState.shared.tab
                     refreshNeverUsed()
                     revealPendingFeatureTarget(using: proxy)
+                }
+                .onChange(of: tab) { _, newTab in
+                    FeatureHubNavigationState.shared.tab = newTab
                 }
                 .onChange(of: router.requestID) { _, _ in revealPendingFeatureTarget(using: proxy) }
                 .onChange(of: features.revision) { _, _ in refreshNeverUsed() }
@@ -59,6 +74,8 @@ struct FeatureHubSettings: View {
         // layout could keep redoing itself until Settings froze.
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 20) {
+                FeatureHubScrollCoordinator(state: FeatureHubNavigationState.shared)
+                    .frame(width: 0, height: 0)
                 // Keep one header child in the lazy stack. Inserting or
                 // removing the restart notice as an offscreen lazy child
                 // invalidates its visible range: the page jumps or goes
@@ -132,28 +149,42 @@ struct FeatureHubSettings: View {
     /// `SettingsSectionFocusModifier` gives a freshly installed Form to
     /// register its row identities.
     private func revealPendingFeatureTarget(using proxy: ScrollViewProxy) {
-        guard let request = router.pendingFeatureTarget else { return }
-        router.consumeFeatureTarget(id: request.id)
-        revealID = request.id
-        if tab == .permissions { tab = .features }
-        if request.feature.group == .dynamicIsland {
-            if request.feature != .notch { islandExtensionsExpanded = true }
-        } else {
-            expandedGroups.insert(request.feature.group)
-        }
-        DispatchQueue.main.async {
-            guard self.revealID == request.id else { return }
-            proxy.scrollTo(request.feature.group, anchor: .top)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+        if let request = router.pendingFeatureTarget {
+            router.consumeFeatureTarget(id: request.id)
+            revealID = request.id
+            if tab == .permissions { tab = .features }
+            if request.feature.group == .dynamicIsland {
+                if request.feature != .notch { islandExtensionsExpanded = true }
+            } else {
+                expandedGroups.insert(request.feature.group)
+            }
+            DispatchQueue.main.async {
                 guard self.revealID == request.id else { return }
-                reveal(request.feature, using: proxy)
+                proxy.scrollTo(request.feature.group, anchor: .top)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
                     guard self.revealID == request.id else { return }
                     reveal(request.feature, using: proxy)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                        guard self.revealID == request.id else { return }
+                        reveal(request.feature, using: proxy)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                        guard self.revealID == request.id else { return }
+                        clearHighlight()
+                    }
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    guard self.revealID == request.id else { return }
-                    clearHighlight()
+            }
+        } else if let lastFeature = FeatureHubNavigationState.shared.lastNavigatedFeature {
+            FeatureHubNavigationState.shared.lastNavigatedFeature = nil
+            if lastFeature.group == .dynamicIsland {
+                if lastFeature != .notch { islandExtensionsExpanded = true }
+            } else {
+                expandedGroups.insert(lastFeature.group)
+            }
+            DispatchQueue.main.async {
+                proxy.scrollTo(lastFeature.group, anchor: .top)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                    proxy.scrollTo(lastFeature, anchor: .center)
                 }
             }
         }
@@ -572,6 +603,7 @@ private struct FeatureHubRow: View {
         HStack(spacing: 12) {
             if opensSettings {
                 Button {
+                    FeatureHubNavigationState.shared.lastNavigatedFeature = feature
                     SettingsRouter.shared.request(feature.settingsDestination,
                                                   sidebarFeature: feature)
                 } label: {
@@ -1210,5 +1242,79 @@ extension AppPermission {
         case .camera: return FeatureStrings.cameraPreview(L10n.shared.language).permExplain
         case .appManagement: return hub.explainAppManagement
         }
+    }
+}
+
+// MARK: - Scroll position persistence for Features Hub
+
+private struct FeatureHubScrollCoordinator: NSViewRepresentable {
+    let state: FeatureHubNavigationState
+
+    func makeNSView(context: Context) -> FeatureHubScrollObserverView {
+        let view = FeatureHubScrollObserverView()
+        view.state = state
+        return view
+    }
+
+    func updateNSView(_ nsView: FeatureHubScrollObserverView, context: Context) {
+        nsView.state = state
+    }
+}
+
+private final class FeatureHubScrollObserverView: NSView {
+    var state: FeatureHubNavigationState?
+    private var isRestoring = false
+    private weak var observedClipView: NSClipView?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil {
+            setupObserver()
+        } else {
+            teardownObserver()
+        }
+    }
+
+    private func setupObserver() {
+        teardownObserver()
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let scrollView = self.enclosingScrollView else { return }
+            let clipView = scrollView.contentView
+            self.observedClipView = clipView
+            clipView.postsBoundsChangedNotifications = true
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(self.boundsDidChange(_:)),
+                name: NSView.boundsDidChangeNotification,
+                object: clipView
+            )
+
+            // Restore scroll offset if saved and not navigating to a specific target
+            if let saved = self.state?.scrollOffset, saved > 0, self.state?.lastNavigatedFeature == nil {
+                self.isRestoring = true
+                clipView.scroll(to: NSPoint(x: 0, y: saved))
+                scrollView.reflectScrolledClipView(clipView)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+                    self?.isRestoring = false
+                }
+            }
+        }
+    }
+
+    private func teardownObserver() {
+        if let clipView = observedClipView {
+            NotificationCenter.default.removeObserver(self, name: NSView.boundsDidChangeNotification, object: clipView)
+            observedClipView = nil
+        }
+    }
+
+    @objc private func boundsDidChange(_ notification: Notification) {
+        guard !isRestoring, let clipView = observedClipView else { return }
+        let currentY = clipView.bounds.origin.y
+        state?.scrollOffset = currentY
+    }
+
+    deinit {
+        teardownObserver()
     }
 }
