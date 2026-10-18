@@ -94,4 +94,3 @@ final class CompactShortcutCoordinator: ObservableObject {
         exitObservers.removeAll()
     }
 }
-

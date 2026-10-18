@@ -145,4 +145,3 @@ struct CompactShortcutBindingRecorder: View {
         if errorText == nil { stopRecording() }
     }
 }
-
