@@ -8,7 +8,8 @@ import SwiftUI
 /// Placement calculations for the CleanShot X-style floating preview window.
 enum ScrollingCapturePlacement {
     static let defaultPreviewWidth: CGFloat = 220
-    static let defaultPreviewHeight: CGFloat = 356
+    static let minPreviewHeight: CGFloat = 130
+    static let maxPreviewHeight: CGFloat = 460
     static let defaultPreviewGap: CGFloat = 14
     static let defaultMargin: CGFloat = 16
 
@@ -16,7 +17,7 @@ enum ScrollingCapturePlacement {
         selectionRect: CGRect,
         visibleFrame: CGRect,
         previewWidth: CGFloat = defaultPreviewWidth,
-        previewHeight: CGFloat = defaultPreviewHeight,
+        initialHeight: CGFloat,
         gap: CGFloat = defaultPreviewGap,
         margin: CGFloat = defaultMargin
     ) -> CGRect {
@@ -26,7 +27,7 @@ enum ScrollingCapturePlacement {
         if isFullScreen {
             let x = visibleFrame.maxX - previewWidth - margin
             let y = visibleFrame.minY + margin
-            return CGRect(x: x, y: y, width: previewWidth, height: previewHeight)
+            return CGRect(x: x, y: y, width: previewWidth, height: initialHeight)
         }
 
         // Try right side of the selection first
@@ -50,11 +51,11 @@ enum ScrollingCapturePlacement {
 
         if isSide {
             let topY = min(selectionRect.maxY, visibleFrame.maxY - margin)
-            let y = max(visibleFrame.minY + margin, topY - previewHeight)
-            return CGRect(x: chosenX, y: y, width: previewWidth, height: previewHeight)
+            let y = max(visibleFrame.minY + margin, topY - initialHeight)
+            return CGRect(x: chosenX, y: y, width: previewWidth, height: initialHeight)
         } else {
             let y = visibleFrame.minY + margin
-            return CGRect(x: chosenX, y: y, width: previewWidth, height: previewHeight)
+            return CGRect(x: chosenX, y: y, width: previewWidth, height: initialHeight)
         }
     }
 }
@@ -65,6 +66,7 @@ final class ScrollingCaptureViewModel: ObservableObject {
     @Published var width: Int = 0
     @Published var height: Int = 0
     @Published var isFinishing: Bool = false
+    @Published var previewHeight: CGFloat = 160
 
     let finishTitle: String
     let cancelTitle: String
@@ -73,10 +75,12 @@ final class ScrollingCaptureViewModel: ObservableObject {
 
     init(finishTitle: String,
          cancelTitle: String,
+         initialHeight: CGFloat,
          onFinish: @escaping () -> Void,
          onCancel: @escaping () -> Void) {
         self.finishTitle = finishTitle
         self.cancelTitle = cancelTitle
+        self.previewHeight = initialHeight
         self.onFinish = onFinish
         self.onCancel = onCancel
     }
@@ -90,117 +94,109 @@ final class ScrollingCaptureViewModel: ObservableObject {
     }
 }
 
+/// Borderless edge-to-edge preview image with floating indicator and control pills overlayed directly on top.
 struct ScrollingCapturePreviewView: View {
     @ObservedObject var model: ScrollingCaptureViewModel
-    private let viewportWidth: CGFloat = ScrollingCapturePlacement.defaultPreviewWidth - 24
-    private let viewportHeight: CGFloat = 260
+    private let previewWidth: CGFloat = ScrollingCapturePlacement.defaultPreviewWidth
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header Bar
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(Color.green)
-                    .frame(width: 7, height: 7)
-                    .shadow(color: Color.green.opacity(0.6), radius: 3)
-                Text(FeatureStrings.screenshot(L10n.shared.language).scrollingCaptureTitle)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.primary)
-                Spacer()
-                if model.height > 0 {
-                    Text("\(model.width > 0 ? "\(model.width) × " : "")\(model.height) px")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.1), in: Capsule())
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, 8)
+        ZStack(alignment: .top) {
+            // Edge-to-edge Preview Image
+            if let cgImage = model.cgImage {
+                let contentH = CGFloat(max(1, model.height)) / CGFloat(max(1, model.width)) * previewWidth
+                let isOverflowing = contentH > model.previewHeight
 
-            // Dynamic Preview Viewport (content stretches as we scroll)
-            ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.black.opacity(0.35))
-
-                if let cgImage = model.cgImage {
-                    let contentH = CGFloat(max(1, model.height)) / CGFloat(max(1, model.width)) * viewportWidth
-                    let isOverflowing = contentH > viewportHeight
-
-                    Image(decorative: cgImage, scale: 1.0, orientation: .up)
-                        .resizable()
-                        .interpolation(.medium)
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: viewportWidth, height: contentH)
-                        .frame(width: viewportWidth, height: viewportHeight, alignment: isOverflowing ? .bottom : .top)
-                        .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                } else {
+                Image(decorative: cgImage, scale: 1.0, orientation: .up)
+                    .resizable()
+                    .interpolation(.medium)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: previewWidth, height: max(model.previewHeight, contentH))
+                    .frame(width: previewWidth, height: model.previewHeight, alignment: isOverflowing ? .bottom : .top)
+                    .clipped()
+            } else {
+                ZStack {
+                    Color.black.opacity(0.4)
                     VStack(spacing: 6) {
                         Image(systemName: "arrow.down.to.line")
                             .font(.system(size: 20, weight: .light))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.white.opacity(0.7))
                         Text(FeatureStrings.screenshot(L10n.shared.language).scrollingCaptureButton)
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.white.opacity(0.7))
                     }
                 }
+                .frame(width: previewWidth, height: model.previewHeight)
             }
-            .frame(width: viewportWidth, height: viewportHeight)
-            .padding(.horizontal, 12)
 
-            // Footer Action Toolbar
-            HStack(spacing: 10) {
-                Button(action: model.onCancel) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 10, weight: .bold))
-                        Text(model.cancelTitle)
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            // Top Overlay: Opaque pill with green light indicator and dimension badge
+            if model.height > 0 {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 7, height: 7)
+                        .shadow(color: Color.green.opacity(0.85), radius: 3)
+                    Text("\(model.width > 0 ? "\(model.width) × " : "")\(model.height) px")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.white)
                 }
-                .buttonStyle(.plain)
-                .keyboardShortcut(.cancelAction)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 4.5)
+                .background(Color.black.opacity(0.75), in: Capsule())
+                .padding(.top, 8)
+            }
 
-                Button(action: model.onFinish) {
-                    HStack(spacing: 5) {
-                        if model.isFinishing {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 10, weight: .bold))
+            // Bottom Overlay: Opaque pill with controls (Cancel and Done)
+            VStack {
+                Spacer()
+                HStack(spacing: 8) {
+                    Button(action: model.onCancel) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9, weight: .bold))
+                            Text(model.cancelTitle)
+                                .font(.system(size: 11, weight: .medium))
                         }
-                        Text(model.finishTitle)
-                            .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.white.opacity(0.2), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                     }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .buttonStyle(.plain)
+                    .keyboardShortcut(.cancelAction)
+
+                    Button(action: model.onFinish) {
+                        HStack(spacing: 4) {
+                            if model.isFinishing {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 9, weight: .bold))
+                            }
+                            Text(model.finishTitle)
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 5)
+                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.isFinishing)
+                    .keyboardShortcut(.defaultAction)
                 }
-                .buttonStyle(.plain)
-                .disabled(model.isFinishing)
-                .keyboardShortcut(.defaultAction)
+                .padding(5)
+                .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .padding(.bottom, 8)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, 10)
         }
-        .frame(width: ScrollingCapturePlacement.defaultPreviewWidth, height: ScrollingCapturePlacement.defaultPreviewHeight)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .frame(width: previewWidth, height: model.previewHeight)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
-/// Manages the floating preview window for scrolling capture.
+/// Manages the borderless floating preview window for scrolling capture.
 @MainActor
 final class ScrollingCaptureOverlayController {
     static let shared = ScrollingCaptureOverlayController()
@@ -213,6 +209,8 @@ final class ScrollingCaptureOverlayController {
 
     private var localKeyMonitor: Any?
     private var globalKeyMonitor: Any?
+
+    private var visibleFrame: CGRect = .zero
 
     private init() {}
 
@@ -246,13 +244,22 @@ final class ScrollingCaptureOverlayController {
             NSScreen.screens.first { $0.displayID == reg.displayID }
         } ?? NSScreen.main ?? NSScreen.screens[0]
 
-        let visibleFrame = screen.visibleFrame
+        self.visibleFrame = screen.visibleFrame
         let selectionRect = region?.anchorRect ?? screen.frame
 
-        // 1. Setup ViewModel
+        // 1. Compute initial aspect-ratio-matched height
+        let previewWidth = ScrollingCapturePlacement.defaultPreviewWidth
+        let aspect = selectionRect.height / max(1, selectionRect.width)
+        let initialHeight = min(
+            ScrollingCapturePlacement.maxPreviewHeight,
+            max(ScrollingCapturePlacement.minPreviewHeight, round(previewWidth * aspect))
+        )
+
+        // 2. Setup ViewModel
         let model = ScrollingCaptureViewModel(
             finishTitle: finishTitle,
             cancelTitle: cancelTitle,
+            initialHeight: initialHeight,
             onFinish: { [weak self] in
                 guard let self, let vm = self.viewModel, !vm.isFinishing else { return }
                 vm.isFinishing = true
@@ -264,13 +271,15 @@ final class ScrollingCaptureOverlayController {
         )
         self.viewModel = model
 
-        // 2. Calculate stable placement
+        // 3. Calculate initial placement
         let frame = ScrollingCapturePlacement.calculate(
             selectionRect: selectionRect,
-            visibleFrame: visibleFrame
+            visibleFrame: visibleFrame,
+            previewWidth: previewWidth,
+            initialHeight: initialHeight
         )
 
-        // 3. Create and Show Preview Panel
+        // 4. Create and Show Preview Panel
         let panel = ScrollingCapturePanel(
             contentRect: frame,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -294,7 +303,7 @@ final class ScrollingCaptureOverlayController {
 
         self.previewPanel = panel
 
-        // 4. Install keyboard monitors for Esc / Return
+        // 5. Install keyboard monitors for Esc / Return
         installKeyboardMonitors(onFinish: { [weak self] in
             guard let self, let vm = self.viewModel, !vm.isFinishing else { return }
             vm.isFinishing = true
@@ -305,7 +314,29 @@ final class ScrollingCaptureOverlayController {
     }
 
     func update(image: CGImage?, height: Int) {
-        viewModel?.update(image: image, height: height)
+        guard let panel = previewPanel, let model = viewModel else { return }
+        model.update(image: image, height: height)
+
+        let previewWidth = ScrollingCapturePlacement.defaultPreviewWidth
+        let imageWidth = max(1, image?.width ?? model.width)
+        let imageHeight = height > 0 ? height : (image?.height ?? model.height)
+
+        let aspect = CGFloat(imageHeight) / CGFloat(imageWidth)
+        let rawH = previewWidth * aspect
+        let newHeight = min(
+            ScrollingCapturePlacement.maxPreviewHeight,
+            max(ScrollingCapturePlacement.minPreviewHeight, round(rawH))
+        )
+
+        model.previewHeight = newHeight
+
+        // Anchor to current top edge and stretch downwards smoothly without animation oscillation
+        if abs(panel.frame.height - newHeight) >= 2 {
+            let currentX = panel.frame.origin.x
+            let currentTopY = panel.frame.maxY
+            let newY = currentTopY - newHeight
+            panel.setFrame(NSRect(x: currentX, y: newY, width: previewWidth, height: newHeight), display: true)
+        }
     }
 
     func markFinishing() {

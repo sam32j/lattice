@@ -77,27 +77,40 @@ enum ScreenshotScrollingCapture {
             for scanned in 0..<maxScanRows {
                 let row = fromBottom ? height - 1 - scanned : scanned
                 var rowMatches = true
+                var minVal = 255, maxVal = 0
                 var col = 0
                 while col < width {
                     let offset1 = row * bpr1 + col * bpp1
                     let offset2 = row * bpr2 + col * bpp2
 
                     if bpp1 == 1 && bpp2 == 1 {
-                        let d = abs(Int(ptr1[offset1]) - Int(ptr2[offset2]))
+                        let v = Int(ptr1[offset1])
+                        minVal = min(minVal, v)
+                        maxVal = max(maxVal, v)
+                        let d = abs(v - Int(ptr2[offset2]))
                         if d > tolerance {
                             rowMatches = false
                             break
                         }
                     } else {
-                        let dr = abs(Int(ptr1[offset1]) - Int(ptr2[offset2]))
-                        let dg = abs(Int(ptr1[offset1 + 1]) - Int(ptr2[offset2 + 1]))
-                        let db = abs(Int(ptr1[offset1 + 2]) - Int(ptr2[offset2 + 2]))
+                        let r1 = Int(ptr1[offset1]), g1 = Int(ptr1[offset1 + 1]), b1 = Int(ptr1[offset1 + 2])
+                        let lum = (r1 + g1 + b1) / 3
+                        minVal = min(minVal, lum)
+                        maxVal = max(maxVal, lum)
+                        let dr = abs(r1 - Int(ptr2[offset2]))
+                        let dg = abs(g1 - Int(ptr2[offset2 + 1]))
+                        let db = abs(b1 - Int(ptr2[offset2 + 2]))
                         if dr > tolerance || dg > tolerance || db > tolerance {
                             rowMatches = false
                             break
                         }
                     }
                     col += colStep
+                }
+
+                // If row has no content variation across columns, it is a solid margin, not UI
+                if maxVal - minVal <= tolerance {
+                    break
                 }
 
                 if rowMatches {
@@ -117,7 +130,7 @@ enum ScreenshotScrollingCapture {
         static func detect(frame1: CGImage, frame2: CGImage) -> FixedRegions {
             FixedRegions(
                 header: HeaderDetector.detectHeaderHeight(frame1: frame1, frame2: frame2),
-                footer: HeaderDetector.detectFooterHeight(frame1: frame1, frame2: frame2)
+                footer: 0
             )
         }
 
@@ -238,11 +251,12 @@ enum ScreenshotScrollingCapture {
         return Int(observation.alignmentTransform.ty.rounded())
     }
 
-    static func validateOffset(earlier: CGImage, later: CGImage, offset: Int) -> Bool {
+    static func validateOffset(earlier: CGImage, later: CGImage, offset: Int, header: Int = 0) -> Bool {
         guard offset > 0, offset < earlier.height else { return false }
+        let startRow = header
         let overlap = earlier.height - offset
         let width = min(earlier.width, later.width)
-        guard overlap > 0, width > 0 else { return false }
+        guard overlap > startRow, width > 0 else { return true }
 
         guard let d1 = earlier.dataProvider?.data,
               let d2 = later.dataProvider?.data else { return false }
@@ -253,15 +267,15 @@ enum ScreenshotScrollingCapture {
         let bpp1 = max(1, earlier.bitsPerPixel / 8)
         let bpp2 = max(1, later.bitsPerPixel / 8)
 
-        let sampleRows = min(20, overlap)
+        let sampleRows = min(20, overlap - startRow)
         let sampleCols = min(20, width)
-        let rowStep = max(1, overlap / sampleRows)
+        let rowStep = max(1, (overlap - startRow) / sampleRows)
         let colStep = max(1, width / sampleCols)
 
         var diffTotal: Double = 0
         var count = 0
 
-        for r in stride(from: 0, to: overlap, by: rowStep) {
+        for r in stride(from: startRow, to: overlap, by: rowStep) {
             let r1 = r + offset
             let r2 = r
             for c in stride(from: 0, to: width, by: colStep) {
@@ -279,7 +293,7 @@ enum ScreenshotScrollingCapture {
             }
         }
         let avg = count > 0 ? (diffTotal / Double(count)) : 999.0
-        return avg <= 18.0
+        return avg <= 24.0
     }
 
     static func areFramesIdentical(_ a: CGImage, _ b: CGImage) -> Bool {
@@ -385,7 +399,7 @@ enum ScreenshotScrollingCapture {
                 let regions = fixedRegions ?? FixedRegions()
                 if let offset = verticalOffset(from: shotA, to: current, ignoring: regions) {
                     if offset >= 3 {
-                        if validateOffset(earlier: shotA, later: current, offset: offset) {
+                        if validateOffset(earlier: shotA, later: current, offset: offset, header: regions.header) {
                             if case .stitched = stitcher.stitch(newFrame: current, detectedOffset: offset) {
                                 shotA = current
                                 frameCount += 1
