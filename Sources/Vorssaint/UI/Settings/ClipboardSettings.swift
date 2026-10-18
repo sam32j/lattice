@@ -107,10 +107,6 @@ struct ClipboardSettings: View {
 
             if AppFeature.pastePlain.isAvailable {
                 Section {
-                    Toggle(l10n.s.pastePlainName, isOn: $pastePlainEnabled)
-                        .onChange(of: pastePlainEnabled) { _, _ in
-                            PastePlainService.shared.syncWithPreferences()
-                        }
                     Text(l10n.s.pastePlainCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -164,11 +160,6 @@ struct ClipboardSettings: View {
     @ViewBuilder
     private var clipboardShortcutSection: some View {
         Section(text.shortcut) {
-            Toggle(text.shortcut, isOn: $shortcutEnabled)
-                .onChange(of: shortcutEnabled) { _, _ in
-                    ClipboardHistoryService.shared.syncHotkey()
-                }
-                .disabled(!enabled)
             ShortcutPreferenceRow(role: .clipboard,
                                   isEnabled: enabled && shortcutEnabled,
                                   additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {

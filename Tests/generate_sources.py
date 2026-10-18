@@ -87,7 +87,8 @@ def main():
               .replace("private func", "func", 1)
               .replace("GlobalShortcutRole.conflict(\n            for: shortcut, excluding: role,\n            includeInactive: includeInactiveConflicts)", "conflictingRole")
               .replace("shortcut.conflictsWithSystemShortcut(for: role)", "systemConflict")
-              for prefix in ["    private func validationDecision(", "    private func resetToDefault()"])
+              for prefix in ["    private func validationDecision(", "    private func resetToDefault()",
+                             "    private func clearShortcut()"])
           + "}\n}\n")
     directory = "Sources/Vorssaint/UI/Settings/SettingsDirectory.swift"
     write("SettingsSidebarIdentity.swift", "import Foundation\n" + declaration(directory, "struct SettingsDirectoryItem:")

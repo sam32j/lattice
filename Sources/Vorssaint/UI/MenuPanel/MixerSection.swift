@@ -777,17 +777,16 @@ struct SoundOutputSwitcherControls: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Toggle(l10n.s.soundOutputSwitcherEnable, isOn: $enabled)
-                .toggleStyle(.checkbox)
-                .font(.system(size: 11.5, weight: .medium))
-                .onChange(of: enabled) { _, isEnabled in
-                    if isEnabled, selectedUIDs.isEmpty,
+            ShortcutPreferenceRow(role: .soundOutputSwitcher,
+                                  label: l10n.s.soundOutputSwitcherEnable,
+                                  additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
+                    if enabled, selectedUIDs.isEmpty,
                        let current = mixer.currentOutputDeviceUID,
                        universalOutputDevices.contains(where: { $0.uid == current }) {
                         setSelectedUIDs([current])
                     }
                     outputSwitcher.syncWithPreferences()
-                }
+            }
 
             Text(l10n.s.soundOutputSwitcherCaption)
                 .font(.system(size: 9.5))
@@ -795,11 +794,6 @@ struct SoundOutputSwitcherControls: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             if enabled {
-                ShortcutPreferenceRow(role: .soundOutputSwitcher,
-                                      isEnabled: enabled,
-                                      additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
-                    outputSwitcher.syncWithPreferences()
-                }
                 if outputSwitcher.registrationFailed {
                     inputMessage(l10n.s.shortcutUnavailable, systemImage: "keyboard.badge.ellipsis")
                 }
