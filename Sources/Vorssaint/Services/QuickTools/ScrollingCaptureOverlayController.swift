@@ -98,13 +98,14 @@ final class ScrollingCaptureViewModel: ObservableObject {
 struct ScrollingCapturePreviewView: View {
     @ObservedObject var model: ScrollingCaptureViewModel
     private let previewWidth: CGFloat = ScrollingCapturePlacement.defaultPreviewWidth
+    private let maxHeight: CGFloat = ScrollingCapturePlacement.maxPreviewHeight
 
     var body: some View {
         ZStack(alignment: .top) {
             // Edge-to-edge Preview Image
             if let cgImage = model.cgImage {
                 let contentH = CGFloat(max(1, model.height)) / CGFloat(max(1, model.width)) * previewWidth
-                let isOverflowing = contentH > model.previewHeight
+                let isOverflowing = contentH > (maxHeight + 1.0)
 
                 Image(decorative: cgImage, scale: 1.0, orientation: .up)
                     .resizable()
@@ -211,6 +212,7 @@ final class ScrollingCaptureOverlayController {
     private var globalKeyMonitor: Any?
 
     private var visibleFrame: CGRect = .zero
+    private var anchorTopY: CGFloat = 0
 
     private init() {}
 
@@ -278,6 +280,7 @@ final class ScrollingCaptureOverlayController {
             previewWidth: previewWidth,
             initialHeight: initialHeight
         )
+        self.anchorTopY = frame.maxY
 
         // 4. Create and Show Preview Panel
         let panel = ScrollingCapturePanel(
@@ -330,12 +333,15 @@ final class ScrollingCaptureOverlayController {
 
         model.previewHeight = newHeight
 
-        // Anchor to current top edge and stretch downwards smoothly without animation oscillation
-        if abs(panel.frame.height - newHeight) >= 2 {
-            let currentX = panel.frame.origin.x
-            let currentTopY = panel.frame.maxY
-            let newY = currentTopY - newHeight
-            panel.setFrame(NSRect(x: currentX, y: newY, width: previewWidth, height: newHeight), display: true)
+        // If the user manually dragged the panel, update anchorTopY to the new user-dragged position
+        let currentMaxY = panel.frame.maxY
+        if abs(currentMaxY - self.anchorTopY) > 6 {
+            self.anchorTopY = currentMaxY
+        }
+
+        let newY = self.anchorTopY - newHeight
+        if panel.frame.height != newHeight || panel.frame.origin.y != newY {
+            panel.setFrame(NSRect(x: panel.frame.origin.x, y: newY, width: previewWidth, height: newHeight), display: true)
         }
     }
 

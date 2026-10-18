@@ -293,7 +293,7 @@ enum ScreenshotScrollingCapture {
             }
         }
         let avg = count > 0 ? (diffTotal / Double(count)) : 999.0
-        return avg <= 24.0
+        return avg <= 50.0
     }
 
     static func areFramesIdentical(_ a: CGImage, _ b: CGImage) -> Bool {
