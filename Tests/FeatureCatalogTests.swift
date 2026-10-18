@@ -2190,10 +2190,10 @@ enum FeatureCatalogTests {
         suite.expect(historyRouter.destination == refinedDestination,
                "same-page section requests refine the destination restored by history")
         historyRouter.goBack()
-        historyRouter.page = .support
+        historyRouter.page = .releaseNotes
         let branchedHistoryRequestID = historyRouter.requestID
         historyRouter.goForward()
-        suite.expect(historyRouter.page == .support
+        suite.expect(historyRouter.page == .releaseNotes
                 && historyRouter.requestID == branchedHistoryRequestID,
                "a new sidebar visit after Back discards forward history")
         historyRouter.goBack()
@@ -2201,8 +2201,8 @@ enum FeatureCatalogTests {
         historyRouter.goForward()
         suite.expect(historyRouter.page == .features,
                "a destination request after Back also discards forward history")
-        historyRouter.page = .advanced
-        suite.expect(historyRouter.destination == FeatureSettingsDestination(.advanced)
+        historyRouter.page = .dataPermissions
+        suite.expect(historyRouter.destination == FeatureSettingsDestination(.dataPermissions)
                 && historyRouter.pendingDestinationRequest == nil
                 && historyRouter.pendingFeatureTarget == nil,
                "direct page navigation synchronizes the destination and clears stale reveal requests")
