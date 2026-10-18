@@ -604,10 +604,9 @@ struct SettingsView: View {
         case .windowLayout: WindowLayoutSettings()
         case .shelf: ShelfSettings()
         case .shortcuts: ShortcutsSettings()
-        case .advanced: AdvancedSettings()
+        case .dataPermissions: DataPermissionsSettings()
         case .about: AboutSettings()
         case .releaseNotes: ReleaseNotesSettings()
-        case .support: SupportSettings()
         }
     }
 }
@@ -619,8 +618,6 @@ struct UpdatesView: View {
     @ObservedObject private var updates = UpdateService.shared
     @AppStorage(DefaultsKey.autoCheckUpdates) private var autoCheck = true
     @AppStorage(DefaultsKey.includeBetaUpdates) private var includeBetas = AppInfo.isBeta
-    @AppStorage(DefaultsKey.showReleaseNotesBeforeUpdate) private var showReleaseNotesFirst = true
-    @AppStorage(DefaultsKey.releaseNotesOnUpdate) private var showWhatsNewAfter = true
 
     var body: some View {
         Section(l10n.s.updatesSection) {
@@ -636,16 +633,6 @@ struct UpdatesView: View {
                     }
                 SettingsCaptionText(l10n.s.includeBetaUpdatesCaption)
             }
-
-            VStack(alignment: .leading, spacing: 4) {
-                let whatsNew = FeatureStrings.whatsNew(l10n.language)
-                Toggle(whatsNew.showPreviewToggle, isOn: $showReleaseNotesFirst)
-                if showWhatsNewAfter {
-                    SettingsCaptionText(whatsNew.showPreviewCaption)
-                }
-            }
-
-            Toggle(l10n.s.releaseNotesOnUpdateToggle, isOn: $showWhatsNewAfter)
 
             statusRow
 
@@ -954,96 +941,6 @@ struct ReleaseNotesSettings: View {
     }
 }
 
-// MARK: - Support
-
-struct SupportSettings: View {
-    @ObservedObject private var l10n = L10n.shared
-    @Environment(\.openURL) private var openURL
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var donateThanksText: String {
-        let thanks = l10n.s.donateThanks
-        return colorScheme == .dark
-            ? thanks.replacingOccurrences(of: "🖤", with: "🤍")
-            : thanks
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 18) {
-                ZStack {
-                    Circle()
-                        .fill(Theme.spaceGradient)
-                        .frame(width: 78, height: 78)
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 29, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
-
-                VStack(spacing: 7) {
-                    Text(l10n.s.donateHeading)
-                        .font(.title2.bold())
-                        .multilineTextAlignment(.center)
-                    Text(l10n.s.donateMessage)
-                        .font(.system(size: 13.5))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: 460)
-                }
-
-                Button {
-                    openURL(AppInfo.coffeeURL)
-                } label: {
-                    Label(l10n.s.donateButton, systemImage: "cup.and.saucer.fill")
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-
-                HStack(alignment: .top, spacing: 14) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.yellow)
-                        .frame(width: 38, height: 38)
-                        .background(Circle().fill(Color.yellow.opacity(0.14)))
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(l10n.s.supportIntroStarMessage)
-                            .font(.system(size: 13.5, weight: .medium))
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Button {
-                            openURL(AppInfo.repositoryURL)
-                        } label: {
-                            Label(l10n.s.supportIntroStarButton, systemImage: "star.fill")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(16)
-                .frame(maxWidth: 510)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color(nsColor: .controlBackgroundColor))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Color(nsColor: .separatorColor).opacity(0.45))
-                )
-
-                Text(donateThanksText)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 28)
-            .padding(.vertical, 26)
-        }
-    }
-}
-
 // MARK: - Shared settings rows
 
 private struct SettingsCaptionText: View {
@@ -1152,51 +1049,33 @@ struct PermissionRow: View {
 /// Secure Event Input blocks every synthetic keystroke. Typing a snippet
 /// trigger then does nothing at all, while the snippet library and the
 /// Command Bar's typing actions beep; none of the four paths says what is
-/// wrong or who is holding it. It also hides every key from the switcher's
-/// tap, so the switcher hands ⌘Tab back to macOS for as long as it lasts and
-/// the macOS switcher shows up instead. This row is the only place the app
-/// explains either. macOS never names the holder, only the app that was
-/// active when it turned on, so the row offers that app as a lead rather than
-/// as the holder.
+/// wrong or who is holding it. This row is the only place the app explains
+/// that, and it names the holder when the session can attribute it.
 ///
-/// Every call site instantiates it only once secure input is on, and the
-/// snippets and switcher pages wait for their own toggles as well, so the
-/// `.off` branch below is there to keep the switch exhaustive and for nothing
-/// else. What drives the feature is the polling demand on each page; see
+/// Both call sites instantiate it only once secure input is on, and the
+/// snippets page waits for one of its own toggles as well, so the `.off`
+/// branch below is there to keep the switch exhaustive and for nothing else.
+/// What drives the feature is the polling demand on each page; see
 /// `SecureInputObservation`.
 struct SecureInputRow: View {
-    /// What secure input blocks on the page showing the row, which is what
-    /// its caption has to explain.
-    enum Blocked {
-        /// Snippets and the Command Bar's typing actions.
-        case typing
-        /// The switcher's shortcuts, which macOS's own switcher then answers.
-        case switcher
-    }
-
-    var blocking: Blocked = .typing
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var monitor = SecureInputMonitor.shared
 
     var body: some View {
-        let switcher = blocking == .switcher
         switch monitor.holder {
         case .off:
             EmptyView()
         case .app(let name, _):
-            row(caption: String(format: switcher ? l10n.s.secureInputSwitcherHeldFormat
-                                                 : l10n.s.secureInputHeldFormat, name)) {
+            row(caption: String(format: l10n.s.secureInputHeldFormat, name)) {
                 Button(String(format: l10n.s.secureInputRevealFormat, name)) {
                     monitor.revealHolder()
                 }
                 .controlSize(.small)
             }
         case .unattributed:
-            row(caption: switcher ? l10n.s.secureInputSwitcherUnattributed
-                                  : l10n.s.secureInputUnattributed) { EmptyView() }
+            row(caption: l10n.s.secureInputUnattributed) { EmptyView() }
         case .unknown:
-            row(caption: switcher ? l10n.s.secureInputSwitcherUnidentified
-                                  : l10n.s.secureInputUnidentified) { EmptyView() }
+            row(caption: l10n.s.secureInputUnidentified) { EmptyView() }
         }
     }
 

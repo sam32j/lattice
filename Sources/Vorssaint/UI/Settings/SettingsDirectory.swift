@@ -301,7 +301,6 @@ enum SettingsDirectory {
                                        icon: "doc.on.clipboard",
                                        featureKeywords: [
                                         (.clipboardHistory, [FeatureStrings.clipboard(language).limit,
-                                                             FeatureStrings.clipboardRetention(language).title,
                                                              FeatureStrings.clipboard(language).historyLayout,
                                                              FeatureStrings.clipboard(language).skipSensitive,
                                                              FeatureStrings.clipboard(language).pasteImageAsFile,
@@ -458,12 +457,17 @@ enum SettingsDirectory {
             (categories.app, [
                 SettingsDirectoryItem(page: .shortcuts, title: s.shortcutsPageTitle, icon: "command",
                                       keywords: [s.hotkeyToggle]),
-                SettingsDirectoryItem(page: .advanced, title: s.tabAdvanced, icon: "wrench.and.screwdriver"),
+                SettingsDirectoryItem(page: .dataPermissions,
+                                      title: DataPermissionsStrings.localized(language).title,
+                                      icon: "lock.shield",
+                                      keywords: [FeatureStrings.hub(language).tabPermissions,
+                                                 s.advancedClearButton,
+                                                 DataPermissionsStrings.localized(language).data,
+                                                 FeatureStrings.backup(language).title,
+                                                 s.advancedUninstallButton]),
                 SettingsDirectoryItem(page: .about, title: s.tabAbout, icon: "info.circle",
                                       keywords: [s.reviewIntro, s.reviewHighlights]),
                 SettingsDirectoryItem(page: .releaseNotes, title: s.tabReleaseNotes, icon: "sparkles"),
-                SettingsDirectoryItem(page: .support, title: s.tabSupport, icon: "heart.fill",
-                                      keywords: [s.donateButton, s.supportIntroStarButton]),
             ]),
         ]
     }

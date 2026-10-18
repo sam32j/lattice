@@ -13,6 +13,18 @@ import VMStatisticsCompat
 
 enum SettingsFeatureTests {
     static func run(_ suite: TestSuite) {
+        suite.expect(FeatureVisibilitySupport.isPageVisible(.dataPermissions, isAvailable: { _ in false }),
+                     "Data and Permissions remains available with every optional feature removed")
+        suite.expect(DataPermissionsStrings.localized(.enUS).title == "Data and Permissions"
+                     && DataPermissionsStrings.localized(.enUS).data == "Lattice Data",
+                     "the consolidated page and backup section use their requested names")
+        let dataPage = (try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/AdvancedSettings.swift",
+                                   encoding: .utf8)) ?? ""
+        let sections = ["PermissionsPortalSections(hub:", "Section(l10n.s.advancedResetSection)",
+                        "Section(DataPermissionsStrings.localized", "Section(l10n.s.advancedUninstallSection)"]
+        let positions = sections.compactMap { dataPage.range(of: $0)?.lowerBound }
+        suite.expect(positions.count == sections.count && positions == positions.sorted(),
+                     "the page orders permissions, permission reset, Lattice Data, and uninstall")
         let isCodeLine: (String) -> Bool = {
             !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//")
         }
