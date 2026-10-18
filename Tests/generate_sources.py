@@ -1517,7 +1517,7 @@ def main():
           + "var keyMonitor: Any?\nvar globalKeyMonitor: Any?\nvar spaceIsDown = false\n"
           + "var acceptsWindowClick = true\nvar loupeAcceptsKeyboardActions = false\n"
           + "var actions: [String] = []\nvar draggingPanel: ScreenshotOverlayPanel?\n"
-          + "var isPickingColor = false\nvar acceptsCaptureInput = true\nvar hasSelectedWindows = false\nfunc clearSelectedWindows() {}\nfunc confirmSelectedWindows() {}\n"
+          + "var isPickingColor = false\nvar acceptsCaptureInput = true\nvar hasSelectedWindows = false\nvar offersFullScreenCapture = true\nfunc clearSelectedWindows() {}\nfunc confirmSelectedWindows() {}\n"
           + "var panels: [ScreenshotOverlayPanel] = []\nvar currentPointerLocation: CGPoint?\n"
           + 'func finish(_ outcome: Outcome) { actions.append("cancel") }\n'
           + 'func captureFullDisplayUnderMouse() { actions.append("fullDisplay") }\n'

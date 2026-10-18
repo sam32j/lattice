@@ -213,6 +213,7 @@ enum ScreenshotSelectionRefreshContract {
             screenCaptureToolDidChange()
         }
         static var lastRegion: (displayID: CGDirectDisplayID, viewRect: CGRect)?
+        static var lastInitialCapture: CGImage?
         func panelUnderMouse() -> ScreenshotOverlayPanel? { panels.first }
         static func pickableWindows(
             _ entries: [(id: CGWindowID, bounds: CGRect)], on screenFrame: CGRect,
@@ -625,4 +626,8 @@ enum ScreenshotSelectionRefreshContract {
             "a previous tool's delayed live loupe cannot replace the current source")
 
     }
+}
+
+extension ScreenshotSupport {
+    static func isImageBlank(_ image: ScreenshotSelectionRefreshContract.CGImage) -> Bool { false }
 }

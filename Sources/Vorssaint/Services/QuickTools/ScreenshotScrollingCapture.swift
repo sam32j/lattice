@@ -130,7 +130,7 @@ enum ScreenshotScrollingCapture {
         static func detect(frame1: CGImage, frame2: CGImage) -> FixedRegions {
             FixedRegions(
                 header: HeaderDetector.detectHeaderHeight(frame1: frame1, frame2: frame2),
-                footer: 0
+                footer: HeaderDetector.detectFooterHeight(frame1: frame1, frame2: frame2)
             )
         }
 
@@ -210,10 +210,13 @@ enum ScreenshotScrollingCapture {
             let width = min(top.width, bottom.width)
             let height = top.height + bottom.height
             let colorSpace = top.colorSpace ?? CGColorSpaceCreateDeviceRGB()
+            let isGray = (colorSpace.model == .monochrome)
             let hasAlpha = !([.none, .noneSkipFirst, .noneSkipLast].contains(top.alphaInfo))
-            let bitmapInfo: UInt32 = hasAlpha
-                ? CGImageAlphaInfo.premultipliedLast.rawValue
-                : (colorSpace.model == .monochrome ? CGImageAlphaInfo.none.rawValue : CGImageAlphaInfo.noneSkipLast.rawValue)
+            let bitmapInfo: UInt32 = isGray
+                ? CGImageAlphaInfo.none.rawValue
+                : (hasAlpha
+                    ? (CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+                    : (CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue))
 
             guard let ctx = CGContext(
                 data: nil,

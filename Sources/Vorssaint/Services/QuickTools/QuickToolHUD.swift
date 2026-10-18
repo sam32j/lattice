@@ -99,6 +99,7 @@ enum QuickToolHUD {
     /// The scrolling capture preview and controls, positioned by the side of the selection
     /// or bottom right for full screen.
     static func showScrollingCapture(region: RecorderSupport.Region? = nil,
+                                     initialImage: CGImage? = nil,
                                      message: String,
                                      finishTitle: String,
                                      cancelTitle: String,
@@ -108,6 +109,7 @@ enum QuickToolHUD {
             MainActor.assumeIsolated {
                 ScrollingCaptureOverlayController.shared.show(
                     region: region,
+                    initialImage: initialImage,
                     message: message,
                     finishTitle: finishTitle,
                     cancelTitle: cancelTitle,
@@ -117,6 +119,7 @@ enum QuickToolHUD {
         } else {
             DispatchQueue.main.async {
                 showScrollingCapture(region: region,
+                                     initialImage: initialImage,
                                      message: message,
                                      finishTitle: finishTitle,
                                      cancelTitle: cancelTitle,
