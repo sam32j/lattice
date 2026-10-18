@@ -1386,6 +1386,7 @@ def main():
     preview = "Sources/Vorssaint/Services/QuickTools/ScreenshotQuickPreviewController.swift"
     screen_text = "Sources/Vorssaint/Services/QuickTools/ScreenTextService.swift"
     write("ScreenshotOCRControl.swift", "import AppKit\nimport SwiftUI\n"
+          + declaration(preview, "@objc final class ScreenshotQuickPreviewMenuHelper:")
           + "extension ScreenshotOCRControlTests {\n"
           + declaration(preview, "final class ScreenshotQuickPreviewModel:")
           + declaration(preview, "private struct ScreenshotQuickPreviewView:").replace("private struct", "struct", 1)
