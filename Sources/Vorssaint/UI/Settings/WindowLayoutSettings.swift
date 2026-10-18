@@ -151,16 +151,17 @@ struct WindowLayoutSettings: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     if directionalEnabled {
-                        ShortcutRecorderButton(shortcut: directionalKeyShortcut,
-                                               isEnabled: permissions.accessibility,
-                                               waitingTitle: l10n.s.shortcutPressKeys,
-                                               emptyTitle: directionalTrigger.displayString,
-                                               notCapturedAction: { directionalError = l10n.s.shortcutNotCaptured },
-                                               recordingChanged: { if $0 { directionalError = nil } },
-                                               captureModifiersAction: { saveDirectionalTrigger(.modifiers($0)) },
-                                               invalidAction: { directionalError = l10n.s.shortcutInvalid },
-                                               captureAction: saveDirectionalShortcut)
-                            .frame(width: 108)
+                        CompactShortcutBindingRecorder(
+                            recordingID: "window-layout-directional",
+                            shortcut: directionalKeyShortcut,
+                            isEnabled: permissions.accessibility,
+                            width: 140,
+                            emptyTitle: directionalTrigger.displayString,
+                            captureModifiers: { saveDirectionalTrigger(.modifiers($0)) },
+                            errorText: $directionalError,
+                            onClear: {},
+                            onReset: {},
+                            onCapture: saveDirectionalShortcut)
                         if let directionalError {
                             Text(directionalError)
                                 .font(.caption)
@@ -456,46 +457,18 @@ private struct WindowLayoutActionRow: View {
                 }
                 .disabled(!applyEnabled)
                 Spacer()
-                ShortcutRecorderButton(shortcut: pendingTakeOver
-                                           ?? shortcut
-                                           ?? action.defaultShortcut
-                                           ?? .windowLayoutLeftDefault,
-                                       isEnabled: shortcutEnabled,
-                                       waitingTitle: l10n.s.shortcutPressKeys,
-                                       emptyTitle: pendingTakeOver == nil && shortcut == nil ? l10n.s.shortcutNone : nil,
-                                       clearAction: clear,
-                                       notCapturedAction: { errorText = l10n.s.shortcutNotCaptured },
-                                       recordingChanged: { recording in
-                                           isRecording = recording
-                                           if recording {
-                                               errorText = nil
-                                               pendingTakeOver = nil
-                                           }
-                                       },
-                                       invalidAction: { errorText = l10n.s.shortcutInvalid },
-                                       captureAction: save)
-                    .frame(width: 108)
-                    .disabled(!shortcutEnabled)
-                Button {
-                    clear()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .disabled(!shortcutEnabled || shortcut == nil)
-                .help(l10n.s.shortcutClear)
-                .accessibilityLabel(l10n.s.shortcutClear)
-                Button(l10n.s.shortcutReset) {
-                    rawValue = action.defaultShortcut?.storageValue
-                        ?? WindowLayoutAction.clearedShortcutStorageValue
-                    errorText = nil
-                    pendingTakeOver = nil
-                    SystemShortcutTakeover.setTakeOver(action.shortcutKey, false)
-                    WindowLayoutService.shared.syncWithPreferences()
-                }
-                .disabled(!shortcutEnabled || shortcut == action.defaultShortcut)
+                CompactShortcutBindingRecorder(
+                    recordingID: "window-layout-\(String(describing: action))",
+                    shortcut: pendingTakeOver ?? shortcut,
+                    isEnabled: shortcutEnabled,
+                    emptyTitle: l10n.s.shortcutNone,
+                    canClear: shortcut != nil,
+                    canReset: shortcut != action.defaultShortcut,
+                    errorText: $errorText,
+                    onClear: clear,
+                    onReset: reset,
+                    onCapture: save,
+                    onRecordingChange: { isRecording = $0 })
             }
             if let errorText {
                 Text(errorText)
@@ -532,6 +505,15 @@ private struct WindowLayoutActionRow: View {
 
     private func clear() {
         rawValue = WindowLayoutAction.clearedShortcutStorageValue
+        errorText = nil
+        pendingTakeOver = nil
+        SystemShortcutTakeover.setTakeOver(action.shortcutKey, false)
+        WindowLayoutService.shared.syncWithPreferences()
+    }
+
+    private func reset() {
+        rawValue = action.defaultShortcut?.storageValue
+            ?? WindowLayoutAction.clearedShortcutStorageValue
         errorText = nil
         pendingTakeOver = nil
         SystemShortcutTakeover.setTakeOver(action.shortcutKey, false)

@@ -18,8 +18,11 @@ enum CompactShortcutValidationTests {
         var rawValue = GlobalShortcut.screenshotDefault.storageValue
         var isEnabled = false, systemConflict = false
         var errorText: String?
+        var pendingTakeOver: GlobalShortcut?
         var conflictingRole: GlobalShortcutRole?
+        var includeInactiveConflicts = false
         var notifications = 0
+        func additionalConflict(_ shortcut: GlobalShortcut) -> String? { nil }
         func showError(_ text: String) { errorText = text }
         func onChange() { notifications += 1 }
     }
