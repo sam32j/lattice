@@ -3,10 +3,8 @@
 
 import SwiftUI
 
-/// Advanced page: a clean way to reset every permission the app holds, and a
-/// full self-uninstall. Both actions are confirmation-gated and scoped entirely
-/// to this app (see `SelfUninstall`).
-struct AdvancedSettings: View {
+/// Permission status, permission reset, portable settings, and self-uninstall.
+struct DataPermissionsSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @State private var showClearConfirm = false
     @State private var showUninstallConfirm = false
@@ -25,7 +23,36 @@ struct AdvancedSettings: View {
 
     var body: some View {
         Form {
-            Section(backup.title) {
+            Section(FeatureStrings.hub(l10n.language).tabPermissions) {
+                Text(FeatureStrings.hub(l10n.language).permissionsIntro)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                PermissionsPortalSections(hub: FeatureStrings.hub(l10n.language))
+            }
+            Section(l10n.s.advancedResetSection) {
+                Text(l10n.s.advancedResetDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button(role: .destructive) {
+                    showClearConfirm = true
+                } label: {
+                    Label(l10n.s.advancedClearButton, systemImage: "lock.slash")
+                }
+                .disabled(working)
+                if cleared == true {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                        Text(l10n.s.advancedCleared).font(.caption).foregroundStyle(.green)
+                    }
+                } else if cleared == false {
+                    Text(l10n.s.advancedClearFailed)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+
+            Section(DataPermissionsStrings.localized(l10n.language).data) {
                 Text(backup.description)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -63,29 +90,6 @@ struct AdvancedSettings: View {
                 }
                 if importFailed {
                     Text(backup.invalidFile)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-            }
-
-            Section(l10n.s.advancedResetSection) {
-                Text(l10n.s.advancedResetDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button(role: .destructive) {
-                    showClearConfirm = true
-                } label: {
-                    Label(l10n.s.advancedClearButton, systemImage: "lock.slash")
-                }
-                .disabled(working)
-                if cleared == true {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                        Text(l10n.s.advancedCleared).font(.caption).foregroundStyle(.green)
-                    }
-                } else if cleared == false {
-                    Text(l10n.s.advancedClearFailed)
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }

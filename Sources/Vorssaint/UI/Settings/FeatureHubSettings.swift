@@ -6,15 +6,12 @@ import SwiftUI
 /// The Features hub. Install or uninstall each feature, grouped in plain
 /// language: uninstalling removes it from the whole app (Settings, panel,
 /// menu bar, shortcuts) and stops its work; its configuration is kept for
-/// its return. The Permissions tab is the transparency portal: what each system
-/// permission does, which features use it right now, and a gentle nudge when
-/// one is granted with nothing using it.
+/// its return. Permission management lives in Data and Permissions.
 struct FeatureHubSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var router = SettingsRouter.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var tab: Tab = .features
     @State private var confirmingPreset: FeaturePreset?
     /// Tracks the feature-target request currently being revealed, so a
     /// delayed retry from an older request cannot act after a newer one has
@@ -36,7 +33,6 @@ struct FeatureHubSettings: View {
     /// Below this, the offer would be more to read than it saves.
     private static let neverUsedMinimum = 3
 
-    private enum Tab { case features, permissions }
 
     private var hub: FeatureHubStrings { FeatureStrings.hub(l10n.language) }
 
@@ -66,46 +62,33 @@ struct FeatureHubSettings: View {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 5) {
                         Text(hub.pageTitle).font(.title2.bold())
-                        Text(tab == .features ? hub.intro : hub.permissionsIntro)
+                        Text(hub.intro)
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    Picker(hub.pageTitle, selection: $tab) {
-                        Text(hub.tabFeatures).tag(Tab.features)
-                        Text(hub.tabPermissions).tag(Tab.permissions)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    // The restart notice comes first on either tab.
+                    // Keep the restart notice in the stable header.
                     if features.needsRestartToUnload {
                         restartCard
                     }
                 }
-                if tab == .features {
-                    // The never-used offer comes and goes with installs too,
-                    // so it shares one stable child with the summary.
-                    VStack(alignment: .leading, spacing: 20) {
-                        summaryCard
-                        neverUsedCard
-                    }
-                    dynamicIslandCard
-                    presetsCard
-                    ForEach(FeatureGroup.allCases.filter { $0 != .dynamicIsland }, id: \.self) { group in
-                        groupCard(group)
-                    }
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(hub.footerNote)
-                        Text(hub.energyHelp)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                } else {
-                    SettingsCard {
-                        PermissionsPortalSections(hub: hub)
-                    }
+                // The never-used offer shares one stable child with the summary.
+                VStack(alignment: .leading, spacing: 20) {
+                    summaryCard
+                    neverUsedCard
                 }
+                dynamicIslandCard
+                presetsCard
+                ForEach(FeatureGroup.allCases.filter { $0 != .dynamicIsland }, id: \.self) { group in
+                    groupCard(group)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(hub.footerNote)
+                    Text(hub.energyHelp)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
@@ -126,8 +109,7 @@ struct FeatureHubSettings: View {
         }
     }
 
-    /// Consumes a pending Feature Hub target: switches off the Permissions
-    /// tab if needed and scrolls the requested row into view. Retried once
+    /// Consumes a pending Feature Hub target and scrolls its row into view. Retried once
     /// after the first run-loop turn, the same allowance
     /// `SettingsSectionFocusModifier` gives a freshly installed Form to
     /// register its row identities.
@@ -135,7 +117,6 @@ struct FeatureHubSettings: View {
         guard let request = router.pendingFeatureTarget else { return }
         router.consumeFeatureTarget(id: request.id)
         revealID = request.id
-        if tab == .permissions { tab = .features }
         if request.feature.group == .dynamicIsland {
             if request.feature != .notch { islandExtensionsExpanded = true }
         } else {
