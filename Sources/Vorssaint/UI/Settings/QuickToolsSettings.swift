@@ -39,10 +39,6 @@ struct QuickToolsSettings: View {
                     Text(l10n.s.launcherEditHint)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
-                    Toggle(l10n.s.quickToolShortcutToggle, isOn: $launcherShortcutEnabled)
-                        .onChange(of: launcherShortcutEnabled) { _, _ in
-                            QuickLauncherService.shared.syncWithPreferences()
-                        }
                     ShortcutPreferenceRow(role: .quickLauncher,
                                           isEnabled: launcherShortcutEnabled) {
                         QuickLauncherService.shared.syncWithPreferences()
@@ -120,10 +116,6 @@ struct QuickToolsSettings: View {
                     Text(l10n.s.micMuteMenuBarCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Toggle(l10n.s.quickToolShortcutToggle, isOn: $micShortcutEnabled)
-                        .onChange(of: micShortcutEnabled) { _, _ in
-                            MicMuteService.shared.syncWithPreferences()
-                        }
                     ShortcutPreferenceRow(role: .micMute,
                                           isEnabled: micShortcutEnabled) {
                         MicMuteService.shared.syncWithPreferences()
@@ -150,10 +142,6 @@ struct QuickToolsSettings: View {
                     Text(FeatureStrings.cameraPreview(l10n.language).panelCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Toggle(l10n.s.quickToolShortcutToggle, isOn: $cameraShortcutEnabled)
-                        .onChange(of: cameraShortcutEnabled) { _, _ in
-                            CameraPreviewService.shared.syncWithPreferences()
-                        }
                     ShortcutPreferenceRow(role: .cameraPreview,
                                           isEnabled: cameraShortcutEnabled) {
                         CameraPreviewService.shared.syncWithPreferences()
@@ -246,10 +234,6 @@ struct QuickToolsSettings: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     }
-                    Toggle(l10n.s.quickToolShortcutToggle, isOn: $scratchpadShortcutEnabled)
-                        .onChange(of: scratchpadShortcutEnabled) { _, _ in
-                            ScratchpadService.shared.syncWithPreferences()
-                        }
                     ShortcutPreferenceRow(role: .scratchpad,
                                           isEnabled: scratchpadShortcutEnabled) {
                         ScratchpadService.shared.syncWithPreferences()

@@ -124,15 +124,8 @@ struct GeneralSettings: View {
 
     private var shortcutCard: some View {
         SettingsCard(title: l10n.s.globalHotkeySection) {
-            SettingsRow(symbol: "keyboard", title: l10n.s.hotkeyToggle, caption: l10n.s.hotkeyCaption) {
-                Toggle(l10n.s.hotkeyToggle, isOn: $hotkeyEnabled)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .onChange(of: hotkeyEnabled) { _, enabled in
-                        HotkeyManager.shared.setEnabled(enabled)
-                    }
-            }
-            ShortcutPreferenceRow(role: .keepAwake, isEnabled: hotkeyEnabled) {
+            ShortcutPreferenceRow(role: .keepAwake, label: l10n.s.hotkeyToggle,
+                                  symbolName: "keyboard") {
                 HotkeyManager.shared.syncWithPreferences()
             }
             .padding(.leading, settingsRowTextInset)

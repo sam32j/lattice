@@ -27,7 +27,7 @@ final class QuickToolHotkey {
     /// registration (combination taken by another app).
     @discardableResult
     func sync(enabled: Bool, shortcut: GlobalShortcut, storageKey: String) -> Bool {
-        guard enabled else {
+        guard enabled, shortcut.isValid else {
             unregister()
             return true
         }

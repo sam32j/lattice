@@ -35,7 +35,6 @@ struct ScreenshotToolOrderControls: View {
                     .font(.headline)
             }
 
-            Toggle(strings.toolShortcutsToggle, isOn: $shortcutsEnabled)
             Text(strings.toolShortcutsCaption)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -50,14 +49,6 @@ struct ScreenshotToolOrderControls: View {
                 }
             }
 
-            HStack {
-                Spacer()
-                Button(l10n.s.shortcutReset) {
-                    bindingsRaw = ""
-                    errorTool = nil
-                }
-                .disabled(bindingsRaw.isEmpty)
-            }
         }
         .onChange(of: l10n.language) { _, _ in errorTool = nil }
     }
@@ -71,37 +62,17 @@ struct ScreenshotToolOrderControls: View {
                 .lineLimit(1)
             Spacer(minLength: 4)
 
-            Group {
-                if ScreenshotSupport.Tool.isModified(tool: tool, bindingsRaw: bindingsRaw) {
-                    Button {
-                        resetTool(tool)
-                    } label: {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20, height: 22)
-                            .background(Color.primary.opacity(0.045),
-                                        in: RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
-                    .help(l10n.s.shortcutReset)
-                    .accessibilityLabel(tool.screenshotTitle(strings) + ": " + l10n.s.shortcutReset)
-                } else {
-                    Color.clear.frame(width: 20, height: 22)
-                }
-            }
-
             ToolShortcutRecorder(
                 tool: tool,
-                isEnabled: shortcutsEnabled,
+                shortcutsEnabled: $shortcutsEnabled,
                 bindingsRaw: $bindingsRaw,
                 isError: errorTool == tool,
                 shakeAttempts: shakeAttempts[tool, default: 0],
+                onReset: { resetTool(tool) },
                 onError: {
                     showError(for: tool)
                 }
             )
-            .opacity(shortcutsEnabled ? 1 : 0.48)
         }
         .frame(minHeight: 26)
         .contentShape(Rectangle())
@@ -118,6 +89,7 @@ struct ScreenshotToolOrderControls: View {
         var custom = ScreenshotSupport.Tool.customBindings(from: bindingsRaw)
         custom[tool] = nil
         bindingsRaw = ScreenshotSupport.Tool.customBindingsStorage(custom)
+        shortcutsEnabled = true
         if errorTool == tool {
             errorTool = nil
         }
@@ -141,27 +113,28 @@ private struct ToolShortcutRecorder: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var coordinator = ToolShortcutCoordinator.shared
     let tool: ScreenshotSupport.Tool
-    let isEnabled: Bool
+    @Binding var shortcutsEnabled: Bool
     @Binding var bindingsRaw: String
     let isError: Bool
     let shakeAttempts: CGFloat
+    let onReset: () -> Void
     let onError: () -> Void
 
     private var isRecording: Bool { coordinator.activeTool == tool }
 
     private var currentShortcut: GlobalShortcut? {
-        ScreenshotSupport.Tool.effectiveShortcut(for: tool, bindingsRaw: bindingsRaw)
+        shortcutsEnabled ? ScreenshotSupport.Tool.effectiveShortcut(for: tool, bindingsRaw: bindingsRaw) : nil
     }
 
     private var workflow: CaptureWorkflowStrings {
         .localized(l10n.language)
     }
 
-    private let recorderWidth: CGFloat = 86
+    private let recorderWidth: CGFloat = 140
     var body: some View {
         CompactShortcutField(
             shortcut: currentShortcut,
-            isEnabled: isEnabled,
+            isEnabled: true,
             isRecording: isRecording,
             pressedModifiers: [],
             errorText: isError ? workflow.shortcutUnavailable : nil,
@@ -169,8 +142,8 @@ private struct ToolShortcutRecorder: View {
             width: recorderWidth,
             shakeAttempts: shakeAttempts,
             onToggleRecording: toggleRecording,
-            onClear: nil,
-            onReset: nil)
+            onClear: currentShortcut != nil ? clearShortcut : nil,
+            onReset: onReset)
         .onDisappear {
             coordinator.stopRecording(tool: tool)
         }
@@ -190,7 +163,6 @@ private struct ToolShortcutRecorder: View {
     }
 
     private func toggleRecording() {
-        guard isEnabled else { return }
         if isRecording {
             coordinator.stopRecording(tool: tool)
         } else {
@@ -221,6 +193,7 @@ private struct ToolShortcutRecorder: View {
         var custom = ScreenshotSupport.Tool.customBindings(from: bindingsRaw)
         custom[tool] = .some(captured)
         bindingsRaw = ScreenshotSupport.Tool.customBindingsStorage(custom)
+        shortcutsEnabled = true
         coordinator.stopRecording(tool: tool)
     }
 
