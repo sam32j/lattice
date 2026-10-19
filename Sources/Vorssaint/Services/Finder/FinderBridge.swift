@@ -17,14 +17,16 @@ enum FinderBridge {
         tell application "Finder"
             set out to ""
             repeat with f in (get selection)
-                set out to out & (POSIX path of (f as alias)) & linefeed
+                set out to out & (POSIX path of (f as alias)) & (character id 0)
             end repeat
             return out
         end tell
         """
         let result = AppleScriptRunner.run(script)
         guard result.ok else { return [] }
-        return result.output.split(whereSeparator: \.isNewline)
-            .map { URL(fileURLWithPath: String($0)) }
+        return result.output.split(separator: "\0")
+            .map { String($0) }
+            .filter { !$0.isEmpty }
+            .map { URL(fileURLWithPath: $0) }
     }
 }

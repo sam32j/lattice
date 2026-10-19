@@ -41,6 +41,7 @@ final class ScreenshotQuickPreviewController {
     /// system share sheet.
     private let shareFile: () -> URL?
     private let savedFile: () -> URL?
+    private let saveToDefault: (() -> URL?)?
     private var menuFileURL: URL?
     private let shareAnchor = ShelfSharePickerAnchor.Anchor()
     private var systemSharing = false
@@ -72,6 +73,7 @@ final class ScreenshotQuickPreviewController {
                            @escaping @MainActor (ScreenshotShareRecord?) -> Void) -> Void,
          shareFile: @escaping () -> URL?,
          savedFile: @escaping () -> URL? = { nil },
+         saveToDefault: (() -> URL?)? = nil,
          onClose: @escaping () -> Void) {
         self.capture = capture
         self.strings = strings
@@ -82,6 +84,7 @@ final class ScreenshotQuickPreviewController {
         self.share = share
         self.shareFile = shareFile
         self.savedFile = savedFile
+        self.saveToDefault = saveToDefault
         self.onClose = onClose
         model.disabledActions = completedActions.intersection([.save, .copy])
     }
@@ -125,7 +128,7 @@ final class ScreenshotQuickPreviewController {
                 guard let self, let url = self.fileForMenu() else { return }
                 NSWorkspace.shared.open([url], withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration())
             },
-            menuCanReveal: savedFile() != nil,
+            menuCanReveal: true,
             menuOpened: { [weak self] in self?.dismissWork?.cancel() },
             menuClosed: { [weak self] in self?.scheduleAutoDismiss() })
         if wantsNotch, NotchService.shared.presentCapture(
@@ -320,7 +323,12 @@ final class ScreenshotQuickPreviewController {
         case .close: close()
         case .share: performSystemShare()
         case .reveal:
-            if let url = savedFile() { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+            if let url = savedFile() {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            } else if let url = saveToDefault?() {
+                model.disabledActions.insert(.save)
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
         case .mail:
             if let url = fileForMenu() { NSSharingService(named: .composeEmail)?.perform(withItems: [url]) }
         case .printImage:

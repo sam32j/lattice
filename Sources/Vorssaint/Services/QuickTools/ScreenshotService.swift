@@ -614,6 +614,11 @@ final class ScreenshotService: ObservableObject {
                                                 strings: self.strings)
             },
             savedFile: { saved?.url },
+            saveToDefault: { [weak self] in
+                guard let self, let outcome = self.saveDirect(capture) else { return nil }
+                saved = outcome
+                return outcome.url
+            },
             onClose: { [weak self] in self?.preview = nil })
         preview = controller
         controller.show()
