@@ -1425,7 +1425,7 @@ enum RecorderFeatureTests {
                 == ["Área", "Ímã", "Zebra"],
                "the localized compare is what puts them where a reader expects")
         let onboardingSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Onboarding/OnboardingView.swift",
+            contentsOfFile: "Sources/Vorssaint/UI/Onboarding/OnboardingPermissionsStep.swift",
             encoding: .utf8)) ?? ""
         suite.expect(!onboardingSource.isEmpty, "the onboarding source reads back for its sorting check")
         let onboardingCode = onboardingSource.components(separatedBy: "\n")

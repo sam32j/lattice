@@ -233,7 +233,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             #endif
             if !defaults.bool(forKey: DefaultsKey.hasOnboarded) {
                 guard !skipStartupWindows else { return }
-                self.showOnboarding(mode: .full)
+                self.showOnboarding()
             } else {
                 // Keep the last seen version marker current. An update is
                 // queued for the What's New window first, so a start that
@@ -1590,6 +1590,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     }
 
     @objc private func menuOpenSettings() {
+        closePopover(animated: false, preservingNotch: true)
         openSettingsWindow()
     }
 
@@ -1708,9 +1709,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     // MARK: - Windows
 
     func openSettingsWindow() {
-        // Intentionally does NOT close the panel: the panel uses applicationDefined
-        // dismissal, so it stays open beside Settings for a live preview.
-        // Capture the destination before activation changes the key window.
         let targetScreen = (popover.isShown
             ? popoverAnchor?.screen ?? popover.contentViewController?.view.window?.screen
             : nil) ?? NSScreen.withMouse
@@ -2031,21 +2029,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         FeatureRuntime.shared.relaunchApp()
     }
 
-    func showOnboarding(mode: OnboardingMode = .full) {
+    func showOnboarding() {
         closePopover()
         if let window = onboardingWindow {
             NSApp.activate(ignoringOtherApps: true)
             window.makeKeyAndOrderFront(nil)
             return
         }
-        let host = NSHostingController(rootView: OnboardingView(mode: mode) { [weak self] in
+        let host = NSHostingController(rootView: OnboardingView { [weak self] in
             self?.markOnboardingComplete()
             self?.onboardingWindow?.close()
         })
         host.sizingOptions = .preferredContentSize
         let window = NSWindow(contentViewController: host)
         let isFirstRun = !UserDefaults.standard.bool(forKey: DefaultsKey.hasOnboarded)
-        window.title = mode.title(L10n.shared.s)
+        window.title = L10n.shared.s.obStepWelcomeTitle
         window.styleMask = isFirstRun
             ? [.titled, .fullSizeContentView]
             : [.titled, .closable, .fullSizeContentView]

@@ -1830,7 +1830,7 @@ struct QuickControlsSection: View {
                                ? (permissions.accessibility ? mappingLabel : superKeyStrings.manageButton)
                                : nil,
                            accessoryAction: {
-                               SettingsRouter.shared.page = .superKey
+                               SettingsRouter.shared.request(AppFeature.superKey.settingsDestination)
                                appDelegate()?.openSettingsWindow()
                            })
                 .onChange(of: superKeyEnabled) { _, enabled in

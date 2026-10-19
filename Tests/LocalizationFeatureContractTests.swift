@@ -77,45 +77,9 @@ enum LocalizationFeatureContractTests {
                    && !strings.secureInputUnattributed.isEmpty
                    && !strings.secureInputUnidentified.isEmpty,
                    "\(prefix) secure input copy is translated")
-            // The switcher's captions explain a macOS switcher on ⌘Tab, not
-            // typing, so each names the shortcut it is about.
-            expectFormat(strings.secureInputSwitcherHeldFormat, ["@"],
-                         "\(prefix) switcher secure input holder format")
-            suite.expect([strings.secureInputSwitcherHeldFormat, strings.secureInputSwitcherUnattributed,
-                          strings.secureInputSwitcherUnidentified].allSatisfy { $0.contains("⌘Tab") },
-                   "\(prefix) switcher secure input copy names ⌘Tab")
-            // macOS records the app that was active when secure input turned
-            // on, never the one holding it, so the switcher page gives the
-            // typing pages' advice for the same state and offers that app in
-            // the same words.
-            let advice = { (text: String) -> String in
-                text.components(separatedBy: CharacterSet(charactersIn: ".。"))
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .last { !$0.isEmpty } ?? ""
-            }
-            suite.expect(!advice(strings.secureInputHeldFormat).isEmpty
-                   && !advice(strings.secureInputUnattributed).isEmpty
-                   && strings.secureInputSwitcherHeldFormat.contains(advice(strings.secureInputHeldFormat))
-                   && strings.secureInputSwitcherUnattributed.contains(advice(strings.secureInputUnattributed)),
-                   "\(prefix) switcher secure input captions give the typing captions' advice")
-            if language == .enUS {
-                let attribution = strings.secureInputHeldFormat.components(separatedBy: ", so ").first ?? ""
-                suite.expect(attribution.contains("was the active app")
-                       && strings.secureInputSwitcherHeldFormat.hasPrefix(attribution),
-                       "the switcher page offers the recorded app as a lead, never as the holder")
-            }
-            suite.expect(strings.quickToolsTab == strings.launcherName,
-                   "\(prefix) Quick panel keeps the same name in Settings")
             expectFormat(strings.cutMovedPluralFormat, ["d"], "\(prefix) cut plural format")
             expectFormat(strings.uninstallerSelectedFormat, ["d", "d"], "\(prefix) uninstaller selected format")
             expectFormat(strings.uninstallerFreedFormat, ["@"], "\(prefix) uninstaller freed format")
-            for format in [strings.uninstallerRefusedSystemFormat, strings.uninstallerRefusedSharedFormat,
-                           strings.uninstallerRefusedNestedFormat, strings.uninstallerRefusedSelfFormat,
-                           strings.uninstallerRefusedLinkFormat, strings.uninstallerRefusedUnidentifiedFormat] {
-                expectFormat(format, ["@"], "\(prefix) uninstaller refusal format")
-            }
-            expectFormat(strings.uninstallerRefusedNotApp, [], "\(prefix) uninstaller not-an-app note")
-            expectFormat(strings.uninstallerPickerHiddenNote, [], "\(prefix) uninstaller unlisted apps note")
             expectFormat(strings.shelfSelectedFormat, ["d"], "\(prefix) shelf selection format")
             suite.expect(!strings.shelfClearOnClose.isEmpty
                    && !strings.shelfClearOnCloseCaption.isEmpty
@@ -259,9 +223,9 @@ enum LocalizationFeatureContractTests {
                    && !strings.launchAtLoginNeedsApplications.contains("—"),
                    "\(prefix) launch at login location note is present without em dash")
             // Shortcut recording: the waiting cap, the two hints under the row
-            // and the honest message for a combination that never arrived (#308).
+            // and the caption for recording and clearing a binding.
             let shortcutCaptureStrings = [strings.shortcutPressKeys, strings.shortcutEscapeHint,
-                                          strings.shortcutDeleteHint, strings.shortcutNotCaptured,
+                                          strings.shortcutDeleteHint,
                                           strings.shortcutRecording, strings.shortcutInvalid]
             suite.expect(shortcutCaptureStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
                    "\(prefix) shortcut recording strings are present without em dash")
@@ -280,7 +244,7 @@ enum LocalizationFeatureContractTests {
             suite.expect(ocrStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
                    "\(prefix) screen OCR strings are present without em dash")
             let cleaningStrings = [strings.cleaningKeepScreenVisibleToggle, strings.cleaningKeepScreenVisibleCaption,
-                                   strings.cleaningStartNow, strings.cleaningOverlayTitle,
+                                   strings.cleaningOverlayTitle,
                                    strings.cleaningOverlaySubtitle, strings.cleaningOverlayUnlock,
                                    strings.cleaningOverlayMouseHint, strings.cleaningPanelCaption]
             suite.expect(cleaningStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
@@ -307,55 +271,16 @@ enum LocalizationFeatureContractTests {
             ]
             suite.expect(officialHomebrewIntroStrings.allSatisfy { !$0.isEmpty },
                    "\(prefix) official Homebrew intro is complete")
-            let supportCommunityStrings = [
-                strings.donateHeading,
-                strings.donateMessage,
-                strings.donateButton,
+            let supportIntroStrings = [
                 strings.supportIntroTitle,
                 strings.supportIntroMessage,
                 strings.supportIntroStarButton,
-                strings.supportIntroStarMessage,
                 strings.supportIntroCoffeeButton,
-                strings.discordIntroTitle,
-                strings.discordIntroMessage,
-                strings.discordIntroJoinButton,
-                strings.communityIntroTitle,
-                strings.communityIntroMessage,
-                strings.communityIntroFollowButton,
             ]
-            suite.expect(supportCommunityStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
-                   "\(prefix) support and community strings are complete without em dash")
-            suite.expect(strings.donateButton.contains("Buy Me a Coffee")
-                   && strings.supportIntroCoffeeButton.contains("Buy Me a Coffee"),
+            suite.expect(supportIntroStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
+                   "\(prefix) support intro strings are complete without em dash")
+            suite.expect(strings.supportIntroCoffeeButton.contains("Buy Me a Coffee"),
                    "\(prefix) financial support points only to Buy Me a Coffee")
-            suite.expect(strings.supportIntroStarMessage.localizedCaseInsensitiveContains("GitHub")
-                   && strings.discordIntroJoinButton.localizedCaseInsensitiveContains("Discord"),
-                   "\(prefix) non-financial support and community actions name their destinations")
-            suite.expect(strings.discordIntroMessage.count <= 320,
-                   "\(prefix) Discord introduction stays concise")
-            suite.expect(!strings.communityIntroMessage.isEmpty
-                   && strings.communityIntroMessage.contains("X"),
-                   "\(prefix) community intro invites users to follow previews on X")
-            let retiredWeeklyPhrases = [
-                "uma vez por semana", "once a week", "haftada bir", "раз в неделю",
-                "una vez por semana", "einmal pro Woche", "une fois par semaine",
-                "una volta a settimana", "週1回", "매주 한 번", "每周更新一次", "每週更新一次",
-            ]
-            suite.expect(retiredWeeklyPhrases.allSatisfy {
-                !strings.communityIntroMessage.localizedCaseInsensitiveContains($0)
-            }, "\(prefix) community intro no longer promises weekly updates")
-            suite.expect(!strings.communityIntroMessage.contains("—")
-                   && strings.communityIntroMessage.count <= 320,
-                   "\(prefix) community intro stays concise and has no em dash")
-            if language == .enUS {
-                suite.expect(strings.discordIntroMessage.contains("new")
-                       && strings.discordIntroMessage.contains("still being built"),
-                       "English Discord introduction says the community is new and in development")
-            } else if language == .ptBR {
-                suite.expect(strings.discordIntroMessage.contains("nova")
-                       && strings.discordIntroMessage.contains("em desenvolvimento"),
-                       "Portuguese Discord introduction says the community is new and in development")
-            }
             suite.expect(!strings.updateShowcaseTitle.isEmpty, "\(prefix) update showcase title is present")
             suite.expect(!strings.updateShowcaseMessage.isEmpty, "\(prefix) update showcase message is present")
             suite.expect(!strings.updateShowcaseUnavailable.isEmpty, "\(prefix) update showcase fallback is present")
@@ -467,7 +392,6 @@ enum LocalizationFeatureContractTests {
             ("finderRenameDefault", GlobalShortcut.finderRenameDefault),
             ("keepAwakeDefault", GlobalShortcut.keepAwakeDefault),
             ("micMuteDefault", GlobalShortcut.micMuteDefault),
-            ("notchDefault", GlobalShortcut.notchDefault),
             ("pastePlainDefault", GlobalShortcut.pastePlainDefault),
             ("pointerNextDisplayDefault", GlobalShortcut.pointerNextDisplayDefault),
             ("quickLauncherDefault", GlobalShortcut.quickLauncherDefault),
@@ -503,7 +427,7 @@ enum LocalizationFeatureContractTests {
             ("windowLayoutTopLeftDefault", GlobalShortcut.windowLayoutTopLeftDefault),
             ("windowLayoutTopRightDefault", GlobalShortcut.windowLayoutTopRightDefault),
         ]
-        suite.expect(defaultShortcuts.count == 42, "every default shortcut is in the round trip")
+        suite.expect(defaultShortcuts.count == 41, "every default shortcut is in the round trip")
         var brokenShortcuts: [String] = []
         for (name, shortcut) in defaultShortcuts {
             guard let restored = GlobalShortcut(storageValue: shortcut.storageValue),

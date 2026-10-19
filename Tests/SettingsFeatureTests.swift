@@ -18,9 +18,9 @@ enum SettingsFeatureTests {
         suite.expect(DataPermissionsStrings.localized(.enUS).title == "Data and Permissions"
                      && DataPermissionsStrings.localized(.enUS).data == "Lattice Data",
                      "the consolidated page and backup section use their requested names")
-        let dataPage = (try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/AdvancedSettings.swift",
+        let dataPage = (try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/DataPermissionsSettings.swift",
                                    encoding: .utf8)) ?? ""
-        let sections = ["PermissionsPortalSections(hub:", "Section(l10n.s.advancedResetSection)",
+        let sections = ["PermissionsPortalSections(hub:", "Label(l10n.s.advancedClearButton",
                         "Section(DataPermissionsStrings.localized", "Section(l10n.s.advancedUninstallSection)"]
         let positions = sections.compactMap { dataPage.range(of: $0)?.lowerBound }
         suite.expect(positions.count == sections.count && positions == positions.sorted(),

@@ -62,8 +62,10 @@ def main():
     runtime = "Sources/Vorssaint/App/FeatureRuntime.swift"
     runtime_methods = "".join(declaration(runtime, prefix).replace("private func", "func", 1)
         for prefix in ["    private func mayFlip(", "    func setAvailable(",
-                       "    func replaceAvailable(", "    func setAllAvailable("])
+                       "    func replaceAvailable(", "    func setAllAvailable(",
+                       "    func sync(", "    var needsRestartToUnload:"])
     runtime_methods = runtime_methods.replace("feature.isHardwareSupported", "true").replace("UserDefaults.standard", "defaults").replace("in: .standard", "in: defaults")
+    runtime_methods = runtime_methods.replace("$0.isAvailable", "$0.isAvailable(in: defaults)")
     runtime_methods = re.sub(r"(?<![A-Za-z])((?:AppFeature\.)?[A-Za-z]+)\.isAvailable(?![A-Za-z(])",
                              r"\1.isAvailable(in: defaults)", runtime_methods)
     write("FeatureAvailabilityTransition.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests {\nfinal class Runtime: State {\n"
@@ -82,6 +84,9 @@ def main():
               for prefix in ["    private func deliver(", "    private func sweepTakes()"])
           + "}\n}\n")
     shortcut = "Sources/Vorssaint/UI/CompactShortcutRecorder.swift"
+    write("KeyCaptureBridge.swift", "import AppKit\nimport SwiftUI\nextension KeyCaptureBridgeTests {\n"
+          + declaration("Sources/Vorssaint/UI/KeyCaptureBridgeView.swift", "struct KeyCaptureBridgeView:")
+          + "}\n")
     write("CompactShortcutValidation.swift", "import Foundation\nextension CompactShortcutValidationTests {\nfinal class Recorder: State {\n"
           + "".join(declaration(shortcut, prefix, scope="struct CompactShortcutRecorder: View {")
               .replace("private func", "func", 1)
@@ -91,11 +96,21 @@ def main():
                              "    private func clearShortcut()"])
           + "}\n}\n")
     directory = "Sources/Vorssaint/UI/Settings/SettingsDirectory.swift"
+    directory_pages = "Sources/Vorssaint/UI/Settings/SettingsDirectoryPages.swift"
+    tool_only_pages = re.search(r"    private static let toolOnlyPages:[\s\S]*?\n    \]",
+                               (ROOT / directory).read_text()).group(0)
     write("SettingsSidebarIdentity.swift", "import Foundation\n" + declaration(directory, "struct SettingsDirectoryItem:")
-          + "extension SettingsSidebarIdentityTests {\nfinal class Directory: State {\n"
+          + "extension SettingsSidebarIdentityTests {\nfinal class Directory {\n"
+          + tool_only_pages + "\n"
+          + declaration(directory_pages, "    static func sections(")
+              .replace("SuperKeyService.shared.source", ".capsLock")
+              .replace("NotchSupport.hasNotchedDisplay", "true")
+              .replace("NotchSupport.hasDisplayWithoutNotch", "false")
+              .replace("$0.hubTitle(s, hub: FeatureStrings.hub(language))", "$0.rawValue")
           + declaration(directory, "    static func sidebarSections(")
               .replace("SuperKeyService.shared.source", ".capsLock")
               .replace("BrightnessService.keyboardLightIsSupported", "false")
+              .replace("        let hub = FeatureStrings.hub(language)\n", "")
               .replace("feature.hubTitle(s, hub: hub)", "feature.rawValue")
           + "}\n}\n")
     annotation_editor = "Sources/Vorssaint/UI/Screenshot/ScreenshotEditorView.swift"
@@ -1064,7 +1079,7 @@ def main():
     update_view = "Sources/Vorssaint/UI/Notch/NotchUpdateControl.swift"
     write("NotchUpdate.swift", "import AppKit\nimport SwiftUI\nimport Combine\nextension NotchUpdateTests {\n"
           + "final class UpdateService: ObservableObject {\nstatic let shared = UpdateService()\n"
-          + declaration(update, "    enum State:")
+          + "typealias State = AppUpdateState\n"
           + "@Published var state: State = .idle\n}\n"
           + "final class L10n: ObservableObject {\nstatic let shared = L10n()\n@Published var language = AppLanguage.enUS\n"
           + declaration("Sources/Vorssaint/Core/Localization.swift", "    var s: Strings")

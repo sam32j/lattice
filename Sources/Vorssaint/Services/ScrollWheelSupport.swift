@@ -40,7 +40,7 @@ struct ScrollDirectionPreferences {
     }
 
     init(defaults: UserDefaults = .standard) {
-        self.init(isAvailable: { defaults.bool(forKey: $0.availabilityKey) },
+        self.init(isAvailable: { $0.isAvailable(in: defaults) },
                   boolFor: { defaults.bool(forKey: $0) },
                   stringFor: { defaults.string(forKey: $0) })
     }

@@ -242,7 +242,7 @@ enum CommandBarCatalog {
         }
 
         return AppFeature.allCases.flatMap { feature -> [CommandBarEntry] in
-            guard feature.isAvailable else { return [] }
+            guard feature.isAvailable || feature.isMouseFeature else { return [] }
             if feature == .scrollInverter {
                 return [
                     entry(for: feature,

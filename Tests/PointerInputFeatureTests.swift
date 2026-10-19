@@ -2435,9 +2435,10 @@ enum PointerInputFeatureTests {
                 && AppFeature.superKey.group == .mouseKeyboard
                 && AppFeature.superKey.energyProfile == .inputs,
                "the hub knows the super key's switch and native input switching needs no Automation")
-        suite.expect(FeatureVisibilitySupport.features(for: .superKey) == [.superKey]
-                && !FeatureVisibilitySupport.isPageVisible(.superKey, isAvailable: { _ in false }),
-               "the page leaves the sidebar when the feature is off in the hub")
+        suite.expect(FeatureVisibilitySupport.features(for: .keyboard).isEmpty
+                && FeatureVisibilitySupport.isPageVisible(.keyboard, isAvailable: { _ in false })
+                && AppFeature.superKey.settingsDestination == FeatureSettingsDestination(.keyboard, sectionAnchor: .superKey),
+               "the keyboard page stays visible and routes directly to the Super Key section")
         suite.expect(SuperKeySoloAction.sanitized("escape") == .escape
                 && SuperKeySoloAction.sanitized("capsLock") == .capsLock
                 && SuperKeySoloAction.sanitized("inputSource") == .inputSource
@@ -2688,7 +2689,7 @@ enum PointerInputFeatureTests {
         // The page is the only place a refused mapping is visible, so the
         // reason has to reach it and be spelled out there.
         let superKeySettingsSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Settings/SuperKeySettings.swift",
+            contentsOfFile: "Sources/Vorssaint/UI/Settings/KeyboardSettings.swift",
             encoding: .utf8)) ?? ""
         let failureMark = superKeySettingsSource.range(of: "superKey.mappingFailure")
         let runningMark = superKeySettingsSource.range(of: "superKey.isRunning")

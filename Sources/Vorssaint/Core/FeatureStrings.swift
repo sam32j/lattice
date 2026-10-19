@@ -140,12 +140,16 @@ struct MixerFeatureStrings {
 
 extension SettingsCategoryStrings {
     static let ko = SettingsCategoryStrings(
-        essentials: "기본 기능",
-        windowsControls: "윈도우 및 제어",
-        files: "파일",
-        utilities: "유틸리티",
-        app: "앱",
-        appManagement: "앱 관리"
+        interface: "인터페이스",
+        windowsDock: "윈도우 및 Dock",
+        audio: "오디오",
+        energyDisplay: "에너지 및 디스플레이",
+        screenCaptures: "화면 캡처",
+        mouseKeyboard: "마우스 및 키보드",
+        clipboardFiles: "클립보드 및 파일",
+        system: "시스템",
+        lattice: "Lattice",
+        utilities: "유틸리티"
     )
 }
 
@@ -349,128 +353,188 @@ extension MonitorAlertFeatureStrings {
 }
 
 struct SettingsCategoryStrings {
-    let essentials: String
-    let windowsControls: String
-    let files: String
+    let interface: String
+    let windowsDock: String
+    let audio: String
+    let energyDisplay: String
+    let screenCaptures: String
+    let mouseKeyboard: String
+    let clipboardFiles: String
+    let system: String
+    let lattice: String
     let utilities: String
-    let app: String
-    let appManagement: String
+
+    var sound: String { audio }
+    var files: String { clipboardFiles }
+    var appManagement: String { system }
 
     static let enUS = SettingsCategoryStrings(
-        essentials: "Essentials",
-        windowsControls: "Window controls",
-        files: "Files",
-        utilities: "Utilities",
-        app: "App",
-        appManagement: "App management"
+        interface: "Interface",
+        windowsDock: "Windows and Dock",
+        audio: "Audio",
+        energyDisplay: "Energy and Display",
+        screenCaptures: "Screen Captures",
+        mouseKeyboard: "Mouse and Keyboard",
+        clipboardFiles: "Clipboard and Files",
+        system: "System",
+        lattice: "Lattice",
+        utilities: "Utilities"
     )
 
     static let ptBR = SettingsCategoryStrings(
-        essentials: "Essenciais",
-        windowsControls: "Janelas e controles",
-        files: "Arquivos",
-        utilities: "Utilitários",
-        app: "App",
-        appManagement: "Gestão de apps"
+        interface: "Interface",
+        windowsDock: "Janelas e Dock",
+        audio: "Áudio",
+        energyDisplay: "Energia e Tela",
+        screenCaptures: "Capturas de Tela",
+        mouseKeyboard: "Mouse e Teclado",
+        clipboardFiles: "Área de Transferência e Arquivos",
+        system: "Sistema",
+        lattice: "Lattice",
+        utilities: "Utilitários"
     )
 
     static let tr = SettingsCategoryStrings(
-        essentials: "Temel",
-        windowsControls: "Pencereler ve denetimler",
-        files: "Dosyalar",
-        utilities: "Araçlar",
-        app: "Uygulama",
-        appManagement: "Uygulama yönetimi"
+        interface: "Arayüz",
+        windowsDock: "Pencereler ve Dock",
+        audio: "Ses",
+        energyDisplay: "Enerji ve Ekran",
+        screenCaptures: "Ekran Yakalamaları",
+        mouseKeyboard: "Fare ve Klavye",
+        clipboardFiles: "Pano ve Dosyalar",
+        system: "Sistem",
+        lattice: "Lattice",
+        utilities: "Araçlar"
     )
 
     static let ru = SettingsCategoryStrings(
-        essentials: "Основное",
-        windowsControls: "Окна и управление",
-        files: "Файлы",
-        utilities: "Утилиты",
-        app: "Приложение",
-        appManagement: "Управление приложениями"
+        interface: "Интерфейс",
+        windowsDock: "Окна и Dock",
+        audio: "Аудио",
+        energyDisplay: "Энергия и Дисплей",
+        screenCaptures: "Записи Экрана",
+        mouseKeyboard: "Мышь и клавиатура",
+        clipboardFiles: "Буфер обмена и файлы",
+        system: "Система",
+        lattice: "Lattice",
+        utilities: "Утилиты"
     )
 
     static let es = SettingsCategoryStrings(
-        essentials: "Esenciales",
-        windowsControls: "Ventanas y controles",
-        files: "Archivos",
-        utilities: "Utilidades",
-        app: "App",
-        appManagement: "Gestión de apps"
+        interface: "Interfaz",
+        windowsDock: "Ventanas y Dock",
+        audio: "Audio",
+        energyDisplay: "Energía y Pantalla",
+        screenCaptures: "Capturas de Pantalla",
+        mouseKeyboard: "Ratón y teclado",
+        clipboardFiles: "Portapapeles y archivos",
+        system: "Sistema",
+        lattice: "Lattice",
+        utilities: "Utilidades"
     )
 
     static let sk = SettingsCategoryStrings(
-        essentials: "Základné",
-        windowsControls: "Okná a ovládanie",
-        files: "Súbory",
-        utilities: "Pomôcky",
-        app: "Apka",
-        appManagement: "Správa aplikácií"
+        interface: "Rozhranie",
+        windowsDock: "Okná a Dock",
+        audio: "Audio",
+        energyDisplay: "Energia a Displej",
+        screenCaptures: "Snímky Obrazovky",
+        mouseKeyboard: "Myš a klávesnica",
+        clipboardFiles: "Schránka a súbory",
+        system: "Systém",
+        lattice: "Lattice",
+        utilities: "Pomôcky"
     )
 
     static let de = SettingsCategoryStrings(
-        essentials: "Grundlagen",
-        windowsControls: "Fenster und Steuerung",
-        files: "Dateien",
-        utilities: "Dienstprogramme",
-        app: "App",
-        appManagement: "App-Verwaltung"
+        interface: "Bedienoberfläche",
+        windowsDock: "Fenster und Dock",
+        audio: "Audio",
+        energyDisplay: "Energie und Display",
+        screenCaptures: "Bildschirmaufnahmen",
+        mouseKeyboard: "Maus und Tastatur",
+        clipboardFiles: "Zwischenablage und Dateien",
+        system: "System",
+        lattice: "Lattice",
+        utilities: "Dienstprogramme"
     )
 
     static let fr = SettingsCategoryStrings(
-        essentials: "Essentiel",
-        windowsControls: "Fenêtres et contrôles",
-        files: "Fichiers",
-        utilities: "Utilitaires",
-        app: "App",
-        appManagement: "Gestion des apps"
+        interface: "Interface",
+        windowsDock: "Fenêtres et Dock",
+        audio: "Audio",
+        energyDisplay: "Énergie et Affichage",
+        screenCaptures: "Captures d’Écran",
+        mouseKeyboard: "Souris et clavier",
+        clipboardFiles: "Presse-papiers et fichiers",
+        system: "Système",
+        lattice: "Lattice",
+        utilities: "Utilitaires"
     )
 
     static let it = SettingsCategoryStrings(
-        essentials: "Essenziali",
-        windowsControls: "Finestre e controlli",
-        files: "File",
-        utilities: "Utilità",
-        app: "App",
-        appManagement: "Gestione delle app"
+        interface: "Interfaccia",
+        windowsDock: "Finestre e Dock",
+        audio: "Audio",
+        energyDisplay: "Energia e Schermo",
+        screenCaptures: "Registrazioni Schermo",
+        mouseKeyboard: "Mouse e tastiera",
+        clipboardFiles: "Appunti e file",
+        system: "Sistema",
+        lattice: "Lattice",
+        utilities: "Utilità"
     )
 
     static let ja = SettingsCategoryStrings(
-        essentials: "基本機能",
-        windowsControls: "ウインドウと操作",
-        files: "ファイル",
-        utilities: "ユーティリティ",
-        app: "App",
-        appManagement: "Appの管理"
+        interface: "インターフェイス",
+        windowsDock: "ウインドウとDock",
+        audio: "オーディオ",
+        energyDisplay: "エネルギーとディスプレイ",
+        screenCaptures: "画面キャプチャ",
+        mouseKeyboard: "マウスとキーボード",
+        clipboardFiles: "クリップボードとファイル",
+        system: "システム",
+        lattice: "Lattice",
+        utilities: "ユーティリティ"
     )
 
     static let zhHans = SettingsCategoryStrings(
-        essentials: "基础功能",
-        windowsControls: "窗口与控制",
-        files: "文件",
-        utilities: "实用工具",
-        app: "App",
-        appManagement: "App 管理"
+        interface: "界面",
+        windowsDock: "窗口与程序坞",
+        audio: "音频",
+        energyDisplay: "能源与显示器",
+        screenCaptures: "屏幕截图与录制",
+        mouseKeyboard: "鼠标与键盘",
+        clipboardFiles: "剪贴板与文件",
+        system: "系统",
+        lattice: "Lattice",
+        utilities: "实用工具"
     )
 
     static let zhTW = SettingsCategoryStrings(
-        essentials: "基本功能",
-        windowsControls: "視窗與控制",
-        files: "檔案",
-        utilities: "工具程式",
-        app: "App",
-        appManagement: "App 管理"
+        interface: "介面",
+        windowsDock: "視窗與 Dock",
+        audio: "音訊",
+        energyDisplay: "能源與顯示器",
+        screenCaptures: "螢幕擷取與錄製",
+        mouseKeyboard: "滑鼠與鍵盤",
+        clipboardFiles: "剪貼簿與檔案",
+        system: "系統",
+        lattice: "Lattice",
+        utilities: "工具程式"
     )
 
     static let zhHK = SettingsCategoryStrings(
-        essentials: "基本功能",
-        windowsControls: "視窗及控制",
-        files: "檔案",
-        utilities: "工具",
-        app: "App",
-        appManagement: "App 管理"
+        interface: "介面",
+        windowsDock: "視窗與 Dock",
+        audio: "音訊",
+        energyDisplay: "能源與顯示器",
+        screenCaptures: "螢幕截圖與錄製",
+        mouseKeyboard: "滑鼠與鍵盤",
+        clipboardFiles: "剪貼簿與檔案",
+        system: "系統",
+        lattice: "Lattice",
+        utilities: "工具"
     )
 }
 
@@ -3178,12 +3242,16 @@ struct MonitorAlertFeatureStrings {
 
 extension SettingsCategoryStrings {
     static let uk = SettingsCategoryStrings(
-        essentials: "Основне",
-        windowsControls: "Керування вікнами",
-        files: "Файли",
-        utilities: "Утиліти",
-        app: "Програма",
-        appManagement: "Керування програмами"
+        interface: "Інтерфейс",
+        windowsDock: "Вікна та Dock",
+        audio: "Аудіо",
+        energyDisplay: "Енергія та Дисплей",
+        screenCaptures: "Знімки Екрана",
+        mouseKeyboard: "Миша та клавіатура",
+        clipboardFiles: "Буфер обміну та файли",
+        system: "Система",
+        lattice: "Lattice",
+        utilities: "Утиліти"
     )
 }
 
