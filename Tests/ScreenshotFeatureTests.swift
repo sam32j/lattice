@@ -14,6 +14,8 @@ import VMStatisticsCompat
 
 enum ScreenshotFeatureTests {
     static func run(_ suite: TestSuite) {
+        ScreenshotEditorGeometryTests.run(suite)
+        ScreenshotEditorSelectionTests.run(suite)
         let registrationDomain = UserDefaults.standard.volatileDomain(
             forName: UserDefaults.registrationDomain)
         defer {

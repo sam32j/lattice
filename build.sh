@@ -542,11 +542,18 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/ScreenshotCapturePolicy.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotSupport.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotCanvasSupport.swift
+        Sources/Vorssaint/Services/QuickTools/ScreenshotEditorGeometry.swift
+        Sources/Vorssaint/Services/QuickTools/ScreenshotCropAspect.swift
+        Sources/Vorssaint/Core/ScreenshotEditorRefinementStrings.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinPinchTracker.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinGestureView.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinFeedbackView.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinWindow.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotQuickLookController.swift
+        Sources/Vorssaint/Services/QuickTools/ScreenshotWindowLayering.swift
+        Sources/Vorssaint/Services/QuickTools/ScreenshotPreviewImageActions.swift
+        Sources/Vorssaint/UI/Screenshot/ScreenshotPreviewContextMenu.swift
+        Sources/Vorssaint/UI/Screenshot/ScreenshotSelectionChrome.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinContentView.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinChrome.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinFilePromise.swift

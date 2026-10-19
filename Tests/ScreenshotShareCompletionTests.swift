@@ -181,11 +181,12 @@ enum ScreenshotShareCompletionTests {
         typealias Capture = Int
     }
 
+    final class NSWindow {}
     final class ScreenshotEditorController {
         let capture: Int
         var shown = false
         init(capture: Int) { self.capture = capture }
-        func show() { shown = true }
+        func show(above owner: NSWindow? = nil) { shown = true }
     }
 
     enum WindowActivationPolicy {

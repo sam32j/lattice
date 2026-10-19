@@ -12,6 +12,8 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
     private var previousResponder: NSResponder?
     private var keyMonitor: Any?
     private var previewPanel: QLPreviewPanel?
+    private var originalLevel: NSWindow.Level?
+    var presentationWindow: NSWindow? { previewPanel }
     var isVisible: Bool { previewPanel?.isVisible == true }
     var protectedWindowIDs: Set<CGWindowID> {
         guard let previewPanel, previewPanel.isVisible, previewPanel.windowNumber > 0 else { return [] }
@@ -36,11 +38,16 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
         NSApp.nextResponder = self
         guard let panel = QLPreviewPanel.shared() else { close(); return false }
         previewPanel = panel
+        originalLevel = panel.level
         panel.updateController()
         panel.reloadData()
         panel.makeKeyAndOrderFront(nil)
+        // Quick Look chooses its own level while opening. Apply our layering
+        // only after that transition, not before it resets the window.
+        panel.level = ScreenshotWindowLayering.previewLevel(above: owner)
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self, weak panel] event in
-            guard event.window === panel, event.keyCode == 53 else { return event }
+            guard event.window === panel,
+                  event.keyCode == 53 || ScreenshotWindowLayering.isQuickLookShortcut(event) else { return event }
             self?.close()
             return nil
         }
@@ -66,6 +73,8 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
     func close() {
         let returnFocus = previewPanel?.isKeyWindow == true
         previewPanel?.orderOut(nil)
+        if let originalLevel { previewPanel?.level = originalLevel }
+        originalLevel = nil
         previewPanel?.dataSource = nil
         previewPanel?.delegate = nil
         previewPanel = nil

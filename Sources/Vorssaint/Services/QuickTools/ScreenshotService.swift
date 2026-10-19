@@ -613,9 +613,18 @@ final class ScreenshotService: ObservableObject {
                 return Self.temporaryExportFile(image: export.image, scale: export.scale,
                                                 strings: self.strings)
             },
+            savedFile: { saved?.url },
             onClose: { [weak self] in self?.preview = nil })
         preview = controller
         controller.show()
+    }
+
+    func showTransformedPreview(_ capture: ScreenshotSelectionController.Capture) {
+        guard AppFeature.screenshot.isAvailable else { return }
+        // A menu transform is a new draft, not permission to overwrite the
+        // original file or repeat an automatic clipboard/save action.
+        presentPreview(capture, defaultAction: .none, initialSaved: nil,
+            completedActions: [], dismissInterval: nil, latestCapture: nil)
     }
 
     private func runDefaultAction(_ defaultAction: ScreenshotDefaultAction,
@@ -643,7 +652,7 @@ final class ScreenshotService: ObservableObject {
         }
     }
 
-    func openEditor(with capture: ScreenshotSelectionController.Capture) {
+    func openEditor(with capture: ScreenshotSelectionController.Capture, above owner: NSWindow? = nil) {
         WindowActivationPolicy.retain()
         // Any editor may be showing the latest capture, and what it exports
         // is no longer the stored original, so the shortcut keeps that
@@ -651,7 +660,7 @@ final class ScreenshotService: ObservableObject {
         withholdLatestCapture()
         let editor = ScreenshotEditorController(capture: capture)
         editors.append(editor)
-        editor.show()
+        editor.show(above: owner)
     }
 
     @MainActor

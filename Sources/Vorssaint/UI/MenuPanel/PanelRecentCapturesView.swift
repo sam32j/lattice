@@ -24,8 +24,7 @@ struct RecentCapturesView: View {
     @State private var confirmingClear = false
 
     var onClose: (() -> Void)?
-    /// Inside the island the list becomes a rail of cards that fill this
-    /// area and continue sideways.
+    /// The island uses the same compact vertical rows as the capture history.
     var notchSize: CGSize? = nil
 
     private var text: RecentCaptureStrings {
@@ -111,13 +110,13 @@ struct RecentCapturesView: View {
                 .frame(maxHeight: notchSize == nil ? nil : .infinity)
                 .panelCard()
         } else if let notchSize {
-            let rows = NotchLayout.railRows(count: visibleEntries.count,
-                                            perRow: NotchLayout.railCapacity(width: notchSize.width, itemWidth: 236, spacing: 8),
-                                            rowHeight: 88, spacing: 8, height: notchSize.height)
-            let cardHeight = (notchSize.height - CGFloat(rows - 1) * 8) / CGFloat(rows)
-            NotchRail(items: visibleEntries, rows: rows, itemWidth: 236, width: notchSize.width) { entry in
-                row(entry).frame(height: cardHeight)
+            ScrollView(.vertical) {
+                LazyVStack(alignment: .leading, spacing: 7) {
+                    ForEach(visibleEntries) { entry in row(entry) }
+                }
+                .padding(.trailing, 3)
             }
+            .frame(width: notchSize.width, height: notchSize.height)
         } else {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 7) {

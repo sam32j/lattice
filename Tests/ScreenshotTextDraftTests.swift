@@ -13,9 +13,11 @@ enum ScreenshotTextDraftTests {
         var selectedID: UUID?, editingTextID: UUID?, newTextID: UUID?, draftID: UUID?
         var dragStart = CGPoint.zero, cropLoupePoint: CGPoint?
         var dragRegistered = false, editingSelectedAnnotation = false
+        var duplicateOnDrag = false
         var activeHandle: ScreenshotSupport.Handle?
         var cropDraft: CGRect?, cropResizeOrigin: CGRect?, cropMoveOrigin: CGRect?, cropSelectionOrigin: CGRect?
         var tool = ScreenshotSupport.Tool.text
+        var cropAspect = ScreenshotCropAspect.free
         var color = ScreenshotSupport.ColorID.red
         var stroke = ScreenshotSupport.StrokeID.medium
         var textSize = 18, blurLevel = 10

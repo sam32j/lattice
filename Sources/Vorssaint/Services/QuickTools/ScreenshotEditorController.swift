@@ -17,21 +17,30 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
     @Published var tool: ScreenshotSupport.Tool {
         didSet {
             UserDefaults.standard.set(tool.rawValue, forKey: DefaultsKey.screenshotLastTool)
-            if tool != .select { clearTextSelection() }
+            if tool != .select { textSelectionEnabled = false; clearTextSelection() }
             if tool != oldValue, tool != .select {
                 selectedID = nil
                 editingTextID = nil
             }
             if tool == .crop, oldValue != .crop {
                 selectedID = nil
-                cropDraft = CGRect(origin: .zero, size: imageSize)
+                let bounds = CGRect(origin: .zero, size: imageSize)
+                cropDraft = cropAspect.fitted(bounds, within: bounds, imageSize: imageSize)
             } else if oldValue == .crop {
                 cropDraft = nil
                 cropLoupePoint = nil
             }
         }
     }
-    /// Words recognized in the capture and selectable with the select tool.
+    @Published var textSelectionEnabled = false { didSet { if !textSelectionEnabled { clearTextSelection() } } }
+    @Published var cropAspect = ScreenshotCropAspect.free {
+        didSet {
+            if let cropDraft {
+                self.cropDraft = cropAspect.fitted(cropDraft, within: CGRect(origin: .zero, size: imageSize), imageSize: imageSize)
+            }
+        }
+    }
+    /// Words recognized locally, selected only through the explicit OCR mode.
     @Published private(set) var textWords: [ScreenshotSupport.RecognizedWord] = []
     /// The recognized words joined into the runs text only blur areas cover,
     /// or nil until recognition has read all of the current capture.
@@ -189,6 +198,8 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
     @Published private(set) var draftID: UUID?
     private var moveOrigin: CGRect = .zero
     private var movePoints: [CGPoint] = []
+    private var duplicateOnDrag = false
+    private var moveTextSize = 18
     private var activeHandle: ScreenshotSupport.Handle?
     private var cropResizeOrigin: CGRect?
     private var cropMoveOrigin: CGRect?
@@ -681,8 +692,9 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
 
     // MARK: - Gestures (image-pixel coordinates)
 
-    func beginDrag(at point: CGPoint) {
+    func beginDrag(at point: CGPoint, modifiers: NSEvent.ModifierFlags = []) {
         dragStart = point
+        duplicateOnDrag = modifiers.contains(.option)
         dragRegistered = false
         editingSelectedAnnotation = false
         if tool != .select, tool != .crop, selectedAnnotationOwns(point) {
@@ -745,17 +757,24 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
     }
 
     private func beginSelectDrag(at point: CGPoint) {
+        if textSelectionEnabled {
+            selectedID = nil
+            if let word = wordIndex(at: point) {
+                textSelectionAnchor = point
+                selectedWordIndexes = [word]
+            }
+            return
+        }
         if let selectedID,
            let selected = annotations.first(where: { $0.id == selectedID }) {
             let tolerance = 12 * scale
-            if selected.tool.resizesWithHandles,
-               let handle = ScreenshotSupport.handle(at: point, rect: selected.rect,
-                                                     tolerance: tolerance) {
+            if let handle = ScreenshotEditorGeometry.selectionHandle(at: point, mark: selected, tolerance: tolerance) {
                 activeHandle = handle
                 moveOrigin = selected.rect
+                moveTextSize = selected.textSize
                 return
             }
-            if selected.points.count >= 2 {
+            if selected.tool == .line || selected.tool == .arrow, selected.points.count >= 2 {
                 if hypot(point.x - selected.points[0].x, point.y - selected.points[0].y) < tolerance {
                     activeHandle = .topLeft
                     movePoints = selected.points
@@ -776,14 +795,11 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             moveOrigin = hit.rect
             movePoints = hit.points
             clearTextSelection()
-        } else if let word = wordIndex(at: point) {
-            // A drag over recognized text selects intersecting words.
-            textSelectionAnchor = point
-            selectedWordIndexes = [word]
         }
     }
 
-    func continueDrag(to point: CGPoint) {
+    func continueDrag(to rawPoint: CGPoint, constrained: Bool = false) {
+        let point = ScreenshotEditorGeometry.shapeEnd(from: dragStart, to: rawPoint, tool: tool, constrained: constrained)
         if editingSelectedAnnotation {
             continueSelectDrag(to: point)
             return
@@ -794,14 +810,15 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         case .crop:
             let bounds = CGRect(origin: .zero, size: imageSize)
             if let handle = activeHandle, let origin = cropResizeOrigin {
-                let rect = ScreenshotSupport.resizedRect(origin, dragging: handle, to: point)
+                let rect = cropAspect.resized(origin, handle: handle, to: point, within: bounds, imageSize: imageSize)
                 let snapped = ScreenshotSupport.pixelSnappedCropRect(rect, within: bounds)
                 cropDraft = snapped
                 cropLoupePoint = handle.position(in: snapped)
             } else if cropSelectionOrigin != nil {
+                let rect = cropAspect.resized(CGRect(origin: dragStart, size: .zero), handle: .bottomRight,
+                    to: point, within: bounds, imageSize: imageSize)
                 cropDraft = ScreenshotSupport.pixelSnappedCropRect(
-                    ScreenshotSupport.selectionRect(from: dragStart, to: point),
-                    within: bounds)
+                    rect, within: bounds)
             } else if let origin = cropMoveOrigin {
                 let delta = CGPoint(x: point.x - dragStart.x, y: point.y - dragStart.y)
                 cropDraft = ScreenshotSupport.pixelSnappedCropRect(
@@ -812,7 +829,15 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             updateDraft { $0.points = [dragStart, point] }
         case .freehand:
             updateDraft { $0.points.append(point) }
-        case .rect, .ellipse, .highlight, .pixelate, .redact, .text:
+        case .highlight:
+            let runs = ScreenshotEditorGeometry.highlightRuns(anchor: dragStart, current: point,
+                words: textWords.map(\.rect), padding: 2 * scale)
+            updateDraft {
+                $0.rect = runs.reduce(CGRect.null) { $0.union($1) }
+                if runs.isEmpty { $0.rect = ScreenshotSupport.selectionRect(from: dragStart, to: point) }
+                $0.points = runs.flatMap { [CGPoint(x: $0.minX, y: $0.minY), CGPoint(x: $0.maxX, y: $0.maxY)] }
+            }
+        case .rect, .ellipse, .pixelate, .redact, .text:
             updateDraft { $0.rect = ScreenshotSupport.selectionRect(from: dragStart, to: point) }
         case .sticker, .counter:
             break
@@ -825,15 +850,41 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                 anchor: anchor, current: point, boxes: textWords.map(\.rect))
             return
         }
-        guard let selectedID,
-              let index = annotations.firstIndex(where: { $0.id == selectedID })
+        guard var selectedID,
+              var index = annotations.firstIndex(where: { $0.id == selectedID }),
+              hypot(point.x - dragStart.x, point.y - dragStart.y) > 0.5 * scale
         else { return }
         if !dragRegistered {
             registerUndo()
             dragRegistered = true
         }
+        if duplicateOnDrag {
+            let copy = ScreenshotEditorGeometry.duplicate(annotations[index])
+            annotations.append(copy)
+            annotations = ScreenshotSupport.renumberingCounters(annotations)
+            selectedID = copy.id
+            self.selectedID = selectedID
+            index = annotations.count - 1
+            duplicateOnDrag = false
+        }
         if let handle = activeHandle {
-            if annotations[index].points.count >= 2 {
+            if annotations[index].tool == .text {
+                var annotation = annotations[index]
+                if handle == .bottomRight {
+                    let factor = max(0.2, hypot(max(0, point.x - moveOrigin.minX), max(0, point.y - moveOrigin.minY))
+                        / max(1, hypot(moveOrigin.width, moveOrigin.height)))
+                    annotation.textSize = max(8, min(128, Int((CGFloat(moveTextSize) * factor).rounded())))
+                    annotation.rect = ScreenshotRenderer.textBounds(annotation.text, at: moveOrigin.origin,
+                        textSize: annotation.textSize, scale: scale,
+                        boundingWidth: annotation.isBounded ? max(40, moveOrigin.width * factor) : nil)
+                } else {
+                    let resized = ScreenshotSupport.resizedRect(moveOrigin, dragging: handle, to: point)
+                    annotation.isBounded = true
+                    annotation.rect = ScreenshotRenderer.textBounds(annotation.text, at: resized.origin,
+                        textSize: annotation.textSize, scale: scale, boundingWidth: max(40, resized.width))
+                }
+                annotations[index] = annotation
+            } else if annotations[index].tool == .line || annotations[index].tool == .arrow {
                 var points = movePoints
                 if handle == .topLeft { points[0] = point } else { points[1] = point }
                 annotations[index].points = points
@@ -844,12 +895,9 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             return
         }
         let delta = CGPoint(x: point.x - dragStart.x, y: point.y - dragStart.y)
-        if annotations[index].points.isEmpty {
-            annotations[index].rect = moveOrigin.offsetBy(dx: delta.x, dy: delta.y)
-        } else {
-            annotations[index].points = movePoints.map {
-                CGPoint(x: $0.x + delta.x, y: $0.y + delta.y)
-            }
+        annotations[index].rect = moveOrigin.offsetBy(dx: delta.x, dy: delta.y)
+        annotations[index].points = movePoints.map {
+            CGPoint(x: $0.x + delta.x, y: $0.y + delta.y)
         }
     }
 
@@ -866,6 +914,7 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             cropLoupePoint = nil
             dragRegistered = false
             editingSelectedAnnotation = false
+            duplicateOnDrag = false
         }
         if editingSelectedAnnotation {
             finishSelectDrag(at: point, isTap: isTap)
@@ -959,12 +1008,10 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
               let selected = annotations.first(where: { $0.id == selectedID })
         else { return false }
         let tolerance = 12 * scale
-        if selected.tool.resizesWithHandles,
-           ScreenshotSupport.handle(at: point, rect: selected.rect,
-                                    tolerance: tolerance) != nil {
+        if ScreenshotEditorGeometry.selectionHandle(at: point, mark: selected, tolerance: tolerance) != nil {
             return true
         }
-        if selected.points.prefix(2).contains(where: {
+        if (selected.tool == .line || selected.tool == .arrow), selected.points.prefix(2).contains(where: {
             hypot(point.x - $0.x, point.y - $0.y) < tolerance
         }) {
             return true
@@ -974,15 +1021,20 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
 
     private func finishSelectDrag(at point: CGPoint, isTap: Bool) {
         textSelectionAnchor = nil
+        if dragRegistered, let selectedID, let mark = annotations.first(where: { $0.id == selectedID }) {
+            self.selectedID = nil
+            syncControls(to: mark)
+            self.selectedID = selectedID
+        }
         guard isTap, !dragRegistered else { return }
         let hitID = hitTest(point)
         self.selectedID = nil
         if let hitID, let hit = annotations.first(where: { $0.id == hitID }) {
             syncControls(to: hit)
             self.selectedID = hitID
-            editingTextID = hit.tool == .text ? hitID : nil
+            editingTextID = nil
             clearTextSelection()
-        } else if let word = wordIndex(at: point) {
+        } else if textSelectionEnabled, let word = wordIndex(at: point) {
             selectedWordIndexes = [word]
         } else {
             clearTextSelection()
@@ -1004,10 +1056,19 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         self.selectedID = nil
         syncControls(to: hit)
         selectedID = hitID
-        editingTextID = hit.tool == .text ? hitID : nil
+        editingTextID = nil
         clearTextSelection()
         tool = .select
         return true
+    }
+
+    func editText(at point: CGPoint) {
+        guard let id = hitTest(point), let annotation = annotations.first(where: { $0.id == id }),
+              annotation.tool == .text else { return }
+        tool = .select
+        textSelectionEnabled = false
+        selectedID = id
+        editingTextID = id
     }
 
     private func updateDraft(_ mutate: (inout ScreenshotSupport.Annotation) -> Void) {
@@ -1034,8 +1095,10 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                     return annotation.id
                 }
             case .freehand:
-                for pathPoint in annotation.points
-                where hypot(point.x - pathPoint.x, point.y - pathPoint.y) <= tolerance {
+                let hitArea = ScreenshotEditorGeometry.freehandPath(annotation.points).copy(
+                    strokingWithWidth: tolerance * 2 + annotation.stroke.width * scale,
+                    lineCap: .round, lineJoin: .round, miterLimit: 10)
+                if hitArea.contains(point) {
                     return annotation.id
                 }
             case .counter:
@@ -1044,7 +1107,11 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                     <= radius + 4 * scale {
                     return annotation.id
                 }
-        case .rect, .ellipse, .highlight, .pixelate, .redact:
+            case .highlight:
+                if ScreenshotEditorGeometry.highlightRects(annotation).contains(where: {
+                    $0.insetBy(dx: -tolerance / 2, dy: -tolerance / 2).contains(point)
+                }) { return annotation.id }
+            case .rect, .ellipse, .pixelate, .redact:
                 let outer = annotation.rect.insetBy(dx: -tolerance / 2, dy: -tolerance / 2)
                 guard outer.contains(point) else { continue }
                 if includeShapeInteriors {
@@ -1260,7 +1327,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         super.init()
     }
 
-    func show() {
+    func show(above owner: NSWindow? = nil) {
         let screen = NSScreen.pointerVisibleFrame
         let minimumSize = ScreenshotSupport.editorMinimumContentSize(visibleSize: screen.size)
         // The hosting view rewrites the window's size limits on its first
@@ -1272,6 +1339,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         let host = NSHostingController(rootView: content)
         host.sizingOptions = [.minSize]
         let window = NSWindow(contentViewController: host)
+        window.level = ScreenshotWindowLayering.editorLevel(above: owner)
         // One continuous surface: the canvas fills the window and the
         // controls float over it, so the editor reads as a single object.
         window.title = strings.editorTitle
@@ -1375,6 +1443,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             keyCode: Int64(key), modifiers: GlobalShortcutModifiers(eventFlags: flags),
             number: number, bindingsRaw: bindingsRaw, enabled: enabled,
             capsLockOn: flags.contains(.capsLock)) {
+            model.textSelectionEnabled = false
             model.tool = tool
             return true
         }
