@@ -1550,6 +1550,11 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
                 window?.performClose(nil)
             }
             return true
+        case kVK_ANSI_T:
+            model.tool = .select
+            model.selectedID = nil
+            model.textSelectionEnabled.toggle()
+            return true
         default:
             return false
         }
