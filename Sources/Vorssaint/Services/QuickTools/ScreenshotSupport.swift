@@ -1484,7 +1484,7 @@ enum ScreenshotSupport {
 
         /// Existing rectangular marks with visible resize grips.
         var resizesWithHandles: Bool {
-            dragsRect || self == .sticker
+            (dragsRect && self != .highlight) || self == .sticker
         }
 
         var defaultShortcut: GlobalShortcut? {

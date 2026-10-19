@@ -40,6 +40,8 @@ final class ScreenshotQuickPreviewController {
     /// Writes the capture as it would be saved into a temporary file for the
     /// system share sheet.
     private let shareFile: () -> URL?
+    private let savedFile: () -> URL?
+    private var menuFileURL: URL?
     private let shareAnchor = ShelfSharePickerAnchor.Anchor()
     private var systemSharing = false
     private let onClose: () -> Void
@@ -69,6 +71,7 @@ final class ScreenshotQuickPreviewController {
          share: @escaping (ScreenshotShareDuration,
                            @escaping @MainActor (ScreenshotShareRecord?) -> Void) -> Void,
          shareFile: @escaping () -> URL?,
+         savedFile: @escaping () -> URL? = { nil },
          onClose: @escaping () -> Void) {
         self.capture = capture
         self.strings = strings
@@ -78,6 +81,7 @@ final class ScreenshotQuickPreviewController {
         self.action = action
         self.share = share
         self.shareFile = shareFile
+        self.savedFile = savedFile
         self.onClose = onClose
         model.disabledActions = completedActions.intersection([.save, .copy])
     }
@@ -110,16 +114,20 @@ final class ScreenshotQuickPreviewController {
             copyText: { [weak self] in self?.copyText() },
             dismiss: { [weak self] in self?.close() },
             expand: { [weak self] in
-                guard let self else { return }
-                self.dismissWork?.cancel()
-                if !ScreenshotQuickLookController.shared.show(image: self.capture.image,
-                    scale: self.capture.scale, owner: self.panel ?? NotchService.shared.presentationWindow) {
-                    NSSound.beep()
-                }
+                self?.showQuickLook()
             },
             hoverChanged: { [weak self] inside in self?.hoverChanged(inside) },
             showsDismissButton: presentationPolicy.showsDismissButton,
-            embedded: wantsNotch)
+            embedded: wantsNotch,
+            menuAction: { [weak self] in self?.performMenu($0) },
+            menuApplications: { [weak self] in self?.applicationsForMenu() ?? [] },
+            menuOpenWith: { [weak self] app in
+                guard let self, let url = self.fileForMenu() else { return }
+                NSWorkspace.shared.open([url], withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration())
+            },
+            menuCanReveal: savedFile() != nil,
+            menuOpened: { [weak self] in self?.dismissWork?.cancel() },
+            menuClosed: { [weak self] in self?.scheduleAutoDismiss() })
         if wantsNotch, NotchService.shared.presentCapture(
             id: presentationID, content: AnyView(content), actions: AnyView(content.toolbar), height: Self.size(showingLink: model.sharedRecord != nil).height,
             takeFocus: presentationPolicy.takesFocus,
@@ -277,6 +285,56 @@ final class ScreenshotQuickPreviewController {
             return
         }
         close()
+    }
+
+    private func showQuickLook() {
+        guard !closed else { return }
+        dismissWork?.cancel()
+        if ScreenshotQuickLookController.shared.isVisible { ScreenshotQuickLookController.shared.close(); return }
+        if !ScreenshotQuickLookController.shared.show(image: capture.image, scale: capture.scale,
+            owner: panel ?? NotchService.shared.presentationWindow) { NSSound.beep() }
+    }
+
+    private func fileForMenu() -> URL? {
+        if let menuFileURL { return menuFileURL }
+        menuFileURL = shareFile()
+        return menuFileURL
+    }
+
+    private func applicationsForMenu() -> [URL] {
+        guard let url = fileForMenu() else { return [] }
+        return NSWorkspace.shared.urlsForApplications(toOpen: url).sorted {
+            FileManager.default.displayName(atPath: $0.path).localizedStandardCompare(
+                FileManager.default.displayName(atPath: $1.path)) == .orderedAscending
+        }
+    }
+
+    @MainActor private func performMenu(_ requested: ScreenshotPreviewMenuAction) {
+        guard !closed else { return }
+        switch requested {
+        case .edit: perform(.edit)
+        case .pin: perform(.pin)
+        case .extractText: copyText()
+        case .quickLook: showQuickLook()
+        case .discard: perform(.discard)
+        case .close: close()
+        case .share: performSystemShare()
+        case .reveal:
+            if let url = savedFile() { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+        case .mail:
+            if let url = fileForMenu() { NSSharingService(named: .composeEmail)?.perform(withItems: [url]) }
+        case .printImage:
+            ScreenshotPreviewImageActions.printImage(capture.image, scale: capture.scale)
+        case .saveAs:
+            if ScreenshotPreviewImageActions.saveAs(image: capture.image, scale: capture.scale,
+                owner: panel ?? NotchService.shared.presentationWindow, strings: strings) { close() }
+        case .rotateLeft, .flipHorizontal:
+            guard let image = ScreenshotPreviewImageActions.transformed(capture.image,
+                requested == .rotateLeft ? .rotateLeft : .flipHorizontal) else { NSSound.beep(); return }
+            let capture = ScreenshotSelectionController.Capture(image: image, scale: capture.scale, anchorRect: capture.anchorRect)
+            close()
+            DispatchQueue.main.async { ScreenshotService.shared.showTransformedPreview(capture) }
+        }
     }
 
     func shareLink() {
@@ -459,14 +517,16 @@ final class ScreenshotQuickPreviewController {
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             let key = Int(event.keyCode)
             if flags.intersection([.command, .option, .shift, .control]) == .command {
-                let text = event.charactersIgnoringModifiers?.folding(
-                    options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
-                let letter = text?.count == 1 ? text?.first : nil
-                let isLatinLetter = letter.map { $0.isASCII && $0.isLetter } ?? false
-                if isLatinLetter ? letter == "w" : key == kVK_ANSI_W {
+                func matches(_ letter: String, _ fallback: Int) -> Bool {
+                    ScreenshotWindowLayering.matchesLetter(letter, characters: event.charactersIgnoringModifiers,
+                        keyCode: event.keyCode, fallback: fallback)
+                }
+                if matches("w", kVK_ANSI_W) {
                     self.close()
                     return nil
                 }
+                if matches("y", kVK_ANSI_Y) { self.showQuickLook(); return nil }
+                if matches("e", kVK_ANSI_E) { self.perform(.edit); return nil }
             }
             if flags.contains(.command) {
                 switch key {
@@ -474,7 +534,11 @@ final class ScreenshotQuickPreviewController {
                     self.perform(.copy)
                     return nil
                 case kVK_ANSI_S:
-                    self.perform(.save)
+                    if flags.contains(.shift) { MainActor.assumeIsolated { self.performMenu(.saveAs) } }
+                    else { self.perform(.save) }
+                    return nil
+                case kVK_ANSI_P:
+                    MainActor.assumeIsolated { self.performMenu(.printImage) }
                     return nil
                 case kVK_Delete, kVK_ForwardDelete:
                     self.perform(.discard)
@@ -557,6 +621,12 @@ private struct ScreenshotQuickPreviewView: View {
     let showsDismissButton: Bool
     var embedded = false
     var actionsOnly = false
+    var menuAction: @MainActor (ScreenshotPreviewMenuAction) -> Void = { _ in }
+    var menuApplications: () -> [URL] = { [] }
+    var menuOpenWith: (URL) -> Void = { _ in }
+    var menuCanReveal = false
+    var menuOpened: () -> Void = {}
+    var menuClosed: () -> Void = {}
     var toolbar: Self {
         var view = self
         view.actionsOnly = true
@@ -566,8 +636,14 @@ private struct ScreenshotQuickPreviewView: View {
     @State private var isViewportHovered = false
 
     var body: some View {
-        if actionsOnly { actionBar }
-        else { preview }
+        Group {
+            if actionsOnly { actionBar }
+            else { preview }
+        }
+        .contextMenu {
+            ScreenshotPreviewContextMenu(perform: menuAction, applications: menuApplications,
+                openWith: menuOpenWith, canReveal: menuCanReveal, opened: menuOpened, closed: menuClosed)
+        }
     }
 
     private var actionBar: some View {

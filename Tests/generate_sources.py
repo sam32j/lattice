@@ -117,6 +117,11 @@ def main():
           + declaration("Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift",
                         "    private func startWaitingRecording()").replace("private func", "func", 1)
           + "}\n}\n")
+    write("ScreenshotEditorSelection.swift", "import AppKit\nextension ScreenshotEditorSelectionTests {\nfinal class Model: State {\n"
+          + "".join(declaration(text_model, prefix).replace("private func", "func", 1)
+              for prefix in ["    private func beginSelectDrag(", "    private func continueSelectDrag(",
+                             "    private func finishSelectDrag(", "    func editText(", "    func hitTest("])
+          + "}\n}\n")
     write("ScreenshotTextDraft.swift", "import AppKit\nextension ScreenshotTextDraftTests {\nfinal class Model: State {\n"
           + "".join(declaration(text_model, prefix).replace("private func", "func", 1)
               for prefix in ["    private func registerUndo()", "    private func applyStyleToSelection()",
@@ -1611,6 +1616,8 @@ def main():
           + "var actions: [Action] = []\nfunc perform(_ action: Action) { actions.append(action) }\n"
           + "func close() { closed = true }\nfunc attach(_ panel: NSPanel) { installKeyMonitor(for: panel) }\n"
           + "func copyText() {}\n"
+          + "var quickLookRequests = 0\nfunc showQuickLook() { quickLookRequests += 1 }\n"
+          + "var menuRequests: [ScreenshotPreviewMenuAction] = []\nfunc performMenu(_ action: ScreenshotPreviewMenuAction) { menuRequests.append(action) }\n"
           + declaration(preview, "    private func installKeyMonitor(for panel:")
           + "}\nfinal class Selection {\n"
           + "enum ScreenCaptureTool { case area, recording, window, fullScreen }\n"

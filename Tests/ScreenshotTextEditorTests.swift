@@ -38,6 +38,20 @@ enum ScreenshotTextEditorTests {
             suite.expect(false, "annotation editor creates a native text view")
             return
         }
+        suite.expect(original.textContainer?.lineFragmentPadding == 0 && original.textContainerInset == .zero,
+                     "native annotation editing has the same zero padding as measured text")
+        let sample = "MMMMM"
+        let font = original.font!
+        let boundaryWidth = (sample as NSString).size(withAttributes: [.font: font]).width + 1
+        original.string = sample
+        original.setFrameSize(CGSize(width: boundaryWidth, height: 80))
+        original.textContainer?.containerSize = CGSize(width: boundaryWidth, height: 1000)
+        if let container = original.textContainer, let manager = original.layoutManager {
+            manager.ensureLayout(for: container)
+            suite.expectClose(ceil(manager.usedRect(for: container).height),
+                ScreenshotEditorGeometry.textSize(sample, font: font, width: boundaryWidth).height,
+                "native wrapping agrees with shared measurement at the line boundary")
+        }
         host.rootView = ScreenshotAnnotationTextEditor(
             text: Binding(get: { nextText }, set: { nextText = $0 }),
             fontSize: 18, textColor: .red, isBounded: false, width: 180,
