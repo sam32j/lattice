@@ -189,7 +189,7 @@ final class MiddleClickService: ObservableObject {
             return
         }
 
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -215,7 +215,7 @@ final class MiddleClickService: ObservableObject {
         if let source {
             PointerTapRunLoop.add(source)
         }
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
 
         startMultitouch()
         installObservers()
@@ -233,7 +233,7 @@ final class MiddleClickService: ObservableObject {
             return current
         }
         if let port {
-            CGEvent.tapEnable(tap: port, enable: false)
+            InputEventTap.enable(tap: port, enable: false)
         }
         if let source {
             PointerTapRunLoop.remove(source, invalidating: port)
@@ -501,7 +501,7 @@ final class MiddleClickService: ObservableObject {
             switch SessionActivitySupport.disabledTapRecovery(tapHeld: port != nil,
                                                               tapShouldRun: shouldRearm) {
             case .rearm:
-                if let port { CGEvent.tapEnable(tap: port, enable: true) }
+                if let port { InputEventTap.enable(tap: port, enable: true) }
             case .tearDown:
                 // The matching middle-up was sent above. Tear the disabled tap
                 // down after its callback returns instead of resurrecting it.

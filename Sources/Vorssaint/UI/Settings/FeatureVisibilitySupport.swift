@@ -8,7 +8,7 @@ import Foundation
 /// below and the unit tests can reason about pages without pulling UI in.
 enum SettingsPage: Hashable {
     case general, features, energy, monitor
-    case mouse, keyboard, switcher, dock, cutPaste, autoQuit, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, portManager, notch, notchMascot
+    case mouse, keyboard, switcher, dock, cutPaste, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, portManager, notch, notchMascot
     case shortcuts, dataPermissions, about
 }
 
@@ -19,6 +19,7 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
     case panelConfiguration
     case mixer
     case audioPriority
+    case audioOutputPriority
     case musicBlocking
     case keepAwake
     case brightness
@@ -36,6 +37,7 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
     case switcher
     case dock
     case dockClick
+    case autoQuit
     case spacesOrder
     case finderCutPaste
     case finderRename
@@ -63,21 +65,22 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
         switch self {
         case .panelConfiguration:
             return .general
-        case .mixer, .musicBlocking, .soundOutputSwitcher:
+        case .mixer, .musicBlocking, .soundOutputSwitcher, .audioOutputPriority:
             return .audioOutput
         case .audioPriority, .micMute:
             return .audioInput
-        case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .keyboardBrightnessShortcuts, .wallpaper:
+        case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .keyboardBrightnessShortcuts:
             return .energy
         case .scrollDirection, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts,
              .middleClick, .mouseClickDebounce:
             return .mouse
         case .quitProtection, .keyboardDebounce, .superKey, .cleaningMode:
             return .keyboard
+        case .wallpaper: return .wallpaper
         case .scratchpad:
             return .scratchpad
         case .switcher: return .switcher
-        case .dock, .dockClick, .spacesOrder: return .dock
+        case .dock, .dockClick, .spacesOrder, .autoQuit: return .dock
         case .finderCutPaste, .finderRename: return .cutPaste
         case .clipboardHistory, .pastePlain: return .clipboard
         case .quickLauncher, .cameraPreview: return .shortcuts
@@ -169,7 +172,6 @@ final class SettingsRouter: ObservableObject {
     @Published private(set) var pendingFeatureTarget: SettingsFeatureTargetRequest?
     /// One-shot hint for the Cleaner page's tool switcher, so a panel surface
     /// can land directly on a specific tool. Consumed and cleared on arrival.
-    @Published var cleanerTool: String?
     /// One-shot hint for the Dynamic Island page, so a section of the island
     /// can open its own options. Consumed and cleared on arrival.
     @Published var notchModule: NotchModule?
@@ -247,7 +249,6 @@ final class SettingsRouter: ObservableObject {
         guard let index = historyTarget(step: step, isPageVisible: isPageVisible) else { return }
         historyIndex = index
         isTraversingHistory = true
-        cleanerTool = nil
         notchModule = nil
         let entry = history[index]
         request(entry.destination, sidebarFeature: entry.sidebarFeature)
@@ -298,7 +299,7 @@ extension AppFeature {
         case .windowMaximizer:
             return FeatureSettingsDestination(.windowLayout, sectionAnchor: .windowMaximizer)
         case .windowLayout: return FeatureSettingsDestination(.windowLayout)
-        case .autoQuit: return FeatureSettingsDestination(.autoQuit)
+        case .autoQuit: return FeatureSettingsDestination(.dock, sectionAnchor: .autoQuit)
         case .quitWindowProtection:
             return FeatureSettingsDestination(.keyboard, sectionAnchor: .quitProtection)
 
@@ -380,7 +381,7 @@ extension AppFeature {
         case .cameraPreview:
             return FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview)
         case .wallpaper:
-            return FeatureSettingsDestination(.energy, sectionAnchor: .wallpaper)
+            return FeatureSettingsDestination(.wallpaper, sectionAnchor: .wallpaper)
         case .notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch: return FeatureSettingsDestination(.notch)
         case .notchMascot: return FeatureSettingsDestination(.notchMascot)
         case .radialMenu: return FeatureSettingsDestination(.radialMenu)
@@ -410,18 +411,18 @@ enum FeatureVisibilitySupport {
     /// always shows (General, Shortcuts, About and friends).
     static func features(for page: SettingsPage) -> [AppFeature] {
         switch page {
-        case .energy: return [.keepAwake, .brightness, .extraBrightness, .wallpaper, .bluetoothSleep]
+        case .energy: return [.keepAwake, .brightness, .extraBrightness, .bluetoothSleep]
         case .monitor: return monitorFeatures
         case .switcher: return [.switcher]
-        case .dock: return [.dockPreview, .dockClick, .spacesOrder]
+        case .dock: return [.dockPreview, .dockClick, .spacesOrder, .autoQuit]
         case .windowLayout: return [.windowLayout, .windowMaximizer]
-        case .autoQuit: return [.autoQuit]
-        case .clipboard: return [.clipboardHistory, .pastePlain, .finderCutPaste]
+        case .wallpaper: return [.wallpaper]
+        case .clipboard: return [.clipboardHistory, .pastePlain]
         case .cutPaste: return [.finderCutPaste, .finderRename]
         case .shelf: return [.shelf]
         case .media: return [.mediaTools]
-        case .audioInput: return [.micMute, .audioPriority]
-        case .audioOutput: return [.mixer, .soundOutputSwitcher, .musicBlock]
+        case .audioInput: return [.micMute, .audioPriority, .mixer]
+        case .audioOutput: return [.mixer, .soundOutputSwitcher, .musicBlock, .audioPriority]
         case .scratchpad: return [.scratchpad]
         case .urlCleaner: return [.urlCleaner]
         case .cleaner: return [.cleaner]
@@ -444,8 +445,9 @@ enum FeatureVisibilitySupport {
 
     static func isPageVisible(_ page: SettingsPage,
                               isAvailable: (AppFeature) -> Bool) -> Bool {
+        if page == .dock || page == .windowLayout { return true }
         let gate = features(for: page)
-        return gate.isEmpty || gate.contains(where: isAvailable)
+        return gate.isEmpty || gate.contains { $0.isVisibleInSettings(isAvailable: isAvailable) }
     }
 
     /// Whether one of `page`'s features is among `activeFeatures`, the live

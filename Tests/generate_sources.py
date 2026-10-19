@@ -32,6 +32,10 @@ def declaration(path, prefix, scope=None):
     indent = prefix[:len(prefix) - len(prefix.lstrip())]
     end = next(i for i in range(start + 1, len(lines)) if lines[i].rstrip() == indent + "}")
     body = "".join(lines[start:end + 1])
+    # Existing lifecycle fixtures replace the native CGEvent boundary. Keep
+    # those doubles while exercising the production gate independently.
+    body = body.replace("InputEventTap.create(", "CGEvent.tapCreate(") \
+        .replace("InputEventTap.enable(", "CGEvent.tapEnable(")
     return f'#sourceLocation(file: {json.dumps(path)}, line: {start + 1})\n{body}\n#sourceLocation()\n'
 
 
@@ -60,16 +64,52 @@ def main():
               .replace("UserDefaults.standard", "defaults")
           + "}\n}\n")
     runtime = "Sources/Vorssaint/App/FeatureRuntime.swift"
+    settings_view = (ROOT / "Sources/Vorssaint/UI/Settings/SettingsView.swift").read_text()
+    find_command = re.search(r"                    if (event\.[^\n]+),\n                       (event\.[^\n]+) \{", settings_view)
+    if find_command is None:
+        raise ValueError("Missing Settings Find command condition")
+    write("SettingsSearchKeyboard.swift", "import AppKit\nextension SettingsSearchKeyboardTests {\n"
+          + "static func isFindCommand(_ event: NSEvent) -> Bool { "
+          + find_command[1] + " && " + find_command[2] + " }\n}\n")
+    quick_hotkey = (ROOT / "Sources/Vorssaint/Services/QuickTools/QuickToolHotkey.swift").read_text()
+    queued_press = re.search(r"DispatchQueue.main.async \{ (.+) \}", quick_hotkey)[1]
+    write("PermissionResetHotkey.swift", "import Foundation\nextension PermissionResetHotkeyTests {\n"
+          + "static func deliverQueuedPress(_ instance: Instance) { " + queued_press + " }\n}\n")
     runtime_methods = "".join(declaration(runtime, prefix).replace("private func", "func", 1)
         for prefix in ["    private func mayFlip(", "    func setAvailable(",
-                       "    func replaceAvailable(", "    func setAllAvailable(",
-                       "    func sync(", "    var needsRestartToUnload:"])
+                       "    func setAllAvailable(",
+                       "    func sync(", "    func syncAtLaunch()", "    func hardwareDidChange()",
+                       "    var needsRestartToUnload:"])
     runtime_methods = runtime_methods.replace("feature.isHardwareSupported", "true").replace("UserDefaults.standard", "defaults").replace("in: .standard", "in: defaults")
     runtime_methods = runtime_methods.replace("$0.isAvailable", "$0.isAvailable(in: defaults)")
     runtime_methods = re.sub(r"(?<![A-Za-z])((?:AppFeature\.)?[A-Za-z]+)\.isAvailable(?![A-Za-z(])",
                              r"\1.isAvailable(in: defaults)", runtime_methods)
     write("FeatureAvailabilityTransition.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests {\nfinal class Runtime: State {\n"
           + runtime_methods + "}\n}\n")
+    controls = (ROOT / "Sources/Vorssaint/UI/MenuPanel/MenuPanelView.swift").read_text()
+    handlers = ""
+    for preference, feature, direct in [
+        ("autoQuitEnabled", "autoQuit", "AutoQuitService"),
+        ("windowMaximizeEnabled", "windowMaximizer", "WindowMaximizer"),
+        ("dockClickEnabled", "dockClick", "DockClickService"),
+        ("dockClickHideEnabled", "dockClick", "DockClickService"),
+        ("dockClickCycleEnabled", "dockClick", "DockClickService"),
+        ("spacesOrderEnabled", "spacesOrder", "SpacesOrderHold"),
+    ]:
+        callback = re.search(r"\.onChange\(of: " + preference + r"\) \{ _, (?:enabled|_) in\n(.*?)\n                \}", controls, re.S)
+        if callback is None:
+            raise ValueError("Missing Quick Controls callback: " + preference)
+        body = callback[1].replace("FeatureRuntime.shared", "runtime")
+        body = body.replace(direct + ".shared.syncWithPreferences()", "startDirect(." + feature + ")")
+        handlers += "func " + preference + "(_ enabled: Bool) {\n" + body + "\n}\n"
+    write("SettingsToggleConsumers.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests.Consumer {\n"
+          + handlers + "}\n")
+    brightness = (ROOT / "Sources/Vorssaint/UI/MenuPanel/BrightnessSection.swift").read_text()
+    xdr_visibility = re.search(r"if (AppFeature.extraBrightness[^\n]+) \{", brightness)[1]
+    xdr_visibility = xdr_visibility.replace(".isAvailable", ".isAvailable(in: runtime.defaults)") \
+        .replace(".isPresentInControls()", ".isPresentInControls(in: runtime.defaults)")
+    write("SettingsXDRConsumer.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests.Consumer {\n"
+          + "var offersXDR: Bool { " + xdr_visibility + " }\n}\n")
     text_model = "Sources/Vorssaint/Services/QuickTools/ScreenshotEditorController.swift"
     write("ScreenshotTextDraft.swift", "import AppKit\nextension ScreenshotTextDraftTests {\nfinal class Model: State {\n"
           + "".join(declaration(text_model, prefix).replace("private func", "func", 1)
@@ -232,14 +272,6 @@ def main():
                         "    static func imageCapture(")
           + "}\n")
     panel = "Sources/Vorssaint/App/AppDelegate.swift"
-    write("UpdateIntroFlow.swift", "import AppKit\nimport Foundation\n"
-          + "extension UpdateIntroFlowTests {\nfinal class Host: Fixture {\n"
-          + "".join(declaration(panel, prefix).replace("    private ", "    ", 1) for prefix in [
-              "    private func presentUpdateIntros()", "    private func showUpdateHighlightsIfNeeded()",
-              "    private func markUpdateHighlightsSeen()", "    private func showSupportUpdateIntroIfNeeded()",
-              "    func windowShouldClose(", "    func windowWillClose(", "    private func markOnboardingComplete()",
-              "    private func markSupportUpdateIntroSeenIfCurrentUpdate()", "    private func markSupportUpdateIntroSeen()"])
-          + "}\n}\n")
     write("PostUpdateStatusItemRecovery.swift", "import AppKit\nimport Foundation\n"
           + "extension PostUpdateStatusItemRecoveryTests {\nfinal class Host: Fixture {\n"
           + "".join(declaration(panel, prefix).replace("private ", "") for prefix in [
@@ -399,6 +431,9 @@ def main():
           + "final class ToggleHint: State {\n" + shortcut_consumer("Sources/Vorssaint/UI/MenuPanel/QuickTogglesSection.swift", "    private func shortcutHint(") + "}\n"
           + "final class Catalog: State {\n" + shortcut_consumer("Sources/Vorssaint/Services/CommandBar/CommandBarCatalog.swift", "        func roleShortcut(") + "}\n"
           + "final class GroupStatus: State {\n" + shortcut_consumer("Sources/Vorssaint/UI/Settings/ShortcutsSettings.swift", "    private func featureHasActiveShortcut(") + "}\n"
+          + "final class Inventory: State {\n" + declaration("Sources/Vorssaint/UI/Settings/ShortcutsSettings.swift", "    private var availableRoles:")
+              .replace("private var", "var", 1).replace("$0.isAvailable", "$0.isAvailable(in: defaults)")
+              .replace("BrightnessService.keyboardLightIsSupported", "true") + "}\n"
           + "struct Launcher: View {\nlet defaults: UserDefaults\nvar body: some View { footer }\n" + launcher_footer + "}\n}\n")
     def panel_filter(scope):
         return declaration(menu_panel, "    private func items(editing:", scope=scope) \
@@ -804,8 +839,16 @@ def main():
                         "    private func routeNotchVolume(").replace("private func", "func", 1)
           + "}\n}\n")
     mixer_section = "Sources/Vorssaint/UI/MenuPanel/MixerSection.swift"
+    write("AudioSettingsOwnership.swift", "import SwiftUI\nextension AudioSettingsOwnershipTests.InputPage {\n"
+          + declaration("Sources/Vorssaint/UI/Settings/AudioInputSettings.swift", "    var body:", scope="struct AudioInputSettings:")
+          + "}\nextension AudioSettingsOwnershipTests.OutputPage {\n"
+          + declaration("Sources/Vorssaint/UI/Settings/AudioOutputSettings.swift", "    var body:", scope="struct AudioOutputSettings:")
+          + "}\nextension AudioSettingsOwnershipTests.MixerDevices {\n"
+          + declaration(mixer_section, "    private var audioDevicesSection:").replace("private var", "var", 1)
+          + "}\n")
+    percent_editor = "Sources/Vorssaint/UI/Audio/EditableVolumePercent.swift"
     write("MixerPercentKey.swift", "import Foundation\nextension MixerPercentKeyTests {\nfinal class Coordinator: Fixture {\n"
-          + "".join(declaration(mixer_section, prefix).replace("private func", "func", 1) for prefix in [
+          + "".join(declaration(percent_editor, prefix).replace("private func", "func", 1) for prefix in [
               "        private func startMonitoringEscape()", "        private func finish("])
           + "}\n}\n")
     cleaner = "Sources/Vorssaint/Services/Cleaner/JunkCleaner.swift"
@@ -1014,12 +1057,6 @@ def main():
           + "final class Service: Fixture {\n"
           + declaration(update, "    private func launchAdminInstaller(").replace("private ", "", 1)
           + "}\n}\n")
-    highlights = "Sources/Vorssaint/UI/UpdateHighlightsView.swift"
-    write("UpdateHighlights.swift", "import AppKit\nimport SwiftUI\nextension UpdateHighlightsTests {\n"
-          + "".join(declaration(highlights, prefix) for prefix in [
-              "struct UpdateHighlightsView:", "enum UpdateHighlightsLayout", "private struct UpdateHighlightsGIF:"])
-              .replace("private struct UpdateHighlightsGIF", "struct UpdateHighlightsGIF")
-          + "}\n")
     canvas = "Sources/Vorssaint/Services/Notch/NotchWindowHost.swift"
     write("NotchMissionControlPolling.swift", "import Foundation\n"
           + "extension NotchMissionControlPollingTests {\nfinal class Host: State {\n"
@@ -1889,16 +1926,21 @@ def main():
           + "}\n}\n")
 
     self_uninstall = "Sources/Vorssaint/Services/SelfUninstall.swift"
+    write("PermissionResetLogin.swift", "import Foundation\nextension PermissionResetLoginTests.Host {\n"
+          + declaration(self_uninstall, "    private static func detachLoginItem()")
+              .replace("private static", "static", 1).replace("UserDefaults.standard", "defaults")
+              .replace("SMAppService", "PermissionResetLoginTests.SMAppService")
+              .replace("NotificationCenter", "PermissionResetLoginTests.NotificationCenter")
+              .replace("DispatchQueue", "PermissionResetLoginTests.DispatchQueue")
+          + "}\n")
     write("SelfUninstallRemoval.swift", "import Foundation\n\nextension SelfUninstallContract {\nenum Host {\n"
           + "static let bundleID = \"test\"\n"
           + "static func suspendInputInterceptors() -> Bool { events.append(\"suspend\"); return suspensionAllowed }\n"
           + "static func restoreSleepBeforeRemoval() -> Bool { events.append(\"sleep\"); return sleepRestoreAllowed }\n"
           + "static func detachFanControl() -> Bool { events.append(\"fan\"); return detachAllowed }\n"
-          + "static func detachLoginItem() { events.append(\"login\") }\n"
+          + "@discardableResult static func detachLoginItem() -> Bool { events.append(\"login\"); return loginRemovalAllowed }\n"
           + "static func removePreferences() { events.append(\"preferences\") }\n"
           + "static func trashOwnBundleAndQuit() { events.append(\"trash\") }\n"
-          + declaration(self_uninstall, "    private static func detachFromSystem()")
-            .replace("private static", "static", 1)
           + declaration(self_uninstall, "    static func clearPermissions(")
           + declaration(self_uninstall, "    static func uninstallCompletely(")
           + declaration(self_uninstall, "    private static func removeSudoersRuleIfPresent(")

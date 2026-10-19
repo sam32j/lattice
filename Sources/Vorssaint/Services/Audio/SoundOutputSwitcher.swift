@@ -53,6 +53,7 @@ final class SoundOutputSwitcher: ObservableObject {
     }
 
     private func registerHotkey() {
+        guard !InputEventTap.isBlocked else { unregisterHotkey(); return }
         let shortcut = GlobalShortcut.saved(for: DefaultsKey.soundOutputSwitcherShortcut,
                                             fallback: .soundOutputSwitcherDefault)
         if hotKeyRef != nil, registeredShortcut == shortcut { return }
@@ -71,7 +72,7 @@ final class SoundOutputSwitcher: ObservableObject {
                 guard id.signature == 0x5655_534F, id.id == 4
                 else { return OSStatus(eventNotHandledErr) }
                 let service = Unmanaged<SoundOutputSwitcher>.fromOpaque(userData).takeUnretainedValue()
-                DispatchQueue.main.async { service.switchToNextOutput() }
+                DispatchQueue.main.async { if !InputEventTap.isBlocked { service.switchToNextOutput() } }
                 return noErr
             }, 1, &spec, Unmanaged.passUnretained(self).toOpaque(), &eventHandler)
         }

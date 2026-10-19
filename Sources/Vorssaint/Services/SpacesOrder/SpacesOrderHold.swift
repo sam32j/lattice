@@ -202,7 +202,7 @@ extension SpacesOrderSystem {
 /// recent use, and puts the user's own setting back when the feature lets go.
 ///
 /// What to put back is saved before the first change, so a crash or an
-/// uninstall from the Features hub is recovered by the next sync. An ordinary
+/// interrupted toggle-off is recovered by the next sync. An ordinary
 /// quit restores nothing: the setting lives on disk, and restoring it on every
 /// quit would change the Dock twice per session. Rearranging turned back on in
 /// System Settings turns the feature off, noticed at the next Space change or
@@ -288,10 +288,9 @@ final class SpacesOrderHold {
 
     private var isWanted: Bool {
         AppFeature.spacesOrder.isAvailable(in: defaults)
-            && defaults.bool(forKey: DefaultsKey.spacesOrderEnabled)
     }
 
-    /// Follows the toggle and the hub's availability. The wanted state is read
+    /// Follows the control toggle. The wanted state is read
     /// when the work runs, so rapid toggles settle on the last one.
     func syncWithPreferences() {
         let generation = newRequest()
@@ -356,9 +355,9 @@ final class SpacesOrderHold {
         }
     }
 
-    /// A marker left behind while the feature is uninstalled, for instance by
-    /// a crash during its removal from the hub, is settled at launch. An
-    /// installed feature is synced by its own binding.
+    /// A marker left behind while the feature is off, for instance by a crash
+    /// during teardown, is settled at launch. An enabled feature is synced
+    /// by its own binding.
     static func recoverIfNeeded() {
         guard hasPendingRestore, !AppFeature.spacesOrder.isAvailable else { return }
         shared.syncWithPreferences()

@@ -22,7 +22,7 @@ enum SystemMonitorPlanTests {
         defaults.removePersistentDomain(forName: domain)
         defer { defaults.removePersistentDomain(forName: domain) }
         defaults.set(true, forKey: AppFeature.connectedDevices.availabilityKey)
-        defaults.set(true, forKey: AppFeature.fanControl.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.panelShowFanControl)
         let monitor = Monitor()
 
         suite.expect(!monitor.currentPlan(defaults: defaults).needConnectedDevices,

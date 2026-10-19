@@ -1125,6 +1125,7 @@ final class ClipboardHistoryService: ObservableObject {
     }
 
     private func registerHotkey() {
+        guard !InputEventTap.isBlocked else { unregisterHotkey(); return }
         let shortcut = GlobalShortcut.saved(for: DefaultsKey.clipboardHistoryShortcut,
                                             fallback: .clipboardDefault)
         if hotKeyRef != nil, registeredShortcut == shortcut { return }
@@ -1143,7 +1144,7 @@ final class ClipboardHistoryService: ObservableObject {
                 guard id.signature == 0x5655_434C, id.id == 3
                 else { return OSStatus(eventNotHandledErr) }
                 let service = Unmanaged<ClipboardHistoryService>.fromOpaque(userData).takeUnretainedValue()
-                DispatchQueue.main.async { service.toggleHistoryWindow() }
+                DispatchQueue.main.async { if !InputEventTap.isBlocked { service.toggleHistoryWindow() } }
                 return noErr
             }, 1, &spec, Unmanaged.passUnretained(self).toOpaque(), &hotKeyHandler)
         }

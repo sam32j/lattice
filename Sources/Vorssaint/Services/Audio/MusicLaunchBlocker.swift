@@ -149,7 +149,7 @@ final class MusicLaunchBlocker: ObservableObject {
             let blocker = Unmanaged<MusicLaunchBlocker>.fromOpaque(userInfo).takeUnretainedValue()
             return blocker.handleMediaKeyEvent(type: type, event: event)
         }
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .listenOnly,
@@ -164,12 +164,12 @@ final class MusicLaunchBlocker: ObservableObject {
         mediaKeyTap = tap
         mediaKeyTapSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
     }
 
     private func removeMediaKeyTap() {
         guard let tap = mediaKeyTap else { return }
-        CGEvent.tapEnable(tap: tap, enable: false)
+        InputEventTap.enable(tap: tap, enable: false)
         if let mediaKeyTapSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), mediaKeyTapSource, .commonModes)
         }
@@ -186,7 +186,7 @@ final class MusicLaunchBlocker: ObservableObject {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             // A gap in observation invalidates the pending launch decision.
             lastMediaKeyAt = nil
-            CGEvent.tapEnable(tap: mediaKeyTap, enable: true)
+            InputEventTap.enable(tap: mediaKeyTap, enable: true)
             isMonitoring = CGEvent.tapIsEnabled(tap: mediaKeyTap)
             return Unmanaged.passUnretained(event)
         }

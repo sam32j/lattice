@@ -18,7 +18,9 @@ struct ShortcutsSettings: View {
     private var hub: FeatureHubStrings { FeatureStrings.hub(l10n.language) }
 
     private var availableRoles: [GlobalShortcutRole] {
-        GlobalShortcutRole.availableRoles(isAvailable: { $0.isAvailable }).filter {
+        GlobalShortcutRole.availableRoles(isAvailable: {
+            $0.isVisibleInSettings(isAvailable: { $0.isAvailable })
+        }).filter {
             !$0.isKeyboardBrightness || BrightnessService.keyboardLightIsSupported
         }
     }
@@ -36,12 +38,6 @@ struct ShortcutsSettings: View {
 
     var body: some View {
         Form {
-            Section {
-                Text(l10n.s.shortcutsPageCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
             ForEach(visibleGroups, id: \.self) { group in
                 Section(groupTitle(group)) {
                     ForEach(featuresWithShortcuts(in: group), id: \.self) { feature in

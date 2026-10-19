@@ -33,6 +33,27 @@ enum SettingsSidebarIdentityTests {
             $0.id == .setting(.keyboardBrightnessShortcuts)
         }, "unsupported hardware does not expose Keyboard Light")
         let audio = sections.first { $0.id == 3 }?.items.map(\.id) ?? []
+        let desktop = sections.first { $0.id == 1 }?.items ?? []
+        suite.expect(desktop.contains { $0.id == .page(.dock) }
+                     && !desktop.contains { [.feature(.dockClick), .feature(.spacesOrder), .feature(.windowMaximizer)].contains($0.id) },
+                     "Dock and Window Management own their controls without duplicate sidebar entrances")
+        suite.expect(desktop.contains { $0.destination.page == AppFeature.wallpaper.settingsDestination.page },
+                     "Wallpaper belongs to the Desktop & Dock category")
+        suite.expect(!sections.flatMap(\.items).contains { $0.id == .feature(.pastePlain) || $0.id == .feature(.finderRename) },
+                     "Clipboard and Finder expose one page rather than entries for their child controls")
+        let off = Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in false })
+        suite.expect(off.first { $0.id == 2 }?.items.contains { $0.id == .feature(.brightness) } == true,
+                     "supported XDR controls keep Displays discoverable when optional features are off")
+        let dockClick = SettingsSearchItem(id: .feature(.dockClick), destination: AppFeature.dockClick.settingsDestination,
+                                          title: "Dock clicks", icon: "dock.rectangle", feature: .dockClick)
+        suite.expect(SettingsSearchSupport.route(for: dockClick, isAvailable: { _ in false }).destination.page == .dock,
+                     "searching an off page-owned control opens its page instead of a retired hub row")
+        FeatureHardwareBoundary.unsupported = [.extraBrightness, .fanControl]
+        let unsupported = Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in false })
+        suite.expect(!unsupported.flatMap(\.items).contains {
+            $0.id == .feature(.fanControl) || $0.id == .feature(.extraBrightness) || $0.id == .feature(.brightness)
+        }, "unsupported hardware controls are absent from the actual sidebar")
+        FeatureHardwareBoundary.unsupported = []
         suite.expect(audio == [.page(.audioInput), .page(.audioOutput)],
                      "Audio contains Audio Input followed by Audio Output")
         let clipboardFiles = sections.first { $0.id == 6 }?.items.map(\.id) ?? []

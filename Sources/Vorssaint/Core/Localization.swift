@@ -18,7 +18,7 @@ enum CountAgreement {
 }
 
 /// Languages the interface can use. The first launch defaults to the system
-/// language; the onboarding and Settings let the user override it at any time.
+/// language; Settings lets the user override it at any time.
 enum AppLanguage: String, CaseIterable, Identifiable {
     case enUS = "en-US"
     case ptBR = "pt-BR"
@@ -463,15 +463,8 @@ struct Strings {
     let autoQuitName: String
     let autoQuitEnable: String
     let autoQuitEnableCaption: String
-    let autoQuitActiveNow: String
-    let autoQuitHowTitle: String
-    let autoQuitStep1: String
-    let autoQuitStep2: String
-    let autoQuitPredictableNote: String
     let autoQuitOngoingWorkNote: String
     let autoQuitExceptionsTitle: String
-    let autoQuitExceptionsCaption: String
-    let autoQuitExceptionsEmpty: String
     let autoQuitAddApp: String
 
     // MARK: Feature — complete app uninstaller
@@ -830,7 +823,7 @@ struct Strings {
     let updateNeedsApplicationsBody: String
     let menuCheckUpdates: String
 
-    // MARK: Permissions (shared by Settings & onboarding)
+    // MARK: Permissions
     let permissionRequired: String
     let permissionAccessibility: String
     let permissionScreenRecording: String
@@ -850,41 +843,10 @@ struct Strings {
     // MARK: About
     let aboutDescription: String
     let versionPrefix: String
-    let reviewIntro: String
-    let reviewHighlights: String
 
     // MARK: Onboarding
-    let obContinue: String
-    let obBack: String
-    let obSkipStep: String
-    let obStart: String
-    let obStepWelcomeTitle: String
-    let obStepWelcomeBody: String
-    let obWelcomeBullet1Title: String
-    let obWelcomeBullet1Body: String
-    let obWelcomeBullet2Title: String
-    let obWelcomeBullet2Body: String
-    let obWelcomeBullet3Title: String
-    let obWelcomeBullet3Body: String
-    let obLanguageLabel: String
-    let obStepAccessibilityTitle: String
-    let obStepAccessibilityBody: String
-    let obAccessibilityWhy: String
-    let obStepRecordingTitle: String
-    let obStepRecordingBody: String
-    let obRecordingWhy: String
-    let obStepMonitorTitle: String
-    let obStepMonitorBody: String
-    let obMonitorNoPermission: String
-    let obStepOptionalTitle: String
-    let obStepOptionalBody: String
-    let obStepStatusTitle: String
-    let obStepStatusBody: String
-    let obStatusRecheck: String
-    let obStepDoneTitle: String
-    let obWhatsNewFallback: String
-    let obLanguageUpdateTitle: String
-    let obLanguageUpdateBody: String
+    let navigationBack: String
+    let releaseNotesFallback: String
 
     // MARK: Settings — monitor / menu bar metrics
     let tabMonitor: String
@@ -976,12 +938,9 @@ struct Strings {
     let peripheralBatteryNoDevices: String
     let monitorGraphsSection: String
 
-    // MARK: Update notification + onboarding menu bar setup
+    // MARK: Update notification + menu bar setup
     let updateBannerTitle: String
     let updateBannerAction: String
-    let obStepMenuBarTitle: String
-    let obStepMenuBarBody: String
-    let obStepMenuBarNote: String
     let monitorMenuBarPresetLabel: String
     let menuBarPresetReadable: String
     let menuBarPresetDense: String
@@ -1009,8 +968,7 @@ struct Strings {
     let speedTestTesting: String
     let speedTestFailed: String
 
-    // MARK: Per-item panel config (Settings + onboarding)
-    let monitorShowInPanel: String
+    // MARK: Per-item panel config
     let disclosureExpanded: String
     let disclosureCollapsed: String
     let panelHideItem: String
@@ -1027,10 +985,6 @@ struct Strings {
     let monitorItemDiskTools: String
     let monitorPanelConfigHint: String
     let monitorOrderHint: String
-    let obStepPanelTitle: String
-    let obStepPanelBody: String
-    let obStepPanelNavigationTitle: String
-    let obStepPanelNavigationBody: String
 
     // MARK: Cleaning mode
     let cleaningMenuItem: String
@@ -1041,8 +995,6 @@ struct Strings {
     let panelCategoryFiles: String
     let windowMaximizeName: String
     let windowMaximizeCaption: String
-    let windowMaximizeActiveNow: String
-    let windowMaximizeNeedsAccessibility: String
     let keyDebounceName: String
     let keyDebounceEnable: String
     let keyDebounceCaption: String
@@ -1066,28 +1018,17 @@ struct Strings {
     let cleaningNeedsAxBody: String
 
     // MARK: Support / donate
-    let shortcutsPageCaption: String
     let shortcutsPageTitle: String
     let settingsSearchPlaceholder: String
     let donateThanks: String
-    let supportIntroTitle: String
-    let supportIntroMessage: String
-    let supportIntroStarButton: String
     /// A quiet line under the donation button inviting a GitHub star instead.
-    let supportIntroStarHint: String
-    let supportIntroCoffeeButton: String
-    let supportIntroLaterButton: String
-    let supportIntroDoneButton: String
+    let doneButton: String
     let homebrewOfficialIntroTitle: String
     let homebrewOfficialIntroMessage: String
     let homebrewOfficialIntroInstallLabel: String
     let homebrewOfficialIntroMigrationTitle: String
     let homebrewOfficialIntroMigrationMessage: String
     let homebrewOfficialIntroCopyButton: String
-    let updateShowcaseTitle: String
-    let updateShowcaseMessage: String
-    let updateShowcaseUnavailable: String
-    let updateShowcaseRestart: String
     let showMenuBarIcon: String
     let menuBarIconStillHiddenTitle: String
     let menuBarIconStillHiddenBody: String
@@ -1182,22 +1123,6 @@ struct Strings {
     let qrResultTitle: String
     let qrResultCopy: String
     let qrResultOpen: String
-    let highlightsTitle: String
-    let highlightsTitleClipboardRedesign: String
-    let highlightsTitleWindowLayout: String
-    let highlightsTitleQuitProtection: String
-    let highlightsTitleRecorderBlur: String
-    let highlightsCaptionDockPreview: String
-    let highlightsCaptionScreenshot: String
-    let highlightsCaptionSnippetLibrary: String
-    let highlightsCaptionCapturePalette: String
-    let highlightsCaptionClipboardRedesign: String
-    let highlightsCaptionWindowLayout: String
-    let highlightsCaptionQuitProtection: String
-    let highlightsCaptionRecorderBlur: String
-    let highlightsConfigure: String
-    let highlightsTry: String
-    let highlightsSeeAll: String
     let switcherCurrentSpaceOnly: String
     let switcherCurrentSpaceOnlyCaption: String
     let shelfFileMissing: String
@@ -1394,12 +1319,12 @@ extension Strings {
         previewSizeLarge: "Grande",
         previewSizeXLarge: "Extra grande",
         settingsGroupFeatures: "Recursos",
-        advancedResetDescription: "Redefinir todas as permissões do sistema.",
+        advancedResetDescription: "Redefina permissões e desative o início de sessão. As outras configurações são mantidas.",
         advancedClearButton: "Limpar todas as permissões",
-        advancedCleared: "Permissões limpas.",
-        advancedClearFailed: "Não foi possível remover algumas permissões ou a regra de tampa fechada. Tente de novo e permita o pedido de senha, se ele aparecer.",
+        advancedCleared: "Redefinição solicitada. O início de sessão está desativado. Os controles de entrada ficam pausados até reiniciar o Lattice. Confira as permissões restantes nos Ajustes do Sistema.",
+        advancedClearFailed: "Redefinição incompleta. Os controles de entrada continuam pausados. Reinicie o Lattice e confira as permissões e os Itens de Início nos Ajustes do Sistema.",
         advancedClearConfirmTitle: "Limpar todas as permissões?",
-        advancedClearConfirmBody: "Os recursos que dependem de permissão vão parar de funcionar até você conceder de novo. As suas configurações são mantidas.",
+        advancedClearConfirmBody: "Redefinir permissões e desativar o início de sessão? As outras configurações são mantidas. Os controles de entrada ficam pausados até reiniciar o Lattice.",
         advancedUninstallSection: "Desinstalar Lattice",
         advancedUninstallDescription: "Remova o Lattice e o arquivo de configuração do seu computador completamente.",
         advancedUninstallButton: "Desinstalar o Lattice",
@@ -1566,15 +1491,8 @@ extension Strings {
         autoQuitName: "Encerrar ao fechar",
         autoQuitEnable: "Encerrar o app ao fechar a última janela",
         autoQuitEnableCaption: "Fechar a última janela de um app também o encerra.",
-        autoQuitActiveNow: "Ativo agora",
-        autoQuitHowTitle: "Como funciona",
-        autoQuitStep1: "Feche a última janela de um app (⌘W ou o botão vermelho).",
-        autoQuitStep2: "O app é encerrado sozinho. Diálogos de “salvar?” continuam aparecendo.",
-        autoQuitPredictableNote: "Apps que normalmente rodam sem janela nunca são encerrados.",
         autoQuitOngoingWorkNote: "Alguns apps fecham a última janela e continuam trabalhando, como um gravador de tela depois que a captura começa. Esses também são encerrados, a menos que estejam na lista de exceções.",
         autoQuitExceptionsTitle: "Exceções",
-        autoQuitExceptionsCaption: "Apps nesta lista continuam abertos mesmo sem nenhuma janela.",
-        autoQuitExceptionsEmpty: "Nenhuma exceção",
         autoQuitAddApp: "Adicionar app…",
 
         uninstallerName: "Desinstalador",
@@ -1919,7 +1837,7 @@ extension Strings {
         menuCheckUpdates: "Procurar atualizações…",
 
         permissionRequired: "Permissão necessária",
-        permissionAccessibility: "Acessibilidade",
+        permissionAccessibility: "Controle de Dispositivos e Acesso a Dados",
         permissionScreenRecording: "Gravação de Tela",
         permissionGranted: "Concedida",
         permissionMissing: "Não concedida",
@@ -1934,40 +1852,8 @@ extension Strings {
 
         aboutDescription: "Central de utilidades para o seu Mac.\nEnergia, monitor do sistema, rolagem e alternador de janelas, direto na barra de menus.",
         versionPrefix: "Versão",
-        reviewIntro: "Rever introdução",
-        reviewHighlights: "Rever novidades",
-
-        obContinue: "Continuar",
-        obBack: "Voltar",
-        obSkipStep: "Pular esta etapa",
-        obStart: "Abrir o Lattice",
-        obStepWelcomeTitle: "Bem-vindo ao Lattice",
-        obStepWelcomeBody: "Um utilitário discreto na barra de menus que deixa o macOS mais prático no dia a dia.",
-        obWelcomeBullet1Title: "Energia sob controle",
-        obWelcomeBullet1Body: "Mantenha o Mac acordado por quanto tempo quiser, até com a tampa fechada.",
-        obWelcomeBullet2Title: "Visão clara do sistema",
-        obWelcomeBullet2Body: "Temperaturas, uso de CPU e GPU e pressão de memória em tempo real.",
-        obWelcomeBullet3Title: "Mouse e janelas do seu jeito",
-        obWelcomeBullet3Body: "Rolagem invertida no mouse e um alternador de janelas com miniaturas.",
-        obLanguageLabel: "Idioma",
-        obStepAccessibilityTitle: "Acessibilidade",
-        obStepAccessibilityBody: "Necessária para inverter a rolagem do mouse e para o alternador de janelas responder ao teclado.",
-        obAccessibilityWhy: "O app só observa a roda do mouse e o atalho do alternador. Nada é gravado nem enviado a lugar algum.",
-        obStepRecordingTitle: "Gravação de Tela",
-        obStepRecordingBody: "Permite mostrar miniaturas reais das janelas no alternador, em vez de apenas ícones.",
-        obRecordingWhy: "As miniaturas são geradas na hora, ficam só na memória e nunca saem do seu Mac. Sem ela, o alternador funciona com ícones.",
-        obStepMonitorTitle: "Monitor do sistema",
-        obStepMonitorBody: "O painel mostra as temperaturas de CPU, GPU e bateria, o uso de hardware e a pressão de memória.",
-        obMonitorNoPermission: "Não precisa de permissão. Os sensores são lidos direto do sistema.",
-        obStepOptionalTitle: "Recursos opcionais",
-        obStepOptionalBody: "Ative agora o que quiser usar. Tudo pode ser mudado depois nos Ajustes.",
-        obStepStatusTitle: "Verificação",
-        obStepStatusBody: "Confira se está tudo pronto para os recursos que você quer usar.",
-        obStatusRecheck: "Verificar novamente",
-        obStepDoneTitle: "Tudo pronto!",
-        obWhatsNewFallback: "Esta atualização inclui as correções e melhorias mais recentes.",
-        obLanguageUpdateTitle: "Agora no seu idioma",
-        obLanguageUpdateBody: "O Lattice agora fala vários idiomas. Escolha o que você prefere usar; dá para mudar quando quiser nos Ajustes.",
+        navigationBack: "Voltar",
+        releaseNotesFallback: "Esta atualização inclui as correções e melhorias mais recentes.",
 
         tabMonitor: "Monitor de Atividade",
         monitorMenuBarSection: "Na barra de menus",
@@ -2057,9 +1943,6 @@ extension Strings {
 
         updateBannerTitle: "Atualização disponível",
         updateBannerAction: "Atualizar",
-        obStepMenuBarTitle: "Métricas na barra de menus",
-        obStepMenuBarBody: "Escolha o que mostrar ao lado do ícone. A prévia acima muda em tempo real.",
-        obStepMenuBarNote: "Novidade: blocos de Rede e Energia e gráficos no painel. Ajuste tudo depois em Ajustes › Monitor de Atividade.",
         monitorMenuBarPresetLabel: "Estilo",
         menuBarPresetReadable: "Legível",
         menuBarPresetDense: "Denso",
@@ -2086,7 +1969,6 @@ extension Strings {
         speedTestTesting: "Testando…",
         speedTestFailed: "Falha no teste",
 
-        monitorShowInPanel: "Mostrar no painel",
         disclosureExpanded: "Expandido",
         disclosureCollapsed: "Recolhido",
         panelHideItem: "Ocultar do painel",
@@ -2103,10 +1985,6 @@ extension Strings {
         monitorItemDiskTools: "Ferramentas",
         monitorPanelConfigHint: "Abra um bloco para escolher o que ele mostra.",
         monitorOrderHint: "Arraste para reordenar as seções do painel e use o olho para mostrar ou ocultar cada uma.",
-        obStepPanelTitle: "O que aparece no painel",
-        obStepPanelBody: "Abra cada bloco e escolha exatamente o que mostrar quando você clica no ícone.",
-        obStepPanelNavigationTitle: "Painel por seções",
-        obStepPanelNavigationBody: "O painel agora pode mostrar uma seção por vez. Você pode mudar entre Seções e Lista nos Ajustes.",
 
         cleaningMenuItem: "Modo de limpeza",
         utilitiesSection: "Utilidades",
@@ -2116,8 +1994,6 @@ extension Strings {
         panelCategoryFiles: "Arquivos",
         windowMaximizeName: "Maximizar janelas",
         windowMaximizeCaption: "O botão verde maximiza sem criar outro Espaço.",
-        windowMaximizeActiveNow: "Ativo no botão verde",
-        windowMaximizeNeedsAccessibility: "Precisa de Acessibilidade para funcionar.",
         keyDebounceName: "Debounce",
         keyDebounceEnable: "Filtrar teclas duplicadas",
         keyDebounceCaption: "Filtra toques duplicados muito rápidos.",
@@ -2139,28 +2015,16 @@ extension Strings {
         cleaningKeepScreenVisibleCaption: "Exibe um indicador discreto no canto da tela em vez de escurecer o conteúdo.",
         cleaningNeedsAxTitle: "Precisa de Acessibilidade",
         cleaningNeedsAxBody: "Para bloquear o teclado com segurança, o Lattice precisa da permissão de Acessibilidade. Conceda em Ajustes do Sistema e tente de novo.",
-
-        shortcutsPageCaption: "Edite aqui todos os atalhos globais dos recursos instalados neste Mac. Os inativos continuam salvos, mas não funcionam.",
         shortcutsPageTitle: "Atalhos de teclado",
         settingsSearchPlaceholder: "Buscar ajustes",
         donateThanks: "Obrigado por estar aqui. 🖤",
-        supportIntroTitle: "Ajude o Vorssaint a continuar crescendo",
-        supportIntroMessage: "Se você quiser apoiar financeiramente o desenvolvimento, o Buy Me a Coffee é o único lugar para fazer isso.",
-        supportIntroStarButton: "Dar uma estrela no GitHub",
-        supportIntroStarHint: "Uma estrela no GitHub também ajuda mais pessoas a conhecer o Vorssaint e significa muito.",
-        supportIntroCoffeeButton: "Apoiar no Buy Me a Coffee",
-        supportIntroLaterButton: "Agora não",
-        supportIntroDoneButton: "Concluir",
+        doneButton: "Concluir",
         homebrewOfficialIntroTitle: "Agora no catálogo oficial do Homebrew",
         homebrewOfficialIntroMessage: "O Lattice agora pode ser instalado direto do catálogo oficial do Homebrew.",
         homebrewOfficialIntroInstallLabel: "Nova instalação",
         homebrewOfficialIntroMigrationTitle: "Usava o tap antigo?",
         homebrewOfficialIntroMigrationMessage: "Remova o tap uma vez. O app e seus ajustes continuam no lugar.",
         homebrewOfficialIntroCopyButton: "Copiar comando",
-        updateShowcaseTitle: "Novidades da 3.1.4",
-        updateShowcaseMessage: "Veja uma prévia rápida das principais melhorias desta atualização.",
-        updateShowcaseUnavailable: "Não foi possível carregar o vídeo agora. Você ainda pode continuar.",
-        updateShowcaseRestart: "Voltar ao início",
         showMenuBarIcon: "Mostrar ícone na barra de menus",
         menuBarIconStillHiddenTitle: "O ícone continua escondido",
         menuBarIconStillHiddenBody: "O ícone foi recriado, mas o macOS não deu um lugar visível a ele. A barra de menus provavelmente está sem espaço: remova alguns ícones da barra (ou feche apps com menus longos) e tente de novo.",
@@ -2249,22 +2113,6 @@ extension Strings {
         qrResultTitle: "QR code",
         qrResultCopy: "Copiar",
         qrResultOpen: "Abrir link",
-        highlightsTitle: "Novidades desta versão",
-        highlightsTitleClipboardRedesign: "Novo visual da área de transferência",
-        highlightsTitleWindowLayout: "Organização de janelas",
-        highlightsTitleQuitProtection: "Proteção de ⌘Q e ⌘W",
-        highlightsTitleRecorderBlur: "Desfoque no gravador de tela",
-        highlightsCaptionDockPreview: "O Dock Preview agora funciona com a ampliação do Dock ligada",
-        highlightsCaptionScreenshot: "A captura de tela ganhou uma lupa de pixels e leitura de QR codes",
-        highlightsCaptionSnippetLibrary: "Um menu de snippets com busca digita qualquer snippet direto no cursor",
-        highlightsCaptionCapturePalette: "Um único atalho agora abre uma paleta flutuante para capturas, gravações, texto na tela e cores com ajustes por perto.",
-        highlightsCaptionClipboardRedesign: "O histórico agora abre como uma paleta compacta, com linhas limpas e prévia sob demanda para ler ou editar o item completo.",
-        highlightsCaptionWindowLayout: "Use o anel direcional com atalho e ponteiro para posicionar janelas, ou arraste até as bordas da tela para encaixar com margens personalizadas.",
-        highlightsCaptionQuitProtection: "Evite fechar aplicativos ou janelas por engano exigindo segurar a tecla, tocar duas vezes ou usar um atalho extra, ajustável por aplicativo.",
-        highlightsCaptionRecorderBlur: "Oculte dados confidenciais, senhas e informações privadas em qualquer trecho do seu vídeo gravado antes de salvar ou exportar.",
-        highlightsConfigure: "Configurar",
-        highlightsTry: "Experimentar",
-        highlightsSeeAll: "Ver todas as mudanças",
         switcherCurrentSpaceOnly: "Mostrar só a Mesa atual",
         switcherCurrentSpaceOnlyCaption: "Mostra as janelas da Mesa atual. Janelas em tela cheia de outras Mesas também aparecem enquanto “Mostrar janelas em tela cheia” estiver ativo.",
         shelfFileMissing: "O arquivo não existe mais",
@@ -2462,12 +2310,12 @@ extension Strings {
         previewSizeLarge: "Large",
         previewSizeXLarge: "Extra large",
         settingsGroupFeatures: "Features",
-        advancedResetDescription: "Reset all system permissions.",
+        advancedResetDescription: "Reset permissions and disable Launch at login. Other settings are kept.",
         advancedClearButton: "Clear all permissions",
-        advancedCleared: "Permissions cleared.",
-        advancedClearFailed: "Some permissions or the closed-lid rule could not be removed. Try again and allow the password request if it appears.",
+        advancedCleared: "Reset requested. Launch at login is off. Input controls are paused until you restart Lattice. Review remaining grants in System Settings.",
+        advancedClearFailed: "Reset incomplete. Input controls remain paused. Restart Lattice and review permissions and Login Items in System Settings.",
         advancedClearConfirmTitle: "Clear all permissions?",
-        advancedClearConfirmBody: "Features that need permissions will stop working until you grant them again. Your settings are kept.",
+        advancedClearConfirmBody: "Reset permissions and disable Launch at login? Other settings are kept. Input controls will stay paused until you restart Lattice.",
         advancedUninstallSection: "Uninstall Lattice",
         advancedUninstallDescription: "Remove Lattice and its configuration file from your computer.",
         advancedUninstallButton: "Uninstall Lattice",
@@ -2634,15 +2482,8 @@ extension Strings {
         autoQuitName: "Quit on close",
         autoQuitEnable: "Quit an app when its last window closes",
         autoQuitEnableCaption: "Closing an app’s last window also quits it.",
-        autoQuitActiveNow: "Active now",
-        autoQuitHowTitle: "How it works",
-        autoQuitStep1: "Close an app’s last window (⌘W or the red button).",
-        autoQuitStep2: "The app quits on its own. “Save changes?” dialogs still appear.",
-        autoQuitPredictableNote: "Apps that normally run without a window are never quit.",
         autoQuitOngoingWorkNote: "Some apps close their last window while they keep working, such as a screen recorder once capture starts. Those are quit too, unless they are on the Exceptions list.",
         autoQuitExceptionsTitle: "Exceptions",
-        autoQuitExceptionsCaption: "Apps on this list stay open even with no windows.",
-        autoQuitExceptionsEmpty: "No exceptions",
         autoQuitAddApp: "Add app…",
 
         uninstallerName: "Uninstaller",
@@ -2987,7 +2828,7 @@ extension Strings {
         menuCheckUpdates: "Check for updates…",
 
         permissionRequired: "Permission required",
-        permissionAccessibility: "Accessibility",
+        permissionAccessibility: "Device Control and Data Access",
         permissionScreenRecording: "Screen Recording",
         permissionGranted: "Granted",
         permissionMissing: "Not granted",
@@ -3002,40 +2843,8 @@ extension Strings {
 
         aboutDescription: "A utility hub for your Mac.\nEnergy, system monitor, scrolling and a window switcher, right in the menu bar.",
         versionPrefix: "Version",
-        reviewIntro: "Review introduction",
-        reviewHighlights: "Review highlights",
-
-        obContinue: "Continue",
-        obBack: "Back",
-        obSkipStep: "Skip this step",
-        obStart: "Open Lattice",
-        obStepWelcomeTitle: "Welcome to Lattice",
-        obStepWelcomeBody: "A discreet menu bar utility that makes everyday macOS more practical.",
-        obWelcomeBullet1Title: "Energy under control",
-        obWelcomeBullet1Body: "Keep the Mac awake for as long as you want, even with the lid closed.",
-        obWelcomeBullet2Title: "A clear view of the system",
-        obWelcomeBullet2Body: "CPU, GPU and battery temperatures, hardware usage and memory pressure in real time.",
-        obWelcomeBullet3Title: "Mouse and windows, your way",
-        obWelcomeBullet3Body: "Reversed mouse scrolling and a window switcher with thumbnails.",
-        obLanguageLabel: "Language",
-        obStepAccessibilityTitle: "Accessibility",
-        obStepAccessibilityBody: "Needed to invert mouse scrolling and for the window switcher to respond to the keyboard.",
-        obAccessibilityWhy: "The app only watches the mouse wheel and the switcher shortcut. Nothing is recorded or sent anywhere.",
-        obStepRecordingTitle: "Screen Recording",
-        obStepRecordingBody: "Lets the switcher show real window thumbnails instead of icons only.",
-        obRecordingWhy: "Thumbnails are generated on the fly, stay in memory and never leave your Mac. Without it, the switcher still works with icons.",
-        obStepMonitorTitle: "System monitor",
-        obStepMonitorBody: "The panel shows CPU, GPU and battery temperatures, hardware usage and memory pressure.",
-        obMonitorNoPermission: "No permission needed. Sensors are read straight from the system.",
-        obStepOptionalTitle: "Optional features",
-        obStepOptionalBody: "Turn on what you want to use now. Everything can be changed later in Settings.",
-        obStepStatusTitle: "Checkup",
-        obStepStatusBody: "Make sure everything is ready for the features you want.",
-        obStatusRecheck: "Check again",
-        obStepDoneTitle: "All set!",
-        obWhatsNewFallback: "This update includes the latest fixes and improvements.",
-        obLanguageUpdateTitle: "Now in your language",
-        obLanguageUpdateBody: "Lattice now speaks several languages. Choose the one you’d like to use; you can change it anytime in Settings.",
+        navigationBack: "Back",
+        releaseNotesFallback: "This update includes the latest fixes and improvements.",
 
         tabMonitor: "Activity Monitor",
         monitorMenuBarSection: "In the menu bar",
@@ -3125,9 +2934,6 @@ extension Strings {
 
         updateBannerTitle: "Update available",
         updateBannerAction: "Update",
-        obStepMenuBarTitle: "Metrics in the menu bar",
-        obStepMenuBarBody: "Pick what to show next to the icon. The preview above updates live.",
-        obStepMenuBarNote: "New: Network and Power blocks and graphs in the panel. Fine-tune it all later in Settings › Activity Monitor.",
         monitorMenuBarPresetLabel: "Style",
         menuBarPresetReadable: "Readable",
         menuBarPresetDense: "Dense",
@@ -3154,7 +2960,6 @@ extension Strings {
         speedTestTesting: "Testing…",
         speedTestFailed: "Test failed",
 
-        monitorShowInPanel: "Show in panel",
         disclosureExpanded: "Expanded",
         disclosureCollapsed: "Collapsed",
         panelHideItem: "Hide from panel",
@@ -3171,10 +2976,6 @@ extension Strings {
         monitorItemDiskTools: "Tools",
         monitorPanelConfigHint: "Open a block to choose what it shows.",
         monitorOrderHint: "Drag to reorder the panel sections and use the eye to show or hide each one.",
-        obStepPanelTitle: "What’s in the panel",
-        obStepPanelBody: "Open each block and pick exactly what shows when you click the icon.",
-        obStepPanelNavigationTitle: "Section-based panel",
-        obStepPanelNavigationBody: "The panel can now show one section at a time. You can switch between Sections and List in Settings.",
 
         cleaningMenuItem: "Cleaning Mode",
         utilitiesSection: "Utilities",
@@ -3184,8 +2985,6 @@ extension Strings {
         panelCategoryFiles: "Files",
         windowMaximizeName: "Maximize windows",
         windowMaximizeCaption: "The green button maximizes without creating another Space.",
-        windowMaximizeActiveNow: "Green button override active",
-        windowMaximizeNeedsAccessibility: "Needs Accessibility to work.",
         keyDebounceName: "Debounce",
         keyDebounceEnable: "Filter duplicate keys",
         keyDebounceCaption: "Filters very fast duplicate key presses.",
@@ -3207,28 +3006,16 @@ extension Strings {
         cleaningKeepScreenVisibleCaption: "Shows a discreet indicator in the corner of the screen instead of blacking out content.",
         cleaningNeedsAxTitle: "Accessibility needed",
         cleaningNeedsAxBody: "To lock the keyboard safely, Lattice needs Accessibility permission. Grant it in System Settings and try again.",
-
-        shortcutsPageCaption: "Edit every global shortcut from the features installed on this Mac. Inactive shortcuts stay saved but do not run.",
         shortcutsPageTitle: "Keyboard shortcuts",
         settingsSearchPlaceholder: "Search settings",
         donateThanks: "Thank you for being here. 🖤",
-        supportIntroTitle: "Help Vorssaint keep growing",
-        supportIntroMessage: "If you would like to support development financially, Buy Me a Coffee is the one place to do it.",
-        supportIntroStarButton: "Star Vorssaint on GitHub",
-        supportIntroStarHint: "A star on GitHub also helps more people find Vorssaint, and it means a lot.",
-        supportIntroCoffeeButton: "Support on Buy Me a Coffee",
-        supportIntroLaterButton: "Not now",
-        supportIntroDoneButton: "Done",
+        doneButton: "Done",
         homebrewOfficialIntroTitle: "Now in the official Homebrew catalog",
         homebrewOfficialIntroMessage: "Lattice can now be installed directly from the official Homebrew catalog.",
         homebrewOfficialIntroInstallLabel: "New installation",
         homebrewOfficialIntroMigrationTitle: "Used the old tap?",
         homebrewOfficialIntroMigrationMessage: "Remove the tap once. The app and your settings stay in place.",
         homebrewOfficialIntroCopyButton: "Copy command",
-        updateShowcaseTitle: "What’s new in 3.1.4",
-        updateShowcaseMessage: "Take a quick look at the main improvements in this update.",
-        updateShowcaseUnavailable: "The video could not load right now. You can still continue.",
-        updateShowcaseRestart: "Restart",
         showMenuBarIcon: "Show menu bar icon",
         menuBarIconStillHiddenTitle: "The icon is still hidden",
         menuBarIconStillHiddenBody: "The icon was rebuilt, but macOS did not give it a visible spot. The menu bar is probably out of room: remove some menu bar icons (or close apps with long menus) and try again.",
@@ -3317,22 +3104,6 @@ extension Strings {
         qrResultTitle: "QR code",
         qrResultCopy: "Copy",
         qrResultOpen: "Open link",
-        highlightsTitle: "New in this update",
-        highlightsTitleClipboardRedesign: "Redesigned clipboard",
-        highlightsTitleWindowLayout: "Window Layout",
-        highlightsTitleQuitProtection: "Quit and close protection",
-        highlightsTitleRecorderBlur: "Recording privacy blur",
-        highlightsCaptionDockPreview: "Dock Preview now works with Dock magnification turned on",
-        highlightsCaptionScreenshot: "The screenshot tool gained a pixel loupe and QR code reading",
-        highlightsCaptionSnippetLibrary: "A searchable snippet menu types any snippet right at your cursor",
-        highlightsCaptionCapturePalette: "One shortcut now opens a floating palette for screenshots, recordings, screen text and colors with nearby controls.",
-        highlightsCaptionClipboardRedesign: "Clipboard history now opens as a compact palette with uncluttered rows and an on-demand preview for reading or editing the full item.",
-        highlightsCaptionWindowLayout: "Position windows with the directional ring using a shortcut and pointer, or drag to screen edges to snap with custom gaps.",
-        highlightsCaptionQuitProtection: "Avoid quitting apps or closing windows by accident with a hold, a double press or an extra modifier, customizable per app.",
-        highlightsCaptionRecorderBlur: "Hide private details, passwords and sensitive areas anywhere across your recorded video before sharing or exporting.",
-        highlightsConfigure: "Set up",
-        highlightsTry: "Try it",
-        highlightsSeeAll: "See all changes",
         switcherCurrentSpaceOnly: "Show only the current desktop",
         switcherCurrentSpaceOnlyCaption: "Lists windows from the current desktop. Fullscreen windows from other desktops also appear while “Show fullscreen windows” is on.",
         shelfFileMissing: "The file no longer exists",

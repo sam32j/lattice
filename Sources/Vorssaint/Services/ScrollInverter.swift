@@ -91,13 +91,13 @@ final class ScrollInverter: ObservableObject {
 
     private func start() {
         if let port = tapStateLock.withLock({ tap }) {
-            CGEvent.tapEnable(tap: port, enable: true)
+            InputEventTap.enable(tap: port, enable: true)
             setSourceTracking(true)
             isRunning = true
             return
         }
         setSourceTracking(true)
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cghidEventTap,
             place: .tailAppendEventTap,
             options: .defaultTap,
@@ -136,7 +136,7 @@ final class ScrollInverter: ObservableObject {
         if let source {
             PointerTapRunLoop.add(source)
         }
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         isRunning = true
     }
 
@@ -153,7 +153,7 @@ final class ScrollInverter: ObservableObject {
             return current
         }
         if let port {
-            CGEvent.tapEnable(tap: port, enable: false)
+            InputEventTap.enable(tap: port, enable: false)
         }
         // Hand the tap back rather than only switching it off: a disabled tap
         // keeps its place in the chain, and a session that is switched away
@@ -172,7 +172,7 @@ final class ScrollInverter: ObservableObject {
         // the stall is the reason the tap was disabled and re-arming feeds it.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if SessionActivity.shared.isActive, let port = tapStateLock.withLock({ tap }) {
-                CGEvent.tapEnable(tap: port, enable: true)
+                InputEventTap.enable(tap: port, enable: true)
             }
             return Unmanaged.passUnretained(event)
         }

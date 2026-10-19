@@ -92,7 +92,7 @@ final class SmoothScrollService: ObservableObject {
     private func start() {
         guard tap == nil else {
             if let tap {
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
             }
             installScreenObserver()
             installSleepObserver()
@@ -101,7 +101,7 @@ final class SmoothScrollService: ObservableObject {
             return
         }
         MouseAppExceptions.shared.setSourceTracking(true, for: .smoothScroll)
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cghidEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -137,7 +137,7 @@ final class SmoothScrollService: ObservableObject {
         // Its isRunning is read from the tap callback, so it is built off the event path.
         _ = ScrollInverter.shared
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         installScreenObserver()
         installSleepObserver()
         isRunning = true
@@ -151,7 +151,7 @@ final class SmoothScrollService: ObservableObject {
         removeScreenObserver()
         removeSleepObserver()
         if let tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
         }
         if let runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
@@ -182,7 +182,7 @@ final class SmoothScrollService: ObservableObject {
                 sessionIsActive: SessionActivity.shared.isActive
             )
             if shouldRearm, let tap {
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
             } else {
                 DispatchQueue.main.async { [weak self] in
                     self?.stop()

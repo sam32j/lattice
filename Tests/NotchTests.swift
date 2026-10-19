@@ -14,14 +14,14 @@ enum NotchTests {
         defer { defaults.removePersistentDomain(forName: domain) }
         for feature in AppFeature.allCases { defaults.set(false, forKey: feature.availabilityKey) }
         suite.expect(!NotchModule.system.isAvailable(in: defaults), "System stays unavailable without an installed monitor")
-        defaults.set(true, forKey: AppFeature.fanControl.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.panelShowFanControl)
         suite.expect(NotchModule.system.isAvailable(in: defaults)
                      && NotchSupport.systemCardCount(hasBattery: false, fans: 1, in: defaults) == 1,
                      "fan control alone makes its containing System page reachable")
         suite.expect(NotchModule.system.isAvailable(in: defaults)
                      && NotchSupport.systemCardCount(hasBattery: false, fans: 0, in: defaults) == 0,
                      "System remains reachable while waiting for the first fan sample")
-        defaults.set(false, forKey: AppFeature.fanControl.availabilityKey)
+        defaults.set(false, forKey: DefaultsKey.panelShowFanControl)
         defaults.set(true, forKey: AppFeature.connectedDevices.availabilityKey)
         defaults.set(false, forKey: DefaultsKey.menuBarConnectedDevices)
         suite.expect(NotchModule.system.isAvailable(in: defaults)

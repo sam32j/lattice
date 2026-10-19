@@ -14,20 +14,22 @@ struct AudioInputSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(pageStrings.audioInputTitle).font(.title2.bold())
                     Text(pageStrings.audioInputDescription)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
+                if AppFeature.mixer.isAvailable {
+                    SettingsCard(title: l10n.s.mixerInputTitle) { AudioInputDeviceControls() }
+                }
                 if AppFeature.micMute.isAvailable {
                     AudioInputMuteCard()
                         .settingsSectionAnchor(.micMute, cornerRadius: 16)
                 }
                 if AppFeature.audioPriority.isAvailable {
-                    SettingsCard(title: l10n.s.audioPrioritySection) {
-                        AudioPriorityDisclosure(initiallyExpanded: true, showsHeader: false)
+                    SettingsCard(title: l10n.s.audioPriorityInputList) {
+                        AudioInputPriorityControls()
                     }
                     .settingsSectionAnchor(.audioPriority, cornerRadius: 16)
                 }

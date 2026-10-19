@@ -1420,20 +1420,26 @@ enum RepositoryFeatureTests {
         suite.expect(!appSources.isEmpty && unguardedParentWalks.isEmpty,
                "a walk up the parent chain stops at the application element: \(unguardedParentWalks)")
 
-        // Availability is only ever written by the runtime that gates it, so a
-        // new install surface cannot walk around the hardware check.
+        // Production availability writers cannot bypass the hardware gate.
+        // The layout-only host is compiled out of release builds and refuses
+        // real app identities before writing its isolated preview preferences.
         var availabilityWriters: Set<String> = []
         for path in repository.swiftPaths {
+            if path.hasSuffix("/Support/SettingsPresentationProbe.swift") { continue }
             let writes = repository.lines(at: path).contains {
                 $0.contains(".set(") && $0.contains("availabilityKey")
             }
             if writes { availabilityWriters.insert((path as NSString).lastPathComponent) }
         }
         suite.expect(availabilityWriters == ["FeatureRuntime.swift",
-                                       "FeaturePresets.swift",
                                        "Defaults.swift"],
                "feature availability is written only where the hardware gate runs, "
                + "found \(availabilityWriters.sorted())")
+        let preview = repository.source(at: "Sources/Vorssaint/Support/SettingsPresentationProbe.swift")
+        suite.expect(preview.hasPrefix("#if VORSSAINT_DEVELOPMENT")
+                     && preview.contains("hasPrefix(\"com.vorssaint.tests.\") == true")
+                     && preview.contains("exit(2)"),
+                     "the layout-only preview refuses production identities and never ships in release builds")
 
         // A saved shelf may only be read through the loader that distinguishes
         // an unreadable or partial store from a valid empty one.
@@ -1465,7 +1471,7 @@ enum RepositoryFeatureTests {
             let code = repository.lines(at: path)
                 .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
                 .joined(separator: "\n")
-            let taps = code.components(separatedBy: "CGEvent.tapCreate").count - 1
+            let taps = code.components(separatedBy: "InputEventTap.create").count - 1
             guard taps > 0 else { continue }
             tapOwners += 1
             let invalidations = code.components(separatedBy: "CFMachPortInvalidate").count - 1
@@ -1852,8 +1858,7 @@ enum RepositoryFeatureTests {
         suite.expect(!selfUninstallSource.contains("_ = Sudoers.pmsetDisableSleep")
                 && !uninstallerSource.contains("_ = Sudoers.pmsetDisableSleep"),
                "neither uninstall path discards the result of restoring sleep")
-        suite.expect(selfUninstallSource.contains("guard restoreSleepBeforeRemoval() else")
-                && selfUninstallSource.contains("guard detachFromSystem() else")
+        suite.expect(selfUninstallSource.contains("SpacesOrderHold.restoreForRemoval(), restoreSleepBeforeRemoval()")
                 && selfUninstallSource.contains("restoreSleepBeforeRemoval() -> Bool")
                 && selfUninstallSource.contains("guard detachFanControl() else")
                 && selfUninstallSource.contains("FanControlService.restoreAndUnregisterForRemoval()")

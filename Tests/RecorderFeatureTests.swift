@@ -1411,7 +1411,7 @@ enum RecorderFeatureTests {
 
         // A plain sort orders by Unicode scalar, which throws every accented
         // name past Z. Lists of names people read are sorted by the rules of
-        // the language instead, and the onboarding one is on the first screen
+        // the language instead
         // anyone sees.
         let accented = ["Zebra", "Ímã", "Área"]
         suite.expect(accented.sorted() == ["Zebra", "Área", "Ímã"],
@@ -1419,16 +1419,6 @@ enum RecorderFeatureTests {
         suite.expect(accented.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
                 == ["Área", "Ímã", "Zebra"],
                "the localized compare is what puts them where a reader expects")
-        let onboardingSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Onboarding/OnboardingPermissionsStep.swift",
-            encoding: .utf8)) ?? ""
-        suite.expect(!onboardingSource.isEmpty, "the onboarding source reads back for its sorting check")
-        let onboardingCode = onboardingSource.components(separatedBy: "\n")
-            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
-            .joined(separator: "\n")
-        suite.expect(!onboardingCode.contains(".sorted()\n"),
-               "onboarding sorts the names it shows by the rules of the language")
-
         // Case folding that inherits the Mac's locale answers differently for
         // a Turkish user: there the dotted I folds to a dotless one, so a
         // search for "istanbul" stops finding "ISTANBUL". The app ships

@@ -36,7 +36,7 @@ struct PermissionDetailsSheet: View {
             Divider()
             HStack {
                 Spacer()
-                Button(l10n.s.supportIntroDoneButton) { dismiss() }
+                Button(l10n.s.doneButton) { dismiss() }
                     .keyboardShortcut(.cancelAction)
                     .buttonStyle(.borderedProminent)
             }

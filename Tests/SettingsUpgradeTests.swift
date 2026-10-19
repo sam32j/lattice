@@ -58,5 +58,21 @@ enum SettingsUpgradeTests {
         suite.expect(!AppFeature.focusFollowsMouse.isAvailable(in: defaults)
                      && AppFeature.linearScroll.isAvailable(in: defaults),
                      "legacy restore re-applies upgrade while preserving the earlier linear-scroll migration")
+
+        defaults.set(false, forKey: AppFeature.dockClick.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.dockClickMinimize)
+        defaults.set(true, forKey: DefaultsKey.dockClickCycleWindows)
+        defaults.set(true, forKey: AppFeature.extraBrightness.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.extraBrightnessEnabled)
+        Defaults.migratePageOwnedControls(in: defaults)
+        suite.expect(!AppFeature.dockClick.isAvailable(in: defaults)
+                     && !defaults.bool(forKey: DefaultsKey.dockClickCycleWindows),
+                     "retiring an installation gate preserves all formerly uninstalled Dock choices as off")
+        suite.expect(AppFeature.extraBrightness.isAvailable(in: defaults),
+                     "retiring XDR installation preserves its enabled choice")
+        defaults.set(true, forKey: DefaultsKey.dockClickMinimize)
+        Defaults.migratePageOwnedControls(in: defaults)
+        suite.expect(AppFeature.dockClick.isAvailable(in: defaults),
+                     "page-owned migration never resets subsequent user choices")
     }
 }

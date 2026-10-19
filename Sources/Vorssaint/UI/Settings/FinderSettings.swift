@@ -3,7 +3,7 @@
 
 import SwiftUI
 
-struct CutPasteSettings: View {
+struct FinderSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var service = FinderCutPaste.shared
@@ -66,6 +66,7 @@ struct CutPasteSettings: View {
                 }
             }
 
+            if AppFeature.finderCutPaste.isAvailable { FinderImagePasteSettings() }
             if AppFeature.finderRename.isAvailable {
                 Section {
                     Text(renameText.caption)

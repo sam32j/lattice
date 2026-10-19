@@ -163,7 +163,7 @@ struct NotchTimerView: View {
                                 primary: true, action: service.startNext)
                 }
                 roundButton(symbol: "xmark",
-                            title: service.session.completed ? l10n.s.supportIntroDoneButton : l10n.s.mediaCancel,
+                            title: service.session.completed ? l10n.s.doneButton : l10n.s.mediaCancel,
                             primary: false, action: service.cancel)
             }
             Spacer(minLength: 0)

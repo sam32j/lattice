@@ -117,7 +117,7 @@ final class MouseClickDebounceService {
         }
 
         if let tap = snapshot.tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFMachPortInvalidate(tap)
         }
         if let runLoop = snapshot.runLoop {
@@ -142,7 +142,7 @@ final class MouseClickDebounceService {
                 return
             }
 
-            guard let tap = CGEvent.tapCreate(
+            guard let tap = InputEventTap.create(
                 tap: .cghidEventTap,
                 place: .headInsertEventTap,
                 options: .defaultTap,
@@ -164,16 +164,16 @@ final class MouseClickDebounceService {
                 self.tap = tap
             }
             CFRunLoopAddSource(runLoop, source, .commonModes)
-            CGEvent.tapEnable(tap: tap, enable: true)
+            InputEventTap.enable(tap: tap, enable: true)
 
             let shouldStop = lifecycleLock.withLock { shouldStopTapThread }
             if shouldStop {
-                CGEvent.tapEnable(tap: tap, enable: false)
+                InputEventTap.enable(tap: tap, enable: false)
             } else {
                 CFRunLoopRun()
             }
 
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFRunLoopRemoveSource(runLoop, source, .commonModes)
             CFMachPortInvalidate(tap)
             eventLock.withLock {
@@ -249,7 +249,7 @@ final class MouseClickDebounceService {
                 && !stopping
             let currentTap = lifecycleLock.withLock { tap }
             if shouldRearm, let currentTap {
-                CGEvent.tapEnable(tap: currentTap, enable: true)
+                InputEventTap.enable(tap: currentTap, enable: true)
             } else if !stopping {
                 // stop() switches the tap off itself, and that can still be
                 // reported here like a disable by the system. Its generation

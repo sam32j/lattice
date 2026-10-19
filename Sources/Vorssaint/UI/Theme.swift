@@ -269,7 +269,7 @@ struct BrandMark: View {
 
 
 /// Squircle badge with the mark on the space gradient — the app's face in the
-/// About tab and onboarding.
+/// About page.
 struct BrandBadge: View {
     var size: CGFloat
 

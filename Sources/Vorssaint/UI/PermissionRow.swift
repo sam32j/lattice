@@ -11,7 +11,7 @@ enum PermissionKind {
     case microphone
 }
 
-/// Status + actions for one TCC permission; shared by Settings and onboarding.
+/// Status + actions for one TCC permission; shared across Settings pages.
 struct PermissionRow: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared

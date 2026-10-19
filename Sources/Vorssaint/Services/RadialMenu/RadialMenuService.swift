@@ -192,7 +192,7 @@ final class RadialMenuService: ObservableObject {
         guard mouseTap == nil else { return }
         let mask = (CGEventMask(1) << CGEventType.otherMouseDown.rawValue)
             | (CGEventMask(1) << CGEventType.otherMouseUp.rawValue)
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -208,13 +208,13 @@ final class RadialMenuService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         mouseTapSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         if !isWatchingMouseButton { isWatchingMouseButton = true }
     }
 
     private func tearDownMouseTap() {
         if let mouseTap {
-            CGEvent.tapEnable(tap: mouseTap, enable: false)
+            InputEventTap.enable(tap: mouseTap, enable: false)
             CFMachPortInvalidate(mouseTap)
         }
         if let mouseTapSource {
@@ -238,7 +238,7 @@ final class RadialMenuService: ObservableObject {
                 accessibilityGranted: AXIsProcessTrusted(),
                 sessionIsActive: SessionActivity.shared.isActive
             ), let mouseTap {
-                CGEvent.tapEnable(tap: mouseTap, enable: true)
+                InputEventTap.enable(tap: mouseTap, enable: true)
             } else {
                 // Invalidating the port from its own callback stack is unsafe;
                 // finish this callback fail-open, then release the tap.

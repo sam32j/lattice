@@ -68,6 +68,7 @@ struct MetricsTests {
                 MixerFeatureTests.run(suite)
             }),
             ("audio-priority", { AudioPriorityTests.run(suite) }),
+            ("audio-settings", { AudioSettingsOwnershipTests.run(suite) }),
             ("shelf", { ShelfFeatureTests.run(suite) }),
             ("overlays", { OverlayPanelTests.run(suite) }),
             ("updates", {
@@ -80,8 +81,6 @@ struct MetricsTests {
                 LaunchAtLoginSettingsTests.run(suite)
                 PostUpdateStatusItemRecoveryTests.run(suite)
                 UpdateAdminInstallContract.run(suite)
-                UpdateHighlightsTests.run(suite)
-                UpdateIntroFlowTests.run(suite)
             }),
             ("repository", { RepositoryFeatureTests.run(suite) }),
             ("screenshot-pins", { ScreenshotPinGestureTests.run(suite) }),
@@ -129,6 +128,7 @@ struct MetricsTests {
             ("switcher-model", { SwitcherModelFeatureTests.run(suite) }),
             ("agents", { NotchAgentTests.run(suite) }),
             ("features", {
+                RetiredSettingsFlowTests.run(suite)
                 FeatureCatalogTests.run(suite)
                 MenuPanelSectionGateContract.run(suite)
                 SettingsPanelFilterTests.run(suite)
@@ -143,6 +143,7 @@ struct MetricsTests {
             }),
             ("settings", {
                 SettingsFeatureTests.run(suite)
+                SettingsSearchKeyboardTests.run(suite)
                 SettingsWindowTests.run { suite.expect($0, $1) }
                 PermissionDetailsSheetTests.run { suite.expect($0, $1) }
                 NotchSettingsChoiceTests.run(suite)
@@ -205,6 +206,9 @@ struct MetricsTests {
                 UninstallerFlowTests.run(suite)
                 UninstallerCommandBarCleanupTests.run(suite)
                 SelfUninstallContract.run(suite)
+                InputEventTapTests.run(suite)
+                PermissionResetHotkeyTests.run(suite)
+                PermissionResetLoginTests.run(suite)
             }),
             ("force-quit", { ProcessForceQuitTests.run(suite) }),
             ("launcher", { QuickLauncherContract.run(suite) }),

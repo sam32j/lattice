@@ -11,7 +11,6 @@ enum FeatureHubLayoutTests {
         static let shared = FeatureRuntime()
         @Published var needsRestartToUnload = false
         @Published var offersNeverUsed = false
-        func apply(_ preset: FeaturePreset) {}
         func relaunchApp() {}
     }
 
@@ -22,10 +21,8 @@ enum FeatureHubLayoutTests {
         enum Tab { case features, permissions }
         @ObservedObject var features = FeatureRuntime.shared
         @State var tab = Tab.features
-        @State var confirmingPreset: FeaturePreset?
         let hub = FeatureStrings.hub(.enUS)
         var body: some View { content }
-        func presetName(_ preset: FeaturePreset) -> String { "Preset" }
         var summaryCard: some View { Text("Installed features").frame(height: 90) }
         @ViewBuilder var neverUsedCard: some View {
             if features.offersNeverUsed { Text("Never used").frame(height: 120) }
@@ -33,7 +30,6 @@ enum FeatureHubLayoutTests {
         var dynamicIslandCard: some View {
             Text("Dynamic Island").frame(height: 900).id(FeatureGroup.dynamicIsland)
         }
-        var presetsCard: some View { Text("Presets").frame(height: 180) }
         func groupCard(_ group: FeatureGroup) -> some View {
             SettingsCard {
                 Text(group.rawValue)

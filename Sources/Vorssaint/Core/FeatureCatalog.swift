@@ -101,7 +101,7 @@ extension AppFeature {
 
     var group: FeatureGroup {
         switch self {
-        case .switcher, .dockPreview, .dockClick, .windowMaximizer, .windowLayout, .autoQuit, .spacesOrder:
+        case .switcher, .dockPreview, .dockClick, .windowMaximizer, .windowLayout, .autoQuit, .spacesOrder, .wallpaper:
             return .windowsDock
         case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts, .middleClick,
              .keyboardDebounce, .superKey, .quitWindowProtection, .mouseClickDebounce, .cleaningMode:
@@ -111,7 +111,7 @@ extension AppFeature {
             return .clipboardFiles
         case .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock:
             return .sound
-        case .keepAwake, .brightness, .extraBrightness, .wallpaper, .bluetoothSleep:
+        case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep:
             return .energyDisplay
         case .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .radialMenu,
@@ -235,6 +235,17 @@ extension AppFeature {
         }
     }
 
+    /// Controls owned by a Settings page, not a separately installed hub item.
+    var isToggleOwned: Bool {
+        if isMouseFeature || isKeyboardFeature { return true }
+        switch self {
+        case .dockClick, .spacesOrder, .windowMaximizer, .autoQuit, .pastePlain,
+             .extraBrightness, .fanControl:
+            return true
+        default: return false
+        }
+    }
+
     func isToggledOn(in defaults: UserDefaults = .standard) -> Bool {
         switch self {
         case .scrollInverter:
@@ -269,7 +280,7 @@ extension AppFeature {
         case .cleaningMode:
             return (defaults.object(forKey: DefaultsKey.cleaningModeEnabled) as? Bool) ?? true
         default:
-            return false
+            return enabledKeys.contains { defaults.bool(forKey: $0) }
         }
     }
 
@@ -279,8 +290,12 @@ extension AppFeature {
         isAvailable(in: .standard)
     }
 
-    func isAvailable(in defaults: UserDefaults) -> Bool {
-        if isMouseFeature || isKeyboardFeature {
+    func isAvailable(in defaults: UserDefaults, hardwareSupported: Bool? = nil) -> Bool {
+        guard hardwareSupported ?? isHardwareSupported else { return false }
+        if self == .pastePlain {
+            return AppFeature.clipboardHistory.isAvailable(in: defaults) && isToggledOn(in: defaults)
+        }
+        if isToggleOwned {
             return isToggledOn(in: defaults)
         }
         switch self {
@@ -293,8 +308,18 @@ extension AppFeature {
 
     /// Permanent input controls remain discoverable when their switch is off.
     /// Runtime availability still describes whether their behavior should run.
-    func isPresentInControls(in defaults: UserDefaults = .standard) -> Bool {
-        isMouseFeature || isKeyboardFeature || isAvailable(in: defaults)
+    func isPresentInControls(in defaults: UserDefaults = .standard, hardwareSupported: Bool? = nil) -> Bool {
+        guard hardwareSupported ?? isHardwareSupported else { return false }
+        if self == .pastePlain { return AppFeature.clipboardHistory.isAvailable(in: defaults) }
+        return isToggleOwned || isAvailable(in: defaults)
+    }
+
+    /// Configuration remains reachable while behavior is off. Unsupported
+    /// hardware and children of an uninstalled owner are never advertised.
+    func isVisibleInSettings(isAvailable: (AppFeature) -> Bool) -> Bool {
+        guard isHardwareSupported else { return false }
+        if self == .pastePlain { return isAvailable(.clipboardHistory) }
+        return isToggleOwned || isAvailable(self)
     }
 
     /// The feature's own enable keys; any one being true means the feature is
@@ -355,6 +380,7 @@ extension AppFeature {
         case .musicBlock: return [DefaultsKey.musicBlockEnabled]
         case .brightness: return [DefaultsKey.brightnessControlEnabled]
         case .extraBrightness: return [DefaultsKey.extraBrightnessEnabled]
+        case .fanControl: return [DefaultsKey.panelShowFanControl]
         case .bluetoothSleep: return [DefaultsKey.bluetoothSleepEnabled]
         case .cleaningMode: return [DefaultsKey.cleaningModeEnabled]
         case .windowLayout, .diskImageInstaller, .mixer, .micMute, .keepAwake,
@@ -362,7 +388,7 @@ extension AppFeature {
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .scratchpad,
              .commandBar, .screenRecorder, .wallpaper, .killProcess, .portManager,
              .monitorCPU, .monitorGPU, .monitorMemory, .monitorNetwork, .monitorDisk, .monitorPower,
-             .connectedDevices, .fanControl:
+             .connectedDevices:
             return []
         }
     }
@@ -384,7 +410,7 @@ extension AppFeature {
     /// Registered defaults are visible through `object(forKey:)`, so only the
     /// persistent domain can tell a fresh install from a saved off choice.
     func enableOnFirstInstall(in defaults: UserDefaults, savedValues: [String: Any]) {
-        guard !isMouseFeature && !isKeyboardFeature else { return }
+        guard !isToggleOwned else { return }
         let choices = self == .windowLayout
             ? [DefaultsKey.windowLayoutShortcutsEnabled, DefaultsKey.windowDirectionalEnabled,
                DefaultsKey.pointerDisplayEnabled, DefaultsKey.windowEdgeSnapEnabled,
@@ -446,7 +472,7 @@ extension AppFeature {
         case .cameraPreview: return [.camera]
         case .keepAwake: return [.accessibility]
         case .brightness: return [.accessibility]
-        case .cleaner: return [.fullDiskAccess, .filesAndFolders, .notifications]
+        case .cleaner: return [.fullDiskAccess, .notifications]
         case .uninstaller: return [.fullDiskAccess, .automationFinder]
         case .homebrew: return [.automationTerminal, .appManagement]
         case .appUpdates: return [.notifications, .appManagement]
@@ -463,19 +489,6 @@ extension AppFeature {
         }
     }
 
-    /// Broad grants worth explaining during first run. Permissions used only
-    /// by an optional sub-feature stay contextual, at the moment that control
-    /// is actually used.
-    var onboardingPermissions: [AppPermission] {
-        switch self {
-        case .keepAwake, .brightness, .radialMenu, .quickToggles, .cleaner,
-             .uninstaller, .homebrew, .appUpdates, .mixer, .cameraPreview,
-             .micMute, .musicBlock, .notchWatch:
-            return []
-        default:
-            return permissions.filter { $0 == .accessibility || $0 == .screenRecording }
-        }
-    }
 
     static func features(in group: FeatureGroup) -> [AppFeature] {
         allCases.filter { $0.group == group }
@@ -483,7 +496,7 @@ extension AppFeature {
 
     static func hubFeatures(in group: FeatureGroup) -> [AppFeature] {
         features(in: group).filter {
-            $0 != .colorPicker && $0 != .screenOCR && !$0.isMouseFeature && !$0.isKeyboardFeature
+            $0 != .colorPicker && $0 != .screenOCR && !$0.isToggleOwned
         }
     }
 
@@ -639,16 +652,9 @@ extension AppFeature {
                 return AppUpdatesSupport.CheckFrequency
                     .sanitized(stringFor(DefaultsKey.appUpdatesCheckFrequency)) != .off
                     && boolFor(DefaultsKey.appUpdatesNotify)
-            case (.cleaner, .filesAndFolders):
-                return boolFor(DefaultsKey.whatsAppDownloadsEnabled)
             case (.cleaner, .notifications):
-                let cleanerNotifies = (stringFor(DefaultsKey.cleanerScheduleFrequency) ?? "off") != "off"
+                return (stringFor(DefaultsKey.cleanerScheduleFrequency) ?? "off") != "off"
                     && boolFor(DefaultsKey.cleanerScheduleNotify)
-                let whatsAppNotifies = boolFor(DefaultsKey.whatsAppDownloadsEnabled)
-                    && (boolFor(DefaultsKey.whatsAppDownloadsAutomaticEnabled)
-                        || boolFor(DefaultsKey.whatsAppOrganizerEnabled))
-                    && boolFor(DefaultsKey.whatsAppDownloadsNotify)
-                return cleanerNotifies || whatsAppNotifies
             case (.notchLiveEqualizer, .audioCapture):
                 return isAvailable(.notch) && boolFor(DefaultsKey.notchEnabled)
                     && !(stringFor(DefaultsKey.notchHiddenModules) ?? "").split(separator: ",").contains("music")
