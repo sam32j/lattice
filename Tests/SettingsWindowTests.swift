@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Vorssaint
 
 import AppKit
+import SwiftUI
 
 private final class TestSettingsWindow: SettingsWindow {
     var testIsKeyWindow = true
@@ -12,6 +13,7 @@ private final class TestSettingsWindow: SettingsWindow {
 enum SettingsWindowTests {
     static func run(expect: (Bool, String) -> Void) {
         let app = NSApplication.shared
+        checkDetailViewport(expect: expect)
         let split = NSSplitViewController()
         let sidebar = NSSplitViewItem(sidebarWithViewController: NSViewController())
         split.addSplitViewItem(sidebar)
@@ -34,6 +36,19 @@ enum SettingsWindowTests {
         window.configureGeometry(for: window.contentView!)
         expect(window.titleVisibility == .hidden,
                "the page header replaces the redundant native Settings window title")
+        expect(window.titlebarAppearsTransparent && window.titlebarSeparatorStyle == .none,
+               "Settings starts with a clear toolbar and no separator before content scrolls underneath")
+        let backdrop = SettingsToolbarBackdropView()
+        backdrop.isScrolled = true
+        window.contentView!.addSubview(backdrop)
+        expect(!window.titlebarAppearsTransparent && window.titlebarSeparatorStyle == .line,
+               "attaching an already-scrolled detail enables native toolbar material and its separator")
+        backdrop.isScrolled = false
+        expect(window.titlebarAppearsTransparent && window.titlebarSeparatorStyle == .none,
+               "returning to the top clears both the toolbar backdrop and the separator")
+        backdrop.isScrolled = true
+        expect(!window.titlebarAppearsTransparent && window.titlebarSeparatorStyle == .line,
+               "scrolling again restores the backdrop and separator together")
         expect(window.styleMask.contains(.fullSizeContentView),
                "Settings content extends through the native title bar for the full-height sidebar")
         expect(window.contentMinSize.width == 772 && window.contentMaxSize.width == 772
@@ -158,6 +173,35 @@ enum SettingsWindowTests {
             let strings = SettingsNavigationStrings.localized(language)
             expect(!strings.go.isEmpty && !strings.back.isEmpty && !strings.forward.isEmpty,
                    "Settings navigation menu is translated for \(language.rawValue)")
+        }
+    }
+
+    private struct HeaderMarker: NSViewRepresentable {
+        let view: NSView
+        func makeNSView(context: Context) -> NSView { view }
+        func updateNSView(_ view: NSView, context: Context) {}
+    }
+
+    private static func checkDetailViewport(expect: (Bool, String) -> Void) {
+        for height in [528.0, 838.0] {
+            let marker = NSView()
+            let host = NSHostingController(rootView: SettingsDetailViewport {
+                VStack(spacing: 0) {
+                    HeaderMarker(view: marker).frame(height: 64)
+                    List(0..<500, id: \.self) { Text("Package or process \($0)") }
+                }
+            })
+            host.sizingOptions = []
+            let window = NSWindow(contentViewController: host)
+            window.isReleasedWhenClosed = false
+            window.setContentSize(NSSize(width: 542, height: height))
+            window.contentView?.layoutSubtreeIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+            let header = marker.convert(marker.bounds, to: host.view)
+            expect(abs(host.view.bounds.height - height) < 1
+                   && header.height == 64 && host.view.bounds.contains(header),
+                   "a 500-row detail keeps its header visible inside a \(Int(height))-point viewport")
+            window.close()
         }
     }
 }

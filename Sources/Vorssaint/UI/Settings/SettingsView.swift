@@ -59,6 +59,7 @@ struct SettingsView: View {
     @State private var activeSearchIndex: Int?
     @State private var directoryCache = SettingsDirectoryCache()
     @State private var navigationFromSidebar = false
+    @State private var detailIsScrolled = false
     /// The row just picked in the sidebar, until the router has taken it.
     @State private var sidebarPick: SettingsSidebarItem.ID?
     @FocusState private var sidebarSearchFocused: Bool
@@ -147,25 +148,20 @@ struct SettingsView: View {
                 .navigationSplitViewColumnWidth(min: SettingsSidebarConfiguration.width, ideal: SettingsSidebarConfiguration.width, max: SettingsSidebarConfiguration.width)
                 .background { Color(nsColor: SettingsSidebarConfiguration.backgroundColor).ignoresSafeArea(.container, edges: .top) }
         } detail: {
-            // NavigationSplitView's detail slot sometimes queries its content
-            // for an unconstrained ideal size (settling the divider, or on a
-            // page switch). `List` answers that with its full content height
-            // rather than a viewport size the way `ScrollView` does, and
-            // `.frame(maxHeight: .infinity)` only bounds a size it is given,
-            // not one it is asked to report - so a few hundred rows (Kill
-            // Process) grew the whole window. `GeometryReader` reports the
-            // real space it was actually given for normal layout, and ~zero
-            // when asked for an unconstrained ideal size, breaking the chain.
-            GeometryReader { geometry in
-                detail
+            // List-heavy pages must receive a viewport, not an unconstrained
+            // ideal height that can push their header outside the window.
+            SettingsDetailViewport {
+                scrollEdgeDetail
                     .settingsSectionFocus(for: router.page)
-                    .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
             }
             .toolbar { settingsNavigationToolbar }
+            .toolbarBackground(detailIsScrolled ? .visible : .hidden, for: .windowToolbar)
+            .background(SettingsToolbarBackdrop(isScrolled: detailIsScrolled))
             .background { Color(nsColor: .textBackgroundColor).ignoresSafeArea(.container, edges: .top) }
         }
         .navigationSplitViewStyle(.balanced)
         .toolbar(removing: .sidebarToggle)
+        .toolbar(removing: defaultTitleItem)
         .frame(minWidth: 772, maxWidth: 772, minHeight: 528, maxHeight: .infinity)
         .onAppear {
             ensureVisiblePage()
@@ -176,6 +172,9 @@ struct SettingsView: View {
         }
         .onChange(of: router.requestID) { _, _ in
             ensureVisiblePage()
+        }
+        .onChange(of: router.page) { _, _ in
+            if #available(macOS 15, *) { detailIsScrolled = false }
         }
     }
 
@@ -202,19 +201,57 @@ struct SettingsView: View {
 #if compiler(>=6.2)
         if #available(macOS 26, *) {
             ToolbarItem(placement: .navigation) {
-                Text(detailTitle).font(.headline)
+                toolbarTitle
             }
             .sharedBackgroundVisibility(.hidden)
         } else {
             ToolbarItem(placement: .navigation) {
-                Text(detailTitle).font(.headline)
+                toolbarTitle
             }
         }
 #else
         ToolbarItem(placement: .navigation) {
-            Text(detailTitle).font(.headline)
+            toolbarTitle
         }
 #endif
+    }
+
+    private var defaultTitleItem: ToolbarDefaultItemKind? {
+        if #available(macOS 15, *) { return .title }
+        return nil
+    }
+
+    private var toolbarTitle: some View {
+        Text(detailTitle)
+            .font(.system(size: 17, weight: .semibold))
+            .padding(.leading, 10)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    @ViewBuilder
+    private var scrollEdgeDetail: some View {
+#if compiler(>=6.2)
+        if #available(macOS 26, *) {
+            observedScrollDetail.scrollEdgeEffectStyle(.hard, for: .top)
+        } else {
+            observedScrollDetail
+        }
+#else
+        observedScrollDetail
+#endif
+    }
+
+    @ViewBuilder
+    private var observedScrollDetail: some View {
+        if #available(macOS 15, *) {
+            detail.onScrollGeometryChange(for: Bool.self) { geometry in
+                geometry.contentOffset.y + geometry.contentInsets.top > 0.5
+            } action: { _, isScrolled in
+                detailIsScrolled = isScrolled
+            }
+        } else {
+            detail.onAppear { detailIsScrolled = true }
+        }
     }
 
     private func sidebar(searchResults: SearchResultsSnapshot) -> some View {
