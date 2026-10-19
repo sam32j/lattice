@@ -796,31 +796,13 @@ private struct RadialItemEditor: View {
 
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.dismiss) private var dismiss
-    @State private var shortcutMessage: ShortcutMessage?
+    @State private var shortcutError: String?
     @State private var isFetchingFavicon = false
     @State private var faviconStatus: FaviconFetchStatus?
 
     enum FaviconFetchStatus {
         case success
         case error
-    }
-
-    /// What the line under the form is saying about the shortcut field: the
-    /// calm hint while it listens, or the reason a press did not stick.
-    enum ShortcutMessage {
-        case hint(String)
-        case problem(String)
-
-        var text: String {
-            switch self {
-            case .hint(let text), .problem(let text): return text
-            }
-        }
-
-        var isProblem: Bool {
-            if case .problem = self { return true }
-            return false
-        }
     }
 
     private var availableTools: [RadialMenuTool] {
@@ -882,11 +864,10 @@ private struct RadialItemEditor: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
-            if item.kind == .shortcut, let shortcutMessage {
-                Text(shortcutMessage.text)
+            if item.kind == .shortcut, let shortcutError {
+                Text(shortcutError)
                     .font(.caption)
-                    .foregroundStyle(shortcutMessage.isProblem ? AnyShapeStyle(.orange)
-                                                               : AnyShapeStyle(.secondary))
+                    .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if item.kind == .submenu {
@@ -939,7 +920,7 @@ private struct RadialItemEditor: View {
         Binding(get: { item.kind }, set: { kind in
             guard kind != item.kind else { return }
             item.kind = kind
-            shortcutMessage = nil
+            shortcutError = nil
             faviconStatus = nil
             if kind != .url { item.customIconData = nil }
             switch kind {
@@ -1021,20 +1002,15 @@ private struct RadialItemEditor: View {
                     isEnabled: true,
                     emptyTitle: l10n.s.shortcutNone,
                     canClear: !item.payload.isEmpty,
-                    errorText: Binding(
-                        get: {
-                            guard let shortcutMessage, shortcutMessage.isProblem else { return nil }
-                            return shortcutMessage.text
-                        },
-                        set: { shortcutMessage = $0.map(ShortcutMessage.problem) }),
+                    errorText: $shortcutError,
                     onClear: {
                         item.payload = ""
-                        shortcutMessage = nil
+                        shortcutError = nil
                     },
                     onReset: {},
                     onCapture: {
                         item.payload = $0.storageValue
-                        shortcutMessage = nil
+                        shortcutError = nil
                     })
             }
         case .tool:

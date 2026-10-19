@@ -34,6 +34,7 @@ struct KeyCaptureBridgeView: NSViewRepresentable {
 
     @MainActor
     final class Coordinator {
+        private static weak var tapOwner: Coordinator?
         var onKeyDown: (NSEvent) -> Void
         var onFlagsChanged: (NSEvent) -> Void
         var onExit: (() -> Void)?
@@ -50,6 +51,27 @@ struct KeyCaptureBridgeView: NSViewRepresentable {
 
         func install(view: NSView) {
             if keyMonitor == nil {
+                if ShortcutRecordingTap.begin({ [weak self, weak view] keyCode, modifiers, rawFlags in
+                    guard let self, Self.tapOwner === self,
+                          let key = UInt16(exactly: keyCode) else { return }
+                    var flags = NSEvent.ModifierFlags(rawValue: UInt(rawFlags.rawValue))
+                    if modifiers.contains(.control) { flags.insert(.control) }
+                    if modifiers.contains(.option) { flags.insert(.option) }
+                    if modifiers.contains(.shift) { flags.insert(.shift) }
+                    if modifiers.contains(.command) { flags.insert(.command) }
+                    guard let event = NSEvent.keyEvent(
+                        with: .keyDown, location: .zero, modifierFlags: flags,
+                        timestamp: ProcessInfo.processInfo.systemUptime,
+                        windowNumber: view?.window?.windowNumber ?? 0, context: nil,
+                        characters: "", charactersIgnoringModifiers: "",
+                        isARepeat: false, keyCode: key) else { return }
+                    self.onKeyDown(event)
+                }) {
+                    Self.tapOwner = self
+                }
+                // Keep local events for modifier previews and as the fallback
+                // when Accessibility is unavailable. A live tap swallows keys
+                // before they can reach this monitor or other applications.
                 keyMonitor = NSEvent.addLocalMonitorForEvents(
                     matching: [.keyDown, .flagsChanged]) { [weak self] event in
                         if event.type == .flagsChanged {
@@ -84,6 +106,12 @@ struct KeyCaptureBridgeView: NSViewRepresentable {
         }
 
         func remove() {
+            // SwiftUI can install a replacement before dismantling this view.
+            // Only the current owner may release the shared recording tap.
+            if Self.tapOwner === self {
+                ShortcutRecordingTap.end()
+                Self.tapOwner = nil
+            }
             if let keyMonitor {
                 NSEvent.removeMonitor(keyMonitor)
                 self.keyMonitor = nil

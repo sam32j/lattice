@@ -16,13 +16,11 @@ struct ShortcutPreferenceRow: View {
     private let showsSuperKeyAlternative: Bool
     private let superKeyModifiers: GlobalShortcutModifiers
     private let includeInactiveConflicts: Bool
-    private let reservesClearButtonSpace: Bool
     private let onChange: () -> Void
     private let additionalConflict: (GlobalShortcut) -> String?
     @AppStorage private var rawValue: String
 
     init(role: GlobalShortcutRole,
-         isEnabled _: Bool = true,
          label: String? = nil,
          symbolName: String? = nil,
          contextLabel: String? = nil,
@@ -31,7 +29,6 @@ struct ShortcutPreferenceRow: View {
          showsSuperKeyAlternative: Bool = false,
          superKeyModifiers: GlobalShortcutModifiers = .validMask,
          includeInactiveConflicts: Bool = false,
-         reservesClearButtonSpace: Bool = false,
          additionalConflict: @escaping (GlobalShortcut) -> String? = { _ in nil },
          onChange: @escaping () -> Void) {
         self.role = role
@@ -43,7 +40,6 @@ struct ShortcutPreferenceRow: View {
         self.showsSuperKeyAlternative = showsSuperKeyAlternative
         self.superKeyModifiers = superKeyModifiers
         self.includeInactiveConflicts = includeInactiveConflicts
-        self.reservesClearButtonSpace = reservesClearButtonSpace
         self.additionalConflict = additionalConflict
         self.onChange = onChange
         _rawValue = AppStorage(wrappedValue: role.defaultShortcut.storageValue,
@@ -64,7 +60,6 @@ struct ShortcutPreferenceRow: View {
                     enabledKey: role == .screenshotUpload
                         ? DefaultsKey.screenshotUploadShortcutEnabled
                         : role.requiredEnableKeys.last ?? "",
-                    isAvailable: true,
                     includeInactiveConflicts: includeInactiveConflicts,
                     additionalConflict: additionalConflict,
                     onChange: onChange)
@@ -75,9 +70,6 @@ struct ShortcutPreferenceRow: View {
                         .foregroundStyle(.secondary)
                         .accessibilityLabel(alternative)
                 }
-            }
-            if reservesClearButtonSpace {
-                Color.clear.frame(width: 0, height: 0)
             }
         }
     }

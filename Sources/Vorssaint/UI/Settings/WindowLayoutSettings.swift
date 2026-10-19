@@ -13,7 +13,6 @@ struct WindowLayoutSettings: View {
     @ObservedObject private var pointerDisplay = PointerDisplayService.shared
     @AppStorage(DefaultsKey.pointerDisplayEnabled) private var pointerDisplayEnabled = false
     @AppStorage(DefaultsKey.panelUtilityWindowLayout) private var showInPanel = true
-    @AppStorage(DefaultsKey.windowLayoutShortcutsEnabled) private var shortcutsEnabled = true
     @AppStorage(DefaultsKey.windowDirectionalEnabled) private var directionalEnabled = false
     @AppStorage(DefaultsKey.windowDirectionalShortcut) private var directionalShortcutRaw = GlobalShortcut.windowDirectionalDefault.storageValue
     @AppStorage(DefaultsKey.windowEdgeSnapEnabled) private var edgeSnapEnabled = false
@@ -182,7 +181,6 @@ struct WindowLayoutSettings: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     ShortcutPreferenceRow(role: .pointerNextDisplay,
-                                          isEnabled: pointerDisplayEnabled,
                                           additionalConflict: {
                                               service.shortcutConflictTitle($0)
                                           }) {
@@ -253,11 +251,6 @@ struct WindowLayoutSettings: View {
 
     private var directionalTrigger: WindowDirectionalTrigger {
         WindowDirectionalTrigger(storageValue: directionalShortcutRaw) ?? .key(.windowDirectionalDefault)
-    }
-
-    private var directionalKeyShortcut: GlobalShortcut {
-        if case .key(let shortcut) = directionalTrigger { return shortcut }
-        return .windowDirectionalDefault
     }
 
     private var directionalDisplayShortcut: GlobalShortcut? {
