@@ -375,6 +375,45 @@ def main():
           + middle_click_lifecycle
           + "}\n}\n")
     menu_panel = "Sources/Vorssaint/UI/MenuPanel/MenuPanelView.swift"
+    def reset_availability(path, scope):
+        source = declaration(path, scope)
+        matches = re.findall(r"canReset: ([^\n]+),", source)
+        if len(matches) != 1:
+            raise ValueError(f"Expected one recorder reset condition in {path}")
+        return "var offersReset: Bool { " + matches[0] + " }\n"
+    write("SettingsResetAvailability.swift", "import Foundation\nextension SettingsResetAvailabilityTests {\n"
+          + "final class Layout: State {\n" + reset_availability("Sources/Vorssaint/UI/Settings/WindowLayoutSettings.swift", "private struct WindowLayoutActionRow:") + "}\n"
+          + "final class Central: State {\n" + reset_availability("Sources/Vorssaint/UI/Settings/CentralWindowLayoutShortcutRow.swift", "struct CentralWindowLayoutShortcutRow:") + "}\n}\n")
+    def shortcut_consumer(path, prefix, scope=None):
+        return declaration(path, prefix, scope=scope).replace("private func", "func", 1) \
+            .replace("UserDefaults.standard", "defaults") \
+            .replace("$0.isAvailable", "$0.isAvailable(in: defaults)") \
+            .replace("role.savedShortcut", "GlobalShortcut.saved(for: role.storageKey, fallback: role.defaultShortcut, in: defaults)")
+    launcher_footer = declaration("Sources/Vorssaint/UI/QuickLauncher/QuickLauncherView.swift", "    private var footer:")
+    launcher_footer = launcher_footer.replace("Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString)",
+                                             "Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString).background(Marker())")
+    launcher_footer = launcher_footer.replace("GlobalShortcutRole.quickLauncher.savedShortcut",
+        "GlobalShortcut.saved(for: GlobalShortcutRole.quickLauncher.storageKey, fallback: GlobalShortcutRole.quickLauncher.defaultShortcut, in: defaults)")
+    write("SettingsShortcutConsumers.swift", "import AppKit\nimport SwiftUI\nextension SettingsShortcutConsumerTests {\n"
+          + "final class MenuHint: State {\n" + shortcut_consumer(menu_panel, "    private func shortcutHint(") + "}\n"
+          + "final class ToggleHint: State {\n" + shortcut_consumer("Sources/Vorssaint/UI/MenuPanel/QuickTogglesSection.swift", "    private func shortcutHint(") + "}\n"
+          + "final class Catalog: State {\n" + shortcut_consumer("Sources/Vorssaint/Services/CommandBar/CommandBarCatalog.swift", "        func roleShortcut(") + "}\n"
+          + "final class GroupStatus: State {\n" + shortcut_consumer("Sources/Vorssaint/UI/Settings/ShortcutsSettings.swift", "    private func featureHasActiveShortcut(") + "}\n"
+          + "struct Launcher: View {\nlet defaults: UserDefaults\nvar body: some View { footer }\n" + launcher_footer + "}\n}\n")
+    def panel_filter(scope):
+        return declaration(menu_panel, "    private func items(editing:", scope=scope) \
+            .replace("private func", "func", 1) \
+            .replace(".isPresentInControls()", ".isPresentInControls(in: defaults)") \
+            .replace(".isAvailable", ".isAvailable(in: defaults)")
+    write("SettingsPanelFilters.swift", "import Foundation\nextension SettingsPanelFilterTests {\n"
+          + declaration("Sources/Vorssaint/UI/MenuPanel/PanelLayout.swift", "enum PanelSectionID:")
+              .replace("featureGate.contains(where: \\.isAvailable)", "featureGate.contains { $0.isAvailable(in: Layout.defaults) }")
+              .replace(".isPresentInControls()", ".isPresentInControls(in: Layout.defaults)")
+          + "final class Layout: LayoutState {\n"
+          + declaration("Sources/Vorssaint/UI/MenuPanel/PanelLayout.swift", "    static func isVisibleInPanel(")
+          + declaration("Sources/Vorssaint/UI/MenuPanel/PanelLayout.swift", "    static func isShown(") + "}\n"
+          + "final class Controls: ControlState {\n" + panel_filter("struct QuickControlsSection: View {") + "}\n"
+          + "final class Utilities: UtilityState {\n" + panel_filter("struct UtilitiesSection: View {") + "}\n}\n")
     write("MiddleClickPanelCaption.swift", "import Foundation\n"
           + "extension MiddleClickTrackpadContract {\nfinal class Panel: PanelFixture {\n"
           + "".join(declaration(menu_panel, prefix).replace("private ", "", 1) for prefix in [

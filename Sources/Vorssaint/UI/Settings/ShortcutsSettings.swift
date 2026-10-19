@@ -241,7 +241,8 @@ struct ShortcutsSettings: View {
             return true
         }
         return roles.contains { role in
-            role.requiredEnableKeys.allSatisfy { UserDefaults.standard.bool(forKey: $0) }
+            role.savedShortcut.isValid
+                && role.requiredEnableKeys.allSatisfy { UserDefaults.standard.bool(forKey: $0) }
         }
     }
 

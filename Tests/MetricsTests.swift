@@ -131,6 +131,9 @@ struct MetricsTests {
             ("features", {
                 FeatureCatalogTests.run(suite)
                 MenuPanelSectionGateContract.run(suite)
+                SettingsPanelFilterTests.run(suite)
+                SettingsShortcutConsumerTests.run(suite)
+                SettingsResetAvailabilityTests.run(suite)
             }),
             ("utilities", {
                 UtilitySettingsTests.run { suite.expect($0, $1) }
