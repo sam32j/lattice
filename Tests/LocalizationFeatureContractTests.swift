@@ -26,6 +26,8 @@ enum LocalizationFeatureContractTests {
         // the main one never was, so a caption in every language carried a
         // pair of them.
         for (language, strings) in localizedStrings {
+            suite.expect(strings.obStepMenuBarNote.contains(strings.tabMonitor),
+                         "onboarding monitor references match the Settings title (\(language.rawValue))")
             let values = Mirror(reflecting: strings).children.compactMap { $0.value as? String }
             suite.expect(values.allSatisfy { !$0.contains("\u{2014}") },
                    "no em-dash in visible strings (\(language.rawValue))")

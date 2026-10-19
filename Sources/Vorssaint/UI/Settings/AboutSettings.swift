@@ -75,7 +75,7 @@ struct AboutSettings: View {
                 Button {
                     appDelegate()?.showOnboarding()
                 } label: {
-                    Label("Review onboarding", systemImage: "arrow.counterclockwise")
+                    Label(l10n.s.reviewIntro, systemImage: "arrow.counterclockwise")
                 }
                 Button {
                     showingReleaseNotes = true

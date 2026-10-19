@@ -788,7 +788,7 @@ extension Strings {
         updateBannerAction: "Güncelle",
         obStepMenuBarTitle: "Menü çubuğunda metrikler",
         obStepMenuBarBody: "Simgenin yanında ne gösterileceğini seç. Yukarıdaki önizleme canlı güncellenir.",
-        obStepMenuBarNote: "Yeni: Ağ ve Güç blokları ve panelde grafikler. Tümünü daha sonra Ayarlar › Monitör bölümünde ince ayarlayabilirsin.",
+        obStepMenuBarNote: "Yeni: Ağ ve Güç blokları ve panelde grafikler. Tümünü daha sonra Ayarlar › Etkinlik Monitörü bölümünde ince ayarlayabilirsin.",
         monitorMenuBarPresetLabel: "Stil",
         menuBarPresetReadable: "Okunaklı",
         menuBarPresetDense: "Sıkı",

@@ -87,6 +87,9 @@ struct MetricsTests {
             ("screenshot-pins", { ScreenshotPinGestureTests.run(suite) }),
             ("screenshots", {
                 SettingsSidebarIdentityTests.run(suite)
+                SettingsUpgradeTests.run(suite)
+                BindingRecorderEventTests.run(suite)
+                WindowLayoutShortcutEditorTests.run(suite)
                 CompactShortcutValidationTests.run(suite)
                 ScreenshotTextDraftTests.run(suite)
                 FeatureAvailabilityTransitionTests.run(suite)

@@ -45,7 +45,7 @@ enum SettingsSidebarIdentityTests {
             title: "Keyboard", icon: "keyboard")]
         suite.expect(SettingsSidebarSupport.fallbackDestination(
             for: FeatureSettingsDestination(.keyboard, sectionAnchor: .cleaningMode),
-            in: keyboardRows) == FeatureSettingsDestination(.keyboard),
-            "cleaning mode history destination falls back to keyboard page")
+            in: keyboardRows) == nil,
+            "visible keyboard page preserves the requested cleaning section anchor")
     }
 }

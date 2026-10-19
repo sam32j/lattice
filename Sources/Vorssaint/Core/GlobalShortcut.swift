@@ -237,13 +237,14 @@ struct GlobalShortcut: Equatable, Hashable {
     static let cleaningModeDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_C),
                                                     modifiers: [.control, .option, .command, .shift])
 
-    static func saved(for key: String, fallback: GlobalShortcut) -> GlobalShortcut {
+    static func saved(for key: String, fallback: GlobalShortcut,
+                      in defaults: UserDefaults = .standard) -> GlobalShortcut {
         // Absence preserves the installation default. An explicitly empty
         // binding stays unassigned, including roles that share an enable flag.
-        if UserDefaults.standard.string(forKey: key) == "" {
+        if defaults.string(forKey: key) == "" {
             return GlobalShortcut(keyCode: 65535, modifiers: [])
         }
-        if let raw = UserDefaults.standard.string(forKey: key),
+        if let raw = defaults.string(forKey: key),
            let shortcut = GlobalShortcut(storageValue: raw) {
             return shortcut
         }
@@ -870,6 +871,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
                          isOn: (String) -> Bool = { UserDefaults.standard.bool(forKey: $0) },
                          isAvailable: (AppFeature) -> Bool = { $0.isAvailable },
                          includeInactive: Bool = false,
+                         shortcutForRole: (GlobalShortcutRole) -> GlobalShortcut = { $0.savedShortcut },
                          radialMenuShortcuts: () -> [GlobalShortcut] = { RadialMenuSupport.profileShortcuts() })
         -> GlobalShortcutRole? {
         let candidates = includeInactive
@@ -880,7 +882,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
             // The radial menu's role key only seeds the first wheel. Every
             // wheel registers its own combination, so those are the ones taken.
             if candidate == .radialMenu { return radialMenuShortcuts().contains(shortcut) }
-            return candidate.savedShortcut == shortcut
+            return shortcutForRole(candidate) == shortcut
         }
     }
 
