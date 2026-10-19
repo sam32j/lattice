@@ -65,7 +65,7 @@
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Show your upcoming appointments in the notch. Calendar events stay on this Mac.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Lattice shows your camera only in the preview window you open, so you can check how you look before a call. Nothing is recorded or leaves your Mac.</string>
+	<string>Lattice uses your camera when you open camera preview or enable the camera overlay for a recording. Camera video is recorded only when you enable it for a screen recording and stays on your Mac unless you choose to share it.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
 	<string>Lattice checks local metadata in Downloads to review, organize or trash only confirmed WhatsApp files you choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
 	<key>NSDesktopFolderUsageDescription</key>

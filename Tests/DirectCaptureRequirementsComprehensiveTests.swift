@@ -310,7 +310,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // 5. Delayed start mode check in ScreenRecorderService
         suite.expect(recorderServiceSource.contains("DefaultsKey.recorderImmediateStartAfterSelection")
-                     && recorderServiceSource.contains("indicator.setWaitingForStart()"),
+                     && recorderServiceSource.contains("indicator.setWaitingForStart(in: region.anchorRect)"),
                      "ScreenRecorderService checks recorderImmediateStartAfterSelection and delays countdown until user click")
 
         // 6. Selection live unfrozen screen for recorder

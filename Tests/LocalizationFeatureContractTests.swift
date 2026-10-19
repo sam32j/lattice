@@ -496,7 +496,7 @@ enum LocalizationFeatureContractTests {
         let turkishInfoPlistStrings = (try? String(contentsOfFile: "Resources/tr.lproj/InfoPlist.strings",
                                                    encoding: .utf8)) ?? ""
         suite.expect(turkishInfoPlistStrings.contains("NSAudioCaptureUsageDescription")
-               && turkishInfoPlistStrings.contains("Hiçbir şey kaydedilmez"),
+               && turkishInfoPlistStrings.contains("Hiçbir şey Mac'inden çıkmaz"),
                "Turkish InfoPlist.strings localizes the audio permission prompt")
         let koreanInfoPlistStrings = (try? String(contentsOfFile: "Resources/ko.lproj/InfoPlist.strings",
                                                   encoding: .utf8)) ?? ""

@@ -47,6 +47,8 @@ def availability_declaration(path, prefix):
 
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    write("RecorderScreen.swift", "import AppKit\n" + declaration(
+        "Sources/Vorssaint/Services/QuickTools/ScreenshotCaptureEngine.swift", "extension NSScreen {"))
     recorder = "Sources/Vorssaint/Services/Recorder/ScreenRecorderService.swift"
     editor = "Sources/Vorssaint/Services/Recorder/RecorderEditorController.swift"
     write("RecordingStash.swift", "import Foundation\nextension RecordingStashTests {\n"

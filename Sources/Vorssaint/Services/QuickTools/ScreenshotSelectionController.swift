@@ -320,6 +320,9 @@ final class ScreenshotSelectionController {
     }
 
     private func screenCaptureToolDidChange() {
+        if activeTool != .recording && !RecorderOverlayController.shared.isRecording {
+            RecorderOverlayController.shared.stop()
+        }
         if let activeTool {
             let defaults = UserDefaults.standard
             let nextPolicy = ScreenshotSupport.unifiedCapturePolicy(
@@ -480,6 +483,10 @@ final class ScreenshotSelectionController {
                 if self.activeTool == .recording {
                     self.screenCaptureOptions?.recorderAudio.microphone.toggle()
                 }
+            case _ where self.activeTool == .recording && Self.matchesShortcutKey(event, character: "c", physicalKeyCode: kVK_ANSI_C):
+                if !event.isARepeat { RecorderOverlayController.shared.toggleCamera() }
+            case _ where self.activeTool == .recording && Self.matchesShortcutKey(event, character: "k", physicalKeyCode: kVK_ANSI_K):
+                if !event.isARepeat { RecorderOverlayController.shared.keysEnabled.toggle() }
             case _ where Self.isLoupeKey(event):
                 guard !self.hasSelectedWindows else { return event }
                 self.toggleLoupe()
@@ -992,6 +999,9 @@ final class ScreenshotSelectionController {
 
     private func finish(_ outcome: Outcome) {
         guard !finished else { return }
+        if activeTool == .recording {
+            if case .region = outcome {} else { RecorderOverlayController.shared.stop() }
+        }
         finished = true
         selectedWindows.removeAll()
         Self.isSessionOnScreen = false
@@ -1479,6 +1489,12 @@ private final class ScreenshotOverlayView: NSView {
                 fromCenter: event.modifierFlags.contains(.option))
         }
         selection = ScreenshotSupport.clamp(selection, to: bounds)
+        if controller.activeTool == .recording, let panel {
+            let anchor = ScreenshotSupport.cocoaRect(fromFlippedView: selection, screenFrame: panel.screenFrame)
+            let scale = panel.screen?.backingScaleFactor ?? 1
+            RecorderOverlayController.shared.updateRegion(anchorRect: anchor,
+                pixelSize: CGSize(width: selection.width * scale, height: selection.height * scale))
+        }
         lastDragPoint = point
         needsDisplay = true
     }
@@ -2681,6 +2697,9 @@ private struct RecorderSelectionAudioControls: View {
             }
             .buttonStyle(.plain)
             .focusable(false)
+            .contextMenu { RecorderInputSourceMenu(camera: false) }
+
+            RecorderOverlayInputControls()
         }
         .padding(3)
         .background(CaptureChromeBackdrop(material: .regularMaterial,
