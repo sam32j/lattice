@@ -34,10 +34,7 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
 
     override func mouseDown(with event: NSEvent) {
         guard let pin, !pin.isClosed else { return }
-        if event.clickCount == 2 {
-            pin.onReopenPreview?()
-            return
-        }
+        guard event.clickCount < 2 else { return }
         if !pin.isKeyWindow || !NSApp.isActive {
             NSApp.activate(ignoringOtherApps: true)
             pin.makeKeyAndOrderFront(nil)
@@ -55,18 +52,31 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
         let strings = FeatureStrings.screenshot(L10n.shared.language)
         let controls = ScreenshotPinStrings.localized(L10n.shared.language)
         let menu = NSMenu()
-        func add(_ title: String, _ action: Selector, checked: Bool = false, value: Int? = nil) {
-            let item = menu.addItem(withTitle: title, action: action, keyEquivalent: "")
+        func add(_ title: String, _ action: Selector, key: String = "", checked: Bool = false, value: Int? = nil) {
+            let item = menu.addItem(withTitle: title, action: action, keyEquivalent: key)
             item.target = self
             item.state = checked ? .on : .off
             item.representedObject = value
         }
-        add(strings.copyButton, #selector(copyPin))
-        add(strings.saveAsButton, #selector(savePin))
+        add(strings.editButton, #selector(editPin), key: "e")
+        add(strings.copyButton, #selector(copy(_:)), key: "c")
+        add(strings.saveButton, #selector(savePin), key: "s")
         menu.addItem(.separator())
+        let zoom = NSMenuItem(title: "Zoom", action: nil, keyEquivalent: "")
+        let scales = NSMenu()
+        scales.autoenablesItems = false
+        for multiplier in [0.5, 0.8, 1.0, 2.0] {
+            let item = scales.addItem(withTitle: "\(multiplier.formatted())x", action: #selector(setZoom(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = multiplier
+            item.isEnabled = !pin.isPositionLocked && !NSEvent.modifierFlags.contains(.option)
+            item.state = abs(pin.zoomMultiplier - multiplier) < 0.01 ? .on : .off
+        }
+        zoom.submenu = scales
+        menu.addItem(zoom)
         let opacity = NSMenuItem(title: strings.pinOpacity, action: nil, keyEquivalent: "")
         let levels = NSMenu()
-        for percent in [100, 90, 70, 50, 25, 10] {
+        for percent in [10, 50, 100] {
             let item = levels.addItem(withTitle: "\(percent)%", action: #selector(setOpacity(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = percent
@@ -77,12 +87,13 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
         add(pin.isPositionLocked ? controls.unlock : controls.lock, #selector(lockPin), checked: pin.isPositionLocked)
         add(strings.pinClickThrough, #selector(clickThrough), checked: pin.ignoresMouseEvents)
         menu.addItem(.separator())
-        add(L10n.shared.s.menuClose, #selector(closePin))
+        add(L10n.shared.s.menuClose, #selector(closePin), key: "w")
         add(strings.pinCloseAll, #selector(closeAll))
         return menu
     }
 
-    @objc private func copyPin() { pin?.onCopy?() }
+    @objc func copy(_ sender: Any?) { pin?.onCopy?() }
+    @objc private func editPin() { pin?.onEdit?() }
     @objc private func savePin() { pin?.onSave?() }
     @objc private func closePin() { pin?.closePin() }
     @objc private func closeAll() { pin?.onCloseAll?() }
@@ -90,5 +101,8 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
     @objc private func clickThrough() { if let pin { pin.setClickThrough(!pin.ignoresMouseEvents) } }
     @objc private func setOpacity(_ item: NSMenuItem) {
         if let percent = item.representedObject as? Int { pin?.setOpacity(CGFloat(percent) / 100) }
+    }
+    @objc private func setZoom(_ item: NSMenuItem) {
+        if let multiplier = item.representedObject as? Double { pin?.setZoom(multiplier) }
     }
 }

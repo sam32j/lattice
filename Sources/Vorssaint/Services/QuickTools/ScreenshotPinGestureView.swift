@@ -47,16 +47,26 @@ class ScreenshotPinGestureView: NSView {
         set {}
     }
 
-    func handleGestureEvent(_ event: NSEvent) {
+    func resetGestureTracking() {
+        pinchTracker.reset()
+        pinchSource = ScreenshotPinGestureSource()
+    }
+
+    func handleGestureEvent(_ event: NSEvent, at point: CGPoint? = nil) {
         guard let window, !window.ignoresMouseEvents, !isPositionLocked else { return }
+        guard !event.modifierFlags.contains(.option) else {
+            pinchTracker.reset()
+            pinchSource = ScreenshotPinGestureSource()
+            return
+        }
         if event.type == .gesture {
             let touches = event.allTouches()
             let phase: NSEvent.Phase = touches.allSatisfy { $0.phase == .ended || $0.phase == .cancelled }
                 ? .ended : touches.contains { $0.phase == .began } ? .began : .changed
-            applyPinch(by: pinchTracker.process(event: event) ?? 1, at: event.locationInWindow,
+            applyPinch(by: pinchTracker.process(event: event) ?? 1, at: point ?? event.locationInWindow,
                        source: .touches, phase: phase)
         } else if event.type == .magnify {
-            magnify(with: event)
+            applyMagnify(event, at: point ?? event.locationInWindow)
         }
     }
 
@@ -66,7 +76,19 @@ class ScreenshotPinGestureView: NSView {
     override func touchesCancelled(with event: NSEvent) { pinchTracker.reset(); pinchSource.finish(.touches) }
 
     override func magnify(with event: NSEvent) {
-        applyPinch(by: 1 + event.magnification, at: event.locationInWindow,
+        applyMagnify(event, at: event.locationInWindow)
+    }
+
+    private func applyMagnify(_ event: NSEvent, at point: CGPoint) {
+        guard !event.modifierFlags.contains(.option) else {
+            pinchTracker.reset()
+            pinchSource = ScreenshotPinGestureSource()
+            return
+        }
+        // Some AppKit magnify deliveries have no phase at all. They must be
+        // able to begin after a phased gesture has ended.
+        if event.phase.isEmpty { pinchSource.begin(.magnify) }
+        applyPinch(by: 1 + event.magnification, at: point,
                    source: .magnify, phase: event.phase)
     }
 
