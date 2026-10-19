@@ -222,8 +222,8 @@ final class SuperKeyService: ObservableObject {
             mappingGeneration &+= 1
             return (tapRunLoop, tap, mouseTap, tapThread != nil)
         }
-        if let tap = snapshot.tap { CGEvent.tapEnable(tap: tap, enable: false) }
-        if let mouseTap = snapshot.mouseTap { CGEvent.tapEnable(tap: mouseTap, enable: false) }
+        if let tap = snapshot.tap { InputEventTap.enable(tap: tap, enable: false) }
+        if let mouseTap = snapshot.mouseTap { InputEventTap.enable(tap: mouseTap, enable: false) }
         if let runLoop = snapshot.runLoop {
             CFRunLoopPerformBlock(runLoop, CFRunLoopMode.commonModes.rawValue) {
                 CFRunLoopStop(runLoop)
@@ -258,7 +258,7 @@ final class SuperKeyService: ObservableObject {
             let mask = (CGEventMask(1) << CGEventType.keyDown.rawValue)
                 | (CGEventMask(1) << CGEventType.keyUp.rawValue)
                 | (CGEventMask(1) << CGEventType.flagsChanged.rawValue)
-            guard let tap = CGEvent.tapCreate(
+            guard let tap = InputEventTap.create(
                 tap: .cgSessionEventTap,
                 place: .headInsertEventTap,
                 options: .defaultTap,
@@ -289,7 +289,7 @@ final class SuperKeyService: ObservableObject {
             let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
             lifecycleLock.withLock { self.tap = tap }
             CFRunLoopAddSource(runLoop, source, .commonModes)
-            CGEvent.tapEnable(tap: tap, enable: true)
+            InputEventTap.enable(tap: tap, enable: true)
 
             // Mouse button presses need the modifiers too — a drag chord like
             // "move and resize by dragging" reads them off the mouse-down, not
@@ -306,7 +306,7 @@ final class SuperKeyService: ObservableObject {
             let mouseMask = Self.mouseDownTypes.reduce(CGEventMask(0)) {
                 $0 | (CGEventMask(1) << $1.rawValue)
             }
-            let mouseTap = CGEvent.tapCreate(
+            let mouseTap = InputEventTap.create(
                 tap: .cghidEventTap,
                 place: .headInsertEventTap,
                 options: .defaultTap,
@@ -327,22 +327,22 @@ final class SuperKeyService: ObservableObject {
             if let mouseTap {
                 mouseSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, mouseTap, 0)
                 CFRunLoopAddSource(runLoop, mouseSource, .commonModes)
-                CGEvent.tapEnable(tap: mouseTap, enable: true)
+                InputEventTap.enable(tap: mouseTap, enable: true)
             }
 
             DispatchQueue.main.async { [weak self] in self?.tapDidStart(tap) }
             if lifecycleLock.withLock({ shouldStopTapThread }) {
-                CGEvent.tapEnable(tap: tap, enable: false)
-                if let mouseTap { CGEvent.tapEnable(tap: mouseTap, enable: false) }
+                InputEventTap.enable(tap: tap, enable: false)
+                if let mouseTap { InputEventTap.enable(tap: mouseTap, enable: false) }
             } else {
                 CFRunLoopRun()
             }
 
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFRunLoopRemoveSource(runLoop, source, .commonModes)
             CFMachPortInvalidate(tap)
             if let mouseTap {
-                CGEvent.tapEnable(tap: mouseTap, enable: false)
+                InputEventTap.enable(tap: mouseTap, enable: false)
                 if let mouseSource { CFRunLoopRemoveSource(runLoop, mouseSource, .commonModes) }
                 CFMachPortInvalidate(mouseTap)
             }
@@ -622,8 +622,8 @@ final class SuperKeyService: ObservableObject {
                 shouldStopTapThread ? (nil, nil) : (tap, mouseTap)
             }
             if SessionActivity.shared.isActive, AXIsProcessTrusted() {
-                if let currentTap = currentTaps.0 { CGEvent.tapEnable(tap: currentTap, enable: true) }
-                if let currentMouseTap = currentTaps.1 { CGEvent.tapEnable(tap: currentMouseTap, enable: true) }
+                if let currentTap = currentTaps.0 { InputEventTap.enable(tap: currentTap, enable: true) }
+                if let currentMouseTap = currentTaps.1 { InputEventTap.enable(tap: currentMouseTap, enable: true) }
             } else {
                 DispatchQueue.main.async { [weak self] in self?.syncWithPreferences() }
             }

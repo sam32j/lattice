@@ -12,9 +12,6 @@ struct MixerSection: View {
     @Environment(\.notchPresentation) private var inNotch
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var mixer = AppVolumeMixer.shared
-    @ObservedObject private var inputManager = AudioInputDeviceManager.shared
-    @ObservedObject private var audioPriority = AudioPriorityService.shared
-    @ObservedObject private var micMute = MicMuteService.shared
     @AppStorage(DefaultsKey.liquidGlassEnabled) private var windowsGlass = false
     @AppStorage(DefaultsKey.notchLiquidGlassEnabled) private var islandGlass = false
     @AppStorage(DefaultsKey.mixerAppArrangement)
@@ -83,7 +80,7 @@ struct MixerSection: View {
         VStack(alignment: .leading, spacing: 6) {
             universalOutputPicker
             systemSoundOutputPicker
-            microphonePicker
+            if !settingsMode { AudioInputDeviceControls() }
             if let outputSwitchError = mixer.outputSwitchError {
                 inputMessage(String(format: l10n.s.mixerSystemOutputErrorFormat, outputSwitchError),
                              systemImage: "exclamationmark.triangle")
@@ -287,114 +284,8 @@ struct MixerSection: View {
         )
     }
 
-    private var microphonePicker: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                Label {
-                    Text(l10n.s.mixerInputTitle)
-                        .font(.system(size: 11.5, weight: .medium))
-                } icon: {
-                    Image(systemName: "mic.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .frame(width: 16)
-                }
-                .foregroundStyle(.secondary)
 
-                Spacer(minLength: 6)
 
-                Picker(l10n.s.mixerInputTooltip, selection: inputSelectionBinding) {
-                    Text(l10n.s.mixerOutputDefault)
-                        .tag(MixerRoutingSupport.systemDefaultSelectionID)
-                    ForEach(inputManager.inputDevices) { device in
-                        Text(inputDeviceTitle(device))
-                            .tag(device.uid)
-                    }
-                    if !audioPriority.inputPriorityEnabled,
-                       let selected = inputManager.preferredInputDeviceUID,
-                       inputManager.preferredUnavailable {
-                        Text(l10n.s.mixerInputUnavailable)
-                            .tag(selected)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .controlSize(.small)
-                .frame(width: 164)
-                .disabled(inputManager.inputDevices.isEmpty)
-                .help(l10n.s.mixerInputTooltip)
-            }
-
-            if let volume = inputManager.inputVolume {
-                HStack(spacing: 8) {
-                    Image(systemName: volume <= 0.001 ? "mic.slash.fill" : "mic.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 16)
-
-                    MixerVolumeSlider(value: inputVolumeBinding,
-                                      normalTint: normalSliderTint,
-                                      boostTint: normalSliderTint,
-                                      isBoosting: false,
-                                      accentRevision: accentRevision,
-                                      glassEnabled: glassEnabled,
-                                      maximum: 1,
-                                      accessibilityLabel: l10n.s.mixerInputTitle)
-
-                    EditableVolumePercent(currentPercent: Int((volume * 100).rounded()),
-                                          maximumPercent: 100,
-                                          width: 36,
-                                          editorID: "microphone-input",
-                                          editingID: $editingVolumeID,
-                                          accessibilityLabel: l10n.s.mixerInputTitle) {
-                        Text("\(Int((volume * 100).rounded()))%")
-                            .font(.system(size: 10.5, weight: .medium))
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                    } onCommit: {
-                        inputManager.setInputVolume($0)
-                    }
-                }
-                .disabled(micMute.isMuted)
-            }
-
-            if inputManager.inputDevices.isEmpty {
-                inputMessage(l10n.s.mixerInputNoDevices, systemImage: "mic.slash")
-            } else if !audioPriority.inputPriorityEnabled, inputManager.preferredUnavailable {
-                inputMessage(l10n.s.mixerInputFallback, systemImage: "mic.badge.xmark")
-            } else if let lastError = inputManager.lastError {
-                inputMessage(String(format: l10n.s.mixerInputErrorFormat, lastError),
-                             systemImage: "exclamationmark.triangle")
-            }
-        }
-    }
-
-    private var inputSelectionBinding: Binding<String> {
-        Binding(
-            get: {
-                return MixerRoutingSupport.selectedInputDeviceUID(
-                    preferredUID: inputManager.preferredInputDeviceUID,
-                    currentUID: inputManager.currentInputDeviceUID,
-                    priorityIsActive: audioPriority.inputPriorityEnabled)
-                    ?? MixerRoutingSupport.systemDefaultSelectionID
-            },
-            set: { selection in
-                if audioPriority.inputPriorityEnabled {
-                    guard selection != MixerRoutingSupport.systemDefaultSelectionID else { return }
-                    inputManager.setCurrentInputDeviceUID(selection)
-                } else {
-                    inputManager.setPreferredInputDeviceUID(
-                        selection == MixerRoutingSupport.systemDefaultSelectionID ? nil : selection)
-                }
-            }
-        )
-    }
-
-    private var inputVolumeBinding: Binding<Double> {
-        Binding(
-            get: { inputManager.inputVolume ?? 0 },
-            set: { inputManager.setInputVolume($0) }
-        )
-    }
 
     private var arrangement: MixerAppArrangement { MixerAppArrangement(rawValue: arrangementValue) }
 
@@ -407,9 +298,6 @@ struct MixerSection: View {
         }
     }
 
-    private func inputDeviceTitle(_ device: MixerInputDevice) -> String {
-        device.isDefault ? "\(device.name) (\(l10n.s.mixerOutputCurrent))" : device.name
-    }
 
     private func outputDeviceTitle(_ device: MixerOutputDevice) -> String {
         device.isDefault ? "\(device.name) (\(l10n.s.mixerOutputCurrent))" : device.name
@@ -777,17 +665,16 @@ struct SoundOutputSwitcherControls: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Toggle(l10n.s.soundOutputSwitcherEnable, isOn: $enabled)
-                .toggleStyle(.checkbox)
-                .font(.system(size: 11.5, weight: .medium))
-                .onChange(of: enabled) { _, isEnabled in
-                    if isEnabled, selectedUIDs.isEmpty,
+            ShortcutPreferenceRow(role: .soundOutputSwitcher,
+                                  label: l10n.s.soundOutputSwitcherEnable,
+                                  additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
+                    if enabled, selectedUIDs.isEmpty,
                        let current = mixer.currentOutputDeviceUID,
                        universalOutputDevices.contains(where: { $0.uid == current }) {
                         setSelectedUIDs([current])
                     }
                     outputSwitcher.syncWithPreferences()
-                }
+            }
 
             Text(l10n.s.soundOutputSwitcherCaption)
                 .font(.system(size: 9.5))
@@ -795,11 +682,6 @@ struct SoundOutputSwitcherControls: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             if enabled {
-                ShortcutPreferenceRow(role: .soundOutputSwitcher,
-                                      isEnabled: enabled,
-                                      additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
-                    outputSwitcher.syncWithPreferences()
-                }
                 if outputSwitcher.registrationFailed {
                     inputMessage(l10n.s.shortcutUnavailable, systemImage: "keyboard.badge.ellipsis")
                 }
@@ -1102,393 +984,3 @@ private struct MixerRow: View {
 
 /// The percentage keeps its compact read-only appearance until clicked, then
 /// becomes a selected text field so the next keystroke replaces the old value.
-struct EditableVolumePercent<Label: View>: View {
-    let currentPercent: Int
-    let maximumPercent: Int
-    let width: CGFloat
-    var height: CGFloat = 18
-    let editorID: String
-    @Binding var editingID: String?
-    let accessibilityLabel: String
-    @ViewBuilder let label: () -> Label
-    let onCommit: (Double) -> Void
-
-    @State private var draft = ""
-
-    private var isEditing: Bool { editingID == editorID }
-
-    var body: some View {
-        ZStack {
-            HStack(spacing: 1) {
-                AutofocusingVolumeTextField(text: $draft,
-                                            isActive: isEditing,
-                                            accessibilityLabel: accessibilityLabel,
-                                            onSubmit: commit,
-                                            onCancel: cancel)
-                Text("%")
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-            }
-            .padding(.horizontal, 3)
-            .frame(width: width, height: height)
-            .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(Color(nsColor: .controlBackgroundColor))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .strokeBorder(Color.accentColor.opacity(0.7), lineWidth: 1)
-            )
-            .opacity(isEditing ? 1 : 0)
-            .allowsHitTesting(isEditing)
-            .accessibilityHidden(!isEditing)
-
-            Button(action: beginEditing) {
-                label()
-                    .frame(width: width, alignment: .trailing)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .opacity(isEditing ? 0 : 1)
-            .allowsHitTesting(!isEditing)
-            .accessibilityLabel("\(accessibilityLabel) \(currentPercent)%")
-            .accessibilityHidden(isEditing)
-        }
-        .frame(width: width, alignment: .trailing)
-    }
-
-    private func beginEditing() {
-        draft = String(currentPercent)
-        editingID = editorID
-    }
-
-    @discardableResult
-    private func commit() -> Bool {
-        guard let volume = MixerRoutingSupport.volumeFraction(
-            fromPercentageText: draft,
-            maximumPercent: maximumPercent
-        ) else {
-            NSSound.beep()
-            return false
-        }
-        onCommit(volume)
-        editingID = nil
-        return true
-    }
-
-    private func cancel() {
-        if isEditing { editingID = nil }
-    }
-}
-
-/// A native field is used because an NSPopover can attach its SwiftUI backing
-/// view after a FocusState request has already fired. The field retries when it
-/// joins the window, then owns Return, Escape and loss-of-focus behavior.
-private struct AutofocusingVolumeTextField: NSViewRepresentable {
-    @Binding var text: String
-    let isActive: Bool
-    let accessibilityLabel: String
-    let onSubmit: () -> Bool
-    let onCancel: () -> Void
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text,
-                    isActive: isActive,
-                    onSubmit: onSubmit,
-                    onCancel: onCancel)
-    }
-
-    func makeNSView(context: Context) -> MixerPercentNativeTextField {
-        let field = MixerPercentNativeTextField()
-        field.delegate = context.coordinator
-        context.coordinator.field = field
-        field.isBordered = false
-        field.drawsBackground = false
-        field.focusRingType = .none
-        field.alignment = .right
-        field.font = .systemFont(ofSize: 10.5, weight: .medium)
-        field.cell?.wraps = false
-        field.cell?.isScrollable = true
-        field.isEnabled = isActive
-        field.isHidden = !isActive
-        field.setAccessibilityLabel(accessibilityLabel)
-        field.didAttachToWindow = { [weak field, weak coordinator = context.coordinator] in
-            guard let field else { return }
-            coordinator?.focusIfNeeded(field)
-        }
-        return field
-    }
-
-    func updateNSView(_ field: MixerPercentNativeTextField, context: Context) {
-        context.coordinator.text = $text
-        context.coordinator.onSubmit = onSubmit
-        context.coordinator.onCancel = onCancel
-        field.setAccessibilityLabel(accessibilityLabel)
-        if field.stringValue != text { field.stringValue = text }
-        context.coordinator.setActive(isActive, field: field)
-    }
-
-    static func dismantleNSView(_ field: MixerPercentNativeTextField,
-                                coordinator: Coordinator) {
-        coordinator.stopMonitoringEscape()
-        field.didAttachToWindow = nil
-        field.delegate = nil
-    }
-
-    final class Coordinator: NSObject, NSTextFieldDelegate {
-        var text: Binding<String>
-        private var isActive: Bool
-        var onSubmit: () -> Bool
-        var onCancel: () -> Void
-        weak var field: MixerPercentNativeTextField?
-        private var didFocus = false
-        private var isFinishing = false
-        private var escapeMonitor: Any?
-
-        init(text: Binding<String>,
-             isActive: Bool,
-             onSubmit: @escaping () -> Bool,
-             onCancel: @escaping () -> Void) {
-            self.text = text
-            self.isActive = isActive
-            self.onSubmit = onSubmit
-            self.onCancel = onCancel
-            super.init()
-            if isActive { startMonitoringEscape() }
-        }
-
-        func controlTextDidChange(_ notification: Notification) {
-            guard let field = notification.object as? NSTextField else { return }
-            text.wrappedValue = field.stringValue
-        }
-
-        func controlTextDidEndEditing(_ notification: Notification) {
-            guard isActive, didFocus, !isFinishing,
-                  let field = notification.object as? NSTextField else { return }
-            text.wrappedValue = field.stringValue
-            isFinishing = true
-            if !onSubmit() { onCancel() }
-        }
-
-        func control(_ control: NSControl,
-                     textView: NSTextView,
-                     doCommandBy commandSelector: Selector) -> Bool {
-            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
-                text.wrappedValue = (control as? NSTextField)?.stringValue ?? text.wrappedValue
-                if onSubmit() { isFinishing = true }
-                return true
-            }
-            if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-                finish(onCancel)
-                return true
-            }
-            return false
-        }
-
-        func focusIfNeeded(_ field: MixerPercentNativeTextField) {
-            guard isActive, !didFocus else { return }
-            DispatchQueue.main.async { [weak self, weak field] in
-                guard let self, let field, self.isActive, !self.didFocus else { return }
-                if field.focusAndSelectAll() { self.didFocus = true }
-            }
-        }
-
-        func setActive(_ active: Bool, field: MixerPercentNativeTextField) {
-            if active != isActive {
-                isActive = active
-                didFocus = false
-                isFinishing = false
-                if active {
-                    field.isHidden = false
-                    field.isEnabled = true
-                    startMonitoringEscape()
-                } else {
-                    stopMonitoringEscape()
-                    field.isEnabled = false
-                    field.isHidden = true
-                }
-            }
-            if active { focusIfNeeded(field) }
-        }
-
-        private func startMonitoringEscape() {
-            guard escapeMonitor == nil else { return }
-            escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                // The monitor sees the whole app; Escape in another window,
-                // such as Settings, stays there.
-                guard let self, self.isActive, event.keyCode == 53,
-                      let window = self.field?.window, event.window === window else { return event }
-                // While an input method is composing, Esc belongs to it and
-                // drops the candidate; the next one cancels the level.
-                if (window.firstResponder as? NSTextView)?.hasMarkedText() == true { return event }
-                self.finish(self.onCancel)
-                return nil
-            }
-        }
-
-        func stopMonitoringEscape() {
-            guard let escapeMonitor else { return }
-            NSEvent.removeMonitor(escapeMonitor)
-            self.escapeMonitor = nil
-        }
-
-        private func finish(_ action: () -> Void) {
-            guard !isFinishing else { return }
-            isFinishing = true
-            action()
-        }
-    }
-}
-
-private struct MixerVolumeSlider: View {
-    @Binding var value: Double
-    let normalTint: Color
-    let boostTint: Color
-    let isBoosting: Bool
-    let accentRevision: Int
-    let glassEnabled: Bool
-    let maximum: Double
-    let accessibilityLabel: String
-
-    private var activeTint: Color { isBoosting ? boostTint : normalTint }
-    private var percentage: Int { Int((value * 100).rounded()) }
-
-    var body: some View {
-        Group {
-#if compiler(>=6.2)
-            if #available(macOS 26.0, *), glassEnabled {
-                LiquidGlassMixerSlider(value: $value,
-                                       tint: activeTint,
-                                       isBoosting: isBoosting,
-                                       maximum: maximum,
-                                       accessibilityLabel: accessibilityLabel)
-            } else {
-                nativeSlider
-                    .accessibilityLabel(accessibilityLabel)
-                    .accessibilityValue("\(percentage)%")
-            }
-#else
-            nativeSlider
-                .accessibilityLabel(accessibilityLabel)
-                .accessibilityValue("\(percentage)%")
-#endif
-        }
-    }
-
-    private var nativeSlider: some View {
-        Slider(value: $value, in: 0...maximum)
-            .controlSize(.small)
-            // Pass an explicit accent (not nil) for the normal state: on the
-            // macOS slider, tint(nil) does not reliably clear a previously
-            // applied colour, so the bar would stay amber after leaving boost.
-            .tint(activeTint)
-            .id(accentRevision)
-    }
-}
-
-#if compiler(>=6.2)
-@available(macOS 26.0, *)
-private struct LiquidGlassMixerSlider: View {
-    @Binding var value: Double
-    let tint: Color
-    let isBoosting: Bool
-    let maximum: Double
-    let accessibilityLabel: String
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @Environment(\.colorScheme) private var colorScheme
-
-    private let knobWidth: CGFloat = 24
-    private let knobHeight: CGFloat = 15
-    private let trackHeight: CGFloat = 5
-
-    private var progress: CGFloat {
-        let clamped = min(max(value, 0), maximum)
-        return CGFloat(clamped / maximum)
-    }
-
-    var body: some View {
-        GeometryReader { proxy in
-            let width = max(proxy.size.width, knobWidth)
-            let amount = progress
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.primary.opacity(trackOpacity))
-                    .frame(height: trackHeight)
-
-                Capsule()
-                    .fill(tint)
-                    .frame(width: max(trackHeight, width * amount), height: trackHeight)
-                    .shadow(color: tint.opacity(0.18), radius: 3)
-
-                knob
-                    .frame(width: knobWidth, height: knobHeight)
-                    .offset(x: (width - knobWidth) * amount)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .animation(.easeOut(duration: 0.16), value: amount)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { gesture in
-                        updateValue(at: gesture.location.x, width: width)
-                    }
-            )
-        }
-        .frame(height: knobHeight)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityValue("\(Int((value * 100).rounded()))%")
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment:
-                value = min(maximum, value + 0.05)
-            case .decrement:
-                value = max(0, value - 0.05)
-            @unknown default:
-                break
-            }
-        }
-    }
-
-    private var trackOpacity: Double {
-        colorScheme == .light ? 0.11 : 0.16
-    }
-
-    private var knob: some View {
-        ZStack {
-            knobFill
-            Capsule()
-                .strokeBorder(tint.opacity(isBoosting ? 0.55 : 0.36), lineWidth: isBoosting ? 1.1 : 0.8)
-            Capsule()
-                .fill(
-                    LinearGradient(colors: [
-                        Color.white.opacity(colorScheme == .light ? 0.48 : 0.28),
-                        Color.white.opacity(0.06)
-                    ], startPoint: .top, endPoint: .bottom)
-                )
-                .blendMode(.screen)
-                .padding(1)
-        }
-        .shadow(color: tint.opacity(isBoosting ? 0.24 : 0.16), radius: 3, x: 0, y: 0)
-        .shadow(color: Color.black.opacity(colorScheme == .light ? 0.08 : 0.18), radius: 2, x: 0, y: 1)
-    }
-
-    @ViewBuilder
-    private var knobFill: some View {
-        if reduceTransparency {
-            Capsule()
-                .fill(Color(nsColor: .controlBackgroundColor))
-                .overlay(Capsule().fill(tint.opacity(colorScheme == .light ? 0.10 : 0.16)))
-        } else {
-            Color.clear
-                .glassEffect(.regular.tint(tint.opacity(isBoosting ? 0.18 : 0.10)).interactive(), in: Capsule())
-        }
-    }
-
-    private func updateValue(at x: CGFloat, width: CGFloat) {
-        let travel = max(width - knobWidth, 1)
-        let normalized = min(max((x - knobWidth / 2) / travel, 0), 1)
-        value = Double(normalized) * maximum
-    }
-}
-#endif

@@ -30,8 +30,7 @@ enum AdminShell {
     // app. SecurityAgent attaches its password dialog to the requesting process;
     // when that process is an inactive agent the dialog can open behind the
     // frontmost app and read as "no prompt appeared". Bringing the app forward
-    // first — exactly what onboarding and the Dock Preview intro already do for
-    // their own windows — makes the dialog surface in focus.
+    // first makes the dialog surface in focus.
     //
     // `prompting` serializes the request: a second one while a dialog is already
     // up returns false instead of stacking another SecurityAgent dialog (what a

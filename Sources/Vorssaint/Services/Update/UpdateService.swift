@@ -10,16 +10,7 @@ import Combine
 final class UpdateService: ObservableObject {
     static let shared = UpdateService()
 
-    enum State: Equatable {
-        case idle
-        case checking
-        case upToDate
-        case available(version: String)
-        /// nil while the total size is still unknown (indeterminate spinner).
-        case downloading(progress: Double?)
-        case installing
-        case failed(String)
-    }
+    typealias State = AppUpdateState
 
     @Published private(set) var state: State = .idle
     @Published private(set) var lastChecked: Date?
@@ -65,14 +56,8 @@ final class UpdateService: ObservableObject {
         if AppInfo.isBeta && UserDefaults.standard.object(forKey: DefaultsKey.includeBetaUpdates) == nil {
             UserDefaults.standard.set(true, forKey: DefaultsKey.includeBetaUpdates)
         }
-        // The local dev build never auto-updates, but can simulate the
-        // "update available" UI via the `simulateUpdate` default, for testing.
+        // The local dev build never auto-updates.
         if AppInfo.isDeveloperBuild {
-            if UserDefaults.standard.bool(forKey: DefaultsKey.simulateUpdate) {
-                let simulatedVersion = AppInfo.isBeta ? "9.9.9-beta.1" : "9.9.9"
-                state = .available(version: simulatedVersion)
-                availableNotes = ReleaseNotes.rawNotes(for: AppInfo.version)
-            }
             return
         }
         configureAutomaticChecks()
@@ -101,15 +86,8 @@ final class UpdateService: ObservableObject {
 
     func check(manual: Bool) {
         if AppInfo.isDeveloperBuild {
-            // No real update target; reflect the simulation default so the
-            // notification UI can be exercised locally.
-            if UserDefaults.standard.bool(forKey: DefaultsKey.simulateUpdate) {
-                state = .available(version: "9.9.9")
-                availableNotes = ReleaseNotes.rawNotes(for: AppInfo.version)
-            } else {
-                state = .upToDate
-                availableNotes = nil
-            }
+            state = .upToDate
+            availableNotes = nil
             lastChecked = Date()
             return
         }
@@ -127,13 +105,18 @@ final class UpdateService: ObservableObject {
         request.setValue("Lattice/\(AppInfo.version)", forHTTPHeaderField: "User-Agent")
         request.cachePolicy = .reloadIgnoringLocalCacheData
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             guard let self else { return }
             DispatchQueue.main.async {
                 self.lastChecked = Date()
-                guard let data, error == nil else {
+                if let failure = UpdateCheckResponse.failure(response: response, error: error) {
                     self.availableNotes = nil
-                    self.state = .failed(error?.localizedDescription ?? "-")
+                    self.state = .failed(failure)
+                    return
+                }
+                guard let data else {
+                    self.availableNotes = nil
+                    self.state = .failed(URLError(.zeroByteResource).localizedDescription)
                     return
                 }
 
@@ -148,7 +131,7 @@ final class UpdateService: ObservableObject {
 
                 guard !releases.isEmpty else {
                     self.availableNotes = nil
-                    self.state = .failed(error?.localizedDescription ?? "-")
+                    self.state = .failed(URLError(.cannotParseResponse).localizedDescription)
                     return
                 }
 
@@ -390,14 +373,14 @@ final class UpdateService: ObservableObject {
         // nothing can take the overlay down, not even the menu, so it
         // leaves first and returns if the prompt is declined; an approved
         // install quits.
-        ExtraBrightnessService.shared.stop()
+        ExtraBrightnessService.stopIfLoaded()
         AdminShell.runInProcess(command, prompt: L10n.shared.s.adminPromptUpdate) { [weak self] granted in
             DispatchQueue.main.async {
                 guard let self else { return }
                 if granted {
                     NSApp.terminate(nil)
                 } else {
-                    ExtraBrightnessService.shared.syncWithPreferences()
+                    ExtraBrightnessService.resumeIfLoaded()
                     // The user dismissed the admin prompt: keep the offer so
                     // the button simply works again.
                     self.abortInstall(dmgPath: dmgPath, offered: expectedVersion)

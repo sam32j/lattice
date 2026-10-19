@@ -242,7 +242,7 @@ enum CommandBarCatalog {
         }
 
         return AppFeature.allCases.flatMap { feature -> [CommandBarEntry] in
-            guard feature.isAvailable else { return [] }
+            guard feature.isPresentInControls() else { return [] }
             if feature == .scrollInverter {
                 return [
                     entry(for: feature,
@@ -301,6 +301,7 @@ enum CommandBarCatalog {
         /// so the bar never teaches a dead combination.
         func roleShortcut(_ role: GlobalShortcutRole) -> GlobalShortcut? {
             guard role.isAvailable(using: { $0.isAvailable }),
+                  role.savedShortcut.isValid,
                   role.requiredEnableKeys.allSatisfy({ UserDefaults.standard.bool(forKey: $0) })
             else { return nil }
             return role.savedShortcut
@@ -579,29 +580,33 @@ enum CommandBarCatalog {
             }
         }
 
-        if AppFeature.quickToggles.isAvailable {
+        if AppFeature.commandBar.isAvailable {
             let toggles = QuickTogglesService.shared
             let togglesText = FeatureStrings.quickToggles(language)
-            let togglesArea = area(.quickToggles)
+            let togglesArea = area(.commandBar)
             let isDark = toggles.systemAppearanceIsDark ?? false
-            entries.append(CommandBarEntry(
-                id: "action.darkMode",
-                title: isDark ? togglesText.darkModeToLight : togglesText.darkModeToDark,
-                subtitle: togglesArea,
-                icon: .symbol(isDark ? "sun.max.fill" : "moon.fill"),
-                run: { _ in QuickTogglesService.shared.toggleDarkMode() }))
+            if AppFeature.brightness.isAvailable {
+                entries.append(CommandBarEntry(
+                    id: "action.darkMode",
+                    title: isDark ? togglesText.darkModeToLight : togglesText.darkModeToDark,
+                    subtitle: area(.brightness),
+                    icon: .symbol(isDark ? "sun.max.fill" : "moon.fill"),
+                    run: { _ in QuickTogglesService.shared.toggleDarkMode() }))
+            }
             entries.append(CommandBarEntry(
                 id: "action.lockScreen",
                 title: togglesText.lockScreenTitle,
                 subtitle: togglesArea,
                 icon: .symbol("lock.fill"),
                 run: { _ in afterBeat { QuickTogglesService.shared.lockScreen() } }))
-            entries.append(CommandBarEntry(
-                id: "action.displayOff",
-                title: togglesText.displayOffTitle,
-                subtitle: togglesArea,
-                icon: .symbol("display"),
-                run: { _ in afterBeat { QuickTogglesService.shared.turnDisplayOff() } }))
+            if AppFeature.brightness.isAvailable {
+                entries.append(CommandBarEntry(
+                    id: "action.displayOff",
+                    title: togglesText.displayOffTitle,
+                    subtitle: area(.brightness),
+                    icon: .symbol("display"),
+                    run: { _ in afterBeat { QuickTogglesService.shared.turnDisplayOff() } }))
+            }
             entries.append(CommandBarEntry(
                 id: "action.screenSaver",
                 title: togglesText.screenSaverTitle,
@@ -854,13 +859,13 @@ enum CommandBarCatalog {
                 else { return nil }
                 id = "settings.\(page)"
             case .feature(let feature):
-                guard feature.isAvailable,
+                guard feature.isPresentInControls(),
                       FeatureVisibilitySupport.isPageVisible(
                         item.destination.page, isAvailable: { $0.isAvailable })
                 else { return nil }
                 id = "settings.feature.\(feature.rawValue)"
             case .setting(let anchor):
-                guard item.feature.map(\.isAvailable) ?? true,
+                guard item.feature.map({ $0.isPresentInControls() }) ?? true,
                       FeatureVisibilitySupport.isPageVisible(
                         item.destination.page, isAvailable: { $0.isAvailable })
                 else { return nil }

@@ -77,8 +77,6 @@ enum LocalizationFeatureContractTests {
                    && !strings.secureInputUnattributed.isEmpty
                    && !strings.secureInputUnidentified.isEmpty,
                    "\(prefix) secure input copy is translated")
-            suite.expect(strings.quickToolsTab == strings.launcherName,
-                   "\(prefix) Quick panel keeps the same name in Settings")
             expectFormat(strings.cutMovedPluralFormat, ["d"], "\(prefix) cut plural format")
             expectFormat(strings.uninstallerSelectedFormat, ["d", "d"], "\(prefix) uninstaller selected format")
             expectFormat(strings.uninstallerFreedFormat, ["@"], "\(prefix) uninstaller freed format")
@@ -225,9 +223,9 @@ enum LocalizationFeatureContractTests {
                    && !strings.launchAtLoginNeedsApplications.contains("—"),
                    "\(prefix) launch at login location note is present without em dash")
             // Shortcut recording: the waiting cap, the two hints under the row
-            // and the honest message for a combination that never arrived (#308).
+            // and the caption for recording and clearing a binding.
             let shortcutCaptureStrings = [strings.shortcutPressKeys, strings.shortcutEscapeHint,
-                                          strings.shortcutDeleteHint, strings.shortcutNotCaptured,
+                                          strings.shortcutDeleteHint,
                                           strings.shortcutRecording, strings.shortcutInvalid]
             suite.expect(shortcutCaptureStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
                    "\(prefix) shortcut recording strings are present without em dash")
@@ -246,22 +244,11 @@ enum LocalizationFeatureContractTests {
             suite.expect(ocrStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
                    "\(prefix) screen OCR strings are present without em dash")
             let cleaningStrings = [strings.cleaningKeepScreenVisibleToggle, strings.cleaningKeepScreenVisibleCaption,
-                                   strings.cleaningStartNow, strings.cleaningOverlayTitle,
+                                   strings.cleaningOverlayTitle,
                                    strings.cleaningOverlaySubtitle, strings.cleaningOverlayUnlock,
                                    strings.cleaningOverlayMouseHint, strings.cleaningPanelCaption]
             suite.expect(cleaningStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
                    "\(prefix) cleaning mode strings are present without em dash")
-            let highlightsStrings = [strings.highlightsTitle, strings.highlightsTitleClipboardRedesign,
-                                     strings.highlightsCaptionDockPreview,
-                                     strings.highlightsCaptionScreenshot,
-                                     strings.highlightsCaptionSnippetLibrary,
-                                     strings.highlightsCaptionCapturePalette,
-                                     strings.highlightsCaptionClipboardRedesign,
-                                     strings.highlightsConfigure,
-                                     strings.highlightsTry, strings.highlightsSeeAll,
-                                     strings.reviewIntro, strings.reviewHighlights]
-            suite.expect(highlightsStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
-                   "\(prefix) update highlights strings are present without em dash")
             let officialHomebrewIntroStrings = [
                 strings.homebrewOfficialIntroTitle,
                 strings.homebrewOfficialIntroMessage,
@@ -269,63 +256,10 @@ enum LocalizationFeatureContractTests {
                 strings.homebrewOfficialIntroMigrationTitle,
                 strings.homebrewOfficialIntroMigrationMessage,
                 strings.homebrewOfficialIntroCopyButton,
-                strings.supportIntroDoneButton,
+                strings.doneButton,
             ]
             suite.expect(officialHomebrewIntroStrings.allSatisfy { !$0.isEmpty },
                    "\(prefix) official Homebrew intro is complete")
-            let supportCommunityStrings = [
-                strings.donateHeading,
-                strings.donateMessage,
-                strings.donateButton,
-                strings.supportIntroTitle,
-                strings.supportIntroMessage,
-                strings.supportIntroStarButton,
-                strings.supportIntroStarMessage,
-                strings.supportIntroCoffeeButton,
-                strings.discordIntroTitle,
-                strings.discordIntroMessage,
-                strings.discordIntroJoinButton,
-                strings.communityIntroTitle,
-                strings.communityIntroMessage,
-                strings.communityIntroFollowButton,
-            ]
-            suite.expect(supportCommunityStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
-                   "\(prefix) support and community strings are complete without em dash")
-            suite.expect(strings.donateButton.contains("Buy Me a Coffee")
-                   && strings.supportIntroCoffeeButton.contains("Buy Me a Coffee"),
-                   "\(prefix) financial support points only to Buy Me a Coffee")
-            suite.expect(strings.supportIntroStarMessage.localizedCaseInsensitiveContains("GitHub")
-                   && strings.discordIntroJoinButton.localizedCaseInsensitiveContains("Discord"),
-                   "\(prefix) non-financial support and community actions name their destinations")
-            suite.expect(strings.discordIntroMessage.count <= 320,
-                   "\(prefix) Discord introduction stays concise")
-            suite.expect(!strings.communityIntroMessage.isEmpty
-                   && strings.communityIntroMessage.contains("X"),
-                   "\(prefix) community intro invites users to follow previews on X")
-            let retiredWeeklyPhrases = [
-                "uma vez por semana", "once a week", "haftada bir", "раз в неделю",
-                "una vez por semana", "einmal pro Woche", "une fois par semaine",
-                "una volta a settimana", "週1回", "매주 한 번", "每周更新一次", "每週更新一次",
-            ]
-            suite.expect(retiredWeeklyPhrases.allSatisfy {
-                !strings.communityIntroMessage.localizedCaseInsensitiveContains($0)
-            }, "\(prefix) community intro no longer promises weekly updates")
-            suite.expect(!strings.communityIntroMessage.contains("—")
-                   && strings.communityIntroMessage.count <= 320,
-                   "\(prefix) community intro stays concise and has no em dash")
-            if language == .enUS {
-                suite.expect(strings.discordIntroMessage.contains("new")
-                       && strings.discordIntroMessage.contains("still being built"),
-                       "English Discord introduction says the community is new and in development")
-            } else if language == .ptBR {
-                suite.expect(strings.discordIntroMessage.contains("nova")
-                       && strings.discordIntroMessage.contains("em desenvolvimento"),
-                       "Portuguese Discord introduction says the community is new and in development")
-            }
-            suite.expect(!strings.updateShowcaseTitle.isEmpty, "\(prefix) update showcase title is present")
-            suite.expect(!strings.updateShowcaseMessage.isEmpty, "\(prefix) update showcase message is present")
-            suite.expect(!strings.updateShowcaseUnavailable.isEmpty, "\(prefix) update showcase fallback is present")
-            suite.expect(!strings.updateShowcaseRestart.isEmpty, "\(prefix) update showcase restart control is present")
             suite.expect(!strings.homebrewConfirmUpgradeAllTitle.isEmpty, "\(prefix) Homebrew update all confirmation title is present")
             suite.expect(!strings.homebrewConfirmUpgradeAllBody.isEmpty, "\(prefix) Homebrew update all confirmation body is present")
             suite.expect(!strings.homebrewConfirmUpdateHomebrewTitle.isEmpty, "\(prefix) Homebrew update Homebrew confirmation title is present")

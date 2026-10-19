@@ -14,6 +14,15 @@ enum SelfUninstallContract {
     static var tccResetAllowed = true
     static var fanHelperWasRegistered = true
     static var fanRegistrationRestored = true
+    static var loginRemovalAllowed = true
+    enum InputEventTap {
+        static var isBlocked = false
+        static func blockUntilRestart() {
+            guard !isBlocked else { return }
+            isBlocked = true
+            events.append("block input")
+        }
+    }
 
     enum DispatchQueue {
         static let main = Queue()
@@ -96,6 +105,8 @@ enum SelfUninstallContract {
             tccResetAllowed = true
             fanHelperWasRegistered = true
             fanRegistrationRestored = true
+            loginRemovalAllowed = true
+            InputEventTap.isBlocked = false
             SpacesOrderHold.restores = spacesRestore
         }
 
@@ -105,46 +116,54 @@ enum SelfUninstallContract {
         Host.clearPermissions { cleared = $0 }
         DispatchQueue.main.flush()
         suite.expect(cleared == true
-                        && events == ["suspend", "sleep", "fan", "login", "rule", "tccutil", "refresh permissions", "restore keep awake", "resume brightness"],
+                        && events == ["block input", "suspend", "login", "tccutil", "refresh permissions"],
                      "a mouse journal kept for a disconnected device does not block clearing permissions, found \(events)")
 
         reset(allowRule: true)
         sleepRestoreAllowed = false
         Host.clearPermissions { cleared = $0 }
         DispatchQueue.main.flush()
-        suite.expect(cleared == false
-                        && events == ["suspend", "sleep", "refresh permissions", "resume features", "resume brightness"],
-                     "failed sleep restoration keeps the recovery rule and permissions, found \(events)")
+        suite.expect(cleared == true
+                        && events == ["block input", "suspend", "login", "tccutil", "refresh permissions"],
+                     "permission reset does not change sleep settings, found \(events)")
 
         reset(allowRule: true)
         detachAllowed = false
         Host.clearPermissions { cleared = $0 }
         DispatchQueue.main.flush()
-        suite.expect(cleared == false
-                        && events == ["suspend", "sleep", "fan", "restore keep awake", "refresh permissions", "resume features", "resume brightness"],
-                     "failed system detach keeps the recovery rule and rearms closed-lid mode, found \(events)")
+        suite.expect(cleared == true
+                        && events == ["block input", "suspend", "login", "tccutil", "refresh permissions"],
+                     "permission reset removes login without depending on fan helper removal, found \(events)")
 
         reset(allowRule: false)
         Host.clearPermissions { cleared = $0 }
         DispatchQueue.main.flush()
-        suite.expect(cleared == false
-                        && events == ["suspend", "sleep", "fan", "login", "rule", "tccutil", "refresh permissions", "restore keep awake", "resume features", "resume brightness"],
-                     "a refused password request reports partial clear and restores closed-lid mode, found \(events)")
+        suite.expect(cleared == true
+                        && events == ["block input", "suspend", "login", "tccutil", "refresh permissions"],
+                     "permission reset needs no privileged rule removal or password, found \(events)")
 
         reset(allowRule: true)
         tccResetAllowed = false
         Host.clearPermissions { cleared = $0 }
         DispatchQueue.main.flush()
         suite.expect(cleared == false
-                        && events == ["suspend", "sleep", "fan", "login", "rule", "tccutil", "refresh permissions", "restore keep awake", "resume features", "resume brightness"],
-                     "a failed TCC reset reports partial clear and restores closed-lid mode, found \(events)")
+                        && events == ["block input", "suspend", "login", "tccutil", "refresh permissions"],
+                     "a failed TCC reset keeps input blocked because grants may be partially revoked, found \(events)")
 
         reset(allowRule: true)
         Host.clearPermissions { cleared = $0 }
         DispatchQueue.main.flush()
         suite.expect(cleared == true
-                        && events == ["suspend", "sleep", "fan", "login", "rule", "tccutil", "refresh permissions", "restore keep awake", "resume brightness"],
-                     "clear permissions succeeds when the rule and permissions are removed, found \(events)")
+                        && events == ["block input", "suspend", "login", "tccutil", "refresh permissions"],
+                     "clear permissions succeeds without uninstalling system integrations, found \(events)")
+
+        reset(allowRule: true)
+        loginRemovalAllowed = false
+        Host.clearPermissions { cleared = $0 }
+        DispatchQueue.main.flush()
+        suite.expect(cleared == false && InputEventTap.isBlocked
+                     && events == ["block input", "suspend", "login", "tccutil", "refresh permissions"],
+                     "login removal failure is reported without skipping TCC reset or rearming input, found \(events)")
 
         reset(allowRule: false)
         var failure: String?
@@ -169,7 +188,7 @@ enum SelfUninstallContract {
         Host.uninstallCompletely { failure = $0 }
         DispatchQueue.main.flush()
         suite.expect(failure == "rule kept"
-                        && events == ["suspend", "spaces", "sleep", "rule", "fan registration", "fan", "tccutil", "restore fan registration", "restore keep awake", "refresh permissions", "resume features", "resume brightness"],
+                        && events == ["suspend", "spaces", "sleep", "rule", "fan registration", "fan", "block input", "tccutil", "restore fan registration", "restore keep awake", "refresh permissions"],
                      "a failed permission reset restores the prior fan helper and keeps login, found \(events)")
 
         reset(allowRule: true)
@@ -179,7 +198,7 @@ enum SelfUninstallContract {
         Host.uninstallCompletely { failure = $0 }
         DispatchQueue.main.flush()
         suite.expect(failure == "rule kept\nfan unavailable"
-                        && events == ["suspend", "spaces", "sleep", "rule", "fan registration", "fan", "tccutil", "restore fan registration", "restore keep awake", "refresh permissions", "resume features", "resume brightness"],
+                        && events == ["suspend", "spaces", "sleep", "rule", "fan registration", "fan", "block input", "tccutil", "restore fan registration", "restore keep awake", "refresh permissions"],
                      "failed fan registration tells the user the helper is unavailable, found \(events)")
 
         reset(allowRule: true)
@@ -189,7 +208,7 @@ enum SelfUninstallContract {
         Host.uninstallCompletely { failure = $0 }
         DispatchQueue.main.flush()
         suite.expect(failure == "rule kept"
-                        && events == ["suspend", "spaces", "sleep", "rule", "fan registration", "fan", "tccutil", "restore keep awake", "refresh permissions", "resume features", "resume brightness"],
+                        && events == ["suspend", "spaces", "sleep", "rule", "fan registration", "fan", "block input", "tccutil", "restore keep awake", "refresh permissions"],
                      "a failed reset does not register a helper the user never had, found \(events)")
 
         reset(allowRule: true)
@@ -206,7 +225,7 @@ enum SelfUninstallContract {
         Host.uninstallCompletely { failure = $0 }
         DispatchQueue.main.flush()
         suite.expect(failure == nil
-                        && events == ["suspend", "spaces", "sleep", "rule", "fan registration", "fan", "tccutil", "login", "preferences", "trash"],
+                        && events == ["suspend", "spaces", "sleep", "rule", "fan registration", "fan", "block input", "tccutil", "login", "preferences", "trash"],
                      "a full uninstall detaches the fan helper before permission reset and login afterward, found \(events)")
 
         reset(allowRule: true)

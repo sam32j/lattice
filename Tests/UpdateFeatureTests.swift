@@ -13,30 +13,6 @@ import VMStatisticsCompat
 
 enum UpdateFeatureTests {
     static func run(_ suite: TestSuite) {
-        suite.expect(BrightnessUpdatePromptInfo.isUpgrade(appVersion: "3.4.0-beta.7",
-                                                          previousVersion: "3.4.0-beta.6")
-                    && BrightnessUpdatePromptInfo.isUpgrade(appVersion: "3.4.0",
-                                                            previousVersion: "3.4.0-beta.6"),
-                    "the display setup invitation recognizes a newer release")
-        for previous in [nil, "", "dev", "3.4.0-beta.7", "3.4.0"] as [String?] {
-            suite.expect(!BrightnessUpdatePromptInfo.isUpgrade(appVersion: "3.4.0-beta.7",
-                                                               previousVersion: previous),
-                         "a first install, unknown version, unchanged release or downgrade does not invite: \(previous ?? "nil")")
-        }
-        suite.expect(BrightnessUpdatePromptInfo.needsSetup(
-            notchAvailable: true, brightnessAvailable: true, notchEnabled: true,
-            notchBrightness: true, brightnessEnabled: false),
-            "the invitation targets an enabled island with brightness waiting for display controls")
-        for (notchAvailable, brightnessAvailable, notchEnabled, notchBrightness, brightnessEnabled)
-            in [(false, true, true, true, false), (true, false, true, true, false),
-                (true, true, false, true, false), (true, true, true, false, false),
-                (true, true, true, true, true)] {
-            suite.expect(!BrightnessUpdatePromptInfo.needsSetup(
-                notchAvailable: notchAvailable, brightnessAvailable: brightnessAvailable,
-                notchEnabled: notchEnabled, notchBrightness: notchBrightness,
-                brightnessEnabled: brightnessEnabled),
-                "the invitation skips unavailable, unused or already configured display controls")
-        }
         func activeSet(_ permission: AppPermission,
                        available: Set<AppFeature> = Set(AppFeature.allCases),
                        on: Set<String> = [],
@@ -258,20 +234,6 @@ enum UpdateFeatureTests {
                                                        expectedBytes: nil),
                "a plausible body with no advertised size is accepted")
 
-        // The showcase loader is a @StateObject, so it can be released without
-        // `.onDisappear` running. Its session holds the download delegate, and
-        // that delegate's deinit is what deletes the scratch file, so the
-        // release path has to invalidate the session too.
-        let showcaseSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/Update/UpdateShowcaseMedia.swift",
-            encoding: .utf8)) ?? ""
-        let showcaseDeinitBody = (showcaseSource.components(separatedBy: "\n    deinit {")
-            .dropFirst().first ?? "").components(separatedBy: "\n    }").first ?? ""
-        suite.expect(showcaseDeinitBody.contains("session?.invalidateAndCancel()"),
-               "a released showcase loader invalidates its session, freeing the delegate and its scratch file")
-        suite.expect(!showcaseDeinitBody.contains("finishTasksAndInvalidate"),
-               "a released showcase loader cancels its download instead of letting it finish")
-
         suite.expect(SettingsSearchSupport.matches(query: "", title: "Monitor"),
                "a blank settings search matches everything")
         suite.expect(SettingsSearchSupport.matches(query: "moni", title: "Monitor"),
@@ -316,46 +278,43 @@ enum UpdateFeatureTests {
                     keywords: captureSearchKeywords),
                "Screen capture tools and their options find the one settings page")
 
-        let quickToolFeatures: [AppFeature] = [.quickLauncher, .micMute, .scratchpad, .cleaningMode]
-        let quickToolRows = SettingsSidebarSupport.items(
-            page: .quickTools, title: "Quick panel", icon: "wand.and.rays",
-            preferredFeatures: quickToolFeatures, includePage: false,
-            isAvailable: { quickToolFeatures.contains($0) },
+        let audioInputFeatures: [AppFeature] = [.micMute, .audioPriority]
+        let audioInputRows = SettingsSidebarSupport.items(
+            page: .audioInput, title: "Audio Input", icon: "mic",
+            preferredFeatures: audioInputFeatures, includePage: true,
+            isAvailable: { audioInputFeatures.contains($0) },
             featureTitle: { $0.rawValue })
-        let generalFeatures: [AppFeature] = [
-            .musicBlock, .mixer, .soundOutputSwitcher, .audioPriority,
-        ]
+        suite.expect(audioInputRows.count == 1
+                && audioInputRows.first?.id == .page(.audioInput)
+                && audioInputRows.first?.destination == FeatureSettingsDestination(.audioInput),
+               "Audio Input produces a single page entrance on the sidebar")
+
+        let audioOutputFeatures: [AppFeature] = [.soundOutputSwitcher, .mixer, .musicBlock]
+        let audioOutputRows = SettingsSidebarSupport.items(
+            page: .audioOutput, title: "Audio Output", icon: "speaker.wave.2",
+            preferredFeatures: audioOutputFeatures, includePage: true,
+            isAvailable: { audioOutputFeatures.contains($0) },
+            featureTitle: { $0.rawValue })
+        suite.expect(audioOutputRows.count == 1
+                && audioOutputRows.first?.id == .page(.audioOutput)
+                && audioOutputRows.first?.destination == FeatureSettingsDestination(.audioOutput),
+               "Audio Output produces a single page entrance on the sidebar")
+
+        let scratchpadRows = SettingsSidebarSupport.items(
+            page: .scratchpad, title: "Scratchpad", icon: "note.text",
+            preferredFeatures: [.scratchpad], includePage: true,
+            isAvailable: { $0 == .scratchpad },
+            featureTitle: { $0.rawValue })
+        suite.expect(scratchpadRows.count == 1
+                && scratchpadRows.first?.id == .page(.scratchpad)
+                && scratchpadRows.first?.destination == FeatureSettingsDestination(.scratchpad),
+               "Scratchpad produces a single page entrance on the sidebar")
+
         let generalRows = SettingsSidebarSupport.items(
             page: .general, title: "General", icon: "gearshape",
-            preferredFeatures: [.musicBlock], includePage: true,
-            isAvailable: { generalFeatures.contains($0) },
+            preferredFeatures: [], includePage: true,
+            isAvailable: { _ in true },
             featureTitle: { $0.rawValue })
-        let toolRows = generalRows + quickToolRows
-        func toolRow(_ feature: AppFeature) -> SettingsSidebarItem? {
-            toolRows.first { $0.id == .feature(feature) }
-        }
-        suite.expect(toolRow(.musicBlock)?.icon == AppFeature.musicBlock.symbolName
-                && toolRow(.mixer)?.icon == AppFeature.mixer.symbolName
-                && toolRow(.soundOutputSwitcher)?.icon == AppFeature.soundOutputSwitcher.symbolName
-                && toolRow(.audioPriority)?.icon == AppFeature.audioPriority.symbolName
-                && toolRow(.micMute)?.icon == AppFeature.micMute.symbolName
-                && toolRow(.scratchpad)?.icon == AppFeature.scratchpad.symbolName
-                && toolRow(.cleaningMode)?.icon == AppFeature.cleaningMode.symbolName,
-               "shared Settings pages expose every anchored tool with its own symbol")
-        suite.expect(toolRows.count == Set(toolRows.map(\.id)).count
-                && !quickToolRows.contains { $0.id == .page(.quickTools) }
-                && toolRow(.mixer)?.destination
-                    == FeatureSettingsDestination(.general, sectionAnchor: .mixer)
-                && toolRow(.soundOutputSwitcher)?.destination
-                    == FeatureSettingsDestination(.general, sectionAnchor: .soundOutputSwitcher)
-                && toolRow(.audioPriority)?.destination
-                    == FeatureSettingsDestination(.general, sectionAnchor: .audioPriority)
-                && SettingsSidebarSupport.selection(for: AppFeature.scratchpad.settingsDestination,
-                                                    in: toolRows) == .feature(.scratchpad)
-                && SettingsSidebarSupport.selection(for: AppFeature.audioPriority.settingsDestination,
-                                                    in: toolRows, preferredID: .feature(.audioPriority))
-                    == .feature(.audioPriority),
-               "flat tool rows keep unique identities and select the clicked tool")
         let menuBarDestination = FeatureSettingsDestination(
             .general, sectionAnchor: .panelConfiguration)
         let menuBarRow = SettingsSidebarItem(
@@ -368,70 +327,44 @@ enum UpdateFeatureTests {
                 for: menuBarDestination,
                 in: generalRows + [menuBarRow]) == .setting(.panelConfiguration),
             "General and its menu bar editor keep distinct sidebar selections")
-        func pageRow(_ page: SettingsPage) -> SettingsSidebarItem {
-            SettingsSidebarItem(id: .page(page), destination: FeatureSettingsDestination(page),
-                                title: "\(page)", icon: "")
-        }
-        let groupedRows = SettingsSidebarSupport.featureGroupRows(
-            windowsControls: [pageRow(.windowLayout), pageRow(.autoQuit), pageRow(.quitProtection)]
-                + [SettingsSidebarItem(id: .feature(.scrollInverter),
-                                       destination: AppFeature.scrollInverter.settingsDestination,
-                                       title: "Scroll", icon: "")],
-            utilities: quickToolRows + [pageRow(.urlCleaner), pageRow(.keyDebounce),
-                                        pageRow(.superKey), pageRow(.textSnippets),
-                                        pageRow(.radialMenu)])
-        suite.expect(groupedRows.windowsDock.map(\.id) == [.page(.windowLayout), .page(.autoQuit)]
-                && groupedRows.mouseKeyboard.map(\.id) == [
-                    .page(.quitProtection), .feature(.scrollInverter), .page(.keyDebounce),
-                    .page(.superKey), .page(.textSnippets)]
-                && groupedRows.files.map(\.id) == [.page(.urlCleaner)]
-                && groupedRows.sound.map(\.id) == [.feature(.micMute)]
-                && groupedRows.utilities.map(\.id) == [
-                    .feature(.quickLauncher), .feature(.scratchpad), .feature(.cleaningMode),
-                    .page(.radialMenu)],
-               "sidebar rows follow the Features page groups and other utilities stay put")
-        let scratchpadOnlyRows = SettingsSidebarSupport.items(
-            page: .quickTools, title: "Quick panel", icon: "wand.and.rays",
-            preferredFeatures: quickToolFeatures, includePage: false,
-            isAvailable: { $0 == .scratchpad },
-            featureTitle: { $0.rawValue })
-        suite.expect(scratchpadOnlyRows.count == 1
-                && scratchpadOnlyRows.first?.id == .feature(.scratchpad)
-                && SettingsSidebarSupport.selection(for: AppFeature.micMute.settingsDestination,
-                                                    in: scratchpadOnlyRows) == .feature(.scratchpad),
-               "the sidebar hides unavailable tools and keeps a visible selection for their page")
-        let scrollingRows = SettingsSidebarSupport.items(
+        let mouseRows = SettingsSidebarSupport.items(
             page: .mouse, title: "Mouse", icon: "computermouse",
             preferredFeatures: [.scrollInverter, .scrollHorizontal], includePage: false,
             isAvailable: { [.scrollInverter, .scrollHorizontal].contains($0) },
             featureTitle: { $0.rawValue })
-        let sidewaysOnlyRows = SettingsSidebarSupport.items(
-            page: .mouse, title: "Mouse", icon: "computermouse",
-            preferredFeatures: [.scrollInverter, .scrollHorizontal], includePage: false,
-            isAvailable: { $0 == .scrollHorizontal }, featureTitle: { $0.rawValue })
-        suite.expect(scrollingRows.count == 2
-                && Set(scrollingRows.map(\.id)) == [.feature(.scrollInverter),
-                                                    .feature(.scrollHorizontal)]
-                && scrollingRows[0].destination == scrollingRows[1].destination
-                && sidewaysOnlyRows.first?.id == .feature(.scrollHorizontal),
-               "tools sharing a section keep separate named rows")
+        suite.expect(mouseRows.count == 1
+                && mouseRows.first?.id == .page(.mouse)
+                && mouseRows.first?.destination == FeatureSettingsDestination(.mouse),
+               "Mouse & Trackpad produces a single page entrance on the sidebar")
+        let dockRows = SettingsSidebarSupport.items(
+            page: .dock, title: "Dock", icon: "dock.rectangle",
+            preferredFeatures: [.dockPreview, .dockClick], includePage: false,
+            isAvailable: { [.dockPreview, .dockClick].contains($0) },
+            featureTitle: { $0.rawValue })
+        let dockClickOnlyRows = SettingsSidebarSupport.items(
+            page: .dock, title: "Dock", icon: "dock.rectangle",
+            preferredFeatures: [.dockPreview, .dockClick], includePage: false,
+            isAvailable: { $0 == .dockClick }, featureTitle: { $0.rawValue })
+        suite.expect(dockRows.map(\.id) == [.page(.dock)]
+                     && dockClickOnlyRows.map(\.id) == [.page(.dock)],
+                     "Dock exposes one page regardless of which child control is enabled")
         let keyboardDestination = FeatureSettingsDestination(
-            .shortcuts, sectionAnchor: .keyboardBrightnessShortcuts)
+            .energy, sectionAnchor: .keyboardBrightnessShortcuts)
         let keyboardShortcutItem = SettingsSearchSupport.keyboardBrightnessShortcutItem(language: .enUS)
-        let shortcutPageItem = SettingsSearchItem(
-            id: .page(.shortcuts), destination: FeatureSettingsDestination(.shortcuts),
-            title: "Shortcuts", icon: "command")
+        let energyPageItem = SettingsSearchItem(
+            id: .page(.energy), destination: FeatureSettingsDestination(.energy),
+            title: "Energy and Display", icon: "bolt.fill")
         let keyboardShortcutGroups = SettingsSearchSupport.groupedMatchingItems(
             query: "keyboard brightness shortcuts",
-            items: [shortcutPageItem, keyboardShortcutItem],
+            items: [energyPageItem, keyboardShortcutItem],
             isAvailable: { _ in true })
-        suite.expect(keyboardShortcutGroups.first?.id == .shortcuts
+        suite.expect(keyboardShortcutGroups.first?.id == .energy
                 && keyboardShortcutGroups.first?.suggestions.first.map {
                     SettingsSearchSupport.route(for: $0, isAvailable: { _ in true }).destination
                 } == keyboardDestination,
-               "keyboard brightness shortcut search reveals its own Shortcuts section")
+               "keyboard brightness shortcut search reveals Keyboard Light in Energy")
         let keyboardLightGroups = SettingsSearchSupport.groupedMatchingItems(
-            query: "keyboard light", items: [shortcutPageItem, keyboardShortcutItem],
+            query: "keyboard light", items: [energyPageItem, keyboardShortcutItem],
             isAvailable: { _ in true })
         suite.expect(keyboardLightGroups.first?.suggestions.first.map {
             SettingsSearchSupport.route(for: $0, isAvailable: { _ in true }).destination
@@ -456,9 +389,9 @@ enum UpdateFeatureTests {
         }
         let expectedFeatureSearchDestinations: [(AppFeature, FeatureSettingsDestination)] = [
             (.homebrew, FeatureSettingsDestination(.homebrew)),
-            (.cameraPreview, FeatureSettingsDestination(.quickTools, sectionAnchor: .cameraPreview)),
+            (.cameraPreview, FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview)),
             (.screenRecorder, FeatureSettingsDestination(.screenRecorder, sectionAnchor: .screenRecorder)),
-            (.micMute, FeatureSettingsDestination(.quickTools, sectionAnchor: .micMute)),
+            (.micMute, FeatureSettingsDestination(.audioInput, sectionAnchor: .micMute)),
             (.diskImageInstaller, FeatureSettingsDestination(.features)),
         ]
         for (feature, destination) in expectedFeatureSearchDestinations {
@@ -554,9 +487,9 @@ enum UpdateFeatureTests {
                                 destination: FeatureSettingsDestination(.appUpdates),
                                 title: "App Updates", icon: "arrow.down.app",
                                 keywords: ["Homebrew"]),
-            SettingsSearchItem(id: .page(.quickTools),
-                                destination: FeatureSettingsDestination(.quickTools),
-                                title: "Quick Tools", icon: "wand.and.rays",
+            SettingsSearchItem(id: .page(.shortcuts),
+                                destination: FeatureSettingsDestination(.shortcuts),
+                                title: "Keyboard Shortcuts", icon: "keyboard",
                                 keywords: ["Camera Preview"]),
             SettingsSearchItem(id: .page(.homebrew),
                                 destination: FeatureSettingsDestination(.homebrew),
@@ -604,7 +537,7 @@ enum UpdateFeatureTests {
                "an unavailable grouped feature targets its own row even while its shared page stays visible")
         let availableCameraRoute = SettingsSearchSupport.route(for: cameraPreviewItem) { _ in true }
         suite.expect(availableCameraRoute.destination
-                == FeatureSettingsDestination(.quickTools, sectionAnchor: .cameraPreview)
+                == FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview)
                 && availableCameraRoute.targetFeature == nil,
                "an available grouped feature keeps opening its anchored section directly")
 
@@ -647,9 +580,9 @@ enum UpdateFeatureTests {
         suite.expect(mergedWindowLayout.feature == .windowLayout
                 && maximizerOnlyRoute.destination == FeatureSettingsDestination(.windowLayout)
                 && maximizerOnlyRoute.targetFeature == nil
-                && noneRoute.destination == FeatureSettingsDestination(.features)
-                && noneRoute.targetFeature == .windowLayout,
-               "a page kept visible by another feature opens itself, and falls back to its hub row once hidden")
+                && noneRoute.destination == FeatureSettingsDestination(.windowLayout)
+                && noneRoute.targetFeature == nil,
+               "Window Management remains reachable for its page-owned controls even with optional layout tools off")
         let exceptionGroups = SettingsSearchSupport.groupedMatchingItems(
             query: "keep full screen", items: windowLayoutItems, isAvailable: maximizerOnly)
         let snapGroups = SettingsSearchSupport.groupedMatchingItems(
@@ -673,9 +606,9 @@ enum UpdateFeatureTests {
         let cameraPreviewMatches = SettingsSearchSupport.matchingItems(
             query: "Camera Preview", items: combinedSettingsItems)
         suite.expect(cameraPreviewMatches.first?.destination
-                == FeatureSettingsDestination(.quickTools, sectionAnchor: .cameraPreview)
+                == FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview)
                 && cameraPreviewMatches.map(\.id)
-                    == [.feature(.cameraPreview), .page(.features), .page(.quickTools)],
+                    == [.feature(.cameraPreview), .page(.features), .page(.shortcuts)],
                "an exact Camera Preview feature ranks before its page containers")
 
         let keywordBeforePartialTitle = SettingsSearchItem(
@@ -690,12 +623,12 @@ enum UpdateFeatureTests {
                "partial title containment ranks before an earlier keyword-only match")
 
         let tiedTitleMatches = [
-            SettingsSearchItem(id: .page(.quickTools),
-                               destination: FeatureSettingsDestination(.quickTools),
+            SettingsSearchItem(id: .page(.scratchpad),
+                               destination: FeatureSettingsDestination(.scratchpad),
                                title: "Camera Tools", icon: "wand.and.rays"),
             SettingsSearchItem(id: .feature(.cameraPreview),
                                destination: FeatureSettingsDestination(
-                                 .quickTools, sectionAnchor: .cameraPreview),
+                                 .shortcuts, sectionAnchor: .cameraPreview),
                                title: "Camera Controls", icon: "web.camera"),
         ]
         suite.expect(SettingsSearchSupport.matchingItems(query: "camera", items: tiedTitleMatches)
@@ -709,13 +642,13 @@ enum UpdateFeatureTests {
         let cameraGroups = SettingsSearchSupport.groupedMatchingItems(
             query: "Camera Preview", items: combinedSettingsItems,
             isAvailable: { _ in true })
-        suite.expect(cameraGroups.map(\.id) == [.quickTools, .features]
-                && cameraGroups.first?.pageItem.title == "Quick Tools",
+        suite.expect(cameraGroups.map(\.id) == [.shortcuts, .features]
+                && cameraGroups.first?.pageItem.title == "Keyboard Shortcuts",
                "an exact utility match puts its main Settings page first")
         suite.expect(cameraGroups.first?.parentMatches == false
                 && cameraGroups.first?.suggestions.map(\.title) == ["Camera Preview"]
                 && cameraGroups.first?.suggestions.first?.item.destination
-                    == FeatureSettingsDestination(.quickTools, sectionAnchor: .cameraPreview),
+                    == FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview),
                "a grouped utility row retains its exact anchored destination")
         suite.expect(cameraGroups.last?.suggestions.map(\.title) == ["Camera Preview"],
                "every other main page containing the query remains represented")
@@ -752,26 +685,26 @@ enum UpdateFeatureTests {
                "a blank query does not replace the normal Settings sidebar with groups")
 
         let availabilityPage = SettingsSearchItem(
-            id: .page(.quickTools), destination: FeatureSettingsDestination(.quickTools),
-            title: "Quick Tools", icon: "wand.and.rays",
-            keywords: ["Camera Preview", "Open camera automatically", "Scratchpad Notes"],
-            keywordFeatures: [.cameraPreview, .cameraPreview, .scratchpad])
+            id: .page(.audioOutput), destination: FeatureSettingsDestination(.audioOutput),
+            title: "Audio Output", icon: "speaker.wave.2",
+            keywords: ["Camera Preview", "Open camera automatically", "Mixer Volume"],
+            keywordFeatures: [.cameraPreview, .cameraPreview, .mixer])
         let availabilityHub = SettingsSearchItem(
             id: .page(.features), destination: FeatureSettingsDestination(.features),
             title: "Features", icon: "square.grid.2x2",
-            keywords: ["Camera Preview", "scratchpad"],
-            keywordFeatures: [.cameraPreview, .scratchpad])
+            keywords: ["Camera Preview", "mixer"],
+            keywordFeatures: [.cameraPreview, .mixer])
         let availabilityFeatures = featureSearchItems.filter {
-            $0.id == .feature(.cameraPreview) || $0.id == .feature(.scratchpad)
+            $0.id == .feature(.cameraPreview) || $0.id == .feature(.mixer)
         }
         let availabilityItems = [availabilityHub, availabilityPage] + availabilityFeatures
-        let onlyScratchpadAvailable: (AppFeature) -> Bool = { $0 == .scratchpad }
+        let onlyMixerAvailable: (AppFeature) -> Bool = { $0 == .mixer }
         let unavailableCameraGroups = SettingsSearchSupport.groupedMatchingItems(
             query: "camera", items: availabilityItems,
-            isAvailable: onlyScratchpadAvailable)
+            isAvailable: onlyMixerAvailable)
         let unavailableCameraSuggestion = unavailableCameraGroups.first?.suggestions.first
         let groupedUnavailableCameraRoute = unavailableCameraSuggestion.map {
-            SettingsSearchSupport.route(for: $0.item, isAvailable: onlyScratchpadAvailable)
+            SettingsSearchSupport.route(for: $0.item, isAvailable: onlyMixerAvailable)
         }
         suite.expect(unavailableCameraGroups.count == 1
                 && unavailableCameraGroups[0].id == .features
@@ -781,7 +714,7 @@ enum UpdateFeatureTests {
                "an unavailable utility remains navigable through its exact Features row")
         suite.expect(SettingsSearchSupport.groupedMatchingItems(
                     query: "automatically", items: availabilityItems,
-                    isAvailable: onlyScratchpadAvailable).isEmpty,
+                    isAvailable: onlyMixerAvailable).isEmpty,
                "setting fields owned by an unavailable utility stay out of suggestions")
         let availableCameraSetting = SettingsSearchSupport.groupedMatchingItems(
             query: "automatically", items: availabilityItems,
@@ -791,40 +724,40 @@ enum UpdateFeatureTests {
         }
         suite.expect(availableCameraSetting?.title == "Open camera automatically"
                 && availableCameraSettingRoute?.destination
-                    == FeatureSettingsDestination(.quickTools, sectionAnchor: .cameraPreview)
+                    == FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview)
                 && availableCameraSettingRoute?.targetFeature == nil,
                "a feature-owned setting keyword opens its exact anchored section")
-        let availableScratchpadGroups = SettingsSearchSupport.groupedMatchingItems(
-            query: "scratchpad", items: availabilityItems,
-            isAvailable: onlyScratchpadAvailable)
-        suite.expect(availableScratchpadGroups.first?.id == .quickTools
-                && availableScratchpadGroups[0].suggestions.map(\.title)
-                    == ["scratchpad", "Scratchpad Notes"]
-                && availableScratchpadGroups[0].suggestions.first?.item.destination
-                    == FeatureSettingsDestination(.quickTools, sectionAnchor: .scratchpad),
+        let availableMixerGroups = SettingsSearchSupport.groupedMatchingItems(
+            query: "mixer", items: availabilityItems,
+            isAvailable: onlyMixerAvailable)
+        suite.expect(availableMixerGroups.first?.id == .audioOutput
+                && availableMixerGroups[0].suggestions.map(\.title)
+                    == ["mixer", "Mixer Volume"]
+                && availableMixerGroups[0].suggestions.first?.item.destination
+                    == FeatureSettingsDestination(.audioOutput, sectionAnchor: .mixer),
                "an installed utility remains searchable on a shared Settings page")
         suite.expect(SettingsSearchSupport.groupedMatchingItems(
-                    query: "Quick Tools", items: availabilityItems,
+                    query: "Audio Output", items: availabilityItems,
                     isAvailable: { _ in false }).isEmpty,
                "a main page with no installed utilities is not suggested")
 
-        let freshSize = SettingsWindowSupport.initialContentSize(savedWidth: 0, savedHeight: 0,
+        let freshSize = SettingsWindowSupport.initialContentSize(savedHeight: 0,
                                                                  availableHeight: 1200)
         suite.expect(freshSize.width == 772 && freshSize.height == 838,
                "settings window opens at the tall default when nothing is saved")
-        let clampedSize = SettingsWindowSupport.initialContentSize(savedWidth: 0, savedHeight: 0,
+        let clampedSize = SettingsWindowSupport.initialContentSize(savedHeight: 0,
                                                                    availableHeight: 700)
         suite.expect(clampedSize.height == 700,
                "the tall default shrinks to what the screen fits")
-        let tinyScreen = SettingsWindowSupport.initialContentSize(savedWidth: 0, savedHeight: 0,
+        let tinyScreen = SettingsWindowSupport.initialContentSize(savedHeight: 0,
                                                                   availableHeight: 400)
         suite.expect(tinyScreen.height == 528,
                "the default never goes below the design height")
-        let savedSize = SettingsWindowSupport.initialContentSize(savedWidth: 900, savedHeight: 950,
+        let savedSize = SettingsWindowSupport.initialContentSize(savedHeight: 950,
                                                                  availableHeight: 700)
-        suite.expect(savedSize.width == 900 && savedSize.height == 950,
-               "a user-chosen size is restored as is")
-        let bogusSaved = SettingsWindowSupport.initialContentSize(savedWidth: 300, savedHeight: 200,
+        suite.expect(savedSize.width == 772 && savedSize.height == 950,
+               "Settings restores height but normalizes historical widths to the fixed design width")
+        let bogusSaved = SettingsWindowSupport.initialContentSize(savedHeight: 200,
                                                                   availableHeight: 1200)
         suite.expect(bogusSaved.width == 772 && bogusSaved.height == 838,
                "a saved size below the minimum falls back to the default")
@@ -832,39 +765,8 @@ enum UpdateFeatureTests {
                "sub-minimum sizes are rejected by isValidContentSize")
         suite.expect(SettingsWindowSupport.isValidContentSize(width: 772, height: 528),
                "exact minimum size is valid")
-        suite.expect(SettingsWindowSupport.isValidContentSize(width: 1000, height: 800),
-               "larger size is valid")
-        let fullTourSize = CGSize(width: 600, height: 584)
-        let tourSettingsSize = CGSize(width: 772, height: 750)
-        let wideTourScreen = CGRect(x: -1600, y: 100, width: 1470, height: 900)
-        let wideTourPlacement = SettingsWindowSupport.tourPlacement(
-            settingsSize: tourSettingsSize, tourSize: fullTourSize, visibleFrame: wideTourScreen)
-        suite.expect(!wideTourPlacement.settings.intersects(wideTourPlacement.tour)
-                && wideTourPlacement.settings.maxX < wideTourPlacement.tour.minX,
-               "the complete tour fits beside Settings on a wide display")
-        suite.expect(wideTourScreen.contains(wideTourPlacement.settings)
-                && wideTourScreen.contains(wideTourPlacement.tour),
-               "tour placement respects external displays with offset coordinates")
-        let smallTourScreen = CGRect(x: 0, y: 0, width: 1280, height: 800)
-        let smallTourPlacement = SettingsWindowSupport.tourPlacement(
-            settingsSize: tourSettingsSize, tourSize: fullTourSize, visibleFrame: smallTourScreen)
-        suite.expect(smallTourScreen.contains(smallTourPlacement.settings)
-                && smallTourScreen.contains(smallTourPlacement.tour)
-                && smallTourPlacement.settings.size == tourSettingsSize
-                && smallTourPlacement.tour.size == fullTourSize,
-               "narrow displays keep the complete images and controls on screen without resizing")
-        let tallTourPlacement = SettingsWindowSupport.tourPlacement(
-            settingsSize: tourSettingsSize, tourSize: fullTourSize,
-            visibleFrame: CGRect(x: 200, y: -1700, width: 1000, height: 1600))
-        suite.expect(!tallTourPlacement.settings.intersects(tallTourPlacement.tour)
-                && tallTourPlacement.tour.minY > tallTourPlacement.settings.maxY,
-               "portrait displays stack the tour above Settings when both fit")
-        let oversizedTourPlacement = SettingsWindowSupport.tourPlacement(
-            settingsSize: CGSize(width: 1600, height: 1000), tourSize: fullTourSize,
-            visibleFrame: smallTourScreen)
-        suite.expect(smallTourScreen.contains(oversizedTourPlacement.tour)
-                && oversizedTourPlacement.settings.maxY == smallTourScreen.maxY - 20,
-               "an oversized Settings window cannot push the tour or its own title bar off screen")
+        suite.expect(!SettingsWindowSupport.isValidContentSize(width: 1000, height: 800),
+               "Settings rejects widths other than its fixed design width")
         let preferredSettingsFrame = CGRect(x: -50, y: 100, width: 1000, height: 700)
         let overlappingPlacement = SettingsWindowSupport.panelPlacement(
             preferredFrame: preferredSettingsFrame,
@@ -1196,10 +1098,7 @@ enum UpdateFeatureTests {
         for language in AppLanguage.allCases {
             L10n.shared.language = language
             let s = L10n.shared.s
-            suite.expect(!s.includeBetaUpdatesToggle.isEmpty, "\(language.rawValue) includeBetaUpdatesToggle non-empty")
-            suite.expect(!s.includeBetaUpdatesCaption.isEmpty, "\(language.rawValue) includeBetaUpdatesCaption non-empty")
             suite.expect(!s.betaBadgeLabel.isEmpty, "\(language.rawValue) betaBadgeLabel non-empty")
-            suite.expect(!s.includeBetaUpdatesCaption.contains("—"), "\(language.rawValue) has no em dash")
         }
         L10n.shared.language = originalLanguage
 

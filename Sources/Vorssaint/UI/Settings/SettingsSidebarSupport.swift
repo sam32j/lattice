@@ -34,7 +34,7 @@ enum SettingsSidebarSupport {
         let pageItem = SettingsSidebarItem(id: .page(page),
                                            destination: FeatureSettingsDestination(page),
                                            title: title, icon: icon)
-        if page == .screenshot || page == .screenRecorder {
+        if page == .dock || page == .windowLayout || page == .cutPaste || page == .clipboard || page == .wallpaper || page == .screenshot || page == .screenRecorder || page == .shortcuts || page == .mouse || page == .keyboard || page == .audioInput || page == .audioOutput || page == .scratchpad {
             return [pageItem]
         }
         var rows = includePage ? [pageItem] : []
@@ -43,7 +43,8 @@ enum SettingsSidebarSupport {
             guard seenFeatures.insert(feature).inserted else { continue }
             let destination = feature.settingsDestination
             guard destination.page == page, destination.sectionAnchor != nil,
-                  isAvailable(feature) else { continue }
+                  feature != .extraBrightness,
+                  feature.isVisibleInSettings(isAvailable: isAvailable) else { continue }
             rows.append(SettingsSidebarItem(id: .feature(feature),
                                             destination: destination,
                                             title: featureTitle(feature),
@@ -63,6 +64,8 @@ enum SettingsSidebarSupport {
             utilities: [SettingsSidebarItem]) {
         func group(_ item: SettingsSidebarItem) -> FeatureGroup? {
             if case .feature(let feature) = item.id { return feature.group }
+            if item.destination.page == .mouse || item.destination.page == .keyboard { return .mouseKeyboard }
+            if item.destination.page == .textSnippets { return .clipboardFiles }
             return AppFeature.allCases.first { $0.settingsDestination == item.destination }?.group
         }
         func moved(_ target: FeatureGroup) -> [SettingsSidebarItem] {
@@ -74,10 +77,30 @@ enum SettingsSidebarSupport {
                 utilities.filter { ![.mouseKeyboard, .clipboardFiles, .sound].contains(group($0)) })
     }
 
+    static func fallbackDestination(for destination: FeatureSettingsDestination,
+                                    in items: [SettingsSidebarItem]) -> FeatureSettingsDestination? {
+        guard destination.sectionAnchor != nil,
+              !items.contains(where: { $0.destination == destination }) else { return nil }
+        switch destination.page {
+        case .general:
+            return FeatureSettingsDestination(.general)
+        case .mouse, .keyboard, .audioInput, .audioOutput, .scratchpad:
+            return items.contains { $0.id == .page(destination.page) }
+                ? nil : FeatureSettingsDestination(destination.page)
+        case .energy:
+            if destination.sectionAnchor == .extraBrightness, items.contains(where: { $0.id == .feature(.brightness) }) { return nil }
+            return items.first { $0.destination.page == destination.page }?.destination
+        default:
+            return nil
+        }
+    }
+
     static func selection(for destination: FeatureSettingsDestination,
                           in items: [SettingsSidebarItem],
                           preferredID: SettingsSidebarItem.ID? = nil)
         -> SettingsSidebarItem.ID? {
+        if destination.page == .energy, destination.sectionAnchor == .extraBrightness,
+           items.contains(where: { $0.id == .feature(.brightness) }) { return .feature(.brightness) }
         if let preferredID,
            items.contains(where: { $0.id == preferredID && $0.destination == destination }) {
             return preferredID

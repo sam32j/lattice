@@ -26,7 +26,7 @@ enum AppFeature: String, CaseIterable {
     // Energy and display
     case keepAwake, brightness, extraBrightness, bluetoothSleep
     // Tools
-    case quickLauncher, quickToggles, colorPicker, screenOCR, cleaningMode, mediaTools,
+    case quickLauncher, colorPicker, screenOCR, cleaningMode, mediaTools,
          cleaner, uninstaller, homebrew, appUpdates, screenshot, cameraPreview, radialMenu, scratchpad,
          commandBar, screenRecorder, wallpaper, killProcess, portManager
     // Dynamic Island, then its extensions
@@ -101,21 +101,21 @@ extension AppFeature {
 
     var group: FeatureGroup {
         switch self {
-        case .switcher, .dockPreview, .dockClick, .windowMaximizer, .windowLayout, .autoQuit, .spacesOrder:
+        case .switcher, .dockPreview, .dockClick, .windowMaximizer, .windowLayout, .autoQuit, .spacesOrder, .wallpaper:
             return .windowsDock
         case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts, .middleClick,
-             .keyboardDebounce, .textSnippets, .superKey, .quitWindowProtection, .mouseClickDebounce:
+             .keyboardDebounce, .superKey, .quitWindowProtection, .mouseClickDebounce, .cleaningMode:
             return .mouseKeyboard
         case .clipboardHistory, .pastePlain, .finderCutPaste, .finderRename, .shelf, .urlCleaner,
-             .diskImageInstaller:
+             .diskImageInstaller, .textSnippets, .scratchpad:
             return .clipboardFiles
         case .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock:
             return .sound
         case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep:
             return .energyDisplay
-        case .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .cleaningMode, .mediaTools,
+        case .quickLauncher, .colorPicker, .screenOCR, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .radialMenu,
-             .scratchpad, .commandBar, .screenRecorder, .wallpaper, .killProcess, .portManager:
+             .commandBar, .screenRecorder, .killProcess, .portManager:
             return .tools
         case .notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories,
              .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch,
@@ -170,7 +170,6 @@ extension AppFeature {
         case .extraBrightness: return "sun.max.fill"
         case .bluetoothSleep: return "wave.3.right.circle"
         case .quickLauncher: return "wand.and.rays"
-        case .quickToggles: return "togglepower"
         case .colorPicker: return "eyedropper"
         case .screenOCR: return "text.viewfinder"
         case .cleaningMode: return "bubbles.and.sparkles"
@@ -216,19 +215,110 @@ extension AppFeature {
 
     var isBeta: Bool { self == .fanControl || self == .killProcess }
 
-    /// Availability read straight from defaults. Existing features stay
-    /// available on update; explicit beta opt-ins may start unavailable.
+    var isMouseFeature: Bool {
+        switch self {
+        case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll,
+             .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts, .middleClick, .mouseClickDebounce:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isKeyboardFeature: Bool {
+        switch self {
+        case .keyboardDebounce, .superKey, .quitWindowProtection, .cleaningMode:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Controls owned by a Settings page, not a separately installed hub item.
+    var isToggleOwned: Bool {
+        if isMouseFeature || isKeyboardFeature { return true }
+        switch self {
+        case .dockClick, .spacesOrder, .windowMaximizer, .autoQuit, .pastePlain,
+             .extraBrightness, .fanControl:
+            return true
+        default: return false
+        }
+    }
+
+    func isToggledOn(in defaults: UserDefaults = .standard) -> Bool {
+        switch self {
+        case .scrollInverter:
+            return defaults.bool(forKey: DefaultsKey.scrollInverterEnabled)
+                || defaults.bool(forKey: DefaultsKey.scrollInverterHorizontalEnabled)
+        case .scrollHorizontal:
+            return defaults.bool(forKey: DefaultsKey.scrollHorizontalEnabled)
+        case .focusFollowsMouse:
+            return defaults.bool(forKey: DefaultsKey.focusFollowsMouseEnabled)
+        case .smoothScroll:
+            return defaults.bool(forKey: DefaultsKey.smoothScrollEnabled)
+        case .linearScroll:
+            return defaults.bool(forKey: DefaultsKey.linearScrollEnabled)
+        case .mouseAcceleration:
+            return defaults.bool(forKey: DefaultsKey.mouseAccelerationDisabled)
+        case .mouseNavigation:
+            return defaults.bool(forKey: DefaultsKey.mouseNavigationEnabled)
+        case .mouseButtonShortcuts:
+            return defaults.bool(forKey: DefaultsKey.mouseButtonShortcutsEnabled)
+                || defaults.bool(forKey: DefaultsKey.mouseSpacesGestureEnabled)
+        case .middleClick:
+            return defaults.bool(forKey: DefaultsKey.middleClickEnabled)
+        case .mouseClickDebounce:
+            return defaults.bool(forKey: DefaultsKey.mouseClickDebounceEnabled)
+        case .keyboardDebounce:
+            return defaults.bool(forKey: DefaultsKey.keyboardDebounceEnabled)
+        case .superKey:
+            return defaults.bool(forKey: DefaultsKey.superKeyEnabled)
+        case .quitWindowProtection:
+            return defaults.bool(forKey: DefaultsKey.quitProtectionQuitEnabled)
+                || defaults.bool(forKey: DefaultsKey.quitProtectionCloseEnabled)
+        case .cleaningMode:
+            return (defaults.object(forKey: DefaultsKey.cleaningModeEnabled) as? Bool) ?? true
+        default:
+            return enabledKeys.contains { defaults.bool(forKey: $0) }
+        }
+    }
+
+    /// Input controls use their own switches; other features use installation
+    /// preferences, retaining existing installations across app updates.
     var isAvailable: Bool {
         isAvailable(in: .standard)
     }
 
-    func isAvailable(in defaults: UserDefaults) -> Bool {
+    func isAvailable(in defaults: UserDefaults, hardwareSupported: Bool? = nil) -> Bool {
+        guard hardwareSupported ?? isHardwareSupported else { return false }
+        if self == .pastePlain {
+            return AppFeature.clipboardHistory.isAvailable(in: defaults) && isToggledOn(in: defaults)
+        }
+        if isToggleOwned {
+            return isToggledOn(in: defaults)
+        }
         switch self {
         case .colorPicker, .screenOCR:
             return AppFeature.screenshot.isAvailable(in: defaults)
         default:
             return defaults.bool(forKey: availabilityKey)
         }
+    }
+
+    /// Permanent input controls remain discoverable when their switch is off.
+    /// Runtime availability still describes whether their behavior should run.
+    func isPresentInControls(in defaults: UserDefaults = .standard, hardwareSupported: Bool? = nil) -> Bool {
+        guard hardwareSupported ?? isHardwareSupported else { return false }
+        if self == .pastePlain { return AppFeature.clipboardHistory.isAvailable(in: defaults) }
+        return isToggleOwned || isAvailable(in: defaults)
+    }
+
+    /// Configuration remains reachable while behavior is off. Unsupported
+    /// hardware and children of an uninstalled owner are never advertised.
+    func isVisibleInSettings(isAvailable: (AppFeature) -> Bool) -> Bool {
+        guard isHardwareSupported else { return false }
+        if self == .pastePlain { return isAvailable(.clipboardHistory) }
+        return isToggleOwned || isAvailable(self)
     }
 
     /// The feature's own enable keys; any one being true means the feature is
@@ -289,13 +379,15 @@ extension AppFeature {
         case .musicBlock: return [DefaultsKey.musicBlockEnabled]
         case .brightness: return [DefaultsKey.brightnessControlEnabled]
         case .extraBrightness: return [DefaultsKey.extraBrightnessEnabled]
+        case .fanControl: return [DefaultsKey.panelShowFanControl]
         case .bluetoothSleep: return [DefaultsKey.bluetoothSleepEnabled]
+        case .cleaningMode: return [DefaultsKey.cleaningModeEnabled]
         case .windowLayout, .diskImageInstaller, .mixer, .micMute, .keepAwake,
-             .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .cleaningMode, .mediaTools,
+             .quickLauncher, .colorPicker, .screenOCR, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .scratchpad,
              .commandBar, .screenRecorder, .wallpaper, .killProcess, .portManager,
              .monitorCPU, .monitorGPU, .monitorMemory, .monitorNetwork, .monitorDisk, .monitorPower,
-             .connectedDevices, .fanControl:
+             .connectedDevices:
             return []
         }
     }
@@ -317,6 +409,7 @@ extension AppFeature {
     /// Registered defaults are visible through `object(forKey:)`, so only the
     /// persistent domain can tell a fresh install from a saved off choice.
     func enableOnFirstInstall(in defaults: UserDefaults, savedValues: [String: Any]) {
+        guard !isToggleOwned else { return }
         let choices = self == .windowLayout
             ? [DefaultsKey.windowLayoutShortcutsEnabled, DefaultsKey.windowDirectionalEnabled,
                DefaultsKey.pointerDisplayEnabled, DefaultsKey.windowEdgeSnapEnabled,
@@ -357,16 +450,13 @@ extension AppFeature {
         case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseNavigation, .mouseButtonShortcuts, .middleClick,
              .keyboardDebounce, .textSnippets, .superKey, .mouseClickDebounce,
              .dockClick, .windowMaximizer, .windowLayout,
-             .autoQuit, .quitWindowProtection, .cleaningMode, .pastePlain, .radialMenu,
-             // The bar reads other apps' menus and windows and types at the
-             // caret, all of it through Accessibility.
-             .commandBar:
+             .autoQuit, .quitWindowProtection, .cleaningMode, .pastePlain, .radialMenu:
             return [.accessibility]
+        // Accessibility powers menu/window actions; only Empty Trash asks Finder.
+        case .commandBar:
+            return [.accessibility, .automationFinder]
         case .finderCutPaste: return [.accessibility, .automationFinder]
         case .finderRename: return [.accessibility]
-        // Only emptying the Trash asks the Finder; every other quick toggle
-        // (dark mode included) works without a permission.
-        case .quickToggles: return [.automationFinder]
         case .switcher: return [.accessibility, .screenRecording]
         case .dockPreview: return [.accessibility, .screenRecording]
         case .screenOCR: return [.screenRecording]
@@ -378,7 +468,7 @@ extension AppFeature {
         case .cameraPreview: return [.camera]
         case .keepAwake: return [.accessibility]
         case .brightness: return [.accessibility]
-        case .cleaner: return [.fullDiskAccess, .filesAndFolders, .notifications]
+        case .cleaner: return [.fullDiskAccess, .notifications]
         case .uninstaller: return [.fullDiskAccess, .automationFinder]
         case .homebrew: return [.automationTerminal, .appManagement]
         case .appUpdates: return [.notifications, .appManagement]
@@ -395,26 +485,15 @@ extension AppFeature {
         }
     }
 
-    /// Broad grants worth explaining during first run. Permissions used only
-    /// by an optional sub-feature stay contextual, at the moment that control
-    /// is actually used.
-    var onboardingPermissions: [AppPermission] {
-        switch self {
-        case .keepAwake, .brightness, .radialMenu, .quickToggles, .cleaner,
-             .uninstaller, .homebrew, .appUpdates, .mixer, .cameraPreview,
-             .micMute, .musicBlock, .notchWatch:
-            return []
-        default:
-            return permissions.filter { $0 == .accessibility || $0 == .screenRecording }
-        }
-    }
 
     static func features(in group: FeatureGroup) -> [AppFeature] {
         allCases.filter { $0.group == group }
     }
 
     static func hubFeatures(in group: FeatureGroup) -> [AppFeature] {
-        features(in: group).filter { $0 != .colorPicker && $0 != .screenOCR }
+        features(in: group).filter {
+            $0 != .colorPicker && $0 != .screenOCR && !$0.isToggleOwned
+        }
     }
 
     /// All features shown and counted as installable features in the Hub.
@@ -449,8 +528,6 @@ extension AppFeature {
     /// switcher and text snippets that feed the Command Bar.
     static let offeredWhenNeverSwitchedOn: [AppFeature] = [
         .dockPreview, .dockClick, .windowMaximizer, .autoQuit,
-        .scrollInverter, .linearScroll, .focusFollowsMouse, .mouseAcceleration, .mouseNavigation,
-        .mouseButtonShortcuts, .middleClick, .keyboardDebounce, .mouseClickDebounce, .superKey,
         .finderCutPaste,
     ]
 
@@ -464,14 +541,9 @@ extension AppFeature {
             isAvailable(feature)
                 && !feature.enabledKeys.isEmpty
                 && !feature.enabledKeys.contains(where: boolFor)
-                && !feature.enabledKeys.contains { isSaved($0) && !savedOnEveryMac.contains($0) }
+                && !feature.enabledKeys.contains { isSaved($0) }
         }
     }
-
-    /// Switches a launch migration saves on every Mac, the horizontal scroll
-    /// direction copying the vertical one, so a saved value there says
-    /// nothing about use. Only one that is on counts.
-    private static let savedOnEveryMac: Set<String> = [DefaultsKey.scrollInverterHorizontalEnabled]
 
     /// Whether a Mac that never chose this feature has it installed. Most
     /// people updating never saved an availability, so this list IS their
@@ -491,7 +563,7 @@ extension AppFeature {
              .clipboardHistory, .pastePlain, .finderCutPaste, .finderRename, .shelf, .urlCleaner,
              .mixer, .soundOutputSwitcher, .micMute, .musicBlock,
              .keepAwake, .brightness, .extraBrightness, .bluetoothSleep,
-             .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .cleaningMode, .mediaTools,
+             .quickLauncher, .colorPicker, .screenOCR, .cleaningMode, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .radialMenu,
              .scratchpad, .commandBar, .screenRecorder,
              .notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories,
@@ -576,16 +648,9 @@ extension AppFeature {
                 return AppUpdatesSupport.CheckFrequency
                     .sanitized(stringFor(DefaultsKey.appUpdatesCheckFrequency)) != .off
                     && boolFor(DefaultsKey.appUpdatesNotify)
-            case (.cleaner, .filesAndFolders):
-                return boolFor(DefaultsKey.whatsAppDownloadsEnabled)
             case (.cleaner, .notifications):
-                let cleanerNotifies = (stringFor(DefaultsKey.cleanerScheduleFrequency) ?? "off") != "off"
+                return (stringFor(DefaultsKey.cleanerScheduleFrequency) ?? "off") != "off"
                     && boolFor(DefaultsKey.cleanerScheduleNotify)
-                let whatsAppNotifies = boolFor(DefaultsKey.whatsAppDownloadsEnabled)
-                    && (boolFor(DefaultsKey.whatsAppDownloadsAutomaticEnabled)
-                        || boolFor(DefaultsKey.whatsAppOrganizerEnabled))
-                    && boolFor(DefaultsKey.whatsAppDownloadsNotify)
-                return cleanerNotifies || whatsAppNotifies
             case (.notchLiveEqualizer, .audioCapture):
                 return isAvailable(.notch) && boolFor(DefaultsKey.notchEnabled)
                     && !(stringFor(DefaultsKey.notchHiddenModules) ?? "").split(separator: ",").contains("music")

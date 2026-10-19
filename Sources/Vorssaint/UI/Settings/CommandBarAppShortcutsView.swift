@@ -143,7 +143,7 @@ struct CommandBarAppShortcutsView: View {
                     .foregroundStyle(message == nil ? Color.secondary : Color.orange)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer()
-                Button(l10n.s.supportIntroDoneButton) { dismiss() }
+                Button(l10n.s.doneButton) { dismiss() }
                     .keyboardShortcut(.cancelAction)
             }
         }
@@ -179,31 +179,29 @@ struct CommandBarAppShortcutsView: View {
 
     private func shortcutField(for entry: CommandBarEntry, shortcut: GlobalShortcut?) -> some View {
         HStack(spacing: 4) {
-            ShortcutRecorderButton(
-                shortcut: shortcut ?? .commandBarDefault,
+            CompactShortcutBindingRecorder(
+                recordingID: "command-bar-app-\(entry.stableKey)",
+                shortcut: shortcut,
                 isEnabled: AppFeature.commandBar.isAvailable,
-                waitingTitle: l10n.s.shortcutPressKeys,
-                emptyTitle: shortcut == nil ? text.appShortcutRecord : nil,
-                clearAction: { report(service.setRowShortcut(nil, for: entry), for: entry) },
-                notCapturedAction: { report(l10n.s.shortcutNotCaptured, for: entry) },
-                recordingChanged: { if $0 { message = nil; pendingTakeOver = nil } },
-                invalidAction: { report(l10n.s.shortcutInvalid, for: entry) },
-                captureAction: { record($0, for: entry) })
-                .frame(width: 140)
+                emptyTitle: text.appShortcutRecord,
+                canClear: shortcut != nil,
+                errorText: Binding(
+                    get: {
+                        let prefix = "\(entry.title): "
+                        guard let message, message.hasPrefix(prefix) else { return nil }
+                        return String(message.dropFirst(prefix.count))
+                    },
+                    set: { report($0, for: entry) }),
+                onClear: { report(service.setRowShortcut(nil, for: entry), for: entry) },
+                onReset: {},
+                onCapture: { record($0, for: entry) },
+                onRecordingChange: { if $0 { pendingTakeOver = nil } })
                 .accessibilityLabel("\(entry.title): \(text.appShortcutLabel)")
             if service.refusedRowShortcutKeys.contains(entry.stableKey) {
                 Image(systemName: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
                     .help(l10n.s.shortcutUnavailable)
                     .accessibilityLabel(l10n.s.shortcutUnavailable)
-            }
-            if shortcut != nil {
-                Button { report(service.setRowShortcut(nil, for: entry), for: entry) } label: {
-                    Image(systemName: "xmark.circle")
-                }
-                .buttonStyle(.borderless)
-                .help(text.actionShortcutRemove)
-                .accessibilityLabel("\(entry.title): \(text.actionShortcutRemove)")
             }
         }
     }

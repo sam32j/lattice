@@ -68,21 +68,27 @@ struct MetricsTests {
                 MixerFeatureTests.run(suite)
             }),
             ("audio-priority", { AudioPriorityTests.run(suite) }),
+            ("audio-settings", { AudioSettingsOwnershipTests.run(suite) }),
             ("shelf", { ShelfFeatureTests.run(suite) }),
             ("overlays", { OverlayPanelTests.run(suite) }),
             ("updates", {
+                UpdateSettingsPresentationTests.run { suite.expect($0, $1) }
+                UpdateSettingsLayoutTests.run { suite.expect($0, $1) }
+                UpdateCheckResponseTests.run { suite.expect($0, $1) }
+                SettingsChangelogTests.run { suite.expect($0, $1) }
                 UpdateFeatureTests.run(suite)
                 DownstreamUpdateTests.run(suite)
                 LaunchAtLoginSettingsTests.run(suite)
                 PostUpdateStatusItemRecoveryTests.run(suite)
                 UpdateAdminInstallContract.run(suite)
-                UpdateHighlightsTests.run(suite)
-                UpdateIntroFlowTests.run(suite)
             }),
             ("repository", { RepositoryFeatureTests.run(suite) }),
             ("screenshot-pins", { ScreenshotPinGestureTests.run(suite) }),
             ("screenshots", {
                 SettingsSidebarIdentityTests.run(suite)
+                SettingsUpgradeTests.run(suite)
+                BindingRecorderEventTests.run(suite)
+                WindowLayoutShortcutEditorTests.run(suite)
                 CompactShortcutValidationTests.run(suite)
                 ScreenshotTextDraftTests.run(suite)
                 FeatureAvailabilityTransitionTests.run(suite)
@@ -123,17 +129,24 @@ struct MetricsTests {
             ("switcher-model", { SwitcherModelFeatureTests.run(suite) }),
             ("agents", { NotchAgentTests.run(suite) }),
             ("features", {
+                RetiredSettingsFlowTests.run(suite)
                 FeatureCatalogTests.run(suite)
                 MenuPanelSectionGateContract.run(suite)
+                SettingsPanelFilterTests.run(suite)
+                SettingsShortcutConsumerTests.run(suite)
+                SettingsResetAvailabilityTests.run(suite)
             }),
             ("utilities", {
+                UtilitySettingsTests.run { suite.expect($0, $1) }
                 UtilitiesFeatureTests.run(suite)
                 QuickTogglesAlertTests.run(suite)
                 PortManagerRefreshTests.run(suite)
             }),
             ("settings", {
                 SettingsFeatureTests.run(suite)
+                SettingsSearchKeyboardTests.run(suite)
                 SettingsWindowTests.run { suite.expect($0, $1) }
+                PermissionDetailsSheetTests.run { suite.expect($0, $1) }
                 NotchSettingsChoiceTests.run(suite)
                 MonitorTokenTests.run(suite)
             }),
@@ -146,6 +159,7 @@ struct MetricsTests {
             ("software-dimming", { SoftwareDimmingRouteTests.run { suite.expect($0, $1) } }),
             ("capture", { ScreenshotSelectionRefreshContract.run(suite) }),
             ("keyboard", {
+                KeyCaptureBridgeTests.run { suite.expect($0, $1) }
                 KeyboardFeatureTests.run(suite)
                 AssistiveKeyboardTests.run(suite)
                 ScreenshotToolShortcutTests.run(suite)
@@ -193,6 +207,9 @@ struct MetricsTests {
                 UninstallerFlowTests.run(suite)
                 UninstallerCommandBarCleanupTests.run(suite)
                 SelfUninstallContract.run(suite)
+                InputEventTapTests.run(suite)
+                PermissionResetHotkeyTests.run(suite)
+                PermissionResetLoginTests.run(suite)
             }),
             ("force-quit", { ProcessForceQuitTests.run(suite) }),
             ("launcher", { QuickLauncherContract.run(suite) }),

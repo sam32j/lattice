@@ -2,6 +2,32 @@
 
 ## [3.4.1-d.2] - 2026-10-17
 
+## [3.4.1-d.3] - 2026-10-19
+
+### Added
+- **Settings**: Consolidate pages and harden permission reset
+  - Give controls one Settings owner with capability-aware lifecycle and preference migration.
+  - Remove retired onboarding, bundle presets, WhatsApp cleanup and orphan resources.
+  - Keep event taps and global shortcuts suspended through permission reset, and unregister Launch at login with observable failure.
+  - Use a fixed 230-point grey sidebar, detail-side page header and floating glass-style search.
+  - Separate audio input and output settings and update all 15 language catalogs.
+  - Cover runtime transitions, reset safety, native geometry, consumer routing and keyboard layouts.
+- **Settings**: Organize preferences around dedicated tool pages
+- **Settings**: Redesign permission cards and data management actions
+- **Updates**: Present balanced status actions and dismissible release notes
+- **Settings**: Consolidate data and permissions
+- **Shortcuts**: Unify shortcut setters
+
+### Changed
+- **Features**: Move system actions to their owning features
+
+### Fixed
+- **Settings**: Correct detail viewport and scroll-aware toolbar
+- **Settings**: Correct panel visibility and shortcut hints
+- **Settings**: Preserve control and shortcut state
+- **Shortcuts**: Streamline inline recording and preserve global key capture
+- **Shortcuts**: Replace redundant toggles with inline controls
+
 ### Added
 - **Ci**: Parse commit body bullet points as nested changelog sub-bullets
 - **Screenshot**: Revamp tool shortcut setter, prevent duplicate reset conflicts, and trim dead order logic

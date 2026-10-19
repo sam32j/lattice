@@ -5,6 +5,25 @@ import AppKit
 
 /// Handles side buttons before the hosted SwiftUI controls can consume them.
 class SettingsWindow: NSWindow {
+    /// AppKit owns width constraints as well as the SwiftUI layout.
+    func configureGeometry(for content: NSView) {
+        titleVisibility = .hidden
+        // Start clear; the detail's scroll state opts into native material and a line.
+        titlebarAppearsTransparent = true
+        titlebarSeparatorStyle = .none
+        backgroundColor = SettingsSidebarConfiguration.backgroundColor
+        styleMask.insert(.fullSizeContentView)
+        content.widthAnchor.constraint(equalToConstant: SettingsWindowSupport.minContentWidth).isActive = true
+        content.heightAnchor.constraint(greaterThanOrEqualToConstant: SettingsWindowSupport.minContentHeight).isActive = true
+        let minimum = NSSize(width: SettingsWindowSupport.minContentWidth,
+                             height: SettingsWindowSupport.minContentHeight)
+        minSize = frameRect(forContentRect: NSRect(origin: .zero, size: minimum)).size
+        contentMinSize = minimum
+        contentMaxSize = NSSize(width: minimum.width, height: CGFloat.greatestFiniteMagnitude)
+        maxSize = NSSize(width: minSize.width, height: CGFloat.greatestFiniteMagnitude)
+        collectionBehavior.insert(.fullScreenNone)
+    }
+
     var router = SettingsRouter.shared
     // The app supplies capture state without making the window own a global input service.
     var isMouseButtonCaptureActive: () -> Bool = { false }

@@ -59,11 +59,7 @@ struct ShelfSettings: View {
                 }
 
                 Section {
-                    Toggle(l10n.s.shelfShortcutToggle, isOn: $shortcutEnabled)
-                        .onChange(of: shortcutEnabled) { _, _ in
-                            ShelfService.shared.syncHotkey()
-                        }
-                    ShortcutPreferenceRow(role: .shelf, isEnabled: shortcutEnabled) {
+                    ShortcutPreferenceRow(role: .shelf) {
                         ShelfService.shared.syncHotkey()
                     }
                     if shortcutEnabled, shelf.hotkeyRegistrationFailed {

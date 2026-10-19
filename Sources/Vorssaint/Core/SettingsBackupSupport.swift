@@ -46,6 +46,8 @@ enum SettingsBackupSupport {
     /// Preferences stored without a registered default (absence means "use
     /// the built-in behavior"), still part of how the user set the app up.
     static let unregisteredPreferenceKeys: Set<String> = [
+        Defaults.permanentInputControlsMigrationKey,
+        Defaults.pageOwnedControlsMigrationKey,
         DefaultsKey.autoQuitEnabled,
         DefaultsKey.shelfEnabled,
         DefaultsKey.finderCutPasteEnabled,
@@ -82,16 +84,8 @@ enum SettingsBackupSupport {
         DefaultsKey.notchQuickAccessSecond,
         DefaultsKey.notchQuickAccessThird,
         DefaultsKey.systemShortcutTakeOverKeys,
-        // Experience flags: a restored Mac must not replay onboarding or the
-        // feature intros the user has already been through.
-        DefaultsKey.hasOnboarded,
-        DefaultsKey.onboardingStep,
-        DefaultsKey.featuresOnboardingVersion,
-        DefaultsKey.lastUpdateIntroVersion,
-        DefaultsKey.supportUpdateIntroVersion,
-        DefaultsKey.updateHighlightsSeenVersion,
+        DefaultsKey.lastLaunchedVersion,
         DefaultsKey.featureHubKeptFeatures,
-        DefaultsKey.brightnessUpdatePromptState,
         DefaultsKey.panelCollapsedResetVersion,
     ]
 
@@ -122,22 +116,6 @@ enum SettingsBackupSupport {
         DefaultsKey.appUpdatesNotifiedIDs,
         DefaultsKey.cleanerLastAutoFreed,
         DefaultsKey.cleanerLastAutoFailed,
-        DefaultsKey.whatsAppDownloadsAutomaticStartDate,
-        DefaultsKey.whatsAppDownloadsLastAutoRun,
-        DefaultsKey.whatsAppDownloadsLastCleanup,
-        DefaultsKey.whatsAppDownloadsLastCleanupCount,
-        DefaultsKey.whatsAppDownloadsLastCleanupBytes,
-        DefaultsKey.whatsAppDownloadsLastCleanupFailed,
-        DefaultsKey.whatsAppDownloadsLastCleanupAutomatic,
-        DefaultsKey.whatsAppDownloadsExclusions,
-        DefaultsKey.whatsAppDownloadsAccessConfirmed,
-        DefaultsKey.whatsAppOrganizerDestinationPath,
-        DefaultsKey.whatsAppOrganizerRecords,
-        DefaultsKey.whatsAppOrganizerUndoTransaction,
-        DefaultsKey.whatsAppOrganizerLastRun,
-        DefaultsKey.whatsAppOrganizerLastMoved,
-        DefaultsKey.whatsAppOrganizerLastDuplicates,
-        DefaultsKey.whatsAppOrganizerLastFailed,
         // What one person runs most is habit, not configuration.
         DefaultsKey.commandBarUsage,
         DefaultsKey.commandBarQueryHabits,
@@ -154,14 +132,10 @@ enum SettingsBackupSupport {
         DefaultsKey.musicBlockReplacementPath,
         // A local watermark file is authority on this Mac, not portable data.
         DefaultsKey.mediaImageWatermarkLogoPath,
-        DefaultsKey.simulateUpdate,
-        DefaultsKey.updateShowcaseIntroVersion,
-        DefaultsKey.updateShowcaseMediaOverride,
         DefaultsKey.unifiedScreenCaptureShortcutMigrated,
         DefaultsKey.restoredScreenCaptureShortcutsMigrated,
         DefaultsKey.orphanedCaptureShortcutMigrated,
         DefaultsKey.notchAgentsOptInMigrated,
-        DefaultsKey.settingsWindowWidth,
         DefaultsKey.settingsWindowHeight,
         DefaultsKey.clipboardHistoryWindowWidth,
         DefaultsKey.clipboardHistoryWindowHeight,

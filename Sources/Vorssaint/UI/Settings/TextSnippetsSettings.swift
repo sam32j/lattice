@@ -71,16 +71,11 @@ struct TextSnippetsSettings: View {
             }
 
             Section {
-                Toggle(text.libraryToggle, isOn: $libraryEnabled)
-                    .onChange(of: libraryEnabled) { _, _ in
-                        SnippetLibraryService.shared.syncWithPreferences()
-                    }
                 Text(text.libraryCaption)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                if libraryEnabled {
-                    ShortcutPreferenceRow(role: .snippetLibrary,
-                                          isEnabled: libraryEnabled) {
+                Group {
+                    ShortcutPreferenceRow(role: .snippetLibrary) {
                         SnippetLibraryService.shared.syncWithPreferences()
                     }
                     if library.shortcutRegistrationFailed {

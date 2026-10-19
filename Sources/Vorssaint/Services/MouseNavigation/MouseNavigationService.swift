@@ -73,7 +73,7 @@ final class MouseNavigationService: ObservableObject {
         let mask = CGEventMask(1 << CGEventType.otherMouseDown.rawValue)
             | CGEventMask(1 << CGEventType.otherMouseUp.rawValue)
             | CGEventMask(1 << CGEventType.otherMouseDragged.rawValue)
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cghidEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -94,7 +94,7 @@ final class MouseNavigationService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         observeWebHandlerChanges()
         // Which keys carry Back and Forward depends on the keyboard in use.
         // The Go menu answers on every click; without it the answer is asked
@@ -109,7 +109,7 @@ final class MouseNavigationService: ObservableObject {
     }
 
     private func stop() {
-        if let tap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap { InputEventTap.enable(tap: tap, enable: false) }
         if let runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
         }
@@ -189,7 +189,7 @@ final class MouseNavigationService: ObservableObject {
                 sessionIsActive: SessionActivity.shared.isActive
             )
             if shouldRearm, let tap {
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
             } else {
                 // Invalidating the port from its own callback stack is unsafe;
                 // finish this callback fail-open, then release the tap.

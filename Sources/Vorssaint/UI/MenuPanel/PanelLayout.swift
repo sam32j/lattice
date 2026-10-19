@@ -73,10 +73,8 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
     /// Installed sections show by default and remain individually hideable.
     var shownByDefault: Bool { true }
 
-    /// Hub features that keep this section alive: with all of them off, the
-    /// section leaves the panel, the section navigation and the layout
-    /// editors, regardless of its visibility key (which is preserved for the
-    /// feature's return).
+    /// Features represented by this section. Permanent input controls remain
+    /// discoverable while off; other sections follow runtime availability.
     var featureGate: [AppFeature] {
         switch self {
         case .keepAwake: return [.keepAwake]
@@ -96,12 +94,15 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
                                 .finderCutPaste, .autoQuit,
                                 .shelf, .windowMaximizer, .dockPreview, .keyboardDebounce, .dockClick, .spacesOrder,
                                 .middleClick, .textSnippets, .superKey, .radialMenu, .mouseClickDebounce, .notch]
-        case .toggles: return [.quickToggles, .micMute]
+        case .toggles: return [.brightness, .commandBar, .micMute]
         case .wallpaper: return [.wallpaper]
         }
     }
 
-    var isAvailable: Bool { featureGate.contains(where: \.isAvailable) }
+    var isAvailable: Bool {
+        if self == .controls { return featureGate.contains { $0.isPresentInControls() } }
+        return featureGate.contains(where: \.isAvailable)
+    }
 }
 
 /// Persisted panel layout: the order the sections appear in and which ones are

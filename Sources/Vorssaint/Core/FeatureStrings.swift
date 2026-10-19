@@ -104,9 +104,6 @@ enum FeatureStrings {
         }
     }
 
-    static func whatsAppDownloads(_ language: AppLanguage) -> WhatsAppDownloadStrings {
-        WhatsAppDownloadStrings.localized(language)
-    }
 }
 
 struct MixerFeatureStrings {
@@ -140,12 +137,16 @@ struct MixerFeatureStrings {
 
 extension SettingsCategoryStrings {
     static let ko = SettingsCategoryStrings(
-        essentials: "기본 기능",
-        windowsControls: "윈도우 및 제어",
-        files: "파일",
-        utilities: "유틸리티",
-        app: "앱",
-        appManagement: "앱 관리"
+        interface: "인터페이스",
+        windowsDock: "데스크탑 & Dock",
+        audio: "오디오",
+        energyDisplay: "에너지 & 디스플레이",
+        screenCaptures: "화면 캡처",
+        mouseKeyboard: "마우스 & 키보드",
+        clipboardFiles: "클립보드 & 파일",
+        system: "시스템",
+        lattice: "Lattice",
+        utilities: "유틸리티"
     )
 }
 
@@ -218,7 +219,7 @@ extension ClipboardFeatureStrings {
 
 extension WindowLayoutFeatureStrings {
     static let ko = WindowLayoutFeatureStrings(
-        title: "윈도우 정렬",
+        title: "윈도우 관리",
         caption: "윈도우를 화면 구역에 배치하거나 트랙패드 또는 마우스로 이동하고 크기를 조절합니다.",
         showInPanel: "패널에 표시",
         gestureSection: "윈도우 드래그",
@@ -349,128 +350,188 @@ extension MonitorAlertFeatureStrings {
 }
 
 struct SettingsCategoryStrings {
-    let essentials: String
-    let windowsControls: String
-    let files: String
+    let interface: String
+    let windowsDock: String
+    let audio: String
+    let energyDisplay: String
+    let screenCaptures: String
+    let mouseKeyboard: String
+    let clipboardFiles: String
+    let system: String
+    let lattice: String
     let utilities: String
-    let app: String
-    let appManagement: String
+
+    var sound: String { audio }
+    var files: String { clipboardFiles }
+    var appManagement: String { system }
 
     static let enUS = SettingsCategoryStrings(
-        essentials: "Essentials",
-        windowsControls: "Window controls",
-        files: "Files",
-        utilities: "Utilities",
-        app: "App",
-        appManagement: "App management"
+        interface: "Interface",
+        windowsDock: "Desktop & Dock",
+        audio: "Audio",
+        energyDisplay: "Energy & Display",
+        screenCaptures: "Screen Captures",
+        mouseKeyboard: "Mouse & Keyboard",
+        clipboardFiles: "Clipboard & Files",
+        system: "System",
+        lattice: "Lattice",
+        utilities: "Utilities"
     )
 
     static let ptBR = SettingsCategoryStrings(
-        essentials: "Essenciais",
-        windowsControls: "Janelas e controles",
-        files: "Arquivos",
-        utilities: "Utilitários",
-        app: "App",
-        appManagement: "Gestão de apps"
+        interface: "Interface",
+        windowsDock: "Mesa & Dock",
+        audio: "Áudio",
+        energyDisplay: "Energia & Tela",
+        screenCaptures: "Capturas de Tela",
+        mouseKeyboard: "Mouse & Teclado",
+        clipboardFiles: "Área de Transferência & Arquivos",
+        system: "Sistema",
+        lattice: "Lattice",
+        utilities: "Utilitários"
     )
 
     static let tr = SettingsCategoryStrings(
-        essentials: "Temel",
-        windowsControls: "Pencereler ve denetimler",
-        files: "Dosyalar",
-        utilities: "Araçlar",
-        app: "Uygulama",
-        appManagement: "Uygulama yönetimi"
+        interface: "Arayüz",
+        windowsDock: "Masaüstü & Dock",
+        audio: "Ses",
+        energyDisplay: "Enerji & Ekran",
+        screenCaptures: "Ekran Yakalamaları",
+        mouseKeyboard: "Fare & Klavye",
+        clipboardFiles: "Pano & Dosyalar",
+        system: "Sistem",
+        lattice: "Lattice",
+        utilities: "Araçlar"
     )
 
     static let ru = SettingsCategoryStrings(
-        essentials: "Основное",
-        windowsControls: "Окна и управление",
-        files: "Файлы",
-        utilities: "Утилиты",
-        app: "Приложение",
-        appManagement: "Управление приложениями"
+        interface: "Интерфейс",
+        windowsDock: "Рабочий стол & Dock",
+        audio: "Аудио",
+        energyDisplay: "Энергия & Дисплей",
+        screenCaptures: "Записи Экрана",
+        mouseKeyboard: "Мышь & клавиатура",
+        clipboardFiles: "Буфер обмена & файлы",
+        system: "Система",
+        lattice: "Lattice",
+        utilities: "Утилиты"
     )
 
     static let es = SettingsCategoryStrings(
-        essentials: "Esenciales",
-        windowsControls: "Ventanas y controles",
-        files: "Archivos",
-        utilities: "Utilidades",
-        app: "App",
-        appManagement: "Gestión de apps"
+        interface: "Interfaz",
+        windowsDock: "Escritorio & Dock",
+        audio: "Audio",
+        energyDisplay: "Energía & Pantalla",
+        screenCaptures: "Capturas de Pantalla",
+        mouseKeyboard: "Ratón & teclado",
+        clipboardFiles: "Portapapeles & archivos",
+        system: "Sistema",
+        lattice: "Lattice",
+        utilities: "Utilidades"
     )
 
     static let sk = SettingsCategoryStrings(
-        essentials: "Základné",
-        windowsControls: "Okná a ovládanie",
-        files: "Súbory",
-        utilities: "Pomôcky",
-        app: "Apka",
-        appManagement: "Správa aplikácií"
+        interface: "Rozhranie",
+        windowsDock: "Plocha & Dock",
+        audio: "Audio",
+        energyDisplay: "Energia & Displej",
+        screenCaptures: "Snímky Obrazovky",
+        mouseKeyboard: "Myš & klávesnica",
+        clipboardFiles: "Schránka & súbory",
+        system: "Systém",
+        lattice: "Lattice",
+        utilities: "Pomôcky"
     )
 
     static let de = SettingsCategoryStrings(
-        essentials: "Grundlagen",
-        windowsControls: "Fenster und Steuerung",
-        files: "Dateien",
-        utilities: "Dienstprogramme",
-        app: "App",
-        appManagement: "App-Verwaltung"
+        interface: "Bedienoberfläche",
+        windowsDock: "Schreibtisch & Dock",
+        audio: "Audio",
+        energyDisplay: "Energie & Display",
+        screenCaptures: "Bildschirmaufnahmen",
+        mouseKeyboard: "Maus & Tastatur",
+        clipboardFiles: "Zwischenablage & Dateien",
+        system: "System",
+        lattice: "Lattice",
+        utilities: "Dienstprogramme"
     )
 
     static let fr = SettingsCategoryStrings(
-        essentials: "Essentiel",
-        windowsControls: "Fenêtres et contrôles",
-        files: "Fichiers",
-        utilities: "Utilitaires",
-        app: "App",
-        appManagement: "Gestion des apps"
+        interface: "Interface",
+        windowsDock: "Bureau & Dock",
+        audio: "Audio",
+        energyDisplay: "Énergie & Affichage",
+        screenCaptures: "Captures d’Écran",
+        mouseKeyboard: "Souris & clavier",
+        clipboardFiles: "Presse-papiers & fichiers",
+        system: "Système",
+        lattice: "Lattice",
+        utilities: "Utilitaires"
     )
 
     static let it = SettingsCategoryStrings(
-        essentials: "Essenziali",
-        windowsControls: "Finestre e controlli",
-        files: "File",
-        utilities: "Utilità",
-        app: "App",
-        appManagement: "Gestione delle app"
+        interface: "Interfaccia",
+        windowsDock: "Scrivania & Dock",
+        audio: "Audio",
+        energyDisplay: "Energia & Schermo",
+        screenCaptures: "Registrazioni Schermo",
+        mouseKeyboard: "Mouse & tastiera",
+        clipboardFiles: "Appunti & file",
+        system: "Sistema",
+        lattice: "Lattice",
+        utilities: "Utilità"
     )
 
     static let ja = SettingsCategoryStrings(
-        essentials: "基本機能",
-        windowsControls: "ウインドウと操作",
-        files: "ファイル",
-        utilities: "ユーティリティ",
-        app: "App",
-        appManagement: "Appの管理"
+        interface: "インターフェイス",
+        windowsDock: "デスクトップ & Dock",
+        audio: "オーディオ",
+        energyDisplay: "エネルギー & ディスプレイ",
+        screenCaptures: "画面キャプチャ",
+        mouseKeyboard: "マウス & キーボード",
+        clipboardFiles: "クリップボード & ファイル",
+        system: "システム",
+        lattice: "Lattice",
+        utilities: "ユーティリティ"
     )
 
     static let zhHans = SettingsCategoryStrings(
-        essentials: "基础功能",
-        windowsControls: "窗口与控制",
-        files: "文件",
-        utilities: "实用工具",
-        app: "App",
-        appManagement: "App 管理"
+        interface: "界面",
+        windowsDock: "桌面 & 程序坞",
+        audio: "音频",
+        energyDisplay: "能源 & 显示器",
+        screenCaptures: "屏幕截图与录制",
+        mouseKeyboard: "鼠标 & 键盘",
+        clipboardFiles: "剪贴板 & 文件",
+        system: "系统",
+        lattice: "Lattice",
+        utilities: "实用工具"
     )
 
     static let zhTW = SettingsCategoryStrings(
-        essentials: "基本功能",
-        windowsControls: "視窗與控制",
-        files: "檔案",
-        utilities: "工具程式",
-        app: "App",
-        appManagement: "App 管理"
+        interface: "介面",
+        windowsDock: "桌面 & Dock",
+        audio: "音訊",
+        energyDisplay: "能源 & 顯示器",
+        screenCaptures: "螢幕擷取與錄製",
+        mouseKeyboard: "滑鼠 & 鍵盤",
+        clipboardFiles: "剪貼簿 & 檔案",
+        system: "系統",
+        lattice: "Lattice",
+        utilities: "工具程式"
     )
 
     static let zhHK = SettingsCategoryStrings(
-        essentials: "基本功能",
-        windowsControls: "視窗及控制",
-        files: "檔案",
-        utilities: "工具",
-        app: "App",
-        appManagement: "App 管理"
+        interface: "介面",
+        windowsDock: "桌面 & Dock",
+        audio: "音訊",
+        energyDisplay: "能源 & 顯示器",
+        screenCaptures: "螢幕截圖與錄製",
+        mouseKeyboard: "滑鼠 & 鍵盤",
+        clipboardFiles: "剪貼簿 & 檔案",
+        system: "系統",
+        lattice: "Lattice",
+        utilities: "工具"
     )
 }
 
@@ -1477,7 +1538,7 @@ struct WindowLayoutFeatureStrings {
     let gapExtraLarge: String
 
     static let enUS = WindowLayoutFeatureStrings(
-        title: "Window layout",
+        title: "Window Management",
         caption: "Arrange windows into screen sections or move and resize them with a trackpad or mouse.",
         showInPanel: "Show in panel",
         gestureSection: "Window dragging",
@@ -1570,7 +1631,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let ptBR = WindowLayoutFeatureStrings(
-        title: "Layout de janelas",
+        title: "Gerenciamento de Janelas",
         caption: "Organize janelas em áreas da tela ou mova e redimensione com o trackpad ou mouse.",
         showInPanel: "Mostrar no painel",
         gestureSection: "Arraste de janelas",
@@ -1663,7 +1724,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let tr = WindowLayoutFeatureStrings(
-        title: "Pencere yerleşimi",
+        title: "Pencere Yönetimi",
         caption: "Pencereleri ekran bölümlerine yerleştirin veya izleme dörtgeni ya da fareyle taşıyıp yeniden boyutlandırın.",
         showInPanel: "Panelde göster",
         gestureSection: "Pencere sürükleme",
@@ -1756,7 +1817,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let ru = WindowLayoutFeatureStrings(
-        title: "Раскладка окон",
+        title: "Управление окнами",
         caption: "Размещайте окна по областям экрана или перемещайте и меняйте их размер трекпадом или мышью.",
         showInPanel: "Показывать в панели",
         gestureSection: "Перетаскивание окон",
@@ -1849,7 +1910,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let es = WindowLayoutFeatureStrings(
-        title: "Diseño de ventanas",
+        title: "Gestión de ventanas",
         caption: "Organiza ventanas en zonas de la pantalla o muévelas y cambia su tamaño con el trackpad o el ratón.",
         showInPanel: "Mostrar en el panel",
         gestureSection: "Arrastre de ventanas",
@@ -1942,7 +2003,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let sk = WindowLayoutFeatureStrings(
-        title: "Rozloženie okien",
+        title: "Správa okien",
         caption: "Usporiadajte okná do oblastí obrazovky alebo ich presúvajte a meňte im veľkosť trackpadom či myšou.",
         showInPanel: "Zobraziť v paneli",
         gestureSection: "Ťahanie okien",
@@ -2035,7 +2096,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let de = WindowLayoutFeatureStrings(
-        title: "Fensterlayout",
+        title: "Fensterverwaltung",
         caption: "Ordne Fenster in Bildschirmbereiche ein oder verschiebe und skaliere sie mit Trackpad oder Maus.",
         showInPanel: "Im Panel anzeigen",
         gestureSection: "Fenster ziehen",
@@ -2128,7 +2189,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let fr = WindowLayoutFeatureStrings(
-        title: "Disposition des fenêtres",
+        title: "Gestion des fenêtres",
         caption: "Organisez les fenêtres dans des zones de l’écran ou déplacez-les et redimensionnez-les au trackpad ou à la souris.",
         showInPanel: "Afficher dans le panneau",
         gestureSection: "Glissement des fenêtres",
@@ -2221,7 +2282,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let it = WindowLayoutFeatureStrings(
-        title: "Layout finestre",
+        title: "Gestione finestre",
         caption: "Disponi le finestre nelle aree dello schermo oppure spostale e ridimensionale con trackpad o mouse.",
         showInPanel: "Mostra nel pannello",
         gestureSection: "Trascinamento finestre",
@@ -2314,7 +2375,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let ja = WindowLayoutFeatureStrings(
-        title: "ウインドウ配置",
+        title: "ウインドウ管理",
         caption: "ウインドウを画面の領域に配置したり、トラックパッドやマウスで移動やサイズ変更ができます。",
         showInPanel: "パネルに表示",
         gestureSection: "ウインドウのドラッグ",
@@ -2407,7 +2468,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let zhHans = WindowLayoutFeatureStrings(
-        title: "窗口布局",
+        title: "窗口管理",
         caption: "将窗口排列到屏幕区域，或用触控板或鼠标移动和调整大小。",
         showInPanel: "在面板中显示",
         gestureSection: "窗口拖动",
@@ -2500,7 +2561,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let zhTW = WindowLayoutFeatureStrings(
-        title: "視窗排列",
+        title: "視窗管理",
         caption: "將視窗排列到螢幕區域，或用觸控板或滑鼠移動及調整大小。",
         showInPanel: "在面板中顯示",
         gestureSection: "視窗拖移",
@@ -2593,7 +2654,7 @@ struct WindowLayoutFeatureStrings {
     )
 
     static let zhHK = WindowLayoutFeatureStrings(
-        title: "視窗排列",
+        title: "視窗管理",
         caption: "將視窗排列到螢幕區域，或用觸控板或滑鼠移動及調整大小。",
         showInPanel: "在面板中顯示",
         gestureSection: "視窗拖動",
@@ -3178,12 +3239,16 @@ struct MonitorAlertFeatureStrings {
 
 extension SettingsCategoryStrings {
     static let uk = SettingsCategoryStrings(
-        essentials: "Основне",
-        windowsControls: "Керування вікнами",
-        files: "Файли",
-        utilities: "Утиліти",
-        app: "Програма",
-        appManagement: "Керування програмами"
+        interface: "Інтерфейс",
+        windowsDock: "Робочий стіл & Dock",
+        audio: "Аудіо",
+        energyDisplay: "Енергія & Дисплей",
+        screenCaptures: "Знімки Екрана",
+        mouseKeyboard: "Миша & клавіатура",
+        clipboardFiles: "Буфер обміну & файли",
+        system: "Система",
+        lattice: "Lattice",
+        utilities: "Утиліти"
     )
 }
 
@@ -3256,7 +3321,7 @@ extension ClipboardFeatureStrings {
 
 extension WindowLayoutFeatureStrings {
     static let uk = WindowLayoutFeatureStrings(
-        title: "Розкладка вікон",
+        title: "Керування вікнами",
         caption: "Розставляйте вікна у розділи екрана або переміщуйте та змінюйте їхній розмір трекпедом або мишею.",
         showInPanel: "Показати в панелі",
         gestureSection: "Перетягування вікна",

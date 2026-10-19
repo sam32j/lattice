@@ -2,6 +2,7 @@
 build/
 dist/
 .build/
+.worktrees/
 *.dmg
 
 # Signing material: never commit private keys or notary credentials

@@ -114,7 +114,7 @@ final class QuitProtectionService: ObservableObject {
         activationObserver = nil
 
         if let tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFMachPortInvalidate(tap)
         }
         if let runLoopSource {
@@ -133,7 +133,7 @@ final class QuitProtectionService: ObservableObject {
         let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
             | CGEventMask(1 << CGEventType.keyUp.rawValue)
             | CGEventMask(1 << CGEventType.flagsChanged.rawValue)
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -153,7 +153,7 @@ final class QuitProtectionService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         return true
     }
 
@@ -172,7 +172,7 @@ final class QuitProtectionService: ObservableObject {
                 sessionIsActive: SessionActivity.shared.isActive
             )
             if shouldRearm, let tap {
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
             } else {
                 DispatchQueue.main.async { [weak self] in
                     self?.stop()

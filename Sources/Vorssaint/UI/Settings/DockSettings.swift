@@ -32,7 +32,6 @@ struct DockSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(pages.dockTitle).font(.title2.bold())
                     Text(pages.dockDescription)
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -42,16 +41,15 @@ struct DockSettings: View {
                     dockPreviewCard
                         .settingsSectionAnchor(.dock, cornerRadius: 16)
                 }
-                // Clicking a Dock icon is its own installable feature in the
-                // hub, so it gets its own card here.
-                if AppFeature.dockClick.isAvailable {
+                if AppFeature.dockClick.isPresentInControls() {
                     dockClickCard
                         .settingsSectionAnchor(.dockClick, cornerRadius: 16)
                 }
-                if AppFeature.spacesOrder.isAvailable {
+                if AppFeature.spacesOrder.isPresentInControls() {
                     spacesOrderCard
                         .settingsSectionAnchor(.spacesOrder, cornerRadius: 16)
                 }
+                DockQuitOnCloseSettings()
                 if AppFeature.dockPreview.isAvailable {
                     WindowPreviewsCard(sizeKey: DefaultsKey.previewSize,
                                        excludedAppsKey: DefaultsKey.windowPreviewExcludedApps)
@@ -158,7 +156,7 @@ struct DockSettings: View {
                     .labelsHidden()
                     .onChange(of: dockClickMinimize) { _, enabled in
                         if enabled { dockClickHide = false }
-                        DockClickService.shared.syncWithPreferences()
+                        FeatureRuntime.shared.sync([.dockClick])
                     }
             }
             SettingsRow(symbol: "eye.slash", title: l10n.s.dockClickHide, caption: l10n.s.dockClickHideCaption) {
@@ -166,7 +164,7 @@ struct DockSettings: View {
                     .labelsHidden()
                     .onChange(of: dockClickHide) { _, enabled in
                         if enabled { dockClickMinimize = false }
-                        DockClickService.shared.syncWithPreferences()
+                        FeatureRuntime.shared.sync([.dockClick])
                     }
             }
             SettingsRow(symbol: "arrow.triangle.2.circlepath", title: l10n.s.dockClickCycleWindows,
@@ -174,7 +172,7 @@ struct DockSettings: View {
                 Toggle(l10n.s.dockClickCycleWindows, isOn: $dockClickCycleWindows)
                     .labelsHidden()
                     .onChange(of: dockClickCycleWindows) { _, _ in
-                        DockClickService.shared.syncWithPreferences()
+                        FeatureRuntime.shared.sync([.dockClick])
                     }
             }
         }
@@ -187,7 +185,7 @@ struct DockSettings: View {
                 Toggle(l10n.s.spacesOrderName, isOn: $spacesOrderEnabled)
                     .labelsHidden()
                     .onChange(of: spacesOrderEnabled) { _, _ in
-                        SpacesOrderHold.shared.syncWithPreferences()
+                        FeatureRuntime.shared.sync([.spacesOrder])
                     }
             }
         }

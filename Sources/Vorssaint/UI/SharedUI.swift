@@ -3,8 +3,7 @@
 
 import SwiftUI
 
-/// A single keyboard key drawn like a physical keycap. Used across Settings and
-/// onboarding to show shortcuts such as ⌘X / ⌘V.
+/// A single keyboard key drawn like a physical keycap for Settings shortcuts.
 struct KeyCap: View {
     let label: String
 

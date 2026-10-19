@@ -76,7 +76,11 @@ final class CleaningModeManager: ObservableObject {
                                                     threshold: unlockThreshold,
                                                     pressWindow: 6.0)
 
+    private let hotkey = QuickToolHotkey(id: 25)
+    @Published private(set) var shortcutRegistrationFailed = false
+
     private init() {
+        hotkey.onPress = { [weak self] in self?.toggle() }
         // A switched-away login session cannot keep a filter tap in the input
         // chain. Cleaning is a temporary local state, so leaving the session
         // ends it; suspended features resume only after this session returns.
@@ -89,6 +93,19 @@ final class CleaningModeManager: ObservableObject {
             } else if self.isActive {
                 self.deactivate(restoreSuspendedFeatures: false)
             }
+        }
+    }
+
+    func syncWithPreferences() {
+        let available = AppFeature.cleaningMode.isAvailable
+        let enabled = available
+            && UserDefaults.standard.bool(forKey: DefaultsKey.cleaningModeShortcutEnabled)
+        let shortcut = GlobalShortcut.saved(for: DefaultsKey.cleaningModeShortcut,
+                                            fallback: .cleaningModeDefault)
+        shortcutRegistrationFailed = !hotkey.sync(enabled: enabled, shortcut: shortcut,
+                                                  storageKey: DefaultsKey.cleaningModeShortcut)
+        if !available && isActive {
+            deactivate()
         }
     }
 
@@ -209,7 +226,7 @@ final class CleaningModeManager: ObservableObject {
 
     private func installTap() -> Bool {
         let mask = Self.eventMask
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cghidEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -227,12 +244,12 @@ final class CleaningModeManager: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         return true
     }
 
     private func removeTap() {
-        if let tap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap { InputEventTap.enable(tap: tap, enable: false) }
         if let runLoopSource { CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes) }
         if let tap { CFMachPortInvalidate(tap) }
         tap = nil
@@ -253,7 +270,7 @@ final class CleaningModeManager: ObservableObject {
                 // already requested deactivation, fail open after the callback.
                 let shouldFinishUserDeactivation = mouseReleaseGate.deactivationPending
                 mouseReleaseGate.invalidateTrackedPresses()
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
                 if shouldFinishUserDeactivation {
                     scheduleUserDeactivation()
                 }

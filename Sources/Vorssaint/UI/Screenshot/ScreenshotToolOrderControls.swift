@@ -5,8 +5,6 @@ import AppKit
 import Carbon.HIToolbox
 import SwiftUI
 
-typealias ToolShortcutCoordinator = CompactShortcutCoordinator
-
 /// Controls for screenshot annotation tool shortcut assignments.
 struct ScreenshotToolOrderControls: View {
     @ObservedObject private var l10n = L10n.shared
@@ -35,7 +33,6 @@ struct ScreenshotToolOrderControls: View {
                     .font(.headline)
             }
 
-            Toggle(strings.toolShortcutsToggle, isOn: $shortcutsEnabled)
             Text(strings.toolShortcutsCaption)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -50,14 +47,6 @@ struct ScreenshotToolOrderControls: View {
                 }
             }
 
-            HStack {
-                Spacer()
-                Button(l10n.s.shortcutReset) {
-                    bindingsRaw = ""
-                    errorTool = nil
-                }
-                .disabled(bindingsRaw.isEmpty)
-            }
         }
         .onChange(of: l10n.language) { _, _ in errorTool = nil }
     }
@@ -71,37 +60,17 @@ struct ScreenshotToolOrderControls: View {
                 .lineLimit(1)
             Spacer(minLength: 4)
 
-            Group {
-                if ScreenshotSupport.Tool.isModified(tool: tool, bindingsRaw: bindingsRaw) {
-                    Button {
-                        resetTool(tool)
-                    } label: {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20, height: 22)
-                            .background(Color.primary.opacity(0.045),
-                                        in: RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
-                    .help(l10n.s.shortcutReset)
-                    .accessibilityLabel(tool.screenshotTitle(strings) + ": " + l10n.s.shortcutReset)
-                } else {
-                    Color.clear.frame(width: 20, height: 22)
-                }
-            }
-
             ToolShortcutRecorder(
                 tool: tool,
-                isEnabled: shortcutsEnabled,
+                shortcutsEnabled: $shortcutsEnabled,
                 bindingsRaw: $bindingsRaw,
                 isError: errorTool == tool,
                 shakeAttempts: shakeAttempts[tool, default: 0],
+                onReset: { resetTool(tool) },
                 onError: {
                     showError(for: tool)
                 }
             )
-            .opacity(shortcutsEnabled ? 1 : 0.48)
         }
         .frame(minHeight: 26)
         .contentShape(Rectangle())
@@ -118,6 +87,7 @@ struct ScreenshotToolOrderControls: View {
         var custom = ScreenshotSupport.Tool.customBindings(from: bindingsRaw)
         custom[tool] = nil
         bindingsRaw = ScreenshotSupport.Tool.customBindingsStorage(custom)
+        shortcutsEnabled = true
         if errorTool == tool {
             errorTool = nil
         }
@@ -139,88 +109,39 @@ struct ScreenshotToolOrderControls: View {
 
 private struct ToolShortcutRecorder: View {
     @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var coordinator = ToolShortcutCoordinator.shared
+    @ObservedObject private var coordinator = CompactShortcutCoordinator.shared
     let tool: ScreenshotSupport.Tool
-    let isEnabled: Bool
+    @Binding var shortcutsEnabled: Bool
     @Binding var bindingsRaw: String
     let isError: Bool
     let shakeAttempts: CGFloat
+    let onReset: () -> Void
     let onError: () -> Void
-
-    @State private var isHovering = false
 
     private var isRecording: Bool { coordinator.activeTool == tool }
 
     private var currentShortcut: GlobalShortcut? {
-        ScreenshotSupport.Tool.effectiveShortcut(for: tool, bindingsRaw: bindingsRaw)
+        shortcutsEnabled ? ScreenshotSupport.Tool.effectiveShortcut(for: tool, bindingsRaw: bindingsRaw) : nil
     }
 
     private var workflow: CaptureWorkflowStrings {
         .localized(l10n.language)
     }
 
-    private let recorderWidth: CGFloat = 86
-    private let recorderHeight: CGFloat = 26
-
+    private let recorderWidth: CGFloat = 140
     var body: some View {
-        ZStack {
-            Button {
-                if !isEnabled { return }
-                if isRecording {
-                    coordinator.stopRecording(tool: tool)
-                } else {
-                    coordinator.startRecording(tool: tool)
-                }
-            } label: {
-                HStack(spacing: 3) {
-                    if isError {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(Color.red)
-                        Text(workflow.shortcutUnavailable)
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundStyle(Color.red)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.65)
-                    } else if isRecording {
-                        Text(l10n.s.shortcutPressKeys)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color.accentColor)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                    } else if let currentShortcut {
-                        Text(currentShortcut.displayString)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                    } else {
-                        Text(l10n.s.shortcutNone)
-                            .font(.system(size: 11, weight: .regular))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .frame(width: recorderWidth, height: recorderHeight)
-        .modifier(CompactRecorderShakeEffect(animatableData: shakeAttempts))
-        .background(
-            backgroundColor,
-            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(
-                    borderColor,
-                    lineWidth: (isRecording || isError) ? 1.5 : (isHovering ? 0.8 : 0.5)
-                )
-        )
-        .onHover { hovering in
-            isHovering = hovering
-        }
+        CompactShortcutField(
+            shortcut: currentShortcut,
+            isEnabled: true,
+            isRecording: isRecording,
+            pressedModifiers: [],
+            errorText: isError ? workflow.shortcutUnavailable : nil,
+            emptyTitle: l10n.s.shortcutNone,
+            width: recorderWidth,
+            shakeAttempts: shakeAttempts,
+            onToggleRecording: toggleRecording,
+            onClear: currentShortcut != nil ? clearShortcut : nil,
+            onReset: onReset)
         .onDisappear {
             coordinator.stopRecording(tool: tool)
         }
@@ -239,27 +160,11 @@ private struct ToolShortcutRecorder: View {
         }
     }
 
-    private var backgroundColor: Color {
-        if isError {
-            return Color.red.opacity(0.12)
-        } else if isRecording {
-            return Color.accentColor.opacity(0.12)
-        } else if isHovering {
-            return Color.primary.opacity(0.06)
+    private func toggleRecording() {
+        if isRecording {
+            coordinator.stopRecording(tool: tool)
         } else {
-            return Color.primary.opacity(0.03)
-        }
-    }
-
-    private var borderColor: Color {
-        if isError {
-            return Color.red
-        } else if isRecording {
-            return Color.accentColor
-        } else if isHovering {
-            return Color.primary.opacity(0.25)
-        } else {
-            return Color.primary.opacity(0.12)
+            coordinator.startRecording(tool: tool)
         }
     }
 
@@ -286,6 +191,7 @@ private struct ToolShortcutRecorder: View {
         var custom = ScreenshotSupport.Tool.customBindings(from: bindingsRaw)
         custom[tool] = .some(captured)
         bindingsRaw = ScreenshotSupport.Tool.customBindingsStorage(custom)
+        shortcutsEnabled = true
         coordinator.stopRecording(tool: tool)
     }
 

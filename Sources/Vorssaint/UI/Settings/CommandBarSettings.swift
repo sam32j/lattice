@@ -95,14 +95,7 @@ struct CommandBarSettings: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                // Not the shared "Global shortcut" label the other feature
-                // pages use: this page already has an "open the bar" button at
-                // the top, so the toggle has to say which of the two it arms.
-                Toggle(text.shortcutToggle, isOn: $shortcutEnabled)
-                    .onChange(of: shortcutEnabled) { _, _ in
-                        CommandBarService.shared.syncWithPreferences()
-                    }
-                ShortcutPreferenceRow(role: .commandBar, isEnabled: shortcutEnabled) {
+                ShortcutPreferenceRow(role: .commandBar, label: text.shortcutToggle) {
                     CommandBarService.shared.syncWithPreferences()
                 }
                 if shortcutEnabled, service.shortcutRegistrationFailed {
@@ -140,6 +133,8 @@ struct CommandBarSettings: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            CommandBarEjectSettings()
 
             Section {
                 ForEach(CommandBarSource.allCases) { source in

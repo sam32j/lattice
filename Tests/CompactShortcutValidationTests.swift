@@ -18,15 +18,43 @@ enum CompactShortcutValidationTests {
         var rawValue = GlobalShortcut.screenshotDefault.storageValue
         var isEnabled = false, systemConflict = false
         var errorText: String?
+        var pendingTakeOver: GlobalShortcut?
         var conflictingRole: GlobalShortcutRole?
+        var includeInactiveConflicts = false
         var notifications = 0
+        func additionalConflict(_ shortcut: GlobalShortcut) -> String? { nil }
         func showError(_ text: String) { errorText = text }
         func onChange() { notifications += 1 }
     }
     static func run(_ suite: TestSuite) {
+        let clearedKey = "test.shortcut.cleared.\(UUID().uuidString)"
+        defer { UserDefaults.standard.removeObject(forKey: clearedKey) }
+        suite.expect(GlobalShortcut.saved(for: clearedKey, fallback: .screenshotDefault) == .screenshotDefault,
+                     "an unset shortcut retains its default for existing installations")
+        UserDefaults.standard.set("", forKey: clearedKey)
+        suite.expect(!GlobalShortcut.saved(for: clearedKey, fallback: .screenshotDefault).isValid,
+                     "an explicitly cleared shortcut stays disabled rather than restoring its default")
+        UserDefaults.standard.set(GlobalShortcut.screenshotDefault.storageValue, forKey: clearedKey)
+        suite.expect(GlobalShortcut.saved(for: clearedKey, fallback: .keepAwakeDefault) == .screenshotDefault,
+                     "recording after clear restores the selected shortcut")
         defer { SystemShortcutTakeover.conflict = false; SystemShortcutTakeover.takenOver = false
             SystemShortcutTakeover.changes = [] }
         let recorder = Recorder()
+        recorder.isEnabled = true
+        recorder.clearShortcut()
+        suite.expect(!recorder.isEnabled && recorder.rawValue.isEmpty && recorder.notifications == 1,
+                     "clear disables a dedicated shortcut and removes its assignment")
+        recorder.role = .displayBrightnessDecrease
+        recorder.isEnabled = true
+        recorder.clearShortcut()
+        suite.expect(recorder.isEnabled && recorder.rawValue.isEmpty,
+                     "clearing one brightness shortcut preserves the shared enable flag for its sibling")
+        recorder.role = .screenshot
+        recorder.isEnabled = false
+        recorder.rawValue = recorder.role.defaultShortcut.storageValue
+        recorder.notifications = 0
+        recorder.errorText = nil
+        SystemShortcutTakeover.changes = []
         let shortcut = recorder.role.defaultShortcut
         recorder.conflictingRole = .clipboard
         recorder.resetToDefault()

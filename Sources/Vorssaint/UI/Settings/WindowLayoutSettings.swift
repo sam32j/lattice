@@ -8,12 +8,10 @@ struct WindowLayoutSettings: View {
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var service = WindowLayoutService.shared
-    @ObservedObject private var maximizer = WindowMaximizer.shared
     @AppStorage(DefaultsKey.windowMaximizeEnabled) private var maximizeEnabled = false
     @ObservedObject private var pointerDisplay = PointerDisplayService.shared
     @AppStorage(DefaultsKey.pointerDisplayEnabled) private var pointerDisplayEnabled = false
     @AppStorage(DefaultsKey.panelUtilityWindowLayout) private var showInPanel = true
-    @AppStorage(DefaultsKey.windowLayoutShortcutsEnabled) private var shortcutsEnabled = true
     @AppStorage(DefaultsKey.windowDirectionalEnabled) private var directionalEnabled = false
     @AppStorage(DefaultsKey.windowDirectionalShortcut) private var directionalShortcutRaw = GlobalShortcut.windowDirectionalDefault.storageValue
     @AppStorage(DefaultsKey.windowEdgeSnapEnabled) private var edgeSnapEnabled = false
@@ -57,10 +55,7 @@ struct WindowLayoutSettings: View {
                 }
             }
 
-            // The green button override has no page of its own; it lives here
-            // with the other window behaviors and keeps this page reachable
-            // when it is the only one of the two still switched on in the hub.
-            if AppFeature.windowMaximizer.isAvailable {
+            if AppFeature.windowMaximizer.isPresentInControls() {
                 windowMaximizerSection
             }
 
@@ -132,10 +127,6 @@ struct WindowLayoutSettings: View {
                 }
 
                 Section(text.shortcuts) {
-                    Toggle(text.shortcuts, isOn: $shortcutsEnabled)
-                        .onChange(of: shortcutsEnabled) { _, _ in
-                            WindowLayoutService.shared.syncWithPreferences()
-                        }
                     Text(text.shortcutsCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -144,23 +135,28 @@ struct WindowLayoutSettings: View {
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
-                    Toggle(WindowDirectionalStrings.localized(l10n.language).title,
-                           isOn: $directionalEnabled)
-                        .onChange(of: directionalEnabled) { _, _ in service.syncWithPreferences() }
                     Text(WindowDirectionalStrings.localized(l10n.language).caption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    if directionalEnabled {
-                        ShortcutRecorderButton(shortcut: directionalKeyShortcut,
-                                               isEnabled: permissions.accessibility,
-                                               waitingTitle: l10n.s.shortcutPressKeys,
-                                               emptyTitle: directionalTrigger.displayString,
-                                               notCapturedAction: { directionalError = l10n.s.shortcutNotCaptured },
-                                               recordingChanged: { if $0 { directionalError = nil } },
-                                               captureModifiersAction: { saveDirectionalTrigger(.modifiers($0)) },
-                                               invalidAction: { directionalError = l10n.s.shortcutInvalid },
-                                               captureAction: saveDirectionalShortcut)
-                            .frame(width: 108)
+                    HStack {
+                        Text(WindowDirectionalStrings.localized(l10n.language).title)
+                        Spacer()
+                        CompactShortcutBindingRecorder(
+                            recordingID: "window-layout-directional",
+                            shortcut: directionalDisplayShortcut,
+                            isEnabled: permissions.accessibility,
+                            width: 140,
+                            emptyTitle: directionalEnabled ? directionalTrigger.displayString : l10n.s.shortcutNone,
+                            canClear: directionalEnabled,
+                            canReset: true,
+                            captureModifiers: { saveDirectionalTrigger(.modifiers($0)) },
+                            errorText: $directionalError,
+                            onClear: {
+                                directionalEnabled = false
+                                service.syncWithPreferences()
+                            },
+                            onReset: { saveDirectionalShortcut(.windowDirectionalDefault) },
+                            onCapture: saveDirectionalShortcut)
                         if let directionalError {
                             Text(directionalError)
                                 .font(.caption)
@@ -177,18 +173,10 @@ struct WindowLayoutSettings: View {
                 // The pointer moves without Accessibility, so this sits outside
                 // the window shortcuts toggle and works before that grant.
                 Section {
-                    Toggle(PointerDisplayStrings.localized(l10n.language).title,
-                           isOn: $pointerDisplayEnabled)
-                        .onChange(of: pointerDisplayEnabled) { _, _ in
-                            // Also syncs the pointer key, and starts or stops
-                            // watching app switches for Ignore apps.
-                            service.syncWithPreferences()
-                        }
                     Text(PointerDisplayStrings.localized(l10n.language).caption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     ShortcutPreferenceRow(role: .pointerNextDisplay,
-                                          isEnabled: pointerDisplayEnabled,
                                           additionalConflict: {
                                               service.shortcutConflictTitle($0)
                                           }) {
@@ -204,13 +192,14 @@ struct WindowLayoutSettings: View {
                 Section {
                     Toggle(l10n.s.dockClickCycleWindows, isOn: $dockClickCycleWindows)
                         .onChange(of: dockClickCycleWindows) { _, _ in
-                            DockClickService.shared.syncWithPreferences()
+                            FeatureRuntime.shared.sync([.dockClick])
                         }
                     Text(l10n.s.dockClickCycleWindowsCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
+                Section { WindowLayoutShortcutActivation() }
                 placementSections
 
                 Section(text.other) {
@@ -242,16 +231,11 @@ struct WindowLayoutSettings: View {
         Section {
             Toggle(l10n.s.windowMaximizeName, isOn: $maximizeEnabled)
                 .onChange(of: maximizeEnabled) { _, _ in
-                    WindowMaximizer.shared.syncWithPreferences()
+                    FeatureRuntime.shared.sync([.windowMaximizer])
                 }
             Text(l10n.s.windowMaximizeCaption)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            if maximizeEnabled, maximizer.isRunning {
-                Label(l10n.s.windowMaximizeActiveNow, systemImage: "checkmark.circle.fill")
-                    .font(.caption)
-                    .foregroundStyle(.green)
-            }
             WindowMaximizerExclusionsList()
         }
         .settingsFormSectionAnchor(.windowMaximizer)
@@ -261,9 +245,9 @@ struct WindowLayoutSettings: View {
         WindowDirectionalTrigger(storageValue: directionalShortcutRaw) ?? .key(.windowDirectionalDefault)
     }
 
-    private var directionalKeyShortcut: GlobalShortcut {
-        if case .key(let shortcut) = directionalTrigger { return shortcut }
-        return .windowDirectionalDefault
+    private var directionalDisplayShortcut: GlobalShortcut? {
+        guard directionalEnabled, case .key(let shortcut) = directionalTrigger else { return nil }
+        return shortcut
     }
 
     private func saveDirectionalShortcut(_ shortcut: GlobalShortcut) {
@@ -277,6 +261,7 @@ struct WindowLayoutSettings: View {
     private func saveDirectionalTrigger(_ trigger: WindowDirectionalTrigger) {
         directionalError = nil
         directionalShortcutRaw = trigger.storageValue
+        directionalEnabled = true
         service.syncWithPreferences()
     }
 
@@ -386,7 +371,7 @@ struct WindowLayoutSettings: View {
                               title: title(for: action),
                               symbol: symbol(for: action),
                               applyEnabled: permissions.accessibility,
-                              shortcutEnabled: shortcutsEnabled && permissions.accessibility)
+                              shortcutEnabled: permissions.accessibility)
     }
 
     private func title(for action: WindowLayoutAction) -> String {
@@ -419,6 +404,7 @@ struct WindowLayoutSettings: View {
 
 private struct WindowLayoutActionRow: View {
     @ObservedObject private var l10n = L10n.shared
+    @AppStorage(DefaultsKey.windowLayoutShortcutsEnabled) private var actionsEnabled = true
     let action: WindowLayoutAction
     let title: String
     let symbol: String
@@ -455,47 +441,24 @@ private struct WindowLayoutActionRow: View {
                     Label(title, systemImage: symbol)
                 }
                 .disabled(!applyEnabled)
-                Spacer()
-                ShortcutRecorderButton(shortcut: pendingTakeOver
-                                           ?? shortcut
-                                           ?? action.defaultShortcut
-                                           ?? .windowLayoutLeftDefault,
-                                       isEnabled: shortcutEnabled,
-                                       waitingTitle: l10n.s.shortcutPressKeys,
-                                       emptyTitle: pendingTakeOver == nil && shortcut == nil ? l10n.s.shortcutNone : nil,
-                                       clearAction: clear,
-                                       notCapturedAction: { errorText = l10n.s.shortcutNotCaptured },
-                                       recordingChanged: { recording in
-                                           isRecording = recording
-                                           if recording {
-                                               errorText = nil
-                                               pendingTakeOver = nil
-                                           }
-                                       },
-                                       invalidAction: { errorText = l10n.s.shortcutInvalid },
-                                       captureAction: save)
-                    .frame(width: 108)
-                    .disabled(!shortcutEnabled)
-                Button {
-                    clear()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .symbolRenderingMode(.hierarchical)
+                if !actionsEnabled, shortcut != nil {
+                    Text(FeatureStrings.shortcuts(l10n.language).inactive)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
-                .disabled(!shortcutEnabled || shortcut == nil)
-                .help(l10n.s.shortcutClear)
-                .accessibilityLabel(l10n.s.shortcutClear)
-                Button(l10n.s.shortcutReset) {
-                    rawValue = action.defaultShortcut?.storageValue
-                        ?? WindowLayoutAction.clearedShortcutStorageValue
-                    errorText = nil
-                    pendingTakeOver = nil
-                    SystemShortcutTakeover.setTakeOver(action.shortcutKey, false)
-                    WindowLayoutService.shared.syncWithPreferences()
-                }
-                .disabled(!shortcutEnabled || shortcut == action.defaultShortcut)
+                Spacer()
+                CompactShortcutBindingRecorder(
+                    recordingID: "window-layout-\(String(describing: action))",
+                    shortcut: pendingTakeOver ?? shortcut,
+                    isEnabled: shortcutEnabled,
+                    emptyTitle: l10n.s.shortcutNone,
+                    canClear: shortcut != nil,
+                    canReset: shortcut != action.defaultShortcut,
+                    errorText: $errorText,
+                    onClear: clear,
+                    onReset: reset,
+                    onCapture: save,
+                    onRecordingChange: { isRecording = $0 })
             }
             if let errorText {
                 Text(errorText)
@@ -510,10 +473,7 @@ private struct WindowLayoutActionRow: View {
                 SystemShortcutTakeOverOffer(
                     shortcut: pendingTakeOver,
                     onAccept: {
-                        rawValue = pendingTakeOver.storageValue
-                        SystemShortcutTakeover.setTakeOver(action.shortcutKey, true)
-                        self.pendingTakeOver = nil
-                        WindowLayoutService.shared.syncWithPreferences()
+                        save(pendingTakeOver, approvingSystemConflict: true)
                     },
                     onDismiss: {
                         self.pendingTakeOver = nil
@@ -531,38 +491,39 @@ private struct WindowLayoutActionRow: View {
     }
 
     private func clear() {
-        rawValue = WindowLayoutAction.clearedShortcutStorageValue
-        errorText = nil
-        pendingTakeOver = nil
-        SystemShortcutTakeover.setTakeOver(action.shortcutKey, false)
-        WindowLayoutService.shared.syncWithPreferences()
+        apply(WindowLayoutShortcutEditor.clear(action))
+    }
+
+    private func reset() {
+        if let shortcut = action.defaultShortcut { save(shortcut) }
+        else { clear() }
     }
 
     private func save(_ shortcut: GlobalShortcut) {
-        if let conflict = GlobalShortcutRole.conflict(for: shortcut, excluding: nil) {
-            errorText = String(format: l10n.s.shortcutConflictFormat, conflict.title(l10n.s))
-            return
-        }
-        if let conflict = WindowLayoutService.shared.shortcutConflictTitle(shortcut, excluding: action) {
-            errorText = String(format: l10n.s.shortcutConflictFormat, conflict)
-            return
-        }
-        // The offer is the last word on a combination: every other check has
-        // already passed, so accepting it writes exactly what a save writes.
-        switch SystemShortcutTakeoverSupport.recorderDecision(
-            shortcut: shortcut,
-            conflictsWithMacOS: SystemShortcutTakeover.conflictsWithMacOS(shortcut),
+        save(shortcut, approvingSystemConflict: false)
+    }
+
+    private func save(_ shortcut: GlobalShortcut, approvingSystemConflict: Bool) {
+        apply(WindowLayoutShortcutEditor.save(shortcut, for: action, language: l10n.language,
+            conflictsWithSystem: SystemShortcutTakeover.conflictsWithMacOS(shortcut),
             takenOver: SystemShortcutTakeover.isTakenOver(action.shortcutKey),
-            current: GlobalShortcut(storageValue: rawValue)) {
+            approveSystemConflict: approvingSystemConflict), offered: shortcut)
+    }
+
+    private func apply(_ result: WindowLayoutShortcutEditor.Result, offered: GlobalShortcut? = nil) {
+        switch result {
+        case .conflict(let message):
+            errorText = message
+            pendingTakeOver = nil
         case .offer:
-            pendingTakeOver = shortcut
+            pendingTakeOver = offered
             errorText = nil
-            return
-        case .save(let clearTakeOver):
-            rawValue = shortcut.storageValue
+        case .saved(let value, let takeOver):
+            rawValue = value
             errorText = nil
-            if clearTakeOver { SystemShortcutTakeover.setTakeOver(action.shortcutKey, false) }
+            pendingTakeOver = nil
+            SystemShortcutTakeover.setTakeOver(action.shortcutKey, takeOver)
+            WindowLayoutService.shared.syncWithPreferences()
         }
-        WindowLayoutService.shared.syncWithPreferences()
     }
 }

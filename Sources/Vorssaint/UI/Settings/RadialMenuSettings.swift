@@ -623,26 +623,21 @@ private struct ProfileShortcutRow: View {
             HStack {
                 Text(text.profileShortcutLabel)
                 Spacer()
-                ShortcutRecorderButton(
-                    shortcut: GlobalShortcut(storageValue: shortcutValue) ?? .radialMenuDefault,
+                CompactShortcutBindingRecorder(
+                    recordingID: "radial-profile-\(shortcutValue)",
+                    shortcut: GlobalShortcut(storageValue: shortcutValue),
                     isEnabled: isEnabled,
-                    waitingTitle: l10n.s.shortcutPressKeys,
-                    emptyTitle: shortcutValue.isEmpty ? l10n.s.shortcutNone : nil,
-                    clearAction: {
+                    width: 140,
+                    emptyTitle: l10n.s.shortcutNone,
+                    canClear: !shortcutValue.isEmpty,
+                    errorText: $message,
+                    onClear: {
                         shortcutValue = ""
                         message = nil
                         onChange()
                     },
-                    notCapturedAction: {
-                        message = l10n.s.shortcutNotCaptured
-                    },
-                    recordingChanged: { recording in
-                        if recording { message = nil }
-                    },
-                    invalidAction: {
-                        message = l10n.s.shortcutInvalid
-                    },
-                    captureAction: { newShortcut in
+                    onReset: {},
+                    onCapture: { newShortcut in
                         if let owner = conflictTitle(newShortcut) {
                             message = String(format: l10n.s.shortcutConflictFormat, owner)
                             return
@@ -650,9 +645,7 @@ private struct ProfileShortcutRow: View {
                         shortcutValue = newShortcut.storageValue
                         message = nil
                         onChange()
-                    }
-                )
-                .frame(width: 130)
+                    })
             }
             if let message {
                 Text(message)
@@ -803,7 +796,7 @@ private struct RadialItemEditor: View {
 
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.dismiss) private var dismiss
-    @State private var shortcutMessage: ShortcutMessage?
+    @State private var shortcutError: String?
     @State private var isFetchingFavicon = false
     @State private var faviconStatus: FaviconFetchStatus?
 
@@ -812,30 +805,12 @@ private struct RadialItemEditor: View {
         case error
     }
 
-    /// What the line under the form is saying about the shortcut field: the
-    /// calm hint while it listens, or the reason a press did not stick.
-    enum ShortcutMessage {
-        case hint(String)
-        case problem(String)
-
-        var text: String {
-            switch self {
-            case .hint(let text), .problem(let text): return text
-            }
-        }
-
-        var isProblem: Bool {
-            if case .problem = self { return true }
-            return false
-        }
-    }
-
     private var availableTools: [RadialMenuTool] {
         RadialMenuTool.allCases.filter { $0.isRunnable() }
     }
 
     private var availableQuickToggles: [RadialMenuQuickToggle] {
-        AppFeature.quickToggles.isAvailable ? RadialMenuQuickToggle.allCases : []
+        RadialMenuQuickToggle.allCases.filter { $0.feature.isAvailable }
     }
 
     private var urlIsInvalid: Bool {
@@ -889,11 +864,10 @@ private struct RadialItemEditor: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
-            if item.kind == .shortcut, let shortcutMessage {
-                Text(shortcutMessage.text)
+            if item.kind == .shortcut, let shortcutError {
+                Text(shortcutError)
                     .font(.caption)
-                    .foregroundStyle(shortcutMessage.isProblem ? AnyShapeStyle(.orange)
-                                                               : AnyShapeStyle(.secondary))
+                    .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if item.kind == .submenu {
@@ -946,7 +920,7 @@ private struct RadialItemEditor: View {
         Binding(get: { item.kind }, set: { kind in
             guard kind != item.kind else { return }
             item.kind = kind
-            shortcutMessage = nil
+            shortcutError = nil
             faviconStatus = nil
             if kind != .url { item.customIconData = nil }
             switch kind {
@@ -1022,30 +996,22 @@ private struct RadialItemEditor: View {
             }
         case .shortcut:
             LabeledContent(text.kindShortcut) {
-                ShortcutRecorderButton(shortcut: GlobalShortcut(storageValue: item.payload) ?? .radialMenuDefault,
-                                       isEnabled: true,
-                                       waitingTitle: l10n.s.shortcutPressKeys,
-                                       emptyTitle: item.payload.isEmpty ? l10n.s.shortcutNone : nil,
-                                       clearAction: {
-                                           item.payload = ""
-                                           shortcutMessage = nil
-                                       },
-                                       notCapturedAction: {
-                                           shortcutMessage = .problem(l10n.s.shortcutNotCaptured)
-                                       },
-                                       recordingChanged: { recording in
-                                           shortcutMessage = recording
-                                               ? .hint(ShortcutRecordingCaption.text(l10n.s, canClear: true))
-                                               : nil
-                                       },
-                                       invalidAction: {
-                                           shortcutMessage = .problem(l10n.s.shortcutInvalid)
-                                       },
-                                       captureAction: {
-                                           item.payload = $0.storageValue
-                                           shortcutMessage = nil
-                                       })
-                    .frame(width: 108)
+                CompactShortcutBindingRecorder(
+                    recordingID: "radial-item-shortcut",
+                    shortcut: GlobalShortcut(storageValue: item.payload),
+                    isEnabled: true,
+                    emptyTitle: l10n.s.shortcutNone,
+                    canClear: !item.payload.isEmpty,
+                    errorText: $shortcutError,
+                    onClear: {
+                        item.payload = ""
+                        shortcutError = nil
+                    },
+                    onReset: {},
+                    onCapture: {
+                        item.payload = $0.storageValue
+                        shortcutError = nil
+                    })
             }
         case .tool:
             Picker(text.toolLabel, selection: $item.payload) {

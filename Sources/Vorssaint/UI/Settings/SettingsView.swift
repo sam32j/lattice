@@ -58,11 +58,10 @@ struct SettingsView: View {
     @State private var searchQuery = ""
     @State private var activeSearchIndex: Int?
     @State private var directoryCache = SettingsDirectoryCache()
-    @State private var collapsedSectionIDs: Set<Int> = []
     @State private var navigationFromSidebar = false
+    @State private var detailIsScrolled = false
     /// The row just picked in the sidebar, until the router has taken it.
     @State private var sidebarPick: SettingsSidebarItem.ID?
-    @State private var columnVisibility = NavigationSplitViewVisibility.all
     @FocusState private var sidebarSearchFocused: Bool
 
     private struct SearchResultsSnapshot: Equatable {
@@ -144,124 +143,126 @@ struct SettingsView: View {
                     isAvailable: { features.isAvailable($0) }))
         }()
 
-        NavigationSplitView(columnVisibility: $columnVisibility) {
+        NavigationSplitView(columnVisibility: .constant(.all)) {
             sidebar(searchResults: searchResults)
-                .navigationSplitViewColumnWidth(min: 198, ideal: 210, max: 240)
+                .navigationSplitViewColumnWidth(min: SettingsSidebarConfiguration.width, ideal: SettingsSidebarConfiguration.width, max: SettingsSidebarConfiguration.width)
+                .background { Color(nsColor: SettingsSidebarConfiguration.backgroundColor).ignoresSafeArea(.container, edges: .top) }
         } detail: {
-            // NavigationSplitView's detail slot sometimes queries its content
-            // for an unconstrained ideal size (settling the divider, or on a
-            // page switch). `List` answers that with its full content height
-            // rather than a viewport size the way `ScrollView` does, and
-            // `.frame(maxHeight: .infinity)` only bounds a size it is given,
-            // not one it is asked to report - so a few hundred rows (Kill
-            // Process) grew the whole window. `GeometryReader` reports the
-            // real space it was actually given for normal layout, and ~zero
-            // when asked for an unconstrained ideal size, breaking the chain.
-            GeometryReader { geometry in
-                detail
+            // List-heavy pages must receive a viewport, not an unconstrained
+            // ideal height that can push their header outside the window.
+            SettingsDetailViewport {
+                scrollEdgeDetail
                     .settingsSectionFocus(for: router.page)
-                    .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
             }
+            .toolbar { settingsNavigationToolbar }
+            .toolbarBackground(detailIsScrolled ? .visible : .hidden, for: .windowToolbar)
+            .background(SettingsToolbarBackdrop(isScrolled: detailIsScrolled))
+            .background { Color(nsColor: .textBackgroundColor).ignoresSafeArea(.container, edges: .top) }
         }
         .navigationSplitViewStyle(.balanced)
-        .toolbar {
-            // SwiftUI adds its sidebar button only to windows it creates, and
-            // this one is AppKit's. Without it, a sidebar dragged shut could
-            // only be dragged back from a one-point strip at the window's
-            // edge, and a full-screen window could only peek at it.
-            ToolbarItem(placement: .navigation) {
-                let strings = SettingsNavigationStrings.localized(l10n.language)
-                let title = sidebarShown ? strings.hideSidebar : strings.showSidebar
-                Button(action: toggleSidebar) {
-                    Label(title, systemImage: "sidebar.left")
-                }
-                .keyboardShortcut("s", modifiers: [.control, .command])
-                .help(title)
-            }
-            ToolbarItemGroup(placement: .navigation) {
-                let strings = SettingsNavigationStrings.localized(l10n.language)
-                Button {
-                    router.goBack(isPageVisible: isPageVisible)
-                } label: {
-                    Label(strings.back, systemImage: "chevron.backward")
-                }
-                .disabled(!router.canGoBack(isPageVisible: isPageVisible))
-                .help(strings.back)
-
-                Button {
-                    router.goForward(isPageVisible: isPageVisible)
-                } label: {
-                    Label(strings.forward, systemImage: "chevron.forward")
-                }
-                .disabled(!router.canGoForward(isPageVisible: isPageVisible))
-                .help(strings.forward)
-            }
-        }
-        .frame(minWidth: 772, maxWidth: .infinity, minHeight: 528, maxHeight: .infinity)
+        .toolbar(removing: .sidebarToggle)
+        .toolbar(removing: defaultTitleItem)
+        .frame(minWidth: 772, maxWidth: 772, minHeight: 528, maxHeight: .infinity)
         .onAppear {
             ensureVisiblePage()
-            expandSelectedSection()
         }
         .onChange(of: features.revision) { _, _ in ensureVisiblePage() }
         .onChange(of: searchResults, initial: true) { previous, current in
             updateSearchSelection(previous: previous, current: current)
         }
         .onChange(of: router.requestID) { _, _ in
-            searchQuery = ""
-            activeSearchIndex = nil
             ensureVisiblePage()
+        }
+        .onChange(of: router.page) { _, _ in
+            if #available(macOS 15, *) { detailIsScrolled = false }
         }
     }
 
-    /// macOS 27 backs the pinned sidebar search field with a hard top scroll
-    /// edge, so rows fade out cleanly under it. On macOS 26 that effect does
-    /// not render inside split-view sidebars and the pinned field has no
-    /// backing of its own, so rows slid legibly across the placeholder
-    /// (issues #183, #254); there the field lives on a fixed header above the
-    /// list, where rows can never reach it. Earlier systems keep the classic
-    /// opaque sidebar chrome.
-    @ViewBuilder
-    private func sidebar(searchResults: SearchResultsSnapshot) -> some View {
-#if compiler(>=6.2)
-        if #available(macOS 27, *) {
-            sidebarList(searchResults: searchResults)
-                .searchable(text: $searchQuery,
-                            placement: .sidebar,
-                            prompt: l10n.s.settingsSearchPlaceholder)
-                .scrollEdgeEffectStyle(.hard, for: .top)
-        } else if #available(macOS 26, *) {
-            VStack(spacing: 0) {
-                SidebarSearchField(query: $searchQuery, isFocused: $sidebarSearchFocused)
-                sidebarList(searchResults: searchResults)
+    @ToolbarContentBuilder
+    private var settingsNavigationToolbar: some ToolbarContent {
+        ToolbarItemGroup(placement: .navigation) {
+            let strings = SettingsNavigationStrings.localized(l10n.language)
+            Button {
+                router.goBack(isPageVisible: isPageVisible)
+            } label: {
+                Label(strings.back, systemImage: "chevron.backward")
             }
+            .disabled(!router.canGoBack(isPageVisible: isPageVisible))
+            .help(strings.back)
+
+            Button {
+                router.goForward(isPageVisible: isPageVisible)
+            } label: {
+                Label(strings.forward, systemImage: "chevron.forward")
+            }
+            .disabled(!router.canGoForward(isPageVisible: isPageVisible))
+            .help(strings.forward)
+        }
+#if compiler(>=6.2)
+        if #available(macOS 26, *) {
+            ToolbarItem(placement: .navigation) {
+                toolbarTitle
+            }
+            .sharedBackgroundVisibility(.hidden)
         } else {
-            sidebarList(searchResults: searchResults)
-                .searchable(text: $searchQuery,
-                            placement: .sidebar,
-                            prompt: l10n.s.settingsSearchPlaceholder)
+            ToolbarItem(placement: .navigation) {
+                toolbarTitle
+            }
         }
 #else
-        sidebarList(searchResults: searchResults)
-            .searchable(text: $searchQuery,
-                        placement: .sidebar,
-                        prompt: l10n.s.settingsSearchPlaceholder)
+        ToolbarItem(placement: .navigation) {
+            toolbarTitle
+        }
 #endif
+    }
+
+    private var defaultTitleItem: ToolbarDefaultItemKind? {
+        if #available(macOS 15, *) { return .title }
+        return nil
+    }
+
+    private var toolbarTitle: some View {
+        Text(detailTitle)
+            .font(.system(size: 17, weight: .semibold))
+            .padding(.leading, 10)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    @ViewBuilder
+    private var scrollEdgeDetail: some View {
+#if compiler(>=6.2)
+        if #available(macOS 26, *) {
+            observedScrollDetail.scrollEdgeEffectStyle(.hard, for: .top)
+        } else {
+            observedScrollDetail
+        }
+#else
+        observedScrollDetail
+#endif
+    }
+
+    @ViewBuilder
+    private var observedScrollDetail: some View {
+        if #available(macOS 15, *) {
+            detail.onScrollGeometryChange(for: Bool.self) { geometry in
+                geometry.contentOffset.y + geometry.contentInsets.top > 0.5
+            } action: { _, isScrolled in
+                detailIsScrolled = isScrolled
+            }
+        } else {
+            detail.onAppear { detailIsScrolled = true }
+        }
+    }
+
+    private func sidebar(searchResults: SearchResultsSnapshot) -> some View {
+        sidebarList(searchResults: searchResults)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                SidebarSearchField(query: $searchQuery, isFocused: $sidebarSearchFocused)
+            }
     }
 
     private var hasSearchQuery: Bool {
         !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    /// A sidebar dragged shut reports `.detailOnly` here as well.
-    private var sidebarShown: Bool { columnVisibility != .detailOnly }
-
-    private func toggleSidebar() {
-        let next: NavigationSplitViewVisibility = sidebarShown ? .detailOnly : .all
-        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
-            columnVisibility = next
-        } else {
-            withAnimation { columnVisibility = next }
-        }
     }
 
     @ViewBuilder
@@ -275,6 +276,7 @@ struct SettingsView: View {
                 }
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
             .onChange(of: sidebarPick) { _, selectedID in routeSidebarPick(selectedID) }
             .onChange(of: activeSearchIndex) { _, index in
                 guard let index, searchResults.items.indices.contains(index) else { return }
@@ -292,7 +294,6 @@ struct SettingsView: View {
                 // pages clamp to where a fresh list starts, and a top anchor
                 // would leave the list's inset hidden.
                 guard !searching else { return }
-                expandSelectedSection()
                 DispatchQueue.main.async { scrollSidebarToSelection(proxy) }
             }
             .onChange(of: router.requestID) { _, _ in
@@ -301,11 +302,10 @@ struct SettingsView: View {
                 let fromSidebar = navigationFromSidebar
                 navigationFromSidebar = false
                 guard !fromSidebar else { return }
-                expandSelectedSection()
                 DispatchQueue.main.async { scrollSidebarToSelection(proxy) }
             }
             .background {
-                SearchKeyMonitor(customSearchFocused: sidebarSearchFocused) { keyCode in
+                SearchKeyMonitor(customSearchFocused: sidebarSearchFocused, focusSearch: { sidebarSearchFocused = true }) { keyCode in
                     handleSearchKey(keyCode, searchResults: searchResults.items)
                 }
             }
@@ -324,52 +324,29 @@ struct SettingsView: View {
         proxy.scrollTo(selected, anchor: .center)
     }
 
-    private func expandSelectedSection() {
-        guard let selected = selectedSidebarItem,
-              let section = sidebarSections.first(where: { section in
-                  section.items.contains(where: { $0.id == selected })
-              }) else { return }
-        collapsedSectionIDs.remove(section.id)
+    private var detailTitle: String {
+        sidebarItems.first { $0.id == selectedSidebarItem }?.title ?? l10n.s.settingsTitle
     }
 
     @ViewBuilder
     private var normalSidebarRows: some View {
-        let sections = sidebarSections
-        let items = directoryCache.items
-        let selectedID = SettingsSidebarSupport.selection(for: router.destination, in: items,
-                                                          preferredID: router.sidebarFeature.map { .feature($0) })
-        ForEach(sections) { section in
+        let selectedID = selectedSidebarItem
+        ForEach(sidebarSections) { section in
             Section {
-                if !collapsedSectionIDs.contains(section.id) {
-                    ForEach(section.items) { item in
-                        HStack(spacing: 9) {
-                            Image(systemName: item.icon)
-                                .foregroundStyle(selectedID == item.id
-                                    ? AnyShapeStyle(.primary) : AnyShapeStyle(.tint))
-                                .frame(width: 18)
-                            Text(item.title)
-                        }
-                        .tag(item.id)
-                        .id(item.id)
-                        .help(item.title)
+                ForEach(section.items) { item in
+                    HStack(spacing: 9) {
+                        Image(systemName: item.icon)
+                            .foregroundStyle(selectedID == item.id
+                                ? AnyShapeStyle(.primary) : AnyShapeStyle(.tint))
+                            .frame(width: 18)
+                        Text(item.title)
                     }
+                    .tag(item.id)
+                    .id(item.id)
+                    .help(item.title)
                 }
             } header: {
-                Button {
-                    if !collapsedSectionIDs.insert(section.id).inserted {
-                        collapsedSectionIDs.remove(section.id)
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: collapsedSectionIDs.contains(section.id)
-                            ? "chevron.right" : "chevron.down")
-                            .font(.system(size: 9, weight: .semibold))
-                            .frame(width: 12)
-                        Text(section.title)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
+                Text(section.title)
             }
         }
     }
@@ -390,6 +367,7 @@ struct SettingsView: View {
         let selectionIndex = searchResults.items.firstIndex { $0.id == suggestion.id }
         let isSelected = selectionIndex == activeSearchIndex
         return Button {
+            if let selectionIndex { activeSearchIndex = selectionIndex }
             requestSearchItem(suggestion)
         } label: {
             Label(group.pageItem.title, systemImage: group.pageItem.icon)
@@ -406,6 +384,7 @@ struct SettingsView: View {
         let selectionIndex = searchResults.items.firstIndex { $0.id == suggestion.id }
         let isSelected = selectionIndex == activeSearchIndex
         return Button {
+            if let selectionIndex { activeSearchIndex = selectionIndex }
             requestSearchItem(suggestion)
         } label: {
             Label(suggestion.title, systemImage: suggestion.icon)
@@ -458,6 +437,7 @@ struct SettingsView: View {
 
     private struct SearchKeyMonitor: NSViewRepresentable {
         var customSearchFocused: Bool
+        var focusSearch: () -> Void
         var handleKey: (UInt16) -> Bool
 
         func makeNSView(context: Context) -> NSView {
@@ -467,12 +447,13 @@ struct SettingsView: View {
         }
 
         func updateNSView(_ nsView: NSView, context: Context) {
+            context.coordinator.focusSearch = focusSearch
             context.coordinator.customSearchFocused = customSearchFocused
             context.coordinator.handleKey = handleKey
         }
 
         func makeCoordinator() -> Coordinator {
-            Coordinator(customSearchFocused: customSearchFocused, handleKey: handleKey)
+            Coordinator(customSearchFocused: customSearchFocused, focusSearch: focusSearch, handleKey: handleKey)
         }
 
         static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
@@ -481,10 +462,12 @@ struct SettingsView: View {
 
         final class Coordinator: NSObject {
             var customSearchFocused: Bool
+            var focusSearch: () -> Void
             var handleKey: (UInt16) -> Bool
             private var monitor: Any?
 
-            init(customSearchFocused: Bool, handleKey: @escaping (UInt16) -> Bool) {
+            init(customSearchFocused: Bool, focusSearch: @escaping () -> Void, handleKey: @escaping (UInt16) -> Bool) {
+                self.focusSearch = focusSearch
                 self.customSearchFocused = customSearchFocused
                 self.handleKey = handleKey
             }
@@ -493,11 +476,15 @@ struct SettingsView: View {
                 monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
                     [weak self, weak view] event in
                     guard let self, let view, let window = view.window,
-                          event.window === window,
-                          Self.isNavigationKey(event),
+                          event.window === window else { return event }
+                    if event.charactersIgnoringModifiers?.lowercased() == "f",
+                       event.modifierFlags.intersection([.command, .control, .option, .shift]) == .command {
+                        focusSearch()
+                        return nil
+                    }
+                    guard customSearchFocused, Self.isNavigationKey(event),
                           let editor = window.firstResponder as? NSTextView,
                           editor.isFieldEditor,
-                          (customSearchFocused || Self.isSidebarSearchEditor(editor, near: view)),
                           !editor.hasMarkedText() else { return event }
                     return handleKey(event.keyCode) ? nil : event
                 }
@@ -515,18 +502,11 @@ struct SettingsView: View {
                 return [UInt16(126), 125, 36, 76].contains(event.keyCode)
             }
 
-            private static func isSidebarSearchEditor(_ editor: NSTextView,
-                                                      near monitorView: NSView) -> Bool {
-                guard let searchField = editor.delegate as? NSSearchField else { return false }
-                let searchMidX = searchField.convert(searchField.bounds, to: nil).midX
-                let sidebarFrame = monitorView.convert(monitorView.bounds, to: nil)
-                return sidebarFrame.minX...sidebarFrame.maxX ~= searchMidX
-            }
+
         }
     }
 
     private func requestSearchItem(_ suggestion: SettingsSearchSuggestion) {
-        activeSearchIndex = nil
         let routed = SettingsSearchSupport.route(for: suggestion)
         router.request(routed.destination, targetFeature: routed.targetFeature,
                        sidebarFeature: suggestion.item.feature)
@@ -540,20 +520,9 @@ struct SettingsView: View {
             router.page = .features
             return
         }
-        guard router.destination.sectionAnchor != nil,
-              !sidebarItems.contains(where: { $0.destination == router.destination }) else { return }
-        switch router.page {
-        case .general:
-            // General stays visible when one of its tools is uninstalled.
-            router.request(FeatureSettingsDestination(.general), replacingVisit: true)
-        case .energy:
-            // Energy has no overview row. A history visit to an uninstalled
-            // tool should show another available tool, not an empty detail.
-            if let available = sidebarItems.first(where: { $0.destination.page == .energy }) {
-                router.request(available.destination, replacingVisit: true)
-            }
-        default:
-            break
+        if let fallback = SettingsSidebarSupport.fallbackDestination(
+            for: router.destination, in: sidebarItems) {
+            router.request(fallback, replacingVisit: true)
         }
     }
 
@@ -565,11 +534,9 @@ struct SettingsView: View {
     private var detail: some View {
         switch router.page {
         case .general:
-            if let anchor = router.destination.sectionAnchor,
-               [.panelConfiguration, .mixer, .soundOutputSwitcher,
-                .audioPriority, .musicBlocking].contains(anchor),
+            if router.destination.sectionAnchor == .panelConfiguration,
                sidebarItems.contains(where: { $0.destination == router.destination }) {
-                GeneralToolSettings(anchor: anchor)
+                GeneralToolSettings()
             } else {
                 GeneralSettings()
             }
@@ -584,743 +551,29 @@ struct SettingsView: View {
         case .mouse: MouseSettings()
         case .switcher: SwitcherSettings()
         case .dock: DockSettings()
-        case .keyDebounce: KeyboardDebounceSettings()
-        case .superKey: SuperKeySettings()
-        case .cutPaste: CutPasteSettings()
-        case .autoQuit: AutoQuitSettings()
-        case .quitProtection: QuitProtectionSettings()
+        case .keyboard: KeyboardSettings()
+        case .cutPaste: FinderSettings()
+        case .wallpaper: WallpaperSettings()
         case .uninstaller: UninstallerView()
         case .killProcess: KillProcessView()
         case .portManager: PortManagerView()
         case .urlCleaner: URLCleanerSettings()
-        case .cleaner: CleanerSettings()
+        case .cleaner: CleanerView()
         case .homebrew: HomebrewSettings()
         case .appUpdates: AppUpdatesSettings()
         case .media: MediaSettings()
         case .clipboard: ClipboardSettings()
-        case .quickTools: QuickToolsSettings()
+        case .audioInput: AudioInputSettings()
+        case .audioOutput: AudioOutputSettings()
+        case .scratchpad: ScratchpadSettings()
         case .screenshot: ScreenshotSettings()
         case .screenRecorder: ScreenRecorderSettings()
         case .windowLayout: WindowLayoutSettings()
         case .shelf: ShelfSettings()
         case .shortcuts: ShortcutsSettings()
-        case .advanced: AdvancedSettings()
+        case .dataPermissions: DataPermissionsSettings()
         case .about: AboutSettings()
-        case .releaseNotes: ReleaseNotesSettings()
-        case .support: SupportSettings()
         }
-    }
-}
-
-// MARK: - Updates
-
-struct UpdatesView: View {
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var updates = UpdateService.shared
-    @AppStorage(DefaultsKey.autoCheckUpdates) private var autoCheck = true
-    @AppStorage(DefaultsKey.includeBetaUpdates) private var includeBetas = AppInfo.isBeta
-
-    var body: some View {
-        Section(l10n.s.updatesSection) {
-            Toggle(l10n.s.autoCheckToggle, isOn: $autoCheck)
-                .onChange(of: autoCheck) { _, value in
-                    UpdateService.shared.autoCheckEnabled = value
-                }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Toggle(l10n.s.includeBetaUpdatesToggle, isOn: $includeBetas)
-                    .onChange(of: includeBetas) { _, value in
-                        UpdateService.shared.includeBetaUpdates = value
-                    }
-                SettingsCaptionText(l10n.s.includeBetaUpdatesCaption)
-            }
-
-            statusRow
-
-            HStack {
-                Button(l10n.s.checkNowButton) {
-                    updates.check(manual: true)
-                }
-                .disabled(isBusy)
-
-                if case .available = updates.state {
-                    Button(l10n.s.updateInstallButton) {
-                        appDelegate()?.showUpdatePreview()
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-            }
-
-            if let lastChecked = updates.lastChecked {
-                Text("\(l10n.s.updateLastChecked) \(Self.format(lastChecked))")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var statusRow: some View {
-        switch updates.state {
-        case .idle:
-            EmptyView()
-        case .checking:
-            label(l10n.s.updateChecking, system: "arrow.triangle.2.circlepath", tint: .secondary)
-        case .upToDate:
-            label(l10n.s.updateUpToDate, system: "checkmark.circle.fill", tint: .green)
-        case let .available(version):
-            label("\(l10n.s.updateAvailablePrefix) \(version)", system: "arrow.down.circle.fill", tint: .accentColor)
-        case let .downloading(progress):
-            if let progress {
-                label("\(l10n.s.updateDownloading) \(Int(progress * 100))%",
-                      system: "arrow.down.circle", tint: .secondary)
-            } else {
-                label(l10n.s.updateDownloading, system: "arrow.down.circle", tint: .secondary)
-            }
-        case .installing:
-            label(l10n.s.updateInstalling, system: "gearshape.2.fill", tint: .secondary)
-        case let .failed(reason):
-            label("\(l10n.s.updateFailedPrefix) \(reason)", system: "exclamationmark.triangle.fill", tint: .orange)
-        }
-    }
-
-    private func label(_ text: String, system: String, tint: Color) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: system).foregroundStyle(tint)
-            Text(text).font(.callout)
-            Spacer()
-        }
-    }
-
-    private var isBusy: Bool {
-        switch updates.state {
-        case .checking, .downloading, .installing: return true
-        default: return false
-        }
-    }
-
-    private static func format(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateStyle = .short
-        f.timeStyle = .short
-        return f.string(from: date)
-    }
-}
-
-// MARK: - About
-
-struct AboutSettings: View {
-    @ObservedObject private var l10n = L10n.shared
-
-    var body: some View {
-        Form {
-            Section {
-                aboutContent
-            }
-
-            UpdatesView()
-        }
-        .formStyle(.grouped)
-    }
-
-    private var aboutContent: some View {
-        VStack(spacing: 14) {
-            BrandBadge(size: 76)
-            VStack(spacing: 3) {
-                Text(AppInfo.name)
-                    .font(.title2.bold())
-                HStack(spacing: 6) {
-                    Text("\(l10n.s.versionPrefix) \(AppInfo.version)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if AppInfo.isBeta {
-                        Text(l10n.s.betaBadgeLabel)
-                            .font(.system(size: 9, weight: .bold))
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1.5)
-                            .background(Color.orange.opacity(0.18))
-                            .foregroundStyle(.orange)
-                            .clipShape(Capsule())
-                    }
-                }
-                if AppInfo.isDeveloperBuild, let commit = AppInfo.buildCommit {
-                    // Dev-only: which source commit this build came from. Never shipped.
-                    Text(commit)
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(.tertiary)
-                        .textSelection(.enabled)
-                }
-            }
-            Text(l10n.s.aboutDescription)
-                .font(.system(size: 12))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 12) {
-                Button(l10n.s.reviewIntro) {
-                    appDelegate()?.showOnboarding()
-                }
-                Button(l10n.s.reviewHighlights) {
-                    appDelegate()?.showUpdateHighlights(isReview: true)
-                }
-                Link(l10n.s.viewOnGitHub, destination: AppInfo.repositoryURL)
-            }
-            Text(AppInfo.copyright)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-    }
-}
-
-// MARK: - Release notes
-
-struct ReleaseNotesSettings: View {
-    @ObservedObject private var l10n = L10n.shared
-    @State private var selectedScope: Scope = .lattice
-
-    enum Scope: String, CaseIterable {
-        case lattice = "Lattice Features"
-        case upstream = "Upstream Base"
-    }
-
-    private var hasLatticeChangelog: Bool {
-        ReleaseNotes.bundledLatticeChangelog() != nil
-    }
-
-    private var activeNotes: ReleaseNotes {
-        if !hasLatticeChangelog {
-            return ReleaseNotes.currentUpstream
-        }
-        switch selectedScope {
-        case .lattice:
-            return ReleaseNotes.currentLattice
-        case .upstream:
-            return ReleaseNotes.currentUpstream
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(l10n.s.obWhatsNewTitle)
-                        .font(.title2.bold())
-                    Text(versionLine)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                if hasLatticeChangelog {
-                    Spacer()
-                    Picker("", selection: $selectedScope) {
-                        ForEach(Scope.allCases, id: \.self) { scope in
-                            Text(scope.rawValue).tag(scope)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 240)
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    if activeNotes.sections.isEmpty {
-                        fallbackNote
-                    } else {
-                        ForEach(Array(activeNotes.sections.enumerated()), id: \.offset) { _, section in
-                            releaseSection(section)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var versionLine: String {
-        let notes = activeNotes
-        if let date = notes.date {
-            return "v\(notes.version) · \(date)"
-        }
-        return "v\(notes.version)"
-    }
-
-    private var fallbackNote: some View {
-        HStack(alignment: .top, spacing: 9) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 18, alignment: .center)
-            Text(l10n.s.obWhatsNewFallback)
-                .font(.system(size: 12.5))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func releaseSection(_ section: ReleaseNoteSection) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            if !section.title.isEmpty {
-                Text(section.title.uppercased())
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.secondary)
-                    .tracking(1.2)
-            }
-            ForEach(Array(section.items.enumerated()), id: \.offset) { _, item in
-                releaseItem(item, sectionTitle: section.title)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func releaseItem(_ item: ReleaseNoteItem, sectionTitle: String) -> some View {
-        switch item {
-        case let .paragraph(text):
-            Text(text)
-                .font(.system(size: 12.8))
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
-        case let .bullet(text):
-            HStack(alignment: .top, spacing: 9) {
-                Image(systemName: iconName(for: sectionTitle))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-                    .frame(width: 18, alignment: .center)
-                Text(text)
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        case let .image(image):
-            if let nsImage = releaseNoteImage(image) {
-                Image(nsImage: nsImage)
-                    .resizable()
-                    .scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(.quaternary, lineWidth: 1)
-                    )
-                    .accessibilityLabel(image.alt)
-                    .padding(.leading, 27)
-            }
-        }
-    }
-
-    private func releaseNoteImage(_ image: ReleaseNoteImage) -> NSImage? {
-        var path = image.path
-        if let resourcesRange = path.range(of: "Resources/") {
-            path = String(path[resourcesRange.lowerBound...])
-        }
-        if path.hasPrefix("Resources/") {
-            path.removeFirst("Resources/".count)
-        }
-        let nsPath = path as NSString
-        let ext = nsPath.pathExtension
-        let name = (nsPath.deletingPathExtension as NSString).lastPathComponent
-        let directory = nsPath.deletingLastPathComponent
-        guard !name.isEmpty, !ext.isEmpty else { return nil }
-        let subdirectory = directory.isEmpty || directory == "." ? nil : directory
-        guard let url = Bundle.main.url(forResource: name,
-                                        withExtension: ext,
-                                        subdirectory: subdirectory) else { return nil }
-        return NSImage(contentsOf: url)
-    }
-
-    private func iconName(for title: String) -> String {
-        switch title.lowercased() {
-        case "added": return "plus.circle.fill"
-        case "changed": return "slider.horizontal.3"
-        case "fixed": return "checkmark.circle.fill"
-        default: return "circle.fill"
-        }
-    }
-}
-
-// MARK: - Support and community
-
-struct SupportSettings: View {
-    @ObservedObject private var l10n = L10n.shared
-    @Environment(\.openURL) private var openURL
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var donateThanksText: String {
-        let thanks = l10n.s.donateThanks
-        return colorScheme == .dark
-            ? thanks.replacingOccurrences(of: "🖤", with: "🤍")
-            : thanks
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 18) {
-                ZStack {
-                    Circle()
-                        .fill(Theme.spaceGradient)
-                        .frame(width: 78, height: 78)
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 29, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
-
-                VStack(spacing: 7) {
-                    Text(l10n.s.donateHeading)
-                        .font(.title2.bold())
-                        .multilineTextAlignment(.center)
-                    Text(l10n.s.donateMessage)
-                        .font(.system(size: 13.5))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: 460)
-                }
-
-                Button {
-                    openURL(AppInfo.coffeeURL)
-                } label: {
-                    Label(l10n.s.donateButton, systemImage: "cup.and.saucer.fill")
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-
-                HStack(alignment: .top, spacing: 14) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.yellow)
-                        .frame(width: 38, height: 38)
-                        .background(Circle().fill(Color.yellow.opacity(0.14)))
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(l10n.s.supportIntroStarMessage)
-                            .font(.system(size: 13.5, weight: .medium))
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Button {
-                            openURL(AppInfo.repositoryURL)
-                        } label: {
-                            Label(l10n.s.supportIntroStarButton, systemImage: "star.fill")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(16)
-                .frame(maxWidth: 510)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color(nsColor: .controlBackgroundColor))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Color(nsColor: .separatorColor).opacity(0.45))
-                )
-
-                HStack(alignment: .top, spacing: 14) {
-                    DiscordMark(width: 24)
-                        .frame(width: 38, height: 38)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color(red: 0.35, green: 0.40, blue: 0.94))
-                        )
-
-                    VStack(alignment: .leading, spacing: 7) {
-                        Text(l10n.s.discordIntroTitle)
-                            .font(.headline)
-                        Text(l10n.s.discordIntroMessage)
-                            .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        communityActions
-                            .padding(.top, 3)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(16)
-                .frame(maxWidth: 510)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color(nsColor: .controlBackgroundColor))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Color(nsColor: .separatorColor).opacity(0.45))
-                )
-
-                Text(donateThanksText)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 28)
-            .padding(.vertical, 26)
-        }
-    }
-
-    private var communityActions: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 9) {
-                discordButton
-                socialButton
-            }
-            VStack(alignment: .leading, spacing: 8) {
-                discordButton
-                socialButton
-            }
-        }
-    }
-
-    private var discordButton: some View {
-        Button {
-            openURL(AppInfo.discordURL)
-        } label: {
-            HStack(spacing: 8) {
-                DiscordMark(width: 19)
-                Text(l10n.s.discordIntroJoinButton)
-            }
-        }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .tint(Color(red: 0.35, green: 0.40, blue: 0.94))
-    }
-
-    private var socialButton: some View {
-        Button {
-            openURL(AppInfo.socialURL)
-        } label: {
-            HStack(spacing: 7) {
-                XLogoShape()
-                    .fill(Color.primary, style: FillStyle(eoFill: true))
-                    .frame(width: 12, height: 12)
-                Text(l10n.s.communityIntroFollowButton)
-            }
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.large)
-    }
-}
-
-// MARK: - Shared settings rows
-
-private struct SettingsCaptionText: View {
-    let text: String
-
-    init(_ text: String) {
-        self.text = text
-    }
-
-    var body: some View {
-        Text(text)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(nil)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-}
-
-// MARK: - Shared permission row
-
-enum PermissionKind {
-    case accessibility
-    case screenRecording
-    case microphone
-}
-
-/// Status + actions for one TCC permission; shared by Settings and onboarding.
-struct PermissionRow: View {
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var permissions = Permissions.shared
-    @State private var pollingDemandID = UUID()
-    let kind: PermissionKind
-
-    private var granted: Bool {
-        switch kind {
-        case .accessibility: return permissions.accessibility
-        case .screenRecording: return permissions.screenRecording
-        case .microphone: return permissions.microphone == .granted
-        }
-    }
-
-    private var monitorsActivePermission: Bool {
-        switch kind {
-        case .accessibility, .screenRecording: return true
-        case .microphone: return false
-        }
-    }
-
-    private var name: String {
-        switch kind {
-        case .accessibility: return l10n.s.permissionAccessibility
-        case .screenRecording: return l10n.s.permissionScreenRecording
-        case .microphone:
-            return FeatureStrings.recorder(l10n.language).microphonePermissionName
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: granted ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                    .foregroundStyle(granted ? .green : .orange)
-                Text(name)
-                Spacer()
-                Text(granted ? l10n.s.permissionGranted : l10n.s.permissionMissing)
-                    .font(.caption)
-                    .foregroundStyle(granted ? .green : .orange)
-            }
-            if !granted {
-                HStack(spacing: 8) {
-                    Button(l10n.s.permissionRequest) {
-                        switch kind {
-                        case .accessibility:
-                            permissions.requestAccessibility()
-                        case .screenRecording:
-                            permissions.requestScreenRecording()
-                        case .microphone:
-                            permissions.requestMicrophone()
-                        }
-                    }
-                    Button(l10n.s.permissionOpenSettings) {
-                        switch kind {
-                        case .accessibility:
-                            permissions.openAccessibilitySettings()
-                        case .screenRecording:
-                            permissions.openScreenRecordingSettings()
-                        case .microphone:
-                            permissions.openMicrophoneSettings()
-                        }
-                    }
-                }
-                .controlSize(.small)
-            }
-        }
-        .onAppear {
-            if monitorsActivePermission {
-                permissions.setActivePermissionSurface(pollingDemandID, visible: true)
-            }
-        }
-        .onDisappear {
-            permissions.setActivePermissionSurface(pollingDemandID, visible: false)
-        }
-    }
-}
-
-/// Secure Event Input blocks every synthetic keystroke. Typing a snippet
-/// trigger then does nothing at all, while the snippet library and the
-/// Command Bar's typing actions beep; none of the four paths says what is
-/// wrong or who is holding it. This row is the only place the app explains
-/// that, and it names the holder when the session can attribute it.
-///
-/// Both call sites instantiate it only once secure input is on, and the
-/// snippets page waits for one of its own toggles as well, so the `.off`
-/// branch below is there to keep the switch exhaustive and for nothing else.
-/// What drives the feature is the polling demand on each page; see
-/// `SecureInputObservation`.
-struct SecureInputRow: View {
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var monitor = SecureInputMonitor.shared
-
-    var body: some View {
-        switch monitor.holder {
-        case .off:
-            EmptyView()
-        case .app(let name, _):
-            row(caption: String(format: l10n.s.secureInputHeldFormat, name)) {
-                Button(String(format: l10n.s.secureInputRevealFormat, name)) {
-                    monitor.revealHolder()
-                }
-                .controlSize(.small)
-            }
-        case .unattributed:
-            row(caption: l10n.s.secureInputUnattributed) { EmptyView() }
-        case .unknown:
-            row(caption: l10n.s.secureInputUnidentified) { EmptyView() }
-        }
-    }
-
-    private func row<Action: View>(caption: String,
-                                   @ViewBuilder action: () -> Action) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: "exclamationmark.circle.fill")
-                    .foregroundStyle(.orange)
-                Text(l10n.s.secureInputTitle)
-                Spacer()
-            }
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            action()
-        }
-    }
-}
-
-/// Keeps secure input polled for as long as the page is on screen and
-/// `isActive` holds, e.g. the snippets page only while one of its own
-/// toggles is on, since with both off nothing this row could report can
-/// show. The demand cannot live on `SecureInputRow`: nothing would
-/// register it until the state it reports had already been reached.
-private struct SecureInputObservation: ViewModifier {
-    let isActive: Bool
-    @State private var demandID = UUID()
-
-    func body(content: Content) -> some View {
-        content
-            .onAppear { SecureInputMonitor.shared.setObservingSurface(demandID, visible: isActive) }
-            .onDisappear { SecureInputMonitor.shared.setObservingSurface(demandID, visible: false) }
-            .onChange(of: isActive) { _, active in
-                SecureInputMonitor.shared.setObservingSurface(demandID, visible: active)
-            }
-    }
-}
-
-extension View {
-    func observesSecureInput(isActive: Bool = true) -> some View {
-        modifier(SecureInputObservation(isActive: isActive))
-    }
-}
-
-/// Search field for the macOS 26 sidebar, styled after the system pill.
-/// It sits on a fixed header outside the List, so scrolling rows can never
-/// cross it (issues #183, #254). Esc and the clear button empty the query,
-/// matching the system field.
-private struct SidebarSearchField: View {
-    @ObservedObject private var l10n = L10n.shared
-    @Binding var query: String
-    var isFocused: FocusState<Bool>.Binding
-
-    var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField(l10n.s.settingsSearchPlaceholder, text: $query)
-                .textFieldStyle(.plain)
-                .focused(isFocused)
-                .onExitCommand { query = "" }
-            if !query.isEmpty {
-                Button {
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(l10n.s.urlCleanerClearButton)
-            }
-        }
-        .padding(.vertical, 5)
-        .padding(.horizontal, 7)
-        .background(.quaternary.opacity(0.5), in: Capsule())
-        .padding(.horizontal, 10)
-        .padding(.top, 8)
-        .padding(.bottom, 4)
     }
 }
 

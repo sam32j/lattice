@@ -321,7 +321,8 @@ struct QuickTogglesList: View {
     }
 
     private func shortcutHint(_ role: GlobalShortcutRole) -> String? {
-        guard role.requiredEnableKeys.allSatisfy({ UserDefaults.standard.bool(forKey: $0) })
+        guard role.savedShortcut.isValid,
+              role.requiredEnableKeys.allSatisfy({ UserDefaults.standard.bool(forKey: $0) })
         else { return nil }
         return role.savedShortcut.displayString
     }

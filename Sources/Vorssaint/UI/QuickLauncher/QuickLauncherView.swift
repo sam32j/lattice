@@ -38,7 +38,7 @@ struct QuickLauncherView: View {
             if notchSize != nil, launcher.activeUtility == nil, launcher.isEditing {
                 editHint
             }
-            if let utility = launcher.activeUtility, utility.feature.isAvailable {
+            if let utility = launcher.activeUtility, utility.isAvailable() {
                 hostedUtility(utility)
             } else if launcher.visibleItems.isEmpty && !launcher.isEditing {
                 emptyState
@@ -187,8 +187,8 @@ struct QuickLauncherView: View {
                 .frame(width: 26, height: 26)
         }
         .buttonStyle(.plain)
-        .help(l10n.s.obBack)
-        .accessibilityLabel(l10n.s.obBack)
+        .help(l10n.s.navigationBack)
+        .accessibilityLabel(l10n.s.navigationBack)
     }
 
     /// Inside the island the tiles fill the rows its height allows and run
@@ -366,12 +366,14 @@ struct QuickLauncherView: View {
 
     private var footer: some View {
         HStack(spacing: 5) {
-            Image(systemName: "keyboard")
-                .font(.system(size: 8.5))
-                .foregroundStyle(.tertiary)
-            Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString)
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
-                .foregroundStyle(.tertiary)
+            if GlobalShortcutRole.quickLauncher.savedShortcut.isValid {
+                Image(systemName: "keyboard")
+                    .font(.system(size: 8.5))
+                    .foregroundStyle(.tertiary)
+                Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString)
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.tertiary)
+            }
             Spacer()
             Text("Esc")
                 .font(.system(size: 9, weight: .semibold, design: .rounded))

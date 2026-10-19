@@ -46,7 +46,6 @@ struct SwitcherSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(l10n.s.tabSwitcher).font(.title2.bold())
                     Text(pages.switcherDescription)
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -135,13 +134,11 @@ struct SwitcherSettings: View {
                 }
                 Divider()
                 ShortcutPreferenceRow(role: .switcher,
-                                      isEnabled: switcherEnabled,
                                       label: l10n.s.switcherShortcutHintApps,
                                       symbolName: "app.dashed") {
                     AppSwitcher.shared.syncWithPreferences()
                 }
                 ShortcutPreferenceRow(role: .switcherWindow,
-                                      isEnabled: switcherEnabled,
                                       label: l10n.s.switcherShortcutHintWindows,
                                       symbolName: "macwindow.on.rectangle") {
                     AppSwitcher.shared.syncWithPreferences()

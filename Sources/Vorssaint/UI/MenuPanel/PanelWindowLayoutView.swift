@@ -156,13 +156,11 @@ struct PanelWindowLayoutView: View {
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Toggle(text.shortcuts, isOn: $shortcutsEnabled)
-                .toggleStyle(.checkbox)
-                .controlSize(.small)
-                .font(.system(size: 10.5, weight: .medium))
-                .onChange(of: shortcutsEnabled) { _, _ in
-                    WindowLayoutService.shared.syncWithPreferences()
-                }
+            Button(text.shortcuts) {
+                SettingsRouter.shared.request(AppFeature.windowLayout.settingsDestination,
+                                              sidebarFeature: .windowLayout)
+                appDelegate()?.openSettingsWindow()
+            }
             if shortcutsEnabled {
                 Text(text.shortcutsCaption)
                     .font(.system(size: 9.5))

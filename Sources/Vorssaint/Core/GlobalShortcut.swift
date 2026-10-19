@@ -234,9 +234,17 @@ struct GlobalShortcut: Equatable, Hashable {
     // layer, matching how the system numbers its own capture keys.
     static let screenRecorderDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_5),
                                                       modifiers: [.control, .option, .command])
+    static let cleaningModeDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_C),
+                                                    modifiers: [.control, .option, .command, .shift])
 
-    static func saved(for key: String, fallback: GlobalShortcut) -> GlobalShortcut {
-        if let raw = UserDefaults.standard.string(forKey: key),
+    static func saved(for key: String, fallback: GlobalShortcut,
+                      in defaults: UserDefaults = .standard) -> GlobalShortcut {
+        // Absence preserves the installation default. An explicitly empty
+        // binding stays unassigned, including roles that share an enable flag.
+        if defaults.string(forKey: key) == "" {
+            return GlobalShortcut(keyCode: 65535, modifiers: [])
+        }
+        if let raw = defaults.string(forKey: key),
            let shortcut = GlobalShortcut(storageValue: raw) {
             return shortcut
         }
@@ -715,6 +723,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     case snippetLibrary
     case commandBar
     case screenRecorder
+    case cleaningMode
     case displayBrightnessDecrease
     case displayBrightnessIncrease
     case keyboardBrightnessDecrease
@@ -749,6 +758,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .snippetLibrary: return DefaultsKey.snippetLibraryShortcut
         case .commandBar: return DefaultsKey.commandBarShortcut
         case .screenRecorder: return DefaultsKey.recorderShortcut
+        case .cleaningMode: return DefaultsKey.cleaningModeShortcut
         case .displayBrightnessDecrease: return DefaultsKey.displayBrightnessDecreaseShortcut
         case .displayBrightnessIncrease: return DefaultsKey.displayBrightnessIncreaseShortcut
         case .keyboardBrightnessDecrease: return DefaultsKey.keyboardBrightnessDecreaseShortcut
@@ -783,6 +793,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .snippetLibrary: return .snippetLibraryDefault
         case .commandBar: return .commandBarDefault
         case .screenRecorder: return .screenRecorderDefault
+        case .cleaningMode: return .cleaningModeDefault
         case .displayBrightnessDecrease: return .displayBrightnessDecreaseDefault
         case .displayBrightnessIncrease: return .displayBrightnessIncreaseDefault
         case .keyboardBrightnessDecrease: return .keyboardBrightnessDecreaseDefault
@@ -842,6 +853,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .snippetLibrary: return FeatureStrings.snippets(L10n.shared.language).libraryTitle
         case .commandBar: return FeatureStrings.commandBar(L10n.shared.language).pageTitle
         case .screenRecorder: return FeatureStrings.recorder(L10n.shared.language).pageTitle
+        case .cleaningMode: return strings.cleaningMenuItem
         case .displayBrightnessDecrease:
             return FeatureStrings.brightness(L10n.shared.language).displayBrightnessDecrease
         case .displayBrightnessIncrease:
@@ -859,6 +871,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
                          isOn: (String) -> Bool = { UserDefaults.standard.bool(forKey: $0) },
                          isAvailable: (AppFeature) -> Bool = { $0.isAvailable },
                          includeInactive: Bool = false,
+                         shortcutForRole: (GlobalShortcutRole) -> GlobalShortcut = { $0.savedShortcut },
                          radialMenuShortcuts: () -> [GlobalShortcut] = { RadialMenuSupport.profileShortcuts() })
         -> GlobalShortcutRole? {
         let candidates = includeInactive
@@ -869,7 +882,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
             // The radial menu's role key only seeds the first wheel. Every
             // wheel registers its own combination, so those are the ones taken.
             if candidate == .radialMenu { return radialMenuShortcuts().contains(shortcut) }
-            return candidate.savedShortcut == shortcut
+            return shortcutForRole(candidate) == shortcut
         }
     }
 
@@ -903,6 +916,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .snippetLibrary: return [DefaultsKey.snippetLibraryEnabled]
         case .commandBar: return [DefaultsKey.commandBarShortcutEnabled]
         case .screenRecorder: return [DefaultsKey.recorderShortcutEnabled]
+        case .cleaningMode: return [DefaultsKey.cleaningModeEnabled, DefaultsKey.cleaningModeShortcutEnabled]
         case .displayBrightnessDecrease, .displayBrightnessIncrease:
             return [DefaultsKey.brightnessControlEnabled, DefaultsKey.displayBrightnessShortcutsEnabled]
         case .keyboardBrightnessDecrease, .keyboardBrightnessIncrease:
@@ -936,6 +950,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .snippetLibrary: return .textSnippets
         case .commandBar: return .commandBar
         case .screenRecorder: return .screenRecorder
+        case .cleaningMode: return .cleaningMode
         case .displayBrightnessDecrease, .displayBrightnessIncrease: return .brightness
         case .keyboardBrightnessDecrease, .keyboardBrightnessIncrease: return .brightness
         case .pointerNextDisplay: return .windowLayout
@@ -1002,7 +1017,8 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     static func activeRoles(isOn: (String) -> Bool,
                             isAvailable: (AppFeature) -> Bool = { _ in true }) -> [GlobalShortcutRole] {
         allCases.filter { role in
-            role.isAvailable(using: isAvailable) && role.requiredEnableKeys.allSatisfy(isOn)
+            role.isAvailable(using: isAvailable) && role.savedShortcut.isValid
+                && role.requiredEnableKeys.allSatisfy(isOn)
         }
     }
 

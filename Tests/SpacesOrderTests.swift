@@ -521,8 +521,6 @@ enum SpacesOrderTests {
                      && defaults.object(forKey: marker) == nil && !defaults.bool(forKey: enabled),
                      "a key removed while the feature was on is never turned off again")
 
-        let available = AppFeature.spacesOrder.availabilityKey
-        defaults.set(true, forKey: available)
         defaults.set(true, forKey: enabled)
         (hold, dock) = make(.off, marker: absent)
         suite.expect(!hold.letGoIfRearrangingReturned() && dock.events.isEmpty
@@ -557,13 +555,12 @@ enum SpacesOrderTests {
                          "the next launch never turns rearranging off over that choice (\(check))")
         }
         defaults.set(true, forKey: enabled)
-        defaults.set(false, forKey: available)
+        defaults.set(false, forKey: enabled)
         (hold, dock) = make(.on, marker: absent)
         suite.expect(!hold.letGoIfRearrangingReturned() && defaults.string(forKey: marker) == absent,
-                     "an uninstalled feature is left to its own sync, which restores or forgets")
+                     "an off control is left to its own sync, which restores or forgets")
 
         // The sync starts the watch, so the check needs no caller of its own.
-        defaults.set(true, forKey: available)
         defaults.set(true, forKey: enabled)
         (hold, dock) = make(.off, marker: absent)
         dock.changeAfterFirstRead = .on
@@ -648,11 +645,9 @@ enum SpacesOrderTests {
                      && dock.events.isEmpty && dock.value == .on,
                      "the check run off the main thread clears recovery on the service queue and publishes the toggle on main")
         defaults.removeObject(forKey: enabled)
-        defaults.removeObject(forKey: available)
 
         // A reply queued before an off/on cycle cannot erase the new hold,
         // even when the new marker has exactly the same string value.
-        defaults.set(true, forKey: available)
         defaults.set(true, forKey: enabled)
         (hold, dock) = make(.on, marker: on)
         let staleHold = hold
@@ -712,7 +707,6 @@ enum SpacesOrderTests {
 
         // A preference observer may synchronously request another sync while
         // the main-thread toggle publication still owns the generation guard.
-        defaults.set(true, forKey: available)
         defaults.set(true, forKey: enabled)
         (hold, dock) = make(.on, marker: on)
         let reentrantHold = hold
@@ -730,7 +724,6 @@ enum SpacesOrderTests {
                      && defaults.object(forKey: marker) == nil && dock.events.isEmpty,
                      "toggle publication allows a reentrant sync without losing recovery ownership or deadlocking")
         defaults.removeObject(forKey: enabled)
-        defaults.removeObject(forKey: available)
 
         // MARK: Managed settings
 
@@ -751,23 +744,21 @@ enum SpacesOrderTests {
             return defaults.string(forKey: marker) == expected
         }
         defaults.set(true, forKey: DefaultsKey.spacesOrderEnabled)
-        defaults.set(true, forKey: available)
         (hold, dock) = make(.absent)
         hold.syncWithPreferences()
         suite.expect(dock.signals.wait(timeout: .now() + 3) == .success
                      && dock.signals.wait(timeout: .now() + 3) == .success
                      && dock.events == ["write(false)", "restart"] && defaults.string(forKey: marker) == absent,
                      "an installed feature with its toggle on keeps Spaces in place")
-        defaults.set(false, forKey: available)
+        defaults.set(false, forKey: enabled)
         (hold, dock) = make(.off, marker: absent)
         hold.syncWithPreferences()
         suite.expect(dock.signals.wait(timeout: .now() + 3) == .success
                      && dock.signals.wait(timeout: .now() + 3) == .success
                      && waitForMarker(nil)
                      && dock.events == ["write(nil)", "restart"],
-                     "uninstalling the feature restores the setting even with its toggle still on")
+                     "turning the control off restores the system setting")
         defaults.removeObject(forKey: DefaultsKey.spacesOrderEnabled)
-        defaults.removeObject(forKey: available)
 
         SpacesOrderRequestContract.run(suite)
 
@@ -781,11 +772,6 @@ enum SpacesOrderTests {
                      && SettingsSectionAnchor.spacesOrder.page == .dock
                      && FeatureVisibilitySupport.features(for: .dock).contains(.spacesOrder),
                      "fixed Space order has its own card on the Dock page")
-        suite.expect(FeaturePreset.allCases.allSatisfy {
-                         !$0.features.contains(.spacesOrder)
-                             && !$0.enableKeys.contains(DefaultsKey.spacesOrderEnabled)
-                     },
-                     "no preset installs or turns on a feature that can restart the Dock")
         suite.expect(SettingsBackupSupport.machineStateKeys.isSuperset(of: [marker, restartPending])
                      && SettingsBackupSupport.exportKeys().isDisjoint(with: [marker, restartPending]),
                      "the restore marker and an owed restart belong to this Mac and never travel in a backup")

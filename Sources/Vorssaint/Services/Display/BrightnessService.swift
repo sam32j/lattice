@@ -1203,7 +1203,7 @@ final class BrightnessService: ObservableObject {
             let service = Unmanaged<BrightnessService>.fromOpaque(userInfo).takeUnretainedValue()
             return service.handleKeyEvent(type: type, event: event)
         }
-        guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap,
+        guard let tap = InputEventTap.create(tap: .cgSessionEventTap,
                                           place: .headInsertEventTap,
                                           options: .defaultTap,
                                           eventsOfInterest: CGEventMask(1 << systemDefined.rawValue),
@@ -1214,12 +1214,12 @@ final class BrightnessService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         keyTapSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
     }
 
     private func removeKeyTap() {
         guard let tap = keyTap else { return }
-        CGEvent.tapEnable(tap: tap, enable: false)
+        InputEventTap.enable(tap: tap, enable: false)
         if let keyTapSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), keyTapSource, .commonModes)
         }
@@ -1278,7 +1278,7 @@ final class BrightnessService: ObservableObject {
             swallowedKeyCodes.removeAll()
             return (functionKeyRunLoop, functionKeyTap, functionKeyThread != nil)
         }
-        if let tap = snapshot.tap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap = snapshot.tap { InputEventTap.enable(tap: tap, enable: false) }
         if let runLoop = snapshot.runLoop {
             CFRunLoopPerformBlock(runLoop, CFRunLoopMode.commonModes.rawValue) {
                 CFRunLoopStop(runLoop)
@@ -1303,7 +1303,7 @@ final class BrightnessService: ObservableObject {
             }
             let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
                 | CGEventMask(1 << CGEventType.keyUp.rawValue)
-            guard let tap = CGEvent.tapCreate(
+            guard let tap = InputEventTap.create(
                 tap: .cgSessionEventTap,
                 place: .headInsertEventTap,
                 options: .defaultTap,
@@ -1322,13 +1322,13 @@ final class BrightnessService: ObservableObject {
             let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
             keyThreadLock.withLock { functionKeyTap = tap }
             CFRunLoopAddSource(runLoop, source, .commonModes)
-            CGEvent.tapEnable(tap: tap, enable: true)
+            InputEventTap.enable(tap: tap, enable: true)
             if keyThreadLock.withLock({ shouldStopFunctionKeyThread }) {
-                CGEvent.tapEnable(tap: tap, enable: false)
+                InputEventTap.enable(tap: tap, enable: false)
             } else {
                 CFRunLoopRun()
             }
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFRunLoopRemoveSource(runLoop, source, .commonModes)
             CFMachPortInvalidate(tap)
             if clearFunctionKeyThread() { installFunctionKeyTap() }
@@ -1363,7 +1363,7 @@ final class BrightnessService: ObservableObject {
                 guard !inputTapsSuspended else { return false }
                 // Keep the lock through the enable so a main-thread suspend
                 // cannot disable the tap and then lose a race to re-enable it.
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
                 return false
             }
             if shouldSync {
@@ -1597,7 +1597,7 @@ final class BrightnessService: ObservableObject {
         guard !tapsAreSuspended() else { return Unmanaged.passUnretained(event) }
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if SessionActivity.shared.isActive, AXIsProcessTrusted(), let keyTap {
-                CGEvent.tapEnable(tap: keyTap, enable: true)
+                InputEventTap.enable(tap: keyTap, enable: true)
             } else {
                 DispatchQueue.main.async { [weak self] in self?.syncKeyTap() }
             }
