@@ -1437,7 +1437,10 @@ final class NotchService: ObservableObject {
         inside = windowHost?.containsHover(NSEvent.mouseLocation) == true
         installEventMonitors()
         syncVisibleConsumers()
-        if takeFocus { panel.makeKey() }
+        if takeFocus {
+            NSApp.activate(ignoringOtherApps: true)
+            panel.makeKey()
+        }
         if feedback, changesPresentation { provideHapticFeedback() }
         if closesCommandBar { commandBarDidClose() }
     }

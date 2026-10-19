@@ -1081,6 +1081,13 @@ enum ScreenshotFeatureTests {
                 && recentCapturePaletteCode.contains(
                     "NSWorkspace.shared.notificationCenter.removeObserver("),
                "a recent captures palette appears promptly and leaves when another app activates")
+        let panelRecentCapturesSource = (try? String(
+            contentsOfFile: "Sources/Vorssaint/UI/MenuPanel/PanelRecentCapturesView.swift",
+            encoding: .utf8)) ?? ""
+        suite.expect(!panelRecentCapturesSource.contains("style: .relative")
+                && panelRecentCapturesSource.contains("formattedCaptureTime")
+                && panelRecentCapturesSource.contains("islandCard"),
+               "recent captures in dynamic island do not track seconds and use redesigned cards")
         suite.expect(!ScreenshotSupport.captureAvailabilityChanged(
                     activeTools: [.screenshot, .recording],
                     availableTools: [.screenshot, .recording])
@@ -1373,7 +1380,8 @@ enum ScreenshotFeatureTests {
         // The island reads the same policy: whether it takes the keyboard and
         // whether a collapse closes the preview come from it, never a literal.
         suite.expect(quickPreviewCode.contains("takeFocus: presentationPolicy.takesFocus,")
-                && quickPreviewCode.contains("closeOnCollapse: presentationPolicy.closesOnCollapse,"),
+                && quickPreviewCode.contains("closeOnCollapse: presentationPolicy.closesOnCollapse,")
+                && quickPreviewCode.contains("if presentationPolicy.takesFocus {\n                NSApp.activate(ignoringOtherApps: true)"),
                "the island preview takes the keyboard and closes on collapse exactly as the presentation policy says")
         let makeKeyCount = quickPreviewCode.components(separatedBy: "makeKey").count - 1
         let panelMakeKeyCount = panelBody.components(separatedBy: "makeKey").count - 1

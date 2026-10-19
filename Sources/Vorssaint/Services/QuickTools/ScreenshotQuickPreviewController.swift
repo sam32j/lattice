@@ -146,6 +146,9 @@ final class ScreenshotQuickPreviewController {
             close: { [weak self] in self?.close() },
             hover: { [weak self] inside in self?.hoverChanged(inside) }) {
             shownInNotch = true
+            if presentationPolicy.takesFocus {
+                NSApp.activate(ignoringOtherApps: true)
+            }
             if let window = NotchService.shared.presentationWindow { installKeyMonitor(for: window) }
             finishShowing()
             return
