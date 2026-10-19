@@ -37,13 +37,13 @@ final class CompactShortcutCoordinator: ObservableObject {
         observeExits()
     }
 
-    func stopRecording(role: GlobalShortcutRole? = nil) {
-        guard role == nil ? activeRole != nil : activeRole == role else { return }
+    func stopRecording(role: GlobalShortcutRole) {
+        guard activeRole == role else { return }
         stopRecordingAll()
     }
 
-    func stopRecording(tool: ScreenshotSupport.Tool? = nil) {
-        guard tool == nil ? activeTool != nil : activeTool == tool else { return }
+    func stopRecording(tool: ScreenshotSupport.Tool) {
+        guard activeTool == tool else { return }
         stopRecordingAll()
     }
 

@@ -26,8 +26,6 @@ struct CompactShortcutRecorder: View {
     @ObservedObject private var coordinator = CompactShortcutCoordinator.shared
 
     let role: GlobalShortcutRole
-    let enabledKey: String
-    let isAvailable: Bool
     let includeInactiveConflicts: Bool
     let additionalConflict: (GlobalShortcut) -> String?
     var onChange: () -> Void = {}
@@ -41,13 +39,10 @@ struct CompactShortcutRecorder: View {
 
     init(role: GlobalShortcutRole,
          enabledKey: String,
-         isAvailable: Bool = true,
          includeInactiveConflicts: Bool = false,
          additionalConflict: @escaping (GlobalShortcut) -> String? = { _ in nil },
          onChange: @escaping () -> Void = {}) {
         self.role = role
-        self.enabledKey = enabledKey
-        self.isAvailable = isAvailable
         self.includeInactiveConflicts = includeInactiveConflicts
         self.additionalConflict = additionalConflict
         self.onChange = onChange
@@ -70,7 +65,7 @@ struct CompactShortcutRecorder: View {
         VStack(alignment: .trailing, spacing: 4) {
             CompactShortcutField(
                 shortcut: hasShortcut ? (pendingTakeOver ?? shortcut) : nil,
-                isEnabled: isAvailable,
+                isEnabled: true,
                 isRecording: isRecording,
                 pressedModifiers: pressedModifiers,
                 errorText: errorText,
@@ -78,8 +73,8 @@ struct CompactShortcutRecorder: View {
                 width: 140,
                 shakeAttempts: shakeAttempts,
                 onToggleRecording: toggleRecording,
-                onClear: isAvailable && hasShortcut ? clearShortcut : nil,
-                onReset: isAvailable && (!hasShortcut || isModifiedFromDefault) ? resetToDefault : nil)
+                onClear: hasShortcut ? clearShortcut : nil,
+                onReset: !hasShortcut || isModifiedFromDefault ? resetToDefault : nil)
             if let pendingTakeOver {
                 SystemShortcutTakeOverOffer(
                     shortcut: pendingTakeOver,

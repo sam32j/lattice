@@ -143,13 +143,11 @@ struct SwitcherSettings: View {
                 }
                 Divider()
                 ShortcutPreferenceRow(role: .switcher,
-                                      isEnabled: switcherEnabled,
                                       label: l10n.s.switcherShortcutHintApps,
                                       symbolName: "app.dashed") {
                     AppSwitcher.shared.syncWithPreferences()
                 }
                 ShortcutPreferenceRow(role: .switcherWindow,
-                                      isEnabled: switcherEnabled,
                                       label: l10n.s.switcherShortcutHintWindows,
                                       symbolName: "macwindow.on.rectangle") {
                     AppSwitcher.shared.syncWithPreferences()
