@@ -16,9 +16,6 @@ dist/
 
 # Local-only working notes
 AGENTS.md
-docs/specs/2026-10-17-shortcut-setting-overhaul/
-docs/specs/2026-10-18-settings-ergonomics/
-docs/specs/2026-10-18-settings-permission-cards/
 
 # macOS noise
 .DS_Store
