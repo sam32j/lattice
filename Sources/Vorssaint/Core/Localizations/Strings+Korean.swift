@@ -789,7 +789,7 @@ extension Strings {
         updateBannerAction: "업데이트",
         obStepMenuBarTitle: "메뉴 막대 지표",
         obStepMenuBarBody: "아이콘 옆에 표시할 항목을 선택하세요. 위 미리보기가 실시간으로 갱신됩니다.",
-        obStepMenuBarNote: "새로운 기능: 패널의 네트워크 및 전원 블록과 그래프입니다. 나중에 설정 › 모니터에서 모두 미세 조정할 수 있습니다.",
+        obStepMenuBarNote: "새로운 기능: 패널의 네트워크 및 전원 블록과 그래프입니다. 나중에 설정 › 활성 상태 보기에서 모두 미세 조정할 수 있습니다.",
         monitorMenuBarPresetLabel: "스타일",
         menuBarPresetReadable: "읽기 쉬움",
         menuBarPresetDense: "촘촘함",

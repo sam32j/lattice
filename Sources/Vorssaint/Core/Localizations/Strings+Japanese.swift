@@ -788,7 +788,7 @@ extension Strings {
         updateBannerAction: "アップデート",
         obStepMenuBarTitle: "メニューバーの計測値",
         obStepMenuBarBody: "アイコンの横に表示する項目を選びます。上のプレビューがリアルタイムで更新されます。",
-        obStepMenuBarNote: "新機能：パネルのネットワークと電源のブロック、そしてグラフ。すべて後から設定 › モニタで微調整できます。",
+        obStepMenuBarNote: "新機能：パネルのネットワークと電源のブロック、そしてグラフ。すべて後から設定 › アクティビティモニタで微調整できます。",
         monitorMenuBarPresetLabel: "スタイル",
         menuBarPresetReadable: "読みやすい",
         menuBarPresetDense: "高密度",

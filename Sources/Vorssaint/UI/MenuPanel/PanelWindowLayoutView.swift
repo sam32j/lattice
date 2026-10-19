@@ -159,6 +159,7 @@ struct PanelWindowLayoutView: View {
             Button(text.shortcuts) {
                 SettingsRouter.shared.request(AppFeature.windowLayout.settingsDestination,
                                               sidebarFeature: .windowLayout)
+                appDelegate()?.openSettingsWindow()
             }
             if shortcutsEnabled {
                 Text(text.shortcutsCaption)

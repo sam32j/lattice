@@ -788,7 +788,7 @@ extension Strings {
         updateBannerAction: "Aktualizovať",
         obStepMenuBarTitle: "Metriky v lište s ponukami",
         obStepMenuBarBody: "Vyberte, čo sa má zobraziť vedľa ikony. Náhľad vyššie sa aktualizuje naživo.",
-        obStepMenuBarNote: "Novinka: bloky Sieť a Napájanie a grafy v paneli. Všetko doladíte neskôr v Nastaveniach › Monitor.",
+        obStepMenuBarNote: "Novinka: bloky Sieť a Napájanie a grafy v paneli. Všetko doladíte neskôr v Nastaveniach › Monitor aktivity.",
         monitorMenuBarPresetLabel: "Štýl",
         menuBarPresetReadable: "Čitateľný",
         menuBarPresetDense: "Hustý",

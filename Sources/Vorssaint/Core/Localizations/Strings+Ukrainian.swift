@@ -761,7 +761,7 @@ extension Strings {
         updateBannerAction: "Оновити",
         obStepMenuBarTitle: "Метрики на смузі меню",
         obStepMenuBarBody: "Виберіть, що показувати біля значка. Прев’ю вище оновлюється наживо.",
-        obStepMenuBarNote: "Нове: блоки Мережа та Живлення, а також графіки в панелі. Усе це можна докладно налаштувати пізніше в Налаштування › Монітор.",
+        obStepMenuBarNote: "Нове: блоки Мережа та Живлення, а також графіки в панелі. Усе це можна докладно налаштувати пізніше в Налаштування › Монітор активності.",
         monitorMenuBarPresetLabel: "Стиль",
         menuBarPresetReadable: "Читабельний",
         menuBarPresetDense: "Щільний",

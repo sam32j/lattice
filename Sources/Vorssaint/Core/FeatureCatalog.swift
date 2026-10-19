@@ -291,6 +291,12 @@ extension AppFeature {
         }
     }
 
+    /// Permanent input controls remain discoverable when their switch is off.
+    /// Runtime availability still describes whether their behavior should run.
+    func isPresentInControls(in defaults: UserDefaults = .standard) -> Bool {
+        isMouseFeature || isKeyboardFeature || isAvailable(in: defaults)
+    }
+
     /// The feature's own enable keys; any one being true means the feature is
     /// engaged. Empty means the feature works on demand (a panel tile, a
     /// context-menu action), so being available already counts as engaged for

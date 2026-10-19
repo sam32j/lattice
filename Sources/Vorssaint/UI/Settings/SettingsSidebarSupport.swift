@@ -83,16 +83,9 @@ enum SettingsSidebarSupport {
         switch destination.page {
         case .general:
             return FeatureSettingsDestination(.general)
-        case .mouse:
-            return FeatureSettingsDestination(.mouse)
-        case .keyboard:
-            return FeatureSettingsDestination(.keyboard)
-        case .audioInput:
-            return FeatureSettingsDestination(.audioInput)
-        case .audioOutput:
-            return FeatureSettingsDestination(.audioOutput)
-        case .scratchpad:
-            return FeatureSettingsDestination(.scratchpad)
+        case .mouse, .keyboard, .audioInput, .audioOutput, .scratchpad:
+            return items.contains { $0.id == .page(destination.page) }
+                ? nil : FeatureSettingsDestination(destination.page)
         case .energy:
             return items.first { $0.destination.page == destination.page }?.destination
         default:

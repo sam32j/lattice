@@ -788,7 +788,7 @@ extension Strings {
         updateBannerAction: "更新",
         obStepMenuBarTitle: "菜单栏中的指标",
         obStepMenuBarBody: "选择图标旁要显示的内容。上方预览会实时更新。",
-        obStepMenuBarNote: "新增：面板中的网络和电源模块及图表。稍后可在设置 › 监视中细致调整。",
+        obStepMenuBarNote: "新增：面板中的网络和电源模块及图表。稍后可在设置 › 活动监视器中细致调整。",
         monitorMenuBarPresetLabel: "样式",
         menuBarPresetReadable: "易读",
         menuBarPresetDense: "密集",

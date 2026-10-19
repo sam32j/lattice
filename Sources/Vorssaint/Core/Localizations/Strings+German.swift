@@ -788,7 +788,7 @@ extension Strings {
         updateBannerAction: "Aktualisieren",
         obStepMenuBarTitle: "Werte in der Menüleiste",
         obStepMenuBarBody: "Wähle, was neben dem Symbol angezeigt wird. Die Vorschau oben aktualisiert sich live.",
-        obStepMenuBarNote: "Neu: Blöcke für Netzwerk und Energie sowie Diagramme im Panel. Stelle alles später unter Einstellungen › Überwachung fein ein.",
+        obStepMenuBarNote: "Neu: Blöcke für Netzwerk und Energie sowie Diagramme im Panel. Stelle alles später unter Einstellungen › Aktivitätsanzeige fein ein.",
         monitorMenuBarPresetLabel: "Stil",
         menuBarPresetReadable: "Lesbar",
         menuBarPresetDense: "Dicht",

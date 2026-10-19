@@ -789,7 +789,7 @@ extension Strings {
         updateBannerAction: "Обновить",
         obStepMenuBarTitle: "Метрики в строке меню",
         obStepMenuBarBody: "Выберите, что показывать рядом со значком. Превью выше обновляется вживую.",
-        obStepMenuBarNote: "Новое: блоки Сеть и Питание, а также графики в панели. Позже всё можно настроить в Настройки › Монитор.",
+        obStepMenuBarNote: "Новое: блоки Сеть и Питание, а также графики в панели. Позже всё можно настроить в Настройки › Мониторинг системы.",
         monitorMenuBarPresetLabel: "Стиль",
         menuBarPresetReadable: "Читаемый",
         menuBarPresetDense: "Плотный",

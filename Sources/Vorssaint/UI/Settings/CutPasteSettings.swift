@@ -96,7 +96,7 @@ struct CutPasteSettings: View {
                             .font(.caption)
                             .foregroundStyle(.orange)
                     } else if recordingRename {
-                        Text(ShortcutRecordingCaption.text(l10n.s, canClear: false))
+                        Text(ShortcutRecordingCaption.text(l10n.s, canClear: renameEnabled))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
