@@ -46,7 +46,7 @@ def write(name, text):
 
 
 def availability_declaration(path, prefix):
-    return declaration(path, prefix).replace(".feature.isAvailable", ".feature.isAvailable(in: ReviewDefaults.current)")
+    return declaration(path, prefix).replace(".feature.isAvailable", ".feature.isAvailable(in: ReviewDefaults.current)").replace(".isAvailable()", ".isAvailable(in: ReviewDefaults.current)")
 
 
 def main():
@@ -964,6 +964,7 @@ def main():
           + declaration("Sources/Vorssaint/Services/Notch/NotchWindowHost.swift", "final class NotchPanel:"))
     write("QuickTogglesAlert.swift", "import AppKit\nextension QuickTogglesAlertTests {\nfinal class Host: Fixture {\n"
           + declaration("Sources/Vorssaint/Services/QuickTools/QuickTogglesService.swift", "    func emptyTrash()")
+              .replace("QuickToggleAction.emptyTrash.feature.isAvailable", "available")
           + "}\n}\n")
     write("OverlayPanelDeclaration.swift", "import AppKit\n"
           + declaration("Sources/Vorssaint/UI/OverlayPanel.swift", "class OverlayPanel:"))
@@ -1454,7 +1455,7 @@ def main():
           + "final class Launcher {\nvar isEditing = false\nvar activeUtility: QuickLauncherItem?\n"
           + "var editingOptionsItem: QuickLauncherItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar presentationID = UUID()\n"
           + "var candidates: [QuickLauncherItem] = QuickLauncherItem.allCases\n"
-          + "var visibleItems: [QuickLauncherItem] { candidates.filter { $0.feature.isAvailable(in: ReviewDefaults.current) } }\n"
+          + "var visibleItems: [QuickLauncherItem] { candidates.filter { $0.isAvailable(in: ReviewDefaults.current) } }\n"
           + 'func hide() { events.append("hide") }\n'
           + availability_declaration(service, "    func run(_ item: QuickLauncherItem)")
           + declaration(service, "    func prepareForPresentation()")

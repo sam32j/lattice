@@ -26,7 +26,7 @@ enum AppFeature: String, CaseIterable {
     // Energy and display
     case keepAwake, brightness, extraBrightness, bluetoothSleep
     // Tools
-    case quickLauncher, quickToggles, colorPicker, screenOCR, cleaningMode, mediaTools,
+    case quickLauncher, colorPicker, screenOCR, cleaningMode, mediaTools,
          cleaner, uninstaller, homebrew, appUpdates, screenshot, cameraPreview, radialMenu, scratchpad,
          commandBar, screenRecorder, wallpaper, killProcess, portManager
     // Dynamic Island, then its extensions
@@ -113,7 +113,7 @@ extension AppFeature {
             return .sound
         case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep:
             return .energyDisplay
-        case .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .mediaTools,
+        case .quickLauncher, .colorPicker, .screenOCR, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .radialMenu,
              .commandBar, .screenRecorder, .killProcess, .portManager:
             return .tools
@@ -170,7 +170,6 @@ extension AppFeature {
         case .extraBrightness: return "sun.max.fill"
         case .bluetoothSleep: return "wave.3.right.circle"
         case .quickLauncher: return "wand.and.rays"
-        case .quickToggles: return "togglepower"
         case .colorPicker: return "eyedropper"
         case .screenOCR: return "text.viewfinder"
         case .cleaningMode: return "bubbles.and.sparkles"
@@ -384,7 +383,7 @@ extension AppFeature {
         case .bluetoothSleep: return [DefaultsKey.bluetoothSleepEnabled]
         case .cleaningMode: return [DefaultsKey.cleaningModeEnabled]
         case .windowLayout, .diskImageInstaller, .mixer, .micMute, .keepAwake,
-             .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .mediaTools,
+             .quickLauncher, .colorPicker, .screenOCR, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .scratchpad,
              .commandBar, .screenRecorder, .wallpaper, .killProcess, .portManager,
              .monitorCPU, .monitorGPU, .monitorMemory, .monitorNetwork, .monitorDisk, .monitorPower,
@@ -451,16 +450,13 @@ extension AppFeature {
         case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseNavigation, .mouseButtonShortcuts, .middleClick,
              .keyboardDebounce, .textSnippets, .superKey, .mouseClickDebounce,
              .dockClick, .windowMaximizer, .windowLayout,
-             .autoQuit, .quitWindowProtection, .cleaningMode, .pastePlain, .radialMenu,
-             // The bar reads other apps' menus and windows and types at the
-             // caret, all of it through Accessibility.
-             .commandBar:
+             .autoQuit, .quitWindowProtection, .cleaningMode, .pastePlain, .radialMenu:
             return [.accessibility]
+        // Accessibility powers menu/window actions; only Empty Trash asks Finder.
+        case .commandBar:
+            return [.accessibility, .automationFinder]
         case .finderCutPaste: return [.accessibility, .automationFinder]
         case .finderRename: return [.accessibility]
-        // Only emptying the Trash asks the Finder; every other quick toggle
-        // (dark mode included) works without a permission.
-        case .quickToggles: return [.automationFinder]
         case .switcher: return [.accessibility, .screenRecording]
         case .dockPreview: return [.accessibility, .screenRecording]
         case .screenOCR: return [.screenRecording]
@@ -567,7 +563,7 @@ extension AppFeature {
              .clipboardHistory, .pastePlain, .finderCutPaste, .finderRename, .shelf, .urlCleaner,
              .mixer, .soundOutputSwitcher, .micMute, .musicBlock,
              .keepAwake, .brightness, .extraBrightness, .bluetoothSleep,
-             .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .cleaningMode, .mediaTools,
+             .quickLauncher, .colorPicker, .screenOCR, .cleaningMode, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .radialMenu,
              .scratchpad, .commandBar, .screenRecorder,
              .notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories,
