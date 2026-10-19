@@ -14,7 +14,12 @@ enum QuickToggleAction: String, PanelOrderItem, Identifiable {
     var id: String { rawValue }
 
     var feature: AppFeature {
-        self == .micMute ? .micMute : .quickToggles
+        switch self {
+        case .darkMode, .keyboardLight, .displayOff: return .brightness
+        case .micMute: return .micMute
+        case .emptyTrash, .ejectDisks, .hiddenFiles, .desktopIcons, .lockScreen, .screenSaver:
+            return .commandBar
+        }
     }
 }
 
@@ -68,7 +73,7 @@ final class QuickTogglesService: ObservableObject {
     /// no Automation consent involved. The symbol is resolved lazily and
     /// guarded; without it the row reports the failure instead of crashing.
     func toggleDarkMode() {
-        guard available, beginRun(.darkMode) else { return }
+        guard QuickToggleAction.darkMode.feature.isAvailable, beginRun(.darkMode) else { return }
         guard let theme = Self.appearanceTheme else {
             finishRun(.darkMode, state: .failed)
             return
@@ -83,7 +88,7 @@ final class QuickTogglesService: ObservableObject {
     /// the Trash. Runs on the main thread up to the confirmation; the Apple
     /// Event goes to the work queue.
     func emptyTrash() {
-        guard available, states[.emptyTrash] != .running else { return }
+        guard QuickToggleAction.emptyTrash.feature.isAvailable, states[.emptyTrash] != .running else { return }
         let strings = FeatureStrings.quickToggles(L10n.shared.language)
         let alert = NSAlert()
         alert.alertStyle = .warning
@@ -128,7 +133,7 @@ final class QuickTogglesService: ObservableObject {
     /// monitor's "Eject all". Enumerated fresh on each click, so the action
     /// never keeps a disk list alive.
     func ejectAllDisks() {
-        guard available, beginRun(.ejectDisks) else { return }
+        guard QuickToggleAction.ejectDisks.feature.isAvailable, beginRun(.ejectDisks) else { return }
         workQueue.async {
             let volumes = Self.ejectableVolumeURLs()
             guard !volumes.isEmpty else {
@@ -157,7 +162,7 @@ final class QuickTogglesService: ObservableObject {
     /// resolved lazily and guarded; when it is unavailable the screen saver
     /// path stands in (with a password required, it locks too).
     func lockScreen() {
-        guard available else { return }
+        guard QuickToggleAction.lockScreen.feature.isAvailable else { return }
         if let lock = Self.lockScreenFunction {
             _ = lock()
         } else {
@@ -166,7 +171,7 @@ final class QuickTogglesService: ObservableObject {
     }
 
     func turnDisplayOff() {
-        guard available, beginRun(.displayOff) else { return }
+        guard QuickToggleAction.displayOff.feature.isAvailable, beginRun(.displayOff) else { return }
         workQueue.async {
             let result = Shell.run("/usr/bin/pmset", ["displaysleepnow"])
             self.finishRun(.displayOff, state: result.status == 0 ? nil : .failed)
@@ -174,7 +179,7 @@ final class QuickTogglesService: ObservableObject {
     }
 
     func startScreenSaver() {
-        guard available else { return }
+        guard QuickToggleAction.screenSaver.feature.isAvailable else { return }
         let url = URL(fileURLWithPath: "/System/Library/CoreServices/ScreenSaverEngine.app")
         NSWorkspace.shared.openApplication(at: url,
                                            configuration: NSWorkspace.OpenConfiguration())
@@ -204,10 +209,6 @@ final class QuickTogglesService: ObservableObject {
 
     // MARK: - Internals
 
-    private var available: Bool {
-        AppFeature.quickToggles.isAvailable
-    }
-
     private static func automationTarget(for action: QuickToggleAction) -> Permissions.AutomationTarget? {
         switch action {
         case .emptyTrash: return .finder
@@ -218,7 +219,7 @@ final class QuickTogglesService: ObservableObject {
     private func runAppleScript(_ action: QuickToggleAction,
                                 target: Permissions.AutomationTarget,
                                 source: String) {
-        guard available, beginRun(action) else { return }
+        guard action.feature.isAvailable, beginRun(action) else { return }
         workQueue.async {
             // Denied consent never re-prompts by itself: surface the grant
             // button instead of a silent failure. Undetermined runs straight
@@ -239,7 +240,7 @@ final class QuickTogglesService: ObservableObject {
     }
 
     private func toggleFinderFlag(_ action: QuickToggleAction, key: String, to value: Bool) {
-        guard available, beginRun(action) else { return }
+        guard action.feature.isAvailable, beginRun(action) else { return }
         workQueue.async {
             CFPreferencesSetAppValue(key as CFString,
                                      value as CFBoolean,

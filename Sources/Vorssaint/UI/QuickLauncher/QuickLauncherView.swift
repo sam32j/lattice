@@ -37,7 +37,7 @@ struct QuickLauncherView: View {
             if notchSize != nil, launcher.activeUtility == nil, launcher.isEditing {
                 editHint
             }
-            if let utility = launcher.activeUtility, utility.feature.isAvailable {
+            if let utility = launcher.activeUtility, utility.isAvailable() {
                 hostedUtility(utility)
             } else if launcher.visibleItems.isEmpty && !launcher.isEditing {
                 emptyState

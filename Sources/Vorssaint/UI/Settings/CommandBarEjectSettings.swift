@@ -8,7 +8,7 @@ struct CommandBarEjectSettings: View {
 
     var body: some View {
         let strings = FeatureStrings.quickToggles(l10n.language)
-        if AppFeature.quickToggles.isAvailable {
+        if AppFeature.commandBar.isAvailable {
             Section {
                 DiskExclusionsList()
             } header: {

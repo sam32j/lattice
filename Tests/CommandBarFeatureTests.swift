@@ -1446,8 +1446,8 @@ enum CommandBarFeatureTests {
                 && GlobalShortcutRole.commandBar.feature == .commandBar,
                "the command bar shortcut role gates on its toggle and feature")
         suite.expect(AppFeature.commandBar.group == .tools && AppFeature.commandBar.enabledKeys.isEmpty
-                && AppFeature.commandBar.permissions == [.accessibility],
-               "the command bar is an on-demand tool that reads and types through accessibility")
+                && AppFeature.commandBar.permissions == [.accessibility, .automationFinder],
+               "Command Bar declares Accessibility actions and its on-demand Finder Trash action")
         suite.expect(AppFeature.commandBar.energyProfile == .idle,
                "the command bar costs nothing while closed")
         suite.expect(pageVisible(.commandBar, available: [.commandBar])

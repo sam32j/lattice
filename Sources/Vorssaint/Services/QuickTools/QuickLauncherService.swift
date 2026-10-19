@@ -17,13 +17,20 @@ enum QuickLauncherItem: String, PanelOrderItem, Identifiable {
 
     var id: String { rawValue }
 
+    func isAvailable(in defaults: UserDefaults = .standard) -> Bool {
+        guard feature.isAvailable(in: defaults) else { return false }
+        return self != .toggles || [AppFeature.brightness, .commandBar, .micMute].contains {
+            $0.isAvailable(in: defaults)
+        }
+    }
+
     /// The hub feature behind the tile; off in the hub removes it from the
     /// grid, the hidden list and edit mode until it returns.
     var feature: AppFeature {
         switch self {
         case .keepAwake: return .keepAwake
         case .cleaner: return .cleaner
-        case .toggles: return .quickToggles
+        case .toggles: return .quickLauncher
         case .micMute: return .micMute
         case .screenOCR: return .screenOCR
         case .colorPicker: return .colorPicker
@@ -113,7 +120,7 @@ final class QuickLauncherService: ObservableObject {
 
     private var orderedItems: [QuickLauncherItem] {
         PanelLayout.itemOrder(QuickLauncherItem.self, key: DefaultsKey.quickLauncherItemOrder)
-            .filter { $0.feature.isAvailable }
+            .filter { $0.isAvailable() }
     }
 
     var itemOrderBinding: Binding<[QuickLauncherItem]> {
@@ -178,8 +185,8 @@ final class QuickLauncherService: ObservableObject {
     }
 
     func refreshAvailability() {
-        if let activeUtility, !activeUtility.feature.isAvailable { self.activeUtility = nil }
-        if let editingOptionsItem, !editingOptionsItem.feature.isAvailable { self.editingOptionsItem = nil }
+        if let activeUtility, !activeUtility.isAvailable() { self.activeUtility = nil }
+        if let editingOptionsItem, !editingOptionsItem.isAvailable() { self.editingOptionsItem = nil }
         clampSelection()
     }
 
@@ -269,7 +276,7 @@ final class QuickLauncherService: ObservableObject {
     }
 
     func run(_ item: QuickLauncherItem) {
-        guard !isEditing, item.feature.isAvailable else { return }
+        guard !isEditing, item.isAvailable() else { return }
         switch item {
         case .keepAwake:
             KeepAwakeManager.shared.toggle()
