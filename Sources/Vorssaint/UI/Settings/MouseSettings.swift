@@ -48,8 +48,6 @@ struct MouseSettings: View {
         FeatureStrings.mouseClickDebounce(l10n.language)
     }
 
-    private var hub: FeatureHubStrings { FeatureStrings.hub(l10n.language) }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -60,44 +58,23 @@ struct MouseSettings: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if !legendFeatures.isEmpty {
-                    legendCard
-                }
-                if AppFeature.scrollInverter.isAvailable || AppFeature.scrollHorizontal.isAvailable {
-                    scrollCard
-                        .settingsSectionAnchor(.scrollDirection, cornerRadius: 16)
-                }
-                if AppFeature.focusFollowsMouse.isAvailable {
-                    focusFollowsMouseCard
-                        .settingsSectionAnchor(.focusFollowsMouse, cornerRadius: 16)
-                }
-                if AppFeature.smoothScroll.isAvailable {
-                    smoothScrollCard
-                        .settingsSectionAnchor(.smoothScroll, cornerRadius: 16)
-                }
-                if AppFeature.linearScroll.isAvailable {
-                    linearScrollCard
-                        .settingsSectionAnchor(.linearScroll, cornerRadius: 16)
-                }
-                if AppFeature.mouseAcceleration.isAvailable {
-                    accelerationCard
-                        .settingsSectionAnchor(.mouseAcceleration, cornerRadius: 16)
-                }
-                if AppFeature.mouseNavigation.isAvailable {
-                    navigationCard
-                        .settingsSectionAnchor(.mouseNavigation, cornerRadius: 16)
-                }
-                if AppFeature.mouseButtonShortcuts.isAvailable {
-                    MouseButtonShortcutsSection()
-                }
-                if AppFeature.mouseClickDebounce.isAvailable {
-                    clickDebounceCard
-                        .settingsSectionAnchor(.mouseClickDebounce, cornerRadius: 16)
-                }
-                if AppFeature.middleClick.isAvailable {
-                    middleClickCard
-                        .settingsSectionAnchor(.middleClick, cornerRadius: 16)
-                }
+                scrollCard
+                    .settingsSectionAnchor(.scrollDirection, cornerRadius: 16)
+                focusFollowsMouseCard
+                    .settingsSectionAnchor(.focusFollowsMouse, cornerRadius: 16)
+                smoothScrollCard
+                    .settingsSectionAnchor(.smoothScroll, cornerRadius: 16)
+                linearScrollCard
+                    .settingsSectionAnchor(.linearScroll, cornerRadius: 16)
+                accelerationCard
+                    .settingsSectionAnchor(.mouseAcceleration, cornerRadius: 16)
+                navigationCard
+                    .settingsSectionAnchor(.mouseNavigation, cornerRadius: 16)
+                MouseButtonShortcutsSection()
+                clickDebounceCard
+                    .settingsSectionAnchor(.mouseClickDebounce, cornerRadius: 16)
+                middleClickCard
+                    .settingsSectionAnchor(.middleClick, cornerRadius: 16)
                 if accessibilityNoteVisible {
                     SettingsCard(title: l10n.s.permissionRequired) {
                         PermissionRow(kind: .accessibility)
@@ -114,103 +91,40 @@ struct MouseSettings: View {
         }
     }
 
-    // MARK: - Overview
 
-    /// The mouse features on this page, in page order, for the legend.
-    private var legendFeatures: [AppFeature] {
-        [.scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration,
-         .mouseNavigation, .mouseButtonShortcuts, .mouseClickDebounce, .middleClick]
-            .filter(\.isAvailable)
-    }
-
-    /// Whether the feature is switched on here, so the legend agrees with
-    /// the switches below.
-    private func isOn(_ feature: AppFeature) -> Bool {
-        switch feature {
-        case .scrollInverter: return invertVertical || invertHorizontal
-        case .scrollHorizontal: return horizontalScrollEnabled
-        case .focusFollowsMouse: return focusFollowsMouseEnabled
-        case .smoothScroll: return smoothScrollEnabled
-        case .linearScroll: return linearScrollEnabled
-        case .mouseAcceleration: return mouseAccelerationDisabled
-        case .mouseNavigation: return mouseNavigationEnabled
-        case .mouseButtonShortcuts: return mouseButtonShortcutsEnabled || spacesEnabled
-        case .mouseClickDebounce: return mouseClickDebounceEnabled
-        case .middleClick: return middleClickEnabled
-        default: return false
-        }
-    }
-
-    /// Every feature with a light for on or off; clicking one lands on its
-    /// card, centered and lit, the same way a search result does.
-    private var legendCard: some View {
-        SettingsCard {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 4)], alignment: .leading, spacing: 2) {
-                ForEach(legendFeatures, id: \.self) { feature in
-                    let on = isOn(feature)
-                    Button {
-                        SettingsRouter.shared.request(feature.settingsDestination,
-                                                      sidebarFeature: feature)
-                    } label: {
-                        HStack(spacing: 10) {
-                            Circle()
-                                .fill(on ? Color.accentColor : Color.secondary.opacity(0.35))
-                                .frame(width: 8, height: 8)
-                            Text(feature.hubTitle(l10n.s, hub: hub))
-                                .font(.callout)
-                                .foregroundStyle(on ? .primary : .secondary)
-                                .lineLimit(1)
-                            Spacer(minLength: 0)
-                            Image(systemName: "chevron.forward")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(.tertiary)
-                        }
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 8)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
 
     // MARK: - Scrolling
 
     private var scrollCard: some View {
         SettingsCard(title: l10n.s.scrollSection) {
-            if AppFeature.scrollInverter.isAvailable {
-                SettingsRow(symbol: "arrow.up.arrow.down", title: l10n.s.invertVerticalScroll) {
-                    Toggle(l10n.s.invertVerticalScroll, isOn: $invertVertical)
-                        .labelsHidden()
-                        .onChange(of: invertVertical) { _, _ in
-                            ScrollInverter.shared.syncWithPreferences()
-                            if scrollDirectionEnabled { permissions.requestAccessibility() }
-                        }
-                }
-                SettingsRow(symbol: "arrow.left.arrow.right", title: l10n.s.invertHorizontalScroll) {
-                    Toggle(l10n.s.invertHorizontalScroll, isOn: $invertHorizontal)
-                        .labelsHidden()
-                        .onChange(of: invertHorizontal) { _, _ in
-                            ScrollInverter.shared.syncWithPreferences()
-                            if scrollDirectionEnabled { permissions.requestAccessibility() }
-                        }
-                }
+            SettingsRow(symbol: "arrow.up.arrow.down", title: l10n.s.invertVerticalScroll) {
+                Toggle(l10n.s.invertVerticalScroll, isOn: $invertVertical)
+                    .labelsHidden()
+                    .onChange(of: invertVertical) { _, _ in
+                        ScrollInverter.shared.syncWithPreferences()
+                        if scrollDirectionEnabled { permissions.requestAccessibility() }
+                    }
             }
-            if AppFeature.scrollHorizontal.isAvailable {
-                SettingsRow(symbol: "arrow.left.and.right", title: l10n.s.scrollHorizontalName,
-                            caption: l10n.s.scrollHorizontalCaption) {
-                    Toggle(l10n.s.scrollHorizontalName, isOn: $horizontalScrollEnabled)
-                        .labelsHidden()
-                        .onChange(of: horizontalScrollEnabled) { _, _ in
-                            ScrollInverter.shared.syncWithPreferences()
-                            if scrollDirectionEnabled { permissions.requestAccessibility() }
-                        }
-                }
-                if horizontalScrollEnabled {
-                    modifierKeys
-                        .padding(.leading, settingsRowTextInset)
-                }
+            SettingsRow(symbol: "arrow.left.arrow.right", title: l10n.s.invertHorizontalScroll) {
+                Toggle(l10n.s.invertHorizontalScroll, isOn: $invertHorizontal)
+                    .labelsHidden()
+                    .onChange(of: invertHorizontal) { _, _ in
+                        ScrollInverter.shared.syncWithPreferences()
+                        if scrollDirectionEnabled { permissions.requestAccessibility() }
+                    }
+            }
+            SettingsRow(symbol: "arrow.left.and.right", title: l10n.s.scrollHorizontalName,
+                        caption: l10n.s.scrollHorizontalCaption) {
+                Toggle(l10n.s.scrollHorizontalName, isOn: $horizontalScrollEnabled)
+                    .labelsHidden()
+                    .onChange(of: horizontalScrollEnabled) { _, _ in
+                        ScrollInverter.shared.syncWithPreferences()
+                        if scrollDirectionEnabled { permissions.requestAccessibility() }
+                    }
+            }
+            if horizontalScrollEnabled {
+                modifierKeys
+                    .padding(.leading, settingsRowTextInset)
             }
             if scrollInversionEnabled, inverter.isRunning {
                 activeBadge(l10n.s.scrollActiveNow)
@@ -537,28 +451,25 @@ struct MouseSettings: View {
 
     // MARK: - State
 
-    /// Only features that are on AND still available can ask for the
-    /// permission note; a hub-disabled one no longer needs anything.
     private var accessibilityNoteVisible: Bool {
         let anyEngaged = scrollDirectionEnabled
-            || (focusFollowsMouseEnabled && AppFeature.focusFollowsMouse.isAvailable)
-            || (smoothScrollEnabled && AppFeature.smoothScroll.isAvailable)
-            || (linearScrollEnabled && AppFeature.linearScroll.isAvailable)
-            || (mouseNavigationEnabled && AppFeature.mouseNavigation.isAvailable)
+            || focusFollowsMouseEnabled
+            || smoothScrollEnabled
+            || linearScrollEnabled
+            || mouseNavigationEnabled
             || ((mouseButtonShortcutsEnabled || spacesEnabled)
                 && AppFeature.mouseButtonShortcuts.isAvailable)
-            || (mouseClickDebounceEnabled && AppFeature.mouseClickDebounce.isAvailable)
-            || (middleClickEnabled && AppFeature.middleClick.isAvailable)
+            || mouseClickDebounceEnabled
+            || middleClickEnabled
         return anyEngaged && !permissions.accessibility
     }
 
     private var scrollInversionEnabled: Bool {
-        AppFeature.scrollInverter.isAvailable && (invertVertical || invertHorizontal)
+        invertVertical || invertHorizontal
     }
 
     private var scrollDirectionEnabled: Bool {
-        scrollInversionEnabled
-            || (AppFeature.scrollHorizontal.isAvailable && horizontalScrollEnabled)
+        scrollInversionEnabled || horizontalScrollEnabled
     }
 
     private var smoothScrollStepBinding: Binding<Double> {

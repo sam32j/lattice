@@ -104,18 +104,18 @@ extension AppFeature {
         case .switcher, .dockPreview, .dockClick, .windowMaximizer, .windowLayout, .autoQuit, .spacesOrder:
             return .windowsDock
         case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts, .middleClick,
-             .keyboardDebounce, .textSnippets, .superKey, .quitWindowProtection, .mouseClickDebounce:
+             .keyboardDebounce, .superKey, .quitWindowProtection, .mouseClickDebounce, .cleaningMode:
             return .mouseKeyboard
         case .clipboardHistory, .pastePlain, .finderCutPaste, .finderRename, .shelf, .urlCleaner,
-             .diskImageInstaller:
+             .diskImageInstaller, .textSnippets, .scratchpad:
             return .clipboardFiles
         case .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock:
             return .sound
-        case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep:
+        case .keepAwake, .brightness, .extraBrightness, .wallpaper, .bluetoothSleep:
             return .energyDisplay
-        case .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .cleaningMode, .mediaTools,
+        case .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .radialMenu,
-             .scratchpad, .commandBar, .screenRecorder, .wallpaper, .killProcess, .portManager:
+             .commandBar, .screenRecorder, .killProcess, .portManager:
             return .tools
         case .notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories,
              .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch,
@@ -216,13 +216,73 @@ extension AppFeature {
 
     var isBeta: Bool { self == .fanControl || self == .killProcess }
 
-    /// Availability read straight from defaults. Existing features stay
-    /// available on update; explicit beta opt-ins may start unavailable.
+    var isMouseFeature: Bool {
+        switch self {
+        case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll,
+             .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts, .middleClick, .mouseClickDebounce:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var isKeyboardFeature: Bool {
+        switch self {
+        case .keyboardDebounce, .superKey, .quitWindowProtection, .cleaningMode:
+            return true
+        default:
+            return false
+        }
+    }
+
+    func isToggledOn(in defaults: UserDefaults = .standard) -> Bool {
+        switch self {
+        case .scrollInverter:
+            return defaults.bool(forKey: DefaultsKey.scrollInverterEnabled)
+                || defaults.bool(forKey: DefaultsKey.scrollInverterHorizontalEnabled)
+        case .scrollHorizontal:
+            return defaults.bool(forKey: DefaultsKey.scrollHorizontalEnabled)
+        case .focusFollowsMouse:
+            return defaults.bool(forKey: DefaultsKey.focusFollowsMouseEnabled)
+        case .smoothScroll:
+            return defaults.bool(forKey: DefaultsKey.smoothScrollEnabled)
+        case .linearScroll:
+            return defaults.bool(forKey: DefaultsKey.linearScrollEnabled)
+        case .mouseAcceleration:
+            return defaults.bool(forKey: DefaultsKey.mouseAccelerationDisabled)
+        case .mouseNavigation:
+            return defaults.bool(forKey: DefaultsKey.mouseNavigationEnabled)
+        case .mouseButtonShortcuts:
+            return defaults.bool(forKey: DefaultsKey.mouseButtonShortcutsEnabled)
+                || defaults.bool(forKey: DefaultsKey.mouseSpacesGestureEnabled)
+        case .middleClick:
+            return defaults.bool(forKey: DefaultsKey.middleClickEnabled)
+        case .mouseClickDebounce:
+            return defaults.bool(forKey: DefaultsKey.mouseClickDebounceEnabled)
+        case .keyboardDebounce:
+            return defaults.bool(forKey: DefaultsKey.keyboardDebounceEnabled)
+        case .superKey:
+            return defaults.bool(forKey: DefaultsKey.superKeyEnabled)
+        case .quitWindowProtection:
+            return defaults.bool(forKey: DefaultsKey.quitProtectionQuitEnabled)
+                || defaults.bool(forKey: DefaultsKey.quitProtectionCloseEnabled)
+        case .cleaningMode:
+            return (defaults.object(forKey: DefaultsKey.cleaningModeEnabled) as? Bool) ?? true
+        default:
+            return false
+        }
+    }
+
+    /// Input controls use their own switches; other features use installation
+    /// preferences, retaining existing installations across app updates.
     var isAvailable: Bool {
         isAvailable(in: .standard)
     }
 
     func isAvailable(in defaults: UserDefaults) -> Bool {
+        if isMouseFeature || isKeyboardFeature {
+            return isToggledOn(in: defaults)
+        }
         switch self {
         case .colorPicker, .screenOCR:
             return AppFeature.screenshot.isAvailable(in: defaults)
@@ -290,8 +350,9 @@ extension AppFeature {
         case .brightness: return [DefaultsKey.brightnessControlEnabled]
         case .extraBrightness: return [DefaultsKey.extraBrightnessEnabled]
         case .bluetoothSleep: return [DefaultsKey.bluetoothSleepEnabled]
+        case .cleaningMode: return [DefaultsKey.cleaningModeEnabled]
         case .windowLayout, .diskImageInstaller, .mixer, .micMute, .keepAwake,
-             .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .cleaningMode, .mediaTools,
+             .quickLauncher, .quickToggles, .colorPicker, .screenOCR, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .scratchpad,
              .commandBar, .screenRecorder, .wallpaper, .killProcess, .portManager,
              .monitorCPU, .monitorGPU, .monitorMemory, .monitorNetwork, .monitorDisk, .monitorPower,
@@ -317,6 +378,7 @@ extension AppFeature {
     /// Registered defaults are visible through `object(forKey:)`, so only the
     /// persistent domain can tell a fresh install from a saved off choice.
     func enableOnFirstInstall(in defaults: UserDefaults, savedValues: [String: Any]) {
+        guard !isMouseFeature && !isKeyboardFeature else { return }
         let choices = self == .windowLayout
             ? [DefaultsKey.windowLayoutShortcutsEnabled, DefaultsKey.windowDirectionalEnabled,
                DefaultsKey.pointerDisplayEnabled, DefaultsKey.windowEdgeSnapEnabled,
@@ -414,7 +476,9 @@ extension AppFeature {
     }
 
     static func hubFeatures(in group: FeatureGroup) -> [AppFeature] {
-        features(in: group).filter { $0 != .colorPicker && $0 != .screenOCR }
+        features(in: group).filter {
+            $0 != .colorPicker && $0 != .screenOCR && !$0.isMouseFeature && !$0.isKeyboardFeature
+        }
     }
 
     /// All features shown and counted as installable features in the Hub.
@@ -449,8 +513,6 @@ extension AppFeature {
     /// switcher and text snippets that feed the Command Bar.
     static let offeredWhenNeverSwitchedOn: [AppFeature] = [
         .dockPreview, .dockClick, .windowMaximizer, .autoQuit,
-        .scrollInverter, .linearScroll, .focusFollowsMouse, .mouseAcceleration, .mouseNavigation,
-        .mouseButtonShortcuts, .middleClick, .keyboardDebounce, .mouseClickDebounce, .superKey,
         .finderCutPaste,
     ]
 
@@ -464,14 +526,9 @@ extension AppFeature {
             isAvailable(feature)
                 && !feature.enabledKeys.isEmpty
                 && !feature.enabledKeys.contains(where: boolFor)
-                && !feature.enabledKeys.contains { isSaved($0) && !savedOnEveryMac.contains($0) }
+                && !feature.enabledKeys.contains { isSaved($0) }
         }
     }
-
-    /// Switches a launch migration saves on every Mac, the horizontal scroll
-    /// direction copying the vertical one, so a saved value there says
-    /// nothing about use. Only one that is on counts.
-    private static let savedOnEveryMac: Set<String> = [DefaultsKey.scrollInverterHorizontalEnabled]
 
     /// Whether a Mac that never chose this feature has it installed. Most
     /// people updating never saved an availability, so this list IS their

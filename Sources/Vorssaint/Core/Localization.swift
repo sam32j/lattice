@@ -274,10 +274,8 @@ struct Strings {
     let tabEnergy: String
     let tabMouse: String
     let tabSwitcher: String
-    let tabAdvanced: String
     let tabAbout: String
     let tabReleaseNotes: String
-    let releaseNotesOnUpdateToggle: String
     let minimalWindowPreviews: String
     let minimalWindowPreviewsCaption: String
     let previewSizeLabel: String
@@ -287,7 +285,6 @@ struct Strings {
     let settingsGroupFeatures: String
 
     // MARK: Settings — advanced
-    let advancedResetSection: String
     let advancedResetDescription: String
     let advancedClearButton: String
     let advancedCleared: String
@@ -309,7 +306,6 @@ struct Strings {
     let showCountdown: String
     let globalHotkeySection: String
     let hotkeyToggle: String
-    let hotkeyCaption: String
 
     // MARK: Settings — energy
     let sessionSection: String
@@ -350,8 +346,6 @@ struct Strings {
     let middleClickTapThreeFingers: String
     let middleClickTapFourFingers: String
     let middleClickTapCaption: String
-    let quickToolsTab: String
-    let quickToolShortcutToggle: String
     let ocrName: String
     let ocrCaption: String
     let ocrCopied: String
@@ -374,7 +368,6 @@ struct Strings {
     let pastePlainCaption: String
     let launcherName: String
     let launcherCaption: String
-    let launcherOpenNow: String
     let launcherEditHint: String
     let launcherEmptyState: String
     let launcherAddSection: String
@@ -822,11 +815,7 @@ struct Strings {
 
     // MARK: Settings — updates
     let updatesSection: String
-    let autoCheckToggle: String
-    let includeBetaUpdatesToggle: String
-    let includeBetaUpdatesCaption: String
     let betaBadgeLabel: String
-    let checkNowButton: String
     let updateChecking: String
     let updateUpToDate: String
     let updateAvailablePrefix: String  // + version
@@ -863,7 +852,6 @@ struct Strings {
     let versionPrefix: String
     let reviewIntro: String
     let reviewHighlights: String
-    let viewOnGitHub: String
 
     // MARK: Onboarding
     let obContinue: String
@@ -894,15 +882,9 @@ struct Strings {
     let obStepStatusBody: String
     let obStatusRecheck: String
     let obStepDoneTitle: String
-    let obStepDoneBody: String
-    let obDoneHint: String
-    let obWhatsNewTitle: String
     let obWhatsNewFallback: String
     let obLanguageUpdateTitle: String
     let obLanguageUpdateBody: String
-    let obPurposeTitle: String
-    let obPurposeBody: String
-    let obPurposeSkip: String
 
     // MARK: Settings — monitor / menu bar metrics
     let tabMonitor: String
@@ -1080,34 +1062,22 @@ struct Strings {
     let cleaningOverlayMouseHint: String
     let cleaningKeepScreenVisibleToggle: String
     let cleaningKeepScreenVisibleCaption: String
-    let cleaningStartNow: String
     let cleaningNeedsAxTitle: String
     let cleaningNeedsAxBody: String
 
     // MARK: Support / donate
-    let tabSupport: String
     let shortcutsPageCaption: String
     let shortcutsPageTitle: String
     let settingsSearchPlaceholder: String
-    let donateHeading: String
-    let donateMessage: String
-    let donateButton: String
     let donateThanks: String
     let supportIntroTitle: String
     let supportIntroMessage: String
     let supportIntroStarButton: String
-    let supportIntroStarMessage: String
     /// A quiet line under the donation button inviting a GitHub star instead.
     let supportIntroStarHint: String
     let supportIntroCoffeeButton: String
     let supportIntroLaterButton: String
     let supportIntroDoneButton: String
-    let discordIntroTitle: String
-    let discordIntroMessage: String
-    let discordIntroJoinButton: String
-    let communityIntroTitle: String
-    let communityIntroMessage: String
-    let communityIntroFollowButton: String
     let homebrewOfficialIntroTitle: String
     let homebrewOfficialIntroMessage: String
     let homebrewOfficialIntroInstallLabel: String
@@ -1133,14 +1103,12 @@ struct Strings {
     let shortcutPressKeys: String
     let shortcutEscapeHint: String
     let shortcutDeleteHint: String
-    let shortcutNotCaptured: String
     let shortcutConflictFormat: String
     let shortcutTakeOverOffer: String
     let shortcutTakeOverAction: String
     let shortcutTakeOverCaption: String
     let shortcutTakeOverDismiss: String
     let shortcutUnavailable: String
-    let shelfShortcutToggle: String
     let switcherUsageHintFormat: String
 
     // MARK: Media keys
@@ -1417,10 +1385,8 @@ extension Strings {
         tabEnergy: "Energia",
         tabMouse: "Mouse e Trackpad",
         tabSwitcher: "Alternador",
-        tabAdvanced: "Avançado",
         tabAbout: "Sobre",
         tabReleaseNotes: "Novidades",
-        releaseNotesOnUpdateToggle: "Mostrar novidades ao atualizar",
         minimalWindowPreviews: "Prévias minimalistas",
         minimalWindowPreviewsCaption: "Oculta títulos, botões e detalhes decorativos nas prévias do Dock e do alternador. A seleção continua visível.",
         previewSizeLabel: "Tamanho dos previews",
@@ -1428,16 +1394,15 @@ extension Strings {
         previewSizeLarge: "Grande",
         previewSizeXLarge: "Extra grande",
         settingsGroupFeatures: "Recursos",
-        advancedResetSection: "Permissões",
-        advancedResetDescription: "Remove todas as permissões que você concedeu ao Lattice (Acessibilidade, Gravação de Tela, Acesso Total ao Disco e outras), o item de início e a regra de tampa fechada. Útil para começar do zero ou antes de desinstalar. O app continua instalado.",
+        advancedResetDescription: "Redefinir todas as permissões do sistema.",
         advancedClearButton: "Limpar todas as permissões",
         advancedCleared: "Permissões limpas.",
         advancedClearFailed: "Não foi possível remover algumas permissões ou a regra de tampa fechada. Tente de novo e permita o pedido de senha, se ele aparecer.",
         advancedClearConfirmTitle: "Limpar todas as permissões?",
         advancedClearConfirmBody: "Os recursos que dependem de permissão vão parar de funcionar até você conceder de novo. As suas configurações são mantidas.",
-        advancedUninstallSection: "Desinstalar",
-        advancedUninstallDescription: "Faz tudo acima e ainda apaga as preferências e move o Lattice para a Lixeira, sem deixar rastro no sistema. O app fecha ao final. Você pode reinstalar quando quiser.",
-        advancedUninstallButton: "Desinstalar o Lattice completamente",
+        advancedUninstallSection: "Desinstalar Lattice",
+        advancedUninstallDescription: "Remova o Lattice e o arquivo de configuração do seu computador completamente.",
+        advancedUninstallButton: "Desinstalar o Lattice",
         advancedUninstallConfirmTitle: "Desinstalar o Lattice?",
         advancedUninstallConfirmBody: "O Lattice vai limpar as permissões, apagar as preferências e ir para a Lixeira, e então fechar. Esta ação não pode ser desfeita pelo app, mas ele fica na Lixeira até você esvaziá-la.",
         advancedUninstallFailedTitle: "A desinstalação parou",
@@ -1449,7 +1414,6 @@ extension Strings {
         showCountdown: "Mostrar tempo restante ao lado do ícone",
         globalHotkeySection: "Atalho global",
         hotkeyToggle: "Ativar atalho para “Manter acordado”",
-        hotkeyCaption: "Funciona em qualquer app, sem permissões extras.",
 
         sessionSection: "Sessão",
         defaultDurationLabel: "Duração padrão",
@@ -1488,8 +1452,6 @@ extension Strings {
         middleClickTapThreeFingers: "3 dedos",
         middleClickTapFourFingers: "4 dedos",
         middleClickTapCaption: "Um toque leve com esse número de dedos, sem pressionar, também dispara o clique do meio. Deslizar nunca conta. Se o toque de três dedos do macOS estiver atribuído à Busca, desative-o para os dois não abrirem juntos.",
-        quickToolsTab: "Painel rápido",
-        quickToolShortcutToggle: "Atalho global",
         ocrName: "Copiar texto da tela",
         ocrCaption: "Selecione uma área da tela e o texto reconhecido é copiado, pronto para colar.",
         ocrCopied: "Texto copiado",
@@ -1512,7 +1474,6 @@ extension Strings {
         pastePlainCaption: "Cola o que foi copiado sem cores, fontes ou formatação. O conteúdo original continua no clipboard.",
         launcherName: "Painel rápido",
         launcherCaption: "Um painel flutuante com suas ferramentas favoritas, aberto por atalho de qualquer lugar.",
-        launcherOpenNow: "Abrir painel rápido",
         launcherEditHint: "Use o botão de ajustes para escolher, ocultar e arrastar as ferramentas.",
         launcherEmptyState: "Todas as ferramentas estão ocultas. Use o botão de ajustes para trazê-las de volta.",
         launcherAddSection: "Adicionar de volta",
@@ -1942,11 +1903,7 @@ extension Strings {
         audioPriorityCaption: "Os dispositivos são selecionados por ordem de prioridade. Quando um dispositivo de maior prioridade é conectado, ele passa a ser usado. Quando o dispositivo ativo é desconectado, o próximo disponível é selecionado.",
 
         updatesSection: "Atualizações",
-        autoCheckToggle: "Procurar atualizações automaticamente",
-        includeBetaUpdatesToggle: "Receber atualizações beta",
-        includeBetaUpdatesCaption: "Versões beta incluem novidades em desenvolvimento e podem apresentar instabilidades ou comportamentos incompletos.",
         betaBadgeLabel: "Beta",
-        checkNowButton: "Procurar agora",
         updateChecking: "Procurando…",
         updateUpToDate: "Você está na versão mais recente.",
         updateAvailablePrefix: "Atualização disponível:",
@@ -1979,7 +1936,6 @@ extension Strings {
         versionPrefix: "Versão",
         reviewIntro: "Rever introdução",
         reviewHighlights: "Rever novidades",
-        viewOnGitHub: "Ver no GitHub",
 
         obContinue: "Continuar",
         obBack: "Voltar",
@@ -2009,17 +1965,11 @@ extension Strings {
         obStepStatusBody: "Confira se está tudo pronto para os recursos que você quer usar.",
         obStatusRecheck: "Verificar novamente",
         obStepDoneTitle: "Tudo pronto!",
-        obStepDoneBody: "O Lattice já está cuidando do seu Mac.",
-        obDoneHint: "Procure o buraco negro na barra de menus, no canto superior direito da tela.",
-        obWhatsNewTitle: "Novidades nesta versão",
         obWhatsNewFallback: "Esta atualização inclui as correções e melhorias mais recentes.",
         obLanguageUpdateTitle: "Agora no seu idioma",
         obLanguageUpdateBody: "O Lattice agora fala vários idiomas. Escolha o que você prefere usar; dá para mudar quando quiser nos Ajustes.",
-        obPurposeTitle: "O que te trouxe aqui?",
-        obPurposeBody: "Escolha uma configuração pronta ou marque exatamente o que quer usar.",
-        obPurposeSkip: "Você pode adicionar ou remover recursos depois nos Ajustes.",
 
-        tabMonitor: "Monitor",
+        tabMonitor: "Monitor de Atividade",
         monitorMenuBarSection: "Na barra de menus",
         monitorMenuBarCaption: "Escolha o que aparece ao lado do ícone na barra de menus.",
         monitorCombineTemperatures: "Combinar uso e temperatura",
@@ -2187,32 +2137,20 @@ extension Strings {
         cleaningOverlayMouseHint: "O mouse e o trackpad continuam funcionando",
         cleaningKeepScreenVisibleToggle: "Manter a tela visível",
         cleaningKeepScreenVisibleCaption: "Exibe um indicador discreto no canto da tela em vez de escurecer o conteúdo.",
-        cleaningStartNow: "Bloquear teclado agora",
         cleaningNeedsAxTitle: "Precisa de Acessibilidade",
         cleaningNeedsAxBody: "Para bloquear o teclado com segurança, o Lattice precisa da permissão de Acessibilidade. Conceda em Ajustes do Sistema e tente de novo.",
 
-        tabSupport: "Apoiar",
         shortcutsPageCaption: "Edite aqui todos os atalhos globais dos recursos instalados neste Mac. Os inativos continuam salvos, mas não funcionam.",
         shortcutsPageTitle: "Atalhos de teclado",
         settingsSearchPlaceholder: "Buscar ajustes",
-        donateHeading: "Ajude o Vorssaint a continuar crescendo",
-        donateMessage: "O Vorssaint é gratuito, independente e desenvolvido no meu tempo livre. Se você quiser contribuir financeiramente, o Buy Me a Coffee ajuda diretamente a manter o desenvolvimento avançando.",
-        donateButton: "Apoiar no Buy Me a Coffee",
         donateThanks: "Obrigado por estar aqui. 🖤",
         supportIntroTitle: "Ajude o Vorssaint a continuar crescendo",
         supportIntroMessage: "Se você quiser apoiar financeiramente o desenvolvimento, o Buy Me a Coffee é o único lugar para fazer isso.",
         supportIntroStarButton: "Dar uma estrela no GitHub",
-        supportIntroStarMessage: "Apoio financeiro nunca é esperado. Dar uma estrela no GitHub ajuda mais pessoas a encontrar o Vorssaint e faz uma diferença enorme no desenvolvimento.",
         supportIntroStarHint: "Uma estrela no GitHub também ajuda mais pessoas a conhecer o Vorssaint e significa muito.",
         supportIntroCoffeeButton: "Apoiar no Buy Me a Coffee",
         supportIntroLaterButton: "Agora não",
         supportIntroDoneButton: "Concluir",
-        discordIntroTitle: "A comunidade do Vorssaint no Discord está começando",
-        discordIntroMessage: "A comunidade do Vorssaint é nova e ainda está em desenvolvimento. Entre desde o começo para conhecer outros usuários e ajudar a construir um espaço acolhedor em torno do app.",
-        discordIntroJoinButton: "Entrar na comunidade no Discord",
-        communityIntroTitle: "Vem ver antes de todo mundo",
-        communityIntroMessage: "Quem já me seguia no X viu várias novidades desta atualização antes de todo mundo. Lá eu posto prévias do que vem depois e mostro como funciona, para você já saber o básico antes mesmo da atualização sair. Segue lá e veja o que vem depois!",
-        communityIntroFollowButton: "Seguir @vorssaint no X",
         homebrewOfficialIntroTitle: "Agora no catálogo oficial do Homebrew",
         homebrewOfficialIntroMessage: "O Lattice agora pode ser instalado direto do catálogo oficial do Homebrew.",
         homebrewOfficialIntroInstallLabel: "Nova instalação",
@@ -2236,14 +2174,12 @@ extension Strings {
         shortcutPressKeys: "Pressione",
         shortcutEscapeHint: "Esc cancela.",
         shortcutDeleteHint: "Delete remove.",
-        shortcutNotCaptured: "Nada foi capturado. O macOS ou outro app já usa essa combinação. Tente outra.",
         shortcutConflictFormat: "Este atalho já está em uso por %@.",
         shortcutTakeOverOffer: "O macOS usa %@ em um atalho próprio.",
         shortcutTakeOverAction: "Assumir enquanto o Lattice estiver aberto",
         shortcutTakeOverCaption: "O macOS recupera a tecla sempre que o Lattice não estiver aberto ou este recurso estiver desligado.",
         shortcutTakeOverDismiss: "Não assumir",
         shortcutUnavailable: "O macOS recusou este atalho. Escolha outro.",
-        shelfShortcutToggle: "Atalho da área temporária",
         switcherUsageHintFormat: "Segure %@ para navegar; solte para ativar a janela. Shift ou ← volta; W fecha a janela; Q encerra o app; Esc cancela.",
         musicBlockSection: "Teclas de mídia",
         musicBlockTitle: "Impedir que o Música abra sozinho",
@@ -2517,10 +2453,8 @@ extension Strings {
         tabEnergy: "Energy",
         tabMouse: "Mouse & Trackpad",
         tabSwitcher: "Switcher",
-        tabAdvanced: "Advanced",
         tabAbout: "About",
         tabReleaseNotes: "What’s New",
-        releaseNotesOnUpdateToggle: "Show what’s new after updating",
         minimalWindowPreviews: "Minimal previews",
         minimalWindowPreviewsCaption: "Hide titles, buttons and decorative details in Dock and switcher previews. The selection stays visible.",
         previewSizeLabel: "Preview size",
@@ -2528,16 +2462,15 @@ extension Strings {
         previewSizeLarge: "Large",
         previewSizeXLarge: "Extra large",
         settingsGroupFeatures: "Features",
-        advancedResetSection: "Permissions",
-        advancedResetDescription: "Removes every permission you granted Lattice (Accessibility, Screen Recording, Full Disk Access and others), the login item and the closed-lid rule. Useful to start fresh or before uninstalling. The app stays installed.",
+        advancedResetDescription: "Reset all system permissions.",
         advancedClearButton: "Clear all permissions",
         advancedCleared: "Permissions cleared.",
         advancedClearFailed: "Some permissions or the closed-lid rule could not be removed. Try again and allow the password request if it appears.",
         advancedClearConfirmTitle: "Clear all permissions?",
         advancedClearConfirmBody: "Features that need permissions will stop working until you grant them again. Your settings are kept.",
-        advancedUninstallSection: "Uninstall",
-        advancedUninstallDescription: "Does all of the above, then removes the preferences and moves Lattice to the Trash, leaving nothing behind. The app quits when done. You can reinstall anytime.",
-        advancedUninstallButton: "Uninstall Lattice completely",
+        advancedUninstallSection: "Uninstall Lattice",
+        advancedUninstallDescription: "Remove Lattice and configuration file from your computer completely.",
+        advancedUninstallButton: "Uninstall Lattice",
         advancedUninstallConfirmTitle: "Uninstall Lattice?",
         advancedUninstallConfirmBody: "Lattice will clear its permissions, remove its preferences and move to the Trash, then quit. This can’t be undone from the app, but it stays in the Trash until you empty it.",
         advancedUninstallFailedTitle: "Uninstall stopped",
@@ -2549,7 +2482,6 @@ extension Strings {
         showCountdown: "Show remaining time next to the icon",
         globalHotkeySection: "Global shortcut",
         hotkeyToggle: "Enable shortcut for “Keep awake”",
-        hotkeyCaption: "Works in any app, no extra permissions.",
 
         sessionSection: "Session",
         defaultDurationLabel: "Default duration",
@@ -2588,8 +2520,6 @@ extension Strings {
         middleClickTapThreeFingers: "3 fingers",
         middleClickTapFourFingers: "4 fingers",
         middleClickTapCaption: "A light tap with that many fingers, without pressing, also fires the middle click. Sliding never counts. If the macOS three-finger tap is assigned to Look Up, turn it off so both do not fire together.",
-        quickToolsTab: "Quick panel",
-        quickToolShortcutToggle: "Global shortcut",
         ocrName: "Copy text from screen",
         ocrCaption: "Select an area of the screen and the recognized text is copied, ready to paste.",
         ocrCopied: "Text copied",
@@ -2612,7 +2542,6 @@ extension Strings {
         pastePlainCaption: "Pastes what you copied without colors, fonts or formatting. The original stays on the clipboard.",
         launcherName: "Quick panel",
         launcherCaption: "A floating panel with your favorite tools, summoned by a shortcut from anywhere.",
-        launcherOpenNow: "Open quick panel",
         launcherEditHint: "Use the tune button to choose, hide and drag the tools around.",
         launcherEmptyState: "All tools are hidden. Use the tune button to add them back.",
         launcherAddSection: "Add back",
@@ -3042,11 +2971,7 @@ extension Strings {
         audioPriorityCaption: "Devices are selected in priority order. When a higher-priority device connects, it becomes active. When the active one disconnects, the next available takes over.",
 
         updatesSection: "Updates",
-        autoCheckToggle: "Check for updates automatically",
-        includeBetaUpdatesToggle: "Receive beta updates",
-        includeBetaUpdatesCaption: "Beta versions include features in development and may contain bugs or incomplete behavior.",
         betaBadgeLabel: "Beta",
-        checkNowButton: "Check now",
         updateChecking: "Checking…",
         updateUpToDate: "You’re on the latest version.",
         updateAvailablePrefix: "Update available:",
@@ -3079,7 +3004,6 @@ extension Strings {
         versionPrefix: "Version",
         reviewIntro: "Review introduction",
         reviewHighlights: "Review highlights",
-        viewOnGitHub: "View on GitHub",
 
         obContinue: "Continue",
         obBack: "Back",
@@ -3109,17 +3033,11 @@ extension Strings {
         obStepStatusBody: "Make sure everything is ready for the features you want.",
         obStatusRecheck: "Check again",
         obStepDoneTitle: "All set!",
-        obStepDoneBody: "Lattice is already looking after your Mac.",
-        obDoneHint: "Look for the black hole in the menu bar, at the top right of the screen.",
-        obWhatsNewTitle: "What’s new in this version",
         obWhatsNewFallback: "This update includes the latest fixes and improvements.",
         obLanguageUpdateTitle: "Now in your language",
         obLanguageUpdateBody: "Lattice now speaks several languages. Choose the one you’d like to use; you can change it anytime in Settings.",
-        obPurposeTitle: "What brought you here?",
-        obPurposeBody: "Choose a ready setup or select exactly what you want to use.",
-        obPurposeSkip: "You can add or remove features later in Settings.",
 
-        tabMonitor: "Monitor",
+        tabMonitor: "Activity Monitor",
         monitorMenuBarSection: "In the menu bar",
         monitorMenuBarCaption: "Choose what appears next to the icon in the menu bar.",
         monitorCombineTemperatures: "Combine usage and temperature",
@@ -3287,32 +3205,20 @@ extension Strings {
         cleaningOverlayMouseHint: "Your mouse and trackpad still work",
         cleaningKeepScreenVisibleToggle: "Keep screen visible",
         cleaningKeepScreenVisibleCaption: "Shows a discreet indicator in the corner of the screen instead of blacking out content.",
-        cleaningStartNow: "Lock keyboard now",
         cleaningNeedsAxTitle: "Accessibility needed",
         cleaningNeedsAxBody: "To lock the keyboard safely, Lattice needs Accessibility permission. Grant it in System Settings and try again.",
 
-        tabSupport: "Support",
         shortcutsPageCaption: "Edit every global shortcut from the features installed on this Mac. Inactive shortcuts stay saved but do not run.",
         shortcutsPageTitle: "Keyboard shortcuts",
         settingsSearchPlaceholder: "Search settings",
-        donateHeading: "Help Vorssaint keep growing",
-        donateMessage: "Vorssaint is free, independent and built in my spare time. If you would like to contribute financially, Buy Me a Coffee directly helps me keep development moving forward.",
-        donateButton: "Support on Buy Me a Coffee",
         donateThanks: "Thank you for being here. 🖤",
         supportIntroTitle: "Help Vorssaint keep growing",
         supportIntroMessage: "If you would like to support development financially, Buy Me a Coffee is the one place to do it.",
         supportIntroStarButton: "Star Vorssaint on GitHub",
-        supportIntroStarMessage: "Financial support is never expected. A star on GitHub helps more people discover Vorssaint and makes a real difference to its development.",
         supportIntroStarHint: "A star on GitHub also helps more people find Vorssaint, and it means a lot.",
         supportIntroCoffeeButton: "Support on Buy Me a Coffee",
         supportIntroLaterButton: "Not now",
         supportIntroDoneButton: "Done",
-        discordIntroTitle: "The Vorssaint Discord community is just getting started",
-        discordIntroMessage: "The Vorssaint community is new and still being built. Join early to meet other users and help build a welcoming space around the app.",
-        discordIntroJoinButton: "Join the Discord community",
-        communityIntroTitle: "See it before everyone else",
-        communityIntroMessage: "People who already followed me on X saw several changes in this update before anyone else. I post previews of what is coming and show how it works, so you already know the basics before the update ships. Follow along and see what comes next!",
-        communityIntroFollowButton: "Follow @vorssaint on X",
         homebrewOfficialIntroTitle: "Now in the official Homebrew catalog",
         homebrewOfficialIntroMessage: "Lattice can now be installed directly from the official Homebrew catalog.",
         homebrewOfficialIntroInstallLabel: "New installation",
@@ -3336,14 +3242,12 @@ extension Strings {
         shortcutPressKeys: "Press keys",
         shortcutEscapeHint: "Escape cancels.",
         shortcutDeleteHint: "Delete clears.",
-        shortcutNotCaptured: "Nothing was captured. macOS or another app already uses that combination. Try another one.",
         shortcutConflictFormat: "This shortcut is already used by %@.",
         shortcutTakeOverOffer: "macOS uses %@ for one of its own shortcuts.",
         shortcutTakeOverAction: "Take over while Lattice runs",
         shortcutTakeOverCaption: "macOS gets the key back whenever Lattice is not running or this feature is off.",
         shortcutTakeOverDismiss: "Don’t take over",
         shortcutUnavailable: "macOS rejected this shortcut. Choose another one.",
-        shelfShortcutToggle: "Shelf shortcut",
         switcherUsageHintFormat: "Hold %@ to navigate; release to activate the window. Shift or ← goes back; W closes the window; Q quits the app; Esc cancels.",
         musicBlockSection: "Media keys",
         musicBlockTitle: "Stop Music from opening on its own",

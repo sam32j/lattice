@@ -10,7 +10,6 @@ struct FeatureHubStrings {
     // Page chrome
     let pageTitle: String
     let intro: String
-    let tabFeatures: String
     let tabPermissions: String
     let activeCountFormat: String      // "%1$d of %2$d features on"
     let monitorAllOffNote: String
@@ -161,7 +160,6 @@ extension FeatureHubStrings {
     static let ko = FeatureHubStrings(
         pageTitle: "기능",
         intro: "사용하는 기능만 설치하세요. 제거한 기능은 앱 전체에서 사라지고 더 이상 불러오지 않습니다.",
-        tabFeatures: "기능",
         tabPermissions: "권한",
         activeCountFormat: "기능 %1$d개 / %2$d개 설치됨",
         monitorAllOffNote: "모두 끄면 모니터가 패널과 메뉴 막대에서 사라집니다.",
@@ -183,7 +181,7 @@ extension FeatureHubStrings {
         unusedBanner: "이 권한을 허용했지만 현재 켠 기능은 필요로 하지 않습니다. 원한다면 시스템 설정에서 취소할 수 있습니다.",
         statusGranted: "허용됨",
         statusMissing: "허용되지 않음",
-        statusUnknown: "앱에서 이 권한은 확인할 수 없습니다",
+        statusUnknown: "알 수 없음",
         requestButton: "요청",
         openSystemSettings: "시스템 설정 열기",
         permAccessibility: "손쉬운 사용",
@@ -285,7 +283,6 @@ extension FeatureHubStrings {
     static let enUS = FeatureHubStrings(
         pageTitle: "Features",
         intro: "Install only what you use. Whatever you uninstall disappears from the whole app and stops loading.",
-        tabFeatures: "Features",
         tabPermissions: "Permissions",
         activeCountFormat: "%1$d of %2$d features installed",
         monitorAllOffNote: "With everything off, the Monitor leaves the panel and the menu bar.",
@@ -307,7 +304,7 @@ extension FeatureHubStrings {
         unusedBanner: "You granted this permission, but nothing that is on needs it. If you like, revoke it in System Settings.",
         statusGranted: "Granted",
         statusMissing: "Not granted",
-        statusUnknown: "The app can’t check this one",
+        statusUnknown: "Unknown",
         requestButton: "Request",
         openSystemSettings: "Open System Settings",
         permAccessibility: "Accessibility",
@@ -407,7 +404,6 @@ extension FeatureHubStrings {
     static let ptBR = FeatureHubStrings(
         pageTitle: "Recursos",
         intro: "Instale só o que você usa. O que você desinstalar some do app inteiro e deixa de carregar.",
-        tabFeatures: "Recursos",
         tabPermissions: "Permissões",
         activeCountFormat: "%1$d de %2$d recursos instalados",
         monitorAllOffNote: "Com tudo desligado, o Monitor some do painel e da barra de menus.",
@@ -429,7 +425,7 @@ extension FeatureHubStrings {
         unusedBanner: "Você concedeu esta permissão, mas nada que está ligado precisa dela. Se quiser, revogue nos Ajustes do Sistema.",
         statusGranted: "Concedida",
         statusMissing: "Não concedida",
-        statusUnknown: "O app não consegue verificar esta",
+        statusUnknown: "Desconhecido",
         requestButton: "Solicitar",
         openSystemSettings: "Abrir Ajustes do Sistema",
         permAccessibility: "Acessibilidade",
@@ -529,7 +525,6 @@ extension FeatureHubStrings {
     static let tr = FeatureHubStrings(
         pageTitle: "Özellikler",
         intro: "Yalnızca kullandıklarınızı yükleyin. Kaldırdıklarınız uygulamanın tamamından kaybolur ve yüklenmeyi bırakır.",
-        tabFeatures: "Özellikler",
         tabPermissions: "İzinler",
         activeCountFormat: "%2$d özellikten %1$d tanesi yüklü",
         monitorAllOffNote: "Hepsi kapalıyken Monitör panelden ve menü çubuğundan kaybolur.",
@@ -551,7 +546,7 @@ extension FeatureHubStrings {
         unusedBanner: "Bu izni verdiniz ama açık olan hiçbir şeyin ona ihtiyacı yok. İsterseniz Sistem Ayarları’ndan geri alabilirsiniz.",
         statusGranted: "Verildi",
         statusMissing: "Verilmedi",
-        statusUnknown: "Uygulama bunu denetleyemiyor",
+        statusUnknown: "Bilinmiyor",
         requestButton: "İste",
         openSystemSettings: "Sistem Ayarları’nı Aç",
         permAccessibility: "Erişilebilirlik",
@@ -651,7 +646,6 @@ extension FeatureHubStrings {
     static let ru = FeatureHubStrings(
         pageTitle: "Функции",
         intro: "Устанавливайте только то, чем пользуетесь. Всё удалённое исчезает из всего приложения и перестаёт загружаться.",
-        tabFeatures: "Функции",
         tabPermissions: "Разрешения",
         activeCountFormat: "Установлено %1$d из %2$d функций",
         monitorAllOffNote: "Когда всё выключено, Монитор исчезает из панели и строки меню.",
@@ -673,7 +667,7 @@ extension FeatureHubStrings {
         unusedBanner: "Вы дали это разрешение, но ничему включённому оно не нужно. При желании отзовите его в Системных настройках.",
         statusGranted: "Предоставлено",
         statusMissing: "Не предоставлено",
-        statusUnknown: "Приложение не может это проверить",
+        statusUnknown: "Неизвестно",
         requestButton: "Запросить",
         openSystemSettings: "Открыть Системные настройки",
         permAccessibility: "Универсальный доступ",
@@ -773,7 +767,6 @@ extension FeatureHubStrings {
     static let es = FeatureHubStrings(
         pageTitle: "Funciones",
         intro: "Instala solo lo que usas. Lo que desinstales desaparece de toda la app y deja de cargarse.",
-        tabFeatures: "Funciones",
         tabPermissions: "Permisos",
         activeCountFormat: "%1$d de %2$d funciones instaladas",
         monitorAllOffNote: "Con todo apagado, el Monitor desaparece del panel y de la barra de menús.",
@@ -795,7 +788,7 @@ extension FeatureHubStrings {
         unusedBanner: "Concediste este permiso, pero nada de lo que está activo lo necesita. Si quieres, revócalo en Ajustes del Sistema.",
         statusGranted: "Concedido",
         statusMissing: "No concedido",
-        statusUnknown: "La app no puede comprobar este",
+        statusUnknown: "Desconocido",
         requestButton: "Solicitar",
         openSystemSettings: "Abrir Ajustes del Sistema",
         permAccessibility: "Accesibilidad",
@@ -895,7 +888,6 @@ extension FeatureHubStrings {
     static let sk = FeatureHubStrings(
         pageTitle: "Funkcie",
         intro: "Nainštalujte len to, čo používate. Čokoľvek odinštalujete, zmizne z celej aplikácie a prestane sa načítavať.",
-        tabFeatures: "Funkcie",
         tabPermissions: "Povolenia",
         activeCountFormat: "Nainštalované: %1$d z %2$d funkcií",
         monitorAllOffNote: "Keď je všetko vypnuté, Monitor zmizne z panela aj z lišty.",
@@ -917,7 +909,7 @@ extension FeatureHubStrings {
         unusedBanner: "Toto povolenie ste udelili, no žiadna zapnutá funkcia ho nepotrebuje. Ak chcete, odvolajte ho v Systémových nastaveniach.",
         statusGranted: "Udelené",
         statusMissing: "Neudelené",
-        statusUnknown: "Aplikácia toto nedokáže overiť",
+        statusUnknown: "Neznáme",
         requestButton: "Vyžiadať",
         openSystemSettings: "Otvoriť Systémové nastavenia",
         permAccessibility: "Prístupnosť",
@@ -1017,7 +1009,6 @@ extension FeatureHubStrings {
     static let de = FeatureHubStrings(
         pageTitle: "Funktionen",
         intro: "Installiere nur, was du nutzt. Alles Deinstallierte verschwindet aus der ganzen App und lädt nicht mehr.",
-        tabFeatures: "Funktionen",
         tabPermissions: "Berechtigungen",
         activeCountFormat: "%1$d von %2$d Funktionen installiert",
         monitorAllOffNote: "Ist alles aus, verschwindet der Monitor aus dem Panel und der Menüleiste.",
@@ -1039,7 +1030,7 @@ extension FeatureHubStrings {
         unusedBanner: "Du hast diese Berechtigung erteilt, aber nichts Eingeschaltetes braucht sie. Du kannst sie in den Systemeinstellungen widerrufen.",
         statusGranted: "Erteilt",
         statusMissing: "Nicht erteilt",
-        statusUnknown: "Die App kann das nicht prüfen",
+        statusUnknown: "Unbekannt",
         requestButton: "Anfragen",
         openSystemSettings: "Systemeinstellungen öffnen",
         permAccessibility: "Bedienungshilfen",
@@ -1139,7 +1130,6 @@ extension FeatureHubStrings {
     static let fr = FeatureHubStrings(
         pageTitle: "Fonctions",
         intro: "N’installez que ce que vous utilisez. Tout ce qui est désinstallé disparaît de toute l’app et ne se charge plus.",
-        tabFeatures: "Fonctions",
         tabPermissions: "Autorisations",
         activeCountFormat: "%1$d fonctions sur %2$d installées",
         monitorAllOffNote: "Tout éteint, le Moniteur disparaît du panneau et de la barre des menus.",
@@ -1161,7 +1151,7 @@ extension FeatureHubStrings {
         unusedBanner: "Vous avez accordé cette autorisation, mais rien d’activé n’en a besoin. Si vous voulez, révoquez-la dans Réglages Système.",
         statusGranted: "Accordée",
         statusMissing: "Non accordée",
-        statusUnknown: "L’app ne peut pas vérifier celle-ci",
+        statusUnknown: "Inconnu",
         requestButton: "Demander",
         openSystemSettings: "Ouvrir Réglages Système",
         permAccessibility: "Accessibilité",
@@ -1261,7 +1251,6 @@ extension FeatureHubStrings {
     static let it = FeatureHubStrings(
         pageTitle: "Funzioni",
         intro: "Installa solo ciò che usi. Ciò che disinstalli sparisce dall’intera app e smette di caricarsi.",
-        tabFeatures: "Funzioni",
         tabPermissions: "Permessi",
         activeCountFormat: "%1$d funzioni installate su %2$d",
         monitorAllOffNote: "Con tutto spento, il Monitor sparisce dal pannello e dalla barra dei menu.",
@@ -1283,7 +1272,7 @@ extension FeatureHubStrings {
         unusedBanner: "Hai concesso questo permesso, ma niente di attivo ne ha bisogno. Se vuoi, revocalo in Impostazioni di Sistema.",
         statusGranted: "Concesso",
         statusMissing: "Non concesso",
-        statusUnknown: "L’app non può verificarlo",
+        statusUnknown: "Sconosciuto",
         requestButton: "Richiedi",
         openSystemSettings: "Apri Impostazioni di Sistema",
         permAccessibility: "Accessibilità",
@@ -1383,7 +1372,6 @@ extension FeatureHubStrings {
     static let ja = FeatureHubStrings(
         pageTitle: "機能",
         intro: "使う機能だけをインストール。アンインストールしたものはアプリ全体から消え、読み込まれなくなります。",
-        tabFeatures: "機能",
         tabPermissions: "権限",
         activeCountFormat: "%2$d 個中 %1$d 個の機能をインストール済み",
         monitorAllOffNote: "すべてオフにすると、モニタはパネルとメニューバーから消えます。",
@@ -1405,7 +1393,7 @@ extension FeatureHubStrings {
         unusedBanner: "この権限は許可されていますが、オンの機能はどれも必要としていません。よければシステム設定で取り消せます。",
         statusGranted: "許可済み",
         statusMissing: "未許可",
-        statusUnknown: "アプリからは確認できません",
+        statusUnknown: "不明",
         requestButton: "許可を求める",
         openSystemSettings: "システム設定を開く",
         permAccessibility: "アクセシビリティ",
@@ -1505,7 +1493,6 @@ extension FeatureHubStrings {
     static let zhHans = FeatureHubStrings(
         pageTitle: "功能",
         intro: "只安装你会用到的功能。卸载的功能会从整个 App 中消失，不再加载。",
-        tabFeatures: "功能",
         tabPermissions: "权限",
         activeCountFormat: "已安装 %1$d 项，共 %2$d 项",
         monitorAllOffNote: "全部关闭后，系统监视器会从面板和菜单栏中消失。",
@@ -1527,7 +1514,7 @@ extension FeatureHubStrings {
         unusedBanner: "你已授予此权限，但没有已开启的功能需要它。如果愿意，可以在系统设置中撤销。",
         statusGranted: "已授予",
         statusMissing: "未授予",
-        statusUnknown: "App 无法检查此项",
+        statusUnknown: "未知",
         requestButton: "申请",
         openSystemSettings: "打开系统设置",
         permAccessibility: "辅助功能",
@@ -1627,7 +1614,6 @@ extension FeatureHubStrings {
     static let zhTW = FeatureHubStrings(
         pageTitle: "功能",
         intro: "只安裝你會用到的功能。解除安裝的功能會從整個 App 中消失，不再載入。",
-        tabFeatures: "功能",
         tabPermissions: "權限",
         activeCountFormat: "已安裝 %1$d 項，共 %2$d 項",
         monitorAllOffNote: "全部關閉後，監視器會從面板和選單列中消失。",
@@ -1649,7 +1635,7 @@ extension FeatureHubStrings {
         unusedBanner: "你已授予此權限，但沒有已開啟的功能需要它。若你願意，可以在系統設定中撤銷。",
         statusGranted: "已授予",
         statusMissing: "未授予",
-        statusUnknown: "App 無法檢查此項",
+        statusUnknown: "未知",
         requestButton: "要求",
         openSystemSettings: "打開系統設定",
         permAccessibility: "輔助使用",
@@ -1749,7 +1735,6 @@ extension FeatureHubStrings {
     static let zhHK = FeatureHubStrings(
         pageTitle: "功能",
         intro: "只安裝你會用到的功能。解除安裝的功能會從整個 App 消失，不再載入。",
-        tabFeatures: "功能",
         tabPermissions: "權限",
         activeCountFormat: "已安裝 %1$d 項，共 %2$d 項",
         monitorAllOffNote: "全部關閉後，監察器會從面板和選單列消失。",
@@ -1771,7 +1756,7 @@ extension FeatureHubStrings {
         unusedBanner: "你已授予此權限，但沒有已開啟的功能需要它。如願意，可在系統設定中撤銷。",
         statusGranted: "已授予",
         statusMissing: "未授予",
-        statusUnknown: "App 無法檢查此項",
+        statusUnknown: "未知",
         requestButton: "要求",
         openSystemSettings: "打開系統設定",
         permAccessibility: "輔助使用",
@@ -1874,7 +1859,6 @@ extension FeatureHubStrings {
     static let uk = FeatureHubStrings(
         pageTitle: "Функції",
         intro: "Встановлюйте лише те, чим користуєтесь. Усе видалене зникає з усієї програми та перестає завантажуватися.",
-        tabFeatures: "Функції",
         tabPermissions: "Дозволи",
         activeCountFormat: "Встановлено функцій: %1$d з %2$d",
         monitorAllOffNote: "Коли все вимкнено, Монітор зникає з панелі та зі смуги меню.",
@@ -1896,7 +1880,7 @@ extension FeatureHubStrings {
         unusedBanner: "Ви надали цей дозвіл, але ніщо з увімкненого його не потребує. За бажанням відкличте його в Системних параметрах.",
         statusGranted: "Надано",
         statusMissing: "Не надано",
-        statusUnknown: "Програма не може це перевірити",
+        statusUnknown: "Невідомо",
         requestButton: "Запитати",
         openSystemSettings: "Відкрити Системні параметри",
         permAccessibility: "Доступність",

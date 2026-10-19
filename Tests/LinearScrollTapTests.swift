@@ -48,15 +48,12 @@ enum LinearScrollTapTests {
             defaults.removePersistentDomain(forName: name)
             Exceptions.shared.excepted = []
         }
-        func configure(linear: Bool = true, installed: Bool = true, lines: Int = 3,
-                       invert: Bool = false, inverterInstalled: Bool = true,
+        func configure(linear: Bool = true, lines: Int = 3,
+                       invert: Bool = false,
                        sidewaysKey: ScrollHorizontalModifier? = nil) {
-            defaults.set(installed, forKey: AppFeature.linearScroll.availabilityKey)
             defaults.set(linear, forKey: DefaultsKey.linearScrollEnabled)
             defaults.set(lines, forKey: DefaultsKey.linearScrollLines)
-            defaults.set(inverterInstalled, forKey: AppFeature.scrollInverter.availabilityKey)
             defaults.set(invert, forKey: DefaultsKey.scrollInverterEnabled)
-            defaults.set(sidewaysKey != nil, forKey: AppFeature.scrollHorizontal.availabilityKey)
             defaults.set(sidewaysKey != nil, forKey: DefaultsKey.scrollHorizontalEnabled)
             defaults.set(sidewaysKey?.rawValue, forKey: DefaultsKey.scrollHorizontalModifier)
             Exceptions.shared.excepted = []
@@ -118,14 +115,12 @@ enum LinearScrollTapTests {
 
         configure(linear: false)
         let off = deliver(wheel(line: 4, fixed: 4, point: 40))
-        configure(installed: false)
-        let uninstalled = deliver(wheel(line: 4, fixed: 4, point: 40))
-        suite.expect(off.map(verticalLine) == 4 && uninstalled.map(verticalLine) == 4,
+        suite.expect(off.map(verticalLine) == 4,
                      "linear scrolling switched off or uninstalled leaves the wheel alone")
 
         configure(invert: true)
         let flipped = deliver(wheel(line: 4, fixed: 4, point: 40))
-        configure(invert: true, inverterInstalled: false)
+        configure(invert: false)
         let inverterRemoved = deliver(wheel(line: 4, fixed: 4, point: 40))
         suite.expect(flipped.map(verticalLine) == -3 && inverterRemoved.map(verticalLine) == 3,
                      "the capped notch is flipped only while the inverter is installed, not because linear scrolling keeps the tap up")

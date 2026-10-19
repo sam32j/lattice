@@ -16,6 +16,12 @@ struct SettingsPageStrings {
     let switcherLayoutWindowsCaption: String
     let switcherLayoutIcons: String
     let switcherLayoutSimple: String
+    let keyboardTitle: String
+    let keyboardDescription: String
+    let audioInputTitle: String
+    let audioInputDescription: String
+    let audioOutputTitle: String
+    let audioOutputDescription: String
 }
 
 extension FeatureStrings {
@@ -51,7 +57,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "Мініатюри вікон",
         switcherLayoutWindowsCaption: "По одній мініатюрі для кожного вікна, включно зі згорнутими.",
         switcherLayoutIcons: "Великі значки",
-        switcherLayoutSimple: "Простий список"
+        switcherLayoutSimple: "Простий список",
+        keyboardTitle: "Клавіатура",
+        keyboardDescription: "Захист від випадкового закриття, усунення брязкоту клавіш та налаштування Super Key.",
+        audioInputTitle: "Вхід аудіо",
+        audioInputDescription: "Швидкі клавіші вимкнення мікрофона та пріоритет пристроїв входу аудіо.",
+        audioOutputTitle: "Вихід аудіо",
+        audioOutputDescription: "Мікшер гучності, перемикач виходу аудіо та блокувальник програми Музика."
     )
 
     static let enUS = SettingsPageStrings(
@@ -64,7 +76,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "Window previews",
         switcherLayoutWindowsCaption: "One preview per window, minimized ones included.",
         switcherLayoutIcons: "Large icons",
-        switcherLayoutSimple: "Simple list"
+        switcherLayoutSimple: "Simple list",
+        keyboardTitle: "Keyboard",
+        keyboardDescription: "Protect against accidental quits, debounce chatter, and unlock the Super Key.",
+        audioInputTitle: "Audio Input",
+        audioInputDescription: "Microphone mute shortcuts and audio input device priority.",
+        audioOutputTitle: "Audio Output",
+        audioOutputDescription: "Volume mixer, audio output switcher, and Music app blocker."
     )
 
     static let ptBR = SettingsPageStrings(
@@ -77,7 +95,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "Previews das janelas",
         switcherLayoutWindowsCaption: "Um preview por janela, incluindo as minimizadas.",
         switcherLayoutIcons: "Ícones grandes",
-        switcherLayoutSimple: "Lista simples"
+        switcherLayoutSimple: "Lista simples",
+        keyboardTitle: "Teclado",
+        keyboardDescription: "Evite encerramentos acidentais, elimine repetições de teclas e use a tecla Super.",
+        audioInputTitle: "Entrada de áudio",
+        audioInputDescription: "Atalhos para silenciar microfone e prioridade de dispositivos de entrada.",
+        audioOutputTitle: "Saída de áudio",
+        audioOutputDescription: "Mixer de volume, alternador de saída e bloqueador do app Música."
     )
 
     static let tr = SettingsPageStrings(
@@ -90,7 +114,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "Pencere önizlemeleri",
         switcherLayoutWindowsCaption: "Her pencere için bir önizleme, simge durumundakiler dahil.",
         switcherLayoutIcons: "Büyük simgeler",
-        switcherLayoutSimple: "Basit liste"
+        switcherLayoutSimple: "Basit liste",
+        keyboardTitle: "Klavye",
+        keyboardDescription: "Yanlışlıkla kapatmayı önleyin, tuş sekmesini engelleyin ve Super Key’i kullanın.",
+        audioInputTitle: "Ses Girişi",
+        audioInputDescription: "Mikrofon ses kapatma kısayolları ve ses giriş aygıtı önceliği.",
+        audioOutputTitle: "Ses Çıkışı",
+        audioOutputDescription: "Ses karıştırıcı, ses çıkış anahtarlayıcı ve Müzik uygulaması engelleyici."
     )
 
     static let ru = SettingsPageStrings(
@@ -103,7 +133,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "Миниатюры окон",
         switcherLayoutWindowsCaption: "По миниатюре на каждое окно, включая свёрнутые.",
         switcherLayoutIcons: "Крупные значки",
-        switcherLayoutSimple: "Простой список"
+        switcherLayoutSimple: "Простой список",
+        keyboardTitle: "Клавиатура",
+        keyboardDescription: "Защита от случайного закрытия, устранение дребезга и настройка клавиши Super.",
+        audioInputTitle: "Вход аудио",
+        audioInputDescription: "Сочетания клавиш для отключения микрофона и приоритет устройств ввода.",
+        audioOutputTitle: "Выход аудио",
+        audioOutputDescription: "Микшер громкости, переключатель выхода и блокировщик приложения Музыка."
     )
 
     static let es = SettingsPageStrings(
@@ -116,7 +152,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "Vistas previas de ventanas",
         switcherLayoutWindowsCaption: "Una vista previa por ventana, incluidas las minimizadas.",
         switcherLayoutIcons: "Iconos grandes",
-        switcherLayoutSimple: "Lista simple"
+        switcherLayoutSimple: "Lista simple",
+        keyboardTitle: "Teclado",
+        keyboardDescription: "Evita cierres accidentales, elimina rebotes de teclas y aprovecha la tecla Super.",
+        audioInputTitle: "Entrada de audio",
+        audioInputDescription: "Atajos para silenciar el micrófono y prioridad de dispositivos de entrada.",
+        audioOutputTitle: "Salida de audio",
+        audioOutputDescription: "Mezclador de volumen, selector de salida y bloqueador de la app Música."
     )
 
     static let sk = SettingsPageStrings(
@@ -129,7 +171,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "Náhľady okien",
         switcherLayoutWindowsCaption: "Jeden náhľad na okno, vrátane minimalizovaných.",
         switcherLayoutIcons: "Veľké ikony",
-        switcherLayoutSimple: "Jednoduchý zoznam"
+        switcherLayoutSimple: "Jednoduchý zoznam",
+        keyboardTitle: "Klávesnica",
+        keyboardDescription: "Chráňte sa pred náhodným ukončením, potlačte chvenie klávesov a využite Super Key.",
+        audioInputTitle: "Zvukový vstup",
+        audioInputDescription: "Skratky stlmenia mikrofónu a priorita vstupných zvukových zariadení.",
+        audioOutputTitle: "Zvukový výstup",
+        audioOutputDescription: "Zmiešavač hlasitosti, prepínač výstupu a blokovač aplikácie Hudba."
     )
 
     static let de = SettingsPageStrings(
@@ -142,7 +190,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "Fenstervorschauen",
         switcherLayoutWindowsCaption: "Eine Vorschau pro Fenster, auch für minimierte.",
         switcherLayoutIcons: "Große Symbole",
-        switcherLayoutSimple: "Einfache Liste"
+        switcherLayoutSimple: "Einfache Liste",
+        keyboardTitle: "Tastatur",
+        keyboardDescription: "Schütze vor versehentlichem Beenden, entprelle Tasten und nutze die Super-Taste.",
+        audioInputTitle: "Audioeingang",
+        audioInputDescription: "Tastenkürzel zum Stummschalten des Mikrofons und Priorität von Audioeingabegeräten.",
+        audioOutputTitle: "Audioausgang",
+        audioOutputDescription: "Lautstärkemixer, Audioausgabe-Umschalter und Musik-App-Blocker."
     )
 
     static let fr = SettingsPageStrings(
@@ -155,7 +209,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "Aperçus des fenêtres",
         switcherLayoutWindowsCaption: "Un aperçu par fenêtre, fenêtres réduites comprises.",
         switcherLayoutIcons: "Grandes icônes",
-        switcherLayoutSimple: "Liste simple"
+        switcherLayoutSimple: "Liste simple",
+        keyboardTitle: "Clavier",
+        keyboardDescription: "Évitez les fermetures accidentelles, éliminez les rebonds et profitez de la touche Super.",
+        audioInputTitle: "Entrée audio",
+        audioInputDescription: "Raccourcis de coupure du micro et priorité des périphériques d’entrée audio.",
+        audioOutputTitle: "Sortie audio",
+        audioOutputDescription: "Mélangeur de volume, sélecteur de sortie et bloqueur de l’application Musique."
     )
 
     static let it = SettingsPageStrings(
@@ -168,7 +228,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "Anteprime delle finestre",
         switcherLayoutWindowsCaption: "Un’anteprima per finestra, comprese quelle contratte.",
         switcherLayoutIcons: "Icone grandi",
-        switcherLayoutSimple: "Elenco semplice"
+        switcherLayoutSimple: "Elenco semplice",
+        keyboardTitle: "Tastiera",
+        keyboardDescription: "Evita chiusure accidentali, elimina i rimbalzi dei tasti e usa il tasto Super.",
+        audioInputTitle: "Ingresso audio",
+        audioInputDescription: "Scorciatoie per disattivare il microfono e priorità dei dispositivi di ingresso audio.",
+        audioOutputTitle: "Uscita audio",
+        audioOutputDescription: "Mixer del volume, selettore di uscita e blocco dell’app Musica."
     )
 
     static let ja = SettingsPageStrings(
@@ -181,7 +247,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "ウインドウのプレビュー",
         switcherLayoutWindowsCaption: "ウインドウごとにプレビューを表示。しまったウインドウも含みます。",
         switcherLayoutIcons: "大きなアイコン",
-        switcherLayoutSimple: "シンプルなリスト"
+        switcherLayoutSimple: "シンプルなリスト",
+        keyboardTitle: "キーボード",
+        keyboardDescription: "誤終了を防ぎ、チャタリングを抑制し、Super Key を活用します。",
+        audioInputTitle: "オーディオ入力",
+        audioInputDescription: "マイク消音ショートカットおよびオーディオ入力デバイスの優先順位。",
+        audioOutputTitle: "オーディオ出力",
+        audioOutputDescription: "音量ミキサー、オーディオ出力スイッチャー、ミュージックアプリブロッカー。"
     )
 
     static let ko = SettingsPageStrings(
@@ -194,7 +266,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "윈도우 미리보기",
         switcherLayoutWindowsCaption: "윈도우마다 미리보기 하나, 축소된 윈도우도 포함합니다.",
         switcherLayoutIcons: "큰 아이콘",
-        switcherLayoutSimple: "간단한 목록"
+        switcherLayoutSimple: "간단한 목록",
+        keyboardTitle: "키보드",
+        keyboardDescription: "실수 방지 종료 보호, 키 바운스 방지 및 Super Key를 설정합니다.",
+        audioInputTitle: "오디오 입력",
+        audioInputDescription: "마이크 음소거 단축키 및 오디오 입력 기기 우선순위.",
+        audioOutputTitle: "오디오 출력",
+        audioOutputDescription: "볼륨 믹서, 오디오 출력 전환기 및 음악 앱 차단기."
     )
 
     static let zhHans = SettingsPageStrings(
@@ -207,7 +285,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "窗口预览",
         switcherLayoutWindowsCaption: "每个窗口一张预览，包括已最小化的窗口。",
         switcherLayoutIcons: "大图标",
-        switcherLayoutSimple: "简单列表"
+        switcherLayoutSimple: "简单列表",
+        keyboardTitle: "键盘",
+        keyboardDescription: "防误退防误关、按键消抖以及配置 Super Key。",
+        audioInputTitle: "音频输入",
+        audioInputDescription: "麦克风静音快捷键和音频输入设备优先级。",
+        audioOutputTitle: "音频输出",
+        audioOutputDescription: "音量混音器、音频输出切换器和音乐应用阻止程序。"
     )
 
     static let zhTW = SettingsPageStrings(
@@ -220,7 +304,13 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "視窗預覽",
         switcherLayoutWindowsCaption: "每個視窗一張預覽，包括已縮到最小的視窗。",
         switcherLayoutIcons: "大圖示",
-        switcherLayoutSimple: "簡單列表"
+        switcherLayoutSimple: "簡單列表",
+        keyboardTitle: "鍵盤",
+        keyboardDescription: "防誤退防誤關、按鍵消抖以及設定 Super Key。",
+        audioInputTitle: "音訊輸入",
+        audioInputDescription: "麥克風靜音快捷鍵與音訊輸入裝置優先權。",
+        audioOutputTitle: "音訊輸出",
+        audioOutputDescription: "音量混音器、音訊輸出切換器與音樂應用程式阻擋器。"
     )
 
     static let zhHK = SettingsPageStrings(
@@ -233,6 +323,12 @@ extension SettingsPageStrings {
         switcherLayoutWindows: "視窗預覽",
         switcherLayoutWindowsCaption: "每個視窗一張預覽，包括已縮到最小的視窗。",
         switcherLayoutIcons: "大圖示",
-        switcherLayoutSimple: "簡單列表"
+        switcherLayoutSimple: "簡單列表",
+        keyboardTitle: "鍵盤",
+        keyboardDescription: "防誤退防誤關、按鍵消抖以及設定 Super Key。",
+        audioInputTitle: "音訊輸入",
+        audioInputDescription: "麥克風靜音快捷鍵與音訊輸入裝置優先權。",
+        audioOutputTitle: "音訊輸出",
+        audioOutputDescription: "音量混音器、音訊輸出切換器與音樂應用程式阻擋器。"
     )
 }

@@ -454,12 +454,18 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Finder/FinderRenameSupport.swift
         Sources/Vorssaint/Services/Update/UpdateInstallerSupport.swift
         Sources/Vorssaint/Services/Update/UpdateServiceSupport.swift
+        Sources/Vorssaint/Services/Update/UpdateCheckResponse.swift
+        Sources/Vorssaint/Core/UpdateSettingsPresentation.swift
+        Sources/Vorssaint/Core/UpdateSettingsStrings.swift
         Sources/Vorssaint/Services/InstalledApps.swift
         Sources/Vorssaint/Services/LaunchAtLoginSupport.swift
         Sources/Vorssaint/UI/Settings/SettingsSearchSupport.swift
         Sources/Vorssaint/UI/Settings/SettingsSidebarSupport.swift
         Sources/Vorssaint/UI/Settings/FeatureVisibilitySupport.swift
         Sources/Vorssaint/UI/Settings/SettingsWindow.swift
+        Sources/Vorssaint/UI/Settings/ReleaseNotesSettings.swift
+        Sources/Vorssaint/UI/Settings/UpdateSettingsStatusRow.swift
+        Sources/Vorssaint/UI/PermissionDetailsSheet.swift
         Sources/Vorssaint/Core/SettingsNavigationStrings.swift
         Sources/Vorssaint/App/MenuBarSpacingSupport.swift
         Sources/Vorssaint/App/MenuBarAllowanceSupport.swift
@@ -483,11 +489,11 @@ if (( TEST )); then
         Sources/Vorssaint/Core/MouseClickDebounceStrings.swift
         Sources/Vorssaint/Core/MouseExceptionStrings.swift
         Sources/Vorssaint/Core/ClipboardIgnoredAppsStrings.swift
+        Sources/Vorssaint/Core/DiskExclusionStrings.swift
         Sources/Vorssaint/Core/WindowLayoutIgnoredAppsStrings.swift
         Sources/Vorssaint/Services/WindowLayout/WindowLayoutIgnoredApps.swift
         Sources/Vorssaint/Core/WindowPreviewExclusionStrings.swift
         Sources/Vorssaint/Core/WindowMaximizerExclusionStrings.swift
-        Sources/Vorssaint/Core/DiskExclusionStrings.swift
         Sources/Vorssaint/Core/SwitcherAppRulesStrings.swift
         Sources/Vorssaint/Services/QuickTools/QuickToolsSupport.swift
         Sources/Vorssaint/Services/CommandBar/CommandBarSupport.swift

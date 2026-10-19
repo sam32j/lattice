@@ -35,7 +35,7 @@ final class FeatureRuntime: ObservableObject {
     /// a restart would actually unload it. Features already uninstalled when
     /// the app came up never loaded, so they need no restart.
     var needsRestartToUnload: Bool {
-        loadedThisSession.contains { !$0.isAvailable }
+        loadedThisSession.contains { !$0.isMouseFeature && !$0.isKeyboardFeature && !$0.isAvailable }
     }
 
     /// Relaunches the app in place: a detached helper waits for this process
@@ -92,6 +92,7 @@ final class FeatureRuntime: ObservableObject {
     /// strands someone's settings costs far more than one that leaves a
     /// feature reporting itself unsupported.
     private func mayFlip(_ feature: AppFeature, to available: Bool) -> Bool {
+        guard !feature.isMouseFeature && !feature.isKeyboardFeature else { return false }
         guard feature.isAvailable != available else { return false }
         return !available || feature.isHardwareSupported
     }
@@ -213,7 +214,7 @@ final class FeatureRuntime: ObservableObject {
 
     /// Bulk install or uninstall for the hub's "all" buttons.
     func setAllAvailable(_ available: Bool) {
-        setAvailable(AppFeature.allCases, available, enablingFirstInstalls: false)
+        setAvailable(AppFeature.hubInstallableFeatures, available, enablingFirstInstalls: false)
     }
 
     private func savedPreferences() -> [String: Any] {
@@ -229,17 +230,17 @@ final class FeatureRuntime: ObservableObject {
         }
     }
 
-    /// Re-syncs a set of features (used by the permission sinks); skips
-    /// unavailable ones so their singletons never come to life.
+    /// Permanent input controls must also sync when off: they can have started
+    /// directly from Settings, so an off change must always reach teardown.
     func sync(_ features: [AppFeature]) {
-        for feature in features where feature.isAvailable {
+        for feature in features where feature.isMouseFeature || feature.isKeyboardFeature || feature.isAvailable || loadedThisSession.contains(feature) {
             Self.bindings[feature]?()
         }
     }
 
     /// One bump for Settings, and the Command Bar drops rows of features that
     /// just left the hub so a pin cannot linger as a bare id.
-    private func finishAvailabilityChange() {
+    func finishAvailabilityChange() {
         revision += 1
         CommandBarService.shared.noteHubChange()
         if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }
@@ -276,6 +277,7 @@ final class FeatureRuntime: ObservableObject {
         .keyboardDebounce: { KeyboardDebounceService.shared.syncWithPreferences() },
         .quitWindowProtection: { QuitProtectionService.shared.syncWithPreferences() },
         .superKey: { SuperKeyService.shared.syncWithPreferences() },
+        .cleaningMode: { CleaningModeManager.shared.syncWithPreferences() },
         .textSnippets: {
             TextSnippetService.shared.syncWithPreferences()
             SnippetLibraryService.shared.syncWithPreferences()

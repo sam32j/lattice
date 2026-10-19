@@ -234,6 +234,8 @@ struct GlobalShortcut: Equatable, Hashable {
     // layer, matching how the system numbers its own capture keys.
     static let screenRecorderDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_5),
                                                       modifiers: [.control, .option, .command])
+    static let cleaningModeDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_C),
+                                                    modifiers: [.control, .option, .command, .shift])
 
     static func saved(for key: String, fallback: GlobalShortcut) -> GlobalShortcut {
         // Absence preserves the installation default. An explicitly empty
@@ -720,6 +722,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     case snippetLibrary
     case commandBar
     case screenRecorder
+    case cleaningMode
     case displayBrightnessDecrease
     case displayBrightnessIncrease
     case keyboardBrightnessDecrease
@@ -754,6 +757,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .snippetLibrary: return DefaultsKey.snippetLibraryShortcut
         case .commandBar: return DefaultsKey.commandBarShortcut
         case .screenRecorder: return DefaultsKey.recorderShortcut
+        case .cleaningMode: return DefaultsKey.cleaningModeShortcut
         case .displayBrightnessDecrease: return DefaultsKey.displayBrightnessDecreaseShortcut
         case .displayBrightnessIncrease: return DefaultsKey.displayBrightnessIncreaseShortcut
         case .keyboardBrightnessDecrease: return DefaultsKey.keyboardBrightnessDecreaseShortcut
@@ -788,6 +792,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .snippetLibrary: return .snippetLibraryDefault
         case .commandBar: return .commandBarDefault
         case .screenRecorder: return .screenRecorderDefault
+        case .cleaningMode: return .cleaningModeDefault
         case .displayBrightnessDecrease: return .displayBrightnessDecreaseDefault
         case .displayBrightnessIncrease: return .displayBrightnessIncreaseDefault
         case .keyboardBrightnessDecrease: return .keyboardBrightnessDecreaseDefault
@@ -847,6 +852,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .snippetLibrary: return FeatureStrings.snippets(L10n.shared.language).libraryTitle
         case .commandBar: return FeatureStrings.commandBar(L10n.shared.language).pageTitle
         case .screenRecorder: return FeatureStrings.recorder(L10n.shared.language).pageTitle
+        case .cleaningMode: return strings.cleaningMenuItem
         case .displayBrightnessDecrease:
             return FeatureStrings.brightness(L10n.shared.language).displayBrightnessDecrease
         case .displayBrightnessIncrease:
@@ -908,6 +914,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .snippetLibrary: return [DefaultsKey.snippetLibraryEnabled]
         case .commandBar: return [DefaultsKey.commandBarShortcutEnabled]
         case .screenRecorder: return [DefaultsKey.recorderShortcutEnabled]
+        case .cleaningMode: return [DefaultsKey.cleaningModeEnabled, DefaultsKey.cleaningModeShortcutEnabled]
         case .displayBrightnessDecrease, .displayBrightnessIncrease:
             return [DefaultsKey.brightnessControlEnabled, DefaultsKey.displayBrightnessShortcutsEnabled]
         case .keyboardBrightnessDecrease, .keyboardBrightnessIncrease:
@@ -941,6 +948,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .snippetLibrary: return .textSnippets
         case .commandBar: return .commandBar
         case .screenRecorder: return .screenRecorder
+        case .cleaningMode: return .cleaningMode
         case .displayBrightnessDecrease, .displayBrightnessIncrease: return .brightness
         case .keyboardBrightnessDecrease, .keyboardBrightnessIncrease: return .brightness
         case .pointerNextDisplay: return .windowLayout

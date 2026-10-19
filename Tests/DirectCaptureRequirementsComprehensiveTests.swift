@@ -87,14 +87,10 @@ enum DirectCaptureRequirementsComprehensiveTests {
         }
 
         // 8. Sidebar directory: Screen Capture section has exactly 2 items (.screenshot and .screenRecorder)
-        let directorySource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Settings/SettingsDirectory.swift",
-            encoding: .utf8)) ?? ""
-        suite.expect(directorySource.contains("SettingsSidebarSection(id: 5, title: FeatureStrings.screenshot(language).screenCaptureTitle, items: rows(5))"),
-                     "SettingsDirectory registers Section 5 for Screen Capture")
-        suite.expect(directorySource.contains("SettingsDirectoryItem(page: .screenshot")
-                     && directorySource.contains("SettingsDirectoryItem(page: .screenRecorder"),
-                     "Screen Capture section in SettingsDirectory defines screenshot and screenRecorder items")
+        let sections = SettingsSidebarIdentityTests.Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in true })
+        let screenCaptures = sections.first { $0.id == 4 }
+        suite.expect(screenCaptures?.items.map(\.id) == [.page(.screenshot), .page(.screenRecorder)],
+                     "SettingsDirectory registers Screen Captures section with screenshot and screenRecorder")
 
         // 9. SettingsSidebarSupport produces single items for screenshot and screenRecorder without extra clutter
         let screenshotSidebar = SettingsSidebarSupport.items(
@@ -122,9 +118,12 @@ enum DirectCaptureRequirementsComprehensiveTests {
     // MARK: - 2. Feature Catalog Bundling & Count
 
     private static func testFeatureCatalogBundlingAndCount(_ suite: TestSuite) {
-        // 1. Total installable features in Feature Hub excludes bundled .colorPicker and .screenOCR
-        suite.expect(AppFeature.hubInstallableFeatures.count == AppFeature.allCases.count - 2,
-                     "the Hub omits exactly the two screenshot companions")
+        // 1. Total installable features in Feature Hub excludes bundled .colorPicker and .screenOCR, plus mouse and keyboard features
+        let nonHubFeatures = AppFeature.allCases.filter {
+            $0 == .colorPicker || $0 == .screenOCR || $0.isMouseFeature || $0.isKeyboardFeature
+        }
+        suite.expect(AppFeature.hubInstallableFeatures.count == AppFeature.allCases.count - nonHubFeatures.count,
+                     "the Hub omits the screenshot companions as well as mouse and keyboard features")
 
         // 2. Color picker and screen OCR are excluded from standalone Hub installables
         suite.expect(!AppFeature.hubInstallableFeatures.contains(.colorPicker)
@@ -164,9 +163,6 @@ enum DirectCaptureRequirementsComprehensiveTests {
     // MARK: - 3. Compact Shortcut Recorders & Conflict Handling
 
     private static func testCompactShortcutRecordersAndConflictHandling(_ suite: TestSuite) {
-        let shortcutRecorderSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/ShortcutRecorderButton.swift",
-            encoding: .utf8)) ?? ""
         let compactRecorderSource = (try? String(
             contentsOfFile: "Sources/Vorssaint/UI/CompactShortcutRecorder.swift",
             encoding: .utf8)) ?? ""
@@ -176,7 +172,6 @@ enum DirectCaptureRequirementsComprehensiveTests {
         let compactFieldSource = (try? String(
             contentsOfFile: "Sources/Vorssaint/UI/CompactShortcutField.swift",
             encoding: .utf8)) ?? ""
-        suite.expect(!shortcutRecorderSource.isEmpty, "ShortcutRecorderButton.swift is readable")
 
         suite.expect(compactFieldSource.contains("struct CompactShortcutField: View")
                      && compactFieldSource.contains("let width: CGFloat")
@@ -188,7 +183,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
         suite.expect(compactRecorderSource.contains("struct CompactShortcutPreferenceRow: View")
                      && compactRecorderSource.contains("struct CompactShortcutRecorder: View")
                      && compactCoordinatorSource.contains("final class CompactShortcutCoordinator: ObservableObject"),
-                     "ShortcutRecorderButton provides single-row compact recorder and coordinator")
+                     "shared shortcut components provide a compact recorder and coordinator")
 
         // 2. Only one setter active at a time via CompactShortcutCoordinator
         suite.expect(compactCoordinatorSource.contains("func startRecording(role: GlobalShortcutRole) {")
