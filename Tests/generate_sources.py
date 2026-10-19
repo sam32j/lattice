@@ -113,6 +113,10 @@ def main():
     write("SettingsXDRConsumer.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests.Consumer {\n"
           + "var offersXDR: Bool { " + xdr_visibility + " }\n}\n")
     text_model = "Sources/Vorssaint/Services/QuickTools/ScreenshotEditorController.swift"
+    write("RecorderWaitingFlow.swift", "import Foundation\nextension RecorderWaitingFlowTests {\nfinal class Controller: State {\n"
+          + declaration("Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift",
+                        "    private func startWaitingRecording()").replace("private func", "func", 1)
+          + "}\n}\n")
     write("ScreenshotTextDraft.swift", "import AppKit\nextension ScreenshotTextDraftTests {\nfinal class Model: State {\n"
           + "".join(declaration(text_model, prefix).replace("private func", "func", 1)
               for prefix in ["    private func registerUndo()", "    private func applyStyleToSelection()",
@@ -187,7 +191,7 @@ def main():
                     for prefix in ["    private func beginRecording(", "    private func pendingStartIsAuthorized(",
                                    "    private func invalidatePendingStart()", "    var hasActiveCapture:",
                                    "    func stopOrCancelActiveCapture()", "    func prepareForSelection()",
-                                   "    func record(_ region:", "    private func startDelayedSelection(",
+                                   "    func record(_ region:",
                                    "    func stop(reason:"])
           + "}\n}\n")
     write("SwitcherFullscreenScope.swift", "import AppKit\nimport ApplicationServices\nimport CoreGraphics\n"
@@ -1615,6 +1619,9 @@ def main():
           + "final class Options { var controlsInNotch = true; var hasFocusedControl = false; var recorderAudio = AudioSelection() }\n"
           + "enum Outcome { case cancelled }\nvar screenCaptureOptions: Options? = Options()\n"
           + "var activeTool = ScreenCaptureTool.area\n"
+          + "final class WaitingControls { var panel: NSPanel? }\nvar waitingControls: WaitingControls?\n"
+          + "var waitingRecordingPanel: ScreenshotOverlayPanel?\n"
+          + 'func startWaitingRecording() { actions.append("start") }\n'
           + "var keyMonitor: Any?\nvar globalKeyMonitor: Any?\nvar spaceIsDown = false\n"
           + "var acceptsWindowClick = true\nvar loupeAcceptsKeyboardActions = false\n"
           + "var actions: [String] = []\nvar draggingPanel: ScreenshotOverlayPanel?\n"
@@ -1626,8 +1633,8 @@ def main():
           + "func panelUnderMouse() -> ScreenshotOverlayPanel? { draggingPanel }\n"
           + 'func repeatLastRegion() { actions.append("repeat") }\n'
           + "func selectCaptureTool(for event: NSEvent) -> Bool { false }\n"
-          + "static func isScrollingCaptureKey(_ event: NSEvent) -> Bool { false }\n"
-          + "static func isMicrophoneKey(_ event: NSEvent) -> Bool { false }\n"
+          + "static func isScrollingCaptureKey(_ event: NSEvent) -> Bool { event.keyCode == UInt16(kVK_ANSI_S) }\n"
+          + "static func isMicrophoneKey(_ event: NSEvent) -> Bool { event.keyCode == UInt16(kVK_ANSI_M) }\n"
           + "static func isLoupeKey(_ event: NSEvent) -> Bool { false }\n"
           + "static func isCopyColorKey(_ event: NSEvent) -> Bool { false }\n"
           + "static func isNudgeKey(_ event: NSEvent) -> Bool { false }\n"

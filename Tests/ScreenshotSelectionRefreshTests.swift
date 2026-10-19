@@ -57,6 +57,7 @@ enum ScreenshotSelectionRefreshContract {
         var loupeImage: CGImage?
         var dragOrigin: CGPoint?
         var selection = CGRect.zero
+        var recordingDraft: RecorderSelectionDraft?
         var hoverPoint = CGPoint.zero
         var pointerIsInside = false
         var hoveredWindow: ScreenshotSupport.PickableWindow?
@@ -142,6 +143,9 @@ enum ScreenshotSelectionRefreshContract {
         }
     }
     @MainActor final class Chooser {
+        var isWaitingForRecording = false
+        func resetWaitingRecording() {}
+        func prepareWaitingRecording(_ rect: CGRect, on panel: ScreenshotOverlayPanel, windowID: CGWindowID?) -> Bool { false }
         typealias CGImage = ScreenshotSelectionRefreshContract.CGImage
         typealias ScreenshotCaptureEngine = ScreenshotSelectionRefreshContract.ScreenshotCaptureEngine
         typealias DefaultsKey = ScreenshotSelectionRefreshContract.DefaultsKey

@@ -43,6 +43,9 @@ final class ScreenshotSelectionController {
     }
 
     private var panels: [ScreenshotOverlayPanel] = []
+    private weak var waitingRecordingPanel: ScreenshotOverlayPanel?
+    private var waitingRecordingWindowID: CGWindowID?
+    private var waitingControls: RecorderWaitingControls?
 
     var protectedWindowIDs: Set<CGWindowID> {
         Set(panels.compactMap { $0.windowNumber > 0 ? CGWindowID($0.windowNumber) : nil })
@@ -320,6 +323,7 @@ final class ScreenshotSelectionController {
     }
 
     private func screenCaptureToolDidChange() {
+        resetWaitingRecording()
         if activeTool != .recording && !RecorderOverlayController.shared.isRecording {
             RecorderOverlayController.shared.stop()
         }
@@ -441,7 +445,26 @@ final class ScreenshotSelectionController {
             guard let self else { return event }
             let inNotch = self.screenCaptureOptions?.controlsInNotch == true
                 && event.window === NotchService.shared.presentationWindow
-            guard event.window is ScreenshotOverlayPanel || inNotch else { return event }
+            guard event.window is ScreenshotOverlayPanel || event.window === self.waitingControls?.panel || inNotch else { return event }
+            if self.waitingRecordingPanel != nil {
+                // The selected area still owns input until Start, not the app
+                // that happened to be behind it. Only recording controls apply.
+                guard event.type == .keyDown else { return nil }
+                switch Int(event.keyCode) {
+                case kVK_Escape: self.finish(.cancelled)
+                case kVK_Return, kVK_ANSI_KeypadEnter: self.startWaitingRecording()
+                default:
+                    guard !event.isARepeat else { return nil }
+                    if Self.isScrollingCaptureKey(event) { self.screenCaptureOptions?.recorderAudio.systemAudio.toggle() }
+                    else if Self.isMicrophoneKey(event) { self.screenCaptureOptions?.recorderAudio.microphone.toggle() }
+                    else if Self.matchesShortcutKey(event, character: "c", physicalKeyCode: kVK_ANSI_C) {
+                        RecorderOverlayController.shared.toggleCamera()
+                    } else if Self.matchesShortcutKey(event, character: "k", physicalKeyCode: kVK_ANSI_K) {
+                        RecorderOverlayController.shared.keysEnabled.toggle()
+                    }
+                }
+                return nil
+            }
             if inNotch {
                 guard event.window?.attachedSheet == nil, !(event.window?.firstResponder is NSText),
                       !ShortcutCapture.isCapturing else { return event }
@@ -744,6 +767,55 @@ final class ScreenshotSelectionController {
 
     // MARK: - Confirmations (called by the views)
 
+    private func prepareWaitingRecording(_ rect: CGRect, on panel: ScreenshotOverlayPanel,
+                                         windowID: CGWindowID?) -> Bool {
+        guard activeTool == .recording,
+              !(UserDefaults.standard.object(forKey: DefaultsKey.recorderImmediateStartAfterSelection) as? Bool ?? true),
+              let options = screenCaptureOptions else { return false }
+        waitingRecordingPanel = panel
+        waitingRecordingWindowID = windowID
+        panel.overlayView.setRecordingDraft(rect)
+        panels.forEach {
+            $0.overlayView.refreshGuideVisibility()
+            $0.overlayView.refreshFullScreenControlVisibility()
+        }
+        NotchService.shared.endCaptureControls()
+        panel.makeKey()
+        let region = region(fromView: rect, on: panel, windowID: windowID)
+        RecorderOverlayController.shared.prepareRecording(anchorRect: region.anchorRect,
+            pixelSize: region.pixelSize, immediate: false)
+        waitingControls = RecorderWaitingControls(audio: options.recorderAudio,
+            start: { [weak self] in self?.startWaitingRecording() },
+            cancel: { [weak self] in self?.finish(.cancelled) })
+        waitingControls?.show(in: region.anchorRect, screen: panel.screenFrame)
+        setSelectionInProgress(false)
+        return true
+    }
+
+    private func resetWaitingRecording() {
+        waitingControls?.hide()
+        waitingControls = nil
+        waitingRecordingPanel = nil
+        waitingRecordingWindowID = nil
+    }
+
+    fileprivate var isWaitingForRecording: Bool { waitingRecordingPanel != nil }
+
+    fileprivate func updateWaitingRecording(_ rect: CGRect, on panel: ScreenshotOverlayPanel) {
+        guard waitingRecordingPanel === panel else { return }
+        waitingRecordingWindowID = nil // A manually adjusted window becomes an area capture.
+        let region = region(fromView: rect, on: panel, windowID: nil)
+        RecorderOverlayController.shared.updateRegion(anchorRect: region.anchorRect, pixelSize: region.pixelSize)
+        waitingControls?.show(in: region.anchorRect, screen: panel.screenFrame)
+    }
+
+    private func startWaitingRecording() {
+        guard acceptsCaptureInput, let panel = waitingRecordingPanel,
+              let rect = panel.overlayView.recordingDraft?.rect else { return }
+        Self.lastRegion = (panel.displayID, rect)
+        finish(.region(region(fromView: rect, on: panel, windowID: waitingRecordingWindowID)))
+    }
+
     private func confirmSelectionWithKeyboard() {
         if isPickingColor {
             guard acceptsCaptureInput, !panels.contains(where: { $0.overlayView.isDragging }),
@@ -795,6 +867,7 @@ final class ScreenshotSelectionController {
     fileprivate func confirmRegion(_ viewRect: CGRect, on panel: ScreenshotOverlayPanel) {
         guard acceptsCaptureInput, activeMode != .color,
               viewRect.width >= 1, viewRect.height >= 1 else { return }
+        if prepareWaitingRecording(viewRect, on: panel, windowID: nil) { return }
         markCapturePending()
         Self.lastRegion = (panel.displayID, viewRect)
         if activeMode == .geometry {
@@ -840,6 +913,7 @@ final class ScreenshotSelectionController {
                                    frame: CGRect,
                                    on panel: ScreenshotOverlayPanel) {
         guard acceptsCaptureInput, activeMode != .color else { return }
+        if prepareWaitingRecording(frame, on: panel, windowID: windowID) { return }
         markCapturePending()
         if activeMode == .geometry {
             finish(.region(region(fromView: frame, on: panel, windowID: windowID)))
@@ -898,6 +972,7 @@ final class ScreenshotSelectionController {
     }
 
     private func captureFullDisplay(on panel: ScreenshotOverlayPanel) {
+        if prepareWaitingRecording(CGRect(origin: .zero, size: panel.screenFrame.size), on: panel, windowID: nil) { return }
         markCapturePending()
         if activeMode == .geometry {
             let whole = CGRect(origin: .zero, size: panel.screenFrame.size)
@@ -999,6 +1074,9 @@ final class ScreenshotSelectionController {
 
     private func finish(_ outcome: Outcome) {
         guard !finished else { return }
+        waitingControls?.hide()
+        waitingControls = nil
+        waitingRecordingPanel = nil
         if activeTool == .recording {
             if case .region = outcome {} else { RecorderOverlayController.shared.stop() }
         }
@@ -1175,6 +1253,7 @@ private final class ScreenshotOverlayView: NSView {
     private var dragOrigin: CGPoint?
     private var lastDragPoint: CGPoint = .zero
     private var selection: CGRect = .zero
+    fileprivate private(set) var recordingDraft: RecorderSelectionDraft?
     private var hoverPoint: CGPoint = .zero
     private var pointerIsInside = false
     private var hoveredWindow: ScreenshotSupport.PickableWindow?
@@ -1350,6 +1429,13 @@ private final class ScreenshotOverlayView: NSView {
         needsDisplay = true
     }
 
+    func setRecordingDraft(_ rect: CGRect) {
+        recordingDraft = RecorderSelectionDraft(rect: rect)
+        selection = rect
+        dragOrigin = nil
+        needsDisplay = true
+    }
+
     func copyLoupeColorUnderPointer() {
         guard let loupeImage else { return }
         let point = isDragging ? lastDragPoint : hoverPoint
@@ -1384,6 +1470,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     func captureToolDidChange() {
+        recordingDraft = nil
         dragOrigin = nil
         selection = .zero
         hoveredWindow = nil
@@ -1454,6 +1541,10 @@ private final class ScreenshotOverlayView: NSView {
         guard acceptsPointerInput else { return }
         controller?.currentPointerLocation = nil
         let point = convert(event.locationInWindow, from: nil)
+        if controller?.isWaitingForRecording == true {
+            recordingDraft?.begin(at: point)
+            return
+        }
         pointerIsInside = true
         hoverPoint = point
         dragOrigin = point
@@ -1465,6 +1556,15 @@ private final class ScreenshotOverlayView: NSView {
 
     override func mouseDragged(with event: NSEvent) {
         NSCursor.crosshair.set()
+        if controller?.isWaitingForRecording == true {
+            if recordingDraft?.drag(to: convert(event.locationInWindow, from: nil), within: bounds) == true,
+               let rect = recordingDraft?.rect, let panel {
+                selection = rect
+                controller?.updateWaitingRecording(rect, on: panel)
+                needsDisplay = true
+            }
+            return
+        }
         guard acceptsPointerInput, let controller, let origin = dragOrigin else { return }
         controller.currentPointerLocation = nil
         let point = convert(event.locationInWindow, from: nil)
@@ -1501,6 +1601,7 @@ private final class ScreenshotOverlayView: NSView {
 
     override func mouseUp(with event: NSEvent) {
         guard acceptsPointerInput, let controller, let panel else { return }
+        if controller.isWaitingForRecording { recordingDraft?.end(); return }
         let point = convert(event.locationInWindow, from: nil)
         guard let origin = dragOrigin else { return }
         dragOrigin = nil
@@ -1531,7 +1632,7 @@ private final class ScreenshotOverlayView: NSView {
             } else if controller.hasSelectedWindows {
                 // Clicked blank area without Shift
             }
-            selection = .zero
+            if recordingDraft == nil { selection = .zero }
             needsDisplay = true
             controller.setSelectionInProgress(false)
             refreshGuideVisibility()
@@ -1548,6 +1649,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     func refreshGuideVisibility() {
+        if controller?.isWaitingForRecording == true { guideHost.isHidden = true; return }
         guard screenCaptureOptions?.controlsInNotch != true, let panel else {
             guideHost.isHidden = true
             return
@@ -1571,6 +1673,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     func refreshFullScreenControlVisibility() {
+        if controller?.isWaitingForRecording == true { fullScreenHost.isHidden = true; return }
         guard let panel else {
             fullScreenHost.isHidden = true
             resetFullScreenControlHover()
@@ -1727,6 +1830,13 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     private func drawSelectionChrome(_ context: CGContext, pixelScale: CGFloat) {
+        if recordingDraft != nil {
+            context.setFillColor(NSColor.white.cgColor)
+            for handle in ScreenshotSupport.Handle.allCases {
+                let point = handle.position(in: selection)
+                context.fillEllipse(in: CGRect(x: point.x - 3, y: point.y - 3, width: 6, height: 6))
+            }
+        }
         let outer = CGPath(roundedRect: selection.insetBy(dx: -1.5, dy: -1.5),
                            cornerWidth: 9,
                            cornerHeight: 9,

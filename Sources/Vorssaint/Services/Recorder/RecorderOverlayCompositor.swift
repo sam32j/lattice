@@ -29,10 +29,10 @@ final class RecorderOverlayCompositor {
             source = source.transformed(by: CGAffineTransform(
                 translationX: frame.midX - source.extent.midX,
                 y: frame.midY - source.extent.midY)).cropped(to: frame)
-            if layout.shape == .circle && !layout.isFullArea {
+            if !layout.isFullArea {
                 let mask = CIFilter.roundedRectangleGenerator()
                 mask.extent = frame
-                mask.radius = Float(min(frame.width, frame.height) / 2)
+                mask.radius = Float(layout.cornerRadius(in: frame))
                 mask.color = .white
                 let blend = CIFilter.blendWithAlphaMask()
                 blend.inputImage = source

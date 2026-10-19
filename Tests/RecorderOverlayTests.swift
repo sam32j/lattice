@@ -11,10 +11,12 @@ enum RecorderOverlayTests {
         RecorderKeystrokeTests.run(suite)
         RecorderOverlayControllerTests.run(suite)
         RecorderIndicatorLayoutTests.run(suite)
+        RecorderSelectionDraftTests.run(suite)
+        RecorderWaitingFlowTests.run(suite)
         var layout = RecorderCameraLayout()
         let tiny = CGSize(width: 100, height: 80)
         let frame = layout.frame(in: tiny)
-        suite.expectClose(frame.width, 73.6, "small camera shrinks to fit a tiny selection", tol: 0.01)
+        suite.expectClose(frame.width, 80, "small camera shrinks to fit a tiny selection", tol: 0.01)
         suite.expect(CGRect(origin: .zero, size: tiny).contains(frame), "camera never extends beyond its selection")
         suite.expect(!layout.isAvailable(.medium, in: tiny) && !layout.isAvailable(.big, in: tiny),
                      "medium and big are disabled when only a reduced small camera fits")
@@ -25,7 +27,7 @@ enum RecorderOverlayTests {
         suite.expect(max(big.width, big.height) <= 500, "big PiP never exceeds five hundred output pixels")
         layout.shape = .vertical
         let vertical = layout.frame(in: regular)
-        suite.expectClose(vertical.height / vertical.width, 1.47, "vertical camera mask uses the requested aspect ratio")
+        suite.expectClose(vertical.height / vertical.width, 1.52, "vertical camera mask uses the requested aspect ratio")
         let previous = layout.frame(in: regular)
         layout.isFullArea = true
         suite.expect(layout.frame(in: regular) == CGRect(origin: .zero, size: regular),
@@ -37,8 +39,10 @@ enum RecorderOverlayTests {
                      "dragging a PiP past an edge keeps it inside the selection")
         var magnetic = RecorderCameraLayout()
         magnetic.size = .small
-        magnetic.place(origin: CGPoint(x: 20, y: 20), in: regular)
-        suite.expect(magnetic.frame(in: regular).minX > 12 && magnetic.frame(in: regular).minX < 20,
-                     "edge attraction is gradual rather than an abrupt full-distance jump")
+        magnetic.place(origin: CGPoint(x: 10, y: 10), in: regular)
+        suite.expect(magnetic.frame(in: regular).origin == .zero, "camera snaps flush to the selection edge")
+        magnetic.place(origin: CGPoint(x: 40, y: 40), in: regular)
+        suite.expect(magnetic.frame(in: regular).origin == CGPoint(x: 40, y: 40),
+                     "camera moves freely away from the snapping zone")
     }
 }
