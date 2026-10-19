@@ -371,7 +371,7 @@ final class DockPreviewService: ObservableObject {
             | CGEventMask(1 << CGEventType.rightMouseDown.rawValue)
             | CGEventMask(1 << CGEventType.otherMouseDown.rawValue)
 
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .tailAppendEventTap,
             options: .listenOnly,
@@ -392,14 +392,14 @@ final class DockPreviewService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         isRunning = true
     }
 
     private func stopTap() {
         stopSpaceObservation()
         if let tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
         }
         if let runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
@@ -413,7 +413,7 @@ final class DockPreviewService: ObservableObject {
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-            if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
+            if let tap { InputEventTap.enable(tap: tap, enable: true) }
             return Unmanaged.passUnretained(event)
         }
 
@@ -1016,7 +1016,7 @@ final class DockPreviewService: ObservableObject {
     // has already changed auto-hide, overwriting the user's new choice.
     private func startDockHoldInputTap() -> Bool {
         guard dockHoldInputTap == nil else { return true }
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -1033,7 +1033,7 @@ final class DockPreviewService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         dockHoldInputSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         return true
     }
 
@@ -1050,7 +1050,7 @@ final class DockPreviewService: ObservableObject {
 
     private func stopDockHoldInputTap() {
         if let tap = dockHoldInputTap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFMachPortInvalidate(tap)
         }
         if let source = dockHoldInputSource {

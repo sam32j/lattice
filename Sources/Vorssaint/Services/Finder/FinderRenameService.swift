@@ -82,7 +82,7 @@ final class FinderRenameService {
             return (tapRunLoop, tap, tapThread != nil)
         }
         if let tap = snapshot.tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
         }
         if let runLoop = snapshot.runLoop {
             CFRunLoopPerformBlock(runLoop, CFRunLoopMode.commonModes.rawValue) {
@@ -109,7 +109,7 @@ final class FinderRenameService {
             }
 
             let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
-            guard let tap = CGEvent.tapCreate(
+            guard let tap = InputEventTap.create(
                 tap: .cgSessionEventTap,
                 // The Super Key decorates shortcuts before this tap sees them.
                 place: .tailAppendEventTap,
@@ -136,15 +136,15 @@ final class FinderRenameService {
                 runLoopSource = source
             }
             CFRunLoopAddSource(runLoop, source, .commonModes)
-            CGEvent.tapEnable(tap: tap, enable: true)
+            InputEventTap.enable(tap: tap, enable: true)
 
             if lifecycleLock.withLock({ shouldStopTapThread }) {
-                CGEvent.tapEnable(tap: tap, enable: false)
+                InputEventTap.enable(tap: tap, enable: false)
             } else {
                 CFRunLoopRun()
             }
 
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFRunLoopRemoveSource(runLoop, source, .commonModes)
             CFMachPortInvalidate(tap)
             if clearEventTapThread() { installTap() }
@@ -174,7 +174,7 @@ final class FinderRenameService {
             // to recover: syncing would start the tap again under a suspend().
             let currentTap = lifecycleLock.withLock { shouldStopTapThread ? nil : tap }
             if SessionActivity.shared.isActive, AXIsProcessTrusted(), let currentTap {
-                CGEvent.tapEnable(tap: currentTap, enable: true)
+                InputEventTap.enable(tap: currentTap, enable: true)
             } else if currentTap != nil {
                 DispatchQueue.main.async { [weak self] in self?.syncWithPreferences() }
             }

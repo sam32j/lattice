@@ -167,13 +167,7 @@ extension AppFeature {
         case .commandBar: return FeatureStrings.commandBar(L10n.shared.language).hubDescription
         case .cleaningMode: return hub.descCleaningMode
         case .mediaTools: return hub.descMediaTools
-        case .cleaner:
-            let description = hub.descCleaner
-            guard WhatsAppDownloadSupport.isEnabled else {
-                return description
-            }
-            return description + " · "
-                + FeatureStrings.whatsAppDownloads(L10n.shared.language).hubDescription
+        case .cleaner: return hub.descCleaner
         case .uninstaller: return hub.descUninstaller
         case .killProcess: return FeatureStrings.killProcess(L10n.shared.language).hubDescription
         case .portManager: return FeatureStrings.portManager(L10n.shared.language).hubDescription

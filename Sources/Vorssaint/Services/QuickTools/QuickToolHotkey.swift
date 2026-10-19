@@ -27,7 +27,7 @@ final class QuickToolHotkey {
     /// registration (combination taken by another app).
     @discardableResult
     func sync(enabled: Bool, shortcut: GlobalShortcut, storageKey: String) -> Bool {
-        guard enabled, shortcut.isValid else {
+        guard enabled, shortcut.isValid, !InputEventTap.isBlocked else {
             unregister()
             return true
         }
@@ -87,7 +87,7 @@ final class QuickToolHotkey {
             guard id.signature == 0x5655_5154,
                   let instance = QuickToolHotkey.instances[id.id]
             else { return OSStatus(eventNotHandledErr) }
-            DispatchQueue.main.async { instance.onPress?() }
+            DispatchQueue.main.async { if !InputEventTap.isBlocked { instance.onPress?() } }
             return noErr
         }, 1, &spec, nil, &sharedHandler)
     }

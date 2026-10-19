@@ -59,7 +59,7 @@ enum ShortcutRecordingTap {
             guard AXIsProcessTrusted() else { return false }
             let mask = (CGEventMask(1) << CGEventType.keyDown.rawValue)
                 | (CGEventMask(1) << CGEventType.keyUp.rawValue)
-            guard let created = CGEvent.tapCreate(
+            guard let created = InputEventTap.create(
                 tap: .cgSessionEventTap,
                 place: .headInsertEventTap,
                 options: .defaultTap,
@@ -73,7 +73,7 @@ enum ShortcutRecordingTap {
             let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, created, 0)
             runLoopSource = source
             CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-            CGEvent.tapEnable(tap: created, enable: true)
+            InputEventTap.enable(tap: created, enable: true)
         }
         handler = newHandler
         return true
@@ -111,7 +111,7 @@ enum ShortcutRecordingTap {
         handler = nil
         superState.reset()
         if let tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFMachPortInvalidate(tap)
         }
         if let runLoopSource {
@@ -124,7 +124,7 @@ enum ShortcutRecordingTap {
     private static func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if SessionActivity.shared.isActive, AXIsProcessTrusted(), let tap {
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
             } else {
                 DispatchQueue.main.async { tearDown(); ShortcutCapture.end() }
             }

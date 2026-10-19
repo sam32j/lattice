@@ -4,70 +4,6 @@
 import SwiftUI
 import UserNotifications
 
-/// One Settings home for the installable Cleaner module. The system cleaner
-/// and WhatsApp downloads keep separate controls and schedules, while sharing
-/// the module's availability and permission portal entry.
-struct CleanerSettings: View {
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var router = SettingsRouter.shared
-    @AppStorage(DefaultsKey.whatsAppDownloadsEnabled) private var whatsAppEnabled = false
-    @State private var tool = Tool.system
-
-    private enum Tool: String {
-        case system, whatsApp
-    }
-
-    /// A panel surface can ask for a specific tool; the hint is one-shot.
-    private func consumeToolHint() {
-        guard let hint = router.cleanerTool else { return }
-        router.cleanerTool = nil
-        guard whatsAppEnabled, let wanted = Tool(rawValue: hint) else { return }
-        tool = wanted
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            if whatsAppEnabled {
-                Picker("", selection: $tool) {
-                    Label(l10n.s.cleanerName, systemImage: "sparkles")
-                        .tag(Tool.system)
-                    Label(FeatureStrings.whatsAppDownloads(l10n.language).title,
-                          systemImage: "arrow.down.doc")
-                        .tag(Tool.whatsApp)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 440)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
-
-                Divider()
-            }
-
-            if whatsAppEnabled, tool == .whatsApp {
-                WhatsAppDownloadsSettings()
-            } else {
-                CleanerView()
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .onAppear {
-            if !whatsAppEnabled { tool = .system }
-            consumeToolHint()
-        }
-        .onChange(of: router.cleanerTool) { _, _ in consumeToolHint() }
-        .onChange(of: whatsAppEnabled) { _, enabled in
-            tool = enabled ? .whatsApp : .system
-            WhatsAppDownloadScheduler.shared.syncWithPreferences()
-            WhatsAppDownloadOrganizer.shared.syncWithPreferences()
-            if !enabled {
-                WhatsAppDownloadManager.shared.reset()
-                WhatsAppDownloadOrganizer.shared.stop()
-            }
-        }
-    }
-}
-
 /// The junk cleaner, built for one glance: a safe section that is fully
 /// selected and ready for a single click, and an optional section that
 /// starts unchecked and collapsed for whoever wants to dig. Every group has
@@ -89,17 +25,9 @@ struct CleanerView: View {
     @AppStorage(DefaultsKey.cleanerScreenshotAgeDays)
     private var screenshotAgeDays = CleanerPolicy.defaultScreenshotAgeDays
     @ObservedObject private var scheduler = CleanerScheduler.shared
-    @ObservedObject private var whatsAppScheduler = WhatsAppDownloadScheduler.shared
-    @AppStorage(DefaultsKey.whatsAppDownloadsEnabled) private var whatsAppEnabled = false
-    @AppStorage(DefaultsKey.whatsAppDownloadsAutomaticEnabled) private var whatsAppAutomatic = false
-    @AppStorage(DefaultsKey.whatsAppDownloadsLastCleanup) private var whatsAppLastCleanup = 0.0
-    @AppStorage(DefaultsKey.whatsAppDownloadsLastCleanupCount) private var whatsAppLastCount = 0
-    @AppStorage(DefaultsKey.whatsAppDownloadsLastCleanupBytes) private var whatsAppLastBytes = 0
-    @AppStorage(DefaultsKey.whatsAppDownloadsLastCleanupFailed) private var whatsAppLastFailed = 0
     @State private var notificationsDenied = false
     /// The panel hosted card starts folded; the Settings page shows it open.
     @State private var scheduleExpanded = false
-    @State private var whatsAppExpanded = false
     /// Tightens paddings for the panel and launcher.
     var compact = false
 
@@ -263,11 +191,6 @@ struct CleanerView: View {
                 .buttonStyle(.borderedProminent)
             scheduleCard
             screenshotsCard
-            if !compact, !whatsAppEnabled { whatsAppOptInCard }
-            // The Settings page has its own full tool for these downloads;
-            // the panel gets this one-line home so the feature is findable
-            // without opening Settings.
-            if compact, whatsAppEnabled { whatsAppCard }
             if !permissions.fullDiskAccess {
                 FullDiskAccessNote(compact: compact).frame(maxWidth: 380)
             }
@@ -319,105 +242,6 @@ struct CleanerView: View {
             }
         }
         .padding(11)
-        .frame(maxWidth: 380)
-        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.primary.opacity(0.05)))
-    }
-
-    // MARK: WhatsApp downloads (panel surface)
-
-    private var whatsAppStrings: WhatsAppDownloadStrings {
-        FeatureStrings.whatsAppDownloads(l10n.language)
-    }
-
-    private var whatsAppOptInCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Toggle(whatsAppStrings.title, isOn: $whatsAppEnabled)
-                .font(.system(size: 12, weight: .medium))
-            Text(whatsAppStrings.hubDescription)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(11)
-        .frame(maxWidth: 380, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.primary.opacity(0.05)))
-    }
-
-    /// Collapsed summary: Off until the automation is armed, then the next
-    /// pass, so the row answers "is it working?" without being opened.
-    private var whatsAppSummary: String {
-        guard whatsAppAutomatic else { return l10n.s.cleanerScheduleOff }
-        if let next = whatsAppScheduler.nextFire {
-            return Self.nextRunFormatter.string(from: next)
-        }
-        return whatsAppStrings.automatic
-    }
-
-    /// The cleanup's one-line home in the panel: state at a glance, the last
-    /// and next pass when expanded, and a jump straight into its settings.
-    private var whatsAppCard: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button {
-                var transaction = Transaction(animation: nil)
-                transaction.disablesAnimations = true
-                withTransaction(transaction) {
-                    whatsAppExpanded.toggle()
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: whatsAppExpanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 9)
-                    Image(systemName: "arrow.down.doc").foregroundStyle(.secondary)
-                    Text(whatsAppStrings.title)
-                        .font(.system(size: 12, weight: .medium))
-                    Spacer()
-                    Text(whatsAppSummary)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(11)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if whatsAppExpanded {
-                VStack(alignment: .leading, spacing: 8) {
-                    if whatsAppLastCleanup > 0 {
-                        Text(String(format: whatsAppStrings.lastRunFormat,
-                                    Self.nextRunFormatter.string(
-                                        from: Date(timeIntervalSince1970: whatsAppLastCleanup)),
-                                    whatsAppLastCount,
-                                    Self.byteString(Int64(whatsAppLastBytes)),
-                                    whatsAppLastFailed))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } else {
-                        Text(whatsAppStrings.neverRun)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    if whatsAppAutomatic, let next = whatsAppScheduler.nextFire {
-                        Text(String(format: whatsAppStrings.nextRunFormat,
-                                    Self.nextRunFormatter.string(from: next)))
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                    Button(whatsAppStrings.manageButton) {
-                        SettingsRouter.shared.cleanerTool = "whatsApp"
-                        SettingsRouter.shared.request(FeatureSettingsDestination(.cleaner))
-                        appDelegate()?.openSettingsWindow()
-                    }
-                    .controlSize(.small)
-                }
-                .padding(.horizontal, 11)
-                .padding(.top, 5)
-                .padding(.bottom, 11)
-            }
-        }
         .frame(maxWidth: 380)
         .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.primary.opacity(0.05)))
     }

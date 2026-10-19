@@ -130,6 +130,7 @@ enum NotchDestinationContract {
         }
         for (key, value) in Defaults.registeredDefaults where key.hasPrefix("notch") { defaults.set(value, forKey: key) }
         for feature in AppFeature.allCases { defaults.set(true, forKey: feature.availabilityKey) }
+        defaults.set(true, forKey: DefaultsKey.panelShowFanControl)
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
         let focus = Service()
         focus.showsKeyboardFocus = true
@@ -181,6 +182,7 @@ enum NotchDestinationContract {
             service.open(.system, pinned: true, metric: metric)
             suite.expect(service.selectedMetric == metric, "an available metric opens its own detail")
             defaults.set(false, forKey: feature.availabilityKey)
+            if feature == .fanControl { defaults.set(false, forKey: DefaultsKey.panelShowFanControl) }
             service.syncWithPreferences()
             suite.expect(service.selectedMetric == nil && service.requestedDetail == nil,
                    "removing the selected metric clears its detail even when other system families remain")
@@ -189,18 +191,20 @@ enum NotchDestinationContract {
             suite.expect(service.selectedMetric == nil,
                    "a retained gallery argument cannot restore a metric removed from the hub")
             defaults.set(true, forKey: feature.availabilityKey)
+            if feature == .fanControl { defaults.set(true, forKey: DefaultsKey.panelShowFanControl) }
         }
         let service = Service()
         service.open(.system, metric: .cpu)
         for (_, feature) in families { defaults.set(false, forKey: feature.availabilityKey) }
+        defaults.set(false, forKey: DefaultsKey.panelShowFanControl)
         service.syncWithPreferences()
         suite.expect(!service.modules.contains(.system) && service.selected == .controls
                && service.selectedMetric == nil && service.requestedDetail == nil,
                "removing the last system family selects an available module without keeping its old detail")
-        defaults.set(true, forKey: AppFeature.fanControl.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.panelShowFanControl)
         service.open(.system, metric: .fan)
         suite.expect(service.modules.contains(.system) && service.selectedMetric == .fan,
-               "a separately installed fan feature exposes System and retains its direct detail")
+               "an enabled fan control exposes System and retains its direct detail")
 
         QuickLauncherService.shared = QuickLauncherContract.Launcher()
         let launcher = QuickLauncherService.shared

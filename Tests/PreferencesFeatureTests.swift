@@ -33,7 +33,6 @@ enum PreferencesFeatureTests {
         suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.screenshotSaveSubfolder),
                "a screenshot subfolder name is a pattern rather than a path, so it still follows settings backups")
         suite.expect(!SettingsBackupSupport.exportKeys().contains(DefaultsKey.commandBarFileScopes)
-            && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.whatsAppOrganizerDestinationPath)
             && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.notchDownloadsFolderBookmark)
             && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.wallpaperOwnBookmarks)
             && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.mediaImageWatermarkLogoPath),
@@ -90,8 +89,7 @@ enum PreferencesFeatureTests {
         companionDefaults.set(false, forKey: AppFeature.notchMascot.availabilityKey)
         companionDefaults.set(false, forKey: AppFeature.notch.availabilityKey)
         Defaults.installCompanionForBetaCommandBar(in: companionDefaults, isBeta: true)
-        let waitsForSetup = !companionDefaults.bool(forKey: AppFeature.notchMascot.availabilityKey)
-        companionDefaults.set(true, forKey: DefaultsKey.hasOnboarded)
+        let noIslandBeforeInstall = !companionDefaults.bool(forKey: AppFeature.notchMascot.availabilityKey)
         Defaults.installCompanionForBetaCommandBar(in: companionDefaults, isBeta: false)
         let stableUntouched = !companionDefaults.bool(forKey: AppFeature.notchMascot.availabilityKey)
         Defaults.installCompanionForBetaCommandBar(in: companionDefaults, isBeta: true)
@@ -107,8 +105,8 @@ enum PreferencesFeatureTests {
         companionDefaults.removeObject(forKey: DefaultsKey.notchMascotBetaInstalled)
         companionDefaults.set(false, forKey: AppFeature.commandBar.availabilityKey)
         let noCommandBar = !Defaults.installsCompanionForBeta(in: companionDefaults, isBeta: true)
-        suite.expect(waitsForSetup && stableUntouched && noIsland && installed && keptOut && noCommandBar,
-                     "a beta installs the companion once for Command Bar users with the island after setup, even over setup's off, and leaves it out once uninstalled")
+        suite.expect(noIslandBeforeInstall && stableUntouched && noIsland && installed && keptOut && noCommandBar,
+                     "a beta installs the companion once for Command Bar users with the island without onboarding, and leaves it out once uninstalled")
         suite.expect(AppAppearance.sanitized(nil) == .system
                 && AppAppearance.sanitized("nonsense") == .system,
                "an unknown stored appearance falls back to the system one")

@@ -52,7 +52,7 @@ final class PreciseVolumeRollerService: ObservableObject {
     }
 
     private func removeTap() {
-        if let tap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap { InputEventTap.enable(tap: tap, enable: false) }
         if let source {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
         }
@@ -72,7 +72,7 @@ final class PreciseVolumeRollerService: ObservableObject {
             return
         }
         if let tap, !CGEvent.tapIsEnabled(tap: tap) {
-            CGEvent.tapEnable(tap: tap, enable: true)
+            InputEventTap.enable(tap: tap, enable: true)
         }
         guard tap == nil else { return }
 
@@ -84,7 +84,7 @@ final class PreciseVolumeRollerService: ObservableObject {
                 .takeUnretainedValue()
             return service.handle(type: type, event: event)
         }
-        guard let created = CGEvent.tapCreate(
+        guard let created = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -101,14 +101,14 @@ final class PreciseVolumeRollerService: ObservableObject {
         if let source {
             CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
         }
-        CGEvent.tapEnable(tap: created, enable: true)
+        InputEventTap.enable(tap: created, enable: true)
         tapFailed = false
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if SessionActivity.shared.isActive, AXIsProcessTrusted(), let tap {
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
             } else {
                 DispatchQueue.main.async { [weak self] in self?.syncWithPreferences() }
             }

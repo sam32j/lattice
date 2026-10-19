@@ -120,7 +120,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
     private static func testFeatureCatalogBundlingAndCount(_ suite: TestSuite) {
         // 1. Total installable features in Feature Hub excludes bundled .colorPicker and .screenOCR, plus mouse and keyboard features
         let nonHubFeatures = AppFeature.allCases.filter {
-            $0 == .colorPicker || $0 == .screenOCR || $0.isMouseFeature || $0.isKeyboardFeature
+            $0 == .colorPicker || $0 == .screenOCR || $0.isToggleOwned
         }
         suite.expect(AppFeature.hubInstallableFeatures.count == AppFeature.allCases.count - nonHubFeatures.count,
                      "the Hub omits the screenshot companions as well as mouse and keyboard features")

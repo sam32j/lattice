@@ -22,7 +22,16 @@ import QuartzCore
 /// The overlay dies with the app, so no display state can outlive a crash.
 /// No windows, timers or observers exist while the feature is off.
 final class ExtraBrightnessService: ObservableObject {
-    static let shared = ExtraBrightnessService()
+    private static var instance: ExtraBrightnessService?
+    static var shared: ExtraBrightnessService {
+        if let instance { return instance }
+        let service = ExtraBrightnessService()
+        instance = service
+        return service
+    }
+
+    static func stopIfLoaded() { instance?.stop() }
+    static func resumeIfLoaded() { instance?.syncWithPreferences() }
 
     /// A built-in display with EDR headroom exists (feature can work here).
     @Published private(set) var supported = false
@@ -69,9 +78,6 @@ final class ExtraBrightnessService: ObservableObject {
             && UserDefaults.standard.bool(forKey: DefaultsKey.extraBrightnessEnabled)
         if enabled, supported {
             start()
-        } else if enabled {
-            installObserver()
-            stop(preservingObservers: true)
         } else {
             stop()
         }
@@ -86,30 +92,11 @@ final class ExtraBrightnessService: ObservableObject {
 
     // MARK: - Detection
 
-    /// The Mac's model identifier (for example Mac16,1), the primary signal
-    /// for a real XDR panel: names and headroom values from NSScreen proved
-    /// unreliable across machines and macOS versions.
-    private static let modelIdentifier: String? = {
-        var size = 0
-        guard sysctlbyname("hw.model", nil, &size, nil, 0) == 0, size > 0 else { return nil }
-        var buffer = [CChar](repeating: 0, count: size)
-        guard sysctlbyname("hw.model", &buffer, &size, nil, 0) == 0 else { return nil }
-        return String(cString: buffer)
-    }()
-
     /// Which sustainable boost curve this panel generation takes.
-    private static let panelReference = ExtraBrightnessSupport.panelReference(model: modelIdentifier)
+    private static let panelReference = ExtraBrightnessSupport.panelReference(model: XDRDisplaySupport.modelIdentifier)
 
     private static func builtInXDRScreen() -> NSScreen? {
-        NSScreen.screens.first { screen in
-            guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber
-            else { return false }
-            return CGDisplayIsBuiltin(number.uint32Value) != 0
-                && ExtraBrightnessSupport.isSupportedPanel(
-                    model: modelIdentifier,
-                    localizedName: screen.localizedName,
-                    potentialEDR: Double(screen.maximumPotentialExtendedDynamicRangeColorComponentValue))
-        }
+        XDRDisplaySupport.supportedScreen
     }
 
     /// The screen the overlay was built for. Which panel qualifies moves only

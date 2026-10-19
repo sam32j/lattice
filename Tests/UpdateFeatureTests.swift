@@ -13,30 +13,6 @@ import VMStatisticsCompat
 
 enum UpdateFeatureTests {
     static func run(_ suite: TestSuite) {
-        suite.expect(BrightnessUpdatePromptInfo.isUpgrade(appVersion: "3.4.0-beta.7",
-                                                          previousVersion: "3.4.0-beta.6")
-                    && BrightnessUpdatePromptInfo.isUpgrade(appVersion: "3.4.0",
-                                                            previousVersion: "3.4.0-beta.6"),
-                    "the display setup invitation recognizes a newer release")
-        for previous in [nil, "", "dev", "3.4.0-beta.7", "3.4.0"] as [String?] {
-            suite.expect(!BrightnessUpdatePromptInfo.isUpgrade(appVersion: "3.4.0-beta.7",
-                                                               previousVersion: previous),
-                         "a first install, unknown version, unchanged release or downgrade does not invite: \(previous ?? "nil")")
-        }
-        suite.expect(BrightnessUpdatePromptInfo.needsSetup(
-            notchAvailable: true, brightnessAvailable: true, notchEnabled: true,
-            notchBrightness: true, brightnessEnabled: false),
-            "the invitation targets an enabled island with brightness waiting for display controls")
-        for (notchAvailable, brightnessAvailable, notchEnabled, notchBrightness, brightnessEnabled)
-            in [(false, true, true, true, false), (true, false, true, true, false),
-                (true, true, false, true, false), (true, true, true, false, false),
-                (true, true, true, true, true)] {
-            suite.expect(!BrightnessUpdatePromptInfo.needsSetup(
-                notchAvailable: notchAvailable, brightnessAvailable: brightnessAvailable,
-                notchEnabled: notchEnabled, notchBrightness: notchBrightness,
-                brightnessEnabled: brightnessEnabled),
-                "the invitation skips unavailable, unused or already configured display controls")
-        }
         func activeSet(_ permission: AppPermission,
                        available: Set<AppFeature> = Set(AppFeature.allCases),
                        on: Set<String> = [],
@@ -258,20 +234,6 @@ enum UpdateFeatureTests {
                                                        expectedBytes: nil),
                "a plausible body with no advertised size is accepted")
 
-        // The showcase loader is a @StateObject, so it can be released without
-        // `.onDisappear` running. Its session holds the download delegate, and
-        // that delegate's deinit is what deletes the scratch file, so the
-        // release path has to invalidate the session too.
-        let showcaseSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/Update/UpdateShowcaseMedia.swift",
-            encoding: .utf8)) ?? ""
-        let showcaseDeinitBody = (showcaseSource.components(separatedBy: "\n    deinit {")
-            .dropFirst().first ?? "").components(separatedBy: "\n    }").first ?? ""
-        suite.expect(showcaseDeinitBody.contains("session?.invalidateAndCancel()"),
-               "a released showcase loader invalidates its session, freeing the delegate and its scratch file")
-        suite.expect(!showcaseDeinitBody.contains("finishTasksAndInvalidate"),
-               "a released showcase loader cancels its download instead of letting it finish")
-
         suite.expect(SettingsSearchSupport.matches(query: "", title: "Monitor"),
                "a blank settings search matches everything")
         suite.expect(SettingsSearchSupport.matches(query: "moni", title: "Monitor"),
@@ -383,11 +345,9 @@ enum UpdateFeatureTests {
             page: .dock, title: "Dock", icon: "dock.rectangle",
             preferredFeatures: [.dockPreview, .dockClick], includePage: false,
             isAvailable: { $0 == .dockClick }, featureTitle: { $0.rawValue })
-        suite.expect(dockRows.count == 2
-                && Set(dockRows.map(\.id)) == [.feature(.dockPreview),
-                                               .feature(.dockClick)]
-                && dockClickOnlyRows.first?.id == .feature(.dockClick),
-               "tools sharing a section keep separate named rows")
+        suite.expect(dockRows.map(\.id) == [.page(.dock)]
+                     && dockClickOnlyRows.map(\.id) == [.page(.dock)],
+                     "Dock exposes one page regardless of which child control is enabled")
         let keyboardDestination = FeatureSettingsDestination(
             .energy, sectionAnchor: .keyboardBrightnessShortcuts)
         let keyboardShortcutItem = SettingsSearchSupport.keyboardBrightnessShortcutItem(language: .enUS)
@@ -620,9 +580,9 @@ enum UpdateFeatureTests {
         suite.expect(mergedWindowLayout.feature == .windowLayout
                 && maximizerOnlyRoute.destination == FeatureSettingsDestination(.windowLayout)
                 && maximizerOnlyRoute.targetFeature == nil
-                && noneRoute.destination == FeatureSettingsDestination(.features)
-                && noneRoute.targetFeature == .windowLayout,
-               "a page kept visible by another feature opens itself, and falls back to its hub row once hidden")
+                && noneRoute.destination == FeatureSettingsDestination(.windowLayout)
+                && noneRoute.targetFeature == nil,
+               "Window Management remains reachable for its page-owned controls even with optional layout tools off")
         let exceptionGroups = SettingsSearchSupport.groupedMatchingItems(
             query: "keep full screen", items: windowLayoutItems, isAvailable: maximizerOnly)
         let snapGroups = SettingsSearchSupport.groupedMatchingItems(
@@ -781,23 +741,23 @@ enum UpdateFeatureTests {
                     isAvailable: { _ in false }).isEmpty,
                "a main page with no installed utilities is not suggested")
 
-        let freshSize = SettingsWindowSupport.initialContentSize(savedWidth: 0, savedHeight: 0,
+        let freshSize = SettingsWindowSupport.initialContentSize(savedHeight: 0,
                                                                  availableHeight: 1200)
         suite.expect(freshSize.width == 772 && freshSize.height == 838,
                "settings window opens at the tall default when nothing is saved")
-        let clampedSize = SettingsWindowSupport.initialContentSize(savedWidth: 0, savedHeight: 0,
+        let clampedSize = SettingsWindowSupport.initialContentSize(savedHeight: 0,
                                                                    availableHeight: 700)
         suite.expect(clampedSize.height == 700,
                "the tall default shrinks to what the screen fits")
-        let tinyScreen = SettingsWindowSupport.initialContentSize(savedWidth: 0, savedHeight: 0,
+        let tinyScreen = SettingsWindowSupport.initialContentSize(savedHeight: 0,
                                                                   availableHeight: 400)
         suite.expect(tinyScreen.height == 528,
                "the default never goes below the design height")
-        let savedSize = SettingsWindowSupport.initialContentSize(savedWidth: 900, savedHeight: 950,
+        let savedSize = SettingsWindowSupport.initialContentSize(savedHeight: 950,
                                                                  availableHeight: 700)
-        suite.expect(savedSize.width == 900 && savedSize.height == 950,
-               "a user-chosen size is restored as is")
-        let bogusSaved = SettingsWindowSupport.initialContentSize(savedWidth: 300, savedHeight: 200,
+        suite.expect(savedSize.width == 772 && savedSize.height == 950,
+               "Settings restores height but normalizes historical widths to the fixed design width")
+        let bogusSaved = SettingsWindowSupport.initialContentSize(savedHeight: 200,
                                                                   availableHeight: 1200)
         suite.expect(bogusSaved.width == 772 && bogusSaved.height == 838,
                "a saved size below the minimum falls back to the default")
@@ -805,39 +765,8 @@ enum UpdateFeatureTests {
                "sub-minimum sizes are rejected by isValidContentSize")
         suite.expect(SettingsWindowSupport.isValidContentSize(width: 772, height: 528),
                "exact minimum size is valid")
-        suite.expect(SettingsWindowSupport.isValidContentSize(width: 1000, height: 800),
-               "larger size is valid")
-        let fullTourSize = CGSize(width: 600, height: 584)
-        let tourSettingsSize = CGSize(width: 772, height: 750)
-        let wideTourScreen = CGRect(x: -1600, y: 100, width: 1470, height: 900)
-        let wideTourPlacement = SettingsWindowSupport.tourPlacement(
-            settingsSize: tourSettingsSize, tourSize: fullTourSize, visibleFrame: wideTourScreen)
-        suite.expect(!wideTourPlacement.settings.intersects(wideTourPlacement.tour)
-                && wideTourPlacement.settings.maxX < wideTourPlacement.tour.minX,
-               "the complete tour fits beside Settings on a wide display")
-        suite.expect(wideTourScreen.contains(wideTourPlacement.settings)
-                && wideTourScreen.contains(wideTourPlacement.tour),
-               "tour placement respects external displays with offset coordinates")
-        let smallTourScreen = CGRect(x: 0, y: 0, width: 1280, height: 800)
-        let smallTourPlacement = SettingsWindowSupport.tourPlacement(
-            settingsSize: tourSettingsSize, tourSize: fullTourSize, visibleFrame: smallTourScreen)
-        suite.expect(smallTourScreen.contains(smallTourPlacement.settings)
-                && smallTourScreen.contains(smallTourPlacement.tour)
-                && smallTourPlacement.settings.size == tourSettingsSize
-                && smallTourPlacement.tour.size == fullTourSize,
-               "narrow displays keep the complete images and controls on screen without resizing")
-        let tallTourPlacement = SettingsWindowSupport.tourPlacement(
-            settingsSize: tourSettingsSize, tourSize: fullTourSize,
-            visibleFrame: CGRect(x: 200, y: -1700, width: 1000, height: 1600))
-        suite.expect(!tallTourPlacement.settings.intersects(tallTourPlacement.tour)
-                && tallTourPlacement.tour.minY > tallTourPlacement.settings.maxY,
-               "portrait displays stack the tour above Settings when both fit")
-        let oversizedTourPlacement = SettingsWindowSupport.tourPlacement(
-            settingsSize: CGSize(width: 1600, height: 1000), tourSize: fullTourSize,
-            visibleFrame: smallTourScreen)
-        suite.expect(smallTourScreen.contains(oversizedTourPlacement.tour)
-                && oversizedTourPlacement.settings.maxY == smallTourScreen.maxY - 20,
-               "an oversized Settings window cannot push the tour or its own title bar off screen")
+        suite.expect(!SettingsWindowSupport.isValidContentSize(width: 1000, height: 800),
+               "Settings rejects widths other than its fixed design width")
         let preferredSettingsFrame = CGRect(x: -50, y: 100, width: 1000, height: 700)
         let overlappingPlacement = SettingsWindowSupport.panelPlacement(
             preferredFrame: preferredSettingsFrame,

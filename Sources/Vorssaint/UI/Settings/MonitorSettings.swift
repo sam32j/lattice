@@ -29,7 +29,6 @@ struct MonitorSettings: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 20, pinnedViews: [.sectionHeaders]) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(l10n.s.tabMonitor).font(.title2.bold())
                     Text(FeatureStrings.settingsPages(l10n.language).monitorDescription)
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -48,7 +47,7 @@ struct MonitorSettings: View {
                 }
                 groupHeading(l10n.s.monitorPanelSection, symbol: "macwindow")
                 panelCard
-                if AppFeature.fanControl.isAvailable {
+                if AppFeature.fanControl.isPresentInControls() {
                     fanControlCard
                         .settingsSectionAnchor(.fanControl, cornerRadius: 16)
                 }
@@ -224,7 +223,7 @@ struct MonitorSettings: View {
 
     private var panelCard: some View {
         SettingsCard {
-            MonitorPanelConfig(tiles: true)
+            MonitorPanelConfig()
             Text(l10n.s.monitorPanelConfigHint)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -239,7 +238,11 @@ struct MonitorSettings: View {
         return SettingsCard {
             SettingsRow(symbol: "fanblades.fill", title: fanStrings.title, badge: l10n.s.betaBadge,
                         caption: fanStrings.settingsCaption) {
-                Toggle(fanStrings.showInPanel, isOn: $showFanControl).labelsHidden()
+                Toggle(fanStrings.title, isOn: $showFanControl)
+                    .labelsHidden()
+                    .onChange(of: showFanControl) { _, _ in
+                        FeatureRuntime.shared.sync([.fanControl])
+                    }
             }
             Text(l10n.s.betaFeatureWarning)
                 .font(.caption)

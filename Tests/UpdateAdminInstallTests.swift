@@ -12,6 +12,8 @@ enum UpdateAdminInstallContract {
 
     final class ExtraBrightnessService {
         static let shared = ExtraBrightnessService()
+        static func stopIfLoaded() { shared.stop() }
+        static func resumeIfLoaded() { shared.syncWithPreferences() }
         var onScreen = true
         func stop() { onScreen = false }
         func syncWithPreferences() { onScreen = true; events.append("overlay") }

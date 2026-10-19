@@ -74,7 +74,6 @@ struct KeyboardSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(pageStrings.keyboardTitle).font(.title2.bold())
                     Text(pageStrings.keyboardDescription)
                         .font(.callout)
                         .foregroundStyle(.secondary)

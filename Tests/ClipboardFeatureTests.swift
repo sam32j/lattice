@@ -903,19 +903,19 @@ enum ClipboardFeatureTests {
                "a queued clear is invalidated when its setting changes before pasteboard access")
 
         let featureTitles: [(AppLanguage, String, String, String, String)] = [
-            (.enUS, "Clipboard", "Window layout", "Utilities", "Alerts"),
-            (.ptBR, "Clipboard", "Layout de janelas", "Utilitários", "Alertas"),
-            (.tr, "Pano", "Pencere yerleşimi", "Araçlar", "Uyarılar"),
-            (.es, "Portapapeles", "Diseño de ventanas", "Utilidades", "Alertas"),
-            (.de, "Zwischenablage", "Fensterlayout", "Dienstprogramme", "Warnungen"),
-            (.fr, "Presse-papiers", "Disposition des fenêtres", "Utilitaires", "Alertes"),
-            (.it, "Appunti", "Layout finestre", "Utilità", "Avvisi"),
-            (.ja, "クリップボード", "ウインドウ配置", "ユーティリティ", "アラート"),
-            (.ko, "클립보드", "윈도우 정렬", "유틸리티", "알림"),
-            (.ru, "Буфер обмена", "Раскладка окон", "Утилиты", "Оповещения"),
-            (.zhHans, "剪贴板", "窗口布局", "实用工具", "提醒"),
-            (.zhTW, "剪貼簿", "視窗排列", "工具程式", "提醒"),
-            (.zhHK, "剪貼簿", "視窗排列", "工具", "提示"),
+            (.enUS, "Clipboard", "Window Management", "Utilities", "Alerts"),
+            (.ptBR, "Clipboard", "Gerenciamento de Janelas", "Utilitários", "Alertas"),
+            (.tr, "Pano", "Pencere Yönetimi", "Araçlar", "Uyarılar"),
+            (.es, "Portapapeles", "Gestión de ventanas", "Utilidades", "Alertas"),
+            (.de, "Zwischenablage", "Fensterverwaltung", "Dienstprogramme", "Warnungen"),
+            (.fr, "Presse-papiers", "Gestion des fenêtres", "Utilitaires", "Alertes"),
+            (.it, "Appunti", "Gestione finestre", "Utilità", "Avvisi"),
+            (.ja, "クリップボード", "ウインドウ管理", "ユーティリティ", "アラート"),
+            (.ko, "클립보드", "윈도우 관리", "유틸리티", "알림"),
+            (.ru, "Буфер обмена", "Управление окнами", "Утилиты", "Оповещения"),
+            (.zhHans, "剪贴板", "窗口管理", "实用工具", "提醒"),
+            (.zhTW, "剪貼簿", "視窗管理", "工具程式", "提醒"),
+            (.zhHK, "剪貼簿", "視窗管理", "工具", "提示"),
         ]
         for (language, clipboardTitle, windowTitle, utilitiesTitle, alertsTitle) in featureTitles {
             suite.expect(FeatureStrings.clipboard(language).title == clipboardTitle,

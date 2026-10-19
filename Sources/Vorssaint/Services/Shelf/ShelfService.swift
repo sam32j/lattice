@@ -390,6 +390,7 @@ final class ShelfService: ObservableObject {
     }
 
     private func registerHotkey() {
+        guard !InputEventTap.isBlocked else { unregisterHotkey(); return }
         let shortcut = GlobalShortcut.saved(for: DefaultsKey.shelfShortcut,
                                             fallback: .shelfDefault)
         if hotKeyRef != nil, registeredShortcut == shortcut { return }
@@ -411,7 +412,7 @@ final class ShelfService: ObservableObject {
                 guard id.signature == 0x5655_5348, id.id == 2
                 else { return OSStatus(eventNotHandledErr) }
                 let service = Unmanaged<ShelfService>.fromOpaque(userData).takeUnretainedValue()
-                DispatchQueue.main.async { service.handleShortcut() }
+                DispatchQueue.main.async { if !InputEventTap.isBlocked { service.handleShortcut() } }
                 return noErr
             }, 1, &spec, Unmanaged.passUnretained(self).toOpaque(), &hotKeyHandler)
         }

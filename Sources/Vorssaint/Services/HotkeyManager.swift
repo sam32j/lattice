@@ -28,6 +28,7 @@ final class HotkeyManager: ObservableObject {
     }
 
     private func register() {
+        guard !InputEventTap.isBlocked else { unregister(); return }
         let shortcut = GlobalShortcut.saved(for: DefaultsKey.keepAwakeShortcut,
                                             fallback: .keepAwakeDefault)
         if hotKeyRef != nil, registeredShortcut == shortcut { return }
@@ -53,7 +54,7 @@ final class HotkeyManager: ObservableObject {
                 guard hotKeyID.signature == 0x5655_544C, hotKeyID.id == 1
                 else { return OSStatus(eventNotHandledErr) }
                 let manager = Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue()
-                DispatchQueue.main.async { manager.onActivate?() }
+                DispatchQueue.main.async { if !InputEventTap.isBlocked { manager.onActivate?() } }
                 return noErr
             }, 1, &spec, Unmanaged.passUnretained(self).toOpaque(), &eventHandler)
         }

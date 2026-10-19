@@ -57,16 +57,7 @@ struct PermissionsPortalSections: View {
         case .accessibility: return permissions.accessibility ? .granted : .missing
         case .screenRecording: return permissions.screenRecording ? .granted : .missing
         case .fullDiskAccess: return permissions.fullDiskAccess ? .granted : .missing
-        case .filesAndFolders:
-            guard AppFeature.cleaner.isAvailable,
-                  WhatsAppDownloadSupport.isEnabled else {
-                return .unknown
-            }
-            switch WhatsAppDownloadManager.shared.accessStatus {
-            case .available: return .granted
-            case .denied: return .missing
-            case .unknown: return .unknown
-            }
+        case .filesAndFolders: return .unknown
         case .notifications:
             switch permissions.notifications {
             case .granted: return .granted

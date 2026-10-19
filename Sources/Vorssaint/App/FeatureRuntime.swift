@@ -35,7 +35,7 @@ final class FeatureRuntime: ObservableObject {
     /// a restart would actually unload it. Features already uninstalled when
     /// the app came up never loaded, so they need no restart.
     var needsRestartToUnload: Bool {
-        loadedThisSession.contains { !$0.isMouseFeature && !$0.isKeyboardFeature && !$0.isAvailable }
+        loadedThisSession.contains { !$0.isToggleOwned && !$0.isAvailable }
     }
 
     /// Relaunches the app in place: a detached helper waits for this process
@@ -92,7 +92,7 @@ final class FeatureRuntime: ObservableObject {
     /// strands someone's settings costs far more than one that leaves a
     /// feature reporting itself unsupported.
     private func mayFlip(_ feature: AppFeature, to available: Bool) -> Bool {
-        guard !feature.isMouseFeature && !feature.isKeyboardFeature else { return false }
+        guard !feature.isToggleOwned else { return false }
         guard feature.isAvailable != available else { return false }
         return !available || feature.isHardwareSupported
     }
@@ -133,59 +133,14 @@ final class FeatureRuntime: ObservableObject {
             }
         }
         for feature in changed { Self.bindings[feature]?() }
+        if changed.contains(.clipboardHistory) { sync([.pastePlain]) }
         if firstIslandInstall && AppFeature.notch.isAvailable {
             UserDefaults.standard.set(true, forKey: DefaultsKey.notchInitialExtensionsInstalled)
         }
         if !changed.isEmpty { finishAvailabilityChange() }
     }
 
-    /// Applies a hub preset: its features become the installed set, with
-    /// their enable keys switched on so they work right away, and everything
-    /// else uninstalls. Nothing is deleted, so any feature returns with one
-    /// click, settings intact.
-    func apply(_ preset: FeaturePreset) {
-        replaceAvailable(with: preset.features, enabling: preset.enableKeys)
-    }
 
-    /// Replaces the installed set after the first-run picker. It uses the same
-    /// availability layer as the hub, so unselected features disappear without
-    /// losing any of their settings.
-    func replaceAvailable(with selected: Set<AppFeature>, enabling keys: [String] = []) {
-        var selected = selected
-        if selected.contains(.screenshot) {
-            selected.formUnion([.colorPicker, .screenOCR])
-        } else {
-            selected.subtract([.colorPicker, .screenOCR])
-        }
-        for key in keys {
-            UserDefaults.standard.set(true, forKey: key)
-        }
-        let savedValues = savedPreferences()
-        let changed = AppFeature.allCases.filter { mayFlip($0, to: selected.contains($0)) }
-        for feature in changed {
-            let joins = selected.contains(feature)
-            if joins {
-                feature.enableOnFirstInstall(in: .standard, savedValues: savedValues)
-            }
-            UserDefaults.standard.set(joins, forKey: feature.availabilityKey)
-            if joins {
-                loadedThisSession.insert(feature)
-                offerableThisSession.remove(feature)
-            }
-        }
-        for feature in changed { Self.bindings[feature]?() }
-        // Features that stayed installed still need a sync: their enable
-        // keys may have just flipped on. Changed features were synced above.
-        // A selected feature the gate refused is skipped like any other
-        // unavailable one and its service never comes to life.
-        for feature in selected where feature.isAvailable && !changed.contains(feature) {
-            Self.bindings[feature]?()
-        }
-        if selected.contains(.notch) && AppFeature.notch.isAvailable {
-            UserDefaults.standard.set(true, forKey: DefaultsKey.notchInitialExtensionsInstalled)
-        }
-        finishAvailabilityChange()
-    }
 
     /// Installed switches that were never once turned on, for the Features
     /// page to offer as one batch, minus the ones the person chose to keep.
@@ -230,11 +185,27 @@ final class FeatureRuntime: ObservableObject {
         }
     }
 
+    /// Capability changes can enable a saved preference without constructing
+    /// services for unsupported or switched-off controls.
+    func hardwareDidChange() {
+        sync([.extraBrightness, .fanControl])
+    }
+
     /// Permanent input controls must also sync when off: they can have started
     /// directly from Settings, so an off change must always reach teardown.
     func sync(_ features: [AppFeature]) {
+        guard !InputEventTap.isBlocked else { return }
         for feature in features where feature.isMouseFeature || feature.isKeyboardFeature || feature.isAvailable || loadedThisSession.contains(feature) {
+            if feature.isAvailable { loadedThisSession.insert(feature) }
             Self.bindings[feature]?()
+            if feature == .clipboardHistory, loadedThisSession.contains(.pastePlain) || AppFeature.pastePlain.isAvailable {
+                if AppFeature.pastePlain.isAvailable { loadedThisSession.insert(.pastePlain) }
+                Self.bindings[.pastePlain]?()
+            }
+        }
+        if features.contains(where: \.isToggleOwned) {
+            revision += 1
+            if AppFeature.commandBar.isAvailable { CommandBarService.shared.noteHubChange() }
         }
     }
 
@@ -242,7 +213,7 @@ final class FeatureRuntime: ObservableObject {
     /// just left the hub so a pin cannot linger as a bare id.
     func finishAvailabilityChange() {
         revision += 1
-        CommandBarService.shared.noteHubChange()
+        if AppFeature.commandBar.isAvailable { CommandBarService.shared.noteHubChange() }
         if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }
     }
 
@@ -394,15 +365,7 @@ final class FeatureRuntime: ObservableObject {
         },
         .scratchpad: { ScratchpadService.shared.syncWithPreferences() },
         .commandBar: { CommandBarService.shared.syncWithPreferences() },
-        .cleaner: {
-            CleanerScheduler.shared.syncWithPreferences()
-            WhatsAppDownloadScheduler.shared.syncWithPreferences()
-            WhatsAppDownloadOrganizer.shared.syncWithPreferences()
-            if !AppFeature.cleaner.isAvailable || !WhatsAppDownloadSupport.isEnabled {
-                WhatsAppDownloadManager.shared.reset()
-                WhatsAppDownloadOrganizer.shared.stop()
-            }
-        },
+        .cleaner: { CleanerScheduler.shared.syncWithPreferences() },
         .appUpdates: { AppUpdatesService.shared.syncWithPreferences() },
         .monitorCPU: { FeatureRuntime.syncMonitor() },
         .monitorGPU: { FeatureRuntime.syncMonitor() },
@@ -440,6 +403,8 @@ extension AppFeature {
         case .fanControl:
             return FanControlHardware.hasControllableFan
                 ? nil : FeatureStrings.fanControl(L10n.shared.language).noFans
+        case .extraBrightness:
+            return XDRDisplaySupport.supportedScreen != nil ? nil : L10n.shared.s.extraBrightnessUnsupported
         default:
             return nil
         }

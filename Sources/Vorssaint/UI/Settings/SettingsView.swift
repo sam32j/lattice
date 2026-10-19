@@ -58,11 +58,9 @@ struct SettingsView: View {
     @State private var searchQuery = ""
     @State private var activeSearchIndex: Int?
     @State private var directoryCache = SettingsDirectoryCache()
-    @State private var collapsedSectionIDs: Set<Int> = []
     @State private var navigationFromSidebar = false
     /// The row just picked in the sidebar, until the router has taken it.
     @State private var sidebarPick: SettingsSidebarItem.ID?
-    @State private var columnVisibility = NavigationSplitViewVisibility.all
     @FocusState private var sidebarSearchFocused: Bool
 
     private struct SearchResultsSnapshot: Equatable {
@@ -144,9 +142,10 @@ struct SettingsView: View {
                     isAvailable: { features.isAvailable($0) }))
         }()
 
-        NavigationSplitView(columnVisibility: $columnVisibility) {
+        NavigationSplitView(columnVisibility: .constant(.all)) {
             sidebar(searchResults: searchResults)
-                .navigationSplitViewColumnWidth(min: 198, ideal: 210, max: 240)
+                .navigationSplitViewColumnWidth(min: SettingsSidebarConfiguration.width, ideal: SettingsSidebarConfiguration.width, max: SettingsSidebarConfiguration.width)
+                .background { Color(nsColor: SettingsSidebarConfiguration.backgroundColor).ignoresSafeArea(.container, edges: .top) }
         } detail: {
             // NavigationSplitView's detail slot sometimes queries its content
             // for an unconstrained ideal size (settling the divider, or on a
@@ -162,45 +161,14 @@ struct SettingsView: View {
                     .settingsSectionFocus(for: router.page)
                     .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
             }
+            .toolbar { settingsNavigationToolbar }
+            .background { Color(nsColor: .textBackgroundColor).ignoresSafeArea(.container, edges: .top) }
         }
         .navigationSplitViewStyle(.balanced)
-        .toolbar {
-            // SwiftUI adds its sidebar button only to windows it creates, and
-            // this one is AppKit's. Without it, a sidebar dragged shut could
-            // only be dragged back from a one-point strip at the window's
-            // edge, and a full-screen window could only peek at it.
-            ToolbarItem(placement: .navigation) {
-                let strings = SettingsNavigationStrings.localized(l10n.language)
-                let title = sidebarShown ? strings.hideSidebar : strings.showSidebar
-                Button(action: toggleSidebar) {
-                    Label(title, systemImage: "sidebar.left")
-                }
-                .keyboardShortcut("s", modifiers: [.control, .command])
-                .help(title)
-            }
-            ToolbarItemGroup(placement: .navigation) {
-                let strings = SettingsNavigationStrings.localized(l10n.language)
-                Button {
-                    router.goBack(isPageVisible: isPageVisible)
-                } label: {
-                    Label(strings.back, systemImage: "chevron.backward")
-                }
-                .disabled(!router.canGoBack(isPageVisible: isPageVisible))
-                .help(strings.back)
-
-                Button {
-                    router.goForward(isPageVisible: isPageVisible)
-                } label: {
-                    Label(strings.forward, systemImage: "chevron.forward")
-                }
-                .disabled(!router.canGoForward(isPageVisible: isPageVisible))
-                .help(strings.forward)
-            }
-        }
-        .frame(minWidth: 772, maxWidth: .infinity, minHeight: 528, maxHeight: .infinity)
+        .toolbar(removing: .sidebarToggle)
+        .frame(minWidth: 772, maxWidth: 772, minHeight: 528, maxHeight: .infinity)
         .onAppear {
             ensureVisiblePage()
-            expandSelectedSection()
         }
         .onChange(of: features.revision) { _, _ in ensureVisiblePage() }
         .onChange(of: searchResults, initial: true) { previous, current in
@@ -211,55 +179,53 @@ struct SettingsView: View {
         }
     }
 
-    /// macOS 27 backs the pinned sidebar search field with a hard top scroll
-    /// edge, so rows fade out cleanly under it. On macOS 26 that effect does
-    /// not render inside split-view sidebars and the pinned field has no
-    /// backing of its own, so rows slid legibly across the placeholder
-    /// (issues #183, #254); there the field lives on a fixed header above the
-    /// list, where rows can never reach it. Earlier systems keep the classic
-    /// opaque sidebar chrome.
-    @ViewBuilder
-    private func sidebar(searchResults: SearchResultsSnapshot) -> some View {
-#if compiler(>=6.2)
-        if #available(macOS 27, *) {
-            sidebarList(searchResults: searchResults)
-                .searchable(text: $searchQuery,
-                            placement: .sidebar,
-                            prompt: l10n.s.settingsSearchPlaceholder)
-                .scrollEdgeEffectStyle(.hard, for: .top)
-        } else if #available(macOS 26, *) {
-            VStack(spacing: 0) {
-                SidebarSearchField(query: $searchQuery, isFocused: $sidebarSearchFocused)
-                sidebarList(searchResults: searchResults)
+    @ToolbarContentBuilder
+    private var settingsNavigationToolbar: some ToolbarContent {
+        ToolbarItemGroup(placement: .navigation) {
+            let strings = SettingsNavigationStrings.localized(l10n.language)
+            Button {
+                router.goBack(isPageVisible: isPageVisible)
+            } label: {
+                Label(strings.back, systemImage: "chevron.backward")
             }
+            .disabled(!router.canGoBack(isPageVisible: isPageVisible))
+            .help(strings.back)
+
+            Button {
+                router.goForward(isPageVisible: isPageVisible)
+            } label: {
+                Label(strings.forward, systemImage: "chevron.forward")
+            }
+            .disabled(!router.canGoForward(isPageVisible: isPageVisible))
+            .help(strings.forward)
+        }
+#if compiler(>=6.2)
+        if #available(macOS 26, *) {
+            ToolbarItem(placement: .navigation) {
+                Text(detailTitle).font(.headline)
+            }
+            .sharedBackgroundVisibility(.hidden)
         } else {
-            sidebarList(searchResults: searchResults)
-                .searchable(text: $searchQuery,
-                            placement: .sidebar,
-                            prompt: l10n.s.settingsSearchPlaceholder)
+            ToolbarItem(placement: .navigation) {
+                Text(detailTitle).font(.headline)
+            }
         }
 #else
-        sidebarList(searchResults: searchResults)
-            .searchable(text: $searchQuery,
-                        placement: .sidebar,
-                        prompt: l10n.s.settingsSearchPlaceholder)
+        ToolbarItem(placement: .navigation) {
+            Text(detailTitle).font(.headline)
+        }
 #endif
+    }
+
+    private func sidebar(searchResults: SearchResultsSnapshot) -> some View {
+        sidebarList(searchResults: searchResults)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                SidebarSearchField(query: $searchQuery, isFocused: $sidebarSearchFocused)
+            }
     }
 
     private var hasSearchQuery: Bool {
         !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    /// A sidebar dragged shut reports `.detailOnly` here as well.
-    private var sidebarShown: Bool { columnVisibility != .detailOnly }
-
-    private func toggleSidebar() {
-        let next: NavigationSplitViewVisibility = sidebarShown ? .detailOnly : .all
-        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
-            columnVisibility = next
-        } else {
-            withAnimation { columnVisibility = next }
-        }
     }
 
     @ViewBuilder
@@ -273,6 +239,7 @@ struct SettingsView: View {
                 }
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
             .onChange(of: sidebarPick) { _, selectedID in routeSidebarPick(selectedID) }
             .onChange(of: activeSearchIndex) { _, index in
                 guard let index, searchResults.items.indices.contains(index) else { return }
@@ -290,7 +257,6 @@ struct SettingsView: View {
                 // pages clamp to where a fresh list starts, and a top anchor
                 // would leave the list's inset hidden.
                 guard !searching else { return }
-                expandSelectedSection()
                 DispatchQueue.main.async { scrollSidebarToSelection(proxy) }
             }
             .onChange(of: router.requestID) { _, _ in
@@ -299,11 +265,10 @@ struct SettingsView: View {
                 let fromSidebar = navigationFromSidebar
                 navigationFromSidebar = false
                 guard !fromSidebar else { return }
-                expandSelectedSection()
                 DispatchQueue.main.async { scrollSidebarToSelection(proxy) }
             }
             .background {
-                SearchKeyMonitor(customSearchFocused: sidebarSearchFocused) { keyCode in
+                SearchKeyMonitor(customSearchFocused: sidebarSearchFocused, focusSearch: { sidebarSearchFocused = true }) { keyCode in
                     handleSearchKey(keyCode, searchResults: searchResults.items)
                 }
             }
@@ -322,52 +287,29 @@ struct SettingsView: View {
         proxy.scrollTo(selected, anchor: .center)
     }
 
-    private func expandSelectedSection() {
-        guard let selected = selectedSidebarItem,
-              let section = sidebarSections.first(where: { section in
-                  section.items.contains(where: { $0.id == selected })
-              }) else { return }
-        collapsedSectionIDs.remove(section.id)
+    private var detailTitle: String {
+        sidebarItems.first { $0.id == selectedSidebarItem }?.title ?? l10n.s.settingsTitle
     }
 
     @ViewBuilder
     private var normalSidebarRows: some View {
-        let sections = sidebarSections
-        let items = directoryCache.items
-        let selectedID = SettingsSidebarSupport.selection(for: router.destination, in: items,
-                                                          preferredID: router.sidebarFeature.map { .feature($0) })
-        ForEach(sections) { section in
+        let selectedID = selectedSidebarItem
+        ForEach(sidebarSections) { section in
             Section {
-                if !collapsedSectionIDs.contains(section.id) {
-                    ForEach(section.items) { item in
-                        HStack(spacing: 9) {
-                            Image(systemName: item.icon)
-                                .foregroundStyle(selectedID == item.id
-                                    ? AnyShapeStyle(.primary) : AnyShapeStyle(.tint))
-                                .frame(width: 18)
-                            Text(item.title)
-                        }
-                        .tag(item.id)
-                        .id(item.id)
-                        .help(item.title)
+                ForEach(section.items) { item in
+                    HStack(spacing: 9) {
+                        Image(systemName: item.icon)
+                            .foregroundStyle(selectedID == item.id
+                                ? AnyShapeStyle(.primary) : AnyShapeStyle(.tint))
+                            .frame(width: 18)
+                        Text(item.title)
                     }
+                    .tag(item.id)
+                    .id(item.id)
+                    .help(item.title)
                 }
             } header: {
-                Button {
-                    if !collapsedSectionIDs.insert(section.id).inserted {
-                        collapsedSectionIDs.remove(section.id)
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: collapsedSectionIDs.contains(section.id)
-                            ? "chevron.right" : "chevron.down")
-                            .font(.system(size: 9, weight: .semibold))
-                            .frame(width: 12)
-                        Text(section.title)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
+                Text(section.title)
             }
         }
     }
@@ -458,6 +400,7 @@ struct SettingsView: View {
 
     private struct SearchKeyMonitor: NSViewRepresentable {
         var customSearchFocused: Bool
+        var focusSearch: () -> Void
         var handleKey: (UInt16) -> Bool
 
         func makeNSView(context: Context) -> NSView {
@@ -467,12 +410,13 @@ struct SettingsView: View {
         }
 
         func updateNSView(_ nsView: NSView, context: Context) {
+            context.coordinator.focusSearch = focusSearch
             context.coordinator.customSearchFocused = customSearchFocused
             context.coordinator.handleKey = handleKey
         }
 
         func makeCoordinator() -> Coordinator {
-            Coordinator(customSearchFocused: customSearchFocused, handleKey: handleKey)
+            Coordinator(customSearchFocused: customSearchFocused, focusSearch: focusSearch, handleKey: handleKey)
         }
 
         static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
@@ -481,10 +425,12 @@ struct SettingsView: View {
 
         final class Coordinator: NSObject {
             var customSearchFocused: Bool
+            var focusSearch: () -> Void
             var handleKey: (UInt16) -> Bool
             private var monitor: Any?
 
-            init(customSearchFocused: Bool, handleKey: @escaping (UInt16) -> Bool) {
+            init(customSearchFocused: Bool, focusSearch: @escaping () -> Void, handleKey: @escaping (UInt16) -> Bool) {
+                self.focusSearch = focusSearch
                 self.customSearchFocused = customSearchFocused
                 self.handleKey = handleKey
             }
@@ -493,11 +439,15 @@ struct SettingsView: View {
                 monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
                     [weak self, weak view] event in
                     guard let self, let view, let window = view.window,
-                          event.window === window,
-                          Self.isNavigationKey(event),
+                          event.window === window else { return event }
+                    if event.charactersIgnoringModifiers?.lowercased() == "f",
+                       event.modifierFlags.intersection([.command, .control, .option, .shift]) == .command {
+                        focusSearch()
+                        return nil
+                    }
+                    guard customSearchFocused, Self.isNavigationKey(event),
                           let editor = window.firstResponder as? NSTextView,
                           editor.isFieldEditor,
-                          (customSearchFocused || Self.isSidebarSearchEditor(editor, near: view)),
                           !editor.hasMarkedText() else { return event }
                     return handleKey(event.keyCode) ? nil : event
                 }
@@ -515,13 +465,7 @@ struct SettingsView: View {
                 return [UInt16(126), 125, 36, 76].contains(event.keyCode)
             }
 
-            private static func isSidebarSearchEditor(_ editor: NSTextView,
-                                                      near monitorView: NSView) -> Bool {
-                guard let searchField = editor.delegate as? NSSearchField else { return false }
-                let searchMidX = searchField.convert(searchField.bounds, to: nil).midX
-                let sidebarFrame = monitorView.convert(monitorView.bounds, to: nil)
-                return sidebarFrame.minX...sidebarFrame.maxX ~= searchMidX
-            }
+
         }
     }
 
@@ -571,13 +515,13 @@ struct SettingsView: View {
         case .switcher: SwitcherSettings()
         case .dock: DockSettings()
         case .keyboard: KeyboardSettings()
-        case .cutPaste: CutPasteSettings()
-        case .autoQuit: AutoQuitSettings()
+        case .cutPaste: FinderSettings()
+        case .wallpaper: WallpaperSettings()
         case .uninstaller: UninstallerView()
         case .killProcess: KillProcessView()
         case .portManager: PortManagerView()
         case .urlCleaner: URLCleanerSettings()
-        case .cleaner: CleanerSettings()
+        case .cleaner: CleanerView()
         case .homebrew: HomebrewSettings()
         case .appUpdates: AppUpdatesSettings()
         case .media: MediaSettings()
@@ -593,43 +537,6 @@ struct SettingsView: View {
         case .dataPermissions: DataPermissionsSettings()
         case .about: AboutSettings()
         }
-    }
-}
-
-/// Search field for the macOS 26 sidebar, styled after the system pill.
-/// It sits on a fixed header outside the List, so scrolling rows can never
-/// cross it (issues #183, #254). Esc and the clear button empty the query,
-/// matching the system field.
-private struct SidebarSearchField: View {
-    @ObservedObject private var l10n = L10n.shared
-    @Binding var query: String
-    var isFocused: FocusState<Bool>.Binding
-
-    var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField(l10n.s.settingsSearchPlaceholder, text: $query)
-                .textFieldStyle(.plain)
-                .focused(isFocused)
-                .onExitCommand { query = "" }
-            if !query.isEmpty {
-                Button {
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(l10n.s.urlCleanerClearButton)
-            }
-        }
-        .padding(.vertical, 5)
-        .padding(.horizontal, 7)
-        .background(.quaternary.opacity(0.5), in: Capsule())
-        .padding(.horizontal, 10)
-        .padding(.top, 8)
-        .padding(.bottom, 4)
     }
 }
 

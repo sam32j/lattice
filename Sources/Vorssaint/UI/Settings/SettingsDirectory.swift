@@ -62,6 +62,14 @@ enum SettingsDirectory {
                         }
                         return feature.hubTitle(s, hub: hub)
                     }
+                if pageItem.page == .energy, AppFeature.extraBrightness.isHardwareSupported,
+                   !rows.contains(where: { $0.id == .feature(.brightness) }) {
+                    rows.removeAll { $0.id == .page(.energy) }
+                    rows.insert(SettingsSidebarItem(
+                        id: .feature(.brightness),
+                        destination: FeatureSettingsDestination(.energy, sectionAnchor: .brightness),
+                        title: FeatureStrings.brightness(language).pageTitle, icon: "display.2"), at: 0)
+                }
                 if pageItem.page == .general {
                     rows.insert(SettingsSidebarItem(
                         id: .setting(.panelConfiguration),

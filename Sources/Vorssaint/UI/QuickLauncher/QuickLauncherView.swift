@@ -187,8 +187,8 @@ struct QuickLauncherView: View {
                 .frame(width: 26, height: 26)
         }
         .buttonStyle(.plain)
-        .help(l10n.s.obBack)
-        .accessibilityLabel(l10n.s.obBack)
+        .help(l10n.s.navigationBack)
+        .accessibilityLabel(l10n.s.navigationBack)
     }
 
     /// Inside the island the tiles fill the rows its height allows and run

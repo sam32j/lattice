@@ -526,14 +526,14 @@ enum FeatureCatalogTests {
                 installDefaults.persistentDomain(forName: installSuiteName) ?? [:]
             }
             for feature in AppFeature.allCases
-            where !feature.enabledKeys.isEmpty && feature != .notchLiveEqualizer && !feature.isMouseFeature && !feature.isKeyboardFeature {
+            where !feature.enabledKeys.isEmpty && feature != .notchLiveEqualizer && !feature.isToggleOwned {
                 feature.enableOnFirstInstall(in: installDefaults, savedValues: savedValues())
                 suite.expect(feature.enabledKeys.contains {
                     savedValues()[$0] as? Bool == true
                 }, "a new \(feature.rawValue) install saves an enabled main control")
                 for key in feature.enabledKeys { installDefaults.removeObject(forKey: key) }
             }
-            for feature in AppFeature.allCases where feature.isMouseFeature || feature.isKeyboardFeature {
+            for feature in AppFeature.allCases where feature.isToggleOwned {
                 feature.enableOnFirstInstall(in: installDefaults, savedValues: savedValues())
                 suite.expect(!feature.enabledKeys.contains {
                     savedValues()[$0] as? Bool == true
@@ -702,36 +702,8 @@ enum FeatureCatalogTests {
             "automationFinder", "automationTerminal", "automationPlayback", "audioCapture", "microphone", "camera",
             "appManagement", "calendar",
         ], "permission portal contains every supported permission")
-        let onboardingViewSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Onboarding/OnboardingPermissionsStep.swift",
-            encoding: .utf8)) ?? ""
-        let additionalPermissionsAlignment =
-            #"DisclosureGroup\(isExpanded: \$showingOtherPermissions\) \{\s+"#
-            + #"VStack\(alignment: \.leading, spacing: 14\)"#
-        suite.expect(onboardingViewSource.range(
-            of: additionalPermissionsAlignment,
-            options: .regularExpression) != nil,
-               "the additional onboarding permission rows share one leading edge")
-        suite.expect(FeaturePreset.essential.features.flatMap(\.onboardingPermissions).isEmpty,
-               "the essential first-run choice asks for no broad permission")
-        suite.expect(Set(FeaturePreset.windows.features.flatMap(\.onboardingPermissions))
-                == [.accessibility, .screenRecording],
-               "the windows first-run choice explains exactly its two broad permissions")
-        suite.expect(AppFeature.musicBlock.permissions == [.accessibility]
-                && AppFeature.musicBlock.onboardingPermissions.isEmpty,
-               "music launch blocking declares its required Accessibility access contextually")
-        suite.expect(AppFeature.screenshot.permissions == [.screenRecording]
-                && AppFeature.screenshot.onboardingPermissions == [.screenRecording],
-               "screenshots only need the screen recording grant")
-        suite.expect(AppFeature.screenRecorder.onboardingPermissions
-                == [.screenRecording, .accessibility],
-               "the recorder choice explains both permissions it needs")
-        suite.expect(AppFeature.cleaner.onboardingPermissions.isEmpty
-                && AppFeature.cameraPreview.onboardingPermissions.isEmpty
-                && AppFeature.notchWatch.onboardingPermissions.isEmpty,
-               "contextual grants are not requested during first setup")
         suite.expect(AppFeature.fanControl.group == .monitor
-                && AppFeature.fanControl.enabledKeys.isEmpty
+                && AppFeature.fanControl.enabledKeys == [DefaultsKey.panelShowFanControl]
                 && AppFeature.fanControl.permissions.isEmpty
                 && AppFeature.fanControl.energyProfile == .idle
                 && AppFeature.fanControl.isBeta
@@ -739,9 +711,6 @@ enum FeatureCatalogTests {
                "fan control is an on-demand beta with no broad permission")
 
         // MARK: Hardware-gated installs
-
-        suite.expect(FeaturePreset.allCases.allSatisfy { !$0.features.contains(.fanControl) },
-               "no first-run preset installs a feature whose hardware the Mac may lack")
 
         let featureHubSource = (try? String(
             contentsOfFile: "Sources/Vorssaint/UI/Settings/FeatureHubSettings.swift",
@@ -1450,29 +1419,6 @@ enum FeatureCatalogTests {
         suite.expect(activeSet(.notifications, on: [DefaultsKey.cleanerScheduleNotify],
                          strings: [DefaultsKey.cleanerScheduleFrequency: "off"]) == [],
                "an unscheduled cleaner does not use notifications")
-        suite.expect(activeSet(.notifications,
-                         on: [DefaultsKey.whatsAppDownloadsAutomaticEnabled,
-                              DefaultsKey.whatsAppDownloadsNotify]) == [],
-               "WhatsApp cleanup notifications stay unused until that cleaner is turned on")
-        suite.expect(activeSet(.notifications,
-                         on: [DefaultsKey.whatsAppDownloadsEnabled,
-                              DefaultsKey.whatsAppDownloadsAutomaticEnabled,
-                              DefaultsKey.whatsAppDownloadsNotify]) == [.cleaner],
-               "WhatsApp cleanup only uses notifications for an opted-in automatic summary")
-        suite.expect(activeSet(.notifications,
-                         on: [DefaultsKey.whatsAppOrganizerEnabled,
-                              DefaultsKey.whatsAppDownloadsNotify]) == [],
-               "the experimental WhatsApp organizer stays silent until that cleaner is turned on")
-        suite.expect(activeSet(.notifications,
-                         on: [DefaultsKey.whatsAppDownloadsEnabled,
-                              DefaultsKey.whatsAppOrganizerEnabled,
-                              DefaultsKey.whatsAppDownloadsNotify]) == [.cleaner],
-               "the experimental WhatsApp organizer can offer an undo notification")
-        suite.expect(activeSet(.filesAndFolders) == [],
-               "WhatsApp Downloads folder access stays unused until that cleaner is turned on")
-        suite.expect(activeSet(.filesAndFolders, on: [DefaultsKey.whatsAppDownloadsEnabled]) == [.cleaner],
-               "the cleaner owns WhatsApp Downloads folder access")
-
         suite.expect(activeSet(.fullDiskAccess) == [.cleaner, .uninstaller],
                "cleaner and uninstaller are on-demand full disk users")
         suite.expect(activeSet(.automationFinder, on: [DefaultsKey.finderCutPasteEnabled])
@@ -1784,53 +1730,6 @@ enum FeatureCatalogTests {
 
         // MARK: Hub presets and energy badges
 
-        suite.expect(FeaturePreset.allCases.count == 3,
-               "three starting points, not another wall of decisions")
-        suite.expect(FeaturePreset.allCases.allSatisfy { !$0.features.isEmpty },
-               "every preset installs something")
-        suite.expect(FeaturePreset.essential.features.contains(.mixer)
-                && FeaturePreset.essential.features.contains(.keepAwake)
-                && FeaturePreset.essential.features.contains(.monitorPower),
-               "the essential preset covers mixer, monitor and keep awake")
-        suite.expect(FeaturePreset.windows.features.allSatisfy { $0.group == .windowsDock },
-               "the windows preset stays inside the windows and Dock group")
-        suite.expect(FeaturePreset.battery.features.allSatisfy {
-                   $0.energyProfile != .mouse && $0.energyProfile != .pointer
-                       && $0.energyProfile != .keyboard
-                       && $0.energyProfile != .inputs
-               },
-               "battery and quiet installs nothing that listens to input")
-        suite.expect(FeaturePreset.battery.features.allSatisfy {
-                   !$0.permissions.contains(.accessibility)
-               },
-               "battery and quiet needs no accessibility permission at all")
-        let firstRunSuiteName = "com.vorssaint.tests.first-run.\(UUID().uuidString)"
-        if let firstRunDefaults = UserDefaults(suiteName: firstRunSuiteName) {
-            firstRunDefaults.register(defaults: AppFeature.availabilityDefaults)
-            FeaturePreset.prepareFirstRunAvailability(in: firstRunDefaults)
-            suite.expect(Set(AppFeature.allCases.filter {
-                firstRunDefaults.bool(forKey: $0.availabilityKey)
-            }) == FeaturePreset.essential.features,
-            "a clean install loads only the essential feature set before onboarding")
-
-            for feature in AppFeature.allCases {
-                firstRunDefaults.set(true, forKey: feature.availabilityKey)
-            }
-            firstRunDefaults.set(2, forKey: DefaultsKey.onboardingStep)
-            FeaturePreset.prepareFirstRunAvailability(in: firstRunDefaults)
-            suite.expect(AppFeature.allCases.allSatisfy {
-                firstRunDefaults.bool(forKey: $0.availabilityKey)
-            }, "an interrupted onboarding keeps the feature selection already applied")
-            firstRunDefaults.removePersistentDomain(forName: firstRunSuiteName)
-        } else {
-            suite.expect(false, "first-run defaults suite can be created")
-        }
-        for preset in FeaturePreset.allCases {
-            suite.expect(preset.enableKeys.allSatisfy { key in
-                       preset.features.contains { $0.enabledKeys.contains(key) }
-                   },
-                   "preset enable keys belong to its own features (\(preset.rawValue))")
-        }
         suite.expect(AppFeature.monitorCPU.energyProfile == .periodic
                 && AppFeature.clipboardHistory.energyProfile == .periodic
                 && AppFeature.mouseAcceleration.energyProfile == .idle
@@ -1977,17 +1876,17 @@ enum FeatureCatalogTests {
                "mouse click debounce alone keeps its Settings page reachable")
         suite.expect(pageVisible(.mouse, available: []),
                "the mouse page is always visible")
-        suite.expect(!pageVisible(.energy, available: allFeatures.subtracting([.keepAwake, .brightness,
+        suite.expect(pageVisible(.energy, available: allFeatures.subtracting([.keepAwake, .brightness,
                                                                          .extraBrightness, .wallpaper,
                                                                          .bluetoothSleep])),
-               "energy hides when all of its features are off")
+               "supported XDR configuration remains reachable while optional energy features are off")
         suite.expect(pageVisible(.energy, available: [.wallpaper]),
-               "Wallpaper alone keeps its relocated Energy settings available")
+               "supported XDR keeps Displays reachable independently of Wallpaper")
         suite.expect(pageVisible(.energy, available: [.extraBrightness]), "XDR alone keeps the energy page")
         suite.expect(pageVisible(.energy, available: [.brightness]),
                "brightness control alone keeps the energy page")
-        suite.expect(!pageVisible(.monitor, available: allFeatures.subtracting(Set(FeatureVisibilitySupport.monitorFeatures))),
-               "monitor page hides with every metric off")
+        suite.expect(pageVisible(.monitor, available: allFeatures.subtracting(Set(FeatureVisibilitySupport.monitorFeatures))),
+               "supported fan configuration stays reachable with every metric off")
         suite.expect(pageVisible(.monitor, available: [.monitorNetwork]), "one metric keeps the monitor page")
         suite.expect(pageVisible(.general, available: []) && pageVisible(.about, available: [])
                 && pageVisible(.shortcuts, available: []),
@@ -2000,9 +1899,9 @@ enum FeatureCatalogTests {
                "either Finder shortcut keeps their shared page visible")
         suite.expect(!pageVisible(.cleaner,
                             available: allFeatures.subtracting([.cleaner])),
-               "cleaner settings, including WhatsApp downloads, follow the cleaner module")
-        suite.expect(pageVisible(.clipboard, available: [.finderCutPaste]),
-               "the image paste option keeps the Clipboard page available")
+               "cleaner settings follow the cleaner module")
+        suite.expect(!pageVisible(.clipboard, available: [.finderCutPaste]),
+               "Finder controls do not keep Clipboard History settings installed")
         suite.expect(AppFeature.allCases.allSatisfy { feature in
             let destination = feature.settingsDestination
             let gate = FeatureVisibilitySupport.features(for: destination.page)
@@ -2012,7 +1911,7 @@ enum FeatureCatalogTests {
                "every feature anchor belongs to its destination page")
         suite.expect(Set(AppFeature.allCases.compactMap(\.settingsDestination.sectionAnchor))
                 == Set(SettingsSectionAnchor.allCases).subtracting([
-                    .panelConfiguration, .keyboardBrightnessShortcuts,
+                    .panelConfiguration, .keyboardBrightnessShortcuts, .audioOutputPriority,
                 ])
                 && SettingsSectionAnchor.panelConfiguration.page == .general
                 && SettingsSectionAnchor.keyboardBrightnessShortcuts.page == .energy,
@@ -2045,9 +1944,9 @@ enum FeatureCatalogTests {
         suite.expect(AppFeature.windowMaximizer.settingsDestination
                 == FeatureSettingsDestination(.windowLayout, sectionAnchor: .windowMaximizer)
                 && pageVisible(.windowLayout, available: [.windowMaximizer])
-                && !pageVisible(.windowLayout,
+                && pageVisible(.windowLayout,
                                 available: allFeatures.subtracting([.windowLayout, .windowMaximizer])),
-               "the green button override and its exception list keep the window layout page on their own")
+               "Window Management keeps its toggle-owned green-button behavior discoverable")
         suite.expect(AppFeature.cleaningMode.settingsDestination
                 == FeatureSettingsDestination(.keyboard, sectionAnchor: .cleaningMode),
                "cleaning mode lands on Keyboard cleaning mode section")
@@ -2127,12 +2026,10 @@ enum FeatureCatalogTests {
         suite.expect(settingsRouter.pendingFeatureTarget == nil,
                "a later generic request clears any unconsumed feature target so it cannot leak into unrelated navigation")
 
-        settingsRouter.cleanerTool = "tool-id"
         settingsRouter.request(FeatureSettingsDestination(.cleaner))
-        suite.expect(settingsRouter.page == .cleaner && settingsRouter.cleanerTool == "tool-id",
+        suite.expect(settingsRouter.page == .cleaner,
                "requesting Cleaner Settings preserves its one-shot tool hint")
         settingsRouter.consumeDestinationRequest(id: settingsRouter.requestID)
-        settingsRouter.cleanerTool = nil
         settingsRouter.page = .general
         withExtendedLifetime(settingsRequestObservation) {}
 
@@ -2235,10 +2132,8 @@ enum FeatureCatalogTests {
         suite.expect(hiddenHistoryRouter.page == .about
                 && hiddenHistoryRouter.requestID == visibleHistoryRequestID,
                "Settings history stays put when no earlier page is visible")
-        hiddenHistoryRouter.cleanerTool = "stale-tool"
         hiddenHistoryRouter.goBack()
-        suite.expect(hiddenHistoryRouter.page == .mouse
-                && hiddenHistoryRouter.cleanerTool == nil,
+        suite.expect(hiddenHistoryRouter.page == .mouse,
                "history can revisit re-enabled pages without replaying a stale Cleaner tool hint")
 
         let toolHistoryRouter = SettingsRouter()

@@ -13,15 +13,8 @@ enum DefaultsKey {
     static let notchLiquidGlassEnabled = "notchLiquidGlassEnabled" // Dynamic Island glass, independently controlled
     static let clamshellPreferred = "clamshellPreferred"  // apply closed-lid mode to every session
     static let dimScreenOnLidClose = "dimScreenOnLidClose" // dim the built-in display to zero while the lid is closed
-    static let onboardingStep = "onboardingStep"          // resume point if onboarding is interrupted
-    static let featuresOnboardingVersion = "featuresOnboardingVersion" // last feature-tour marker handled
-    static let lastUpdateIntroVersion = "lastUpdateIntroVersion"
-    static let supportUpdateIntroVersion = "supportUpdateIntroVersion"
-    static let updateHighlightsSeenVersion = "updateHighlightsSeenVersion"
+    static let lastLaunchedVersion = "lastUpdateIntroVersion"
     static let featureHubKeptFeatures = "featureHubKeptFeatures" // comma-joined AppFeature raw values
-    static let brightnessUpdatePromptState = "brightnessUpdatePromptState"
-    static let updateShowcaseIntroVersion = "updateShowcaseIntroVersion"
-    static let updateShowcaseMediaOverride = "updateShowcaseMediaOverride"
     static let defaultDuration = "defaultDurationMinutes" // 0 = indefinite
     static let batteryLimit = "batteryLimitPercent"       // 0 = never
     static let keepAwakeAutoStart = "keepAwakeAutoStart"  // start Keep Awake when the app launches
@@ -47,7 +40,6 @@ enum DefaultsKey {
     static let keepAwakeActiveIcon = "keepAwakeActiveIcon" // KeepAwakeActiveIcon.rawValue
     static let showCountdown = "showCountdownInMenuBar"
     static let statusItemPlacementGeneration = "statusItemPlacementGeneration"
-    static let hasOnboarded = "hasOnboarded"
     static let sleepDisabledFlag = "vorssDisabledSleep"   // internal guard for pmset disablesleep
     static let dimmedDisplaySavedBrightness = "vorssDimmedDisplaySavedBrightness" // internal guard for closed-lid screen dimming recovery
     static let scrollInverterEnabled = "scrollInverterEnabled"
@@ -258,36 +250,6 @@ enum DefaultsKey {
     static let cleanerLastAutoFreed = "cleanerLastAutoFreed"            // Int bytes
     static let cleanerLastAutoFailed = "cleanerLastAutoFailed"          // Int items left in place
     static let cleanerScreenshotAgeDays = "cleanerScreenshotAgeDays"    // Int, 0 = off
-    // Confirmed WhatsApp downloads in the top level of ~/Downloads.
-    static let whatsAppDownloadsEnabled = "whatsAppDownloadsEnabled"
-    static let whatsAppDownloadsAutomaticEnabled = "whatsAppDownloadsAutomaticEnabled"
-    static let whatsAppDownloadsCategories = "whatsAppDownloadsCategories" // comma-joined category ids
-    static let whatsAppDownloadsRetentionDays = "whatsAppDownloadsRetentionDays"
-    static let whatsAppDownloadsNotify = "whatsAppDownloadsNotify"
-    static let whatsAppDownloadsIncludeExisting = "whatsAppDownloadsIncludeExisting"
-    static let whatsAppDownloadsAutomaticStartDate = "whatsAppDownloadsAutomaticStartDate"
-    static let whatsAppDownloadsLastAutoRun = "whatsAppDownloadsLastAutoRun"
-    static let whatsAppDownloadsLastCleanup = "whatsAppDownloadsLastCleanup"
-    static let whatsAppDownloadsLastCleanupCount = "whatsAppDownloadsLastCleanupCount"
-    static let whatsAppDownloadsLastCleanupBytes = "whatsAppDownloadsLastCleanupBytes"
-    static let whatsAppDownloadsLastCleanupFailed = "whatsAppDownloadsLastCleanupFailed"
-    static let whatsAppDownloadsLastCleanupAutomatic = "whatsAppDownloadsLastCleanupAutomatic"
-    static let whatsAppDownloadsExclusions = "whatsAppDownloadsExclusions" // device:inode ids
-    static let whatsAppDownloadsAccessConfirmed = "whatsAppDownloadsAccessConfirmed"
-    // Experimental organizer for confirmed WhatsApp downloads.
-    static let whatsAppOrganizerEnabled = "whatsAppOrganizerEnabled"
-    static let whatsAppOrganizerDestinationPath = "whatsAppOrganizerDestinationPath"
-    static let whatsAppOrganizerDelayMinutes = "whatsAppOrganizerDelayMinutes"
-    static let whatsAppOrganizerCategories = "whatsAppOrganizerCategories"
-    static let whatsAppOrganizerLayout = "whatsAppOrganizerLayout"
-    static let whatsAppOrganizerDuplicateAction = "whatsAppOrganizerDuplicateAction"
-    static let whatsAppOrganizerRecords = "whatsAppOrganizerRecords"
-    static let whatsAppOrganizerUndoTransaction = "whatsAppOrganizerUndoTransaction"
-    static let whatsAppOrganizerLastRun = "whatsAppOrganizerLastRun"
-    static let whatsAppOrganizerLastMoved = "whatsAppOrganizerLastMoved"
-    static let whatsAppOrganizerLastDuplicates = "whatsAppOrganizerLastDuplicates"
-    static let whatsAppOrganizerLastFailed = "whatsAppOrganizerLastFailed"
-    static let settingsWindowWidth = "settingsWindowWidth"     // last user-chosen content size (0 = unset)
     static let settingsWindowHeight = "settingsWindowHeight"
     static let shelfItems = "shelfItems"                  // Data: [ShelfPersistedItem] JSON
     static let urlCleanerEnabled = "urlCleanerEnabled"
@@ -959,87 +921,9 @@ enum DefaultsKey {
     static func featureAvailable(_ id: String) -> String { "featureAvailable.\(id)" }
 }
 
-/// Bump `currentFeatureSet` when first-run feature defaults need a quiet marker.
-enum OnboardingInfo {
-    // 2: system monitor, configurable panel and menu bar metrics.
-    // 3: app languages and support settings.
-    // 4: navigable menu panel sections.
-    static let currentFeatureSet = 4
-}
 
-/// The one-time tour of this release's headline feature, shown after updating.
-enum UpdateHighlightsInfo {
-    // Keep this marker unchanged for every stable patch in the 3.4 series.
-    static let releaseVersion = "3.4.0"
-    static let betaSeenVersion = "3.4.0-beta.1"
 
-    static func matchesRelease(_ appVersion: String) -> Bool {
-        guard let version = UpdateServiceSupport.SemanticVersion(raw: appVersion),
-              let release = UpdateServiceSupport.SemanticVersion(raw: releaseVersion),
-              (version.major, version.minor) == (release.major, release.minor),
-              version.patch >= release.patch else { return false }
-        if version.prerelease.isEmpty { return true }
-        guard version.patch == release.patch, (2...3).contains(version.prerelease.count), version.prerelease[0].description == "beta",
-              let number = Int(version.prerelease[1].description) else { return false }
-        if version.prerelease.count == 3 {
-            guard case let .numeric(hotfix) = version.prerelease[2], hotfix >= 0 else { return false }
-        }
-        return number >= 1
-    }
 
-    static func shouldShow(appVersion: String, lastSeenVersion: String?) -> Bool {
-        guard let marker = seenVersion(for: appVersion) else { return false }
-        return lastSeenVersion != marker
-    }
-
-    static func seenVersion(for appVersion: String) -> String? {
-        guard matchesRelease(appVersion),
-              let version = UpdateServiceSupport.SemanticVersion(raw: appVersion) else { return nil }
-        return version.prerelease.isEmpty ? releaseVersion : betaSeenVersion
-    }
-}
-
-/// A single invitation for existing Dynamic Island users to turn on display
-/// controls after updating. "pending" survives a launch interrupted before
-/// the invitation can be shown; "handled" prevents future updates replaying it.
-enum BrightnessUpdatePromptInfo {
-    static let pending = "pending"
-    static let handled = "handled"
-
-    static func isUpgrade(appVersion: String, previousVersion: String?) -> Bool {
-        guard let previousVersion,
-              let previous = UpdateServiceSupport.SemanticVersion(raw: previousVersion),
-              let current = UpdateServiceSupport.SemanticVersion(raw: appVersion) else { return false }
-        return current > previous
-    }
-
-    static func needsSetup(notchAvailable: Bool, brightnessAvailable: Bool,
-                           notchEnabled: Bool, notchBrightness: Bool, brightnessEnabled: Bool) -> Bool {
-        notchAvailable && brightnessAvailable && notchEnabled && notchBrightness && !brightnessEnabled
-    }
-}
-
-enum SupportUpdateIntroInfo {
-    /// The stable release that gets this invitation, and the patches after it,
-    /// which share one completion marker. 3.4.1 asks again, including people
-    /// who saw it in 3.4.0, whose marker differs.
-    static let releaseVersion = "3.4.1"
-
-    // Older beta onboarding wrote the release version before this screen was
-    // available. A distinct completion marker keeps those upgraders eligible.
-    static let seenVersion = "3.4.1-support"
-
-    static func matchesRelease(_ appVersion: String) -> Bool {
-        guard let version = UpdateServiceSupport.SemanticVersion(raw: appVersion),
-              let release = UpdateServiceSupport.SemanticVersion(raw: releaseVersion) else { return false }
-        return (version.major, version.minor) == (release.major, release.minor)
-            && version.patch >= release.patch && version.prerelease.isEmpty
-    }
-
-    static func shouldShow(appVersion: String, lastSeenVersion: String?) -> Bool {
-        matchesRelease(appVersion) && lastSeenVersion != seenVersion
-    }
-}
 
 enum KeepAwakeIconTint: String, CaseIterable, Identifiable {
     case orange, green, blue, purple, pink, none
@@ -1280,8 +1164,6 @@ enum Defaults {
         DefaultsKey.autoCheckUpdates: true,
         DefaultsKey.includeBetaUpdates: false,
         DefaultsKey.releaseNotesOnUpdate: true,
-        DefaultsKey.updateShowcaseIntroVersion: "",
-        DefaultsKey.updateShowcaseMediaOverride: "",
         DefaultsKey.mixerShowFinder: true,
         DefaultsKey.mixerHideInactiveApps: false,
         DefaultsKey.mixerAppArrangement: "",
@@ -1362,33 +1244,6 @@ enum Defaults {
         DefaultsKey.cleanerLastAutoFreed: 0,
         DefaultsKey.cleanerLastAutoFailed: 0,
         DefaultsKey.cleanerScreenshotAgeDays: CleanerPolicy.defaultScreenshotAgeDays,
-        DefaultsKey.whatsAppDownloadsEnabled: false,
-        DefaultsKey.whatsAppDownloadsAutomaticEnabled: false,
-        DefaultsKey.whatsAppDownloadsCategories: "image,video,audio",
-        DefaultsKey.whatsAppDownloadsRetentionDays: 7,
-        DefaultsKey.whatsAppDownloadsNotify: true,
-        DefaultsKey.whatsAppDownloadsIncludeExisting: false,
-        DefaultsKey.whatsAppDownloadsAutomaticStartDate: 0.0,
-        DefaultsKey.whatsAppDownloadsLastAutoRun: 0.0,
-        DefaultsKey.whatsAppDownloadsLastCleanup: 0.0,
-        DefaultsKey.whatsAppDownloadsLastCleanupCount: 0,
-        DefaultsKey.whatsAppDownloadsLastCleanupBytes: 0,
-        DefaultsKey.whatsAppDownloadsLastCleanupFailed: 0,
-        DefaultsKey.whatsAppDownloadsLastCleanupAutomatic: false,
-        DefaultsKey.whatsAppDownloadsExclusions: [String](),
-        DefaultsKey.whatsAppDownloadsAccessConfirmed: false,
-        DefaultsKey.whatsAppOrganizerEnabled: false,
-        DefaultsKey.whatsAppOrganizerDestinationPath: "",
-        DefaultsKey.whatsAppOrganizerDelayMinutes: 5,
-        DefaultsKey.whatsAppOrganizerCategories: "image,video,audio,document,archive,other",
-        DefaultsKey.whatsAppOrganizerLayout: "flat",
-        DefaultsKey.whatsAppOrganizerDuplicateAction: "trashNew",
-        DefaultsKey.whatsAppOrganizerRecords: Data(),
-        DefaultsKey.whatsAppOrganizerUndoTransaction: Data(),
-        DefaultsKey.whatsAppOrganizerLastRun: 0.0,
-        DefaultsKey.whatsAppOrganizerLastMoved: 0,
-        DefaultsKey.whatsAppOrganizerLastDuplicates: 0,
-        DefaultsKey.whatsAppOrganizerLastFailed: 0,
         DefaultsKey.urlCleanerEnabled: false,
         DefaultsKey.urlCleanerCustomParameters: "",
         DefaultsKey.urlCleanerSiteParameters: "",
@@ -1962,12 +1817,12 @@ enum Defaults {
         migrateFanControlVisibility(in: defaults)
         migrateScrollInverterAxes(in: defaults)
         migrateLinearScrollAvailability(in: defaults)
-        migrateWhatsAppDownloadsEnabled(in: defaults)
         migrateBatteryTemperatureVisibility(in: defaults)
         migrateSwitcherPreviewSize(in: defaults)
         migrateSwitcherPreviewExcludedApps(in: defaults)
         migrateNotchWatchAvailability(in: defaults)
         migratePermanentInputControls(in: defaults)
+        migratePageOwnedControls(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         activateBetaChannelIfRunningBeta(in: defaults)
@@ -2160,13 +2015,9 @@ enum Defaults {
         defaults.set(true, forKey: DefaultsKey.includeBetaUpdates)
     }
 
-    /// On a beta, people with the Command Bar get the island's companion,
-    /// which can be its face, installed and on, once: uninstalled afterwards,
-    /// it stays out. A clean install waits for its setup to finish, since
-    /// setup picks the installed features afresh. It lives in the island, so
-    /// someone without the island gets nothing.
+    /// A beta may install the companion once for existing Command Bar users.
     static func installsCompanionForBeta(in defaults: UserDefaults, isBeta: Bool = AppInfo.isBeta) -> Bool {
-        isBeta && defaults.bool(forKey: DefaultsKey.hasOnboarded)
+        isBeta
             && !defaults.bool(forKey: DefaultsKey.notchMascotBetaInstalled)
             && AppFeature.commandBar.isAvailable(in: defaults)
             && AppFeature.notch.isAvailable(in: defaults)
@@ -2179,20 +2030,6 @@ enum Defaults {
         defaults.set(true, forKey: DefaultsKey.notchMascotEnabled)
     }
 
-    /// The downloads cleanup for a messaging app used to sit in Cleaner for
-    /// everyone. Keep it visible only when someone already turned automatic
-    /// cleanup or the organizer on; everyone else gets the new off-by-default
-    /// choice.
-    static func migrateWhatsAppDownloadsEnabled(in defaults: UserDefaults) {
-        guard defaults.object(forKey: DefaultsKey.whatsAppDownloadsEnabled) == nil else {
-            return
-        }
-        let alreadyUsing = defaults.bool(forKey: DefaultsKey.whatsAppDownloadsAutomaticEnabled)
-            || defaults.bool(forKey: DefaultsKey.whatsAppOrganizerEnabled)
-        if alreadyUsing {
-            defaults.set(true, forKey: DefaultsKey.whatsAppDownloadsEnabled)
-        }
-    }
 
     /// The former single switch also reversed vertical wheel events redirected
     /// sideways with Shift. Mirror that choice once so updates and older

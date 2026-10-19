@@ -226,7 +226,7 @@ final class CleaningModeManager: ObservableObject {
 
     private func installTap() -> Bool {
         let mask = Self.eventMask
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cghidEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -244,12 +244,12 @@ final class CleaningModeManager: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         return true
     }
 
     private func removeTap() {
-        if let tap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap { InputEventTap.enable(tap: tap, enable: false) }
         if let runLoopSource { CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes) }
         if let tap { CFMachPortInvalidate(tap) }
         tap = nil
@@ -270,7 +270,7 @@ final class CleaningModeManager: ObservableObject {
                 // already requested deactivation, fail open after the callback.
                 let shouldFinishUserDeactivation = mouseReleaseGate.deactivationPending
                 mouseReleaseGate.invalidateTrackedPresses()
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
                 if shouldFinishUserDeactivation {
                     scheduleUserDeactivation()
                 }

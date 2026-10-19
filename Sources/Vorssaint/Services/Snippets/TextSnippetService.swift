@@ -152,7 +152,7 @@ final class TextSnippetService {
             pendingTapRestart = false
             return (tapRunLoop, tap, tapThread != nil)
         }
-        if let tap = snapshot.tap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap = snapshot.tap { InputEventTap.enable(tap: tap, enable: false) }
         if let runLoop = snapshot.runLoop {
             CFRunLoopPerformBlock(runLoop, CFRunLoopMode.commonModes.rawValue) {
                 CFRunLoopStop(runLoop)
@@ -183,7 +183,7 @@ final class TextSnippetService {
             let mask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
                 | (1 << CGEventType.leftMouseDown.rawValue)
                 | (1 << CGEventType.rightMouseDown.rawValue)
-            guard let tap = CGEvent.tapCreate(
+            guard let tap = InputEventTap.create(
                 tap: .cgSessionEventTap,
                 place: .headInsertEventTap,
                 options: .defaultTap,
@@ -203,16 +203,16 @@ final class TextSnippetService {
             let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
             tapLifecycleLock.withLock { self.tap = tap }
             CFRunLoopAddSource(runLoop, source, .commonModes)
-            CGEvent.tapEnable(tap: tap, enable: true)
+            InputEventTap.enable(tap: tap, enable: true)
             DispatchQueue.main.async { [weak self] in self?.tapDidStart(tap) }
 
             if tapLifecycleLock.withLock({ shouldStopTapThread }) {
-                CGEvent.tapEnable(tap: tap, enable: false)
+                InputEventTap.enable(tap: tap, enable: false)
             } else {
                 CFRunLoopRun()
             }
 
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFRunLoopRemoveSource(runLoop, source, .commonModes)
             CFMachPortInvalidate(tap)
             if clearEventTapThread() { startOnMain() }
@@ -271,7 +271,7 @@ final class TextSnippetService {
             // recover: syncing would start the tap again under a suspend().
             let currentTap = tapLifecycleLock.withLock { shouldStopTapThread ? nil : tap }
             if SessionActivity.shared.isActive, AXIsProcessTrusted(), let currentTap {
-                CGEvent.tapEnable(tap: currentTap, enable: true)
+                InputEventTap.enable(tap: currentTap, enable: true)
             } else if currentTap != nil {
                 DispatchQueue.main.async { [weak self] in self?.syncWithPreferences() }
             }

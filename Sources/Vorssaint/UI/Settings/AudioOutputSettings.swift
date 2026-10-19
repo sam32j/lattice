@@ -16,7 +16,6 @@ struct AudioOutputSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(pageStrings.audioOutputTitle).font(.title2.bold())
                     Text(pageStrings.audioOutputDescription)
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -30,6 +29,10 @@ struct AudioOutputSettings: View {
                 if AppFeature.mixer.isAvailable {
                     MixerSection(settingsMode: true)
                         .settingsSectionAnchor(.mixer, cornerRadius: 16)
+                }
+                if AppFeature.audioPriority.isAvailable {
+                    SettingsCard(title: l10n.s.audioPriorityOutputList) { AudioOutputPriorityControls() }
+                        .settingsSectionAnchor(.audioOutputPriority, cornerRadius: 16)
                 }
                 if AppFeature.musicBlock.isAvailable {
                     MusicBlockingSettings()

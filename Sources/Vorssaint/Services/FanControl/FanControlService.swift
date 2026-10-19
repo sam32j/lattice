@@ -53,6 +53,12 @@ final class FanControlService: ObservableObject {
     }
 
     static func recoverIfNeeded() {
+        if !AppFeature.fanControl.isAvailable {
+            guard hasRegisteredHelperForRemoval
+                || UserDefaults.standard.bool(forKey: DefaultsKey.fanControlRecoveryNeeded) else { return }
+            shared.syncWithPreferences()
+            return
+        }
         // Re-applying supersedes the recovery: a start that fails restores too.
         if let configuration = resumableConfiguration, shared.resume(configuration) { return }
         guard UserDefaults.standard.bool(forKey: DefaultsKey.fanControlRecoveryNeeded) else { return }
