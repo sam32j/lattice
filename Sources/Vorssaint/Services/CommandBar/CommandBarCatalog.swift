@@ -301,6 +301,7 @@ enum CommandBarCatalog {
         /// so the bar never teaches a dead combination.
         func roleShortcut(_ role: GlobalShortcutRole) -> GlobalShortcut? {
             guard role.isAvailable(using: { $0.isAvailable }),
+                  role.savedShortcut.isValid,
                   role.requiredEnableKeys.allSatisfy({ UserDefaults.standard.bool(forKey: $0) })
             else { return nil }
             return role.savedShortcut

@@ -759,7 +759,7 @@ struct UtilitiesSection: View {
     }
 
     private func items(editing: Bool) -> [UtilityPanelItem] {
-        orderedItems.filter { $0.feature.isPresentInControls() && (editing || isVisible($0)) }
+        orderedItems.filter { $0.feature.isAvailable && (editing || isVisible($0)) }
     }
 
     private func isVisible(_ item: UtilityPanelItem) -> Bool {
@@ -1035,6 +1035,7 @@ struct UtilitiesSection: View {
     /// combo that does nothing.
     private func shortcutHint(_ role: GlobalShortcutRole) -> String? {
         guard role.isAvailable(using: { $0.isAvailable }),
+              role.savedShortcut.isValid,
               role.requiredEnableKeys.allSatisfy({ UserDefaults.standard.bool(forKey: $0) })
         else { return nil }
         return role.savedShortcut.displayString
@@ -1412,7 +1413,7 @@ struct QuickControlsSection: View {
     }
 
     private func items(editing: Bool) -> [ControlPanelItem] {
-        orderedItems.filter { $0.feature.isAvailable && (editing || isVisible($0)) }
+        orderedItems.filter { $0.feature.isPresentInControls() && (editing || isVisible($0)) }
     }
 
     private func isVisible(_ item: ControlPanelItem) -> Bool {

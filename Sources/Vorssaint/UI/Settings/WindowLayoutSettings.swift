@@ -462,7 +462,7 @@ private struct WindowLayoutActionRow: View {
                     isEnabled: shortcutEnabled,
                     emptyTitle: l10n.s.shortcutNone,
                     canClear: shortcut != nil,
-                    canReset: !actionsEnabled || shortcut != action.defaultShortcut,
+                    canReset: shortcut != action.defaultShortcut,
                     errorText: $errorText,
                     onClear: clear,
                     onReset: reset,

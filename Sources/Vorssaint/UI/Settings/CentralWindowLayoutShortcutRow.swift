@@ -53,7 +53,7 @@ struct CentralWindowLayoutShortcutRow: View {
                         isEnabled: true,
                         emptyTitle: l10n.s.shortcutNone,
                         canClear: shortcut != nil,
-                        canReset: !shortcutsEnabled || shortcut != action.defaultShortcut,
+                        canReset: shortcut != action.defaultShortcut,
                         errorText: $errorText,
                         onClear: clear,
                         onReset: reset,
