@@ -35,24 +35,9 @@ enum ScreenshotRenderer {
                            scale: CGFloat,
                            boundingWidth: CGFloat? = nil) -> CGRect {
         let font = NSFont.systemFont(ofSize: fontSize(for: textSize, scale: scale), weight: .semibold)
-        let sample = text.isEmpty ? " " : text
-        if let boundingWidth, boundingWidth > 30 {
-            let rect = (sample as NSString).boundingRect(
-                with: CGSize(width: boundingWidth - 4, height: .greatestFiniteMagnitude),
-                options: [.usesLineFragmentOrigin, .usesFontLeading],
-                attributes: [.font: font])
-            return CGRect(origin: origin,
-                          size: CGSize(width: boundingWidth, height: max(ceil(rect.height) + 4, ceil(font.pointSize) + 4)))
-        }
-        let lines = sample.components(separatedBy: "\n")
-        let maxLineWidth = lines.map { ($0 as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
-        let rect = (sample as NSString).boundingRect(
-            with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
-            options: [.usesLineFragmentOrigin, .usesFontLeading],
-            attributes: [.font: font])
-        let width = max(ceil(maxLineWidth) + 6, ceil(rect.width) + 6)
-        return CGRect(origin: origin,
-                      size: CGSize(width: width, height: max(ceil(rect.height) + 2, ceil(font.pointSize) + 4)))
+        let width = boundingWidth.flatMap { $0 > 30 ? $0 : nil }
+        let measured = ScreenshotEditorGeometry.textSize(text, font: font, width: width.map { $0 - 4 })
+        return CGRect(origin: origin, size: CGSize(width: width ?? measured.width + 6, height: measured.height + 4))
     }
 
     // MARK: - Annotation pass
@@ -79,7 +64,11 @@ enum ScreenshotRenderer {
                 context.saveGState()
                 context.setBlendMode(.multiply)
                 context.setFillColor(color(annotation.color, alpha: 0.42))
-                context.fill(annotation.rect)
+                for rect in ScreenshotEditorGeometry.highlightRects(annotation) {
+                    let radius = min(4 * scale, rect.height / 2)
+                    context.addPath(CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil))
+                    context.fillPath()
+                }
                 context.restoreGState()
             case .rect:
                 strokeShape(in: context, annotation: annotation, scale: scale,
@@ -207,19 +196,7 @@ enum ScreenshotRenderer {
         context.setLineWidth(annotation.stroke.width * scale)
         context.setLineJoin(.round)
         context.setLineCap(.round)
-        context.beginPath()
-        context.move(to: annotation.points[0])
-        // Quadratic curves through midpoints smooth hand jitter without
-        // drifting from the stroke.
-        for index in 1..<annotation.points.count {
-            let current = annotation.points[index]
-            let previous = annotation.points[index - 1]
-            let mid = CGPoint(x: (current.x + previous.x) / 2, y: (current.y + previous.y) / 2)
-            context.addQuadCurve(to: mid, control: previous)
-        }
-        if let last = annotation.points.last {
-            context.addLine(to: last)
-        }
+        context.addPath(ScreenshotEditorGeometry.freehandPath(annotation.points))
         context.strokePath()
         context.restoreGState()
     }
@@ -248,7 +225,7 @@ enum ScreenshotRenderer {
         NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: true)
         let rect = CGRect(x: annotation.rect.minX + 2,
                           y: annotation.rect.minY,
-                          width: max(annotation.rect.width, 10),
+                          width: max(annotation.rect.width - 4, 1),
                           height: max(annotation.rect.height, 10))
         (annotation.text as NSString).draw(
             with: rect,

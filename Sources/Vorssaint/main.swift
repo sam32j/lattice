@@ -4,6 +4,9 @@
 import AppKit
 
 #if VORSSAINT_DEVELOPMENT
+if CommandLine.arguments.contains("--capture-editor-presentation-test") {
+    CaptureEditorPresentationProbe.runAndExit()
+}
 if CommandLine.arguments.contains("--settings-presentation-preview") {
     SettingsPresentationProbe.runAndExit()
 }

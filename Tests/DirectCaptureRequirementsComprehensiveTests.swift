@@ -557,10 +557,13 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      "EditorTextView uses isolated UndoManager, preventing undo crashes in screenshot editor")
 
         // 3. Drag creates bounded text box; single click creates dynamic box
-        suite.expect(editorViewSource.contains("if isBounded {")
-                     && editorViewSource.contains("let minBoxWidth: CGFloat = 40")
+        let inlineTextSource = (try? String(
+            contentsOfFile: "Sources/Vorssaint/UI/Screenshot/ScreenshotInlineTextEditor.swift",
+            encoding: .utf8)) ?? ""
+        suite.expect(inlineTextSource.contains("let wrapWidth = mark.isBounded ?")
+                     && inlineTextSource.contains("ScreenshotEditorGeometry.textSize(text, font: font, width: wrapWidth)")
                      && editorViewSource.contains("textView.textContainer?.widthTracksTextView = isBounded")
-                     && editorViewSource.contains("let dynamicWidth = min(max(maxLineWidth + 24, 60), availableWidth)"),
+                     && inlineTextSource.contains("wrapWidth ?? max(40, measured.width + 4 * zoom)"),
                      "Text tool drag creates contained bounded box with word wrap; click creates dynamic sizing box")
     }
 

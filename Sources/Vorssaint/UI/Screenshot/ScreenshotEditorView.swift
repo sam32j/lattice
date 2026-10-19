@@ -13,7 +13,6 @@ struct ScreenshotEditorView: View {
     @StateObject private var keyboard = ScreenshotShortcutContext()
 
     @State private var editingText = ""
-    @FocusState private var textFieldFocused: Bool
     @State private var dragInFlight = false
     @State private var drag = ScreenshotSupport.EditorDrag()
     @State private var dragCanvasArea: CGSize?
@@ -65,7 +64,6 @@ struct ScreenshotEditorView: View {
             }
         }
         .ignoresSafeArea()
-        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: model.tool)
         .animation(.easeOut(duration: 0.16), value: model.annotationShadowsEnabled)
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: model.backdropStyle)
         .onAppear { keyboard.start() }
@@ -215,17 +213,20 @@ struct ScreenshotEditorView: View {
             }
         }
         .gesture(canvasGesture(zoom: zoom, available: available))
+        .simultaneousGesture(SpatialTapGesture(count: 2).onEnded { value in
+            commitEditingTextIfNeeded()
+            model.editText(at: imagePoint(from: value.location, zoom: zoom))
+        })
         .onContinuousHover { phase in
             switch phase {
             case .active(let location):
                 let point = imagePoint(from: location, zoom: zoom)
-                if model.tool != .select, model.selectedAnnotationOwns(point) {
+                if model.textSelectionEnabled, model.wordIndex(at: point) != nil {
+                    NSCursor.iBeam.set()
+                } else if model.hitTest(point) != nil {
                     NSCursor.openHand.set()
                 } else if model.tool != .select {
                     NSCursor.crosshair.set()
-                } else if model.wordIndex(at: point) != nil {
-                    // Recognized text under the cursor reads as text.
-                    NSCursor.iBeam.set()
                 } else {
                     NSCursor.arrow.set()
                 }
@@ -386,14 +387,15 @@ struct ScreenshotEditorView: View {
                     drag.begin(at: value.startLocation)
                     dragCanvasArea = available
                     commitEditingTextIfNeeded()
-                    model.beginDrag(at: imagePoint(from: value.startLocation, zoom: zoom))
+                    model.beginDrag(at: imagePoint(from: value.startLocation, zoom: zoom), modifiers: NSEvent.modifierFlags)
                     if value.location != value.startLocation {
-                        model.continueDrag(to: point)
+                        model.continueDrag(to: point, constrained: NSEvent.modifierFlags.contains(.shift))
                     }
                 } else {
-                    model.continueDrag(to: point)
+                    model.continueDrag(to: point, constrained: NSEvent.modifierFlags.contains(.shift))
                 }
                 drag.update(to: value.location)
+                if model.selectedID != nil { NSCursor.closedHand.set() }
             }
             .onEnded { value in
                 dragInFlight = false
@@ -408,9 +410,6 @@ struct ScreenshotEditorView: View {
                 model.endDrag(at: point, isTap: isTap)
                 if let editingID = model.editingTextID {
                     editingText = model.annotations.first(where: { $0.id == editingID })?.text ?? ""
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        textFieldFocused = true
-                    }
                 }
             }
     }
@@ -503,48 +502,12 @@ struct ScreenshotEditorView: View {
     // MARK: - Selection and crop chrome
 
     private func drawSelectionChrome(_ cg: CGContext) {
-        guard let selectedID = model.selectedID,
-              let selected = model.annotations.first(where: { $0.id == selectedID }),
-              selectedID != model.editingTextID
-        else { return }
-        let scale = model.scale
-        cg.setStrokeColor(CGColor(srgbRed: 0.04, green: 0.52, blue: 1, alpha: 0.9))
-        cg.setLineWidth(1.5 * scale)
-        cg.setLineDash(phase: 0, lengths: [4 * scale, 3 * scale])
-        if selected.points.count >= 2, selected.tool != .freehand {
-            for point in selected.points.prefix(2) {
-                cg.setFillColor(CGColor(gray: 1, alpha: 1))
-                let handle = CGRect(x: point.x - 4 * scale, y: point.y - 4 * scale,
-                                    width: 8 * scale, height: 8 * scale)
-                cg.fillEllipse(in: handle)
-                cg.strokeEllipse(in: handle)
-            }
-            return
-        }
-        let box = selected.tool == .counter
-            ? counterBox(selected)
-            : selected.rect.insetBy(dx: -3 * scale, dy: -3 * scale)
-        cg.stroke(box)
-        cg.setLineDash(phase: 0, lengths: [])
-        if selected.tool.resizesWithHandles {
-            for handle in ScreenshotSupport.Handle.allCases {
-                let position = handle.position(in: selected.rect)
-                let dot = CGRect(x: position.x - 3.5 * scale, y: position.y - 3.5 * scale,
-                                 width: 7 * scale, height: 7 * scale)
-                cg.setFillColor(CGColor(gray: 1, alpha: 1))
-                cg.fillEllipse(in: dot)
-                cg.strokeEllipse(in: dot)
-            }
-        }
+        guard let id = model.selectedID, id != model.editingTextID,
+              let mark = model.annotations.first(where: { $0.id == id }) else { return }
+        ScreenshotSelectionChrome.draw(mark, in: cg, captureScale: model.scale,
+            displayZoom: model.currentDisplayZoom, imageSize: model.imageSize)
     }
 
-    private func counterBox(_ annotation: ScreenshotSupport.Annotation) -> CGRect {
-        let diameter = ScreenshotSupport.counterDiameter(for: model.imageSize, scale: 1)
-        return CGRect(x: annotation.rect.midX - diameter / 2,
-                      y: annotation.rect.midY - diameter / 2,
-                      width: diameter,
-                      height: diameter).insetBy(dx: -3, dy: -3)
-    }
 
     private func drawCropChrome(_ cg: CGContext, canvasSize: CGSize, zoom: CGFloat) {
         guard model.tool == .crop, let draft = model.cropDraft else { return }
@@ -575,83 +538,7 @@ struct ScreenshotEditorView: View {
 
     @ViewBuilder
     private func textEditorOverlay(zoom: CGFloat) -> some View {
-        if let editingID = model.editingTextID,
-           let annotation = model.annotations.first(where: { $0.id == editingID }) {
-            let fontSize = max(11, ScreenshotRenderer.fontSize(for: annotation.textSize,
-                                                               scale: model.scale) * zoom)
-            let pad = model.backdropPaddingPixels
-            let isBounded = annotation.isBounded
-            let availableWidth = max(40, (model.imageSize.width - annotation.rect.minX) * zoom)
-            let availableHeight = max(28, (model.imageSize.height - annotation.rect.minY) * zoom)
-            let nsColor = ScreenshotRenderer.nsColor(annotation.color)
-            let font = NSFont.systemFont(ofSize: fontSize, weight: .semibold)
-            let sample = editingText.isEmpty ? (strings.textPlaceholder.isEmpty ? "Text" : strings.textPlaceholder) : editingText
-
-            Group {
-                if isBounded {
-                    let minBoxWidth: CGFloat = 40
-                    let boxWidth = min(max(annotation.rect.width * zoom, minBoxWidth), availableWidth)
-                    let contentWidth = max(20, boxWidth - 12)
-                    let textRect = (sample as NSString).boundingRect(
-                        with: CGSize(width: contentWidth, height: .greatestFiniteMagnitude),
-                        options: [.usesLineFragmentOrigin, .usesFontLeading],
-                        attributes: [.font: font])
-                    let lineHeight = max(font.ascender - font.descender + font.leading, fontSize * 1.2)
-                    let trailingNewlines = editingText.reversed().prefix(while: { $0 == "\n" }).count
-                    let extraNewlineHeight = CGFloat(trailingNewlines) * lineHeight
-                    let contentHeight = ceil(textRect.height) + extraNewlineHeight
-                    let boxHeight = min(max(contentHeight + 14, annotation.rect.height * zoom, 28), availableHeight)
-
-                    ScreenshotAnnotationTextEditor(
-                        text: $editingText,
-                        fontSize: fontSize,
-                        textColor: nsColor,
-                        isBounded: true,
-                        width: contentWidth,
-                        onCommit: {
-                            model.commitText(editingID, text: editingText)
-                        }
-                    )
-                    .frame(width: contentWidth, height: max(1, boxHeight - 6), alignment: .topLeading)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                } else {
-                    let lines = sample.components(separatedBy: "\n")
-                    let maxLineWidth = lines.map { ($0 as NSString).size(withAttributes: [.font: font]).width }.max() ?? 40
-                    let lineHeight = max(font.ascender - font.descender + font.leading, fontSize * 1.2)
-                    let trailingNewlines = editingText.reversed().prefix(while: { $0 == "\n" }).count
-                    let totalLines = max(1, lines.count + trailingNewlines)
-                    let totalHeight = CGFloat(totalLines) * lineHeight
-                    let dynamicWidth = min(max(maxLineWidth + 24, 60), availableWidth)
-                    let dynamicHeight = min(max(totalHeight + 14, 28), availableHeight)
-
-                    ScreenshotAnnotationTextEditor(
-                        text: $editingText,
-                        fontSize: fontSize,
-                        textColor: nsColor,
-                        isBounded: false,
-                        width: dynamicWidth,
-                        onCommit: {
-                            model.commitText(editingID, text: editingText)
-                        }
-                    )
-                    .frame(width: dynamicWidth, height: max(1, dynamicHeight - 6), alignment: .topLeading)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                }
-            }
-            .background(.black.opacity(0.35),
-                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(Color.accentColor.opacity(0.7), lineWidth: 1)
-            )
-            .offset(x: (annotation.rect.minX + pad) * zoom,
-                    y: (annotation.rect.minY + pad) * zoom)
-            .onAppear {
-                editingText = annotation.text
-            }
-        }
+        ScreenshotInlineTextEditor(model: model, text: $editingText, zoom: zoom)
     }
 
     private func commitEditingTextIfNeeded() {
@@ -670,6 +557,23 @@ struct ScreenshotEditorView: View {
         VStack(spacing: 2) {
             ForEach(orderedTools, id: \.self) { tool in
                 railButton(tool)
+                if tool == .select {
+                    Button {
+                        commitEditingTextIfNeeded()
+                        model.tool = .select
+                        model.selectedID = nil
+                        model.textSelectionEnabled.toggle()
+                    } label: {
+                        Image(systemName: "text.viewfinder")
+                            .frame(width: 33, height: 29)
+                            .foregroundStyle(model.textSelectionEnabled ? Color.accentColor : Color.secondary)
+                            .background(model.textSelectionEnabled ? Color.accentColor.opacity(0.18) : .clear,
+                                        in: RoundedRectangle(cornerRadius: 9))
+                    }
+                    .buttonStyle(.plain)
+                    .screenshotSafeHelp(FeatureStrings.editorRefinements(l10n.language).selectText)
+                    .accessibilityLabel(FeatureStrings.editorRefinements(l10n.language).selectText)
+                }
             }
             Divider()
                 .frame(width: 22)
@@ -707,13 +611,14 @@ struct ScreenshotEditorView: View {
     }
 
     private func railButton(_ tool: ScreenshotSupport.Tool) -> some View {
-        let isActive = model.tool == tool
+        let isActive = model.tool == tool && !model.textSelectionEnabled
         let isHovered = hoveredTool == tool
         let shortcutLabel = ScreenshotSupport.Tool.shortcutLabel(
             for: tool, orderRaw: nil, bindingsRaw: bindingsRaw, enabled: toolShortcutsEnabled,
             capsLockOn: keyboard.capsLockOn)
         return Button {
             commitEditingTextIfNeeded()
+            model.textSelectionEnabled = false
             model.tool = tool
         } label: {
             ZStack(alignment: .topTrailing) {
@@ -1036,6 +941,7 @@ struct ScreenshotEditorView: View {
                 }
             }
         }
+        .frame(height: 82, alignment: .bottom)
     }
 
     @ViewBuilder
@@ -1173,6 +1079,15 @@ struct ScreenshotEditorView: View {
 
     private var cropBar: some View {
         HStack(spacing: 8) {
+            Picker(FeatureStrings.editorRefinements(l10n.language).aspectRatio, selection: $model.cropAspect) {
+                ForEach(ScreenshotCropAspect.allCases, id: \.self) { aspect in
+                    Text(aspect == .free ? FeatureStrings.editorRefinements(l10n.language).freeCrop
+                         : aspect == .original ? FeatureStrings.recorder(l10n.language).shapeOriginal : aspect.rawValue)
+                        .tag(aspect)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 112)
             Button(strings.cancel) {
                 model.tool = .select
             }
@@ -1555,8 +1470,7 @@ struct ScreenshotEditorView: View {
     private var dimensionsLabel: String {
         let width = Int(model.imageSize.width)
         let height = Int(model.imageSize.height)
-        let retina = model.scale > 1 ? "  @\(Int(model.scale))x" : ""
-        return "\(width) × \(height) px\(retina)"
+        return "\(width) × \(height) px"
     }
 
     /// A draggable control that exports the flattened PNG. Lives in infoChip
@@ -1839,6 +1753,8 @@ struct ScreenshotAnnotationTextEditor: NSViewRepresentable {
         textView.font = .systemFont(ofSize: fontSize, weight: .semibold)
         textView.textColor = textColor
         textView.insertionPointColor = textColor
+        textView.textContainerInset = .zero
+        textView.textContainer?.lineFragmentPadding = 0
         textView.isHorizontallyResizable = !isBounded
         textView.textContainer?.widthTracksTextView = false
         textView.setFrameSize(NSSize(width: width, height: textView.frame.height))
