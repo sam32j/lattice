@@ -759,7 +759,7 @@ struct UtilitiesSection: View {
     }
 
     private func items(editing: Bool) -> [UtilityPanelItem] {
-        orderedItems.filter { $0.feature.isAvailable && (editing || isVisible($0)) }
+        orderedItems.filter { $0.feature.isPresentInControls() && (editing || isVisible($0)) }
     }
 
     private func isVisible(_ item: UtilityPanelItem) -> Bool {

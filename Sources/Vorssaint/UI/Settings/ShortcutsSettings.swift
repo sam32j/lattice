@@ -118,11 +118,10 @@ struct ShortcutsSettings: View {
             featureHeader(feature, roles: roles, count: count, in: group)
             if expandedFeatures[group, default: []].contains(feature) {
                 if feature == .windowLayout {
+                    WindowLayoutShortcutActivation()
                     ForEach(WindowLayoutAction.shortcutActions) { action in
                         CentralWindowLayoutShortcutRow(
                             action: action,
-                            shortcutsEnabled: UserDefaults.standard.bool(
-                                forKey: DefaultsKey.windowLayoutShortcutsEnabled),
                             showsSuperKeyAlternative: superKey.isRunning,
                             superKeyModifiers: superKey.modifiers,
                             text: text

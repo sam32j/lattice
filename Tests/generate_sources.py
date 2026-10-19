@@ -84,6 +84,11 @@ def main():
               for prefix in ["    private func deliver(", "    private func sweepTakes()"])
           + "}\n}\n")
     shortcut = "Sources/Vorssaint/UI/CompactShortcutRecorder.swift"
+    write("BindingRecorderEvents.swift", "import AppKit\nimport Carbon.HIToolbox\nextension BindingRecorderEventTests {\nfinal class Recorder: State {\n"
+          + "".join(declaration("Sources/Vorssaint/UI/CompactShortcutBindingRecorder.swift", prefix)
+              .replace("private func", "func", 1)
+              for prefix in ["    private func handleKeyEvent(", "    private func handleFlagsChanged("])
+          + "}\n}\n")
     write("KeyCaptureBridge.swift", "import AppKit\nimport SwiftUI\nextension KeyCaptureBridgeTests {\n"
           + declaration("Sources/Vorssaint/UI/KeyCaptureBridgeView.swift", "struct KeyCaptureBridgeView:")
           + "}\n")

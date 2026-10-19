@@ -7,7 +7,7 @@ struct CentralWindowLayoutShortcutRow: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var superKey = SuperKeyService.shared
     let action: WindowLayoutAction
-    let shortcutsEnabled: Bool
+    @AppStorage(DefaultsKey.windowLayoutShortcutsEnabled) private var shortcutsEnabled = true
     let showsSuperKeyAlternative: Bool
     let superKeyModifiers: GlobalShortcutModifiers
     let text: ShortcutSettingsStrings
@@ -17,12 +17,10 @@ struct CentralWindowLayoutShortcutRow: View {
     @State private var pendingTakeOver: GlobalShortcut?
 
     init(action: WindowLayoutAction,
-         shortcutsEnabled: Bool,
          showsSuperKeyAlternative: Bool,
          superKeyModifiers: GlobalShortcutModifiers,
          text: ShortcutSettingsStrings) {
         self.action = action
-        self.shortcutsEnabled = shortcutsEnabled
         self.showsSuperKeyAlternative = showsSuperKeyAlternative
         self.superKeyModifiers = superKeyModifiers
         self.text = text
@@ -55,7 +53,7 @@ struct CentralWindowLayoutShortcutRow: View {
                         isEnabled: true,
                         emptyTitle: l10n.s.shortcutNone,
                         canClear: shortcut != nil,
-                        canReset: shortcut != action.defaultShortcut,
+                        canReset: !shortcutsEnabled || shortcut != action.defaultShortcut,
                         errorText: $errorText,
                         onClear: clear,
                         onReset: reset,
@@ -82,11 +80,7 @@ struct CentralWindowLayoutShortcutRow: View {
                 SystemShortcutTakeOverOffer(
                     shortcut: pendingTakeOver,
                     onAccept: {
-                        rawValue = pendingTakeOver.storageValue
-                        UserDefaults.standard.set(true, forKey: DefaultsKey.windowLayoutShortcutsEnabled)
-                        SystemShortcutTakeover.setTakeOver(action.shortcutKey, true)
-                        self.pendingTakeOver = nil
-                        WindowLayoutService.shared.syncWithPreferences()
+                        save(pendingTakeOver, approvingSystemConflict: true)
                     },
                     onDismiss: {
                         self.pendingTakeOver = nil
@@ -115,52 +109,39 @@ struct CentralWindowLayoutShortcutRow: View {
     }
 
     private func clear() {
-        rawValue = WindowLayoutAction.clearedShortcutStorageValue
-        errorText = nil
-        pendingTakeOver = nil
-        SystemShortcutTakeover.setTakeOver(action.shortcutKey, false)
-        WindowLayoutService.shared.syncWithPreferences()
+        apply(WindowLayoutShortcutEditor.clear(action))
     }
 
     private func reset() {
-        rawValue = action.defaultShortcut?.storageValue
-            ?? WindowLayoutAction.clearedShortcutStorageValue
-        errorText = nil
-        pendingTakeOver = nil
-        UserDefaults.standard.set(true, forKey: DefaultsKey.windowLayoutShortcutsEnabled)
-        SystemShortcutTakeover.setTakeOver(action.shortcutKey, false)
-        WindowLayoutService.shared.syncWithPreferences()
+        if let shortcut = action.defaultShortcut { save(shortcut) }
+        else { clear() }
     }
 
     private func save(_ shortcut: GlobalShortcut) {
-        if let conflict = GlobalShortcutRole.conflict(for: shortcut,
-                                                      excluding: nil,
-                                                      includeInactive: true) {
-            errorText = String(format: l10n.s.shortcutConflictFormat, conflict.title(l10n.s))
-            return
-        }
-        if let conflict = WindowLayoutService.shared.shortcutConflictTitle(shortcut,
-                                                                           excluding: action) {
-            errorText = String(format: l10n.s.shortcutConflictFormat, conflict)
-            return
-        }
-        // The offer is the last word on a combination: every other check has
-        // already passed, so accepting it writes exactly what a save writes.
-        switch SystemShortcutTakeoverSupport.recorderDecision(
-            shortcut: shortcut,
-            conflictsWithMacOS: SystemShortcutTakeover.conflictsWithMacOS(shortcut),
+        save(shortcut, approvingSystemConflict: false)
+    }
+
+    private func save(_ shortcut: GlobalShortcut, approvingSystemConflict: Bool) {
+        apply(WindowLayoutShortcutEditor.save(shortcut, for: action, language: l10n.language,
+            conflictsWithSystem: SystemShortcutTakeover.conflictsWithMacOS(shortcut),
             takenOver: SystemShortcutTakeover.isTakenOver(action.shortcutKey),
-            current: GlobalShortcut(storageValue: rawValue)) {
+            approveSystemConflict: approvingSystemConflict), offered: shortcut)
+    }
+
+    private func apply(_ result: WindowLayoutShortcutEditor.Result, offered: GlobalShortcut? = nil) {
+        switch result {
+        case .conflict(let message):
+            errorText = message
+            pendingTakeOver = nil
         case .offer:
-            pendingTakeOver = shortcut
+            pendingTakeOver = offered
             errorText = nil
-            return
-        case .save(let clearTakeOver):
-            rawValue = shortcut.storageValue
-            UserDefaults.standard.set(true, forKey: DefaultsKey.windowLayoutShortcutsEnabled)
+        case .saved(let value, let takeOver):
+            rawValue = value
             errorText = nil
-            if clearTakeOver { SystemShortcutTakeover.setTakeOver(action.shortcutKey, false) }
+            pendingTakeOver = nil
+            SystemShortcutTakeover.setTakeOver(action.shortcutKey, takeOver)
+            WindowLayoutService.shared.syncWithPreferences()
         }
-        WindowLayoutService.shared.syncWithPreferences()
     }
 }

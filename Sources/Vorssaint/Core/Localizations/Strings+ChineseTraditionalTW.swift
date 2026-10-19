@@ -789,7 +789,7 @@ extension Strings {
         updateBannerAction: "更新",
         obStepMenuBarTitle: "選單列中的指標",
         obStepMenuBarBody: "選擇圖示旁要顯示的內容。上方預覽會即時更新。",
-        obStepMenuBarNote: "新增：面板中的網路、電源模組和圖表。稍後可在設定 › 監控中微調。",
+        obStepMenuBarNote: "新增：面板中的網路、電源模組和圖表。稍後可在設定 › 活動監視器中微調。",
         monitorMenuBarPresetLabel: "樣式",
         menuBarPresetReadable: "易讀",
         menuBarPresetDense: "密集",

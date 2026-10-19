@@ -124,6 +124,7 @@ struct CompactShortcutBindingRecorder: View {
     }
 
     private func handleKeyEvent(_ event: NSEvent) {
+        modifierRecording.keyPressed()
         if event.keyCode == UInt16(kVK_Escape) {
             stopRecording()
             return

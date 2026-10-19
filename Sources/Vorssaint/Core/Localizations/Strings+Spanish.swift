@@ -788,7 +788,7 @@ extension Strings {
         updateBannerAction: "Actualizar",
         obStepMenuBarTitle: "Métricas en la barra de menús",
         obStepMenuBarBody: "Elige qué mostrar junto al icono. La vista previa de arriba se actualiza en tiempo real.",
-        obStepMenuBarNote: "Novedad: bloques de Red y Energía y gráficas en el panel. Ajústalo todo más tarde en Ajustes › Monitor.",
+        obStepMenuBarNote: "Novedad: bloques de Red y Energía y gráficas en el panel. Ajústalo todo más tarde en Ajustes › Monitor de Actividad.",
         monitorMenuBarPresetLabel: "Estilo",
         menuBarPresetReadable: "Legible",
         menuBarPresetDense: "Densa",

@@ -242,7 +242,7 @@ enum CommandBarCatalog {
         }
 
         return AppFeature.allCases.flatMap { feature -> [CommandBarEntry] in
-            guard feature.isAvailable || feature.isMouseFeature else { return [] }
+            guard feature.isPresentInControls() else { return [] }
             if feature == .scrollInverter {
                 return [
                     entry(for: feature,
@@ -854,13 +854,13 @@ enum CommandBarCatalog {
                 else { return nil }
                 id = "settings.\(page)"
             case .feature(let feature):
-                guard feature.isAvailable,
+                guard feature.isPresentInControls(),
                       FeatureVisibilitySupport.isPageVisible(
                         item.destination.page, isAvailable: { $0.isAvailable })
                 else { return nil }
                 id = "settings.feature.\(feature.rawValue)"
             case .setting(let anchor):
-                guard item.feature.map(\.isAvailable) ?? true,
+                guard item.feature.map({ $0.isPresentInControls() }) ?? true,
                       FeatureVisibilitySupport.isPageVisible(
                         item.destination.page, isAvailable: { $0.isAvailable })
                 else { return nil }
