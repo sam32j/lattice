@@ -580,29 +580,33 @@ enum CommandBarCatalog {
             }
         }
 
-        if AppFeature.quickToggles.isAvailable {
+        if AppFeature.commandBar.isAvailable {
             let toggles = QuickTogglesService.shared
             let togglesText = FeatureStrings.quickToggles(language)
-            let togglesArea = area(.quickToggles)
+            let togglesArea = area(.commandBar)
             let isDark = toggles.systemAppearanceIsDark ?? false
-            entries.append(CommandBarEntry(
-                id: "action.darkMode",
-                title: isDark ? togglesText.darkModeToLight : togglesText.darkModeToDark,
-                subtitle: togglesArea,
-                icon: .symbol(isDark ? "sun.max.fill" : "moon.fill"),
-                run: { _ in QuickTogglesService.shared.toggleDarkMode() }))
+            if AppFeature.brightness.isAvailable {
+                entries.append(CommandBarEntry(
+                    id: "action.darkMode",
+                    title: isDark ? togglesText.darkModeToLight : togglesText.darkModeToDark,
+                    subtitle: area(.brightness),
+                    icon: .symbol(isDark ? "sun.max.fill" : "moon.fill"),
+                    run: { _ in QuickTogglesService.shared.toggleDarkMode() }))
+            }
             entries.append(CommandBarEntry(
                 id: "action.lockScreen",
                 title: togglesText.lockScreenTitle,
                 subtitle: togglesArea,
                 icon: .symbol("lock.fill"),
                 run: { _ in afterBeat { QuickTogglesService.shared.lockScreen() } }))
-            entries.append(CommandBarEntry(
-                id: "action.displayOff",
-                title: togglesText.displayOffTitle,
-                subtitle: togglesArea,
-                icon: .symbol("display"),
-                run: { _ in afterBeat { QuickTogglesService.shared.turnDisplayOff() } }))
+            if AppFeature.brightness.isAvailable {
+                entries.append(CommandBarEntry(
+                    id: "action.displayOff",
+                    title: togglesText.displayOffTitle,
+                    subtitle: area(.brightness),
+                    icon: .symbol("display"),
+                    run: { _ in afterBeat { QuickTogglesService.shared.turnDisplayOff() } }))
+            }
             entries.append(CommandBarEntry(
                 id: "action.screenSaver",
                 title: togglesText.screenSaverTitle,

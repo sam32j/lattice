@@ -22,7 +22,7 @@ struct EnergyDisplaySettings: View {
     var body: some View {
         let strings = FeatureStrings.brightness(l10n.language)
         return SettingsCard {
-            if AppFeature.quickToggles.isAvailable {
+            if AppFeature.brightness.isAvailable {
                 let appearance = FeatureStrings.quickToggles(l10n.language)
                 let isDark = toggles.systemAppearanceIsDark ?? (colorScheme == .dark)
                 Button {

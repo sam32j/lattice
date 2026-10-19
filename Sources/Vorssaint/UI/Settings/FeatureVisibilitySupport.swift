@@ -361,8 +361,6 @@ extension AppFeature {
 
         case .quickLauncher:
             return FeatureSettingsDestination(.shortcuts, sectionAnchor: .quickLauncher)
-        case .quickToggles:
-            return FeatureSettingsDestination(.features)
         case .colorPicker:
             return FeatureSettingsDestination(.screenshot, sectionAnchor: .colorPicker)
         case .screenOCR:

@@ -3345,7 +3345,7 @@ final class CommandBarService: ObservableObject {
     /// The blocking Apple Event check runs away from the main thread; the
     /// Trash row reads the cached answer.
     private func refreshAutomationStatus(for id: UUID) {
-        guard AppFeature.quickToggles.isAvailable else { return }
+        guard AppFeature.commandBar.isAvailable else { return }
         DispatchQueue.global(qos: .utility).async { [weak self] in
             let denied = Permissions.automationStatus(for: .finder) == .denied
             DispatchQueue.main.async {

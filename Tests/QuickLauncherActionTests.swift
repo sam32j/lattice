@@ -107,7 +107,7 @@ enum QuickLauncherContract {
             (.urlCleaner, .urlCleaner, nil, nil),
             (.uninstaller, .uninstaller, nil, nil),
             (.cleaner, .cleaner, nil, nil),
-            (.toggles, .quickToggles, nil, nil),
+            (.toggles, .quickLauncher, nil, nil),
         ]
         suite.expect(Set(cases.map { $0.0 }) == Set(QuickLauncherItem.allCases),
                      "every launcher tile has an activation contract")
@@ -160,6 +160,21 @@ enum QuickLauncherContract {
         presentationContracts(suite)
         compositionContracts(suite)
         railContracts(suite)
+        for feature in [AppFeature.brightness, .commandBar, .micMute] {
+            defaults.set(false, forKey: feature.availabilityKey)
+        }
+        let grouping = Launcher()
+        grouping.run(.toggles)
+        suite.expect(!grouping.visibleItems.contains(.toggles) && grouping.activeUtility == nil,
+                     "Quick Panel does not offer or open an empty system-action grouping")
+        grouping.activeUtility = .toggles
+        grouping.refreshAvailability()
+        suite.expect(grouping.activeUtility == nil,
+                     "removing the final action owner closes an already-open grouping")
+        defaults.set(true, forKey: AppFeature.brightness.availabilityKey)
+        grouping.run(.toggles)
+        suite.expect(grouping.visibleItems.contains(.toggles) && grouping.activeUtility == .toggles,
+                     "installing Displays alone restores the grouping and its appearance actions")
     }
 
     private static func presentationContracts(_ suite: TestSuite) {
