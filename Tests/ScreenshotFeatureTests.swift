@@ -2921,13 +2921,13 @@ enum ScreenshotFeatureTests {
         suite.expect(ScreenshotSupport.Tool.shortcutTool(number: 1, enabled: true) == .select
                 && ScreenshotSupport.Tool.shortcutTool(number: 3, enabled: true) == .line
                 && ScreenshotSupport.Tool.shortcutTool(number: 9, enabled: true) == .text
-                && ScreenshotSupport.Tool.shortcutTool(number: 0, enabled: true) == .crop
+                && ScreenshotSupport.Tool.shortcutTool(number: 0, enabled: true) == .pixelate
                 && ScreenshotSupport.Tool.shortcutTool(number: 1, enabled: false) == nil
                 && ScreenshotSupport.Tool.shortcutTool(number: 11, enabled: true) == nil,
                "number keys 1 through 9 and 0 select the fixed rail tools and can be disabled together")
         suite.expect(ScreenshotSupport.Tool.shortcutNumber(for: .select, enabled: true) == 1
-                && ScreenshotSupport.Tool.shortcutNumber(for: .crop, enabled: true) == 0
-                && ScreenshotSupport.Tool.shortcutNumber(for: .pixelate, enabled: true) == nil,
+                && ScreenshotSupport.Tool.shortcutNumber(for: .pixelate, enabled: true) == 0
+                && ScreenshotSupport.Tool.shortcutNumber(for: .crop, enabled: true) == nil,
                "the rail exposes default shortcut numbers 1-9 and 0 for the first ten tools")
 
         // MARK: Remappable screenshot tool shortcuts
@@ -3008,8 +3008,8 @@ enum ScreenshotFeatureTests {
                         orderRaw: nil, bindingsRaw: "", enabled: true)
                     == Tool.shortcutTool(number: numberArg, orderRaw: nil, enabled: true),
                        "empty bindings preserve position behavior for \(tool)")
-                suite.expect((Tool.shortcutLabel(for: tool, orderRaw: nil, bindingsRaw: "", enabled: true) != nil)
-                    == (index < Tool.shortcutLimit), "only the first ten tools get default badges")
+                suite.expect(Tool.shortcutLabel(for: tool, orderRaw: nil, bindingsRaw: "", enabled: true) != nil,
+                       "all tools get default badges")
             }
             suite.expect(Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: raw, enabled: true) == text.displayString
                 && Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: raw, enabled: false) == nil,

@@ -1465,7 +1465,7 @@ enum ScreenshotSupport {
         // Case order is the fixed rail order and therefore the default
         // mapping for keys 1 through 9, and 0.
         case select, arrow, line, ellipse, rect, redact,
-             freehand, highlight, text, crop, pixelate, counter, sticker
+             freehand, highlight, text, pixelate, crop, counter, sticker
 
         static let shortcutLimit = 10
 
@@ -1498,13 +1498,20 @@ enum ScreenshotSupport {
             case .freehand: return GlobalShortcut(keyCode: Int64(kVK_ANSI_7), modifiers: [])
             case .highlight: return GlobalShortcut(keyCode: Int64(kVK_ANSI_8), modifiers: [])
             case .text: return GlobalShortcut(keyCode: Int64(kVK_ANSI_9), modifiers: [])
-            case .crop: return GlobalShortcut(keyCode: Int64(kVK_ANSI_0), modifiers: [])
-            case .pixelate, .counter, .sticker: return nil
+            case .pixelate: return GlobalShortcut(keyCode: Int64(kVK_ANSI_0), modifiers: [])
+            case .crop: return GlobalShortcut(keyCode: Int64(kVK_ANSI_Grave), modifiers: [])
+            case .counter: return GlobalShortcut(keyCode: Int64(kVK_ANSI_N), modifiers: [])
+            case .sticker: return GlobalShortcut(keyCode: Int64(kVK_ANSI_E), modifiers: [])
             }
         }
 
         static func ordered(from raw: String? = nil) -> [Tool] {
-            allCases
+            var tools = allCases
+            if let cropIndex = tools.firstIndex(of: .crop) {
+                tools.remove(at: cropIndex)
+                tools.insert(.crop, at: 0)
+            }
+            return tools
         }
 
         static func shortcutTool(number: Int,
@@ -1680,6 +1687,15 @@ enum ScreenshotSupport {
             if let entry = custom[tool] {
                 return entry?.displayString
             }
+            if let defaultShortcut = tool.defaultShortcut {
+                if defaultShortcut.modifiers.isEmpty {
+                    if defaultShortcut.keyCode == Int64(kVK_ANSI_Grave) { return "`" }
+                    if defaultShortcut.keyCode == Int64(kVK_ANSI_0) { return "0" }
+                    if defaultShortcut.keyCode == Int64(kVK_ANSI_N) { return "N" }
+                    if defaultShortcut.keyCode == Int64(kVK_ANSI_E) { return "E" }
+                }
+                return defaultShortcut.displayString
+            }
             return shortcutNumber(for: tool, enabled: true).map(String.init)
         }
 
@@ -1711,6 +1727,12 @@ enum ScreenshotSupport {
                     if custom[defaultOwner] == nil {
                         return .tool(defaultOwner)
                     }
+                }
+            } else if shortcut.modifiers.isEmpty {
+                if let defaultOwner = allCases.first(where: { $0.defaultShortcut == shortcut }),
+                   shortcutNumber(for: defaultOwner, enabled: true) == nil,
+                   defaultOwner != tool, custom[defaultOwner] == nil {
+                    return .tool(defaultOwner)
                 }
             }
             if let role = roleConflict(shortcut) { return .role(role) }

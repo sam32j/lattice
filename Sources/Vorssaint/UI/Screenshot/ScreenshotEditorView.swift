@@ -20,6 +20,8 @@ struct ScreenshotEditorView: View {
     @State private var backdropPopoverShown = false
     @State private var watermarkPopoverShown = false
     @State private var hoveredTool: ScreenshotSupport.Tool?
+    @State private var isTextSelectionHovered = false
+    @FocusState private var focusedTool: ScreenshotSupport.Tool?
     @State private var toolOptionsShown = false
     @State private var sharing = false
     @State private var sharedRecord: ScreenshotShareRecord?
@@ -47,6 +49,9 @@ struct ScreenshotEditorView: View {
                 topBand
                     .padding(.top, 10)
                     .padding(.horizontal, 12)
+                contextualTopBar
+                    .padding(.top, 4)
+                    .padding(.bottom, 4)
                 HStack(spacing: 0) {
                     ScrollView(.vertical) {
                         toolRail
@@ -56,7 +61,7 @@ struct ScreenshotEditorView: View {
                     .padding(.leading, 10)
                     canvasArea
                 }
-                .padding(.top, 6)
+                .padding(.top, 2)
                 bottomRow
                     .padding(.horizontal, 12)
                     .padding(.top, 6)
@@ -66,7 +71,10 @@ struct ScreenshotEditorView: View {
         .ignoresSafeArea()
         .animation(.easeOut(duration: 0.16), value: model.annotationShadowsEnabled)
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: model.backdropStyle)
-        .onAppear { keyboard.start() }
+        .onAppear {
+            keyboard.start()
+            focusedTool = .select
+        }
         .onDisappear { keyboard.stop() }
         .onChange(of: model.editingTextID) { _, newID in
             if let newID, let annotation = model.annotations.first(where: { $0.id == newID }) {
@@ -550,31 +558,15 @@ struct ScreenshotEditorView: View {
     // MARK: - Tool rail
 
     private var orderedTools: [ScreenshotSupport.Tool] {
-        ScreenshotSupport.Tool.allCases
+        ScreenshotSupport.Tool.ordered(from: nil)
     }
 
     private var toolRail: some View {
         VStack(spacing: 2) {
             ForEach(orderedTools, id: \.self) { tool in
                 railButton(tool)
-                if tool == .select {
-                    Button {
-                        commitEditingTextIfNeeded()
-                        model.tool = .select
-                        model.selectedID = nil
-                        model.textSelectionEnabled.toggle()
-                    } label: {
-                        Image(systemName: "text.viewfinder")
-                            .frame(width: 33, height: 29)
-                            .foregroundStyle(model.textSelectionEnabled ? Color.accentColor : Color.secondary)
-                            .background(model.textSelectionEnabled ? Color.accentColor.opacity(0.18) : .clear,
-                                        in: RoundedRectangle(cornerRadius: 9))
-                    }
-                    .buttonStyle(.plain)
-                    .screenshotSafeHelp(FeatureStrings.editorRefinements(l10n.language).selectText)
-                    .accessibilityLabel(FeatureStrings.editorRefinements(l10n.language).selectText)
-                }
             }
+            textSelectionButton
             Divider()
                 .frame(width: 22)
                 .padding(.vertical, 2)
@@ -608,6 +600,49 @@ struct ScreenshotEditorView: View {
                 .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.18), radius: 16, y: 5)
+    }
+
+    private var textSelectionButton: some View {
+        let isActive = model.textSelectionEnabled
+        let isHovered = isTextSelectionHovered
+        return Button {
+            commitEditingTextIfNeeded()
+            model.tool = .select
+            model.selectedID = nil
+            model.textSelectionEnabled.toggle()
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: "text.viewfinder")
+                    .font(.system(size: 13.5, weight: .medium))
+                    .symbolEffect(.bounce, value: isActive)
+                    .frame(width: 33, height: 29)
+                if toolShortcutsEnabled {
+                    Text("T")
+                        .font(.system(size: 8, weight: .bold, design: .rounded))
+                        .fixedSize()
+                        .foregroundStyle(isActive ? Color.accentColor : Color.secondary)
+                        .padding(2)
+                        .opacity(isHovered || isActive ? 0.9 : 0.55)
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(isActive
+                            ? Color.accentColor.opacity(0.22)
+                            : isHovered ? Color.primary.opacity(0.08) : .clear)
+            )
+            .foregroundStyle(isActive ? Color.accentColor : Color.primary.opacity(0.85))
+            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .scaleEffect(isHovered && !isActive ? 1.06 : 1)
+        }
+        .buttonStyle(.borderless)
+        .onHover { inside in
+            withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                isTextSelectionHovered = inside
+            }
+        }
+        .screenshotSafeHelp(FeatureStrings.editorRefinements(l10n.language).selectText + (toolShortcutsEnabled ? "  (T)" : ""))
+        .accessibilityLabel(FeatureStrings.editorRefinements(l10n.language).selectText)
     }
 
     private func railButton(_ tool: ScreenshotSupport.Tool) -> some View {
@@ -646,6 +681,7 @@ struct ScreenshotEditorView: View {
             .scaleEffect(isHovered && !isActive ? 1.06 : 1)
         }
         .buttonStyle(.borderless)
+        .focused($focusedTool, equals: tool)
         .onHover { inside in
             withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
                 hoveredTool = inside ? tool : (hoveredTool == tool ? nil : hoveredTool)
@@ -685,6 +721,7 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .focusable(false)
             .screenshotSafeHelp(recentCapturesTitle)
             .accessibilityLabel(recentCapturesTitle)
 
@@ -697,6 +734,7 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .focusable(false)
             .screenshotSafeHelp(strings.discardConfirm)
             .accessibilityLabel(strings.discardConfirm)
 
@@ -710,6 +748,7 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .focusable(false)
             .disabled(!model.canUndo)
             Button {
                 commitEditingTextIfNeeded()
@@ -719,11 +758,13 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .focusable(false)
             .disabled(!model.canRedo)
 
             if model.qrReading != nil {
                 Divider().frame(height: 16).padding(.horizontal, 3)
                 qrControl
+                    .focusable(false)
                     .transition(.scale.combined(with: .opacity))
             }
 
@@ -737,6 +778,7 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .focusable(false)
             .screenshotSafeHelp(strings.pinButton + "  (⌘P)")
             .accessibilityLabel(strings.pinButton)
 
@@ -756,6 +798,7 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .focusable(false)
             .background(ShelfSharePickerAnchor(anchor: shareAnchor))
             .screenshotSafeHelp(strings.shareButton)
             .accessibilityLabel(strings.shareButton)
@@ -786,6 +829,7 @@ struct ScreenshotEditorView: View {
                 commitEditingTextIfNeeded()
                 controller.save()
             }
+            .focusable(false)
             .fixedSize()
             .screenshotSafeHelp("⌘S")
 
@@ -825,11 +869,13 @@ struct ScreenshotEditorView: View {
                         .controlSize(.mini)
                 } else {
                     Image(systemName: "link")
+                        .font(.system(size: 13.5, weight: .medium))
                 }
             }
             .frame(width: 24, height: 24)
         }
         .menuStyle(.borderlessButton)
+        .focusable(false)
         .fixedSize()
         .disabled(sharing)
         .screenshotSafeHelp(sharing ? strings.sharingHUD : strings.shareSectionTitle)
@@ -921,27 +967,21 @@ struct ScreenshotEditorView: View {
         return selected.tool == .sticker
     }
 
-    private var bottomRow: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: 10) {
-                infoChip
-                Spacer(minLength: 6)
-                contextualBar
-                Spacer(minLength: 6)
-                zoomChip
-            }
-            // Small captures open at the minimum window width. Keep the
-            // controls inside it rather than letting this row widen the root.
-            VStack(spacing: 6) {
-                contextualBar
-                HStack {
-                    infoChip
-                    Spacer()
-                    zoomChip
-                }
-            }
+    private var contextualTopBar: some View {
+        HStack {
+            Spacer()
+            contextualBar
+            Spacer()
         }
-        .frame(height: 82, alignment: .bottom)
+    }
+
+    private var bottomRow: some View {
+        HStack(alignment: .center, spacing: 10) {
+            infoChip
+            Spacer()
+            zoomChip
+        }
+        .frame(height: 32)
     }
 
     @ViewBuilder
@@ -1468,8 +1508,8 @@ struct ScreenshotEditorView: View {
     }
 
     private var dimensionsLabel: String {
-        let width = Int(model.imageSize.width)
-        let height = Int(model.imageSize.height)
+        let width = Int(model.pointSize.width.rounded())
+        let height = Int(model.pointSize.height.rounded())
         return "\(width) × \(height) px"
     }
 
