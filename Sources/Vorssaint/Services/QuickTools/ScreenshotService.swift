@@ -72,9 +72,7 @@ final class ScreenshotService: ObservableObject {
         if let number = QuickToolHUD.currentWindowNumber, number > 0 {
             ids.insert(CGWindowID(number))
         }
-        if let number = QuickToolHUD.currentScrollingWindowNumber, number > 0 {
-            ids.insert(CGWindowID(number))
-        }
+        ids.formUnion(QuickToolHUD.scrollingWindowIDs)
         return ids
     }
 
@@ -86,6 +84,7 @@ final class ScreenshotService: ObservableObject {
             ids.formUnion(editor.protectedWindowIDs)
         }
         ids.formUnion(ScreenshotPinController.shared.protectedWindowIDs)
+        ids.formUnion(ScreenshotQuickLookController.shared.protectedWindowIDs)
         return ids
     }
 
@@ -372,9 +371,13 @@ final class ScreenshotService: ObservableObject {
 
     private func captureScrolling(_ region: RecorderSupport.Region) {
         guard scrollingTask == nil else { return }
+        let initialImage = ScreenshotSelectionController.lastInitialCapture
+        ScreenshotSelectionController.lastInitialCapture = nil
         let finishSignal = ScreenshotScrollingCapture.FinishSignal()
         scrollingFinishSignal = finishSignal
         QuickToolHUD.showScrollingCapture(
+            region: region,
+            initialImage: initialImage,
             message: strings.scrollingCaptureProgressHUD,
             finishTitle: strings.done,
             cancelTitle: strings.cancel,
@@ -394,8 +397,9 @@ final class ScreenshotService: ObservableObject {
                 hideVorssaintWindows: hideWindows,
                 protectedWindowIDs: protectedIDs,
                 finishSignal: finishSignal,
-                onProgress: { height in
-                    QuickToolHUD.updateScrollingCapture(height: height)
+                onProgress: { _ in },
+                onFrame: { image, height in
+                    QuickToolHUD.updateScrollingCapture(image: image, height: height)
                 })
             guard self.scrollingCaptureID == captureID else { return }
             self.scrollingCaptureID = nil
@@ -545,16 +549,6 @@ final class ScreenshotService: ObservableObject {
                        completedActions: [],
                        dismissInterval: ScreenshotSupport.recoveryPreviewDismissInterval,
                        latestCapture: nil)
-    }
-
-    /// Re-opens the Quick View preview window from a pinned image.
-    func reopenPreview(image: CGImage, scale: CGFloat, anchorRect: CGRect) {
-        let capture = ScreenshotSelectionController.Capture(
-            image: image,
-            scale: scale,
-            anchorRect: anchorRect
-        )
-        restorePreview(capture)
     }
 
     private func presentPreview(_ capture: ScreenshotSelectionController.Capture,

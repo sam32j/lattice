@@ -3,10 +3,12 @@
 
 import AppKit
 import CoreGraphics
+import Vision
 
-/// Watches a selected region while the person scrolls it, then joins only
-/// overlaps that can be identified confidently. Pixel polling also handles
-/// scrollbar drags and keyboard scrolling without global event permissions.
+/// Watches a selected region while the person scrolls it, then joins overlaps
+/// detected via Apple Vision translational image registration with sticky header
+/// and footer protection. Pixel polling handles scrollbar drags and keyboard
+/// scrolling without global event permissions.
 enum ScreenshotScrollingCapture {
     final class FinishSignal: @unchecked Sendable {
         private let lock = NSLock()
@@ -33,16 +35,291 @@ enum ScreenshotScrollingCapture {
         case failed
     }
 
-    private static let sampleInterval: TimeInterval = 0.09
+    private static let sampleInterval: TimeInterval = 0.08
     private static let settleInterval: TimeInterval = 0.22
     private static let finishGraceInterval: TimeInterval = 0.85
+
+    // MARK: - Header & Footer Detection
+
+    enum HeaderDetector {
+        private static let maxScanPercent = 0.20
+        private static let sampleColumns = 20
+        private static let tolerance: Int = 2
+
+        static func detectHeaderHeight(frame1: CGImage, frame2: CGImage) -> Int {
+            unchangedRowCount(frame1: frame1, frame2: frame2, fromBottom: false)
+        }
+
+        static func detectFooterHeight(frame1: CGImage, frame2: CGImage) -> Int {
+            unchangedRowCount(frame1: frame1, frame2: frame2, fromBottom: true)
+        }
+
+        private static func unchangedRowCount(frame1: CGImage, frame2: CGImage, fromBottom: Bool) -> Int {
+            let width = min(frame1.width, frame2.width)
+            let height = min(frame1.height, frame2.height)
+            let maxScanRows = Int(Double(height) * maxScanPercent)
+            guard width > 0, maxScanRows > 0 else { return 0 }
+
+            guard let data1 = frame1.dataProvider?.data,
+                  let data2 = frame2.dataProvider?.data else { return 0 }
+
+            guard let ptr1 = CFDataGetBytePtr(data1),
+                  let ptr2 = CFDataGetBytePtr(data2) else { return 0 }
+
+            let bpr1 = frame1.bytesPerRow
+            let bpr2 = frame2.bytesPerRow
+            let bpp1 = max(1, frame1.bitsPerPixel / 8)
+            let bpp2 = max(1, frame2.bitsPerPixel / 8)
+
+            let colStep = max(1, width / min(sampleColumns, width))
+            var unchangedRows = 0
+
+            for scanned in 0..<maxScanRows {
+                let row = fromBottom ? height - 1 - scanned : scanned
+                var rowMatches = true
+                var minVal = 255, maxVal = 0
+                var col = 0
+                while col < width {
+                    let offset1 = row * bpr1 + col * bpp1
+                    let offset2 = row * bpr2 + col * bpp2
+
+                    if bpp1 == 1 && bpp2 == 1 {
+                        let v = Int(ptr1[offset1])
+                        minVal = min(minVal, v)
+                        maxVal = max(maxVal, v)
+                        let d = abs(v - Int(ptr2[offset2]))
+                        if d > tolerance {
+                            rowMatches = false
+                            break
+                        }
+                    } else {
+                        let r1 = Int(ptr1[offset1]), g1 = Int(ptr1[offset1 + 1]), b1 = Int(ptr1[offset1 + 2])
+                        let lum = (r1 + g1 + b1) / 3
+                        minVal = min(minVal, lum)
+                        maxVal = max(maxVal, lum)
+                        let dr = abs(r1 - Int(ptr2[offset2]))
+                        let dg = abs(g1 - Int(ptr2[offset2 + 1]))
+                        let db = abs(b1 - Int(ptr2[offset2 + 2]))
+                        if dr > tolerance || dg > tolerance || db > tolerance {
+                            rowMatches = false
+                            break
+                        }
+                    }
+                    col += colStep
+                }
+
+                // If row has no content variation across columns, it is a solid margin, not UI
+                if maxVal - minVal <= tolerance {
+                    break
+                }
+
+                if rowMatches {
+                    unchangedRows = scanned + 1
+                } else {
+                    break
+                }
+            }
+            return unchangedRows
+        }
+    }
+
+    struct FixedRegions: Equatable {
+        var header = 0
+        var footer = 0
+
+        static func detect(frame1: CGImage, frame2: CGImage) -> FixedRegions {
+            FixedRegions(
+                header: HeaderDetector.detectHeaderHeight(frame1: frame1, frame2: frame2),
+                footer: HeaderDetector.detectFooterHeight(frame1: frame1, frame2: frame2)
+            )
+        }
+
+        func scrollingArea(in frame: CGImage) -> CGRect? {
+            let rect = CGRect(
+                x: 0, y: header,
+                width: frame.width, height: frame.height - header - footer
+            )
+            return rect.height > 0 ? rect : nil
+        }
+    }
+
+    // MARK: - Incremental Stitcher
+
+    final class ScrollStitcher: @unchecked Sendable {
+        private(set) var body: CGImage?
+        private var lastFrame: CGImage?
+        private(set) var footerHeight = 0
+        private(set) var totalHeight: Int = 0
+
+        var mergedImage: CGImage? {
+            guard let body else { return nil }
+            guard footerHeight > 0, let lastFrame,
+                  let footer = lastFrame.cropping(to: CGRect(
+                      x: 0, y: lastFrame.height - footerHeight,
+                      width: lastFrame.width, height: footerHeight
+                  )) else { return body }
+            return Self.stack(top: body, bottom: footer)
+        }
+
+        func setInitialFrame(_ frame: CGImage) {
+            body = frame
+            lastFrame = frame
+            footerHeight = 0
+            totalHeight = frame.height
+        }
+
+        func setFooterHeight(_ height: Int) {
+            guard let body, height > 0, height < body.height else { return }
+            footerHeight = height
+            self.body = body.cropping(to: CGRect(x: 0, y: 0, width: body.width, height: body.height - height))
+        }
+
+        enum StitchResult {
+            case stitched(yOffset: Int)
+            case noChange
+            case reversedScroll
+            case alignmentFailed
+        }
+
+        func stitch(newFrame: CGImage, detectedOffset: Int) -> StitchResult {
+            guard let body else {
+                setInitialFrame(newFrame)
+                return .stitched(yOffset: 0)
+            }
+            guard detectedOffset > 0 else {
+                return detectedOffset < 0 ? .reversedScroll : .noChange
+            }
+
+            let contentBottom = newFrame.height - footerHeight
+            guard detectedOffset < contentBottom,
+                  let newRows = newFrame.cropping(to: CGRect(
+                      x: 0, y: contentBottom - detectedOffset,
+                      width: newFrame.width, height: detectedOffset
+                  )),
+                  let stacked = Self.stack(top: body, bottom: newRows) else {
+                return .alignmentFailed
+            }
+
+            self.body = stacked
+            lastFrame = newFrame
+            totalHeight = stacked.height + footerHeight
+            return .stitched(yOffset: detectedOffset)
+        }
+
+        static func stack(top: CGImage, bottom: CGImage) -> CGImage? {
+            let width = min(top.width, bottom.width)
+            let height = top.height + bottom.height
+            let colorSpace = top.colorSpace ?? CGColorSpaceCreateDeviceRGB()
+            let isGray = (colorSpace.model == .monochrome)
+            let hasAlpha = !([.none, .noneSkipFirst, .noneSkipLast].contains(top.alphaInfo))
+            let bitmapInfo: UInt32 = isGray
+                ? CGImageAlphaInfo.none.rawValue
+                : (hasAlpha
+                    ? (CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+                    : (CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue))
+
+            guard let ctx = CGContext(
+                data: nil,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: colorSpace,
+                bitmapInfo: bitmapInfo
+            ) else { return nil }
+
+            ctx.interpolationQuality = .none
+            ctx.draw(top, in: CGRect(x: 0, y: bottom.height, width: width, height: top.height))
+            ctx.draw(bottom, in: CGRect(x: 0, y: 0, width: width, height: bottom.height))
+            return ctx.makeImage()
+        }
+    }
+
+    // MARK: - Offset Detection & Matching
+
+    static func verticalOffset(from earlier: CGImage, to later: CGImage, ignoring fixed: FixedRegions) -> Int? {
+        guard let area = fixed.scrollingArea(in: earlier),
+              let a = earlier.cropping(to: area),
+              let b = later.cropping(to: area) else { return nil }
+
+        let request = VNTranslationalImageRegistrationRequest(targetedCGImage: a)
+        do {
+            try VNImageRequestHandler(cgImage: b, options: [:]).perform([request])
+        } catch {
+            return nil
+        }
+        guard let observation = request.results?.first as? VNImageTranslationAlignmentObservation else {
+            return nil
+        }
+        return Int(observation.alignmentTransform.ty.rounded())
+    }
+
+    static func validateOffset(earlier: CGImage, later: CGImage, offset: Int, header: Int = 0) -> Bool {
+        guard offset > 0, offset < earlier.height else { return false }
+        let startRow = header
+        let overlap = earlier.height - offset
+        let width = min(earlier.width, later.width)
+        guard overlap > startRow, width > 0 else { return true }
+
+        guard let d1 = earlier.dataProvider?.data,
+              let d2 = later.dataProvider?.data else { return false }
+        guard let p1 = CFDataGetBytePtr(d1),
+              let p2 = CFDataGetBytePtr(d2) else { return false }
+        let bpr1 = earlier.bytesPerRow
+        let bpr2 = later.bytesPerRow
+        let bpp1 = max(1, earlier.bitsPerPixel / 8)
+        let bpp2 = max(1, later.bitsPerPixel / 8)
+
+        let sampleRows = min(20, overlap - startRow)
+        let sampleCols = min(20, width)
+        let rowStep = max(1, (overlap - startRow) / sampleRows)
+        let colStep = max(1, width / sampleCols)
+
+        var diffTotal: Double = 0
+        var count = 0
+
+        for r in stride(from: startRow, to: overlap, by: rowStep) {
+            let r1 = r + offset
+            let r2 = r
+            for c in stride(from: 0, to: width, by: colStep) {
+                let o1 = r1 * bpr1 + c * bpp1
+                let o2 = r2 * bpr2 + c * bpp2
+                if bpp1 == 1 && bpp2 == 1 {
+                    diffTotal += Double(abs(Int(p1[o1]) - Int(p2[o2])))
+                } else {
+                    let dr = abs(Int(p1[o1]) - Int(p2[o2]))
+                    let dg = abs(Int(p1[o1 + 1]) - Int(p2[o2 + 1]))
+                    let db = abs(Int(p1[o1 + 2]) - Int(p2[o2 + 2]))
+                    diffTotal += Double(dr + dg + db) / 3.0
+                }
+                count += 1
+            }
+        }
+        let avg = count > 0 ? (diffTotal / Double(count)) : 999.0
+        return avg <= 50.0
+    }
+
+    static func areFramesIdentical(_ a: CGImage, _ b: CGImage) -> Bool {
+        guard a.width == b.width, a.height == b.height,
+              let dataA = a.dataProvider?.data,
+              let dataB = b.dataProvider?.data else { return false }
+        let lenA = CFDataGetLength(dataA)
+        let lenB = CFDataGetLength(dataB)
+        guard lenA == lenB,
+              let ptrA = CFDataGetBytePtr(dataA),
+              let ptrB = CFDataGetBytePtr(dataB) else { return false }
+        return memcmp(ptrA, ptrB, lenA) == 0
+    }
+
+    // MARK: - Capture Loop
 
     static func capture(region: RecorderSupport.Region,
                         includePointer: Bool,
                         hideVorssaintWindows: Bool,
                         protectedWindowIDs: Set<CGWindowID>,
                         finishSignal: FinishSignal,
-                        onProgress: @escaping @MainActor (Int) -> Void) async -> Result {
+                        onProgress: @escaping @MainActor (Int) -> Void = { _ in },
+                        onFrame: (@MainActor (CGImage, Int) -> Void)? = nil) async -> Result {
         do {
             guard let source = await ScreenshotCaptureEngine.prepareDisplayRegion(
                 displayID: region.displayID, pixelRect: region.pixelRect,
@@ -52,24 +329,21 @@ enum ScreenshotScrollingCapture {
                   let first = contentFrame(firstFrame)
             else { return Task.isCancelled ? .cancelled : .failed }
             try Task.checkCancellation()
-            guard let firstSample = sample(first) else { return .failed }
 
             let startedAt = ProcessInfo.processInfo.systemUptime
-            var slices = [first]
-            var previousSample = firstSample
-            var lastObservedSample = firstSample
-            var totalHeight = first.height
-            var retainedPixels = first.width * first.height
-            var contentSampleColumns: Range<Int>?
-            var contentPixelColumns: Range<Int>?
-            var fixedBottomPixels = 0
-            var footerSlice: CGImage?
+            let stitcher = ScrollStitcher()
+            stitcher.setInitialFrame(first)
+            var shotA = first
+            var lastObservedFrame = first
+            var fixedRegions: FixedRegions?
             var hasUnmatchedContent = false
-            var lastChangedAt = startedAt
+            var finishRequestedAt: TimeInterval?
             var lastCaptureAt = ProcessInfo.processInfo.systemUptime
             var scrollPending = false
-            var finishRequestedAt: TimeInterval?
-            await onProgress(totalHeight)
+            var frameCount = 1
+
+            await onProgress(stitcher.totalHeight)
+            await onFrame?(stitcher.mergedImage ?? first, stitcher.totalHeight)
 
             while true {
                 try Task.checkCancellation()
@@ -77,166 +351,75 @@ enum ScreenshotScrollingCapture {
                 let now = ProcessInfo.processInfo.systemUptime
                 if finishSignal.isRequested, finishRequestedAt == nil {
                     finishRequestedAt = now
-                    // Take one final frame even if no wheel event was delivered.
                     scrollPending = true
                 }
                 if let finishRequestedAt,
                    !scrollPending || now - finishRequestedAt >= finishGraceInterval {
                     return completedByUser(
-                        slices: slices,
-                        footerSlice: footerSlice,
+                        stitcher: stitcher,
                         region: region,
                         hasUnmatchedContent: hasUnmatchedContent)
                 }
-                if now - startedAt
-                    >= ScreenshotSupport.scrollingCaptureMaximumDuration
-                    || slices.count >= ScreenshotSupport.scrollingCaptureMaximumFrames {
-                    return completed(slices: slices,
-                                     footerSlice: footerSlice,
-                                     region: region,
-                                     result: .limited)
+                if now - startedAt >= ScreenshotSupport.scrollingCaptureMaximumDuration
+                    || frameCount >= ScreenshotSupport.scrollingCaptureMaximumFrames
+                    || stitcher.totalHeight * first.width >= ScreenshotSupport.scrollingCaptureMaximumPixels {
+                    return completed(
+                        image: stitcher.mergedImage,
+                        region: region,
+                        result: .limited)
                 }
 
-                // Observe pixels throughout the session. Wheel monitors miss
-                // scrollbar drags, keyboard scrolling and some other apps.
                 let sinceLastCapture = now - lastCaptureAt
                 if sinceLastCapture < sampleInterval {
-                    try await Task.sleep(nanoseconds: UInt64(
-                        (sampleInterval - sinceLastCapture) * 1_000_000_000))
+                    try await Task.sleep(nanoseconds: UInt64((sampleInterval - sinceLastCapture) * 1_000_000_000))
                     continue
                 }
 
-                guard let frame = await source.image(),
-                      let current = contentFrame(frame),
-                      let currentSample = sample(current)
+                guard let rawFrame = await source.image(),
+                      let current = contentFrame(rawFrame)
                 else {
-                    return completed(slices: slices, footerSlice: footerSlice,
-                                     region: region, result: .partial)
+                    return completed(
+                        image: stitcher.mergedImage,
+                        region: region,
+                        result: .partial)
                 }
                 try Task.checkCancellation()
                 lastCaptureAt = ProcessInfo.processInfo.systemUptime
-                let frameIsStable = ScreenshotSupport.scrollingSamplesAreStable(
-                    lastObservedSample,
-                    currentSample,
-                    contentColumns: contentSampleColumns)
-                lastObservedSample = currentSample
-                if !frameIsStable { lastChangedAt = lastCaptureAt }
-                let transition = ScreenshotSupport.scrollingTransition(
-                    previous: previousSample,
-                    current: currentSample,
-                    contentColumns: contentSampleColumns)
 
-                switch transition {
-                case .end:
-                    hasUnmatchedContent = false
+                if areFramesIdentical(lastObservedFrame, current) {
+                    scrollPending = false
+                    continue
+                }
+                lastObservedFrame = current
+                scrollPending = true
 
-                case .advanced(let sampleOverlap, .forward, let matchedColumns):
-                    let overlap = Int((CGFloat(sampleOverlap) / CGFloat(currentSample.height)
-                        * CGFloat(current.height)).rounded())
-                    guard overlap > 0, overlap < current.height else { return .failed }
-                    let establishingContent = contentSampleColumns == nil
-                    if establishingContent {
-                        guard let pixelColumns = ScreenshotSupport.scrollingPixelRange(
-                            sampleColumns: matchedColumns,
-                            sampleWidth: currentSample.width,
-                            imageWidth: current.width)
-                        else { return .failed }
-                        let fixedBottomRows = ScreenshotSupport.scrollingFixedBottomRows(
-                            previous: previousSample,
-                            current: currentSample,
-                            overlap: sampleOverlap,
-                            contentColumns: matchedColumns)
-                        fixedBottomPixels = Int(
-                            (CGFloat(fixedBottomRows) / CGFloat(currentSample.height)
-                                * CGFloat(current.height)).rounded())
-                        guard let newContentRows = ScreenshotSupport.scrollingNewContentRows(
-                            imageHeight: current.height,
-                            overlap: overlap,
-                            fixedBottomRows: fixedBottomPixels),
-                              let croppedFirst = copiedStrip(from: first,
-                                                            columns: pixelColumns,
-                                                            topCrop: 0,
-                                                            bottomCrop: fixedBottomPixels)
-                        else { return .failed }
-                        contentSampleColumns = matchedColumns
-                        contentPixelColumns = pixelColumns
-                        slices[0] = croppedFirst
-                        retainedPixels = croppedFirst.width * croppedFirst.height
-
-                        if fixedBottomPixels > 0 {
-                            guard let footer = copiedStrip(
-                                from: current,
-                                columns: pixelColumns,
-                                topCrop: newContentRows.upperBound,
-                                bottomCrop: 0)
-                            else { return .failed }
-                            footerSlice = footer
-                            retainedPixels += footer.width * footer.height
-                        }
-                    }
-                    guard let pixelColumns = contentPixelColumns else { return .failed }
-                    guard let newContentRows = ScreenshotSupport.scrollingNewContentRows(
-                        imageHeight: current.height,
-                        overlap: overlap,
-                        fixedBottomRows: fixedBottomPixels)
-                    else { return .failed }
-                    let stripHeight = newContentRows.count
-                    let nextHeight = totalHeight + stripHeight
-                    guard !pixelColumns.isEmpty,
-                          nextHeight <= ScreenshotSupport.scrollingCaptureMaximumPixels
-                            / pixelColumns.count
-                    else {
-                        return completed(slices: slices,
-                                         footerSlice: footerSlice,
-                                         region: region,
-                                         result: .limited)
-                    }
-                    guard let strip = copiedStrip(from: current,
-                                                  columns: pixelColumns,
-                                                  topCrop: newContentRows.lowerBound,
-                                                  bottomCrop: current.height
-                                                    - newContentRows.upperBound)
-                    else { return .failed }
-                    let stripPixels = strip.width * strip.height
-                    guard stripPixels <= ScreenshotSupport.scrollingCaptureMaximumRetainedPixels,
-                          retainedPixels
-                            <= ScreenshotSupport.scrollingCaptureMaximumRetainedPixels
-                                - stripPixels else {
-                        return completed(slices: slices,
-                                         footerSlice: footerSlice,
-                                         region: region,
-                                         result: .limited)
-                    }
-                    if fixedBottomPixels > 0, !establishingContent {
-                        guard let footer = copiedStrip(
-                            from: current,
-                            columns: pixelColumns,
-                            topCrop: current.height - fixedBottomPixels,
-                            bottomCrop: 0)
-                        else { return .failed }
-                        footerSlice = footer
-                    }
-                    // Keep only new pixels. Retaining every full frame made a
-                    // common Retina selection hit the memory guard after about
-                    // eleven scrolls even though the final image was still safe.
-                    slices.append(strip)
-                    totalHeight = nextHeight
-                    retainedPixels += stripPixels
-                    previousSample = currentSample
-                    hasUnmatchedContent = false
-                    await onProgress(totalHeight)
-
-                case .advanced(_, .backward, _):
-                    // Scrolling back never duplicates pixels already kept. A
-                    // later forward movement can continue from the furthest
-                    // accepted frame without inventing a seam.
-                    hasUnmatchedContent = false
-
-                case .unmatched:
-                    hasUnmatchedContent = true
+                if fixedRegions == nil {
+                    let detected = FixedRegions.detect(frame1: shotA, frame2: current)
+                    fixedRegions = detected
+                    stitcher.setFooterHeight(detected.footer)
                 }
 
-                scrollPending = !frameIsStable || lastCaptureAt - lastChangedAt < settleInterval
+                let regions = fixedRegions ?? FixedRegions()
+                if let offset = verticalOffset(from: shotA, to: current, ignoring: regions) {
+                    if offset >= 3 {
+                        if validateOffset(earlier: shotA, later: current, offset: offset, header: regions.header) {
+                            if case .stitched = stitcher.stitch(newFrame: current, detectedOffset: offset) {
+                                shotA = current
+                                frameCount += 1
+                                hasUnmatchedContent = false
+                                await onProgress(stitcher.totalHeight)
+                                await onFrame?(stitcher.mergedImage ?? current, stitcher.totalHeight)
+                            }
+                        } else {
+                            hasUnmatchedContent = true
+                        }
+                    } else if offset < 0 {
+                        // Backwards scroll: preserve furthest forward frame without duplicating pixels
+                        hasUnmatchedContent = false
+                    }
+                } else {
+                    hasUnmatchedContent = true
+                }
             }
         } catch is CancellationError {
             return .cancelled
@@ -245,20 +428,12 @@ enum ScreenshotScrollingCapture {
         }
     }
 
-    private static func completedByUser(slices: [CGImage],
-                                        footerSlice: CGImage?,
+    private static func completedByUser(stitcher: ScrollStitcher,
                                         region: RecorderSupport.Region,
                                         hasUnmatchedContent: Bool) -> Result {
-        guard hasUnmatchedContent else {
-            return completed(slices: slices,
-                             footerSlice: footerSlice,
-                             region: region,
-                             result: .success)
-        }
-        return completed(slices: slices,
-                         footerSlice: footerSlice,
-                         region: region,
-                         result: .partial)
+        completed(image: stitcher.mergedImage,
+                  region: region,
+                  result: hasUnmatchedContent ? .partial : .success)
     }
 
     private enum CompletedResult {
@@ -267,16 +442,11 @@ enum ScreenshotScrollingCapture {
         case limited
     }
 
-    private static func completed(slices: [CGImage],
-                                  footerSlice: CGImage?,
+    private static func completed(image: CGImage?,
                                   region: RecorderSupport.Region,
                                   result: CompletedResult) -> Result {
         guard !Task.isCancelled else { return .cancelled }
-        let completedSlices = footerSlice.map { slices + [$0] } ?? slices
-        guard let image = stitch(completedSlices) else {
-            return Task.isCancelled ? .cancelled : .failed
-        }
-        guard !Task.isCancelled else { return .cancelled }
+        guard let image else { return Task.isCancelled ? .cancelled : .failed }
         let capture = ScreenshotSelectionController.Capture(
             image: image,
             scale: region.scale,
@@ -288,10 +458,8 @@ enum ScreenshotScrollingCapture {
         }
     }
 
-    /// ScreenCaptureKit can pad a region with a transparent edge row. Keeping
-    /// that row in each appended strip produces a dark seam in image viewers.
-    /// Remove only fully transparent outer rows/columns before matching, so the
-    /// overlap and strip coordinates describe the same actual screen pixels.
+    // MARK: - Frame Helpers
+
     private static func contentFrame(_ image: CGImage) -> CGImage? {
         if [.none, .noneSkipFirst, .noneSkipLast].contains(image.alphaInfo) { return image }
         let width = image.width, height = image.height
@@ -327,60 +495,7 @@ enum ScreenshotScrollingCapture {
         return image.cropping(to: CGRect(x: left, y: top, width: right - left, height: bottom - top))
     }
 
-    private static func sample(_ image: CGImage) -> ScreenshotSupport.ScrollingSample? {
-        // Width can be reduced safely, but vertical rows stay one-for-one with
-        // the source. Resizing both axes turns an integer scroll into a
-        // fractional row offset and destroys an otherwise exact overlap.
-        let width = min(32, image.width)
-        let height = image.height
-        guard width > 0, height > 0 else { return nil }
-        var pixels = [UInt8](repeating: 0, count: width * height)
-        guard let context = CGContext(data: &pixels,
-                                      width: width,
-                                      height: height,
-                                      bitsPerComponent: 8,
-                                      bytesPerRow: width,
-                                      space: CGColorSpaceCreateDeviceGray(),
-                                      bitmapInfo: CGImageAlphaInfo.none.rawValue)
-        else { return nil }
-        context.interpolationQuality = .low
-        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
-        return ScreenshotSupport.ScrollingSample(width: width,
-                                                 height: height,
-                                                 pixels: pixels)
-    }
-
-    /// A cropped CGImage may keep its full source storage alive. Drawing the
-    /// new strip into its own bitmap makes the retained-pixel guard truthful.
-    private static func copiedStrip(from image: CGImage,
-                                    columns: Range<Int>,
-                                    topCrop: Int,
-                                    bottomCrop: Int) -> CGImage? {
-        let height = image.height - topCrop - bottomCrop
-        guard image.width > 0, height > 0,
-              topCrop >= 0, bottomCrop >= 0,
-              columns.lowerBound >= 0,
-              columns.upperBound <= image.width,
-              !columns.isEmpty,
-              let source = image.cropping(to: CGRect(x: columns.lowerBound,
-                                                     y: topCrop,
-                                                     width: columns.count,
-                                                     height: height)),
-              let context = CGContext(data: nil,
-                                      width: columns.count,
-                                      height: height,
-                                      bitsPerComponent: 8,
-                                      bytesPerRow: 0,
-                                      space: CGColorSpaceCreateDeviceRGB(),
-                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { return nil }
-        context.interpolationQuality = .none
-        context.draw(source, in: CGRect(x: 0, y: 0,
-                                       width: columns.count, height: height))
-        return context.makeImage()
-    }
-
-    private static func stitch(_ slices: [CGImage]) -> CGImage? {
+    static func stitch(_ slices: [CGImage]) -> CGImage? {
         guard !Task.isCancelled else { return nil }
         guard let first = slices.first else { return nil }
         guard slices.count > 1 else { return first }
@@ -391,7 +506,7 @@ enum ScreenshotScrollingCapture {
                                       height: height,
                                       bitsPerComponent: 8,
                                       bytesPerRow: 0,
-                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      space: first.colorSpace ?? CGColorSpaceCreateDeviceRGB(),
                                       bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
         else { return nil }
         context.interpolationQuality = .none

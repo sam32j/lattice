@@ -45,7 +45,7 @@ enum RecorderPreparationTests {
         func show(on screen: NSScreen?, tooltip: String, pauseTooltip: String,
                   resumeTooltip: String, stopTooltip: String,
                   startTooltip: String, discardTooltip: String) {}
-        func setWaitingForStart() {}
+        func setWaitingForStart(in selection: CGRect) {}
     }
     typealias RecorderIndicator = Indicator
     struct NSScreen {

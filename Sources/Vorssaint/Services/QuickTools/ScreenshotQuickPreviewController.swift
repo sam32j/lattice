@@ -109,6 +109,14 @@ final class ScreenshotQuickPreviewController {
             showQR: { [weak self] in self?.showQRResult() },
             copyText: { [weak self] in self?.copyText() },
             dismiss: { [weak self] in self?.close() },
+            expand: { [weak self] in
+                guard let self else { return }
+                self.dismissWork?.cancel()
+                if !ScreenshotQuickLookController.shared.show(image: self.capture.image,
+                    scale: self.capture.scale, owner: self.panel ?? NotchService.shared.presentationWindow) {
+                    NSSound.beep()
+                }
+            },
             hoverChanged: { [weak self] inside in self?.hoverChanged(inside) },
             showsDismissButton: presentationPolicy.showsDismissButton,
             embedded: wantsNotch)
@@ -135,7 +143,7 @@ final class ScreenshotQuickPreviewController {
         let size = Self.size(showingLink: model.sharedRecord != nil)
         let panel = ScreenshotQuickPreviewPanel(
             contentRect: CGRect(origin: .zero, size: size),
-            styleMask: [.borderless, .nonactivatingPanel],
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false)
         panel.contentViewController = host
@@ -153,13 +161,9 @@ final class ScreenshotQuickPreviewController {
         self.panel = panel
         installKeyMonitor(for: panel)
         panel.orderFrontRegardless()
-        // On by default: leaving the keyboard behind after a capture is what
-        // #1463 reported, since Command-C and Command-S did nothing until a
-        // click. Taking it costs the caret in the app being typed into
-        // (#1089), so persistent previews always leave focus where it was;
-        // a click can still hand focus to the preview explicitly.
         if presentationPolicy.takesFocus {
             panel.makeKey()
+            NSApp.activate(ignoringOtherApps: true)
         }
         finishShowing()
     }
@@ -548,6 +552,7 @@ private struct ScreenshotQuickPreviewView: View {
     let showQR: () -> Void
     let copyText: () -> Void
     let dismiss: () -> Void
+    let expand: () -> Void
     let hoverChanged: (Bool) -> Void
     let showsDismissButton: Bool
     var embedded = false
@@ -643,8 +648,9 @@ private struct ScreenshotQuickPreviewView: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 24, height: 24)
-                .background(.regularMaterial, in: Circle())
-                .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                .background(Color.black.opacity(0.65), in: Circle())
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.18), lineWidth: 0.8))
+                .shadow(color: Color.black.opacity(0.25), radius: 2, y: 1)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -681,9 +687,7 @@ private struct ScreenshotQuickPreviewView: View {
     }
 
     private var viewportLinkMenu: some View {
-        Menu {
-            shareDurations
-        } label: {
+        Button(action: showShareMenu) {
             Group {
                 if model.sharing {
                     ProgressView()
@@ -695,16 +699,33 @@ private struct ScreenshotQuickPreviewView: View {
                 }
             }
             .frame(width: 24, height: 24)
-            .background(.regularMaterial, in: Circle())
-            .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+            .background(Color.black.opacity(0.65), in: Circle())
+            .overlay(Circle().strokeBorder(Color.white.opacity(0.18), lineWidth: 0.8))
+            .shadow(color: Color.black.opacity(0.25), radius: 2, y: 1)
             .contentShape(Circle())
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
         .disabled(model.sharing)
         .focusable(false)
         .screenshotSafeHelp(strings.shareSectionTitle)
         .accessibilityLabel(strings.shareSectionTitle)
+    }
+
+    private func showShareMenu() {
+        let menu = NSMenu()
+        for duration in ScreenshotShareDuration.allCases {
+            let item = NSMenuItem(
+                title: duration.title(strings),
+                action: #selector(ScreenshotQuickPreviewMenuHelper.handleDurationAction(_:)),
+                keyEquivalent: ""
+            )
+            item.target = ScreenshotQuickPreviewMenuHelper.shared
+            item.representedObject = {
+                self.share(duration)
+            }
+            menu.addItem(item)
+        }
+        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
     }
 
     private var viewportBottomLeadingButtons: some View {
@@ -723,10 +744,11 @@ private struct ScreenshotQuickPreviewView: View {
         Button(action: { perform(.discard) }) {
             Image(systemName: "trash")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.red)
+                .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.45))
                 .frame(width: 24, height: 24)
-                .background(.regularMaterial, in: Circle())
-                .overlay(Circle().strokeBorder(Color.red.opacity(0.35), lineWidth: 1))
+                .background(Color.black.opacity(0.65), in: Circle())
+                .overlay(Circle().strokeBorder(Color.red.opacity(0.4), lineWidth: 0.8))
+                .shadow(color: Color.black.opacity(0.25), radius: 2, y: 1)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -753,8 +775,9 @@ private struct ScreenshotQuickPreviewView: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 24, height: 24)
-                .background(.regularMaterial, in: Circle())
-                .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                .background(Color.black.opacity(0.65), in: Circle())
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.18), lineWidth: 0.8))
+                .shadow(color: Color.black.opacity(0.25), radius: 2, y: 1)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -780,6 +803,7 @@ private struct ScreenshotQuickPreviewView: View {
                             .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
                     )
                     .onDrag(dragItem)
+                    .onTapGesture(count: 2, perform: expand)
 
                 if !embedded {
                     VStack {
@@ -1081,6 +1105,15 @@ private struct QuickPreviewCenterActions: View {
                 .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.22), radius: 8, y: 3)
+    }
+}
+
+@objc final class ScreenshotQuickPreviewMenuHelper: NSObject {
+    static let shared = ScreenshotQuickPreviewMenuHelper()
+    @objc func handleDurationAction(_ sender: NSMenuItem) {
+        if let block = sender.representedObject as? () -> Void {
+            block()
+        }
     }
 }
 

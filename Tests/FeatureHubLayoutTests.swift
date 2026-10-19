@@ -18,6 +18,13 @@ enum FeatureHubLayoutTests {
         typealias FeatureRuntime = FeatureHubLayoutTests.FeatureRuntime
         typealias SettingsCard<Content: View> = FeatureHubLayoutTests.SettingsCard<Content>
         typealias PermissionsPortalSections = FeatureHubLayoutTests.PermissionsPortalSections
+        struct FeatureHubScrollCoordinator: View {
+            let state: Any?
+            var body: some View { EmptyView() }
+        }
+        final class FeatureHubNavigationState {
+            static let shared = FeatureHubNavigationState()
+        }
         enum Tab { case features, permissions }
         @ObservedObject var features = FeatureRuntime.shared
         @State var tab = Tab.features

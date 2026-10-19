@@ -51,6 +51,8 @@ def availability_declaration(path, prefix):
 
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    write("RecorderScreen.swift", "import AppKit\n" + declaration(
+        "Sources/Vorssaint/Services/QuickTools/ScreenshotCaptureEngine.swift", "extension NSScreen {"))
     recorder = "Sources/Vorssaint/Services/Recorder/ScreenRecorderService.swift"
     editor = "Sources/Vorssaint/Services/Recorder/RecorderEditorController.swift"
     write("RecordingStash.swift", "import Foundation\nextension RecordingStashTests {\n"
@@ -257,7 +259,7 @@ def main():
           + declaration("Sources/Vorssaint/UI/Notch/NotchView.swift", "    func title(_ language: AppLanguage)",
                         scope="extension NotchModule: PanelOrderItem {")
           + "}\n")
-    write("ScrollingCaptureLoop.swift", "import AppKit\nimport CoreGraphics\n"
+    write("ScrollingCaptureLoop.swift", "import AppKit\nimport CoreGraphics\nimport Vision\n"
           + "extension ScreenshotScrollingCaptureTests {\n"
           + declaration("Sources/Vorssaint/Services/QuickTools/ScreenshotScrollingCapture.swift",
                         "enum ScreenshotScrollingCapture {").replace(
@@ -1484,6 +1486,7 @@ def main():
     preview = "Sources/Vorssaint/Services/QuickTools/ScreenshotQuickPreviewController.swift"
     screen_text = "Sources/Vorssaint/Services/QuickTools/ScreenTextService.swift"
     write("ScreenshotOCRControl.swift", "import AppKit\nimport SwiftUI\n"
+          + declaration(preview, "@objc final class ScreenshotQuickPreviewMenuHelper:")
           + "extension ScreenshotOCRControlTests {\n"
           + declaration(preview, "final class ScreenshotQuickPreviewModel:")
           + declaration(preview, "private struct ScreenshotQuickPreviewView:").replace("private struct", "struct", 1)
@@ -1615,7 +1618,7 @@ def main():
           + "var keyMonitor: Any?\nvar globalKeyMonitor: Any?\nvar spaceIsDown = false\n"
           + "var acceptsWindowClick = true\nvar loupeAcceptsKeyboardActions = false\n"
           + "var actions: [String] = []\nvar draggingPanel: ScreenshotOverlayPanel?\n"
-          + "var isPickingColor = false\nvar acceptsCaptureInput = true\nvar hasSelectedWindows = false\nfunc clearSelectedWindows() {}\nfunc confirmSelectedWindows() {}\n"
+          + "var isPickingColor = false\nvar acceptsCaptureInput = true\nvar hasSelectedWindows = false\nvar offersFullScreenCapture = true\nfunc clearSelectedWindows() {}\nfunc confirmSelectedWindows() {}\n"
           + "var panels: [ScreenshotOverlayPanel] = []\nvar currentPointerLocation: CGPoint?\n"
           + 'func finish(_ outcome: Outcome) { actions.append("cancel") }\n'
           + 'func captureFullDisplayUnderMouse() { actions.append("fullDisplay") }\n'

@@ -209,6 +209,76 @@ enum ScreenshotSupport {
 
     // MARK: - Preferences
 
+    /// Determines if an image is blank (empty, transparent, or without meaningful visual content).
+    /// Used as a safeguard against window server, out-of-process GPU compositing, or Mission Control capture failures.
+    static func isImageBlank(_ image: CGImage) -> Bool {
+        let width = image.width
+        let height = image.height
+        guard width > 0, height > 0 else { return true }
+
+        let sampleW = min(64, width)
+        let sampleH = min(64, height)
+        var buffer = [UInt32](repeating: 0, count: sampleW * sampleH)
+        guard let context = CGContext(
+            data: &buffer,
+            width: sampleW,
+            height: sampleH,
+            bitsPerComponent: 8,
+            bytesPerRow: sampleW * 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return false }
+
+        context.interpolationQuality = .none
+        context.draw(image, in: CGRect(x: 0, y: 0, width: sampleW, height: sampleH))
+
+        var opaqueCount = 0
+        var innerOpaqueCount = 0
+        let innerXStart = sampleW / 5
+        let innerXEnd = sampleW * 4 / 5
+        let innerYStart = sampleH / 5
+        let innerYEnd = sampleH * 4 / 5
+        let totalInnerPixels = (innerXEnd - innerXStart) * (innerYEnd - innerYStart)
+
+        var firstPixel: UInt32?
+        var allPixelsIdentical = true
+
+        for y in 0..<sampleH {
+            for x in 0..<sampleW {
+                let pixel = buffer[y * sampleW + x]
+                if let first = firstPixel {
+                    if pixel != first {
+                        allPixelsIdentical = false
+                    }
+                } else {
+                    firstPixel = pixel
+                }
+
+                let alpha = (pixel >> 24) & 0xff
+                if alpha > 16 {
+                    opaqueCount += 1
+                    if x >= innerXStart && x < innerXEnd && y >= innerYStart && y < innerYEnd {
+                        innerOpaqueCount += 1
+                    }
+                }
+            }
+        }
+
+        // 1. Completely uniform (e.g. solid black, solid white, solid clear)
+        if allPixelsIdentical {
+            return true
+        }
+
+        // 2. Hollow or mostly transparent overlay (e.g. Window Highlight Overlay where interior is empty)
+        let overallRatio = Double(opaqueCount) / Double(sampleW * sampleH)
+        let innerRatio = Double(innerOpaqueCount) / Double(totalInnerPixels)
+        if overallRatio < 0.25 || innerRatio < 0.05 {
+            return true
+        }
+
+        return false
+    }
+
     static let recentCaptureLimit = 12
     static let recentCaptureMaximumBytes: Int64 = 256 * 1024 * 1024
 

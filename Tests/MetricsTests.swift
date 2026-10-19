@@ -105,6 +105,7 @@ struct MetricsTests {
                 ScreenshotAttachedCaptureTests.run(suite)
             }),
             ("recorder", {
+                RecorderOverlayTests.run(suite)
                 RecorderGIFWriterTests.run(suite)
                 RecorderFeatureTests.run(suite)
                 RecorderZoomAimingTests.run(suite)

@@ -17,17 +17,19 @@ final class ScreenshotPinPinchTracker {
         let distance = hypot(p1.x - p2.x, p1.y - p2.y)
         guard distance > 0.005 else { return nil }
 
-        defer { lastDistance = distance }
-
         guard let previous = lastDistance, previous > 0.005 else {
+            lastDistance = distance
             return nil
         }
 
         let factor = distance / previous
         // Sanity limit on single-packet delta: ignore extreme jumps (e.g. finger swap)
-        guard factor.isFinite, factor > 0.5, factor < 2.0, abs(factor - 1.0) > 0.0005 else {
+        guard factor.isFinite, factor > 0.5, factor < 2.0 else {
+            lastDistance = distance
             return nil
         }
+        guard abs(factor - 1.0) > 0.0005 else { return nil }
+        lastDistance = distance
         return factor
     }
 

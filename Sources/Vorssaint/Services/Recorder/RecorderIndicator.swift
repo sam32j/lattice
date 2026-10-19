@@ -16,6 +16,8 @@ final class RecorderIndicator {
     private var panel: NSPanel?
     private var pill: PillView?
     private var regionGuide: NSPanel?
+    private var recordingOrigin = CGPoint.zero
+    var presentationWindow: NSWindow? { panel }
     private let onPause: () -> Void
     private let onStop: () -> Void
     private let onDiscard: (() -> Void)?
@@ -108,7 +110,8 @@ final class RecorderIndicator {
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
-        panel.level = .statusBar
+        // Stay above full-area camera video without obscuring native menus.
+        panel.level = NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue - 2)
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary,
@@ -116,6 +119,7 @@ final class RecorderIndicator {
         let frame = host.visibleFrame
         panel.setFrameOrigin(CGPoint(x: (frame.midX - PillView.size.width / 2).rounded(),
                                      y: (frame.maxY - PillView.size.height - 10).rounded()))
+        recordingOrigin = panel.frame.origin
         panel.alphaValue = 0
         panel.orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { context in
@@ -127,11 +131,18 @@ final class RecorderIndicator {
         self.pill = pill
     }
 
-    func setWaitingForStart() {
+    func setWaitingForStart(in selection: CGRect) {
         pill?.setWaitingForStart()
+        panel?.setFrame(CGRect(x: selection.midX - PillView.waitingSize.width / 2,
+                              y: selection.midY - PillView.waitingSize.height / 2,
+                              width: PillView.waitingSize.width, height: PillView.waitingSize.height), display: true)
     }
 
     func update(elapsed: String) {
+        if pill?.isWaitingForStart == true {
+            panel?.setFrame(CGRect(origin: recordingOrigin, size: PillView.size), display: true)
+            pill?.setStarted()
+        }
         pill?.setTime(elapsed)
     }
 
@@ -183,6 +194,7 @@ final class RecorderIndicator {
 
     private final class PillView: NSView {
         static let size = CGSize(width: 182, height: 32)
+        static let waitingSize = CGSize(width: 82, height: 40)
 
         var onPause: (() -> Void)?
         var onStop: (() -> Void)?
@@ -245,6 +257,14 @@ final class RecorderIndicator {
             pauseButton.image = symbolImage("play.fill")
             pauseButton.toolTip = startTooltip
             pauseButton.setAccessibilityLabel(startTooltip)
+            dot.isHidden = true
+            label.isHidden = true
+            trashButton.isHidden = true
+            pauseButton.frame = CGRect(x: 8, y: 7, width: 30, height: 26)
+            stopButton.frame = CGRect(x: 44, y: 7, width: 30, height: 26)
+            stopButton.image = symbolImage("xmark")
+            stopButton.toolTip = L10n.shared.s.cutCancel
+            stopButton.setAccessibilityLabel(L10n.shared.s.cutCancel)
         }
 
         func setStarted() {
@@ -254,6 +274,15 @@ final class RecorderIndicator {
             pauseButton.image = symbolImage("pause.fill")
             pauseButton.toolTip = pauseTooltip
             pauseButton.setAccessibilityLabel(pauseTooltip)
+            pauseButton.isEnabled = true
+            dot.isHidden = false
+            label.isHidden = false
+            trashButton.isHidden = false
+            pauseButton.frame = CGRect(x: 82, y: 3, width: 30, height: 26)
+            stopButton.frame = CGRect(x: 114, y: 3, width: 30, height: 26)
+            stopButton.image = symbolImage("stop.fill")
+            stopButton.toolTip = stopTooltip
+            stopButton.setAccessibilityLabel(stopTooltip)
         }
 
         func setTime(_ text: String) {
@@ -290,10 +319,12 @@ final class RecorderIndicator {
             context.setLineWidth(1)
             context.strokePath()
 
-            context.move(to: CGPoint(x: 78.5, y: 8))
-            context.addLine(to: CGPoint(x: 78.5, y: bounds.height - 8))
-            context.setStrokeColor(CGColor(gray: 1, alpha: 0.14))
-            context.strokePath()
+            if !isWaitingForStart {
+                context.move(to: CGPoint(x: 78.5, y: 8))
+                context.addLine(to: CGPoint(x: 78.5, y: bounds.height - 8))
+                context.setStrokeColor(CGColor(gray: 1, alpha: 0.14))
+                context.strokePath()
+            }
         }
 
         private func configure(_ button: NSButton,
@@ -331,7 +362,8 @@ final class RecorderIndicator {
 
         @objc private func pausePressed() {
             if isWaitingForStart {
-                setStarted()
+                guard pauseButton.isEnabled else { return }
+                pauseButton.isEnabled = false
                 onStart?()
             } else {
                 onPause?()
