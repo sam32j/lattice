@@ -3,16 +3,10 @@
 
 import SwiftUI
 
-/// Reusable panel configuration: one block per panel section, each with a
-/// master "show in panel" toggle plus per-item toggles. The onboarding panel
-/// step draws it as expandable rows inside a grouped `Form`; Settings → Monitor
-/// draws the same choices as tiles, one per block, with the chosen block's
-/// items as tiles under it. Both write the same keys.
+/// Panel configuration tiles, with one master per block and per-item options.
 struct MonitorPanelConfig: View {
-    var tiles = false
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
-    @State private var expandedBlocks = Set<PanelConfigBlock>()
     @State private var selectedBlock: PanelConfigBlock?
 
     @AppStorage(DefaultsKey.monitorShowSystem) private var showSystem = true
@@ -46,7 +40,6 @@ struct MonitorPanelConfig: View {
     @AppStorage(DefaultsKey.monitorPwrBattery) private var pwrBattery = true
     @AppStorage(DefaultsKey.monitorPwrTimeRemaining) private var pwrTimeRemaining = true
     @AppStorage(DefaultsKey.monitorPwrHealth) private var pwrHealth = true
-    @AppStorage(DefaultsKey.monitorPwrPeripherals) private var pwrPeripherals = false
 
     @AppStorage(DefaultsKey.monitorShowMixer) private var showMixer = true
 
@@ -59,11 +52,7 @@ struct MonitorPanelConfig: View {
     @AppStorage(DefaultsKey.monitorGraphBattery) private var graphBattery = true
 
     var body: some View {
-        if tiles {
-            tileLayout
-        } else {
-            rowLayout
-        }
+        tileLayout
     }
 
     // MARK: - Tiles
@@ -173,8 +162,6 @@ struct MonitorPanelConfig: View {
                          available: available)
                 itemTile(l10n.s.powerHealth, symbol: "heart", value: $pwrHealth, available: available)
             }
-            itemTile(l10n.s.monitorShowPeripheralBattery, symbol: MenuBarMetric.peripheralBattery.symbolName,
-                     value: $pwrPeripherals, available: available)
         case .mixer:
             EmptyView()
         }
@@ -198,104 +185,6 @@ struct MonitorPanelConfig: View {
 
     private func chartOption(_ isOn: Binding<Bool>) -> some View {
         MonitorTokenOption(symbol: "chart.xyaxis.line", title: l10n.s.monitorGraphsSection, isOn: isOn)
-    }
-
-    // MARK: - Rows
-
-    @ViewBuilder
-    private var rowLayout: some View {
-        if PanelSectionID.system.isAvailable {
-            block(.system, title: l10n.s.systemSection, master: $showSystem) {
-                if AppFeature.monitorCPU.isAvailable || AppFeature.monitorGPU.isAvailable {
-                    Toggle(l10n.s.temperatures, isOn: $sysTemps)
-                }
-                if AppFeature.monitorCPU.isAvailable {
-                    Toggle(l10n.s.cpuLabel, isOn: $sysCPU)
-                }
-                if AppFeature.monitorGPU.isAvailable {
-                    Toggle(l10n.s.gpuLabel, isOn: $sysGPU)
-                }
-                if AppFeature.monitorMemory.isAvailable {
-                    Toggle(l10n.s.memorySection, isOn: $sysMemory)
-                }
-                Toggle(l10n.s.monitorItemUptime, isOn: $sysUptime)
-                if AppFeature.connectedDevices.isAvailable {
-                    Toggle(FeatureStrings.connectedDevices(l10n.language).title, isOn: $sysConnectedDevices)
-                }
-            }
-        }
-        if AppFeature.monitorNetwork.isAvailable {
-            block(.network, title: l10n.s.networkSection, master: $showNetwork) {
-                Toggle(l10n.s.monitorItemNetSpeed, isOn: $netSpeed)
-                Toggle(l10n.s.networkApps, isOn: $netApps)
-                Toggle(l10n.s.monitorItemNetTotals, isOn: $netTotals)
-                Toggle(l10n.s.networkIPAddresses, isOn: $netAddresses)
-                Toggle(l10n.s.monitorItemNetTest, isOn: $netTest)
-            }
-        }
-        if AppFeature.monitorDisk.isAvailable {
-            block(.disk, title: l10n.s.diskSection, master: $showDisk) {
-                Toggle(l10n.s.monitorItemDiskUsage, isOn: $diskUsage)
-                Toggle(l10n.s.monitorItemDiskActivity, isOn: $diskActivity)
-                Toggle(l10n.s.monitorItemDiskSMART, isOn: $diskSMART)
-                Toggle(l10n.s.monitorItemDiskProtection, isOn: $diskProtection)
-                Toggle(l10n.s.monitorItemDiskTools, isOn: $diskTools)
-            }
-        }
-        if AppFeature.monitorPower.isAvailable {
-            block(.power, title: l10n.s.powerSection, master: $showPower) {
-                Toggle(l10n.s.powerSystem, isOn: $pwrSystem)
-                Toggle(l10n.s.powerAdapter, isOn: $pwrAdapter)
-                if PowerSampler.hasInternalBattery {
-                    Toggle(l10n.s.batteryCharge, isOn: $sysBattery)
-                    Toggle(l10n.s.powerBattery, isOn: $pwrBattery)
-                    Toggle(FeatureStrings.batteryTime(l10n.language).title, isOn: $pwrTimeRemaining)
-                    DisclosureGroup(FeatureStrings.mouseClickDebounce(l10n.language).moreOptions) {
-                        Toggle(l10n.s.monitorShowBatteryTemperature, isOn: $pwrTemperature)
-                        Toggle(l10n.s.powerHealth, isOn: $pwrHealth)
-                    }
-                }
-                Toggle(l10n.s.monitorShowPeripheralBattery, isOn: $pwrPeripherals)
-            }
-        }
-        // The mixer is a per-app list, so it has no sub-items — just show/hide.
-        if AppFeature.mixer.isAvailable {
-            Toggle(l10n.s.mixerSection, isOn: $showMixer)
-        }
-    }
-
-    /// One expandable section: a master "show in panel" toggle, then the per-item
-    /// toggles (disabled while the whole block is hidden).
-    @ViewBuilder
-    private func block<Content: View>(_ id: PanelConfigBlock,
-                                      title: String,
-                                      master: Binding<Bool>,
-                                      @ViewBuilder _ items: @escaping () -> Content) -> some View {
-        DisclosureHeaderRow(isExpanded: expansionBinding(for: id)) {
-            Text(title)
-            Spacer()
-        }
-        if expandedBlocks.contains(id) {
-            Group {
-                Toggle(l10n.s.monitorShowInPanel, isOn: master)
-                items()
-                    .disabled(!master.wrappedValue)
-            }
-            .disclosureIndent()
-        }
-    }
-
-    private func expansionBinding(for id: PanelConfigBlock) -> Binding<Bool> {
-        Binding(
-            get: { expandedBlocks.contains(id) },
-            set: { expanded in
-                if expanded {
-                    expandedBlocks.insert(id)
-                } else {
-                    expandedBlocks.remove(id)
-                }
-            }
-        )
     }
 
 }

@@ -808,6 +808,7 @@ final class WindowLayoutService: ObservableObject {
     // MARK: - Shortcuts
 
     private func registerHotkeys() {
+        guard !InputEventTap.isBlocked else { unregisterHotkeys(); return }
         // Cleared shortcuts are simply absent: their key combo stays free for
         // other apps, which is the whole point of clearing them (issue #169).
         let shortcuts = Dictionary(uniqueKeysWithValues: WindowLayoutAction.shortcutActions.compactMap { action in
@@ -858,7 +859,7 @@ final class WindowLayoutService: ObservableObject {
                 let kind = event.map(GetEventKind) ?? 0
                 if id.signature == 0x5655_5744 { // 'VUWD'
                     DispatchQueue.main.async {
-                        guard service.directionalHotKeyRef != nil, !ShortcutCapture.isCapturing else { return }
+                        guard !InputEventTap.isBlocked, service.directionalHotKeyRef != nil, !ShortcutCapture.isCapturing else { return }
                         kind == UInt32(kEventHotKeyPressed)
                             ? service.beginDirectionalGesture()
                             : service.finishDirectionalGesture()
@@ -870,7 +871,7 @@ final class WindowLayoutService: ObservableObject {
                       let action = WindowLayoutAction(shortcutID: id.id) else {
                     return OSStatus(eventNotHandledErr)
                 }
-                DispatchQueue.main.async { service.apply(action) }
+                DispatchQueue.main.async { if !InputEventTap.isBlocked { service.apply(action) } }
                 return noErr
             }, specs.count, &specs, Unmanaged.passUnretained(self).toOpaque(), &eventHandler)
         }
@@ -896,6 +897,7 @@ final class WindowLayoutService: ObservableObject {
     }
 
     private func registerDirectionalHotkey() {
+        guard !InputEventTap.isBlocked else { unregisterDirectionalHotkey(); return }
         guard let trigger = UserDefaults.standard.string(forKey: DefaultsKey.windowDirectionalShortcut)
             .flatMap(WindowDirectionalTrigger.init(storageValue:)) else {
             unregisterDirectionalHotkey()
@@ -1021,7 +1023,7 @@ final class WindowLayoutService: ObservableObject {
     @discardableResult
     private func startDirectionalModifierTap() -> Bool {
         guard directionalModifierTap == nil else { return true }
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: WindowDirectionalModifierTapSupport.options,
@@ -1038,7 +1040,7 @@ final class WindowLayoutService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         directionalModifierTapSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         return true
     }
 
@@ -1048,7 +1050,7 @@ final class WindowLayoutService: ObservableObject {
         }
         directionalModifierTapSource = nil
         if let directionalModifierTap {
-            CGEvent.tapEnable(tap: directionalModifierTap, enable: false)
+            InputEventTap.enable(tap: directionalModifierTap, enable: false)
             CFMachPortInvalidate(directionalModifierTap)
         }
         directionalModifierTap = nil
@@ -1075,7 +1077,7 @@ final class WindowLayoutService: ObservableObject {
                     self.directionalModifierButtons = .current()
                     _ = self.directionalModifierHold?.update(GlobalShortcutModifiers(
                         cgFlags: CGEventSource.flagsState(.combinedSessionState)))
-                    CGEvent.tapEnable(tap: directionalModifierTap, enable: true)
+                    InputEventTap.enable(tap: directionalModifierTap, enable: true)
                 } else {
                     self.unregisterDirectionalHotkey()
                 }
@@ -1148,7 +1150,7 @@ final class WindowLayoutService: ObservableObject {
             | CGEventMask(1 << CGEventType.rightMouseDown.rawValue)
             | CGEventMask(1 << CGEventType.otherMouseDown.rawValue)
             | CGEventMask(1 << CGEventType.keyDown.rawValue)
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -1165,7 +1167,7 @@ final class WindowLayoutService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         directionalTapSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         return true
     }
 
@@ -1347,7 +1349,7 @@ final class WindowLayoutService: ObservableObject {
         }
         directionalTapSource = nil
         if let directionalTap {
-            CGEvent.tapEnable(tap: directionalTap, enable: false)
+            InputEventTap.enable(tap: directionalTap, enable: false)
             CFMachPortInvalidate(directionalTap)
         }
         directionalTap = nil
@@ -1420,7 +1422,7 @@ final class WindowLayoutService: ObservableObject {
         let mask = CGEventMask(1 << CGEventType.leftMouseDown.rawValue)
             | CGEventMask(1 << CGEventType.leftMouseDragged.rawValue)
             | CGEventMask(1 << CGEventType.leftMouseUp.rawValue)
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -1437,7 +1439,7 @@ final class WindowLayoutService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         edgeSnapRunLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
     }
 
     private func stopEdgeSnapTap() {
@@ -1459,7 +1461,7 @@ final class WindowLayoutService: ObservableObject {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), edgeSnapRunLoopSource, .commonModes)
         }
         if let edgeSnapTap {
-            CGEvent.tapEnable(tap: edgeSnapTap, enable: false)
+            InputEventTap.enable(tap: edgeSnapTap, enable: false)
             CFMachPortInvalidate(edgeSnapTap)
         }
         edgeSnapTap = nil
@@ -1471,7 +1473,7 @@ final class WindowLayoutService: ObservableObject {
                                       event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if SessionActivity.shared.isActive, AXIsProcessTrusted(), let edgeSnapTap {
-                CGEvent.tapEnable(tap: edgeSnapTap, enable: true)
+                InputEventTap.enable(tap: edgeSnapTap, enable: true)
             } else {
                 DispatchQueue.main.async { [weak self] in self?.syncWithPreferences() }
             }
@@ -2073,7 +2075,7 @@ final class WindowLayoutService: ObservableObject {
             | CGEventMask(1 << CGEventType.rightMouseDown.rawValue)
             | CGEventMask(1 << CGEventType.rightMouseDragged.rawValue)
             | CGEventMask(1 << CGEventType.rightMouseUp.rawValue)
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -2093,7 +2095,7 @@ final class WindowLayoutService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         gestureRunLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         isGestureRunning = true
     }
 
@@ -2105,7 +2107,7 @@ final class WindowLayoutService: ObservableObject {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), gestureRunLoopSource, .commonModes)
         }
         if let gestureTap {
-            CGEvent.tapEnable(tap: gestureTap, enable: false)
+            InputEventTap.enable(tap: gestureTap, enable: false)
             CFMachPortInvalidate(gestureTap)
         }
         gestureTap = nil
@@ -2153,7 +2155,7 @@ final class WindowLayoutService: ObservableObject {
         let tapDisabled = type == .tapDisabledByTimeout || type == .tapDisabledByUserInput
         if tapDisabled, let gestureTap {
             if SessionActivity.shared.isActive, AXIsProcessTrusted() {
-                CGEvent.tapEnable(tap: gestureTap, enable: true)
+                InputEventTap.enable(tap: gestureTap, enable: true)
             } else {
                 DispatchQueue.main.async { [weak self] in self?.syncWithPreferences() }
             }

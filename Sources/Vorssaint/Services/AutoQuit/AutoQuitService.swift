@@ -640,7 +640,7 @@ final class AutoQuitService: ObservableObject {
         guard closeRequestTap == nil else { return }
         let mask = CGEventMask(1 << CGEventType.leftMouseDown.rawValue)
             | CGEventMask(1 << CGEventType.keyDown.rawValue)
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .tailAppendEventTap,
             options: .listenOnly,
@@ -657,12 +657,12 @@ final class AutoQuitService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         closeRequestRunLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
     }
 
     private func stopCloseRequestMonitor() {
         if let closeRequestTap {
-            CGEvent.tapEnable(tap: closeRequestTap, enable: false)
+            InputEventTap.enable(tap: closeRequestTap, enable: false)
         }
         if let closeRequestRunLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), closeRequestRunLoopSource, .commonModes)
@@ -674,7 +674,7 @@ final class AutoQuitService: ObservableObject {
 
     private func handleCloseRequestEvent(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-            if let closeRequestTap { CGEvent.tapEnable(tap: closeRequestTap, enable: true) }
+            if let closeRequestTap { InputEventTap.enable(tap: closeRequestTap, enable: true) }
             return Unmanaged.passUnretained(event)
         }
 

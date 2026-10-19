@@ -113,7 +113,7 @@ final class KeyboardDebounceService: ObservableObject {
         }
 
         if let tap = snapshot.tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFMachPortInvalidate(tap)
         }
         if let runLoop = snapshot.runLoop {
@@ -152,7 +152,7 @@ final class KeyboardDebounceService: ObservableObject {
 
             let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
                 | CGEventMask(1 << CGEventType.keyUp.rawValue)
-            guard let tap = CGEvent.tapCreate(
+            guard let tap = InputEventTap.create(
                 tap: .cghidEventTap,
                 place: .headInsertEventTap,
                 options: .defaultTap,
@@ -175,7 +175,7 @@ final class KeyboardDebounceService: ObservableObject {
                 runLoopSource = source
             }
             CFRunLoopAddSource(runLoop, source, .commonModes)
-            CGEvent.tapEnable(tap: tap, enable: true)
+            InputEventTap.enable(tap: tap, enable: true)
             eventLock.withLock {
                 state.reset()
             }
@@ -184,13 +184,13 @@ final class KeyboardDebounceService: ObservableObject {
                 shouldStopTapThread
             }
             if shouldStop {
-                CGEvent.tapEnable(tap: tap, enable: false)
+                InputEventTap.enable(tap: tap, enable: false)
             } else {
                 publishRunning(true, generation: generation)
                 CFRunLoopRun()
             }
 
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFRunLoopRemoveSource(runLoop, source, .commonModes)
             CFMachPortInvalidate(tap)
             eventLock.withLock {
@@ -243,7 +243,7 @@ final class KeyboardDebounceService: ObservableObject {
             // a suspend(), which Cleaning Mode counts on.
             let currentTap = lifecycleLock.withLock { shouldStopTapThread ? nil : tap }
             if SessionActivity.shared.isActive, AXIsProcessTrusted(), let currentTap {
-                CGEvent.tapEnable(tap: currentTap, enable: true)
+                InputEventTap.enable(tap: currentTap, enable: true)
             } else if currentTap != nil {
                 DispatchQueue.main.async { [weak self] in self?.syncWithPreferences() }
             }

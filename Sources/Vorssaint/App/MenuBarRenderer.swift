@@ -215,7 +215,7 @@ enum MenuBarBlockStyle {
 /// Builds the compact content shown next to the icon.
 ///
 /// Output is a list of segments so two consumers stay in sync: the status item
-/// turns them into a colored attributed string, and the onboarding preview into
+/// turns them into a colored attributed string, and Settings previews into
 /// SwiftUI views. Labels are intentionally abbreviated because the menu bar is
 /// a scarce space, especially on notched MacBooks.
 enum MenuBarRenderer {

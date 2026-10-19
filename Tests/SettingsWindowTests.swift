@@ -12,6 +12,14 @@ private final class TestSettingsWindow: SettingsWindow {
 enum SettingsWindowTests {
     static func run(expect: (Bool, String) -> Void) {
         let app = NSApplication.shared
+        let split = NSSplitViewController()
+        let sidebar = NSSplitViewItem(sidebarWithViewController: NSViewController())
+        split.addSplitViewItem(sidebar)
+        split.addSplitViewItem(NSSplitViewItem(viewController: NSViewController()))
+        SettingsSidebarConfiguration.apply(to: split)
+        expect(!sidebar.canCollapse && !sidebar.isCollapsed
+               && sidebar.minimumThickness == 230 && sidebar.maximumThickness == 230,
+               "native Settings sidebar stays visible at exactly 230 points")
         let defaults = UserDefaults.standard
         let keys = [DefaultsKey.mouseButtonShortcutsEnabled, DefaultsKey.mouseSpacesGestureEnabled,
                     AppFeature.radialMenu.availabilityKey, AppFeature.scrollInverter.availabilityKey]
@@ -22,6 +30,16 @@ enum SettingsWindowTests {
         let window = TestSettingsWindow(contentRect: NSRect(x: -10_000, y: -10_000, width: 300, height: 200),
                                         styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
+        window.setContentSize(NSSize(width: 772, height: 528))
+        window.configureGeometry(for: window.contentView!)
+        expect(window.titleVisibility == .hidden,
+               "the page header replaces the redundant native Settings window title")
+        expect(window.styleMask.contains(.fullSizeContentView),
+               "Settings content extends through the native title bar for the full-height sidebar")
+        expect(window.contentMinSize.width == 772 && window.contentMaxSize.width == 772
+               && window.maxSize.width == window.minSize.width
+               && window.contentMaxSize.height > window.contentMinSize.height,
+               "native Settings geometry locks width while allowing height resizing")
         window.router = SettingsRouter()
         defer {
             window.close()
@@ -140,9 +158,6 @@ enum SettingsWindowTests {
             let strings = SettingsNavigationStrings.localized(language)
             expect(!strings.go.isEmpty && !strings.back.isEmpty && !strings.forward.isEmpty,
                    "Settings navigation menu is translated for \(language.rawValue)")
-            expect(!strings.showSidebar.isEmpty && !strings.hideSidebar.isEmpty
-                       && strings.showSidebar != strings.hideSidebar,
-                   "the sidebar button names both of its actions in \(language.rawValue)")
         }
     }
 }

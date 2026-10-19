@@ -26,8 +26,6 @@ enum LocalizationFeatureContractTests {
         // the main one never was, so a caption in every language carried a
         // pair of them.
         for (language, strings) in localizedStrings {
-            suite.expect(strings.obStepMenuBarNote.contains(strings.tabMonitor),
-                         "onboarding monitor references match the Settings title (\(language.rawValue))")
             let values = Mirror(reflecting: strings).children.compactMap { $0.value as? String }
             suite.expect(values.allSatisfy { !$0.contains("\u{2014}") },
                    "no em-dash in visible strings (\(language.rawValue))")
@@ -251,17 +249,6 @@ enum LocalizationFeatureContractTests {
                                    strings.cleaningOverlayMouseHint, strings.cleaningPanelCaption]
             suite.expect(cleaningStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
                    "\(prefix) cleaning mode strings are present without em dash")
-            let highlightsStrings = [strings.highlightsTitle, strings.highlightsTitleClipboardRedesign,
-                                     strings.highlightsCaptionDockPreview,
-                                     strings.highlightsCaptionScreenshot,
-                                     strings.highlightsCaptionSnippetLibrary,
-                                     strings.highlightsCaptionCapturePalette,
-                                     strings.highlightsCaptionClipboardRedesign,
-                                     strings.highlightsConfigure,
-                                     strings.highlightsTry, strings.highlightsSeeAll,
-                                     strings.reviewIntro, strings.reviewHighlights]
-            suite.expect(highlightsStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
-                   "\(prefix) update highlights strings are present without em dash")
             let officialHomebrewIntroStrings = [
                 strings.homebrewOfficialIntroTitle,
                 strings.homebrewOfficialIntroMessage,
@@ -269,24 +256,10 @@ enum LocalizationFeatureContractTests {
                 strings.homebrewOfficialIntroMigrationTitle,
                 strings.homebrewOfficialIntroMigrationMessage,
                 strings.homebrewOfficialIntroCopyButton,
-                strings.supportIntroDoneButton,
+                strings.doneButton,
             ]
             suite.expect(officialHomebrewIntroStrings.allSatisfy { !$0.isEmpty },
                    "\(prefix) official Homebrew intro is complete")
-            let supportIntroStrings = [
-                strings.supportIntroTitle,
-                strings.supportIntroMessage,
-                strings.supportIntroStarButton,
-                strings.supportIntroCoffeeButton,
-            ]
-            suite.expect(supportIntroStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
-                   "\(prefix) support intro strings are complete without em dash")
-            suite.expect(strings.supportIntroCoffeeButton.contains("Buy Me a Coffee"),
-                   "\(prefix) financial support points only to Buy Me a Coffee")
-            suite.expect(!strings.updateShowcaseTitle.isEmpty, "\(prefix) update showcase title is present")
-            suite.expect(!strings.updateShowcaseMessage.isEmpty, "\(prefix) update showcase message is present")
-            suite.expect(!strings.updateShowcaseUnavailable.isEmpty, "\(prefix) update showcase fallback is present")
-            suite.expect(!strings.updateShowcaseRestart.isEmpty, "\(prefix) update showcase restart control is present")
             suite.expect(!strings.homebrewConfirmUpgradeAllTitle.isEmpty, "\(prefix) Homebrew update all confirmation title is present")
             suite.expect(!strings.homebrewConfirmUpgradeAllBody.isEmpty, "\(prefix) Homebrew update all confirmation body is present")
             suite.expect(!strings.homebrewConfirmUpdateHomebrewTitle.isEmpty, "\(prefix) Homebrew update Homebrew confirmation title is present")

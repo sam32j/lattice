@@ -135,7 +135,7 @@ struct NotchQuickAccessView: View {
         case .control(.recording) where recorder.isRecording: symbol = "stop.circle.fill"
         default: break
         }
-        let title = isBack ? l10n.s.obBack : button.label.isEmpty ? actionTitle : button.label
+        let title = isBack ? l10n.s.navigationBack : button.label.isEmpty ? actionTitle : button.label
         return Button {
             service.activateQuickAction(action)
         } label: {

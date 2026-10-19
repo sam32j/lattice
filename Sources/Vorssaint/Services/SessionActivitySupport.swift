@@ -35,7 +35,7 @@ enum SessionActivitySupport {
     static func tapShouldRun(featureWanted: Bool,
                              accessibilityGranted: Bool,
                              sessionIsActive: Bool) -> Bool {
-        featureWanted && accessibilityGranted && sessionIsActive
+        featureWanted && accessibilityGranted && sessionIsActive && !InputEventTap.isBlocked
     }
 
     /// What a tap's callback owes a tap that was just reported as disabled.

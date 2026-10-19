@@ -10,6 +10,7 @@ struct BrightnessSection: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var service = BrightnessService.shared
     @ObservedObject private var permissions = Permissions.shared
+    @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.brightnessOSDEnabled) private var brightnessOSDEnabled = false
     @AppStorage(DefaultsKey.brightnessKeysEnabled) private var brightnessKeysEnabled = false
     @State private var optionsExpanded = false
@@ -50,7 +51,7 @@ struct BrightnessSection: View {
                             service.syncWithPreferences()
                         }
                 }
-                if AppFeature.extraBrightness.isAvailable {
+                if AppFeature.extraBrightness.isPresentInControls() {
                     Divider()
                     ExtraBrightnessPanelToggle()
                 }
@@ -186,7 +187,6 @@ struct BrightnessSection: View {
 
 private struct ExtraBrightnessPanelToggle: View {
     @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var service = ExtraBrightnessService.shared
     @AppStorage(DefaultsKey.extraBrightnessEnabled) private var enabled = false
 
     var body: some View {
@@ -194,10 +194,8 @@ private struct ExtraBrightnessPanelToggle: View {
             .font(.system(size: 10.5, weight: .medium))
             .toggleStyle(.switch)
             .controlSize(.mini)
-            .disabled(!service.supported && !enabled)
-            .help(service.supported ? l10n.s.extraBrightnessCaption : l10n.s.extraBrightnessUnsupported)
-            .onChange(of: enabled) { _, _ in service.syncWithPreferences() }
-            .onAppear { service.syncWithPreferences() }
+            .help(l10n.s.extraBrightnessCaption)
+            .onChange(of: enabled) { _, _ in FeatureRuntime.shared.sync([.extraBrightness]) }
     }
 }
 

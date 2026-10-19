@@ -380,7 +380,7 @@ final class AppSwitcher: ObservableObject {
             return (tapRunLoop, tap, tapThread != nil)
         }
         if let tap = snapshot.tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
         }
         if let runLoop = snapshot.runLoop {
             CFRunLoopPerformBlock(runLoop, CFRunLoopMode.commonModes.rawValue) {
@@ -413,7 +413,7 @@ final class AppSwitcher: ObservableObject {
                 | CGEventMask(1 << CGEventType.otherMouseDown.rawValue)
                 | CGEventMask(1 << CGEventType.otherMouseUp.rawValue)
                 | CGEventMask(1 << CGEventType.scrollWheel.rawValue)
-            guard let tap = CGEvent.tapCreate(
+            guard let tap = InputEventTap.create(
                 tap: .cgSessionEventTap,
                 place: .headInsertEventTap,
                 options: .defaultTap,
@@ -438,11 +438,11 @@ final class AppSwitcher: ObservableObject {
                 runLoopSource = source
             }
             CFRunLoopAddSource(runLoop, source, .commonModes)
-            CGEvent.tapEnable(tap: tap, enable: true)
+            InputEventTap.enable(tap: tap, enable: true)
 
             let shouldStop = lifecycleLock.withLock { shouldStopTapThread }
             if shouldStop {
-                CGEvent.tapEnable(tap: tap, enable: false)
+                InputEventTap.enable(tap: tap, enable: false)
             } else {
                 DispatchQueue.main.async { [weak self] in
                     self?.applyNativeHotkeySuppressionIfTapLive()
@@ -450,7 +450,7 @@ final class AppSwitcher: ObservableObject {
                 CFRunLoopRun()
             }
 
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFRunLoopRemoveSource(runLoop, source, .commonModes)
             CFMachPortInvalidate(tap)
             if clearEventTapThread() { installTap() }
@@ -551,7 +551,7 @@ final class AppSwitcher: ObservableObject {
             // under a suspend().
             let currentTap = lifecycleLock.withLock { shouldStopTapThread ? nil : tap }
             if SessionActivity.shared.isActive, AXIsProcessTrusted(), let currentTap {
-                CGEvent.tapEnable(tap: currentTap, enable: true)
+                InputEventTap.enable(tap: currentTap, enable: true)
             } else if currentTap != nil {
                 DispatchQueue.main.async { [weak self] in self?.syncWithPreferences() }
             }

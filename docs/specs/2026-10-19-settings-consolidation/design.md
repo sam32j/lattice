@@ -8,6 +8,8 @@ Settings content width is fixed at 772 points; height remains resizable. Sidebar
 
 Use localized Desktop & Dock and ampersands in sidebar category headings. Rename Window Layout to Window Management. Move Wallpaper to Desktop & Dock. Remove standalone Dock Clicks, Spaces Order, maximizer, and Paste as Plain Text sidebar/hub entries. Dock owns compact Quit on Close settings. Finder owns Cut & Paste and Rename. Paste as Plain Text belongs to Clipboard History. Remove the global-shortcuts introductory sentence.
 
+Search is a floating, glass-style capsule without a full-width divider, with subtle hover elevation and keyboard focus indication. Respect Reduce Transparency and the app’s Liquid Glass preference. Preserve logical Command-F on non-US keyboard layouts, arrow/Return result navigation, Escape clearing, clear-button focus, and input-method composition. Use Device Control and Data Access as the visible permission label, with corresponding translations; preserve the internal Accessibility permission identifiers and deep links.
+
 ## Lifecycle and hardware
 
 Use one consistent capability/lifecycle policy, not independent per-page guards. Hardware detection must not construct the feature service. Unsupported hardware controls are hidden. Supported off controls remain discoverable so they can be enabled, but off/unsupported features do not start feature-specific services, hooks, observers, timers, overlays, or privileged integrations. Enabling starts supported functionality; disabling or losing capability safely tears it down. Safety restoration for existing fan/helper state runs before teardown and must never be skipped merely because the feature is now off.

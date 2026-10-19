@@ -73,11 +73,6 @@ struct AboutSettings: View {
             }
             HStack(spacing: 12) {
                 Button {
-                    appDelegate()?.showOnboarding()
-                } label: {
-                    Label(l10n.s.reviewIntro, systemImage: "arrow.counterclockwise")
-                }
-                Button {
                     showingReleaseNotes = true
                 } label: {
                     Label(UpdateSettingsStrings.localized(l10n.language).changelog,

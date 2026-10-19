@@ -143,7 +143,7 @@ struct CommandBarAppShortcutsView: View {
                     .foregroundStyle(message == nil ? Color.secondary : Color.orange)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer()
-                Button(l10n.s.supportIntroDoneButton) { dismiss() }
+                Button(l10n.s.doneButton) { dismiss() }
                     .keyboardShortcut(.cancelAction)
             }
         }

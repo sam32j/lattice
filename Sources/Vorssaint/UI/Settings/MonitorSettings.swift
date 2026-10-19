@@ -26,50 +26,38 @@ struct MonitorSettings: View {
     @AppStorage(DefaultsKey.panelShowFanControl) private var showFanControl = true
 
     var body: some View {
-        // A plain stack, not a lazy one: a lazy stack estimates the rows it
-        // has not built yet, and with the taller Bars options this page kept
-        // it re-measuring and re-anchoring without ever settling, which hung
-        // Settings on the first scroll. Pinned headers exist only on lazy
-        // stacks, so the preview sits above the scroll view instead, where it
-        // also stays in view for the shared units further down that change it.
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(l10n.s.monitorMenuBarPreview)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                MenuBarMetricsPreview()
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 20, pinnedViews: [.sectionHeaders]) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(FeatureStrings.settingsPages(l10n.language).monitorDescription)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                groupHeading(l10n.s.monitorMenuBarSection, symbol: "menubar.rectangle")
+                // Everything under this header changes what the header
+                // shows, so it stays in view until the section ends.
+                Section {
+                    menuBarCard
+                    menuBarStyleCard
+                } header: {
+                    MenuBarMetricsPreview()
+                        .padding(.vertical, 8)
+                        .background(Color(nsColor: .windowBackgroundColor))
+                }
+                groupHeading(l10n.s.monitorPanelSection, symbol: "macwindow")
+                panelCard
+                if AppFeature.fanControl.isPresentInControls() {
+                    fanControlCard
+                        .settingsSectionAnchor(.fanControl, cornerRadius: 16)
+                }
+                groupHeading(FeatureStrings.monitorLayout(l10n.language).shared, symbol: "slider.horizontal.3")
+                readingsCard
+                alertsCard
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 22)
-            .padding(.vertical, 10)
-            Divider()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(l10n.s.tabMonitor).font(.title2.bold())
-                        Text(FeatureStrings.settingsPages(l10n.language).monitorDescription)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    groupHeading(l10n.s.monitorMenuBarSection, symbol: "menubar.rectangle")
-                    menuBarCard
-                    menuBarStyleCard
-                    groupHeading(l10n.s.monitorPanelSection, symbol: "macwindow")
-                    panelCard
-                    if AppFeature.fanControl.isAvailable {
-                        fanControlCard
-                            .settingsSectionAnchor(.fanControl, cornerRadius: 16)
-                    }
-                    groupHeading(FeatureStrings.monitorLayout(l10n.language).shared, symbol: "slider.horizontal.3")
-                    readingsCard
-                    alertsCard
-                }
-                .frame(maxWidth: 760)
-                .frame(maxWidth: .infinity)
-                .padding(22)
-            }
+            .padding(22)
         }
         .toggleStyle(.switch)
         .onAppear {
@@ -235,7 +223,7 @@ struct MonitorSettings: View {
 
     private var panelCard: some View {
         SettingsCard {
-            MonitorPanelConfig(tiles: true)
+            MonitorPanelConfig()
             Text(l10n.s.monitorPanelConfigHint)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -250,7 +238,11 @@ struct MonitorSettings: View {
         return SettingsCard {
             SettingsRow(symbol: "fanblades.fill", title: fanStrings.title, badge: l10n.s.betaBadge,
                         caption: fanStrings.settingsCaption) {
-                Toggle(fanStrings.showInPanel, isOn: $showFanControl).labelsHidden()
+                Toggle(fanStrings.title, isOn: $showFanControl)
+                    .labelsHidden()
+                    .onChange(of: showFanControl) { _, _ in
+                        FeatureRuntime.shared.sync([.fanControl])
+                    }
             }
             Text(l10n.s.betaFeatureWarning)
                 .font(.caption)

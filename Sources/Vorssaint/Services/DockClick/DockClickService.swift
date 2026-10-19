@@ -86,7 +86,7 @@ final class DockClickService {
 
     private func start() {
         guard tap == nil else { return }
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -105,12 +105,12 @@ final class DockClickService {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
     }
 
     private func stop() {
         if let tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
         }
         if let runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
@@ -128,7 +128,7 @@ final class DockClickService {
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if SessionActivity.shared.isActive, AXIsProcessTrusted(), let tap {
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
             } else {
                 DispatchQueue.main.async { [weak self] in self?.syncWithPreferences() }
             }

@@ -3,16 +3,13 @@
 
 import AppKit
 import ApplicationServices
-import Combine
 import CoreGraphics
 
 /// Makes the green traffic-light button maximize in the current Space instead
 /// of entering macOS fullscreen. The event tap is installed only while the user
 /// has opted in and Accessibility is granted.
-final class WindowMaximizer: ObservableObject {
+final class WindowMaximizer {
     static let shared = WindowMaximizer()
-
-    @Published private(set) var isRunning = false
 
     private var tap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -42,7 +39,7 @@ final class WindowMaximizer: ObservableObject {
     }
 
     func stop() {
-        if let tap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap { InputEventTap.enable(tap: tap, enable: false) }
         if let runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
         }
@@ -55,18 +52,16 @@ final class WindowMaximizer: ObservableObject {
         for suspension in assistiveModeSuspensions.values { suspension.resume() }
         assistiveModeSuspensions.removeAll()
         originalFrames.removeAll()
-        isRunning = false
     }
 
     private func start() {
         guard tap == nil else {
-            isRunning = true
             return
         }
 
         let mask = CGEventMask(1 << CGEventType.leftMouseDown.rawValue)
             | CGEventMask(1 << CGEventType.leftMouseUp.rawValue)
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -78,7 +73,6 @@ final class WindowMaximizer: ObservableObject {
             },
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
-            isRunning = false
             return
         }
 
@@ -86,14 +80,13 @@ final class WindowMaximizer: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
-        isRunning = true
+        InputEventTap.enable(tap: tap, enable: true)
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if SessionActivity.shared.isActive, AXIsProcessTrusted(), let tap {
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
             } else {
                 DispatchQueue.main.async { [weak self] in self?.syncWithPreferences() }
             }

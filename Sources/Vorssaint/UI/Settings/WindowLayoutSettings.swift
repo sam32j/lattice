@@ -8,7 +8,6 @@ struct WindowLayoutSettings: View {
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var service = WindowLayoutService.shared
-    @ObservedObject private var maximizer = WindowMaximizer.shared
     @AppStorage(DefaultsKey.windowMaximizeEnabled) private var maximizeEnabled = false
     @ObservedObject private var pointerDisplay = PointerDisplayService.shared
     @AppStorage(DefaultsKey.pointerDisplayEnabled) private var pointerDisplayEnabled = false
@@ -56,10 +55,7 @@ struct WindowLayoutSettings: View {
                 }
             }
 
-            // The green button override has no page of its own; it lives here
-            // with the other window behaviors and keeps this page reachable
-            // when it is the only one of the two still switched on in the hub.
-            if AppFeature.windowMaximizer.isAvailable {
+            if AppFeature.windowMaximizer.isPresentInControls() {
                 windowMaximizerSection
             }
 
@@ -196,7 +192,7 @@ struct WindowLayoutSettings: View {
                 Section {
                     Toggle(l10n.s.dockClickCycleWindows, isOn: $dockClickCycleWindows)
                         .onChange(of: dockClickCycleWindows) { _, _ in
-                            DockClickService.shared.syncWithPreferences()
+                            FeatureRuntime.shared.sync([.dockClick])
                         }
                     Text(l10n.s.dockClickCycleWindowsCaption)
                         .font(.caption)
@@ -235,16 +231,11 @@ struct WindowLayoutSettings: View {
         Section {
             Toggle(l10n.s.windowMaximizeName, isOn: $maximizeEnabled)
                 .onChange(of: maximizeEnabled) { _, _ in
-                    WindowMaximizer.shared.syncWithPreferences()
+                    FeatureRuntime.shared.sync([.windowMaximizer])
                 }
             Text(l10n.s.windowMaximizeCaption)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            if maximizeEnabled, maximizer.isRunning {
-                Label(l10n.s.windowMaximizeActiveNow, systemImage: "checkmark.circle.fill")
-                    .font(.caption)
-                    .foregroundStyle(.green)
-            }
             WindowMaximizerExclusionsList()
         }
         .settingsFormSectionAnchor(.windowMaximizer)

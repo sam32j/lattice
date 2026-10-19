@@ -5,6 +5,7 @@ import SwiftUI
 
 struct EnergyDisplaySettings: View {
     @Environment(\.colorScheme) private var colorScheme
+    @ObservedObject private var router = SettingsRouter.shared
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var brightness = BrightnessService.shared
@@ -56,8 +57,10 @@ struct EnergyDisplaySettings: View {
                         .foregroundStyle(.red)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                DisclosureGroup(isExpanded: $brightnessOptionsExpanded) {
+            }
+            DisclosureGroup(isExpanded: $brightnessOptionsExpanded) {
                     VStack(alignment: .leading, spacing: 13) {
+                        if brightnessEnabled {
                         SettingsRow(symbol: "cursorarrow.rays", title: strings.keysToggle,
                                     caption: strings.keysCaption) {
                             Toggle(strings.keysToggle, isOn: $brightnessKeysEnabled)
@@ -96,14 +99,21 @@ struct EnergyDisplaySettings: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
+                        }
+                        DisplayExtraBrightnessSettings()
                     }
                     .padding(.top, 10)
                 } label: {
                     Text(FeatureStrings.recorder(l10n.language).moreOptions)
                         .font(.subheadline.weight(.medium))
                 }
-            }
         }
+        .onAppear { revealRequestedOptions() }
+        .onChange(of: router.requestID) { _, _ in revealRequestedOptions() }
+    }
+
+    private func revealRequestedOptions() {
+        if router.destination.sectionAnchor == .extraBrightness { brightnessOptionsExpanded = true }
     }
 
     /// A finer step answers the keys in place of the system, which takes the

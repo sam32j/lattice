@@ -15,16 +15,19 @@ enum SettingsFeatureTests {
     static func run(_ suite: TestSuite) {
         suite.expect(FeatureVisibilitySupport.isPageVisible(.dataPermissions, isAvailable: { _ in false }),
                      "Data and Permissions remains available with every optional feature removed")
-        suite.expect(DataPermissionsStrings.localized(.enUS).title == "Data and Permissions"
+        suite.expect(DataPermissionsStrings.localized(.enUS).title == "Data & Permissions"
                      && DataPermissionsStrings.localized(.enUS).data == "Lattice Data",
                      "the consolidated page and backup section use their requested names")
         let dataPage = (try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/DataPermissionsSettings.swift",
                                    encoding: .utf8)) ?? ""
-        let sections = ["PermissionsPortalSections(hub:", "Label(l10n.s.advancedClearButton",
-                        "Section(DataPermissionsStrings.localized", "Section(l10n.s.advancedUninstallSection)"]
+        let sections = ["Section(DataPermissionsStrings.localized", "PermissionsPortalSections(hub:",
+                        "Label(l10n.s.advancedClearButton", "Section(l10n.s.advancedUninstallSection)"]
         let positions = sections.compactMap { dataPage.range(of: $0)?.lowerBound }
         suite.expect(positions.count == sections.count && positions == positions.sorted(),
-                     "the page orders permissions, permission reset, Lattice Data, and uninstall")
+                     "the page orders Lattice Data, permissions, permission reset, and uninstall")
+        suite.expect(Strings.enUS.permissionAccessibility == "Device Control and Data Access"
+                     && FeatureStrings.hub(.enUS).permAccessibility == Strings.enUS.permissionAccessibility,
+                     "permission labels consistently use Device Control and Data Access")
         let isCodeLine: (String) -> Bool = {
             !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//")
         }
@@ -211,28 +214,6 @@ enum SettingsFeatureTests {
                "the chosen screenshot save folder does not travel with the settings backup, being authority on one Mac")
         suite.expect(!backupKeys.contains(DefaultsKey.screenshotLoupeLastZoom),
                "the magnifier's last session zoom stays on its own Mac")
-        suite.expect(backupKeys.contains(DefaultsKey.whatsAppDownloadsEnabled)
-                && backupKeys.contains(DefaultsKey.whatsAppDownloadsAutomaticEnabled)
-                && backupKeys.contains(DefaultsKey.whatsAppDownloadsCategories)
-                && backupKeys.contains(DefaultsKey.whatsAppDownloadsRetentionDays)
-                && backupKeys.contains(DefaultsKey.whatsAppDownloadsNotify),
-               "portable WhatsApp cleanup choices travel with settings backup")
-        suite.expect(backupKeys.contains(DefaultsKey.whatsAppOrganizerEnabled)
-                && backupKeys.contains(DefaultsKey.whatsAppOrganizerDelayMinutes)
-                && backupKeys.contains(DefaultsKey.whatsAppOrganizerCategories)
-                && backupKeys.contains(DefaultsKey.whatsAppOrganizerLayout)
-                && backupKeys.contains(DefaultsKey.whatsAppOrganizerDuplicateAction),
-               "portable WhatsApp organizer choices travel with settings backup")
-        suite.expect(!backupKeys.contains(DefaultsKey.whatsAppDownloadsAutomaticStartDate)
-                && !backupKeys.contains(DefaultsKey.whatsAppDownloadsLastCleanup)
-                && !backupKeys.contains(DefaultsKey.whatsAppDownloadsExclusions)
-                && !backupKeys.contains(DefaultsKey.whatsAppDownloadsAccessConfirmed),
-               "machine-specific WhatsApp cleanup state never travels")
-        suite.expect(!backupKeys.contains(DefaultsKey.whatsAppOrganizerDestinationPath)
-                && !backupKeys.contains(DefaultsKey.whatsAppOrganizerRecords)
-                && !backupKeys.contains(DefaultsKey.whatsAppOrganizerUndoTransaction)
-                && !backupKeys.contains(DefaultsKey.whatsAppOrganizerLastRun),
-               "organizer paths, digests and activity never travel to another Mac")
         suite.expect(backupKeys.contains(DefaultsKey.cameraPreviewShortcut)
                 && backupKeys.contains(DefaultsKey.cameraPreviewShortcutEnabled)
                 && backupKeys.contains(DefaultsKey.panelUtilityCameraPreview),
@@ -370,11 +351,8 @@ enum SettingsFeatureTests {
                "an ordinary stored shortcut still reads back")
         suite.expect(!backupKeys.contains(DefaultsKey.startupDidNotFinish),
                "the backup never carries a note about a start that did not finish")
-        suite.expect(backupKeys.contains(DefaultsKey.hasOnboarded)
-                && backupKeys.contains(DefaultsKey.featuresOnboardingVersion)
-                && backupKeys.contains(DefaultsKey.lastUpdateIntroVersion)
-                && backupKeys.contains(DefaultsKey.brightnessUpdatePromptState),
-               "a restored Mac does not replay onboarding or the intros already seen")
+        suite.expect(backupKeys.contains(DefaultsKey.lastLaunchedVersion),
+                     "backups retain the last launched version without retired onboarding state")
         let backupPayload = SettingsBackupSupport.payload(appVersion: "test") { key in
             key == DefaultsKey.switcherEnabled ? true : nil
         }

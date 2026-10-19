@@ -23,34 +23,6 @@ struct DataPermissionsSettings: View {
 
     var body: some View {
         Form {
-            Section(FeatureStrings.hub(l10n.language).tabPermissions) {
-                PermissionsPortalSections(hub: FeatureStrings.hub(l10n.language))
-                VStack(alignment: .leading, spacing: 10) {
-                    Button(role: .destructive) {
-                        showClearConfirm = true
-                    } label: {
-                        Label(l10n.s.advancedClearButton, systemImage: "lock.slash")
-                    }
-                    .foregroundStyle(.red)
-                    .disabled(working)
-                    Text(l10n.s.advancedResetDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if cleared == true {
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                            Text(l10n.s.advancedCleared).font(.caption).foregroundStyle(.green)
-                        }
-                    } else if cleared == false {
-                        Text(l10n.s.advancedClearFailed)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
-                }
-                .padding(.vertical, 8)
-            }
-
             Section(DataPermissionsStrings.localized(l10n.language).data) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 10) {
@@ -92,6 +64,36 @@ struct DataPermissionsSettings: View {
                         Text(backup.invalidFile)
                             .font(.caption)
                             .foregroundStyle(.orange)
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+
+            Section(FeatureStrings.hub(l10n.language).tabPermissions) {
+                PermissionsPortalSections(hub: FeatureStrings.hub(l10n.language))
+                VStack(alignment: .leading, spacing: 10) {
+                    Button(role: .destructive) {
+                        showClearConfirm = true
+                    } label: {
+                        Label(l10n.s.advancedClearButton, systemImage: "lock.slash")
+                    }
+                    .foregroundStyle(.red)
+                    .disabled(working)
+                    Text(l10n.s.advancedResetDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let cleared {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label(cleared ? l10n.s.advancedCleared : l10n.s.advancedClearFailed,
+                                  systemImage: cleared ? "arrow.clockwise.circle" : "exclamationmark.triangle")
+                                .font(.caption)
+                                .foregroundStyle(cleared ? Color.secondary : Color.orange)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button(FeatureStrings.hub(l10n.language).restartButton) {
+                                FeatureRuntime.shared.relaunchApp()
+                            }
+                        }
                     }
                 }
                 .padding(.vertical, 8)

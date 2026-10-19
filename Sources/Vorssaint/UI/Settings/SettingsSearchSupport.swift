@@ -76,7 +76,7 @@ enum SettingsSearchSupport {
     /// distinguishable from the containing Clipboard page.
     static func featureItems(language: AppLanguage,
                              title: (AppFeature) -> String) -> [SettingsSearchItem] {
-        AppFeature.allCases.map { feature in
+        AppFeature.allCases.filter(\.isHardwareSupported).map { feature in
             SettingsSearchItem(id: .feature(feature),
                                destination: feature.settingsDestination,
                                title: feature == .clipboardHistory
@@ -146,7 +146,7 @@ enum SettingsSearchSupport {
                        isAvailable: (AppFeature) -> Bool = { $0.isAvailable })
         -> (destination: FeatureSettingsDestination, targetFeature: AppFeature?) {
         if let feature = item.feature {
-            guard feature.isMouseFeature || feature.isKeyboardFeature || isAvailable(feature) || leadsToVisiblePage(item, isAvailable: isAvailable) else {
+            guard feature.isVisibleInSettings(isAvailable: isAvailable) || leadsToVisiblePage(item, isAvailable: isAvailable) else {
                 return (FeatureSettingsDestination(.features), feature)
             }
             if item.destination.page == .features {
@@ -222,8 +222,7 @@ enum SettingsSearchSupport {
         guard !foldedQuery.isEmpty else { return [] }
 
         let navigableItems = items.compactMap { item -> SettingsSearchItem? in
-            if let feature = item.feature, !isAvailable(feature),
-               !feature.isMouseFeature, !feature.isKeyboardFeature,
+            if let feature = item.feature, !feature.isVisibleInSettings(isAvailable: isAvailable),
                !leadsToVisiblePage(item, isAvailable: isAvailable) {
                 // The utility itself remains navigable through its Features
                 // row, but settings that do not exist until installation must
@@ -268,10 +267,12 @@ enum SettingsSearchSupport {
                     where fold(keyword).contains(foldedQuery) {
                     let keywordFeature = item.keywordFeatures.indices.contains(index)
                         ? item.keywordFeatures[index] : nil
-                    if let keywordFeature, !isAvailable(keywordFeature), !keywordFeature.isMouseFeature, !keywordFeature.isKeyboardFeature { continue }
+                    if let keywordFeature, !keywordFeature.isVisibleInSettings(isAvailable: isAvailable) { continue }
                     let suggestionItem = keywordFeature.map { feature in
                         SettingsSearchItem(id: .feature(feature),
-                                           destination: feature.settingsDestination,
+                                           destination: feature == .audioPriority && page == .audioOutput
+                                                ? FeatureSettingsDestination(.audioOutput, sectionAnchor: .audioOutputPriority)
+                                                : feature.settingsDestination,
                                            title: keyword,
                                            icon: feature.symbolName,
                                            feature: feature)
@@ -405,61 +406,29 @@ enum SettingsSearchSupport {
     }
 }
 
-/// Content sizing for the resizable Settings window: tall enough by default
-/// to show the whole sidebar without scrolling, and a size the user chose is
-/// restored as is. Kept pure so the unit harness pins the rules.
+/// Fixed-width Settings geometry with independently restorable height.
 enum SettingsWindowSupport {
-    /// The layout's design size; the window can only grow from here.
+    /// Width is locked; only height can grow from its minimum.
     static let minContentWidth: Double = 772
     static let minContentHeight: Double = 528
     /// Tall default so every sidebar entry is visible on regular screens.
     static let preferredContentHeight: Double = 838
 
     static func isValidContentSize(width: Double, height: Double) -> Bool {
-        width >= minContentWidth && height >= minContentHeight
+        width == minContentWidth && height >= minContentHeight
     }
 
     /// A saved size wins when it is at least the minimum (0 means unset);
     /// otherwise the tall default, capped to the screen's available height.
-    static func initialContentSize(savedWidth: Double, savedHeight: Double,
+    static func initialContentSize(savedHeight: Double,
                                    availableHeight: Double) -> (width: Double, height: Double) {
-        if isValidContentSize(width: savedWidth, height: savedHeight) {
-            return (savedWidth, savedHeight)
+        if savedHeight.isFinite && savedHeight >= minContentHeight {
+            return (minContentWidth, savedHeight)
         }
         let height = min(preferredContentHeight, max(availableHeight, minContentHeight))
         return (minContentWidth, height)
     }
 
-    /// Keep both full presentations intact. Small displays use a movable cascade
-    /// rather than squeezing content or pushing a window outside the work area.
-    static func tourPlacement(settingsSize: CGSize, tourSize: CGSize,
-                              visibleFrame: CGRect) -> (settings: CGRect, tour: CGRect) {
-        let area = visibleFrame.insetBy(dx: 20, dy: 20)
-        let gap: CGFloat = 16
-        var settings = CGRect(origin: area.origin, size: settingsSize)
-        var tour = CGRect(origin: area.origin, size: tourSize)
-        if settings.width + gap + tour.width <= area.width {
-            settings.origin.x = area.midX - (settings.width + gap + tour.width) / 2
-            tour.origin.x = settings.maxX + gap
-            settings.origin.y = area.midY - settings.height / 2
-            tour.origin.y = area.midY - tour.height / 2
-        } else if settings.height + gap + tour.height <= area.height {
-            settings.origin.y = area.midY - (settings.height + gap + tour.height) / 2
-            tour.origin.y = settings.maxY + gap
-            settings.origin.x = area.midX - settings.width / 2
-            tour.origin.x = area.midX - tour.width / 2
-        } else {
-            tour.origin.x = area.maxX - tour.width
-            tour.origin.y = area.maxY - tour.height
-        }
-        func contained(_ frame: CGRect) -> CGRect {
-            var result = frame
-            result.origin.x = max(area.minX, min(frame.minX, area.maxX - frame.width))
-            result.origin.y = min(max(area.minY, frame.minY), area.maxY - frame.height)
-            return result
-        }
-        return (contained(settings), contained(tour))
-    }
 
     static func panelPlacement(preferredFrame: CGRect,
                                panelFrame: CGRect,

@@ -271,14 +271,16 @@ if (( TEST )); then
     TEST_OBJECT_DIR="build/objects/tests"
     mkdir -p "$TEST_OBJECT_DIR"
     TEST_SOURCES=(
+        Sources/Vorssaint/Services/InputEventTap.swift
         Sources/Vorssaint/Services/Media/MediaSupport.swift
         Sources/Vorssaint/Core/QuitProtectionSupport.swift
         Sources/Vorssaint/Core/QuitProtectionStrings.swift
         Sources/Vorssaint/Core/Defaults.swift
         Sources/Vorssaint/Core/PermanentInputMigration.swift
+        Sources/Vorssaint/Core/PageOwnedControlsMigration.swift
+        Sources/Vorssaint/UI/Settings/SettingsHostingController.swift
         Sources/Vorssaint/Core/WindowLayoutShortcutEditor.swift
         Sources/Vorssaint/Core/NotchStrings.swift
-        Sources/Vorssaint/Core/NotchTourStrings.swift
         Sources/Vorssaint/Core/NotchEditorStrings.swift
         Sources/Vorssaint/UI/Settings/NotchSettingsTabRow.swift
         Sources/Vorssaint/Core/NotchActivityStrings.swift
@@ -351,7 +353,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Notch/NotchPlaybackCommand.swift
         Sources/Vorssaint/Services/Notch/NotchMusicCommandWriter.swift
         Sources/Vorssaint/Core/FeatureCatalog.swift
-        Sources/Vorssaint/Core/FeaturePresets.swift
+        Sources/Vorssaint/Core/FeatureEnergyProfile.swift
         Sources/Vorssaint/Core/FeatureHubStrings.swift
         Sources/Vorssaint/Core/ShortcutSettingsStrings.swift
         Sources/Vorssaint/Core/SettingsBackupSupport.swift
@@ -432,8 +434,6 @@ if (( TEST )); then
         Sources/Vorssaint/Core/FeatureStrings.swift
         Sources/Vorssaint/Core/KillProcessStrings.swift
         Sources/Vorssaint/Core/PortManagerStrings.swift
-        Sources/Vorssaint/Core/WhatsAppDownloadStrings.swift
-        Sources/Vorssaint/Core/WhatsAppOrganizerStrings.swift
         Sources/Vorssaint/Core/ReleaseNotes.swift
         Sources/Vorssaint/Core/ReleaseDigest.swift
         Sources/Vorssaint/Core/ReleaseChangeAliases.swift
@@ -608,7 +608,6 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Cleaner/CleanerPolicy.swift
         Sources/Vorssaint/Services/Cleaner/CleanerSchedule.swift
         Sources/Vorssaint/Services/Uninstall/UninstallerSupport.swift
-        Sources/Vorssaint/Services/ManagedDownloads/WhatsAppDownloadSupport.swift
         Sources/Vorssaint/Core/SecureInputSupport.swift
         Tests/*.swift
         build/generated-tests/*.swift
@@ -774,10 +773,6 @@ fi
 if [[ -d Resources/Gifs ]]; then
     mkdir -p "$STAGE/Contents/Resources/Gifs"
     cp Resources/Gifs/*.gif "$STAGE/Contents/Resources/Gifs/"
-fi
-if ! cmp -s Resources/Gifs/highlights-notch.gif "$STAGE/Contents/Resources/Gifs/highlights-notch.gif"; then
-    echo "Dynamic Island tour GIF is missing or differs from the bundled copy" >&2
-    exit 1
 fi
 if [[ -d Resources/Images ]]; then
     mkdir -p "$STAGE/Contents/Resources/Images"

@@ -3,6 +3,12 @@
 
 import AppKit
 
+#if VORSSAINT_DEVELOPMENT
+if CommandLine.arguments.contains("--settings-presentation-preview") {
+    SettingsPresentationProbe.runAndExit()
+}
+#endif
+
 SuperKeyMappingGuard.runIfRequestedAndExit()
 Defaults.register()
 NotchControlItem.keyboardLightIsSupported = { BrightnessService.keyboardLightIsSupported }

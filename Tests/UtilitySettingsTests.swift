@@ -23,8 +23,8 @@ enum UtilitySettingsTests {
         expect(!AppFeature.quickToggles.hasNavigableSettingsDestination,
                "Quick Toggles keeps its panel actions without exposing a redundant preferences page")
         expect(AppFeature.wallpaper.settingsDestination
-               == FeatureSettingsDestination(.energy, sectionAnchor: .wallpaper),
-               "Wallpaper links open its own Energy and Display preferences")
+               == FeatureSettingsDestination(.wallpaper, sectionAnchor: .wallpaper),
+               "Wallpaper links open its own Desktop & Dock preferences")
         for feature in [AppFeature.focusFollowsMouse, .keyboardDebounce] {
             let item = SettingsSearchItem(id: .feature(feature), destination: feature.settingsDestination,
                                           title: feature.rawValue, icon: feature.symbolName, feature: feature)

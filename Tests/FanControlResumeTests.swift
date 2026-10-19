@@ -31,6 +31,9 @@ enum FanControlResumeContract {
         enum AccessState { case notRegistered, requiresApproval, enabled, unavailable }
         static let shared = Service()
         static var helperVersion = "bundled"
+        static var hasRegisteredHelperForRemoval: Bool {
+            UserDefaults.standard.string(forKey: DefaultsKey.fanControlHelperVersion) != nil
+        }
         var accessState = AccessState.enabled
         var snapshot = FanControlSnapshot.empty
         var panelIsVisible = false
@@ -91,6 +94,12 @@ enum FanControlResumeContract {
         Environment.available = false
         Service.recoverIfNeeded()
         suite.expect(service.applied.isEmpty, "a feature removed from the hub resumes nothing")
+        reset(stored: nil)
+        Environment.available = false
+        defaults.values[DefaultsKey.fanControlHelperVersion] = Service.helperVersion
+        Service.recoverIfNeeded()
+        suite.expect(service.events == ["unregister"],
+                     "an off feature removes an old helper registration even without an interrupted fan session")
         reset()
         defaults.values[DefaultsKey.fanControlResumeConfiguration] =
             #"{"curves":[],"manualLevel":100,"mode":"system"}"#

@@ -12,7 +12,6 @@ struct FeatureHubSettings: View {
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var router = SettingsRouter.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var confirmingPreset: FeaturePreset?
     /// Tracks the feature-target request currently being revealed, so a
     /// delayed retry from an older request cannot act after a newer one has
     /// already taken over (same convention as `SettingsSectionFocusModifier`).
@@ -23,7 +22,6 @@ struct FeatureHubSettings: View {
     @State private var highlightedFeature: AppFeature?
     @State private var expandedGroups = Set(FeatureGroup.allCases)
     @State private var islandExtensionsExpanded = true
-    @State private var presetsExpanded = true
     /// Installed switches never once turned on, read when the page appears
     /// and after every install change rather than on every redraw.
     @State private var neverUsed: [AppFeature] = []
@@ -60,7 +58,6 @@ struct FeatureHubSettings: View {
                 // blank until the next scroll event.
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(hub.pageTitle).font(.title2.bold())
                         Text(hub.intro)
                             .font(.callout)
                             .foregroundStyle(.secondary)
@@ -77,7 +74,6 @@ struct FeatureHubSettings: View {
                     neverUsedCard
                 }
                 dynamicIslandCard
-                presetsCard
                 ForEach(FeatureGroup.allCases.filter { $0 != .dynamicIsland && $0 != .mouseKeyboard }, id: \.self) { group in
                     groupCard(group)
                 }
@@ -93,19 +89,7 @@ struct FeatureHubSettings: View {
             .frame(maxWidth: .infinity)
             .padding(22)
         }
-        .alert(confirmingPreset.map { presetName($0) } ?? "",
-               isPresented: Binding(get: { confirmingPreset != nil },
-                                    set: { if !$0 { confirmingPreset = nil } }),
-               presenting: confirmingPreset) { preset in
-            Button(hub.presetConfirmApply) {
-                withAnimation(.easeOut(duration: 0.22)) {
-                    FeatureRuntime.shared.apply(preset)
-                }
-            }
-            Button(hub.presetConfirmCancel, role: .cancel) {}
-        } message: { preset in
-            Text(String(format: hub.presetConfirmFormat, presetName(preset)))
-        }
+
     }
 
     /// Consumes a pending Feature Hub target and scrolls its row into view. Retried once
@@ -275,47 +259,8 @@ struct FeatureHubSettings: View {
         }
     }
 
-    /// Three one-click starting points. Nobody arrives wanting 67 decisions;
-    /// a preset shapes the app in one move and everything else stays one
-    /// click away in the list below.
-    private var presetsCard: some View {
-        SettingsCard {
-            DisclosureGroup(hub.presetsTitle, isExpanded: $presetsExpanded) {
-                if presetsExpanded {
-                    HStack(alignment: .top, spacing: 10) {
-                        ForEach(FeaturePreset.allCases) { preset in
-                            PresetCard(preset: preset,
-                                       name: presetName(preset),
-                                       caption: presetDescription(preset),
-                                       applyTitle: hub.presetApplyButton) {
-                                confirmingPreset = preset
-                            }
-                        }
-                    }
-                    Text(hub.presetsCaption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    }
 
-    private func presetName(_ preset: FeaturePreset) -> String {
-        switch preset {
-        case .essential: return hub.presetEssentialName
-        case .windows: return hub.presetWindowsName
-        case .battery: return hub.presetBatteryName
-        }
-    }
 
-    private func presetDescription(_ preset: FeaturePreset) -> String {
-        switch preset {
-        case .essential: return hub.presetEssentialDesc
-        case .windows: return hub.presetWindowsDesc
-        case .battery: return hub.presetBatteryDesc
-        }
-    }
 
     /// The island stays near the top, with its additions in a group the user
     /// can close when they want a shorter catalog.
@@ -451,44 +396,6 @@ private struct InstalledShareBar: View {
     }
 }
 
-// MARK: - Preset card
-
-private struct PresetCard: View {
-    let preset: FeaturePreset
-    let name: String
-    let caption: String
-    let applyTitle: String
-    let onApply: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: preset.symbolName)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 34, height: 34)
-                .background(Color.accentColor.opacity(0.12),
-                            in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            Text(name)
-                .font(.system(size: 13, weight: .semibold))
-                .lineLimit(1)
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Spacer(minLength: 0)
-            Button(applyTitle, action: onApply)
-                .controlSize(.small)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 138, alignment: .topLeading)
-        .background(Color.primary.opacity(0.05),
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(name). \(caption)")
-    }
-}
-
 // MARK: - Feature row
 
 /// Icon, name and one line about the feature; small icons for the
@@ -579,7 +486,7 @@ private struct FeatureHubRow: View {
         .alert(hub.notchUninstallTitle, isPresented: $confirmingExtensions) {
             Button(hub.notchUninstallWithExtensions) { flip(to: false, alongside: installedExtensions) }
             Button(hub.notchUninstallKeepExtensions) { flip(to: false) }
-            Button(hub.presetConfirmCancel, role: .cancel) {}
+            Button(l10n.s.mediaCancel, role: .cancel) {}
         } message: {
             Text(String(format: hub.notchUninstallMessageFormat,
                         installedExtensions.map { $0.hubTitle(l10n.s, hub: hub) }

@@ -6,6 +6,7 @@ import Foundation
 /// The one-line description under a redesigned Settings page's title, for
 /// pages whose own string catalog has no room for it.
 struct SettingsPageStrings {
+    let finderTitle: String
     let energyDescription: String
     let monitorDescription: String
     let mouseDescription: String
@@ -48,6 +49,7 @@ extension FeatureStrings {
 
 extension SettingsPageStrings {
     static let uk = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Не давайте Mac заснути, керуйте екранами та заощаджуйте заряд акумулятора.",
         monitorDescription: "Що смуга меню й панель показують про Mac та коли попереджати вас.",
         mouseDescription: "Дайте колесу, боковим кнопкам і трекпеду нові функції.",
@@ -67,6 +69,7 @@ extension SettingsPageStrings {
     )
 
     static let enUS = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Keep the Mac awake, control your displays and save battery.",
         monitorDescription: "What the menu bar and the panel show about your Mac, and when to warn you.",
         mouseDescription: "Give the wheel, the side buttons and the trackpad new jobs.",
@@ -86,6 +89,7 @@ extension SettingsPageStrings {
     )
 
     static let ptBR = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Mantenha o Mac acordado, controle suas telas e economize bateria.",
         monitorDescription: "O que a barra de menus e o painel mostram sobre o Mac, e quando avisar você.",
         mouseDescription: "Dê novas funções à rodinha, aos botões laterais e ao trackpad.",
@@ -105,6 +109,7 @@ extension SettingsPageStrings {
     )
 
     static let tr = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Mac’i uyanık tutun, ekranlarınızı yönetin ve pil tasarrufu yapın.",
         monitorDescription: "Menü çubuğu ve panelin Mac hakkında neler gösterdiği ve sizi ne zaman uyaracağı.",
         mouseDescription: "Tekerleğe, yan tuşlara ve izleme dörtgenine yeni görevler verin.",
@@ -124,6 +129,7 @@ extension SettingsPageStrings {
     )
 
     static let ru = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Не давайте Mac уснуть, управляйте экранами и берегите батарею.",
         monitorDescription: "Что строка меню и панель показывают о Mac и когда вас предупреждать.",
         mouseDescription: "Дайте колёсику, боковым кнопкам и трекпаду новые задачи.",
@@ -143,6 +149,7 @@ extension SettingsPageStrings {
     )
 
     static let es = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Mantén el Mac despierto, controla tus pantallas y ahorra batería.",
         monitorDescription: "Qué muestran la barra de menús y el panel sobre el Mac, y cuándo avisarte.",
         mouseDescription: "Dale nuevas funciones a la rueda, a los botones laterales y al trackpad.",
@@ -162,6 +169,7 @@ extension SettingsPageStrings {
     )
 
     static let sk = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Udržujte Mac v bdelom stave, ovládajte svoje displeje a šetrite batériu.",
         monitorDescription: "Čo lišta a panel zobrazujú o vašom Macu a kedy vás upozorniť.",
         mouseDescription: "Priraďte koliesku, bočným tlačidlám a trackpadu nové úlohy.",
@@ -181,6 +189,7 @@ extension SettingsPageStrings {
     )
 
     static let de = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Halte den Mac wach, steuere deine Bildschirme und spare Batterie.",
         monitorDescription: "Was Menüleiste und Panel über den Mac zeigen und wann du gewarnt wirst.",
         mouseDescription: "Gib dem Scrollrad, den Seitentasten und dem Trackpad neue Aufgaben.",
@@ -200,6 +209,7 @@ extension SettingsPageStrings {
     )
 
     static let fr = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Gardez le Mac éveillé, réglez vos écrans et économisez la batterie.",
         monitorDescription: "Ce que la barre des menus et le panneau montrent du Mac, et quand vous prévenir.",
         mouseDescription: "Donnez de nouveaux rôles à la molette, aux boutons latéraux et au trackpad.",
@@ -219,6 +229,7 @@ extension SettingsPageStrings {
     )
 
     static let it = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Tieni il Mac sveglio, controlla i tuoi schermi e risparmia batteria.",
         monitorDescription: "Cosa mostrano la barra dei menu e il pannello sul Mac, e quando avvisarti.",
         mouseDescription: "Assegna nuovi compiti alla rotellina, ai tasti laterali e al trackpad.",
@@ -238,6 +249,7 @@ extension SettingsPageStrings {
     )
 
     static let ja = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Mac をスリープさせず、ディスプレイを調整し、バッテリーを節約します。",
         monitorDescription: "メニューバーとパネルに Mac の何を表示するか、いつ知らせるか。",
         mouseDescription: "ホイール、サイドボタン、トラックパッドに新しい役割を。",
@@ -257,6 +269,7 @@ extension SettingsPageStrings {
     )
 
     static let ko = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "Mac을 깨어 있게 하고, 화면을 조절하고, 배터리를 아끼세요.",
         monitorDescription: "메뉴 막대와 패널에 Mac의 무엇을 표시할지, 언제 알릴지.",
         mouseDescription: "휠, 사이드 버튼, 트랙패드에 새 역할을 맡기세요.",
@@ -276,6 +289,7 @@ extension SettingsPageStrings {
     )
 
     static let zhHans = SettingsPageStrings(
+        finderTitle: "访达",
         energyDescription: "让 Mac 保持唤醒、调节显示器并节省电量。",
         monitorDescription: "菜单栏和面板显示 Mac 的哪些信息，以及何时提醒你。",
         mouseDescription: "让滚轮、侧键和触控板承担新的任务。",
@@ -295,6 +309,7 @@ extension SettingsPageStrings {
     )
 
     static let zhTW = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "讓 Mac 保持喚醒、調整顯示器並節省電量。",
         monitorDescription: "選單列和面板顯示 Mac 的哪些資訊，以及何時提醒你。",
         mouseDescription: "讓滾輪、側鍵和觸控板承擔新的任務。",
@@ -314,6 +329,7 @@ extension SettingsPageStrings {
     )
 
     static let zhHK = SettingsPageStrings(
+        finderTitle: "Finder",
         energyDescription: "讓 Mac 保持喚醒、調整顯示器並節省電量。",
         monitorDescription: "選單列和面板顯示 Mac 的哪些資訊，以及何時提醒你。",
         mouseDescription: "讓滾輪、側鍵和觸控板承擔新的任務。",

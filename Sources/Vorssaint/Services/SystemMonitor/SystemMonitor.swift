@@ -477,7 +477,7 @@ final class SystemMonitor: ObservableObject {
         }
     }
 
-    /// True while at least one full monitor surface (Settings or onboarding) is
+    /// True while at least one full monitor surface (Settings or the panel) is
     /// on screen. A depth count, not a bool, so overlapping appear/disappear from
     /// independent surfaces cannot desync.
     private var fullMonitorVisible: Bool { panelClients > 0 }
@@ -585,7 +585,7 @@ final class SystemMonitor: ObservableObject {
             (panelNeedsPower && defaults.bool(forKey: DefaultsKey.monitorPwrTemperature))
                 || menuPanelNeeds.batteryTemperature
                 || defaults.bool(forKey: DefaultsKey.menuBarBatteryTemperature) || alertBatteryTemperature)
-        if defaults.bool(forKey: AppFeature.fanControl.availabilityKey),
+        if AppFeature.fanControl.isAvailable(in: defaults),
            Self.fanTelemetryAvailable {
             plan.needFanSpeed = fullMonitorVisible || menuPanelNeeds.fanSpeed
                 || defaults.bool(forKey: DefaultsKey.menuBarFanSpeed)
@@ -600,7 +600,7 @@ final class SystemMonitor: ObservableObject {
         // The hub gates whole metric families: an unavailable metric never
         // samples, no matter what is pinned, shown or alerting.
         func available(_ feature: AppFeature) -> Bool {
-            defaults.bool(forKey: feature.availabilityKey)
+            feature.isAvailable(in: defaults)
         }
         if !available(.monitorCPU) {
             plan.needCPU = false

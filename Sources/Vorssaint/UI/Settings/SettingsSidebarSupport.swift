@@ -34,7 +34,7 @@ enum SettingsSidebarSupport {
         let pageItem = SettingsSidebarItem(id: .page(page),
                                            destination: FeatureSettingsDestination(page),
                                            title: title, icon: icon)
-        if page == .screenshot || page == .screenRecorder || page == .shortcuts || page == .mouse || page == .keyboard || page == .audioInput || page == .audioOutput || page == .scratchpad {
+        if page == .dock || page == .windowLayout || page == .cutPaste || page == .clipboard || page == .wallpaper || page == .screenshot || page == .screenRecorder || page == .shortcuts || page == .mouse || page == .keyboard || page == .audioInput || page == .audioOutput || page == .scratchpad {
             return [pageItem]
         }
         var rows = includePage ? [pageItem] : []
@@ -43,7 +43,8 @@ enum SettingsSidebarSupport {
             guard seenFeatures.insert(feature).inserted else { continue }
             let destination = feature.settingsDestination
             guard destination.page == page, destination.sectionAnchor != nil,
-                  isAvailable(feature) else { continue }
+                  feature != .extraBrightness,
+                  feature.isVisibleInSettings(isAvailable: isAvailable) else { continue }
             rows.append(SettingsSidebarItem(id: .feature(feature),
                                             destination: destination,
                                             title: featureTitle(feature),
@@ -87,6 +88,7 @@ enum SettingsSidebarSupport {
             return items.contains { $0.id == .page(destination.page) }
                 ? nil : FeatureSettingsDestination(destination.page)
         case .energy:
+            if destination.sectionAnchor == .extraBrightness, items.contains(where: { $0.id == .feature(.brightness) }) { return nil }
             return items.first { $0.destination.page == destination.page }?.destination
         default:
             return nil
@@ -97,6 +99,8 @@ enum SettingsSidebarSupport {
                           in items: [SettingsSidebarItem],
                           preferredID: SettingsSidebarItem.ID? = nil)
         -> SettingsSidebarItem.ID? {
+        if destination.page == .energy, destination.sectionAnchor == .extraBrightness,
+           items.contains(where: { $0.id == .feature(.brightness) }) { return .feature(.brightness) }
         if let preferredID,
            items.contains(where: { $0.id == preferredID && $0.destination == destination }) {
             return preferredID

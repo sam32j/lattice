@@ -197,7 +197,7 @@ final class MouseButtonShortcutService: ObservableObject {
         if wantsSideWheelEvents {
             mask |= CGEventMask(1) << CGEventType.scrollWheel.rawValue
         }
-        guard let tap = CGEvent.tapCreate(
+        guard let tap = InputEventTap.create(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -220,7 +220,7 @@ final class MouseButtonShortcutService: ObservableObject {
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        InputEventTap.enable(tap: tap, enable: true)
         Self.hasActiveSideWheelInterest = wantsSideWheelEvents
         MouseAppExceptions.shared.setSourceTracking(wantsSideWheelEvents, for: .buttonShortcuts)
         isRunning = true
@@ -255,7 +255,7 @@ final class MouseButtonShortcutService: ObservableObject {
             spacesGesture = nil
         }
         if let tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+            InputEventTap.enable(tap: tap, enable: false)
             CFMachPortInvalidate(tap)
         }
         if let runLoopSource {
@@ -298,7 +298,7 @@ final class MouseButtonShortcutService: ObservableObject {
                     isDraining = true
                     isRunning = false
                 }
-                CGEvent.tapEnable(tap: tap, enable: true)
+                InputEventTap.enable(tap: tap, enable: true)
             } else {
                 // Invalidating a tap from its own callback stack is unsafe.
                 DispatchQueue.main.async { [weak self] in

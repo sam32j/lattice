@@ -1177,8 +1177,6 @@ struct QuickControlsSection: View {
     @ObservedObject private var switcher = AppSwitcher.shared
     @ObservedObject private var dockPreview = DockPreviewService.shared
     @ObservedObject private var cutPaste = FinderCutPaste.shared
-    @ObservedObject private var autoQuit = AutoQuitService.shared
-    @ObservedObject private var windowMaximizer = WindowMaximizer.shared
     @ObservedObject private var keyDebounce = KeyboardDebounceService.shared
     @ObservedObject private var middleClick = MiddleClickService.shared
     @ObservedObject private var shelf = ShelfService.shared
@@ -1584,7 +1582,7 @@ struct QuickControlsSection: View {
                            permissionButtonTitle: l10n.s.permissionRequest,
                            permissionAction: accessibilityPermissionAction(autoQuitEnabled))
                 .onChange(of: autoQuitEnabled) { _, enabled in
-                    AutoQuitService.shared.syncWithPreferences()
+                    FeatureRuntime.shared.sync([.autoQuit])
                     requestAccessibilityIfNeeded(enabled)
                 }
         case .shelf:
@@ -1616,7 +1614,7 @@ struct QuickControlsSection: View {
                            permissionButtonTitle: l10n.s.permissionRequest,
                            permissionAction: accessibilityPermissionAction(windowMaximizeEnabled))
                 .onChange(of: windowMaximizeEnabled) { _, enabled in
-                    WindowMaximizer.shared.syncWithPreferences()
+                    FeatureRuntime.shared.sync([.windowMaximizer])
                     requestAccessibilityIfNeeded(enabled)
                 }
         case .dockPreview:
@@ -1652,7 +1650,7 @@ struct QuickControlsSection: View {
                            permissionAction: accessibilityPermissionAction(dockClickEnabled))
                 .onChange(of: dockClickEnabled) { _, enabled in
                     if enabled { dockClickHideEnabled = false }
-                    DockClickService.shared.syncWithPreferences()
+                    FeatureRuntime.shared.sync([.dockClick])
                     requestAccessibilityIfNeeded(enabled)
                 }
         case .dockClickHide:
@@ -1668,7 +1666,7 @@ struct QuickControlsSection: View {
                            permissionAction: accessibilityPermissionAction(dockClickHideEnabled))
                 .onChange(of: dockClickHideEnabled) { _, enabled in
                     if enabled { dockClickEnabled = false }
-                    DockClickService.shared.syncWithPreferences()
+                    FeatureRuntime.shared.sync([.dockClick])
                     requestAccessibilityIfNeeded(enabled)
                 }
         case .dockClickCycle:
@@ -1683,7 +1681,7 @@ struct QuickControlsSection: View {
                            permissionButtonTitle: l10n.s.permissionRequest,
                            permissionAction: accessibilityPermissionAction(dockClickCycleEnabled))
                 .onChange(of: dockClickCycleEnabled) { _, enabled in
-                    DockClickService.shared.syncWithPreferences()
+                    FeatureRuntime.shared.sync([.dockClick])
                     requestAccessibilityIfNeeded(enabled)
                 }
         case .middleClick:
@@ -1858,7 +1856,7 @@ struct QuickControlsSection: View {
                            showsDragHandle: true,
                            visibility: $showSpacesOrder)
                 .onChange(of: spacesOrderEnabled) { _, _ in
-                    SpacesOrderHold.shared.syncWithPreferences()
+                    FeatureRuntime.shared.sync([.spacesOrder])
                 }
         case .mouseClickDebounce:
             let debounceStrings = FeatureStrings.mouseClickDebounce(l10n.language)

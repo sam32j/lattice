@@ -68,7 +68,7 @@ struct ReleaseNotesSettings: View {
             Divider()
             HStack {
                 Spacer()
-                Button(l10n.s.supportIntroDoneButton) { dismiss() }
+                Button(l10n.s.doneButton) { dismiss() }
                     .keyboardShortcut(.cancelAction)
                     .buttonStyle(.borderedProminent)
             }
@@ -93,7 +93,7 @@ struct ReleaseNotesSettings: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 18, alignment: .center)
-            Text(l10n.s.obWhatsNewFallback)
+            Text(l10n.s.releaseNotesFallback)
                 .font(.system(size: 12.5))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

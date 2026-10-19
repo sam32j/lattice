@@ -13,15 +13,8 @@ enum DefaultsKey {
     static let notchLiquidGlassEnabled = "notchLiquidGlassEnabled" // Dynamic Island glass, independently controlled
     static let clamshellPreferred = "clamshellPreferred"  // apply closed-lid mode to every session
     static let dimScreenOnLidClose = "dimScreenOnLidClose" // dim the built-in display to zero while the lid is closed
-    static let onboardingStep = "onboardingStep"          // resume point if onboarding is interrupted
-    static let featuresOnboardingVersion = "featuresOnboardingVersion" // last feature-tour marker handled
-    static let lastUpdateIntroVersion = "lastUpdateIntroVersion"
-    static let supportUpdateIntroVersion = "supportUpdateIntroVersion"
-    static let updateHighlightsSeenVersion = "updateHighlightsSeenVersion"
+    static let lastLaunchedVersion = "lastUpdateIntroVersion"
     static let featureHubKeptFeatures = "featureHubKeptFeatures" // comma-joined AppFeature raw values
-    static let brightnessUpdatePromptState = "brightnessUpdatePromptState"
-    static let updateShowcaseIntroVersion = "updateShowcaseIntroVersion"
-    static let updateShowcaseMediaOverride = "updateShowcaseMediaOverride"
     static let defaultDuration = "defaultDurationMinutes" // 0 = indefinite
     static let batteryLimit = "batteryLimitPercent"       // 0 = never
     static let keepAwakeAutoStart = "keepAwakeAutoStart"  // start Keep Awake when the app launches
@@ -47,7 +40,6 @@ enum DefaultsKey {
     static let keepAwakeActiveIcon = "keepAwakeActiveIcon" // KeepAwakeActiveIcon.rawValue
     static let showCountdown = "showCountdownInMenuBar"
     static let statusItemPlacementGeneration = "statusItemPlacementGeneration"
-    static let hasOnboarded = "hasOnboarded"
     static let sleepDisabledFlag = "vorssDisabledSleep"   // internal guard for pmset disablesleep
     static let dimmedDisplaySavedBrightness = "vorssDimmedDisplaySavedBrightness" // internal guard for closed-lid screen dimming recovery
     static let scrollInverterEnabled = "scrollInverterEnabled"
@@ -142,10 +134,6 @@ enum DefaultsKey {
     static let autoCheckUpdates = "autoCheckUpdates"
     static let includeBetaUpdates = "includeBetaUpdates"
     static let releaseNotesOnUpdate = "releaseNotesOnUpdate" // show What's New after an update
-    static let showReleaseNotesBeforeUpdate = "showReleaseNotesBeforeUpdate" // release notes before downloading an update
-    static let whatsNewPendingVersion = "whatsNewPendingVersion" // the update the post-update window starts after
-    static let whatsNewSeenVersion = "whatsNewSeenVersion"   // last version that finished the window
-    static let whatsNewKnownFeatures = "whatsNewKnownFeatures" // comma-joined AppFeature raw values
     static let appVolumes = "appVolumes"                  // [bundle id: 0...2]
     static let appVolumesArePositions = "appVolumesArePositions" // appVolumes hold slider positions, not gains; travels with them so an older backup converts on restore
     static let appOutputDevices = "appOutputDevices"      // [bundle id: audio device UID]
@@ -156,7 +144,6 @@ enum DefaultsKey {
     static let mixerHiddenApps = "mixerHiddenApps"        // [persistence id: display name] kept out of the mixer list (issue #300)
     static let mixerLowerVolumeOnHeadphonesDisconnect = "mixerLowerVolumeOnHeadphonesDisconnect"
     static let mixerHeadphonesDisconnectVolumePercent = "mixerHeadphonesDisconnectVolumePercent"
-    static let mixerHeadphonesDisconnectSilenceAllowed = "mixerHeadphonesDisconnectSilenceAllowed" // one-time: volumes below 10% were rewritten before silence became a choice
     static let preciseVolumeRollerEnabled = "preciseVolumeRollerEnabled"
     static let soundOutputSwitcherEnabled = "soundOutputSwitcherEnabled"
     static let soundOutputSwitcherShortcut = "soundOutputSwitcherShortcut"
@@ -263,36 +250,6 @@ enum DefaultsKey {
     static let cleanerLastAutoFreed = "cleanerLastAutoFreed"            // Int bytes
     static let cleanerLastAutoFailed = "cleanerLastAutoFailed"          // Int items left in place
     static let cleanerScreenshotAgeDays = "cleanerScreenshotAgeDays"    // Int, 0 = off
-    // Confirmed WhatsApp downloads in the top level of ~/Downloads.
-    static let whatsAppDownloadsEnabled = "whatsAppDownloadsEnabled"
-    static let whatsAppDownloadsAutomaticEnabled = "whatsAppDownloadsAutomaticEnabled"
-    static let whatsAppDownloadsCategories = "whatsAppDownloadsCategories" // comma-joined category ids
-    static let whatsAppDownloadsRetentionDays = "whatsAppDownloadsRetentionDays"
-    static let whatsAppDownloadsNotify = "whatsAppDownloadsNotify"
-    static let whatsAppDownloadsIncludeExisting = "whatsAppDownloadsIncludeExisting"
-    static let whatsAppDownloadsAutomaticStartDate = "whatsAppDownloadsAutomaticStartDate"
-    static let whatsAppDownloadsLastAutoRun = "whatsAppDownloadsLastAutoRun"
-    static let whatsAppDownloadsLastCleanup = "whatsAppDownloadsLastCleanup"
-    static let whatsAppDownloadsLastCleanupCount = "whatsAppDownloadsLastCleanupCount"
-    static let whatsAppDownloadsLastCleanupBytes = "whatsAppDownloadsLastCleanupBytes"
-    static let whatsAppDownloadsLastCleanupFailed = "whatsAppDownloadsLastCleanupFailed"
-    static let whatsAppDownloadsLastCleanupAutomatic = "whatsAppDownloadsLastCleanupAutomatic"
-    static let whatsAppDownloadsExclusions = "whatsAppDownloadsExclusions" // device:inode ids
-    static let whatsAppDownloadsAccessConfirmed = "whatsAppDownloadsAccessConfirmed"
-    // Experimental organizer for confirmed WhatsApp downloads.
-    static let whatsAppOrganizerEnabled = "whatsAppOrganizerEnabled"
-    static let whatsAppOrganizerDestinationPath = "whatsAppOrganizerDestinationPath"
-    static let whatsAppOrganizerDelayMinutes = "whatsAppOrganizerDelayMinutes"
-    static let whatsAppOrganizerCategories = "whatsAppOrganizerCategories"
-    static let whatsAppOrganizerLayout = "whatsAppOrganizerLayout"
-    static let whatsAppOrganizerDuplicateAction = "whatsAppOrganizerDuplicateAction"
-    static let whatsAppOrganizerRecords = "whatsAppOrganizerRecords"
-    static let whatsAppOrganizerUndoTransaction = "whatsAppOrganizerUndoTransaction"
-    static let whatsAppOrganizerLastRun = "whatsAppOrganizerLastRun"
-    static let whatsAppOrganizerLastMoved = "whatsAppOrganizerLastMoved"
-    static let whatsAppOrganizerLastDuplicates = "whatsAppOrganizerLastDuplicates"
-    static let whatsAppOrganizerLastFailed = "whatsAppOrganizerLastFailed"
-    static let settingsWindowWidth = "settingsWindowWidth"     // last user-chosen content size (0 = unset)
     static let settingsWindowHeight = "settingsWindowHeight"
     static let shelfItems = "shelfItems"                  // Data: [ShelfPersistedItem] JSON
     static let urlCleanerEnabled = "urlCleanerEnabled"
@@ -474,7 +431,6 @@ enum DefaultsKey {
     static let monitorPwrBattery = "monitorPwrBattery"
     static let monitorPwrTimeRemaining = "monitorPwrTimeRemaining"
     static let monitorPwrHealth = "monitorPwrHealth"
-    static let monitorPwrPeripherals = "monitorPwrPeripherals"
     // System monitor — optional notifications for sustained or actionable conditions.
     static let monitorAlertCPU = "monitorAlertCPU"
     static let monitorAlertCPUTemperature = "monitorAlertCPUTemperature"
@@ -557,7 +513,6 @@ enum DefaultsKey {
     static let clipboardHistoryEnabled = "clipboardHistoryEnabled"
     static let clipboardHistoryEntries = "clipboardHistoryEntries"
     static let clipboardHistoryLimit = "clipboardHistoryLimit"
-    static let clipboardHistoryRetentionDays = "clipboardHistoryRetentionDays" // 0 keeps items until the limit drops them
     // A separate opt-in from the old, enabled-by-default text heuristic.
     static let clipboardHistoryFilterSensitiveText = "clipboardHistoryFilterSensitiveText"
     static let clipboardHistoryIncludeImagesFiles = "clipboardHistoryIncludeImagesFiles" // capture copied images and files too
@@ -692,7 +647,6 @@ enum DefaultsKey {
     static let screenshotLastBlurLevel = "screenshotLastBlurLevel"
     static let screenshotLastBlurStyle = "screenshotLastBlurStyle"
     static let screenshotLastBlurTextOnly = "screenshotLastBlurTextOnly"
-    static let screenshotSpotlightDim = "screenshotSpotlightDim"
     static let screenshotLastArrowStyle = "screenshotLastArrowStyle"
     static let screenshotLastSticker = "screenshotLastSticker"
     static let screenshotAnnotationShadows = "screenshotAnnotationShadows"
@@ -857,7 +811,6 @@ enum DefaultsKey {
     static let notchAccessoriesEnabled = "notchAccessoriesEnabled"
     static let notchLyricsEnabled = "notchLyricsEnabled"
     static let notchLyricsOnline = "notchLyricsOnline"
-    static let notchBrowserCovers = "notchBrowserCovers"
     static let notchLiveEqualizer = "notchLiveEqualizer"
     static let notchQueueEnabled = "notchQueueEnabled"
     static let notchDownloadsEnabled = "notchDownloadsEnabled"
@@ -877,8 +830,6 @@ enum DefaultsKey {
     static let notchAgentsEnabled = "notchAgentsEnabled"
     static let notchAgentsClaude = "notchAgentsClaude"
     static let notchAgentsCodex = "notchAgentsCodex"
-    /// The Codex homes, `CODEX_HOME` folders, that get limits cards of their own.
-    static let notchAgentsCodexProfiles = "notchAgentsCodexProfiles"
     static let notchAgentsOpenCode = "notchAgentsOpenCode"
     static let notchAgentsCopilot = "notchAgentsCopilot"
     static let notchAgentsCardOrder = "notchAgentsCardOrder"
@@ -903,11 +854,8 @@ enum DefaultsKey {
     static let notchCapsuleFitHeight = "notchCapsuleFitHeight"
     static let notchCapsuleFitDrop = "notchCapsuleFitDrop"
     static let notchOpenOnHover = "notchOpenOnHover"
-    static let notchShortcutEnabled = "notchShortcutEnabled"
-    static let notchShortcut = "notchShortcut"
     static let notchHideInFullscreen = "notchHideInFullscreen"
     static let notchHideUntilHover = "notchHideUntilHover"
-    static let notchHiddenShowsActivity = "notchHiddenShowsActivity"
     static let notchCoversMenus = "notchCoversMenus"
     static let notchLowBatteryTint = "notchLowBatteryTint"
     static let notchLowBatteryThreshold = "notchLowBatteryThreshold"
@@ -932,7 +880,6 @@ enum DefaultsKey {
     static let notchBattery = "notchBattery"
     static let notchClipboard = "notchClipboard"
     static let notchClipboardWindow = "notchClipboardWindow"
-    static let notchClipboardCardSize = "notchClipboardCardSize"
     static let notchCapture = "notchCapture"
     static let notchTrackChange = "notchTrackChange"
     // Legacy backup key. Resting content is now selected explicitly by notchIdleContent.
@@ -974,87 +921,9 @@ enum DefaultsKey {
     static func featureAvailable(_ id: String) -> String { "featureAvailable.\(id)" }
 }
 
-/// Bump `currentFeatureSet` when first-run feature defaults need a quiet marker.
-enum OnboardingInfo {
-    // 2: system monitor, configurable panel and menu bar metrics.
-    // 3: app languages and support settings.
-    // 4: navigable menu panel sections.
-    static let currentFeatureSet = 4
-}
 
-/// The one-time tour of this release's headline feature, shown after updating.
-enum UpdateHighlightsInfo {
-    // Keep this marker unchanged for every stable patch in the 3.4 series.
-    static let releaseVersion = "3.4.0"
-    static let betaSeenVersion = "3.4.0-beta.1"
 
-    static func matchesRelease(_ appVersion: String) -> Bool {
-        guard let version = UpdateServiceSupport.SemanticVersion(raw: appVersion),
-              let release = UpdateServiceSupport.SemanticVersion(raw: releaseVersion),
-              (version.major, version.minor) == (release.major, release.minor),
-              version.patch >= release.patch else { return false }
-        if version.prerelease.isEmpty { return true }
-        guard version.patch == release.patch, (2...3).contains(version.prerelease.count), version.prerelease[0].description == "beta",
-              let number = Int(version.prerelease[1].description) else { return false }
-        if version.prerelease.count == 3 {
-            guard case let .numeric(hotfix) = version.prerelease[2], hotfix >= 0 else { return false }
-        }
-        return number >= 1
-    }
 
-    static func shouldShow(appVersion: String, lastSeenVersion: String?) -> Bool {
-        guard let marker = seenVersion(for: appVersion) else { return false }
-        return lastSeenVersion != marker
-    }
-
-    static func seenVersion(for appVersion: String) -> String? {
-        guard matchesRelease(appVersion),
-              let version = UpdateServiceSupport.SemanticVersion(raw: appVersion) else { return nil }
-        return version.prerelease.isEmpty ? releaseVersion : betaSeenVersion
-    }
-}
-
-/// A single invitation for existing Dynamic Island users to turn on display
-/// controls after updating. "pending" survives a launch interrupted before
-/// the invitation can be shown; "handled" prevents future updates replaying it.
-enum BrightnessUpdatePromptInfo {
-    static let pending = "pending"
-    static let handled = "handled"
-
-    static func isUpgrade(appVersion: String, previousVersion: String?) -> Bool {
-        guard let previousVersion,
-              let previous = UpdateServiceSupport.SemanticVersion(raw: previousVersion),
-              let current = UpdateServiceSupport.SemanticVersion(raw: appVersion) else { return false }
-        return current > previous
-    }
-
-    static func needsSetup(notchAvailable: Bool, brightnessAvailable: Bool,
-                           notchEnabled: Bool, notchBrightness: Bool, brightnessEnabled: Bool) -> Bool {
-        notchAvailable && brightnessAvailable && notchEnabled && notchBrightness && !brightnessEnabled
-    }
-}
-
-enum SupportUpdateIntroInfo {
-    /// The stable release that gets this invitation, and the patches after it,
-    /// which share one completion marker. 3.4.2 introduces the revised message
-    /// even to people who completed the earlier invitation.
-    static let releaseVersion = "3.4.2"
-
-    // Older beta onboarding wrote the release version before this screen was
-    // available. A distinct completion marker keeps those upgraders eligible.
-    static let seenVersion = "3.4.2-support"
-
-    static func matchesRelease(_ appVersion: String) -> Bool {
-        guard let version = UpdateServiceSupport.SemanticVersion(raw: appVersion),
-              let release = UpdateServiceSupport.SemanticVersion(raw: releaseVersion) else { return false }
-        return (version.major, version.minor) == (release.major, release.minor)
-            && version.patch >= release.patch && version.prerelease.isEmpty
-    }
-
-    static func shouldShow(appVersion: String, lastSeenVersion: String?) -> Bool {
-        matchesRelease(appVersion) && lastSeenVersion != seenVersion
-    }
-}
 
 enum KeepAwakeIconTint: String, CaseIterable, Identifiable {
     case orange, green, blue, purple, pink, none
@@ -1187,7 +1056,6 @@ enum Defaults {
     static let allowedMonitorMemoryMetrics = ["used", "app"]
     static let allowedPreviewSizes = ["small", "normal", "large", "xlarge"]
     static let allowedClipboardHistoryLimits = [20, 50, 100, 250, 500, 1_000, 10_000, 0]
-    static let allowedClipboardHistoryRetentionDays = [1, 7, 30, 90, 365, 0]
     static let allowedClipboardAutoClearDelayRange = 5...3_600
     static let defaultClipboardAutoClearDelay = 20
     static let allowedClipboardMenuBarPreviewLengthRange = 5...50
@@ -1296,15 +1164,11 @@ enum Defaults {
         DefaultsKey.autoCheckUpdates: true,
         DefaultsKey.includeBetaUpdates: false,
         DefaultsKey.releaseNotesOnUpdate: true,
-        DefaultsKey.showReleaseNotesBeforeUpdate: true,
-        DefaultsKey.updateShowcaseIntroVersion: "",
-        DefaultsKey.updateShowcaseMediaOverride: "",
         DefaultsKey.mixerShowFinder: true,
         DefaultsKey.mixerHideInactiveApps: false,
         DefaultsKey.mixerAppArrangement: "",
         DefaultsKey.mixerLowerVolumeOnHeadphonesDisconnect: false,
         DefaultsKey.mixerHeadphonesDisconnectVolumePercent: defaultMixerHeadphonesDisconnectVolumePercent,
-        DefaultsKey.mixerHeadphonesDisconnectSilenceAllowed: false,
         DefaultsKey.preciseVolumeRollerEnabled: false,
         DefaultsKey.soundOutputSwitcherEnabled: false,
         DefaultsKey.soundOutputSwitcherShortcut: GlobalShortcut.soundOutputSwitcherDefault.storageValue,
@@ -1380,33 +1244,6 @@ enum Defaults {
         DefaultsKey.cleanerLastAutoFreed: 0,
         DefaultsKey.cleanerLastAutoFailed: 0,
         DefaultsKey.cleanerScreenshotAgeDays: CleanerPolicy.defaultScreenshotAgeDays,
-        DefaultsKey.whatsAppDownloadsEnabled: false,
-        DefaultsKey.whatsAppDownloadsAutomaticEnabled: false,
-        DefaultsKey.whatsAppDownloadsCategories: "image,video,audio",
-        DefaultsKey.whatsAppDownloadsRetentionDays: 7,
-        DefaultsKey.whatsAppDownloadsNotify: true,
-        DefaultsKey.whatsAppDownloadsIncludeExisting: false,
-        DefaultsKey.whatsAppDownloadsAutomaticStartDate: 0.0,
-        DefaultsKey.whatsAppDownloadsLastAutoRun: 0.0,
-        DefaultsKey.whatsAppDownloadsLastCleanup: 0.0,
-        DefaultsKey.whatsAppDownloadsLastCleanupCount: 0,
-        DefaultsKey.whatsAppDownloadsLastCleanupBytes: 0,
-        DefaultsKey.whatsAppDownloadsLastCleanupFailed: 0,
-        DefaultsKey.whatsAppDownloadsLastCleanupAutomatic: false,
-        DefaultsKey.whatsAppDownloadsExclusions: [String](),
-        DefaultsKey.whatsAppDownloadsAccessConfirmed: false,
-        DefaultsKey.whatsAppOrganizerEnabled: false,
-        DefaultsKey.whatsAppOrganizerDestinationPath: "",
-        DefaultsKey.whatsAppOrganizerDelayMinutes: 5,
-        DefaultsKey.whatsAppOrganizerCategories: "image,video,audio,document,archive,other",
-        DefaultsKey.whatsAppOrganizerLayout: "flat",
-        DefaultsKey.whatsAppOrganizerDuplicateAction: "trashNew",
-        DefaultsKey.whatsAppOrganizerRecords: Data(),
-        DefaultsKey.whatsAppOrganizerUndoTransaction: Data(),
-        DefaultsKey.whatsAppOrganizerLastRun: 0.0,
-        DefaultsKey.whatsAppOrganizerLastMoved: 0,
-        DefaultsKey.whatsAppOrganizerLastDuplicates: 0,
-        DefaultsKey.whatsAppOrganizerLastFailed: 0,
         DefaultsKey.urlCleanerEnabled: false,
         DefaultsKey.urlCleanerCustomParameters: "",
         DefaultsKey.urlCleanerSiteParameters: "",
@@ -1426,7 +1263,7 @@ enum Defaults {
         DefaultsKey.notchControlOrder: "",
         DefaultsKey.notchSize: NotchSize.spacious.rawValue,
         DefaultsKey.notchOutlineEnabled: false,
-        DefaultsKey.notchHideMenuBarGap: false,
+        DefaultsKey.notchHideMenuBarGap: true,
         DefaultsKey.notchCustomWidth: NotchSize.defaultWidth,
         DefaultsKey.notchCustomHeight: NotchSize.defaultHeight,
         DefaultsKey.notchCameraFitWidth: 0.0,
@@ -1466,7 +1303,6 @@ enum Defaults {
         DefaultsKey.notchAgentsEnabled: false,
         DefaultsKey.notchAgentsClaude: true,
         DefaultsKey.notchAgentsCodex: true,
-        DefaultsKey.notchAgentsCodexProfiles: "",
         DefaultsKey.notchAgentsOpenCode: true,
         DefaultsKey.notchAgentsCopilot: true,
         DefaultsKey.notchAgentsCardOrder: "",
@@ -1484,7 +1320,6 @@ enum Defaults {
         DefaultsKey.notchAgentsPriceUpdates: true,
         DefaultsKey.notchLyricsEnabled: true,
         DefaultsKey.notchLyricsOnline: false,
-        DefaultsKey.notchBrowserCovers: false,
         DefaultsKey.notchLiveEqualizer: false,
         DefaultsKey.notchQueueEnabled: true,
         DefaultsKey.notchDownloadsEnabled: true,
@@ -1498,11 +1333,8 @@ enum Defaults {
         DefaultsKey.notchCapsuleFitHeight: 0.0,
         DefaultsKey.notchCapsuleFitDrop: 0.0,
         DefaultsKey.notchOpenOnHover: false,
-        DefaultsKey.notchShortcutEnabled: false,
-        DefaultsKey.notchShortcut: GlobalShortcut.notchDefault.storageValue,
         DefaultsKey.notchHideInFullscreen: false,
         DefaultsKey.notchHideUntilHover: false,
-        DefaultsKey.notchHiddenShowsActivity: false,
         DefaultsKey.notchCoversMenus: true,
         DefaultsKey.notchLowBatteryTint: false,
         DefaultsKey.notchLowBatteryThreshold: NotchSupport.defaultLowBatteryThreshold,
@@ -1524,7 +1356,6 @@ enum Defaults {
         DefaultsKey.notchBattery: true,
         DefaultsKey.notchClipboard: true,
         DefaultsKey.notchClipboardWindow: true,
-        DefaultsKey.notchClipboardCardSize: NotchClipboardCardSize.comfortable.rawValue,
         DefaultsKey.notchCapture: true,
         DefaultsKey.notchTrackChange: true,
         DefaultsKey.notchMusicActivity: false,
@@ -1711,7 +1542,6 @@ enum Defaults {
         DefaultsKey.monitorPwrBattery: true,
         DefaultsKey.monitorPwrTimeRemaining: true,
         DefaultsKey.monitorPwrHealth: true,
-        DefaultsKey.monitorPwrPeripherals: false,
         DefaultsKey.monitorAlertCPU: false,
         DefaultsKey.monitorAlertCPUTemperature: false,
         DefaultsKey.monitorAlertBatteryTemperature: false,
@@ -1767,7 +1597,6 @@ enum Defaults {
         DefaultsKey.mediaTextLanguageCorrection: true,
         DefaultsKey.clipboardHistoryEnabled: false,
         DefaultsKey.clipboardHistoryLimit: 50,
-        DefaultsKey.clipboardHistoryRetentionDays: 0,
         DefaultsKey.clipboardHistoryFilterSensitiveText: false,
         DefaultsKey.clipboardHistoryIncludeImagesFiles: true,
         DefaultsKey.clipboardHistoryIgnoredApps: [String](),
@@ -1901,7 +1730,6 @@ enum Defaults {
         DefaultsKey.screenshotLastBlurLevel: ScreenshotSupport.BlurStrength.defaultLevel,
         DefaultsKey.screenshotLastBlurStyle: "pixelate",
         DefaultsKey.screenshotLastBlurTextOnly: false,
-        DefaultsKey.screenshotSpotlightDim: Double(ScreenshotSupport.defaultSpotlightDim),
         DefaultsKey.screenshotLastArrowStyle: "filled",
         DefaultsKey.screenshotLastSticker: "check",
         DefaultsKey.screenshotAnnotationShadows: false,
@@ -1989,13 +1817,12 @@ enum Defaults {
         migrateFanControlVisibility(in: defaults)
         migrateScrollInverterAxes(in: defaults)
         migrateLinearScrollAvailability(in: defaults)
-        migrateWhatsAppDownloadsEnabled(in: defaults)
         migrateBatteryTemperatureVisibility(in: defaults)
-        migratePowerPeripheralsVisibility(in: defaults)
         migrateSwitcherPreviewSize(in: defaults)
         migrateSwitcherPreviewExcludedApps(in: defaults)
         migrateNotchWatchAvailability(in: defaults)
         migratePermanentInputControls(in: defaults)
+        migratePageOwnedControls(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         activateBetaChannelIfRunningBeta(in: defaults)
@@ -2172,17 +1999,6 @@ enum Defaults {
                      forKey: DefaultsKey.monitorPwrTemperature)
     }
 
-    /// The Power card listed peripheral batteries only while the menu bar
-    /// showed them. Copy that choice once, before defaults are registered,
-    /// so an update keeps the same card and starts no Bluetooth reads that
-    /// were not running. The value is saved even when off: turning on the
-    /// menu bar item later must not change the card at the next launch.
-    static func migratePowerPeripheralsVisibility(in defaults: UserDefaults) {
-        guard defaults.object(forKey: DefaultsKey.monitorPwrPeripherals) == nil else { return }
-        defaults.set(defaults.bool(forKey: DefaultsKey.menuBarPeripheralBattery),
-                     forKey: DefaultsKey.monitorPwrPeripherals)
-    }
-
     /// When the user installs or runs a beta pre-release, activate the beta
     /// channel default once so they seamlessly receive subsequent beta builds.
     static func activateBetaChannelIfRunningBeta(in defaults: UserDefaults,
@@ -2199,13 +2015,9 @@ enum Defaults {
         defaults.set(true, forKey: DefaultsKey.includeBetaUpdates)
     }
 
-    /// On a beta, people with the Command Bar get the island's companion,
-    /// which can be its face, installed and on, once: uninstalled afterwards,
-    /// it stays out. A clean install waits for its setup to finish, since
-    /// setup picks the installed features afresh. It lives in the island, so
-    /// someone without the island gets nothing.
+    /// A beta may install the companion once for existing Command Bar users.
     static func installsCompanionForBeta(in defaults: UserDefaults, isBeta: Bool = AppInfo.isBeta) -> Bool {
-        isBeta && defaults.bool(forKey: DefaultsKey.hasOnboarded)
+        isBeta
             && !defaults.bool(forKey: DefaultsKey.notchMascotBetaInstalled)
             && AppFeature.commandBar.isAvailable(in: defaults)
             && AppFeature.notch.isAvailable(in: defaults)
@@ -2218,20 +2030,6 @@ enum Defaults {
         defaults.set(true, forKey: DefaultsKey.notchMascotEnabled)
     }
 
-    /// The downloads cleanup for a messaging app used to sit in Cleaner for
-    /// everyone. Keep it visible only when someone already turned automatic
-    /// cleanup or the organizer on; everyone else gets the new off-by-default
-    /// choice.
-    static func migrateWhatsAppDownloadsEnabled(in defaults: UserDefaults) {
-        guard defaults.object(forKey: DefaultsKey.whatsAppDownloadsEnabled) == nil else {
-            return
-        }
-        let alreadyUsing = defaults.bool(forKey: DefaultsKey.whatsAppDownloadsAutomaticEnabled)
-            || defaults.bool(forKey: DefaultsKey.whatsAppOrganizerEnabled)
-        if alreadyUsing {
-            defaults.set(true, forKey: DefaultsKey.whatsAppDownloadsEnabled)
-        }
-    }
 
     /// The former single switch also reversed vertical wheel events redirected
     /// sideways with Shift. Mirror that choice once so updates and older
@@ -2617,10 +2415,6 @@ enum Defaults {
         allowedClipboardHistoryLimits.contains(value) ? value : 50
     }
 
-    static func sanitizedClipboardHistoryRetentionDays(_ value: Int) -> Int {
-        allowedClipboardHistoryRetentionDays.contains(value) ? value : 0
-    }
-
     static func sanitizedMonitorAlertCooldown(_ value: Int) -> Int {
         allowedMonitorAlertCooldowns.contains(value) ? value : 15
     }
@@ -2682,31 +2476,24 @@ enum Defaults {
         return min(max(volume, 0), 2)
     }
 
-    /// The volume the speakers are set to when headphones disconnect. At zero
-    /// the lowering also turns their mute on, because the bottom of the level
-    /// range is still faintly audible on some speakers. The default stays
-    /// audible, so turning the option on does not mute them until zero is chosen.
-    static let minimumMixerHeadphonesDisconnectVolumePercent = 0
+    /// The volume the speakers are set to when headphones disconnect. It is a
+    /// protection against a sudden blast, not a mute, so it never goes low
+    /// enough to leave the sound inaudible.
+    static let minimumMixerHeadphonesDisconnectVolumePercent = 10
     static let defaultMixerHeadphonesDisconnectVolumePercent = 25
-    /// The stepper used to stop here. Anything stored below it comes from the
-    /// first release, where an untouched control saved 0.
-    static let legacyMixerHeadphonesDisconnectVolumeFloor = 10
 
     static func sanitizedMixerHeadphonesDisconnectVolumePercent(_ percent: Int) -> Int {
         min(max(percent, minimumMixerHeadphonesDisconnectVolumePercent), 100)
     }
 
-    /// Rewrites that accidental silence once. After the marker is saved, 0 is
-    /// a choice and is left alone, including when a backup of that choice is
-    /// restored.
+    /// The option shipped with a stored value of 0, so ticking the box without
+    /// touching the stepper silenced the speakers on the next disconnect. A
+    /// value below the floor becomes the sane default.
     static func migrateSilentHeadphonesDisconnectVolume(in defaults: UserDefaults) {
-        guard !defaults.bool(forKey: DefaultsKey.mixerHeadphonesDisconnectSilenceAllowed) else { return }
-        if let stored = defaults.object(forKey: DefaultsKey.mixerHeadphonesDisconnectVolumePercent) as? Int,
-           stored < legacyMixerHeadphonesDisconnectVolumeFloor {
-            defaults.set(defaultMixerHeadphonesDisconnectVolumePercent,
-                         forKey: DefaultsKey.mixerHeadphonesDisconnectVolumePercent)
-        }
-        defaults.set(true, forKey: DefaultsKey.mixerHeadphonesDisconnectSilenceAllowed)
+        guard let stored = defaults.object(forKey: DefaultsKey.mixerHeadphonesDisconnectVolumePercent) as? Int,
+              stored < minimumMixerHeadphonesDisconnectVolumePercent else { return }
+        defaults.set(defaultMixerHeadphonesDisconnectVolumePercent,
+                     forKey: DefaultsKey.mixerHeadphonesDisconnectVolumePercent)
     }
 
     /// App volumes were saved as the gain itself until the sliders followed
