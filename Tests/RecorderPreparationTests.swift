@@ -33,19 +33,16 @@ enum RecorderPreparationTests {
     }
     final class Indicator {
         var hidden = false
-        var onStart: (() -> Void)?
         var onStop: (() -> Void)?
         init(onPause: @escaping () -> Void = {}, onStop: @escaping () -> Void = {},
-             onDiscard: (() -> Void)? = nil, onStart: (() -> Void)? = nil) {
-            self.onStart = onStart
+             onDiscard: (() -> Void)? = nil) {
             self.onStop = onStop
         }
         func hide() { hidden = true }
         func showRegionGuide(for region: RecorderSupport.Region) {}
         func show(on screen: NSScreen?, tooltip: String, pauseTooltip: String,
                   resumeTooltip: String, stopTooltip: String,
-                  startTooltip: String, discardTooltip: String) {}
-        func setWaitingForStart(in selection: CGRect) {}
+                  discardTooltip: String) {}
     }
     typealias RecorderIndicator = Indicator
     struct NSScreen {
@@ -101,7 +98,6 @@ enum RecorderPreparationTests {
         var isFinishing = false
         var isAwaitingMicrophone = false
         var isPreparingRecording = false
-        var isWaitingForStart = false
         var countdown: DispatchWorkItem?
         var pendingStartGeneration = 1
         var starts = 0
@@ -154,16 +150,13 @@ enum RecorderPreparationTests {
 
         let delayed = Service()
         delayed.record(region, audioOptions: RecorderSelectionAudioOptions())
-        let oldStart = delayed.indicator!.onStart
+        suite.expect(delayed.countdownRequests == 1,
+                     "a confirmed selection starts countdown without a second waiting screen")
         delayed.invalidatePendingStart()
         delayed.record(region, audioOptions: RecorderSelectionAudioOptions())
-        oldStart?()
-        suite.expect(delayed.countdownRequests == 0,
-                     "an obsolete indicator cannot start a replacement recording")
-        delayed.indicator?.onStart?()
-        delayed.indicator?.onStart?()
-        suite.expect(delayed.countdownRequests == 1,
-                     "a waiting recording accepts its Start action exactly once")
+        delayed.record(region, audioOptions: RecorderSelectionAudioOptions())
+        suite.expect(delayed.countdownRequests == 2,
+                     "recording admission rejects duplicate Start requests")
 
         UserDefaults.immediate = true
         let immediate = Service()
