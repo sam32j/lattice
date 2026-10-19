@@ -384,12 +384,14 @@ struct QuickLauncherView: View {
 
     private var footer: some View {
         HStack(spacing: 5) {
-            Image(systemName: "keyboard")
-                .font(.system(size: 8.5))
-                .foregroundStyle(.tertiary)
-            Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString)
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
-                .foregroundStyle(.tertiary)
+            if GlobalShortcutRole.quickLauncher.savedShortcut.isValid {
+                Image(systemName: "keyboard")
+                    .font(.system(size: 8.5))
+                    .foregroundStyle(.tertiary)
+                Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString)
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.tertiary)
+            }
             Spacer()
             Text("Esc")
                 .font(.system(size: 9, weight: .semibold, design: .rounded))
