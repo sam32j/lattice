@@ -32,5 +32,9 @@ enum ScreenshotPreviewTransformTests {
         suite.expect(ScreenshotWindowLayering.editorLevel(above: owner).rawValue > owner.level.rawValue
                      && ScreenshotWindowLayering.editorLevel(above: nil) == .normal,
                      "only a pin-owned editor is elevated above its owner")
+        let rawFinderPaths = "/tmp/file\nwith\nnewlines.png\0/tmp/other.png\0"
+        let parsed = rawFinderPaths.split(separator: "\0").map { String($0) }.filter { !$0.isEmpty }.map { URL(fileURLWithPath: $0) }
+        suite.expect(parsed.count == 2 && parsed.first?.path == "/tmp/file\nwith\nnewlines.png",
+                     "FinderBridge parses null-separated paths preserving embedded newlines")
     }
 }

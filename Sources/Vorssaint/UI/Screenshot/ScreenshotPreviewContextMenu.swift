@@ -24,7 +24,7 @@ struct ScreenshotPreviewContextMenu: View {
         Button(screenshot.editButton) { perform(.edit) }.keyboardShortcut("e")
             .onAppear { opened(); apps = applications() }.onDisappear(perform: closed)
         Button(screenshot.pinButton) { perform(.pin) }
-        Button(text.selectText) { perform(.extractText) }.disabled(!AppFeature.screenOCR.isAvailable)
+        Button(screenshot.copyTextButton) { perform(.extractText) }.disabled(!AppFeature.screenOCR.isAvailable)
         Divider()
         Button(text.rotateLeft) { perform(.rotateLeft) }
         Button(text.flipHorizontal) { perform(.flipHorizontal) }
@@ -48,7 +48,6 @@ struct ScreenshotPreviewContextMenu: View {
         Divider()
         Button(screenshot.discardConfirm, role: .destructive) { perform(.discard) }
         Button(FeatureStrings.commandBar(l10n.language).actionRevealInFinder) { perform(.reveal) }
-            .disabled(!canReveal)
         Divider()
         Button(screenshot.shareButton) { perform(.share) }
         Divider()
