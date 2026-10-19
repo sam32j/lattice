@@ -98,6 +98,32 @@ struct RecentCapturesView: View {
         }
     }
 
+    private static let captureTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
+    private static let captureDateTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
+    static func formattedCaptureTime(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return captureTimeFormatter.string(from: date)
+        } else if calendar.isDateInYesterday(date) {
+            let timeStr = captureTimeFormatter.string(from: date)
+            return "Yesterday, \(timeStr)"
+        } else {
+            return captureDateTimeFormatter.string(from: date)
+        }
+    }
+
     @ViewBuilder
     private var content: some View {
         if visibleEntries.isEmpty {
@@ -110,11 +136,14 @@ struct RecentCapturesView: View {
                 .frame(maxHeight: notchSize == nil ? nil : .infinity)
                 .panelCard()
         } else if let notchSize {
-            ScrollView(.vertical) {
-                LazyVStack(alignment: .leading, spacing: 7) {
-                    ForEach(visibleEntries) { entry in row(entry) }
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 8) {
+                    ForEach(visibleEntries) { entry in
+                        islandCard(entry)
+                    }
                 }
-                .padding(.trailing, 3)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 4)
             }
             .frame(width: notchSize.width, height: notchSize.height)
         } else {
@@ -127,6 +156,95 @@ struct RecentCapturesView: View {
             }
             .frame(maxHeight: 300)
         }
+    }
+
+    private func islandCard(_ entry: RecentCaptureEntry) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                history.open(entry)
+            } label: {
+                ZStack(alignment: .topTrailing) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.black.opacity(0.2))
+                        if let image = history.thumbnail(for: entry) {
+                            Image(nsImage: image)
+                                .resizable()
+                                .interpolation(.high)
+                                .scaledToFit()
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        } else {
+                            Image(systemName: entry.kind == .screenshot ? "photo" : "film")
+                                .font(.system(size: 24, weight: .light))
+                                .foregroundStyle(.tertiary)
+                        }
+                        if entry.kind == .recording {
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundStyle(.white.opacity(0.85))
+                                .shadow(radius: 2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    HStack(spacing: 3) {
+                        Image(systemName: entry.kind == .screenshot ? "camera.fill" : "video.fill")
+                            .font(.system(size: 8))
+                        Text(entry.kind == .screenshot ? text.screenshot : text.recording)
+                            .font(.system(size: 9, weight: .medium))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(.black.opacity(0.6), in: Capsule())
+                    .padding(6)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(NotchButtonStyle(cornerRadius: 8, lifts: false))
+
+            HStack(spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
+                    if entry.kind == .recording, let name = entry.recordingURL?.lastPathComponent {
+                        Text(name)
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                    Text(Self.formattedCaptureTime(entry.createdAt))
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+
+                Button {
+                    history.open(entry)
+                } label: {
+                    Text(entry.kind == .screenshot ? text.restore : text.open)
+                        .font(.system(size: 10, weight: .semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.mini)
+
+                Button {
+                    history.remove(entry)
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 9.5))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.mini)
+                .help(text.remove)
+                .accessibilityLabel(text.remove)
+            }
+            .padding(.horizontal, 2)
+        }
+        .padding(8)
+        .frame(width: 165)
+        .frame(maxHeight: .infinity)
+        .modifier(NotchControlSurface(cornerRadius: 12))
     }
 
     private func row(_ entry: RecentCaptureEntry) -> some View {
@@ -142,7 +260,7 @@ struct RecentCapturesView: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
-                Text(entry.createdAt, style: .relative)
+                Text(Self.formattedCaptureTime(entry.createdAt))
                     .font(.system(size: 9.5))
                     .foregroundStyle(.tertiary)
                 HStack(spacing: 6) {

@@ -17,7 +17,10 @@ enum NotchDestinationContract {
     final class Host { func containsHover(_ point: CGPoint) -> Bool { false } }
     enum NSEvent { static let mouseLocation = CGPoint.zero }
     final class AppDelegate { func closePopover(preservingNotch: Bool) {} }
-    struct Application { let delegate: AnyObject? = nil }
+    struct Application {
+        let delegate: AnyObject? = nil
+        func activate(ignoringOtherApps: Bool = true) {}
+    }
     static let NSApp = Application()
     enum ClipboardHistoryService {
         static let shared = Reader()
