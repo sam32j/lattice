@@ -5,8 +5,6 @@ import AppKit
 import Carbon.HIToolbox
 import SwiftUI
 
-typealias ToolShortcutCoordinator = CompactShortcutCoordinator
-
 /// Controls for screenshot annotation tool shortcut assignments.
 struct ScreenshotToolOrderControls: View {
     @ObservedObject private var l10n = L10n.shared
@@ -111,7 +109,7 @@ struct ScreenshotToolOrderControls: View {
 
 private struct ToolShortcutRecorder: View {
     @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var coordinator = ToolShortcutCoordinator.shared
+    @ObservedObject private var coordinator = CompactShortcutCoordinator.shared
     let tool: ScreenshotSupport.Tool
     @Binding var shortcutsEnabled: Bool
     @Binding var bindingsRaw: String

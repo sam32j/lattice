@@ -75,8 +75,7 @@ struct TextSnippetsSettings: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Group {
-                    ShortcutPreferenceRow(role: .snippetLibrary,
-                                          isEnabled: libraryEnabled) {
+                    ShortcutPreferenceRow(role: .snippetLibrary) {
                         SnippetLibraryService.shared.syncWithPreferences()
                     }
                     if library.shortcutRegistrationFailed {

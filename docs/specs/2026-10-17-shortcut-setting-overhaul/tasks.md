@@ -174,7 +174,7 @@ Expected: raw recorder uses remain only inside the shared implementation or a do
 
 **Step 2: Check file sizes and the complete diff**
 
-Run: `wc -l Sources/Vorssaint/UI/ShortcutRecorderButton.swift Sources/Vorssaint/UI/CompactShortcutRecorder.swift Sources/Vorssaint/UI/CompactShortcutField.swift`
+Run: `wc -l Sources/Vorssaint/UI/CompactShortcutBindingRecorder.swift Sources/Vorssaint/UI/CompactShortcutRecorder.swift Sources/Vorssaint/UI/CompactShortcutField.swift`
 
 Run: `git diff --check`
 
@@ -190,7 +190,7 @@ Expected: PASS with no failures.
 
 Run: `./build.sh --dev`
 
-Run: `./build/VorssaintDeveloper --selftest`
+Run: `./build/LatticeDeveloper --selftest`
 
 Expected: the build succeeds without warnings and selftest passes.
 
