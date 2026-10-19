@@ -13,14 +13,21 @@ struct RecorderCameraLayout: Equatable {
     }
     enum Shape: String, CaseIterable { case circle, square, rectangle, vertical
         var aspect: CGFloat {
-            switch self { case .circle, .square: 1; case .rectangle: 1.47; case .vertical: 1 / 1.47 }
+            switch self { case .circle, .square: 1; case .rectangle: 1.52; case .vertical: 1 / 1.52 }
         }
     }
     var size: Size = .medium
     var shape: Shape = .circle
     var isFlipped = false
     var isFullArea = false
+    var pixelsPerPoint: CGFloat = 1
     private var position = CGPoint(x: 1, y: 0)
+
+    func cornerRadius(in frame: CGRect) -> CGFloat {
+        if isFullArea { return 0 }
+        let halfSide = min(frame.width, frame.height) / 2
+        return shape == .circle ? halfSide : min(20 * pixelsPerPoint, halfSide)
+    }
 
     func isAvailable(_ size: Size, in canvas: CGSize) -> Bool {
         guard canvas.width.isFinite, canvas.height.isFinite, canvas.width > 0, canvas.height > 0 else { return false }
@@ -48,14 +55,8 @@ struct RecorderCameraLayout: Equatable {
         let current = frame(in: canvas)
         func snapped(_ value: CGFloat, lower: CGFloat, upper: CGFloat) -> CGFloat {
             let clamped = min(max(value, lower), upper)
-            if clamped - lower < 18 {
-                let distance = clamped - lower
-                return distance < 2 ? lower : lower + distance * distance / 18
-            }
-            if upper - clamped < 18 {
-                let distance = upper - clamped
-                return distance < 2 ? upper : upper - distance * distance / 18
-            }
+            if clamped - lower < 18 * pixelsPerPoint { return lower }
+            if upper - clamped < 18 * pixelsPerPoint { return upper }
             return clamped
         }
         let x = snapped(origin.x, lower: bounds.minX, upper: bounds.maxX - current.width)
@@ -65,8 +66,7 @@ struct RecorderCameraLayout: Equatable {
     }
 
     private func usableBounds(_ canvas: CGSize) -> CGRect {
-        let margin = min(12, canvas.width * 0.04, canvas.height * 0.04)
-        return CGRect(origin: .zero, size: canvas).insetBy(dx: margin, dy: margin)
+        CGRect(origin: .zero, size: canvas)
     }
     private func dimensions(_ size: Size) -> CGSize {
         let longest = min(500, size.longestSide)

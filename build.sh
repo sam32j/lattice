@@ -419,6 +419,9 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Recorder/RecorderPointerTrack.swift
         Sources/Vorssaint/Services/Recorder/RecorderTypingTrack.swift
         Sources/Vorssaint/Services/Recorder/RecorderCameraLayout.swift
+        Sources/Vorssaint/Core/RecorderOverlayStrings.swift
+        Sources/Vorssaint/Services/Recorder/RecorderSelectionDraft.swift
+        Sources/Vorssaint/Services/Recorder/RecorderSelectionAudioOptions.swift
         Sources/Vorssaint/Services/Recorder/RecorderOverlayCompositor.swift
         Sources/Vorssaint/Services/Recorder/RecorderCameraCapture.swift
         Sources/Vorssaint/Services/Recorder/RecorderNativeCameraSource.swift
@@ -427,6 +430,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Recorder/RecorderCameraOverlayView.swift
         Sources/Vorssaint/Services/Recorder/RecorderIndicator.swift
         Sources/Vorssaint/UI/Recorder/RecorderCaptureInputControls.swift
+        Sources/Vorssaint/UI/Recorder/RecorderWaitingControls.swift
         Sources/Vorssaint/Services/Recorder/RecorderTimeline.swift
         Sources/Vorssaint/Services/Recorder/RecorderTextOverlay.swift
         Sources/Vorssaint/Services/Recorder/RecorderImageOverlay.swift

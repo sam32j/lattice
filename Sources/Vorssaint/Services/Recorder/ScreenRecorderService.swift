@@ -5,22 +5,6 @@ import AVFoundation
 import AppKit
 import CoreMedia
 
-/// The two choices shown while the area is being picked. They write through to
-/// preferences immediately, so the selection and Settings always start alike.
-final class RecorderSelectionAudioOptions: ObservableObject {
-    @Published var systemAudio: Bool {
-        didSet { UserDefaults.standard.set(systemAudio, forKey: DefaultsKey.recorderSystemAudio) }
-    }
-    @Published var microphone: Bool {
-        didSet { UserDefaults.standard.set(microphone, forKey: DefaultsKey.recorderMicrophone) }
-    }
-
-    init(defaults: UserDefaults = .standard) {
-        systemAudio = defaults.bool(forKey: DefaultsKey.recorderSystemAudio)
-        microphone = defaults.bool(forKey: DefaultsKey.recorderMicrophone)
-    }
-}
-
 /// One recording, from the first frame to the closed file. Everything that
 /// only exists while recording lives here and dies with it, so the service
 /// itself keeps nothing running between recordings.
@@ -308,7 +292,6 @@ final class ScreenRecorderService: ObservableObject {
     private var pendingStartGeneration = 0
     private var isAwaitingMicrophone = false
     private var isPreparingRecording = false
-    private var isWaitingForStart = false
     private var sleepActivity: NSObjectProtocol?
     /// Set while a stop is being finalized, so a second press of the shortcut
     /// cannot start a recording on top of one still closing its file.
@@ -388,7 +371,7 @@ final class ScreenRecorderService: ObservableObject {
 
     var hasActiveCapture: Bool {
         isRecording || session != nil || countdown != nil || isAwaitingMicrophone
-            || isPreparingRecording || isWaitingForStart || isFinishing
+            || isPreparingRecording || isFinishing
     }
 
     func stopOrCancelActiveCapture() -> Bool {
@@ -400,7 +383,7 @@ final class ScreenRecorderService: ObservableObject {
             invalidatePendingStart()
             return true
         }
-        if isAwaitingMicrophone || isPreparingRecording || isWaitingForStart {
+        if isAwaitingMicrophone || isPreparingRecording {
             invalidatePendingStart()
             return true
         }
@@ -410,7 +393,7 @@ final class ScreenRecorderService: ObservableObject {
     func prepareForSelection() -> Bool {
         guard AppFeature.screenRecorder.isAvailable, !isFinishing,
               session == nil, countdown == nil, !isAwaitingMicrophone,
-              !isPreparingRecording, !isWaitingForStart else { return false }
+              !isPreparingRecording else { return false }
         guard Permissions.shared.screenRecording else {
             Permissions.shared.requestScreenRecording()
             return false
@@ -434,43 +417,20 @@ final class ScreenRecorderService: ObservableObject {
             self?.stop(reason: message)
             QuickToolHUD.show(icon: "video.slash", message: message)
         }
-        overlays.prepareRecording(anchorRect: region.anchorRect, pixelSize: region.pixelSize)
+        let immediate = UserDefaults.standard.object(
+            forKey: DefaultsKey.recorderImmediateStartAfterSelection) as? Bool ?? true
+        overlays.prepareRecording(anchorRect: region.anchorRect, pixelSize: region.pixelSize, immediate: immediate)
         pendingStartGeneration &+= 1
         let generation = pendingStartGeneration
         let indicator = RecorderIndicator(
             onPause: { [weak self] in self?.togglePause() },
             onStop: { [weak self] in self?.stop() },
-            onDiscard: { [weak self] in self?.stopAndDiscard() },
-            onStart: { [weak self] in
-                self?.startDelayedSelection(region: region, wantsMicrophone: audioOptions.microphone,
-                                            generation: generation)
-            })
+            onDiscard: { [weak self] in self?.stopAndDiscard() })
         indicator.showRegionGuide(for: region)
         self.indicator = indicator
-        let immediate = UserDefaults.standard.object(
-            forKey: DefaultsKey.recorderImmediateStartAfterSelection) as? Bool ?? true
-        if immediate {
-            prepareCountdown(for: region, wantsMicrophone: audioOptions.microphone,
-                             generation: generation)
-        } else {
-            isWaitingForStart = true
-            let screen = NSScreen.screens.first { $0.displayID == region.displayID }
-            indicator.show(on: screen,
-                           tooltip: strings.indicatorTooltip,
-                           pauseTooltip: strings.pauseButton,
-                           resumeTooltip: strings.resumeButton,
-                           stopTooltip: strings.stopButton,
-                           startTooltip: strings.startButton,
-                           discardTooltip: strings.discardButton)
-            indicator.setWaitingForStart(in: region.anchorRect)
-        }
-    }
-
-    private func startDelayedSelection(region: RecorderSupport.Region, wantsMicrophone: Bool,
-                                       generation: Int) {
-        guard isWaitingForStart, pendingStartIsAuthorized(generation) else { return }
-        isWaitingForStart = false
-        prepareCountdown(for: region, wantsMicrophone: wantsMicrophone, generation: generation)
+        // Selection owns the editable waiting state. Reaching this boundary
+        // means Start was confirmed or immediate recording was requested.
+        prepareCountdown(for: region, wantsMicrophone: audioOptions.microphone, generation: generation)
     }
 
     private func prepareCountdown(for region: RecorderSupport.Region,
@@ -621,7 +581,6 @@ final class ScreenRecorderService: ObservableObject {
                        pauseTooltip: strings.pauseButton,
                        resumeTooltip: strings.resumeButton,
                        stopTooltip: strings.stopButton,
-                       startTooltip: strings.startButton,
                        discardTooltip: strings.discardButton)
         self.indicator = indicator
 
@@ -671,7 +630,6 @@ final class ScreenRecorderService: ObservableObject {
         pendingStartGeneration &+= 1
         isAwaitingMicrophone = false
         isPreparingRecording = false
-        isWaitingForStart = false
         countdown?.cancel()
         countdown = nil
         indicator?.hide()
@@ -750,7 +708,7 @@ final class ScreenRecorderService: ObservableObject {
             return
         }
         guard let session, !isFinishing else {
-            if isPreparingRecording || isWaitingForStart || countdown != nil || isAwaitingMicrophone {
+            if isPreparingRecording || countdown != nil || isAwaitingMicrophone {
                 invalidatePendingStart()
             }
             return

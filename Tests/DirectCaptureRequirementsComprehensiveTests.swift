@@ -291,21 +291,14 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      && indicatorSource.contains("trashButton.toolTip = discardTooltip"),
                      "RecorderIndicator expanded to 182x32 and includes trash button for deleting/discarding recording")
 
-        // 2. Delayed start waiting state
-        suite.expect(indicatorSource.contains("func setWaitingForStart() {")
-                     && indicatorSource.contains("isWaitingForStart = true")
-                     && indicatorSource.contains("dot.opacity = 0.4")
-                     && indicatorSource.contains("pauseButton.image = symbolImage(\"play.fill\")")
-                     && indicatorSource.contains("pauseButton.toolTip = startTooltip"),
-                     "RecorderIndicator implements setWaitingForStart with dim pulse, play icon, and Start recording tooltip")
-
-        // 3. Starting delayed recording
-        suite.expect(indicatorSource.contains("func setStarted() {")
-                     && indicatorSource.contains("isWaitingForStart = false")
-                     && indicatorSource.contains("addPulse()")
-                     && indicatorSource.contains("if isWaitingForStart {")
-                     && indicatorSource.contains("onStart?()"),
-                     "Clicking pause/play button while waiting transitions to started state and invokes onStart")
+        let waitingSource = (try? String(contentsOfFile:
+            "Sources/Vorssaint/UI/Recorder/RecorderWaitingControls.swift", encoding: .utf8)) ?? ""
+        suite.expect(waitingSource.contains("RecorderOverlayInputControls()")
+                     && waitingSource.contains("speaker.wave.2.fill") && waitingSource.contains("mic.fill")
+                     && waitingSource.contains("play.fill") && waitingSource.contains("xmark"),
+                     "waiting controls group four inputs beside Start and Cancel")
+        suite.expect(!indicatorSource.contains("isWaitingForStart"),
+                     "the recording indicator has no obsolete pre-recording waiting state")
 
         // 4. Discard action in ScreenRecorderService
         let recorderServiceSource = (try? String(
@@ -318,10 +311,12 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      && !discardBody.contains("stashRecording"),
                      "ScreenRecorderService stopAndDiscard deletes take from store without stashing into Recent Captures")
 
-        // 5. Delayed start mode check in ScreenRecorderService
-        suite.expect(recorderServiceSource.contains("DefaultsKey.recorderImmediateStartAfterSelection")
-                     && recorderServiceSource.contains("indicator.setWaitingForStart(in: region.anchorRect)"),
-                     "ScreenRecorderService checks recorderImmediateStartAfterSelection and delays countdown until user click")
+        let waitingSelectionSource = (try? String(contentsOfFile:
+            "Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift", encoding: .utf8)) ?? ""
+        suite.expect(waitingSelectionSource.contains("DefaultsKey.recorderImmediateStartAfterSelection")
+                     && waitingSelectionSource.contains("prepareWaitingRecording")
+                     && waitingSelectionSource.contains("recordingDraft?.drag"),
+                     "the chooser owns delayed Start and retains editable recording geometry")
 
         // 6. Selection live unfrozen screen for recorder
         let recordingPolicy = ScreenshotSupport.unifiedCapturePolicy(

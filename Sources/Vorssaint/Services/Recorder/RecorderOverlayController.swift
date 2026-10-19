@@ -6,6 +6,7 @@ import Combine
 
 /// Owns only the live recording overlays, never the standalone camera mirror.
 final class RecorderOverlayController: ObservableObject {
+    private enum Phase { case selecting, waiting, starting, recording }
     static let shared = RecorderOverlayController()
     let frames: RecorderOverlayFrameStore
     @Published var cameraEnabled = false { didSet { if oldValue != cameraEnabled { configureCamera() } } }
@@ -25,7 +26,9 @@ final class RecorderOverlayController: ObservableObject {
     private var keyPanel: RecorderOverlayPanel?
     private var refreshTimer: Timer?
     private var pauseClock: RecorderPauseClock?
+    private var phase = Phase.selecting
     var isRecording: Bool { pauseClock != nil }
+    var cameraPreviewVisible: Bool { cameraPanel?.isVisible == true && (cameraPanel?.alphaValue ?? 0) > 0 }
     var onFailure: ((String) -> Void)?
     var excludedWindowNumbers: [Int] {
         [cameraPanel?.windowNumber, keyPanel?.windowNumber].compactMap { number in
@@ -45,13 +48,15 @@ final class RecorderOverlayController: ObservableObject {
         guard anchorRect.width > 0, anchorRect.height > 0, pixelSize.width > 0, pixelSize.height > 0 else { return }
         self.anchorRect = anchorRect
         self.pixelSize = pixelSize
+        layout.pixelsPerPoint = pixelSize.width / anchorRect.width
         frames.setLayout(layout)
         refreshLayout()
     }
 
-    func prepareRecording(anchorRect: CGRect, pixelSize: CGSize) {
+    func prepareRecording(anchorRect: CGRect, pixelSize: CGSize, immediate: Bool = true) {
+        phase = immediate ? .starting : .waiting
         updateRegion(anchorRect: anchorRect, pixelSize: pixelSize)
-        if keysEnabled { ensureKeyPanel() }
+        if cameraEnabled { configureCamera() }
     }
 
     @MainActor func ensureCameraReady() async -> Bool {
@@ -71,6 +76,8 @@ final class RecorderOverlayController: ObservableObject {
 
     func startRecording(pauseClock: RecorderPauseClock) {
         self.pauseClock = pauseClock
+        phase = .recording
+        refreshLayout()
         updateKeyCapture()
     }
     func pauseChanged() { updateKeyCapture() }
@@ -89,6 +96,7 @@ final class RecorderOverlayController: ObservableObject {
     }
 
     func stop() {
+        phase = .selecting
         cameraEnabled = false
         keysEnabled = false
         cameraGeneration &+= 1
@@ -115,7 +123,7 @@ final class RecorderOverlayController: ObservableObject {
         cameraGeneration &+= 1
         let generation = cameraGeneration
         cameraReady = false
-        if !cameraEnabled {
+        if !cameraEnabled || phase == .selecting {
             _ = camera.stop()
             cameraPanel?.orderOut(nil)
             refreshTimer?.invalidate()
@@ -145,7 +153,7 @@ final class RecorderOverlayController: ObservableObject {
     }
 
     private func refreshLayout() {
-        guard cameraEnabled, anchorRect.width > 0, pixelSize.width > 0 else { return }
+        guard cameraEnabled, phase != .selecting, anchorRect.width > 0, pixelSize.width > 0 else { return }
         if cameraPanel == nil {
             let panel = RecorderOverlayPanel()
             panel.contentView = RecorderCameraOverlayView(controller: self)
@@ -157,6 +165,12 @@ final class RecorderOverlayController: ObservableObject {
                             width: frame.width * anchorRect.width / pixelSize.width,
                             height: frame.height * anchorRect.height / pixelSize.height)
         cameraPanel?.setFrame(points, display: true)
+        // Allocate the native window before capture filtering, but keep it
+        // invisible through countdown for immediate-start recordings.
+        cameraPanel?.alphaValue = phase == .starting ? 0 : 1
+        cameraPanel?.level = phase == .waiting
+            ? NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()) + 1)
+            : NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
         cameraPanel?.orderFrontRegardless()
         if refreshTimer == nil {
             let timer = Timer(timeInterval: 1 / 30, repeats: true) { [weak self] _ in
