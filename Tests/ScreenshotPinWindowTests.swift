@@ -14,6 +14,19 @@ enum ScreenshotPinWindowTests {
         defer { preferences.removePersistentDomain(forName: namespace) }
         let pin = ScreenshotPinWindow(image: image, scale: 2, preferences: preferences)
         defer { pin.closePin() }
+        var saved = 0
+        pin.onSave = { saved += 1 }
+        if let save = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command,
+                                      timestamp: 0, windowNumber: pin.windowNumber, context: nil,
+                                      characters: "s", charactersIgnoringModifiers: "s", isARepeat: false,
+                                      keyCode: 1) {
+            pin.keyDown(with: save)
+        }
+        suite.expect(saved == 1, "Command-S dispatches the focused pin's save action")
+        var copied = 0
+        pin.onCopy = { copied += 1 }
+        suite.expect(pin.contentView?.tryToPerform(#selector(NSText.copy(_:)), with: nil) == true && copied == 1,
+                     "the standard Edit menu copy action reaches the focused pin responder")
         suite.expect(!pin.isVisible, "pin window is not visible upon initialization")
         pin.setOpacity(0.1)
         suite.expectClose(pin.alphaValue, 1, "pin controls retain an opaque window at ten percent image opacity")
@@ -70,6 +83,28 @@ enum ScreenshotPinWindowTests {
         suite.expectClose(pin.cornerRadius, 10, "zoom does not scale the corner radius")
         suite.expectClose(pin.zoomMultiplier, 1.5, "zoom feedback uses original display points")
 
+        let beforeForeign = pin.frame
+        let center = CGPoint(x: beforeForeign.midX, y: beforeForeign.midY)
+        let foreign = ScreenshotPinGestureTests.Gesture()
+        foreign.pinch = 0.1
+        foreign.point = CGPoint(x: 9000, y: 9000)
+        pin.handleGestureEvent(foreign, screenLocation: center)
+        suite.expectClose(pin.frame.midX, center.x, "foreign-window pinch coordinates do not move the horizontal anchor", tol: 1)
+        suite.expectClose(pin.frame.midY, center.y, "foreign-window pinch coordinates do not move the vertical anchor", tol: 1)
+
+        let other = ScreenshotPinWindow(image: image, scale: 2, preferences: preferences)
+        defer { other.closePin() }
+        other.setFrame(pin.frame, display: false)
+        suite.expect(ScreenshotPinWindow.gestureTarget(at: center, windows: [other, pin]) === other,
+                     "overlapping pins route gestures in front-to-back window order")
+        other.setPositionLocked(true)
+        suite.expect(ScreenshotPinWindow.gestureTarget(at: center, windows: [other, pin]) === pin,
+                     "a locked front pin leaves the eligible pin underneath reachable")
+        pin.setZoom(0.5)
+        suite.expectClose(pin.zoomMultiplier, 0.5, "the half-size menu preset is reachable even for a small source image")
+        other.performClose(nil)
+        suite.expect(other.isClosed, "the native Close Window menu action runs pin cleanup")
+
         var closed = 0
         pin.onClose = { closed += 1 }
         let drag = ScreenshotPinDragView(pin: pin)
@@ -82,5 +117,6 @@ enum ScreenshotPinWindowTests {
         suite.expect(pin.isClosed && closed == 1, "a successful ordinary file drop closes its pin once")
         ScreenshotPinFilePromiseTests.run(suite, image: image)
         ScreenshotPinChromeTests.run(suite, image: image)
+        ScreenshotQuickLookTests.run(suite, image: image)
     }
 }

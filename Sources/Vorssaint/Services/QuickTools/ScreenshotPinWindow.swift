@@ -18,7 +18,8 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     var onSave: (() -> Void)?
     var onCloseAll: (() -> Void)?
     var onClickThroughChanged: (() -> Void)?
-    var onReopenPreview: (() -> Void)?
+    var onEdit: (() -> Void)?
+    static let pinLevel = NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue - 1)
     private lazy var chrome = ScreenshotPinChrome(pin: self)
     private lazy var surface = ScreenshotPinContentView(image: image, pin: self)
 
@@ -45,7 +46,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
                                       width: size.width, height: size.height),
                    styleMask: [.borderless, .resizable, .nonactivatingPanel], backing: .buffered, defer: false)
         isReleasedWhenClosed = false
-        level = .floating
+        level = Self.pinLevel
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         isOpaque = false
         backgroundColor = .clear
@@ -53,7 +54,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         isMovableByWindowBackground = true
         hidesOnDeactivate = false
         contentAspectRatio = CGSize(width: image.width, height: image.height)
-        minSize = CGSize(width: 140, height: 90)
+        minSize = CGSize(width: min(140, native.width * 0.5), height: min(90, native.height * 0.5))
         contentView = surface
         delegate = self
         refreshAppearance()
@@ -66,9 +67,18 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         surface.magnify(with: event)
     }
 
-    func handleGestureEvent(_ event: NSEvent) {
+    static func gestureTarget(at point: CGPoint, windows: [NSWindow]) -> ScreenshotPinWindow? {
+        windows.lazy.compactMap { $0 as? ScreenshotPinWindow }.first {
+            !$0.isHiddenForDrag && !$0.isClosed && !$0.isPositionLocked
+                && !$0.ignoresMouseEvents && $0.frame.contains(point)
+        }
+    }
+
+    func resetGestureTracking() { surface.resetGestureTracking() }
+
+    func handleGestureEvent(_ event: NSEvent, screenLocation: CGPoint = NSEvent.mouseLocation) {
         guard !isClosed, !isPositionLocked, !ignoresMouseEvents else { return }
-        surface.handleGestureEvent(event)
+        surface.handleGestureEvent(event, at: convertPoint(fromScreen: screenLocation))
     }
 
     override func sendEvent(_ event: NSEvent) {
@@ -126,6 +136,20 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         chrome.showFeedback(String(format: "%.1fx", locale: Locale.current, Double(zoomMultiplier)))
     }
 
+    func setZoom(_ multiplier: CGFloat) {
+        guard multiplier.isFinite, multiplier > 0, !NSEvent.modifierFlags.contains(.option) else { return }
+        surface.zoom(by: multiplier / zoomMultiplier,
+                     at: CGPoint(x: frame.width / 2, y: frame.height / 2))
+    }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard isKeyWindow, event.modifierFlags.intersection([.command, .option, .control, .shift]) == .command,
+              ["w", "e", "c", "s"].contains(event.charactersIgnoringModifiers?.lowercased() ?? "")
+        else { return super.performKeyEquivalent(with: event) }
+        keyDown(with: event)
+        return true
+    }
+
     func setPositionLocked(_ enabled: Bool) {
         guard !isClosed else { return }
         isPositionLocked = enabled
@@ -154,10 +178,12 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         onClose?()
     }
 
+    override func performClose(_ sender: Any?) { closePin() }
+
     func windowDidMove(_ notification: Notification) { chrome.layout() }
     func windowDidResize(_ notification: Notification) { chrome.layout() }
     func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
-        isPositionLocked ? frame.size : frameSize
+        isPositionLocked || NSEvent.modifierFlags.contains(.option) ? frame.size : frameSize
     }
 
     private(set) var isHiddenForDrag = false
@@ -186,6 +212,8 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         case kVK_Escape: closePin()
         case kVK_ANSI_W where flags.contains(.command): closePin()
         case kVK_ANSI_C where flags.contains(.command): onCopy?()
+        case kVK_ANSI_E where flags.contains(.command): onEdit?()
+        case kVK_ANSI_S where flags.contains(.command): onSave?()
         case kVK_LeftArrow where !isPositionLocked: setFrameOrigin(CGPoint(x: frame.minX - step, y: frame.minY))
         case kVK_RightArrow where !isPositionLocked: setFrameOrigin(CGPoint(x: frame.minX + step, y: frame.minY))
         case kVK_UpArrow where !isPositionLocked: setFrameOrigin(CGPoint(x: frame.minX, y: frame.minY + step))

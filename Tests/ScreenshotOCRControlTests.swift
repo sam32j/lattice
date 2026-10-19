@@ -79,7 +79,7 @@ enum ScreenshotOCRControlTests {
                     dragItem: { NSItemProvider() }, share: { _ in }, systemShare: {},
                     shareAnchor: ShelfSharePickerAnchor.Anchor(), copySharedLink: {},
                     deleteSharedLink: {}, showQR: {}, copyText: { presses += 1 },
-                    dismiss: {}, hoverChanged: { _ in }, showsDismissButton: true,
+                    dismiss: {}, expand: {}, hoverChanged: { _ in }, showsDismissButton: true,
                     embedded: embedded)
                 let host = NSHostingView(rootView: (embedded ? view.toolbar : view)
                     .defaultAppStorage(defaults))

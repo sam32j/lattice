@@ -17,6 +17,8 @@ enum ScreenshotPinGestureTests {
         var momentum: NSEvent.Phase = []
         var point = CGPoint(x: 50, y: 25)
         var backingEvent: CGEvent?
+        var nativeType: NSEvent.EventType = .magnify
+        override var type: NSEvent.EventType { nativeType }
         override var scrollingDeltaY: CGFloat { scroll }
         override var magnification: CGFloat { pinch }
         override var hasPreciseScrollingDeltas: Bool { precise }
@@ -44,6 +46,18 @@ enum ScreenshotPinGestureTests {
         source.begin(.touches)
         suite.expect(source.accepts(.touches), "ending a pinch releases stream ownership immediately")
         ScreenshotPinControlsTests.run(suite)
+        let gentleTracker = ScreenshotPinPinchTracker()
+        _ = gentleTracker.update(p1: .zero, p2: CGPoint(x: 0.2, y: 0), active: true)
+        var emitted = 1.0
+        var distance = 0.2
+        for _ in 0..<1000 {
+            distance *= 1.0004
+            if let factor = gentleTracker.update(p1: .zero, p2: CGPoint(x: distance, y: 0), active: true) {
+                emitted *= factor
+            }
+        }
+        suite.expect(emitted > 1.48 && emitted < 1.50,
+                     "tiny raw-touch movements accumulate into a gentle pinch instead of disappearing")
         guard let screen = NSScreen.main else {
             suite.expect(false, "native pin gesture tests require a display")
             return
@@ -73,6 +87,12 @@ enum ScreenshotPinGestureTests {
         view.applyPinch(by: 1.1, at: .zero, source: .touches, phase: .changed)
         suite.expect(window.frame == magnifyStart, "a nonowning raw stream cannot end or take over an active magnify pinch")
         view.applyPinch(by: 1, at: .zero, source: .magnify, phase: .ended)
+        let afterEnd = window.frame
+        let legacyPinch = Gesture()
+        legacyPinch.pinch = 0.1
+        view.magnify(with: legacyPinch)
+        suite.expect(window.frame.width > afterEnd.width,
+                     "phase-less magnify events can start a new pinch after a completed gesture")
         view.applyPinch(by: 1, at: .zero, source: .magnify, phase: .began)
         window.setFrame(initial, display: false)
 
@@ -90,6 +110,10 @@ enum ScreenshotPinGestureTests {
 
         let pinch = Gesture()
         pinch.pinch = 0.5
+        pinch.flags = .option
+        view.magnify(with: pinch)
+        suite.expect(window.frame == initial, "Option-pinch never zooms while adjusting pin opacity")
+        pinch.flags = []
         view.magnify(with: pinch)
         suite.expectClose(window.frame.width, 300, "pinching out zooms the pin", tol: 0.6)
         suite.expectClose(window.frame.height, 150, "pinching preserves the image's proportions", tol: 0.6)

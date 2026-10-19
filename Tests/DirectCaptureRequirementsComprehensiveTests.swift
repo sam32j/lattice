@@ -320,7 +320,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // 5. Delayed start mode check in ScreenRecorderService
         suite.expect(recorderServiceSource.contains("DefaultsKey.recorderImmediateStartAfterSelection")
-                     && recorderServiceSource.contains("indicator.setWaitingForStart()"),
+                     && recorderServiceSource.contains("indicator.setWaitingForStart(in: region.anchorRect)"),
                      "ScreenRecorderService checks recorderImmediateStartAfterSelection and delays countdown until user click")
 
         // 6. Selection live unfrozen screen for recorder
@@ -435,18 +435,20 @@ enum DirectCaptureRequirementsComprehensiveTests {
             suite.expect(pin.isMovableByWindowBackground == true,
                          "Unlocking position restores window background movement")
 
-            // Double click to reopen preview
-            var reopened = false
-            pin.onReopenPreview = { reopened = true }
-            pin.onReopenPreview?()
-            suite.expect(reopened, "pin.onReopenPreview callback triggers properly")
-
-            let contentSource = (try? String(
-                contentsOfFile: "Sources/Vorssaint/Services/QuickTools/ScreenshotPinContentView.swift",
-                encoding: .utf8)) ?? ""
-            suite.expect(contentSource.contains("if event.clickCount == 2 {")
-                         && contentSource.contains("pin.onReopenPreview?()"),
-                         "ScreenshotPinContentView double click invokes pin.onReopenPreview")
+            var edited = false
+            pin.onEdit = { edited = true }
+            if let click = NSEvent.mouseEvent(with: .leftMouseDown, location: .zero,
+                modifierFlags: [], timestamp: 0, windowNumber: pin.windowNumber, context: nil,
+                eventNumber: 1, clickCount: 2, pressure: 1) {
+                pin.contentView?.mouseDown(with: click)
+            }
+            suite.expect(!edited, "double-clicking a pin has no action")
+            if let edit = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command,
+                timestamp: 0, windowNumber: pin.windowNumber, context: nil, characters: "e",
+                charactersIgnoringModifiers: "e", isARepeat: false, keyCode: 14) {
+                pin.keyDown(with: edit)
+            }
+            suite.expect(edited, "Command-E opens the focused pin in the editor")
 
             // Test first-try zoom logic
             let gestureView = ScreenshotPinGestureView(frame: .zero)
@@ -463,8 +465,8 @@ enum DirectCaptureRequirementsComprehensiveTests {
             encoding: .utf8)) ?? ""
         suite.expect(pinControllerSource.contains("localGestureMonitor = NSEvent.addLocalMonitorForEvents")
                      && pinControllerSource.contains("gestureMonitor = NSEvent.addGlobalMonitorForEvents")
-                     && pinControllerSource.contains("event.type == .magnify")
-                     && pinControllerSource.contains("pin.magnify(with: event)"),
+                     && pinControllerSource.contains("routeGesture(event)")
+                     && pinControllerSource.contains("pin.handleGestureEvent(event, screenLocation: location)"),
                      "ScreenshotPinController monitors local and global gesture events so pinch zoom works on first try without prior click")
     }
 

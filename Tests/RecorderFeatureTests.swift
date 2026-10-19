@@ -893,7 +893,7 @@ enum RecorderFeatureTests {
             .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }.joined(separator: " ")
         suite.expect(recorderSessionShape.contains(
-            "await MainActor.run { pointer.start() typing.start() }"
+            "await MainActor.run { guard self.startGate.isAuthorized else { return } pointer.start() typing.start()"
         ), "the recorder installs its event monitors on the main thread")
         suite.expect(recorderSessionShape.contains(
             "await MainActor.run { (pointer.stop(), typing.stop()) }"

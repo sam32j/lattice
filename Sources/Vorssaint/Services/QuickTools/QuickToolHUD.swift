@@ -9,8 +9,6 @@ import SwiftUI
 /// the mouse, fading out on its own. Purely visual; never takes focus.
 enum QuickToolHUD {
     private static var panel: NSPanel?
-    private static var scrollingPanel: ScrollingCapturePanel?
-    private static var scrollingModel: ScrollingCaptureHUDModel?
     private static var dismissWork: DispatchWorkItem?
     /// How wide a message is allowed to get, on either of this file's two
     /// message panels. A confirmation is read at a
@@ -31,8 +29,11 @@ enum QuickToolHUD {
     /// The scrolling capture controls, when they are on screen. They belong to
     /// the capture in progress and must stay out of its own pictures.
     static var currentScrollingWindowNumber: Int? {
-        guard let scrollingPanel, scrollingPanel.isVisible else { return nil }
-        return scrollingPanel.windowNumber
+        ScrollingCaptureOverlayController.activePreviewWindowNumber
+    }
+
+    static var scrollingWindowIDs: Set<CGWindowID> {
+        ScrollingCaptureOverlayController.activeWindowIDs
     }
 
     static func show(icon: String, message: String, swatch: NSColor? = nil) {
@@ -95,70 +96,71 @@ enum QuickToolHUD {
         present(AnyView(content), dismissAfter: 0.92, windowShadow: false)
     }
 
-    /// The scrolling capture stays visible while the person moves the target.
-    /// Its non-activating panel takes key focus only so Return and Escape do
-    /// not leak into the page being captured.
-    static func showScrollingCapture(message: String,
+    /// The scrolling capture preview and controls, positioned by the side of the selection
+    /// or bottom right for full screen.
+    static func showScrollingCapture(region: RecorderSupport.Region? = nil,
+                                     initialImage: CGImage? = nil,
+                                     message: String,
                                      finishTitle: String,
                                      cancelTitle: String,
                                      onFinish: @escaping () -> Void,
                                      onCancel: @escaping () -> Void) {
-        guard Thread.isMainThread else {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated {
+                ScrollingCaptureOverlayController.shared.show(
+                    region: region,
+                    initialImage: initialImage,
+                    message: message,
+                    finishTitle: finishTitle,
+                    cancelTitle: cancelTitle,
+                    onFinish: onFinish,
+                    onCancel: onCancel)
+            }
+        } else {
             DispatchQueue.main.async {
-                showScrollingCapture(message: message,
+                showScrollingCapture(region: region,
+                                     initialImage: initialImage,
+                                     message: message,
                                      finishTitle: finishTitle,
                                      cancelTitle: cancelTitle,
                                      onFinish: onFinish,
                                      onCancel: onCancel)
             }
-            return
         }
-        let model = ScrollingCaptureHUDModel(message: message)
-        scrollingModel = model
-        let content = ScrollingCaptureHUDView(model: model,
-                                              finishTitle: finishTitle,
-                                              cancelTitle: cancelTitle,
-                                              onFinish: {
-                                                  guard !model.isFinishing else { return }
-                                                  model.isFinishing = true
-                                                  onFinish()
-                                              },
-                                              onCancel: onCancel)
-        let host = ScrollingCaptureHostingView(rootView: AnyView(content))
-        host.layoutSubtreeIfNeeded()
-        let size = host.fittingSize
-        let panel = ensureScrollingPanel()
-        panel.contentView = host
-        let frame = NSScreen.pointerVisibleFrame
-        panel.setFrame(NSRect(x: frame.midX - size.width / 2,
-                              y: frame.maxY - size.height - 24,
-                              width: size.width,
-                              height: size.height),
-                       display: true)
-        panel.orderFrontRegardless()
-        panel.makeKey()
+    }
+
+    static func updateScrollingCapture(image: CGImage?, height: Int) {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated {
+                ScrollingCaptureOverlayController.shared.update(image: image, height: height)
+            }
+        } else {
+            DispatchQueue.main.async { updateScrollingCapture(image: image, height: height) }
+        }
     }
 
     static func updateScrollingCapture(height: Int) {
-        guard Thread.isMainThread else {
-            DispatchQueue.main.async { updateScrollingCapture(height: height) }
-            return
-        }
-        scrollingModel?.height = height
+        updateScrollingCapture(image: nil, height: height)
     }
 
     static func markScrollingCaptureFinishing() {
-        scrollingModel?.isFinishing = true
+        if Thread.isMainThread {
+            MainActor.assumeIsolated {
+                ScrollingCaptureOverlayController.shared.markFinishing()
+            }
+        } else {
+            DispatchQueue.main.async { markScrollingCaptureFinishing() }
+        }
     }
 
     static func dismissScrollingCapture() {
-        guard Thread.isMainThread else {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated {
+                ScrollingCaptureOverlayController.shared.dismiss()
+            }
+        } else {
             DispatchQueue.main.async { dismissScrollingCapture() }
-            return
         }
-        scrollingPanel?.orderOut(nil)
-        scrollingPanel?.contentView = nil
-        scrollingModel = nil
     }
 
     private static func present(_ content: AnyView,
@@ -213,18 +215,6 @@ enum QuickToolHUD {
         return panel
     }
 
-    private static func ensureScrollingPanel() -> ScrollingCapturePanel {
-        if let scrollingPanel { return scrollingPanel }
-        let panel = ScrollingCapturePanel(contentRect: .zero,
-                                          styleMask: [.borderless, .nonactivatingPanel],
-                                          backing: .buffered,
-                                          defer: false)
-        configure(panel)
-        panel.ignoresMouseEvents = false
-        scrollingPanel = panel
-        return panel
-    }
-
     private static func makePanel() -> NSPanel {
         let panel = OverlayPanel(contentRect: .zero,
                                  styleMask: [.borderless, .nonactivatingPanel],
@@ -264,73 +254,5 @@ private struct QuickToolCountdownView: View {
                 .font(.system(size: 32, weight: .bold, design: .rounded))
                 .monospacedDigit()
         }
-    }
-}
-
-/// A non-activating panel that can still own Return and Escape while the
-/// underlying window continues receiving pointer and scrolling events.
-private final class ScrollingCapturePanel: OverlayPanel {
-    override var canBecomeKey: Bool { true }
-}
-
-private final class ScrollingCaptureHostingView: NSHostingView<AnyView> {
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
-}
-
-private final class ScrollingCaptureHUDModel: ObservableObject {
-    let message: String
-    @Published var height = 0
-    @Published var isFinishing = false
-
-    init(message: String) {
-        self.message = message
-    }
-}
-
-private struct ScrollingCaptureHUDView: View {
-    @ObservedObject var model: ScrollingCaptureHUDModel
-    let finishTitle: String
-    let cancelTitle: String
-    let onFinish: () -> Void
-    let onCancel: () -> Void
-
-    var body: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                if model.isFinishing {
-                    ProgressView().controlSize(.small)
-                } else {
-                    Image(systemName: "rectangle.stack.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
-                }
-            }
-            .frame(width: 16, height: 16)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(model.message)
-                    .font(.system(size: 12, weight: .semibold))
-                    .lineLimit(2)
-                    // Same panel geometry as the confirmation above, so the
-                    // same bound: this one is laid out from fittingSize and
-                    // centred on it too.
-                    .truncationMode(.tail)
-                    .frame(maxWidth: QuickToolHUD.messageWidthLimit, alignment: .leading)
-                Text("\(model.height) px")
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-            }
-            Button(cancelTitle, action: onCancel)
-                .controlSize(.small)
-                .keyboardShortcut(.cancelAction)
-            Button(finishTitle, action: onFinish)
-                .disabled(model.isFinishing)
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .keyboardShortcut(.defaultAction)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }

@@ -53,6 +53,10 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
     /// Immutable for the whole session, which is what makes it safe to touch
     /// from the capture queue while the main thread watches the clock.
     private let writer: RecorderWriter
+    private let overlayFrames = RecorderOverlayController.shared.frames
+    private let overlayCompositor = RecorderOverlayCompositor()
+    private let overlayGeneration: Int
+    private var compositionFailed = false // writer queue only
 
     var onUnexpectedStop: ((RecorderFailure) -> Void)?
     var onMicrophoneUnavailable: (() -> Void)?
@@ -68,7 +72,9 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
         self.writer = writer
         self.pauseClock = pauseClock
         self.capturesSystemAudio = capturesSystemAudio
-        microphone = capturesMicrophone ? RecorderMicrophoneCapture() : nil
+        overlayGeneration = RecorderOverlayController.shared.frames.snapshot.generation
+        microphone = capturesMicrophone ? RecorderMicrophoneCapture(
+            deviceID: RecorderOverlayController.shared.selectedMicrophoneID) : nil
         pointer = RecorderPointerSampler(region: region, pauseClock: pauseClock)
         typing = RecorderTypingSampler(pauseClock: pauseClock)
         super.init()
@@ -76,6 +82,7 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
         microphone?.onSample = { [weak self] sampleBuffer in
             self?.append(sampleBuffer, kind: .microphone)
         }
+        microphone?.onUnavailable = { [weak self] in self?.onMicrophoneUnavailable?() }
     }
 
     func start(frameRate: Int,
@@ -136,7 +143,7 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
         }
         if let microphone {
             if await microphone.start(synchronizingTo: clock) == false {
-                onMicrophoneUnavailable?()
+                await MainActor.run { onMicrophoneUnavailable?() }
             }
             guard startGate.isAuthorized else {
                 await tap?.stop()
@@ -150,8 +157,10 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
         // two samplers install AppKit event monitors, which belong to the
         // main thread's dispatch, so they are started and stopped there.
         await MainActor.run {
+            guard self.startGate.isAuthorized else { return }
             pointer.start()
             typing.start()
+            RecorderOverlayController.shared.startRecording(pauseClock: self.pauseClock)
         }
         return nil
     }
@@ -258,8 +267,20 @@ private final class RecorderSession: NSObject, RecorderCaptureEngineDelegate {
     }
 
     private func append(_ sampleBuffer: CMSampleBuffer, kind: RecorderCaptureEngine.Kind) {
-        writerQueue.async { [writer] in
-            writer.append(sampleBuffer, kind: kind)
+        if kind == .video, pauseClock.isPaused { return }
+        let overlay = kind == .video ? overlayFrames.snapshot : nil
+        if let overlay, overlay.generation != overlayGeneration { return }
+        writerQueue.async { [weak self, writer, overlayCompositor] in
+            guard let self, !self.compositionFailed else { return }
+            do {
+                let sample = try overlay.map {
+                    try overlayCompositor.sample(sampleBuffer, camera: $0.camera, layout: $0.layout, keyImage: $0.keyImage)
+                } ?? sampleBuffer
+                writer.append(sample, kind: kind)
+            } catch {
+                self.compositionFailed = true
+                DispatchQueue.main.async { [weak self] in self?.onUnexpectedStop?(.writerFailed) }
+            }
         }
     }
 }
@@ -407,7 +428,13 @@ final class ScreenRecorderService: ObservableObject {
 
     func record(_ region: RecorderSupport.Region,
                 audioOptions: RecorderSelectionAudioOptions) {
-        guard prepareForSelection() else { return }
+        guard prepareForSelection() else { RecorderOverlayController.shared.stop(); return }
+        let overlays = RecorderOverlayController.shared
+        overlays.onFailure = { [weak self] message in
+            self?.stop(reason: message)
+            QuickToolHUD.show(icon: "video.slash", message: message)
+        }
+        overlays.prepareRecording(anchorRect: region.anchorRect, pixelSize: region.pixelSize)
         pendingStartGeneration &+= 1
         let generation = pendingStartGeneration
         let indicator = RecorderIndicator(
@@ -435,7 +462,7 @@ final class ScreenRecorderService: ObservableObject {
                            stopTooltip: strings.stopButton,
                            startTooltip: strings.startButton,
                            discardTooltip: strings.discardButton)
-            indicator.setWaitingForStart()
+            indicator.setWaitingForStart(in: region.anchorRect)
         }
     }
 
@@ -450,6 +477,22 @@ final class ScreenRecorderService: ObservableObject {
                                   wantsMicrophone: Bool,
                                   generation: Int) {
         guard pendingStartIsAuthorized(generation) else { return }
+        let overlays = RecorderOverlayController.shared
+        if overlays.cameraEnabled && !overlays.cameraReady {
+            isPreparingRecording = true
+            Task { @MainActor [weak self] in
+                let ready = await overlays.ensureCameraReady()
+                guard let self, self.pendingStartIsAuthorized(generation) else { return }
+                self.isPreparingRecording = false
+                guard ready else {
+                    self.invalidatePendingStart()
+                    QuickToolHUD.show(icon: "video.slash", message: overlays.errorMessage ?? "The camera is unavailable.")
+                    return
+                }
+                self.prepareCountdown(for: region, wantsMicrophone: wantsMicrophone, generation: generation)
+            }
+            return
+        }
         guard wantsMicrophone else {
             startCountdown(for: region, generation: generation)
             return
@@ -510,6 +553,7 @@ final class ScreenRecorderService: ObservableObject {
     private func beginRecording(region: RecorderSupport.Region, generation: Int) {
         guard pendingStartIsAuthorized(generation), session == nil,
               !isFinishing, let take = RecorderTakeStore.shared.makeTake() else {
+            if pendingStartIsAuthorized(generation), session == nil { RecorderOverlayController.shared.stop() }
             indicator?.hide()
             indicator = nil
             QuickToolHUD.show(icon: "record.circle", message: strings.recordFailed)
@@ -534,6 +578,7 @@ final class ScreenRecorderService: ObservableObject {
             }
             self.isPreparingRecording = false
             guard let writer else {
+                RecorderOverlayController.shared.stop()
                 self.indicator?.hide()
                 self.indicator = nil
                 RecorderTakeStore.shared.delete(take)
@@ -578,7 +623,6 @@ final class ScreenRecorderService: ObservableObject {
                        stopTooltip: strings.stopButton,
                        startTooltip: strings.startButton,
                        discardTooltip: strings.discardButton)
-        indicator.update(elapsed: RecorderSupport.elapsedLabel(seconds: 0))
         self.indicator = indicator
 
         Task { @MainActor [weak self] in
@@ -595,6 +639,7 @@ final class ScreenRecorderService: ObservableObject {
                 .protectedWindowIDsForCapture(honoursVisibilityPreference: false)
                 .map(Int.init))
             chrome.formUnion(indicator.excludedWindowNumbers)
+            chrome.formUnion(RecorderOverlayController.shared.excludedWindowNumbers)
             if let number = QuickToolHUD.currentWindowNumber { chrome.insert(number) }
             let failure = await session.start(frameRate: frameRate,
                                               capturesSystemAudio: capturesSystemAudio,
@@ -602,6 +647,7 @@ final class ScreenRecorderService: ObservableObject {
             guard self.session === session, !self.isFinishing,
                   self.pendingStartIsAuthorized(generation) else { return }
             if let failure {
+                RecorderOverlayController.shared.stop()
                 self.session = nil
                 self.indicator?.hide()
                 self.indicator = nil
@@ -621,6 +667,7 @@ final class ScreenRecorderService: ObservableObject {
     }
 
     private func invalidatePendingStart() {
+        RecorderOverlayController.shared.stop()
         pendingStartGeneration &+= 1
         isAwaitingMicrophone = false
         isPreparingRecording = false
@@ -670,6 +717,7 @@ final class ScreenRecorderService: ObservableObject {
         elapsedSeconds = Int(session.elapsed(at: now))
         indicator?.update(elapsed: RecorderSupport.elapsedLabel(seconds: elapsedSeconds))
         indicator?.update(paused: isPaused)
+        RecorderOverlayController.shared.pauseChanged()
     }
 
     /// A recording that fills the disk is a much worse failure than one that

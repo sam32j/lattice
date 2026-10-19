@@ -40,6 +40,7 @@ enum NotchCaptureKeyboardContract {
         let keyCode: UInt16
         var modifierFlags: ModifierFlags = []
         var type: EventType = .keyDown
+        var isARepeat = false
         var charactersIgnoringModifiers: String?
         static var handler: ((Self) -> Self?)?
         static func addLocalMonitorForEvents(matching: EventTypeMask, handler: @escaping (Self) -> Self?) -> Any? {

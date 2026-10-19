@@ -145,7 +145,30 @@ enum ScreenshotCaptureEngine {
             ownWindowIDs: ownWindowIDs,
             protectedWindowIDs: protectedWindowIDs,
             islandWindowIDs: islandIDs)
-        return content.windows.filter { excludedIDs.contains($0.windowID) }
+        return content.windows.filter {
+            excludedIDs.contains($0.windowID) || isSystemOverlayWindow($0)
+        }
+    }
+
+    /// System overlay windows (such as Mission Control's blue hover ring) that should
+    /// never be stamped into screen or region captures.
+    private static func isSystemOverlayWindow(_ window: SCWindow) -> Bool {
+        if window.title == "Window Highlight Overlay" {
+            return true
+        }
+        if window.owningApplication?.bundleIdentifier == "com.apple.WindowManager",
+           window.title == "Window Highlight Overlay" || window.title == "Gesture Blocking Overlay" {
+            return true
+        }
+        return false
+    }
+
+    private static func isOverlayWindow(_ windowID: CGWindowID) -> Bool {
+        guard let info = CGWindowListCopyWindowInfo([.optionIncludingWindow], windowID) as? [[String: Any]],
+              let dict = info.first else { return false }
+        let owner = dict[kCGWindowOwnerName as String] as? String ?? ""
+        let name = dict[kCGWindowName as String] as? String ?? ""
+        return owner == "WindowManager" || name == "Window Highlight Overlay"
     }
 
     private static func captureDisplay(_ display: SCDisplay,
@@ -172,6 +195,9 @@ enum ScreenshotCaptureEngine {
     static func captureWindow(_ windowID: CGWindowID,
                               scale: CGFloat,
                               includeAttachedWindows: Bool = true) async -> (image: CGImage, scale: CGFloat)? {
+        if isOverlayWindow(windowID) {
+            return nil
+        }
         // A sheet or dialog the app stacked on the window is a window of its
         // own, and neither single-window route draws it (issue #1098). The
         // window list answers this without waiting on shareable content, so
@@ -205,7 +231,7 @@ enum ScreenshotCaptureEngine {
         var clippedFallback: CGImage?
         let capturedImage = await WindowPreviewProvider.captureViaWindowServer(windowID)
         guard !Task.isCancelled else { return nil }
-        if let image = capturedImage {
+        if let image = capturedImage, !ScreenshotSupport.isImageBlank(image) {
             let bounds = windowBounds(windowID)
             if bounds.map({ SwitcherSupport.captureCoversWindow(imageWidth: image.width,
                                                                 imageHeight: image.height,
@@ -214,24 +240,17 @@ enum ScreenshotCaptureEngine {
             }
             clippedFallback = image
         }
-        let capture = await captureIndependentWindow(windowID, scale: scale)
-        return (capture ?? clippedFallback).map { ($0, scale) }
-    }
-
-    /// The window drawn on its own by ScreenCaptureKit, whole wherever it
-    /// sits. Watch reads a window through this as well, in its capture turn.
-    static func captureIndependentWindow(_ windowID: CGWindowID, scale: CGFloat) async -> CGImage? {
         guard let content = try? await SCShareableContent.excludingDesktopWindows(
             false, onScreenWindowsOnly: true),
             let window = content.windows.first(where: { $0.windowID == windowID })
-        else { return nil }
+        else { return clippedFallback.map { ($0, scale) } }
         let configuration = SCStreamConfiguration()
         configuration.width = max(1, Int((window.frame.width * scale).rounded()))
         configuration.height = max(1, Int((window.frame.height * scale).rounded()))
         // The resolution choice only exists for an independent window, and
         // its automatic setting may render below the window's own scale and
         // stretch the result to the size asked for. The recorder already asks
-        // for the best one; this is the only window stream here.
+        // for the best one; this is the screenshot tool's only window stream.
         configuration.captureResolution = .best
         configuration.showsCursor = false
         configuration.colorSpaceName = CGColorSpace.sRGB
@@ -239,7 +258,12 @@ enum ScreenshotCaptureEngine {
         // Requested dimensions alone do not restore pixels clipped there.
         configuration.ignoreGlobalClipSingleWindow = true
         let filter = SCContentFilter(desktopIndependentWindow: window)
-        return try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+        let capture = try? await SCScreenshotManager.captureImage(contentFilter: filter,
+                                                                  configuration: configuration)
+        if let capture, !ScreenshotSupport.isImageBlank(capture) {
+            return (capture, scale)
+        }
+        return clippedFallback.map { ($0, scale) }
     }
 
     /// Captures multiple selected windows together into a single composited image,

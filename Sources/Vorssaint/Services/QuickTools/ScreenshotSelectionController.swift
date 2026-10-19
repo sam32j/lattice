@@ -61,6 +61,7 @@ final class ScreenshotSelectionController {
     private var includePointer: Bool
     private let showLastRegion: Bool
     private var hideVorssaintWindows: Bool
+    private var previousFrontmostApp: NSRunningApplication?
     private let otherProtectedWindowIDs: () -> Set<CGWindowID>
     private let baseMode: Mode
     private let supportsScrollingCapture: Bool
@@ -148,6 +149,8 @@ final class ScreenshotSelectionController {
 
     /// The last confirmed region, per display, so R repeats it instantly.
     private static var lastRegion: (displayID: CGDirectDisplayID, viewRect: CGRect)?
+    /// Holds the initial screenshot cropped to the confirmed region for seamless scrolling capture preview handoff.
+    nonisolated(unsafe) static var lastInitialCapture: CGImage?
 
     /// True while a session owns the screen. Two surfaces at once would stack
     /// dim over dim and split the keyboard between them, so whichever feature
@@ -221,6 +224,7 @@ final class ScreenshotSelectionController {
         Self.isSessionOnScreen = true
         Self.activeSession = self
         self.completion = completion
+        self.previousFrontmostApp = NSWorkspace.shared.frontmostApplication
         screenCaptureOptions?.onSelectionChange = { [weak self] in
             self?.screenCaptureToolDidChange()
         }
@@ -266,8 +270,8 @@ final class ScreenshotSelectionController {
             if showLastRegion, let last = Self.lastRegion, last.displayID == displayID {
                 panel.overlayView.ghostRect = last.viewRect
             }
-            // Populate the retained backing store before a full-screen
-            // opaque panel can expose its black background for one frame.
+            // Prime pointer state BEFORE display so initial frame already punches out hovered window
+            panel.overlayView.refreshPointerState()
             panel.contentView?.layoutSubtreeIfNeeded()
             panel.display()
             panels.append(panel)
@@ -286,6 +290,7 @@ final class ScreenshotSelectionController {
         // resigning a full-screen key panel can flash the surrounding chrome.
         screenCaptureOptions?.onPresentationReady?()
         guard !finished else { return }
+        NSApp.activate(ignoringOtherApps: true)
         panels.forEach { $0.orderFrontRegardless() }
         if let keyPanel = keyPanelUnderMouse() ?? panels.first {
             keyPanel.makeKeyAndOrderFront(nil)
@@ -315,6 +320,9 @@ final class ScreenshotSelectionController {
     }
 
     private func screenCaptureToolDidChange() {
+        if activeTool != .recording && !RecorderOverlayController.shared.isRecording {
+            RecorderOverlayController.shared.stop()
+        }
         if let activeTool {
             let defaults = UserDefaults.standard
             let nextPolicy = ScreenshotSupport.unifiedCapturePolicy(
@@ -453,7 +461,7 @@ final class ScreenshotSelectionController {
             case kVK_Return, kVK_ANSI_KeypadEnter:
                 self.confirmSelectionWithKeyboard()
             case _ where Self.matchesShortcutKey(event, character: "f", physicalKeyCode: kVK_ANSI_F):
-                guard !self.hasSelectedWindows else { return event }
+                guard !self.hasSelectedWindows, self.offersFullScreenCapture else { return event }
                 self.captureFullDisplayUnderMouse()
             case kVK_Space:
                 if let panel = self.panelUnderMouse(), panel.overlayView.isDragging {
@@ -475,6 +483,10 @@ final class ScreenshotSelectionController {
                 if self.activeTool == .recording {
                     self.screenCaptureOptions?.recorderAudio.microphone.toggle()
                 }
+            case _ where self.activeTool == .recording && Self.matchesShortcutKey(event, character: "c", physicalKeyCode: kVK_ANSI_C):
+                if !event.isARepeat { RecorderOverlayController.shared.toggleCamera() }
+            case _ where self.activeTool == .recording && Self.matchesShortcutKey(event, character: "k", physicalKeyCode: kVK_ANSI_K):
+                if !event.isARepeat { RecorderOverlayController.shared.keysEnabled.toggle() }
             case _ where Self.isLoupeKey(event):
                 guard !self.hasSelectedWindows else { return event }
                 self.toggleLoupe()
@@ -705,14 +717,25 @@ final class ScreenshotSelectionController {
 
         Task { @MainActor [weak self] in
             guard let self else { return }
-            guard let capture = await ScreenshotCaptureEngine.captureMultipleWindows(
-                windowIDs, scale: scale) else {
+            var capture = await ScreenshotCaptureEngine.captureMultipleWindows(
+                windowIDs, scale: scale)
+            let isBlank = capture.map { ScreenshotSupport.isImageBlank($0.image) } ?? true
+            if isBlank {
+                let pixelRect = ScreenshotSupport.imagePixelRect(
+                    fromView: unionViewFrame,
+                    viewSize: firstPanel.screenFrame.size,
+                    imageSize: firstPanel.frozenImageSize ?? firstPanel.pixelSize)
+                if let fallbackCrop = firstPanel.frozenImage?.cropping(to: pixelRect) {
+                    capture = (fallbackCrop, firstPanel.pixelScale)
+                }
+            }
+            guard let finalCapture = capture else {
                 self.finish(.failed)
                 return
             }
             self.finish(.captured(Capture(
-                image: capture.image,
-                scale: capture.scale,
+                image: finalCapture.image,
+                scale: finalCapture.scale,
                 anchorRect: ScreenshotSupport.cocoaRect(
                     fromFlippedView: unionViewFrame,
                     screenFrame: firstPanel.screenFrame))))
@@ -779,7 +802,13 @@ final class ScreenshotSelectionController {
             return
         }
         if scrollingCaptureEnabled {
-            finish(.scrollingRegion(region(fromView: viewRect, on: panel, windowID: nil)))
+            let reg = region(fromView: viewRect, on: panel, windowID: nil)
+            let pixelRect = ScreenshotSupport.imagePixelRect(
+                fromView: viewRect,
+                viewSize: panel.screenFrame.size,
+                imageSize: panel.frozenImageSize ?? panel.pixelSize)
+            Self.lastInitialCapture = panel.frozenImage?.cropping(to: pixelRect)
+            finish(.scrollingRegion(reg))
             return
         }
         let pixelRect = ScreenshotSupport.imagePixelRect(
@@ -817,21 +846,40 @@ final class ScreenshotSelectionController {
             return
         }
         if scrollingCaptureEnabled {
-            finish(.scrollingRegion(region(fromView: frame, on: panel, windowID: windowID)))
+            let reg = region(fromView: frame, on: panel, windowID: windowID)
+            let pixelRect = ScreenshotSupport.imagePixelRect(
+                fromView: frame,
+                viewSize: panel.screenFrame.size,
+                imageSize: panel.frozenImageSize ?? panel.pixelSize)
+            Self.lastInitialCapture = panel.frozenImage?.cropping(to: pixelRect)
+            finish(.scrollingRegion(reg))
             return
         }
         Task { @MainActor [weak self] in
             guard let self else { return }
-            // A composite with an attached dialog may be captured at another
-            // display's scale than this panel's; record the one it has.
-            guard let capture = await ScreenshotCaptureEngine.captureWindow(
-                windowID, scale: panel.pixelScale) else {
+            var capture = await ScreenshotCaptureEngine.captureWindow(
+                windowID, scale: panel.pixelScale)
+
+            // If window-specific capture failed or delivered an empty/blank image (e.g. out-of-process Metal, Chromium, or Mission Control),
+            // fall back to cropping the window area directly from the frozen display image.
+            let isBlank = capture.map { ScreenshotSupport.isImageBlank($0.image) } ?? true
+            if isBlank {
+                let pixelRect = ScreenshotSupport.imagePixelRect(
+                    fromView: frame,
+                    viewSize: panel.screenFrame.size,
+                    imageSize: panel.frozenImageSize ?? panel.pixelSize)
+                if let fallbackCrop = panel.frozenImage?.cropping(to: pixelRect) {
+                    capture = (fallbackCrop, panel.pixelScale)
+                }
+            }
+
+            guard let finalCapture = capture else {
                 self.finish(.failed)
                 return
             }
             self.finish(.captured(Capture(
-                image: capture.image,
-                scale: capture.scale,
+                image: finalCapture.image,
+                scale: finalCapture.scale,
                 anchorRect: ScreenshotSupport.cocoaRect(
                     fromFlippedView: frame,
                     screenFrame: panel.screenFrame))))
@@ -951,6 +999,9 @@ final class ScreenshotSelectionController {
 
     private func finish(_ outcome: Outcome) {
         guard !finished else { return }
+        if activeTool == .recording {
+            if case .region = outcome {} else { RecorderOverlayController.shared.stop() }
+        }
         finished = true
         selectedWindows.removeAll()
         Self.isSessionOnScreen = false
@@ -979,6 +1030,10 @@ final class ScreenshotSelectionController {
             cursorPushed = false
         }
         NSCursor.arrow.set()
+        if let previous = previousFrontmostApp, previous.bundleIdentifier != Bundle.main.bundleIdentifier {
+            previous.activate(options: [])
+        }
+        self.previousFrontmostApp = nil
         let completion = completion
         self.completion = nil
         completion?(outcome)
@@ -987,8 +1042,7 @@ final class ScreenshotSelectionController {
 
 // MARK: - Panel
 
-/// Full-screen borderless panel for one display. Never activates the app;
-/// becomes key only so Esc and friends arrive.
+/// Full-screen borderless panel for one display.
 private final class ScreenshotOverlayPanel: OverlayPanel {
     let screenFrame: CGRect
     let displayID: CGDirectDisplayID
@@ -1025,12 +1079,12 @@ private final class ScreenshotOverlayPanel: OverlayPanel {
         self.frozenImage = frozenImage
         pixelScale = screen.backingScaleFactor
         super.init(contentRect: screen.frame,
-                   styleMask: [.borderless, .nonactivatingPanel],
+                   styleMask: [.borderless],
                    backing: .buffered,
                    defer: false)
         isReleasedWhenClosed = false
-        isOpaque = frozenImage != nil
-        backgroundColor = frozenImage == nil ? NSColor(white: 0, alpha: 0.005) : .black
+        isOpaque = false
+        backgroundColor = .clear
         hasShadow = false
         level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
@@ -1068,8 +1122,8 @@ private final class ScreenshotOverlayPanel: OverlayPanel {
     /// panel ever leaving the screen.
     func update(frozenImage: CGImage?, windows: [ScreenshotSupport.PickableWindow]) {
         self.frozenImage = frozenImage
-        isOpaque = frozenImage != nil
-        backgroundColor = frozenImage == nil ? NSColor(white: 0, alpha: 0.005) : .black
+        isOpaque = false
+        backgroundColor = .clear
         backdropView.image = frozenImage.map { NSImage(cgImage: $0, size: screenFrame.size) }
         overlayView.update(frozenImage: frozenImage, windows: windows)
     }
@@ -1435,6 +1489,12 @@ private final class ScreenshotOverlayView: NSView {
                 fromCenter: event.modifierFlags.contains(.option))
         }
         selection = ScreenshotSupport.clamp(selection, to: bounds)
+        if controller.activeTool == .recording, let panel {
+            let anchor = ScreenshotSupport.cocoaRect(fromFlippedView: selection, screenFrame: panel.screenFrame)
+            let scale = panel.screen?.backingScaleFactor ?? 1
+            RecorderOverlayController.shared.updateRegion(anchorRect: anchor,
+                pixelSize: CGSize(width: selection.width * scale, height: selection.height * scale))
+        }
         lastDragPoint = point
         needsDisplay = true
     }
@@ -2637,6 +2697,9 @@ private struct RecorderSelectionAudioControls: View {
             }
             .buttonStyle(.plain)
             .focusable(false)
+            .contextMenu { RecorderInputSourceMenu(camera: false) }
+
+            RecorderOverlayInputControls()
         }
         .padding(3)
         .background(CaptureChromeBackdrop(material: .regularMaterial,

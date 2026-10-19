@@ -11,7 +11,7 @@
 "NSMicrophoneUsageDescription" = "O Vorssaint grava seu microfone apenas quando você o ativa em uma gravação de tela. O áudio fica no seu Mac, a menos que você escolha criar um link temporário.";
 
 /* macOS Camera permission prompt. */
-"NSCameraUsageDescription" = "O Vorssaint mostra sua câmera apenas na janela de prévia que você abre, para conferir como você está antes de uma chamada. Nada é gravado nem sai do seu Mac.";
+"NSCameraUsageDescription" = "O Lattice usa a câmera ao abrir a prévia ou ativar a sobreposição em uma gravação de tela. O vídeo só é gravado quando você o ativa e fica no Mac, a menos que escolha compartilhá-lo.";
 
 /* macOS Downloads folder permission prompt. */
 "NSDownloadsFolderUsageDescription" = "O Vorssaint consulta metadados locais em Downloads para revisar, organizar ou mover para a Lixeira apenas os arquivos confirmados do WhatsApp que você escolher. A Limpeza também procura capturas de tela esquecidas quando você as salva aqui.";

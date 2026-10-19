@@ -242,12 +242,20 @@ final class RecorderMicrophoneCapture: NSObject,
                                        AVCaptureAudioDataOutputSampleBufferDelegate,
                                        @unchecked Sendable {
     var onSample: ((CMSampleBuffer) -> Void)?
+    var onUnavailable: (() -> Void)?
 
     private let queue = DispatchQueue(label: "com.vorssaint.recorder.microphone",
                                       qos: .userInitiated)
     private let session = AVCaptureSession()
     private var targetClock: CMClock?
     private var configured = false
+    private let deviceID: String?
+    private var deviceObservers: [NSObjectProtocol] = []
+
+    init(deviceID: String? = nil) {
+        self.deviceID = deviceID
+        super.init()
+    }
 
     func start(synchronizingTo clock: CMClock) async -> Bool {
         await withCheckedContinuation { continuation in
@@ -266,8 +274,15 @@ final class RecorderMicrophoneCapture: NSObject,
     func stop() async {
         await withCheckedContinuation { continuation in
             queue.async { [self] in
+                deviceObservers.forEach { NotificationCenter.default.removeObserver($0) }
+                deviceObservers.removeAll()
                 if session.isRunning { session.stopRunning() }
                 targetClock = nil
+                session.beginConfiguration()
+                for input in session.inputs { session.removeInput(input) }
+                for output in session.outputs { session.removeOutput(output) }
+                session.commitConfiguration()
+                configured = false
                 continuation.resume()
             }
         }
@@ -275,7 +290,9 @@ final class RecorderMicrophoneCapture: NSObject,
 
     private func configureIfNeeded() -> Bool {
         if configured { return true }
-        guard let device = AVCaptureDevice.default(for: .audio),
+        let selected = deviceID.flatMap { id in RecorderCaptureInputs.microphones.first { $0.uniqueID == id } }
+            ?? (deviceID == nil ? AVCaptureDevice.default(for: .audio) : nil)
+        guard let device = selected,
               let input = try? AVCaptureDeviceInput(device: device)
         else { return false }
 
@@ -286,6 +303,18 @@ final class RecorderMicrophoneCapture: NSObject,
         session.addInput(input)
         session.addOutput(output)
         output.setSampleBufferDelegate(self, queue: queue)
+        let center = NotificationCenter.default
+        for (name, object) in [(AVCaptureDevice.wasDisconnectedNotification, device as AnyObject),
+                               (AVCaptureSession.runtimeErrorNotification, session as AnyObject)] {
+            deviceObservers.append(center.addObserver(forName: name, object: object, queue: nil) { [weak self] _ in
+                self?.queue.async { [weak self] in
+                    guard let self, self.targetClock != nil else { return }
+                    self.targetClock = nil
+                    if self.session.isRunning { self.session.stopRunning() }
+                    DispatchQueue.main.async { [weak self] in self?.onUnavailable?() }
+                }
+            })
+        }
         configured = true
         return true
     }

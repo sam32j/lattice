@@ -277,7 +277,7 @@ private final class PinControlPanel: OverlayPanel {
         isOpaque = false
         backgroundColor = .clear
         hasShadow = false
-        level = .floating
+        level = ScreenshotPinWindow.pinLevel
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         hidesOnDeactivate = false
     }

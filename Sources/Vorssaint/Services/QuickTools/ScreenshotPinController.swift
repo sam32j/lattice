@@ -10,6 +10,9 @@ final class ScreenshotPinController {
     private var escapeMonitor: Any?
     private var gestureMonitor: Any?
     private var localGestureMonitor: Any?
+    private weak var activeGesturePin: ScreenshotPinWindow?
+    private var lastGestureTime: TimeInterval = 0
+    private var gestureFinished = false
     private var hoverTimer: Timer?
     private var preferenceObserver: NSObjectProtocol?
     private var dragObservers: [NSObjectProtocol] = []
@@ -48,9 +51,9 @@ final class ScreenshotPinController {
         pin.onSave = { [weak pin] in pin.map { Self.save($0) } }
         pin.onCloseAll = { [weak self] in self?.closeAll() }
         pin.onClickThroughChanged = { [weak self] in self?.refreshEscapeMonitor() }
-        pin.onReopenPreview = { [weak pin] in
+        pin.onEdit = { [weak pin] in
             guard let pin else { return }
-            ScreenshotService.shared.reopenPreview(image: pin.image, scale: pin.captureScale, anchorRect: pin.frame)
+            ScreenshotService.shared.openEditor(with: .init(image: pin.image, scale: pin.captureScale, anchorRect: pin.frame))
         }
         let offset = CGFloat(pins.count % 5) * 26
         pin.setFrameOrigin(CGPoint(x: pin.frame.minX + offset, y: pin.frame.minY - offset))
@@ -109,6 +112,7 @@ final class ScreenshotPinController {
 
     private func refreshGestureMonitor() {
         guard !pins.isEmpty else {
+            activeGesturePin = nil
             if let monitor = gestureMonitor {
                 NSEvent.removeMonitor(monitor)
                 gestureMonitor = nil
@@ -121,33 +125,46 @@ final class ScreenshotPinController {
         }
         if gestureMonitor == nil {
             gestureMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.gesture, .magnify]) { [weak self] event in
-                guard let pin = self?.gestureTarget() else { return }
-                if !NSApp.isActive || !pin.isKeyWindow {
-                    NSApp.activate(ignoringOtherApps: true)
-                    pin.makeKeyAndOrderFront(nil)
-                    pin.makeFirstResponder(pin.contentView)
-                }
-                pin.handleGestureEvent(event)
+                self?.routeGesture(event)
             }
         }
         if localGestureMonitor == nil {
             localGestureMonitor = NSEvent.addLocalMonitorForEvents(matching: [.gesture, .magnify]) { [weak self] event in
-                guard let pin = self?.gestureTarget() else { return event }
-                if event.type == .magnify {
-                    pin.magnify(with: event)
-                    return nil
-                }
-                pin.handleGestureEvent(event)
-                return nil
+                self?.routeGesture(event) == true ? nil : event
             }
         }
     }
 
-    private func gestureTarget() -> ScreenshotPinWindow? {
+    @discardableResult private func routeGesture(_ event: NSEvent) -> Bool {
         let location = NSEvent.mouseLocation
-        return pins.first {
-            $0.isVisible && !$0.isHiddenForDrag && $0.frame.contains(location) && !$0.isClosed && !$0.isPositionLocked && !$0.ignoresMouseEvents
+        let time = ProcessInfo.processInfo.systemUptime
+        let sequenceBegan = event.phase.contains(.began)
+            || (event.type == .gesture && event.allTouches().contains { $0.phase == .began })
+        // Retain the target while fingers move beyond the pin. A quiet gap
+        // recovers ownership if AppKit omitted the preceding end packet.
+        if activeGesturePin == nil || time - lastGestureTime > 0.25
+            || (gestureFinished && sequenceBegan) {
+            activeGesturePin?.resetGestureTracking()
+            let windows = NSApp.orderedWindows.filter { window in
+                window.isVisible && pins.contains { $0 === window }
+            }
+            activeGesturePin = ScreenshotPinWindow.gestureTarget(at: location, windows: windows)
+            activeGesturePin?.resetGestureTracking()
+            gestureFinished = false
         }
+        guard let pin = activeGesturePin, pin.isVisible, !pin.isClosed,
+              !pin.isPositionLocked, !pin.ignoresMouseEvents, !pin.isHiddenForDrag else {
+            activeGesturePin?.resetGestureTracking()
+            activeGesturePin = nil
+            return false
+        }
+        lastGestureTime = time
+        pin.handleGestureEvent(event, screenLocation: location)
+        if event.phase.contains(.ended) || event.phase.contains(.cancelled)
+            || (event.type == .gesture && event.allTouches().allSatisfy {
+                $0.phase == .ended || $0.phase == .cancelled
+            }) { gestureFinished = true }
+        return true
     }
 
     private func refreshEscapeMonitor() {
@@ -177,15 +194,19 @@ final class ScreenshotPinController {
 
     private static func save(_ pin: ScreenshotPinWindow) {
         let strings = FeatureStrings.screenshot(L10n.shared.language)
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = ScreenshotSupport.fileName(prefix: strings.fileNamePrefix, date: Date())
-        NSApp.activate(ignoringOtherApps: true)
-        panel.begin { response in
-            guard response == .OK, let url = panel.url,
-                  let data = ScreenshotRenderer.pngData(from: pin.image, scale: pin.captureScale) else { return }
-            do { try data.write(to: url, options: .atomic) }
-            catch { NSSound.beep() }
+        guard let data = ScreenshotRenderer.pngData(from: pin.image, scale: pin.captureScale) else {
+            NSSound.beep()
+            return
+        }
+        let (url, number) = ScreenshotService.saveDestination(strings: strings)
+        do {
+            try data.write(to: url, options: .withoutOverwriting)
+            ScreenshotSupport.markAsScreenCapture(url)
+            QuickToolHUD.show(icon: "camera.viewfinder", message: String(format: strings.savedHUDFormat,
+                url.deletingLastPathComponent().lastPathComponent))
+        } catch {
+            if let number { ScreenshotService.rewindNumberSequence(toReuse: number) }
+            QuickToolHUD.show(icon: "exclamationmark.triangle", message: error.localizedDescription)
         }
     }
 }
