@@ -2,6 +2,23 @@
 
 ## [3.4.1-d.2] - 2026-10-17
 
+## [3.4.1-d.4] - 2026-10-19
+
+### Added
+- **Capture**: Improve scrolling previews and recording overlays (#6)
+  - Improve scrolling capture stitching, selection, preview layout, and
+  - Open quick previews in native Quick Look with Escape dismissal,
+  - Add pinned-image zoom and opacity presets, focused keyboard actions,
+  - Add composited camera PiP and individual-keystroke overlays to
+  - Preserve Features scroll/navigation state while retaining the latest
+  - 10,096 checks passed across screenshot-pins, screenshots, recorder,
+  - Development build passed: ./build.sh --dev.
+  - App health check passed: ./build/LatticeDeveloper --selftest.
+  - Diff checks passed and working tree is clean. Full test suite was not
+  - Coverage includes native pin/Quick Look checks, synthetic gestures,
+  - Physical camera and Continuity devices, real trackpad behavior, and
+  - No release published or installed application replaced.
+
 ## [3.4.1-d.3] - 2026-10-19
 
 ### Added
