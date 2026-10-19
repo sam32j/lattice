@@ -84,6 +84,7 @@ final class ScreenshotService: ObservableObject {
             ids.formUnion(editor.protectedWindowIDs)
         }
         ids.formUnion(ScreenshotPinController.shared.protectedWindowIDs)
+        ids.formUnion(ScreenshotQuickLookController.shared.protectedWindowIDs)
         return ids
     }
 

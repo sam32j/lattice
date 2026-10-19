@@ -82,5 +82,6 @@ enum ScreenshotPinWindowTests {
         suite.expect(pin.isClosed && closed == 1, "a successful ordinary file drop closes its pin once")
         ScreenshotPinFilePromiseTests.run(suite, image: image)
         ScreenshotPinChromeTests.run(suite, image: image)
+        ScreenshotQuickLookTests.run(suite, image: image)
     }
 }

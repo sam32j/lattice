@@ -510,6 +510,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinGestureView.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinFeedbackView.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinWindow.swift
+        Sources/Vorssaint/Services/QuickTools/ScreenshotQuickLookController.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinContentView.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinChrome.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinFilePromise.swift

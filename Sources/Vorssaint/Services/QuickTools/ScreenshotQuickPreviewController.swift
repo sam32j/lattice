@@ -109,6 +109,14 @@ final class ScreenshotQuickPreviewController {
             showQR: { [weak self] in self?.showQRResult() },
             copyText: { [weak self] in self?.copyText() },
             dismiss: { [weak self] in self?.close() },
+            expand: { [weak self] in
+                guard let self else { return }
+                self.dismissWork?.cancel()
+                if !ScreenshotQuickLookController.shared.show(image: self.capture.image,
+                    scale: self.capture.scale, owner: self.panel ?? NotchService.shared.presentationWindow) {
+                    NSSound.beep()
+                }
+            },
             hoverChanged: { [weak self] inside in self?.hoverChanged(inside) },
             showsDismissButton: presentationPolicy.showsDismissButton,
             embedded: wantsNotch)
@@ -544,6 +552,7 @@ private struct ScreenshotQuickPreviewView: View {
     let showQR: () -> Void
     let copyText: () -> Void
     let dismiss: () -> Void
+    let expand: () -> Void
     let hoverChanged: (Bool) -> Void
     let showsDismissButton: Bool
     var embedded = false
@@ -794,6 +803,7 @@ private struct ScreenshotQuickPreviewView: View {
                             .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
                     )
                     .onDrag(dragItem)
+                    .onTapGesture(count: 2, perform: expand)
 
                 if !embedded {
                     VStack {
