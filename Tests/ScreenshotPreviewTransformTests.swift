@@ -32,6 +32,16 @@ enum ScreenshotPreviewTransformTests {
         suite.expect(ScreenshotWindowLayering.editorLevel(above: owner).rawValue > owner.level.rawValue
                      && ScreenshotWindowLayering.editorLevel(above: nil) == .normal,
                      "only a pin-owned editor is elevated above its owner")
+        let editorWindow = NSWindow()
+        editorWindow.isReleasedWhenClosed = false
+        editorWindow.level = ScreenshotWindowLayering.editorLevel(above: owner)
+        defer { editorWindow.close() }
+        let dialogLevel = ScreenshotWindowLayering.dialogLevel(above: editorWindow)
+        suite.expect(dialogLevel.rawValue > editorWindow.level.rawValue
+                     && dialogLevel.rawValue >= NSWindow.Level.modalPanel.rawValue,
+                     "dialogs sit strictly above the editor window level even when editor is above a pinned window")
+        suite.expect(ScreenshotWindowLayering.dialogLevel(above: nil) == .modalPanel,
+                     "dialog level defaults to modalPanel when owner window is nil")
         let rawFinderPaths = "/tmp/file\nwith\nnewlines.png\0/tmp/other.png\0"
         let parsed = rawFinderPaths.split(separator: "\0").map { String($0) }.filter { !$0.isEmpty }.map { URL(fileURLWithPath: $0) }
         suite.expect(parsed.count == 2 && parsed.first?.path == "/tmp/file\nwith\nnewlines.png",
