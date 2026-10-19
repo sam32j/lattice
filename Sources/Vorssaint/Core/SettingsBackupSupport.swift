@@ -50,7 +50,6 @@ enum SettingsBackupSupport {
         Defaults.pageOwnedControlsMigrationKey,
         DefaultsKey.autoQuitEnabled,
         DefaultsKey.shelfEnabled,
-        DefaultsKey.finderCutPasteEnabled,
         DefaultsKey.textSnippets,
         DefaultsKey.radialMenuItems,
         DefaultsKey.radialMenuProfiles,

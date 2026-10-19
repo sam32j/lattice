@@ -8,7 +8,7 @@ import Foundation
 /// below and the unit tests can reason about pages without pulling UI in.
 enum SettingsPage: Hashable {
     case general, features, energy, monitor
-    case mouse, keyboard, switcher, dock, cutPaste, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, portManager, notch, notchMascot
+    case mouse, keyboard, switcher, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, portManager, notch, notchMascot
     case shortcuts, dataPermissions, about
 }
 
@@ -39,8 +39,6 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
     case dockClick
     case autoQuit
     case spacesOrder
-    case finderCutPaste
-    case finderRename
     case clipboardHistory
     case pastePlain
     case quickLauncher
@@ -81,7 +79,6 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
             return .scratchpad
         case .switcher: return .switcher
         case .dock, .dockClick, .spacesOrder, .autoQuit: return .dock
-        case .finderCutPaste, .finderRename: return .cutPaste
         case .clipboardHistory, .pastePlain: return .clipboard
         case .quickLauncher, .cameraPreview: return .shortcuts
         case .screenshot, .colorPicker, .screenOCR:
@@ -331,10 +328,6 @@ extension AppFeature {
             return FeatureSettingsDestination(.clipboard, sectionAnchor: .clipboardHistory)
         case .pastePlain:
             return FeatureSettingsDestination(.clipboard, sectionAnchor: .pastePlain)
-        case .finderCutPaste:
-            return FeatureSettingsDestination(.cutPaste, sectionAnchor: .finderCutPaste)
-        case .finderRename:
-            return FeatureSettingsDestination(.cutPaste, sectionAnchor: .finderRename)
         case .shelf: return FeatureSettingsDestination(.shelf)
         case .urlCleaner: return FeatureSettingsDestination(.urlCleaner)
         case .diskImageInstaller: return FeatureSettingsDestination(.features)
@@ -416,7 +409,6 @@ enum FeatureVisibilitySupport {
         case .windowLayout: return [.windowLayout, .windowMaximizer]
         case .wallpaper: return [.wallpaper]
         case .clipboard: return [.clipboardHistory, .pastePlain]
-        case .cutPaste: return [.finderCutPaste, .finderRename]
         case .shelf: return [.shelf]
         case .media: return [.mediaTools]
         case .audioInput: return [.micMute, .audioPriority, .mixer]

@@ -74,7 +74,7 @@ struct ShelfSettings: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             if shortcutAddsFinderSelection {
-                                Text(l10n.s.cutPasteAutomationNote)
+                                Text(l10n.s.finderAutomationNote)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }

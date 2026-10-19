@@ -39,8 +39,8 @@ enum SettingsSidebarIdentityTests {
                      "Dock and Window Management own their controls without duplicate sidebar entrances")
         suite.expect(desktop.contains { $0.destination.page == AppFeature.wallpaper.settingsDestination.page },
                      "Wallpaper belongs to the Desktop & Dock category")
-        suite.expect(!sections.flatMap(\.items).contains { $0.id == .feature(.pastePlain) || $0.id == .feature(.finderRename) },
-                     "Clipboard and Finder expose one page rather than entries for their child controls")
+        suite.expect(!sections.flatMap(\.items).contains { $0.id == .feature(.pastePlain) },
+                     "Clipboard exposes one page rather than entries for its child controls")
         let off = Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in false })
         suite.expect(off.first { $0.id == 2 }?.items.contains { $0.id == .feature(.brightness) } == true,
                      "supported XDR controls keep Displays discoverable when optional features are off")

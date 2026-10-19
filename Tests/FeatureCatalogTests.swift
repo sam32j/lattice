@@ -386,14 +386,14 @@ enum FeatureCatalogTests {
 
         // MARK: Features hub catalog
 
-        suite.expect(AppFeature.allCases.count == 76, "feature catalog has 76 features")
+        suite.expect(AppFeature.allCases.count == 74, "feature catalog has 74 features")
         suite.expect(Set(AppFeature.allCases.map(\.rawValue)).count == AppFeature.allCases.count,
                "feature ids are unique")
         suite.expect(AppFeature.allCases.map(\.rawValue) == [
             "switcher", "dockPreview", "dockClick", "windowMaximizer", "windowLayout", "autoQuit", "spacesOrder",
             "scrollInverter", "scrollHorizontal", "focusFollowsMouse", "smoothScroll", "linearScroll", "mouseAcceleration", "mouseNavigation", "mouseButtonShortcuts", "middleClick",
             "mouseClickDebounce", "keyboardDebounce", "textSnippets", "superKey", "quitWindowProtection",
-            "clipboardHistory", "pastePlain", "finderCutPaste", "finderRename", "shelf", "urlCleaner",
+            "clipboardHistory", "pastePlain", "shelf", "urlCleaner",
             "diskImageInstaller",
             "mixer", "soundOutputSwitcher", "audioPriority", "micMute", "musicBlock",
             "keepAwake", "brightness", "extraBrightness", "bluetoothSleep",
@@ -572,7 +572,7 @@ enum FeatureCatalogTests {
             "scrollInverter", "smoothScroll", "mouseAcceleration", "mouseNavigation", "mouseButtonShortcuts",
             "middleClick", "mouseClickDebounce", "keyboardDebounce", "textSnippets", "superKey",
             "quitWindowProtection",
-            "clipboardHistory", "pastePlain", "finderCutPaste", "finderRename", "shelf", "urlCleaner",
+            "clipboardHistory", "pastePlain", "shelf", "urlCleaner",
             "mixer", "soundOutputSwitcher", "micMute", "musicBlock",
             "keepAwake", "brightness", "extraBrightness", "bluetoothSleep",
             "quickLauncher", "colorPicker", "screenOCR", "cleaningMode", "mediaTools",
@@ -1374,8 +1374,6 @@ enum FeatureCatalogTests {
                 && activeSet(.accessibility, available: [.musicBlock]).isEmpty
                 && activeSet(.accessibility, available: [], on: [DefaultsKey.musicBlockEnabled]).isEmpty,
                "music blocking requires access only while both enabled and installed")
-        suite.expect(activeSet(.accessibility, on: [DefaultsKey.finderRenameEnabled]).contains(.finderRename),
-               "the enabled Finder rename shortcut uses accessibility")
         suite.expect(!activeSet(.accessibility, available: [], on: [DefaultsKey.scrollInverterEnabled])
                 .contains(.scrollInverter),
                "an unavailable feature never uses a permission")
@@ -1444,12 +1442,6 @@ enum FeatureCatalogTests {
                "an unscheduled cleaner does not use notifications")
         suite.expect(activeSet(.fullDiskAccess) == [.cleaner, .uninstaller],
                "cleaner and uninstaller are on-demand full disk users")
-        suite.expect(activeSet(.automationFinder, on: [DefaultsKey.finderCutPasteEnabled])
-                == [.finderCutPaste, .uninstaller, .commandBar],
-               "finder automation is used by cut and paste, the uninstaller and Command Bar trash")
-        suite.expect(activeSet(.automationFinder, on: [DefaultsKey.finderPasteImageAsFile])
-                == [.finderCutPaste, .uninstaller, .commandBar],
-               "pasting copied images as files engages the shared Finder feature")
         suite.expect(AppFeature.commandBar.permissions.contains(.automationFinder),
                "Command Bar declares the Finder permission used by its Trash action")
         suite.expect(activeSet(.automationTerminal) == [.homebrew], "homebrew drives the Terminal")
@@ -1760,7 +1752,6 @@ enum FeatureCatalogTests {
                 && AppFeature.dockPreview.energyProfile == .mouse
                 && AppFeature.mouseClickDebounce.energyProfile == .mouse
                 && AppFeature.switcher.energyProfile == .inputs
-                && AppFeature.finderRename.energyProfile == .keyboard
                 && AppFeature.musicBlock.energyProfile == .keyboard
                 && AppFeature.colorPicker.energyProfile == .idle
                 && AppFeature.keepAwake.energyProfile == .idle
@@ -1916,15 +1907,9 @@ enum FeatureCatalogTests {
                "app pages never hide")
         suite.expect(!pageVisible(.shelf, available: allFeatures.subtracting([.shelf])),
                "single-feature pages follow their feature")
-        suite.expect(pageVisible(.cutPaste, available: [.finderRename])
-                && pageVisible(.cutPaste, available: [.finderCutPaste])
-                && !pageVisible(.cutPaste, available: []),
-               "either Finder shortcut keeps their shared page visible")
         suite.expect(!pageVisible(.cleaner,
                             available: allFeatures.subtracting([.cleaner])),
                "cleaner settings follow the cleaner module")
-        suite.expect(!pageVisible(.clipboard, available: [.finderCutPaste]),
-               "Finder controls do not keep Clipboard History settings installed")
         suite.expect(AppFeature.allCases.allSatisfy { feature in
             let destination = feature.settingsDestination
             let gate = FeatureVisibilitySupport.features(for: destination.page)
