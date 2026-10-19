@@ -37,12 +37,13 @@ enum RecorderOverlayTests {
         layout.place(origin: CGPoint(x: -200, y: 3000), in: regular)
         suite.expect(CGRect(origin: .zero, size: regular).contains(layout.frame(in: regular)),
                      "dragging a PiP past an edge keeps it inside the selection")
-        var magnetic = RecorderCameraLayout()
-        magnetic.size = .small
-        magnetic.place(origin: CGPoint(x: 10, y: 10), in: regular)
-        suite.expect(magnetic.frame(in: regular).origin == .zero, "camera snaps flush to the selection edge")
-        magnetic.place(origin: CGPoint(x: 40, y: 40), in: regular)
-        suite.expect(magnetic.frame(in: regular).origin == CGPoint(x: 40, y: 40),
-                     "camera moves freely away from the snapping zone")
+        var snapper = RecorderCameraLayout()
+        snapper.size = .small
+        snapper.place(origin: CGPoint(x: 10, y: 10), in: regular)
+        suite.expect(snapper.frame(in: regular).origin == CGPoint(x: 10, y: 10),
+                     "camera drags smoothly without magnet jumps")
+        snapper.snapToNearestEdge(in: regular)
+        suite.expect(snapper.frame(in: regular).origin.x == 0 || snapper.frame(in: regular).origin.y == 0,
+                     "camera snaps to the nearest selection edge on release")
     }
 }

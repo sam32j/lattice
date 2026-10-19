@@ -53,16 +53,33 @@ struct RecorderCameraLayout: Equatable {
         guard !isFullArea, origin.x.isFinite, origin.y.isFinite else { return }
         let bounds = usableBounds(canvas)
         let current = frame(in: canvas)
-        func snapped(_ value: CGFloat, lower: CGFloat, upper: CGFloat) -> CGFloat {
-            let clamped = min(max(value, lower), upper)
-            if clamped - lower < 18 * pixelsPerPoint { return lower }
-            if upper - clamped < 18 * pixelsPerPoint { return upper }
-            return clamped
-        }
-        let x = snapped(origin.x, lower: bounds.minX, upper: bounds.maxX - current.width)
-        let y = snapped(origin.y, lower: bounds.minY, upper: bounds.maxY - current.height)
+        let x = min(max(origin.x, bounds.minX), bounds.maxX - current.width)
+        let y = min(max(origin.y, bounds.minY), bounds.maxY - current.height)
         position = CGPoint(x: bounds.width > current.width ? (x - bounds.minX) / (bounds.width - current.width) : 0,
                            y: bounds.height > current.height ? (y - bounds.minY) / (bounds.height - current.height) : 0)
+    }
+
+    mutating func snapToNearestEdge(in canvas: CGSize) {
+        guard !isFullArea else { return }
+        let bounds = usableBounds(canvas)
+        let current = frame(in: canvas)
+        guard bounds.width > current.width || bounds.height > current.height else { return }
+
+        let distLeft = current.minX - bounds.minX
+        let distRight = bounds.maxX - current.maxX
+        let distBottom = current.minY - bounds.minY
+        let distTop = bounds.maxY - current.maxY
+
+        let minDist = min(distLeft, distRight, distBottom, distTop)
+        if minDist == distLeft {
+            position.x = 0
+        } else if minDist == distRight {
+            position.x = 1
+        } else if minDist == distBottom {
+            position.y = 0
+        } else {
+            position.y = 1
+        }
     }
 
     private func usableBounds(_ canvas: CGSize) -> CGRect {
