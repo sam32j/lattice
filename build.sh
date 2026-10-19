@@ -465,6 +465,7 @@ if (( TEST )); then
         Sources/Vorssaint/UI/Settings/SettingsSidebarSupport.swift
         Sources/Vorssaint/UI/Settings/FeatureVisibilitySupport.swift
         Sources/Vorssaint/UI/Settings/SettingsWindow.swift
+        Sources/Vorssaint/UI/Settings/SettingsDetailViewport.swift
         Sources/Vorssaint/UI/Settings/ReleaseNotesSettings.swift
         Sources/Vorssaint/UI/Settings/UpdateSettingsStatusRow.swift
         Sources/Vorssaint/UI/PermissionDetailsSheet.swift
