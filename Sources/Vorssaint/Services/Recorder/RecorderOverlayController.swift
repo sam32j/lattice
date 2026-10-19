@@ -95,6 +95,25 @@ final class RecorderOverlayController: ObservableObject {
                                      y: (origin.y - anchorRect.minY) * yScale), in: pixelSize)
     }
 
+    func snapCameraToNearestEdge(animated: Bool = true) {
+        guard !layout.isFullArea, cameraPanel != nil, anchorRect.width > 0, pixelSize.width > 0 else { return }
+        layout.snapToNearestEdge(in: pixelSize)
+        if animated {
+            let frame = layout.frame(in: pixelSize)
+            let points = CGRect(x: anchorRect.minX + frame.minX * anchorRect.width / pixelSize.width,
+                                y: anchorRect.minY + frame.minY * anchorRect.height / pixelSize.height,
+                                width: frame.width * anchorRect.width / pixelSize.width,
+                                height: frame.height * anchorRect.height / pixelSize.height)
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.22
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                cameraPanel?.animator().setFrame(points, display: true)
+            }
+        } else {
+            refreshLayout()
+        }
+    }
+
     func stop() {
         phase = .selecting
         cameraEnabled = false

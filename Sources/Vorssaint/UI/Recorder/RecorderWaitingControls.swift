@@ -52,11 +52,19 @@ private struct RecorderWaitingBar: View {
             .padding(6)
             .background(.regularMaterial, in: Capsule())
             HStack(spacing: 4) {
-                Button(action: start) { Image(systemName: "play.fill").frame(width: 28, height: 32) }
-                    .help(strings.startButton)
-                Button(action: cancel) {
-                    Image(systemName: "xmark").foregroundStyle(.red).frame(width: 28, height: 32)
+                Button(action: start) {
+                    Image(systemName: "play.fill")
+                        .frame(width: 28, height: 32)
                 }
+                .buttonStyle(WaitingFeedbackButtonStyle())
+                .help(strings.startButton)
+
+                Button(action: cancel) {
+                    Image(systemName: "xmark")
+                        .foregroundStyle(.red)
+                        .frame(width: 28, height: 32)
+                }
+                .buttonStyle(WaitingFeedbackButtonStyle(isDestructive: true))
                 .help(strings.cancelButton)
             }
             .padding(4)
@@ -76,5 +84,21 @@ private struct RecorderWaitingBar: View {
         }
         .help(title)
         .accessibilityLabel(title)
+    }
+}
+
+private struct WaitingFeedbackButtonStyle: ButtonStyle {
+    var isDestructive = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                Capsule()
+                    .fill(configuration.isPressed
+                          ? (isDestructive ? Color.red.opacity(0.2) : Color.accentColor.opacity(0.25))
+                          : Color.clear)
+            )
+            .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
