@@ -110,8 +110,7 @@ struct ClipboardSettings: View {
                     Text(l10n.s.pastePlainCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    ShortcutPreferenceRow(role: .pastePlain,
-                                          isEnabled: pastePlainEnabled) {
+                    ShortcutPreferenceRow(role: .pastePlain) {
                         PastePlainService.shared.syncWithPreferences()
                     }
                     if pastePlainEnabled, pastePlain.shortcutRegistrationFailed {
@@ -161,7 +160,6 @@ struct ClipboardSettings: View {
     private var clipboardShortcutSection: some View {
         Section(text.shortcut) {
             ShortcutPreferenceRow(role: .clipboard,
-                                  isEnabled: enabled && shortcutEnabled,
                                   additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
                 ClipboardHistoryService.shared.syncHotkey()
             }

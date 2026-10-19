@@ -300,6 +300,9 @@ enum DefaultsKey {
     static let keyboardDebounceWindowMs = "keyboardDebounceWindowMs"
     static let keyboardDebounceKeyWindows = "keyboardDebounceKeyWindows" // comma-separated keyCode:ms
     static let panelUtilityCleaning = "panelUtilityCleaning"
+    static let cleaningModeEnabled = "cleaningModeEnabled"
+    static let cleaningModeShortcut = "cleaningModeShortcut"
+    static let cleaningModeShortcutEnabled = "cleaningModeShortcutEnabled"
     static let cleaningModeKeepScreenVisible = "cleaningModeKeepScreenVisible"
     static let panelUtilityURLCleaner = "panelUtilityURLCleaner"
     static let panelUtilityUninstaller = "panelUtilityUninstaller"
@@ -948,7 +951,6 @@ enum DefaultsKey {
     static let radialMenuProfiles = "radialMenuProfiles"  // Data: [RadialMenuProfile] JSON
 
     // Dev-build only: force the "update available" UI for local testing.
-    static let simulateUpdate = "simulateUpdate"
     static let simulateBetaUI = "simulateBetaUI"
 
     /// Features hub availability layer, one key per AppFeature raw value.
@@ -1529,6 +1531,9 @@ enum Defaults {
         DefaultsKey.keyboardDebounceWindowMs: defaultKeyboardDebounceWindowMs,
         DefaultsKey.keyboardDebounceKeyWindows: "",
         DefaultsKey.panelUtilityCleaning: true,
+        DefaultsKey.cleaningModeEnabled: true,
+        DefaultsKey.cleaningModeShortcutEnabled: false,
+        DefaultsKey.cleaningModeShortcut: GlobalShortcut.cleaningModeDefault.storageValue,
         DefaultsKey.cleaningModeKeepScreenVisible: false,
         DefaultsKey.panelUtilityURLCleaner: true,
         DefaultsKey.panelUtilityUninstaller: true,

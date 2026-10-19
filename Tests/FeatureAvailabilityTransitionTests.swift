@@ -67,5 +67,42 @@ enum FeatureAvailabilityTransitionTests {
                      && !defaults.bool(forKey: DefaultsKey.screenOCRShortcutEnabled)
                      && !defaults.bool(forKey: DefaultsKey.colorPickerShortcutEnabled),
                      "orphaned shortcut migration never assigns a shortcut to a hidden companion")
+
+        defaults.set(false, forKey: DefaultsKey.focusFollowsMouseEnabled)
+        defaults.set(false, forKey: DefaultsKey.superKeyEnabled)
+        service.setAllAvailable(true)
+        suite.expect(!defaults.bool(forKey: DefaultsKey.focusFollowsMouseEnabled)
+                     && !defaults.bool(forKey: DefaultsKey.superKeyEnabled),
+                     "hub install-all leaves permanent mouse and keyboard controls off")
+        defaults.set(true, forKey: DefaultsKey.focusFollowsMouseEnabled)
+        defaults.set(true, forKey: DefaultsKey.superKeyEnabled)
+        service.setAllAvailable(false)
+        suite.expect(defaults.bool(forKey: DefaultsKey.focusFollowsMouseEnabled)
+                     && defaults.bool(forKey: DefaultsKey.superKeyEnabled),
+                     "hub uninstall-all preserves enabled mouse and keyboard preferences")
+        service.replaceAvailable(with: [])
+        suite.expect(defaults.bool(forKey: DefaultsKey.focusFollowsMouseEnabled)
+                     && defaults.bool(forKey: DefaultsKey.superKeyEnabled),
+                     "replacing hub installations does not reset permanent input preferences")
+        defaults.set(true, forKey: DefaultsKey.scrollInverterHorizontalEnabled)
+        service.setAvailable([.focusFollowsMouse, .scrollInverter], false)
+        suite.expect(defaults.bool(forKey: DefaultsKey.focusFollowsMouseEnabled)
+                     && defaults.bool(forKey: DefaultsKey.scrollInverterHorizontalEnabled),
+                     "direct installation requests cannot reset permanent input controls or secondary preferences")
+
+        var running = false
+        State.bindings = [.focusFollowsMouse: {
+            running = defaults.bool(forKey: DefaultsKey.focusFollowsMouseEnabled)
+        }]
+        service.loadedThisSession = []
+        defaults.set(true, forKey: DefaultsKey.focusFollowsMouseEnabled)
+        service.sync([.focusFollowsMouse])
+        suite.expect(running, "an input control enabled after launch starts through runtime sync")
+        defaults.set(false, forKey: DefaultsKey.focusFollowsMouseEnabled)
+        service.sync([.focusFollowsMouse])
+        suite.expect(!running, "turning that input control off always reaches its service teardown")
+        service.loadedThisSession = [.focusFollowsMouse]
+        suite.expect(!service.needsRestartToUnload,
+                     "ordinary input toggle-off does not produce an uninstall restart prompt")
     }
 }

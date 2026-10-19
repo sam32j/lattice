@@ -34,7 +34,7 @@ enum SettingsSidebarSupport {
         let pageItem = SettingsSidebarItem(id: .page(page),
                                            destination: FeatureSettingsDestination(page),
                                            title: title, icon: icon)
-        if page == .screenshot || page == .screenRecorder {
+        if page == .screenshot || page == .screenRecorder || page == .shortcuts || page == .mouse || page == .keyboard || page == .audioInput || page == .audioOutput || page == .scratchpad {
             return [pageItem]
         }
         var rows = includePage ? [pageItem] : []
@@ -63,6 +63,8 @@ enum SettingsSidebarSupport {
             utilities: [SettingsSidebarItem]) {
         func group(_ item: SettingsSidebarItem) -> FeatureGroup? {
             if case .feature(let feature) = item.id { return feature.group }
+            if item.destination.page == .mouse || item.destination.page == .keyboard { return .mouseKeyboard }
+            if item.destination.page == .textSnippets { return .clipboardFiles }
             return AppFeature.allCases.first { $0.settingsDestination == item.destination }?.group
         }
         func moved(_ target: FeatureGroup) -> [SettingsSidebarItem] {
@@ -72,6 +74,30 @@ enum SettingsSidebarSupport {
                 windowsControls.filter { group($0) != .windowsDock } + moved(.mouseKeyboard),
                 moved(.clipboardFiles), moved(.sound),
                 utilities.filter { ![.mouseKeyboard, .clipboardFiles, .sound].contains(group($0)) })
+    }
+
+    static func fallbackDestination(for destination: FeatureSettingsDestination,
+                                    in items: [SettingsSidebarItem]) -> FeatureSettingsDestination? {
+        guard destination.sectionAnchor != nil,
+              !items.contains(where: { $0.destination == destination }) else { return nil }
+        switch destination.page {
+        case .general:
+            return FeatureSettingsDestination(.general)
+        case .mouse:
+            return FeatureSettingsDestination(.mouse)
+        case .keyboard:
+            return FeatureSettingsDestination(.keyboard)
+        case .audioInput:
+            return FeatureSettingsDestination(.audioInput)
+        case .audioOutput:
+            return FeatureSettingsDestination(.audioOutput)
+        case .scratchpad:
+            return FeatureSettingsDestination(.scratchpad)
+        case .energy:
+            return items.first { $0.destination.page == destination.page }?.destination
+        default:
+            return nil
+        }
     }
 
     static func selection(for destination: FeatureSettingsDestination,

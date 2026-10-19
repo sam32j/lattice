@@ -8,7 +8,6 @@ import ServiceManagement
 struct GeneralSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var appearance = AppAppearanceController.shared
-    @ObservedObject private var hotkeys = HotkeyManager.shared
     // Seeded from the stored choice so the switch does not flash off while
     // the status read is still on its way.
     @State private var loginRegistration: LaunchAtLoginSupport.Registration =
@@ -16,11 +15,9 @@ struct GeneralSettings: View {
     @State private var loginError: String?
     @State private var loginPending = false
     @State private var loginRefreshID = UUID()
-    @AppStorage(DefaultsKey.hotkeyEnabled) private var hotkeyEnabled = true
 
     private var text: GeneralSettingsStrings { FeatureStrings.generalSettings(l10n.language) }
     private var appearanceStrings: AppearanceStrings { FeatureStrings.appearance(l10n.language) }
-    private var feedbackStrings: FeedbackStrings { FeatureStrings.feedback(l10n.language) }
 
     var body: some View {
         ScrollView {
@@ -28,10 +25,6 @@ struct GeneralSettings: View {
                 Text(l10n.s.tabGeneral).font(.title2.bold())
                 basicsCard
                 appearanceCard
-                if AppFeature.keepAwake.isAvailable {
-                    shortcutCard
-                }
-                feedbackCard
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
@@ -122,32 +115,7 @@ struct GeneralSettings: View {
         }
     }
 
-    private var shortcutCard: some View {
-        SettingsCard(title: l10n.s.globalHotkeySection) {
-            ShortcutPreferenceRow(role: .keepAwake, label: l10n.s.hotkeyToggle,
-                                  symbolName: "keyboard") {
-                HotkeyManager.shared.syncWithPreferences()
-            }
-            .padding(.leading, settingsRowTextInset)
-            if hotkeyEnabled, hotkeys.registrationFailed {
-                Text(l10n.s.shortcutUnavailable)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .padding(.leading, settingsRowTextInset)
-            }
-        }
-    }
 
-    private var feedbackCard: some View {
-        SettingsCard {
-            SettingsRow(symbol: "bubble.left.and.text.bubble.right", title: feedbackStrings.sectionTitle,
-                        caption: feedbackStrings.sectionCaption) {
-                Button(feedbackStrings.openButton) {
-                    appDelegate()?.openFeedbackWindow()
-                }
-            }
-        }
-    }
 
     // Reads come with every visit and activation, so they update the switch
     // quietly; only a change makes it wait. A read that replaces a change's

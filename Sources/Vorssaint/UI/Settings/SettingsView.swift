@@ -207,8 +207,6 @@ struct SettingsView: View {
             updateSearchSelection(previous: previous, current: current)
         }
         .onChange(of: router.requestID) { _, _ in
-            searchQuery = ""
-            activeSearchIndex = nil
             ensureVisiblePage()
         }
     }
@@ -390,6 +388,7 @@ struct SettingsView: View {
         let selectionIndex = searchResults.items.firstIndex { $0.id == suggestion.id }
         let isSelected = selectionIndex == activeSearchIndex
         return Button {
+            if let selectionIndex { activeSearchIndex = selectionIndex }
             requestSearchItem(suggestion)
         } label: {
             Label(group.pageItem.title, systemImage: group.pageItem.icon)
@@ -406,6 +405,7 @@ struct SettingsView: View {
         let selectionIndex = searchResults.items.firstIndex { $0.id == suggestion.id }
         let isSelected = selectionIndex == activeSearchIndex
         return Button {
+            if let selectionIndex { activeSearchIndex = selectionIndex }
             requestSearchItem(suggestion)
         } label: {
             Label(suggestion.title, systemImage: suggestion.icon)
@@ -526,7 +526,6 @@ struct SettingsView: View {
     }
 
     private func requestSearchItem(_ suggestion: SettingsSearchSuggestion) {
-        activeSearchIndex = nil
         let routed = SettingsSearchSupport.route(for: suggestion)
         router.request(routed.destination, targetFeature: routed.targetFeature,
                        sidebarFeature: suggestion.item.feature)
@@ -540,20 +539,9 @@ struct SettingsView: View {
             router.page = .features
             return
         }
-        guard router.destination.sectionAnchor != nil,
-              !sidebarItems.contains(where: { $0.destination == router.destination }) else { return }
-        switch router.page {
-        case .general:
-            // General stays visible when one of its tools is uninstalled.
-            router.request(FeatureSettingsDestination(.general), replacingVisit: true)
-        case .energy:
-            // Energy has no overview row. A history visit to an uninstalled
-            // tool should show another available tool, not an empty detail.
-            if let available = sidebarItems.first(where: { $0.destination.page == .energy }) {
-                router.request(available.destination, replacingVisit: true)
-            }
-        default:
-            break
+        if let fallback = SettingsSidebarSupport.fallbackDestination(
+            for: router.destination, in: sidebarItems) {
+            router.request(fallback, replacingVisit: true)
         }
     }
 
@@ -565,11 +553,9 @@ struct SettingsView: View {
     private var detail: some View {
         switch router.page {
         case .general:
-            if let anchor = router.destination.sectionAnchor,
-               [.panelConfiguration, .mixer, .soundOutputSwitcher,
-                .audioPriority, .musicBlocking].contains(anchor),
+            if router.destination.sectionAnchor == .panelConfiguration,
                sidebarItems.contains(where: { $0.destination == router.destination }) {
-                GeneralToolSettings(anchor: anchor)
+                GeneralToolSettings()
             } else {
                 GeneralSettings()
             }
@@ -584,11 +570,9 @@ struct SettingsView: View {
         case .mouse: MouseSettings()
         case .switcher: SwitcherSettings()
         case .dock: DockSettings()
-        case .keyDebounce: KeyboardDebounceSettings()
-        case .superKey: SuperKeySettings()
+        case .keyboard: KeyboardSettings()
         case .cutPaste: CutPasteSettings()
         case .autoQuit: AutoQuitSettings()
-        case .quitProtection: QuitProtectionSettings()
         case .uninstaller: UninstallerView()
         case .killProcess: KillProcessView()
         case .portManager: PortManagerView()
@@ -598,7 +582,9 @@ struct SettingsView: View {
         case .appUpdates: AppUpdatesSettings()
         case .media: MediaSettings()
         case .clipboard: ClipboardSettings()
-        case .quickTools: QuickToolsSettings()
+        case .audioInput: AudioInputSettings()
+        case .audioOutput: AudioOutputSettings()
+        case .scratchpad: ScratchpadSettings()
         case .screenshot: ScreenshotSettings()
         case .screenRecorder: ScreenRecorderSettings()
         case .windowLayout: WindowLayoutSettings()
@@ -606,519 +592,7 @@ struct SettingsView: View {
         case .shortcuts: ShortcutsSettings()
         case .dataPermissions: DataPermissionsSettings()
         case .about: AboutSettings()
-        case .releaseNotes: ReleaseNotesSettings()
         }
-    }
-}
-
-// MARK: - Updates
-
-struct UpdatesView: View {
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var updates = UpdateService.shared
-    @AppStorage(DefaultsKey.autoCheckUpdates) private var autoCheck = true
-    @AppStorage(DefaultsKey.includeBetaUpdates) private var includeBetas = AppInfo.isBeta
-
-    var body: some View {
-        Section(l10n.s.updatesSection) {
-            Toggle(l10n.s.autoCheckToggle, isOn: $autoCheck)
-                .onChange(of: autoCheck) { _, value in
-                    UpdateService.shared.autoCheckEnabled = value
-                }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Toggle(l10n.s.includeBetaUpdatesToggle, isOn: $includeBetas)
-                    .onChange(of: includeBetas) { _, value in
-                        UpdateService.shared.includeBetaUpdates = value
-                    }
-                SettingsCaptionText(l10n.s.includeBetaUpdatesCaption)
-            }
-
-            statusRow
-
-            HStack {
-                Button(l10n.s.checkNowButton) {
-                    updates.check(manual: true)
-                }
-                .disabled(isBusy)
-
-                if case .available = updates.state {
-                    Button(l10n.s.updateInstallButton) {
-                        appDelegate()?.showUpdatePreview()
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-            }
-
-            if let lastChecked = updates.lastChecked {
-                Text("\(l10n.s.updateLastChecked) \(Self.format(lastChecked))")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var statusRow: some View {
-        switch updates.state {
-        case .idle:
-            EmptyView()
-        case .checking:
-            label(l10n.s.updateChecking, system: "arrow.triangle.2.circlepath", tint: .secondary)
-        case .upToDate:
-            label(l10n.s.updateUpToDate, system: "checkmark.circle.fill", tint: .green)
-        case let .available(version):
-            label("\(l10n.s.updateAvailablePrefix) \(version)", system: "arrow.down.circle.fill", tint: .accentColor)
-        case let .downloading(progress):
-            if let progress {
-                label("\(l10n.s.updateDownloading) \(Int(progress * 100))%",
-                      system: "arrow.down.circle", tint: .secondary)
-            } else {
-                label(l10n.s.updateDownloading, system: "arrow.down.circle", tint: .secondary)
-            }
-        case .installing:
-            label(l10n.s.updateInstalling, system: "gearshape.2.fill", tint: .secondary)
-        case let .failed(reason):
-            label("\(l10n.s.updateFailedPrefix) \(reason)", system: "exclamationmark.triangle.fill", tint: .orange)
-        }
-    }
-
-    private func label(_ text: String, system: String, tint: Color) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: system).foregroundStyle(tint)
-            Text(text).font(.callout)
-            Spacer()
-        }
-    }
-
-    private var isBusy: Bool {
-        switch updates.state {
-        case .checking, .downloading, .installing: return true
-        default: return false
-        }
-    }
-
-    private static func format(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateStyle = .short
-        f.timeStyle = .short
-        return f.string(from: date)
-    }
-}
-
-// MARK: - About
-
-struct AboutSettings: View {
-    @ObservedObject private var l10n = L10n.shared
-
-    var body: some View {
-        Form {
-            Section {
-                aboutContent
-            }
-
-            UpdatesView()
-        }
-        .formStyle(.grouped)
-    }
-
-    private var aboutContent: some View {
-        VStack(spacing: 14) {
-            BrandBadge(size: 76)
-            VStack(spacing: 3) {
-                Text(AppInfo.name)
-                    .font(.title2.bold())
-                HStack(spacing: 6) {
-                    Text("\(l10n.s.versionPrefix) \(AppInfo.version)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if AppInfo.isBeta {
-                        Text(l10n.s.betaBadgeLabel)
-                            .font(.system(size: 9, weight: .bold))
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1.5)
-                            .background(Color.orange.opacity(0.18))
-                            .foregroundStyle(.orange)
-                            .clipShape(Capsule())
-                    }
-                }
-                if AppInfo.isDeveloperBuild, let commit = AppInfo.buildCommit {
-                    // Dev-only: which source commit this build came from. Never shipped.
-                    Text(commit)
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(.tertiary)
-                        .textSelection(.enabled)
-                }
-            }
-            Text(l10n.s.aboutDescription)
-                .font(.system(size: 12))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 12) {
-                Button(l10n.s.reviewIntro) {
-                    appDelegate()?.showOnboarding()
-                }
-                Button(l10n.s.reviewHighlights) {
-                    appDelegate()?.showUpdateHighlights(isReview: true)
-                }
-                Link(l10n.s.viewOnGitHub, destination: AppInfo.repositoryURL)
-            }
-            Text(AppInfo.copyright)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-    }
-}
-
-// MARK: - Release notes
-
-struct ReleaseNotesSettings: View {
-    @ObservedObject private var l10n = L10n.shared
-    @State private var selectedScope: Scope = .lattice
-
-    enum Scope: String, CaseIterable {
-        case lattice = "Lattice Features"
-        case upstream = "Upstream Base"
-    }
-
-    private var hasLatticeChangelog: Bool {
-        ReleaseNotes.bundledLatticeChangelog() != nil
-    }
-
-    private var activeNotes: ReleaseNotes {
-        if !hasLatticeChangelog {
-            return ReleaseNotes.currentUpstream
-        }
-        switch selectedScope {
-        case .lattice:
-            return ReleaseNotes.currentLattice
-        case .upstream:
-            return ReleaseNotes.currentUpstream
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(l10n.s.obWhatsNewTitle)
-                        .font(.title2.bold())
-                    Text(versionLine)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                if hasLatticeChangelog {
-                    Spacer()
-                    Picker("", selection: $selectedScope) {
-                        ForEach(Scope.allCases, id: \.self) { scope in
-                            Text(scope.rawValue).tag(scope)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 240)
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    if activeNotes.sections.isEmpty {
-                        fallbackNote
-                    } else {
-                        ForEach(Array(activeNotes.sections.enumerated()), id: \.offset) { _, section in
-                            releaseSection(section)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var versionLine: String {
-        let notes = activeNotes
-        if let date = notes.date {
-            return "v\(notes.version) · \(date)"
-        }
-        return "v\(notes.version)"
-    }
-
-    private var fallbackNote: some View {
-        HStack(alignment: .top, spacing: 9) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 18, alignment: .center)
-            Text(l10n.s.obWhatsNewFallback)
-                .font(.system(size: 12.5))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func releaseSection(_ section: ReleaseNoteSection) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            if !section.title.isEmpty {
-                Text(section.title.uppercased())
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.secondary)
-                    .tracking(1.2)
-            }
-            ForEach(Array(section.items.enumerated()), id: \.offset) { _, item in
-                releaseItem(item, sectionTitle: section.title)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func releaseItem(_ item: ReleaseNoteItem, sectionTitle: String) -> some View {
-        switch item {
-        case let .paragraph(text):
-            Text(text)
-                .font(.system(size: 12.8))
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
-        case let .bullet(text):
-            HStack(alignment: .top, spacing: 9) {
-                Image(systemName: iconName(for: sectionTitle))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-                    .frame(width: 18, alignment: .center)
-                Text(text)
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        case let .image(image):
-            if let nsImage = releaseNoteImage(image) {
-                Image(nsImage: nsImage)
-                    .resizable()
-                    .scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(.quaternary, lineWidth: 1)
-                    )
-                    .accessibilityLabel(image.alt)
-                    .padding(.leading, 27)
-            }
-        }
-    }
-
-    private func releaseNoteImage(_ image: ReleaseNoteImage) -> NSImage? {
-        var path = image.path
-        if let resourcesRange = path.range(of: "Resources/") {
-            path = String(path[resourcesRange.lowerBound...])
-        }
-        if path.hasPrefix("Resources/") {
-            path.removeFirst("Resources/".count)
-        }
-        let nsPath = path as NSString
-        let ext = nsPath.pathExtension
-        let name = (nsPath.deletingPathExtension as NSString).lastPathComponent
-        let directory = nsPath.deletingLastPathComponent
-        guard !name.isEmpty, !ext.isEmpty else { return nil }
-        let subdirectory = directory.isEmpty || directory == "." ? nil : directory
-        guard let url = Bundle.main.url(forResource: name,
-                                        withExtension: ext,
-                                        subdirectory: subdirectory) else { return nil }
-        return NSImage(contentsOf: url)
-    }
-
-    private func iconName(for title: String) -> String {
-        switch title.lowercased() {
-        case "added": return "plus.circle.fill"
-        case "changed": return "slider.horizontal.3"
-        case "fixed": return "checkmark.circle.fill"
-        default: return "circle.fill"
-        }
-    }
-}
-
-// MARK: - Shared settings rows
-
-private struct SettingsCaptionText: View {
-    let text: String
-
-    init(_ text: String) {
-        self.text = text
-    }
-
-    var body: some View {
-        Text(text)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(nil)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-}
-
-// MARK: - Shared permission row
-
-enum PermissionKind {
-    case accessibility
-    case screenRecording
-    case microphone
-}
-
-/// Status + actions for one TCC permission; shared by Settings and onboarding.
-struct PermissionRow: View {
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var permissions = Permissions.shared
-    @State private var pollingDemandID = UUID()
-    let kind: PermissionKind
-
-    private var granted: Bool {
-        switch kind {
-        case .accessibility: return permissions.accessibility
-        case .screenRecording: return permissions.screenRecording
-        case .microphone: return permissions.microphone == .granted
-        }
-    }
-
-    private var monitorsActivePermission: Bool {
-        switch kind {
-        case .accessibility, .screenRecording: return true
-        case .microphone: return false
-        }
-    }
-
-    private var name: String {
-        switch kind {
-        case .accessibility: return l10n.s.permissionAccessibility
-        case .screenRecording: return l10n.s.permissionScreenRecording
-        case .microphone:
-            return FeatureStrings.recorder(l10n.language).microphonePermissionName
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: granted ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                    .foregroundStyle(granted ? .green : .orange)
-                Text(name)
-                Spacer()
-                Text(granted ? l10n.s.permissionGranted : l10n.s.permissionMissing)
-                    .font(.caption)
-                    .foregroundStyle(granted ? .green : .orange)
-            }
-            if !granted {
-                HStack(spacing: 8) {
-                    Button(l10n.s.permissionRequest) {
-                        switch kind {
-                        case .accessibility:
-                            permissions.requestAccessibility()
-                        case .screenRecording:
-                            permissions.requestScreenRecording()
-                        case .microphone:
-                            permissions.requestMicrophone()
-                        }
-                    }
-                    Button(l10n.s.permissionOpenSettings) {
-                        switch kind {
-                        case .accessibility:
-                            permissions.openAccessibilitySettings()
-                        case .screenRecording:
-                            permissions.openScreenRecordingSettings()
-                        case .microphone:
-                            permissions.openMicrophoneSettings()
-                        }
-                    }
-                }
-                .controlSize(.small)
-            }
-        }
-        .onAppear {
-            if monitorsActivePermission {
-                permissions.setActivePermissionSurface(pollingDemandID, visible: true)
-            }
-        }
-        .onDisappear {
-            permissions.setActivePermissionSurface(pollingDemandID, visible: false)
-        }
-    }
-}
-
-/// Secure Event Input blocks every synthetic keystroke. Typing a snippet
-/// trigger then does nothing at all, while the snippet library and the
-/// Command Bar's typing actions beep; none of the four paths says what is
-/// wrong or who is holding it. This row is the only place the app explains
-/// that, and it names the holder when the session can attribute it.
-///
-/// Both call sites instantiate it only once secure input is on, and the
-/// snippets page waits for one of its own toggles as well, so the `.off`
-/// branch below is there to keep the switch exhaustive and for nothing else.
-/// What drives the feature is the polling demand on each page; see
-/// `SecureInputObservation`.
-struct SecureInputRow: View {
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var monitor = SecureInputMonitor.shared
-
-    var body: some View {
-        switch monitor.holder {
-        case .off:
-            EmptyView()
-        case .app(let name, _):
-            row(caption: String(format: l10n.s.secureInputHeldFormat, name)) {
-                Button(String(format: l10n.s.secureInputRevealFormat, name)) {
-                    monitor.revealHolder()
-                }
-                .controlSize(.small)
-            }
-        case .unattributed:
-            row(caption: l10n.s.secureInputUnattributed) { EmptyView() }
-        case .unknown:
-            row(caption: l10n.s.secureInputUnidentified) { EmptyView() }
-        }
-    }
-
-    private func row<Action: View>(caption: String,
-                                   @ViewBuilder action: () -> Action) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: "exclamationmark.circle.fill")
-                    .foregroundStyle(.orange)
-                Text(l10n.s.secureInputTitle)
-                Spacer()
-            }
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            action()
-        }
-    }
-}
-
-/// Keeps secure input polled for as long as the page is on screen and
-/// `isActive` holds, e.g. the snippets page only while one of its own
-/// toggles is on, since with both off nothing this row could report can
-/// show. The demand cannot live on `SecureInputRow`: nothing would
-/// register it until the state it reports had already been reached.
-private struct SecureInputObservation: ViewModifier {
-    let isActive: Bool
-    @State private var demandID = UUID()
-
-    func body(content: Content) -> some View {
-        content
-            .onAppear { SecureInputMonitor.shared.setObservingSurface(demandID, visible: isActive) }
-            .onDisappear { SecureInputMonitor.shared.setObservingSurface(demandID, visible: false) }
-            .onChange(of: isActive) { _, active in
-                SecureInputMonitor.shared.setObservingSurface(demandID, visible: active)
-            }
-    }
-}
-
-extension View {
-    func observesSecureInput(isActive: Bool = true) -> some View {
-        modifier(SecureInputObservation(isActive: isActive))
     }
 }
 

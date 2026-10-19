@@ -71,6 +71,10 @@ struct MetricsTests {
             ("shelf", { ShelfFeatureTests.run(suite) }),
             ("overlays", { OverlayPanelTests.run(suite) }),
             ("updates", {
+                UpdateSettingsPresentationTests.run { suite.expect($0, $1) }
+                UpdateSettingsLayoutTests.run { suite.expect($0, $1) }
+                UpdateCheckResponseTests.run { suite.expect($0, $1) }
+                SettingsChangelogTests.run { suite.expect($0, $1) }
                 UpdateFeatureTests.run(suite)
                 DownstreamUpdateTests.run(suite)
                 LaunchAtLoginSettingsTests.run(suite)
@@ -126,6 +130,7 @@ struct MetricsTests {
                 MenuPanelSectionGateContract.run(suite)
             }),
             ("utilities", {
+                UtilitySettingsTests.run { suite.expect($0, $1) }
                 UtilitiesFeatureTests.run(suite)
                 QuickTogglesAlertTests.run(suite)
                 PortManagerRefreshTests.run(suite)
@@ -133,6 +138,7 @@ struct MetricsTests {
             ("settings", {
                 SettingsFeatureTests.run(suite)
                 SettingsWindowTests.run { suite.expect($0, $1) }
+                PermissionDetailsSheetTests.run { suite.expect($0, $1) }
                 NotchSettingsChoiceTests.run(suite)
                 MonitorTokenTests.run(suite)
             }),
@@ -145,6 +151,7 @@ struct MetricsTests {
             ("software-dimming", { SoftwareDimmingRouteTests.run { suite.expect($0, $1) } }),
             ("capture", { ScreenshotSelectionRefreshContract.run(suite) }),
             ("keyboard", {
+                KeyCaptureBridgeTests.run { suite.expect($0, $1) }
                 KeyboardFeatureTests.run(suite)
                 AssistiveKeyboardTests.run(suite)
                 ScreenshotToolShortcutTests.run(suite)

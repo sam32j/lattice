@@ -92,10 +92,10 @@ enum SettingsSearchSupport {
         return SettingsSearchItem(
             id: .setting(.keyboardBrightnessShortcuts),
             destination: FeatureSettingsDestination(
-                .shortcuts, sectionAnchor: .keyboardBrightnessShortcuts),
-            title: brightness.keyboardBrightnessShortcuts,
+                .energy, sectionAnchor: .keyboardBrightnessShortcuts),
+            title: brightness.keyboardLight,
             icon: "keyboard",
-            keywords: [brightness.keyboardLight, brightness.keyboardBrightnessDecrease,
+            keywords: [brightness.keyboardBrightnessShortcuts, brightness.keyboardBrightnessDecrease,
                        brightness.keyboardBrightnessIncrease],
             feature: .brightness)
     }
@@ -146,7 +146,7 @@ enum SettingsSearchSupport {
                        isAvailable: (AppFeature) -> Bool = { $0.isAvailable })
         -> (destination: FeatureSettingsDestination, targetFeature: AppFeature?) {
         if let feature = item.feature {
-            guard isAvailable(feature) || leadsToVisiblePage(item, isAvailable: isAvailable) else {
+            guard feature.isMouseFeature || feature.isKeyboardFeature || isAvailable(feature) || leadsToVisiblePage(item, isAvailable: isAvailable) else {
                 return (FeatureSettingsDestination(.features), feature)
             }
             if item.destination.page == .features {
@@ -223,6 +223,7 @@ enum SettingsSearchSupport {
 
         let navigableItems = items.compactMap { item -> SettingsSearchItem? in
             if let feature = item.feature, !isAvailable(feature),
+               !feature.isMouseFeature, !feature.isKeyboardFeature,
                !leadsToVisiblePage(item, isAvailable: isAvailable) {
                 // The utility itself remains navigable through its Features
                 // row, but settings that do not exist until installation must
@@ -267,7 +268,7 @@ enum SettingsSearchSupport {
                     where fold(keyword).contains(foldedQuery) {
                     let keywordFeature = item.keywordFeatures.indices.contains(index)
                         ? item.keywordFeatures[index] : nil
-                    if let keywordFeature, !isAvailable(keywordFeature) { continue }
+                    if let keywordFeature, !isAvailable(keywordFeature), !keywordFeature.isMouseFeature, !keywordFeature.isKeyboardFeature { continue }
                     let suggestionItem = keywordFeature.map { feature in
                         SettingsSearchItem(id: .feature(feature),
                                            destination: feature.settingsDestination,
