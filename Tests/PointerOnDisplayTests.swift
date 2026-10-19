@@ -73,6 +73,7 @@ enum PointerOnDisplayContract {
         typealias NSEvent = Event
         struct Options { let controlsInNotch: Bool }
         final class Controller {
+            var isWaitingForRecording = false
             var currentPointerLocation: CGPoint?
             var selectionInProgress = false
         }

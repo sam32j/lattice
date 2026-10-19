@@ -263,8 +263,8 @@ final class RecorderIndicator {
             pauseButton.frame = CGRect(x: 8, y: 7, width: 30, height: 26)
             stopButton.frame = CGRect(x: 44, y: 7, width: 30, height: 26)
             stopButton.image = symbolImage("xmark")
-            stopButton.toolTip = L10n.shared.s.cutCancel
-            stopButton.setAccessibilityLabel(L10n.shared.s.cutCancel)
+            stopButton.toolTip = FeatureStrings.recorder(L10n.shared.language).cancelButton
+            stopButton.setAccessibilityLabel(FeatureStrings.recorder(L10n.shared.language).cancelButton)
         }
 
         func setStarted() {
