@@ -1831,11 +1831,33 @@ private final class ScreenshotOverlayView: NSView {
 
     private func drawSelectionChrome(_ context: CGContext, pixelScale: CGFloat) {
         if recordingDraft != nil {
-            context.setFillColor(NSColor.white.cgColor)
+            context.saveGState()
+            context.setShadow(offset: CGSize(width: 0, height: -0.5), blur: 3, color: CGColor(gray: 0, alpha: 0.35))
             for handle in ScreenshotSupport.Handle.allCases {
                 let point = handle.position(in: selection)
-                context.fillEllipse(in: CGRect(x: point.x - 3, y: point.y - 3, width: 6, height: 6))
+                let rect: CGRect
+                let radius: CGFloat
+                switch handle {
+                case .top, .bottom:
+                    rect = CGRect(x: point.x - 14, y: point.y - 3, width: 28, height: 6)
+                    radius = 3
+                case .left, .right:
+                    rect = CGRect(x: point.x - 3, y: point.y - 14, width: 6, height: 28)
+                    radius = 3
+                case .topLeft, .topRight, .bottomLeft, .bottomRight:
+                    rect = CGRect(x: point.x - 5, y: point.y - 5, width: 10, height: 10)
+                    radius = 2.5
+                }
+                let path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+                context.addPath(path)
+                context.setFillColor(NSColor.white.cgColor)
+                context.fillPath()
+                context.addPath(path)
+                context.setStrokeColor(CGColor(gray: 0.1, alpha: 0.25))
+                context.setLineWidth(0.75)
+                context.strokePath()
             }
+            context.restoreGState()
         }
         let outer = CGPath(roundedRect: selection.insetBy(dx: -1.5, dy: -1.5),
                            cornerWidth: 9,

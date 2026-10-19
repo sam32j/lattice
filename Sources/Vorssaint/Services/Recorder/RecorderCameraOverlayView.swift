@@ -48,9 +48,6 @@ final class RecorderCameraOverlayView: NSView {
         graphics.setFillColor(NSColor.black.cgColor)
         graphics.fill(bounds)
         guard var camera = controller.frames.snapshot.camera else {
-            let text = text.starting as NSString
-            text.draw(at: CGPoint(x: 10, y: max(4, bounds.midY - 8)),
-                withAttributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.white])
             return
         }
         let source = camera.extent
@@ -83,7 +80,11 @@ final class RecorderCameraOverlayView: NSView {
                                                             y: origin.y + point.y - start.y)) }
     }
     override func mouseUp(with event: NSEvent) {
-        if !dragged, dragStart != nil { controller?.layout.isFullArea.toggle() }
+        if dragged {
+            controller?.snapCameraToNearestEdge(animated: true)
+        } else if dragStart != nil {
+            controller?.layout.isFullArea.toggle()
+        }
         dragStart = nil
     }
 
