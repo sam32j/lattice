@@ -1759,13 +1759,16 @@ private final class ScreenshotOverlayView: NSView {
         } else if dragOrigin == nil, (hoveredWindow != nil || controller.hasSelectedWindows) {
             context.beginPath()
             context.addRect(bounds)
+            let windowRadius: CGFloat = 10
             if controller.hasSelectedWindows {
                 for (_, entry) in controller.selectedWindows where entry.panel === panel {
-                    context.addRect(entry.window.frame)
+                    let path = CGPath(roundedRect: entry.window.frame, cornerWidth: windowRadius, cornerHeight: windowRadius, transform: nil)
+                    context.addPath(path)
                 }
             }
             if let hovered = hoveredWindow, controller.selectedWindows[hovered.windowID] == nil {
-                context.addRect(hovered.frame)
+                let path = CGPath(roundedRect: hovered.frame, cornerWidth: windowRadius, cornerHeight: windowRadius, transform: nil)
+                context.addPath(path)
             }
             context.fillPath(using: .evenOdd)
 
@@ -1777,8 +1780,13 @@ private final class ScreenshotOverlayView: NSView {
                 let windowsInFront = windows.prefix(while: { $0.windowID != targetID })
                 for foreground in windowsInFront where !activePunchedIDs.contains(foreground.windowID) {
                     context.setFillColor(CGColor(gray: 0, alpha: dimAlpha))
-                    context.fill(foreground.frame)
+                    let path = CGPath(roundedRect: foreground.frame, cornerWidth: windowRadius, cornerHeight: windowRadius, transform: nil)
+                    context.addPath(path)
+                    context.fillPath()
                 }
+            }
+            if let hovered = hoveredWindow, controller.selectedWindows[hovered.windowID] == nil {
+                drawWindowHighlight(context, rect: hovered.frame, cornerRadius: windowRadius)
             }
             if controller.hasSelectedWindows {
                 for (_, entry) in controller.selectedWindows where entry.panel === panel {
@@ -1887,11 +1895,11 @@ private final class ScreenshotOverlayView: NSView {
                   near: CGPoint(x: selection.midX, y: selection.maxY + 10))
     }
 
-    private func drawWindowHighlight(_ context: CGContext, rect: CGRect) {
+    private func drawWindowHighlight(_ context: CGContext, rect: CGRect, cornerRadius: CGFloat = 10) {
         let path = CGPath(roundedRect: rect.insetBy(dx: 1.25, dy: 1.25),
-                           cornerWidth: 9,
-                           cornerHeight: 9,
-                           transform: nil)
+                          cornerWidth: max(0, cornerRadius - 1),
+                          cornerHeight: max(0, cornerRadius - 1),
+                          transform: nil)
         context.addPath(path)
         context.setFillColor(CGColor(srgbRed: 0.35, green: 0.62, blue: 1, alpha: 0.14))
         context.fillPath()

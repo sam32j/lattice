@@ -578,7 +578,8 @@ enum ScreenshotCaptureEngine {
         let ownPID = Int32(ProcessInfo.processInfo.processIdentifier)
         let decorations = ScreenshotCapturePolicy.decorationWindowIDs(frontToBack: captureWindows(in: info))
         return info.compactMap { entry in
-            guard let layer = entry[kCGWindowLayer as String] as? Int, layer == 0,
+            guard let layer = entry[kCGWindowLayer as String] as? Int,
+                  layer == 0 || (layer > 0 && layer <= 25 && !["Window Server", "Dock"].contains(entry[kCGWindowOwnerName as String] as? String ?? "")),
                   let pid = entry[kCGWindowOwnerPID as String] as? Int32,
                   let id = (entry[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
                   let boundsDict = entry[kCGWindowBounds as String] as? [String: CGFloat]
