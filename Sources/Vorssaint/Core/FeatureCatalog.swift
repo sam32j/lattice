@@ -19,7 +19,7 @@ enum AppFeature: String, CaseIterable {
     case scrollInverter, scrollHorizontal, focusFollowsMouse, smoothScroll, linearScroll, mouseAcceleration, mouseNavigation, mouseButtonShortcuts, middleClick,
          mouseClickDebounce, keyboardDebounce, textSnippets, superKey, quitWindowProtection
     // Clipboard and files
-    case clipboardHistory, pastePlain, finderCutPaste, finderRename, shelf, urlCleaner,
+    case clipboardHistory, pastePlain, shelf, urlCleaner,
          diskImageInstaller
     // Sound
     case mixer, soundOutputSwitcher, audioPriority, micMute, musicBlock
@@ -106,7 +106,7 @@ extension AppFeature {
         case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts, .middleClick,
              .keyboardDebounce, .superKey, .quitWindowProtection, .mouseClickDebounce, .cleaningMode:
             return .mouseKeyboard
-        case .clipboardHistory, .pastePlain, .finderCutPaste, .finderRename, .shelf, .urlCleaner,
+        case .clipboardHistory, .pastePlain, .shelf, .urlCleaner,
              .diskImageInstaller, .textSnippets, .scratchpad:
             return .clipboardFiles
         case .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock:
@@ -155,8 +155,6 @@ extension AppFeature {
         case .quitWindowProtection: return "shield.lefthalf.filled"
         case .clipboardHistory: return "doc.on.clipboard"
         case .pastePlain: return "doc.plaintext"
-        case .finderCutPaste: return "scissors"
-        case .finderRename: return "pencil"
         case .shelf: return "tray.full"
         case .urlCleaner: return "link"
         case .diskImageInstaller: return "externaldrive.badge.plus"
@@ -368,9 +366,6 @@ extension AppFeature {
         case .radialMenu: return [DefaultsKey.radialMenuEnabled]
         case .clipboardHistory: return [DefaultsKey.clipboardHistoryEnabled]
         case .pastePlain: return [DefaultsKey.pastePlainEnabled]
-        case .finderCutPaste: return [DefaultsKey.finderCutPasteEnabled,
-                                      DefaultsKey.finderPasteImageAsFile]
-        case .finderRename: return [DefaultsKey.finderRenameEnabled]
         case .shelf: return [DefaultsKey.shelfEnabled]
         case .urlCleaner: return [DefaultsKey.urlCleanerEnabled]
         case .soundOutputSwitcher: return [DefaultsKey.soundOutputSwitcherEnabled]
@@ -455,8 +450,6 @@ extension AppFeature {
         // Accessibility powers menu/window actions; only Empty Trash asks Finder.
         case .commandBar:
             return [.accessibility, .automationFinder]
-        case .finderCutPaste: return [.accessibility, .automationFinder]
-        case .finderRename: return [.accessibility]
         case .switcher: return [.accessibility, .screenRecording]
         case .dockPreview: return [.accessibility, .screenRecording]
         case .screenOCR: return [.screenRecording]
@@ -528,7 +521,6 @@ extension AppFeature {
     /// switcher and text snippets that feed the Command Bar.
     static let offeredWhenNeverSwitchedOn: [AppFeature] = [
         .dockPreview, .dockClick, .windowMaximizer, .autoQuit,
-        .finderCutPaste,
     ]
 
     /// Installed features from that list whose switches are off and were never
@@ -560,7 +552,7 @@ extension AppFeature {
              .scrollInverter, .smoothScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts,
              .middleClick, .mouseClickDebounce, .keyboardDebounce, .textSnippets, .superKey,
              .quitWindowProtection,
-             .clipboardHistory, .pastePlain, .finderCutPaste, .finderRename, .shelf, .urlCleaner,
+             .clipboardHistory, .pastePlain, .shelf, .urlCleaner,
              .mixer, .soundOutputSwitcher, .micMute, .musicBlock,
              .keepAwake, .brightness, .extraBrightness, .bluetoothSleep,
              .quickLauncher, .colorPicker, .screenOCR, .cleaningMode, .mediaTools,

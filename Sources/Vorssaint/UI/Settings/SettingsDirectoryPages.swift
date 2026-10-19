@@ -230,7 +230,6 @@ extension SettingsDirectory {
                                         (.clipboardHistory, [FeatureStrings.clipboard(language).limit,
                                                              FeatureStrings.clipboard(language).historyLayout,
                                                              FeatureStrings.clipboard(language).skipSensitive,
-                                                             FeatureStrings.clipboard(language).pasteImageAsFile,
                                                              FeatureStrings.clipboard(language).autoClearEnable,
                                                              FeatureStrings.clipboard(language).autoClearOnSleep,
                                                              FeatureStrings.clipboard(language)
@@ -240,14 +239,6 @@ extension SettingsDirectory {
                                                              FeatureStrings.clipboardIgnoredApps(language)
                                                                 .listTitle]),
                                         (.pastePlain, [s.pastePlainName]),
-                                      ]),
-                SettingsDirectoryItem(page: .cutPaste,
-                                      title: settingsPages.finderTitle,
-                                      icon: "filemenu.and.selection",
-                                      featureKeywords: [
-                                        (.finderCutPaste, [s.cutPasteEnable, FeatureStrings.clipboard(language).pasteImageAsFile]),
-                                        (.finderRename,
-                                         [FeatureStrings.finderRename(language).enableLabel]),
                                       ]),
                 SettingsDirectoryItem(page: .shelf, title: s.shelfName, icon: "tray.full",
                                       keywords: [s.shelfEnable, s.shelfDropZoneToggle, s.shelfEdgeToggle,

@@ -13,6 +13,7 @@ import VMStatisticsCompat
 
 enum SettingsFeatureTests {
     static func run(_ suite: TestSuite) {
+        FinderRemovalTests.run(suite)
         suite.expect(FeatureVisibilitySupport.isPageVisible(.dataPermissions, isAvailable: { _ in false }),
                      "Data and Permissions remains available with every optional feature removed")
         suite.expect(DataPermissionsStrings.localized(.enUS).title == "Data & Permissions"
@@ -175,9 +176,6 @@ enum SettingsFeatureTests {
         suite.expect(backupKeys.contains(DefaultsKey.dockClickHide)
                 && backupKeys.contains(DefaultsKey.panelControlDockClickHide),
                "Dock hiding and its panel visibility travel with the settings backup")
-        suite.expect(backupKeys.contains(DefaultsKey.finderRenameEnabled)
-                && backupKeys.contains(DefaultsKey.finderRenameShortcut),
-               "the Finder rename choice and shortcut travel with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.textSnippets)
                 && backupKeys.contains(DefaultsKey.textSnippetsEnabled),
                "snippets travel with the settings backup")
@@ -269,16 +267,10 @@ enum SettingsFeatureTests {
                "the apps that pause window layout travel with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.switcherAppRules),
                "per-app switcher rules travel with the settings backup")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.finderPasteImageAsFile] as? Bool == false
-                && backupKeys.contains(DefaultsKey.finderPasteImageAsFile),
-               "pasting copied images as files is opt-in and travels with settings backup")
         suite.expect(Defaults.registeredDefaults[
             DefaultsKey.diskImageInstallerUseUserApplications] as? Bool == false
                 && backupKeys.contains(DefaultsKey.diskImageInstallerUseUserApplications),
                "installing disk-image apps for the current user is opt-in and travels with settings backup")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.finderCutPasteShowHUD] as? Bool == true
-                && backupKeys.contains(DefaultsKey.finderCutPasteShowHUD),
-               "the Finder cut and paste floating panel default is on and travels with settings backup")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.diskImageInstallerTrashesDownload] as? Bool == true
                 && Defaults.registeredDefaults[DefaultsKey.diskImageInstallerRevealsApp] as? Bool == false
                 && backupKeys.contains(DefaultsKey.diskImageInstallerTrashesDownload)

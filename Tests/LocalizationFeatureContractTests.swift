@@ -77,7 +77,6 @@ enum LocalizationFeatureContractTests {
                    && !strings.secureInputUnattributed.isEmpty
                    && !strings.secureInputUnidentified.isEmpty,
                    "\(prefix) secure input copy is translated")
-            expectFormat(strings.cutMovedPluralFormat, ["d"], "\(prefix) cut plural format")
             expectFormat(strings.uninstallerSelectedFormat, ["d", "d"], "\(prefix) uninstaller selected format")
             expectFormat(strings.uninstallerFreedFormat, ["@"], "\(prefix) uninstaller freed format")
             expectFormat(strings.shelfSelectedFormat, ["d"], "\(prefix) shelf selection format")
@@ -279,7 +278,6 @@ enum LocalizationFeatureContractTests {
             expectFormat(strings.homebrewOperationElapsedFormat, ["@"], "\(prefix) Homebrew operation elapsed format")
 
             let rendered = [
-                String(format: strings.cutMovedPluralFormat, 2),
                 String(format: strings.uninstallerSelectedFormat, 1, 3),
                 String(format: strings.uninstallerFreedFormat, "1 MB"),
                 String(format: strings.shelfSelectedFormat, 2),
@@ -364,7 +362,6 @@ enum LocalizationFeatureContractTests {
             ("clipboardDefault", GlobalShortcut.clipboardDefault),
             ("colorPickerDefault", GlobalShortcut.colorPickerDefault),
             ("commandBarDefault", GlobalShortcut.commandBarDefault),
-            ("finderRenameDefault", GlobalShortcut.finderRenameDefault),
             ("keepAwakeDefault", GlobalShortcut.keepAwakeDefault),
             ("micMuteDefault", GlobalShortcut.micMuteDefault),
             ("pastePlainDefault", GlobalShortcut.pastePlainDefault),
@@ -402,7 +399,7 @@ enum LocalizationFeatureContractTests {
             ("windowLayoutTopLeftDefault", GlobalShortcut.windowLayoutTopLeftDefault),
             ("windowLayoutTopRightDefault", GlobalShortcut.windowLayoutTopRightDefault),
         ]
-        suite.expect(defaultShortcuts.count == 41, "every default shortcut is in the round trip")
+        suite.expect(defaultShortcuts.count == 40, "every default shortcut is in the round trip")
         var brokenShortcuts: [String] = []
         for (name, shortcut) in defaultShortcuts {
             guard let restored = GlobalShortcut(storageValue: shortcut.storageValue),
