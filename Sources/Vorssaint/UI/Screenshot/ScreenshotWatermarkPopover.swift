@@ -347,6 +347,7 @@ struct ScreenshotWatermarkPopover: View {
 
     private func chooseImage() {
         let panel = NSOpenPanel()
+        panel.level = ScreenshotWindowLayering.dialogLevel(above: NSApp.keyWindow)
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false

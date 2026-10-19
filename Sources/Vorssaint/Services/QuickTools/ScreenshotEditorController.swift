@@ -1307,6 +1307,51 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
 
 /// Hosts one editor window per capture and owns everything with a side
 /// effect: clipboard, files, pins, text recognition and the close-confirm.
+/// An editor window that positions traffic light buttons down 13px and right 5px within the top toolbar.
+final class ScreenshotEditorWindow: NSWindow {
+    override func layoutIfNeeded() {
+        super.layoutIfNeeded()
+        adjustTrafficLightPosition()
+    }
+
+    private func adjustTrafficLightPosition() {
+        guard !styleMask.contains(.fullScreen),
+              let closeButton = standardWindowButton(.closeButton),
+              let titlebarView = closeButton.superview,
+              let containerView = titlebarView.superview else {
+            return
+        }
+        let targetHeight: CGFloat = 54
+        var containerFrame = containerView.frame
+        if containerFrame.size.height != targetHeight {
+            containerFrame.origin.y = frame.size.height - targetHeight
+            containerFrame.size.height = targetHeight
+            containerView.frame = containerFrame
+        }
+        var titlebarFrame = titlebarView.frame
+        if titlebarFrame.size.height != targetHeight {
+            titlebarFrame.origin.y = 0
+            titlebarFrame.size.height = targetHeight
+            titlebarView.frame = titlebarFrame
+        }
+
+        let buttonHeight = closeButton.frame.height
+        let targetY: CGFloat = 18.0
+        var currentX: CGFloat = 25.0
+        let buttonSpacing: CGFloat = 9.0
+
+        for buttonType in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
+            if let button = standardWindowButton(buttonType) {
+                var f = button.frame
+                f.origin.x = currentX
+                f.origin.y = targetY
+                button.frame = f
+                currentX += f.width + buttonSpacing
+            }
+        }
+    }
+}
+
 final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     let model: ScreenshotEditorModel
     private var window: NSWindow?
@@ -1338,7 +1383,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             .frame(minWidth: minimumSize.width, minHeight: minimumSize.height)
         let host = NSHostingController(rootView: content)
         host.sizingOptions = [.minSize]
-        let window = NSWindow(contentViewController: host)
+        let window = ScreenshotEditorWindow(contentViewController: host)
         window.level = ScreenshotWindowLayering.editorLevel(above: owner)
         // One continuous surface: the canvas fills the window and the
         // controls float over it, so the editor reads as a single object.
@@ -1678,6 +1723,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     func saveAs() {
         guard let window else { return }
         let panel = NSSavePanel()
+        panel.level = ScreenshotWindowLayering.dialogLevel(above: window)
         panel.allowedContentTypes = [.png]
         panel.nameFieldStringValue = ScreenshotSupport.fileName(
             prefix: strings.fileNamePrefix, date: Date())
@@ -1739,6 +1785,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard model.isDirty else { return true }
         let alert = NSAlert()
+        alert.window.level = ScreenshotWindowLayering.dialogLevel(above: sender)
         alert.messageText = strings.discardTitle
         alert.informativeText = strings.discardMessage
         alert.addButton(withTitle: strings.discardConfirm)

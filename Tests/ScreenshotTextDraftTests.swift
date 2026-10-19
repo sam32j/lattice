@@ -38,11 +38,14 @@ enum ScreenshotTextDraftTests {
         func refreshUndoFlags() { canUndo = !undoStack.isEmpty; canRedo = !redoStack.isEmpty }
         func refreshDirtyState() { isDirty = !annotations.isEmpty }
     }
-    final class NSWindow {}
+    final class NSWindow {
+        var level = AppKit.NSWindow.Level.normal
+    }
     final class NSAlert {
         enum Style { case warning }
         enum Response { case alertFirstButtonReturn, cancelled }
         static var presentations = 0
+        var window = NSWindow()
         var messageText = "", informativeText = ""
         var alertStyle = Style.warning
         func addButton(withTitle title: String) {}

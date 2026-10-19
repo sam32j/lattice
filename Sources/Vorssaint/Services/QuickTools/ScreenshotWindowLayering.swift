@@ -12,6 +12,10 @@ enum ScreenshotWindowLayering {
         guard let owner else { return .normal }
         return NSWindow.Level(rawValue: max(NSWindow.Level.normal.rawValue, owner.level.rawValue + 1))
     }
+    static func dialogLevel(above window: AnyObject?) -> NSWindow.Level {
+        guard let window = window as? NSWindow else { return .modalPanel }
+        return NSWindow.Level(rawValue: max(NSWindow.Level.modalPanel.rawValue, window.level.rawValue + 1))
+    }
     static func isQuickLookShortcut(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
         guard flags == .command else { return false }
