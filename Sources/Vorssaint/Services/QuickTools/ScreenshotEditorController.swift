@@ -224,14 +224,12 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         CGSize(width: CGFloat(baseImage.width) / scale, height: CGFloat(baseImage.height) / scale)
     }
 
-    init(image: CGImage, scale: CGFloat) {
+    init(image: CGImage, scale: CGFloat, annotations: [ScreenshotSupport.Annotation] = []) {
         baseImage = image
         self.scale = scale
+        self.annotations = annotations
         let defaults = UserDefaults.standard
-        var lastTool = ScreenshotSupport.Tool(
-            rawValue: defaults.string(forKey: DefaultsKey.screenshotLastTool) ?? "") ?? .arrow
-        if lastTool == .select || lastTool == .crop { lastTool = .arrow }
-        tool = lastTool
+        tool = .select
         color = ScreenshotSupport.ColorID.sanitized(
             defaults.string(forKey: DefaultsKey.screenshotLastColor))
         stroke = ScreenshotSupport.StrokeID.sanitized(
@@ -834,7 +832,6 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                 words: textWords.map(\.rect), padding: 2 * scale)
             updateDraft {
                 $0.rect = runs.reduce(CGRect.null) { $0.union($1) }
-                if runs.isEmpty { $0.rect = ScreenshotSupport.selectionRect(from: dragStart, to: point) }
                 $0.points = runs.flatMap { [CGPoint(x: $0.minX, y: $0.minY), CGPoint(x: $0.maxX, y: $0.maxY)] }
             }
         case .rect, .ellipse, .pixelate, .redact, .text:
@@ -980,10 +977,20 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             annotations.append(annotation)
             annotations = ScreenshotSupport.renumberingCounters(annotations)
             selectedID = annotation.id
-        case .arrow, .line, .rect, .ellipse, .highlight, .pixelate, .redact, .freehand:
+        case .arrow, .line, .rect, .ellipse, .pixelate, .redact, .freehand:
             if isTap {
                 // A tap never leaves a degenerate shape behind; treat it as
                 // picking whatever is under the cursor instead.
+                annotations.removeAll { $0.id == draftID }
+                if !undoStack.isEmpty { undoStack.removeLast() }
+                refreshUndoFlags()
+                refreshDirtyState()
+                _ = selectExistingAnnotation(at: point)
+            } else if let draftID {
+                selectedID = draftID
+            }
+        case .highlight:
+            if isTap || (draftID != nil && annotations.first(where: { $0.id == draftID })?.points.isEmpty == true) {
                 annotations.removeAll { $0.id == draftID }
                 if !undoStack.isEmpty { undoStack.removeLast() }
                 refreshUndoFlags()
@@ -1032,7 +1039,11 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         if let hitID, let hit = annotations.first(where: { $0.id == hitID }) {
             syncControls(to: hit)
             self.selectedID = hitID
-            editingTextID = nil
+            if NSApp.currentEvent?.clickCount == 2, hit.tool == .text {
+                editingTextID = hitID
+            } else if editingTextID != hitID {
+                editingTextID = nil
+            }
             clearTextSelection()
         } else if textSelectionEnabled, let word = wordIndex(at: point) {
             selectedWordIndexes = [word]
@@ -1354,6 +1365,8 @@ final class ScreenshotEditorWindow: NSWindow {
 
 final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     let model: ScreenshotEditorModel
+    let capture: ScreenshotSelectionController.Capture
+    weak var originatingPin: ScreenshotPinWindow?
     private var window: NSWindow?
     private var keyMonitor: Any?
     private var scrollMonitor: Any?
@@ -1368,7 +1381,8 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     }
 
     init(capture: ScreenshotSelectionController.Capture) {
-        model = ScreenshotEditorModel(image: capture.image, scale: capture.scale)
+        self.capture = capture
+        model = ScreenshotEditorModel(image: capture.image, scale: capture.scale, annotations: capture.annotations)
         super.init()
     }
 
@@ -1509,7 +1523,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
                 }
                 return true
             case kVK_ANSI_S:
-                if flags.contains(.shift) { saveAs() } else { save() }
+                if flags.contains(.shift) { save() } else { done() }
                 return true
             case kVK_ANSI_Z:
                 if flags.contains(.shift) { model.redo() } else { model.undo() }
@@ -1536,7 +1550,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             if model.tool == .crop, model.cropDraft != nil {
                 model.applyCrop()
             } else {
-                copyToClipboard()
+                done()
             }
             return true
         case kVK_Escape:
@@ -1554,6 +1568,9 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             model.tool = .select
             model.selectedID = nil
             model.textSelectionEnabled.toggle()
+            return true
+        case kVK_ANSI_S:
+            saveAs()
             return true
         default:
             return false
@@ -1763,10 +1780,40 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         window?.close()
     }
 
+    func done() {
+        if window?.firstResponder is NSText || model.editingTextID != nil {
+            model.editingTextID = nil
+        }
+        guard let export = model.exportImage(withBackdrop: false) else { return }
+
+        RecentCaptureService.shared.saveEditedCapture(
+            id: capture.id,
+            renderedImage: export.image,
+            baseImage: model.baseImage,
+            scale: export.scale,
+            annotations: model.annotations
+        )
+
+        let pin = originatingPin ?? ScreenshotPinController.shared.findPin(for: capture.id)
+        pin?.updateImage(export.image, baseImage: model.baseImage, annotations: model.annotations)
+
+        model.markExported()
+        window?.close()
+    }
+
     /// Pinning snapshots the current export and leaves the editor open.
     func pin() {
         guard let export = model.exportImage(withBackdrop: false) else { return }
-        ScreenshotPinController.shared.pin(image: export.image, scale: export.scale)
+        let pinned = ScreenshotPinController.shared.pin(
+            image: export.image,
+            scale: export.scale,
+            baseImage: model.baseImage,
+            annotations: model.annotations,
+            captureID: capture.id
+        )
+        if originatingPin == nil {
+            originatingPin = pinned
+        }
         model.markExported()
     }
 

@@ -41,8 +41,13 @@ final class ScreenshotPinController {
         }
     }
 
-    func pin(image: CGImage, scale: CGFloat) {
-        let pin = ScreenshotPinWindow(image: image, scale: scale)
+    func findPin(for captureID: UUID) -> ScreenshotPinWindow? {
+        pins.first { $0.captureID == captureID }
+    }
+
+    @discardableResult
+    func pin(image: CGImage, scale: CGFloat, baseImage: CGImage? = nil, annotations: [ScreenshotSupport.Annotation] = [], captureID: UUID = UUID()) -> ScreenshotPinWindow {
+        let pin = ScreenshotPinWindow(image: image, scale: scale, captureID: captureID, baseImage: baseImage, annotations: annotations)
         pin.onClose = { [weak self, weak pin] in
             self?.pins.removeAll { $0 === pin }
             self?.refreshMonitoring()
@@ -53,13 +58,19 @@ final class ScreenshotPinController {
         pin.onClickThroughChanged = { [weak self] in self?.refreshEscapeMonitor() }
         pin.onEdit = { [weak pin] in
             guard let pin else { return }
-            ScreenshotService.shared.openEditor(with: .init(image: pin.image, scale: pin.captureScale, anchorRect: pin.frame), above: pin)
+            let base = pin.baseImage ?? pin.image
+            ScreenshotService.shared.openEditor(
+                with: .init(id: pin.captureID, image: base, scale: pin.captureScale, anchorRect: pin.frame, annotations: pin.annotations),
+                above: pin,
+                originatingPin: pin
+            )
         }
         let offset = CGFloat(pins.count % 5) * 26
         pin.setFrameOrigin(CGPoint(x: pin.frame.minX + offset, y: pin.frame.minY - offset))
         pins.append(pin)
         pin.showPin()
         refreshMonitoring()
+        return pin
     }
 
     func closeAll() {

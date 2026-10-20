@@ -224,12 +224,17 @@ struct ScreenshotEditorView: View {
         .simultaneousGesture(SpatialTapGesture(count: 2).onEnded { value in
             commitEditingTextIfNeeded()
             model.editText(at: imagePoint(from: value.location, zoom: zoom))
+            if let editingID = model.editingTextID {
+                editingText = model.annotations.first(where: { $0.id == editingID })?.text ?? ""
+            }
         })
         .onContinuousHover { phase in
             switch phase {
             case .active(let location):
                 let point = imagePoint(from: location, zoom: zoom)
                 if model.textSelectionEnabled, model.wordIndex(at: point) != nil {
+                    NSCursor.iBeam.set()
+                } else if model.tool == .highlight {
                     NSCursor.iBeam.set()
                 } else if model.hitTest(point) != nil {
                     NSCursor.openHand.set()
@@ -403,7 +408,11 @@ struct ScreenshotEditorView: View {
                     model.continueDrag(to: point, constrained: NSEvent.modifierFlags.contains(.shift))
                 }
                 drag.update(to: value.location)
-                if model.selectedID != nil { NSCursor.closedHand.set() }
+                if model.tool == .highlight {
+                    NSCursor.iBeam.set()
+                } else if model.selectedID != nil {
+                    NSCursor.closedHand.set()
+                }
             }
             .onEnded { value in
                 dragInFlight = false
@@ -831,14 +840,14 @@ struct ScreenshotEditorView: View {
             }
             .focusable(false)
             .fixedSize()
-            .screenshotSafeHelp("⌘S")
+            .screenshotSafeHelp("⇧⌘S")
 
-            Button(strings.copyButton) {
+            Button(l10n.s.doneButton) {
                 commitEditingTextIfNeeded()
-                controller.copyToClipboard()
+                controller.done()
             }
             .buttonStyle(.borderedProminent)
-            .screenshotSafeHelp("⏎")
+            .screenshotSafeHelp("⌘S / ⏎")
         }
         .padding(.horizontal, 9)
         .padding(.vertical, 6)
