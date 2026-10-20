@@ -12,7 +12,7 @@ struct RecorderSelectionDraft {
     private var handle: ScreenshotSupport.Handle?
 
     mutating func begin(at point: CGPoint) {
-        handle = ScreenshotSupport.handle(at: point, rect: rect, tolerance: 8)
+        handle = ScreenshotSupport.handle(at: point, rect: rect, tolerance: 14)
         origin = handle != nil || rect.contains(point) ? point : nil
         initial = rect
     }

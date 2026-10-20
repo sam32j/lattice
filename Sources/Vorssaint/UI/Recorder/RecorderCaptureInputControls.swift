@@ -7,25 +7,59 @@ import SwiftUI
 struct RecorderOverlayInputControls: View {
     @ObservedObject private var overlays = RecorderOverlayController.shared
     private var text: RecorderOverlayStrings { FeatureStrings.recorderOverlay(L10n.shared.language) }
+    @State private var cameraHovered = false
+    @State private var keysHovered = false
+
     var body: some View {
         HStack(spacing: 6) {
             Button { overlays.toggleCamera() } label: {
                 Image(systemName: "video.fill")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(overlays.cameraEnabled ? .white : .secondary)
+                    .foregroundStyle(overlays.cameraEnabled ? .white : (cameraHovered ? .primary : .secondary))
                     .frame(width: 32, height: 26)
-                    .background(overlays.cameraEnabled ? Color.accentColor : Color.primary.opacity(0.06), in: Capsule())
+                    .background(
+                        overlays.cameraEnabled
+                            ? (cameraHovered ? Color.accentColor.opacity(0.85) : Color.accentColor)
+                            : (cameraHovered ? Color.primary.opacity(0.14) : Color.primary.opacity(0.06)),
+                        in: Capsule()
+                    )
+                    .overlay {
+                        if cameraHovered && !overlays.cameraEnabled {
+                            Capsule()
+                                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                        }
+                    }
+                    .scaleEffect(cameraHovered ? 1.05 : 1.0)
+                    .animation(.easeOut(duration: 0.15), value: cameraHovered)
             }
+            .buttonStyle(.plain)
+            .onHover { cameraHovered = $0 }
             .help(text.camera)
             .accessibilityLabel(text.camera)
             .contextMenu { RecorderInputSourceMenu(camera: true) }
+
             Button { overlays.keysEnabled.toggle() } label: {
                 Image(systemName: "keyboard")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(overlays.keysEnabled ? .white : .secondary)
+                    .foregroundStyle(overlays.keysEnabled ? .white : (keysHovered ? .primary : .secondary))
                     .frame(width: 32, height: 26)
-                    .background(overlays.keysEnabled ? Color.accentColor : Color.primary.opacity(0.06), in: Capsule())
+                    .background(
+                        overlays.keysEnabled
+                            ? (keysHovered ? Color.accentColor.opacity(0.85) : Color.accentColor)
+                            : (keysHovered ? Color.primary.opacity(0.14) : Color.primary.opacity(0.06)),
+                        in: Capsule()
+                    )
+                    .overlay {
+                        if keysHovered && !overlays.keysEnabled {
+                            Capsule()
+                                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                        }
+                    }
+                    .scaleEffect(keysHovered ? 1.05 : 1.0)
+                    .animation(.easeOut(duration: 0.15), value: keysHovered)
             }
+            .buttonStyle(.plain)
+            .onHover { keysHovered = $0 }
             .help(text.keys)
             .accessibilityLabel(text.keys)
         }

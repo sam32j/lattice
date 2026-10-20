@@ -21,6 +21,7 @@ struct RecorderCameraLayout: Equatable {
     var isFlipped = false
     var isFullArea = false
     var pixelsPerPoint: CGFloat = 1
+    var edgePadding: CGFloat = 5.0
     private var position = CGPoint(x: 1, y: 0)
 
     func cornerRadius(in frame: CGRect) -> CGFloat {
@@ -83,7 +84,12 @@ struct RecorderCameraLayout: Equatable {
     }
 
     private func usableBounds(_ canvas: CGSize) -> CGRect {
-        CGRect(origin: .zero, size: canvas)
+        let padding = edgePadding * max(1, pixelsPerPoint)
+        let target = dimensions(.small)
+        guard canvas.width >= target.width + padding * 2, canvas.height >= target.height + padding * 2 else {
+            return CGRect(origin: .zero, size: canvas)
+        }
+        return CGRect(origin: .zero, size: canvas).insetBy(dx: padding, dy: padding)
     }
     private func dimensions(_ size: Size) -> CGSize {
         let longest = min(500, size.longestSide)

@@ -105,8 +105,8 @@ final class RecorderOverlayController: ObservableObject {
                                 width: frame.width * anchorRect.width / pixelSize.width,
                                 height: frame.height * anchorRect.height / pixelSize.height)
             NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.22
-                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                context.duration = 0.35
+                context.timingFunction = CAMediaTimingFunction(controlPoints: 0.16, 1.0, 0.3, 1.0)
                 cameraPanel?.animator().setFrame(points, display: true)
             }
         } else {
