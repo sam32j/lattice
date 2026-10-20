@@ -303,8 +303,8 @@ final class ScreenshotSelectionController {
         // resigning a full-screen key panel can flash the surrounding chrome.
         screenCaptureOptions?.onPresentationReady?()
         guard !finished else { return }
-        NSApp.activate(ignoringOtherApps: true)
         panels.forEach { $0.orderFrontRegardless() }
+        NSApp.activate(ignoringOtherApps: true)
         if let keyPanel = keyPanelUnderMouse() ?? panels.first {
             keyPanel.makeKeyAndOrderFront(nil)
         }
@@ -1800,6 +1800,7 @@ private final class ScreenshotOverlayView: NSView {
             }
             if controller.hasSelectedWindows {
                 for (_, entry) in controller.selectedWindows where entry.panel === panel {
+                    drawWindowHighlight(context, rect: entry.window.frame, cornerRadius: windowRadius)
                     drawWindowCheckmark(context, for: entry.window)
                 }
             }
@@ -1849,55 +1850,104 @@ private final class ScreenshotOverlayView: NSView {
 
     private func drawSelectionChrome(_ context: CGContext, pixelScale: CGFloat) {
         if recordingDraft != nil {
+            // Screen recording selection:
+            // 1. Selection border: 1pt white line with subtle shadow (no blue glow)
             context.saveGState()
-            context.setShadow(offset: CGSize(width: 0, height: -0.5), blur: 3, color: CGColor(gray: 0, alpha: 0.35))
-            for handle in ScreenshotSupport.Handle.allCases {
+            context.setShadow(offset: CGSize(width: 0, height: -0.5), blur: 2.5, color: CGColor(gray: 0, alpha: 0.4))
+            let borderPath = CGPath(rect: selection.insetBy(dx: -0.5, dy: -0.5), transform: nil)
+            context.addPath(borderPath)
+            context.setStrokeColor(NSColor.white.cgColor)
+            context.setLineWidth(1)
+            context.strokePath()
+            context.restoreGState()
+
+            // 2. Tabs: 4 edge pills and 4 corner L-brackets
+            context.saveGState()
+            context.setShadow(offset: CGSize(width: 0, height: -0.5), blur: 3, color: CGColor(gray: 0, alpha: 0.45))
+
+            // Edge pills
+            for handle in [ScreenshotSupport.Handle.top, .bottom, .left, .right] {
                 let point = handle.position(in: selection)
                 let rect: CGRect
-                let radius: CGFloat
+                let radius: CGFloat = 2.5
                 switch handle {
                 case .top, .bottom:
-                    rect = CGRect(x: point.x - 14, y: point.y - 3, width: 28, height: 6)
-                    radius = 3
+                    rect = CGRect(x: point.x - 13, y: point.y - 2.5, width: 26, height: 5)
                 case .left, .right:
-                    rect = CGRect(x: point.x - 3, y: point.y - 14, width: 6, height: 28)
-                    radius = 3
-                case .topLeft, .topRight, .bottomLeft, .bottomRight:
-                    rect = CGRect(x: point.x - 5, y: point.y - 5, width: 10, height: 10)
-                    radius = 2.5
+                    rect = CGRect(x: point.x - 2.5, y: point.y - 13, width: 5, height: 26)
+                default:
+                    continue
                 }
-                let path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
-                context.addPath(path)
+                let pillPath = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+                context.addPath(pillPath)
                 context.setFillColor(NSColor.white.cgColor)
                 context.fillPath()
-                context.addPath(path)
-                context.setStrokeColor(CGColor(gray: 0.1, alpha: 0.25))
-                context.setLineWidth(0.75)
+                context.addPath(pillPath)
+                context.setStrokeColor(CGColor(gray: 0.1, alpha: 0.2))
+                context.setLineWidth(0.5)
+                context.strokePath()
+            }
+
+            // Corner L-brackets
+            let arm: CGFloat = 18.0
+            let r: CGFloat = 3.0
+            for handle in [ScreenshotSupport.Handle.topLeft, .topRight, .bottomLeft, .bottomRight] {
+                let p = CGMutablePath()
+                switch handle {
+                case .topLeft:
+                    p.move(to: CGPoint(x: selection.minX + arm, y: selection.minY))
+                    p.addArc(tangent1End: CGPoint(x: selection.minX, y: selection.minY),
+                             tangent2End: CGPoint(x: selection.minX, y: selection.minY + arm), radius: r)
+                    p.addLine(to: CGPoint(x: selection.minX, y: selection.minY + arm))
+                case .topRight:
+                    p.move(to: CGPoint(x: selection.maxX - arm, y: selection.minY))
+                    p.addArc(tangent1End: CGPoint(x: selection.maxX, y: selection.minY),
+                             tangent2End: CGPoint(x: selection.maxX, y: selection.minY + arm), radius: r)
+                    p.addLine(to: CGPoint(x: selection.maxX, y: selection.minY + arm))
+                case .bottomLeft:
+                    p.move(to: CGPoint(x: selection.minX + arm, y: selection.maxY))
+                    p.addArc(tangent1End: CGPoint(x: selection.minX, y: selection.maxY),
+                             tangent2End: CGPoint(x: selection.minX, y: selection.maxY - arm), radius: r)
+                    p.addLine(to: CGPoint(x: selection.minX, y: selection.maxY - arm))
+                case .bottomRight:
+                    p.move(to: CGPoint(x: selection.maxX - arm, y: selection.maxY))
+                    p.addArc(tangent1End: CGPoint(x: selection.maxX, y: selection.maxY),
+                             tangent2End: CGPoint(x: selection.maxX, y: selection.maxY - arm), radius: r)
+                    p.addLine(to: CGPoint(x: selection.maxX, y: selection.maxY - arm))
+                default:
+                    continue
+                }
+                context.addPath(p)
+                context.setLineCap(.round)
+                context.setLineJoin(.round)
+                context.setLineWidth(3.0)
+                context.setStrokeColor(NSColor.white.cgColor)
                 context.strokePath()
             }
             context.restoreGState()
+        } else {
+            let outer = CGPath(roundedRect: selection.insetBy(dx: -1.5, dy: -1.5),
+                               cornerWidth: 9,
+                               cornerHeight: 9,
+                               transform: nil)
+            let inner = CGPath(roundedRect: selection.insetBy(dx: -0.5, dy: -0.5),
+                               cornerWidth: 8,
+                               cornerHeight: 8,
+                               transform: nil)
+            context.saveGState()
+            context.setShadow(offset: .zero,
+                              blur: 9,
+                              color: CGColor(srgbRed: 0.18, green: 0.55, blue: 1, alpha: 0.55))
+            context.addPath(outer)
+            context.setStrokeColor(CGColor(srgbRed: 0.18, green: 0.55, blue: 1, alpha: 0.98))
+            context.setLineWidth(3)
+            context.strokePath()
+            context.restoreGState()
+            context.addPath(inner)
+            context.setStrokeColor(CGColor(gray: 1, alpha: 0.95))
+            context.setLineWidth(1)
+            context.strokePath()
         }
-        let outer = CGPath(roundedRect: selection.insetBy(dx: -1.5, dy: -1.5),
-                           cornerWidth: 9,
-                           cornerHeight: 9,
-                           transform: nil)
-        let inner = CGPath(roundedRect: selection.insetBy(dx: -0.5, dy: -0.5),
-                           cornerWidth: 8,
-                           cornerHeight: 8,
-                           transform: nil)
-        context.saveGState()
-        context.setShadow(offset: .zero,
-                          blur: 9,
-                          color: CGColor(srgbRed: 0.18, green: 0.55, blue: 1, alpha: 0.55))
-        context.addPath(outer)
-        context.setStrokeColor(CGColor(srgbRed: 0.18, green: 0.55, blue: 1, alpha: 0.98))
-        context.setLineWidth(3)
-        context.strokePath()
-        context.restoreGState()
-        context.addPath(inner)
-        context.setStrokeColor(CGColor(gray: 1, alpha: 0.95))
-        context.setLineWidth(1)
-        context.strokePath()
 
         let width = Int(selection.width.rounded())
         let height = Int(selection.height.rounded())
@@ -1906,16 +1956,13 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     private func drawWindowHighlight(_ context: CGContext, rect: CGRect, cornerRadius: CGFloat = 10) {
-        let path = CGPath(roundedRect: rect.insetBy(dx: 1.25, dy: 1.25),
+        let path = CGPath(roundedRect: rect.insetBy(dx: 1.0, dy: 1.0),
                           cornerWidth: max(0, cornerRadius - 1),
                           cornerHeight: max(0, cornerRadius - 1),
                           transform: nil)
         context.addPath(path)
-        context.setFillColor(CGColor(srgbRed: 0.35, green: 0.62, blue: 1, alpha: 0.14))
-        context.fillPath()
-        context.addPath(path)
-        context.setStrokeColor(CGColor(srgbRed: 0.35, green: 0.62, blue: 1, alpha: 0.95))
-        context.setLineWidth(2.5)
+        context.setStrokeColor(CGColor(srgbRed: 0.35, green: 0.65, blue: 1.0, alpha: 0.90))
+        context.setLineWidth(2.0)
         context.strokePath()
     }
 

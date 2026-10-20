@@ -43,7 +43,7 @@ enum RecorderOverlayTests {
         suite.expect(snapper.frame(in: regular).origin == CGPoint(x: 10, y: 10),
                      "camera drags smoothly without magnet jumps")
         snapper.snapToNearestEdge(in: regular)
-        suite.expect(snapper.frame(in: regular).origin.x == 0 || snapper.frame(in: regular).origin.y == 0,
+        suite.expect(snapper.frame(in: regular).origin.x == snapper.edgePadding || snapper.frame(in: regular).origin.y == snapper.edgePadding,
                      "camera snaps to the nearest selection edge on release")
     }
 }
