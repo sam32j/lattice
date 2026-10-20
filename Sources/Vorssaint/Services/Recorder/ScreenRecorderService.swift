@@ -408,7 +408,18 @@ final class ScreenRecorderService: ObservableObject {
             onStop: { [weak self] in self?.stop() },
             onDiscard: { [weak self] in self?.stopAndDiscard() })
         indicator.showRegionGuide(for: region)
+        indicator.show(on: NSScreen.screens.first { $0.displayID == region.displayID },
+                       tooltip: strings.indicatorTooltip,
+                       pauseTooltip: strings.pauseButton,
+                       resumeTooltip: strings.resumeButton,
+                       stopTooltip: strings.stopButton,
+                       discardTooltip: strings.discardButton)
         self.indicator = indicator
+
+        if UserDefaults.standard.bool(forKey: DefaultsKey.recorderPlaySound) {
+            NSSound(contentsOfFile: "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/SystemSounds/system/begin_record.caf", byReference: true)?.play()
+        }
+
         // Selection owns the editable waiting state. Reaching this boundary
         // means Start was confirmed or immediate recording was requested.
         prepareCountdown(for: region, wantsMicrophone: audioOptions.microphone, generation: generation)
@@ -620,9 +631,6 @@ final class ScreenRecorderService: ObservableObject {
     private func recordingDidStart() {
         isRecording = true
         isPaused = false
-        if UserDefaults.standard.bool(forKey: DefaultsKey.recorderPlaySound) {
-            NSSound(contentsOfFile: "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/SystemSounds/system/begin_record.caf", byReference: true)?.play()
-        }
         elapsedSeconds = Int(session?.elapsed(at: CACurrentMediaTime()) ?? 0)
         indicator?.update(elapsed: RecorderSupport.elapsedLabel(seconds: elapsedSeconds))
         sleepActivity = ProcessInfo.processInfo.beginActivity(

@@ -39,33 +39,25 @@ private struct RecorderWaitingBar: View {
     let start: () -> Void
     let cancel: () -> Void
     private var strings: RecorderFeatureStrings { FeatureStrings.recorder(L10n.shared.language) }
+
     var body: some View {
         HStack(spacing: 10) {
             HStack(spacing: 6) {
-                input("speaker.wave.2.fill", title: strings.systemAudioTrackLabel,
-                      enabled: audio.systemAudio) { audio.systemAudio.toggle() }
-                input("mic.fill", title: strings.microphoneTrackLabel,
-                      enabled: audio.microphone) { audio.microphone.toggle() }
+                WaitingInputButton(icon: "speaker.wave.2.fill", title: strings.systemAudioTrackLabel,
+                                   enabled: audio.systemAudio) { audio.systemAudio.toggle() }
+                WaitingInputButton(icon: "mic.fill", title: strings.microphoneTrackLabel,
+                                   enabled: audio.microphone) { audio.microphone.toggle() }
                     .contextMenu { RecorderInputSourceMenu(camera: false) }
                 RecorderOverlayInputControls()
             }
             .padding(6)
             .background(.regularMaterial, in: Capsule())
-            HStack(spacing: 4) {
-                Button(action: start) {
-                    Image(systemName: "play.fill")
-                        .frame(width: 28, height: 32)
-                }
-                .buttonStyle(WaitingFeedbackButtonStyle())
-                .help(strings.startButton)
 
-                Button(action: cancel) {
-                    Image(systemName: "xmark")
-                        .foregroundStyle(.red)
-                        .frame(width: 28, height: 32)
-                }
-                .buttonStyle(WaitingFeedbackButtonStyle(isDestructive: true))
-                .help(strings.cancelButton)
+            HStack(spacing: 4) {
+                WaitingActionButton(icon: "play.fill", isDestructive: false,
+                                    tooltip: strings.startButton, action: start)
+                WaitingActionButton(icon: "xmark", isDestructive: true,
+                                    tooltip: strings.cancelButton, action: cancel)
             }
             .padding(4)
             .background(.regularMaterial, in: Capsule())
@@ -74,14 +66,74 @@ private struct RecorderWaitingBar: View {
         .focusable(false)
         .padding(2)
     }
-    private func input(_ icon: String, title: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+}
+
+private struct WaitingActionButton: View {
+    let icon: String
+    var isDestructive: Bool = false
+    let tooltip: String
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(enabled ? .white : .secondary)
-                .frame(width: 32, height: 26)
-                .background(enabled ? Color.accentColor : Color.primary.opacity(0.06), in: Capsule())
+                .foregroundStyle(isDestructive ? Color.red : Color.primary)
+                .frame(width: 28, height: 32)
+                .background(
+                    Capsule()
+                        .fill(isHovered
+                              ? (isDestructive ? Color.red.opacity(0.15) : Color.primary.opacity(0.10))
+                              : Color.clear)
+                )
+                .overlay {
+                    if isHovered {
+                        Capsule()
+                            .strokeBorder(isDestructive ? Color.red.opacity(0.25) : Color.primary.opacity(0.12), lineWidth: 0.5)
+                    }
+                }
+                .scaleEffect(isHovered ? 1.05 : 1.0)
+                .animation(.easeOut(duration: 0.15), value: isHovered)
         }
+        .buttonStyle(WaitingFeedbackButtonStyle(isDestructive: isDestructive))
+        .onHover { isHovered = $0 }
+        .help(tooltip)
+    }
+}
+
+private struct WaitingInputButton: View {
+    let icon: String
+    let title: String
+    let enabled: Bool
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(enabled ? .white : (isHovered ? .primary : .secondary))
+                .frame(width: 32, height: 26)
+                .background(
+                    enabled
+                        ? (isHovered ? Color.accentColor.opacity(0.85) : Color.accentColor)
+                        : (isHovered ? Color.primary.opacity(0.14) : Color.primary.opacity(0.06)),
+                    in: Capsule()
+                )
+                .overlay {
+                    if isHovered && !enabled {
+                        Capsule()
+                            .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                    }
+                }
+                .scaleEffect(isHovered ? 1.05 : 1.0)
+                .animation(.easeOut(duration: 0.15), value: isHovered)
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
         .help(title)
         .accessibilityLabel(title)
     }
@@ -95,7 +147,7 @@ private struct WaitingFeedbackButtonStyle: ButtonStyle {
             .background(
                 Capsule()
                     .fill(configuration.isPressed
-                          ? (isDestructive ? Color.red.opacity(0.2) : Color.accentColor.opacity(0.25))
+                          ? (isDestructive ? Color.red.opacity(0.25) : Color.accentColor.opacity(0.28))
                           : Color.clear)
             )
             .scaleEffect(configuration.isPressed ? 0.92 : 1.0)

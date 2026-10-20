@@ -108,20 +108,30 @@ enum ScreenshotCaptureEngine {
         let ownWindows = await excludedOwnWindows(in: content,
                                             hideVorssaintWindows: hideVorssaintWindows,
                                             protectedWindowIDs: protectedWindowIDs)
-        var result: [CGDirectDisplayID: CGImage] = [:]
-        for screen in NSScreen.screens {
-            let id = screen.displayID
-            guard id != 0,
-                  let display = content.displays.first(where: { $0.displayID == id })
-            else { continue }
-            if let image = await captureDisplay(display,
-                                                scale: screen.backingScaleFactor,
-                                                excluding: ownWindows,
-                                                includePointer: includePointer) {
-                result[id] = image
+        let screens = NSScreen.screens
+        return await withTaskGroup(of: (CGDirectDisplayID, CGImage?).self) { group in
+            for screen in screens {
+                let id = screen.displayID
+                guard id != 0,
+                      let display = content.displays.first(where: { $0.displayID == id })
+                else { continue }
+                let scale = screen.backingScaleFactor
+                group.addTask {
+                    let image = await captureDisplay(display,
+                                                     scale: scale,
+                                                     excluding: ownWindows,
+                                                     includePointer: includePointer)
+                    return (id, image)
+                }
             }
+            var result: [CGDirectDisplayID: CGImage] = [:]
+            for await (id, image) in group {
+                if let image {
+                    result[id] = image
+                }
+            }
+            return result
         }
-        return result
     }
 
     /// The app's own windows a display capture must leave out, resolved
