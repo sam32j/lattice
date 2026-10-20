@@ -17,11 +17,21 @@ import SwiftUI
 final class ScreenshotSelectionController {
 
     struct Capture {
+        let id: UUID
         let image: CGImage
         /// Pixels per point of the source display, for 1x export math.
         let scale: CGFloat
         /// The captured area in Cocoa global coordinates.
         let anchorRect: CGRect
+        let annotations: [ScreenshotSupport.Annotation]
+
+        init(id: UUID = UUID(), image: CGImage, scale: CGFloat, anchorRect: CGRect = .zero, annotations: [ScreenshotSupport.Annotation] = []) {
+            self.id = id
+            self.image = image
+            self.scale = scale
+            self.anchorRect = anchorRect
+            self.annotations = annotations
+        }
     }
 
     /// What the caller wants out of the same gesture. The screenshot tool

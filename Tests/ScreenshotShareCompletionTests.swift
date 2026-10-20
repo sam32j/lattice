@@ -185,6 +185,7 @@ enum ScreenshotShareCompletionTests {
     final class ScreenshotEditorController {
         let capture: Int
         var shown = false
+        var originatingPin: Any? = nil
         init(capture: Int) { self.capture = capture }
         func show(above owner: NSWindow? = nil) { shown = true }
     }

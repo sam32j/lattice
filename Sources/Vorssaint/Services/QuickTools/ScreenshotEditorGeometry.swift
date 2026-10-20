@@ -40,7 +40,7 @@ enum ScreenshotEditorGeometry {
         guard constrained else { return end }
         let dx = end.x - start.x, dy = end.y - start.y
         switch tool {
-        case .rect, .ellipse:
+        case .rect, .ellipse, .redact:
             let side = max(abs(dx), abs(dy))
             return CGPoint(x: start.x + (dx < 0 ? -side : side), y: start.y + (dy < 0 ? -side : side))
         case .arrow, .line:
@@ -69,10 +69,12 @@ enum ScreenshotEditorGeometry {
     static func aspectRect(from start: CGPoint, to end: CGPoint, aspect: CGFloat) -> CGRect {
         guard aspect.isFinite, aspect > 0 else { return ScreenshotSupport.selectionRect(from: start, to: end) }
         let dx = end.x - start.x, dy = end.y - start.y
-        let width = max(abs(dx), abs(dy) * aspect)
+        let proj = (abs(dx) * aspect + abs(dy)) / (aspect * aspect + 1)
+        let width = proj * aspect
+        let height = proj
         return ScreenshotSupport.selectionRect(from: start,
             to: CGPoint(x: start.x + (dx < 0 ? -width : width),
-                        y: start.y + (dy < 0 ? -width / aspect : width / aspect)))
+                        y: start.y + (dy < 0 ? -height : height)))
     }
 
     /// Reading-order range, merged within each line without bridging columns.

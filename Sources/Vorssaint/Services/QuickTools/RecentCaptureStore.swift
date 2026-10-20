@@ -170,6 +170,19 @@ final class RecentCaptureStore {
         let referencedRecordings = Set(entries.compactMap { $0.recordingPath })
         let referencedCaptures = referencedScreenshots.union(referencedRecordings)
         let referencedThumbnails = Set(entries.compactMap { $0.thumbnailName })
+        let referencedIDs = Set(entries.map { $0.id.uuidString })
+
+        func isReferenced(_ relativePath: String, fileName: String) -> Bool {
+            if referencedCaptures.contains(relativePath) || referencedThumbnails.contains(fileName) {
+                return true
+            }
+            for id in referencedIDs {
+                if fileName.hasPrefix(id) {
+                    return true
+                }
+            }
+            return false
+        }
 
         // Sweep legacy root files and dated captures without following symlinks.
         for item in contents(of: resolvedDir) {
@@ -179,14 +192,14 @@ final class RecentCaptureStore {
 
             if values.isRegularFile == true {
                 if Self.isCaptureFileName(name),
-                   !referencedCaptures.contains(name), !referencedThumbnails.contains(name) {
+                   !isReferenced(name, fileName: name) {
                     try? manager.removeItem(at: item)
                 }
             } else if values.isDirectory == true, Self.isDateFolderName(name) {
                 for file in contents(of: item) {
                     let fileName = file.lastPathComponent
                     guard Self.isRegularFile(file), Self.isCaptureFileName(fileName),
-                          !referencedCaptures.contains("\(name)/\(fileName)") else { continue }
+                          !isReferenced("\(name)/\(fileName)", fileName: fileName) else { continue }
                     try? manager.removeItem(at: file)
                 }
                 if let remaining = try? manager.contentsOfDirectory(atPath: item.path), remaining.isEmpty {
@@ -240,6 +253,12 @@ final class RecentCaptureStore {
         if lower.hasSuffix(".mov") || lower.hasSuffix(".mp4") {
             let stem = String(name.dropLast(4))
             return UUID(uuidString: stem) != nil
+        }
+        if lower.hasSuffix(".json") {
+            let stem = String(name.dropLast(5))
+            let suffix = "-annotations"
+            return stem.hasSuffix(suffix)
+                && UUID(uuidString: String(stem.dropLast(suffix.count))) != nil
         }
         return false
     }
