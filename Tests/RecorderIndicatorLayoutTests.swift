@@ -11,7 +11,7 @@ enum RecorderIndicatorLayoutTests {
             indicator.show(on: NSScreen.main, tooltip: "Recording", pauseTooltip: "Pause",
                 resumeTooltip: "Resume", stopTooltip: "Stop", discardTooltip: "Trash")
             let selection = CGRect(x: 200, y: 180, width: 600, height: 400)
-            let domain = "RecorderWaitingControlsTests.\(UUID().uuidString)"
+            let domain = "vorss.tests.RecorderWaitingControlsTests.\(UUID().uuidString)"
             let defaults = UserDefaults(suiteName: domain)!
             defer { defaults.removePersistentDomain(forName: domain) }
             let audio = RecorderSelectionAudioOptions(defaults: defaults)
