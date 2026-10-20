@@ -315,8 +315,13 @@ final class RecentCaptureService: ObservableObject {
                     screenshotName: screenshotName,
                     recordingPath: nil,
                     thumbnailName: thumbnailName,
-                    scale: Double(scale)
+                    scale: Double(scale),
+                    anchorX: nil,
+                    anchorY: nil,
+                    anchorWidth: nil,
+                    anchorHeight: nil
                 )
+
             }
 
             do {
