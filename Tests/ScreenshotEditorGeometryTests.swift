@@ -22,6 +22,8 @@ enum ScreenshotEditorGeometryTests {
                           "Shift draws a square rather than an arbitrary rectangle")
         let circle = ScreenshotEditorGeometry.shapeEnd(from: origin, to: end, tool: .ellipse, constrained: true)
         suite.expect(circle == square, "Shift uses the same equal sides for circles")
+        let redactSquare = ScreenshotEditorGeometry.shapeEnd(from: origin, to: end, tool: .redact, constrained: true)
+        suite.expect(redactSquare == square, "Shift draws a square for filled rectangles (redact)")
         let line = ScreenshotEditorGeometry.shapeEnd(from: origin, to: end, tool: .line, constrained: true)
         suite.expectClose(line.y, origin.y, "Shift snaps a nearly horizontal line to a perfect horizontal")
         suite.expect(ScreenshotEditorGeometry.shapeEnd(from: origin, to: end, tool: .rect, constrained: false) == end,
@@ -44,6 +46,8 @@ enum ScreenshotEditorGeometryTests {
                      "a multiline highlight follows text runs rather than filling the intervening box")
         let crop = ScreenshotEditorGeometry.aspectRect(from: .zero, to: CGPoint(x: 90, y: 30), aspect: 1.5)
         suite.expectClose(crop.width / crop.height, 1.5, "crop geometry preserves its selected aspect ratio")
+        let aspectProj = ScreenshotEditorGeometry.aspectRect(from: .zero, to: CGPoint(x: 100, y: 0), aspect: 1)
+        suite.expectClose(aspectProj.width, 50, "aspect ratio cropper orthogonally projects onto aspect diagonal")
         let bounds = CGRect(x: 0, y: 0, width: 800, height: 600)
         let edge = ScreenshotCropAspect.square.resized(CGRect(x: 100, y: 100, width: 300, height: 300),
             handle: .topLeft, to: CGPoint(x: -100, y: -100), within: bounds, imageSize: bounds.size)

@@ -229,7 +229,7 @@ final class RecentCaptureService: ObservableObject {
     }
 
     func recordScreenshot(_ capture: ScreenshotSelectionController.Capture) {
-        let id = UUID()
+        let id = capture.id
         let createdAt = Date()
         let day = Self.dayFormatter.string(from: createdAt)
         let screenshotName = "\(day)/\(id.uuidString).png"
@@ -258,6 +258,13 @@ final class RecentCaptureService: ObservableObject {
                       let small = ScreenshotRenderer.pngData(from: smallImage, scale: 1)
                 else { return }
                 try RecentCaptureStore.write(full, to: root.appendingPathComponent(screenshotName))
+                let baseName = "\(day)/\(id.uuidString)-base.png"
+                try? RecentCaptureStore.write(full, to: root.appendingPathComponent(baseName))
+                if !capture.annotations.isEmpty,
+                   let annoData = try? JSONEncoder().encode(capture.annotations) {
+                    let annoName = "\(day)/\(id.uuidString)-annotations.json"
+                    try? RecentCaptureStore.write(annoData, to: root.appendingPathComponent(annoName))
+                }
                 if let storeRoot = self.thumbnailRoot {
                     do {
                         try RecentCaptureStore.write(small, to: storeRoot.appendingPathComponent(thumbnailName))
@@ -268,6 +275,78 @@ final class RecentCaptureService: ObservableObject {
                     }
                 }
                 self.prepend(entry)
+            } catch {
+                return
+            }
+        }
+    }
+
+    func saveEditedCapture(
+        id: UUID,
+        renderedImage: CGImage,
+        baseImage: CGImage,
+        scale: CGFloat,
+        annotations: [ScreenshotSupport.Annotation]
+    ) {
+        queue.async { [weak self] in
+            guard let self, let root = self.capturesRoot else { return }
+            guard self.store.loadIfNeeded() else { return }
+
+            let screenshotName: String
+            let thumbnailName: String
+            let day: String
+            let entry: RecentCaptureEntry
+
+            if let existing = self.store.entries.first(where: { $0.id == id }) {
+                entry = existing
+                screenshotName = existing.screenshotName ?? "\(Self.dayFormatter.string(from: existing.createdAt))/\(id.uuidString).png"
+                thumbnailName = existing.thumbnailName ?? "\(id.uuidString)-thumbnail.png"
+                let parts = screenshotName.split(separator: "/")
+                day = parts.count > 1 ? String(parts[0]) : Self.dayFormatter.string(from: existing.createdAt)
+            } else {
+                let createdAt = Date()
+                day = Self.dayFormatter.string(from: createdAt)
+                screenshotName = "\(day)/\(id.uuidString).png"
+                thumbnailName = "\(id.uuidString)-thumbnail.png"
+                entry = RecentCaptureEntry(
+                    id: id,
+                    kind: .screenshot,
+                    createdAt: createdAt,
+                    screenshotName: screenshotName,
+                    recordingPath: nil,
+                    thumbnailName: thumbnailName,
+                    scale: Double(scale)
+                )
+            }
+
+            do {
+                guard let renderedData = ScreenshotRenderer.pngData(from: renderedImage, scale: scale),
+                      let baseData = ScreenshotRenderer.pngData(from: baseImage, scale: scale),
+                      let smallImage = Self.thumbnail(from: renderedImage),
+                      let smallData = ScreenshotRenderer.pngData(from: smallImage, scale: 1)
+                else { return }
+
+                let baseName = "\(day)/\(id.uuidString)-base.png"
+                try RecentCaptureStore.write(baseData, to: root.appendingPathComponent(baseName))
+                try RecentCaptureStore.write(renderedData, to: root.appendingPathComponent(screenshotName))
+
+                if let storeRoot = self.thumbnailRoot {
+                    try? RecentCaptureStore.write(smallData, to: storeRoot.appendingPathComponent(thumbnailName))
+                }
+
+                let annoName = "\(day)/\(id.uuidString)-annotations.json"
+                if annotations.isEmpty {
+                    try? self.manager.removeItem(at: root.appendingPathComponent(annoName))
+                } else if let annoData = try? JSONEncoder().encode(annotations) {
+                    try? RecentCaptureStore.write(annoData, to: root.appendingPathComponent(annoName))
+                }
+
+                if !self.store.entries.contains(where: { $0.id == id }) {
+                    self.prepend(entry)
+                } else {
+                    self.store.persist()
+                    self.publish()
+                }
             } catch {
                 return
             }
@@ -463,21 +542,43 @@ final class RecentCaptureService: ObservableObject {
               Self.isSafeRelativePath(name),
               let capturesRoot,
               let scale = entry.scale,
-              scale.isFinite, scale > 0,
-              let source = CGImageSourceCreateWithURL(
-                capturesRoot.appendingPathComponent(name) as CFURL,
+              scale.isFinite, scale > 0
+        else { return nil }
+
+        let parts = name.split(separator: "/")
+        let day = parts.count > 1 ? String(parts[0]) : nil
+        let baseName = day != nil ? "\(day!)/\(entry.id.uuidString)-base.png" : "\(entry.id.uuidString)-base.png"
+        let baseCandidate = capturesRoot.appendingPathComponent(baseName)
+        let imageURL = manager.fileExists(atPath: baseCandidate.path) ? baseCandidate : capturesRoot.appendingPathComponent(name)
+
+        guard let source = CGImageSourceCreateWithURL(
+                imageURL as CFURL,
                 [kCGImageSourceShouldCache: false] as CFDictionary),
               let image = CGImageSourceCreateImageAtIndex(
                 source, 0,
                 [kCGImageSourceShouldCacheImmediately: true] as CFDictionary)
         else { return nil }
+
+        var loadedAnnotations: [ScreenshotSupport.Annotation] = []
+        let annoName = day != nil ? "\(day!)/\(entry.id.uuidString)-annotations.json" : "\(entry.id.uuidString)-annotations.json"
+        let annoURL = capturesRoot.appendingPathComponent(annoName)
+        if let data = try? Data(contentsOf: annoURL),
+           let decoded = try? JSONDecoder().decode([ScreenshotSupport.Annotation].self, from: data) {
+            loadedAnnotations = decoded
+        }
+
         let anchor = CGRect(
             x: entry.anchorX ?? 0,
             y: entry.anchorY ?? 0,
             width: entry.anchorWidth ?? 0,
             height: entry.anchorHeight ?? 0)
         return ScreenshotSelectionController.Capture(
-            image: image, scale: CGFloat(scale), anchorRect: anchor)
+            id: entry.id,
+            image: image,
+            scale: CGFloat(scale),
+            anchorRect: anchor,
+            annotations: loadedAnnotations
+        )
     }
 
     private func pruneMissingEntries() {

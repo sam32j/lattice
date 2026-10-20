@@ -6,8 +6,11 @@ import Carbon.HIToolbox
 
 /// Image presentation is independent from the small interactive chrome panels.
 final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
-    let image: CGImage
+    private(set) var image: CGImage
     let captureScale: CGFloat
+    var captureID: UUID
+    var baseImage: CGImage?
+    var annotations: [ScreenshotSupport.Annotation] = []
     private let preferences: UserDefaults
     private(set) var chosenOpacity: CGFloat = 1
     private(set) var isPositionLocked = false
@@ -27,8 +30,20 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     var zoomMultiplier: CGFloat { frame.width / (CGFloat(image.width) / captureScale) }
     var cornerRadius: CGFloat { surface.layer?.cornerRadius ?? 0 }
 
-    init(image: CGImage, scale: CGFloat, preferences: UserDefaults = .standard) {
+    func updateImage(_ newImage: CGImage, baseImage: CGImage? = nil, annotations: [ScreenshotSupport.Annotation] = []) {
+        guard !isClosed else { return }
+        self.image = newImage
+        if let baseImage { self.baseImage = baseImage }
+        self.annotations = annotations
+        surface.layer?.contents = newImage
+        contentAspectRatio = CGSize(width: newImage.width, height: newImage.height)
+    }
+
+    init(image: CGImage, scale: CGFloat, preferences: UserDefaults = .standard, captureID: UUID = UUID(), baseImage: CGImage? = nil, annotations: [ScreenshotSupport.Annotation] = []) {
         self.image = image
+        self.captureID = captureID
+        self.baseImage = baseImage
+        self.annotations = annotations
         captureScale = scale.isFinite && scale > 0 ? scale : 1
         self.preferences = preferences
         let pointer = NSEvent.mouseLocation

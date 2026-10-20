@@ -657,13 +657,14 @@ final class ScreenshotService: ObservableObject {
         }
     }
 
-    func openEditor(with capture: ScreenshotSelectionController.Capture, above owner: NSWindow? = nil) {
+    func openEditor(with capture: ScreenshotSelectionController.Capture, above owner: NSWindow? = nil, originatingPin: ScreenshotPinWindow? = nil) {
         WindowActivationPolicy.retain()
         // Any editor may be showing the latest capture, and what it exports
         // is no longer the stored original, so the shortcut keeps that
         // original back until a newer capture arrives.
         withholdLatestCapture()
         let editor = ScreenshotEditorController(capture: capture)
+        editor.originatingPin = originatingPin
         editors.append(editor)
         editor.show(above: owner)
     }

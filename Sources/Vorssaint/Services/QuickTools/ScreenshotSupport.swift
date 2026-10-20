@@ -287,6 +287,7 @@ enum ScreenshotSupport {
               name.lowercased().hasSuffix(".png") else { return false }
         let stem = String(name.dropLast(4))
         if UUID(uuidString: stem) != nil { return true }
+        if stem.hasSuffix("-base") && UUID(uuidString: String(stem.dropLast(5))) != nil { return true }
         let suffix = "-thumbnail"
         return stem.hasSuffix(suffix)
             && UUID(uuidString: String(stem.dropLast(suffix.count))) != nil
@@ -1461,7 +1462,7 @@ enum ScreenshotSupport {
         }
     }
 
-    enum Tool: String, CaseIterable {
+    enum Tool: String, CaseIterable, Codable {
         // Case order is the fixed rail order and therefore the default
         // mapping for keys 1 through 9, and 0.
         case select, arrow, line, ellipse, rect, redact,
@@ -1741,7 +1742,7 @@ enum ScreenshotSupport {
         }
     }
 
-    enum ColorID: String, CaseIterable {
+    enum ColorID: String, CaseIterable, Codable {
         case red, orange, yellow, green, blue, purple, black, white
 
         /// sRGB components, shared by live rendering and export.
@@ -1763,7 +1764,7 @@ enum ScreenshotSupport {
         }
     }
 
-    enum StrokeID: String, CaseIterable {
+    enum StrokeID: String, CaseIterable, Codable {
         case small, medium, large
 
         /// Line width in image points at 1x; export multiplies by the image
@@ -1829,7 +1830,7 @@ enum ScreenshotSupport {
         }
     }
 
-    enum ArrowStyleID: String, CaseIterable {
+    enum ArrowStyleID: String, CaseIterable, Codable {
         case filled, outline, open, doubleEnded, scribbly
 
         static func sanitized(_ raw: String?) -> ArrowStyleID {
@@ -1839,7 +1840,7 @@ enum ScreenshotSupport {
 
     /// What a blur area does to what is under it. Pixelate was the only style
     /// before, so it stays the default.
-    enum BlurStyleID: String, CaseIterable {
+    enum BlurStyleID: String, CaseIterable, Codable {
         case pixelate, blur, erase
 
         static func sanitized(_ raw: String?) -> BlurStyleID {
@@ -1856,7 +1857,7 @@ enum ScreenshotSupport {
         UInt64.random(in: UInt64.min...UInt64.max)
     }
 
-    enum StickerID: String, CaseIterable {
+    enum StickerID: String, CaseIterable, Codable {
         case check, cross, star, heart, thumbsUp, thumbsDown,
              smile, laugh, party, fire, warning, eyes
 
@@ -1902,7 +1903,7 @@ enum ScreenshotSupport {
     /// One annotation on the canvas. Geometry lives in image-point
     /// coordinates (top-left origin), so export is resolution-exact and the
     /// view only scales for display.
-    struct Annotation: Identifiable, Equatable {
+    struct Annotation: Identifiable, Equatable, Codable {
         let id: UUID
         var tool: Tool
         var rect: CGRect
