@@ -1346,7 +1346,6 @@ final class ScreenshotEditorWindow: NSWindow {
             titlebarView.frame = titlebarFrame
         }
 
-        let buttonHeight = closeButton.frame.height
         let targetY: CGFloat = 18.0
         var currentX: CGFloat = 25.0
         let buttonSpacing: CGFloat = 9.0
