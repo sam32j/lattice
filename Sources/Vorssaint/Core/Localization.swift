@@ -775,6 +775,7 @@ struct Strings {
     let mixerLowerOnHeadphonesDisconnect: String
     let mixerLowerOnHeadphonesDisconnectCaption: String
     let mixerHeadphonesDisconnectVolume: String
+    let volumeMixerEnable: String
     let preciseVolumeRollerEnable: String
     let preciseVolumeRollerCaption: String
     let preciseVolumeRollerTapFailed: String
@@ -789,6 +790,17 @@ struct Strings {
     let mixerInputFallback: String
     let mixerInputTooltip: String
     let mixerInputErrorFormat: String
+    let microphoneControlEnable: String
+    let mixerInputLevelLabel: String
+    let mixerInputSourceLabel: String
+    let muteAudioInputSubtitle: String
+    let showInMenuBarLabel: String
+    let manageAudioInputPriorityTitle: String
+    let manageAudioOutputPriorityTitle: String
+    let mixerOutputLevelLabel: String
+    let sliderUnavailable: String
+    let screenshotEnable: String
+    let screenRecorderEnable: String
     let mixerVisibleApps: String
     let mixerAllShown: String
     let mixerHiddenCountLabel: String
@@ -1246,7 +1258,7 @@ extension Strings {
         panelQuit: "Sair",
         panelHotkeyHint: "Atalho alterna",
 
-        keepAwakeTitle: "Manter acordado",
+        keepAwakeTitle: "Ficar acordado",
         keepAwakeEndsIn: "Termina em",
         keepAwakeUntilDisabled: "Ativo até você desativar",
         keepAwakeNormalRules: "O Mac segue as regras normais de energia",
@@ -1309,7 +1321,7 @@ extension Strings {
         tabGeneral: "Geral",
         tabEnergy: "Energia",
         tabMouse: "Mouse e Trackpad",
-        tabSwitcher: "Alternador",
+        tabSwitcher: "Alternador do Lattice",
         tabAbout: "Sobre",
         tabReleaseNotes: "Novidades",
         minimalWindowPreviews: "Prévias minimalistas",
@@ -1404,8 +1416,8 @@ extension Strings {
         launcherAddSection: "Adicionar de volta",
         launcherKeysHint: "Setas navegam, Enter abre, 1 a 9 abrem direto",
 
-        switcherSection: "Alternador de janelas",
-        switcherEnable: "Usar o alternador do Lattice",
+        switcherSection: "Alternador do Lattice",
+        switcherEnable: "Ativar o alternador do Lattice",
         switcherEnableCaption: "Troque de app ou janela, inclusive janelas minimizadas e várias janelas do mesmo app.",
         switcherUsageHint: "Segure o atalho para navegar; solte para ativar a janela. Shift ou ← volta; W fecha a janela; Q encerra o app; Esc cancela.",
         switcherNoWindows: "Nenhuma janela aberta",
@@ -1488,7 +1500,7 @@ extension Strings {
         cutMovingTitle: "Movendo…",
         cutMovingCountFormat: "%d de %d",
 
-        autoQuitName: "Encerrar ao fechar",
+        autoQuitName: "Encerrar o app quando nenhuma janela estiver aberta",
         autoQuitEnable: "Encerrar o app ao fechar a última janela",
         autoQuitEnableCaption: "Fechar a última janela de um app também o encerra.",
         autoQuitOngoingWorkNote: "Alguns apps fecham a última janela e continuam trabalhando, como um gravador de tela depois que a captura começa. Esses também são encerrados, a menos que estejam na lista de exceções.",
@@ -1791,6 +1803,7 @@ extension Strings {
         mixerLowerOnHeadphonesDisconnect: "Baixar volume ao desconectar fones",
         mixerLowerOnHeadphonesDisconnectCaption: "Ajusta a saída quando fones com fio ou Bluetooth desconectam.",
         mixerHeadphonesDisconnectVolume: "Volume ao desconectar",
+        volumeMixerEnable: "Ativar controle do mixer de volume",
         preciseVolumeRollerEnable: "Volume mais preciso no controle",
         preciseVolumeRollerCaption: "Transforma roletes e teclas de volume em passos menores.",
         preciseVolumeRollerTapFailed: "Não foi possível ouvir as teclas de volume.",
@@ -1805,6 +1818,17 @@ extension Strings {
         mixerInputFallback: "Usando o padrão até esse microfone voltar.",
         mixerInputTooltip: "Escolher microfone",
         mixerInputErrorFormat: "Não foi possível trocar: %@",
+        microphoneControlEnable: "Ativar controle de nível do microfone",
+        mixerInputLevelLabel: "Nível de entrada",
+        mixerInputSourceLabel: "Fonte de entrada de áudio",
+        muteAudioInputSubtitle: "Silenciar entrada de áudio",
+        showInMenuBarLabel: "Mostrar na barra de menus",
+        manageAudioInputPriorityTitle: "Gerenciar prioridade de entrada de áudio",
+        manageAudioOutputPriorityTitle: "Gerenciar prioridade de saída de áudio",
+        mixerOutputLevelLabel: "Volume de saída",
+        sliderUnavailable: "(indisponível)",
+        screenshotEnable: "Ativar captura de tela",
+        screenRecorderEnable: "Ativar gravação de tela",
         mixerVisibleApps: "Apps na lista",
         mixerAllShown: "Todos",
         mixerHiddenCountLabel: "Escondidos",
@@ -1816,7 +1840,7 @@ extension Strings {
         audioPriorityInputList: "Prioridade dos microfones",
         audioPriorityMoveUp: "Mover para cima",
         audioPriorityMoveDown: "Mover para baixo",
-        audioPriorityUnavailable: "Indisponível",
+        audioPriorityUnavailable: "Desconectado",
         audioPriorityCurrent: "Em uso",
         audioPriorityCaption: "Os dispositivos são selecionados por ordem de prioridade. Quando um dispositivo de maior prioridade é conectado, ele passa a ser usado. Quando o dispositivo ativo é desconectado, o próximo disponível é selecionado.",
 
@@ -2045,7 +2069,7 @@ extension Strings {
         shortcutTakeOverDismiss: "Não assumir",
         shortcutUnavailable: "O macOS recusou este atalho. Escolha outro.",
         switcherUsageHintFormat: "Segure %@ para navegar; solte para ativar a janela. Shift ou ← volta; W fecha a janela; Q encerra o app; Esc cancela.",
-        musicBlockSection: "Teclas de mídia",
+        musicBlockSection: "Desativar teclas de mídia",
         musicBlockTitle: "Impedir que o Música abra sozinho",
         musicBlockCaption: "Bloqueia a abertura do app de música após detectar uma tecla de mídia. Requer acesso à Acessibilidade. Comandos de fones sem uma tecla detectada são preservados.",
         musicBlockUnavailable: "Esta proteção está indisponível agora. Desligue e ligue a opção para tentar novamente.",
@@ -2237,7 +2261,7 @@ extension Strings {
         panelQuit: "Quit",
         panelHotkeyHint: "Shortcut toggles",
 
-        keepAwakeTitle: "Keep awake",
+        keepAwakeTitle: "Stay Awake",
         keepAwakeEndsIn: "Ends in",
         keepAwakeUntilDisabled: "Active until you turn it off",
         keepAwakeNormalRules: "The Mac follows its normal energy rules",
@@ -2300,7 +2324,7 @@ extension Strings {
         tabGeneral: "General",
         tabEnergy: "Energy",
         tabMouse: "Mouse & Trackpad",
-        tabSwitcher: "Switcher",
+        tabSwitcher: "Lattice Switcher",
         tabAbout: "About",
         tabReleaseNotes: "What’s New",
         minimalWindowPreviews: "Minimal previews",
@@ -2326,7 +2350,7 @@ extension Strings {
 
         launchAtLogin: "Launch at login",
         languageLabel: "Language",
-        menuBarSection: "Menu bar",
+        menuBarSection: "Menu Bar",
         showCountdown: "Show remaining time next to the icon",
         globalHotkeySection: "Global shortcut",
         hotkeyToggle: "Enable shortcut for “Keep awake”",
@@ -2395,8 +2419,8 @@ extension Strings {
         launcherAddSection: "Add back",
         launcherKeysHint: "Arrows navigate, Enter opens, 1 to 9 open directly",
 
-        switcherSection: "Window switcher",
-        switcherEnable: "Use the Lattice switcher",
+        switcherSection: "Lattice Switcher",
+        switcherEnable: "Enable the Lattice Switcher",
         switcherEnableCaption: "Switch between apps and windows, including minimized windows and multiple windows from the same app.",
         switcherUsageHint: "Hold the shortcut to navigate; release to activate the window. Shift or ← goes back; W closes the window; Q quits the app; Esc cancels.",
         switcherNoWindows: "No open windows",
@@ -2458,7 +2482,7 @@ extension Strings {
         dockPreviewPreviousWindow: "Previous window",
         dockPreviewNextWindow: "Next window",
 
-        cutPasteName: "Cut & paste",
+        cutPasteName: "Cut & Paste",
         cutPasteEnable: "Cut & paste files in Finder",
         cutPasteEnableCaption: "Use ⌘X to cut and ⌘V to move files and folders in Finder.",
         cutPasteShowHUD: "Show floating panel",
@@ -2479,7 +2503,7 @@ extension Strings {
         cutMovingTitle: "Moving…",
         cutMovingCountFormat: "%d of %d",
 
-        autoQuitName: "Quit on close",
+        autoQuitName: "Quit app when no window is open",
         autoQuitEnable: "Quit an app when its last window closes",
         autoQuitEnableCaption: "Closing an app’s last window also quits it.",
         autoQuitOngoingWorkNote: "Some apps close their last window while they keep working, such as a screen recorder once capture starts. Those are quit too, unless they are on the Exceptions list.",
@@ -2782,6 +2806,7 @@ extension Strings {
         mixerLowerOnHeadphonesDisconnect: "Lower volume when headphones disconnect",
         mixerLowerOnHeadphonesDisconnectCaption: "Adjusts output when wired or Bluetooth headphones disconnect.",
         mixerHeadphonesDisconnectVolume: "Volume after disconnect",
+        volumeMixerEnable: "Enable Volume Mixer Control",
         preciseVolumeRollerEnable: "Use finer volume steps",
         preciseVolumeRollerCaption: "Turns volume wheels and keys into smaller system volume steps.",
         preciseVolumeRollerTapFailed: "Could not listen for volume keys.",
@@ -2796,6 +2821,17 @@ extension Strings {
         mixerInputFallback: "Using default until this microphone returns.",
         mixerInputTooltip: "Choose microphone",
         mixerInputErrorFormat: "Could not switch: %@",
+        microphoneControlEnable: "Enable Microphone Level Control",
+        mixerInputLevelLabel: "Input Level",
+        mixerInputSourceLabel: "Audio input source",
+        muteAudioInputSubtitle: "Mute Audio Input",
+        showInMenuBarLabel: "Show in menu bar",
+        manageAudioInputPriorityTitle: "Manage Audio Input Priority",
+        manageAudioOutputPriorityTitle: "Manage Audio Output Priority",
+        mixerOutputLevelLabel: "Output volume",
+        sliderUnavailable: "(unavailable)",
+        screenshotEnable: "Enable Screenshot",
+        screenRecorderEnable: "Enable Screen Recording",
         mixerVisibleApps: "Apps in the list",
         mixerAllShown: "All",
         mixerHiddenCountLabel: "Hidden",
@@ -2807,7 +2843,7 @@ extension Strings {
         audioPriorityInputList: "Microphone priority",
         audioPriorityMoveUp: "Move up",
         audioPriorityMoveDown: "Move down",
-        audioPriorityUnavailable: "Unavailable",
+        audioPriorityUnavailable: "Disconnected",
         audioPriorityCurrent: "Current",
         audioPriorityCaption: "Devices are selected in priority order. When a higher-priority device connects, it becomes active. When the active one disconnects, the next available takes over.",
 
@@ -3006,7 +3042,7 @@ extension Strings {
         cleaningKeepScreenVisibleCaption: "Shows a discreet indicator in the corner of the screen instead of blacking out content.",
         cleaningNeedsAxTitle: "Accessibility needed",
         cleaningNeedsAxBody: "To lock the keyboard safely, Lattice needs Accessibility permission. Grant it in System Settings and try again.",
-        shortcutsPageTitle: "Keyboard shortcuts",
+        shortcutsPageTitle: "Keyboard Shortcuts",
         settingsSearchPlaceholder: "Search settings",
         donateThanks: "Thank you for being here. 🖤",
         doneButton: "Done",
@@ -3036,7 +3072,7 @@ extension Strings {
         shortcutTakeOverDismiss: "Don’t take over",
         shortcutUnavailable: "macOS rejected this shortcut. Choose another one.",
         switcherUsageHintFormat: "Hold %@ to navigate; release to activate the window. Shift or ← goes back; W closes the window; Q quits the app; Esc cancels.",
-        musicBlockSection: "Media keys",
+        musicBlockSection: "Disable Media keys",
         musicBlockTitle: "Stop Music from opening on its own",
         musicBlockCaption: "Blocks the music app opening after a detected media key. Requires Accessibility access. Headphone commands without a detected key are left alone.",
         musicBlockUnavailable: "This protection is unavailable right now. Turn it off and on to try again.",
