@@ -94,11 +94,25 @@ enum ScreenshotTextEditorTests {
             fontSize: 18, textColor: .red, isBounded: true, width: 80,
             onCommit: { nextCommits += 1 }).frame(width: 80, height: 80)
         settle(host)
+        suite.expect(updated.isEditable && updated.isSelectable && !updated.isHidden
+                     && updated.enclosingScrollView?.isHidden == false,
+                     "rapidly reopening a committed native editor restores its visible editable surface")
         suite.expect(!updated.isHorizontallyResizable
                      && updated.textContainer?.widthTracksTextView == true
                      && abs((updated.textContainer?.containerSize.width ?? 0) - 80) < 1,
                      "returning to bounded text applies the current wrapping width")
         suite.expect(updated.selectedRange() == NSRange(location: 2, length: 3),
                      "updating an unchanged text value preserves its native selection")
+        suite.expect(updated.frame.height > 0 && updated.visibleRect.height > 0,
+                     "a reopened text editor immediately has a visible drawing and caret surface")
+        if let scrollView = updated.enclosingScrollView {
+            window.makeFirstResponder(updated)
+            ScreenshotAnnotationTextEditor.dismantleNSView(scrollView, coordinator: first.makeCoordinator())
+            suite.expect(window.firstResponder !== updated && !updated.isEditable && scrollView.isHidden
+                         && updated.hitTest(CGPoint(x: 5, y: 5)) == nil,
+                         "ending text editing immediately releases focus and disables the native hit and cursor surface")
+        } else { suite.expect(false, "native editing retains its scroll wrapper until teardown") }
+        ScreenshotFontTextEditingTests.run(suite)
+        ScreenshotCanvasInputTests.run(suite)
     }
 }
