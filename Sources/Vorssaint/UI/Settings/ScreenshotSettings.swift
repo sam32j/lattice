@@ -8,6 +8,8 @@ struct ScreenshotSettings: View {
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var service = ScreenshotService.shared
     @ObservedObject private var sharing = ScreenshotShareService.shared
+    @ObservedObject private var runtime = FeatureRuntime.shared
+    @AppStorage(DefaultsKey.screenshotEnabled) private var screenshotEnabled = true
     @AppStorage(DefaultsKey.screenshotFreeze) private var freeze = true
     @AppStorage(DefaultsKey.screenshotHideVorssaintWindows) private var hideVorssaintWindows = true
     @AppStorage(DefaultsKey.screenshotSaveFolder) private var saveFolder = ""
@@ -54,11 +56,82 @@ struct ScreenshotSettings: View {
     private var workflow: CaptureWorkflowStrings { .localized(l10n.language) }
 
     var body: some View {
-        Form {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(strings.hubDescription)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                shortcutsCard
+                    .settingsSectionAnchor(.screenshot, cornerRadius: 16)
+
+                Group {
+                    selectionCard
+                    magnifierCard
+                    previewCard
+                    destinationCard
+                    toolsCard
+                    sharingCard
+                    ocrCard
+                        .settingsSectionAnchor(.screenOCR, cornerRadius: 16)
+                    colorPickerCard
+                        .settingsSectionAnchor(.colorPicker, cornerRadius: 16)
+                }
+                .disabled(!screenshotInstalled)
+                .opacity(screenshotInstalled ? 1 : 0.55)
+            }
+            .frame(maxWidth: 760)
+            .frame(maxWidth: .infinity)
+            .padding(22)
+        }
+        .onAppear { sharing.refresh() }
+        .sheet(isPresented: $showingSharedLinks) {
+            ScreenshotSharedLinksView()
+        }
+        .sheet(isPresented: $showingSharePrivacy) {
+            ScreenshotSharePrivacyView()
+        }
+    }
+
+    private var screenshotInstalled: Bool {
+        AppFeature.screenshot.isAvailable
+    }
+
+    private var shortcutsCard: some View {
+        SettingsCard(title: strings.pageTitle, headerAccessory: {
+            HStack(spacing: 8) {
+                Text(screenshotInstalled ? l10n.s.homebrewInstalledBadge : l10n.s.homebrewNotInstalledBadge)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(screenshotInstalled ? Color.green : Color.secondary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill((screenshotInstalled ? Color.green : Color.secondary).opacity(0.12)))
+
+                Toggle(l10n.s.screenshotEnable, isOn: Binding(
+                    get: { screenshotInstalled },
+                    set: { enabled in
+                        screenshotEnabled = enabled
+                        FeatureRuntime.shared.setAvailable([.screenshot], enabled)
+                        ScreenshotService.shared.syncWithPreferences()
+                        ScreenTextService.shared.syncWithPreferences()
+                        ScreenCaptureService.shared.syncWithPreferences()
+                    }
+                ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                    .help(l10n.s.screenshotEnable)
+                    .accessibilityLabel(l10n.s.screenshotEnable)
+            }
+        }) {
+            VStack(alignment: .leading, spacing: 10) {
                 CompactShortcutPreferenceRow(title: strings.pageTitle,
                                              role: .screenshot,
                                              enabledKey: DefaultsKey.screenshotShortcutEnabled) {
+                    ScreenCaptureService.shared.syncWithPreferences()
                     ScreenshotService.shared.syncWithPreferences()
                 }
                 CompactShortcutPreferenceRow(title: strings.fullScreenShortcutTitle,
@@ -100,138 +173,227 @@ struct ScreenshotSettings: View {
                 if !permissions.screenRecording {
                     PermissionRow(kind: .screenRecording)
                 }
-            } header: {
-                Text(l10n.s.shortcutsPageTitle)
             }
-            .settingsFormSectionAnchor(.screenshot)
+            .disabled(!screenshotEnabled)
+            .opacity(screenshotEnabled ? 1 : 0.55)
+        }
+    }
 
-            Section {
-                Toggle(isOn: $freeze) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(strings.freezeToggle)
-                        Text(strings.freezeCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Toggle(strings.hideVorssaintWindowsToggle, isOn: $hideVorssaintWindows)
-                Picker(strings.delayLabel, selection: $delay) {
-                    ForEach(ScreenshotSupport.allowedDelays, id: \.self) { seconds in
-                        if seconds == 0 {
-                            Text(strings.delayOff).tag(0)
-                        } else {
-                            Text(String(format: strings.delaySecondsFormat, seconds)).tag(seconds)
+    // MARK: - Selection
+
+    private var selectionCard: some View {
+        SettingsCard(title: workflow.selection) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsToggleRow(title: strings.freezeToggle,
+                                  caption: strings.freezeCaption,
+                                  isOn: $freeze)
+
+                SettingsToggleRow(title: strings.hideVorssaintWindowsToggle,
+                                  isOn: $hideVorssaintWindows)
+
+                SettingsControlRow(title: strings.delayLabel) {
+                    Picker(strings.delayLabel, selection: $delay) {
+                        ForEach(ScreenshotSupport.allowedDelays, id: \.self) { seconds in
+                            if seconds == 0 {
+                                Text(strings.delayOff).tag(0)
+                            } else {
+                                Text(String(format: strings.delaySecondsFormat, seconds)).tag(seconds)
+                            }
                         }
                     }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
                 }
-                .pickerStyle(.segmented)
-                Toggle(strings.pointerToggle, isOn: $includePointer)
-                Toggle(strings.lastRegionToggle, isOn: $showLastRegion)
-                Toggle(workflow.shutter, isOn: $playShutterSound)
-            } header: {
-                Text(workflow.selection)
-            }
 
-            Section {
-                Toggle(strings.loupeStartsOnToggle, isOn: $loupeStartsOn)
-                Toggle(strings.loupeRememberZoomToggle, isOn: $rememberLoupeZoom)
+                SettingsToggleRow(title: strings.highlightWindowsToggle,
+                                  caption: strings.highlightWindowsCaption,
+                                  isOn: $highlightWindows)
+
+                SettingsToggleRow(title: strings.pointerToggle,
+                                  isOn: $includePointer)
+
+                SettingsToggleRow(title: strings.lastRegionToggle,
+                                  isOn: $showLastRegion)
+
+                SettingsToggleRow(title: workflow.shutter,
+                                  isOn: $playShutterSound)
+            }
+        }
+    }
+
+    // MARK: - Magnifier
+
+    private var magnifierCard: some View {
+        SettingsCard(title: workflow.magnifier) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsToggleRow(title: strings.loupeStartsOnToggle,
+                                  isOn: $loupeStartsOn)
+
+                SettingsToggleRow(title: strings.loupeRememberZoomToggle,
+                                  isOn: $rememberLoupeZoom)
+
                 if !rememberLoupeZoom {
-                    Picker(strings.loupeDefaultZoomLabel, selection: $loupeDefaultZoom) {
-                        ForEach(ScreenshotSupport.captureLoupeDefaultZooms, id: \.self) { zoom in
-                            Text(zoom.formatted(
-                                .number.precision(.fractionLength(0...1))) + "×")
-                                .tag(zoom)
+                    SettingsControlRow(title: strings.loupeDefaultZoomLabel) {
+                        Picker(strings.loupeDefaultZoomLabel, selection: $loupeDefaultZoom) {
+                            ForEach(ScreenshotSupport.captureLoupeDefaultZooms, id: \.self) { zoom in
+                                Text(zoom.formatted(
+                                    .number.precision(.fractionLength(0...1))) + "×")
+                                    .tag(zoom)
+                            }
                         }
+                        .labelsHidden()
+                        .fixedSize()
                     }
                 }
-                VStack(alignment: .leading, spacing: 3) {
+
+                SettingsControlRow(title: strings.loupeWheelZoomLabel,
+                                   caption: strings.loupeZoomOptionCaption) {
                     Picker(strings.loupeWheelZoomLabel,
                            selection: $steppedLoupeZoomByDefault) {
                         Text(strings.loupeZoomFast).tag(false)
                         Text(strings.loupeZoomStepped).tag(true)
                     }
                     .pickerStyle(.segmented)
-                    Text(strings.loupeZoomOptionCaption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    .labelsHidden()
+                    .fixedSize()
                 }
-            } header: {
-                Text(workflow.magnifier)
             }
+        }
+    }
 
-            Section {
-                defaultActionRow
-                previewPositionRow
-                previewFocusRow
-                Toggle(ScreenshotPinStrings.localized(l10n.language).rounded, isOn: $pinRoundedCorners)
-            } header: {
-                Text(workflow.preview)
-            }
+    // MARK: - Preview & Actions
 
-            Section {
-                Toggle(isOn: autoCopyBinding) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(strings.autoCopyToggle)
-                        Text(strings.autoCopyCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+    private var previewCard: some View {
+        SettingsCard(title: workflow.preview) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsControlRow(title: strings.defaultActionLabel,
+                                   caption: defaultActionRaw != ScreenshotDefaultAction.edit.rawValue ? strings.defaultActionCaption : nil) {
+                    ScreenshotDefaultActionPicker(strings: strings, selection: $defaultActionRaw)
+                        .labelsHidden()
+                        .fixedSize()
+                }
+
+                if usesAutomaticConfirmationPreview {
+                    SettingsToggleRow(title: strings.confirmationPreviewToggle,
+                                      caption: previewEnabled ? strings.confirmationPreviewCaption : nil,
+                                      isOn: $previewEnabled)
+
+                    if previewEnabled {
+                        SettingsControlRow(title: strings.confirmationPreviewDurationLabel) {
+                            Picker(strings.confirmationPreviewDurationLabel, selection: $previewDuration) {
+                                ForEach(ScreenshotSupport.confirmationPreviewDurations, id: \.self) { seconds in
+                                    if seconds == 0 {
+                                        Text(strings.confirmationPreviewUntilDismissed).tag(0)
+                                    } else {
+                                        Text(String(format: strings.delaySecondsFormat, seconds)).tag(seconds)
+                                    }
+                                }
+                            }
+                            .labelsHidden()
+                            .fixedSize()
+                        }
                     }
                 }
-                Toggle(isOn: addToShelfBinding) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(strings.addToShelfToggle)
-                        Text(strings.addToShelfCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+
+                SettingsControlRow(title: strings.previewPositionLabel) {
+                    Picker(strings.previewPositionLabel, selection: $previewPositionRaw) {
+                        Text(strings.previewPositionAutomatic)
+                            .tag(ScreenshotSupport.QuickPreviewPosition.automatic.rawValue)
+                        Text(strings.previewPositionTopLeft)
+                            .tag(ScreenshotSupport.QuickPreviewPosition.topLeft.rawValue)
+                        Text(strings.previewPositionTopRight)
+                            .tag(ScreenshotSupport.QuickPreviewPosition.topRight.rawValue)
+                        Text(strings.previewPositionBottomLeft)
+                            .tag(ScreenshotSupport.QuickPreviewPosition.bottomLeft.rawValue)
+                        Text(strings.previewPositionBottomRight)
+                            .tag(ScreenshotSupport.QuickPreviewPosition.bottomRight.rawValue)
                     }
+                    .labelsHidden()
+                    .fixedSize()
                 }
-                .disabled(!shelfIsOn)
+
+                SettingsToggleRow(title: strings.previewFocusToggle,
+                                  caption: strings.previewFocusCaption,
+                                  isOn: $previewTakesFocus)
+
+                SettingsToggleRow(title: ScreenshotPinStrings.localized(l10n.language).rounded,
+                                  isOn: $pinRoundedCorners)
+            }
+        }
+    }
+
+    // MARK: - Destination
+
+    private var destinationCard: some View {
+        SettingsCard(title: workflow.destination) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsToggleRow(title: strings.autoCopyToggle,
+                                  caption: strings.autoCopyCaption,
+                                  isOn: autoCopyBinding)
+
+                SettingsToggleRow(title: strings.addToShelfToggle,
+                                  caption: strings.addToShelfCaption,
+                                  isOn: addToShelfBinding)
+                    .disabled(!shelfIsOn)
+
                 folderRow
                 subfolderRow
                 fileNameRow
-                Toggle(isOn: $downscale) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(strings.downscaleToggle)
-                        Text(strings.downscaleCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            } header: {
-                Text(workflow.destination)
-            }
 
-            Section {
-                ScreenshotToolOrderControls(shortcutsEnabled: $toolShortcutsEnabled,
-                                            showsTitle: false)
-            } header: {
-                Text(strings.toolShortcutsTitle)
+                SettingsToggleRow(title: strings.downscaleToggle,
+                                  caption: strings.downscaleCaption,
+                                  isOn: $downscale)
             }
+        }
+    }
 
-            Section {
-                Toggle(isOn: $sharingEnabled) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(strings.shareEnabledToggle)
-                        if sharingEnabled {
-                            Text(strings.shareCaption)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .onChange(of: sharingEnabled) { _, _ in service.syncWithPreferences() }
+    // MARK: - Tools
+
+    private var toolsCard: some View {
+        SettingsCard(title: strings.toolShortcutsTitle) {
+            ScreenshotToolOrderControls(shortcutsEnabled: $toolShortcutsEnabled,
+                                        showsTitle: false)
+        }
+    }
+
+    // MARK: - Sharing
+
+    private var sharingCard: some View {
+        SettingsCard(title: strings.shareSectionTitle, headerAccessory: {
+            Button {
+                showingSharePrivacy = true
+            } label: {
+                Label(strings.sharePrivacyButton, systemImage: "hand.raised")
+            }
+            .buttonStyle(.plain)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsToggleRow(title: strings.shareEnabledToggle,
+                                  caption: sharingEnabled ? strings.shareCaption : nil,
+                                  isOn: $sharingEnabled)
+                    .onChange(of: sharingEnabled) { _, _ in service.syncWithPreferences() }
+
                 if sharingEnabled {
-                    Picker(strings.uploadExpiry, selection: $uploadDuration) {
-                        ForEach(ScreenshotShareDuration.allCases) { duration in
-                            Text(duration.title(strings)).tag(duration.rawValue)
+                    SettingsControlRow(title: strings.uploadExpiry) {
+                        Picker(strings.uploadExpiry, selection: $uploadDuration) {
+                            ForEach(ScreenshotShareDuration.allCases) { duration in
+                                Text(duration.title(strings)).tag(duration.rawValue)
+                            }
                         }
+                        .labelsHidden()
+                        .fixedSize()
                     }
+
                     if !sharing.records.isEmpty {
                         Button {
                             showingSharedLinks = true
                         } label: {
                             HStack {
-                                Label(strings.sharedLinksTitle, systemImage: "link")
+                                Text(strings.sharedLinksTitle)
+                                    .font(.body)
                                 Spacer()
                                 Text("\(sharing.records.count)")
                                     .foregroundStyle(.secondary)
@@ -243,71 +405,52 @@ struct ScreenshotSettings: View {
                         .buttonStyle(.plain)
                     }
                 }
-            } header: {
-                HStack {
-                    Text(strings.shareSectionTitle)
-                    Spacer()
-                    Button {
-                        showingSharePrivacy = true
-                    } label: {
-                        Label(strings.sharePrivacyButton, systemImage: "hand.raised")
-                    }
-                    .buttonStyle(.plain)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
             }
-
-            Section {
-                Toggle(isOn: $removesLineBreaks) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(l10n.s.ocrRemoveLineBreaksToggle)
-                        Text(l10n.s.ocrRemoveLineBreaksCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Toggle(isOn: $detectsQRCodes) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(l10n.s.ocrQRToggle)
-                        Text(l10n.s.ocrQRCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            } header: {
-                Text(l10n.s.ocrName)
-            }
-            .settingsFormSectionAnchor(.screenOCR)
-
-            Section {
-                Picker(l10n.s.colorPickerFormatLabel, selection: $colorFormat) {
-                    ForEach(ColorCopyFormat.allCases) { format in
-                        Text(format.label).tag(format.rawValue)
-                    }
-                }
-                .pickerStyle(.segmented)
-                if colorFormat == ColorCopyFormat.hex.rawValue {
-                    Toggle(l10n.s.colorPickerBareHexToggle, isOn: $usesBareHex)
-                }
-            } header: {
-                Text(l10n.s.colorPickerName)
-            }
-            .settingsFormSectionAnchor(.colorPicker)
-        }
-        .formStyle(.grouped)
-        .onAppear { sharing.refresh() }
-        .sheet(isPresented: $showingSharedLinks) {
-            ScreenshotSharedLinksView()
-        }
-        .sheet(isPresented: $showingSharePrivacy) {
-            ScreenshotSharePrivacyView()
         }
     }
 
-    /// The after-capture action can copy too, so the toggle reads on while
-    /// either one copies. Turning it off clears both. Otherwise captures keep
-    /// reaching the clipboard while the switch shows off.
+    // MARK: - Screen OCR
+
+    private var ocrCard: some View {
+        SettingsCard(title: l10n.s.ocrName) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsToggleRow(title: l10n.s.ocrRemoveLineBreaksToggle,
+                                  caption: l10n.s.ocrRemoveLineBreaksCaption,
+                                  isOn: $removesLineBreaks)
+
+                SettingsToggleRow(title: l10n.s.ocrQRToggle,
+                                  caption: l10n.s.ocrQRCaption,
+                                  isOn: $detectsQRCodes)
+            }
+        }
+    }
+
+    // MARK: - Color Picker
+
+    private var colorPickerCard: some View {
+        SettingsCard(title: l10n.s.colorPickerName) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsControlRow(title: l10n.s.colorPickerFormatLabel) {
+                    Picker(l10n.s.colorPickerFormatLabel, selection: $colorFormat) {
+                        ForEach(ColorCopyFormat.allCases) { format in
+                            Text(format.label).tag(format.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
+                }
+
+                if colorFormat == ColorCopyFormat.hex.rawValue {
+                    SettingsToggleRow(title: l10n.s.colorPickerBareHexToggle,
+                                      isOn: $usesBareHex)
+                }
+            }
+        }
+    }
+
+    // MARK: - Bindings & Helpers
+
     private var autoCopyBinding: Binding<Bool> {
         Binding {
             copyToClipboard || defaultAction.copiesToClipboard
@@ -325,41 +468,11 @@ struct ScreenshotSettings: View {
         shelfEnabled && shelfAvailable
     }
 
-    /// Reads off while the shelf is off, since no capture reaches it then.
-    /// The choice itself is kept for when the shelf comes back.
     private var addToShelfBinding: Binding<Bool> {
         Binding {
             addToShelf && shelfIsOn
         } set: { isOn in
             addToShelf = isOn
-        }
-    }
-
-    private var defaultActionRow: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ScreenshotDefaultActionPicker(strings: strings, selection: $defaultActionRaw)
-            if defaultActionRaw != ScreenshotDefaultAction.edit.rawValue {
-                Text(strings.defaultActionCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            if usesAutomaticConfirmationPreview {
-                Toggle(strings.confirmationPreviewToggle, isOn: $previewEnabled)
-                if previewEnabled {
-                    Picker(strings.confirmationPreviewDurationLabel, selection: $previewDuration) {
-                        ForEach(ScreenshotSupport.confirmationPreviewDurations, id: \.self) { seconds in
-                            if seconds == 0 {
-                                Text(strings.confirmationPreviewUntilDismissed).tag(0)
-                            } else {
-                                Text(String(format: strings.delaySecondsFormat, seconds)).tag(seconds)
-                            }
-                        }
-                    }
-                }
-                Text(strings.confirmationPreviewCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 
@@ -371,115 +484,64 @@ struct ScreenshotSettings: View {
         }
     }
 
-    private var previewFocusRow: some View {
-        Toggle(isOn: $previewTakesFocus) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(strings.previewFocusToggle)
-                Text(strings.previewFocusCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var previewPositionRow: some View {
-        Picker(strings.previewPositionLabel, selection: $previewPositionRaw) {
-            Text(strings.previewPositionAutomatic)
-                .tag(ScreenshotSupport.QuickPreviewPosition.automatic.rawValue)
-            Text(strings.previewPositionTopLeft)
-                .tag(ScreenshotSupport.QuickPreviewPosition.topLeft.rawValue)
-            Text(strings.previewPositionTopRight)
-                .tag(ScreenshotSupport.QuickPreviewPosition.topRight.rawValue)
-            Text(strings.previewPositionBottomLeft)
-                .tag(ScreenshotSupport.QuickPreviewPosition.bottomLeft.rawValue)
-            Text(strings.previewPositionBottomRight)
-                .tag(ScreenshotSupport.QuickPreviewPosition.bottomRight.rawValue)
-        }
-    }
-
     private var folderRow: some View {
-        HStack {
-            Text(strings.folderLabel)
-            Spacer()
-            Text(currentFolderName)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            if !saveFolder.isEmpty {
-                Button {
-                    saveFolder = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.tertiary)
+        SettingsControlRow(title: strings.folderLabel) {
+            HStack(spacing: 8) {
+                Text(currentFolderName)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                if !saveFolder.isEmpty {
+                    Button {
+                        saveFolder = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.tertiary)
+                    }
+                    .buttonStyle(.borderless)
+                    .screenshotSafeHelp(l10n.s.shortcutReset)
                 }
-                .buttonStyle(.borderless)
-                .screenshotSafeHelp(l10n.s.shortcutReset)
-            }
-            Button(strings.folderChoose) {
-                chooseFolder()
+                Button(strings.folderChoose) {
+                    chooseFolder()
+                }
+                .controlSize(.small)
             }
         }
     }
 
     private var subfolderRow: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(strings.subfolderLabel)
-                    .lineLimit(1)
-                Spacer(minLength: 12)
-                if !saveSubfolder.isEmpty {
-                    Text(ScreenshotSupport.expandSaveSubfolder(saveSubfolder, date: Date()))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
-                TextField("", text: $saveSubfolder)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 150)
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            Text(strings.subfolderCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        SettingsControlRow(title: strings.subfolderLabel,
+                           caption: saveSubfolder.isEmpty ? strings.subfolderCaption : "\(strings.subfolderCaption)\n→ \(ScreenshotSupport.expandSaveSubfolder(saveSubfolder, date: Date()))") {
+            TextField("", text: $saveSubfolder)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 200)
         }
     }
 
     private var fileNameRow: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(strings.fileNamePatternLabel)
-                    .lineLimit(1)
-                Spacer(minLength: 12)
-                Text(fileNamePreview)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+        VStack(alignment: .leading, spacing: 14) {
+            SettingsControlRow(title: strings.fileNamePatternLabel,
+                               caption: "\(strings.fileNamePatternCaption)\n→ \(fileNamePreview)") {
                 TextField("", text: $fileNamePattern)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 150)
+                    .frame(width: 200)
             }
-            .fixedSize(horizontal: false, vertical: true)
-            Text(strings.fileNamePatternCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+
             if ScreenshotSupport.fileNamePatternUsesNumber(fileNamePattern) {
-                HStack {
-                    Text(strings.fileNumberStartLabel)
-                        .lineLimit(1)
-                    TextField("", value: $numberStart, formatter: Self.numberFieldFormatter)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 70)
-                    Stepper("", value: $numberStart, in: 0...999_999)
-                        .labelsHidden()
-                    Button(strings.fileNumberResetButton) {
-                        nextNumber = numberStart
+                SettingsControlRow(title: strings.fileNumberStartLabel,
+                                   caption: String(format: strings.fileNumberNextFormat, nextNumber)) {
+                    HStack(spacing: 6) {
+                        TextField("", value: $numberStart, formatter: Self.numberFieldFormatter)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 60)
+                        Stepper("", value: $numberStart, in: 0...999_999)
+                            .labelsHidden()
+                        Button(strings.fileNumberResetButton) {
+                            nextNumber = numberStart
+                        }
+                        .controlSize(.small)
                     }
-                    Spacer()
-                    Text(String(format: strings.fileNumberNextFormat, nextNumber))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
                 }
-                .fixedSize(horizontal: false, vertical: true)
                 .onChange(of: numberStart) { _, newValue in
                     nextNumber = newValue
                 }
@@ -521,7 +583,6 @@ struct ScreenshotSettings: View {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
-        panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
         if panel.runModal() == .OK, let url = panel.url {
             saveFolder = url.path

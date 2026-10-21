@@ -7,8 +7,9 @@ import SwiftUI
 struct ScreenRecorderSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
-    @ObservedObject private var service = ScreenRecorderService.shared
     @ObservedObject private var sharing = RecordingShareService.shared
+    @ObservedObject private var runtime = FeatureRuntime.shared
+    @AppStorage(DefaultsKey.screenRecorderEnabled) private var screenRecorderEnabled = true
     @AppStorage(DefaultsKey.recorderCountdown) private var countdown = 3
     @AppStorage(DefaultsKey.recorderQuality) private var qualityRaw =
         RecorderSupport.Quality.balanced.rawValue
@@ -43,11 +44,77 @@ struct ScreenRecorderSettings: View {
     private var workflow: CaptureWorkflowStrings { .localized(l10n.language) }
 
     var body: some View {
-        Form {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(strings.hubDescription)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                shortcutsCard
+                    .settingsSectionAnchor(.screenRecorder, cornerRadius: 16)
+
+                Group {
+                    recordingCard
+                    audioEditorCard
+                    exportCard
+                    sharingCard
+                }
+                .disabled(!screenRecorderInstalled)
+                .opacity(screenRecorderInstalled ? 1 : 0.55)
+            }
+            .frame(maxWidth: 760)
+            .frame(maxWidth: .infinity)
+            .padding(22)
+        }
+        .onAppear { sharing.refresh() }
+        .sheet(isPresented: $showingSharedLinks) {
+            RecorderSharedLinksView()
+        }
+        .sheet(isPresented: $showingSharePrivacy) {
+            RecorderSharePrivacyView()
+        }
+    }
+
+    // MARK: - Master Header & Shortcuts Card
+
+    private var screenRecorderInstalled: Bool {
+        AppFeature.screenRecorder.isAvailable
+    }
+
+    private var shortcutsCard: some View {
+        SettingsCard(title: strings.pageTitle, headerAccessory: {
+            HStack(spacing: 8) {
+                Text(screenRecorderInstalled ? l10n.s.homebrewInstalledBadge : l10n.s.homebrewNotInstalledBadge)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(screenRecorderInstalled ? Color.green : Color.secondary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill((screenRecorderInstalled ? Color.green : Color.secondary).opacity(0.12)))
+
+                Toggle(l10n.s.screenRecorderEnable, isOn: Binding(
+                    get: { screenRecorderInstalled },
+                    set: { enabled in
+                        screenRecorderEnabled = enabled
+                        FeatureRuntime.shared.setAvailable([.screenRecorder], enabled)
+                        ScreenCaptureService.shared.syncWithPreferences()
+                        ScreenRecorderService.shared.syncWithPreferences()
+                    }
+                ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                    .help(l10n.s.screenRecorderEnable)
+                    .accessibilityLabel(l10n.s.screenRecorderEnable)
+            }
+        }) {
+            VStack(alignment: .leading, spacing: 10) {
                 CompactShortcutPreferenceRow(title: strings.pageTitle,
                                              role: .screenRecorder,
                                              enabledKey: DefaultsKey.recorderShortcutEnabled) {
+                    ScreenCaptureService.shared.syncWithPreferences()
                     ScreenRecorderService.shared.syncWithPreferences()
                 }
                 CompactShortcutPreferenceRow(title: FeatureStrings.recentCaptures(l10n.language).title,
@@ -61,137 +128,169 @@ struct ScreenRecorderSettings: View {
                 if !permissions.accessibility {
                     PermissionRow(kind: .accessibility)
                 }
-            } header: {
-                Text(l10n.s.shortcutsPageTitle)
             }
-            .settingsFormSectionAnchor(.screenRecorder)
+            .disabled(!screenRecorderEnabled)
+            .opacity(screenRecorderEnabled ? 1 : 0.55)
+        }
+    }
 
-            Section {
-                Picker(strings.countdownLabel, selection: $countdown) {
-                    ForEach(ScreenshotSupport.allowedDelays, id: \.self) { seconds in
-                        if seconds == 0 {
-                            Text(strings.countdownOff).tag(0)
-                        } else {
-                            Text(String(format: strings.countdownSecondsFormat, seconds)).tag(seconds)
+    // MARK: - Recording
+
+    private var recordingCard: some View {
+        SettingsCard(title: workflow.recording) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsControlRow(title: strings.countdownLabel) {
+                    Picker(strings.countdownLabel, selection: $countdown) {
+                        ForEach(ScreenshotSupport.allowedDelays, id: \.self) { seconds in
+                            if seconds == 0 {
+                                Text(strings.countdownOff).tag(0)
+                            } else {
+                                Text(String(format: strings.countdownSecondsFormat, seconds)).tag(seconds)
+                            }
                         }
                     }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
                 }
-                .pickerStyle(.segmented)
-                Toggle(workflow.immediate, isOn: $immediateStart)
-                Toggle(workflow.recordSound, isOn: $playRecordSound)
-            } header: {
-                Text(workflow.recording)
+
+                SettingsToggleRow(title: workflow.immediate,
+                                  isOn: $immediateStart)
+
+                SettingsToggleRow(title: workflow.recordSound,
+                                  isOn: $playRecordSound)
             }
+        }
+    }
 
-            Section {
-                Toggle(isOn: $opensEditor) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(strings.openEditorToggle)
-                        Text(strings.openEditorCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Toggle(isOn: $automaticZoom) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(strings.automaticZoomToggle)
-                        Text(strings.automaticZoomCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Toggle(isOn: $systemAudio) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(strings.systemAudioToggle)
-                        Text(strings.systemAudioCaption)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                VStack(alignment: .leading, spacing: 3) {
-                    Toggle(isOn: $microphone) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(strings.microphoneToggle)
-                            Text(strings.microphoneCaption)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+    // MARK: - Audio & Editor
+
+    private var audioEditorCard: some View {
+        SettingsCard(title: workflow.audioEditor) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsToggleRow(title: strings.openEditorToggle,
+                                  caption: strings.openEditorCaption,
+                                  isOn: $opensEditor)
+
+                SettingsToggleRow(title: strings.automaticZoomToggle,
+                                  caption: strings.automaticZoomCaption,
+                                  isOn: $automaticZoom)
+
+                SettingsToggleRow(title: strings.systemAudioToggle,
+                                  caption: strings.systemAudioCaption,
+                                  isOn: $systemAudio)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    SettingsToggleRow(title: strings.microphoneToggle,
+                                      caption: strings.microphoneCaption,
+                                      isOn: $microphone)
+                        .onChange(of: microphone) { _, enabled in
+                            if enabled, permissions.microphone == .undetermined {
+                                permissions.requestMicrophone()
+                            }
                         }
-                    }
-                    .onChange(of: microphone) { _, enabled in
-                        if enabled, permissions.microphone == .undetermined {
-                            permissions.requestMicrophone()
-                        }
-                    }
                     if microphone, permissions.microphone != .granted {
                         PermissionRow(kind: .microphone)
                     }
                 }
-            } header: {
-                Text(workflow.audioEditor)
             }
+        }
+    }
 
-            Section {
+    // MARK: - Export & Destination
+
+    private var exportCard: some View {
+        SettingsCard(title: workflow.export) {
+            VStack(alignment: .leading, spacing: 14) {
                 folderRow
-                Picker(workflow.recentRecordings, selection: $recentRecordingLimit) {
-                    Text("5").tag(5)
-                    Text("10").tag(10)
-                    Text(workflow.unlimited).tag(0)
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: recentRecordingLimit) { _, _ in
-                    RecentCaptureService.shared.reload()
+
+                SettingsControlRow(title: workflow.recentRecordings) {
+                    Picker(workflow.recentRecordings, selection: $recentRecordingLimit) {
+                        Text("5").tag(5)
+                        Text("10").tag(10)
+                        Text(workflow.unlimited).tag(0)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
+                    .onChange(of: recentRecordingLimit) { _, _ in
+                        RecentCaptureService.shared.reload()
+                    }
                 }
 
-                VStack(alignment: .leading, spacing: 3) {
+                SettingsControlRow(title: strings.qualityLabel,
+                                   caption: strings.qualityCaption) {
                     Picker(strings.qualityLabel, selection: $qualityRaw) {
                         Text(strings.qualitySmall).tag(RecorderSupport.Quality.small.rawValue)
                         Text(strings.qualityBalanced).tag(RecorderSupport.Quality.balanced.rawValue)
                         Text(strings.qualityHigh).tag(RecorderSupport.Quality.high.rawValue)
                     }
-                    Text(strings.qualityCaption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    .labelsHidden()
+                    .fixedSize()
                 }
-                Picker(strings.frameRateLabel, selection: $frameRate) {
-                    ForEach(RecorderSupport.frameRates, id: \.self) { rate in
-                        Text(String(format: strings.frameRateFormat, rate)).tag(rate)
-                    }
-                }
-                .pickerStyle(.segmented)
-                Picker(strings.gifSizeLabel, selection: $gifSizeRaw) {
-                    Text(strings.gifSizeSmall).tag(RecorderSupport.GIFSize.small.rawValue)
-                    Text(strings.gifSizeMedium).tag(RecorderSupport.GIFSize.medium.rawValue)
-                    Text(strings.gifSizeLarge).tag(RecorderSupport.GIFSize.large.rawValue)
-                }
-                .pickerStyle(.segmented)
-                Picker(strings.gifFrameRateLabel, selection: $gifFrameRate) {
-                    ForEach(RecorderSupport.gifFrameRates, id: \.self) { rate in
-                        Text(String(format: strings.frameRateFormat, rate)).tag(rate)
-                    }
-                }
-                .pickerStyle(.segmented)
-            } header: {
-                Text(workflow.export)
-            }
 
-            Section {
-                Toggle(isOn: $sharingEnabled) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(screenshotStrings.shareEnabledToggle)
-                        if sharingEnabled {
-                            Text(shareStrings.caption)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                SettingsControlRow(title: strings.frameRateLabel) {
+                    Picker(strings.frameRateLabel, selection: $frameRate) {
+                        ForEach(RecorderSupport.frameRates, id: \.self) { rate in
+                            Text(String(format: strings.frameRateFormat, rate)).tag(rate)
                         }
                     }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
                 }
+
+                SettingsControlRow(title: strings.gifSizeLabel) {
+                    Picker(strings.gifSizeLabel, selection: $gifSizeRaw) {
+                        Text(strings.gifSizeSmall).tag(RecorderSupport.GIFSize.small.rawValue)
+                        Text(strings.gifSizeMedium).tag(RecorderSupport.GIFSize.medium.rawValue)
+                        Text(strings.gifSizeLarge).tag(RecorderSupport.GIFSize.large.rawValue)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
+                }
+
+                SettingsControlRow(title: strings.gifFrameRateLabel) {
+                    Picker(strings.gifFrameRateLabel, selection: $gifFrameRate) {
+                        ForEach(RecorderSupport.gifFrameRates, id: \.self) { rate in
+                            Text(String(format: strings.frameRateFormat, rate)).tag(rate)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
+                }
+            }
+        }
+    }
+
+    // MARK: - Sharing
+
+    private var sharingCard: some View {
+        SettingsCard(title: screenshotStrings.shareSectionTitle, headerAccessory: {
+            Button {
+                showingSharePrivacy = true
+            } label: {
+                Label(screenshotStrings.sharePrivacyButton, systemImage: "hand.raised")
+            }
+            .buttonStyle(.plain)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsToggleRow(title: screenshotStrings.shareEnabledToggle,
+                                  caption: sharingEnabled ? shareStrings.caption : nil,
+                                  isOn: $sharingEnabled)
+
                 if sharingEnabled {
                     if !sharing.records.isEmpty {
                         Button {
                             showingSharedLinks = true
                         } label: {
                             HStack {
-                                Label(screenshotStrings.sharedLinksTitle, systemImage: "link")
+                                Text(screenshotStrings.sharedLinksTitle)
+                                    .font(.body)
                                 Spacer()
                                 Text("\(sharing.records.count)")
                                     .foregroundStyle(.secondary)
@@ -203,51 +302,33 @@ struct ScreenRecorderSettings: View {
                         .buttonStyle(.plain)
                     }
                 }
-            } header: {
-                HStack {
-                    Text(screenshotStrings.shareSectionTitle)
-                    Spacer()
-                    Button {
-                        showingSharePrivacy = true
-                    } label: {
-                        Label(screenshotStrings.sharePrivacyButton, systemImage: "hand.raised")
-                    }
-                    .buttonStyle(.plain)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
             }
-        }
-        .formStyle(.grouped)
-        .onAppear { sharing.refresh() }
-        .sheet(isPresented: $showingSharedLinks) {
-            RecorderSharedLinksView()
-        }
-        .sheet(isPresented: $showingSharePrivacy) {
-            RecorderSharePrivacyView()
         }
     }
 
+    // MARK: - Folder Row
+
     private var folderRow: some View {
-        HStack {
-            Text(strings.folderLabel)
-            Spacer()
-            Text(currentFolderName)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            if !saveFolder.isEmpty {
-                Button {
-                    saveFolder = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.tertiary)
+        SettingsControlRow(title: strings.folderLabel) {
+            HStack(spacing: 8) {
+                Text(currentFolderName)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                if !saveFolder.isEmpty {
+                    Button {
+                        saveFolder = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.tertiary)
+                    }
+                    .buttonStyle(.borderless)
+                    .screenshotSafeHelp(l10n.s.shortcutReset)
                 }
-                .buttonStyle(.borderless)
-                .screenshotSafeHelp(l10n.s.shortcutReset)
-            }
-            Button(strings.folderChoose) {
-                chooseFolder()
+                Button(strings.folderChoose) {
+                    chooseFolder()
+                }
+                .controlSize(.small)
             }
         }
     }
@@ -269,7 +350,6 @@ struct ScreenRecorderSettings: View {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
-        panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
         if panel.runModal() == .OK, let url = panel.url {
             saveFolder = url.path
