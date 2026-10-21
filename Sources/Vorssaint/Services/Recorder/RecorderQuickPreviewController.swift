@@ -184,10 +184,16 @@ final class RecorderQuickPreviewController {
     }
 
     private func performEdit() {
-        guard let url else { return }
+        guard AppFeature.screenRecorder.isAvailable, let url else { return }
         close()
-        if let take = RecorderTakeStore.shared.importVideo(at: url) {
-            ScreenRecorderService.shared.openEditor(with: take, preservedRecordingURL: url)
+        Task { @MainActor in
+            let take = await Task.detached(priority: .userInitiated) {
+                RecorderTakeStore.shared.importVideo(at: url)
+            }.value
+            guard let take else { NSSound.beep(); return }
+            MediaEditorFileSupport.presentIfEnabled(AppFeature.screenRecorder.isAvailable, present: {
+                ScreenRecorderService.shared.openEditor(with: take, preservedRecordingURL: url)
+            }, discard: { RecorderTakeStore.shared.delete(take) })
         }
     }
 
