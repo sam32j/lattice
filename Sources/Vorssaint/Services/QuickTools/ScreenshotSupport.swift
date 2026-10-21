@@ -986,6 +986,10 @@ enum ScreenshotSupport {
         case topRight
         case bottomLeft
         case bottomRight
+
+        static func current(in defaults: UserDefaults = .standard) -> Self {
+            Self(rawValue: defaults.string(forKey: DefaultsKey.screenshotPreviewPosition) ?? "") ?? .automatic
+        }
     }
 
     /// Picks the display containing most of the capture. The pointer breaks
