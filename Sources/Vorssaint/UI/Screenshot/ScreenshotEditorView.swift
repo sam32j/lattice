@@ -36,6 +36,48 @@ struct ScreenshotEditorView: View {
         FeatureStrings.screenshot(l10n.language)
     }
 
+    private static var hollowBlockCursorCache: [Int: NSCursor] = [:]
+
+    private static func hollowBlockCursor(forHeight targetHeight: CGFloat) -> NSCursor {
+        let h = max(16.0, min(120.0, targetHeight))
+        let key = Int(h.rounded())
+        if let cached = hollowBlockCursorCache[key] {
+            return cached
+        }
+
+        let height = CGFloat(key)
+        let width = max(8.0, (height * (25.0 / 45.0)).rounded())
+        let cornerRadius = max(2.0, (height * (10.0 / 45.0)).rounded())
+
+        let strokePad: CGFloat = 2.0
+        let imageSize = NSSize(width: width + strokePad * 2, height: height + strokePad * 2)
+
+        let image = NSImage(size: imageSize, flipped: false) { rect in
+            guard let context = NSGraphicsContext.current?.cgContext else { return false }
+            let blockRect = CGRect(x: strokePad, y: strokePad, width: width, height: height)
+            let path = CGPath(roundedRect: blockRect,
+                              cornerWidth: cornerRadius,
+                              cornerHeight: cornerRadius,
+                              transform: nil)
+
+            context.addPath(path)
+            context.setStrokeColor(CGColor(gray: 0, alpha: 0.9))
+            context.setLineWidth(2.5)
+            context.strokePath()
+
+            context.addPath(path)
+            context.setStrokeColor(CGColor(gray: 1, alpha: 1.0))
+            context.setLineWidth(1.2)
+            context.strokePath()
+
+            return true
+        }
+
+        let cursor = NSCursor(image: image, hotSpot: NSPoint(x: imageSize.width / 2, y: imageSize.height / 2))
+        hollowBlockCursorCache[key] = cursor
+        return cursor
+    }
+
     private var recentCapturesTitle: String {
         FeatureStrings.recentCaptures(l10n.language).title
     }
@@ -220,38 +262,35 @@ struct ScreenshotEditorView: View {
                 appeared = true
             }
         }
-        .gesture(canvasGesture(zoom: zoom, available: available))
-        .simultaneousGesture(SpatialTapGesture(count: 2).onEnded { value in
-            commitEditingTextIfNeeded()
-            model.editText(at: imagePoint(from: value.location, zoom: zoom))
-            if let editingID = model.editingTextID {
-                editingText = model.annotations.first(where: { $0.id == editingID })?.text ?? ""
-            }
-        })
-        .onContinuousHover { phase in
-            switch phase {
-            case .active(let location):
-                let point = imagePoint(from: location, zoom: zoom)
-                if model.textSelectionEnabled, model.wordIndex(at: point) != nil {
-                    NSCursor.iBeam.set()
-                } else if model.tool == .highlight {
-                    NSCursor.iBeam.set()
-                } else if model.hitTest(point) != nil {
-                    NSCursor.openHand.set()
-                } else if model.tool != .select {
-                    NSCursor.crosshair.set()
-                } else {
-                    NSCursor.arrow.set()
-                }
-            case .ended:
-                NSCursor.arrow.set()
-            }
+        .overlay {
+            canvasInput(zoom: zoom, available: available)
         }
         .overlay(alignment: .topLeading) {
             textEditorOverlay(zoom: zoom)
         }
         .overlay(alignment: .topLeading) {
             cropLoupeOverlay(zoom: zoom, canvasSize: canvasSize)
+        }
+    }
+
+    private func updateCanvasCursor(at point: CGPoint, zoom: CGFloat, dragging: Bool = false) {
+        if let handle = model.resizeHandle(at: point) {
+            ScreenshotEditorResizeCursor.cursor(for: handle).set()
+        } else if model.tool == .crop {
+            if let draft = model.cropDraft, draft.contains(point),
+               !ScreenshotSupport.startsNewCropSelection(at: point, draft: draft,
+                    within: CGRect(origin: .zero, size: model.imageSize)) {
+                (dragging ? NSCursor.closedHand : .openHand).set()
+            } else { NSCursor.crosshair.set() }
+        } else if model.textSelectionEnabled, model.wordIndex(at: point) != nil {
+            NSCursor.iBeam.set()
+        } else if model.tool == .highlight {
+            let height = model.selectableTextHeight(at: point).map { $0 * zoom } ?? 16
+            Self.hollowBlockCursor(forHeight: height).set()
+        } else if model.tool == .select ? model.hitTest(point) != nil : model.selectedAnnotationOwns(point) {
+            (dragging ? NSCursor.closedHand : .openHand).set()
+        } else {
+            (model.tool == .select ? NSCursor.arrow : .crosshair).set()
         }
     }
 
@@ -391,44 +430,43 @@ struct ScreenshotEditorView: View {
 
     // MARK: - Gestures
 
-    private func canvasGesture(zoom: CGFloat, available: CGSize) -> some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { value in
-                let point = imagePoint(from: value.location, zoom: zoom)
-                if !dragInFlight {
-                    dragInFlight = true
-                    drag.begin(at: value.startLocation)
-                    dragCanvasArea = available
-                    commitEditingTextIfNeeded()
-                    model.beginDrag(at: imagePoint(from: value.startLocation, zoom: zoom), modifiers: NSEvent.modifierFlags)
-                    if value.location != value.startLocation {
-                        model.continueDrag(to: point, constrained: NSEvent.modifierFlags.contains(.shift))
-                    }
-                } else {
-                    model.continueDrag(to: point, constrained: NSEvent.modifierFlags.contains(.shift))
-                }
-                drag.update(to: value.location)
-                if model.tool == .highlight {
-                    NSCursor.iBeam.set()
-                } else if model.selectedID != nil {
-                    NSCursor.closedHand.set()
-                }
-            }
-            .onEnded { value in
+    private func canvasInput(zoom: CGFloat, available: CGSize) -> some View {
+        ScreenshotCanvasInput(
+            began: { location, modifiers in
+                dragInFlight = true
+                drag.begin(at: location)
+                dragCanvasArea = available
+                commitEditingTextIfNeeded()
+                let point = imagePoint(from: location, zoom: zoom)
+                model.beginDrag(at: point, modifiers: modifiers)
+                updateCanvasCursor(at: point, zoom: zoom, dragging: true)
+            }, moved: { location, modifiers in
+                let point = imagePoint(from: location, zoom: zoom)
+                model.continueDrag(to: point, constrained: modifiers.contains(.shift))
+                drag.update(to: location)
+                updateCanvasCursor(at: point, zoom: zoom, dragging: true)
+            }, ended: { location, modifiers, clicks in
+                guard dragInFlight else { return }
                 dragInFlight = false
                 dragCanvasArea = nil
-                let point = imagePoint(from: value.location, zoom: zoom)
-                drag.update(to: value.location)
+                let point = imagePoint(from: location, zoom: zoom)
+                drag.update(to: location)
                 let isTap = drag.isTap(for: model.tool)
                 if isTap, model.tool == .text || model.tool == .sticker || model.tool == .counter,
                    !CGRect(origin: .zero, size: model.imageSize).contains(point) {
                     return
                 }
                 model.endDrag(at: point, isTap: isTap)
+                if isTap, clicks == 2, !modifiers.contains(.command) { model.editText(at: point) }
+                updateCanvasCursor(at: point, zoom: zoom)
                 if let editingID = model.editingTextID {
                     editingText = model.annotations.first(where: { $0.id == editingID })?.text ?? ""
                 }
-            }
+            }, hovered: { location in
+                if let location {
+                    updateCanvasCursor(at: imagePoint(from: location, zoom: zoom), zoom: zoom, dragging: dragInFlight)
+                } else if !dragInFlight { NSCursor.arrow.set() }
+            })
     }
 
     private func imagePoint(from viewPoint: CGPoint, zoom: CGFloat) -> CGPoint {
@@ -519,10 +557,11 @@ struct ScreenshotEditorView: View {
     // MARK: - Selection and crop chrome
 
     private func drawSelectionChrome(_ cg: CGContext) {
-        guard let id = model.selectedID, id != model.editingTextID,
-              let mark = model.annotations.first(where: { $0.id == id }) else { return }
-        ScreenshotSelectionChrome.draw(mark, in: cg, captureScale: model.scale,
-            displayZoom: model.currentDisplayZoom, imageSize: model.imageSize)
+        for mark in model.annotations where model.selectedIDs.contains(mark.id) && mark.id != model.editingTextID {
+            ScreenshotSelectionChrome.draw(mark, in: cg, captureScale: model.scale,
+                displayZoom: model.currentDisplayZoom, imageSize: model.imageSize,
+                showsHandles: model.selectedIDs.count == 1)
+        }
     }
 
 
@@ -560,6 +599,7 @@ struct ScreenshotEditorView: View {
 
     private func commitEditingTextIfNeeded() {
         if let editingID = model.editingTextID {
+            controller.endInlineTextEditing()
             model.commitText(editingID, text: editingText)
         }
     }
