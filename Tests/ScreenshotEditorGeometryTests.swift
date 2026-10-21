@@ -6,6 +6,10 @@ import AppKit
 enum ScreenshotEditorGeometryTests {
     static func run(_ suite: TestSuite) {
         ScreenshotPreviewTransformTests.run(suite)
+        let rounded = ScreenshotSupport.Annotation(tool: .rect,
+            rect: CGRect(x: 10, y: 20, width: 100, height: 60), hasCornerRadius: true)
+        suite.expect(ScreenshotEditorGeometry.duplicate(rounded).isRounded,
+                     "Option-drag preserves a shape's rounded-corner style")
         for language in AppLanguage.allCases {
             let camera = FeatureStrings.recorderOverlay(language)
             let editor = FeatureStrings.editorRefinements(language)

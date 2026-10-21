@@ -110,6 +110,22 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             refreshDirtyState()
         }
     }
+    @Published var cornerRadiusEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(cornerRadiusEnabled,
+                                      forKey: DefaultsKey.screenshotLastCornerRadius)
+            applyCornerRadiusToSelection()
+        }
+    }
+    private func applyCornerRadiusToSelection() {
+        guard let selectedID, let idx = annotations.firstIndex(where: { $0.id == selectedID }) else { return }
+        if (annotations[idx].tool == .rect || annotations[idx].tool == .redact),
+           annotations[idx].isRounded != cornerRadiusEnabled {
+            registerUndo()
+            annotations[idx].isRounded = cornerRadiusEnabled
+            refreshDirtyState()
+        }
+    }
     /// The full backdrop configuration (kind, colors or image, margin and
     /// corner sliders), persisted as JSON and applied live on the canvas.
     @Published var backdropStyle: ScreenshotSupport.BackdropStyle {
@@ -247,6 +263,8 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             defaults.string(forKey: DefaultsKey.screenshotLastSticker))
         annotationShadowsEnabled = defaults.bool(
             forKey: DefaultsKey.screenshotAnnotationShadows)
+        cornerRadiusEnabled = defaults.bool(
+            forKey: DefaultsKey.screenshotLastCornerRadius)
         let rawStyle = defaults.string(forKey: DefaultsKey.screenshotBackdropStyle) ?? ""
         backdropStyle = ScreenshotSupport.BackdropStyle.decoded(rawStyle)
         backdropPresets = ScreenshotSupport.decodedBackdropPresets(
@@ -745,7 +763,8 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             let annotation = ScreenshotSupport.Annotation(
                 tool: tool, rect: CGRect(origin: point, size: .zero),
                 color: color, stroke: stroke, textSize: textSize,
-                blurLevel: blurLevel, blurStyle: blurStyle, blurTextOnly: blurTextOnly)
+                blurLevel: blurLevel, blurStyle: blurStyle, blurTextOnly: blurTextOnly,
+                hasCornerRadius: (tool == .rect || tool == .redact) ? cornerRadiusEnabled : false)
             annotations.append(annotation)
             if tool == .text { isDirty = true }
             draftID = annotation.id

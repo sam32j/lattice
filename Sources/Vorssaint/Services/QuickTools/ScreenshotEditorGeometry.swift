@@ -5,11 +5,32 @@ import AppKit
 
 /// Image-pixel geometry shared by editor interactions and exported rendering.
 enum ScreenshotEditorGeometry {
+    static func resizedShape(_ rect: CGRect, handle: ScreenshotSupport.Handle, to point: CGPoint,
+                             tool: ScreenshotSupport.Tool, constrained: Bool) -> CGRect {
+        guard constrained, tool == .rect || tool == .ellipse || tool == .redact else {
+            return ScreenshotSupport.resizedRect(rect, dragging: handle, to: point)
+        }
+        let anchor: CGPoint
+        switch handle {
+        case .topLeft: anchor = CGPoint(x: rect.maxX, y: rect.maxY)
+        case .topRight: anchor = CGPoint(x: rect.minX, y: rect.maxY)
+        case .bottomRight: anchor = CGPoint(x: rect.minX, y: rect.minY)
+        case .bottomLeft: anchor = CGPoint(x: rect.maxX, y: rect.minY)
+        default: return ScreenshotSupport.resizedRect(rect, dragging: handle, to: point)
+        }
+        let end = shapeEnd(from: anchor, to: point, tool: tool, constrained: true)
+        return ScreenshotSupport.selectionRect(from: anchor, to: end)
+    }
+
+    static func selectionHandles(for tool: ScreenshotSupport.Tool) -> [ScreenshotSupport.Handle] {
+        guard tool.resizesWithHandles else { return [] }
+        return tool == .text ? [.left, .right, .bottomRight]
+            : [.topLeft, .topRight, .bottomRight, .bottomLeft]
+    }
+
     static func selectionHandle(at point: CGPoint, mark: ScreenshotSupport.Annotation,
                                 tolerance: CGFloat) -> ScreenshotSupport.Handle? {
-        guard mark.tool.resizesWithHandles else { return nil }
-        let candidates: [ScreenshotSupport.Handle] = mark.tool == .text
-            ? [.left, .right, .bottomRight] : ScreenshotSupport.Handle.allCases
+        let candidates = selectionHandles(for: mark.tool)
         guard let nearest = candidates.min(by: {
             let a = $0.position(in: mark.rect), b = $1.position(in: mark.rect)
             return hypot(point.x - a.x, point.y - a.y) < hypot(point.x - b.x, point.y - b.y)
@@ -33,7 +54,8 @@ enum ScreenshotEditorGeometry {
         .init(tool: mark.tool, rect: mark.rect, points: mark.points, text: mark.text,
             color: mark.color, stroke: mark.stroke, textSize: mark.textSize,
             blurLevel: mark.blurLevel, blurStyle: mark.blurStyle, blurTextOnly: mark.blurTextOnly,
-            arrowStyle: mark.arrowStyle, scribbleSeed: mark.scribbleSeed, number: mark.number, isBounded: mark.isBounded)
+            arrowStyle: mark.arrowStyle, scribbleSeed: mark.scribbleSeed, number: mark.number,
+            isBounded: mark.isBounded, hasCornerRadius: mark.hasCornerRadius)
     }
     static func shapeEnd(from start: CGPoint, to end: CGPoint,
                          tool: ScreenshotSupport.Tool, constrained: Bool) -> CGPoint {
