@@ -10,43 +10,63 @@ struct KeyboardLightSettings: View {
     @AppStorage(DefaultsKey.keyboardBrightnessShortcutsEnabled) private var enabled = false
 
     var body: some View {
-        SettingsCard(title: FeatureStrings.brightness(l10n.language).keyboardLight) {
+        let strings = FeatureStrings.brightness(l10n.language)
+        SettingsCard(title: strings.keyboardLight, headerAccessory: {
             if brightness.keyboardLightEnabled != nil {
-                Toggle(FeatureStrings.brightness(l10n.language).keyboardLight,
+                Toggle(strings.keyboardLight,
                        isOn: Binding(
                         get: { brightness.keyboardLightEnabled ?? false },
                         set: { brightness.setKeyboardLightEnabled($0) }
                        ))
-                HStack(spacing: 8) {
-                    Slider(value: Binding(
-                        get: { Double(brightness.keyboardLightLevel ?? 0) },
-                        set: { brightness.setKeyboardLightLevel(Float($0)) }
-                    ), in: 0...1, onEditingChanged: brightness.keyboardLightDragChanged)
-                    .accessibilityLabel(FeatureStrings.brightness(l10n.language).keyboardLight)
-                    Text("\(Int(((brightness.keyboardLightLevel ?? 0) * 100).rounded()))%")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .frame(width: 34, alignment: .trailing)
-                }
-                Divider()
+                .labelsHidden()
             }
-            ForEach([GlobalShortcutRole.keyboardBrightnessDecrease, .keyboardBrightnessIncrease]) { role in
-                ShortcutPreferenceRow(role: role, label: role.title(l10n.s),
-                                      includeInactiveConflicts: true,
-                                      additionalConflict: { shortcut in
-                    guard AppFeature.windowLayout.isAvailable else { return nil }
-                    return WindowLayoutService.shared.shortcutConflictTitle(shortcut, excluding: nil)
-                }) {
-                    brightness.syncWithPreferences()
-                }
-            }
-            if enabled, brightness.keyboardBrightnessShortcutRegistrationFailed {
-                Text(l10n.s.shortcutUnavailable)
+        }) {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(strings.keyboardLightCaption)
                     .font(.caption)
-                    .foregroundStyle(.red)
-            }
-            if enabled, !permissions.accessibility {
-                PermissionRow(kind: .accessibility)
+                    .foregroundStyle(.secondary)
+
+                if brightness.keyboardLightEnabled != nil {
+                    HStack(spacing: 10) {
+                        Image(systemName: "light.min")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Slider(value: Binding(
+                            get: { Double(brightness.keyboardLightLevel ?? 0) },
+                            set: { brightness.setKeyboardLightLevel(Float($0)) }
+                        ), in: 0...1, onEditingChanged: brightness.keyboardLightDragChanged)
+                        .accessibilityLabel(strings.keyboardLight)
+                        Image(systemName: "light.max")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("\(Int(((brightness.keyboardLightLevel ?? 0) * 100).rounded()))%")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .frame(width: 36, alignment: .trailing)
+                    }
+                    .disabled(brightness.keyboardLightEnabled != true)
+
+                    Divider()
+                }
+
+                ForEach([GlobalShortcutRole.keyboardBrightnessDecrease, .keyboardBrightnessIncrease]) { role in
+                    ShortcutPreferenceRow(role: role, label: role.title(l10n.s),
+                                          includeInactiveConflicts: true,
+                                          additionalConflict: { shortcut in
+                        guard AppFeature.windowLayout.isAvailable else { return nil }
+                        return WindowLayoutService.shared.shortcutConflictTitle(shortcut, excluding: nil)
+                    }) {
+                        brightness.syncWithPreferences()
+                    }
+                }
+                if enabled, brightness.keyboardBrightnessShortcutRegistrationFailed {
+                    Text(l10n.s.shortcutUnavailable)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                if enabled, !permissions.accessibility {
+                    PermissionRow(kind: .accessibility)
+                }
             }
         }
         .onAppear { brightness.refreshKeyboardLight() }
