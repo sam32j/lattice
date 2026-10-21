@@ -412,10 +412,17 @@ struct NotchView: View {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    if !quickActions.contains(.explore) {
+                    if service.selected == .captures {
+                        if service.captureContent != nil {
+                            NotchIconButton(symbol: "clock.arrow.circlepath", title: FeatureStrings.recentCaptures(l10n.language).title,
+                                            action: service.showCaptureHistory)
+                        } else {
+                            NotchIconButton(symbol: "square.grid.2x2", title: text.sectionsTitle, action: service.toggleSections)
+                        }
+                    } else if !quickActions.contains(.explore) {
                         NotchIconButton(symbol: "square.grid.2x2", title: text.sectionsTitle, action: service.toggleSections)
                     }
-                    Text(service.selected.title(l10n.language))
+                    Text(service.selected.presentationTitle(l10n.language, hasCapturePreview: service.captureContent != nil))
                         .font(Font(NotchLayout.headerTitleFont as CTFont))
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -442,7 +449,7 @@ struct NotchView: View {
                 } else if service.expandedGeometry.headerCameraGap > 0 {
                     cameraHeaderActions
                 } else {
-                    headerActions(quickActions: quickActions)
+                    headerActions(quickActions: service.selected == .captures ? quickActions.filter { $0 != .explore } : quickActions)
                 }
             }
             .frame(width: service.expandedGeometry.headerCameraGap > 0 ? (service.contentSize.width - service.expandedGeometry.headerCameraGap) / 2 : nil,

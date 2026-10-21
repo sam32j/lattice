@@ -175,14 +175,18 @@ enum NotchPresentationRefreshContract {
         var captureActions: Bool?
         var captureContent: Bool?
         var captureContentHeight: CGFloat?
+        var captureHistoryGestureProgress = 0.0
+        var captureTrackpadGesture = NotchCaptureTrackpadGesture()
         var captureFallback: (() -> Void)?
         var captureClose: (() -> Void)?
         var captureHover: ((Bool) -> Void)?
         var captureClosesOnCollapse = false
         var routesCaptures = true
         var openedPages: [(module: NotchModule, takeFocus: Bool)] = []
-        func open(_ module: NotchModule, pinned: Bool, takeFocus: Bool, feedback: Bool) {
+        var capturePageCrossfades = 0
+        func open(_ module: NotchModule, pinned: Bool, takeFocus: Bool, feedback: Bool, crossfadeContent: Bool = false) {
             openedPages.append((module, takeFocus))
+            if crossfadeContent { capturePageCrossfades += 1 }
         }
         var pinned = false
         var showingSections = false
