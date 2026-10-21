@@ -14,8 +14,25 @@ import VMStatisticsCompat
 
 enum ScreenshotFeatureTests {
     static func run(_ suite: TestSuite) {
+        MediaEditorFileTests.run(suite)
+        ScreenshotFontSizeControlTests.run(suite)
+        ScreenshotShapeResizeTests.run(suite)
+        HistoryPreviewContinuityTests.run(suite)
+        ScreenshotExposeSelectionTests.run(suite)
+        ScreenshotMultiWindowShiftTests.run(suite)
+        ScreenshotWatermarkPickerTests.run(suite)
+        ScreenshotCapturePresentationTests.run(suite)
+        ScreenshotBlankViewportTests.run(suite)
+        CapturePresentationDeferralTests.run(suite)
+        ScreenshotWatermarkDraftTests.run(suite)
+        CapturePreviewPositionTests.run(suite)
+        ScreenshotWatermarkCollectionTests.run(suite)
+        ScreenshotMissionControlDeferralTests.run(suite)
         ScreenshotEditorGeometryTests.run(suite)
         ScreenshotEditorSelectionTests.run(suite)
+        ScreenshotEditorMultiSelectionTests.run(suite)
+        ScreenshotEditorKeyTests.run(suite)
+        ScreenshotSelectionChromeTests.run(suite)
         let registrationDomain = UserDefaults.standard.volatileDomain(
             forName: UserDefaults.registrationDomain)
         defer {
@@ -2516,16 +2533,10 @@ enum ScreenshotFeatureTests {
                     > ScreenshotRenderer.textBounds("Hi", at: .zero, textSize: 12, scale: 1).height,
                "text size alone drives the rendered font")
         suite.expect(ScreenshotSupport.sanitizedTextSize(0) == ScreenshotSupport.defaultTextSize
-                && ScreenshotSupport.sanitizedTextSize(2) == ScreenshotSupport.textSizes.first
-                && ScreenshotSupport.sanitizedTextSize(500) == ScreenshotSupport.textSizes.last
+                && ScreenshotSupport.sanitizedTextSize(2) == 8
+                && ScreenshotSupport.sanitizedTextSize(500) == 96
                 && ScreenshotSupport.sanitizedTextSize(19) == 19,
                "a stored text size stays inside the offered range")
-        suite.expect(ScreenshotSupport.steppedTextSize(from: 19, up: true) == 24
-                && ScreenshotSupport.steppedTextSize(from: 19, up: false) == 16
-                && ScreenshotSupport.steppedTextSize(from: 20, up: false) == 19
-                && ScreenshotSupport.steppedTextSize(from: 96, up: true) == nil
-                && ScreenshotSupport.steppedTextSize(from: 10, up: false) == nil,
-               "the size buttons step through the presets and stop at the ends")
         suite.expect(screenshotEditorSource.contains("let strokeChanged = usesStroke && annotations[index].stroke != stroke")
                 && screenshotEditorSource.contains("if usesStroke { annotations[index].stroke = stroke }"),
                "picking text or a highlight never records a thickness edit it has no control for")

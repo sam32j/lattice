@@ -13,6 +13,11 @@ import VMStatisticsCompat
 
 enum StorageFeatureTests {
     static func run(_ suite: TestSuite) {
+        RecorderFileCopyTests.run(suite)
+        RecentCaptureEditableImageTests.run(suite)
+        RecentCaptureThumbnailTests.run(suite)
+        ScreenshotDoneSaveTests.run(suite)
+        RecorderPreviewModelTests.run(suite)
         // MARK: A failed removal explains itself where it failed
         // A green tick above "some items couldn't be moved to the Trash" told
         // nobody that sandboxed app data needs Full Disk Access, and the note
