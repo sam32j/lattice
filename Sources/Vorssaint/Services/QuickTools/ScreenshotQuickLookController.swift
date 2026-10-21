@@ -12,6 +12,7 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
     private var previousResponder: NSResponder?
     private var keyMonitor: Any?
     private var previewPanel: QLPreviewPanel?
+    private var isTemporaryURL = false
     private var originalLevel: NSWindow.Level?
     var presentationWindow: NSWindow? { previewPanel }
     var isVisible: Bool { previewPanel?.isVisible == true }
@@ -31,7 +32,17 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
             guard let data = bitmap.representation(using: .png, properties: [:]) else { return false }
             try data.write(to: url, options: .withoutOverwriting)
         } catch { return false }
+        return present(url: url, temporary: true, owner: owner)
+    }
+
+    @discardableResult func show(url: URL, owner: NSWindow? = nil) -> Bool {
+        close()
+        return present(url: url, temporary: false, owner: owner)
+    }
+
+    private func present(url: URL, temporary: Bool, owner: NSWindow?) -> Bool {
         previewURL = url
+        isTemporaryURL = temporary
         self.owner = owner
         previousResponder = NSApp.nextResponder
         nextResponder = previousResponder
@@ -42,8 +53,7 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
         panel.updateController()
         panel.reloadData()
         panel.makeKeyAndOrderFront(nil)
-        // Quick Look chooses its own level while opening. Apply our layering
-        // only after that transition, not before it resets the window.
+        // Quick Look resets its level while opening; elevate it afterwards.
         panel.level = ScreenshotWindowLayering.previewLevel(above: owner)
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self, weak panel] event in
             guard event.window === panel,
@@ -83,8 +93,9 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
         if NSApp.nextResponder === self { NSApp.nextResponder = previousResponder }
         previousResponder = nil
         nextResponder = nil
-        if let url = previewURL { try? FileManager.default.removeItem(at: url) }
+        if let url = previewURL, isTemporaryURL { try? FileManager.default.removeItem(at: url) }
         previewURL = nil
+        isTemporaryURL = false
         if returnFocus, owner?.isVisible == true { owner?.makeKey() }
         owner = nil
     }
