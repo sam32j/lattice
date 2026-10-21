@@ -82,7 +82,7 @@ extension FeatureStrings {
 
 extension AppUpdateStrings {
     static let enUS = AppUpdateStrings(
-        pageTitle: "App updates",
+        pageTitle: "App Updates",
         hubDescription: "Find and install updates for the apps you have",
         caption: "Looks for newer versions of the apps on this Mac and helps you finish each update from its original source.",
         panelCaption: "See which apps have a newer version",

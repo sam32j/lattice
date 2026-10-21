@@ -1985,7 +1985,6 @@ private final class ScreenshotOverlayView: NSView {
         context.setLineWidth(2.0)
         context.strokePath()
     }
-
     private func drawWindowCheckmark(_ context: CGContext, for window: ScreenshotSupport.PickableWindow) {
         let frame = window.frame
         let windowsInFront = windows.prefix(while: { $0.windowID != window.windowID })
@@ -2542,11 +2541,6 @@ private struct CaptureGuideView: View {
             model.isHovered = hovering
         }
         .allowsHitTesting(true)
-    }
-
-    private var title: String {
-        guard let purpose, !purpose.isEmpty else { return strings.hintDrag }
-        return purpose
     }
 
     private var subtitle: String {

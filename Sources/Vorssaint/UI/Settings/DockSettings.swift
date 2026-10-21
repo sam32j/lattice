@@ -23,10 +23,10 @@ struct DockSettings: View {
     @AppStorage(DefaultsKey.dockClickMinimize) private var dockClickMinimize = false
     @AppStorage(DefaultsKey.dockClickHide) private var dockClickHide = false
     @AppStorage(DefaultsKey.dockClickCycleWindows) private var dockClickCycleWindows = false
-    @AppStorage(DefaultsKey.spacesOrderEnabled) private var spacesOrderEnabled = false
 
     private var pages: SettingsPageStrings { FeatureStrings.settingsPages(l10n.language) }
-    private var dockPreviewEngaged: Bool { dockPreviewEnabled && AppFeature.dockPreview.isAvailable }
+    private var dockPreviewInstalled: Bool { AppFeature.dockPreview.isAvailable }
+    private var dockPreviewEngaged: Bool { dockPreviewInstalled && dockPreviewEnabled }
 
     var body: some View {
         ScrollView {
@@ -37,23 +37,17 @@ struct DockSettings: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if AppFeature.dockPreview.isAvailable {
-                    dockPreviewCard
-                        .settingsSectionAnchor(.dock, cornerRadius: 16)
-                }
+                dockPreviewCard
+                    .settingsSectionAnchor(.dock, cornerRadius: 16)
                 if AppFeature.dockClick.isPresentInControls() {
                     dockClickCard
                         .settingsSectionAnchor(.dockClick, cornerRadius: 16)
                 }
-                if AppFeature.spacesOrder.isPresentInControls() {
-                    spacesOrderCard
-                        .settingsSectionAnchor(.spacesOrder, cornerRadius: 16)
-                }
+                WindowPreviewsCard(sizeKey: DefaultsKey.previewSize,
+                                   excludedAppsKey: DefaultsKey.windowPreviewExcludedApps)
+                    .disabled(!dockPreviewInstalled)
+                    .opacity(dockPreviewInstalled ? 1 : 0.55)
                 DockQuitOnCloseSettings()
-                if AppFeature.dockPreview.isAvailable {
-                    WindowPreviewsCard(sizeKey: DefaultsKey.previewSize,
-                                       excludedAppsKey: DefaultsKey.windowPreviewExcludedApps)
-                }
                 if needsAccessibility, !permissions.accessibility {
                     SettingsCard(title: l10n.s.permissionRequired) {
                         PermissionRow(kind: .accessibility)
@@ -75,13 +69,17 @@ struct DockSettings: View {
     private var dockPreviewCard: some View {
         SettingsCard(title: l10n.s.dockPreviewName) {
             SettingsRow(symbol: "dock.rectangle", title: l10n.s.dockPreviewEnable, caption: dockPreviewCaption) {
-                Toggle(l10n.s.dockPreviewEnable, isOn: $dockPreviewEnabled)
-                    .labelsHidden()
-                    .onChange(of: dockPreviewEnabled) { _, _ in
+                Toggle(l10n.s.dockPreviewEnable, isOn: Binding(
+                    get: { dockPreviewEngaged },
+                    set: { enabled in
+                        dockPreviewEnabled = enabled
+                        FeatureRuntime.shared.setAvailable([.dockPreview], enabled)
                         DockPreviewService.shared.syncWithPreferences()
                     }
+                ))
+                    .labelsHidden()
             }
-            if dockPreviewEnabled {
+            Group {
                 SettingsRow(symbol: "rectangle.3.group", title: l10n.s.switcherCurrentSpaceOnly,
                             caption: l10n.s.dockPreviewCurrentSpaceOnlyCaption) {
                     Toggle(l10n.s.switcherCurrentSpaceOnly, isOn: $dockPreviewCurrentSpaceOnly)
@@ -145,6 +143,8 @@ struct DockSettings: View {
                         .font(.subheadline.weight(.medium))
                 }
             }
+            .disabled(!dockPreviewInstalled)
+            .opacity(dockPreviewInstalled ? 1 : 0.55)
         }
     }
 
@@ -173,19 +173,6 @@ struct DockSettings: View {
                     .labelsHidden()
                     .onChange(of: dockClickCycleWindows) { _, _ in
                         FeatureRuntime.shared.sync([.dockClick])
-                    }
-            }
-        }
-    }
-
-    private var spacesOrderCard: some View {
-        SettingsCard {
-            SettingsRow(symbol: AppFeature.spacesOrder.symbolName, title: l10n.s.spacesOrderName,
-                        caption: l10n.s.spacesOrderCaption) {
-                Toggle(l10n.s.spacesOrderName, isOn: $spacesOrderEnabled)
-                    .labelsHidden()
-                    .onChange(of: spacesOrderEnabled) { _, _ in
-                        FeatureRuntime.shared.sync([.spacesOrder])
                     }
             }
         }

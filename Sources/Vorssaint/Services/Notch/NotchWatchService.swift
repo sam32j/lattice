@@ -60,7 +60,6 @@ final class NotchWatchService: ObservableObject {
     var isActive: Bool { target != nil && (state == .watching || state == .hidden) }
     /// An area without text shows itself in the closed island instead.
     var showsThumbnail: Bool { headline.isEmpty && preview != nil }
-    var isSelecting: Bool { selection != nil }
 
     private var tracker = NotchWatchTracker(condition: .changes)
     private var loop: Task<Void, Never>?

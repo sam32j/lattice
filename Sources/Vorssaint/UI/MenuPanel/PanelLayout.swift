@@ -160,10 +160,6 @@ enum PanelLayout {
         defaults.object(forKey: id.visibilityKey) as? Bool ?? id.shownByDefault
     }
 
-    static func setShown(_ shown: Bool, for id: PanelSectionID) {
-        defaults.set(shown, forKey: id.visibilityKey)
-    }
-
     /// Whether the section earns a tab in the panel right now: installed and
     /// shown, and for brightness also switched on, since that tab is enabled
     /// from Settings rather than from an empty panel screen. The one rule the

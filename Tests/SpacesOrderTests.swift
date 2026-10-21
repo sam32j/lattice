@@ -768,10 +768,10 @@ enum SpacesOrderTests {
         suite.expect(feature.group == .windowsDock && feature.enabledKeys == [DefaultsKey.spacesOrderEnabled]
                      && feature.permissions.isEmpty && feature.energyProfile == .idle && !feature.isBeta,
                      "fixed Space order is an idle feature in the window and Dock group that needs no permission")
-        suite.expect(feature.settingsDestination == FeatureSettingsDestination(.dock, sectionAnchor: .spacesOrder)
-                     && SettingsSectionAnchor.spacesOrder.page == .dock
-                     && FeatureVisibilitySupport.features(for: .dock).contains(.spacesOrder),
-                     "fixed Space order has its own card on the Dock page")
+        suite.expect(feature.settingsDestination == FeatureSettingsDestination(.windowLayout, sectionAnchor: .spacesOrder)
+                     && SettingsSectionAnchor.spacesOrder.page == .windowLayout
+                     && FeatureVisibilitySupport.features(for: .windowLayout).contains(.spacesOrder),
+                     "fixed Space order has its own card on the Window Management page")
         suite.expect(SettingsBackupSupport.machineStateKeys.isSuperset(of: [marker, restartPending])
                      && SettingsBackupSupport.exportKeys().isDisjoint(with: [marker, restartPending]),
                      "the restore marker and an owed restart belong to this Mac and never travel in a backup")

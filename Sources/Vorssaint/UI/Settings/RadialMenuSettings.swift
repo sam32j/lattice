@@ -20,6 +20,7 @@ struct RadialMenuSettings: View {
 
     @State private var profiles: [RadialMenuProfile] = RadialMenuSupport.decodeProfiles(
         UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles))
+    @State private var lastSyncedProfilesData: Data?
     @State private var selectedProfileID: UUID?
     /// The submenu being edited; empty means the root wheel.
     @State private var openSubmenuID: UUID?
@@ -187,9 +188,18 @@ struct RadialMenuSettings: View {
         }
         .formStyle(.grouped)
         .onAppear {
+            let data = UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles)
+            lastSyncedProfilesData = data
+            let latest = RadialMenuSupport.decodeProfiles(data)
+            if latest != profiles {
+                profiles = latest
+            }
             if selectedProfileID == nil || !profiles.contains(where: { $0.id == selectedProfileID }) {
                 selectedProfileID = profiles.first?.id
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+            refreshProfilesFromDefaults()
         }
         .onDrop(of: [UTType.text], delegate: RadialDragCleanupDelegate(dragging: $dragging))
         .sheet(item: $editing) { item in
@@ -318,6 +328,9 @@ struct RadialMenuSettings: View {
                 set: { newShortcut in
                     guard profiles.indices.contains(pIndex) else { return }
                     profiles[pIndex].shortcut = newShortcut
+                    if pIndex == 0 {
+                        UserDefaults.standard.set(newShortcut, forKey: DefaultsKey.radialMenuShortcut)
+                    }
                     persist()
                 }
             ),
@@ -495,8 +508,23 @@ struct RadialMenuSettings: View {
         setLevel(new)
     }
 
+    private func refreshProfilesFromDefaults() {
+        let data = UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles)
+        guard data != lastSyncedProfilesData else { return }
+        lastSyncedProfilesData = data
+        let latest = RadialMenuSupport.decodeProfiles(data)
+        if latest != profiles {
+            profiles = latest
+            if selectedProfileID == nil || !profiles.contains(where: { $0.id == selectedProfileID }) {
+                selectedProfileID = profiles.first?.id
+            }
+        }
+    }
+
     private func persist() {
-        UserDefaults.standard.set(RadialMenuSupport.encodeProfiles(profiles), forKey: DefaultsKey.radialMenuProfiles)
+        let data = RadialMenuSupport.encodeProfiles(profiles)
+        lastSyncedProfilesData = data
+        UserDefaults.standard.set(data, forKey: DefaultsKey.radialMenuProfiles)
         RadialMenuService.shared.syncWithPreferences()
     }
 
@@ -504,20 +532,14 @@ struct RadialMenuSettings: View {
     /// rows name it. The other wheels come from this page's own list, and
     /// everything else from the same checks those rows run.
     private func shortcutConflictTitle(_ shortcut: GlobalShortcut, excluding profileID: UUID) -> String? {
-        if let other = RadialMenuSupport.profile(using: shortcut, in: profiles, excluding: profileID) {
-            return other.displayName(text)
-        }
-        if let role = GlobalShortcutRole.conflict(for: shortcut, excluding: .radialMenu) {
-            return role.title(l10n.s)
-        }
-        if let title = WindowLayoutService.shared.shortcutConflictTitle(shortcut) {
-            return title
-        }
-        guard AppFeature.commandBar.isAvailable,
-              let row = CommandBarRowShortcuts.key(for: shortcut, in: CommandBarService.shared.rowShortcuts)
-        else { return nil }
-        return CommandBarService.shared.entryTitle(forStableKey: row)
-            ?? FeatureStrings.commandBar(l10n.language).namedTitle
+        RadialMenuSupport.conflictTitle(
+            for: shortcut,
+            excluding: profileID,
+            in: profiles,
+            radialText: text,
+            strings: l10n.s,
+            additionalConflict: { SettingsShortcutConflicts.title(for: $0, language: l10n.language) }
+        )
     }
 
     private func requestAccessibilityIfNeeded(_ on: Bool) {

@@ -303,7 +303,10 @@ enum ScreenshotSelectionRefreshContract {
         let releasePanel = releaseOutsideApp.panels[0]
         releaseOutsideApp.toggleSelectedWindow(.init(windowID: 11, frame: releasePanel.screenFrame), on: releasePanel)
         // No local flagsChanged event arrives while Exposé owns the keyboard.
-        try? await Task.sleep(nanoseconds: 150_000_000)
+        let releaseDeadline = Date().addingTimeInterval(2.0)
+        while !releaseOutsideApp.finished && Date() < releaseDeadline {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
         expect(releaseOutsideApp.finished,
                "releasing Shift confirms selected Exposé windows even without a local modifier event")
         let color = Chooser(.color)

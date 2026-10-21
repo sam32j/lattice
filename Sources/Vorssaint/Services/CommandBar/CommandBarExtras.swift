@@ -60,10 +60,6 @@ enum CommandBarExtras {
             }
         }
 
-        /// Sleep is instant and harmless; the rest close everything, so they
-        /// are confirmed on the row before anything happens.
-        var needsConfirmation: Bool { self != .sleep }
-
         fileprivate var appleScript: String? {
             switch self {
             case .sleep: return nil

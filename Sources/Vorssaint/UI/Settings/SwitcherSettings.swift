@@ -9,7 +9,6 @@ struct SwitcherSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var permissions = Permissions.shared
-    @ObservedObject private var secureInput = SecureInputMonitor.shared
     @AppStorage(DefaultsKey.switcherEnabled) private var switcherEnabled = true
     @AppStorage(DefaultsKey.switcherShortcut) private var switcherShortcutStorage = GlobalShortcut.switcherDefault.storageValue
     @AppStorage(DefaultsKey.switcherTakeOverSystemShortcuts) private var switcherTakeOverSystemShortcuts = false
@@ -30,12 +29,6 @@ struct SwitcherSettings: View {
     @AppStorage(DefaultsKey.switcherMaxColumns) private var switcherMaxColumns = 0
     private var pages: SettingsPageStrings { FeatureStrings.settingsPages(l10n.language) }
     private var switcherEngaged: Bool { switcherEnabled && AppFeature.switcher.isAvailable }
-    /// Only then does the macOS switcher on ⌘Tab need explaining: without the
-    /// take-over, or without the Accessibility grant the tap needs, it answers
-    /// anyway and keeps answering after secure input ends.
-    private var switcherReplacesSystemShortcuts: Bool {
-        switcherEngaged && switcherTakeOverSystemShortcuts && permissions.accessibility
-    }
     private var switcherWindowlessAppsSelection: Binding<String> {
         Binding(
             get: {
@@ -49,6 +42,10 @@ struct SwitcherSettings: View {
         )
     }
 
+    private var switcherInstalled: Bool {
+        AppFeature.switcher.isAvailable
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -58,39 +55,56 @@ struct SwitcherSettings: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if AppFeature.switcher.isAvailable {
+                enableSwitcherCard
+                    .settingsSectionAnchor(.switcher, cornerRadius: 16)
+
+                Group {
                     switcherCard
-                        .settingsSectionAnchor(.switcher, cornerRadius: 16)
                     switcherOptionsCard
-                        .disabled(!switcherEnabled)
-                }
-                if AppFeature.switcher.isAvailable {
                     WindowPreviewsCard(sizeKey: DefaultsKey.switcherPreviewSize,
                                        excludedAppsKey: DefaultsKey.switcherPreviewExcludedApps)
-                }
-                if switcherEngaged {
-                    if !permissions.accessibility {
-                        SettingsCard(title: l10n.s.permissionRequired) {
-                            PermissionRow(kind: .accessibility)
+                    if switcherEngaged {
+                        if !permissions.accessibility {
+                            SettingsCard(title: l10n.s.permissionRequired) {
+                                PermissionRow(kind: .accessibility)
+                            }
+                        }
+                        if !permissions.screenRecording,
+                           SwitcherSupport.capturesPreviews(simpleMode: switcherSimpleMode) {
+                            SettingsCard {
+                                PermissionRow(kind: .screenRecording)
+                            }
                         }
                     }
-                    if !permissions.screenRecording,
-                       SwitcherSupport.capturesPreviews(simpleMode: switcherSimpleMode) {
-                        SettingsCard {
-                            PermissionRow(kind: .screenRecording)
-                        }
-                    }
                 }
+                .disabled(!switcherInstalled)
+                .opacity(switcherInstalled ? 1 : 0.55)
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
             .padding(22)
         }
         .toggleStyle(.switch)
-        .observesSecureInput(isActive: switcherReplacesSystemShortcuts)
     }
 
     // MARK: - App switcher
+
+    private var enableSwitcherCard: some View {
+        SettingsCard {
+            SettingsRow(symbol: "rectangle.on.rectangle", title: l10n.s.switcherEnable,
+                        caption: l10n.s.switcherEnableCaption) {
+                Toggle(l10n.s.switcherEnable, isOn: Binding(
+                    get: { switcherEngaged },
+                    set: { enabled in
+                        switcherEnabled = enabled
+                        FeatureRuntime.shared.setAvailable([.switcher], enabled)
+                        AppSwitcher.shared.syncWithPreferences()
+                    }
+                ))
+                .labelsHidden()
+            }
+        }
+    }
 
     private var layout: SwitcherLayout {
         if switcherSimpleMode { return .simple }
@@ -113,70 +127,52 @@ struct SwitcherSettings: View {
 
     private var switcherCard: some View {
         SettingsCard(title: l10n.s.switcherSection) {
-            SettingsRow(symbol: "rectangle.on.rectangle", title: l10n.s.switcherEnable,
-                        caption: l10n.s.switcherEnableCaption) {
-                Toggle(l10n.s.switcherEnable, isOn: $switcherEnabled)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(FeatureStrings.notchEditor(l10n.language).layout)
+                    .font(.subheadline.weight(.medium))
+                HStack(spacing: 10) {
+                    SwitcherLayoutChoice(layout: .windows, title: pages.switcherLayoutWindows,
+                                         caption: pages.switcherLayoutWindowsCaption, selected: layout == .windows) {
+                        choose(.windows)
+                    }
+                    SwitcherLayoutChoice(layout: .icons, title: pages.switcherLayoutIcons,
+                                         caption: l10n.s.switcherIconRowModeCaption, selected: layout == .icons) {
+                        choose(.icons)
+                    }
+                    SwitcherLayoutChoice(layout: .simple, title: pages.switcherLayoutSimple,
+                                         caption: l10n.s.switcherSimpleModeCaption, selected: layout == .simple) {
+                        choose(.simple)
+                    }
+                }
+            }
+            Divider()
+            ShortcutPreferenceRow(role: .switcher,
+                                  label: l10n.s.switcherShortcutHintApps,
+                                  symbolName: "app.dashed") {
+                AppSwitcher.shared.syncWithPreferences()
+            }
+            ShortcutPreferenceRow(role: .switcherWindow,
+                                  label: l10n.s.switcherShortcutHintWindows,
+                                  symbolName: "macwindow.on.rectangle") {
+                AppSwitcher.shared.syncWithPreferences()
+            }
+            Text(l10n.s.switcherWindowShortcutCaption)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            SettingsRow(symbol: "command", title: l10n.s.switcherTakeOverSystemShortcuts,
+                        caption: l10n.s.switcherTakeOverSystemShortcutsCaption) {
+                Toggle(l10n.s.switcherTakeOverSystemShortcuts, isOn: $switcherTakeOverSystemShortcuts)
                     .labelsHidden()
-                    .onChange(of: switcherEnabled) { _, _ in
+                    .onChange(of: switcherTakeOverSystemShortcuts) { _, _ in
                         AppSwitcher.shared.syncWithPreferences()
                     }
             }
-            Group {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(FeatureStrings.notchEditor(l10n.language).layout)
-                        .font(.subheadline.weight(.medium))
-                    HStack(spacing: 10) {
-                        SwitcherLayoutChoice(layout: .windows, title: pages.switcherLayoutWindows,
-                                             caption: pages.switcherLayoutWindowsCaption, selected: layout == .windows) {
-                            choose(.windows)
-                        }
-                        SwitcherLayoutChoice(layout: .icons, title: pages.switcherLayoutIcons,
-                                             caption: l10n.s.switcherIconRowModeCaption, selected: layout == .icons) {
-                            choose(.icons)
-                        }
-                        SwitcherLayoutChoice(layout: .simple, title: pages.switcherLayoutSimple,
-                                             caption: l10n.s.switcherSimpleModeCaption, selected: layout == .simple) {
-                            choose(.simple)
-                        }
-                    }
-                }
-                Divider()
-                ShortcutPreferenceRow(role: .switcher,
-                                      label: l10n.s.switcherShortcutHintApps,
-                                      symbolName: "app.dashed") {
-                    AppSwitcher.shared.syncWithPreferences()
-                }
-                ShortcutPreferenceRow(role: .switcherWindow,
-                                      label: l10n.s.switcherShortcutHintWindows,
-                                      symbolName: "macwindow.on.rectangle") {
-                    AppSwitcher.shared.syncWithPreferences()
-                }
-                Text(l10n.s.switcherWindowShortcutCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                SettingsRow(symbol: "command", title: l10n.s.switcherTakeOverSystemShortcuts,
-                            caption: l10n.s.switcherTakeOverSystemShortcutsCaption) {
-                    Toggle(l10n.s.switcherTakeOverSystemShortcuts, isOn: $switcherTakeOverSystemShortcuts)
-                        .labelsHidden()
-                        .onChange(of: switcherTakeOverSystemShortcuts) { _, _ in
-                            AppSwitcher.shared.syncWithPreferences()
-                        }
-                }
-                // Secure input hides every key from the switcher, which hands
-                // ⌘Tab back to macOS until it ends. Without a word here the
-                // macOS switcher looks like the replacement stopped working.
-                if switcherReplacesSystemShortcuts, secureInput.holder != .off {
-                    SecureInputRow(blocking: .switcher)
-                        .padding(.leading, settingsRowTextInset)
-                }
-                Text(String(format: l10n.s.switcherUsageHintFormat,
-                            (GlobalShortcut(storageValue: switcherShortcutStorage) ?? .switcherDefault).displayString))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .disabled(!switcherEnabled)
+            Text(String(format: l10n.s.switcherUsageHintFormat,
+                        (GlobalShortcut(storageValue: switcherShortcutStorage) ?? .switcherDefault).displayString))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

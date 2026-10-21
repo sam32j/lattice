@@ -138,9 +138,9 @@ struct MixerFeatureStrings {
 extension SettingsCategoryStrings {
     static let ko = SettingsCategoryStrings(
         interface: "인터페이스",
-        windowsDock: "데스크탑 & Dock",
+        windowsDock: "데스크탑 & 화면",
         audio: "오디오",
-        energyDisplay: "에너지 & 디스플레이",
+        energyDisplay: "기기 제어",
         screenCaptures: "화면 캡처",
         mouseKeyboard: "마우스 & 키보드",
         clipboardFiles: "클립보드 & 파일",
@@ -215,8 +215,9 @@ extension ClipboardFeatureStrings {
 extension WindowLayoutFeatureStrings {
     static let ko = WindowLayoutFeatureStrings(
         title: "윈도우 관리",
+        enable: "윈도우 관리 활성화",
         caption: "윈도우를 화면 구역에 배치하거나 트랙패드 또는 마우스로 이동하고 크기를 조절합니다.",
-        showInPanel: "패널에 표시",
+        showInPanel: "유틸리티 메뉴에 표시",
         gestureSection: "윈도우 드래그",
         gestureEnable: "드래그로 윈도우 이동 및 크기 조절",
         gestureCaption: "트랙패드 또는 마우스에서 표시된 보조 키를 누른 채 윈도우 안의 아무 곳이나 드래그합니다.",
@@ -362,9 +363,9 @@ struct SettingsCategoryStrings {
 
     static let enUS = SettingsCategoryStrings(
         interface: "Interface",
-        windowsDock: "Desktop & Dock",
+        windowsDock: "Desktop & Screen",
         audio: "Audio",
-        energyDisplay: "Energy & Display",
+        energyDisplay: "Device Controls",
         screenCaptures: "Screen Captures",
         mouseKeyboard: "Mouse & Keyboard",
         clipboardFiles: "Clipboard & Files",
@@ -375,9 +376,9 @@ struct SettingsCategoryStrings {
 
     static let ptBR = SettingsCategoryStrings(
         interface: "Interface",
-        windowsDock: "Mesa & Dock",
+        windowsDock: "Mesa & Tela",
         audio: "Áudio",
-        energyDisplay: "Energia & Tela",
+        energyDisplay: "Controles do Dispositivo",
         screenCaptures: "Capturas de Tela",
         mouseKeyboard: "Mouse & Teclado",
         clipboardFiles: "Área de Transferência & Arquivos",
@@ -388,9 +389,9 @@ struct SettingsCategoryStrings {
 
     static let tr = SettingsCategoryStrings(
         interface: "Arayüz",
-        windowsDock: "Masaüstü & Dock",
+        windowsDock: "Masaüstü & Ekran",
         audio: "Ses",
-        energyDisplay: "Enerji & Ekran",
+        energyDisplay: "Aygıt Denetimleri",
         screenCaptures: "Ekran Yakalamaları",
         mouseKeyboard: "Fare & Klavye",
         clipboardFiles: "Pano & Dosyalar",
@@ -401,9 +402,9 @@ struct SettingsCategoryStrings {
 
     static let ru = SettingsCategoryStrings(
         interface: "Интерфейс",
-        windowsDock: "Рабочий стол & Dock",
+        windowsDock: "Рабочий стол & экран",
         audio: "Аудио",
-        energyDisplay: "Энергия & Дисплей",
+        energyDisplay: "Управление устройствами",
         screenCaptures: "Записи Экрана",
         mouseKeyboard: "Мышь & клавиатура",
         clipboardFiles: "Буфер обмена & файлы",
@@ -414,9 +415,9 @@ struct SettingsCategoryStrings {
 
     static let es = SettingsCategoryStrings(
         interface: "Interfaz",
-        windowsDock: "Escritorio & Dock",
+        windowsDock: "Escritorio & pantalla",
         audio: "Audio",
-        energyDisplay: "Energía & Pantalla",
+        energyDisplay: "Controles del dispositivo",
         screenCaptures: "Capturas de Pantalla",
         mouseKeyboard: "Ratón & teclado",
         clipboardFiles: "Portapapeles & archivos",
@@ -427,9 +428,9 @@ struct SettingsCategoryStrings {
 
     static let sk = SettingsCategoryStrings(
         interface: "Rozhranie",
-        windowsDock: "Plocha & Dock",
+        windowsDock: "Plocha & obrazovka",
         audio: "Audio",
-        energyDisplay: "Energia & Displej",
+        energyDisplay: "Ovládanie zariadení",
         screenCaptures: "Snímky Obrazovky",
         mouseKeyboard: "Myš & klávesnica",
         clipboardFiles: "Schránka & súbory",
@@ -440,9 +441,9 @@ struct SettingsCategoryStrings {
 
     static let de = SettingsCategoryStrings(
         interface: "Bedienoberfläche",
-        windowsDock: "Schreibtisch & Dock",
+        windowsDock: "Schreibtisch & Bildschirm",
         audio: "Audio",
-        energyDisplay: "Energie & Display",
+        energyDisplay: "Gerätesteuerung",
         screenCaptures: "Bildschirmaufnahmen",
         mouseKeyboard: "Maus & Tastatur",
         clipboardFiles: "Zwischenablage & Dateien",
@@ -453,9 +454,9 @@ struct SettingsCategoryStrings {
 
     static let fr = SettingsCategoryStrings(
         interface: "Interface",
-        windowsDock: "Bureau & Dock",
+        windowsDock: "Bureau & écran",
         audio: "Audio",
-        energyDisplay: "Énergie & Affichage",
+        energyDisplay: "Contrôles de l’appareil",
         screenCaptures: "Captures d’Écran",
         mouseKeyboard: "Souris & clavier",
         clipboardFiles: "Presse-papiers & fichiers",
@@ -466,9 +467,9 @@ struct SettingsCategoryStrings {
 
     static let it = SettingsCategoryStrings(
         interface: "Interfaccia",
-        windowsDock: "Scrivania & Dock",
+        windowsDock: "Scrivania & schermo",
         audio: "Audio",
-        energyDisplay: "Energia & Schermo",
+        energyDisplay: "Controlli del dispositivo",
         screenCaptures: "Registrazioni Schermo",
         mouseKeyboard: "Mouse & tastiera",
         clipboardFiles: "Appunti & file",
@@ -479,9 +480,9 @@ struct SettingsCategoryStrings {
 
     static let ja = SettingsCategoryStrings(
         interface: "インターフェイス",
-        windowsDock: "デスクトップ & Dock",
+        windowsDock: "デスクトップ & 画面",
         audio: "オーディオ",
-        energyDisplay: "エネルギー & ディスプレイ",
+        energyDisplay: "デバイスコントロール",
         screenCaptures: "画面キャプチャ",
         mouseKeyboard: "マウス & キーボード",
         clipboardFiles: "クリップボード & ファイル",
@@ -492,9 +493,9 @@ struct SettingsCategoryStrings {
 
     static let zhHans = SettingsCategoryStrings(
         interface: "界面",
-        windowsDock: "桌面 & 程序坞",
+        windowsDock: "桌面 & 屏幕",
         audio: "音频",
-        energyDisplay: "能源 & 显示器",
+        energyDisplay: "设备控制",
         screenCaptures: "屏幕截图与录制",
         mouseKeyboard: "鼠标 & 键盘",
         clipboardFiles: "剪贴板 & 文件",
@@ -505,9 +506,9 @@ struct SettingsCategoryStrings {
 
     static let zhTW = SettingsCategoryStrings(
         interface: "介面",
-        windowsDock: "桌面 & Dock",
+        windowsDock: "桌面 & 螢幕",
         audio: "音訊",
-        energyDisplay: "能源 & 顯示器",
+        energyDisplay: "裝置控制",
         screenCaptures: "螢幕擷取與錄製",
         mouseKeyboard: "滑鼠 & 鍵盤",
         clipboardFiles: "剪貼簿 & 檔案",
@@ -518,9 +519,9 @@ struct SettingsCategoryStrings {
 
     static let zhHK = SettingsCategoryStrings(
         interface: "介面",
-        windowsDock: "桌面 & Dock",
+        windowsDock: "桌面 & 螢幕",
         audio: "音訊",
-        energyDisplay: "能源 & 顯示器",
+        energyDisplay: "裝置控制",
         screenCaptures: "螢幕截圖與錄製",
         mouseKeyboard: "滑鼠 & 鍵盤",
         clipboardFiles: "剪貼簿 & 檔案",
@@ -1372,6 +1373,7 @@ struct ClipboardFeatureStrings {
 
 struct WindowLayoutFeatureStrings {
     let title: String
+    let enable: String
     let caption: String
     let showInPanel: String
     let gestureSection: String
@@ -1464,8 +1466,9 @@ struct WindowLayoutFeatureStrings {
 
     static let enUS = WindowLayoutFeatureStrings(
         title: "Window Management",
+        enable: "Enable Window Management",
         caption: "Arrange windows into screen sections or move and resize them with a trackpad or mouse.",
-        showInPanel: "Show in panel",
+        showInPanel: "Show in utilities menu",
         gestureSection: "Window dragging",
         gestureEnable: "Move and resize by dragging",
         gestureCaption: "On a trackpad or mouse, hold the shown modifier keys and drag anywhere inside a window.",
@@ -1557,8 +1560,9 @@ struct WindowLayoutFeatureStrings {
 
     static let ptBR = WindowLayoutFeatureStrings(
         title: "Gerenciamento de Janelas",
+        enable: "Ativar Gerenciamento de Janelas",
         caption: "Organize janelas em áreas da tela ou mova e redimensione com o trackpad ou mouse.",
-        showInPanel: "Mostrar no painel",
+        showInPanel: "Mostrar no menu de utilitários",
         gestureSection: "Arraste de janelas",
         gestureEnable: "Mover e redimensionar por arraste",
         gestureCaption: "No trackpad ou mouse, segure as teclas indicadas e arraste em qualquer ponto da janela.",
@@ -1650,8 +1654,9 @@ struct WindowLayoutFeatureStrings {
 
     static let tr = WindowLayoutFeatureStrings(
         title: "Pencere Yönetimi",
+        enable: "Pencere Yönetimini Etkinleştir",
         caption: "Pencereleri ekran bölümlerine yerleştirin veya izleme dörtgeni ya da fareyle taşıyıp yeniden boyutlandırın.",
-        showInPanel: "Panelde göster",
+        showInPanel: "İzlenceler menüsünde göster",
         gestureSection: "Pencere sürükleme",
         gestureEnable: "Sürükleyerek taşı ve boyutlandır",
         gestureCaption: "İzleme dörtgeni veya farede gösterilen değiştirici tuşları basılı tutup pencerenin herhangi bir yerinden sürükleyin.",
@@ -1743,8 +1748,9 @@ struct WindowLayoutFeatureStrings {
 
     static let ru = WindowLayoutFeatureStrings(
         title: "Управление окнами",
+        enable: "Включить управление окнами",
         caption: "Размещайте окна по областям экрана или перемещайте и меняйте их размер трекпадом или мышью.",
-        showInPanel: "Показывать в панели",
+        showInPanel: "Показывать в меню утилит",
         gestureSection: "Перетаскивание окон",
         gestureEnable: "Перемещать и менять размер перетаскиванием",
         gestureCaption: "На трекпаде или мыши удерживайте показанные клавиши и тяните из любой точки окна.",
@@ -1836,8 +1842,9 @@ struct WindowLayoutFeatureStrings {
 
     static let es = WindowLayoutFeatureStrings(
         title: "Gestión de ventanas",
+        enable: "Activar gestión de ventanas",
         caption: "Organiza ventanas en zonas de la pantalla o muévelas y cambia su tamaño con el trackpad o el ratón.",
-        showInPanel: "Mostrar en el panel",
+        showInPanel: "Mostrar en el menú de utilidades",
         gestureSection: "Arrastre de ventanas",
         gestureEnable: "Mover y cambiar tamaño al arrastrar",
         gestureCaption: "En el trackpad o el ratón, mantén las teclas indicadas y arrastra desde cualquier punto de una ventana.",
@@ -1929,8 +1936,9 @@ struct WindowLayoutFeatureStrings {
 
     static let sk = WindowLayoutFeatureStrings(
         title: "Správa okien",
+        enable: "Povoliť správu okien",
         caption: "Usporiadajte okná do oblastí obrazovky alebo ich presúvajte a meňte im veľkosť trackpadom či myšou.",
-        showInPanel: "Zobraziť v paneli",
+        showInPanel: "Zobraziť v menu utilít",
         gestureSection: "Ťahanie okien",
         gestureEnable: "Presúvať a meniť veľkosť ťahaním",
         gestureCaption: "Na trackpade alebo myši podržte zobrazené klávesy a ťahajte kdekoľvek vnútri okna.",
@@ -2022,8 +2030,9 @@ struct WindowLayoutFeatureStrings {
 
     static let de = WindowLayoutFeatureStrings(
         title: "Fensterverwaltung",
+        enable: "Fensterverwaltung aktivieren",
         caption: "Ordne Fenster in Bildschirmbereiche ein oder verschiebe und skaliere sie mit Trackpad oder Maus.",
-        showInPanel: "Im Panel anzeigen",
+        showInPanel: "Im Dienstprogramme-Menü anzeigen",
         gestureSection: "Fenster ziehen",
         gestureEnable: "Durch Ziehen verschieben und skalieren",
         gestureCaption: "Halte auf Trackpad oder Maus die angezeigten Sondertasten und ziehe an einer beliebigen Stelle im Fenster.",
@@ -2115,8 +2124,9 @@ struct WindowLayoutFeatureStrings {
 
     static let fr = WindowLayoutFeatureStrings(
         title: "Gestion des fenêtres",
+        enable: "Activer la gestion des fenêtres",
         caption: "Organisez les fenêtres dans des zones de l’écran ou déplacez-les et redimensionnez-les au trackpad ou à la souris.",
-        showInPanel: "Afficher dans le panneau",
+        showInPanel: "Afficher dans le menu des utilitaires",
         gestureSection: "Glissement des fenêtres",
         gestureEnable: "Déplacer et redimensionner par glissement",
         gestureCaption: "Au trackpad ou à la souris, maintenez les touches indiquées et faites glisser depuis n’importe quel point d’une fenêtre.",
@@ -2208,8 +2218,9 @@ struct WindowLayoutFeatureStrings {
 
     static let it = WindowLayoutFeatureStrings(
         title: "Gestione finestre",
+        enable: "Abilita gestione finestre",
         caption: "Disponi le finestre nelle aree dello schermo oppure spostale e ridimensionale con trackpad o mouse.",
-        showInPanel: "Mostra nel pannello",
+        showInPanel: "Mostra nel menu delle utility",
         gestureSection: "Trascinamento finestre",
         gestureEnable: "Sposta e ridimensiona trascinando",
         gestureCaption: "Sul trackpad o con il mouse, tieni premuti i tasti indicati e trascina da qualsiasi punto della finestra.",
@@ -2301,8 +2312,9 @@ struct WindowLayoutFeatureStrings {
 
     static let ja = WindowLayoutFeatureStrings(
         title: "ウインドウ管理",
+        enable: "ウィンドウ管理を有効にする",
         caption: "ウインドウを画面の領域に配置したり、トラックパッドやマウスで移動やサイズ変更ができます。",
-        showInPanel: "パネルに表示",
+        showInPanel: "ユーティリティメニューに表示",
         gestureSection: "ウインドウのドラッグ",
         gestureEnable: "ドラッグで移動とサイズ変更",
         gestureCaption: "トラックパッドまたはマウスで表示された修飾キーを押し、ウインドウ内の任意の場所からドラッグします。",
@@ -2394,8 +2406,9 @@ struct WindowLayoutFeatureStrings {
 
     static let zhHans = WindowLayoutFeatureStrings(
         title: "窗口管理",
+        enable: "启用窗口管理",
         caption: "将窗口排列到屏幕区域，或用触控板或鼠标移动和调整大小。",
-        showInPanel: "在面板中显示",
+        showInPanel: "在实用工具菜单中显示",
         gestureSection: "窗口拖动",
         gestureEnable: "拖动以移动和调整大小",
         gestureCaption: "在触控板或鼠标上按住显示的修饰键，从窗口内任意位置拖动。",
@@ -2487,8 +2500,9 @@ struct WindowLayoutFeatureStrings {
 
     static let zhTW = WindowLayoutFeatureStrings(
         title: "視窗管理",
+        enable: "啟用視窗管理",
         caption: "將視窗排列到螢幕區域，或用觸控板或滑鼠移動及調整大小。",
-        showInPanel: "在面板中顯示",
+        showInPanel: "在工具程式選單中顯示",
         gestureSection: "視窗拖移",
         gestureEnable: "拖移以移動及調整大小",
         gestureCaption: "在觸控板或滑鼠上按住顯示的輔助鍵，從視窗內任何位置拖移。",
@@ -2580,8 +2594,9 @@ struct WindowLayoutFeatureStrings {
 
     static let zhHK = WindowLayoutFeatureStrings(
         title: "視窗管理",
+        enable: "啟用視窗管理",
         caption: "將視窗排列到螢幕區域，或用觸控板或滑鼠移動及調整大小。",
-        showInPanel: "在面板中顯示",
+        showInPanel: "在工具程式選單中顯示",
         gestureSection: "視窗拖動",
         gestureEnable: "拖動以移動及調整大小",
         gestureCaption: "在觸控板或滑鼠上按住顯示的輔助鍵，從視窗內任何位置拖動。",
@@ -3165,9 +3180,9 @@ struct MonitorAlertFeatureStrings {
 extension SettingsCategoryStrings {
     static let uk = SettingsCategoryStrings(
         interface: "Інтерфейс",
-        windowsDock: "Робочий стіл & Dock",
+        windowsDock: "Робочий стіл & екран",
         audio: "Аудіо",
-        energyDisplay: "Енергія & Дисплей",
+        energyDisplay: "Керування пристроями",
         screenCaptures: "Знімки Екрана",
         mouseKeyboard: "Миша & клавіатура",
         clipboardFiles: "Буфер обміну & файли",
@@ -3242,8 +3257,9 @@ extension ClipboardFeatureStrings {
 extension WindowLayoutFeatureStrings {
     static let uk = WindowLayoutFeatureStrings(
         title: "Керування вікнами",
+        enable: "Увімкнути керування вікнами",
         caption: "Розставляйте вікна у розділи екрана або переміщуйте та змінюйте їхній розмір трекпедом або мишею.",
-        showInPanel: "Показати в панелі",
+        showInPanel: "Показати в меню утиліт",
         gestureSection: "Перетягування вікна",
         gestureEnable: "Переміщення та зміна розміру перетягуванням",
         gestureCaption: "На трекпеді або миші утримуйте показані клавіші-модифікатори та перетягуйте в будь-якому місці всередині вікна.",

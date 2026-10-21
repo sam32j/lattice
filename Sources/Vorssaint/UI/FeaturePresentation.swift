@@ -18,7 +18,7 @@ extension AppFeature {
     /// with no clean existing form live in the hub strings.
     func hubTitle(_ s: Strings, hub: FeatureHubStrings) -> String {
         switch self {
-        case .switcher: return s.switcherSection
+        case .switcher: return s.tabSwitcher
         case .dockPreview: return s.dockPreviewName
         case .dockClick: return hub.titleDockClick
         case .windowMaximizer: return s.windowMaximizeName

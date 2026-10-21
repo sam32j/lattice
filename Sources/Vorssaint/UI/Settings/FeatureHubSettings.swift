@@ -85,7 +85,7 @@ struct FeatureHubSettings: View {
                     neverUsedCard
                 }
                 dynamicIslandCard
-                ForEach(FeatureGroup.allCases.filter { $0 != .dynamicIsland && $0 != .mouseKeyboard }, id: \.self) { group in
+                ForEach(FeatureGroup.allCases.filter { $0 != .dynamicIsland && !AppFeature.hubFeatures(in: $0).isEmpty }, id: \.self) { group in
                     groupCard(group)
                 }
                 VStack(alignment: .leading, spacing: 4) {

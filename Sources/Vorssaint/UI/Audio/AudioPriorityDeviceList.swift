@@ -59,7 +59,7 @@ struct PriorityDeviceList: View {
                 if !available {
                     Text(l10n.s.audioPriorityUnavailable)
                         .font(.system(size: 9))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }

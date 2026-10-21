@@ -1633,10 +1633,6 @@ enum ScreenshotSupport {
             return result
         }
 
-        static func activeBindings(from raw: String?, capsLockOn: Bool = false) -> [Tool: GlobalShortcut] {
-            effectiveShortcuts(from: raw)
-        }
-
         static func bindingsStorage(_ bindings: [Tool: GlobalShortcut]) -> String {
             allCases.compactMap { tool in
                 bindings[tool].map { "\(tool.rawValue)=\($0.storageValue)" }

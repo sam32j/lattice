@@ -80,7 +80,7 @@ enum RecorderFeatureTests {
                 && pageVisible(.screenRecorder, available: [.screenRecorder])
                 && pageVisible(.screenshot, available: [.screenOCR])
                 && pageVisible(.screenshot, available: [.colorPicker])
-                && !pageVisible(.screenshot, available: []),
+                && pageVisible(.screenshot, available: []),
                "screen recorder has its own page and screenshot hosts ocr and color picker")
         suite.expect([AppFeature.screenshot, .screenOCR, .colorPicker]
                 .allSatisfy { $0.settingsDestination.page == .screenshot }

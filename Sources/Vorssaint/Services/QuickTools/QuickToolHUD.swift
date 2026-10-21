@@ -26,12 +26,6 @@ enum QuickToolHUD {
         return panel.windowNumber
     }
 
-    /// The scrolling capture controls, when they are on screen. They belong to
-    /// the capture in progress and must stay out of its own pictures.
-    static var currentScrollingWindowNumber: Int? {
-        ScrollingCaptureOverlayController.activePreviewWindowNumber
-    }
-
     static var scrollingWindowIDs: Set<CGWindowID> {
         ScrollingCaptureOverlayController.activeWindowIDs
     }

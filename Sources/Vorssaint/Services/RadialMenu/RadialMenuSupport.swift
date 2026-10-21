@@ -30,23 +30,6 @@ enum RadialMenuColor: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    var baseColor: Color {
-        switch self {
-        case .accent: return .accentColor
-        case .blue: return .blue
-        case .purple: return .purple
-        case .pink: return .pink
-        case .red: return .red
-        case .orange: return .orange
-        case .yellow: return .yellow
-        case .green: return .green
-        case .mint: return .mint
-        case .cyan: return .cyan
-        case .indigo: return .indigo
-        case .graphite: return .gray
-        }
-    }
-
     func title(_ strings: RadialMenuFeatureStrings) -> String {
         switch self {
         case .accent: return strings.colorAccent
@@ -884,7 +867,7 @@ enum RadialMenuSupport {
 
         let items = decode(legacyItemsData)
         let initialProfile = RadialMenuProfile(
-            id: UUID(),
+            id: UUID(uuidString: "E0A8948E-5056-4BD3-82D5-5020F99F0001") ?? UUID(),
             name: "",
             color: .accent,
             shortcut: legacyShortcut,
@@ -910,6 +893,38 @@ enum RadialMenuSupport {
     static func profile(using shortcut: GlobalShortcut, in profiles: [RadialMenuProfile],
                         excluding profileID: UUID) -> RadialMenuProfile? {
         profiles.first { $0.id != profileID && GlobalShortcut(storageValue: $0.shortcut) == shortcut }
+    }
+
+    /// Names whoever already answers to a shortcut, excluding a given profile ID.
+    static func conflictTitle(for shortcut: GlobalShortcut,
+                              excluding profileID: UUID,
+                              in profiles: [RadialMenuProfile],
+                              radialText: RadialMenuFeatureStrings,
+                              strings: Strings,
+                              additionalConflict: (GlobalShortcut) -> String? = { _ in nil }) -> String? {
+        if let other = profile(using: shortcut, in: profiles, excluding: profileID) {
+            return other.displayName(radialText)
+        }
+        if let role = GlobalShortcutRole.conflict(for: shortcut, excluding: .radialMenu) {
+            return role.title(strings)
+        }
+        return additionalConflict(shortcut)
+    }
+
+    static var onPreferencesChanged: (() -> Void)?
+
+    /// Update the shortcut for a specific profile by ID and synchronize settings.
+    static func updateShortcut(_ newShortcut: String,
+                               for profileID: UUID,
+                               defaults: UserDefaults = .standard) {
+        var profiles = decodeProfiles(defaults.data(forKey: DefaultsKey.radialMenuProfiles), defaults: defaults)
+        guard let index = profiles.firstIndex(where: { $0.id == profileID }) ?? (profiles.isEmpty ? nil : 0) else { return }
+        profiles[index].shortcut = newShortcut
+        if index == 0 {
+            defaults.set(newShortcut, forKey: DefaultsKey.radialMenuShortcut)
+        }
+        defaults.set(encodeProfiles(profiles), forKey: DefaultsKey.radialMenuProfiles)
+        onPreferencesChanged?()
     }
 
     static func encodeProfiles(_ profiles: [RadialMenuProfile]) -> Data? {

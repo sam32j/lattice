@@ -132,7 +132,7 @@ extension FeatureStrings {
 
 extension RadialMenuFeatureStrings {
     static let enUS = RadialMenuFeatureStrings(
-        pageTitle: "Radial menu",
+        pageTitle: "Radial Menu",
         hubDescription: "Opens a wheel of your favorite actions around the pointer",
         enableLabel: "Use the radial menu",
         enableCaption: "Hold the shortcut, point at an action and release. A quick press keeps the wheel open.",

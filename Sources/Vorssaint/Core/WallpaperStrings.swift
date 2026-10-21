@@ -6,6 +6,7 @@ import Foundation
 /// Wallpaper panel strings.
 struct WallpaperFeatureStrings {
     let pageTitle: String
+    let enableManagement: String
     let hubDescription: String
     /// Sentence form for the panel layout list, whose descriptions end in a stop.
     let panelDescription: String
@@ -20,7 +21,6 @@ struct WallpaperFeatureStrings {
     let sourceUnavailable: String
     let addImagePrompt: String
     let addFolderPrompt: String
-    let openSystemSettings: String
     let emptyAll: String
     let emptyOwn: String
     let emptyApple: String
@@ -56,6 +56,7 @@ extension FeatureStrings {
 extension WallpaperFeatureStrings {
     static let enUS = WallpaperFeatureStrings(
         pageTitle: "Wallpaper",
+        enableManagement: "Enable Wallpaper Management",
         hubDescription: "Pick a still wallpaper without opening System Settings",
         panelDescription: "Pick a still wallpaper without opening System Settings.",
         filterAll: "All",
@@ -69,7 +70,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "Unavailable",
         addImagePrompt: "Choose images to keep in Lattice’s wallpaper list",
         addFolderPrompt: "Choose a folder of images to keep in Lattice’s wallpaper list",
-        openSystemSettings: "Open Wallpaper settings",
         emptyAll: "No wallpapers found",
         emptyOwn: "No pictures added yet",
         emptyApple: "No Apple stills found",
@@ -82,6 +82,7 @@ extension WallpaperFeatureStrings {
 
     static let ptBR = WallpaperFeatureStrings(
         pageTitle: "Papel de parede",
+        enableManagement: "Ativar gerenciamento de papel de parede",
         hubDescription: "Escolha um papel de parede sem abrir os Ajustes do Sistema",
         panelDescription: "Escolha um papel de parede sem abrir os Ajustes do Sistema.",
         filterAll: "Todos",
@@ -95,7 +96,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "Indisponível",
         addImagePrompt: "Escolha imagens para manter na lista do Lattice",
         addFolderPrompt: "Escolha uma pasta de imagens para manter na lista do Lattice",
-        openSystemSettings: "Abrir Ajustes de papel de parede",
         emptyAll: "Nenhum papel de parede encontrado",
         emptyOwn: "Nenhuma imagem adicionada ainda",
         emptyApple: "Nenhum papel da Apple encontrado",
@@ -108,6 +108,7 @@ extension WallpaperFeatureStrings {
 
     static let tr = WallpaperFeatureStrings(
         pageTitle: "Duvar kağıdı",
+        enableManagement: "Duvar Kağıdı Yönetimini Etkinleştir",
         hubDescription: "Sistem Ayarları’nı açmadan sabit bir duvar kağıdı seçin",
         panelDescription: "Sistem Ayarları’nı açmadan sabit bir duvar kağıdı seçin.",
         filterAll: "Tümü",
@@ -121,7 +122,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "Kullanılamıyor",
         addImagePrompt: "Lattice listesinde tutulacak görüntüleri seçin",
         addFolderPrompt: "Lattice listesinde tutulacak bir görüntü klasörü seçin",
-        openSystemSettings: "Duvar kağıdı ayarlarını aç",
         emptyAll: "Duvar kağıdı bulunamadı",
         emptyOwn: "Henüz görüntü eklenmedi",
         emptyApple: "Apple duvar kağıdı bulunamadı",
@@ -134,6 +134,7 @@ extension WallpaperFeatureStrings {
 
     static let ru = WallpaperFeatureStrings(
         pageTitle: "Обои",
+        enableManagement: "Включить управление обоями",
         hubDescription: "Выберите статичные обои без открытия Системных настроек",
         panelDescription: "Выберите статичные обои без открытия Системных настроек.",
         filterAll: "Все",
@@ -147,7 +148,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "Недоступно",
         addImagePrompt: "Выберите изображения для списка Lattice",
         addFolderPrompt: "Выберите папку с изображениями для списка Lattice",
-        openSystemSettings: "Открыть настройки обоев",
         emptyAll: "Обои не найдены",
         emptyOwn: "Изображения ещё не добавлены",
         emptyApple: "Обои Apple не найдены",
@@ -160,6 +160,7 @@ extension WallpaperFeatureStrings {
 
     static let es = WallpaperFeatureStrings(
         pageTitle: "Fondo de pantalla",
+        enableManagement: "Activar gestión de fondos de pantalla",
         hubDescription: "Elige un fondo fijo sin abrir Ajustes del Sistema",
         panelDescription: "Elige un fondo fijo sin abrir Ajustes del Sistema.",
         filterAll: "Todos",
@@ -173,7 +174,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "No disponible",
         addImagePrompt: "Elige imágenes para la lista de Lattice",
         addFolderPrompt: "Elige una carpeta de imágenes para la lista de Lattice",
-        openSystemSettings: "Abrir ajustes de fondo",
         emptyAll: "No se encontraron fondos",
         emptyOwn: "Aún no hay imágenes añadidas",
         emptyApple: "No se encontraron fondos de Apple",
@@ -185,6 +185,7 @@ extension WallpaperFeatureStrings {
     )
     static let sk = WallpaperFeatureStrings(
         pageTitle: "Pozadie",
+        enableManagement: "Povoliť správu tapiet",
         hubDescription: "Vyberte statické pozadie bez otvárania Systémových nastavení",
         panelDescription: "Vyberte statické pozadie bez otvárania Systémových nastavení.",
         filterAll: "Všetky",
@@ -198,7 +199,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "Nedostupné",
         addImagePrompt: "Vyberte obrázky, ktoré sa majú ponechať v zozname pozadí Latticeu",
         addFolderPrompt: "Vyberte priečinok s obrázkami, ktorý sa má ponechať v zozname pozadí Latticeu",
-        openSystemSettings: "Otvoriť nastavenia pozadia",
         emptyAll: "Nenašli sa žiadne pozadia",
         emptyOwn: "Zatiaľ ste nepridali žiadne obrázky",
         emptyApple: "Nenašli sa žiadne statické pozadia od Apple",
@@ -211,6 +211,7 @@ extension WallpaperFeatureStrings {
 
     static let de = WallpaperFeatureStrings(
         pageTitle: "Hintergrundbild",
+        enableManagement: "Hintergrundbildverwaltung aktivieren",
         hubDescription: "Wähle ein Standbild ohne die Systemeinstellungen zu öffnen",
         panelDescription: "Wähle ein Standbild ohne die Systemeinstellungen zu öffnen.",
         filterAll: "Alle",
@@ -224,7 +225,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "Nicht verfügbar",
         addImagePrompt: "Bilder für die Lattice-Liste wählen",
         addFolderPrompt: "Ordner mit Bildern für die Lattice-Liste wählen",
-        openSystemSettings: "Hintergrundbild-Einstellungen öffnen",
         emptyAll: "Keine Hintergrundbilder gefunden",
         emptyOwn: "Noch keine eigenen Bilder",
         emptyApple: "Keine Apple-Bilder gefunden",
@@ -237,6 +237,7 @@ extension WallpaperFeatureStrings {
 
     static let fr = WallpaperFeatureStrings(
         pageTitle: "Fond d’écran",
+        enableManagement: "Activer la gestion des fonds d’écran",
         hubDescription: "Choisissez une image fixe sans ouvrir Réglages Système",
         panelDescription: "Choisissez une image fixe sans ouvrir Réglages Système.",
         filterAll: "Tous",
@@ -250,7 +251,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "Indisponible",
         addImagePrompt: "Choisissez des images pour la liste Lattice",
         addFolderPrompt: "Choisissez un dossier d’images pour la liste Lattice",
-        openSystemSettings: "Ouvrir les réglages de fond d’écran",
         emptyAll: "Aucun fond d’écran trouvé",
         emptyOwn: "Aucune image ajoutée pour l’instant",
         emptyApple: "Aucun fond Apple trouvé",
@@ -263,6 +263,7 @@ extension WallpaperFeatureStrings {
 
     static let it = WallpaperFeatureStrings(
         pageTitle: "Sfondo",
+        enableManagement: "Abilita gestione sfondo",
         hubDescription: "Scegli uno sfondo fisso senza aprire Impostazioni di Sistema",
         panelDescription: "Scegli uno sfondo fisso senza aprire Impostazioni di Sistema.",
         filterAll: "Tutti",
@@ -276,7 +277,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "Non disponibile",
         addImagePrompt: "Scegli immagini per l’elenco di Lattice",
         addFolderPrompt: "Scegli una cartella di immagini per l’elenco di Lattice",
-        openSystemSettings: "Apri impostazioni sfondo",
         emptyAll: "Nessuno sfondo trovato",
         emptyOwn: "Nessuna immagine aggiunta ancora",
         emptyApple: "Nessuno sfondo Apple trovato",
@@ -289,6 +289,7 @@ extension WallpaperFeatureStrings {
 
     static let ja = WallpaperFeatureStrings(
         pageTitle: "壁紙",
+        enableManagement: "壁紙管理を有効にする",
         hubDescription: "システム設定を開かずに静止壁紙を選べます",
         panelDescription: "システム設定を開かずに静止壁紙を選べます。",
         filterAll: "すべて",
@@ -302,7 +303,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "利用できません",
         addImagePrompt: "Latticeの一覧に残す画像を選んでください",
         addFolderPrompt: "Latticeの一覧に残す画像フォルダを選んでください",
-        openSystemSettings: "壁紙設定を開く",
         emptyAll: "壁紙が見つかりません",
         emptyOwn: "まだ画像がありません",
         emptyApple: "Appleの壁紙が見つかりません",
@@ -315,6 +315,7 @@ extension WallpaperFeatureStrings {
 
     static let ko = WallpaperFeatureStrings(
         pageTitle: "배경화면",
+        enableManagement: "배경화면 관리 활성화",
         hubDescription: "시스템 설정을 열지 않고 고정 배경을 고릅니다",
         panelDescription: "시스템 설정을 열지 않고 고정 배경을 고릅니다.",
         filterAll: "전체",
@@ -328,7 +329,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "사용할 수 없음",
         addImagePrompt: "Lattice 목록에 둘 이미지를 선택하세요",
         addFolderPrompt: "Lattice 목록에 둘 이미지 폴더를 선택하세요",
-        openSystemSettings: "배경화면 설정 열기",
         emptyAll: "배경화면을 찾을 수 없습니다",
         emptyOwn: "아직 추가한 이미지가 없습니다",
         emptyApple: "Apple 배경을 찾을 수 없습니다",
@@ -340,6 +340,7 @@ extension WallpaperFeatureStrings {
     )
     static let uk = WallpaperFeatureStrings(
         pageTitle: "Шпалера",
+        enableManagement: "Увімкнути керування шпалерами",
         hubDescription: "Вибирайте статичну шпалеру, не відкриваючи Системні параметри",
         panelDescription: "Вибирайте статичну шпалеру, не відкриваючи Системні параметри.",
         filterAll: "Усі",
@@ -353,7 +354,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "Недоступно",
         addImagePrompt: "Виберіть зображення для списку шпалер Lattice",
         addFolderPrompt: "Виберіть папку із зображеннями для списку шпалер Lattice",
-        openSystemSettings: "Відкрити параметри шпалери",
         emptyAll: "Шпалер не знайдено",
         emptyOwn: "Зображень ще не додано",
         emptyApple: "Статичних шпалер Apple не знайдено",
@@ -366,6 +366,7 @@ extension WallpaperFeatureStrings {
 
     static let zhHans = WallpaperFeatureStrings(
         pageTitle: "壁纸",
+        enableManagement: "启用壁纸管理",
         hubDescription: "无需打开系统设置即可选择静态壁纸",
         panelDescription: "无需打开系统设置即可选择静态壁纸。",
         filterAll: "全部",
@@ -379,7 +380,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "不可用",
         addImagePrompt: "选择要保留在 Lattice 列表中的图片",
         addFolderPrompt: "选择要保留在 Lattice 列表中的图片文件夹",
-        openSystemSettings: "打开壁纸设置",
         emptyAll: "未找到壁纸",
         emptyOwn: "尚未添加图片",
         emptyApple: "未找到 Apple 壁纸",
@@ -392,6 +392,7 @@ extension WallpaperFeatureStrings {
 
     static let zhTW = WallpaperFeatureStrings(
         pageTitle: "桌布",
+        enableManagement: "啟用桌布管理",
         hubDescription: "不必打開系統設定即可選擇靜態桌布",
         panelDescription: "不必打開系統設定即可選擇靜態桌布。",
         filterAll: "全部",
@@ -405,7 +406,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "無法使用",
         addImagePrompt: "選擇要保留在 Lattice 清單中的圖片",
         addFolderPrompt: "選擇要保留在 Lattice 清單中的圖片資料夾",
-        openSystemSettings: "開啟桌布設定",
         emptyAll: "找不到桌布",
         emptyOwn: "尚未新增圖片",
         emptyApple: "找不到 Apple 桌布",
@@ -418,6 +418,7 @@ extension WallpaperFeatureStrings {
 
     static let zhHK = WallpaperFeatureStrings(
         pageTitle: "桌布",
+        enableManagement: "啟用桌布管理",
         hubDescription: "唔使開系統設定都可以揀靜態桌布",
         panelDescription: "唔使開系統設定都可以揀靜態桌布。",
         filterAll: "全部",
@@ -431,7 +432,6 @@ extension WallpaperFeatureStrings {
         sourceUnavailable: "無法使用",
         addImagePrompt: "選擇要保留喺 Lattice 清單嘅圖片",
         addFolderPrompt: "選擇要保留喺 Lattice 清單嘅圖片資料夾",
-        openSystemSettings: "開啟桌布設定",
         emptyAll: "搵唔到桌布",
         emptyOwn: "未新增圖片",
         emptyApple: "搵唔到 Apple 桌布",

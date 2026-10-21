@@ -258,7 +258,7 @@ extension CommandBarFeatureStrings {
         sourceQuitApps: "Quit an app",
         sourceSettingsPages: "Settings pages",
         sourceSnippets: "Snippets",
-        sourceClipboard: "Clipboard history",
+        sourceClipboard: "Clipboard History",
         sourceEmoji: "Emoji",
         sourceFolders: "Folders",
         sourceAnswers: "Answers about this Mac",
