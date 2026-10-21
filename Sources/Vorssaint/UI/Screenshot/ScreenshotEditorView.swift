@@ -1200,38 +1200,15 @@ struct ScreenshotEditorView: View {
                 )
         }
         .buttonStyle(.borderless)
+        .screenshotIconHover()
         .screenshotSafeHelp(strings.strokeLabel)
         .accessibilityLabel(strings.strokeLabel)
     }
 
-    /// Smaller and larger buttons step through the presets; the menu jumps
-    /// straight to any of them.
+    /// The rail stays icon-only; the popup has room for a live size slider.
     private var textSizeControl: some View {
-        HStack(spacing: 1) {
-            textSizeStepButton(up: false)
-            Menu {
-                Picker(strings.fontSizeLabel, selection: $model.textSize) {
-                    ForEach(ScreenshotSupport.textSizes, id: \.self) { size in
-                        Text("\(size) pt").tag(size)
-                    }
-                }
-                .pickerStyle(.inline)
-                .labelsHidden()
-            } label: {
-                Text("\(model.textSize) pt")
-                    .font(.system(size: 11.5, weight: .medium).monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
-                    .frame(height: 24)
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            textSizeStepButton(up: true)
-        }
-        .screenshotSafeHelp(strings.fontSizeLabel)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(strings.fontSizeLabel)
+        ScreenshotFontSizeControl(value: $model.textSize, title: strings.fontSizeLabel,
+                                  onEditingChanged: model.textSizeEditingChanged)
     }
 
     /// Pixelate, blur or erase, picked the way an arrow style is.
@@ -1738,133 +1715,12 @@ private enum ScreenshotArrowStyleSamples {
     }
 }
 
-extension View {
-    /// SwiftUI's system tooltip bridge crashes on the current macOS 27 beta
-    /// while routing hover events. Keep accessibility labels everywhere and
-    /// use native hover help on earlier systems.
-    @ViewBuilder
-    func screenshotSafeHelp(_ text: String) -> some View {
-        if ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27 {
-            self
-        } else {
-            help(text)
-        }
+
+
+private struct SideBarAvailableHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
-}
-
-struct ScreenshotAnnotationTextEditor: NSViewRepresentable {
-    @Binding var text: String
-    let fontSize: CGFloat
-    let textColor: NSColor
-    let isBounded: Bool
-    let width: CGFloat
-    let onCommit: () -> Void
-
-    func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSScrollView()
-        scrollView.drawsBackground = false
-        scrollView.borderType = .noBorder
-        scrollView.hasVerticalScroller = false
-        scrollView.hasHorizontalScroller = false
-        scrollView.autohidesScrollers = true
-
-        let textView = EditorTextView()
-        textView.delegate = context.coordinator
-        textView.drawsBackground = false
-        textView.isRichText = false
-        textView.allowsUndo = true
-        textView.isAutomaticQuoteSubstitutionEnabled = false
-        textView.isAutomaticDashSubstitutionEnabled = false
-        textView.string = text
-        textView.isVerticallyResizable = true
-        scrollView.documentView = textView
-        configure(textView)
-        DispatchQueue.main.async {
-            textView.window?.makeFirstResponder(textView)
-            if !textView.string.isEmpty {
-                textView.selectAll(nil)
-            }
-        }
-        return scrollView
-    }
-
-    func updateNSView(_ nsView: NSScrollView, context: Context) {
-        guard let textView = nsView.documentView as? EditorTextView else { return }
-        context.coordinator.parent = self
-        if textView.string != text {
-            textView.string = text
-        }
-        configure(textView)
-    }
-
-    private func configure(_ textView: EditorTextView) {
-        textView.onCommit = onCommit
-        textView.font = .systemFont(ofSize: fontSize, weight: .semibold)
-        textView.textColor = textColor
-        textView.insertionPointColor = textColor
-        textView.textContainerInset = .zero
-        textView.textContainer?.lineFragmentPadding = 0
-        textView.isHorizontallyResizable = !isBounded
-        textView.textContainer?.widthTracksTextView = false
-        textView.setFrameSize(NSSize(width: width, height: textView.frame.height))
-        textView.textContainer?.containerSize = NSSize(
-            width: isBounded ? width : .greatestFiniteMagnitude,
-            height: .greatestFiniteMagnitude)
-        textView.textContainer?.widthTracksTextView = isBounded
-    }
-
-    static func dismantleNSView(_ nsView: NSScrollView, coordinator: Coordinator) {
-        if let textView = nsView.documentView as? EditorTextView {
-            textView.isolatedUndoManager.removeAllActions()
-            textView.delegate = nil
-        }
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    final class Coordinator: NSObject, NSTextViewDelegate {
-        var parent: ScreenshotAnnotationTextEditor
-
-        init(_ parent: ScreenshotAnnotationTextEditor) {
-            self.parent = parent
-        }
-
-        func textDidChange(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
-            parent.text = textView.string
-        }
-    }
-}
-
-private final class EditorTextView: NSTextView {
-    var onCommit: (() -> Void)?
-    let isolatedUndoManager = UndoManager()
-
-    override var acceptsFirstResponder: Bool { true }
-    override var undoManager: UndoManager? { isolatedUndoManager }
-
-    deinit {
-        isolatedUndoManager.removeAllActions()
-    }
-
-    override func keyDown(with event: NSEvent) {
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        if event.keyCode == 36 || event.keyCode == 76 { // Return / Enter
-            if flags.contains(.command) {
-                onCommit?()
-                return
-            }
-            insertNewline(nil)
-            return
-        }
-        if event.keyCode == 53 { // Esc
-            onCommit?()
-            return
-        }
-        super.keyDown(with: event)
-    }
-
 }
 
