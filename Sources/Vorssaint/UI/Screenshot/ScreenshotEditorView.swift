@@ -1539,21 +1539,32 @@ struct ScreenshotEditorView: View {
     private var infoChip: some View {
         HStack(spacing: 8) {
             dragOutHandle
-            Text(dimensionsLabel)
-                .font(.system(size: 11, weight: .medium).monospacedDigit())
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .fixedSize()
+                .onHover { proxyHovered = $0 }
+                .onDisappear { proxyHovered = false }
+            ZStack(alignment: .leading) {
+                Text(dimensionsLabel).opacity(proxyHovered ? 0 : 1)
+                Text(refinementStrings.dragPlace).opacity(proxyHovered ? 1 : 0)
+            }
+            .font(.system(size: 11, weight: .medium).monospacedDigit())
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .fixedSize()
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(dimensionsLabel)
         }
+        .animation(.easeInOut(duration: 0.16), value: proxyHovered)
         .padding(.horizontal, 9)
         .padding(.vertical, 6)
-        .background(.regularMaterial, in: Capsule(style: .continuous))
-        .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+        .background {
+            Capsule(style: .continuous)
+                .fill(.regularMaterial)
+                .shadow(color: .black.opacity(colorScheme == .light ? 0.08 : 0.22), radius: 6, y: 2)
+        }
     }
 
     private var zoomChip: some View {
         HStack(spacing: 3) {
-            zoomButton(active: model.zoomOverride == nil, help: "⌘0") {
+            zoomButton(active: model.zoomOverride == nil, help: refinementStrings.fitImage + "  (⌘0)") {
                 Image(systemName: "arrow.down.right.and.arrow.up.left")
                     .font(.system(size: 11, weight: .medium))
             } action: {
@@ -1609,8 +1620,8 @@ struct ScreenshotEditorView: View {
     }
 
     private var dimensionsLabel: String {
-        let width = Int(model.pointSize.width.rounded())
-        let height = Int(model.pointSize.height.rounded())
+        let width = model.baseImage.width
+        let height = model.baseImage.height
         return "\(width) × \(height) px"
     }
 
@@ -1637,8 +1648,9 @@ struct ScreenshotEditorView: View {
                 model.markExported()
                 return provider
             }
-            .screenshotSafeHelp(strings.dragOutHandleLabel)
-            .accessibilityLabel(strings.dragOutHandleLabel)
+            .screenshotIconHover()
+            .screenshotSafeHelp(refinementStrings.dragPlace)
+            .accessibilityLabel(refinementStrings.dragPlace)
     }
 }
 
