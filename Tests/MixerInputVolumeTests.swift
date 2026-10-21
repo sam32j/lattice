@@ -35,6 +35,7 @@ enum MixerInputVolumeContract {
     }
     enum DefaultsKey {
         static let preferredInputDevice = "preferred"
+        static let microphoneLevelControlEnabled = "microphoneLevelControlEnabled"
         static let audioPriorityInputEnabled = "audioPriorityInputEnabled"
         static let micMuteActive = "mute"
         static let micMuteSavedVolumes = "savedVolumes"
@@ -50,7 +51,11 @@ enum MixerInputVolumeContract {
         final class Store {
             var values: [String: Any] = [:]
             func string(forKey k: String) -> String? { values[k] as? String }
-            func bool(forKey k: String) -> Bool { values[k] as? Bool ?? false }
+            func bool(forKey k: String) -> Bool {
+                if let v = values[k] as? Bool { return v }
+                if k == DefaultsKey.microphoneLevelControlEnabled { return true }
+                return false
+            }
             func double(forKey k: String) -> Double { values[k] as? Double ?? 0 }
             func dictionary(forKey k: String) -> [String: Any]? { values[k] as? [String: Any] }
             func stringArray(forKey k: String) -> [String]? { values[k] as? [String] }

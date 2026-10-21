@@ -34,12 +34,10 @@ enum DirectCaptureRequirementsComprehensiveTests {
             encoding: .utf8)) ?? ""
         suite.expect(!screenshotSettingsSource.isEmpty, "ScreenshotSettings.swift exists and is readable")
 
-        // 1. Native Section headers instead of empty lines / fake spacers
-        suite.expect(screenshotSettingsSource.contains("Form {")
-                     && screenshotSettingsSource.contains("} header: {")
-                     && screenshotSettingsSource.contains("Text(l10n.s.shortcutsPageTitle)")
-                     && screenshotSettingsSource.contains("Text(workflow.selection)"),
-                     "ScreenshotSettings uses native SwiftUI Form Section headers instead of fake empty spacer lines")
+        // 1. Native Section headers and cards instead of empty lines / fake spacers
+        suite.expect(screenshotSettingsSource.contains("SettingsCard(title: workflow.selection)")
+                     && screenshotSettingsSource.contains("workflow.selection"),
+                     "ScreenshotSettings uses cards and headers instead of fake empty spacer lines")
 
         // 2. Removed action buttons: "Capture now", "Scrolling capture now", "Show capture menu", "Highlight window under pointer"
         suite.expect(!screenshotSettingsSource.contains("captureNow")
@@ -50,8 +48,9 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      "ScreenshotSettings removed capture now, scrolling capture now, highlight window under pointer, and show capture menu")
 
         // 3. Shutter sound and temporary links in ScreenshotSettings
-        suite.expect(screenshotSettingsSource.contains("Toggle(workflow.shutter, isOn: $playShutterSound)")
-                     && screenshotSettingsSource.contains("Text(strings.shareEnabledToggle)"),
+        suite.expect(screenshotSettingsSource.contains("workflow.shutter")
+                     && screenshotSettingsSource.contains("$playShutterSound")
+                     && screenshotSettingsSource.contains("strings.shareEnabledToggle"),
                      "ScreenshotSettings includes play shutter sound toggle and temporary links toggle")
 
         // Source checks for ScreenRecorderSettings.swift
@@ -61,11 +60,9 @@ enum DirectCaptureRequirementsComprehensiveTests {
         suite.expect(!recorderSettingsSource.isEmpty, "ScreenRecorderSettings.swift exists and is readable")
 
         // 4. Native Section headers in ScreenRecorderSettings
-        suite.expect(recorderSettingsSource.contains("Form {")
-                     && recorderSettingsSource.contains("} header: {")
-                     && recorderSettingsSource.contains("Text(l10n.s.shortcutsPageTitle)")
-                     && recorderSettingsSource.contains("Text(workflow.recording)"),
-                     "ScreenRecorderSettings uses native SwiftUI Form Section headers")
+        suite.expect(recorderSettingsSource.contains("SettingsCard(title: workflow.recording)")
+                     && recorderSettingsSource.contains("workflow.recording"),
+                     "ScreenRecorderSettings uses native cards and headers")
 
         // 5. Removed: "Screen recording now", "Show capture menu"
         suite.expect(!recorderSettingsSource.contains("recordNow")
@@ -74,9 +71,11 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      "ScreenRecorderSettings removed screen recording now and show capture menu")
 
         // 6. Settings items for screen recording: immediate start, record sound, temporary links
-        suite.expect(recorderSettingsSource.contains("Toggle(workflow.immediate, isOn: $immediateStart)")
-                     && recorderSettingsSource.contains("Toggle(workflow.recordSound, isOn: $playRecordSound)")
-                     && recorderSettingsSource.contains("Text(screenshotStrings.shareEnabledToggle)"),
+        suite.expect(recorderSettingsSource.contains("workflow.immediate")
+                     && recorderSettingsSource.contains("$immediateStart")
+                     && recorderSettingsSource.contains("workflow.recordSound")
+                     && recorderSettingsSource.contains("$playRecordSound")
+                     && recorderSettingsSource.contains("screenshotStrings.shareEnabledToggle"),
                      "ScreenRecorderSettings includes immediate start toggle, record sound toggle, and temporary links toggle")
 
         // 7. Temporary links label
@@ -86,11 +85,12 @@ enum DirectCaptureRequirementsComprehensiveTests {
                          "\(language.rawValue): shareEnabledToggle is non-empty")
         }
 
-        // 8. Sidebar directory: Screen Capture section has exactly 2 items (.screenshot and .screenRecorder)
+        // 8. Sidebar directory: Desktop & Screen section has items 1-6 including (.screenshot and .screenRecorder)
         let sections = SettingsSidebarIdentityTests.Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in true })
-        let screenCaptures = sections.first { $0.id == 4 }
-        suite.expect(screenCaptures?.items.map(\.id) == [.page(.screenshot), .page(.screenRecorder)],
-                     "SettingsDirectory registers Screen Captures section with screenshot and screenRecorder")
+        let desktopAndScreen = sections.first { $0.id == 1 }
+        suite.expect(desktopAndScreen?.items.contains { $0.id == .page(.screenshot) } == true
+                     && desktopAndScreen?.items.contains { $0.id == .page(.screenRecorder) } == true,
+                     "SettingsDirectory registers screenshot and screenRecorder under Desktop & Screen")
 
         // 9. SettingsSidebarSupport produces single items for screenshot and screenRecorder without extra clutter
         let screenshotSidebar = SettingsSidebarSupport.items(
@@ -120,10 +120,12 @@ enum DirectCaptureRequirementsComprehensiveTests {
     private static func testFeatureCatalogBundlingAndCount(_ suite: TestSuite) {
         // 1. Total installable features in Feature Hub excludes bundled .colorPicker and .screenOCR, plus mouse and keyboard features
         let nonHubFeatures = AppFeature.allCases.filter {
-            $0 == .colorPicker || $0 == .screenOCR || $0.isToggleOwned
+            $0 == .colorPicker || $0 == .screenOCR || $0.isToggleOwned || $0.isManagedOnDedicatedPage
         }
         suite.expect(AppFeature.hubInstallableFeatures.count == AppFeature.allCases.count - nonHubFeatures.count,
-                     "the Hub omits the screenshot companions as well as mouse and keyboard features")
+                     "the Hub omits the screenshot companions as well as mouse and keyboard features and dedicated page features")
+        suite.expect(AppFeature.hubInstallableFeatures.count == 42,
+                     "the Hub contains exactly 42 installable features")
 
         // 2. Color picker and screen OCR are excluded from standalone Hub installables
         suite.expect(!AppFeature.hubInstallableFeatures.contains(.colorPicker)
