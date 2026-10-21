@@ -3,6 +3,7 @@ language: "en-US"
 reviews:
   profile: "chill"
   path_filters:
+    - "!Sources/Vorssaint/Core/*Strings.swift"
     - "!Sources/Vorssaint/Core/Localizations/**"
     - "!Tests/**"
     - "!Resources/**"
