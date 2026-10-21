@@ -94,6 +94,15 @@ enum ScreenshotPinWindowTests {
 
         let other = ScreenshotPinWindow(image: image, scale: 2, preferences: preferences)
         defer { other.closePin() }
+        let oldFrame = other.frame
+        let oldZoom = other.zoomMultiplier
+        let croppedImage = image.cropping(to: CGRect(x: 0, y: 0, width: 100, height: 200))!
+        other.updateImage(croppedImage)
+        suite.expectClose(other.frame.width / other.frame.height, 0.5,
+                          "editing a pin to a new aspect ratio immediately resizes its frame")
+        suite.expectClose(other.zoomMultiplier, oldZoom, "a cropped pin preserves its display zoom")
+        suite.expectClose(other.frame.midX, oldFrame.midX, "cropping keeps the pin horizontally centered")
+        suite.expectClose(other.frame.midY, oldFrame.midY, "cropping keeps the pin vertically centered")
         other.setFrame(pin.frame, display: false)
         suite.expect(ScreenshotPinWindow.gestureTarget(at: center, windows: [other, pin]) === other,
                      "overlapping pins route gestures in front-to-back window order")

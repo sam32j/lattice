@@ -34,6 +34,8 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
 
     func updateImage(_ newImage: CGImage, baseImage: CGImage? = nil, annotations: [ScreenshotSupport.Annotation] = []) {
         guard !isClosed else { return }
+        let zoom = zoomMultiplier
+        let center = CGPoint(x: frame.midX, y: frame.midY)
         self.image = newImage
         if let baseImage { self.baseImage = baseImage }
         self.annotations = annotations
@@ -42,6 +44,9 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         let native = CGSize(width: CGFloat(newImage.width) / captureScale,
                             height: CGFloat(newImage.height) / captureScale)
         minSize = CGSize(width: min(140, native.width * 0.5), height: min(90, native.height * 0.5))
+        let size = CGSize(width: native.width * zoom, height: native.height * zoom)
+        setFrame(CGRect(x: center.x - size.width / 2, y: center.y - size.height / 2,
+                        width: size.width, height: size.height), display: true)
         surface.resetGestureTracking()
         Self.onResetGestureState?()
         invalidateCursorRects(for: surface)

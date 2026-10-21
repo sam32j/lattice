@@ -28,24 +28,6 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { nil }
 
-    private static let nwseCursor: NSCursor = {
-        let sel = Selector(("_windowResizeNorthWestSouthEastCursor"))
-        if NSCursor.responds(to: sel),
-           let obj = NSCursor.perform(sel)?.takeUnretainedValue() as? NSCursor {
-            return obj
-        }
-        return .resizeLeftRight
-    }()
-
-    private static let neswCursor: NSCursor = {
-        let sel = Selector(("_windowResizeNorthEastSouthWestCursor"))
-        if NSCursor.responds(to: sel),
-           let obj = NSCursor.perform(sel)?.takeUnretainedValue() as? NSCursor {
-            return obj
-        }
-        return .resizeLeftRight
-    }()
-
     private enum ResizeEdge {
         case left, right, top, bottom, topLeft, topRight, bottomLeft, bottomRight
     }
@@ -93,15 +75,15 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
         let bottom = NSRect(x: cornerSize, y: 0, width: bounds.width - cornerSize * 2, height: borderThickness)
         let top = NSRect(x: cornerSize, y: bounds.maxY - borderThickness, width: bounds.width - cornerSize * 2, height: borderThickness)
 
-        addCursorRect(left, cursor: .resizeLeftRight)
-        addCursorRect(right, cursor: .resizeLeftRight)
-        addCursorRect(top, cursor: .resizeUpDown)
-        addCursorRect(bottom, cursor: .resizeUpDown)
+        addCursorRect(left, cursor: ScreenshotEditorResizeCursor.cursor(for: .left))
+        addCursorRect(right, cursor: ScreenshotEditorResizeCursor.cursor(for: .right))
+        addCursorRect(top, cursor: ScreenshotEditorResizeCursor.cursor(for: .top))
+        addCursorRect(bottom, cursor: ScreenshotEditorResizeCursor.cursor(for: .bottom))
 
-        addCursorRect(topLeft, cursor: Self.nwseCursor)
-        addCursorRect(bottomRight, cursor: Self.nwseCursor)
-        addCursorRect(topRight, cursor: Self.neswCursor)
-        addCursorRect(bottomLeft, cursor: Self.neswCursor)
+        addCursorRect(topLeft, cursor: ScreenshotEditorResizeCursor.cursor(for: .topLeft))
+        addCursorRect(bottomRight, cursor: ScreenshotEditorResizeCursor.cursor(for: .bottomRight))
+        addCursorRect(topRight, cursor: ScreenshotEditorResizeCursor.cursor(for: .topRight))
+        addCursorRect(bottomLeft, cursor: ScreenshotEditorResizeCursor.cursor(for: .bottomLeft))
     }
 
     override var mouseDownCanMoveWindow: Bool { !isPositionLocked }
