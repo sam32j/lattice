@@ -193,6 +193,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
                 self?.recoverStatusItemAfterUpdate(previousVersion: previousVersion)
             }
         }
+        MediaEditorFileOpener.shared.finishLaunching()
+    }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        MediaEditorFileOpener.shared.open(urls)
     }
 
     /// Asking another app about its windows waits for that app to answer, and
