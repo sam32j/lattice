@@ -13,9 +13,23 @@ struct ShortcutsSettings: View {
     /// Keyed by group too: brightness has a row in two groups, and each opens on its own.
     @State private var expandedFeatures: [FeatureGroup: Set<AppFeature>] = [.tools: [.screenshot]]
     @State private var showsAppShortcuts = false
+    @AppStorage(DefaultsKey.radialMenuProfiles) private var radialMenuProfilesData: Data?
+    @AppStorage(DefaultsKey.radialMenuEnabled) private var radialMenuEnabled = false
 
     private var text: ShortcutSettingsStrings { FeatureStrings.shortcuts(l10n.language) }
     private var hub: FeatureHubStrings { FeatureStrings.hub(l10n.language) }
+
+    private var radialProfiles: [RadialMenuProfile] {
+        RadialMenuSupport.decodeProfiles(radialMenuProfilesData)
+    }
+
+    private func radialMenuHasActiveShortcut(profiles: [RadialMenuProfile]) -> Bool {
+        guard radialMenuEnabled else { return false }
+        return profiles.contains {
+            !$0.shortcut.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                && GlobalShortcut(storageValue: $0.shortcut) != nil
+        }
+    }
 
     private var availableRoles: [GlobalShortcutRole] {
         GlobalShortcutRole.availableRoles(isAvailable: {
@@ -33,6 +47,7 @@ struct ShortcutsSettings: View {
         FeatureGroup.allCases.filter { group in
             availableRoles.contains { $0.group == group }
                 || (group == .windowsDock && AppFeature.windowLayout.isAvailable)
+                || (group == .tools && AppFeature.radialMenu.isAvailable)
         }
     }
 
@@ -79,6 +94,9 @@ struct ShortcutsSettings: View {
             if feature == .windowLayout {
                 return group == .windowsDock && feature.isAvailable
             }
+            if feature == .radialMenu {
+                return group == .tools && feature.isAvailable
+            }
             return availableRoles.contains { $0.feature == feature && $0.group == group }
         }
     }
@@ -103,13 +121,38 @@ struct ShortcutsSettings: View {
     }
 
     @ViewBuilder
+    private var radialMenuGroupRows: some View {
+        let profiles = radialProfiles
+        disclosureHeader(
+            title: FeatureStrings.radialMenu(l10n.language).pageTitle,
+            symbolName: AppFeature.radialMenu.symbolName,
+            isActive: radialMenuHasActiveShortcut(profiles: profiles),
+            count: profiles.count,
+            isExpanded: expansionBinding(for: .radialMenu, in: .tools)
+        )
+        if expandedFeatures[.tools, default: []].contains(.radialMenu) {
+            ForEach(profiles) { profile in
+                CentralRadialMenuShortcutRow(
+                    profile: profile,
+                    allProfiles: profiles,
+                    isRadialEnabled: radialMenuEnabled,
+                    text: text,
+                    showsSuperKeyAlternative: superKey.isRunning,
+                    superKeyModifiers: superKey.modifiers
+                )
+                .disclosureIndent()
+            }
+        }
+    }
+
+    @ViewBuilder
     private func featureRows(_ feature: AppFeature, in group: FeatureGroup) -> some View {
         let roles = availableRoles.filter { $0.feature == feature && $0.group == group }
         let count = feature == .windowLayout
             ? WindowLayoutAction.shortcutActions.count + roles.count
-            : roles.count
+            : (feature == .radialMenu ? radialProfiles.count : roles.count)
         if feature == .radialMenu {
-            RadialMenuShortcutsRow(text: text)
+            radialMenuGroupRows
         } else if count > 1 {
             featureHeader(feature, roles: roles, count: count, in: group)
             if expandedFeatures[group, default: []].contains(feature) {
@@ -236,6 +279,13 @@ struct ShortcutsSettings: View {
            WindowLayoutAction.shortcutActions.contains(where: { $0.savedShortcut != nil }) {
             return true
         }
+        if feature == .radialMenu,
+           UserDefaults.standard.bool(forKey: DefaultsKey.radialMenuEnabled),
+           RadialMenuSupport.decodeProfiles(UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles), defaults: UserDefaults.standard)
+               .contains(where: { !$0.shortcut.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                   && GlobalShortcut(storageValue: $0.shortcut) != nil }) {
+            return true
+        }
         return roles.contains { role in
             role.savedShortcut.isValid
                 && role.requiredEnableKeys.allSatisfy { UserDefaults.standard.bool(forKey: $0) }
@@ -256,38 +306,115 @@ struct ShortcutsSettings: View {
     }
 }
 
-/// Each wheel answers to the shortcut saved in its own profile, and the radial
-/// menu's role key only seeds the first wheel until one is saved. A recorder for
-/// that key would then show a combination no wheel uses and change nothing, so
-/// the row lists what the wheels answer to and leaves the change to the Radial
-/// menu page.
-private struct RadialMenuShortcutsRow: View {
+/// The radial menu's shortcut row provides a synced keyboard shortcut setter
+/// for each profile, keeping both settings surfaces in two-way sync.
+private struct CentralRadialMenuShortcutRow: View {
     @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var superKey = SuperKeyService.shared
+    let profile: RadialMenuProfile
+    let allProfiles: [RadialMenuProfile]
+    let isRadialEnabled: Bool
     let text: ShortcutSettingsStrings
+    let showsSuperKeyAlternative: Bool
+    let superKeyModifiers: GlobalShortcutModifiers
+
+    @State private var errorText: String?
+    @State private var isRecording = false
+
+    private var radialText: RadialMenuFeatureStrings {
+        FeatureStrings.radialMenu(l10n.language)
+    }
+
+    private var shortcut: GlobalShortcut? {
+        GlobalShortcut(storageValue: profile.shortcut)
+    }
+
+    private var isActive: Bool {
+        isRadialEnabled && shortcut != nil
+    }
+
+    private var superKeyAlternative: String? {
+        guard showsSuperKeyAlternative, let shortcut else { return nil }
+        return shortcut.superKeyAlternative(
+            sourceLabel: FeatureStrings.superKey(l10n.language).sourceLabel(superKey.source),
+            superKeyModifiers: superKeyModifiers
+        )
+    }
 
     var body: some View {
-        let role = GlobalShortcutRole.radialMenu
-        let shortcuts = RadialMenuSupport.profileShortcuts()
-        let active = !shortcuts.isEmpty
-            && role.requiredEnableKeys.allSatisfy { UserDefaults.standard.bool(forKey: $0) }
-        HStack(alignment: .top, spacing: 8) {
-            ShortcutRowLabel(title: role.title(l10n.s),
-                             symbolName: role.feature.symbolName,
-                             contextLabel: nil,
-                             statusText: active ? text.active : text.inactive,
-                             statusIsActive: active)
-            Spacer()
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(shortcuts.isEmpty
-                     ? l10n.s.shortcutNone
-                     : shortcuts.map(\.displayString).joined(separator: "\n"))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.trailing)
-                Button(FeatureStrings.radialMenu(l10n.language).manageButton) {
-                    SettingsRouter.shared.request(role.feature.settingsDestination,
-                                                  sidebarFeature: role.feature)
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .top, spacing: 8) {
+                ShortcutRowLabel(
+                    title: profile.displayName(radialText),
+                    symbolName: AppFeature.radialMenu.symbolName,
+                    contextLabel: nil,
+                    statusText: isActive ? text.active : text.inactive,
+                    statusIsActive: isActive
+                )
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    CompactShortcutBindingRecorder(
+                        recordingID: "central-radial-profile-\(profile.id.uuidString)",
+                        shortcut: shortcut,
+                        isEnabled: true,
+                        width: 140,
+                        emptyTitle: l10n.s.shortcutNone,
+                        canClear: shortcut != nil,
+                        canReset: false,
+                        errorText: $errorText,
+                        onClear: {
+                            errorText = nil
+                            saveShortcut("")
+                        },
+                        onReset: {},
+                        onCapture: { newShortcut in
+                            if let owner = RadialMenuSupport.conflictTitle(
+                                for: newShortcut,
+                                excluding: profile.id,
+                                in: allProfiles,
+                                radialText: radialText,
+                                strings: l10n.s,
+                                additionalConflict: { shortcut in
+                                    if let title = WindowLayoutService.shared.shortcutConflictTitle(shortcut) {
+                                        return title
+                                    }
+                                    guard AppFeature.commandBar.isAvailable,
+                                          let row = CommandBarRowShortcuts.key(for: shortcut, in: CommandBarService.shared.rowShortcuts)
+                                    else { return nil }
+                                    return CommandBarService.shared.entryTitle(forStableKey: row)
+                                        ?? FeatureStrings.commandBar(l10n.language).namedTitle
+                                }
+                            ) {
+                                errorText = String(format: l10n.s.shortcutConflictFormat, owner)
+                                return
+                            }
+                            errorText = nil
+                            saveShortcut(newShortcut.storageValue)
+                        },
+                        onRecordingChange: { isRecording = $0 }
+                    )
+                    if let alternative = superKeyAlternative {
+                        Text(String(format: text.superKeyAlternativeFormat, alternative))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel(alternative)
+                    }
                 }
             }
+            if let errorText {
+                Text(errorText)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            } else if isRecording {
+                Text(ShortcutRecordingCaption.text(l10n.s, canClear: true))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
+    }
+
+    private func saveShortcut(_ storageValue: String) {
+        RadialMenuSupport.updateShortcut(storageValue, for: profile.id)
+        FeatureRuntime.shared.sync([.radialMenu])
     }
 }
