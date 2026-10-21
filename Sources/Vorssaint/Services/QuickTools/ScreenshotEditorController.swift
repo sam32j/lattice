@@ -618,6 +618,14 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
 
     /// Applies color, thickness, text size, or arrow style changes to the
     /// selected annotation.
+    private var coalescingTextSize = false
+    private var textSizeUndoRegistered = false
+
+    func textSizeEditingChanged(_ editing: Bool) {
+        coalescingTextSize = editing
+        textSizeUndoRegistered = false
+    }
+
     private func applyStyleToSelection() {
         guard let selectedID,
               let index = annotations.firstIndex(where: { $0.id == selectedID })
@@ -635,7 +643,10 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                 || arrowStyleChanged
                 || textSizeChanged
         else { return }
-        if newTextID != selectedID { registerUndo() }
+        if newTextID != selectedID, !coalescingTextSize || !textSizeUndoRegistered {
+            registerUndo()
+            if coalescingTextSize { textSizeUndoRegistered = true }
+        }
         annotations[index].color = color
         if usesStroke { annotations[index].stroke = stroke }
         if annotations[index].tool == .arrow {
@@ -646,12 +657,11 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         }
         if annotations[index].tool == .text {
             annotations[index].textSize = textSize
-            annotations[index].rect = ScreenshotRenderer.textBounds(
-                annotations[index].text,
-                at: annotations[index].rect.origin,
-                textSize: textSize,
-                scale: scale,
-                boundingWidth: annotations[index].isBounded ? max(40, annotations[index].rect.width) : nil)
+            if !annotations[index].isBounded {
+                annotations[index].rect = ScreenshotRenderer.textBounds(
+                    annotations[index].text, at: annotations[index].rect.origin,
+                    textSize: textSize, scale: scale)
+            }
         }
     }
 
@@ -1222,13 +1232,11 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             return
         }
         annotations[index].text = trimmed
-        let boundingWidth = annotations[index].isBounded ? max(40, annotations[index].rect.width) : nil
-        annotations[index].rect = ScreenshotRenderer.textBounds(
-            trimmed,
-            at: annotations[index].rect.origin,
-            textSize: annotations[index].textSize,
-            scale: scale,
-            boundingWidth: boundingWidth)
+        if !annotations[index].isBounded {
+            annotations[index].rect = ScreenshotRenderer.textBounds(
+                trimmed, at: annotations[index].rect.origin,
+                textSize: annotations[index].textSize, scale: scale)
+        }
         newTextID = nil
     }
 

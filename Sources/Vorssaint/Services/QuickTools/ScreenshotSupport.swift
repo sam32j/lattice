@@ -1807,20 +1807,12 @@ enum ScreenshotSupport {
         }
     }
 
-    /// Text point sizes at 1x, offered as presets. Text has its own size
-    /// instead of borrowing the shape thickness, so a thin arrow can sit
-    /// beside a large label.
-    static let textSizes: [Int] = [10, 12, 14, 16, 19, 24, 28, 36, 48, 64, 72, 96]
+    /// Point sizes at 1x. Direct input preserves exact values within this range.
+    static let textSizeRange = 8...96
     static let defaultTextSize = 19
 
     static func sanitizedTextSize(_ size: Int) -> Int {
-        guard let first = textSizes.first, let last = textSizes.last else { return defaultTextSize }
-        return size == 0 ? defaultTextSize : min(max(size, first), last)
-    }
-
-    /// The preset one step away from `size`, or nil at either end.
-    static func steppedTextSize(from size: Int, up: Bool) -> Int? {
-        up ? textSizes.first(where: { $0 > size }) : textSizes.last(where: { $0 < size })
+        return size == 0 ? defaultTextSize : min(max(size, textSizeRange.lowerBound), textSizeRange.upperBound)
     }
 
     /// How hard a blur hides what is under it, from 1 (lightest) to 5
