@@ -7,6 +7,9 @@ enum RecorderSelectionDraftTests {
     static func run(_ suite: TestSuite) {
         let bounds = CGRect(x: 0, y: 0, width: 800, height: 600)
         var draft = RecorderSelectionDraft(rect: CGRect(x: 100, y: 100, width: 300, height: 200))
+        suite.expect(draft.rect == CGRect(x: 100, y: 100, width: 300, height: 200)
+                     && !draft.drag(to: CGPoint(x: 200, y: 200), within: bounds),
+                     "recording drafts preserve their initial rectangle and start without an active drag")
         draft.begin(at: CGPoint(x: 400, y: 300))
         draft.drag(to: CGPoint(x: 500, y: 350), within: bounds)
         suite.expect(draft.rect == CGRect(x: 100, y: 100, width: 400, height: 250),
