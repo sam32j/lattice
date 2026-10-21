@@ -132,6 +132,7 @@ struct ScreenRecorderSettings: View {
 
             Section {
                 folderRow
+                CapturePreviewPositionPicker()
                 Picker(workflow.recentRecordings, selection: $recentRecordingLimit) {
                     Text("5").tag(5)
                     Text("10").tag(10)
