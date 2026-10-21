@@ -2,6 +2,78 @@
 
 ## [3.4.1-d.2] - 2026-10-17
 
+## [3.4.1-d.5] - 2026-10-21
+
+### Added
+- **Island**: Offer feature-gated open in editor drop targets
+- **Island**: Crossfade between capture history and preview pages
+- **Island**: Navigate capture history with deliberate trackpad gestures
+- **History**: Scroll recent captures without replacing the island session
+- **Editor**: Reveal drag and place guidance on the proxy icon
+- **Editor**: Condense style controls and crop ratio menus
+- **Editor**: Support grouped selection and constrained shape resizing
+- **Watermark**: Combine composition and style in a live tool
+- **Watermark**: Retain image presets without collecting text
+- **Watermark**: Model live changes and explicit reset behavior
+- **Editor**: Draw compact selection rings and corner handles
+- **Media**: Accept editor file drops on the menu bar icon
+- **Media**: Open supported files in their installed editors
+- **Media**: Declare supported image and video document types
+- **Preview**: Share image and video window placement settings
+- **Recorder**: Centralize preview keyboard actions
+- **Editor**: Persist and render rounded annotation corners
+- **Recorder**: Refine selection chrome, hover feedback, pip snapping, and capture responsiveness
+  - Render L-bracket corner handles, edge pills, and crisp 1pt white border without blue glow for recording draft selection
+  - Add interactive hover styles and click scaling to recorder waiting action buttons and input toggles
+  - Remove blue fill tint from window selection highlight, stroking 2pt light blue border with 10pt corner radius
+  - Smooth camera PiP snapping animation curve with 5pt edge inset padding
+  - Present recording indicator immediately and trigger begin_record sound prior to audio capture to prevent bleed
+  - Parallelize multi-display screenshot capture and reorder overlay presentation to eliminate live desktop flash
+- **Editor**: Implement reversible Done workflow, shortcuts, text double-click, and geometry refinements
+- **Editor**: Reorder tools, update shortcuts, move style bar to top and show logical px
+- **Notch**: Fix island preview focus and redesign recent captures UI
+- **Capture**: Support floating window selection and matching corner radius
+- **Recorder**: Refine selection tabs, camera overlay and waiting button feedback
+- **Capture**: Refine editor interactions and preview experience
+- **Recorder**: Refine selection controls and camera overlays
+
+### Changed
+- **Recorder**: Separate preview presentation and context menus
+- **I18n**: Remove retired feature and permission copy
+- **Finder**: Remove custom file actions and settings
+
+### Fixed
+- **Recorder**: Import preview edits without blocking the UI
+- **Recorder**: Synchronize camera snapping and label waiting actions
+- **History**: Format capture timestamps in the selected language
+- **Capture**: Guard suspect window display fallbacks
+- **Pins**: Preserve image aspect ratio and use public resize cursors
+- **Editor**: Restore censor samples and creation hit testing
+- **Capture**: Restore focus through shared activation handoff
+- **Recorder**: Declare selection draft initializer explicitly
+- **Island**: Dismiss capture previews for outside clicks and settings
+- **Editor**: Soften light appearance and prevent clipped shadows
+- **Editor**: Stabilize inline text teardown and rapid re-editing
+- **Editor**: Unify native pointer tracking and immediate text targeting
+- **Editor**: Keep font palette tracking and keyboard focus stable
+- **Capture**: Claim crosshair ownership without raising editors
+- **Capture**: Compose selected Expose windows without unrelated pixels
+- **Capture**: Recover blank GPU viewports and reject compositor chrome
+- **Video Editor**: Respect appearance and improve overlay contrast
+- **Recorder**: Animate camera snapping without layout races
+- **Editor**: Preserve modal and pinned window ordering
+- **Pin**: Stabilize zoom opacity and native gesture handling
+- **Quick Look**: Keep previews above capture surfaces
+- **Preview**: Defer Mission Control presentation and protect menu dismissal
+- **Recorder**: Reject stale preview thumbnail completions
+- **Recorder**: Copy exported recordings atomically
+- **History**: Persist edit generations before completing editor sessions
+- **Preview**: Present edited pixels without flattening capture sources
+- **History**: Store editable captures in an atomic document
+- **Editor**: Provide RecentCaptureEntry anchor arguments and remove unused variable
+- **Editor**: Elevate dialog levels and adjust window traffic light position
+- **Preview**: Address review findings and auto-save on reveal in finder
+
 ## [3.4.1-d.4] - 2026-10-19
 
 ### Added
