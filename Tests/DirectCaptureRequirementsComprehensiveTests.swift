@@ -541,28 +541,28 @@ enum DirectCaptureRequirementsComprehensiveTests {
             contentsOfFile: "Sources/Vorssaint/UI/Screenshot/ScreenshotEditorView.swift",
             encoding: .utf8)) ?? ""
         suite.expect(!editorViewSource.isEmpty, "ScreenshotEditorView.swift is readable")
+        let inlineTextSource = (try? String(
+            contentsOfFile: "Sources/Vorssaint/UI/Screenshot/ScreenshotInlineTextEditor.swift",
+            encoding: .utf8)) ?? ""
 
         // 1. Multiline Enter vs Cmd+Return save
-        suite.expect(editorViewSource.contains("if event.keyCode == 36 || event.keyCode == 76 {")
-                     && editorViewSource.contains("if flags.contains(.command) {")
-                     && editorViewSource.contains("onCommit?()")
-                     && editorViewSource.contains("insertNewline(nil)")
+        suite.expect(inlineTextSource.contains("if event.keyCode == 36 || event.keyCode == 76 {")
+                     && inlineTextSource.contains("if flags.contains(.command) {")
+                     && inlineTextSource.contains("commitEditing()")
+                     && inlineTextSource.contains("insertNewline(nil)")
 ,
                      "EditorTextView allows Enter for new line, and Cmd+Return to commit and exit text input")
 
         // 2. Isolated undo manager to avoid crashing parent window undo stack
-        suite.expect(editorViewSource.contains("let isolatedUndoManager = UndoManager()")
-                     && editorViewSource.contains("override var undoManager: UndoManager? { isolatedUndoManager }")
-                     && editorViewSource.contains("isolatedUndoManager.removeAllActions()"),
+        suite.expect(inlineTextSource.contains("let isolatedUndoManager = UndoManager()")
+                     && inlineTextSource.contains("override var undoManager: UndoManager? { isolatedUndoManager }")
+                     && inlineTextSource.contains("isolatedUndoManager.removeAllActions()"),
                      "EditorTextView uses isolated UndoManager, preventing undo crashes in screenshot editor")
 
         // 3. Drag creates bounded text box; single click creates dynamic box
-        let inlineTextSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Screenshot/ScreenshotInlineTextEditor.swift",
-            encoding: .utf8)) ?? ""
         suite.expect(inlineTextSource.contains("let wrapWidth = mark.isBounded ?")
                      && inlineTextSource.contains("ScreenshotEditorGeometry.textSize(text, font: font, width: wrapWidth)")
-                     && editorViewSource.contains("textView.textContainer?.widthTracksTextView = isBounded")
+                     && inlineTextSource.contains("textView.textContainer?.widthTracksTextView = isBounded")
                      && inlineTextSource.contains("wrapWidth ?? max(40, measured.width + 4 * zoom)"),
                      "Text tool drag creates contained bounded box with word wrap; click creates dynamic sizing box")
     }
@@ -630,11 +630,10 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      "Clicking hover tab controls does not dismiss or hide the capture tabs")
 
         // 10. Multi-window selection: un-dimmed rather than blue tint, visible checkmark, release shift to capture
+        ScreenshotMultiWindowShiftTests.run(suite)
         suite.expect(selectionSource.contains("func toggleSelectedWindow(_ window: ScreenshotSupport.PickableWindow, on panel: ScreenshotOverlayPanel)")
-                     && selectionSource.contains("selectedWindows[window.windowID] = (window, panel)")
-                     && selectionSource.contains("if !event.modifierFlags.contains(.shift), self.hasSelectedWindows {")
-                     && selectionSource.contains("self.confirmSelectedWindows()"),
-                     "Shift+click toggles window selection and releasing Shift confirms capture without requiring Return")
+                     && selectionSource.contains("selectedWindows[window.windowID] = (window, panel)"),
+                     "Shift+click toggles the windows used by multi-window confirmation")
 
         // 11. Esc quits screenshot mode directly in multi-window selection
         suite.expect(selectionSource.contains("case kVK_Escape:")
@@ -647,10 +646,8 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      && selectionSource.contains(".disabled(!isEnabled)"),
                      "Control buttons (X, F, S, Z, R) are disabled during multi-window selection")
 
-        // 13. Multi-window bounding box union without upward shift bug
-        suite.expect(selectionSource.contains("unionViewFrame = unionViewFrame.union(entry.window.frame)")
-                     && selectionSource.contains("ScreenshotSupport.cocoaRect("),
-                     "Multi-window capture computes proper union of all selected windows without vertical coordinate offset")
+        // Multi-window anchor geometry is exercised against the real chooser
+        // methods in ScreenshotMultiWindowSourceTests, not source spellings.
 
         // 14. Loupe HUD: vertically stacked, 90% opaque + blur, logical pixels, Tab copies color
         suite.expect(selectionSource.contains("drawLoupeCoordinateBox(context, in: coordRect, at: point)")
