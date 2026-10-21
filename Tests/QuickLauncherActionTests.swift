@@ -89,6 +89,7 @@ enum QuickLauncherContract {
             defaults.removePersistentDomain(forName: domain)
         }
         for feature in AppFeature.allCases { defaults.set(true, forKey: feature.availabilityKey) }
+        defaults.set(true, forKey: DefaultsKey.microphoneLevelControlEnabled)
         cameraInNotch = false
         let cases: [(QuickLauncherItem, AppFeature, String?, Double?)] = [
             (.keepAwake, .keepAwake, "keepAwake.toggle", nil),
@@ -163,6 +164,7 @@ enum QuickLauncherContract {
         for feature in [AppFeature.brightness, .commandBar, .micMute] {
             defaults.set(false, forKey: feature.availabilityKey)
         }
+        defaults.set(false, forKey: DefaultsKey.microphoneLevelControlEnabled)
         let grouping = Launcher()
         grouping.run(.toggles)
         suite.expect(!grouping.visibleItems.contains(.toggles) && grouping.activeUtility == nil,

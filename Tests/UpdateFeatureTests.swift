@@ -349,22 +349,22 @@ enum UpdateFeatureTests {
                      && dockClickOnlyRows.map(\.id) == [.page(.dock)],
                      "Dock exposes one page regardless of which child control is enabled")
         let keyboardDestination = FeatureSettingsDestination(
-            .energy, sectionAnchor: .keyboardBrightnessShortcuts)
+            .keyboard, sectionAnchor: .keyboardBrightnessShortcuts)
         let keyboardShortcutItem = SettingsSearchSupport.keyboardBrightnessShortcutItem(language: .enUS)
-        let energyPageItem = SettingsSearchItem(
-            id: .page(.energy), destination: FeatureSettingsDestination(.energy),
-            title: "Energy and Display", icon: "bolt.fill")
+        let keyboardPageItem = SettingsSearchItem(
+            id: .page(.keyboard), destination: FeatureSettingsDestination(.keyboard),
+            title: "Keyboard", icon: "keyboard")
         let keyboardShortcutGroups = SettingsSearchSupport.groupedMatchingItems(
             query: "keyboard brightness shortcuts",
-            items: [energyPageItem, keyboardShortcutItem],
+            items: [keyboardPageItem, keyboardShortcutItem],
             isAvailable: { _ in true })
-        suite.expect(keyboardShortcutGroups.first?.id == .energy
+        suite.expect(keyboardShortcutGroups.first?.id == .keyboard
                 && keyboardShortcutGroups.first?.suggestions.first.map {
                     SettingsSearchSupport.route(for: $0, isAvailable: { _ in true }).destination
                 } == keyboardDestination,
-               "keyboard brightness shortcut search reveals Keyboard Light in Energy")
+               "keyboard brightness shortcut search reveals Keyboard Light in Keyboard")
         let keyboardLightGroups = SettingsSearchSupport.groupedMatchingItems(
-            query: "keyboard light", items: [energyPageItem, keyboardShortcutItem],
+            query: "keyboard light", items: [keyboardPageItem, keyboardShortcutItem],
             isAvailable: { _ in true })
         suite.expect(keyboardLightGroups.first?.suggestions.first.map {
             SettingsSearchSupport.route(for: $0, isAvailable: { _ in true }).destination
@@ -736,8 +736,12 @@ enum UpdateFeatureTests {
                 && availableMixerGroups[0].suggestions.first?.item.destination
                     == FeatureSettingsDestination(.audioOutput, sectionAnchor: .mixer),
                "an installed utility remains searchable on a shared Settings page")
+        let shelfPage = SettingsSearchItem(
+            id: .page(.shelf), destination: FeatureSettingsDestination(.shelf),
+            title: "Shelf", icon: "tray",
+            keywords: ["Shelf"], keywordFeatures: [.shelf])
         suite.expect(SettingsSearchSupport.groupedMatchingItems(
-                    query: "Audio Output", items: availabilityItems,
+                    query: "Shelf", items: availabilityItems + [shelfPage],
                     isAvailable: { _ in false }).isEmpty,
                "a main page with no installed utilities is not suggested")
 

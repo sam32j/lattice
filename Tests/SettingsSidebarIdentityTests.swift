@@ -8,9 +8,9 @@ enum SettingsSidebarIdentityTests {
         let sections = Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in true })
         suite.expect(sections.count == Set(sections.map(\.id)).count,
                      "synthetic sidebar categories never collide with enumerated app or capture groups")
-        suite.expect(sections.contains { $0.id == 8 } && sections.contains { $0.id == 3 },
-                     "app settings and audio keep independent collapse identities")
-        let lattice = sections.first { $0.id == 8 }
+        suite.expect(sections.contains { $0.id == 5 } && sections.contains { $0.id == 2 },
+                     "app settings and device controls keep independent collapse identities")
+        let lattice = sections.first { $0.id == 5 }
         suite.expect(lattice?.title == "Lattice"
                      && lattice?.items.map(\.id) == [.page(.about), .page(.dataPermissions)],
                      "Lattice contains only About followed by Data and Permissions")
@@ -20,28 +20,31 @@ enum SettingsSidebarIdentityTests {
                      "Features follows Keyboard Shortcuts in Interface")
         let withKeyboard = Directory.sidebarSections(.enUS, language: .enUS,
                             keyboardLightSupported: true, isAvailable: { _ in true })
-        let energy = withKeyboard.first { $0.id == 2 }?.items ?? []
-        let energyIDs = energy.map(\.id)
-        suite.expect(energyIDs.firstIndex(of: .setting(.keyboardBrightnessShortcuts))
-                     == energyIDs.firstIndex(of: .feature(.brightness)).map { $0 + 1 }
-                     && energy.first { $0.id == .setting(.keyboardBrightnessShortcuts) }?.destination
-                        == FeatureSettingsDestination(.energy, sectionAnchor: .keyboardBrightnessShortcuts),
-                     "Keyboard Light follows Displays and opens its Energy section")
-        let withoutKeyboard = Directory.sidebarSections(.enUS, language: .enUS,
-                               keyboardLightSupported: false, isAvailable: { _ in true })
-        suite.expect(!withoutKeyboard.flatMap(\.items).contains {
+        let deviceControls = withKeyboard.first { $0.id == 2 }?.items ?? []
+        let deviceControlIDs = deviceControls.map(\.id)
+        suite.expect(deviceControlIDs == [.page(.audioInput), .page(.audioOutput),
+                                          .page(.keyboard), .page(.mouse),
+                                          .feature(.brightness), .feature(.bluetoothSleep)],
+                     "Device Controls contains Audio Input, Audio Output, Keyboard, Mouse, Displays, and Bluetooth Behavior")
+        suite.expect(!withKeyboard.flatMap(\.items).contains {
             $0.id == .setting(.keyboardBrightnessShortcuts)
-        }, "unsupported hardware does not expose Keyboard Light")
-        let audio = sections.first { $0.id == 3 }?.items.map(\.id) ?? []
+        }, "Keyboard Light is moved into Keyboard settings and not in the sidebar")
+        let systemItems = withKeyboard.first { $0.id == 4 }?.items ?? []
+        suite.expect(systemItems.first?.id == .feature(.keepAwake),
+                     "Stay awake is in the System section")
         let desktop = sections.first { $0.id == 1 }?.items ?? []
-        suite.expect(desktop.contains { $0.id == .page(.dock) }
-                     && !desktop.contains { [.feature(.dockClick), .feature(.spacesOrder), .feature(.windowMaximizer)].contains($0.id) },
-                     "Dock and Window Management own their controls without duplicate sidebar entrances")
-        suite.expect(desktop.contains { $0.destination.page == AppFeature.wallpaper.settingsDestination.page },
-                     "Wallpaper belongs to the Desktop & Dock category")
-        suite.expect(!sections.flatMap(\.items).contains { $0.id == .feature(.pastePlain) || $0.id == .feature(.finderRename) },
-                     "Clipboard and Finder expose one page rather than entries for their child controls")
+        suite.expect(desktop.map(\.id) == [.page(.dock), .feature(.switcher), .page(.windowLayout),
+                                           .page(.screenshot), .page(.screenRecorder)],
+                     "Desktop & Screen contains 1-5 items: dock, switcher, window layout, screenshot, screen recorder")
+        suite.expect(!sections.flatMap(\.items).contains { $0.id == .feature(.pastePlain) || $0.id == .feature(.finderRename) || $0.id == .page(.wallpaper) },
+                     "Clipboard and Finder expose one page rather than entries for their child controls, and wallpaper dedicated page is removed")
         let off = Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in false })
+        suite.expect(off.first { $0.id == 1 }?.items.contains { $0.id == .page(.screenshot) } == true
+                     && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.screenRecorder) } == true
+                     && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.dock) } == true
+                     && off.first { $0.id == 1 }?.items.contains { $0.id == .feature(.switcher) } == true
+                     && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.windowLayout) } == true,
+                     "dock, switcher, window layout, screenshot, and screen recorder remain visible on sidebar even when uninstalled")
         suite.expect(off.first { $0.id == 2 }?.items.contains { $0.id == .feature(.brightness) } == true,
                      "supported XDR controls keep Displays discoverable when optional features are off")
         let dockClick = SettingsSearchItem(id: .feature(.dockClick), destination: AppFeature.dockClick.settingsDestination,
@@ -54,9 +57,7 @@ enum SettingsSidebarIdentityTests {
             $0.id == .feature(.fanControl) || $0.id == .feature(.extraBrightness) || $0.id == .feature(.brightness)
         }, "unsupported hardware controls are absent from the actual sidebar")
         FeatureHardwareBoundary.unsupported = []
-        suite.expect(audio == [.page(.audioInput), .page(.audioOutput)],
-                     "Audio contains Audio Input followed by Audio Output")
-        let clipboardFiles = sections.first { $0.id == 6 }?.items.map(\.id) ?? []
+        let clipboardFiles = sections.first { $0.id == 3 }?.items.map(\.id) ?? []
         suite.expect(clipboardFiles.contains(.page(.scratchpad))
                      && clipboardFiles.contains(.page(.textSnippets)),
                      "Clipboard and Files includes Scratchpad and Text Snippets")
