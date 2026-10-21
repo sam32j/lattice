@@ -126,6 +126,8 @@ final class AudioPriorityService: ObservableObject {
         outputPriorityEnabled = enabled
         mergeAvailableDevicesIntoPriorityLists()
         updateDeviceNames()
+        FeatureRuntime.shared.setAvailable([.audioPriority], enabled || inputPriorityEnabled)
+        FeatureRuntime.shared.setAvailable([.soundOutputSwitcher], enabled)
         if becameEnabled {
             pendingOutputPreferenceChange = true
             scheduleEnforcement()
@@ -140,6 +142,8 @@ final class AudioPriorityService: ObservableObject {
         AudioInputDeviceManager.shared.setInputPriorityActive(enabled)
         mergeAvailableDevicesIntoPriorityLists()
         updateDeviceNames()
+        FeatureRuntime.shared.setAvailable([.audioPriority], enabled || outputPriorityEnabled)
+        AudioInputDeviceManager.shared.syncWithPreferences()
         if becameEnabled {
             pendingInputPreferenceChange = true
             scheduleEnforcement()

@@ -6,8 +6,7 @@ struct DockQuitOnCloseSettings: View {
 
     var body: some View {
         SettingsCard {
-            SettingsRow(symbol: "xmark.rectangle", title: l10n.s.autoQuitName,
-                        caption: l10n.s.autoQuitEnableCaption) {
+            SettingsRow(symbol: "xmark.rectangle", title: l10n.s.autoQuitName) {
                 Toggle(l10n.s.autoQuitEnable, isOn: $enabled)
                     .labelsHidden()
                     .onChange(of: enabled) { _, _ in FeatureRuntime.shared.sync([.autoQuit]) }

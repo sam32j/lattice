@@ -232,7 +232,7 @@ extension SnippetFeatureStrings {
 
 extension SnippetFeatureStrings {
     static let enUS = SnippetFeatureStrings(
-        pageTitle: "Text snippets",
+        pageTitle: "Text Snippets",
         hubDescription: "Short triggers expand into full text",
         enable: "Expand snippets while typing",
         enableCaption: "Type a trigger anywhere and it becomes its text. Everything stays on this Mac.",

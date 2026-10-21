@@ -1026,16 +1026,27 @@ enum UtilitiesFeatureTests {
             .components(separatedBy: "private func featureRows(").dropFirst().first?
             .components(separatedBy: "\n    }\n").first ?? ""
         let radialRowCode = shortcutsPageCode
-            .components(separatedBy: "private struct RadialMenuShortcutsRow").dropFirst().first?
+            .components(separatedBy: "private struct CentralRadialMenuShortcutRow").dropFirst().first?
             .components(separatedBy: "\n}\n").first ?? ""
         let radialRowComesFirst = featureRowsCode.range(of: "if feature == .radialMenu {").flatMap { radial in
             featureRowsCode.range(of: "roleRow(").map { radial.lowerBound < $0.lowerBound }
         } ?? false
         suite.expect(radialRowComesFirst
-                && radialRowCode.contains("RadialMenuSupport.profileShortcuts()")
-                && radialRowCode.contains(".manageButton")
-                && !radialRowCode.contains("ShortcutRecorderButton"),
-               "the Keyboard Shortcuts page shows the wheels' shortcuts and links to their page instead of recording the role key")
+                && shortcutsPageCode.contains("radialMenuGroupRows")
+                && radialRowCode.contains("RadialMenuSupport.updateShortcut")
+                && !shortcutsPageCode.contains(".manageButton"),
+               "the Keyboard Shortcuts page uses a nested profile list with two-way synced shortcut setters")
+
+        // Two-way sync test for radial menu profile shortcuts
+        let syncProfileID = UUID()
+        let initialProfile = RadialMenuProfile(id: syncProfileID, name: "Sync Test Profile", shortcut: "")
+        profileTestDefaults.set(RadialMenuSupport.encodeProfiles([initialProfile]), forKey: DefaultsKey.radialMenuProfiles)
+        let newWheelShortcut = GlobalShortcut(keyCode: Int64(kVK_ANSI_M), modifiers: [.option, .command])
+        RadialMenuSupport.updateShortcut(newWheelShortcut.storageValue, for: syncProfileID, defaults: profileTestDefaults)
+        let updatedProfiles = RadialMenuSupport.decodeProfiles(profileTestDefaults.data(forKey: DefaultsKey.radialMenuProfiles), defaults: profileTestDefaults)
+        suite.expect(updatedProfiles.first?.shortcut == newWheelShortcut.storageValue
+                && profileTestDefaults.string(forKey: DefaultsKey.radialMenuShortcut) == newWheelShortcut.storageValue,
+               "updating a radial profile shortcut synchronizes the profiles list and primary shortcut")
         profileTestDefaults.removePersistentDomain(forName: "com.vorssaint.tests.radialProfiles")
 
         let testImage = NSImage(size: NSSize(width: 16, height: 16))

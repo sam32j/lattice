@@ -40,7 +40,7 @@ extension FeatureStrings {
 
 extension BluetoothSleepStrings {
     static let enUS = BluetoothSleepStrings(
-        pageTitle: "Bluetooth on sleep",
+        pageTitle: "Bluetooth Behavior",
         hubDescription: "Switches Bluetooth off while the Mac sleeps, so headphones in a bag stop connecting to it.",
         enable: "Turn Bluetooth off when the Mac sleeps",
         enableCaption: "Bluetooth already off before sleep is left alone and stays off on wake.",
@@ -50,7 +50,7 @@ extension BluetoothSleepStrings {
     )
 
     static let ptBR = BluetoothSleepStrings(
-        pageTitle: "Bluetooth ao dormir",
+        pageTitle: "Comportamento do Bluetooth",
         hubDescription: "Desliga o Bluetooth enquanto o Mac dorme, para que os fones na mochila parem de se conectar.",
         enable: "Desligar o Bluetooth quando o Mac dormir",
         enableCaption: "O Bluetooth que já estava desligado antes do repouso não é tocado e continua desligado ao acordar.",
@@ -60,7 +60,7 @@ extension BluetoothSleepStrings {
     )
 
     static let tr = BluetoothSleepStrings(
-        pageTitle: "Uykuda Bluetooth",
+        pageTitle: "Bluetooth Davranışı",
         hubDescription: "Mac uyurken Bluetooth’u kapatır, böylece çantadaki kulaklıklar bağlanmayı bırakır.",
         enable: "Mac uyuduğunda Bluetooth’u kapat",
         enableCaption: "Uykudan önce zaten kapalı olan Bluetooth’a dokunulmaz ve uyanışta kapalı kalır.",
@@ -70,7 +70,7 @@ extension BluetoothSleepStrings {
     )
 
     static let ru = BluetoothSleepStrings(
-        pageTitle: "Bluetooth при сне",
+        pageTitle: "Поведение Bluetooth",
         hubDescription: "Выключает Bluetooth на время сна Mac, чтобы наушники в сумке перестали к нему подключаться.",
         enable: "Выключать Bluetooth, когда Mac засыпает",
         enableCaption: "Bluetooth, уже выключенный до сна, не трогается и остаётся выключенным после пробуждения.",
@@ -80,7 +80,7 @@ extension BluetoothSleepStrings {
     )
 
     static let es = BluetoothSleepStrings(
-        pageTitle: "Bluetooth al reposo",
+        pageTitle: "Comportamiento de Bluetooth",
         hubDescription: "Apaga el Bluetooth mientras el Mac duerme, para que los auriculares en la mochila dejen de conectarse.",
         enable: "Apagar el Bluetooth cuando el Mac entre en reposo",
         enableCaption: "El Bluetooth que ya estaba apagado antes del reposo no se toca y sigue apagado al despertar.",
@@ -90,7 +90,7 @@ extension BluetoothSleepStrings {
     )
 
     static let sk = BluetoothSleepStrings(
-        pageTitle: "Bluetooth v spánku",
+        pageTitle: "Správanie Bluetooth",
         hubDescription: "Vypne Bluetooth, kým Mac spí, aby sa slúchadlá v taške prestali k nemu pripájať.",
         enable: "Vypnúť Bluetooth, keď Mac zaspí",
         enableCaption: "Bluetooth, ktorý bol vypnutý už pred spánkom, sa nemení a po prebudení ostane vypnutý.",
@@ -100,7 +100,7 @@ extension BluetoothSleepStrings {
     )
 
     static let de = BluetoothSleepStrings(
-        pageTitle: "Bluetooth im Ruhezustand",
+        pageTitle: "Bluetooth-Verhalten",
         hubDescription: "Schaltet Bluetooth aus, während der Mac schläft, damit Kopfhörer in der Tasche sich nicht mehr verbinden.",
         enable: "Bluetooth ausschalten, wenn der Mac in den Ruhezustand geht",
         enableCaption: "Bereits vor dem Ruhezustand ausgeschaltetes Bluetooth bleibt unberührt und beim Aufwachen aus.",
@@ -110,7 +110,7 @@ extension BluetoothSleepStrings {
     )
 
     static let fr = BluetoothSleepStrings(
-        pageTitle: "Bluetooth en veille",
+        pageTitle: "Comportement du Bluetooth",
         hubDescription: "Coupe le Bluetooth pendant que le Mac dort, pour que les écouteurs rangés dans un sac cessent de s’y connecter.",
         enable: "Couper le Bluetooth quand le Mac se met en veille",
         enableCaption: "Un Bluetooth déjà coupé avant la veille n’est pas touché et reste coupé au réveil.",
@@ -120,7 +120,7 @@ extension BluetoothSleepStrings {
     )
 
     static let it = BluetoothSleepStrings(
-        pageTitle: "Bluetooth in stop",
+        pageTitle: "Comportamento Bluetooth",
         hubDescription: "Spegne il Bluetooth mentre il Mac dorme, così le cuffie nello zaino smettono di collegarsi.",
         enable: "Spegni il Bluetooth quando il Mac va in stop",
         enableCaption: "Il Bluetooth già spento prima dello stop resta intoccato e spento alla riattivazione.",
@@ -130,7 +130,7 @@ extension BluetoothSleepStrings {
     )
 
     static let ja = BluetoothSleepStrings(
-        pageTitle: "スリープ時のBluetooth",
+        pageTitle: "Bluetoothの動作",
         hubDescription: "Macのスリープ中にBluetoothを切り、カバンの中のヘッドホンが勝手につながらないようにします。",
         enable: "Macがスリープしたら Bluetooth を切る",
         enableCaption: "スリープ前からオフだったBluetoothはそのままで、復帰後もオフのままです。",
@@ -140,7 +140,7 @@ extension BluetoothSleepStrings {
     )
 
     static let ko = BluetoothSleepStrings(
-        pageTitle: "잠자기 시 Bluetooth",
+        pageTitle: "Bluetooth 동작",
         hubDescription: "Mac이 잠자는 동안 Bluetooth를 꺼서 가방 속 헤드폰이 계속 연결되지 않도록 합니다.",
         enable: "Mac이 잠자기에 들어가면 Bluetooth 끄기",
         enableCaption: "잠자기 전에 이미 꺼져 있던 Bluetooth는 건드리지 않고 깨어난 뒤에도 꺼진 채로 둡니다.",
@@ -150,7 +150,7 @@ extension BluetoothSleepStrings {
     )
 
     static let zhHans = BluetoothSleepStrings(
-        pageTitle: "睡眠时的蓝牙",
+        pageTitle: "蓝牙行为",
         hubDescription: "Mac 睡眠期间关闭蓝牙，包里的耳机不再自动连上来。",
         enable: "Mac 进入睡眠时关闭蓝牙",
         enableCaption: "睡眠前就已关闭的蓝牙不会被改动，唤醒后仍保持关闭。",
@@ -160,7 +160,7 @@ extension BluetoothSleepStrings {
     )
 
     static let zhTW = BluetoothSleepStrings(
-        pageTitle: "睡眠時的藍牙",
+        pageTitle: "藍牙行為",
         hubDescription: "Mac 睡眠期間關閉藍牙，包包裡的耳機不會再自動連上來。",
         enable: "Mac 進入睡眠時關閉藍牙",
         enableCaption: "睡眠前就已關閉的藍牙不會被更動，喚醒後仍保持關閉。",
@@ -170,7 +170,7 @@ extension BluetoothSleepStrings {
     )
 
     static let zhHK = BluetoothSleepStrings(
-        pageTitle: "睡眠時的藍牙",
+        pageTitle: "藍牙行為",
         hubDescription: "Mac 睡眠期間關閉藍牙，袋裡的耳機不會再自動連上來。",
         enable: "Mac 進入睡眠時關閉藍牙",
         enableCaption: "睡眠前已經關閉的藍牙不會被更動，喚醒後仍然保持關閉。",
@@ -179,7 +179,7 @@ extension BluetoothSleepStrings {
         unsupported: "這部 Mac 沒有藍牙控制器。"
     )
     static let uk = BluetoothSleepStrings(
-        pageTitle: "Bluetooth під час сну",
+        pageTitle: "Поведінка Bluetooth",
         hubDescription: "Вимикає Bluetooth, поки Mac спить, щоб навушники в сумці перестали з’єднуватися з ним.",
         enable: "Вимикати Bluetooth, коли Mac засинає",
         enableCaption: "Bluetooth, який уже був вимкнений до сну, залишається таким і не вмикається при пробудженні.",

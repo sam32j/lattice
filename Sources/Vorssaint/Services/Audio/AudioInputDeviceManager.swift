@@ -65,9 +65,10 @@ final class AudioInputDeviceManager: ObservableObject {
     /// The microphone selector lives in the mixer panel section, so it
     /// follows the mixer's hub availability.
     func syncWithPreferences() {
+        let micControl = UserDefaults.standard.bool(forKey: DefaultsKey.microphoneLevelControlEnabled)
         inputPriorityIsActive = AppFeature.audioPriority.isAvailable
             && UserDefaults.standard.bool(forKey: DefaultsKey.audioPriorityInputEnabled)
-        if AppFeature.mixer.isAvailable || AppFeature.audioPriority.isAvailable {
+        if micControl || inputPriorityIsActive {
             start()
         } else {
             stop()
@@ -316,7 +317,7 @@ final class AudioInputDeviceManager: ObservableObject {
             inputDeviceBeforeOverride: inputDeviceBeforeOverride,
             mayApplyPreferred: !applyingPreferred && !inputPriorityIsActive,
             priorityIsActive: inputPriorityIsActive,
-            preferredInputIsActive: AppFeature.mixer.isAvailable,
+            preferredInputIsActive: UserDefaults.standard.bool(forKey: DefaultsKey.microphoneLevelControlEnabled),
             volumeGeneration: volumeRefreshGeneration)
 
         halQueue.async { [weak self] in

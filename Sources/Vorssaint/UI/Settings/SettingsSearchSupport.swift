@@ -92,7 +92,7 @@ enum SettingsSearchSupport {
         return SettingsSearchItem(
             id: .setting(.keyboardBrightnessShortcuts),
             destination: FeatureSettingsDestination(
-                .energy, sectionAnchor: .keyboardBrightnessShortcuts),
+                .keyboard, sectionAnchor: .keyboardBrightnessShortcuts),
             title: brightness.keyboardLight,
             icon: "keyboard",
             keywords: [brightness.keyboardBrightnessShortcuts, brightness.keyboardBrightnessDecrease,
@@ -146,7 +146,7 @@ enum SettingsSearchSupport {
                        isAvailable: (AppFeature) -> Bool = { $0.isAvailable })
         -> (destination: FeatureSettingsDestination, targetFeature: AppFeature?) {
         if let feature = item.feature {
-            guard feature.isVisibleInSettings(isAvailable: isAvailable) || leadsToVisiblePage(item, isAvailable: isAvailable) else {
+            guard hasSettingsControl(feature, isAvailable: isAvailable) || leadsToVisiblePage(item, isAvailable: isAvailable) else {
                 return (FeatureSettingsDestination(.features), feature)
             }
             if item.destination.page == .features {
@@ -158,6 +158,13 @@ enum SettingsSearchSupport {
             return (FeatureSettingsDestination(.features), nil)
         }
         return (item.destination, nil)
+    }
+
+    /// Dedicated pages own their install controls even while the feature is off.
+    private static func hasSettingsControl(_ feature: AppFeature,
+                                           isAvailable: (AppFeature) -> Bool) -> Bool {
+        feature.isHardwareSupported && (feature.isManagedOnDedicatedPage
+            || feature.isVisibleInSettings(isAvailable: isAvailable))
     }
 
     /// A page row carrying its page's own feature, like Window Layout, still
@@ -222,7 +229,7 @@ enum SettingsSearchSupport {
         guard !foldedQuery.isEmpty else { return [] }
 
         let navigableItems = items.compactMap { item -> SettingsSearchItem? in
-            if let feature = item.feature, !feature.isVisibleInSettings(isAvailable: isAvailable),
+            if let feature = item.feature, !hasSettingsControl(feature, isAvailable: isAvailable),
                !leadsToVisiblePage(item, isAvailable: isAvailable) {
                 // The utility itself remains navigable through its Features
                 // row, but settings that do not exist until installation must
@@ -267,7 +274,7 @@ enum SettingsSearchSupport {
                     where fold(keyword).contains(foldedQuery) {
                     let keywordFeature = item.keywordFeatures.indices.contains(index)
                         ? item.keywordFeatures[index] : nil
-                    if let keywordFeature, !keywordFeature.isVisibleInSettings(isAvailable: isAvailable) { continue }
+                    if let keywordFeature, !hasSettingsControl(keywordFeature, isAvailable: isAvailable) { continue }
                     let suggestionItem = keywordFeature.map { feature in
                         SettingsSearchItem(id: .feature(feature),
                                            destination: feature == .audioPriority && page == .audioOutput

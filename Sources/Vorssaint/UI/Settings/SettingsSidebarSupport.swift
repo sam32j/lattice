@@ -39,12 +39,14 @@ enum SettingsSidebarSupport {
         }
         var rows = includePage ? [pageItem] : []
         var seenFeatures: Set<AppFeature> = []
-        for feature in preferredFeatures + AppFeature.allCases {
+        let candidateFeatures = preferredFeatures.isEmpty ? AppFeature.allCases : preferredFeatures
+        for feature in candidateFeatures {
             guard seenFeatures.insert(feature).inserted else { continue }
             let destination = feature.settingsDestination
             guard destination.page == page, destination.sectionAnchor != nil,
                   feature != .extraBrightness,
-                  feature.isVisibleInSettings(isAvailable: isAvailable) else { continue }
+                  feature != .wallpaper,
+                  (feature == .switcher || feature.isVisibleInSettings(isAvailable: isAvailable)) else { continue }
             rows.append(SettingsSidebarItem(id: .feature(feature),
                                             destination: destination,
                                             title: featureTitle(feature),
@@ -52,29 +54,6 @@ enum SettingsSidebarSupport {
         }
         if rows.isEmpty { rows.append(pageItem) }
         return rows
-    }
-
-    /// Splits window and control rows, and takes input, file and sound tools
-    /// out of Utilities, so the sidebar groups them as the Features page does.
-    /// Rows of other groups, or of no feature, stay where they are.
-    static func featureGroupRows(windowsControls: [SettingsSidebarItem],
-                                 utilities: [SettingsSidebarItem])
-        -> (windowsDock: [SettingsSidebarItem], mouseKeyboard: [SettingsSidebarItem],
-            files: [SettingsSidebarItem], sound: [SettingsSidebarItem],
-            utilities: [SettingsSidebarItem]) {
-        func group(_ item: SettingsSidebarItem) -> FeatureGroup? {
-            if case .feature(let feature) = item.id { return feature.group }
-            if item.destination.page == .mouse || item.destination.page == .keyboard { return .mouseKeyboard }
-            if item.destination.page == .textSnippets { return .clipboardFiles }
-            return AppFeature.allCases.first { $0.settingsDestination == item.destination }?.group
-        }
-        func moved(_ target: FeatureGroup) -> [SettingsSidebarItem] {
-            utilities.filter { group($0) == target }
-        }
-        return (windowsControls.filter { group($0) == .windowsDock },
-                windowsControls.filter { group($0) != .windowsDock } + moved(.mouseKeyboard),
-                moved(.clipboardFiles), moved(.sound),
-                utilities.filter { ![.mouseKeyboard, .clipboardFiles, .sound].contains(group($0)) })
     }
 
     static func fallbackDestination(for destination: FeatureSettingsDestination,

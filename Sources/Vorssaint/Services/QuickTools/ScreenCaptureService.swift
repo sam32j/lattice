@@ -46,10 +46,9 @@ final class ScreenCaptureService: ObservableObject {
     @Published private(set) var toolShortcutRegistrationFailures: Set<ScreenCaptureTool> = []
 
     /// One hotkey per tool, built from the tool list so a new mode cannot be
-    /// added without one. Ids continue past the hand-assigned quick tool
-    /// range, which ends at 24.
+    /// added without one. Dedicated 100+ range to prevent collisions.
     private let toolHotkeys: [ScreenCaptureTool: QuickToolHotkey] = {
-        var next: UInt32 = 25
+        var next: UInt32 = 100
         var hotkeys: [ScreenCaptureTool: QuickToolHotkey] = [:]
         for tool in ScreenCaptureTool.allCases {
             hotkeys[tool] = QuickToolHotkey(id: next)

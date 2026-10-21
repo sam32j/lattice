@@ -8,23 +8,91 @@ import SwiftUI
 /// pages read as one design.
 struct SettingsCard<Content: View>: View {
     let title: String?
+    let headerAccessory: AnyView?
     let content: Content
 
     init(title: String? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
+        self.headerAccessory = nil
+        self.content = content()
+    }
+
+    init<Accessory: View>(title: String, @ViewBuilder headerAccessory: () -> Accessory, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.headerAccessory = AnyView(headerAccessory())
         self.content = content()
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
             if let title {
-                Text(title).font(.headline)
+                if let headerAccessory {
+                    HStack(alignment: .center) {
+                        Text(title).font(.headline)
+                        Spacer()
+                        headerAccessory
+                    }
+                } else {
+                    Text(title).font(.headline)
+                }
             }
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+/// A settings row with leading title and optional caption, and a trailing control.
+/// Does not use leading icons, ensuring clean horizontal alignment across all rows.
+struct SettingsControlRow<Control: View>: View {
+    let title: String
+    var caption: String?
+    let control: Control
+
+    init(title: String, caption: String? = nil, @ViewBuilder control: () -> Control) {
+        self.title = title
+        self.caption = caption
+        self.control = control()
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                if let caption {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 12)
+            control
+        }
+    }
+}
+
+/// A standard toggle row with leading title/caption and a trailing switch.
+struct SettingsToggleRow: View {
+    let title: String
+    var caption: String?
+    @Binding var isOn: Bool
+
+    init(title: String, caption: String? = nil, isOn: Binding<Bool>) {
+        self.title = title
+        self.caption = caption
+        self._isOn = isOn
+    }
+
+    var body: some View {
+        SettingsControlRow(title: title, caption: caption) {
+            Toggle(title, isOn: $isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+        }
     }
 }
 

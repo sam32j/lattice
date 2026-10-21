@@ -76,6 +76,9 @@ final class RadialMenuService: ObservableObject {
     private let dismissal = PanelDismissal()
 
     private init() {
+        RadialMenuSupport.onPreferencesChanged = { [weak self] in
+            self?.syncWithPreferences()
+        }
         // A filter tap owned by a switched-away login session keeps its place
         // in the chain, so the account on screen waits out this tap's timeout
         // on every extra-button click it makes (issue #1075). Hand the tap

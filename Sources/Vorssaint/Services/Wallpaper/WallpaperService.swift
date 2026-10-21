@@ -54,10 +54,6 @@ final class WallpaperService: ObservableObject {
 
     var isAvailable: Bool { AppFeature.wallpaper.isAvailable }
 
-    var ownFolderSources: [OwnSource] {
-        ownSources.filter(\.isFolder)
-    }
-
     // folders + unreachable + file bookmarks with no gallery cell (after catalog is ready)
     var removableChipSources: [OwnSource] {
         // while scanning, every file bookmark would look like an orphan
@@ -394,11 +390,6 @@ final class WallpaperService: ObservableObject {
         present(panel) { [weak self] urls in
             self?.remember(urls: urls)
         }
-    }
-
-    func openSystemWallpaperSettings() {
-        guard let url = WallpaperSupport.systemWallpaperSettingsURL else { return }
-        NSWorkspace.shared.open(url)
     }
 
     // MARK: - Bookmarks

@@ -3,6 +3,7 @@ import SwiftUI
 
 /// Shared microphone controls used by Audio Input and the live menu panel.
 struct AudioInputDeviceControls: View {
+    var title: String? = nil
     @Environment(\.notchPresentation) private var inNotch
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var inputManager = AudioInputDeviceManager.shared
@@ -20,10 +21,10 @@ struct AudioInputDeviceControls: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Label {
-                    Text(l10n.s.mixerInputTitle)
+                    Text(title ?? l10n.s.mixerInputTitle)
                         .font(.system(size: 11.5, weight: .medium))
                 } icon: {
                     Image(systemName: "mic.fill")
@@ -56,28 +57,36 @@ struct AudioInputDeviceControls: View {
                 .help(l10n.s.mixerInputTooltip)
             }
 
-            if let volume = inputManager.inputVolume {
-                HStack(spacing: 8) {
-                    Image(systemName: volume <= 0.001 ? "mic.slash.fill" : "mic.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 16)
+            let hasVolume = inputManager.inputVolume != nil
+            let volume = inputManager.inputVolume ?? 0
+            HStack(spacing: 8) {
+                Image(systemName: !hasVolume || volume <= 0.001 ? "mic.slash.fill" : "mic.fill")
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 16)
 
-                    MixerVolumeSlider(value: inputVolumeBinding,
-                                      normalTint: normalSliderTint,
-                                      boostTint: normalSliderTint,
-                                      isBoosting: false,
-                                      accentRevision: accentRevision,
-                                      glassEnabled: glassEnabled,
-                                      maximum: 1,
-                                      accessibilityLabel: l10n.s.mixerInputTitle)
+                Text(l10n.s.mixerInputLevelLabel)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(.secondary)
 
+                MixerVolumeSlider(value: inputVolumeBinding,
+                                  normalTint: normalSliderTint,
+                                  boostTint: normalSliderTint,
+                                  isBoosting: false,
+                                  accentRevision: accentRevision,
+                                  glassEnabled: glassEnabled,
+                                  maximum: 1,
+                                  accessibilityLabel: l10n.s.mixerInputLevelLabel)
+                    .disabled(!hasVolume)
+                    .opacity(hasVolume ? 1 : 0.45)
+
+                if hasVolume {
                     EditableVolumePercent(currentPercent: Int((volume * 100).rounded()),
                                           maximumPercent: 100,
                                           width: 36,
                                           editorID: "microphone-input",
                                           editingID: $editingVolumeID,
-                                          accessibilityLabel: l10n.s.mixerInputTitle) {
+                                          accessibilityLabel: l10n.s.mixerInputLevelLabel) {
                         Text("\(Int((volume * 100).rounded()))%")
                             .font(.system(size: 10.5, weight: .medium))
                             .monospacedDigit()
@@ -85,9 +94,15 @@ struct AudioInputDeviceControls: View {
                     } onCommit: {
                         inputManager.setInputVolume($0)
                     }
+                } else {
+                    Text(l10n.s.sliderUnavailable)
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
-                .disabled(micMute.isMuted)
             }
+            .padding(.vertical, 4)
+            .disabled(micMute.isMuted)
 
             if inputManager.inputDevices.isEmpty {
                 inputMessage(l10n.s.mixerInputNoDevices, systemImage: "mic.slash")
@@ -131,7 +146,7 @@ struct AudioInputDeviceControls: View {
     }
 
     private func inputDeviceTitle(_ device: MixerInputDevice) -> String {
-        device.isDefault ? "\(device.name) (\(l10n.s.mixerOutputCurrent))" : device.name
+        device.name
     }
 
     private func inputMessage(_ text: String, systemImage: String) -> some View {

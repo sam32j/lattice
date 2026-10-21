@@ -45,8 +45,8 @@ enum UtilitySettingsTests {
             Action(rawValue: radial.rawValue)?.feature == radial.feature
         }, "radial menu and panel actions follow the same installation owner")
         expect(AppFeature.wallpaper.settingsDestination
-               == FeatureSettingsDestination(.wallpaper, sectionAnchor: .wallpaper),
-               "Wallpaper links open its own Desktop & Dock preferences")
+               == FeatureSettingsDestination(.energy, sectionAnchor: .wallpaper),
+               "Wallpaper links open its section in Displays preferences")
         for feature in [AppFeature.focusFollowsMouse, .keyboardDebounce] {
             let item = SettingsSearchItem(id: .feature(feature), destination: feature.settingsDestination,
                                           title: feature.rawValue, icon: feature.symbolName, feature: feature)

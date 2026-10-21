@@ -89,6 +89,11 @@ struct KeyboardSettings: View {
                 superKeyCard
                     .settingsSectionAnchor(.superKey, cornerRadius: 16)
 
+                if BrightnessService.keyboardLightIsSupported {
+                    KeyboardLightSettings()
+                        .settingsSectionAnchor(.keyboardBrightnessShortcuts, cornerRadius: 16)
+                }
+
                 cleaningModeCard
                     .settingsSectionAnchor(.cleaningMode, cornerRadius: 16)
 

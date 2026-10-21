@@ -3,11 +3,9 @@
 
 import SwiftUI
 
-/// The Energy page: Keep Awake with its live status and options, the
-/// displays' brightness and power, extra brightness on XDR panels, and
-/// Bluetooth on sleep. One card per feature, opened by a row that names it,
-/// says what it is doing right now and switches it.
-struct EnergySettings: View {
+/// Display settings: Display brightness, XDR extra brightness,
+/// wallpaper management, Keep Awake (when focused), and Bluetooth behavior.
+struct DisplaySettings: View {
     var focus: SettingsSectionAnchor?
     @State private var displayMoreOptionsExpanded = true
     @ObservedObject private var l10n = L10n.shared
@@ -27,21 +25,20 @@ struct EnergySettings: View {
                 if (focus == nil || focus == .keepAwake), AppFeature.keepAwake.isAvailable {
                     EnergyKeepAwakeSettings()
                 }
-                if (focus == nil || focus == .brightness || focus == .extraBrightness), AppFeature.brightness.isAvailable {
-                    EnergyDisplaySettings()
-                        .settingsSectionAnchor(.brightness, cornerRadius: 16)
-                } else if (focus == nil || focus == .brightness || focus == .extraBrightness), AppFeature.extraBrightness.isHardwareSupported {
-                    SettingsCard {
-                        DisclosureGroup(FeatureStrings.recorder(l10n.language).moreOptions, isExpanded: $displayMoreOptionsExpanded) {
-                            DisplayExtraBrightnessSettings().padding(.top, 10)
+                if focus == nil || focus == .brightness || focus == .extraBrightness || focus == .wallpaper {
+                    if AppFeature.brightness.isAvailable {
+                        EnergyDisplaySettings()
+                            .settingsSectionAnchor(.brightness, cornerRadius: 16)
+                    } else if AppFeature.extraBrightness.isHardwareSupported {
+                        SettingsCard {
+                            DisclosureGroup(FeatureStrings.recorder(l10n.language).moreOptions, isExpanded: $displayMoreOptionsExpanded) {
+                                DisplayExtraBrightnessSettings().padding(.top, 10)
+                            }
                         }
+                        .settingsSectionAnchor(.brightness, cornerRadius: 16)
                     }
-                    .settingsSectionAnchor(.brightness, cornerRadius: 16)
-                }
-                if (focus == nil || focus == .keyboardBrightnessShortcuts),
-                   AppFeature.brightness.isAvailable, BrightnessService.keyboardLightIsSupported {
-                    KeyboardLightSettings()
-                        .settingsSectionAnchor(.keyboardBrightnessShortcuts, cornerRadius: 16)
+                    wallpaperCard
+                        .settingsSectionAnchor(.wallpaper, cornerRadius: 16)
                 }
                 if (focus == nil || focus == .bluetoothSleep), AppFeature.bluetoothSleep.isAvailable {
                     bluetoothCard
@@ -65,20 +62,40 @@ struct EnergySettings: View {
         if (focus == nil || focus == .keepAwake), AppFeature.keepAwake.isAvailable {
             KeepAwakeManager.shared.refreshPasswordlessStatus()
         }
-        if (focus == nil || focus == .brightness || focus == .keyboardBrightnessShortcuts), AppFeature.brightness.isAvailable {
+        if (focus == nil || focus == .brightness || focus == .wallpaper), AppFeature.brightness.isAvailable {
             // Displays may have changed since launch (docked, clamshell).
             BrightnessService.shared.refresh()
         }
     }
 
-
     private var pageDescription: String {
         switch focus {
         case .keepAwake: return FeatureStrings.hub(l10n.language).descKeepAwake
-        case .brightness: return FeatureStrings.brightness(l10n.language).hubDescription
-        case .keyboardBrightnessShortcuts: return FeatureStrings.brightness(l10n.language).keyboardLightCaption
+        case .brightness, .wallpaper: return FeatureStrings.brightness(l10n.language).hubDescription
         case .bluetoothSleep: return FeatureStrings.bluetoothSleep(l10n.language).hubDescription
-        default: return FeatureStrings.settingsPages(l10n.language).energyDescription
+        default: return FeatureStrings.brightness(l10n.language).hubDescription
+        }
+    }
+
+    // MARK: - Wallpaper
+
+    private var wallpaperInstalled: Bool {
+        AppFeature.wallpaper.isAvailable
+    }
+
+    private var wallpaperCard: some View {
+        let strings = FeatureStrings.wallpaper(l10n.language)
+        return SettingsCard(title: strings.enableManagement) {
+            SettingsRow(symbol: "photo.on.rectangle", title: strings.enableManagement,
+                        caption: strings.hubDescription) {
+                Toggle(strings.enableManagement, isOn: Binding(
+                    get: { wallpaperInstalled },
+                    set: { enabled in
+                        FeatureRuntime.shared.setAvailable([.wallpaper], enabled)
+                    }
+                ))
+                .labelsHidden()
+            }
         }
     }
 
@@ -110,5 +127,4 @@ struct EnergySettings: View {
             }
         }
     }
-
 }

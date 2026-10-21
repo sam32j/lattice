@@ -53,11 +53,11 @@ enum FeatureAvailabilityTransitionTests {
         suite.expect(Set(calls) == Set(bundle) && calls.count == 3 && observed.allSatisfy { !$0 },
                      "screenshot uninstall tears down every companion against the final parent state")
         calls = []; observed = []
-        service.setAllAvailable(true)
+        service.setAvailable(AppFeature.hubInstallableFeatures + [.screenshot], true)
         suite.expect(Set(calls) == Set(bundle) && observed.allSatisfy { $0 },
                      "bulk install synchronizes companions after screenshot even in catalog order")
         calls = []; observed = []
-        service.setAllAvailable(false)
+        service.setAvailable(AppFeature.hubInstallableFeatures + [.screenshot], false)
         suite.expect(Set(calls) == Set(bundle) && observed.allSatisfy { !$0 },
                      "bulk removal tears down hidden companions after the parent changes")
         calls = []; observed = []

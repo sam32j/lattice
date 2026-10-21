@@ -209,7 +209,6 @@ struct ScrollingCapturePreviewView: View {
 final class ScrollingCaptureOverlayController {
     static let shared = ScrollingCaptureOverlayController()
 
-    nonisolated(unsafe) private(set) static var activePreviewWindowNumber: Int?
     nonisolated(unsafe) private(set) static var activeWindowIDs: Set<CGWindowID> = []
 
     private var previewPanel: ScrollingCapturePanel?
@@ -224,11 +223,6 @@ final class ScrollingCaptureOverlayController {
 
     private init() {}
 
-    var previewWindowNumber: Int? {
-        guard let previewPanel, previewPanel.isVisible else { return nil }
-        return previewPanel.windowNumber
-    }
-
     var windowIDs: Set<CGWindowID> {
         var ids: Set<CGWindowID> = []
         if let previewPanel, previewPanel.windowNumber > 0 {
@@ -241,7 +235,6 @@ final class ScrollingCaptureOverlayController {
     }
 
     private func syncActiveIDs() {
-        Self.activePreviewWindowNumber = previewPanel?.windowNumber
         Self.activeWindowIDs = windowIDs
     }
 
@@ -405,7 +398,6 @@ final class ScrollingCaptureOverlayController {
 
         viewModel = nil
 
-        Self.activePreviewWindowNumber = nil
         Self.activeWindowIDs = []
     }
 

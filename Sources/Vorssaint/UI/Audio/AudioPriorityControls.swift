@@ -4,14 +4,17 @@ struct AudioOutputPriorityControls: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var priority = AudioPriorityService.shared
     @ObservedObject private var mixer = AppVolumeMixer.shared
+    var showsHeader = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AudioPriorityHeader(title: l10n.s.audioPriorityOutputList,
-                                symbol: "speaker.wave.2.fill",
-                                enabled: Binding(get: { priority.outputPriorityEnabled },
-                                                 set: { priority.setOutputPriorityEnabled($0) }),
-                                help: l10n.s.audioPriorityOutputEnable)
+            if showsHeader {
+                AudioPriorityHeader(title: l10n.s.audioPriorityOutputList,
+                                    symbol: "speaker.wave.2.fill",
+                                    enabled: Binding(get: { priority.outputPriorityEnabled },
+                                                     set: { priority.setOutputPriorityEnabled($0) }),
+                                    help: l10n.s.audioPriorityOutputEnable)
+            }
             PriorityDeviceList(priorityUIDs: priority.outputPriorityUIDs,
                                isAvailable: priority.isOutputAvailable,
                                displayName: priority.displayName,
@@ -26,14 +29,17 @@ struct AudioInputPriorityControls: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var priority = AudioPriorityService.shared
     @ObservedObject private var input = AudioInputDeviceManager.shared
+    var showsHeader = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AudioPriorityHeader(title: l10n.s.audioPriorityInputList,
-                                symbol: "mic.fill",
-                                enabled: Binding(get: { priority.inputPriorityEnabled },
-                                                 set: { priority.setInputPriorityEnabled($0) }),
-                                help: l10n.s.audioPriorityInputEnable)
+            if showsHeader {
+                AudioPriorityHeader(title: l10n.s.audioPriorityInputList,
+                                    symbol: "mic.fill",
+                                    enabled: Binding(get: { priority.inputPriorityEnabled },
+                                                     set: { priority.setInputPriorityEnabled($0) }),
+                                    help: l10n.s.audioPriorityInputEnable)
+            }
             PriorityDeviceList(priorityUIDs: priority.inputPriorityUIDs,
                                isAvailable: priority.isInputAvailable,
                                displayName: priority.displayName,

@@ -956,14 +956,6 @@ final class ShelfService: ObservableObject {
         scheduleDockedSync()
     }
 
-    func toggleDocked() {
-        if dockedVisible, dockedExpanded {
-            collapseDocked()
-        } else {
-            expandDocked()
-        }
-    }
-
     /// Shows the docked shelf exactly when the option is on and there is a
     /// reason to (items to keep, a drag to catch, or an explicit open), keeps
     /// it anchored under the menu bar icon, and hides it the moment the shelf

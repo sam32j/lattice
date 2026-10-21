@@ -67,7 +67,7 @@ struct MetricsTests {
                 MixerPercentKeyTests.run(suite)
                 MixerFeatureTests.run(suite)
             }),
-            ("audio-priority", { AudioPriorityTests.run(suite) }),
+            ("audio-priority", { AudioPriorityTests.run(suite); AudioPriorityToggleTests.run(suite) }),
             ("audio-settings", { AudioSettingsOwnershipTests.run(suite) }),
             ("shelf", { ShelfFeatureTests.run(suite) }),
             ("overlays", { OverlayPanelTests.run(suite) }),
@@ -143,6 +143,8 @@ struct MetricsTests {
                 PortManagerRefreshTests.run(suite)
             }),
             ("settings", {
+                SettingsReviewRegressionTests.run(suite)
+                RadialProfileSyncTests.run(suite)
                 SettingsFeatureTests.run(suite)
                 SettingsSearchKeyboardTests.run(suite)
                 SettingsWindowTests.run { suite.expect($0, $1) }

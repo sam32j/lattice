@@ -1110,7 +1110,9 @@ enum NotchTests {
         // tests later in the harness still see a genuinely untouched setup.
         for (key, value) in Defaults.registeredDefaults
         where key.hasPrefix("notch") || key == DefaultsKey.clipboardHistoryEnabled
-            || key == DefaultsKey.brightnessControlEnabled {
+            || key == DefaultsKey.brightnessControlEnabled
+            || key == DefaultsKey.volumeMixerEnabled
+            || key == DefaultsKey.microphoneLevelControlEnabled {
             defaults.set(value, forKey: key)
         }
         for (key, value) in AppFeature.availabilityDefaults { defaults.set(value, forKey: key) }
@@ -1290,8 +1292,10 @@ enum NotchTests {
                      "turning microphone notices off keeps the switch's own confirmation")
         defaults.set(true, forKey: DefaultsKey.notchMicrophone)
         defaults.set(false, forKey: AppFeature.micMute.availabilityKey)
+        defaults.set(false, forKey: DefaultsKey.microphoneLevelControlEnabled)
         suite.expect(!NotchSupport.routes(.microphone, in: defaults), "a removed microphone mute announces nothing in the island")
         defaults.set(true, forKey: AppFeature.micMute.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.microphoneLevelControlEnabled)
         defaults.set(false, forKey: DefaultsKey.notchTrackChange)
         let initialLayout = NotchQuickAccessConfiguration.current(in: defaults)
         suite.expect(initialLayout.buttons.filter { $0.side == .left }.compactMap(\.action) == [.explore, .module(.timer)]
@@ -1301,6 +1305,7 @@ enum NotchTests {
         suite.expect(initialLayout == NotchQuickAccessConfiguration.current(in: defaults),
                "default buttons keep stable identities across preference refreshes")
         defaults.set(false, forKey: AppFeature.mixer.availabilityKey)
+        defaults.set(false, forKey: DefaultsKey.volumeMixerEnabled)
         defaults.set(false, forKey: AppFeature.notchTimer.availabilityKey)
         suite.expect(NotchQuickAccessConfiguration.current(in: defaults).actions == [.explore, .settings, .module(.music)]
                && !NotchQuickAction.module(.mixer).isAvailable(in: defaults)
@@ -1309,6 +1314,7 @@ enum NotchTests {
         suite.expect(NotchQuickAccessConfiguration.stored(in: defaults) == initialLayout,
                "uninstalling a utility preserves its configured position")
         defaults.set(true, forKey: AppFeature.mixer.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.volumeMixerEnabled)
         defaults.set(true, forKey: AppFeature.notchTimer.availabilityKey)
         suite.expect(NotchQuickAccessConfiguration.current(in: defaults) == initialLayout,
                "reinstalled utilities return to their original positions")
@@ -1443,9 +1449,11 @@ enum NotchTests {
         defaults.set(NotchIdleContent.none.rawValue, forKey: DefaultsKey.notchIdleContent)
         suite.expect(NotchSupport.modules(in: defaults).contains(.mixer), "the full mixer has a direct destination")
         defaults.set(false, forKey: AppFeature.mixer.availabilityKey)
+        defaults.set(false, forKey: DefaultsKey.volumeMixerEnabled)
         suite.expect(!NotchSupport.modules(in: defaults).contains(.mixer)
                && !NotchSupport.controls(in: defaults).contains(.volume), "mixer availability gates its module and volume control")
         defaults.set(true, forKey: AppFeature.mixer.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.volumeMixerEnabled)
         suite.expect(NotchControlItem.allCases.filter { $0.setupRequirement == .none } == [.panel],
                      "every unavailable island control with a setup path has a navigation target")
         suite.expect(NotchControlItem.allCases.filter(\.isLevel) == [.volume, .brightness, .keyboardLight]

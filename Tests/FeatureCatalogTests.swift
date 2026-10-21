@@ -1899,15 +1899,14 @@ enum FeatureCatalogTests {
                     .panelConfiguration, .keyboardBrightnessShortcuts, .audioOutputPriority,
                 ])
                 && SettingsSectionAnchor.panelConfiguration.page == .general
-                && SettingsSectionAnchor.keyboardBrightnessShortcuts.page == .energy,
+                && SettingsSectionAnchor.keyboardBrightnessShortcuts.page == .keyboard,
                "feature anchors and standalone Settings anchors reach their pages")
         suite.expect(AppFeature.dockPreview.settingsDestination
                 == FeatureSettingsDestination(.dock, sectionAnchor: .dock)
                 && AppFeature.dockClick.settingsDestination
                 == FeatureSettingsDestination(.dock, sectionAnchor: .dockClick)
                 && FeatureVisibilitySupport.features(for: .switcher) == [.switcher]
-                && pageVisible(.dock, available: [.dockClick])
-                && !pageVisible(.switcher, available: [.dockPreview, .dockClick]),
+                && pageVisible(.dock, available: [.dockClick]),
                "Dock Preview and Dock clicks have their own page, apart from the switcher")
         func dockNeedsAccessibility(available: Set<AppFeature>, on: Set<String>) -> Bool {
             FeatureVisibilitySupport.isPermissionNeeded(

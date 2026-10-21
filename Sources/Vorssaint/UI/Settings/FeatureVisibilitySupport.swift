@@ -67,18 +67,17 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
             return .audioOutput
         case .audioPriority, .micMute:
             return .audioInput
-        case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .keyboardBrightnessShortcuts:
+        case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .wallpaper:
             return .energy
         case .scrollDirection, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts,
              .middleClick, .mouseClickDebounce:
             return .mouse
-        case .quitProtection, .keyboardDebounce, .superKey, .cleaningMode:
+        case .quitProtection, .keyboardDebounce, .superKey, .cleaningMode, .keyboardBrightnessShortcuts:
             return .keyboard
-        case .wallpaper: return .wallpaper
         case .scratchpad:
             return .scratchpad
         case .switcher: return .switcher
-        case .dock, .dockClick, .spacesOrder, .autoQuit: return .dock
+        case .dock, .dockClick, .autoQuit: return .dock
         case .clipboardHistory, .pastePlain: return .clipboard
         case .quickLauncher, .cameraPreview: return .shortcuts
         case .screenshot, .colorPicker, .screenOCR:
@@ -86,7 +85,7 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
         case .screenRecorder:
             return .screenRecorder
         case .fanControl: return .monitor
-        case .windowMaximizer: return .windowLayout
+        case .windowMaximizer, .spacesOrder: return .windowLayout
         }
     }
 }
@@ -292,7 +291,7 @@ extension AppFeature {
         case .switcher: return FeatureSettingsDestination(.switcher, sectionAnchor: .switcher)
         case .dockPreview: return FeatureSettingsDestination(.dock, sectionAnchor: .dock)
         case .dockClick: return FeatureSettingsDestination(.dock, sectionAnchor: .dockClick)
-        case .spacesOrder: return FeatureSettingsDestination(.dock, sectionAnchor: .spacesOrder)
+        case .spacesOrder: return FeatureSettingsDestination(.windowLayout, sectionAnchor: .spacesOrder)
         case .windowMaximizer:
             return FeatureSettingsDestination(.windowLayout, sectionAnchor: .windowMaximizer)
         case .windowLayout: return FeatureSettingsDestination(.windowLayout)
@@ -372,7 +371,7 @@ extension AppFeature {
         case .cameraPreview:
             return FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview)
         case .wallpaper:
-            return FeatureSettingsDestination(.wallpaper, sectionAnchor: .wallpaper)
+            return FeatureSettingsDestination(.energy, sectionAnchor: .wallpaper)
         case .notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch: return FeatureSettingsDestination(.notch)
         case .notchMascot: return FeatureSettingsDestination(.notchMascot)
         case .radialMenu: return FeatureSettingsDestination(.radialMenu)
@@ -402,17 +401,15 @@ enum FeatureVisibilitySupport {
     /// always shows (General, Shortcuts, About and friends).
     static func features(for page: SettingsPage) -> [AppFeature] {
         switch page {
-        case .energy: return [.keepAwake, .brightness, .extraBrightness, .bluetoothSleep]
+        case .energy: return [.keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .wallpaper]
         case .monitor: return monitorFeatures
         case .switcher: return [.switcher]
-        case .dock: return [.dockPreview, .dockClick, .spacesOrder, .autoQuit]
-        case .windowLayout: return [.windowLayout, .windowMaximizer]
+        case .dock: return [.dockPreview, .dockClick, .autoQuit]
+        case .windowLayout: return [.windowLayout, .windowMaximizer, .spacesOrder]
         case .wallpaper: return [.wallpaper]
         case .clipboard: return [.clipboardHistory, .pastePlain]
         case .shelf: return [.shelf]
         case .media: return [.mediaTools]
-        case .audioInput: return [.micMute, .audioPriority, .mixer]
-        case .audioOutput: return [.mixer, .soundOutputSwitcher, .musicBlock, .audioPriority]
         case .scratchpad: return [.scratchpad]
         case .urlCleaner: return [.urlCleaner]
         case .cleaner: return [.cleaner]
@@ -422,20 +419,20 @@ enum FeatureVisibilitySupport {
         case .killProcess: return [.killProcess]
         case .portManager: return [.portManager]
         case .textSnippets: return [.textSnippets]
-        case .screenshot: return [.screenshot, .screenOCR, .colorPicker]
-        case .screenRecorder: return [.screenRecorder]
         case .notch: return [.notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch, .notchMascot]
         case .notchMascot: return [.notchMascot]
         case .radialMenu: return [.radialMenu]
         case .commandBar: return [.commandBar]
-        case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard:
+        case .screenshot: return [.screenshot, .screenOCR, .colorPicker]
+        case .screenRecorder: return [.screenRecorder]
+        case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard, .audioInput, .audioOutput:
             return []
         }
     }
 
     static func isPageVisible(_ page: SettingsPage,
                               isAvailable: (AppFeature) -> Bool) -> Bool {
-        if page == .dock || page == .windowLayout { return true }
+        if page == .dock || page == .windowLayout || page == .switcher || page == .screenshot || page == .screenRecorder { return true }
         let gate = features(for: page)
         return gate.isEmpty || gate.contains { $0.isVisibleInSettings(isAvailable: isAvailable) }
     }

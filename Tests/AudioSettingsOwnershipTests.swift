@@ -13,6 +13,15 @@ enum AudioSettingsOwnershipTests {
         typealias SettingsCard<C: View> = AudioSettingsOwnershipTests.SettingsCard<C>
         let l10n = TextCatalog()
         var pageStrings: SettingsPageStrings { FeatureStrings.settingsPages(.enUS) }
+        var microphoneCard: some View {
+            VStack {
+                AudioInputDeviceControls()
+                AudioInputMuteCard()
+            }
+        }
+        var inputPriorityCard: some View {
+            AudioInputPriorityControls()
+        }
     }
     struct OutputPage: View {
         typealias MixerSection = AudioSettingsOwnershipTests.MixerSection
@@ -22,6 +31,12 @@ enum AudioSettingsOwnershipTests {
         let l10n = TextCatalog()
         var pageStrings: SettingsPageStrings { FeatureStrings.settingsPages(.enUS) }
         var soundOutputSwitcherCard: some View { Marker(name: "output-picker") }
+        var outputPriorityAndSwitcherCard: some View {
+            VStack {
+                AudioOutputPriorityControls()
+                soundOutputSwitcherCard
+            }
+        }
     }
     struct MixerDevices: View {
         typealias AudioInputDeviceControls = AudioSettingsOwnershipTests.AudioInputDeviceControls
@@ -35,7 +50,10 @@ enum AudioSettingsOwnershipTests {
         var body: some View { audioDevicesSection }
         func inputMessage(_ text: String, systemImage: String) -> some View { Text(text) }
     }
-    struct AudioInputDeviceControls: View { var body: some View { Marker(name: "microphone") } }
+    struct AudioInputDeviceControls: View {
+        var title: String? = nil
+        var body: some View { Marker(name: "microphone") }
+    }
     struct AudioInputMuteCard: View { var body: some View { Marker(name: "mute") } }
     struct AudioInputPriorityControls: View { var body: some View { Marker(name: "input-priority") } }
     struct AudioOutputPriorityControls: View { var body: some View { Marker(name: "output-priority") } }
@@ -52,6 +70,7 @@ enum AudioSettingsOwnershipTests {
     struct SettingsCard<Content: View>: View {
         let content: Content
         init(title: String? = nil, @ViewBuilder content: () -> Content) { self.content = content() }
+        init<Accessory: View>(title: String? = nil, @ViewBuilder headerAccessory: () -> Accessory, @ViewBuilder content: () -> Content) { self.content = content() }
         var body: some View { content }
     }
     private final class MarkerView: NSView { var name = "" }

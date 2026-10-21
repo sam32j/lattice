@@ -26,6 +26,8 @@ enum SettingsPanelFilterTests {
             defaults.set(false, forKey: feature.availabilityKey)
             for key in feature.enabledKeys { defaults.set(false, forKey: key) }
         }
+        defaults.set(false, forKey: DefaultsKey.screenshotEnabled)
+        defaults.set(false, forKey: DefaultsKey.screenRecorderEnabled)
         Layout.defaults = defaults
         defer { Layout.defaults = nil }
         suite.expect(Layout.isVisibleInPanel(.controls),
@@ -45,6 +47,7 @@ enum SettingsPanelFilterTests {
                      && controls.items(editing: true).contains(.superKey),
                      "Quick Controls still respects hidden rows outside edit mode")
         defaults.set(true, forKey: AppFeature.screenshot.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.screenshotEnabled)
         let utilities = Utilities(defaults)
         suite.expect(utilities.items(editing: false) == [.screenshot]
                      && utilities.items(editing: true) == [.screenshot],
