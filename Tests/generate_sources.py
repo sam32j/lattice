@@ -113,6 +113,22 @@ def main():
     write("SettingsXDRConsumer.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests.Consumer {\n"
           + "var offersXDR: Bool { " + xdr_visibility + " }\n}\n")
     text_model = "Sources/Vorssaint/Services/QuickTools/ScreenshotEditorController.swift"
+    write("ScreenshotReopenedBlur.swift", "import AppKit\nextension ScreenshotReopenedBlurTests {\nfinal class Model {\n"
+          + "let baseImage: CGImage\nlet scale: CGFloat\nvar annotations: [ScreenshotSupport.Annotation]\n"
+          + "var tool = ScreenshotSupport.Tool.select\nvar color = ScreenshotSupport.ColorID.red\n"
+          + "var stroke = ScreenshotSupport.StrokeID.medium\nvar textSize = 18\nvar blurLevel = 3\n"
+          + "var blurStyle = ScreenshotSupport.BlurStyleID.pixelate\nvar blurTextOnly = false\n"
+          + "var arrowStyle = ScreenshotSupport.ArrowStyleID.filled\nvar sticker = ScreenshotSupport.StickerID.check\n"
+          + "var annotationShadowsEnabled = false\nvar cornerRadiusEnabled = false\n"
+          + "var backdropStyle = ScreenshotSupport.BackdropStyle()\nvar backdropPresets: [ScreenshotSupport.BackdropStyle] = []\n"
+          + "var watermarkStyle = ScreenshotSupport.WatermarkStyle()\nvar watermarkPresets: [ScreenshotSupport.WatermarkStyle] = []\n"
+          + "var pixelated: [Int: CGImage] = [:]\nvar softBlurred: [Int: CGImage] = [:]\n"
+          + "func reloadBackdropImageIfNeeded() {}\nfunc reloadWatermarkImageIfNeeded() {}\nfunc recordCleanState() {}\n"
+          + "".join(declaration(text_model, prefix).replace(
+              "    private func ensureBlurSample(", "    @discardableResult private func ensureBlurSample(") for prefix in [
+              "    init(image: CGImage, scale: CGFloat, annotations:",
+              "    private func ensureBlurSample(", "    private func ensureBlurSamplesForAnnotations()"])
+          + "}\n}\n")
     write("ScreenshotCapturePayload.swift", "import AppKit\nextension ScreenshotCapturePresentationTests {\nenum Payload {\n"
           + declaration("Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift", "    struct Capture {")
           + "}\n}\n")

@@ -117,6 +117,16 @@ enum ScreenshotEditorSelectionTests {
         model.activeHandle = nil
         model.beginSelectDrag(at: CGPoint(x: 10, y: 10))
         suite.expect(model.activeHandle == nil, "highlights have no resize handles even at their corner")
+        model.annotations = [.init(tool: .highlight, rect: CGRect(x: 10, y: 10, width: 200, height: 80))]
+        let highlightID = model.annotations[0].id
+        suite.expect(model.hitTest(CGPoint(x: 100, y: 50), includeShapeInteriors: false) == nil,
+                     "creation tools can place new marks inside an existing highlight")
+        suite.expect(model.hitTest(CGPoint(x: 10, y: 50), includeShapeInteriors: false) == highlightID
+                     && model.hitTest(CGPoint(x: 100, y: 50)) == highlightID,
+                     "highlight edges remain selectable and the pointer still selects their interiors")
+        model.annotations = [.init(tool: .highlight, rect: CGRect(x: 10, y: 10, width: 200, height: 20))]
+        suite.expect(model.hitTest(CGPoint(x: 100, y: 20), includeShapeInteriors: false) == nil,
+                     "a normal text-line highlight leaves its center free for new text and counters")
         model.annotations = []
         model.selectedID = nil
         model.textWords = [.init(text: "Read", rect: CGRect(x: 10, y: 10, width: 80, height: 20), line: 0)]
@@ -142,6 +152,10 @@ enum ScreenshotEditorSelectionTests {
         retina.continueSelectDrag(to: CGPoint(x: 270, y: 134))
         suite.expect(retina.annotations[0].textSize > smallText.textSize,
                      "dragging a scale grip vertically also increases text scale")
+        retina.continueSelectDrag(to: CGPoint(x: 5000, y: 5000))
+        retina.finishSelectDrag(at: CGPoint(x: 5000, y: 5000), isTap: false)
+        suite.expect(retina.annotations[0].textSize == 96 && retina.textSize == 96,
+                     "text scale handles obey the same maximum as the font-size control")
         let stroke = ScreenshotSupport.Annotation(tool: .freehand,
             points: [CGPoint(x: 100, y: 300), CGPoint(x: 500, y: 300)])
         retina.annotations = [stroke]

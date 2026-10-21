@@ -289,6 +289,7 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         watermarkPresets = ScreenshotSupport.decodedWatermarkPresets(
             defaults.string(forKey: DefaultsKey.screenshotWatermarkPresets)).filter { $0.kind == .image }
         pixelated = [:]
+        ensureBlurSamplesForAnnotations()
         reloadBackdropImageIfNeeded()
         reloadWatermarkImageIfNeeded()
         recordCleanState()
@@ -998,7 +999,8 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                 if handle == .bottomRight {
                     let factor = max(0.2, hypot(max(0, point.x - moveOrigin.minX), max(0, point.y - moveOrigin.minY))
                         / max(1, hypot(moveOrigin.width, moveOrigin.height)))
-                    annotation.textSize = max(8, min(128, Int((CGFloat(moveTextSize) * factor).rounded())))
+                    annotation.textSize = ScreenshotSupport.sanitizedTextSize(
+                        Int((CGFloat(moveTextSize) * factor).rounded()))
                     annotation.rect = ScreenshotRenderer.textBounds(annotation.text, at: moveOrigin.origin,
                         textSize: annotation.textSize, scale: scale,
                         boundingWidth: annotation.isBounded ? max(40, moveOrigin.width * factor) : nil)
@@ -1249,8 +1251,12 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                     return annotation.id
                 }
             case .highlight:
-                if ScreenshotEditorGeometry.highlightRects(annotation).contains(where: {
-                    $0.insetBy(dx: -tolerance / 2, dy: -tolerance / 2).contains(point)
+                if ScreenshotEditorGeometry.highlightRects(annotation).contains(where: { rect in
+                    guard rect.insetBy(dx: -tolerance / 2, dy: -tolerance / 2).contains(point) else { return false }
+                    if includeShapeInteriors { return true }
+                    let edgeBand = min(tolerance, min(rect.width, rect.height) / 4)
+                    let inner = rect.insetBy(dx: edgeBand, dy: edgeBand)
+                    return inner.isEmpty || inner.width <= 0 || inner.height <= 0 || !inner.contains(point)
                 }) { return annotation.id }
             case .rect, .ellipse, .pixelate, .redact:
                 let outer = annotation.rect.insetBy(dx: -tolerance / 2, dy: -tolerance / 2)
