@@ -24,6 +24,7 @@ struct WindowLayoutSettings: View {
     @AppStorage(DefaultsKey.windowLayoutScreenGap) private var screenGap = 0
     @AppStorage(DefaultsKey.windowLayoutMarginPercent) private var marginPercent = WindowLayoutMargin.defaultPercent
     @AppStorage(DefaultsKey.windowLayoutSideRepeatCyclesThirds) private var sideRepeatCyclesThirds = false
+    @AppStorage(DefaultsKey.spacesOrderEnabled) private var spacesOrderEnabled = false
     @State private var directionalError: String?
     @State private var systemTilingEnabled = WindowEdgeSnapSupport.isSystemTilingEnabled
     // Same preference the Switcher page exposes next to Dock Preview; it is
@@ -35,31 +36,42 @@ struct WindowLayoutSettings: View {
         FeatureStrings.windowLayout(l10n.language)
     }
 
+    private var windowLayoutInstalled: Bool {
+        AppFeature.windowLayout.isAvailable
+    }
+
     var body: some View {
         Form {
-            if AppFeature.windowLayout.isAvailable {
+            Section {
+                Toggle(text.enable, isOn: Binding(
+                    get: { windowLayoutInstalled },
+                    set: { enabled in
+                        FeatureRuntime.shared.setAvailable([.windowLayout], enabled)
+                        WindowLayoutService.shared.syncWithPreferences()
+                    }
+                ))
+            }
+
+            Group {
                 Section {
                     Toggle(text.showInPanel, isOn: $showInPanel)
-                    Text(text.caption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Label(text.permissionCaption, systemImage: "hand.raised")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
-            }
 
-            if !permissions.accessibility {
-                Section(l10n.s.permissionRequired) {
-                    PermissionRow(kind: .accessibility)
+                if AppFeature.spacesOrder.isPresentInControls() {
+                    spacesOrderSection
+                        .settingsFormSectionAnchor(.spacesOrder)
                 }
-            }
 
-            if AppFeature.windowMaximizer.isPresentInControls() {
-                windowMaximizerSection
-            }
+                if !permissions.accessibility {
+                    Section(l10n.s.permissionRequired) {
+                        PermissionRow(kind: .accessibility)
+                    }
+                }
 
-            if AppFeature.windowLayout.isAvailable {
+                if AppFeature.windowMaximizer.isPresentInControls() {
+                    windowMaximizerSection
+                }
+
                 Section(text.gestureSection) {
                     Toggle(text.edgeSnapEnable, isOn: $edgeSnapEnabled)
                         .onChange(of: edgeSnapEnabled) { _, _ in
@@ -218,12 +230,26 @@ struct WindowLayoutSettings: View {
                     }
                 }
             }
+            .disabled(!windowLayoutInstalled)
+            .opacity(windowLayoutInstalled ? 1 : 0.55)
         }
         .formStyle(.grouped)
         .onAppear { refreshSystemTilingState() }
         .onReceive(NotificationCenter.default.publisher(
             for: NSApplication.didBecomeActiveNotification)) { _ in
             refreshSystemTilingState()
+        }
+    }
+
+    private var spacesOrderSection: some View {
+        Section {
+            Toggle(l10n.s.spacesOrderName, isOn: $spacesOrderEnabled)
+                .onChange(of: spacesOrderEnabled) { _, _ in
+                    FeatureRuntime.shared.sync([.spacesOrder])
+                }
+            Text(l10n.s.spacesOrderCaption)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
