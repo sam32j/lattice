@@ -272,7 +272,7 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         watermarkStyle = ScreenshotSupport.WatermarkStyle.decoded(
             defaults.string(forKey: DefaultsKey.screenshotWatermarkStyle))
         watermarkPresets = ScreenshotSupport.decodedWatermarkPresets(
-            defaults.string(forKey: DefaultsKey.screenshotWatermarkPresets))
+            defaults.string(forKey: DefaultsKey.screenshotWatermarkPresets)).filter { $0.kind == .image }
         pixelated = [:]
         reloadBackdropImageIfNeeded()
         reloadWatermarkImageIfNeeded()
@@ -401,11 +401,15 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
 
     // MARK: - Watermark presets
 
-    /// Keeps the current mark, placement and all, in the presets row;
-    /// duplicates are ignored.
-    func saveCurrentWatermarkAsPreset() {
-        let style = watermarkStyle.sanitized()
-        guard style.kind != .none, !watermarkPresets.contains(style) else { return }
+    func addWatermarkPreset(_ preset: ScreenshotSupport.WatermarkStyle) {
+        let style = preset.sanitized()
+        guard style.kind == .image else { return }
+        if let existing = watermarkPresets.firstIndex(where: {
+            $0.kind == .image && $0.imagePath == style.imagePath
+        }) {
+            watermarkPresets[existing] = style
+            return
+        }
         watermarkPresets = Array((watermarkPresets + [style])
             .suffix(ScreenshotSupport.backdropPresetLimit))
     }
