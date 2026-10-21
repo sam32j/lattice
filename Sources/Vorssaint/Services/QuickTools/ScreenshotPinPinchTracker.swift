@@ -74,4 +74,9 @@ struct ScreenshotPinGestureSource {
     mutating func finish(_ source: Source) {
         if owner == source { ended = true }
     }
+
+    mutating func reset() {
+        owner = nil
+        ended = false
+    }
 }
