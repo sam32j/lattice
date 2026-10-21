@@ -12,7 +12,20 @@ import Vision
 final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
     @Published private(set) var baseImage: CGImage
     @Published var annotations: [ScreenshotSupport.Annotation] = []
-    @Published var selectedID: UUID?
+    @Published var selectedIDs: Set<UUID> = [] {
+        didSet {
+            if let selectedID, let annotation = annotations.first(where: { $0.id == selectedID }) {
+                if annotation.tool == .rect || annotation.tool == .redact {
+                    cornerRadiusEnabled = annotation.isRounded
+                }
+            }
+        }
+    }
+    /// Single-object tools are unavailable for a mixed selection.
+    var selectedID: UUID? {
+        get { selectedIDs.count == 1 ? selectedIDs.first : nil }
+        set { selectedIDs = newValue.map { [$0] } ?? [] }
+    }
     @Published var editingTextID: UUID?
     @Published var tool: ScreenshotSupport.Tool {
         didSet {
@@ -215,6 +228,8 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
     private var moveOrigin: CGRect = .zero
     private var movePoints: [CGPoint] = []
     private var duplicateOnDrag = false
+    private var additiveSelectionClick = false
+    private var movingSelection: [ScreenshotSupport.Annotation] = []
     private var moveTextSize = 18
     private var activeHandle: ScreenshotSupport.Handle?
     private var cropResizeOrigin: CGRect?
@@ -727,6 +742,14 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         duplicateOnDrag = modifiers.contains(.option)
         dragRegistered = false
         editingSelectedAnnotation = false
+        additiveSelectionClick = false
+        movingSelection = []
+        if modifiers.contains(.command), tool != .crop {
+            tool = .select
+            textSelectionEnabled = false
+            beginSelectDrag(at: point, extending: true)
+            return
+        }
         if tool != .select, tool != .crop, selectedAnnotationOwns(point) {
             editingSelectedAnnotation = true
             beginSelectDrag(at: point)
@@ -787,13 +810,43 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         }
     }
 
-    private func beginSelectDrag(at point: CGPoint) {
+    func resizeHandle(at point: CGPoint) -> ScreenshotSupport.Handle? {
+        if tool == .crop {
+            return activeHandle ?? cropDraft.flatMap { ScreenshotSupport.handle(at: point, rect: $0, tolerance: 14 * scale) }
+        }
+        guard let selectedID, editingTextID != selectedID,
+              let mark = annotations.first(where: { $0.id == selectedID }), mark.tool.resizesWithHandles else { return nil }
+        return activeHandle ?? ScreenshotEditorGeometry.selectionHandle(at: point, mark: mark, tolerance: 12 * scale)
+    }
+
+    private func beginSelectDrag(at point: CGPoint, extending: Bool = false) {
+        additiveSelectionClick = extending
+        movingSelection = []
+        if extending {
+            var selection = selectedIDs
+            if let hit = hitTest(point) { selection.formSymmetricDifference([hit]) }
+            if selection.count == 1, let id = selection.first,
+               let mark = annotations.first(where: { $0.id == id }) {
+                // Style setters edit the selected annotation. Clear selection
+                // while reading its controls so selection itself is not an edit.
+                selectedID = nil
+                syncControls(to: mark)
+            }
+            selectedIDs = selection
+            editingTextID = nil
+            clearTextSelection()
+            return
+        }
         if textSelectionEnabled {
             selectedID = nil
             if let word = wordIndex(at: point) {
                 textSelectionAnchor = point
                 selectedWordIndexes = [word]
             }
+            return
+        }
+        if selectedIDs.count > 1, let hit = hitTest(point), selectedIDs.contains(hit) {
+            movingSelection = annotations.filter { selectedIDs.contains($0.id) }
             return
         }
         if let selectedID,
@@ -830,14 +883,14 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
     }
 
     func continueDrag(to rawPoint: CGPoint, constrained: Bool = false) {
-        let point = ScreenshotEditorGeometry.shapeEnd(from: dragStart, to: rawPoint, tool: tool, constrained: constrained)
         if editingSelectedAnnotation {
-            continueSelectDrag(to: point)
+            continueSelectDrag(to: rawPoint, constrained: constrained)
             return
         }
+        let point = ScreenshotEditorGeometry.shapeEnd(from: dragStart, to: rawPoint, tool: tool, constrained: constrained)
         switch tool {
         case .select:
-            continueSelectDrag(to: point)
+            continueSelectDrag(to: point, constrained: constrained)
         case .crop:
             let bounds = CGRect(origin: .zero, size: imageSize)
             if let handle = activeHandle, let origin = cropResizeOrigin {
@@ -874,10 +927,29 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         }
     }
 
-    private func continueSelectDrag(to point: CGPoint) {
+    private func continueSelectDrag(to point: CGPoint, constrained: Bool = false) {
+        guard !additiveSelectionClick else { return }
         if let anchor = textSelectionAnchor {
             selectedWordIndexes = ScreenshotSupport.wordSelection(
                 anchor: anchor, current: point, boxes: textWords.map(\.rect))
+            return
+        }
+        if !movingSelection.isEmpty {
+            guard hypot(point.x - dragStart.x, point.y - dragStart.y) > 0.5 * scale else { return }
+            if !dragRegistered { registerUndo(); dragRegistered = true }
+            if duplicateOnDrag {
+                movingSelection = movingSelection.map(ScreenshotEditorGeometry.duplicate)
+                annotations.append(contentsOf: movingSelection)
+                selectedIDs = Set(movingSelection.map(\.id))
+                annotations = ScreenshotSupport.renumberingCounters(annotations)
+                duplicateOnDrag = false
+            }
+            let delta = CGPoint(x: point.x - dragStart.x, y: point.y - dragStart.y)
+            for origin in movingSelection {
+                guard let index = annotations.firstIndex(where: { $0.id == origin.id }) else { continue }
+                annotations[index].rect = origin.rect.offsetBy(dx: delta.x, dy: delta.y)
+                annotations[index].points = origin.points.map { CGPoint(x: $0.x + delta.x, y: $0.y + delta.y) }
+            }
             return
         }
         guard var selectedID,
@@ -888,7 +960,7 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             registerUndo()
             dragRegistered = true
         }
-        if duplicateOnDrag {
+        if duplicateOnDrag, activeHandle == nil {
             let copy = ScreenshotEditorGeometry.duplicate(annotations[index])
             annotations.append(copy)
             annotations = ScreenshotSupport.renumberingCounters(annotations)
@@ -919,8 +991,8 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                 if handle == .topLeft { points[0] = point } else { points[1] = point }
                 annotations[index].points = points
             } else {
-                annotations[index].rect = ScreenshotSupport.resizedRect(
-                    moveOrigin, dragging: handle, to: point)
+                annotations[index].rect = ScreenshotEditorGeometry.resizedShape(
+                    moveOrigin, handle: handle, to: point, tool: annotations[index].tool, constrained: constrained)
             }
             return
         }
@@ -945,7 +1017,10 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
             dragRegistered = false
             editingSelectedAnnotation = false
             duplicateOnDrag = false
+            additiveSelectionClick = false
+            movingSelection = []
         }
+        if additiveSelectionClick { return }
         if editingSelectedAnnotation {
             finishSelectDrag(at: point, isTap: isTap)
             return
@@ -1061,6 +1136,7 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
 
     private func finishSelectDrag(at point: CGPoint, isTap: Bool) {
         textSelectionAnchor = nil
+        if additiveSelectionClick { additiveSelectionClick = false; return }
         if dragRegistered, let selectedID, let mark = annotations.first(where: { $0.id == selectedID }) {
             self.selectedID = nil
             syncControls(to: mark)
@@ -1183,14 +1259,14 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
     // MARK: - Edits
 
     func deleteSelected() {
-        guard let selectedID else { return }
-        guard annotations.contains(where: { $0.id == selectedID }) else { return }
+        let ids = selectedIDs.intersection(annotations.map(\.id))
+        guard !ids.isEmpty else { return }
         registerUndo()
-        annotations.removeAll { $0.id == selectedID }
+        annotations.removeAll { ids.contains($0.id) }
         annotations = ScreenshotSupport.renumberingCounters(annotations)
         self.selectedID = nil
         editingTextID = nil
-        if newTextID == selectedID { newTextID = nil }
+        if let newTextID, ids.contains(newTextID) { self.newTextID = nil }
     }
 
     /// Moves the selected annotation one step through the drawing order, so a
@@ -1559,7 +1635,8 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
                 return true
             case kVK_ANSI_P: pin(); return true
             case kVK_Delete, kVK_ForwardDelete:
-                discardAndClose()
+                if model.annotations.contains(where: { model.selectedIDs.contains($0.id) }) { model.deleteSelected() }
+                else { discardAndClose() }
                 return true
             case kVK_ANSI_0: model.zoomOverride = nil; return true
             case kVK_ANSI_1: model.zoomOverride = 1 / model.scale; return true
@@ -1587,7 +1664,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
                 model.tool = .select
             } else if !model.selectedWordIndexes.isEmpty {
                 model.clearTextSelection()
-            } else if model.selectedID != nil {
+            } else if !model.selectedIDs.isEmpty {
                 model.selectedID = nil
             } else {
                 window?.performClose(nil)

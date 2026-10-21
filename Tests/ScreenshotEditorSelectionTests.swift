@@ -7,30 +7,80 @@ import AppKit
 enum ScreenshotEditorSelectionTests {
     class State {
         var annotations: [ScreenshotSupport.Annotation] = []
-        var selectedID: UUID?, editingTextID: UUID?
+        var selectedIDs: Set<UUID> = []
+        var selectedID: UUID? {
+            get { selectedIDs.count == 1 ? selectedIDs.first : nil }
+            set { selectedIDs = newValue.map { [$0] } ?? [] }
+        }
+        var editingTextID: UUID?, newTextID: UUID?
         var activeHandle: ScreenshotSupport.Handle?
         var moveOrigin = CGRect.zero
         var movePoints: [CGPoint] = []
         var dragStart = CGPoint.zero
         var dragRegistered = false
         var duplicateOnDrag = false
+        var additiveSelectionClick = false
+        var movingSelection: [ScreenshotSupport.Annotation] = []
         var moveTextSize = 18
         var scale: CGFloat = 1
         var tool = ScreenshotSupport.Tool.select
         var textSelectionEnabled = false
+        var cornerRadiusEnabled = false
+        var dirtyRefreshes = 0
         var textSelectionAnchor: CGPoint?
         var selectedWordIndexes: [Int] = []
         var textWords: [ScreenshotSupport.RecognizedWord] = []
         var imageSize = CGSize(width: 800, height: 600)
+        var cropDraft: CGRect?
         var undoSnapshots: [[ScreenshotSupport.Annotation]] = []
         func registerUndo() { undoSnapshots.append(annotations) }
-        func syncControls(to annotation: ScreenshotSupport.Annotation) {}
+        func refreshDirtyState() { dirtyRefreshes += 1 }
+        var color = ScreenshotSupport.ColorID.red
+        var stroke = ScreenshotSupport.StrokeID.medium
+        var textSize = 18
+        var blurLevel = 3
+        var blurStyle = ScreenshotSupport.BlurStyleID.pixelate
+        var blurTextOnly = false
+        var arrowStyle = ScreenshotSupport.ArrowStyleID.filled
+        var sticker = ScreenshotSupport.StickerID.check
         func clearTextSelection() { selectedWordIndexes = [] }
         func wordIndex(at point: CGPoint) -> Int? { textWords.firstIndex { $0.rect.contains(point) } }
     }
 
     static func run(_ suite: TestSuite) {
+        let style = Model()
+        let shape = ScreenshotSupport.Annotation(tool: .rect, hasCornerRadius: false)
+        style.annotations = [shape]
+        style.selectedID = shape.id
+        style.applyCornerRadiusToSelection()
+        suite.expect(style.undoSnapshots.isEmpty && style.dirtyRefreshes == 0,
+                     "selecting an unchanged corner style is not a document edit")
+        style.cornerRadiusEnabled = true
+        style.applyCornerRadiusToSelection()
+        suite.expect(style.annotations[0].isRounded && style.undoSnapshots.first == [shape],
+                     "changing corner style saves one undo snapshot of the unmodified shape")
         let model = Model()
+        let resizing = Model()
+        let box = ScreenshotSupport.Annotation(tool: .rect,
+            rect: CGRect(x: 50, y: 50, width: 200, height: 120))
+        resizing.annotations = [box]
+        resizing.selectedID = box.id
+        resizing.dragStart = CGPoint(x: 250, y: 170)
+        resizing.beginSelectDrag(at: resizing.dragStart)
+        resizing.duplicateOnDrag = true
+        resizing.continueSelectDrag(to: CGPoint(x: 280, y: 200))
+        suite.expect(resizing.annotations.count == 1 && resizing.annotations[0].id == box.id
+                     && resizing.annotations[0].rect == CGRect(x: 50, y: 50, width: 230, height: 150),
+                     "Option held on a resize grip resizes the original shape without duplicating it")
+        for tool in [ScreenshotSupport.Tool.rect, .ellipse, .redact, .pixelate, .sticker] {
+            let mark = ScreenshotSupport.Annotation(tool: tool, rect: box.rect)
+            suite.expect(ScreenshotEditorGeometry.selectionHandle(at: CGPoint(x: 150, y: 50),
+                mark: mark, tolerance: 8) == nil,
+                "shape edges have no invisible midpoint resize grip: \(tool)")
+            suite.expect(ScreenshotEditorGeometry.selectionHandle(at: CGPoint(x: 250, y: 170),
+                mark: mark, tolerance: 8) == .bottomRight,
+                "shape bounding-box corners remain resizable: \(tool)")
+        }
         let text = ScreenshotSupport.Annotation(tool: .text,
             rect: CGRect(x: 40, y: 40, width: 120, height: 36), text: "Drag me", textSize: 18)
         model.annotations = [text]
