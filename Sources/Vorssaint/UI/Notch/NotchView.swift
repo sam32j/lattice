@@ -298,7 +298,10 @@ struct NotchView: View {
         VStack(spacing: NotchLayout.spacing) {
             header.zIndex(1)
             Group {
-                if service.showingSections {
+                if service.choosingFileDropDestination {
+                    NotchMediaDropTargets(service: service)
+                        .frame(width: service.contentSize.width, height: service.contentSize.height)
+                } else if service.showingSections {
                     NotchSectionsView(service: service)
                 } else if scrollsVertically {
                     ScrollView {
