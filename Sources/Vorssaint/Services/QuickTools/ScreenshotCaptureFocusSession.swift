@@ -22,7 +22,7 @@ final class ScreenshotCaptureFocusSession {
             }, restore: {
                 guard let previous, previous.processIdentifier != ownPID,
                       !previous.isTerminated else { return false }
-                NSApp.yieldActivation(to: previous)
+                ActivationHandoff.yield(to: previous)
                 return previous.activate(from: .current, options: [])
             })
         }
