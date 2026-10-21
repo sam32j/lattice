@@ -2,6 +2,38 @@
 
 ## [3.4.1-d.2] - 2026-10-17
 
+## [3.4.1-d.6] - 2026-10-21
+
+### Changed
+- **Settings**: Streamline feature toggles, consolidate display ownership, and prune dead code (#8)
+  - **Lattice Switcher**: Renamed from "Window Switcher" across
+  - **Window Management**: Added dedicated "Enable Window Management"
+  - **Dock Preview**: Hooked the main Dock Preview toggle to act as the
+  - **Screenshot & Screen Recording**: Made screenshot and screen
+  - **DisplaySettings**: Consolidated display brightness, XDR extra
+  - **Wallpaper Extraction**: Removed the standalone wallpaper feature and
+  - **Pruned Stubs**: Deleted `WallpaperSettings.swift` (view routes
+  - **Profile Shortcut List**: In Shortcuts Settings, converted radial
+  - **Title Case**: Standardized all sidebar item and category titles to
+  - **Dynamic Island**: Added localization for the "Dynamic Island" label
+  - **Wallpaper Management**: Added localization for "Enable Wallpaper
+  - **Menu Bar Column Sizing Subsystem**: Removed orphaned dead sizing
+  - **Dead Functions & Methods**: Pruned `featureGroupRows`, `setShown`,
+  - **Dead Properties & Observables**: Pruned `baseColor`,
+  - **Obsolete Types & Imports**: Pruned `typealias EnergySettings` and
+  - **Full Test Harness**: `./build.sh --test` passes with **115,981
+  - **Developer Build**: `./build.sh --dev --install` builds, signs, and
+  - **New Features**
+  - Added enable/disable controls for audio, microphone, screenshots,
+  - Added sound-output device switching controls and Music app
+  - Added editable radial-menu shortcuts with conflict detection.
+  - Reorganized Settings into clearer card-based pages, including combined
+  - **Bug Fixes**
+  - Improved unavailable-device messaging, control dimming, preference
+  - Updated localization and settings search/navigation labels.
+  - **Changes**
+  - Removed several legacy wallpaper, dock, capture, and menu presentation
+
 ## [3.4.1-d.5] - 2026-10-21
 
 ### Added
