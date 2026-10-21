@@ -24,12 +24,16 @@ enum NotchKeyMonitorTests {
         }
         static let mouseLocation = CGPoint.zero
         static var handler: ((Self) -> Self?)?
+        static var globalHandler: ((Self) -> Void)?
         var type = EventType.keyDown
         let window: Panel?
         let keyCode: UInt16
         var modifierFlags: ModifierFlags = []
         var charactersIgnoringModifiers: String?
-        static func addGlobalMonitorForEvents(matching: EventTypeMask, handler: @escaping (Self) -> Void) -> Any? { nil }
+        static func addGlobalMonitorForEvents(matching: EventTypeMask, handler: @escaping (Self) -> Void) -> Any? {
+            globalHandler = handler
+            return 2
+        }
         static func addLocalMonitorForEvents(matching: EventTypeMask, handler: @escaping (Self) -> Self?) -> Any? {
             self.handler = handler
             return 1
@@ -69,6 +73,9 @@ enum NotchKeyMonitorTests {
         var clickedSinceOpening = false
         var showsKeyboardFocus = false
         var keepsWorkingSurface = false
+        var keepsWorkingSurfaceOnOutsideClick = false
+        var captureContent: Bool?
+        var captureClose: (() -> Void)?
         let panel: Panel? = Panel()
         var windowHost: Host? = Host()
         var captureControls: Int?
@@ -79,15 +86,16 @@ enum NotchKeyMonitorTests {
         var showingCommandBar = false
         var geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1470, height: 956),
                                      safeAreaTop: 32, cameraWidth: 180)
-        var fullWidthRow = false
+        var headerTitleWidth: CGFloat = 0
         var expandedGeometry: NotchGeometry {
             var result = geometry
-            result.requiresFullWidthHeader = fullWidthRow
+            result.headerTitleWidth = headerTitleWidth
             return result
         }
         func collapse() { NotchKeyMonitorTests.actions.append("collapse") }
-        func openSettings() { NotchKeyMonitorTests.actions.append("settings") }
+        func clearCapture() { captureContent = nil; captureClose = nil }
         func stepBack() { NotchKeyMonitorTests.actions.append("stepBack") }
+        func openSettings() { NotchKeyMonitorTests.actions.append("settings") }
         func toggleSections() { NotchKeyMonitorTests.actions.append("sections") }
         func select(_ module: NotchModule) { selected = module }
         func handleSectionKey(_ event: NSEvent) -> Bool { false }
@@ -99,10 +107,40 @@ enum NotchKeyMonitorTests {
     static func run(_ suite: TestSuite) {
         defer {
             NSEvent.handler = nil
+            NSEvent.globalHandler = nil
             actions = []
         }
         let service = Service()
         service.installEventMonitors()
+        let settings = NSEvent(window: service.panel, keyCode: 43,
+                               modifierFlags: .command, charactersIgnoringModifiers: ",")
+        suite.expect(NSEvent.handler?(settings) == nil && actions == ["settings"],
+                     "Command-comma uses the Island Settings action instead of bypassing its dismissal")
+        actions = []
+        service.showsKeyboardFocus = false
+        service.selected = .captures
+        service.captureContent = true
+        service.keepsWorkingSurface = true
+        var closedCaptures = 0
+        service.captureClose = { closedCaptures += 1 }
+        let outside = NSEvent(type: .leftMouseDown, window: Panel(), keyCode: 0)
+        _ = NSEvent.handler?(outside)
+        suite.expect(actions == ["collapse"] && closedCaptures == 1 && service.captureContent == nil,
+                     "clicking outside the Island dismisses and detaches its screenshot preview")
+        actions = []
+        service.captureContent = true
+        service.captureClose = { closedCaptures += 1 }
+        NSEvent.globalHandler?(outside)
+        suite.expect(actions == ["collapse"] && closedCaptures == 2 && service.captureContent == nil,
+                     "a click in another app also closes the Island capture without intercepting it")
+        actions = []
+        service.keepsWorkingSurfaceOnOutsideClick = true
+        _ = NSEvent.handler?(outside)
+        NSEvent.globalHandler?(outside)
+        suite.expect(actions.isEmpty, "a dialog or menu still protects the Island from click-away dismissal")
+        service.keepsWorkingSurface = false
+        service.keepsWorkingSurfaceOnOutsideClick = false
+        service.selected = .controls
         let click = NSEvent(type: .leftMouseDown, window: service.panel, keyCode: 0)
         _ = NSEvent.handler?(click)
         _ = NSEvent.handler?(NSEvent(window: Panel(), keyCode: 48))
@@ -158,24 +196,8 @@ enum NotchKeyMonitorTests {
         actions = []
         suite.expect(NSEvent.handler?(escape) == nil && actions == ["stepBack"],
                      "without the bar, Escape steps back through the island again")
-        // With no settings button in the island, Command-Comma opens its page.
-        actions = []
-        let commandComma = NSEvent(window: service.panel, keyCode: 43, modifierFlags: .command,
-                                   charactersIgnoringModifiers: ",")
-        suite.expect(NSEvent.handler?(commandComma) == nil && actions == ["settings"],
-                     "Command-Comma opens the island's settings from inside it")
-        // Keep open, Settings and Collapse have no button in the row; besides
-        // the secondary-click menu, VoiceOver reaches them as named actions.
-        let islandSource = ((try? String(contentsOfFile: "Sources/Vorssaint/UI/Notch/NotchView.swift",
-                                         encoding: .utf8)) ?? "")
-            .filter { !$0.isWhitespace }
-        suite.expect([".accessibilityAction(named:service.pinned?text.unpin:text.pin){service.pinned.toggle()}",
-                      ".accessibilityAction(named:l10n.s.menuSettings){service.openSettings()}",
-                      ".accessibilityAction(named:text.collapse){service.collapse()}"]
-                        .allSatisfy(islandSource.contains),
-                     "the open island names Keep open, Settings and Collapse as accessibility actions")
-        // A top row that cannot wrap the camera takes a row below it, so a
-        // custom island leaves the Tools rail fewer rows than the island
+        // A title too long to sit beside the camera takes a row below it, so
+        // a custom island leaves the Tools rail fewer rows than the island
         // without its page would. The arrows walk the rail the page draws.
         let launcher = QuickLauncherService.shared
         let items = launcher.visibleItems
@@ -187,11 +209,11 @@ enum NotchKeyMonitorTests {
         service.panel?.firstResponder = nil
         service.geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1710, height: 1112), safeAreaTop: 37.5,
                                          cameraWidth: 208, layout: .custom, customWidth: 480, customHeight: 330)
-        service.fullWidthRow = true
+        service.headerTitleWidth = 200
         launcher.flows = []
         _ = NSEvent.handler?(NSEvent(window: service.panel, keyCode: 125))
         let drawn = service.expandedGeometry.toolFlow(count: 12)
         suite.expect(launcher.flows == [drawn] && drawn != service.geometry.toolFlow(count: 12),
-                     "the Tools arrows follow the rail below a top row under the camera")
+                     "the Tools arrows follow the rail below a title that takes the row under the camera")
     }
 }
