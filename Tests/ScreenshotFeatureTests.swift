@@ -30,6 +30,7 @@ enum ScreenshotFeatureTests {
         ScreenshotMissionControlDeferralTests.run(suite)
         ScreenshotEditorGeometryTests.run(suite)
         ScreenshotEditorSelectionTests.run(suite)
+        ScreenshotReopenedBlurTests.run(suite)
         ScreenshotEditorMultiSelectionTests.run(suite)
         ScreenshotEditorKeyTests.run(suite)
         ScreenshotSelectionChromeTests.run(suite)
