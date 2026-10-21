@@ -100,6 +100,7 @@ private struct WaitingActionButton: View {
         .buttonStyle(WaitingFeedbackButtonStyle(isDestructive: isDestructive))
         .onHover { isHovered = $0 }
         .help(tooltip)
+        .accessibilityLabel(tooltip)
     }
 }
 

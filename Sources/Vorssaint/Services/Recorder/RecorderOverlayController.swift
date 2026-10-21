@@ -13,7 +13,14 @@ final class RecorderOverlayController: ObservableObject {
     @Published var keysEnabled = false { didSet { updateKeyCapture() } }
     @Published var selectedCameraID: String? { didSet { if oldValue != selectedCameraID, cameraEnabled { configureCamera() } } }
     @Published var selectedMicrophoneID: String?
-    @Published var layout = RecorderCameraLayout() { didSet { frames.setLayout(layout); refreshLayout() } }
+    @Published var layout = RecorderCameraLayout() { didSet {
+        guard !isPreparingSnap else { return }
+        snapTimer?.invalidate()
+        snapTimer = nil
+        frames.setLayout(layout)
+        refreshLayout()
+    } }
+    private var isPreparingSnap = false
     @Published private(set) var errorMessage: String?
     @Published private(set) var cameraReady = false
     private(set) var pixelSize = CGSize.zero
@@ -109,22 +116,26 @@ final class RecorderOverlayController: ObservableObject {
         snapTimer?.invalidate()
         snapTimer = nil
         guard !layout.isFullArea, let cameraPanel, anchorRect.width > 0, pixelSize.width > 0, pixelSize.height > 0 else { return }
+        let startOrigin = cameraPanel.frame.origin
+        isPreparingSnap = true
         layout.snapToNearestEdge(in: pixelSize)
+        isPreparingSnap = false
         let targetFrame = layout.frame(in: pixelSize)
         let targetPoints = CGRect(x: anchorRect.minX + targetFrame.minX * anchorRect.width / pixelSize.width,
                                   y: anchorRect.minY + targetFrame.minY * anchorRect.height / pixelSize.height,
                                   width: targetFrame.width * anchorRect.width / pixelSize.width,
                                   height: targetFrame.height * anchorRect.height / pixelSize.height)
         guard animated else {
+            frames.setLayout(layout)
             cameraPanel.setFrame(targetPoints, display: true)
             return
         }
 
-        let startOrigin = cameraPanel.frame.origin
         let targetOrigin = targetPoints.origin
         let dx = targetOrigin.x - startOrigin.x
         let dy = targetOrigin.y - startOrigin.y
         guard hypot(dx, dy) > 0.5 else {
+            frames.setLayout(layout)
             cameraPanel.setFrame(targetPoints, display: true)
             return
         }
@@ -141,11 +152,17 @@ final class RecorderOverlayController: ObservableObject {
             let eased = 1.0 - pow(1.0 - rawProgress, 3.5)
             let currentX = startOrigin.x + dx * CGFloat(eased)
             let currentY = startOrigin.y + dy * CGFloat(eased)
+            var currentLayout = self.layout
+            currentLayout.place(origin: CGPoint(
+                x: (currentX - self.anchorRect.minX) * self.pixelSize.width / self.anchorRect.width,
+                y: (currentY - self.anchorRect.minY) * self.pixelSize.height / self.anchorRect.height), in: self.pixelSize)
+            self.frames.setLayout(currentLayout)
             cameraPanel.setFrameOrigin(CGPoint(x: currentX, y: currentY))
 
             if rawProgress >= 1.0 {
                 t.invalidate()
                 self.snapTimer = nil
+                self.frames.setLayout(self.layout)
                 cameraPanel.setFrame(targetPoints, display: true)
             }
         }
