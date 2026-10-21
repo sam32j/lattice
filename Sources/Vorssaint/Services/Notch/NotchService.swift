@@ -114,6 +114,9 @@ final class NotchService: ObservableObject {
     @Published private(set) var dragPlaceholder = false
     @Published private(set) var choosingFileDropDestination = false
     @Published private(set) var targetsMediaDrop = false
+    @Published private(set) var targetsEditorDrop = false
+    @Published private(set) var editorDropAvailable = false
+    @Published private(set) var optimizationDropAvailable = false
     @Published private(set) var selectedMetric: MetricDetailKind?
     @Published private(set) var captureControls: ScreenCaptureSelectionOptions?
     @Published private(set) var captureControlsCollapsed = false
@@ -2151,30 +2154,50 @@ final class NotchService: ObservableObject {
     }
 
     var canAcceptFileDrop: Bool {
-        acceptsUserInteraction && captureControls == nil && modules.contains(.files)
-            && AppFeature.shelf.isAvailable
+        acceptsUserInteraction && captureControls == nil
+            && (canDropOnShelf || AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable)
+    }
+
+    var canDropOnShelf: Bool {
+        modules.contains(.files) && AppFeature.shelf.isAvailable
             && UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled)
+    }
+
+    private func canAcceptFilePayload(_ pasteboard: NSPasteboard) -> Bool {
+        guard canAcceptFileDrop else { return false }
+        if MediaEditorFileOpener.shared.canOpen(MediaEditorFileSupport.urls(from: pasteboard)) { return true }
+        return canDropOnShelf && !ShelfService.shared.isInternalDragActive
+            && ShelfService.shared.canAcceptPasteboard(pasteboard)
     }
 
     func beginFileDrop(_ pasteboard: NSPasteboard) {
         guard canAcceptFileDrop else { return }
-        choosingFileDropDestination = NotchFileToolsService.shared.mediaDropContent(for: pasteboard) != nil
+        editorDropAvailable = MediaEditorFileOpener.shared.canOpen(MediaEditorFileSupport.urls(from: pasteboard))
+        optimizationDropAvailable = canDropOnShelf && NotchFileToolsService.shared.mediaDropContent(for: pasteboard) != nil
+        choosingFileDropDestination = editorDropAvailable || optimizationDropAvailable
         targetsMediaDrop = false
-        open(.files, takeFocus: false)
+        targetsEditorDrop = false
+        open(canDropOnShelf ? .files : .captures, takeFocus: false)
     }
 
     @discardableResult
     func updateFileDrop(at point: CGPoint) -> Bool {
-        let targeted = choosingFileDropDestination
-            && NotchFileToolsSupport.mediaDropArea(in: expandedGeometry, size: surfaceSize).contains(point)
+        let area = NotchFileToolsSupport.mediaDropArea(in: expandedGeometry, size: surfaceSize)
+        let right = choosingFileDropDestination && area.contains(point)
+        let editor = right && editorDropAvailable && (!optimizationDropAvailable || point.y >= area.midY)
+        let targeted = right && optimizationDropAvailable && !editor
         if targetsMediaDrop != targeted { targetsMediaDrop = targeted }
-        return !targeted || NotchFileToolsService.shared.canAcceptMediaDrop
+        if targetsEditorDrop != editor { targetsEditorDrop = editor }
+        return editor || (targeted ? NotchFileToolsService.shared.canAcceptMediaDrop : canDropOnShelf)
     }
 
     func endFileDrop() {
         let changed = choosingFileDropDestination
         if changed { choosingFileDropDestination = false }
         if targetsMediaDrop { targetsMediaDrop = false }
+        targetsEditorDrop = false
+        editorDropAvailable = false
+        optimizationDropAvailable = false
         if changed, acceptsUserInteraction { refreshPresentation() }
     }
 
@@ -2186,15 +2209,16 @@ final class NotchService: ObservableObject {
     func accept(_ pasteboard: NSPasteboard) -> Bool {
         defer { endFileDrop() }
         guard canAcceptFileDrop else { return false }
+        let editor = choosingFileDropDestination && targetsEditorDrop
         let optimize = choosingFileDropDestination && targetsMediaDrop
-        let accepted = optimize
+        let accepted = editor ? MediaEditorFileOpener.shared.open(MediaEditorFileSupport.urls(from: pasteboard)) : optimize
             ? NotchFileToolsService.shared.openMediaDrop(pasteboard)
-            : ShelfService.shared.acceptDrop(pasteboard: pasteboard)
+            : canDropOnShelf && ShelfService.shared.acceptDrop(pasteboard: pasteboard)
         if accepted {
             heldDrag = false
             dragPlaceholder = false
-            if !optimize { NotchFileToolsService.shared.hideMedia() }
-            open(.files)
+            if canDropOnShelf, !optimize { NotchFileToolsService.shared.hideMedia() }
+            if !editor { open(.files) }
             // A little hop for the file it watched come in, once the island rests again.
             reactMascot(.celebrate, patience: 30)
         }
@@ -3334,11 +3358,10 @@ final class NotchService: ObservableObject {
             windowHost?.setHoverHandler { [weak self] in self?.hover($0) }
             panel?.title = FeatureStrings.notch(L10n.shared.language).title
         }
-        if modules.contains(.files), AppFeature.shelf.isAvailable {
+        if (modules.contains(.files) && AppFeature.shelf.isAvailable) || AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable {
             windowHost?.setFileDropActions(NotchFileDropActions(
                 canAccept: { [weak self] pasteboard in
-                    self?.canAcceptFileDrop == true && !ShelfService.shared.isInternalDragActive
-                        && ShelfService.shared.canAcceptPasteboard(pasteboard)
+                    self?.canAcceptFilePayload(pasteboard) == true
                 },
                 enter: { [weak self] in self?.beginFileDrop($0) },
                 accept: { [weak self] in self?.accept($0) == true },
