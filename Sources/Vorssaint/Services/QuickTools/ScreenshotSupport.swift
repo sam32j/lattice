@@ -1920,6 +1920,11 @@ enum ScreenshotSupport {
         var scribbleSeed: UInt64
         var number: Int
         var isBounded: Bool
+        var hasCornerRadius: Bool?
+        var isRounded: Bool {
+            get { hasCornerRadius ?? false }
+            set { hasCornerRadius = newValue }
+        }
 
         init(id: UUID = UUID(),
              tool: Tool,
@@ -1935,7 +1940,8 @@ enum ScreenshotSupport {
              arrowStyle: ArrowStyleID = .filled,
              scribbleSeed: UInt64? = nil,
              number: Int = 0,
-             isBounded: Bool = false) {
+             isBounded: Bool = false,
+             hasCornerRadius: Bool? = false) {
             self.id = id
             self.tool = tool
             self.rect = rect
@@ -1954,6 +1960,7 @@ enum ScreenshotSupport {
                     : 0)
             self.number = number
             self.isBounded = isBounded
+            self.hasCornerRadius = hasCornerRadius
         }
     }
 
