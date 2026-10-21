@@ -1173,7 +1173,6 @@ struct QuickControlsSection: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var features = FeatureRuntime.shared
-    @ObservedObject private var inverter = ScrollInverter.shared
     @ObservedObject private var switcher = AppSwitcher.shared
     @ObservedObject private var dockPreview = DockPreviewService.shared
     @ObservedObject private var cutPaste = FinderCutPaste.shared
