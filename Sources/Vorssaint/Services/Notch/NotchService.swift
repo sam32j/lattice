@@ -216,6 +216,11 @@ final class NotchService: ObservableObject {
     /// every layout pass, which would decode them each time.
     private var headerShowsSectionsButton = false
     private var keepsWorkingSurface: Bool {
+        keepsWorkingSurfaceOnOutsideClick
+            || (expanded && !showingSections && selected == .captures && captureContent != nil)
+    }
+
+    private var keepsWorkingSurfaceOnOutsideClick: Bool {
         pinned || trackingMenu || NSApp.modalWindow != nil || panel?.attachedSheet != nil
             || NotchLyricsService.shared.isImporting
             // Like the lyrics chooser, these panels stand beside the island
@@ -226,7 +231,6 @@ final class NotchService: ObservableObject {
             || (expanded && !showingSections && selected == .calendar && Permissions.shared.keepsCalendarPrompt)
             || (expanded && !showingSections && selected == .files && fileInteractionActive)
             || CameraPreviewService.shared.keepsNotchPermissionPrompt
-            || (expanded && !showingSections && selected == .captures && captureContent != nil)
             || (expanded && !showingSections && selected == .tools && (QuickLauncherService.shared.activeUtility != nil || QuickLauncherService.shared.isEditing))
     }
     /// Up and measuring its display. Settings previews read the island's
@@ -2123,9 +2127,15 @@ final class NotchService: ObservableObject {
     func cancelCaptureControls() { captureControlsCancel?() }
 
     func openSettings() {
-        collapse()
-        SettingsRouter.shared.request(FeatureSettingsDestination(.notch))
-        (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+        // Finish the Island dismissal before Settings activates the app.
+        dismissForOutsideClick()
+        hoverState.close(pointerInside: true)
+        let show = {
+            SettingsRouter.shared.request(FeatureSettingsDestination(.notch))
+            (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+        }
+        if let windowHost { windowHost.whenSettled(show) }
+        else { DispatchQueue.main.async(execute: show) }
     }
 
     /// Opens the Dynamic Island settings on one section's options.
@@ -3564,14 +3574,20 @@ final class NotchService: ObservableObject {
         clickedSinceOpening = false
         let clicks: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
         if let token = NSEvent.addGlobalMonitorForEvents(matching: clicks, handler: { [weak self] _ in
-            guard let self, !self.keepsWorkingSurface,
+            guard let self, !self.keepsWorkingSurfaceOnOutsideClick,
                   self.windowHost?.contains(NSEvent.mouseLocation) != true,
                   (NSApp.delegate as? AppDelegate)?.isOverStatusItem(NSEvent.mouseLocation) != true,
                   !AssistiveKeyboard.ownsCocoaPoint(NSEvent.mouseLocation) else { return }
-            self.collapse()
+            self.dismissForOutsideClick()
         }) { eventMonitors.append(token) }
         if let token = NSEvent.addLocalMonitorForEvents(matching: clicks.union(.keyDown), handler: { [weak self] event in
             guard let self else { return event }
+            if event.type == .keyDown, self.ownsWindow(event.window),
+               event.modifierFlags.intersection([.command, .control, .option, .shift]) == .command,
+               event.charactersIgnoringModifiers == "," {
+                self.openSettings()
+                return nil
+            }
             // Opening by pointer may assign a control focus automatically.
             // Restore its visible indicator before handling any keyboard input.
             if event.type == .keyDown, event.window === self.panel, !self.showsKeyboardFocus {
@@ -3631,12 +3647,21 @@ final class NotchService: ObservableObject {
             let click = clicks.contains(NSEvent.EventTypeMask(rawValue: 1 << event.type.rawValue))
             let islandWindow = self.ownsWindow(event.window)
             if click, islandWindow { self.clickedSinceOpening = true }
-            if click, !islandWindow, !self.keepsWorkingSurface,
+            if click, !islandWindow, !self.keepsWorkingSurfaceOnOutsideClick,
                self.windowHost?.contains(NSEvent.mouseLocation) != true,
                (NSApp.delegate as? AppDelegate)?.isOverStatusItem(NSEvent.mouseLocation) != true,
-               !AssistiveKeyboard.ownsCocoaPoint(NSEvent.mouseLocation) { self.collapse() }
+               !AssistiveKeyboard.ownsCocoaPoint(NSEvent.mouseLocation) { self.dismissForOutsideClick() }
             return event
         }) { eventMonitors.append(token) }
+    }
+
+    /// Detach first so the preview's close callback cannot collapse a new page.
+    private func dismissForOutsideClick() {
+        let dismissesCapture = selected == .captures && captureContent != nil
+        let close = dismissesCapture ? captureClose : nil
+        if dismissesCapture { clearCapture() }
+        collapse()
+        close?()
     }
 
     /// The panel and what hangs from it: a SwiftUI popover opened in the
