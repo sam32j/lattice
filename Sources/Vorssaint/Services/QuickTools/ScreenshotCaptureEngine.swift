@@ -238,7 +238,6 @@ enum ScreenshotCaptureEngine {
                 return composited
             }
         }
-        var clippedFallback: CGImage?
         let capturedImage = await WindowPreviewProvider.captureViaWindowServer(windowID)
         guard !Task.isCancelled else { return nil }
         if let image = capturedImage, !ScreenshotSupport.isImageBlank(image) {
@@ -248,12 +247,11 @@ enum ScreenshotCaptureEngine {
                                                                 windowSize: $0.size) }) ?? true {
                 return (image, scale)
             }
-            clippedFallback = image
         }
         guard let content = try? await SCShareableContent.excludingDesktopWindows(
             false, onScreenWindowsOnly: true),
             let window = content.windows.first(where: { $0.windowID == windowID })
-        else { return clippedFallback.map { ($0, scale) } }
+        else { return capturedImage.map { ($0, scale) } }
         let configuration = SCStreamConfiguration()
         configuration.width = max(1, Int((window.frame.width * scale).rounded()))
         configuration.height = max(1, Int((window.frame.height * scale).rounded()))
@@ -270,35 +268,33 @@ enum ScreenshotCaptureEngine {
         let filter = SCContentFilter(desktopIndependentWindow: window)
         let capture = try? await SCScreenshotManager.captureImage(contentFilter: filter,
                                                                   configuration: configuration)
-        if let capture, !ScreenshotSupport.isImageBlank(capture) {
+        // WindowServer quality decides whether to retry with ScreenCaptureKit.
+        // The chooser makes the final composed-display fallback decision once,
+        // including for an intentionally uniform but otherwise valid window.
+        if let capture {
             return (capture, scale)
         }
-        return clippedFallback.map { ($0, scale) }
+        return capturedImage.map { ($0, scale) }
     }
 
-    /// Captures multiple selected windows together into a single composited image,
-    /// cropping to the union bounds of the windows.
+    /// Resolve each selected layer before compositing. Empty space between
+    /// windows is intentional transparency, never a failed display capture.
     static func captureMultipleWindows(_ windowIDs: [CGWindowID],
-                                       scale: CGFloat) async -> (image: CGImage, scale: CGFloat)? {
-        guard !windowIDs.isEmpty else { return nil }
-        if windowIDs.count == 1, let single = windowIDs.first {
-            return await captureWindow(single, scale: scale)
-        }
+                                       scale: CGFloat,
+                                       frames: [CGWindowID: CGRect],
+                                       resolveCapture: (CGWindowID, (image: CGImage, scale: CGFloat)?)
+                                           -> (image: CGImage, scale: CGFloat)?)
+        async -> (image: CGImage, scale: CGFloat)? {
+        guard !Task.isCancelled, !windowIDs.isEmpty, scale.isFinite, scale > 0 else { return nil }
 
         let onScreen = onScreenWindows()
         // Capture each window independently: multi-window filters can pack pixels
         // at the output origin instead of preserving desktop coordinates.
-        var windowFrames: [CGWindowID: CGRect] = [:]
-        for id in windowIDs {
-            if let target = onScreen.first(where: { $0.id == id }) {
-                windowFrames[id] = target.frame
-            } else if let b = windowBounds(id) {
-                windowFrames[id] = b
-            }
-        }
-        guard windowFrames.count == windowIDs.count else { return nil }
-        var unionBounds = windowFrames.values.first!
-        for frame in windowFrames.values.dropFirst() {
+        let selectedFrames = windowIDs.compactMap { frames[$0] }
+        guard selectedFrames.count == windowIDs.count,
+              selectedFrames.allSatisfy({ !$0.isEmpty && !$0.isInfinite }) else { return nil }
+        var unionBounds = selectedFrames[0]
+        for frame in selectedFrames.dropFirst() {
             unionBounds = unionBounds.union(frame)
         }
 
@@ -307,8 +303,15 @@ enum ScreenshotCaptureEngine {
 
         var layers: [(image: CGImage, frame: CGRect)] = []
         for id in orderedIDs {
-            guard let frame = windowFrames[id],
-                  let capture = await captureWindow(id, scale: scale, includeAttachedWindows: false),
+            guard !Task.isCancelled, let frame = frames[id] else { return nil }
+            let independent = await captureWindow(id, scale: scale, includeAttachedWindows: false)
+            guard !Task.isCancelled else { return nil }
+            let candidate = independent.flatMap { capture in
+                SwitcherSupport.captureCoversWindow(imageWidth: capture.image.width,
+                    imageHeight: capture.image.height, windowSize: frame.size) ? capture : nil
+            }
+            let resolved = resolveCapture(id, candidate)
+            guard !Task.isCancelled, let capture = resolved,
                   SwitcherSupport.captureCoversWindow(imageWidth: capture.image.width,
                                                       imageHeight: capture.image.height,
                                                       windowSize: frame.size)
@@ -316,6 +319,7 @@ enum ScreenshotCaptureEngine {
             layers.append((capture.image, frame))
         }
 
+        guard !Task.isCancelled else { return nil }
         let width = max(1, Int((unionBounds.width * scale).rounded()))
         let height = max(1, Int((unionBounds.height * scale).rounded()))
         guard let context = CGContext(data: nil, width: width, height: height,
@@ -323,6 +327,7 @@ enum ScreenshotCaptureEngine {
                                       space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
                                       bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
         else { return nil }
+        context.clear(CGRect(x: 0, y: 0, width: width, height: height))
         context.interpolationQuality = .high
         for layer in layers {
             context.draw(layer.image, in: ScreenshotCapturePolicy.compositeRect(
@@ -589,7 +594,8 @@ enum ScreenshotCaptureEngine {
         let decorations = ScreenshotCapturePolicy.decorationWindowIDs(frontToBack: captureWindows(in: info))
         return info.compactMap { entry in
             guard let layer = entry[kCGWindowLayer as String] as? Int,
-                  layer == 0 || (layer > 0 && layer <= 25 && !["Window Server", "Dock"].contains(entry[kCGWindowOwnerName as String] as? String ?? "")),
+                  ScreenshotCapturePolicy.isPickableWindowLayer(layer,
+                      ownerName: entry[kCGWindowOwnerName as String] as? String ?? ""),
                   let pid = entry[kCGWindowOwnerPID as String] as? Int32,
                   let id = (entry[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
                   let boundsDict = entry[kCGWindowBounds as String] as? [String: CGFloat]

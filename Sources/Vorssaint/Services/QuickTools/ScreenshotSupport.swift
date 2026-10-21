@@ -209,6 +209,20 @@ enum ScreenshotSupport {
 
     // MARK: - Preferences
 
+    /// Use composed display pixels only when an independent window is suspect.
+    /// If no display crop exists, retain the original rather than lose a valid
+    /// intentionally uniform window. The quality heuristic is not proof of loss.
+    static func resolvedWindowCapture(_ capture: (image: CGImage, scale: CGFloat)?,
+                                      frozenImage: CGImage?, viewFrame: CGRect,
+                                      viewSize: CGSize, fallbackScale: CGFloat) -> (image: CGImage, scale: CGFloat)? {
+        if let capture, !isImageBlank(capture.image) { return capture }
+        guard let frozenImage else { return capture }
+        let rect = imagePixelRect(fromView: viewFrame, viewSize: viewSize,
+                                  imageSize: CGSize(width: frozenImage.width, height: frozenImage.height))
+        guard let crop = frozenImage.cropping(to: rect) else { return capture }
+        return (crop, fallbackScale)
+    }
+
     /// Determines if an image is blank (empty, transparent, or without meaningful visual content).
     /// Used as a safeguard against window server, out-of-process GPU compositing, or Mission Control capture failures.
     static func isImageBlank(_ image: CGImage) -> Bool {
@@ -234,11 +248,13 @@ enum ScreenshotSupport {
 
         var opaqueCount = 0
         var innerOpaqueCount = 0
-        let innerXStart = sampleW / 5
-        let innerXEnd = sampleW * 4 / 5
-        let innerYStart = sampleH / 5
-        let innerYEnd = sampleH * 4 / 5
+        let innerXStart = min(sampleW - 1, Int(ceil(Double(sampleW) * 0.2)))
+        let innerXEnd = max(innerXStart + 1, Int(floor(Double(sampleW) * 0.8)))
+        let innerYStart = min(sampleH - 1, Int(ceil(Double(sampleH) * 0.2)))
+        let innerYEnd = max(innerYStart + 1, Int(floor(Double(sampleH) * 0.8)))
         let totalInnerPixels = (innerXEnd - innerXStart) * (innerYEnd - innerYStart)
+
+        var innerPixels: [UInt32: Int] = [:]
 
         var firstPixel: UInt32?
         var allPixelsIdentical = true
@@ -246,6 +262,9 @@ enum ScreenshotSupport {
         for y in 0..<sampleH {
             for x in 0..<sampleW {
                 let pixel = buffer[y * sampleW + x]
+                if x >= innerXStart && x < innerXEnd && y >= innerYStart && y < innerYEnd {
+                    innerPixels[pixel, default: 0] += 1
+                }
                 if let first = firstPixel {
                     if pixel != first {
                         allPixelsIdentical = false
@@ -276,7 +295,9 @@ enum ScreenshotSupport {
             return true
         }
 
-        return false
+        // Browser chrome can be complete while the GPU viewport is absent.
+        // A dominant inner color requests the composed capture fallback.
+        return (innerPixels.values.max() ?? 0) * 10 >= totalInnerPixels * 9
     }
 
     static let recentCaptureLimit = 12

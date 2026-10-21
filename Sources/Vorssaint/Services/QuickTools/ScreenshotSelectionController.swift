@@ -948,21 +948,11 @@ final class ScreenshotSelectionController {
         }
         Task { @MainActor [weak self] in
             guard let self else { return }
-            var capture = await ScreenshotCaptureEngine.captureWindow(
+            let independent = await ScreenshotCaptureEngine.captureWindow(
                 windowID, scale: panel.pixelScale)
-
-            // If window-specific capture failed or delivered an empty/blank image (e.g. out-of-process Metal, Chromium, or Mission Control),
-            // fall back to cropping the window area directly from the frozen display image.
-            let isBlank = capture.map { ScreenshotSupport.isImageBlank($0.image) } ?? true
-            if isBlank {
-                let pixelRect = ScreenshotSupport.imagePixelRect(
-                    fromView: frame,
-                    viewSize: panel.screenFrame.size,
-                    imageSize: panel.frozenImageSize ?? panel.pixelSize)
-                if let fallbackCrop = panel.frozenImage?.cropping(to: pixelRect) {
-                    capture = (fallbackCrop, panel.pixelScale)
-                }
-            }
+            let capture = ScreenshotSupport.resolvedWindowCapture(independent,
+                frozenImage: panel.frozenImage, viewFrame: frame,
+                viewSize: panel.screenFrame.size, fallbackScale: panel.pixelScale)
 
             guard let finalCapture = capture else {
                 self.finish(.failed)
