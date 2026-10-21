@@ -558,8 +558,9 @@ final class ScreenshotService: ObservableObject {
                                 dismissInterval: TimeInterval?,
                                 latestCapture: UUID?) {
         var saved = initialSaved
+        let presented = capture.presentationCapture
         let controller = ScreenshotQuickPreviewController(
-            capture: capture,
+            capture: presented,
             strings: strings,
             defaultAction: defaultAction,
             completedActions: completedActions,
@@ -571,16 +572,17 @@ final class ScreenshotService: ObservableObject {
                     self.editFromPreview(capture, latestCapture: latestCapture)
                     return [.edit]
                 case .pin:
-                    ScreenshotPinController.shared.pin(image: capture.image, scale: capture.scale)
+                    ScreenshotPinController.shared.pin(image: presented.image, scale: capture.scale,
+                        baseImage: capture.image, annotations: capture.annotations, captureID: capture.id)
                     return [.pin]
                 case .copy:
-                    return self.copyDirect(capture) ? [.copy] : []
+                    return self.copyDirect(presented) ? [.copy] : []
                 case .save:
-                    guard let outcome = self.saveDirect(capture) else { return [] }
+                    guard let outcome = self.saveDirect(presented) else { return [] }
                     saved = outcome
                     return [.save]
                 case .saveAndCopy:
-                    guard let result = self.saveAndCopyDirect(capture) else { return [] }
+                    guard let result = self.saveAndCopyDirect(presented) else { return [] }
                     saved = result.outcome
                     return result.copied ? [.save, .copy] : [.save]
                 case .discard:
@@ -606,16 +608,16 @@ final class ScreenshotService: ObservableObject {
                     Task { @MainActor in completion(nil) }
                     return
                 }
-                self.shareDirect(capture, duration: duration, completion: completion)
+                self.shareDirect(presented, duration: duration, completion: completion)
             },
             shareFile: { [weak self] in
-                guard let self, let export = self.flatten(capture) else { return nil }
+                guard let self, let export = self.flatten(presented) else { return nil }
                 return Self.temporaryExportFile(image: export.image, scale: export.scale,
                                                 strings: self.strings)
             },
             savedFile: { saved?.url },
             saveToDefault: { [weak self] in
-                guard let self, let outcome = self.saveDirect(capture) else { return nil }
+                guard let self, let outcome = self.saveDirect(presented) else { return nil }
                 saved = outcome
                 return outcome.url
             },

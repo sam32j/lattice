@@ -15,6 +15,7 @@ enum ScreenshotAttachedCaptureTests {
     enum WindowPreviewProvider {
         static var images: [CGWindowID: CGImage] = [:]
         static var calls: [CGWindowID] = []
+        static var cancelDuringCapture = false
         static func captureViaWindowServer(_ id: CGWindowID) async -> CGImage? {
             calls.append(id)
             return images[id]
@@ -79,6 +80,7 @@ enum ScreenshotAttachedCaptureTests {
             (id, solid(width: Int(frame.width * scale), height: Int(frame.height * scale), channel: Int(id - 1)))
         })
         WindowPreviewProvider.calls = []
+        WindowPreviewProvider.cancelDuringCapture = false
         SCShareableContent.ids = [1, 2, 3]
         SCShareableContent.calls = 0
         SCScreenshotManager.images = [:]
@@ -96,14 +98,18 @@ enum ScreenshotAttachedCaptureTests {
 
         for scale: CGFloat in [1, 2] {
             reset(scale: scale)
-            let multi = await Engine.captureMultipleWindows([1, 2, 3], scale: scale)
+            let multi = await Engine.captureMultipleWindows([1, 2, 3], scale: scale,
+                frames: frames, resolveCapture: { _, capture in capture })
             expectPixels(multi, scale: scale, suite)
             suite.expect(SCScreenshotManager.requests.isEmpty,
                          "multi-window capture composites independent buffers without packed-display filtering")
         }
+        await diagonalChecks(suite)
+        await cancellationChecks(suite)
         reset()
         WindowPreviewProvider.images[2] = nil
-        let partial = await Engine.captureMultipleWindows([1, 2, 3], scale: 1)
+        let partial = await Engine.captureMultipleWindows([1, 2, 3], scale: 1,
+            frames: frames, resolveCapture: { _, capture in capture })
         suite.expect(partial == nil, "a missing selected window fails instead of silently delivering partial pixels")
 
         reset(scale: 2)
@@ -149,6 +155,57 @@ enum ScreenshotAttachedCaptureTests {
         let noDisplay = await Engine.composeAttached(plan, frames: frames)
         suite.expect(noDisplay == nil && WindowPreviewProvider.calls.isEmpty,
                      "unknown display scale declines the composite before acquiring pixels")
+    }
+
+    @MainActor private static func diagonalChecks(_ suite: TestSuite) async {
+        let selectedFrames: [CGWindowID: CGRect] = [
+            1: CGRect(x: 0, y: 0, width: 20, height: 20),
+            2: CGRect(x: 140, y: 140, width: 20, height: 20),
+            3: CGRect(x: 140, y: 0, width: 20, height: 20) // Not selected.
+        ]
+        for scale: CGFloat in [1, 2] {
+            reset(scale: scale)
+            let side = Int(160 * scale), corner = Int(20 * scale)
+            var pixels = [UInt8](repeating: 0, count: side * side * 4)
+            for y in 0..<side { for x in 0..<side {
+                let channel = x < corner && y < corner ? 0 : x >= side - corner && y >= side - corner ? 2 : 1
+                pixels[(y * side + x) * 4 + channel] = 255
+                pixels[(y * side + x) * 4 + 3] = 255
+            } }
+            let frozen = CGImage(width: side, height: side, bitsPerComponent: 8, bitsPerPixel: 32,
+                bytesPerRow: side * 4, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                provider: CGDataProvider(data: Data(pixels) as CFData)!, decode: nil,
+                shouldInterpolate: false, intent: .defaultIntent)!
+            WindowPreviewProvider.images[1] = solid(width: corner, height: corner, channel: 0)
+            WindowPreviewProvider.images[2] = nil // The other window requires display fallback.
+            let composite = await Engine.captureMultipleWindows([1, 2], scale: scale,
+                frames: selectedFrames, resolveCapture: { id, capture in
+                    ScreenshotSupport.resolvedWindowCapture(capture, frozenImage: frozen,
+                        viewFrame: selectedFrames[id]!, viewSize: CGSize(width: 160, height: 160),
+                        fallbackScale: scale)
+                })
+            guard let composite else { suite.expect(false, "diagonal windows compose with per-window fallback"); continue }
+            suite.expect(composite.image.width == side && composite.image.height == side && composite.scale == scale,
+                         "diagonal selection preserves its bounds and output scale at \(scale)x")
+            for (x, y, channel) in [(10, 10, 0), (150, 150, 2)] {
+                let pixel = rgba(composite.image, x: Int(CGFloat(x) * scale), y: Int(CGFloat(y) * scale))
+                suite.expect(pixel[channel] == 255 && pixel[3] == 255,
+                             "each selected window keeps its own resolved pixels and position at \(scale)x")
+            }
+            for (x, y) in [(80, 80), (150, 10), (10, 150)] {
+                suite.expect(rgba(composite.image, x: Int(CGFloat(x) * scale), y: Int(CGFloat(y) * scale))[3] == 0,
+                             "gaps and unselected windows remain transparent at \(scale)x")
+            }
+            suite.expect(ScreenshotSupport.isImageBlank(composite.image),
+                         "a legitimately sparse composite survives even when a single-window heuristic calls it blank")
+            let failed = await Engine.captureMultipleWindows([1, 2], scale: scale,
+                frames: selectedFrames, resolveCapture: { _, capture in capture })
+            suite.expect(failed == nil, "a missing selected layer with no fallback fails rather than including the desktop")
+            let rejected = await Engine.captureMultipleWindows([1], scale: scale,
+                frames: selectedFrames, resolveCapture: { _, _ in nil })
+            suite.expect(rejected == nil, "a resolver can reject even a nonmissing independent layer without being bypassed")
+        }
     }
 
     private static func expectPixels(_ capture: (image: CGImage, scale: CGFloat)?,

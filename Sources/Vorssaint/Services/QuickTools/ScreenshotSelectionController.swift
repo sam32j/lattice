@@ -24,13 +24,20 @@ final class ScreenshotSelectionController {
         /// The captured area in Cocoa global coordinates.
         let anchorRect: CGRect
         let annotations: [ScreenshotSupport.Annotation]
+        /// The saved edit generation, without flattening the editable original.
+        let renderedImage: CGImage?
 
-        init(id: UUID = UUID(), image: CGImage, scale: CGFloat, anchorRect: CGRect = .zero, annotations: [ScreenshotSupport.Annotation] = []) {
+        init(id: UUID = UUID(), image: CGImage, scale: CGFloat, anchorRect: CGRect = .zero, annotations: [ScreenshotSupport.Annotation] = [], renderedImage: CGImage? = nil) {
             self.id = id
             self.image = image
             self.scale = scale
             self.anchorRect = anchorRect
             self.annotations = annotations
+            self.renderedImage = renderedImage
+        }
+
+        var presentationCapture: Capture {
+            Capture(id: id, image: renderedImage ?? image, scale: scale, anchorRect: anchorRect)
         }
     }
 
