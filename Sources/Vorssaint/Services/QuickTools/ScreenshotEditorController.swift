@@ -1286,9 +1286,9 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
 
     // MARK: - Output
 
-    func exportImage(withBackdrop: Bool = true) -> ScreenshotRenderer.Export? {
+    func exportImage(withBackdrop: Bool = true, downscaleTo1x: Bool? = nil) -> ScreenshotRenderer.Export? {
         ensureBlurSamplesForAnnotations()
-        let downscale = UserDefaults.standard.bool(forKey: DefaultsKey.screenshotDownscale)
+        let downscale = downscaleTo1x ?? UserDefaults.standard.bool(forKey: DefaultsKey.screenshotDownscale)
         return ScreenshotRenderer.renderExport(
             baseImage: baseImage,
             annotations: annotations,
@@ -1389,6 +1389,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     private var keyMonitor: Any?
     private var scrollMonitor: Any?
     private var pointerMonitor: Any?
+    private var doneSaveInFlight = false
 
     var protectedWindowIDs: Set<CGWindowID> {
         guard let window, window.isVisible, window.windowNumber > 0 else { return [] }
@@ -1799,29 +1800,45 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     }
 
     func done() {
+        guard !doneSaveInFlight else { return }
         if window?.firstResponder is NSText || model.editingTextID != nil {
             model.editingTextID = nil
         }
-        guard let export = model.exportImage(withBackdrop: false) else { return }
-
+        // History and pins keep canonical source pixels. Output downscaling
+        // belongs at Copy/Save, never alongside original-pixel annotations.
+        guard let export = model.exportImage(withBackdrop: false, downscaleTo1x: false) else { return }
+        let original = model.baseImage
+        let annotations = model.annotations
+        let backdrop = model.backdropStyle.sanitized()
+        let watermark = model.watermarkStyle.sanitized()
+        let shadows = model.annotationShadowsEnabled
+        doneSaveInFlight = true
         RecentCaptureService.shared.saveEditedCapture(
             id: capture.id,
             renderedImage: export.image,
-            baseImage: model.baseImage,
+            baseImage: original,
             scale: export.scale,
-            annotations: model.annotations
-        )
-
-        let pin = originatingPin ?? ScreenshotPinController.shared.findPin(for: capture.id)
-        pin?.updateImage(export.image, baseImage: model.baseImage, annotations: model.annotations)
-
-        model.markExported()
-        window?.close()
+            annotations: annotations
+        ) { [weak self] saved in
+            guard let self else { return }
+            self.doneSaveInFlight = false
+            guard saved else { NSSound.beep(); return }
+            // Persistence is asynchronous. Never close over newer unsaved edits.
+            guard self.model.baseImage === original, self.model.annotations == annotations,
+                  self.model.backdropStyle.sanitized() == backdrop,
+                  self.model.watermarkStyle.sanitized() == watermark,
+                  self.model.annotationShadowsEnabled == shadows else { return }
+            let pin = self.originatingPin ?? ScreenshotPinController.shared.findPin(for: self.capture.id)
+            pin?.updateImage(export.image, baseImage: original, annotations: annotations)
+            pin?.showPin(orderFront: true)
+            self.model.markExported()
+            self.window?.close()
+        }
     }
 
     /// Pinning snapshots the current export and leaves the editor open.
     func pin() {
-        guard let export = model.exportImage(withBackdrop: false) else { return }
+        guard let export = model.exportImage(withBackdrop: false, downscaleTo1x: false) else { return }
         let pinned = ScreenshotPinController.shared.pin(
             image: export.image,
             scale: export.scale,
