@@ -16,6 +16,23 @@ enum ScreenshotWindowLayering {
         guard let window = window as? NSWindow else { return .modalPanel }
         return NSWindow.Level(rawValue: max(NSWindow.Level.modalPanel.rawValue, window.level.rawValue + 1))
     }
+    static func runModalPanel(_ panel: NSSavePanel, above window: NSWindow?) -> NSApplication.ModalResponse {
+        var observers: [NSObjectProtocol] = []
+        if let window, window.isVisible {
+            let level = dialogLevel(above: window)
+            let raise: (Notification) -> Void = { _ in panel.level = level }
+            observers = [NSWindow.didBecomeKeyNotification, NSApplication.didBecomeActiveNotification].map {
+                NotificationCenter.default.addObserver(forName: $0, object: nil, queue: .main, using: raise)
+            }
+            panel.level = level
+            DispatchQueue.main.async { panel.level = level }
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        let response = panel.runModal()
+        observers.forEach(NotificationCenter.default.removeObserver)
+        if let window, window.isVisible { window.makeKey() }
+        return response
+    }
     static func isQuickLookShortcut(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
         guard flags == .command else { return false }
