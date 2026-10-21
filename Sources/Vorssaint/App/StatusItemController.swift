@@ -135,6 +135,7 @@ final class StatusItemController {
             button.target = self
             button.action = #selector(clicked)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            button.addSubview(StatusMediaDropView(frame: button.bounds))
         }
         refresh()
         syncMonitorMode()
