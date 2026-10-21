@@ -82,11 +82,17 @@ enum ScreenshotRenderer {
                 }
             case .redact:
                 context.setFillColor(color(annotation.color))
-                context.fill(annotation.rect)
+                if annotation.isRounded {
+                    let radius = min(10 * scale, min(annotation.rect.width, annotation.rect.height) / 2)
+                    context.addPath(CGPath(roundedRect: annotation.rect, cornerWidth: radius, cornerHeight: radius, transform: nil))
+                    context.fillPath()
+                } else {
+                    context.fill(annotation.rect)
+                }
             case .highlight:
                 context.saveGState()
-                context.setBlendMode(.multiply)
-                context.setFillColor(color(annotation.color, alpha: 0.42))
+                context.setBlendMode(.normal)
+                context.setFillColor(color(annotation.color, alpha: 0.35))
                 for rect in ScreenshotEditorGeometry.highlightRects(annotation) {
                     let radius = min(4 * scale, rect.height / 2)
                     context.addPath(CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil))
@@ -96,7 +102,13 @@ enum ScreenshotRenderer {
             case .rect:
                 strokeShape(in: context, annotation: annotation, scale: scale,
                             shadowsEnabled: annotationShadowsEnabled) {
-                    context.stroke(annotation.rect)
+                    if annotation.isRounded {
+                        let radius = min(10 * scale, min(annotation.rect.width, annotation.rect.height) / 2)
+                        context.addPath(CGPath(roundedRect: annotation.rect, cornerWidth: radius, cornerHeight: radius, transform: nil))
+                        context.strokePath()
+                    } else {
+                        context.stroke(annotation.rect)
+                    }
                 }
             case .ellipse:
                 strokeShape(in: context, annotation: annotation, scale: scale,
