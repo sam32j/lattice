@@ -667,6 +667,7 @@ struct ScreenshotEditorView: View {
                     .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
             .buttonStyle(.borderless)
+            .screenshotIconHover()
             .screenshotSafeHelp(strings.toolShortcutsTitle)
             .accessibilityLabel(strings.toolShortcutsTitle)
             .popover(isPresented: $toolOptionsShown, arrowEdge: .leading) {
@@ -720,6 +721,7 @@ struct ScreenshotEditorView: View {
             .scaleEffect(isHovered && !isActive ? 1.06 : 1)
         }
         .buttonStyle(.borderless)
+        .screenshotIconHover()
         .onHover { inside in
             withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
                 isTextSelectionHovered = inside
@@ -765,6 +767,7 @@ struct ScreenshotEditorView: View {
             .scaleEffect(isHovered && !isActive ? 1.06 : 1)
         }
         .buttonStyle(.borderless)
+        .screenshotIconHover()
         .focused($focusedTool, equals: tool)
         .onHover { inside in
             withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
@@ -789,6 +792,7 @@ struct ScreenshotEditorView: View {
                 .frame(width: 24, height: 24)
         }
         .buttonStyle(.borderless)
+        .screenshotIconHover()
         .tint(.accentColor)
         .screenshotSafeHelp(l10n.s.qrResultTitle)
         .accessibilityLabel(l10n.s.qrResultTitle)
@@ -805,6 +809,7 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .screenshotIconHover()
             .focusable(false)
             .screenshotSafeHelp(recentCapturesTitle)
             .accessibilityLabel(recentCapturesTitle)
@@ -818,6 +823,7 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .screenshotIconHover()
             .focusable(false)
             .screenshotSafeHelp(strings.discardConfirm)
             .accessibilityLabel(strings.discardConfirm)
@@ -832,8 +838,12 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .screenshotIconHover()
             .focusable(false)
             .disabled(!model.canUndo)
+            .foregroundStyle(model.canUndo ? Color.primary : Color.secondary.opacity(0.4))
+            .screenshotSafeHelp(refinementStrings.undo + "  (⌘Z)")
+            .accessibilityLabel(refinementStrings.undo)
             Button {
                 commitEditingTextIfNeeded()
                 model.redo()
@@ -842,8 +852,12 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .screenshotIconHover()
             .focusable(false)
             .disabled(!model.canRedo)
+            .foregroundStyle(model.canRedo ? Color.primary : Color.secondary.opacity(0.4))
+            .screenshotSafeHelp(refinementStrings.redo + "  (⇧⌘Z)")
+            .accessibilityLabel(refinementStrings.redo)
 
             if model.qrReading != nil {
                 Divider().frame(height: 16).padding(.horizontal, 3)
@@ -862,6 +876,7 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .screenshotIconHover()
             .focusable(false)
             .screenshotSafeHelp(strings.pinButton + "  (⌘P)")
             .accessibilityLabel(strings.pinButton)
@@ -882,6 +897,7 @@ struct ScreenshotEditorView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .screenshotIconHover()
             .focusable(false)
             .background(ShelfSharePickerAnchor(anchor: shareAnchor))
             .screenshotSafeHelp(strings.shareButton)
@@ -1045,6 +1061,7 @@ struct ScreenshotEditorView: View {
                 .frame(width: 24, height: 24)
         }
         .buttonStyle(.borderless)
+        .screenshotIconHover()
         .disabled(!canMoveSelected(move))
         .screenshotSafeHelp(label)
         .accessibilityLabel(label)
@@ -1324,7 +1341,9 @@ struct ScreenshotEditorView: View {
             .scaleEffect(selected ? 1.05 : 1)
         }
         .buttonStyle(.borderless)
+        .screenshotIconHover()
         .accessibilityLabel(strings.colorLabel)
+        .screenshotSafeHelp(strings.colorLabel)
     }
 
     /// Line-weight glyphs with three increasing stroke widths.
@@ -1546,7 +1565,7 @@ struct ScreenshotEditorView: View {
                 .frame(minWidth: 38)
                 .lineLimit(1)
                 .fixedSize()
-            zoomButton(active: isActualZoom, help: "⌘1") {
+            zoomButton(active: isActualZoom, help: refinementStrings.actualSize + "  (⌘1)") {
                 Text("1:1")
                     .font(.system(size: 11, weight: .medium))
             } action: {
@@ -1575,6 +1594,7 @@ struct ScreenshotEditorView: View {
                 .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
         .buttonStyle(.borderless)
+        .screenshotIconHover()
         .screenshotSafeHelp(help)
     }
 
