@@ -54,6 +54,10 @@ def main():
     write("RecorderScreen.swift", "import AppKit\n" + declaration(
         "Sources/Vorssaint/Services/QuickTools/ScreenshotCaptureEngine.swift", "extension NSScreen {"))
     recorder = "Sources/Vorssaint/Services/Recorder/ScreenRecorderService.swift"
+    write("CaptureTimestamp.swift", "import Foundation\nextension CaptureTimestampTests {\nenum Formatter {\n"
+          + declaration("Sources/Vorssaint/UI/MenuPanel/PanelRecentCapturesView.swift",
+                        "    static func formattedCaptureTime(")
+          + "}\n}\n")
     editor = "Sources/Vorssaint/Services/Recorder/RecorderEditorController.swift"
     write("RecordingStash.swift", "import Foundation\nextension RecordingStashTests {\n"
           + "final class Service: State {\n"

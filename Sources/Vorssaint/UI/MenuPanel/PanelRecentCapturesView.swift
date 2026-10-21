@@ -98,30 +98,20 @@ struct RecentCapturesView: View {
         }
     }
 
-    private static let captureTimeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
-        return formatter
-    }()
-
-    private static let captureDateTimeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
-        return formatter
-    }()
-
     static func formattedCaptureTime(_ date: Date) -> String {
         let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.locale = L10n.shared.language.formattingLocale()
+        formatter.timeStyle = .short
         if calendar.isDateInToday(date) {
-            return captureTimeFormatter.string(from: date)
+            formatter.dateStyle = .none
         } else if calendar.isDateInYesterday(date) {
-            let timeStr = captureTimeFormatter.string(from: date)
-            return "Yesterday, \(timeStr)"
+            formatter.dateStyle = .medium
+            formatter.doesRelativeDateFormatting = true
         } else {
-            return captureDateTimeFormatter.string(from: date)
+            formatter.dateStyle = .short
         }
+        return formatter.string(from: date)
     }
 
     @ViewBuilder
