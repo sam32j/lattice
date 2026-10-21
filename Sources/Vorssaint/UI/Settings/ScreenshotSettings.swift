@@ -32,7 +32,6 @@ struct ScreenshotSettings: View {
     @AppStorage(DefaultsKey.screenshotAddToShelf) private var addToShelf = false
     @AppStorage(DefaultsKey.shelfEnabled) private var shelfEnabled = false
     @AppStorage(AppFeature.shelf.availabilityKey) private var shelfAvailable = false
-    @AppStorage(DefaultsKey.screenshotPreviewPosition) private var previewPositionRaw = ""
     @AppStorage(DefaultsKey.screenshotPreviewTakesFocus) private var previewTakesFocus = true
     @AppStorage(DefaultsKey.screenshotPreviewEnabled) private var previewEnabled = true
     @AppStorage(DefaultsKey.screenshotPreviewDuration) private var previewDuration =
@@ -161,7 +160,7 @@ struct ScreenshotSettings: View {
 
             Section {
                 defaultActionRow
-                previewPositionRow
+                CapturePreviewPositionPicker()
                 previewFocusRow
                 Toggle(ScreenshotPinStrings.localized(l10n.language).rounded, isOn: $pinRoundedCorners)
             } header: {
@@ -382,20 +381,6 @@ struct ScreenshotSettings: View {
         }
     }
 
-    private var previewPositionRow: some View {
-        Picker(strings.previewPositionLabel, selection: $previewPositionRaw) {
-            Text(strings.previewPositionAutomatic)
-                .tag(ScreenshotSupport.QuickPreviewPosition.automatic.rawValue)
-            Text(strings.previewPositionTopLeft)
-                .tag(ScreenshotSupport.QuickPreviewPosition.topLeft.rawValue)
-            Text(strings.previewPositionTopRight)
-                .tag(ScreenshotSupport.QuickPreviewPosition.topRight.rawValue)
-            Text(strings.previewPositionBottomLeft)
-                .tag(ScreenshotSupport.QuickPreviewPosition.bottomLeft.rawValue)
-            Text(strings.previewPositionBottomRight)
-                .tag(ScreenshotSupport.QuickPreviewPosition.bottomRight.rawValue)
-        }
-    }
 
     private var folderRow: some View {
         HStack {
