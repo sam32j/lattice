@@ -167,7 +167,7 @@ struct ScreenshotEditorView: View {
     /// actions on the right, the trash for a capture not worth keeping.
     private var topBand: some View {
         ZStack {
-            BrandMark(width: 40, tint: Color(white: 0.92))
+            BrandMark(width: 28, tint: Color.primary.opacity(0.85))
             HStack {
                 Spacer()
                 actionCluster
@@ -178,12 +178,12 @@ struct ScreenshotEditorView: View {
 
     // MARK: - Artboard
 
-    /// Dark canvas surface shared by the editor chrome.
+    /// Surface shared by the editor chrome.
     private var artboard: some View {
         Rectangle()
-            .fill(Color(white: 0.115))
+            .fill(Color(nsColor: .windowBackgroundColor))
             .overlay {
-                LinearGradient(colors: [Color.white.opacity(0.035), .clear],
+                LinearGradient(colors: [Color.primary.opacity(0.035), .clear],
                                startPoint: .top, endPoint: .bottom)
             }
             .allowsHitTesting(false)
@@ -234,7 +234,8 @@ struct ScreenshotEditorView: View {
     @State private var magnifyBase: CGFloat?
 
     // Margin around the capture inside its scroll region.
-    private static let canvasMargin: CGFloat = 14
+    // Reserve the shadow's full falloff before the scroll viewport clips it.
+    private static let canvasMargin: CGFloat = 40
 
     private func zoomFactor(available: CGSize) -> CGFloat {
         let zoom: CGFloat
@@ -284,8 +285,9 @@ struct ScreenshotEditorView: View {
             RoundedRectangle(cornerRadius: outerRadius, style: .continuous)
                 .strokeBorder(Color.primary.opacity(0.14), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.30), radius: 24, y: 10)
-        .shadow(color: .black.opacity(0.18), radius: 3, y: 1)
+        .compositingGroup()
+        .shadow(color: .black.opacity(colorScheme == .light ? 0.12 : 0.30), radius: 12, y: 4)
+        .shadow(color: .black.opacity(colorScheme == .light ? 0.06 : 0.18), radius: 3, y: 1)
         .scaleEffect(appeared ? 1 : 0.965)
         .opacity(appeared ? 1 : 0)
         .onAppear {
@@ -674,12 +676,14 @@ struct ScreenshotEditorView: View {
             }
         }
         .padding(5)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .background {
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .fill(.regularMaterial)
+        }
         .overlay(
             RoundedRectangle(cornerRadius: 15, style: .continuous)
                 .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.18), radius: 16, y: 5)
     }
 
     private var textSelectionButton: some View {
@@ -920,14 +924,19 @@ struct ScreenshotEditorView: View {
             .buttonStyle(.borderedProminent)
             .screenshotSafeHelp("⌘S / ⏎")
         }
+        .foregroundStyle(Color.primary)
         .padding(.horizontal, 9)
         .padding(.vertical, 6)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.regularMaterial)
+                .compositingGroup()
+                .shadow(color: .black.opacity(colorScheme == .light ? 0.08 : 0.22), radius: 10, y: 3)
+        }
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.16), radius: 14, y: 4)
     }
 
     private var shareMenu: some View {
@@ -1545,8 +1554,11 @@ struct ScreenshotEditorView: View {
             }
         }
         .padding(4)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-        .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+        .background {
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(.regularMaterial)
+                .shadow(color: .black.opacity(colorScheme == .light ? 0.08 : 0.22), radius: 6, y: 2)
+        }
         .screenshotSafeHelp("⌃ scroll · ⌘+ ⌘-")
     }
 
