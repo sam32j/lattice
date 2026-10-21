@@ -278,6 +278,8 @@ if (( TEST )); then
         Sources/Vorssaint/Core/Defaults.swift
         Sources/Vorssaint/Core/PermanentInputMigration.swift
         Sources/Vorssaint/Core/PageOwnedControlsMigration.swift
+        Sources/Vorssaint/Core/AudioControlsMigration.swift
+        Sources/Vorssaint/Core/CaptureControlsMigration.swift
         Sources/Vorssaint/UI/Settings/SettingsHostingController.swift
         Sources/Vorssaint/Core/WindowLayoutShortcutEditor.swift
         Sources/Vorssaint/Core/NotchStrings.swift
