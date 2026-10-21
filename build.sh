@@ -532,6 +532,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/ScreenshotMultiWindowShiftMonitor.swift
         Sources/Vorssaint/Services/QuickTools/CapturePresentationDeferral.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotSupport.swift
+        Sources/Vorssaint/Services/QuickTools/ScreenshotWindowFallback.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotEditorGeometry.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotCropAspect.swift
         Sources/Vorssaint/Core/ScreenshotEditorRefinementStrings.swift

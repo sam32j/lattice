@@ -10,6 +10,8 @@ extension ScreenshotSelectionRefreshContract {
         left.frozenImage = CGImage(excluded: [1001])
         right.frozenImage = CGImage(excluded: [2002])
         let frame = CGRect(x: 10, y: 10, width: 20, height: 20)
+        left.overlayView.windows = [.init(windowID: 15, frame: frame)]
+        right.overlayView.windows = [.init(windowID: 25, frame: frame)]
         chooser.selectedWindows = [
             15: (.init(windowID: 15, frame: frame), left),
             25: (.init(windowID: 25, frame: frame), right)
@@ -36,5 +38,19 @@ extension ScreenshotSelectionRefreshContract {
         await drain()
         suite.expect(resolvedWindowSources.count == 1 && resolvedWindowSources[0] == nil,
                      "a window spanning a display boundary never stretches that display's partial crop")
+
+        for multiple in [false, true] {
+            let covered = Chooser(.screenshot)
+            let panel = covered.panels[0]
+            panel.overlayView.windows = [.init(windowID: 99, frame: frame), .init(windowID: 15, frame: frame)]
+            resolvedWindowSources = []
+            if multiple {
+                covered.selectedWindows = [15: (.init(windowID: 15, frame: frame), panel)]
+                covered.confirmSelectedWindows()
+            } else { covered.confirmWindow(15, frame: frame, on: panel) }
+            await drain()
+            suite.expect(resolvedWindowSources.count == 1 && resolvedWindowSources[0] == nil,
+                         "covered windows never use foreground-window display pixels, multiselect: \(multiple)")
+        }
     }
 }
