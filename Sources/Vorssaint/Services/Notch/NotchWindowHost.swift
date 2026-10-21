@@ -863,6 +863,7 @@ final class NotchPanel: NSPanel {
     static let fullscreenLevel = NSWindow.Level.floating
     var acceptsKeyFocus = false
     var handleScroll: ((NSEvent) -> Bool)?
+    var handleCaptureTouches: ((NSEvent, NSView) -> Bool)?
     var visibilityDidChange: (() -> Void)?
     override var canBecomeKey: Bool { acceptsKeyFocus }
     override var canBecomeMain: Bool { false }
@@ -926,6 +927,7 @@ private final class NotchQuickAccessContainer: NSView {
         quickView.wantsLayer = true
         quickView.isHidden = true
         super.init(frame: canvas.frame)
+        allowedTouchTypes = [.indirect]
         wantsLayer = true
         autoresizesSubviews = false
         addSubview(quickView)
@@ -934,6 +936,19 @@ private final class NotchQuickAccessContainer: NSView {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { nil }
+
+    override func touchesBegan(with event: NSEvent) {
+        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesBegan(with: event) }
+    }
+    override func touchesMoved(with event: NSEvent) {
+        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesMoved(with: event) }
+    }
+    override func touchesEnded(with event: NSEvent) {
+        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesEnded(with: event) }
+    }
+    override func touchesCancelled(with event: NSEvent) {
+        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesCancelled(with: event) }
+    }
 
     override func layout() {
         super.layout()
@@ -1042,6 +1057,7 @@ private final class NotchCanvas: NSView {
         backdrop.wantsLayer = true
         backdrop.autoresizingMask = []
         host = NotchHostingView(rootView: content)
+        host.allowedTouchTypes = [.indirect]
         host.sizingOptions = []
         host.wantsLayer = true
         host.autoresizingMask = []
@@ -1782,4 +1798,16 @@ final class NotchActivationButton: NSButton {
 
 private final class NotchHostingView: NSHostingView<AnyView> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func touchesBegan(with event: NSEvent) {
+        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesBegan(with: event) }
+    }
+    override func touchesMoved(with event: NSEvent) {
+        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesMoved(with: event) }
+    }
+    override func touchesEnded(with event: NSEvent) {
+        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesEnded(with: event) }
+    }
+    override func touchesCancelled(with event: NSEvent) {
+        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesCancelled(with: event) }
+    }
 }
