@@ -58,6 +58,10 @@ def main():
           + declaration("Sources/Vorssaint/UI/MenuPanel/PanelRecentCapturesView.swift",
                         "    static func formattedCaptureTime(")
           + "}\n}\n")
+    write("RecorderPreviewEdit.swift", "import AppKit\nextension RecorderPreviewEditTests {\nfinal class Controller: State {\n"
+          + declaration("Sources/Vorssaint/Services/Recorder/RecorderQuickPreviewController.swift",
+                        "    private func performEdit()").replace("private func", "func", 1)
+          + "}\n}\n")
     editor = "Sources/Vorssaint/Services/Recorder/RecorderEditorController.swift"
     write("RecordingStash.swift", "import Foundation\nextension RecordingStashTests {\n"
           + "final class Service: State {\n"
