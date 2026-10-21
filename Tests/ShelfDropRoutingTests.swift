@@ -9,7 +9,27 @@ enum ShelfDropRoutingContract {
     enum AppFeature {
         static var shelf = Feature()
         static var mediaTools = Feature()
+        static var screenshot = Feature(isAvailable: false)
+        static var screenRecorder = Feature(isAvailable: false)
         struct Feature { var isAvailable = true }
+    }
+    enum MediaEditorFileOpener {
+        static let shared = Opener()
+        final class Opener {
+            var opened: [URL] = []
+            func canOpen(_ urls: [URL]) -> Bool {
+                !urls.isEmpty && urls.allSatisfy {
+                    guard let kind = MediaEditorFileSupport.kind(for: $0) else { return false }
+                    return MediaEditorFileSupport.isEnabled(kind, image: AppFeature.screenshot.isAvailable,
+                                                           video: AppFeature.screenRecorder.isAvailable)
+                }
+            }
+            func open(_ urls: [URL]) -> Bool {
+                guard canOpen(urls) else { return false }
+                opened = urls
+                return true
+            }
+        }
     }
     enum NotchSupport {
         static var enabled = true
@@ -61,6 +81,9 @@ enum ShelfDropRoutingContract {
         var dragPlaceholder = true
         var choosingFileDropDestination = false
         var targetsMediaDrop = false
+        var targetsEditorDrop = false
+        var editorDropAvailable = false
+        var optimizationDropAvailable = false
         var pinned = false
         var geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1440, height: 900), safeAreaTop: 32, cameraWidth: 180)
         var expandedGeometry: NotchGeometry { geometry }
