@@ -187,6 +187,7 @@ final class NotchService: ObservableObject {
     private var powerSource: CFRunLoopSource?
     private var powerSampler: PowerSampler?
     private var captureID: UUID?
+    private let deferredCapturePresentation = CapturePresentationDeferral()
     private var captureFallback: (() -> Void)?
     private var captureClose: (() -> Void)?
     private var captureHover: ((Bool) -> Void)?
@@ -1148,6 +1149,7 @@ final class NotchService: ObservableObject {
         withAnimation(fade ? .easeInOut(duration: 0.22) : nil) { objectWillChange.send() }
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
         if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+        resumeDeferredCaptureIfReady()
     }
 
     private func refreshModules() {
@@ -1163,6 +1165,9 @@ final class NotchService: ObservableObject {
     }
 
     func stop(restoreCapture: Bool = true) {
+        // If routing is disabled while Mission Control is up, the pending
+        // capture still gets its standalone preview after teardown.
+        defer { deferredCapturePresentation.finish(restore: restoreCapture) }
         preferenceSyncWork?.cancel(); preferenceSyncWork = nil
         NotchLyricsService.shared.stop()
         NotchFileToolsService.shared.stop()
@@ -2067,11 +2072,29 @@ final class NotchService: ObservableObject {
         panel?.acceptsMouseMovedEvents = false
     }
 
+    func deferCaptureUntilMissionControlRestores(id: UUID, present: @escaping () -> Void) -> Bool {
+        guard running, !suspended, windowHost?.isConcealedForMissionControl == true else { return false }
+        deferredCapturePresentation.enqueue(id: id, action: present)
+        return true
+    }
+
+    func cancelDeferredCapturePresentation(id: UUID) {
+        deferredCapturePresentation.cancel(id: id)
+    }
+
+    func resumeDeferredCaptureIfReady() {
+        guard deferredCapturePresentation.hasPending, acceptsUserInteraction else { return }
+        deferredCapturePresentation.restore()
+    }
+
     private func missionControlDidRestore() {
+        // Read the landed Space before choosing island vs floating fallback.
+        fullscreenEnvironmentDidChange()
         if captureControls != nil { updateCaptureControlsClickThrough() }
         else { hover(windowHost?.containsHover(NSEvent.mouseLocation) == true) }
         // A pointer that crossed displays during Mission Control is followed now.
         schedulePointerFollow()
+        resumeDeferredCaptureIfReady()
     }
 
     func endCaptureControls() {

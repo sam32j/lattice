@@ -3,8 +3,8 @@
 
 import SwiftUI
 
-enum ScreenshotPreviewMenuAction: CaseIterable {
-    case edit, pin, extractText, rotateLeft, flipHorizontal, quickLook, printImage, saveAs, mail, reveal, share, discard, close
+enum ScreenshotPreviewMenuAction {
+    case edit, pin, extractText, rotateLeft, flipHorizontal, quickLook, printImage, saveAs, mail, reveal, share, close
 }
 
 /// Native menu grouping, shared by the floating and Dynamic Island previews.
@@ -12,7 +12,6 @@ struct ScreenshotPreviewContextMenu: View {
     let perform: @MainActor (ScreenshotPreviewMenuAction) -> Void
     let applications: () -> [URL]
     let openWith: (URL) -> Void
-    let canReveal: Bool
     let opened: () -> Void
     let closed: () -> Void
     @State private var apps: [URL] = []
@@ -46,7 +45,6 @@ struct ScreenshotPreviewContextMenu: View {
         }
         Button(text.openInMail) { perform(.mail) }
         Divider()
-        Button(screenshot.discardConfirm, role: .destructive) { perform(.discard) }
         Button(FeatureStrings.commandBar(l10n.language).actionRevealInFinder) { perform(.reveal) }
         Divider()
         Button(screenshot.shareButton) { perform(.share) }

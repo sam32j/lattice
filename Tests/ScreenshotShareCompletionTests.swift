@@ -109,6 +109,7 @@ enum ScreenshotShareCompletionTests {
     class State {
         typealias UserDefaults = SharingDefaults
         var systemSharing = false
+        var contextMenuOpen = false
         var pointerInside = false
         var onClose: () -> Void = {}
         var shareHandler: ((ScreenshotShareDuration, @escaping @MainActor (ScreenshotShareRecord?) -> Void) -> Void)?
