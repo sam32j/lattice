@@ -173,6 +173,8 @@ struct ScreenshotBackdropPopover<Model: BackdropEditing>: View {
                 )
         }
         .buttonStyle(.borderless)
+        .screenshotIconHover()
+        .screenshotSafeHelp(accessibility)
         .accessibilityLabel(accessibility)
     }
 
@@ -241,6 +243,7 @@ struct ScreenshotBackdropPopover<Model: BackdropEditing>: View {
             )
         }
         .buttonStyle(.borderless)
+        .screenshotIconHover()
         .screenshotSafeHelp(strings.backdropImageButton)
         .accessibilityLabel(strings.backdropImageButton)
     }
@@ -277,6 +280,7 @@ struct ScreenshotBackdropPopover<Model: BackdropEditing>: View {
                     Image(systemName: "plus.circle.fill")
                 }
                 .buttonStyle(.borderless)
+                .screenshotIconHover()
                 .disabled(!canSavePreset)
                 .screenshotSafeHelp(strings.backdropSavePreset)
                 .accessibilityLabel(strings.backdropSavePreset)
@@ -304,6 +308,9 @@ struct ScreenshotBackdropPopover<Model: BackdropEditing>: View {
                 .padding(3)
         }
         .buttonStyle(.borderless)
+        .screenshotIconHover()
+        .screenshotSafeHelp(customIsGradient
+                                ? strings.backdropGradientLabel : strings.backdropSolidLabel)
         .accessibilityLabel(customIsGradient
                                 ? strings.backdropGradientLabel : strings.backdropSolidLabel)
     }
@@ -325,6 +332,10 @@ struct ScreenshotBackdropPopover<Model: BackdropEditing>: View {
                         )
                 }
                 .buttonStyle(.borderless)
+                .screenshotIconHover()
+                .screenshotSafeHelp(customIsGradient
+                                        ? strings.backdropGradientLabel
+                                        : strings.backdropSolidLabel)
                 .accessibilityLabel(customIsGradient
                                         ? strings.backdropGradientLabel
                                         : strings.backdropSolidLabel)
