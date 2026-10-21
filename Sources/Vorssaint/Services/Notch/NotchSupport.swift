@@ -10,6 +10,10 @@ enum NotchModule: String, CaseIterable, Identifiable {
     case controls, mixer, music, clipboard, captures, files, system, tools, calendar, notifications, timer, camera, downloads, scratchpad, agents, watch
     var id: String { rawValue }
 
+    func presentationTitle(_ language: AppLanguage, hasCapturePreview: Bool) -> String {
+        self == .captures && hasCapturePreview ? MediaImageConverterStrings.localized(language).preview : title(language)
+    }
+
     var symbol: String {
         switch self {
         case .controls: return "slider.horizontal.3"

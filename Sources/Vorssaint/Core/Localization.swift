@@ -437,27 +437,8 @@ struct Strings {
     let dockPreviewPreviousWindow: String
     let dockPreviewNextWindow: String
 
-    // MARK: Feature — cut & paste in Finder
-    let cutPasteName: String
-    let cutPasteEnable: String
-    let cutPasteEnableCaption: String
-    let cutPasteShowHUD: String
-    let cutPasteShowHUDCaption: String
-    let cutPasteHowTitle: String
-    let cutPasteStep1: String
-    let cutPasteStep2: String
-    let cutPasteTextNote: String
-    let cutPasteActiveNow: String
-    let cutPasteAutomationNote: String
-    let cutReadyTitle: String
-    let cutReadyHint: String
-    let cutCancel: String
-    let cutDoneTitle: String
-    let cutMovedSingular: String
-    let cutMovedPluralFormat: String      // + count
-    let cutSomeFailed: String
-    let cutMovingTitle: String
-    let cutMovingCountFormat: String      // + position, total
+    // MARK: Finder automation
+    let finderAutomationNote: String
 
     // MARK: Feature — quit on last window close
     let autoQuitName: String
@@ -1479,26 +1460,7 @@ extension Strings {
         dockPreviewPreviousWindow: "Janela anterior",
         dockPreviewNextWindow: "Próxima janela",
 
-        cutPasteName: "Recortar e colar",
-        cutPasteEnable: "Recortar e colar arquivos no Finder",
-        cutPasteEnableCaption: "Use ⌘X para recortar e ⌘V para mover arquivos e pastas no Finder.",
-        cutPasteShowHUD: "Mostrar painel flutuante",
-        cutPasteShowHUDCaption: "Exibe um indicador com os arquivos recortados enquanto o Finder estiver ativo.",
-        cutPasteHowTitle: "Como usar",
-        cutPasteStep1: "Selecione itens no Finder e pressione ⌘X para recortá-los.",
-        cutPasteStep2: "Abra a pasta de destino e pressione ⌘V para movê-los para lá.",
-        cutPasteTextNote: "Em campos de texto (como ao renomear), ⌘X e ⌘V continuam funcionando normalmente.",
-        cutPasteActiveNow: "Pronto para recortar no Finder",
-        cutPasteAutomationNote: "Na primeira vez, o macOS pede permissão para controlar o Finder.",
-        cutReadyTitle: "Recortado",
-        cutReadyHint: "na pasta de destino para mover",
-        cutCancel: "Cancelar recorte",
-        cutDoneTitle: "Movido!",
-        cutMovedSingular: "1 item movido",
-        cutMovedPluralFormat: "%d itens movidos",
-        cutSomeFailed: "Alguns itens não puderam ser movidos",
-        cutMovingTitle: "Movendo…",
-        cutMovingCountFormat: "%d de %d",
+        finderAutomationNote: "Na primeira vez, o macOS pede permissão para controlar o Finder.",
 
         autoQuitName: "Encerrar o app quando nenhuma janela estiver aberta",
         autoQuitEnable: "Encerrar o app ao fechar a última janela",
@@ -2482,26 +2444,7 @@ extension Strings {
         dockPreviewPreviousWindow: "Previous window",
         dockPreviewNextWindow: "Next window",
 
-        cutPasteName: "Cut & Paste",
-        cutPasteEnable: "Cut & paste files in Finder",
-        cutPasteEnableCaption: "Use ⌘X to cut and ⌘V to move files and folders in Finder.",
-        cutPasteShowHUD: "Show floating panel",
-        cutPasteShowHUDCaption: "Display a floating indicator with the cut files while Finder is active.",
-        cutPasteHowTitle: "How to use",
-        cutPasteStep1: "Select items in Finder and press ⌘X to cut them.",
-        cutPasteStep2: "Open the destination folder and press ⌘V to move them there.",
-        cutPasteTextNote: "In text fields (like when renaming), ⌘X and ⌘V keep working as usual.",
-        cutPasteActiveNow: "Ready to cut in Finder",
-        cutPasteAutomationNote: "The first time, macOS asks for permission to control Finder.",
-        cutReadyTitle: "Cut",
-        cutReadyHint: "in the destination folder to move",
-        cutCancel: "Cancel cut",
-        cutDoneTitle: "Moved!",
-        cutMovedSingular: "1 item moved",
-        cutMovedPluralFormat: "%d items moved",
-        cutSomeFailed: "Some items couldn’t be moved",
-        cutMovingTitle: "Moving…",
-        cutMovingCountFormat: "%d of %d",
+        finderAutomationNote: "The first time, macOS asks for permission to control Finder.",
 
         autoQuitName: "Quit app when no window is open",
         autoQuitEnable: "Quit an app when its last window closes",

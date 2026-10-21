@@ -109,6 +109,7 @@ enum ScreenshotShareCompletionTests {
     class State {
         typealias UserDefaults = SharingDefaults
         var systemSharing = false
+        var contextMenuOpen = false
         var pointerInside = false
         var onClose: () -> Void = {}
         var shareHandler: ((ScreenshotShareDuration, @escaping @MainActor (ScreenshotShareRecord?) -> Void) -> Void)?
@@ -181,11 +182,13 @@ enum ScreenshotShareCompletionTests {
         typealias Capture = Int
     }
 
+    final class NSWindow {}
     final class ScreenshotEditorController {
         let capture: Int
         var shown = false
+        var originatingPin: Any? = nil
         init(capture: Int) { self.capture = capture }
-        func show() { shown = true }
+        func show(above owner: NSWindow? = nil) { shown = true }
     }
 
     enum WindowActivationPolicy {

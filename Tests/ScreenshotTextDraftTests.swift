@@ -13,14 +13,21 @@ enum ScreenshotTextDraftTests {
         var selectedID: UUID?, editingTextID: UUID?, newTextID: UUID?, draftID: UUID?
         var dragStart = CGPoint.zero, cropLoupePoint: CGPoint?
         var dragRegistered = false, editingSelectedAnnotation = false
+        var duplicateOnDrag = false
+        var additiveSelectionClick = false
+        var movingSelection: [ScreenshotSupport.Annotation] = []
         var activeHandle: ScreenshotSupport.Handle?
         var cropDraft: CGRect?, cropResizeOrigin: CGRect?, cropMoveOrigin: CGRect?, cropSelectionOrigin: CGRect?
         var tool = ScreenshotSupport.Tool.text
+        var textSelectionEnabled = false
+        var cropAspect = ScreenshotCropAspect.free
         var color = ScreenshotSupport.ColorID.red
         var stroke = ScreenshotSupport.StrokeID.medium
         var textSize = 18, blurLevel = 10
+        var coalescingTextSize = false, textSizeUndoRegistered = false
         var blurStyle = ScreenshotSupport.BlurStyleID.pixelate
         var blurTextOnly = false
+        var cornerRadiusEnabled = false
         var arrowStyle = ScreenshotSupport.ArrowStyleID.filled
         var sticker = ScreenshotSupport.StickerID.allCases[0]
         var scale: CGFloat = 1
@@ -29,22 +36,30 @@ enum ScreenshotTextDraftTests {
         var picksExisting = false
         init(_ image: CGImage) { baseImage = image }
         func selectedAnnotationOwns(_ point: CGPoint) -> Bool { false }
-        func beginSelectDrag(at point: CGPoint) {}
+        func beginSelectDrag(at point: CGPoint, extending: Bool = false) {}
         func finishSelectDrag(at point: CGPoint, isTap: Bool) {}
         func selectExistingAnnotation(at point: CGPoint) -> Bool { picksExisting }
         func ensureBlurSample(_ style: ScreenshotSupport.BlurStyleID, level: Int) {}
         func refreshUndoFlags() { canUndo = !undoStack.isEmpty; canRedo = !redoStack.isEmpty }
         func refreshDirtyState() { isDirty = !annotations.isEmpty }
     }
-    final class NSWindow {}
+    final class NSWindow {
+        var level = AppKit.NSWindow.Level.normal
+    }
     final class NSAlert {
         enum Style { case warning }
         enum Response { case alertFirstButtonReturn, cancelled }
         static var presentations = 0
+        var window = NSWindow()
         var messageText = "", informativeText = ""
         var alertStyle = Style.warning
         func addButton(withTitle title: String) {}
         func runModal() -> Response { Self.presentations += 1; return .cancelled }
+    }
+    enum NotchIslandAlert {
+        static func run(_ alert: NSAlert, above window: NSWindow?) -> NSAlert.Response {
+            alert.runModal()
+        }
     }
     class ControllerState {
         let model: Model
@@ -94,7 +109,28 @@ enum ScreenshotTextDraftTests {
         model.applyStyleToSelection()
         suite.expect(model.annotations[0].isBounded && abs(model.annotations[0].rect.width - 80) < 1,
                      "changing bounded text size preserves its wrap width")
-        suite.expect(model.annotations[0].rect.height > 60,
-                     "bounded text grows vertically after increasing its font size")
+        suite.expect(model.annotations[0].rect == CGRect(x: 20, y: 30, width: 80, height: 60),
+                     "changing bounded text size preserves the entire drawn text area")
+        let undoCount = model.undoStack.count
+        model.textSizeEditingChanged(true)
+        for size in [30, 34, 42] {
+            model.textSize = size
+            model.applyStyleToSelection()
+            suite.expect(model.annotations[0].textSize == size,
+                         "font-size drag changes the selected text live")
+        }
+        model.textSizeEditingChanged(false)
+        suite.expect(model.undoStack.count == undoCount + 1,
+                     "one continuous font-size adjustment is one undoable edit")
+        model.annotations[0].rect = CGRect(x: 100, y: 100, width: 200, height: 300)
+        for size in [8, 96, 32] {
+            model.textSize = size
+            model.applyStyleToSelection()
+            suite.expect(model.annotations[0].rect == CGRect(x: 100, y: 100, width: 200, height: 300),
+                         "font adjustments preserve a 200 by 300 text area at 100,100")
+        }
+        model.commitText(id, text: "A changed draft that must keep its original area")
+        suite.expect(model.annotations[0].rect == CGRect(x: 100, y: 100, width: 200, height: 300),
+                     "committing bounded text does not retroactively change the selected area")
     }
 }

@@ -6,37 +6,66 @@ import SwiftUI
 
 struct RecorderOverlayInputControls: View {
     @ObservedObject private var overlays = RecorderOverlayController.shared
+    private var text: RecorderOverlayStrings { FeatureStrings.recorderOverlay(L10n.shared.language) }
+    @State private var cameraHovered = false
+    @State private var keysHovered = false
+
     var body: some View {
         HStack(spacing: 6) {
             Button { overlays.toggleCamera() } label: {
                 Image(systemName: "video.fill")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(overlays.cameraEnabled ? .white : .secondary)
+                    .foregroundStyle(overlays.cameraEnabled ? .white : (cameraHovered ? .primary : .secondary))
                     .frame(width: 32, height: 26)
-                    .background(overlays.cameraEnabled ? Color.accentColor : Color.primary.opacity(0.06), in: Capsule())
+                    .background(
+                        overlays.cameraEnabled
+                            ? (cameraHovered ? Color.accentColor.opacity(0.85) : Color.accentColor)
+                            : (cameraHovered ? Color.primary.opacity(0.14) : Color.primary.opacity(0.06)),
+                        in: Capsule()
+                    )
+                    .overlay {
+                        if cameraHovered && !overlays.cameraEnabled {
+                            Capsule()
+                                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                        }
+                    }
+                    .scaleEffect(cameraHovered ? 1.05 : 1.0)
+                    .animation(.easeOut(duration: 0.15), value: cameraHovered)
             }
-            .help("Camera")
+            .buttonStyle(.plain)
+            .onHover { cameraHovered = $0 }
+            .help(text.camera)
+            .accessibilityLabel(text.camera)
             .contextMenu { RecorderInputSourceMenu(camera: true) }
+
             Button { overlays.keysEnabled.toggle() } label: {
                 Image(systemName: "keyboard")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(overlays.keysEnabled ? .white : .secondary)
+                    .foregroundStyle(overlays.keysEnabled ? .white : (keysHovered ? .primary : .secondary))
                     .frame(width: 32, height: 26)
-                    .background(overlays.keysEnabled ? Color.accentColor : Color.primary.opacity(0.06), in: Capsule())
+                    .background(
+                        overlays.keysEnabled
+                            ? (keysHovered ? Color.accentColor.opacity(0.85) : Color.accentColor)
+                            : (keysHovered ? Color.primary.opacity(0.14) : Color.primary.opacity(0.06)),
+                        in: Capsule()
+                    )
+                    .overlay {
+                        if keysHovered && !overlays.keysEnabled {
+                            Capsule()
+                                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                        }
+                    }
+                    .scaleEffect(keysHovered ? 1.05 : 1.0)
+                    .animation(.easeOut(duration: 0.15), value: keysHovered)
             }
-            .help("Show keystrokes")
+            .buttonStyle(.plain)
+            .onHover { keysHovered = $0 }
+            .help(text.keys)
+            .accessibilityLabel(text.keys)
         }
         .buttonStyle(.plain)
         .focusable(false)
-        .onAppear {
-            guard overlays.pixelSize == .zero,
-                  let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main
-            else { return }
-            overlays.updateRegion(anchorRect: screen.frame,
-                pixelSize: CGSize(width: screen.frame.width * screen.backingScaleFactor,
-                                  height: screen.frame.height * screen.backingScaleFactor))
-        }
-        .alert("Camera unavailable", isPresented: Binding(get: { overlays.errorMessage != nil },
+        .alert(text.unavailable, isPresented: Binding(get: { overlays.errorMessage != nil },
             set: { if !$0 { overlays.dismissError() } })) {
                 Button("OK") { overlays.dismissError() }
             } message: { Text(overlays.errorMessage ?? "") }
@@ -48,10 +77,11 @@ struct RecorderInputSourceMenu: View {
     @ObservedObject private var overlays = RecorderOverlayController.shared
     @State private var devices: [AVCaptureDevice] = []
     private var selected: String? { camera ? overlays.selectedCameraID : overlays.selectedMicrophoneID }
+    private var text: RecorderOverlayStrings { FeatureStrings.recorderOverlay(L10n.shared.language) }
     var body: some View {
         Button { select(nil) } label: {
-            if selected == nil { Label("System default", systemImage: "checkmark") }
-            else { Text("System default") }
+            if selected == nil { Label(text.defaultInput, systemImage: "checkmark") }
+            else { Text(text.defaultInput) }
         }
         .onAppear { devices = camera ? RecorderCaptureInputs.cameras : RecorderCaptureInputs.microphones }
         Divider()
@@ -61,7 +91,7 @@ struct RecorderInputSourceMenu: View {
                 else { Text(device.localizedName) }
             }
         }
-        if devices.isEmpty { Text(camera ? "No camera available" : "No microphone available").disabled(true) }
+        if devices.isEmpty { Text(camera ? text.noCamera : text.noMicrophone).disabled(true) }
     }
     private func select(_ id: String?) {
         if camera { overlays.selectedCameraID = id }

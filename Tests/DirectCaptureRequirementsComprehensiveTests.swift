@@ -124,8 +124,8 @@ enum DirectCaptureRequirementsComprehensiveTests {
         }
         suite.expect(AppFeature.hubInstallableFeatures.count == AppFeature.allCases.count - nonHubFeatures.count,
                      "the Hub omits the screenshot companions as well as mouse and keyboard features and dedicated page features")
-        suite.expect(AppFeature.hubInstallableFeatures.count == 42,
-                     "the Hub contains exactly 42 installable features")
+        suite.expect(AppFeature.hubInstallableFeatures.count == 40,
+                     "the Hub contains exactly 40 installable features")
 
         // 2. Color picker and screen OCR are excluded from standalone Hub installables
         suite.expect(!AppFeature.hubInstallableFeatures.contains(.colorPicker)
@@ -293,21 +293,14 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      && indicatorSource.contains("trashButton.toolTip = discardTooltip"),
                      "RecorderIndicator expanded to 182x32 and includes trash button for deleting/discarding recording")
 
-        // 2. Delayed start waiting state
-        suite.expect(indicatorSource.contains("func setWaitingForStart() {")
-                     && indicatorSource.contains("isWaitingForStart = true")
-                     && indicatorSource.contains("dot.opacity = 0.4")
-                     && indicatorSource.contains("pauseButton.image = symbolImage(\"play.fill\")")
-                     && indicatorSource.contains("pauseButton.toolTip = startTooltip"),
-                     "RecorderIndicator implements setWaitingForStart with dim pulse, play icon, and Start recording tooltip")
-
-        // 3. Starting delayed recording
-        suite.expect(indicatorSource.contains("func setStarted() {")
-                     && indicatorSource.contains("isWaitingForStart = false")
-                     && indicatorSource.contains("addPulse()")
-                     && indicatorSource.contains("if isWaitingForStart {")
-                     && indicatorSource.contains("onStart?()"),
-                     "Clicking pause/play button while waiting transitions to started state and invokes onStart")
+        let waitingSource = (try? String(contentsOfFile:
+            "Sources/Vorssaint/UI/Recorder/RecorderWaitingControls.swift", encoding: .utf8)) ?? ""
+        suite.expect(waitingSource.contains("RecorderOverlayInputControls()")
+                     && waitingSource.contains("speaker.wave.2.fill") && waitingSource.contains("mic.fill")
+                     && waitingSource.contains("play.fill") && waitingSource.contains("xmark"),
+                     "waiting controls group four inputs beside Start and Cancel")
+        suite.expect(!indicatorSource.contains("isWaitingForStart"),
+                     "the recording indicator has no obsolete pre-recording waiting state")
 
         // 4. Discard action in ScreenRecorderService
         let recorderServiceSource = (try? String(
@@ -320,10 +313,12 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      && !discardBody.contains("stashRecording"),
                      "ScreenRecorderService stopAndDiscard deletes take from store without stashing into Recent Captures")
 
-        // 5. Delayed start mode check in ScreenRecorderService
-        suite.expect(recorderServiceSource.contains("DefaultsKey.recorderImmediateStartAfterSelection")
-                     && recorderServiceSource.contains("indicator.setWaitingForStart(in: region.anchorRect)"),
-                     "ScreenRecorderService checks recorderImmediateStartAfterSelection and delays countdown until user click")
+        let waitingSelectionSource = (try? String(contentsOfFile:
+            "Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift", encoding: .utf8)) ?? ""
+        suite.expect(waitingSelectionSource.contains("DefaultsKey.recorderImmediateStartAfterSelection")
+                     && waitingSelectionSource.contains("prepareWaitingRecording")
+                     && waitingSelectionSource.contains("recordingDraft?.drag"),
+                     "the chooser owns delayed Start and retains editable recording geometry")
 
         // 6. Selection live unfrozen screen for recorder
         let recordingPolicy = ScreenshotSupport.unifiedCapturePolicy(
@@ -548,26 +543,29 @@ enum DirectCaptureRequirementsComprehensiveTests {
             contentsOfFile: "Sources/Vorssaint/UI/Screenshot/ScreenshotEditorView.swift",
             encoding: .utf8)) ?? ""
         suite.expect(!editorViewSource.isEmpty, "ScreenshotEditorView.swift is readable")
+        let inlineTextSource = (try? String(
+            contentsOfFile: "Sources/Vorssaint/UI/Screenshot/ScreenshotInlineTextEditor.swift",
+            encoding: .utf8)) ?? ""
 
         // 1. Multiline Enter vs Cmd+Return save
-        suite.expect(editorViewSource.contains("if event.keyCode == 36 || event.keyCode == 76 {")
-                     && editorViewSource.contains("if flags.contains(.command) {")
-                     && editorViewSource.contains("onCommit?()")
-                     && editorViewSource.contains("insertNewline(nil)")
+        suite.expect(inlineTextSource.contains("if event.keyCode == 36 || event.keyCode == 76 {")
+                     && inlineTextSource.contains("if flags.contains(.command) {")
+                     && inlineTextSource.contains("commitEditing()")
+                     && inlineTextSource.contains("insertNewline(nil)")
 ,
                      "EditorTextView allows Enter for new line, and Cmd+Return to commit and exit text input")
 
         // 2. Isolated undo manager to avoid crashing parent window undo stack
-        suite.expect(editorViewSource.contains("let isolatedUndoManager = UndoManager()")
-                     && editorViewSource.contains("override var undoManager: UndoManager? { isolatedUndoManager }")
-                     && editorViewSource.contains("isolatedUndoManager.removeAllActions()"),
+        suite.expect(inlineTextSource.contains("let isolatedUndoManager = UndoManager()")
+                     && inlineTextSource.contains("override var undoManager: UndoManager? { isolatedUndoManager }")
+                     && inlineTextSource.contains("isolatedUndoManager.removeAllActions()"),
                      "EditorTextView uses isolated UndoManager, preventing undo crashes in screenshot editor")
 
         // 3. Drag creates bounded text box; single click creates dynamic box
-        suite.expect(editorViewSource.contains("if isBounded {")
-                     && editorViewSource.contains("let minBoxWidth: CGFloat = 40")
-                     && editorViewSource.contains("textView.textContainer?.widthTracksTextView = isBounded")
-                     && editorViewSource.contains("let dynamicWidth = min(max(maxLineWidth + 24, 60), availableWidth)"),
+        suite.expect(inlineTextSource.contains("let wrapWidth = mark.isBounded ?")
+                     && inlineTextSource.contains("ScreenshotEditorGeometry.textSize(text, font: font, width: wrapWidth)")
+                     && inlineTextSource.contains("textView.textContainer?.widthTracksTextView = isBounded")
+                     && inlineTextSource.contains("wrapWidth ?? max(40, measured.width + 4 * zoom)"),
                      "Text tool drag creates contained bounded box with word wrap; click creates dynamic sizing box")
     }
 
@@ -634,11 +632,10 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      "Clicking hover tab controls does not dismiss or hide the capture tabs")
 
         // 10. Multi-window selection: un-dimmed rather than blue tint, visible checkmark, release shift to capture
+        ScreenshotMultiWindowShiftTests.run(suite)
         suite.expect(selectionSource.contains("func toggleSelectedWindow(_ window: ScreenshotSupport.PickableWindow, on panel: ScreenshotOverlayPanel)")
-                     && selectionSource.contains("selectedWindows[window.windowID] = (window, panel)")
-                     && selectionSource.contains("if !event.modifierFlags.contains(.shift), self.hasSelectedWindows {")
-                     && selectionSource.contains("self.confirmSelectedWindows()"),
-                     "Shift+click toggles window selection and releasing Shift confirms capture without requiring Return")
+                     && selectionSource.contains("selectedWindows[window.windowID] = (window, panel)"),
+                     "Shift+click toggles the windows used by multi-window confirmation")
 
         // 11. Esc quits screenshot mode directly in multi-window selection
         suite.expect(selectionSource.contains("case kVK_Escape:")
@@ -651,10 +648,8 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      && selectionSource.contains(".disabled(!isEnabled)"),
                      "Control buttons (X, F, S, Z, R) are disabled during multi-window selection")
 
-        // 13. Multi-window bounding box union without upward shift bug
-        suite.expect(selectionSource.contains("unionViewFrame = unionViewFrame.union(entry.window.frame)")
-                     && selectionSource.contains("ScreenshotSupport.cocoaRect("),
-                     "Multi-window capture computes proper union of all selected windows without vertical coordinate offset")
+        // Multi-window anchor geometry is exercised against the real chooser
+        // methods in ScreenshotMultiWindowSourceTests, not source spellings.
 
         // 14. Loupe HUD: vertically stacked, 90% opaque + blur, logical pixels, Tab copies color
         suite.expect(selectionSource.contains("drawLoupeCoordinateBox(context, in: coordRect, at: point)")

@@ -552,7 +552,6 @@ struct SettingsView: View {
         case .switcher: SwitcherSettings()
         case .dock: DockSettings()
         case .keyboard: KeyboardSettings()
-        case .cutPaste: FinderSettings()
         case .wallpaper: DisplaySettings(focus: .wallpaper)
         case .uninstaller: UninstallerView()
         case .killProcess: KillProcessView()

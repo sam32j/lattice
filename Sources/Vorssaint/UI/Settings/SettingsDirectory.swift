@@ -37,7 +37,7 @@ struct SettingsDirectoryItem: Identifiable {
 enum SettingsDirectory {
     /// Shared pages whose tools cover the page without a separate overview row.
     private static let toolOnlyPages: Set<SettingsPage> = [
-        .energy, .switcher, .dock, .clipboard, .cutPaste,
+        .energy, .switcher, .dock, .clipboard,
     ]
 
     /// Keep the directory's destinations, but show the most useful groups

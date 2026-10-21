@@ -19,6 +19,7 @@ enum ScreenshotPreviewHoverTests {
     class State {
         var pointerInside = false
         var systemSharing = false
+        var contextMenuOpen = false
         var dismissWork: DispatchWorkItem?
         var autoDismissDuration: TimeInterval? = 12
         var closed = false
@@ -93,6 +94,14 @@ enum ScreenshotPreviewHoverTests {
             suite.expect(!floatingController.closed, "the floating preview retains its dismissal delay")
             DispatchQueue.main.advance(0.5)
             suite.expect(floatingController.closed, "leaving the floating preview still dismisses it")
+
+            DispatchQueue.main = NotchScreenRefreshContract.Scheduler()
+            let menuController = Controller()
+            menuController.contextMenuOpen = true
+            menuController.hoverChanged(false)
+            DispatchQueue.main.advance(duration)
+            suite.expect(!menuController.closed && DispatchQueue.main.pending == 0,
+                         "moving into a context menu does not dismiss its capture preview")
 
             // The system share sheet opens outside the preview, so the pointer
             // leaves it while a target is being picked.

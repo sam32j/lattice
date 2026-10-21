@@ -558,8 +558,9 @@ final class ScreenshotService: ObservableObject {
                                 dismissInterval: TimeInterval?,
                                 latestCapture: UUID?) {
         var saved = initialSaved
+        let presented = capture.presentationCapture
         let controller = ScreenshotQuickPreviewController(
-            capture: capture,
+            capture: presented,
             strings: strings,
             defaultAction: defaultAction,
             completedActions: completedActions,
@@ -571,16 +572,17 @@ final class ScreenshotService: ObservableObject {
                     self.editFromPreview(capture, latestCapture: latestCapture)
                     return [.edit]
                 case .pin:
-                    ScreenshotPinController.shared.pin(image: capture.image, scale: capture.scale)
+                    ScreenshotPinController.shared.pin(image: presented.image, scale: capture.scale,
+                        baseImage: capture.image, annotations: capture.annotations, captureID: capture.id)
                     return [.pin]
                 case .copy:
-                    return self.copyDirect(capture) ? [.copy] : []
+                    return self.copyDirect(presented) ? [.copy] : []
                 case .save:
-                    guard let outcome = self.saveDirect(capture) else { return [] }
+                    guard let outcome = self.saveDirect(presented) else { return [] }
                     saved = outcome
                     return [.save]
                 case .saveAndCopy:
-                    guard let result = self.saveAndCopyDirect(capture) else { return [] }
+                    guard let result = self.saveAndCopyDirect(presented) else { return [] }
                     saved = result.outcome
                     return result.copied ? [.save, .copy] : [.save]
                 case .discard:
@@ -606,16 +608,30 @@ final class ScreenshotService: ObservableObject {
                     Task { @MainActor in completion(nil) }
                     return
                 }
-                self.shareDirect(capture, duration: duration, completion: completion)
+                self.shareDirect(presented, duration: duration, completion: completion)
             },
             shareFile: { [weak self] in
-                guard let self, let export = self.flatten(capture) else { return nil }
+                guard let self, let export = self.flatten(presented) else { return nil }
                 return Self.temporaryExportFile(image: export.image, scale: export.scale,
                                                 strings: self.strings)
+            },
+            savedFile: { saved?.url },
+            saveToDefault: { [weak self] in
+                guard let self, let outcome = self.saveDirect(presented) else { return nil }
+                saved = outcome
+                return outcome.url
             },
             onClose: { [weak self] in self?.preview = nil })
         preview = controller
         controller.show()
+    }
+
+    func showTransformedPreview(_ capture: ScreenshotSelectionController.Capture) {
+        guard AppFeature.screenshot.isAvailable else { return }
+        // A menu transform is a new draft, not permission to overwrite the
+        // original file or repeat an automatic clipboard/save action.
+        presentPreview(capture, defaultAction: .none, initialSaved: nil,
+            completedActions: [], dismissInterval: nil, latestCapture: nil)
     }
 
     private func runDefaultAction(_ defaultAction: ScreenshotDefaultAction,
@@ -643,15 +659,16 @@ final class ScreenshotService: ObservableObject {
         }
     }
 
-    func openEditor(with capture: ScreenshotSelectionController.Capture) {
+    func openEditor(with capture: ScreenshotSelectionController.Capture, above owner: NSWindow? = nil, originatingPin: ScreenshotPinWindow? = nil) {
         WindowActivationPolicy.retain()
         // Any editor may be showing the latest capture, and what it exports
         // is no longer the stored original, so the shortcut keeps that
         // original back until a newer capture arrives.
         withholdLatestCapture()
         let editor = ScreenshotEditorController(capture: capture)
+        editor.originatingPin = originatingPin
         editors.append(editor)
-        editor.show()
+        editor.show(above: owner)
     }
 
     @MainActor

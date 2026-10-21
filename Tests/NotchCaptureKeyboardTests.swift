@@ -73,7 +73,7 @@ enum NotchCaptureKeyboardTests {
         let panel = notch.presentationWindow!
         preview.attach(panel)
         let commands: [(Int, Event.ModifierFlags, Contract.Preview.Action)] = [
-            (kVK_ANSI_E, [], .edit), (kVK_Return, [], .edit), (kVK_Delete, [], .discard),
+            (kVK_ANSI_E, [], .edit), (kVK_ANSI_E, .command, .edit), (kVK_Return, [], .edit), (kVK_Delete, [], .discard),
             (kVK_ForwardDelete, [], .discard), (kVK_ANSI_C, .command, .copy),
             (kVK_ANSI_S, .command, .save), (kVK_Delete, .command, .discard),
         ]
@@ -93,6 +93,19 @@ enum NotchCaptureKeyboardTests {
             preview.closed = wasClosed
         }
         check("visible capture retains its existing keyboard actions", accepts: true)
+        _ = Event.handler?(Event(window: panel, keyCode: UInt16(kVK_ANSI_Y), modifierFlags: .command))
+        suite.expect(preview.quickLookRequests == 1, "Command-Y opens Quick Look from the visible preview")
+        _ = Event.handler?(Event(window: panel, keyCode: UInt16(kVK_ANSI_Z), modifierFlags: .command,
+                                charactersIgnoringModifiers: "y"))
+        suite.expect(preview.quickLookRequests == 2, "Quick Look follows the Y character on an alternate keyboard layout")
+        let forwardedZ = Event.handler?(Event(window: panel, keyCode: UInt16(kVK_ANSI_Y), modifierFlags: .command,
+                                               charactersIgnoringModifiers: "z"))
+        suite.expect(forwardedZ != nil && preview.quickLookRequests == 2,
+                     "Command-Z on QWERTZ does not accidentally open Quick Look")
+        preview.actions = []
+        _ = Event.handler?(Event(window: panel, keyCode: UInt16(kVK_ANSI_D), modifierFlags: .command,
+                                charactersIgnoringModifiers: "e"))
+        suite.expect(preview.actions == [.edit], "Command-E follows the displayed letter on an alternate layout")
         for module in NotchModule.allCases where module != .captures {
             notch.selected = module
             check("a hidden capture never edits, copies, saves or discards while another section owns the window", accepts: false)
@@ -231,5 +244,32 @@ enum NotchCaptureKeyboardTests {
                          && selection.actions == ["color"],
                    "Return and keypad Enter confirm the color instead of capturing the display")
         }
+        selection.isPickingColor = false
+        selection.activeTool = .recording
+        selection.waitingRecordingPanel = overlay
+        selection.actions = []
+        suite.expect(Event.handler?(Event(window: overlay, keyCode: UInt16(kVK_Return))) == nil
+                     && selection.actions == ["start"], "Enter starts the accepted recording draft")
+        suite.expect(Event.handler?(Event(window: overlay, keyCode: UInt16(kVK_ANSI_A))) == nil,
+                     "unrelated typing cannot leak through the waiting recording selection")
+        for key in [kVK_ANSI_S, kVK_ANSI_M] {
+            _ = Event.handler?(Event(window: overlay, keyCode: UInt16(key)))
+        }
+        suite.expect(selection.screenCaptureOptions?.recorderAudio.systemAudio.enabled == true
+                     && selection.screenCaptureOptions?.recorderAudio.microphone.enabled == true,
+                     "waiting selection retains both audio control shortcuts")
+        let overlays = RecorderOverlayController.shared
+        defer { overlays.stop() }
+        let cameraWasEnabled = overlays.cameraEnabled
+        let keysWereEnabled = overlays.keysEnabled
+        for key in [kVK_ANSI_C, kVK_ANSI_K] {
+            _ = Event.handler?(Event(window: overlay, keyCode: UInt16(key)))
+            _ = Event.handler?(Event(window: overlay, keyCode: UInt16(key), isARepeat: true))
+        }
+        suite.expect(overlays.cameraEnabled != cameraWasEnabled && overlays.keysEnabled != keysWereEnabled,
+                     "C and K remain active while waiting but repeats cannot toggle either twice")
+        selection.actions = []
+        _ = Event.handler?(Event(window: overlay, keyCode: UInt16(kVK_Escape)))
+        suite.expect(selection.actions == ["cancel"], "Escape cancels a waiting recording draft")
     }
 }

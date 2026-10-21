@@ -114,6 +114,9 @@ final class NotchService: ObservableObject {
     @Published private(set) var dragPlaceholder = false
     @Published private(set) var choosingFileDropDestination = false
     @Published private(set) var targetsMediaDrop = false
+    @Published private(set) var targetsEditorDrop = false
+    @Published private(set) var editorDropAvailable = false
+    @Published private(set) var optimizationDropAvailable = false
     @Published private(set) var selectedMetric: MetricDetailKind?
     @Published private(set) var captureControls: ScreenCaptureSelectionOptions?
     @Published private(set) var captureControlsCollapsed = false
@@ -138,6 +141,7 @@ final class NotchService: ObservableObject {
     @Published private(set) var heldMusic: NotchCompactMusicSnapshot?
     @Published private(set) var captureActions: AnyView?
     @Published private(set) var captureContent: AnyView?
+    @Published private(set) var captureHistoryGestureProgress = 0.0
     /// Bumped when Command-W asks the Scratchpad page to close its selected
     /// pad, so the confirmation stays in the page as it does in the floating pad.
     @Published private(set) var scratchpadCloseSerial = 0
@@ -187,6 +191,7 @@ final class NotchService: ObservableObject {
     private var powerSource: CFRunLoopSource?
     private var powerSampler: PowerSampler?
     private var captureID: UUID?
+    private let deferredCapturePresentation = CapturePresentationDeferral()
     private var captureFallback: (() -> Void)?
     private var captureClose: (() -> Void)?
     private var captureHover: ((Bool) -> Void)?
@@ -214,6 +219,11 @@ final class NotchService: ObservableObject {
     /// every layout pass, which would decode them each time.
     private var headerShowsSectionsButton = false
     private var keepsWorkingSurface: Bool {
+        keepsWorkingSurfaceOnOutsideClick
+            || (expanded && !showingSections && selected == .captures && captureContent != nil)
+    }
+
+    private var keepsWorkingSurfaceOnOutsideClick: Bool {
         pinned || trackingMenu || NSApp.modalWindow != nil || panel?.attachedSheet != nil
             || NotchLyricsService.shared.isImporting
             // Like the lyrics chooser, these panels stand beside the island
@@ -224,7 +234,6 @@ final class NotchService: ObservableObject {
             || (expanded && !showingSections && selected == .calendar && Permissions.shared.keepsCalendarPrompt)
             || (expanded && !showingSections && selected == .files && fileInteractionActive)
             || CameraPreviewService.shared.keepsNotchPermissionPrompt
-            || (expanded && !showingSections && selected == .captures && captureContent != nil)
             || (expanded && !showingSections && selected == .tools && (QuickLauncherService.shared.activeUtility != nil || QuickLauncherService.shared.isEditing))
     }
     /// Up and measuring its display. Settings previews read the island's
@@ -241,6 +250,7 @@ final class NotchService: ObservableObject {
     }
     private var settingsSignature = ""
     private var gesture = NotchGestureSupport()
+    private var captureTrackpadGesture = NotchCaptureTrackpadGesture()
     private var sectionScroll = NotchSectionScroll()
     private var volumeBaseline: Double?
     private var muteBaseline: Bool?
@@ -846,7 +856,8 @@ final class NotchService: ObservableObject {
         guard !showingSections else { return 0 }
         let detail = showingAppPanel || selectedMetric != nil
         guard detail || modules.isEmpty else {
-            return NotchLayout.headerTitleWidth(selected.title(L10n.shared.language), button: headerShowsSectionsButton)
+            return NotchLayout.headerTitleWidth(selected.presentationTitle(L10n.shared.language, hasCapturePreview: captureContent != nil),
+                                               button: headerShowsSectionsButton || selected == .captures)
         }
         return NotchLayout.headerTitleWidth(detailTitle, font: NotchLayout.detailTitleFont, button: detail)
     }
@@ -1148,6 +1159,7 @@ final class NotchService: ObservableObject {
         withAnimation(fade ? .easeInOut(duration: 0.22) : nil) { objectWillChange.send() }
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
         if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+        resumeDeferredCaptureIfReady()
     }
 
     private func refreshModules() {
@@ -1163,6 +1175,9 @@ final class NotchService: ObservableObject {
     }
 
     func stop(restoreCapture: Bool = true) {
+        // If routing is disabled while Mission Control is up, the pending
+        // capture still gets its standalone preview after teardown.
+        defer { deferredCapturePresentation.finish(restore: restoreCapture) }
         preferenceSyncWork?.cancel(); preferenceSyncWork = nil
         NotchLyricsService.shared.stop()
         NotchFileToolsService.shared.stop()
@@ -1317,7 +1332,8 @@ final class NotchService: ObservableObject {
     }
 
     func open(_ module: NotchModule? = nil, pinned: Bool = false, takeFocus: Bool = true,
-              appPanel: Bool = false, metric: MetricDetailKind? = nil, feedback: Bool = true, sections: Bool = false) {
+              appPanel: Bool = false, metric: MetricDetailKind? = nil, feedback: Bool = true, sections: Bool = false,
+              crossfadeContent: Bool = false) {
         guard NotchSupport.isEnabled(), !suspended else { return }
         if !running || self.panel == nil { syncWithPreferences() }
         else { refreshModules() }
@@ -1336,7 +1352,7 @@ final class NotchService: ObservableObject {
         let metric = metric.flatMap { metricIsAvailable($0) ? $0 : nil }
         let closesCommandBar = showingCommandBar
         let changesPresentation = !expanded || selected != destination || closesCommandBar
-            || showingAppPanel != appPanel || selectedMetric != metric || showingSections != sections
+            || showingAppPanel != appPanel || selectedMetric != metric || showingSections != sections || crossfadeContent
         if changesPresentation, destination == .tools, !appPanel, !sections, metric == nil {
             QuickLauncherService.shared.prepareForPresentation()
         }
@@ -1375,7 +1391,10 @@ final class NotchService: ObservableObject {
         inside = windowHost?.containsHover(NSEvent.mouseLocation) == true
         installEventMonitors()
         syncVisibleConsumers()
-        if takeFocus { panel.makeKey() }
+        if takeFocus {
+            NSApp.activate(ignoringOtherApps: true)
+            panel.makeKey()
+        }
         if feedback, changesPresentation { provideHapticFeedback() }
         if closesCommandBar { commandBarDidClose() }
     }
@@ -2064,11 +2083,29 @@ final class NotchService: ObservableObject {
         panel?.acceptsMouseMovedEvents = false
     }
 
+    func deferCaptureUntilMissionControlRestores(id: UUID, present: @escaping () -> Void) -> Bool {
+        guard running, !suspended, windowHost?.isConcealedForMissionControl == true else { return false }
+        deferredCapturePresentation.enqueue(id: id, action: present)
+        return true
+    }
+
+    func cancelDeferredCapturePresentation(id: UUID) {
+        deferredCapturePresentation.cancel(id: id)
+    }
+
+    func resumeDeferredCaptureIfReady() {
+        guard deferredCapturePresentation.hasPending, acceptsUserInteraction else { return }
+        deferredCapturePresentation.restore()
+    }
+
     private func missionControlDidRestore() {
+        // Read the landed Space before choosing island vs floating fallback.
+        fullscreenEnvironmentDidChange()
         if captureControls != nil { updateCaptureControlsClickThrough() }
         else { hover(windowHost?.containsHover(NSEvent.mouseLocation) == true) }
         // A pointer that crossed displays during Mission Control is followed now.
         schedulePointerFollow()
+        resumeDeferredCaptureIfReady()
     }
 
     func endCaptureControls() {
@@ -2093,9 +2130,15 @@ final class NotchService: ObservableObject {
     func cancelCaptureControls() { captureControlsCancel?() }
 
     func openSettings() {
-        collapse()
-        SettingsRouter.shared.request(FeatureSettingsDestination(.notch))
-        (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+        // Finish the Island dismissal before Settings activates the app.
+        dismissForOutsideClick()
+        hoverState.close(pointerInside: true)
+        let show = {
+            SettingsRouter.shared.request(FeatureSettingsDestination(.notch))
+            (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+        }
+        if let windowHost { windowHost.whenSettled(show) }
+        else { DispatchQueue.main.async(execute: show) }
     }
 
     /// Opens the Dynamic Island settings on one section's options.
@@ -2111,30 +2154,50 @@ final class NotchService: ObservableObject {
     }
 
     var canAcceptFileDrop: Bool {
-        acceptsUserInteraction && captureControls == nil && modules.contains(.files)
-            && AppFeature.shelf.isAvailable
+        acceptsUserInteraction && captureControls == nil
+            && (canDropOnShelf || AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable)
+    }
+
+    var canDropOnShelf: Bool {
+        modules.contains(.files) && AppFeature.shelf.isAvailable
             && UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled)
+    }
+
+    private func canAcceptFilePayload(_ pasteboard: NSPasteboard) -> Bool {
+        guard canAcceptFileDrop else { return false }
+        if MediaEditorFileOpener.shared.canOpen(MediaEditorFileSupport.urls(from: pasteboard)) { return true }
+        return canDropOnShelf && !ShelfService.shared.isInternalDragActive
+            && ShelfService.shared.canAcceptPasteboard(pasteboard)
     }
 
     func beginFileDrop(_ pasteboard: NSPasteboard) {
         guard canAcceptFileDrop else { return }
-        choosingFileDropDestination = NotchFileToolsService.shared.mediaDropContent(for: pasteboard) != nil
+        editorDropAvailable = MediaEditorFileOpener.shared.canOpen(MediaEditorFileSupport.urls(from: pasteboard))
+        optimizationDropAvailable = canDropOnShelf && NotchFileToolsService.shared.mediaDropContent(for: pasteboard) != nil
+        choosingFileDropDestination = editorDropAvailable || optimizationDropAvailable
         targetsMediaDrop = false
-        open(.files, takeFocus: false)
+        targetsEditorDrop = false
+        open(canDropOnShelf ? .files : .captures, takeFocus: false)
     }
 
     @discardableResult
     func updateFileDrop(at point: CGPoint) -> Bool {
-        let targeted = choosingFileDropDestination
-            && NotchFileToolsSupport.mediaDropArea(in: expandedGeometry, size: surfaceSize).contains(point)
+        let area = NotchFileToolsSupport.mediaDropArea(in: expandedGeometry, size: surfaceSize)
+        let right = choosingFileDropDestination && area.contains(point)
+        let editor = right && editorDropAvailable && (!optimizationDropAvailable || point.y >= area.midY)
+        let targeted = right && optimizationDropAvailable && !editor
         if targetsMediaDrop != targeted { targetsMediaDrop = targeted }
-        return !targeted || NotchFileToolsService.shared.canAcceptMediaDrop
+        if targetsEditorDrop != editor { targetsEditorDrop = editor }
+        return editor || (targeted ? NotchFileToolsService.shared.canAcceptMediaDrop : canDropOnShelf)
     }
 
     func endFileDrop() {
         let changed = choosingFileDropDestination
         if changed { choosingFileDropDestination = false }
         if targetsMediaDrop { targetsMediaDrop = false }
+        targetsEditorDrop = false
+        editorDropAvailable = false
+        optimizationDropAvailable = false
         if changed, acceptsUserInteraction { refreshPresentation() }
     }
 
@@ -2146,15 +2209,16 @@ final class NotchService: ObservableObject {
     func accept(_ pasteboard: NSPasteboard) -> Bool {
         defer { endFileDrop() }
         guard canAcceptFileDrop else { return false }
+        let editor = choosingFileDropDestination && targetsEditorDrop
         let optimize = choosingFileDropDestination && targetsMediaDrop
-        let accepted = optimize
+        let accepted = editor ? MediaEditorFileOpener.shared.open(MediaEditorFileSupport.urls(from: pasteboard)) : optimize
             ? NotchFileToolsService.shared.openMediaDrop(pasteboard)
-            : ShelfService.shared.acceptDrop(pasteboard: pasteboard)
+            : canDropOnShelf && ShelfService.shared.acceptDrop(pasteboard: pasteboard)
         if accepted {
             heldDrag = false
             dragPlaceholder = false
-            if !optimize { NotchFileToolsService.shared.hideMedia() }
-            open(.files)
+            if canDropOnShelf, !optimize { NotchFileToolsService.shared.hideMedia() }
+            if !editor { open(.files) }
             // A little hop for the file it watched come in, once the island rests again.
             reactMascot(.celebrate, patience: 30)
         }
@@ -2353,6 +2417,11 @@ final class NotchService: ObservableObject {
                         close: @escaping () -> Void, hover: @escaping (Bool) -> Void) -> Bool {
         guard acceptsSystemFeedback, NotchSupport.routes(.capture) else { return false }
         let keepOpen = expanded && pinned
+        let replacesPage = expanded && selected == .captures && captureID != id
+        if captureID != id {
+            captureTrackpadGesture = NotchCaptureTrackpadGesture()
+            captureHistoryGestureProgress = 0
+        }
         captureID = id
         captureContentHeight = height
         captureContent = content
@@ -2362,7 +2431,7 @@ final class NotchService: ObservableObject {
         captureHover = hover
         captureClosesOnCollapse = closeOnCollapse
         open(.captures, pinned: keepOpen,
-             takeFocus: takeFocus, feedback: false)
+             takeFocus: takeFocus, feedback: false, crossfadeContent: replacesPage)
         captureHover?(inside)
         return true
     }
@@ -2389,7 +2458,17 @@ final class NotchService: ObservableObject {
         }
     }
 
+    func showCaptureHistory() {
+        let replacesPage = expanded && selected == .captures && captureContent != nil
+        let close = captureClose
+        clearCapture()
+        close?()
+        open(.captures, pinned: false, takeFocus: true, feedback: false, crossfadeContent: replacesPage)
+    }
+
     private func clearCapture() {
+        captureHistoryGestureProgress = 0
+        captureTrackpadGesture = NotchCaptureTrackpadGesture()
         captureID = nil
         captureContent = nil
         captureActions = nil
@@ -3279,11 +3358,10 @@ final class NotchService: ObservableObject {
             windowHost?.setHoverHandler { [weak self] in self?.hover($0) }
             panel?.title = FeatureStrings.notch(L10n.shared.language).title
         }
-        if modules.contains(.files), AppFeature.shelf.isAvailable {
+        if (modules.contains(.files) && AppFeature.shelf.isAvailable) || AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable {
             windowHost?.setFileDropActions(NotchFileDropActions(
                 canAccept: { [weak self] pasteboard in
-                    self?.canAcceptFileDrop == true && !ShelfService.shared.isInternalDragActive
-                        && ShelfService.shared.canAcceptPasteboard(pasteboard)
+                    self?.canAcceptFilePayload(pasteboard) == true
                 },
                 enter: { [weak self] in self?.beginFileDrop($0) },
                 accept: { [weak self] in self?.accept($0) == true },
@@ -3519,14 +3597,20 @@ final class NotchService: ObservableObject {
         clickedSinceOpening = false
         let clicks: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
         if let token = NSEvent.addGlobalMonitorForEvents(matching: clicks, handler: { [weak self] _ in
-            guard let self, !self.keepsWorkingSurface,
+            guard let self, !self.keepsWorkingSurfaceOnOutsideClick,
                   self.windowHost?.contains(NSEvent.mouseLocation) != true,
                   (NSApp.delegate as? AppDelegate)?.isOverStatusItem(NSEvent.mouseLocation) != true,
                   !AssistiveKeyboard.ownsCocoaPoint(NSEvent.mouseLocation) else { return }
-            self.collapse()
+            self.dismissForOutsideClick()
         }) { eventMonitors.append(token) }
         if let token = NSEvent.addLocalMonitorForEvents(matching: clicks.union(.keyDown), handler: { [weak self] event in
             guard let self else { return event }
+            if event.type == .keyDown, self.ownsWindow(event.window),
+               event.modifierFlags.intersection([.command, .control, .option, .shift]) == .command,
+               event.charactersIgnoringModifiers == "," {
+                self.openSettings()
+                return nil
+            }
             // Opening by pointer may assign a control focus automatically.
             // Restore its visible indicator before handling any keyboard input.
             if event.type == .keyDown, event.window === self.panel, !self.showsKeyboardFocus {
@@ -3586,12 +3670,21 @@ final class NotchService: ObservableObject {
             let click = clicks.contains(NSEvent.EventTypeMask(rawValue: 1 << event.type.rawValue))
             let islandWindow = self.ownsWindow(event.window)
             if click, islandWindow { self.clickedSinceOpening = true }
-            if click, !islandWindow, !self.keepsWorkingSurface,
+            if click, !islandWindow, !self.keepsWorkingSurfaceOnOutsideClick,
                self.windowHost?.contains(NSEvent.mouseLocation) != true,
                (NSApp.delegate as? AppDelegate)?.isOverStatusItem(NSEvent.mouseLocation) != true,
-               !AssistiveKeyboard.ownsCocoaPoint(NSEvent.mouseLocation) { self.collapse() }
+               !AssistiveKeyboard.ownsCocoaPoint(NSEvent.mouseLocation) { self.dismissForOutsideClick() }
             return event
         }) { eventMonitors.append(token) }
+    }
+
+    /// Detach first so the preview's close callback cannot collapse a new page.
+    private func dismissForOutsideClick() {
+        let dismissesCapture = selected == .captures && captureContent != nil
+        let close = dismissesCapture ? captureClose : nil
+        if dismissesCapture { clearCapture() }
+        collapse()
+        close?()
     }
 
     /// The panel and what hangs from it: a SwiftUI popover opened in the
@@ -3608,6 +3701,19 @@ final class NotchService: ObservableObject {
     private func syncGestures() {
         if !NotchGestureSupport.isEnabled() { gesture = NotchGestureSupport() }
         panel?.handleScroll = { [weak self] event in self?.handleScroll(event) ?? false }
+        panel?.handleCaptureTouches = { [weak self] event, view in self?.handleCaptureTouches(event, in: view) ?? false }
+    }
+
+    private func handleCaptureTouches(_ event: NSEvent, in view: NSView) -> Bool {
+        let interaction = NotchGestureSupport.nativeInteraction(at: panel?.contentView?.hitTest(event.locationInWindow))
+        let enabled = running && !suspended && expanded && selected == .captures && captureContent != nil
+            && NotchGestureSupport.isEnabled() && !trackingMenu && captureControls == nil && !heldDrag
+            && !showingSections && !showingAppPanel && !showingCommandBar && selectedMetric == nil
+            && !interaction.control && event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty
+        let completed = captureTrackpadGesture.handle(event, in: view, enabled: enabled)
+        captureHistoryGestureProgress = captureTrackpadGesture.progress
+        if completed { showCaptureHistory() }
+        return enabled
     }
 
     /// The gallery steps its rows from the wheel; every other scroll over the
@@ -3643,10 +3749,15 @@ final class NotchService: ObservableObject {
               !trackingMenu, captureControls == nil, !heldDrag,
               event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else {
             gesture = NotchGestureSupport()
+            captureHistoryGestureProgress = 0
             return false
         }
         let screenPoint = panel.convertPoint(toScreen: event.locationInWindow)
-        guard windowHost?.contains(screenPoint) == true else { gesture = NotchGestureSupport(); return false }
+        guard windowHost?.contains(screenPoint) == true else {
+            gesture = NotchGestureSupport()
+            captureHistoryGestureProgress = 0
+            return false
+        }
         let fromTop = panel.frame.maxY - screenPoint.y
         let inHeader = NotchSupport.gestureIsOverHeader(expanded: expanded, peeking: peeking,
                                                        fromTop: fromTop, safeTop: expanded ? expandedGeometry.headerTopInset : geometry.safeContentTop,
@@ -3655,6 +3766,11 @@ final class NotchService: ObservableObject {
         let musicSurface = modules.contains(.music)
             && (compactMusicIsVisible || (expanded && selected == .music && !showingAppPanel && !showingSections
                                           && !showingCommandBar))
+        let captureSurface = expanded && selected == .captures && captureContent != nil
+            && !showingSections && !showingAppPanel && !showingCommandBar && selectedMetric == nil
+        // Scroll deltas are accelerated and cannot enforce physical distance.
+        // The native touch receiver owns this gesture, including over the header.
+        if captureSurface { return !interaction.control && event.hasPreciseScrollingDeltas }
         let vertical = NotchGestureSupport.allowsVertical(expanded: expanded, inHeader: inHeader,
                                                           musicSurface: musicSurface,
                                                           control: interaction.control, scroll: interaction.scroll)
@@ -3663,13 +3779,14 @@ final class NotchService: ObservableObject {
                                              inverted: event.isDirectionInvertedFromDevice)
         let y = NotchGestureSupport.movement(Double(event.scrollingDeltaY), precise: event.hasPreciseScrollingDeltas,
                                              inverted: event.isDirectionInvertedFromDevice)
-        guard let action = gesture.handle(x: x, y: y, timestamp: event.timestamp,
+        let action = gesture.handle(x: x, y: y, timestamp: event.timestamp,
                                           began: event.phase.contains(.began),
                                           ended: !event.phase.intersection([.ended, .cancelled]).isEmpty,
                                           momentum: !event.momentumPhase.isEmpty,
                                           precise: event.hasPreciseScrollingDeltas,
                                           hasPhase: !event.phase.isEmpty,
-                                          allowVertical: vertical, allowHorizontal: horizontal, expanded: expanded) else { return false }
+                                          allowVertical: vertical, allowHorizontal: horizontal, expanded: expanded)
+        guard let action else { return false }
         switch action {
         case .open: open()
         case .close: collapse()

@@ -209,8 +209,23 @@ enum ScreenshotSupport {
 
     // MARK: - Preferences
 
-    /// Determines if an image is blank (empty, transparent, or without meaningful visual content).
-    /// Used as a safeguard against window server, out-of-process GPU compositing, or Mission Control capture failures.
+    /// Use composed display pixels only when an independent window is suspect.
+    /// If no display crop exists, retain the original rather than lose a valid
+    /// intentionally uniform window. The quality heuristic is not proof of loss.
+    static func resolvedWindowCapture(_ capture: (image: CGImage, scale: CGFloat)?,
+                                      frozenImage: CGImage?, viewFrame: CGRect,
+                                      viewSize: CGSize, fallbackScale: CGFloat) -> (image: CGImage, scale: CGFloat)? {
+        if let capture, !isImageBlank(capture.image) { return capture }
+        guard let frozenImage,
+              CGRect(origin: .zero, size: viewSize).contains(viewFrame) else { return capture }
+        let rect = imagePixelRect(fromView: viewFrame, viewSize: viewSize,
+                                  imageSize: CGSize(width: frozenImage.width, height: frozenImage.height))
+        guard let crop = frozenImage.cropping(to: rect) else { return capture }
+        return (crop, fallbackScale)
+    }
+
+    /// Suspect window buffers request a ScreenCaptureKit retry. Uniform pixels
+    /// alone do not prove failure; callers must guard any display-crop fallback.
     static func isImageBlank(_ image: CGImage) -> Bool {
         let width = image.width
         let height = image.height
@@ -234,11 +249,13 @@ enum ScreenshotSupport {
 
         var opaqueCount = 0
         var innerOpaqueCount = 0
-        let innerXStart = sampleW / 5
-        let innerXEnd = sampleW * 4 / 5
-        let innerYStart = sampleH / 5
-        let innerYEnd = sampleH * 4 / 5
+        let innerXStart = min(sampleW - 1, Int(ceil(Double(sampleW) * 0.2)))
+        let innerXEnd = max(innerXStart + 1, Int(floor(Double(sampleW) * 0.8)))
+        let innerYStart = min(sampleH - 1, Int(ceil(Double(sampleH) * 0.2)))
+        let innerYEnd = max(innerYStart + 1, Int(floor(Double(sampleH) * 0.8)))
         let totalInnerPixels = (innerXEnd - innerXStart) * (innerYEnd - innerYStart)
+
+        var innerPixels = Set<UInt32>()
 
         var firstPixel: UInt32?
         var allPixelsIdentical = true
@@ -246,6 +263,9 @@ enum ScreenshotSupport {
         for y in 0..<sampleH {
             for x in 0..<sampleW {
                 let pixel = buffer[y * sampleW + x]
+                if x >= innerXStart && x < innerXEnd && y >= innerYStart && y < innerYEnd {
+                    innerPixels.insert(pixel)
+                }
                 if let first = firstPixel {
                     if pixel != first {
                         allPixelsIdentical = false
@@ -276,7 +296,10 @@ enum ScreenshotSupport {
             return true
         }
 
-        return false
+        // Browser chrome can be complete while the GPU viewport is absent.
+        // Sparse content is still real content. Only a completely uniform
+        // viewport requests a retry, not a mostly empty document or editor.
+        return innerPixels.count == 1
     }
 
     static let recentCaptureLimit = 12
@@ -287,6 +310,7 @@ enum ScreenshotSupport {
               name.lowercased().hasSuffix(".png") else { return false }
         let stem = String(name.dropLast(4))
         if UUID(uuidString: stem) != nil { return true }
+        if stem.hasSuffix("-base") && UUID(uuidString: String(stem.dropLast(5))) != nil { return true }
         let suffix = "-thumbnail"
         return stem.hasSuffix(suffix)
             && UUID(uuidString: String(stem.dropLast(suffix.count))) != nil
@@ -985,6 +1009,10 @@ enum ScreenshotSupport {
         case topRight
         case bottomLeft
         case bottomRight
+
+        static func current(in defaults: UserDefaults = .standard) -> Self {
+            Self(rawValue: defaults.string(forKey: DefaultsKey.screenshotPreviewPosition) ?? "") ?? .automatic
+        }
     }
 
     /// Picks the display containing most of the capture. The pointer breaks
@@ -1461,11 +1489,11 @@ enum ScreenshotSupport {
         }
     }
 
-    enum Tool: String, CaseIterable {
+    enum Tool: String, CaseIterable, Codable {
         // Case order is the fixed rail order and therefore the default
         // mapping for keys 1 through 9, and 0.
         case select, arrow, line, ellipse, rect, redact,
-             freehand, highlight, text, crop, pixelate, counter, sticker
+             freehand, highlight, text, pixelate, crop, counter, sticker
 
         static let shortcutLimit = 10
 
@@ -1484,7 +1512,7 @@ enum ScreenshotSupport {
 
         /// Existing rectangular marks with visible resize grips.
         var resizesWithHandles: Bool {
-            dragsRect || self == .sticker
+            (dragsRect && self != .highlight) || self == .sticker
         }
 
         var defaultShortcut: GlobalShortcut? {
@@ -1498,13 +1526,20 @@ enum ScreenshotSupport {
             case .freehand: return GlobalShortcut(keyCode: Int64(kVK_ANSI_7), modifiers: [])
             case .highlight: return GlobalShortcut(keyCode: Int64(kVK_ANSI_8), modifiers: [])
             case .text: return GlobalShortcut(keyCode: Int64(kVK_ANSI_9), modifiers: [])
-            case .crop: return GlobalShortcut(keyCode: Int64(kVK_ANSI_0), modifiers: [])
-            case .pixelate, .counter, .sticker: return nil
+            case .pixelate: return GlobalShortcut(keyCode: Int64(kVK_ANSI_0), modifiers: [])
+            case .crop: return GlobalShortcut(keyCode: Int64(kVK_ANSI_Grave), modifiers: [])
+            case .counter: return GlobalShortcut(keyCode: Int64(kVK_ANSI_N), modifiers: [])
+            case .sticker: return GlobalShortcut(keyCode: Int64(kVK_ANSI_E), modifiers: [])
             }
         }
 
         static func ordered(from raw: String? = nil) -> [Tool] {
-            allCases
+            var tools = allCases
+            if let cropIndex = tools.firstIndex(of: .crop) {
+                tools.remove(at: cropIndex)
+                tools.insert(.crop, at: 0)
+            }
+            return tools
         }
 
         static func shortcutTool(number: Int,
@@ -1676,6 +1711,15 @@ enum ScreenshotSupport {
             if let entry = custom[tool] {
                 return entry?.displayString
             }
+            if let defaultShortcut = tool.defaultShortcut {
+                if defaultShortcut.modifiers.isEmpty {
+                    if defaultShortcut.keyCode == Int64(kVK_ANSI_Grave) { return "`" }
+                    if defaultShortcut.keyCode == Int64(kVK_ANSI_0) { return "0" }
+                    if defaultShortcut.keyCode == Int64(kVK_ANSI_N) { return "N" }
+                    if defaultShortcut.keyCode == Int64(kVK_ANSI_E) { return "E" }
+                }
+                return defaultShortcut.displayString
+            }
             return shortcutNumber(for: tool, enabled: true).map(String.init)
         }
 
@@ -1708,6 +1752,12 @@ enum ScreenshotSupport {
                         return .tool(defaultOwner)
                     }
                 }
+            } else if shortcut.modifiers.isEmpty {
+                if let defaultOwner = allCases.first(where: { $0.defaultShortcut == shortcut }),
+                   shortcutNumber(for: defaultOwner, enabled: true) == nil,
+                   defaultOwner != tool, custom[defaultOwner] == nil {
+                    return .tool(defaultOwner)
+                }
             }
             if let role = roleConflict(shortcut) { return .role(role) }
             if let title = windowLayoutConflict(shortcut) { return .windowLayout(title) }
@@ -1715,7 +1765,7 @@ enum ScreenshotSupport {
         }
     }
 
-    enum ColorID: String, CaseIterable {
+    enum ColorID: String, CaseIterable, Codable {
         case red, orange, yellow, green, blue, purple, black, white
 
         /// sRGB components, shared by live rendering and export.
@@ -1737,7 +1787,7 @@ enum ScreenshotSupport {
         }
     }
 
-    enum StrokeID: String, CaseIterable {
+    enum StrokeID: String, CaseIterable, Codable {
         case small, medium, large
 
         /// Line width in image points at 1x; export multiplies by the image
@@ -1755,20 +1805,12 @@ enum ScreenshotSupport {
         }
     }
 
-    /// Text point sizes at 1x, offered as presets. Text has its own size
-    /// instead of borrowing the shape thickness, so a thin arrow can sit
-    /// beside a large label.
-    static let textSizes: [Int] = [10, 12, 14, 16, 19, 24, 28, 36, 48, 64, 72, 96]
+    /// Point sizes at 1x. Direct input preserves exact values within this range.
+    static let textSizeRange = 8...96
     static let defaultTextSize = 19
 
     static func sanitizedTextSize(_ size: Int) -> Int {
-        guard let first = textSizes.first, let last = textSizes.last else { return defaultTextSize }
-        return size == 0 ? defaultTextSize : min(max(size, first), last)
-    }
-
-    /// The preset one step away from `size`, or nil at either end.
-    static func steppedTextSize(from size: Int, up: Bool) -> Int? {
-        up ? textSizes.first(where: { $0 > size }) : textSizes.last(where: { $0 < size })
+        return size == 0 ? defaultTextSize : min(max(size, textSizeRange.lowerBound), textSizeRange.upperBound)
     }
 
     /// How hard a blur hides what is under it, from 1 (lightest) to 5
@@ -1803,7 +1845,7 @@ enum ScreenshotSupport {
         }
     }
 
-    enum ArrowStyleID: String, CaseIterable {
+    enum ArrowStyleID: String, CaseIterable, Codable {
         case filled, outline, open, doubleEnded, scribbly
 
         static func sanitized(_ raw: String?) -> ArrowStyleID {
@@ -1813,7 +1855,7 @@ enum ScreenshotSupport {
 
     /// What a blur area does to what is under it. Pixelate was the only style
     /// before, so it stays the default.
-    enum BlurStyleID: String, CaseIterable {
+    enum BlurStyleID: String, CaseIterable, Codable {
         case pixelate, blur, erase
 
         static func sanitized(_ raw: String?) -> BlurStyleID {
@@ -1830,7 +1872,7 @@ enum ScreenshotSupport {
         UInt64.random(in: UInt64.min...UInt64.max)
     }
 
-    enum StickerID: String, CaseIterable {
+    enum StickerID: String, CaseIterable, Codable {
         case check, cross, star, heart, thumbsUp, thumbsDown,
              smile, laugh, party, fire, warning, eyes
 
@@ -1876,7 +1918,7 @@ enum ScreenshotSupport {
     /// One annotation on the canvas. Geometry lives in image-point
     /// coordinates (top-left origin), so export is resolution-exact and the
     /// view only scales for display.
-    struct Annotation: Identifiable, Equatable {
+    struct Annotation: Identifiable, Equatable, Codable {
         let id: UUID
         var tool: Tool
         var rect: CGRect
@@ -1893,6 +1935,11 @@ enum ScreenshotSupport {
         var scribbleSeed: UInt64
         var number: Int
         var isBounded: Bool
+        var hasCornerRadius: Bool?
+        var isRounded: Bool {
+            get { hasCornerRadius ?? false }
+            set { hasCornerRadius = newValue }
+        }
 
         init(id: UUID = UUID(),
              tool: Tool,
@@ -1908,7 +1955,8 @@ enum ScreenshotSupport {
              arrowStyle: ArrowStyleID = .filled,
              scribbleSeed: UInt64? = nil,
              number: Int = 0,
-             isBounded: Bool = false) {
+             isBounded: Bool = false,
+             hasCornerRadius: Bool? = false) {
             self.id = id
             self.tool = tool
             self.rect = rect
@@ -1927,6 +1975,7 @@ enum ScreenshotSupport {
                     : 0)
             self.number = number
             self.isBounded = isBounded
+            self.hasCornerRadius = hasCornerRadius
         }
     }
 

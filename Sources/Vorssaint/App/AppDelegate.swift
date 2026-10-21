@@ -162,7 +162,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             .sink { _ in
                 FeatureRuntime.shared.sync([
                     .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseNavigation, .switcher,
-                    .dockPreview, .finderCutPaste, .finderRename, .autoQuit, .dockClick,
+                    .dockPreview, .autoQuit, .dockClick,
                     .middleClick, .windowMaximizer, .keyboardDebounce, .windowLayout,
                     .textSnippets, .brightness, .radialMenu, .mouseButtonShortcuts,
                     .mouseClickDebounce, .superKey, .quitWindowProtection, .mixer, .musicBlock, .notch,
@@ -193,6 +193,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
                 self?.recoverStatusItemAfterUpdate(previousVersion: previousVersion)
             }
         }
+        MediaEditorFileOpener.shared.finishLaunching()
+    }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        MediaEditorFileOpener.shared.open(urls)
     }
 
     /// Asking another app about its windows waits for that app to answer, and

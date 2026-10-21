@@ -204,6 +204,12 @@ struct ScreenRecorderSettings: View {
             VStack(alignment: .leading, spacing: 14) {
                 folderRow
 
+                SettingsControlRow(title: screenshotStrings.previewPositionLabel) {
+                    CapturePreviewPositionPicker()
+                        .labelsHidden()
+                        .fixedSize()
+                }
+
                 SettingsControlRow(title: workflow.recentRecordings) {
                     Picker(workflow.recentRecordings, selection: $recentRecordingLimit) {
                         Text("5").tag(5)

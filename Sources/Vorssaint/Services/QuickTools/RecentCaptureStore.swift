@@ -170,39 +170,52 @@ final class RecentCaptureStore {
         let referencedRecordings = Set(entries.compactMap { $0.recordingPath })
         let referencedCaptures = referencedScreenshots.union(referencedRecordings)
         let referencedThumbnails = Set(entries.compactMap { $0.thumbnailName })
+        let referencedIDs = Set(entries.map { $0.id.uuidString })
 
-        // Sweep legacy root files and dated captures without following symlinks.
-        for item in contents(of: resolvedDir) {
-            let name = item.lastPathComponent
-            guard let values = try? item.resourceValues(forKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]),
-                  values.isSymbolicLink != true else { continue }
+        func isReferenced(_ relativePath: String, fileName: String) -> Bool {
+            if referencedCaptures.contains(relativePath) || referencedThumbnails.contains(relativePath)
+                || referencedThumbnails.contains(fileName) {
+                return true
+            }
+            for id in referencedIDs {
+                if fileName.hasPrefix(id) {
+                    return true
+                }
+            }
+            return false
+        }
 
-            if values.isRegularFile == true {
-                if Self.isCaptureFileName(name),
-                   !referencedCaptures.contains(name), !referencedThumbnails.contains(name) {
-                    try? manager.removeItem(at: item)
-                }
-            } else if values.isDirectory == true, Self.isDateFolderName(name) {
-                for file in contents(of: item) {
-                    let fileName = file.lastPathComponent
-                    guard Self.isRegularFile(file), Self.isCaptureFileName(fileName),
-                          !referencedCaptures.contains("\(name)/\(fileName)") else { continue }
-                    try? manager.removeItem(at: file)
-                }
-                if let remaining = try? manager.contentsOfDirectory(atPath: item.path), remaining.isEmpty {
-                    try? manager.removeItem(at: item)
+        // Both durable captures and derived caches may use dated folders.
+        // Never descend into a symlink, including one shaped like a date.
+        func sweep(_ directory: URL) {
+            for item in contents(of: directory) {
+                let name = item.lastPathComponent
+                guard let values = try? item.resourceValues(forKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]),
+                      values.isSymbolicLink != true else { continue }
+
+                if values.isRegularFile == true {
+                    if Self.isCaptureFileName(name),
+                       !isReferenced(name, fileName: name) {
+                        try? manager.removeItem(at: item)
+                    }
+                } else if values.isDirectory == true, Self.isDateFolderName(name) {
+                    for file in contents(of: item) {
+                        let fileName = file.lastPathComponent
+                        guard Self.isRegularFile(file), Self.isCaptureFileName(fileName),
+                              !isReferenced("\(name)/\(fileName)", fileName: fileName) else { continue }
+                        try? manager.removeItem(at: file)
+                    }
+                    if let remaining = try? manager.contentsOfDirectory(atPath: item.path), remaining.isEmpty {
+                        try? manager.removeItem(at: item)
+                    }
                 }
             }
         }
+        sweep(resolvedDir)
 
         guard let thumbDir = thumbnailDirectoryURL?.resolvingSymlinksInPath(), thumbDir != resolvedDir
         else { return }
-        for file in contents(of: thumbDir) {
-            let name = file.lastPathComponent
-            guard Self.isRegularFile(file), Self.isCaptureFileName(name),
-                  name.contains("-thumbnail"), !referencedThumbnails.contains(name) else { continue }
-            try? manager.removeItem(at: file)
-        }
+        sweep(thumbDir)
     }
 
     private func contents(of directory: URL) -> [URL] {
@@ -234,12 +247,21 @@ final class RecentCaptureStore {
     static func isCaptureFileName(_ name: String) -> Bool {
         guard name == URL(fileURLWithPath: name).lastPathComponent else { return false }
         let lower = name.lowercased()
+        if lower.hasSuffix(".latticecapture") {
+            return UUID(uuidString: String(name.dropLast(".latticecapture".count))) != nil
+        }
         if lower.hasSuffix(".png") {
             return ScreenshotSupport.isRecentCaptureCacheFileName(name)
         }
         if lower.hasSuffix(".mov") || lower.hasSuffix(".mp4") {
             let stem = String(name.dropLast(4))
             return UUID(uuidString: stem) != nil
+        }
+        if lower.hasSuffix(".json") {
+            let stem = String(name.dropLast(5))
+            let suffix = "-annotations"
+            return stem.hasSuffix(suffix)
+                && UUID(uuidString: String(stem.dropLast(suffix.count))) != nil
         }
         return false
     }

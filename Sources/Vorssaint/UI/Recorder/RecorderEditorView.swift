@@ -63,7 +63,7 @@ struct RecorderEditorView: View {
 
     private var topBand: some View {
         HStack(spacing: 8) {
-            BrandMark(width: 24, tint: Color(white: 0.92))
+            BrandMark(width: 24, tint: Color.primary.opacity(0.85))
             Text(strings.editorTitle)
                 .font(.system(size: 13, weight: .semibold))
             Button {
@@ -131,7 +131,7 @@ struct RecorderEditorView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                         .allowsHitTesting(false)
                 }
                 .disabled(model.isExporting)
@@ -209,11 +209,11 @@ struct RecorderEditorView: View {
                 .font(.system(size: 12, weight: .medium))
                 .padding(.horizontal, 9)
                 .frame(height: 30)
-                .background(Color.white.opacity(0.055),
+                .background(Color.primary.opacity(0.055),
                             in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                 }
         }
         .menuStyle(.borderlessButton)
@@ -255,7 +255,7 @@ struct RecorderEditorView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+                    .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -409,7 +409,7 @@ struct RecorderEditorView: View {
             Text(timeLabel)
                 .font(.system(size: 12, weight: .medium))
                 .monospacedDigit()
-                .foregroundStyle(Color(white: 0.78))
+                .foregroundStyle(Color.secondary)
 
             Button {
                 model.addText(at: model.sourceTime)
@@ -418,7 +418,7 @@ struct RecorderEditorView: View {
                     .font(.system(size: 12, weight: .medium))
             }
             .buttonStyle(.borderless)
-            .foregroundStyle(Color(white: 0.8))
+            .foregroundStyle(Color.primary.opacity(0.85))
 
             Button {
                 model.addImage(at: model.sourceTime)
@@ -427,7 +427,7 @@ struct RecorderEditorView: View {
                     .font(.system(size: 12, weight: .medium))
             }
             .buttonStyle(.borderless)
-            .foregroundStyle(Color(white: 0.8))
+            .foregroundStyle(Color.primary.opacity(0.85))
 
             Button {
                 model.addBlur(at: model.sourceTime)
@@ -436,7 +436,7 @@ struct RecorderEditorView: View {
                     .font(.system(size: 12, weight: .medium))
             }
             .buttonStyle(.borderless)
-            .foregroundStyle(Color(white: 0.8))
+            .foregroundStyle(Color.primary.opacity(0.85))
 
             if let selection = model.cutSelection {
                 Button {
@@ -511,9 +511,9 @@ struct RecorderEditorView: View {
 
     private var stageBackground: some View {
         Rectangle()
-            .fill(Color(white: 0.115))
+            .fill(Color(nsColor: .windowBackgroundColor))
             .overlay {
-                LinearGradient(colors: [Color.white.opacity(0.035), .clear],
+                LinearGradient(colors: [Color.primary.opacity(0.035), .clear],
                                startPoint: .top, endPoint: .bottom)
             }
             .ignoresSafeArea()
@@ -536,7 +536,7 @@ struct RecorderEditorView: View {
             }
             Text(exportProgressLabel)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color(white: 0.8))
+                .foregroundStyle(Color.primary.opacity(0.85))
                 .fixedSize()
             Button(strings.cancelButton) { model.cancelExport() }
                 .buttonStyle(.borderless)
@@ -755,11 +755,11 @@ private struct RecorderToolbarButtonStyle: ButtonStyle {
             .foregroundStyle(destructive ? Color.red : Color.primary)
             .padding(.horizontal, compact ? 0 : 10)
             .frame(width: compact ? 30 : nil, height: 30)
-            .background(Color.white.opacity(configuration.isPressed ? 0.11 : 0.055),
+            .background(Color.primary.opacity(configuration.isPressed ? 0.11 : 0.055),
                         in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(Color.white.opacity(configuration.isPressed ? 0.15 : 0.08),
+                    .strokeBorder(Color.primary.opacity(configuration.isPressed ? 0.15 : 0.08),
                                   lineWidth: 1)
             }
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -778,7 +778,7 @@ private struct RecorderToolbarSplitPartStyle: ButtonStyle {
             .foregroundStyle(Color.primary)
             .padding(.horizontal, compact ? 0 : 10)
             .frame(width: compact ? 30 : nil, height: 30)
-            .background(Color.white.opacity(configuration.isPressed ? 0.11 : 0.055))
+            .background(Color.primary.opacity(configuration.isPressed ? 0.11 : 0.055))
             .contentShape(Rectangle())
     }
 }

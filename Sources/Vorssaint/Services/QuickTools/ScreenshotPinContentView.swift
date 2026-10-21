@@ -28,6 +28,64 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { nil }
 
+    private enum ResizeEdge {
+        case left, right, top, bottom, topLeft, topRight, bottomLeft, bottomRight
+    }
+
+    private let borderThickness: CGFloat = 6
+    private let cornerSize: CGFloat = 14
+
+    private func resizeEdge(at point: NSPoint) -> ResizeEdge? {
+        guard bounds.width > cornerSize * 2, bounds.height > cornerSize * 2 else { return nil }
+        let isLeft = point.x <= borderThickness
+        let isRight = point.x >= bounds.width - borderThickness
+        let isBottom = point.y <= borderThickness
+        let isTop = point.y >= bounds.height - borderThickness
+
+        let isCornerLeft = point.x <= cornerSize
+        let isCornerRight = point.x >= bounds.width - cornerSize
+        let isCornerBottom = point.y <= cornerSize
+        let isCornerTop = point.y >= bounds.height - cornerSize
+
+        if isCornerLeft && isCornerTop { return .topLeft }
+        if isCornerRight && isCornerTop { return .topRight }
+        if isCornerLeft && isCornerBottom { return .bottomLeft }
+        if isCornerRight && isCornerBottom { return .bottomRight }
+
+        if isLeft { return .left }
+        if isRight { return .right }
+        if isTop { return .top }
+        if isBottom { return .bottom }
+
+        return nil
+    }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        guard let pin, !pin.isClosed, !pin.isPositionLocked else { return }
+        guard bounds.width > cornerSize * 2, bounds.height > cornerSize * 2 else { return }
+
+        let bottomLeft = NSRect(x: 0, y: 0, width: cornerSize, height: cornerSize)
+        let bottomRight = NSRect(x: bounds.maxX - cornerSize, y: 0, width: cornerSize, height: cornerSize)
+        let topLeft = NSRect(x: 0, y: bounds.maxY - cornerSize, width: cornerSize, height: cornerSize)
+        let topRight = NSRect(x: bounds.maxX - cornerSize, y: bounds.maxY - cornerSize, width: cornerSize, height: cornerSize)
+
+        let left = NSRect(x: 0, y: cornerSize, width: borderThickness, height: bounds.height - cornerSize * 2)
+        let right = NSRect(x: bounds.maxX - borderThickness, y: cornerSize, width: borderThickness, height: bounds.height - cornerSize * 2)
+        let bottom = NSRect(x: cornerSize, y: 0, width: bounds.width - cornerSize * 2, height: borderThickness)
+        let top = NSRect(x: cornerSize, y: bounds.maxY - borderThickness, width: bounds.width - cornerSize * 2, height: borderThickness)
+
+        addCursorRect(left, cursor: ScreenshotEditorResizeCursor.cursor(for: .left))
+        addCursorRect(right, cursor: ScreenshotEditorResizeCursor.cursor(for: .right))
+        addCursorRect(top, cursor: ScreenshotEditorResizeCursor.cursor(for: .top))
+        addCursorRect(bottom, cursor: ScreenshotEditorResizeCursor.cursor(for: .bottom))
+
+        addCursorRect(topLeft, cursor: ScreenshotEditorResizeCursor.cursor(for: .topLeft))
+        addCursorRect(bottomRight, cursor: ScreenshotEditorResizeCursor.cursor(for: .bottomRight))
+        addCursorRect(topRight, cursor: ScreenshotEditorResizeCursor.cursor(for: .topRight))
+        addCursorRect(bottomLeft, cursor: ScreenshotEditorResizeCursor.cursor(for: .bottomLeft))
+    }
+
     override var mouseDownCanMoveWindow: Bool { !isPositionLocked }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
@@ -40,10 +98,84 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
             pin.makeKeyAndOrderFront(nil)
             pin.makeFirstResponder(self)
         }
-        if !pin.isPositionLocked {
-            NotificationCenter.default.post(name: .screenshotPinWindowDragDidBegin, object: pin)
-            pin.performDrag(with: event)
-            NotificationCenter.default.post(name: .screenshotPinWindowDragDidEnd, object: pin)
+        guard !pin.isPositionLocked else { return }
+        let point = convert(event.locationInWindow, from: nil)
+        if let edge = resizeEdge(at: point) {
+            handleResize(with: event, edge: edge)
+            return
+        }
+        NotificationCenter.default.post(name: .screenshotPinWindowDragDidBegin, object: pin)
+        pin.performDrag(with: event)
+        NotificationCenter.default.post(name: .screenshotPinWindowDragDidEnd, object: pin)
+    }
+
+    private func handleResize(with event: NSEvent, edge: ResizeEdge) {
+        guard let window = self.window, let pin else { return }
+        let initialFrame = window.frame
+        let initialMouse = NSEvent.mouseLocation
+        let minW = pin.minSize.width
+        let minH = pin.minSize.height
+        let aspect = pin.contentAspectRatio.width / max(1, pin.contentAspectRatio.height)
+
+        while true {
+            guard let nextEvent = window.nextEvent(matching: [.leftMouseDragged, .leftMouseUp]) else { break }
+            if nextEvent.type == .leftMouseUp { break }
+
+            let currentMouse = NSEvent.mouseLocation
+            let deltaX = currentMouse.x - initialMouse.x
+            let deltaY = currentMouse.y - initialMouse.y
+
+            var newFrame = initialFrame
+
+            switch edge {
+            case .right:
+                let targetW = max(minW, initialFrame.width + deltaX)
+                newFrame.size.width = targetW
+                newFrame.size.height = max(minH, targetW / aspect)
+            case .left:
+                let clampedDeltaX = min(deltaX, initialFrame.width - minW)
+                let targetW = initialFrame.width - clampedDeltaX
+                newFrame.origin.x = initialFrame.origin.x + clampedDeltaX
+                newFrame.size.width = targetW
+                newFrame.size.height = max(minH, targetW / aspect)
+            case .top:
+                let targetH = max(minH, initialFrame.height + deltaY)
+                newFrame.size.height = targetH
+                newFrame.size.width = max(minW, targetH * aspect)
+            case .bottom:
+                let clampedDeltaY = min(deltaY, initialFrame.height - minH)
+                let targetH = initialFrame.height - clampedDeltaY
+                newFrame.origin.y = initialFrame.origin.y + clampedDeltaY
+                newFrame.size.height = targetH
+                newFrame.size.width = max(minW, targetH * aspect)
+            case .topRight:
+                let targetW = max(minW, initialFrame.width + deltaX)
+                newFrame.size.width = targetW
+                newFrame.size.height = max(minH, targetW / aspect)
+            case .topLeft:
+                let clampedDeltaX = min(deltaX, initialFrame.width - minW)
+                let targetW = initialFrame.width - clampedDeltaX
+                newFrame.origin.x = initialFrame.origin.x + clampedDeltaX
+                newFrame.size.width = targetW
+                newFrame.size.height = max(minH, targetW / aspect)
+            case .bottomRight:
+                let targetW = max(minW, initialFrame.width + deltaX)
+                let targetH = max(minH, targetW / aspect)
+                newFrame.origin.y = initialFrame.maxY - targetH
+                newFrame.size.width = targetW
+                newFrame.size.height = targetH
+            case .bottomLeft:
+                let clampedDeltaX = min(deltaX, initialFrame.width - minW)
+                let targetW = initialFrame.width - clampedDeltaX
+                let targetH = max(minH, targetW / aspect)
+                newFrame.origin.x = initialFrame.origin.x + clampedDeltaX
+                newFrame.origin.y = initialFrame.maxY - targetH
+                newFrame.size.width = targetW
+                newFrame.size.height = targetH
+            }
+
+            window.setFrame(newFrame, display: true)
+            pin.reportZoom()
         }
     }
 

@@ -36,8 +36,8 @@ enum SettingsSidebarIdentityTests {
         suite.expect(desktop.map(\.id) == [.page(.dock), .feature(.switcher), .page(.windowLayout),
                                            .page(.screenshot), .page(.screenRecorder)],
                      "Desktop & Screen contains 1-5 items: dock, switcher, window layout, screenshot, screen recorder")
-        suite.expect(!sections.flatMap(\.items).contains { $0.id == .feature(.pastePlain) || $0.id == .feature(.finderRename) || $0.id == .page(.wallpaper) },
-                     "Clipboard and Finder expose one page rather than entries for their child controls, and wallpaper dedicated page is removed")
+        suite.expect(!sections.flatMap(\.items).contains { $0.id == .feature(.pastePlain) || $0.id == .page(.wallpaper) },
+                     "Clipboard exposes one page rather than entries for its child controls, and wallpaper dedicated page is removed")
         let off = Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in false })
         suite.expect(off.first { $0.id == 1 }?.items.contains { $0.id == .page(.screenshot) } == true
                      && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.screenRecorder) } == true

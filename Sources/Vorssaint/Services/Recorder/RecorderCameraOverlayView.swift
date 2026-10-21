@@ -21,6 +21,7 @@ final class RecorderOverlayPanel: OverlayPanel {
 }
 
 final class RecorderCameraOverlayView: NSView {
+    private var text: RecorderOverlayStrings { FeatureStrings.recorderOverlay(L10n.shared.language) }
     private weak var controller: RecorderOverlayController?
     private let context = CIContext(options: [.cacheIntermediates: false])
     private var dragStart: CGPoint?
@@ -30,7 +31,7 @@ final class RecorderCameraOverlayView: NSView {
     init(controller: RecorderOverlayController) {
         self.controller = controller
         super.init(frame: .zero)
-        setAccessibilityLabel("Recording camera overlay")
+        setAccessibilityLabel(text.overlay)
     }
     @available(*, unavailable) required init?(coder: NSCoder) { nil }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
@@ -40,15 +41,13 @@ final class RecorderCameraOverlayView: NSView {
         guard let controller, let graphics = NSGraphicsContext.current?.cgContext else { return }
         graphics.saveGState()
         defer { graphics.restoreGState() }
-        if controller.layout.shape == .circle && !controller.layout.isFullArea { graphics.addEllipse(in: bounds) }
-        else { graphics.addRect(bounds) }
+        let radius = controller.layout.cornerRadius(in: controller.layout.frame(in: controller.pixelSize))
+            / controller.layout.pixelsPerPoint
+        graphics.addPath(CGPath(roundedRect: bounds, cornerWidth: radius, cornerHeight: radius, transform: nil))
         graphics.clip()
         graphics.setFillColor(NSColor.black.cgColor)
         graphics.fill(bounds)
         guard var camera = controller.frames.snapshot.camera else {
-            let text = "Starting camera…" as NSString
-            text.draw(at: CGPoint(x: 10, y: max(4, bounds.midY - 8)),
-                withAttributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.white])
             return
         }
         let source = camera.extent
@@ -81,7 +80,11 @@ final class RecorderCameraOverlayView: NSView {
                                                             y: origin.y + point.y - start.y)) }
     }
     override func mouseUp(with event: NSEvent) {
-        if !dragged, dragStart != nil { controller?.layout.isFullArea.toggle() }
+        if dragged {
+            controller?.snapCameraToNearestEdge(animated: true)
+        } else if dragStart != nil {
+            controller?.layout.isFullArea.toggle()
+        }
         dragStart = nil
     }
 
@@ -92,32 +95,32 @@ final class RecorderCameraOverlayView: NSView {
             let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
             let submenu = NSMenu(); item.submenu = submenu; menu.addItem(item); return submenu
         }
-        let cameras = section("Camera")
-        let system = cameras.addItem(withTitle: "System default", action: #selector(cameraSelected(_:)), keyEquivalent: "")
+        let cameras = section(text.camera)
+        let system = cameras.addItem(withTitle: text.defaultInput, action: #selector(cameraSelected(_:)), keyEquivalent: "")
         system.target = self; system.state = controller.selectedCameraID == nil ? .on : .off
         for device in RecorderCaptureInputs.cameras {
             let item = cameras.addItem(withTitle: device.localizedName, action: #selector(cameraSelected(_:)), keyEquivalent: "")
             item.target = self; item.representedObject = device.uniqueID
             item.state = device.uniqueID == controller.selectedCameraID ? .on : .off
         }
-        let sizes = section("Size")
+        let sizes = section(text.size)
         sizes.autoenablesItems = false
         for size in RecorderCameraLayout.Size.allCases {
-            let item = sizes.addItem(withTitle: size.rawValue.capitalized, action: #selector(sizeSelected(_:)), keyEquivalent: "")
+            let item = sizes.addItem(withTitle: text.title(size), action: #selector(sizeSelected(_:)), keyEquivalent: "")
             item.target = self; item.representedObject = size.rawValue
             let effective = controller.layout.isAvailable(controller.layout.size, in: controller.pixelSize)
                 ? controller.layout.size : .small
             item.state = effective == size ? .on : .off
             item.isEnabled = controller.layout.isAvailable(size, in: controller.pixelSize)
         }
-        let shapes = section("Shape")
+        let shapes = section(FeatureStrings.recorder(L10n.shared.language).shapeLabel)
         for shape in RecorderCameraLayout.Shape.allCases {
-            let title = shape == .rectangle ? "Rectangle (1.47:1)" : shape == .vertical ? "Vertical (1:1.47)" : shape.rawValue.capitalized
+            let title = text.title(shape)
             let item = shapes.addItem(withTitle: title, action: #selector(shapeSelected(_:)), keyEquivalent: "")
             item.target = self; item.representedObject = shape.rawValue
             item.state = controller.layout.shape == shape ? .on : .off
         }
-        let flip = menu.addItem(withTitle: "Flip camera", action: #selector(flipCamera), keyEquivalent: "")
+        let flip = menu.addItem(withTitle: text.flip, action: #selector(flipCamera), keyEquivalent: "")
         flip.target = self; flip.state = controller.layout.isFlipped ? .on : .off
         return menu
     }

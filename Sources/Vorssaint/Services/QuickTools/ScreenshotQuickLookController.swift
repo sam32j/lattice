@@ -12,6 +12,9 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
     private var previousResponder: NSResponder?
     private var keyMonitor: Any?
     private var previewPanel: QLPreviewPanel?
+    private var isTemporaryURL = false
+    private var originalLevel: NSWindow.Level?
+    var presentationWindow: NSWindow? { previewPanel }
     var isVisible: Bool { previewPanel?.isVisible == true }
     var protectedWindowIDs: Set<CGWindowID> {
         guard let previewPanel, previewPanel.isVisible, previewPanel.windowNumber > 0 else { return [] }
@@ -29,18 +32,32 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
             guard let data = bitmap.representation(using: .png, properties: [:]) else { return false }
             try data.write(to: url, options: .withoutOverwriting)
         } catch { return false }
+        return present(url: url, temporary: true, owner: owner)
+    }
+
+    @discardableResult func show(url: URL, owner: NSWindow? = nil) -> Bool {
+        close()
+        return present(url: url, temporary: false, owner: owner)
+    }
+
+    private func present(url: URL, temporary: Bool, owner: NSWindow?) -> Bool {
         previewURL = url
+        isTemporaryURL = temporary
         self.owner = owner
         previousResponder = NSApp.nextResponder
         nextResponder = previousResponder
         NSApp.nextResponder = self
         guard let panel = QLPreviewPanel.shared() else { close(); return false }
         previewPanel = panel
+        originalLevel = panel.level
         panel.updateController()
         panel.reloadData()
         panel.makeKeyAndOrderFront(nil)
+        // Quick Look resets its level while opening; elevate it afterwards.
+        panel.level = ScreenshotWindowLayering.previewLevel(above: owner)
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self, weak panel] event in
-            guard event.window === panel, event.keyCode == 53 else { return event }
+            guard event.window === panel,
+                  event.keyCode == 53 || ScreenshotWindowLayering.isQuickLookShortcut(event) else { return event }
             self?.close()
             return nil
         }
@@ -66,6 +83,8 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
     func close() {
         let returnFocus = previewPanel?.isKeyWindow == true
         previewPanel?.orderOut(nil)
+        if let originalLevel { previewPanel?.level = originalLevel }
+        originalLevel = nil
         previewPanel?.dataSource = nil
         previewPanel?.delegate = nil
         previewPanel = nil
@@ -74,8 +93,9 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
         if NSApp.nextResponder === self { NSApp.nextResponder = previousResponder }
         previousResponder = nil
         nextResponder = nil
-        if let url = previewURL { try? FileManager.default.removeItem(at: url) }
+        if let url = previewURL, isTemporaryURL { try? FileManager.default.removeItem(at: url) }
         previewURL = nil
+        isTemporaryURL = false
         if returnFocus, owner?.isVisible == true { owner?.makeKey() }
         owner = nil
     }

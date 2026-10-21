@@ -6,26 +6,32 @@ import AppKit
 enum RecorderIndicatorLayoutTests {
     static func run(_ suite: TestSuite) {
         MainActor.assumeIsolated {
-            var started = 0
-            let indicator = RecorderIndicator(onPause: {}, onStop: {}, onDiscard: {}, onStart: { started += 1 })
+            let indicator = RecorderIndicator(onPause: {}, onStop: {}, onDiscard: {})
             defer { indicator.hide() }
             indicator.show(on: NSScreen.main, tooltip: "Recording", pauseTooltip: "Pause",
-                resumeTooltip: "Resume", stopTooltip: "Stop", startTooltip: "Play", discardTooltip: "Trash")
+                resumeTooltip: "Resume", stopTooltip: "Stop", discardTooltip: "Trash")
             let selection = CGRect(x: 200, y: 180, width: 600, height: 400)
-            indicator.setWaitingForStart(in: selection)
+            let domain = "vorss.tests.RecorderWaitingControlsTests.\(UUID().uuidString)"
+            let defaults = UserDefaults(suiteName: domain)!
+            defer { defaults.removePersistentDomain(forName: domain) }
+            let audio = RecorderSelectionAudioOptions(defaults: defaults)
+            let waiting = RecorderWaitingControls(audio: audio, start: {}, cancel: {})
+            defer { waiting.hide() }
+            waiting.show(in: selection, screen: CGRect(x: 0, y: 0, width: 1200, height: 800))
             guard let window = indicator.presentationWindow else { suite.expect(false, "recording indicator exists"); return }
             let cameraOverlay = RecorderOverlayPanel()
             defer { cameraOverlay.close() }
             suite.expect(window.level.rawValue > cameraOverlay.level.rawValue,
                          "recording controls remain above even a full-area camera overlay")
-            suite.expectClose(window.frame.midX, 500, "initial Play/Cancel is centered horizontally in the selection")
-            suite.expectClose(window.frame.midY, 380, "initial Play/Cancel is centered vertically in the selection")
+            suite.expectClose(waiting.panel.frame.midX, 500, "waiting controls are centered horizontally in the selection")
+            suite.expectClose(waiting.panel.frame.midY, 380, "waiting controls are centered vertically in the selection")
+            suite.expect(!waiting.panel.canBecomeKey && !waiting.panel.canBecomeMain,
+                         "waiting controls cannot steal keyboard ownership from the selection")
+            suite.expect(waiting.panel.level.rawValue > Int(CGShieldingWindowLevel()) + 1,
+                         "waiting controls remain above the selection and waiting camera")
             func buttons() -> [NSButton] {
                 window.contentView?.subviews.compactMap { $0 as? NSButton }.filter { !$0.isHidden } ?? []
             }
-            suite.expect(buttons().count == 2, "before first recording only Play and Cancel are visible")
-            buttons().first(where: { $0.toolTip == "Play" })?.performClick(nil)
-            suite.expect(started == 1, "initial Play starts the recording once")
             indicator.update(elapsed: "0:01")
             indicator.update(paused: true)
             suite.expect(buttons().count == 3 && buttons().contains { $0.toolTip == "Resume" },

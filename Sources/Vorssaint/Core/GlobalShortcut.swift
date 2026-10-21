@@ -184,7 +184,6 @@ struct GlobalShortcut: Equatable, Hashable {
     // combination; the others use the free ⌃⌥⌘ letters.
     static let pastePlainDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_V),
                                                   modifiers: [.shift, .option, .command])
-    static let finderRenameDefault = GlobalShortcut(keyCode: Int64(kVK_F2), modifiers: [])
     static let colorPickerDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_C),
                                                    modifiers: [.control, .option, .command])
     static let screenOCRDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_T),
@@ -323,8 +322,7 @@ struct GlobalShortcut: Equatable, Hashable {
     ] as [Int]).map(Int64.init))
 
     /// Function-row keys are safe without modifiers: unlike a bare letter,
-    /// taking one never makes ordinary typing impossible. This also lets F2
-    /// serve as Finder's familiar Rename key.
+    /// taking one never makes ordinary typing impossible.
     private static let standaloneFunctionKeys: Set<Int64> = Set(([
         kVK_F1, kVK_F2, kVK_F3, kVK_F4, kVK_F5, kVK_F6, kVK_F7, kVK_F8, kVK_F9, kVK_F10,
         kVK_F11, kVK_F12, kVK_F13, kVK_F14, kVK_F15, kVK_F16, kVK_F17, kVK_F18, kVK_F19, kVK_F20,
@@ -706,7 +704,6 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     case clipboard
     case soundOutputSwitcher
     case pastePlain
-    case finderRename
     case colorPicker
     case screenOCR
     case micMute
@@ -741,7 +738,6 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .clipboard: return DefaultsKey.clipboardHistoryShortcut
         case .soundOutputSwitcher: return DefaultsKey.soundOutputSwitcherShortcut
         case .pastePlain: return DefaultsKey.pastePlainShortcut
-        case .finderRename: return DefaultsKey.finderRenameShortcut
         case .colorPicker: return DefaultsKey.colorPickerShortcut
         case .screenOCR: return DefaultsKey.screenOCRShortcut
         case .micMute: return DefaultsKey.micMuteShortcut
@@ -776,7 +772,6 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .clipboard: return .clipboardDefault
         case .soundOutputSwitcher: return .soundOutputSwitcherDefault
         case .pastePlain: return .pastePlainDefault
-        case .finderRename: return .finderRenameDefault
         case .colorPicker: return .colorPickerDefault
         case .screenOCR: return .screenOCRDefault
         case .micMute: return .micMuteDefault
@@ -830,7 +825,6 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .clipboard: return FeatureStrings.clipboard(L10n.shared.language).title
         case .soundOutputSwitcher: return strings.soundOutputSwitcherTitle
         case .pastePlain: return strings.pastePlainName
-        case .finderRename: return FeatureStrings.finderRename(L10n.shared.language).hubTitle
         case .colorPicker: return strings.colorPickerName
         case .screenOCR: return strings.ocrName
         case .micMute: return strings.micMuteName
@@ -899,7 +893,6 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
                                  DefaultsKey.clipboardHistoryShortcutEnabled]
         case .soundOutputSwitcher: return [DefaultsKey.soundOutputSwitcherEnabled]
         case .pastePlain: return [DefaultsKey.pastePlainEnabled]
-        case .finderRename: return [DefaultsKey.finderRenameEnabled]
         case .colorPicker: return [DefaultsKey.colorPickerShortcutEnabled]
         case .screenOCR: return [DefaultsKey.screenOCRShortcutEnabled]
         case .micMute: return [DefaultsKey.micMuteShortcutEnabled]
@@ -936,7 +929,6 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .clipboard: return .clipboardHistory
         case .soundOutputSwitcher: return .soundOutputSwitcher
         case .pastePlain: return .pastePlain
-        case .finderRename: return .finderRename
         case .colorPicker: return .colorPicker
         case .screenOCR: return .screenOCR
         case .micMute: return .micMute

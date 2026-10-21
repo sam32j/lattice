@@ -14,6 +14,26 @@ import VMStatisticsCompat
 
 enum ScreenshotFeatureTests {
     static func run(_ suite: TestSuite) {
+        MediaEditorFileTests.run(suite)
+        ScreenshotFontSizeControlTests.run(suite)
+        ScreenshotShapeResizeTests.run(suite)
+        HistoryPreviewContinuityTests.run(suite)
+        ScreenshotExposeSelectionTests.run(suite)
+        ScreenshotMultiWindowShiftTests.run(suite)
+        ScreenshotWatermarkPickerTests.run(suite)
+        ScreenshotCapturePresentationTests.run(suite)
+        ScreenshotBlankViewportTests.run(suite)
+        CapturePresentationDeferralTests.run(suite)
+        ScreenshotWatermarkDraftTests.run(suite)
+        CapturePreviewPositionTests.run(suite)
+        ScreenshotWatermarkCollectionTests.run(suite)
+        ScreenshotMissionControlDeferralTests.run(suite)
+        ScreenshotEditorGeometryTests.run(suite)
+        ScreenshotEditorSelectionTests.run(suite)
+        ScreenshotReopenedBlurTests.run(suite)
+        ScreenshotEditorMultiSelectionTests.run(suite)
+        ScreenshotEditorKeyTests.run(suite)
+        ScreenshotSelectionChromeTests.run(suite)
         let registrationDomain = UserDefaults.standard.volatileDomain(
             forName: UserDefaults.registrationDomain)
         defer {
@@ -1079,6 +1099,13 @@ enum ScreenshotFeatureTests {
                 && recentCapturePaletteCode.contains(
                     "NSWorkspace.shared.notificationCenter.removeObserver("),
                "a recent captures palette appears promptly and leaves when another app activates")
+        let panelRecentCapturesSource = (try? String(
+            contentsOfFile: "Sources/Vorssaint/UI/MenuPanel/PanelRecentCapturesView.swift",
+            encoding: .utf8)) ?? ""
+        suite.expect(!panelRecentCapturesSource.contains("style: .relative")
+                && panelRecentCapturesSource.contains("formattedCaptureTime")
+                && panelRecentCapturesSource.contains("islandCard"),
+               "recent captures in dynamic island do not track seconds and use redesigned cards")
         suite.expect(!ScreenshotSupport.captureAvailabilityChanged(
                     activeTools: [.screenshot, .recording],
                     availableTools: [.screenshot, .recording])
@@ -1371,7 +1398,8 @@ enum ScreenshotFeatureTests {
         // The island reads the same policy: whether it takes the keyboard and
         // whether a collapse closes the preview come from it, never a literal.
         suite.expect(quickPreviewCode.contains("takeFocus: presentationPolicy.takesFocus,")
-                && quickPreviewCode.contains("closeOnCollapse: presentationPolicy.closesOnCollapse,"),
+                && quickPreviewCode.contains("closeOnCollapse: presentationPolicy.closesOnCollapse,")
+                && quickPreviewCode.contains("if presentationPolicy.takesFocus {\n                NSApp.activate(ignoringOtherApps: true)"),
                "the island preview takes the keyboard and closes on collapse exactly as the presentation policy says")
         let makeKeyCount = quickPreviewCode.components(separatedBy: "makeKey").count - 1
         let panelMakeKeyCount = panelBody.components(separatedBy: "makeKey").count - 1
@@ -2506,16 +2534,10 @@ enum ScreenshotFeatureTests {
                     > ScreenshotRenderer.textBounds("Hi", at: .zero, textSize: 12, scale: 1).height,
                "text size alone drives the rendered font")
         suite.expect(ScreenshotSupport.sanitizedTextSize(0) == ScreenshotSupport.defaultTextSize
-                && ScreenshotSupport.sanitizedTextSize(2) == ScreenshotSupport.textSizes.first
-                && ScreenshotSupport.sanitizedTextSize(500) == ScreenshotSupport.textSizes.last
+                && ScreenshotSupport.sanitizedTextSize(2) == 8
+                && ScreenshotSupport.sanitizedTextSize(500) == 96
                 && ScreenshotSupport.sanitizedTextSize(19) == 19,
                "a stored text size stays inside the offered range")
-        suite.expect(ScreenshotSupport.steppedTextSize(from: 19, up: true) == 24
-                && ScreenshotSupport.steppedTextSize(from: 19, up: false) == 16
-                && ScreenshotSupport.steppedTextSize(from: 20, up: false) == 19
-                && ScreenshotSupport.steppedTextSize(from: 96, up: true) == nil
-                && ScreenshotSupport.steppedTextSize(from: 10, up: false) == nil,
-               "the size buttons step through the presets and stop at the ends")
         suite.expect(screenshotEditorSource.contains("let strokeChanged = usesStroke && annotations[index].stroke != stroke")
                 && screenshotEditorSource.contains("if usesStroke { annotations[index].stroke = stroke }"),
                "picking text or a highlight never records a thickness edit it has no control for")
@@ -2911,13 +2933,13 @@ enum ScreenshotFeatureTests {
         suite.expect(ScreenshotSupport.Tool.shortcutTool(number: 1, enabled: true) == .select
                 && ScreenshotSupport.Tool.shortcutTool(number: 3, enabled: true) == .line
                 && ScreenshotSupport.Tool.shortcutTool(number: 9, enabled: true) == .text
-                && ScreenshotSupport.Tool.shortcutTool(number: 0, enabled: true) == .crop
+                && ScreenshotSupport.Tool.shortcutTool(number: 0, enabled: true) == .pixelate
                 && ScreenshotSupport.Tool.shortcutTool(number: 1, enabled: false) == nil
                 && ScreenshotSupport.Tool.shortcutTool(number: 11, enabled: true) == nil,
                "number keys 1 through 9 and 0 select the fixed rail tools and can be disabled together")
         suite.expect(ScreenshotSupport.Tool.shortcutNumber(for: .select, enabled: true) == 1
-                && ScreenshotSupport.Tool.shortcutNumber(for: .crop, enabled: true) == 0
-                && ScreenshotSupport.Tool.shortcutNumber(for: .pixelate, enabled: true) == nil,
+                && ScreenshotSupport.Tool.shortcutNumber(for: .pixelate, enabled: true) == 0
+                && ScreenshotSupport.Tool.shortcutNumber(for: .crop, enabled: true) == nil,
                "the rail exposes default shortcut numbers 1-9 and 0 for the first ten tools")
 
         // MARK: Remappable screenshot tool shortcuts
@@ -2998,8 +3020,8 @@ enum ScreenshotFeatureTests {
                         orderRaw: nil, bindingsRaw: "", enabled: true)
                     == Tool.shortcutTool(number: numberArg, orderRaw: nil, enabled: true),
                        "empty bindings preserve position behavior for \(tool)")
-                suite.expect((Tool.shortcutLabel(for: tool, orderRaw: nil, bindingsRaw: "", enabled: true) != nil)
-                    == (index < Tool.shortcutLimit), "only the first ten tools get default badges")
+                suite.expect(Tool.shortcutLabel(for: tool, orderRaw: nil, bindingsRaw: "", enabled: true) != nil,
+                       "all tools get default badges")
             }
             suite.expect(Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: raw, enabled: true) == text.displayString
                 && Tool.shortcutLabel(for: .text, orderRaw: nil, bindingsRaw: raw, enabled: false) == nil,

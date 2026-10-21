@@ -16,7 +16,11 @@ final class ScreenshotPinController {
     private var hoverTimer: Timer?
     private var preferenceObserver: NSObjectProtocol?
     private var dragObservers: [NSObjectProtocol] = []
-    private init() {}
+    private init() {
+        ScreenshotPinWindow.onResetGestureState = { [weak self] in
+            self?.resetGestureState()
+        }
+    }
 
     var protectedWindowIDs: Set<CGWindowID> {
         var ids = Set<CGWindowID>()
@@ -41,8 +45,13 @@ final class ScreenshotPinController {
         }
     }
 
-    func pin(image: CGImage, scale: CGFloat) {
-        let pin = ScreenshotPinWindow(image: image, scale: scale)
+    func findPin(for captureID: UUID) -> ScreenshotPinWindow? {
+        pins.first { $0.captureID == captureID }
+    }
+
+    @discardableResult
+    func pin(image: CGImage, scale: CGFloat, baseImage: CGImage? = nil, annotations: [ScreenshotSupport.Annotation] = [], captureID: UUID = UUID()) -> ScreenshotPinWindow {
+        let pin = ScreenshotPinWindow(image: image, scale: scale, captureID: captureID, baseImage: baseImage, annotations: annotations)
         pin.onClose = { [weak self, weak pin] in
             self?.pins.removeAll { $0 === pin }
             self?.refreshMonitoring()
@@ -53,13 +62,19 @@ final class ScreenshotPinController {
         pin.onClickThroughChanged = { [weak self] in self?.refreshEscapeMonitor() }
         pin.onEdit = { [weak pin] in
             guard let pin else { return }
-            ScreenshotService.shared.openEditor(with: .init(image: pin.image, scale: pin.captureScale, anchorRect: pin.frame))
+            let base = pin.baseImage ?? pin.image
+            ScreenshotService.shared.openEditor(
+                with: .init(id: pin.captureID, image: base, scale: pin.captureScale, anchorRect: pin.frame, annotations: pin.annotations),
+                above: pin,
+                originatingPin: pin
+            )
         }
         let offset = CGFloat(pins.count % 5) * 26
         pin.setFrameOrigin(CGPoint(x: pin.frame.minX + offset, y: pin.frame.minY - offset))
         pins.append(pin)
         pin.showPin()
         refreshMonitoring()
+        return pin
     }
 
     func closeAll() {
@@ -145,8 +160,11 @@ final class ScreenshotPinController {
         if activeGesturePin == nil || time - lastGestureTime > 0.25
             || (gestureFinished && sequenceBegan) {
             activeGesturePin?.resetGestureTracking()
-            let windows = NSApp.orderedWindows.filter { window in
+            var windows = NSApp.orderedWindows.filter { window in
                 window.isVisible && pins.contains { $0 === window }
+            }
+            if windows.isEmpty {
+                windows = pins.filter(\.isVisible).reversed()
             }
             activeGesturePin = ScreenshotPinWindow.gestureTarget(at: location, windows: windows)
             activeGesturePin?.resetGestureTracking()
@@ -165,6 +183,13 @@ final class ScreenshotPinController {
                 $0.phase == .ended || $0.phase == .cancelled
             }) { gestureFinished = true }
         return true
+    }
+
+    func resetGestureState() {
+        activeGesturePin?.resetGestureTracking()
+        activeGesturePin = nil
+        gestureFinished = false
+        lastGestureTime = 0
     }
 
     private func refreshEscapeMonitor() {

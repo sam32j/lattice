@@ -13,14 +13,22 @@ struct RecorderCameraLayout: Equatable {
     }
     enum Shape: String, CaseIterable { case circle, square, rectangle, vertical
         var aspect: CGFloat {
-            switch self { case .circle, .square: 1; case .rectangle: 1.47; case .vertical: 1 / 1.47 }
+            switch self { case .circle, .square: 1; case .rectangle: 1.52; case .vertical: 1 / 1.52 }
         }
     }
     var size: Size = .medium
     var shape: Shape = .circle
     var isFlipped = false
     var isFullArea = false
+    var pixelsPerPoint: CGFloat = 1
+    var edgePadding: CGFloat = 5.0
     private var position = CGPoint(x: 1, y: 0)
+
+    func cornerRadius(in frame: CGRect) -> CGFloat {
+        if isFullArea { return 0 }
+        let halfSide = min(frame.width, frame.height) / 2
+        return shape == .circle ? halfSide : min(20 * pixelsPerPoint, halfSide)
+    }
 
     func isAvailable(_ size: Size, in canvas: CGSize) -> Bool {
         guard canvas.width.isFinite, canvas.height.isFinite, canvas.width > 0, canvas.height > 0 else { return false }
@@ -46,27 +54,42 @@ struct RecorderCameraLayout: Equatable {
         guard !isFullArea, origin.x.isFinite, origin.y.isFinite else { return }
         let bounds = usableBounds(canvas)
         let current = frame(in: canvas)
-        func snapped(_ value: CGFloat, lower: CGFloat, upper: CGFloat) -> CGFloat {
-            let clamped = min(max(value, lower), upper)
-            if clamped - lower < 18 {
-                let distance = clamped - lower
-                return distance < 2 ? lower : lower + distance * distance / 18
-            }
-            if upper - clamped < 18 {
-                let distance = upper - clamped
-                return distance < 2 ? upper : upper - distance * distance / 18
-            }
-            return clamped
-        }
-        let x = snapped(origin.x, lower: bounds.minX, upper: bounds.maxX - current.width)
-        let y = snapped(origin.y, lower: bounds.minY, upper: bounds.maxY - current.height)
+        let x = min(max(origin.x, bounds.minX), bounds.maxX - current.width)
+        let y = min(max(origin.y, bounds.minY), bounds.maxY - current.height)
         position = CGPoint(x: bounds.width > current.width ? (x - bounds.minX) / (bounds.width - current.width) : 0,
                            y: bounds.height > current.height ? (y - bounds.minY) / (bounds.height - current.height) : 0)
     }
 
+    mutating func snapToNearestEdge(in canvas: CGSize) {
+        guard !isFullArea else { return }
+        let bounds = usableBounds(canvas)
+        let current = frame(in: canvas)
+        guard bounds.width > current.width || bounds.height > current.height else { return }
+
+        let distLeft = current.minX - bounds.minX
+        let distRight = bounds.maxX - current.maxX
+        let distBottom = current.minY - bounds.minY
+        let distTop = bounds.maxY - current.maxY
+
+        let minDist = min(distLeft, distRight, distBottom, distTop)
+        if minDist == distLeft {
+            position.x = 0
+        } else if minDist == distRight {
+            position.x = 1
+        } else if minDist == distBottom {
+            position.y = 0
+        } else {
+            position.y = 1
+        }
+    }
+
     private func usableBounds(_ canvas: CGSize) -> CGRect {
-        let margin = min(12, canvas.width * 0.04, canvas.height * 0.04)
-        return CGRect(origin: .zero, size: canvas).insetBy(dx: margin, dy: margin)
+        let padding = edgePadding * max(1, pixelsPerPoint)
+        let target = dimensions(.small)
+        guard canvas.width >= target.width + padding * 2, canvas.height >= target.height + padding * 2 else {
+            return CGRect(origin: .zero, size: canvas)
+        }
+        return CGRect(origin: .zero, size: canvas).insetBy(dx: padding, dy: padding)
     }
     private func dimensions(_ size: Size) -> CGSize {
         let longest = min(500, size.longestSide)

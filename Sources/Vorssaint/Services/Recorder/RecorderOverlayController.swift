@@ -6,13 +6,21 @@ import Combine
 
 /// Owns only the live recording overlays, never the standalone camera mirror.
 final class RecorderOverlayController: ObservableObject {
+    private enum Phase { case selecting, waiting, starting, recording }
     static let shared = RecorderOverlayController()
     let frames: RecorderOverlayFrameStore
     @Published var cameraEnabled = false { didSet { if oldValue != cameraEnabled { configureCamera() } } }
     @Published var keysEnabled = false { didSet { updateKeyCapture() } }
     @Published var selectedCameraID: String? { didSet { if oldValue != selectedCameraID, cameraEnabled { configureCamera() } } }
     @Published var selectedMicrophoneID: String?
-    @Published var layout = RecorderCameraLayout() { didSet { frames.setLayout(layout); refreshLayout() } }
+    @Published var layout = RecorderCameraLayout() { didSet {
+        guard !isPreparingSnap else { return }
+        snapTimer?.invalidate()
+        snapTimer = nil
+        frames.setLayout(layout)
+        refreshLayout()
+    } }
+    private var isPreparingSnap = false
     @Published private(set) var errorMessage: String?
     @Published private(set) var cameraReady = false
     private(set) var pixelSize = CGSize.zero
@@ -25,7 +33,9 @@ final class RecorderOverlayController: ObservableObject {
     private var keyPanel: RecorderOverlayPanel?
     private var refreshTimer: Timer?
     private var pauseClock: RecorderPauseClock?
+    private var phase = Phase.selecting
     var isRecording: Bool { pauseClock != nil }
+    var cameraPreviewVisible: Bool { cameraPanel?.isVisible == true && (cameraPanel?.alphaValue ?? 0) > 0 }
     var onFailure: ((String) -> Void)?
     var excludedWindowNumbers: [Int] {
         [cameraPanel?.windowNumber, keyPanel?.windowNumber].compactMap { number in
@@ -45,13 +55,15 @@ final class RecorderOverlayController: ObservableObject {
         guard anchorRect.width > 0, anchorRect.height > 0, pixelSize.width > 0, pixelSize.height > 0 else { return }
         self.anchorRect = anchorRect
         self.pixelSize = pixelSize
+        layout.pixelsPerPoint = pixelSize.width / anchorRect.width
         frames.setLayout(layout)
         refreshLayout()
     }
 
-    func prepareRecording(anchorRect: CGRect, pixelSize: CGSize) {
+    func prepareRecording(anchorRect: CGRect, pixelSize: CGSize, immediate: Bool = true) {
+        phase = immediate ? .starting : .waiting
         updateRegion(anchorRect: anchorRect, pixelSize: pixelSize)
-        if keysEnabled { ensureKeyPanel() }
+        if cameraEnabled { configureCamera() }
     }
 
     @MainActor func ensureCameraReady() async -> Bool {
@@ -71,6 +83,8 @@ final class RecorderOverlayController: ObservableObject {
 
     func startRecording(pauseClock: RecorderPauseClock) {
         self.pauseClock = pauseClock
+        phase = .recording
+        refreshLayout()
         updateKeyCapture()
     }
     func pauseChanged() { updateKeyCapture() }
@@ -80,15 +94,86 @@ final class RecorderOverlayController: ObservableObject {
         cameraEnabled.toggle()
     }
 
+    private var snapTimer: Timer?
+
     func moveCamera(origin: CGPoint) {
-        guard anchorRect.width > 0 else { return }
+        snapTimer?.invalidate()
+        snapTimer = nil
+        guard anchorRect.width > 0, pixelSize.width > 0, pixelSize.height > 0 else { return }
         let xScale = pixelSize.width / anchorRect.width
         let yScale = pixelSize.height / anchorRect.height
         layout.place(origin: CGPoint(x: (origin.x - anchorRect.minX) * xScale,
                                      y: (origin.y - anchorRect.minY) * yScale), in: pixelSize)
+        let frame = layout.frame(in: pixelSize)
+        let points = CGRect(x: anchorRect.minX + frame.minX * anchorRect.width / pixelSize.width,
+                            y: anchorRect.minY + frame.minY * anchorRect.height / pixelSize.height,
+                            width: frame.width * anchorRect.width / pixelSize.width,
+                            height: frame.height * anchorRect.height / pixelSize.height)
+        cameraPanel?.setFrame(points, display: true)
+    }
+
+    func snapCameraToNearestEdge(animated: Bool = true) {
+        snapTimer?.invalidate()
+        snapTimer = nil
+        guard !layout.isFullArea, let cameraPanel, anchorRect.width > 0, pixelSize.width > 0, pixelSize.height > 0 else { return }
+        let startOrigin = cameraPanel.frame.origin
+        isPreparingSnap = true
+        layout.snapToNearestEdge(in: pixelSize)
+        isPreparingSnap = false
+        let targetFrame = layout.frame(in: pixelSize)
+        let targetPoints = CGRect(x: anchorRect.minX + targetFrame.minX * anchorRect.width / pixelSize.width,
+                                  y: anchorRect.minY + targetFrame.minY * anchorRect.height / pixelSize.height,
+                                  width: targetFrame.width * anchorRect.width / pixelSize.width,
+                                  height: targetFrame.height * anchorRect.height / pixelSize.height)
+        guard animated else {
+            frames.setLayout(layout)
+            cameraPanel.setFrame(targetPoints, display: true)
+            return
+        }
+
+        let targetOrigin = targetPoints.origin
+        let dx = targetOrigin.x - startOrigin.x
+        let dy = targetOrigin.y - startOrigin.y
+        guard hypot(dx, dy) > 0.5 else {
+            frames.setLayout(layout)
+            cameraPanel.setFrame(targetPoints, display: true)
+            return
+        }
+
+        let duration: TimeInterval = 0.36
+        let startTime = CACurrentMediaTime()
+        let timer = Timer(timeInterval: 1.0 / 120.0, repeats: true) { [weak self, weak cameraPanel] t in
+            guard let self, let cameraPanel else {
+                t.invalidate()
+                return
+            }
+            let elapsed = CACurrentMediaTime() - startTime
+            let rawProgress = min(1.0, max(0.0, elapsed / duration))
+            let eased = 1.0 - pow(1.0 - rawProgress, 3.5)
+            let currentX = startOrigin.x + dx * CGFloat(eased)
+            let currentY = startOrigin.y + dy * CGFloat(eased)
+            var currentLayout = self.layout
+            currentLayout.place(origin: CGPoint(
+                x: (currentX - self.anchorRect.minX) * self.pixelSize.width / self.anchorRect.width,
+                y: (currentY - self.anchorRect.minY) * self.pixelSize.height / self.anchorRect.height), in: self.pixelSize)
+            self.frames.setLayout(currentLayout)
+            cameraPanel.setFrameOrigin(CGPoint(x: currentX, y: currentY))
+
+            if rawProgress >= 1.0 {
+                t.invalidate()
+                self.snapTimer = nil
+                self.frames.setLayout(self.layout)
+                cameraPanel.setFrame(targetPoints, display: true)
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        snapTimer = timer
     }
 
     func stop() {
+        snapTimer?.invalidate()
+        snapTimer = nil
+        phase = .selecting
         cameraEnabled = false
         keysEnabled = false
         cameraGeneration &+= 1
@@ -115,7 +200,7 @@ final class RecorderOverlayController: ObservableObject {
         cameraGeneration &+= 1
         let generation = cameraGeneration
         cameraReady = false
-        if !cameraEnabled {
+        if !cameraEnabled || phase == .selecting {
             _ = camera.stop()
             cameraPanel?.orderOut(nil)
             refreshTimer?.invalidate()
@@ -145,7 +230,7 @@ final class RecorderOverlayController: ObservableObject {
     }
 
     private func refreshLayout() {
-        guard cameraEnabled, anchorRect.width > 0, pixelSize.width > 0 else { return }
+        guard cameraEnabled, phase != .selecting, anchorRect.width > 0, pixelSize.width > 0 else { return }
         if cameraPanel == nil {
             let panel = RecorderOverlayPanel()
             panel.contentView = RecorderCameraOverlayView(controller: self)
@@ -157,6 +242,12 @@ final class RecorderOverlayController: ObservableObject {
                             width: frame.width * anchorRect.width / pixelSize.width,
                             height: frame.height * anchorRect.height / pixelSize.height)
         cameraPanel?.setFrame(points, display: true)
+        // Allocate the native window before capture filtering, but keep it
+        // invisible through countdown for immediate-start recordings.
+        cameraPanel?.alphaValue = phase == .starting ? 0 : 1
+        cameraPanel?.level = phase == .waiting
+            ? NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()) + 1)
+            : NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
         cameraPanel?.orderFrontRegardless()
         if refreshTimer == nil {
             let timer = Timer(timeInterval: 1 / 30, repeats: true) { [weak self] _ in

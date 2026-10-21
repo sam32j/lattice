@@ -54,6 +54,14 @@ def main():
     write("RecorderScreen.swift", "import AppKit\n" + declaration(
         "Sources/Vorssaint/Services/QuickTools/ScreenshotCaptureEngine.swift", "extension NSScreen {"))
     recorder = "Sources/Vorssaint/Services/Recorder/ScreenRecorderService.swift"
+    write("CaptureTimestamp.swift", "import Foundation\nextension CaptureTimestampTests {\nenum Formatter {\n"
+          + declaration("Sources/Vorssaint/UI/MenuPanel/PanelRecentCapturesView.swift",
+                        "    static func formattedCaptureTime(")
+          + "}\n}\n")
+    write("RecorderPreviewEdit.swift", "import AppKit\nextension RecorderPreviewEditTests {\nfinal class Controller: State {\n"
+          + declaration("Sources/Vorssaint/Services/Recorder/RecorderQuickPreviewController.swift",
+                        "    private func performEdit()").replace("private func", "func", 1)
+          + "}\n}\n")
     editor = "Sources/Vorssaint/Services/Recorder/RecorderEditorController.swift"
     write("RecordingStash.swift", "import Foundation\nextension RecordingStashTests {\n"
           + "final class Service: State {\n"
@@ -113,9 +121,67 @@ def main():
     write("SettingsXDRConsumer.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests.Consumer {\n"
           + "var offersXDR: Bool { " + xdr_visibility + " }\n}\n")
     text_model = "Sources/Vorssaint/Services/QuickTools/ScreenshotEditorController.swift"
+    write("ScreenshotReopenedBlur.swift", "import AppKit\nextension ScreenshotReopenedBlurTests {\nfinal class Model {\n"
+          + "let baseImage: CGImage\nlet scale: CGFloat\nvar annotations: [ScreenshotSupport.Annotation]\n"
+          + "var tool = ScreenshotSupport.Tool.select\nvar color = ScreenshotSupport.ColorID.red\n"
+          + "var stroke = ScreenshotSupport.StrokeID.medium\nvar textSize = 18\nvar blurLevel = 3\n"
+          + "var blurStyle = ScreenshotSupport.BlurStyleID.pixelate\nvar blurTextOnly = false\n"
+          + "var arrowStyle = ScreenshotSupport.ArrowStyleID.filled\nvar sticker = ScreenshotSupport.StickerID.check\n"
+          + "var annotationShadowsEnabled = false\nvar cornerRadiusEnabled = false\n"
+          + "var backdropStyle = ScreenshotSupport.BackdropStyle()\nvar backdropPresets: [ScreenshotSupport.BackdropStyle] = []\n"
+          + "var watermarkStyle = ScreenshotSupport.WatermarkStyle()\nvar watermarkPresets: [ScreenshotSupport.WatermarkStyle] = []\n"
+          + "var pixelated: [Int: CGImage] = [:]\nvar softBlurred: [Int: CGImage] = [:]\n"
+          + "func reloadBackdropImageIfNeeded() {}\nfunc reloadWatermarkImageIfNeeded() {}\nfunc recordCleanState() {}\n"
+          + "".join(declaration(text_model, prefix).replace(
+              "    private func ensureBlurSample(", "    @discardableResult private func ensureBlurSample(") for prefix in [
+              "    init(image: CGImage, scale: CGFloat, annotations:",
+              "    private func ensureBlurSample(", "    private func ensureBlurSamplesForAnnotations()"])
+          + "}\n}\n")
+    write("ScreenshotCapturePayload.swift", "import AppKit\nextension ScreenshotCapturePresentationTests {\nenum Payload {\n"
+          + declaration("Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift", "    struct Capture {")
+          + "}\n}\n")
+    write("ScreenshotEditorKeys.swift", "import AppKit\nimport Carbon.HIToolbox\nextension ScreenshotEditorKeyTests {\nfinal class Model: ModelState {\n"
+          + declaration(text_model, "    func deleteSelected()")
+          + "}\nfinal class Controller: State {\n"
+          + declaration(text_model, "    private func handleKey(").replace("private func", "func", 1)
+          + "}\n}\n")
+    watermark_tool = "Sources/Vorssaint/UI/Screenshot/ScreenshotWatermarkToolAnchor.swift"
+    watermark_composer = "Sources/Vorssaint/UI/Screenshot/ScreenshotWatermarkPopover.swift"
+    write("ScreenshotWatermarkPicker.swift", "import AppKit\nimport UniformTypeIdentifiers\nextension ScreenshotWatermarkPickerTests {\nfinal class Chooser: State {\n"
+          + declaration(watermark_composer, "    private func chooseImage()").replace("private func", "func", 1)
+          + declaration(watermark_composer, "    private func rememberImage()").replace("private func", "func", 1)
+          + "}\nfinal class Presenter: PresenterState {\n"
+          + declaration(watermark_tool, "        private func setChoosingImage(").replace("private func", "func", 1)
+          + declaration(watermark_tool, "        func popoverShouldClose(") + "}\n}\n")
+    write("ScreenshotWatermarkCollection.swift", "import AppKit\nextension ScreenshotWatermarkCollectionTests {\nfinal class Model: State {\n"
+          + declaration(text_model, "    func removeWatermarkPreset(")
+          + declaration(text_model, "    func addWatermarkPreset(") + "}\n}\n")
+    write("RecentCaptureThumbnail.swift", "import AppKit\nextension RecentCaptureThumbnailTests {\nfinal class Service: State {\n"
+          + declaration("Sources/Vorssaint/Services/QuickTools/RecentCaptureService.swift", "    func thumbnail(for entry:")
+          + declaration("Sources/Vorssaint/Services/QuickTools/RecentCaptureService.swift", "    private static func thumbnail(from image:")
+              .replace("private static func", "static func", 1)
+          + "}\n}\n")
+    write("HistoryPreviewContinuity.swift", "import AppKit\nextension HistoryPreviewContinuityTests {\nfinal class Service: State {\n"
+          + declaration("Sources/Vorssaint/Services/QuickTools/RecentCaptureService.swift", "    func open(_ entry:")
+          + declaration("Sources/Vorssaint/Services/QuickTools/RecentCaptureService.swift", "    private func restoreScreenshot(")
+          + "}\n}\n")
+    write("ScreenshotDoneSave.swift", "import AppKit\nextension ScreenshotDoneSaveTests {\nfinal class Controller: State {\n"
+          + declaration(text_model, "    func done()")
+          + declaration(text_model, "    func pin()") + "}\n}\n")
+    write("RecorderWaitingFlow.swift", "import Foundation\nextension RecorderWaitingFlowTests {\nfinal class Controller: State {\n"
+          + declaration("Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift",
+                        "    private func startWaitingRecording()").replace("private func", "func", 1)
+          + "}\n}\n")
+    write("ScreenshotEditorSelection.swift", "import AppKit\nextension ScreenshotEditorSelectionTests {\nfinal class Model: State {\n"
+          + "".join(declaration(text_model, prefix).replace("private func", "func", 1)
+              for prefix in ["    private func beginSelectDrag(", "    private func continueSelectDrag(",
+                             "    private func finishSelectDrag(", "    private func applyCornerRadiusToSelection(",
+                             "    private func syncControls(", "    func editText(", "    func hitTest(", "    func deleteSelected()", "    func resizeHandle("])
+          + "}\n}\n")
     write("ScreenshotTextDraft.swift", "import AppKit\nextension ScreenshotTextDraftTests {\nfinal class Model: State {\n"
           + "".join(declaration(text_model, prefix).replace("private func", "func", 1)
               for prefix in ["    private func registerUndo()", "    private func applyStyleToSelection()",
+                             "    func textSizeEditingChanged(",
                              "    func beginDrag(", "    func endDrag(", "    func commitText("])
           + "}\nfinal class Controller: ControllerState {\n"
           + declaration(text_model, "    func windowShouldClose(")
@@ -160,7 +226,7 @@ def main():
               .replace("        let hub = FeatureStrings.hub(language)\n", "")
               .replace("feature.hubTitle(s, hub: hub)", "feature.rawValue")
           + "}\n}\n")
-    annotation_editor = "Sources/Vorssaint/UI/Screenshot/ScreenshotEditorView.swift"
+    annotation_editor = "Sources/Vorssaint/UI/Screenshot/ScreenshotInlineTextEditor.swift"
     write("ScreenshotTextEditor.swift", "import AppKit\nimport SwiftUI\nextension ScreenshotTextEditorTests {\n"
           + declaration(annotation_editor, "struct ScreenshotAnnotationTextEditor:")
           + declaration(annotation_editor, "private final class EditorTextView:")
@@ -187,7 +253,7 @@ def main():
                     for prefix in ["    private func beginRecording(", "    private func pendingStartIsAuthorized(",
                                    "    private func invalidatePendingStart()", "    var hasActiveCapture:",
                                    "    func stopOrCancelActiveCapture()", "    func prepareForSelection()",
-                                   "    func record(_ region:", "    private func startDelayedSelection(",
+                                   "    func record(_ region:",
                                    "    func stop(reason:"])
           + "}\n}\n")
     write("SwitcherFullscreenScope.swift", "import AppKit\nimport ApplicationServices\nimport CoreGraphics\n"
@@ -369,7 +435,8 @@ def main():
           + "frames.sorted { $0.key > $1.key }.map { .init(id: $0.key, ownerPID: 1, frame: $0.value) }\n}\n"
           + "static func windowBounds(_ id: CGWindowID) -> CGRect? { frames[id] }\n"
           + "static func captureWindow(_ id: CGWindowID, scale: CGFloat, includeAttachedWindows: Bool = true) async -> (image: CGImage, scale: CGFloat)? {\n"
-          + "WindowPreviewProvider.images[id].map { ($0, scale) }\n}\n"
+          + "if WindowPreviewProvider.cancelDuringCapture { withUnsafeCurrentTask { $0?.cancel() }; return nil }\n"
+          + "return WindowPreviewProvider.images[id].map { ($0, scale) }\n}\n"
           + declaration("Sources/Vorssaint/Services/QuickTools/ScreenshotCaptureEngine.swift",
                         "    static func captureMultipleWindows(")
           + declaration("Sources/Vorssaint/Services/QuickTools/ScreenshotCaptureEngine.swift",
@@ -668,7 +735,7 @@ def main():
               "    private func handleUninstallKey(", "    func stepBack()",
               "    private func finishUninstallReview()"])
           + "}\n}\nextension UninstallerFlowTests.Finder {\n"
-          + declaration("Sources/Vorssaint/Services/Finder/FinderCutPaste.swift", "    static func selectionURLs(")
+          + declaration("Sources/Vorssaint/Services/Finder/FinderBridge.swift", "    static func selectionURLs(")
           + "}\n")
     write("UninstallerCommandBarCleanup.swift", "import Foundation\n"
           + "extension UninstallerCommandBarCleanupTests {\n"
@@ -1083,6 +1150,8 @@ def main():
                      + '        default: preconditionFailure("Only music is measured by this fixture")\n'
                      + "        }\n    }\n#sourceLocation()\n")
     write("NotchHover.swift", "import AppKit\nextension NotchHoverTests {\nfinal class Service: State {\n"
+          + "let deferredCapturePresentation = CapturePresentationDeferral()\nvar panel: Bool? { windowHost == nil ? nil : true }\nfunc fullscreenEnvironmentDidChange() {}\n"
+          + declaration(notch, "    var acceptsUserInteraction:")
           + declaration(notch, "    func show(_ incoming:").replace("NotchSupport.routes(incoming.event)", "true")
             .replace("    func", "    @discardableResult\n    func", 1)
           + "".join(declaration(notch, prefix).replace("    private ", "    ", 1) for prefix in [
@@ -1090,6 +1159,7 @@ def main():
               "    private func syncHoverExitMonitoring(", "    private func removeHoverExitMonitors(",
               "    var showsCompactActivityPicker:",
               "    private func missionControlDidRestore()",
+              "    func resumeDeferredCaptureIfReady()",
               "    private var holdsNotification:", "    private func holdNotification(",
               "    private func syncNoticeWithPreferences(",
               "    private func releaseNotification(", "    private func scheduleNoticeDismissal(",
@@ -1187,9 +1257,11 @@ def main():
           + "}\n}\n")
     write("NotchKeyMonitor.swift", "import Foundation\nextension NotchKeyMonitorTests {\nfinal class Service: State {\n"
           + declaration(notch, "    private func installEventMonitors()").replace("private func", "func", 1)
+          + declaration(notch, "    private func dismissForOutsideClick()").replace("private func", "func", 1)
           + "}\n}\n")
     write("NotchPresentationRefresh.swift", "import AppKit\nimport Foundation\nimport Combine\nimport SwiftUI\n"
           + "extension NotchPresentationRefreshContract {\nfinal class Service: State {\n"
+          + "let deferredCapturePresentation = CapturePresentationDeferral()\nfunc fullscreenEnvironmentDidChange() {}\n"
           + "func hover(_ entered: Bool) {\nlet wasInside = inside\n"
           + "inside = windowHost?.containsHover(NSEvent.mouseLocation) == true\n"
           + "hoverState.update(pointerInside: inside)\nupdateCaptureControlsHover(wasInside: wasInside)\n}\n"
@@ -1198,6 +1270,8 @@ def main():
               "    private func setCaptureSelectionInProgress(", "    func scheduleCaptureControlsCollapse(",
               "    private func updateCaptureControlsHover(", "    private func updateCaptureControlsClickThrough()",
               "    private func removeCaptureControlsClickThrough()", "    private func missionControlDidRestore()",
+              "    func deferCaptureUntilMissionControlRestores(", "    func cancelDeferredCapturePresentation(",
+              "    func resumeDeferredCaptureIfReady()",
               "    func endCaptureControls()"])
           + declaration(notch, "    func presentCaptureControls(")
               .replace("ScreenCaptureSelectionOptions", "CaptureOptions")
@@ -1222,6 +1296,7 @@ def main():
               .replace("NotchSupport.routes(.capture)", "routesCaptures")
           + declaration(notch, "    func updateCaptureHeight(")
           + declaration(notch, "    func removeCapture(")
+          + declaration(notch, "    func showCaptureHistory()")
           + declaration(notch, "    private func clearCapture(")
           + declaration(notch, "    private func detachCaptureIfClosingOnCollapse(")
           + "}\n}\nextension NotchPresentationRefreshContract.Host {\n"
@@ -1324,6 +1399,7 @@ def main():
           + declaration("Sources/Vorssaint/Services/Notch/NotchFileToolsService.swift", "    func showMedia(")
           + "}\nfinal class Notch: NotchState {\n"
           + declaration(notch, "    var canAcceptFileDrop:")
+          + declaration(notch, "    var canDropOnShelf:")
           + declaration(notch, "    func beginFileDrop(")
           + declaration(notch, "    func updateFileDrop(")
           + declaration(notch, "    func endFileDrop(")
@@ -1496,10 +1572,7 @@ def main():
           + "enum ScreenshotQuickPreviewController {\n"
           + declaration(preview, "    enum Action {")
           + declaration(preview, "    fileprivate static func size(").replace("fileprivate", "", 1)
-          + "}\n}\nextension View {\n"
-          + declaration("Sources/Vorssaint/UI/Screenshot/ScreenshotEditorView.swift", "    func screenshotSafeHelp(")
-              .replace("    func", "    @ViewBuilder\n    func", 1)
-          + "}\n")
+          + "}\n}\n")
     write("ScreenTextCompletion.swift", "import Foundation\n"
           + "extension ScreenTextCompletionTests {\nfinal class ScreenTextService: State {\n"
           + "".join(declaration(screen_text, prefix).replace("private func", "func", 1)
@@ -1562,6 +1635,7 @@ def main():
         "    private func captureFullDisplay(",
         "    private func repeatLastRegion()",
         "    fileprivate func confirmSelectedWindows()",
+        "    fileprivate func toggleSelectedWindow(",
         "    fileprivate func confirmWindow(",
         "    fileprivate func confirmRegion(",
         "    fileprivate func confirmColor(",
@@ -1607,6 +1681,8 @@ def main():
           + "var actions: [Action] = []\nfunc perform(_ action: Action) { actions.append(action) }\n"
           + "func close() { closed = true }\nfunc attach(_ panel: NSPanel) { installKeyMonitor(for: panel) }\n"
           + "func copyText() {}\n"
+          + "var quickLookRequests = 0\nfunc showQuickLook() { quickLookRequests += 1 }\n"
+          + "var menuRequests: [ScreenshotPreviewMenuAction] = []\nfunc performMenu(_ action: ScreenshotPreviewMenuAction) { menuRequests.append(action) }\n"
           + declaration(preview, "    private func installKeyMonitor(for panel:")
           + "}\nfinal class Selection {\n"
           + "enum ScreenCaptureTool { case area, recording, window, fullScreen }\n"
@@ -1615,6 +1691,9 @@ def main():
           + "final class Options { var controlsInNotch = true; var hasFocusedControl = false; var recorderAudio = AudioSelection() }\n"
           + "enum Outcome { case cancelled }\nvar screenCaptureOptions: Options? = Options()\n"
           + "var activeTool = ScreenCaptureTool.area\n"
+          + "final class WaitingControls { var panel: NSPanel? }\nvar waitingControls: WaitingControls?\n"
+          + "var waitingRecordingPanel: ScreenshotOverlayPanel?\n"
+          + 'func startWaitingRecording() { actions.append("start") }\n'
           + "var keyMonitor: Any?\nvar globalKeyMonitor: Any?\nvar spaceIsDown = false\n"
           + "var acceptsWindowClick = true\nvar loupeAcceptsKeyboardActions = false\n"
           + "var actions: [String] = []\nvar draggingPanel: ScreenshotOverlayPanel?\n"
@@ -1626,8 +1705,8 @@ def main():
           + "func panelUnderMouse() -> ScreenshotOverlayPanel? { draggingPanel }\n"
           + 'func repeatLastRegion() { actions.append("repeat") }\n'
           + "func selectCaptureTool(for event: NSEvent) -> Bool { false }\n"
-          + "static func isScrollingCaptureKey(_ event: NSEvent) -> Bool { false }\n"
-          + "static func isMicrophoneKey(_ event: NSEvent) -> Bool { false }\n"
+          + "static func isScrollingCaptureKey(_ event: NSEvent) -> Bool { event.keyCode == UInt16(kVK_ANSI_S) }\n"
+          + "static func isMicrophoneKey(_ event: NSEvent) -> Bool { event.keyCode == UInt16(kVK_ANSI_M) }\n"
           + "static func isLoupeKey(_ event: NSEvent) -> Bool { false }\n"
           + "static func isCopyColorKey(_ event: NSEvent) -> Bool { false }\n"
           + "static func isNudgeKey(_ event: NSEvent) -> Bool { false }\n"

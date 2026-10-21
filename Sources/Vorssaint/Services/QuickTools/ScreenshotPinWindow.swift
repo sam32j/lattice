@@ -6,8 +6,11 @@ import Carbon.HIToolbox
 
 /// Image presentation is independent from the small interactive chrome panels.
 final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
-    let image: CGImage
+    private(set) var image: CGImage
     let captureScale: CGFloat
+    var captureID: UUID
+    var baseImage: CGImage?
+    var annotations: [ScreenshotSupport.Annotation] = []
     private let preferences: UserDefaults
     private(set) var chosenOpacity: CGFloat = 1
     private(set) var isPositionLocked = false
@@ -27,8 +30,33 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     var zoomMultiplier: CGFloat { frame.width / (CGFloat(image.width) / captureScale) }
     var cornerRadius: CGFloat { surface.layer?.cornerRadius ?? 0 }
 
-    init(image: CGImage, scale: CGFloat, preferences: UserDefaults = .standard) {
+    static var onResetGestureState: (() -> Void)?
+
+    func updateImage(_ newImage: CGImage, baseImage: CGImage? = nil, annotations: [ScreenshotSupport.Annotation] = []) {
+        guard !isClosed else { return }
+        let zoom = zoomMultiplier
+        let center = CGPoint(x: frame.midX, y: frame.midY)
+        self.image = newImage
+        if let baseImage { self.baseImage = baseImage }
+        self.annotations = annotations
+        surface.layer?.contents = newImage
+        contentAspectRatio = CGSize(width: newImage.width, height: newImage.height)
+        let native = CGSize(width: CGFloat(newImage.width) / captureScale,
+                            height: CGFloat(newImage.height) / captureScale)
+        minSize = CGSize(width: min(140, native.width * 0.5), height: min(90, native.height * 0.5))
+        let size = CGSize(width: native.width * zoom, height: native.height * zoom)
+        setFrame(CGRect(x: center.x - size.width / 2, y: center.y - size.height / 2,
+                        width: size.width, height: size.height), display: true)
+        surface.resetGestureTracking()
+        Self.onResetGestureState?()
+        invalidateCursorRects(for: surface)
+    }
+
+    init(image: CGImage, scale: CGFloat, preferences: UserDefaults = .standard, captureID: UUID = UUID(), baseImage: CGImage? = nil, annotations: [ScreenshotSupport.Annotation] = []) {
         self.image = image
+        self.captureID = captureID
+        self.baseImage = baseImage
+        self.annotations = annotations
         captureScale = scale.isFinite && scale > 0 ? scale : 1
         self.preferences = preferences
         let pointer = NSEvent.mouseLocation
@@ -101,6 +129,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
             makeKeyAndOrderFront(nil)
             orderFrontRegardless()
             makeFirstResponder(surface)
+            Self.onResetGestureState?()
         }
         attachChrome()
         updateHover(at: NSEvent.mouseLocation)
@@ -181,7 +210,10 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     override func performClose(_ sender: Any?) { closePin() }
 
     func windowDidMove(_ notification: Notification) { chrome.layout() }
-    func windowDidResize(_ notification: Notification) { chrome.layout() }
+    func windowDidResize(_ notification: Notification) {
+        chrome.layout()
+        invalidateCursorRects(for: surface)
+    }
     func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
         isPositionLocked || NSEvent.modifierFlags.contains(.option) ? frame.size : frameSize
     }

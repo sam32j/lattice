@@ -547,29 +547,10 @@ struct RecorderInspector: View {
     /// on the picture, and covers what people actually do with a caption or a
     /// mark of their own.
     private func anchorGrid(selected: RecorderTextOverlay.Anchor,
-                            onSelect: @escaping (RecorderTextOverlay.Anchor) -> Void)
-        -> some View {
-        let rows: [[RecorderTextOverlay.Anchor]] = [
-            [.topLeading, .top, .topTrailing],
-            [.leading, .center, .trailing],
-            [.bottomLeading, .bottom, .bottomTrailing],
-        ]
-        return VStack(spacing: 4) {
-            ForEach(rows.indices, id: \.self) { row in
-                HStack(spacing: 4) {
-                    ForEach(rows[row], id: \.rawValue) { anchor in
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(selected == anchor
-                                  ? Color.accentColor.opacity(0.85)
-                                  : Color.white.opacity(0.08))
-                            .frame(height: 20)
-                            .onTapGesture {
-                                onSelect(anchor)
-                                model.commitZoomEdit()
-                            }
-                    }
-                }
-            }
+                            onSelect: @escaping (RecorderTextOverlay.Anchor) -> Void) -> some View {
+        CaptureAnchorPicker(selected: selected, strings: screenshotStrings) { anchor in
+            onSelect(anchor)
+            model.commitZoomEdit()
         }
     }
 

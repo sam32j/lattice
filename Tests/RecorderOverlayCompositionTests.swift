@@ -38,10 +38,18 @@ enum RecorderOverlayCompositionTests {
             else { suite.expect(false, "each camera shape can be composed"); continue }
             let frame = layout.frame(in: canvas.size)
             let corner = pixel(masked, CGPoint(x: frame.minX + 2, y: frame.minY + 2))
-            suite.expect(shape == .circle ? corner[2] > 240 : corner[0] > 240,
+            suite.expect(corner[2] > 240,
                          "\(shape.rawValue) mask records its correct corner pixels")
         }
         layout.shape = .square
+        layout.pixelsPerPoint = 2
+        if let retina = try? compositor.image(screen: desktop, camera: camera, layout: layout, keyImage: nil) {
+            let rect = layout.frame(in: canvas.size)
+            suite.expect(pixel(retina, CGPoint(x: rect.minX + 8, y: rect.minY + 8))[2] > 240
+                         && pixel(retina, CGPoint(x: rect.minX + 16, y: rect.minY + 16))[0] > 240,
+                         "Retina composition uses a forty-pixel radius for twenty-point corners")
+        } else { suite.expect(false, "Retina camera composition succeeds") }
+        layout.pixelsPerPoint = 1
         let red = camera.cropped(to: CGRect(x: 0, y: 0, width: 50, height: 80))
         let green = CIImage(color: CIColor(red: 0, green: 1, blue: 0))
             .cropped(to: CGRect(x: 50, y: 0, width: 50, height: 80))

@@ -22,15 +22,7 @@ struct NotchFilesView: View {
 
     var body: some View {
         VStack(spacing: NotchLayout.rowSpacing) {
-            if service.choosingFileDropDestination, AppFeature.mediaTools.isAvailable {
-                HStack(spacing: NotchFileToolsSupport.dropSpacing) {
-                    dropDestination(FeatureStrings.notch(l10n.language).files, symbol: "tray.and.arrow.down",
-                                    selected: !service.targetsMediaDrop)
-                    dropDestination(text.optimizeMedia, symbol: "wand.and.stars", selected: service.targetsMediaDrop,
-                                    available: archives.canAcceptMediaDrop)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let session = archives.mediaSession, archives.mediaPresented, AppFeature.mediaTools.isAvailable {
+            if let session = archives.mediaSession, archives.mediaPresented, AppFeature.mediaTools.isAvailable {
                 MediaWorkspaceView(compact: true, onClose: archives.closeMedia,
                                    media: media, initialInputs: session.inputs,
                                    initialTool: session.tool, preservesServiceState: true,
@@ -121,24 +113,6 @@ struct NotchFilesView: View {
         // second SwiftUI update leaves the new controls inside the old frame,
         // and an unrelated preference refresh can settle it without animation.
         if archives.mediaContentHeight != previous { service.refreshPresentation() }
-    }
-
-    private func dropDestination(_ title: String, symbol: String, selected: Bool, available: Bool = true) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 28, weight: .light))
-            Text(title).font(.callout.weight(.medium)).multilineTextAlignment(.center)
-            if !available { Text(l10n.s.mediaRunning).font(.caption).foregroundStyle(.secondary) }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.white.opacity(selected ? 0.14 : 0.04), in: RoundedRectangle(cornerRadius: 20))
-        .overlay {
-            RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(.white.opacity(selected ? 0.7 : 0.2), lineWidth: selected ? 1.5 : 0.75)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .opacity(available ? 1 : 0.5)
     }
 
     // A sheet dims the window's transparent margins. A native menu keeps the
