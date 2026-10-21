@@ -142,6 +142,8 @@ enum DefaultsKey {
     static let mixerAppArrangement = "mixerAppArrangement"
     static let mixerHideInactiveApps = "mixerHideInactiveApps"
     static let mixerHiddenApps = "mixerHiddenApps"        // [persistence id: display name] kept out of the mixer list (issue #300)
+    static let volumeMixerEnabled = "volumeMixerEnabled"
+    static let microphoneLevelControlEnabled = "microphoneLevelControlEnabled"
     static let mixerLowerVolumeOnHeadphonesDisconnect = "mixerLowerVolumeOnHeadphonesDisconnect"
     static let mixerHeadphonesDisconnectVolumePercent = "mixerHeadphonesDisconnectVolumePercent"
     static let preciseVolumeRollerEnabled = "preciseVolumeRollerEnabled"
@@ -620,6 +622,8 @@ enum DefaultsKey {
     static let screenshotLastCaptureShortcut = "screenshotLastCaptureShortcut"
     static let recentCapturesShortcutEnabled = "recentCapturesShortcutEnabled"
     static let recentCapturesShortcut = "recentCapturesShortcut"
+    static let screenshotEnabled = "screenshotEnabled"
+    static let screenRecorderEnabled = "screenRecorderEnabled"
     static let screenshotClipboardShortcutEnabled = "screenshotClipboardShortcutEnabled"
     static let screenshotClipboardShortcut = "screenshotClipboardShortcut"
     static let screenshotFreeze = "screenshotFreeze"
@@ -1165,6 +1169,8 @@ enum Defaults {
         DefaultsKey.includeBetaUpdates: false,
         DefaultsKey.releaseNotesOnUpdate: true,
         DefaultsKey.mixerShowFinder: true,
+        DefaultsKey.volumeMixerEnabled: true,
+        DefaultsKey.microphoneLevelControlEnabled: true,
         DefaultsKey.mixerHideInactiveApps: false,
         DefaultsKey.mixerAppArrangement: "",
         DefaultsKey.mixerLowerVolumeOnHeadphonesDisconnect: false,
@@ -1689,6 +1695,8 @@ enum Defaults {
         DefaultsKey.recorderSharingEnabled: true,
         DefaultsKey.panelUtilityScreenRecorder: true,
         DefaultsKey.panelUtilityPortManager: true,
+        DefaultsKey.screenshotEnabled: true,
+        DefaultsKey.screenRecorderEnabled: true,
         DefaultsKey.screenshotShowCaptureMenuOnShortcut: true,
         DefaultsKey.recorderShowCaptureMenuOnShortcut: true,
         DefaultsKey.screenOCRShowCaptureMenuOnShortcut: true,
@@ -1823,6 +1831,8 @@ enum Defaults {
         migrateNotchWatchAvailability(in: defaults)
         migratePermanentInputControls(in: defaults)
         migratePageOwnedControls(in: defaults)
+        migrateAudioControls(in: defaults)
+        migrateCaptureControls(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         activateBetaChannelIfRunningBeta(in: defaults)
