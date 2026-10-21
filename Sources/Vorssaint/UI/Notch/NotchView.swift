@@ -655,6 +655,17 @@ struct NotchView: View {
             case .captures:
                 if let capture = service.captureContent {
                     capture.frame(maxWidth: .infinity)
+                        .overlay {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 26, weight: .medium))
+                                .padding(16)
+                                .background(.ultraThinMaterial, in: Circle())
+                                .opacity(service.captureHistoryGestureProgress)
+                                .offset(y: 12 * (1 - service.captureHistoryGestureProgress))
+                                .animation(.easeOut(duration: 0.12), value: service.captureHistoryGestureProgress)
+                                .allowsHitTesting(false)
+                                .accessibilityHidden(true)
+                        }
                 } else {
                     RecentCapturesView(onClose: nil, notchSize: pageSize)
                 }

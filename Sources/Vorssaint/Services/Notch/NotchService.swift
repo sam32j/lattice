@@ -147,6 +147,7 @@ final class NotchService: ObservableObject {
     @Published private(set) var clipboardSearchRequest = 0
     func requestClipboardSearch() { clipboardSearchRequest += 1 }
     @Published private(set) var captureContent: AnyView?
+    @Published private(set) var captureHistoryGestureProgress = 0.0
     /// Bumped when Command-W asks the Scratchpad page to close its selected
     /// pad, so the confirmation stays in the page as it does in the floating pad.
     @Published private(set) var scratchpadCloseSerial = 0
@@ -253,6 +254,7 @@ final class NotchService: ObservableObject {
     }
     private var settingsSignature = ""
     private var gesture = NotchGestureSupport()
+    private var captureTrackpadGesture = NotchCaptureTrackpadGesture()
     private var sectionScroll = NotchSectionScroll()
     private var volumeBaseline: Double?
     private var muteBaseline: Bool?
@@ -1382,7 +1384,8 @@ final class NotchService: ObservableObject {
     }
 
     func open(_ module: NotchModule? = nil, pinned: Bool = false, takeFocus: Bool = true,
-              appPanel: Bool = false, metric: MetricDetailKind? = nil, feedback: Bool = true, sections: Bool = false) {
+              appPanel: Bool = false, metric: MetricDetailKind? = nil, feedback: Bool = true, sections: Bool = false,
+              crossfadeContent: Bool = false) {
         guard NotchSupport.isEnabled(), !suspended else { return }
         // The capture controls cover the open page and hold collapsing off, so
         // an island opened now would wait behind them and open by itself once
@@ -1405,7 +1408,7 @@ final class NotchService: ObservableObject {
         let metric = metric.flatMap { metricIsAvailable($0) ? $0 : nil }
         let closesCommandBar = showingCommandBar
         let changesPresentation = !expanded || selected != destination || closesCommandBar
-            || showingAppPanel != appPanel || selectedMetric != metric || showingSections != sections
+            || showingAppPanel != appPanel || selectedMetric != metric || showingSections != sections || crossfadeContent
         if changesPresentation, destination == .tools, !appPanel, !sections, metric == nil {
             QuickLauncherService.shared.prepareForPresentation()
         }
@@ -2532,7 +2535,17 @@ final class NotchService: ObservableObject {
         }
     }
 
+    func showCaptureHistory() {
+        let replacesPage = expanded && selected == .captures && captureContent != nil
+        let close = captureClose
+        clearCapture()
+        close?()
+        open(.captures, pinned: false, takeFocus: true, feedback: false, crossfadeContent: replacesPage)
+    }
+
     private func clearCapture() {
+        captureHistoryGestureProgress = 0
+        captureTrackpadGesture = NotchCaptureTrackpadGesture()
         captureID = nil
         captureContent = nil
         captureActions = nil
@@ -3777,6 +3790,19 @@ final class NotchService: ObservableObject {
     private func syncGestures() {
         if !NotchGestureSupport.isEnabled() { gesture = NotchGestureSupport() }
         panel?.handleScroll = { [weak self] event in self?.handleScroll(event) ?? false }
+        panel?.handleCaptureTouches = { [weak self] event, view in self?.handleCaptureTouches(event, in: view) ?? false }
+    }
+
+    private func handleCaptureTouches(_ event: NSEvent, in view: NSView) -> Bool {
+        let interaction = NotchGestureSupport.nativeInteraction(at: panel?.contentView?.hitTest(event.locationInWindow))
+        let enabled = running && !suspended && expanded && selected == .captures && captureContent != nil
+            && NotchGestureSupport.isEnabled() && !trackingMenu && captureControls == nil && !heldDrag
+            && !showingSections && !showingAppPanel && !showingCommandBar && selectedMetric == nil
+            && !interaction.control && event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty
+        let completed = captureTrackpadGesture.handle(event, in: view, enabled: enabled)
+        captureHistoryGestureProgress = captureTrackpadGesture.progress
+        if completed { showCaptureHistory() }
+        return enabled
     }
 
     /// The gallery steps its rows from the wheel; every other scroll over the
@@ -3812,10 +3838,15 @@ final class NotchService: ObservableObject {
               !trackingMenu, captureControls == nil, !heldDrag,
               event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else {
             gesture = NotchGestureSupport()
+            captureHistoryGestureProgress = 0
             return false
         }
         let screenPoint = panel.convertPoint(toScreen: event.locationInWindow)
-        guard windowHost?.contains(screenPoint) == true else { gesture = NotchGestureSupport(); return false }
+        guard windowHost?.contains(screenPoint) == true else {
+            gesture = NotchGestureSupport()
+            captureHistoryGestureProgress = 0
+            return false
+        }
         let fromTop = panel.frame.maxY - screenPoint.y
         // A page with no top row keeps the strip above it for the gesture.
         let page = expandedGeometry
@@ -3828,6 +3859,11 @@ final class NotchService: ObservableObject {
         let musicSurface = modules.contains(.music)
             && (compactMusicIsVisible || (expanded && selected == .music && !showingAppPanel && !showingSections
                                           && !showingCommandBar))
+        let captureSurface = expanded && selected == .captures && captureContent != nil
+            && !showingSections && !showingAppPanel && !showingCommandBar && selectedMetric == nil
+        // Scroll deltas are accelerated and cannot enforce physical distance.
+        // The native touch receiver owns this gesture, including over the header.
+        if captureSurface { return !interaction.control && event.hasPreciseScrollingDeltas }
         let vertical = NotchGestureSupport.allowsVertical(expanded: expanded, inHeader: inHeader,
                                                           musicSurface: musicSurface,
                                                           control: interaction.control, scroll: interaction.scroll)
@@ -3836,13 +3872,14 @@ final class NotchService: ObservableObject {
                                              inverted: event.isDirectionInvertedFromDevice)
         let y = NotchGestureSupport.movement(Double(event.scrollingDeltaY), precise: event.hasPreciseScrollingDeltas,
                                              inverted: event.isDirectionInvertedFromDevice)
-        guard let action = gesture.handle(x: x, y: y, timestamp: event.timestamp,
+        let action = gesture.handle(x: x, y: y, timestamp: event.timestamp,
                                           began: event.phase.contains(.began),
                                           ended: !event.phase.intersection([.ended, .cancelled]).isEmpty,
                                           momentum: !event.momentumPhase.isEmpty,
                                           precise: event.hasPreciseScrollingDeltas,
                                           hasPhase: !event.phase.isEmpty,
-                                          allowVertical: vertical, allowHorizontal: horizontal, expanded: expanded) else { return false }
+                                          allowVertical: vertical, allowHorizontal: horizontal, expanded: expanded)
+        guard let action else { return false }
         switch action {
         case .open: open()
         case .close: collapse()
