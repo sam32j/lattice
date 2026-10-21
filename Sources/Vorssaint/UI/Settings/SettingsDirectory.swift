@@ -78,6 +78,14 @@ enum SettingsDirectory {
                             .general, sectionAnchor: .panelConfiguration),
                         title: s.menuBarSection, icon: "menubar.rectangle"), at: 1)
                 }
+                if pageItem.page == .energy {
+                    rows.removeAll { $0.id == .feature(.keepAwake) }
+                }
+                if pageItem.page == .monitor, AppFeature.keepAwake.isVisibleInSettings(isAvailable: isAvailable) {
+                    rows.insert(SettingsSidebarItem(
+                        id: .feature(.keepAwake), destination: AppFeature.keepAwake.settingsDestination,
+                        title: s.keepAwakeTitle, icon: AppFeature.keepAwake.symbolName), at: 0)
+                }
                 return rows
             }
             guard !items.isEmpty else { return nil }

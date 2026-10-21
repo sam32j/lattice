@@ -563,8 +563,8 @@ enum UpdateFeatureTests {
                 && hiddenPageRoute.targetFeature == nil,
                "a page result with no merged feature identity still falls back to Features generically")
 
-        // Window Layout stays in the sidebar for the green button override alone;
-        // its page row keeps Window Layout's identity from the merge.
+        // The dedicated page keeps Window Layout's identity and install control
+        // searchable alongside the independent green button override.
         let windowLayoutPage = SettingsSearchItem(
             id: .page(.windowLayout), destination: FeatureSettingsDestination(.windowLayout),
             title: "Window Layout", icon: "rectangle.3.group",
@@ -591,11 +591,11 @@ enum UpdateFeatureTests {
             query: "window layout", items: windowLayoutItems, isAvailable: maximizerOnly)
         suite.expect(exceptionGroups.map(\.id) == [.windowLayout]
                 && exceptionGroups.first?.suggestions.map(\.title) == ["Keep full screen in these apps"]
-                && snapGroups.isEmpty
+                && snapGroups.first?.suggestions.map(\.title) == ["Snap to edges"]
                 && pageGroups.first?.id == .windowLayout && pageGroups.first?.parentMatches == true
                 && pageGroups.first.map { SettingsSearchSupport.route(for: $0.pageItem, isAvailable: maximizerOnly) }?
                     .destination == FeatureSettingsDestination(.windowLayout),
-               "the maximizer alone keeps its settings and the page findable, without Window Layout's own settings")
+               "the maximizer and disabled Window Layout settings remain findable on their owning page")
 
         let homebrewMatches = SettingsSearchSupport.matchingItems(
             query: "  HOMEBREW ", items: combinedSettingsItems)

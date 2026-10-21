@@ -20,6 +20,7 @@ struct RadialMenuSettings: View {
 
     @State private var profiles: [RadialMenuProfile] = RadialMenuSupport.decodeProfiles(
         UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles))
+    @State private var lastSyncedProfilesData: Data?
     @State private var selectedProfileID: UUID?
     /// The submenu being edited; empty means the root wheel.
     @State private var openSubmenuID: UUID?
@@ -187,7 +188,9 @@ struct RadialMenuSettings: View {
         }
         .formStyle(.grouped)
         .onAppear {
-            let latest = RadialMenuSupport.decodeProfiles(UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles))
+            let data = UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles)
+            lastSyncedProfilesData = data
+            let latest = RadialMenuSupport.decodeProfiles(data)
             if latest != profiles {
                 profiles = latest
             }
@@ -196,13 +199,7 @@ struct RadialMenuSettings: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
-            let latest = RadialMenuSupport.decodeProfiles(UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles))
-            if latest != profiles {
-                profiles = latest
-                if selectedProfileID == nil || !profiles.contains(where: { $0.id == selectedProfileID }) {
-                    selectedProfileID = profiles.first?.id
-                }
-            }
+            refreshProfilesFromDefaults()
         }
         .onDrop(of: [UTType.text], delegate: RadialDragCleanupDelegate(dragging: $dragging))
         .sheet(item: $editing) { item in
@@ -511,8 +508,23 @@ struct RadialMenuSettings: View {
         setLevel(new)
     }
 
+    private func refreshProfilesFromDefaults() {
+        let data = UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles)
+        guard data != lastSyncedProfilesData else { return }
+        lastSyncedProfilesData = data
+        let latest = RadialMenuSupport.decodeProfiles(data)
+        if latest != profiles {
+            profiles = latest
+            if selectedProfileID == nil || !profiles.contains(where: { $0.id == selectedProfileID }) {
+                selectedProfileID = profiles.first?.id
+            }
+        }
+    }
+
     private func persist() {
-        UserDefaults.standard.set(RadialMenuSupport.encodeProfiles(profiles), forKey: DefaultsKey.radialMenuProfiles)
+        let data = RadialMenuSupport.encodeProfiles(profiles)
+        lastSyncedProfilesData = data
+        UserDefaults.standard.set(data, forKey: DefaultsKey.radialMenuProfiles)
         RadialMenuService.shared.syncWithPreferences()
     }
 
@@ -526,16 +538,7 @@ struct RadialMenuSettings: View {
             in: profiles,
             radialText: text,
             strings: l10n.s,
-            additionalConflict: { shortcut in
-                if let title = WindowLayoutService.shared.shortcutConflictTitle(shortcut) {
-                    return title
-                }
-                guard AppFeature.commandBar.isAvailable,
-                      let row = CommandBarRowShortcuts.key(for: shortcut, in: CommandBarService.shared.rowShortcuts)
-                else { return nil }
-                return CommandBarService.shared.entryTitle(forStableKey: row)
-                    ?? FeatureStrings.commandBar(l10n.language).namedTitle
-            }
+            additionalConflict: { SettingsShortcutConflicts.title(for: $0, language: l10n.language) }
         )
     }
 

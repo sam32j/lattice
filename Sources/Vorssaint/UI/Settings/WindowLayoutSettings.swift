@@ -52,26 +52,28 @@ struct WindowLayoutSettings: View {
                 ))
             }
 
+            Section {
+                Toggle(text.showInPanel, isOn: $showInPanel)
+            }
+            .disabled(!windowLayoutInstalled)
+            .opacity(windowLayoutInstalled ? 1 : 0.55)
+
+            if AppFeature.spacesOrder.isPresentInControls() {
+                spacesOrderSection
+                    .settingsFormSectionAnchor(.spacesOrder)
+            }
+
+            if !permissions.accessibility {
+                Section(l10n.s.permissionRequired) {
+                    PermissionRow(kind: .accessibility)
+                }
+            }
+
+            if AppFeature.windowMaximizer.isPresentInControls() {
+                windowMaximizerSection
+            }
+
             Group {
-                Section {
-                    Toggle(text.showInPanel, isOn: $showInPanel)
-                }
-
-                if AppFeature.spacesOrder.isPresentInControls() {
-                    spacesOrderSection
-                        .settingsFormSectionAnchor(.spacesOrder)
-                }
-
-                if !permissions.accessibility {
-                    Section(l10n.s.permissionRequired) {
-                        PermissionRow(kind: .accessibility)
-                    }
-                }
-
-                if AppFeature.windowMaximizer.isPresentInControls() {
-                    windowMaximizerSection
-                }
-
                 Section(text.gestureSection) {
                     Toggle(text.edgeSnapEnable, isOn: $edgeSnapEnabled)
                         .onChange(of: edgeSnapEnabled) { _, _ in
@@ -201,16 +203,6 @@ struct WindowLayoutSettings: View {
                     }
                 }
 
-                Section {
-                    Toggle(l10n.s.dockClickCycleWindows, isOn: $dockClickCycleWindows)
-                        .onChange(of: dockClickCycleWindows) { _, _ in
-                            FeatureRuntime.shared.sync([.dockClick])
-                        }
-                    Text(l10n.s.dockClickCycleWindowsCaption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
                 Section { WindowLayoutShortcutActivation() }
                 placementSections
 
@@ -232,6 +224,16 @@ struct WindowLayoutSettings: View {
             }
             .disabled(!windowLayoutInstalled)
             .opacity(windowLayoutInstalled ? 1 : 0.55)
+
+            Section {
+                Toggle(l10n.s.dockClickCycleWindows, isOn: $dockClickCycleWindows)
+                    .onChange(of: dockClickCycleWindows) { _, _ in
+                        FeatureRuntime.shared.sync([.dockClick])
+                    }
+                Text(l10n.s.dockClickCycleWindowsCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
         .onAppear { refreshSystemTilingState() }

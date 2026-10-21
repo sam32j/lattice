@@ -209,6 +209,22 @@ def main():
                              "    private func clearShortcut()"])
           + "}\n}\n")
     directory = "Sources/Vorssaint/UI/Settings/SettingsDirectory.swift"
+    write("RadialProfileSync.swift", "import Foundation\nextension RadialProfileSyncTests {\nfinal class Editor: State {\n"
+          + "".join(declaration("Sources/Vorssaint/UI/Settings/RadialMenuSettings.swift", prefix)
+                    .replace("private func", "func", 1)
+                    .replace("UserDefaults.standard", "defaults")
+                    for prefix in ["    private func persist()", "    private func refreshProfilesFromDefaults()"])
+          + "}\n}\n")
+    write("AudioPriorityToggles.swift", "import Foundation\nextension AudioPriorityToggleTests {\nfinal class Service: State {\n"
+          + "".join(declaration("Sources/Vorssaint/Services/Audio/AudioPriorityService.swift", prefix)
+                    .replace("UserDefaults.standard", "AudioPriorityToggleTests.defaults!")
+                    for prefix in ["    func setOutputPriorityEnabled(", "    func setInputPriorityEnabled("])
+          + "}\nfinal class AudioInputDeviceManager: InputState {\nstatic let shared = AudioInputDeviceManager()\n"
+          + "".join(declaration("Sources/Vorssaint/Services/Audio/AudioInputDeviceManager.swift", prefix)
+                    .replace("UserDefaults.standard", "AudioPriorityToggleTests.defaults!")
+                    .replace("AppFeature.audioPriority.isAvailable", "AppFeature.audioPriority.isAvailable(in: AudioPriorityToggleTests.defaults)")
+                    for prefix in ["    func syncWithPreferences("])
+          + "func setInputPriorityActive(_ active: Bool) { inputPriorityIsActive = active }\n}\n}\n")
     directory_pages = "Sources/Vorssaint/UI/Settings/SettingsDirectoryPages.swift"
     tool_only_pages = re.search(r"    private static let toolOnlyPages:[\s\S]*?\n    \]",
                                (ROOT / directory).read_text()).group(0)

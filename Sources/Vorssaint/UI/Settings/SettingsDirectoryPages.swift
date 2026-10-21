@@ -203,6 +203,19 @@ extension SettingsDirectory {
                                                       FeatureStrings.wallpaper(language).enableManagement]),
                                         (.bluetoothSleep, [FeatureStrings.bluetoothSleep(language).pageTitle,
                                                            FeatureStrings.bluetoothSleep(language).enable]),
+                                        (.keepAwake, [s.keepAwakeTitle, s.clamshellTitle,
+                                                      s.defaultDurationLabel, s.showCountdown,
+                                                      s.keepAwakeActiveIconLabel,
+                                                      s.keepAwakeActiveIconCoffee,
+                                                      s.keepAwakeActiveIconEye,
+                                                      FeatureStrings.keepAwakeAutomation(language)
+                                                        .externalDisplayToggle,
+                                                      FeatureStrings.keepAwakeAutomation(language)
+                                                        .powerToggle,
+                                                      FeatureStrings.keepAwakeAutomation(language)
+                                                        .pauseWhenLockedToggle,
+                                                      FeatureStrings.keepAwakeDisplaySleep(language)
+                                                        .allowDisplaySleep]),
                                       ]),
             ]),
             (categories.clipboardFiles, [
@@ -247,22 +260,6 @@ extension SettingsDirectory {
                                       ]),
             ]),
             (categories.system, [
-                SettingsDirectoryItem(page: .energy, title: s.keepAwakeTitle, icon: "moon.zzz.fill",
-                                      featureKeywords: [
-                                        (.keepAwake, [s.keepAwakeTitle, s.clamshellTitle,
-                                                      s.defaultDurationLabel, s.showCountdown,
-                                                      s.keepAwakeActiveIconLabel,
-                                                      s.keepAwakeActiveIconCoffee,
-                                                      s.keepAwakeActiveIconEye,
-                                                      FeatureStrings.keepAwakeAutomation(language)
-                                                        .externalDisplayToggle,
-                                                      FeatureStrings.keepAwakeAutomation(language)
-                                                        .powerToggle,
-                                                      FeatureStrings.keepAwakeAutomation(language)
-                                                        .pauseWhenLockedToggle,
-                                                      FeatureStrings.keepAwakeDisplaySleep(language)
-                                                        .allowDisplaySleep]),
-                                      ]),
                 SettingsDirectoryItem(page: .monitor, title: s.tabMonitor, icon: "chart.line.uptrend.xyaxis",
                                       keywords: [s.menuBarSpacingLabel, s.menuBarHideIconToggle],
                                       featureKeywords: [

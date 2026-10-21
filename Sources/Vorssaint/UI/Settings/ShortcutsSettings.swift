@@ -279,13 +279,6 @@ struct ShortcutsSettings: View {
            WindowLayoutAction.shortcutActions.contains(where: { $0.savedShortcut != nil }) {
             return true
         }
-        if feature == .radialMenu,
-           UserDefaults.standard.bool(forKey: DefaultsKey.radialMenuEnabled),
-           RadialMenuSupport.decodeProfiles(UserDefaults.standard.data(forKey: DefaultsKey.radialMenuProfiles), defaults: UserDefaults.standard)
-               .contains(where: { !$0.shortcut.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                   && GlobalShortcut(storageValue: $0.shortcut) != nil }) {
-            return true
-        }
         return roles.contains { role in
             role.savedShortcut.isValid
                 && role.requiredEnableKeys.allSatisfy { UserDefaults.standard.bool(forKey: $0) }
@@ -374,16 +367,7 @@ private struct CentralRadialMenuShortcutRow: View {
                                 in: allProfiles,
                                 radialText: radialText,
                                 strings: l10n.s,
-                                additionalConflict: { shortcut in
-                                    if let title = WindowLayoutService.shared.shortcutConflictTitle(shortcut) {
-                                        return title
-                                    }
-                                    guard AppFeature.commandBar.isAvailable,
-                                          let row = CommandBarRowShortcuts.key(for: shortcut, in: CommandBarService.shared.rowShortcuts)
-                                    else { return nil }
-                                    return CommandBarService.shared.entryTitle(forStableKey: row)
-                                        ?? FeatureStrings.commandBar(l10n.language).namedTitle
-                                }
+                                additionalConflict: { SettingsShortcutConflicts.title(for: $0, language: l10n.language) }
                             ) {
                                 errorText = String(format: l10n.s.shortcutConflictFormat, owner)
                                 return
@@ -416,5 +400,20 @@ private struct CentralRadialMenuShortcutRow: View {
     private func saveShortcut(_ storageValue: String) {
         RadialMenuSupport.updateShortcut(storageValue, for: profile.id)
         FeatureRuntime.shared.sync([.radialMenu])
+    }
+}
+
+/// Conflicts shared by the central and per-profile radial shortcut editors.
+enum SettingsShortcutConflicts {
+    static func title(for shortcut: GlobalShortcut, language: AppLanguage) -> String? {
+        if AppFeature.windowLayout.isAvailable,
+           let title = WindowLayoutService.shared.shortcutConflictTitle(shortcut) {
+            return title
+        }
+        guard AppFeature.commandBar.isAvailable,
+              let row = CommandBarRowShortcuts.key(for: shortcut, in: CommandBarService.shared.rowShortcuts)
+        else { return nil }
+        return CommandBarService.shared.entryTitle(forStableKey: row)
+            ?? FeatureStrings.commandBar(language).namedTitle
     }
 }

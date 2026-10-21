@@ -70,7 +70,7 @@ struct DockSettings: View {
         SettingsCard(title: l10n.s.dockPreviewName) {
             SettingsRow(symbol: "dock.rectangle", title: l10n.s.dockPreviewEnable, caption: dockPreviewCaption) {
                 Toggle(l10n.s.dockPreviewEnable, isOn: Binding(
-                    get: { dockPreviewInstalled },
+                    get: { dockPreviewEngaged },
                     set: { enabled in
                         dockPreviewEnabled = enabled
                         FeatureRuntime.shared.setAvailable([.dockPreview], enabled)

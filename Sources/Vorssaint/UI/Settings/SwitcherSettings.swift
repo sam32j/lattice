@@ -94,7 +94,7 @@ struct SwitcherSettings: View {
             SettingsRow(symbol: "rectangle.on.rectangle", title: l10n.s.switcherEnable,
                         caption: l10n.s.switcherEnableCaption) {
                 Toggle(l10n.s.switcherEnable, isOn: Binding(
-                    get: { switcherInstalled },
+                    get: { switcherEngaged },
                     set: { enabled in
                         switcherEnabled = enabled
                         FeatureRuntime.shared.setAvailable([.switcher], enabled)
