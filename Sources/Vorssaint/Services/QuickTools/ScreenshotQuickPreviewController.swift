@@ -45,6 +45,7 @@ final class ScreenshotQuickPreviewController {
     private var menuFileURL: URL?
     private let shareAnchor = ShelfSharePickerAnchor.Anchor()
     private var systemSharing = false
+    private var contextMenuOpen = false
     private let onClose: () -> Void
     private let model = ScreenshotQuickPreviewModel()
     private var panel: ScreenshotQuickPreviewPanel?
@@ -91,6 +92,10 @@ final class ScreenshotQuickPreviewController {
 
     func show(inNotch: Bool = true) {
         guard panel == nil, !shownInNotch, !closed else { return }
+        if inNotch && NotchSupport.routes(.capture),
+           NotchService.shared.deferCaptureUntilMissionControlRestores(id: presentationID, present: { [weak self] in
+               self?.show(inNotch: true)
+           }) { return }
         let wantsNotch = inNotch && NotchSupport.routes(.capture)
             && NotchService.shared.acceptsSystemFeedback
         let presentationPolicy = ScreenshotSupport.confirmationPreviewPresentationPolicy(
@@ -128,9 +133,8 @@ final class ScreenshotQuickPreviewController {
                 guard let self, let url = self.fileForMenu() else { return }
                 NSWorkspace.shared.open([url], withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration())
             },
-            menuCanReveal: true,
-            menuOpened: { [weak self] in self?.dismissWork?.cancel() },
-            menuClosed: { [weak self] in self?.scheduleAutoDismiss() })
+            menuOpened: { [weak self] in self?.setContextMenuOpen(true) },
+            menuClosed: { [weak self] in self?.setContextMenuOpen(false) })
         if wantsNotch, NotchService.shared.presentCapture(
             id: presentationID, content: AnyView(content), actions: AnyView(content.toolbar), height: Self.size(showingLink: model.sharedRecord != nil).height,
             takeFocus: presentationPolicy.takesFocus,
@@ -258,6 +262,7 @@ final class ScreenshotQuickPreviewController {
     func close() {
         guard !closed else { return }
         closed = true
+        NotchService.shared.cancelDeferredCapturePresentation(id: presentationID)
         dismissWork?.cancel()
         dismissWork = nil
         if let keyMonitor {
@@ -322,7 +327,6 @@ final class ScreenshotQuickPreviewController {
         case .pin: perform(.pin)
         case .extractText: copyText()
         case .quickLook: showQuickLook()
-        case .discard: perform(.discard)
         case .close: close()
         case .share: performSystemShare()
         case .reveal:
@@ -480,10 +484,7 @@ final class ScreenshotQuickPreviewController {
             pointer: pointer,
             screens: screens,
             fallback: NSScreen.pointerVisibleFrame)
-        let storedPosition = UserDefaults.standard.string(
-            forKey: DefaultsKey.screenshotPreviewPosition) ?? ""
-        let position = ScreenshotSupport.QuickPreviewPosition(rawValue: storedPosition)
-            ?? .automatic
+        let position = ScreenshotSupport.QuickPreviewPosition.current()
         // With an after-capture action the preview is just a confirmation,
         // so it sits quietly in the corner and leaves sooner, instead of
         // popping up next to the selection and waiting.
@@ -510,13 +511,20 @@ final class ScreenshotQuickPreviewController {
     }
 
     private func scheduleAutoDismiss() {
-        guard !closed, !pointerInside, !systemSharing, !model.sharing, !model.deletingShare,
+        guard !closed, !pointerInside, !contextMenuOpen, !systemSharing, !model.sharing, !model.deletingShare,
               let dismissDuration = autoDismissDuration
         else { return }
         dismissWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.close() }
         dismissWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + dismissDuration, execute: work)
+    }
+
+    private func setContextMenuOpen(_ open: Bool) {
+        contextMenuOpen = open
+        dismissWork?.cancel()
+        dismissWork = nil
+        if !open { scheduleAutoDismiss() }
     }
 
     private func installKeyMonitor(for panel: NSPanel) {
@@ -635,7 +643,6 @@ private struct ScreenshotQuickPreviewView: View {
     var menuAction: @MainActor (ScreenshotPreviewMenuAction) -> Void = { _ in }
     var menuApplications: () -> [URL] = { [] }
     var menuOpenWith: (URL) -> Void = { _ in }
-    var menuCanReveal = false
     var menuOpened: () -> Void = {}
     var menuClosed: () -> Void = {}
     var toolbar: Self {
@@ -653,7 +660,7 @@ private struct ScreenshotQuickPreviewView: View {
         }
         .contextMenu {
             ScreenshotPreviewContextMenu(perform: menuAction, applications: menuApplications,
-                openWith: menuOpenWith, canReveal: menuCanReveal, opened: menuOpened, closed: menuClosed)
+                openWith: menuOpenWith, opened: menuOpened, closed: menuClosed)
         }
     }
 
