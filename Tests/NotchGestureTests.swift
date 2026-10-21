@@ -6,6 +6,7 @@ import AppKit
 enum NotchGestureTests {
     static func run(_ suite: TestSuite) {
         nativeInteractionContracts(suite)
+        NotchCaptureTrackpadGestureTests.run(suite)
         suite.expect(NotchGestureSupport.allowsVertical(expanded: true, inHeader: false,
                                                        musicSurface: true, control: false, scroll: false),
                "the music surface can close the expanded island without aiming at its header")
