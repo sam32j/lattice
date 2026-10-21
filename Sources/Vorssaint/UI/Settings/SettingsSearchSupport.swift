@@ -92,7 +92,7 @@ enum SettingsSearchSupport {
         return SettingsSearchItem(
             id: .setting(.keyboardBrightnessShortcuts),
             destination: FeatureSettingsDestination(
-                .energy, sectionAnchor: .keyboardBrightnessShortcuts),
+                .keyboard, sectionAnchor: .keyboardBrightnessShortcuts),
             title: brightness.keyboardLight,
             icon: "keyboard",
             keywords: [brightness.keyboardBrightnessShortcuts, brightness.keyboardBrightnessDecrease,

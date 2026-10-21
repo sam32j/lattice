@@ -62,7 +62,8 @@ enum SettingsDirectory {
                         }
                         return feature.hubTitle(s, hub: hub)
                     }
-                if pageItem.page == .energy, AppFeature.extraBrightness.isHardwareSupported,
+                if pageItem.page == .energy, pageItem.keywordFeatures.contains(where: { $0 == .brightness }),
+                   AppFeature.extraBrightness.isHardwareSupported,
                    !rows.contains(where: { $0.id == .feature(.brightness) }) {
                     rows.removeAll { $0.id == .page(.energy) }
                     rows.insert(SettingsSidebarItem(
@@ -76,16 +77,6 @@ enum SettingsDirectory {
                         destination: FeatureSettingsDestination(
                             .general, sectionAnchor: .panelConfiguration),
                         title: s.menuBarSection, icon: "menubar.rectangle"), at: 1)
-                }
-                if pageItem.page == .energy, isAvailable(.brightness), keyboardLightSupported {
-                    let destination = FeatureSettingsDestination(
-                        .energy, sectionAnchor: .keyboardBrightnessShortcuts)
-                    let insertion = rows.firstIndex { $0.id == .feature(.brightness) }
-                        .map { $0 + 1 } ?? rows.endIndex
-                    rows.insert(SettingsSidebarItem(
-                        id: .setting(.keyboardBrightnessShortcuts), destination: destination,
-                        title: FeatureStrings.brightness(language).keyboardLight,
-                        icon: "keyboard"), at: insertion)
                 }
                 return rows
             }
