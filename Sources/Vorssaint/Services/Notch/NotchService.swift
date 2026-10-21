@@ -849,7 +849,8 @@ final class NotchService: ObservableObject {
         guard !showingSections else { return 0 }
         let detail = showingAppPanel || selectedMetric != nil
         guard detail || modules.isEmpty else {
-            return NotchLayout.headerTitleWidth(selected.title(L10n.shared.language), button: headerShowsSectionsButton)
+            return NotchLayout.headerTitleWidth(selected.presentationTitle(L10n.shared.language, hasCapturePreview: captureContent != nil),
+                                               button: headerShowsSectionsButton || selected == .captures)
         }
         return NotchLayout.headerTitleWidth(detailTitle, font: NotchLayout.detailTitleFont, button: detail)
     }
@@ -2382,6 +2383,11 @@ final class NotchService: ObservableObject {
                         close: @escaping () -> Void, hover: @escaping (Bool) -> Void) -> Bool {
         guard acceptsSystemFeedback, NotchSupport.routes(.capture) else { return false }
         let keepOpen = expanded && pinned
+        let replacesPage = expanded && selected == .captures && captureID != id
+        if captureID != id {
+            captureTrackpadGesture = NotchCaptureTrackpadGesture()
+            captureHistoryGestureProgress = 0
+        }
         captureID = id
         captureContentHeight = height
         captureContent = content
@@ -2391,7 +2397,7 @@ final class NotchService: ObservableObject {
         captureHover = hover
         captureClosesOnCollapse = closeOnCollapse
         open(.captures, pinned: keepOpen,
-             takeFocus: takeFocus, feedback: false)
+             takeFocus: takeFocus, feedback: false, crossfadeContent: replacesPage)
         captureHover?(inside)
         return true
     }

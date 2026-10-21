@@ -108,7 +108,11 @@ enum NotchDestinationContract {
         var presentationTearDowns = 0
         var captureControlsCancel: (() -> Void)?
         var captureClose: (() -> Void)?
-        func mutatePresentation(transitionContent: NotchContentTransition, _ change: () -> Void) { change() }
+        var contentTransitions: [NotchContentTransition] = []
+        func mutatePresentation(transitionContent: NotchContentTransition, _ change: () -> Void) {
+            contentTransitions.append(transitionContent)
+            change()
+        }
         func installEventMonitors() {}
         func syncVisibleConsumers() { requestedDetail = selectedMetric }
         func provideHapticFeedback() {}
@@ -239,6 +243,14 @@ enum NotchDestinationContract {
         service.open(.tools)
         suite.expect(launcher.selectedIndex == nil, "an empty Tools module leaves keyboard activation without a target")
         sessionContracts(suite)
+        let crossfade = Service()
+        crossfade.open(.controls)
+        crossfade.open(.controls, crossfadeContent: true)
+        suite.expect(crossfade.expanded && crossfade.contentTransitions.last == .replace,
+                     "an in-session page replacement uses the existing native crossfade rather than reopening")
+        crossfade.open(.controls)
+        suite.expect(crossfade.contentTransitions.last == NotchContentTransition.none,
+                     "an unchanged page refresh does not replay the crossfade")
         lockScreenContracts(defaults: defaults, suite: suite)
     }
 
