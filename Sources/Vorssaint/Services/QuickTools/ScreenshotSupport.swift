@@ -216,15 +216,16 @@ enum ScreenshotSupport {
                                       frozenImage: CGImage?, viewFrame: CGRect,
                                       viewSize: CGSize, fallbackScale: CGFloat) -> (image: CGImage, scale: CGFloat)? {
         if let capture, !isImageBlank(capture.image) { return capture }
-        guard let frozenImage else { return capture }
+        guard let frozenImage,
+              CGRect(origin: .zero, size: viewSize).contains(viewFrame) else { return capture }
         let rect = imagePixelRect(fromView: viewFrame, viewSize: viewSize,
                                   imageSize: CGSize(width: frozenImage.width, height: frozenImage.height))
         guard let crop = frozenImage.cropping(to: rect) else { return capture }
         return (crop, fallbackScale)
     }
 
-    /// Determines if an image is blank (empty, transparent, or without meaningful visual content).
-    /// Used as a safeguard against window server, out-of-process GPU compositing, or Mission Control capture failures.
+    /// Suspect window buffers request a ScreenCaptureKit retry. Uniform pixels
+    /// alone do not prove failure; callers must guard any display-crop fallback.
     static func isImageBlank(_ image: CGImage) -> Bool {
         let width = image.width
         let height = image.height
@@ -254,7 +255,7 @@ enum ScreenshotSupport {
         let innerYEnd = max(innerYStart + 1, Int(floor(Double(sampleH) * 0.8)))
         let totalInnerPixels = (innerXEnd - innerXStart) * (innerYEnd - innerYStart)
 
-        var innerPixels: [UInt32: Int] = [:]
+        var innerPixels = Set<UInt32>()
 
         var firstPixel: UInt32?
         var allPixelsIdentical = true
@@ -263,7 +264,7 @@ enum ScreenshotSupport {
             for x in 0..<sampleW {
                 let pixel = buffer[y * sampleW + x]
                 if x >= innerXStart && x < innerXEnd && y >= innerYStart && y < innerYEnd {
-                    innerPixels[pixel, default: 0] += 1
+                    innerPixels.insert(pixel)
                 }
                 if let first = firstPixel {
                     if pixel != first {
@@ -296,8 +297,9 @@ enum ScreenshotSupport {
         }
 
         // Browser chrome can be complete while the GPU viewport is absent.
-        // A dominant inner color requests the composed capture fallback.
-        return (innerPixels.values.max() ?? 0) * 10 >= totalInnerPixels * 9
+        // Sparse content is still real content. Only a completely uniform
+        // viewport requests a retry, not a mostly empty document or editor.
+        return innerPixels.count == 1
     }
 
     static let recentCaptureLimit = 12

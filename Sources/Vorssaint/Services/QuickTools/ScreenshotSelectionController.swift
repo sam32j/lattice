@@ -768,10 +768,11 @@ final class ScreenshotSelectionController {
                 windowIDs, scale: scale, frames: frames, resolveCapture: { id, independent in
                     guard let entry = entriesByID[id] else { return nil }
                     let panel = entry.panel
-                    let fullyVisible = CGRect(origin: .zero, size: panel.screenFrame.size).contains(entry.window.frame)
-                    // Never stretch a partial display crop over a window that spans displays.
+                    let canCrop = ScreenshotSupport.canUseFrozenWindowCapture(windowID: id,
+                        frame: entry.window.frame, viewSize: panel.screenFrame.size,
+                        windows: panel.overlayView.windows)
                     return ScreenshotSupport.resolvedWindowCapture(independent,
-                        frozenImage: fullyVisible ? panel.frozenImage : nil, viewFrame: entry.window.frame,
+                        frozenImage: canCrop ? panel.frozenImage : nil, viewFrame: entry.window.frame,
                         viewSize: panel.screenFrame.size, fallbackScale: panel.pixelScale)
                 })
             guard let finalCapture = capture else {
@@ -966,8 +967,10 @@ final class ScreenshotSelectionController {
             guard let self else { return }
             let independent = await ScreenshotCaptureEngine.captureWindow(
                 windowID, scale: panel.pixelScale)
+            let canCrop = ScreenshotSupport.canUseFrozenWindowCapture(windowID: windowID,
+                frame: frame, viewSize: panel.screenFrame.size, windows: panel.overlayView.windows)
             let capture = ScreenshotSupport.resolvedWindowCapture(independent,
-                frozenImage: panel.frozenImage, viewFrame: frame,
+                frozenImage: canCrop ? panel.frozenImage : nil, viewFrame: frame,
                 viewSize: panel.screenFrame.size, fallbackScale: panel.pixelScale)
 
             guard let finalCapture = capture else {
@@ -1260,7 +1263,7 @@ private final class ScreenshotOverlayView: NSView {
     private var pointerHasMoved = false
     private var frozenImage: CGImage?
     fileprivate var loupeImage: CGImage?
-    private var windows: [ScreenshotSupport.PickableWindow]
+    fileprivate var windows: [ScreenshotSupport.PickableWindow]
     /// Both are held weakly on purpose. The session hands its result over
     /// after the panels leave the screen, so the controller is already gone
     /// while the window server still delivers the tail of a gesture here.
