@@ -87,34 +87,75 @@ final class RecorderOverlayController: ObservableObject {
         cameraEnabled.toggle()
     }
 
+    private var snapTimer: Timer?
+
     func moveCamera(origin: CGPoint) {
-        guard anchorRect.width > 0 else { return }
+        snapTimer?.invalidate()
+        snapTimer = nil
+        guard anchorRect.width > 0, pixelSize.width > 0, pixelSize.height > 0 else { return }
         let xScale = pixelSize.width / anchorRect.width
         let yScale = pixelSize.height / anchorRect.height
         layout.place(origin: CGPoint(x: (origin.x - anchorRect.minX) * xScale,
                                      y: (origin.y - anchorRect.minY) * yScale), in: pixelSize)
+        let frame = layout.frame(in: pixelSize)
+        let points = CGRect(x: anchorRect.minX + frame.minX * anchorRect.width / pixelSize.width,
+                            y: anchorRect.minY + frame.minY * anchorRect.height / pixelSize.height,
+                            width: frame.width * anchorRect.width / pixelSize.width,
+                            height: frame.height * anchorRect.height / pixelSize.height)
+        cameraPanel?.setFrame(points, display: true)
     }
 
     func snapCameraToNearestEdge(animated: Bool = true) {
-        guard !layout.isFullArea, cameraPanel != nil, anchorRect.width > 0, pixelSize.width > 0 else { return }
+        snapTimer?.invalidate()
+        snapTimer = nil
+        guard !layout.isFullArea, let cameraPanel, anchorRect.width > 0, pixelSize.width > 0, pixelSize.height > 0 else { return }
         layout.snapToNearestEdge(in: pixelSize)
-        if animated {
-            let frame = layout.frame(in: pixelSize)
-            let points = CGRect(x: anchorRect.minX + frame.minX * anchorRect.width / pixelSize.width,
-                                y: anchorRect.minY + frame.minY * anchorRect.height / pixelSize.height,
-                                width: frame.width * anchorRect.width / pixelSize.width,
-                                height: frame.height * anchorRect.height / pixelSize.height)
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.35
-                context.timingFunction = CAMediaTimingFunction(controlPoints: 0.16, 1.0, 0.3, 1.0)
-                cameraPanel?.animator().setFrame(points, display: true)
-            }
-        } else {
-            refreshLayout()
+        let targetFrame = layout.frame(in: pixelSize)
+        let targetPoints = CGRect(x: anchorRect.minX + targetFrame.minX * anchorRect.width / pixelSize.width,
+                                  y: anchorRect.minY + targetFrame.minY * anchorRect.height / pixelSize.height,
+                                  width: targetFrame.width * anchorRect.width / pixelSize.width,
+                                  height: targetFrame.height * anchorRect.height / pixelSize.height)
+        guard animated else {
+            cameraPanel.setFrame(targetPoints, display: true)
+            return
         }
+
+        let startOrigin = cameraPanel.frame.origin
+        let targetOrigin = targetPoints.origin
+        let dx = targetOrigin.x - startOrigin.x
+        let dy = targetOrigin.y - startOrigin.y
+        guard hypot(dx, dy) > 0.5 else {
+            cameraPanel.setFrame(targetPoints, display: true)
+            return
+        }
+
+        let duration: TimeInterval = 0.36
+        let startTime = CACurrentMediaTime()
+        let timer = Timer(timeInterval: 1.0 / 120.0, repeats: true) { [weak self, weak cameraPanel] t in
+            guard let self, let cameraPanel else {
+                t.invalidate()
+                return
+            }
+            let elapsed = CACurrentMediaTime() - startTime
+            let rawProgress = min(1.0, max(0.0, elapsed / duration))
+            let eased = 1.0 - pow(1.0 - rawProgress, 3.5)
+            let currentX = startOrigin.x + dx * CGFloat(eased)
+            let currentY = startOrigin.y + dy * CGFloat(eased)
+            cameraPanel.setFrameOrigin(CGPoint(x: currentX, y: currentY))
+
+            if rawProgress >= 1.0 {
+                t.invalidate()
+                self.snapTimer = nil
+                cameraPanel.setFrame(targetPoints, display: true)
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        snapTimer = timer
     }
 
     func stop() {
+        snapTimer?.invalidate()
+        snapTimer = nil
         phase = .selecting
         cameraEnabled = false
         keysEnabled = false
