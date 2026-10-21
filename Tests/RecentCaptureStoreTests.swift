@@ -153,6 +153,19 @@ enum RecentCaptureStoreTests {
             dateStore.entries = [dateEntry]
             suite.expect(dateStore.persist(), "persisting entries with date subfolder succeeds")
 
+            let datedThumbnail = thumbRoot.appendingPathComponent("\(dayString)/\(subfolderCaptureID.uuidString)-thumbnail.png")
+            let datedBase = thumbRoot.appendingPathComponent("\(dayString)/\(subfolderCaptureID.uuidString)-base.png")
+            let datedAnnotations = thumbRoot.appendingPathComponent("\(dayString)/\(subfolderCaptureID.uuidString)-annotations.json")
+            let document = root.appendingPathComponent("\(dayString)/\(subfolderCaptureID.uuidString).latticecapture")
+            try RecentCaptureStore.write(png, to: document)
+            for file in [datedThumbnail, datedBase, datedAnnotations] {
+                try RecentCaptureStore.write(png, to: file)
+            }
+            let outside = root.appendingPathComponent("keep-private.png")
+            try png.write(to: outside)
+            let linkedDay = thumbRoot.appendingPathComponent("2026-10-17")
+            try manager.createSymbolicLink(at: linkedDay, withDestinationURL: root)
+
             let reloadedDateStore = RecentCaptureStore(directoryURL: root, thumbnailDirectoryURL: thumbRoot)
             suite.expect(reloadedDateStore.loadIfNeeded() && reloadedDateStore.entries == [dateEntry],
                    "date subfolder entries are preserved across reloads")
@@ -164,6 +177,13 @@ enum RecentCaptureStoreTests {
                     && !manager.fileExists(atPath: subfolderThumbURL.path)
                     && !manager.fileExists(atPath: root.appendingPathComponent(dayString).path),
                    "orphan cleanup in date subfolder deletes unreferenced capture and removes empty date directory")
+            suite.expect(!manager.fileExists(atPath: document.path),
+                         "clear also removes the owned editable document")
+            suite.expect([datedThumbnail, datedBase, datedAnnotations].allSatisfy {
+                !manager.fileExists(atPath: $0.path)
+            } && manager.fileExists(atPath: outside.path)
+                && (try? linkedDay.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == true,
+                "clear removes dated cached originals, annotations and thumbnails without following linked folders")
 
             suite.expect(RecentCaptureStore.isDateFolderName("2026-10-16")
                     && !RecentCaptureStore.isDateFolderName("2026-1-1")
@@ -196,6 +216,7 @@ enum RecentCaptureStoreTests {
 
             // Test isCaptureFileName for videos
             suite.expect(RecentCaptureStore.isCaptureFileName("\(UUID().uuidString).mov")
+                    && RecentCaptureStore.isCaptureFileName("\(UUID().uuidString).latticecapture")
                     && RecentCaptureStore.isCaptureFileName("\(UUID().uuidString).mp4")
                     && RecentCaptureStore.isCaptureFileName("\(UUID().uuidString).png")
                     && RecentCaptureStore.isCaptureFileName("\(UUID().uuidString)-thumbnail.png")
