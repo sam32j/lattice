@@ -1522,8 +1522,6 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
-        // Dark like every other picture editor, and like the sibling tool.
-        window.appearance = NSAppearance(named: .darkAqua)
         // Dragging inside the window moves the trim handles, never the window.
         window.isMovableByWindowBackground = false
         window.isReleasedWhenClosed = false
