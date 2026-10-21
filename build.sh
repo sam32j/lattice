@@ -331,6 +331,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/AgentUsage/CodexProfileLimitsService.swift
         Sources/Vorssaint/Services/AgentUsage/AgentOpenCodeReader.swift
         Sources/Vorssaint/Services/Notch/NotchGestureSupport.swift
+        Sources/Vorssaint/Services/Notch/NotchCaptureTrackpadGesture.swift
         Sources/Vorssaint/Services/Notch/NotchSectionPaging.swift
         Sources/Vorssaint/Services/Notch/NotchSliderEditing.swift
         Sources/Vorssaint/Services/Notch/NotchNotificationSupport.swift
@@ -540,11 +541,18 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/MicMuteSupport.swift
         Sources/Vorssaint/Services/QuickTools/QuickTogglesSupport.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotCapturePolicy.swift
+        Sources/Vorssaint/App/MediaEditorFileSupport.swift
+        Sources/Vorssaint/Core/MediaEditorFileStrings.swift
+        Sources/Vorssaint/Services/QuickTools/ScreenshotCapturePanel.swift
+        Sources/Vorssaint/Services/QuickTools/ScreenshotCaptureFocusSession.swift
+        Sources/Vorssaint/Services/QuickTools/ScreenshotMultiWindowShiftMonitor.swift
+        Sources/Vorssaint/Services/QuickTools/CapturePresentationDeferral.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotSupport.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotCanvasSupport.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotEditorGeometry.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotCropAspect.swift
         Sources/Vorssaint/Core/ScreenshotEditorRefinementStrings.swift
+        Sources/Vorssaint/Core/ScreenshotWatermarkDraft.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinPinchTracker.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinGestureView.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinFeedbackView.swift
@@ -553,6 +561,12 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/ScreenshotWindowLayering.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPreviewImageActions.swift
         Sources/Vorssaint/UI/Screenshot/ScreenshotPreviewContextMenu.swift
+        Sources/Vorssaint/UI/Screenshot/ScreenshotEditorControlFeedback.swift
+        Sources/Vorssaint/UI/Screenshot/ScreenshotFontSizeControl.swift
+        Sources/Vorssaint/UI/Screenshot/ScreenshotFontSizePalette.swift
+        Sources/Vorssaint/UI/Screenshot/ScreenshotCanvasInput.swift
+        Sources/Vorssaint/UI/Screenshot/ScreenshotFontSizeSlider.swift
+        Sources/Vorssaint/UI/Screenshot/ScreenshotFontSizeField.swift
         Sources/Vorssaint/UI/Screenshot/ScreenshotSelectionChrome.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinContentView.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotPinChrome.swift
@@ -563,8 +577,13 @@ if (( TEST )); then
         Sources/Vorssaint/UI/Settings/MonitorToken.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotRenderer.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotImageLayerRendering.swift
+        Sources/Vorssaint/UI/Screenshot/ScreenshotEditorResizeCursor.swift
         Sources/Vorssaint/Services/QuickTools/RecentCaptureRetention.swift
         Sources/Vorssaint/Services/QuickTools/RecentCaptureStore.swift
+        Sources/Vorssaint/Services/QuickTools/RecentCaptureEditableImage.swift
+        Sources/Vorssaint/Services/Recorder/RecorderFileCopy.swift
+        Sources/Vorssaint/Services/Recorder/RecorderQuickPreviewModel.swift
+        Sources/Vorssaint/Services/Recorder/RecorderPreviewShortcut.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotSharingSupport.swift
         Sources/Vorssaint/Services/QuickTools/WindowActivationPolicy.swift
         Sources/Vorssaint/Services/KeyboardDebounce/KeyboardDebounceSupport.swift

@@ -201,6 +201,7 @@ enum ShelfFeatureTests {
                "unrelated pasteboard types do not activate the shelf")
         ShelfFilePromiseTests.run(suite)
         ShelfDropRoutingTests.run(suite)
+        NotchEditorDropTests.run(suite)
 
         // MARK: Shelf and the screenshot editor (#2812)
 

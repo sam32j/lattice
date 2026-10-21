@@ -1711,6 +1711,7 @@ enum NotchTests {
         NotchHoverTests.run(suite)
         NotchScreenEdgeClickTests.run(suite)
         NotchPresentationRefreshContract.run(suite)
+        NotchCaptureNavigationTests.run(suite)
         NotchScreenRefreshContract.run(suite)
         NotchMirrorContract.run(suite)
         NotchFullscreenTests.run(suite)
