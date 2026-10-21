@@ -5,6 +5,7 @@ import AppKit
 
 enum RecorderPreviewModelTests {
     static func run(_ suite: TestSuite) {
+        MainActor.assumeIsolated { RecorderPreviewEditTests.run(suite) }
         RecorderPreviewShortcutTests.run(suite)
         final class Loader {
             var pending: [URL: CheckedContinuation<CGImage?, Never>] = [:]
