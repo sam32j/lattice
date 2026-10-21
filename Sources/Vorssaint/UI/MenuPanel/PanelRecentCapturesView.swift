@@ -159,49 +159,17 @@ struct RecentCapturesView: View {
     }
 
     private func islandCard(_ entry: RecentCaptureEntry) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Button {
-                history.open(entry)
-            } label: {
-                ZStack(alignment: .topTrailing) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.black.opacity(0.2))
-                        if let image = history.thumbnail(for: entry) {
-                            Image(nsImage: image)
-                                .resizable()
-                                .interpolation(.high)
-                                .scaledToFit()
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        } else {
-                            Image(systemName: entry.kind == .screenshot ? "photo" : "film")
-                                .font(.system(size: 24, weight: .light))
-                                .foregroundStyle(.tertiary)
-                        }
-                        if entry.kind == .recording {
-                            Image(systemName: "play.circle.fill")
-                                .font(.system(size: 24))
-                                .foregroundStyle(.white.opacity(0.85))
-                                .shadow(radius: 2)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                    HStack(spacing: 3) {
-                        Image(systemName: entry.kind == .screenshot ? "camera.fill" : "video.fill")
-                            .font(.system(size: 8))
-                        Text(entry.kind == .screenshot ? text.screenshot : text.recording)
-                            .font(.system(size: 9, weight: .medium))
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(.black.opacity(0.6), in: Capsule())
-                    .padding(6)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(NotchButtonStyle(cornerRadius: 8, lifts: false))
+        VStack(alignment: .leading, spacing: 5) {
+            RecentCapturePreviewThumbnail(
+                entry: entry,
+                history: history,
+                onOpen: { history.open(entry, inNotch: inNotch) },
+                width: 149,
+                height: 100,
+                cornerRadius: 8,
+                showsKindBadge: true,
+                text: text
+            )
 
             HStack(spacing: 4) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -219,37 +187,32 @@ struct RecentCapturesView: View {
                 }
                 Spacer(minLength: 0)
 
-                Button {
-                    history.open(entry)
-                } label: {
-                    Text(entry.kind == .screenshot ? text.restore : text.open)
-                        .font(.system(size: 10, weight: .semibold))
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.mini)
-
-                Button {
-                    history.remove(entry)
-                } label: {
-                    Image(systemName: "trash")
-                        .font(.system(size: 9.5))
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.mini)
-                .help(text.remove)
-                .accessibilityLabel(text.remove)
+                RecentCaptureTrashButton(
+                    action: { history.remove(entry) },
+                    helpText: text.remove
+                )
             }
             .padding(.horizontal, 2)
         }
-        .padding(8)
+        .padding(.horizontal, 8)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
         .frame(width: 165)
-        .frame(maxHeight: .infinity)
         .modifier(NotchControlSurface(cornerRadius: 12))
     }
 
     private func row(_ entry: RecentCaptureEntry) -> some View {
         HStack(spacing: 10) {
-            preview(entry)
+            RecentCapturePreviewThumbnail(
+                entry: entry,
+                history: history,
+                onOpen: { history.open(entry, inNotch: inNotch) },
+                width: 104,
+                height: 68,
+                cornerRadius: 7,
+                showsKindBadge: false,
+                text: text
+            )
             VStack(alignment: .leading, spacing: 5) {
                 Text(entry.kind == .screenshot ? text.screenshot : text.recording)
                     .font(.system(size: 11.5, weight: .semibold))
@@ -263,51 +226,124 @@ struct RecentCapturesView: View {
                 Text(Self.formattedCaptureTime(entry.createdAt))
                     .font(.system(size: 9.5))
                     .foregroundStyle(.tertiary)
-                HStack(spacing: 6) {
-                    Button(entry.kind == .screenshot ? text.restore : text.open) {
-                        history.open(entry)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.mini)
-                    Button {
-                        history.remove(entry)
-                    } label: {
-                        Image(systemName: "trash")
-                            .font(.system(size: 10, weight: .semibold))
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.mini)
-                    .help(text.remove)
-                    .accessibilityLabel(text.remove)
-                }
             }
             Spacer(minLength: 0)
+            RecentCaptureTrashButton(
+                action: { history.remove(entry) },
+                helpText: text.remove
+            )
         }
         .panelCard()
     }
+}
 
-    @ViewBuilder
-    private func preview(_ entry: RecentCaptureEntry) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(Color.black.opacity(0.13))
-            if let image = history.thumbnail(for: entry) {
-                Image(nsImage: image)
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-            } else {
-                Image(systemName: entry.kind == .screenshot ? "photo" : "film")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(.tertiary)
-            }
+private struct RecentCaptureTrashButton: View {
+    let action: () -> Void
+    let helpText: String
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "trash")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(isHovered ? Color.red : Color.secondary)
+                .frame(width: 24, height: 22)
+                .background(
+                    isHovered ? Color.red.opacity(0.18) : Color.primary.opacity(0.06),
+                    in: RoundedRectangle(cornerRadius: 5, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .strokeBorder(isHovered ? Color.red.opacity(0.40) : Color.clear, lineWidth: 1)
+                )
         }
-        .frame(width: 104, height: 68)
-        .overlay(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.1), lineWidth: 1)
-        )
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .help(helpText)
+        .accessibilityLabel(helpText)
+    }
+}
+
+private struct RecentCapturePreviewThumbnail: View {
+    let entry: RecentCaptureEntry
+    @ObservedObject var history: RecentCaptureService
+    let onOpen: () -> Void
+    let width: CGFloat
+    let height: CGFloat
+    let cornerRadius: CGFloat
+    let showsKindBadge: Bool
+    let text: RecentCaptureStrings
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: onOpen) {
+            ZStack {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(Color.black.opacity(0.13))
+                if let image = history.thumbnail(for: entry) {
+                    Image(nsImage: image)
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: width, height: height)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                } else {
+                    Image(systemName: entry.kind == .screenshot ? "photo" : "film")
+                        .font(.system(size: min(width, height) * 0.32, weight: .medium))
+                        .foregroundStyle(.tertiary)
+                }
+
+                if entry.kind == .recording && !isHovered {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .shadow(radius: 2)
+                }
+
+                if showsKindBadge {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            HStack(spacing: 3) {
+                                Image(systemName: entry.kind == .screenshot ? "camera.fill" : "video.fill")
+                                    .font(.system(size: 8))
+                                Text(entry.kind == .screenshot ? text.screenshot : text.recording)
+                                    .font(.system(size: 9, weight: .medium))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(.black.opacity(0.6), in: Capsule())
+                            .padding(6)
+                        }
+                        Spacer()
+                    }
+                }
+
+                if isHovered {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(Color.black.opacity(0.42))
+                        .transition(.opacity.animation(.easeInOut(duration: 0.12)))
+
+                    Image(systemName: "eye.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.6), radius: 4, y: 1)
+                        .transition(.scale(scale: 0.88).combined(with: .opacity).animation(.spring(response: 0.22, dampingFraction: 0.75)))
+                }
+            }
+            .frame(width: width, height: height)
+            .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(isHovered ? Color.accentColor.opacity(0.6) : Color.primary.opacity(0.1), lineWidth: isHovered ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .help(entry.kind == .screenshot ? text.restore : text.open)
+        .accessibilityLabel(entry.kind == .screenshot ? text.restore : text.open)
     }
 }
 
