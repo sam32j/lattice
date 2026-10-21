@@ -1755,20 +1755,6 @@ private final class ScreenshotOverlayView: NSView {
                   near: CGPoint(x: selection.midX, y: selection.maxY + 10))
     }
 
-    private func drawWindowHighlight(_ context: CGContext, rect: CGRect) {
-        let path = CGPath(roundedRect: rect.insetBy(dx: 1.25, dy: 1.25),
-                           cornerWidth: 9,
-                           cornerHeight: 9,
-                           transform: nil)
-        context.addPath(path)
-        context.setFillColor(CGColor(srgbRed: 0.35, green: 0.62, blue: 1, alpha: 0.14))
-        context.fillPath()
-        context.addPath(path)
-        context.setStrokeColor(CGColor(srgbRed: 0.35, green: 0.62, blue: 1, alpha: 0.95))
-        context.setLineWidth(2.5)
-        context.strokePath()
-    }
-
     private func drawWindowCheckmark(_ context: CGContext, for window: ScreenshotSupport.PickableWindow) {
         let frame = window.frame
         let windowsInFront = windows.prefix(while: { $0.windowID != window.windowID })
@@ -2325,11 +2311,6 @@ private struct CaptureGuideView: View {
             model.isHovered = hovering
         }
         .allowsHitTesting(true)
-    }
-
-    private var title: String {
-        guard let purpose, !purpose.isEmpty else { return strings.hintDrag }
-        return purpose
     }
 
     private var subtitle: String {
