@@ -7,6 +7,8 @@ import Foundation
 /// Real selection methods run with controlled capture replies and inert panels.
 /// Images carry exclusion identities; no desktop pixels or input events are used.
 enum ScreenshotSelectionRefreshContract {
+    static var resolvedWindowFrames: [CGRect] = []
+    static var resolvedWindowSources: [Set<CGWindowID>?] = []
     final class SurfaceOptions {
         var onCaptureControlsSurfaceChange: ((CGRect, CGFloat) -> Void)?
     }
@@ -127,8 +129,12 @@ enum ScreenshotSelectionRefreshContract {
         /// The scale a window capture reports, like a composite recaptured
         /// on a 2x display; `nil` echoes the scale asked for.
         static var multiWindowCaptures = 0
-        static func captureMultipleWindows(_ ids: [CGWindowID], scale: CGFloat) async -> (image: CGImage, scale: CGFloat)? {
+        static func captureMultipleWindows(_ ids: [CGWindowID], scale: CGFloat,
+            frames: [CGWindowID: CGRect],
+            resolveCapture: (CGWindowID, (image: CGImage, scale: CGFloat)?) -> (image: CGImage, scale: CGFloat)?)
+            async -> (image: CGImage, scale: CGFloat)? {
             multiWindowCaptures += 1
+            for id in ids { guard resolveCapture(id, (CGImage(excluded: []), scale)) != nil else { return nil } }
             return (CGImage(excluded: []), scale)
         }
         static var windowCaptureScale: CGFloat?
@@ -183,6 +189,12 @@ enum ScreenshotSelectionRefreshContract {
             loupeEnabled = false, selectionInProgress = false
         var selectedWindows: [CGWindowID: (window: ScreenshotSupport.PickableWindow, panel: ScreenshotOverlayPanel)] = [:]
         var hasSelectedWindows: Bool { !selectedWindows.isEmpty }
+        lazy var multiWindowShiftMonitor = ScreenshotMultiWindowShiftMonitor(
+            shiftIsPressed: { false },
+            canConfirm: { [weak self] in
+                guard let self else { return false }
+                return self.acceptsCaptureInput && !self.panels.contains { $0.overlayView.isDragging }
+            }, released: { [weak self] in self?.confirmSelectedWindows() })
         func clearSelectedWindows() { selectedWindows.removeAll() }
         var panels: [ScreenshotOverlayPanel]
         var outcome: Outcome?
@@ -272,6 +284,28 @@ enum ScreenshotSelectionRefreshContract {
         await Task.yield()
         expect(ScreenshotCaptureEngine.multiWindowCaptures == 1,
                "duplicate Shift-release confirmations launch exactly one multi-window capture")
+        let diagonal = Chooser(.screenshot)
+        let diagonalPanel = diagonal.panels[0]
+        let cornerA = CGRect(x: 0, y: 0, width: 20, height: 20)
+        let cornerB = CGRect(x: 80, y: 80, width: 20, height: 20)
+        diagonal.selectedWindows = [
+            11: (.init(windowID: 11, frame: cornerA), diagonalPanel),
+            22: (.init(windowID: 22, frame: cornerB), diagonalPanel)
+        ]
+        resolvedWindowFrames = []
+        diagonal.confirmSelectedWindows()
+        await drain()
+        expect(resolvedWindowFrames.count == 2 && resolvedWindowFrames.contains(cornerA)
+               && resolvedWindowFrames.contains(cornerB),
+               "diagonal selection resolves each chosen window, never their full-screen enclosing rectangle")
+        await multiWindowSourceChecks(suite)
+        let releaseOutsideApp = Chooser(.screenshot)
+        let releasePanel = releaseOutsideApp.panels[0]
+        releaseOutsideApp.toggleSelectedWindow(.init(windowID: 11, frame: releasePanel.screenFrame), on: releasePanel)
+        // No local flagsChanged event arrives while Exposé owns the keyboard.
+        try? await Task.sleep(nanoseconds: 150_000_000)
+        expect(releaseOutsideApp.finished,
+               "releasing Shift confirms selected Exposé windows even without a local modifier event")
         let color = Chooser(.color)
         color.confirmSelectionWithKeyboard()
         if case .color(let picked) = color.outcome {
@@ -633,5 +667,13 @@ enum ScreenshotSelectionRefreshContract {
 }
 
 extension ScreenshotSupport {
-    static func isImageBlank(_ image: ScreenshotSelectionRefreshContract.CGImage) -> Bool { false }
+    // Image quality and real pixel cropping are exercised in ScreenshotBlankViewportTests.
+    static func resolvedWindowCapture(_ capture: (image: ScreenshotSelectionRefreshContract.CGImage, scale: CGFloat)?,
+                                      frozenImage: ScreenshotSelectionRefreshContract.CGImage?, viewFrame: CGRect,
+                                      viewSize: CGSize, fallbackScale: CGFloat)
+        -> (image: ScreenshotSelectionRefreshContract.CGImage, scale: CGFloat)? {
+        ScreenshotSelectionRefreshContract.resolvedWindowFrames.append(viewFrame)
+        ScreenshotSelectionRefreshContract.resolvedWindowSources.append(frozenImage?.excluded)
+        return capture
+    }
 }

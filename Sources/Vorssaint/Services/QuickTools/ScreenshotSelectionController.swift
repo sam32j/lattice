@@ -74,14 +74,17 @@ final class ScreenshotSelectionController {
         otherProtectedWindowIDs().union(protectedWindowIDs)
     }
     private var keyMonitor: Any?
-    private var flagsMonitor: Any?
+    private lazy var multiWindowShiftMonitor = ScreenshotMultiWindowShiftMonitor(
+        canConfirm: { [weak self] in
+            guard let self else { return false }
+            return self.acceptsCaptureInput && !self.panels.contains { $0.overlayView.isDragging }
+        }, released: { [weak self] in self?.confirmSelectedWindows() })
     private var globalKeyMonitor: Any?
     private var completion: ((Outcome) -> Void)?
     private var freeze: Bool
     private var includePointer: Bool
     private let showLastRegion: Bool
     private var hideVorssaintWindows: Bool
-    private var previousFrontmostApp: NSRunningApplication?
     private let otherProtectedWindowIDs: () -> Set<CGWindowID>
     private let baseMode: Mode
     private let supportsScrollingCapture: Bool
@@ -330,13 +333,6 @@ final class ScreenshotSelectionController {
             cursorPushed = true
         }
         NSCursor.crosshair.set()
-        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-            guard let self else { return event }
-            if !event.modifierFlags.contains(.shift), self.hasSelectedWindows {
-                self.confirmSelectedWindows()
-            }
-            return event
-        }
     }
 
     private func screenCaptureToolDidChange() {
@@ -357,6 +353,7 @@ final class ScreenshotSelectionController {
             }
         }
         selectedWindows.removeAll()
+        multiWindowShiftMonitor.stop()
         scrollingCaptureEnabled = false
         loupeEnabled = isPickingColor
         screenCaptureOptions?.offersRepeatLastRegion = offersRepeatLastRegion
@@ -721,6 +718,8 @@ final class ScreenshotSelectionController {
         } else {
             selectedWindows[window.windowID] = (window, panel)
         }
+        if hasSelectedWindows { multiWindowShiftMonitor.start() }
+        else { multiWindowShiftMonitor.stop() }
         panels.forEach {
             $0.overlayView.refreshCaptureGuide()
             $0.overlayView.needsDisplay = true
@@ -729,6 +728,7 @@ final class ScreenshotSelectionController {
 
     fileprivate func clearSelectedWindows() {
         selectedWindows.removeAll()
+        multiWindowShiftMonitor.stop()
         panels.forEach {
             $0.overlayView.refreshCaptureGuide()
             $0.overlayView.needsDisplay = true
@@ -737,38 +737,36 @@ final class ScreenshotSelectionController {
 
     fileprivate func confirmSelectedWindows() {
         guard acceptsCaptureInput, !selectedWindows.isEmpty else { return }
+        multiWindowShiftMonitor.stop()
         let windowEntries = Array(selectedWindows.values)
         guard let firstPanel = windowEntries.first?.panel else { return }
         markCapturePending()
 
         let windowIDs = windowEntries.map(\.window.windowID)
         let scale = firstPanel.pixelScale
+        let mainHeight = NSScreen.screens.first?.frame.height ?? 0
+        let entriesByID = Dictionary(uniqueKeysWithValues: windowEntries.map { ($0.window.windowID, $0) })
+        let frames = Dictionary(uniqueKeysWithValues: windowEntries.map { entry in
+            let cocoa = ScreenshotSupport.cocoaRect(fromFlippedView: entry.window.frame,
+                                                    screenFrame: entry.panel.screenFrame)
+            return (entry.window.windowID, CGRect(x: cocoa.minX, y: mainHeight - cocoa.maxY,
+                                                 width: cocoa.width, height: cocoa.height))
+        })
 
-        var unionViewFrame = windowEntries[0].window.frame
-        for entry in windowEntries.dropFirst() {
-            if entry.panel === firstPanel {
-                unionViewFrame = unionViewFrame.union(entry.window.frame)
-            } else {
-                let cocoa = ScreenshotSupport.cocoaRect(fromFlippedView: entry.window.frame, screenFrame: entry.panel.screenFrame)
-                let view = ScreenshotSupport.flippedViewRect(fromCocoa: cocoa, screenFrame: firstPanel.screenFrame)
-                unionViewFrame = unionViewFrame.union(view)
-            }
-        }
+        let unionBounds = frames.values.reduce(CGRect.null) { $0.union($1) }
 
         Task { @MainActor [weak self] in
             guard let self else { return }
-            var capture = await ScreenshotCaptureEngine.captureMultipleWindows(
-                windowIDs, scale: scale)
-            let isBlank = capture.map { ScreenshotSupport.isImageBlank($0.image) } ?? true
-            if isBlank {
-                let pixelRect = ScreenshotSupport.imagePixelRect(
-                    fromView: unionViewFrame,
-                    viewSize: firstPanel.screenFrame.size,
-                    imageSize: firstPanel.frozenImageSize ?? firstPanel.pixelSize)
-                if let fallbackCrop = firstPanel.frozenImage?.cropping(to: pixelRect) {
-                    capture = (fallbackCrop, firstPanel.pixelScale)
-                }
-            }
+            let capture = await ScreenshotCaptureEngine.captureMultipleWindows(
+                windowIDs, scale: scale, frames: frames, resolveCapture: { id, independent in
+                    guard let entry = entriesByID[id] else { return nil }
+                    let panel = entry.panel
+                    let fullyVisible = CGRect(origin: .zero, size: panel.screenFrame.size).contains(entry.window.frame)
+                    // Never stretch a partial display crop over a window that spans displays.
+                    return ScreenshotSupport.resolvedWindowCapture(independent,
+                        frozenImage: fullyVisible ? panel.frozenImage : nil, viewFrame: entry.window.frame,
+                        viewSize: panel.screenFrame.size, fallbackScale: panel.pixelScale)
+                })
             guard let finalCapture = capture else {
                 self.finish(.failed)
                 return
@@ -776,9 +774,8 @@ final class ScreenshotSelectionController {
             self.finish(.captured(Capture(
                 image: finalCapture.image,
                 scale: finalCapture.scale,
-                anchorRect: ScreenshotSupport.cocoaRect(
-                    fromFlippedView: unionViewFrame,
-                    screenFrame: firstPanel.screenFrame))))
+                anchorRect: ScreenshotSupport.cocoaRect(fromWindowServer: unionBounds,
+                                                       mainScreenHeight: mainHeight))))
         }
     }
 
