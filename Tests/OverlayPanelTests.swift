@@ -20,6 +20,13 @@ enum OverlayPanelTests {
                          "a floating overlay stays an accessible window for assistive technology")
         }
 
+        let capture = ScreenshotCapturePanel(screenRect: CGRect(x: -10000, y: -10000, width: 200, height: 40))
+        capture.isReleasedWhenClosed = false
+        defer { capture.close() }
+        suite.expect(capture.accessibilitySubrole() == .unknown
+                     && capture.accessibilityRole() == .window && capture.isAccessibilityElement(),
+                     "capture's specialized panel inherits the overlay window-manager and accessibility behavior")
+
         // HUDs, previews, pickers and the menu's positioning helper: none is a
         // document window, and each floats over other apps' windows.
         let surfaces = [
@@ -31,6 +38,7 @@ enum OverlayPanelTests {
             "Sources/Vorssaint/Services/QuickTools/CameraPreviewService.swift",
             "Sources/Vorssaint/Services/QuickTools/RecentCaptureService.swift",
             "Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift",
+            "Sources/Vorssaint/Services/QuickTools/ScreenshotCapturePanel.swift",
             "Sources/Vorssaint/Services/QuickTools/ScreenshotQuickPreviewController.swift",
             "Sources/Vorssaint/Services/QuickTools/ScreenshotPinWindow.swift",
             "Sources/Vorssaint/Services/QuickTools/QRResultController.swift",
@@ -50,7 +58,7 @@ enum OverlayPanelTests {
         ]
         for path in surfaces {
             let source = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
-            suite.expect(source.range(of: #"\bOverlayPanel\(contentRect|:\s*OverlayPanel\b"#,
+            suite.expect(source.range(of: #"\bOverlayPanel\(contentRect|:\s*(?:OverlayPanel|ScreenshotCapturePanel)\b"#,
                                       options: .regularExpression) != nil
                          && !source.contains("NSPanel(contentRect")
                          && source.range(of: #"class \w+:\s*NSPanel\b"#, options: .regularExpression) == nil,
