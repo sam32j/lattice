@@ -167,7 +167,7 @@ extension FeatureStrings {
 
 extension RecorderFeatureStrings {
     static let enUS = RecorderFeatureStrings(
-        pageTitle: "Screen recording",
+        pageTitle: "Screen Recording",
         hubDescription: "Records an area, window or screen and edits it afterwards",
         panelCaption: "Record an area, window or the whole screen",
         startButton: "Record now",

@@ -211,7 +211,7 @@ extension NotchStrings {
     )
 
     static let ptBR = NotchStrings(
-        title: "Dynamic Island",
+        title: "Ilha Dinâmica",
         combineActivities: "Combinar",
         enable: "Ativar Dynamic Island",
         description: "Sua música, controles e ferramentas do dia a dia, juntos no topo da tela. Opcional. Desative para continuar usando os painéis separados.",
@@ -303,7 +303,7 @@ extension NotchStrings {
     )
 
     static let es = NotchStrings(
-        title: "Dynamic Island",
+        title: "Isla Dinámica",
         combineActivities: "Combinar",
         enable: "Activar Dynamic Island",
         description: "Tu música, controles y herramientas cotidianas, juntos en la parte superior de la pantalla. Opcional. Desactívalo para seguir usando los paneles por separado.",
@@ -395,7 +395,7 @@ extension NotchStrings {
     )
 
     static let sk = NotchStrings(
-        title: "Dynamic Island",
+        title: "Dynamický ostrov",
         combineActivities: "Kombinovať",
         enable: "Zapnúť Dynamic Island",
         description: "Vaša hudba, ovládacie prvky a bežné nástroje na jednom mieste v hornej časti obrazovky. Voliteľné. Vypnutím budete naďalej používať samostatné panely.",
@@ -763,7 +763,7 @@ extension NotchStrings {
     )
 
     static let ru = NotchStrings(
-        title: "Dynamic Island",
+        title: "Динамический остров",
         combineActivities: "Объединить",
         enable: "Включить Dynamic Island",
         description: "Музыка, управление и повседневные инструменты в верхней части экрана. Необязательно. Отключите, чтобы продолжить пользоваться отдельными панелями.",
@@ -855,7 +855,7 @@ extension NotchStrings {
     )
 
     static let tr = NotchStrings(
-        title: "Dynamic Island",
+        title: "Dinamik Ada",
         combineActivities: "Birleştir",
         enable: "Dynamic Island’u etkinleştir",
         description: "Müziğiniz, denetimleriniz ve günlük araçlarınız ekranın üst kısmında bir arada. İsteğe bağlıdır. Ayrı panelleri kullanmaya devam etmek için kapatın.",
@@ -1131,7 +1131,7 @@ extension NotchStrings {
     )
 
     static let zhHans = NotchStrings(
-        title: "Dynamic Island",
+        title: "灵动岛",
         combineActivities: "组合显示",
         enable: "启用Dynamic Island",
         description: "音乐、控制和日常工具，汇聚在屏幕顶部。 可选功能。关闭后可继续使用独立面板。",
@@ -1223,7 +1223,7 @@ extension NotchStrings {
     )
 
     static let zhTW = NotchStrings(
-        title: "Dynamic Island",
+        title: "動態島",
         combineActivities: "組合顯示",
         enable: "啟用Dynamic Island",
         description: "音樂、控制項與日常工具，匯聚在螢幕頂端。 選用功能。關閉後可繼續使用獨立面板。",
@@ -1315,7 +1315,7 @@ extension NotchStrings {
     )
 
     static let zhHK = NotchStrings(
-        title: "Dynamic Island",
+        title: "動態島",
         combineActivities: "組合顯示",
         enable: "啟用Dynamic Island",
         description: "音樂、控制項與日常工具，集中在螢幕頂端。 選用功能。關閉後可繼續使用獨立面板。",
@@ -1407,7 +1407,7 @@ extension NotchStrings {
     )
 
     static let uk = NotchStrings(
-        title: "Dynamic Island",
+        title: "Динамічний острів",
         combineActivities: "Поєднати",
         enable: "Увімкнути Dynamic Island",
         description: "Ваша музика, елементи керування та повсякденні інструменти, зібрані у верхній частині екрана. Необов’язково. Вимкніть, щоб і надалі користуватися окремими панелями.",
