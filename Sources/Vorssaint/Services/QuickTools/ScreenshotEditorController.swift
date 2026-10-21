@@ -449,6 +449,29 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         textWords.firstIndex { $0.rect.insetBy(dx: -2 * scale, dy: -2 * scale).contains(point) }
     }
 
+    func selectableTextHeight(at point: CGPoint) -> CGFloat? {
+        if let idx = wordIndex(at: point) {
+            return textWords[idx].rect.height
+        }
+        let maxVerticalDistance = 8.0 * scale
+        let maxHorizontalDistance = 24.0 * scale
+        var closestWord: ScreenshotSupport.RecognizedWord?
+        var minDistance = CGFloat.greatestFiniteMagnitude
+        for word in textWords {
+            let box = word.rect
+            let dy = max(box.minY - point.y, point.y - box.maxY, 0)
+            let dx = max(box.minX - point.x, point.x - box.maxX, 0)
+            if dy <= maxVerticalDistance && dx <= maxHorizontalDistance {
+                let dist = hypot(dx, dy)
+                if dist < minDistance {
+                    minDistance = dist
+                    closestWord = word
+                }
+            }
+        }
+        return closestWord?.rect.height
+    }
+
     /// Word-level recognition of the base capture, off the main thread; the
     /// boxes land in image pixels with their line index.
     func recognizeText() {
@@ -1148,9 +1171,7 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
         if let hitID, let hit = annotations.first(where: { $0.id == hitID }) {
             syncControls(to: hit)
             self.selectedID = hitID
-            if NSApp.currentEvent?.clickCount == 2, hit.tool == .text {
-                editingTextID = hitID
-            } else if editingTextID != hitID {
+            if editingTextID != hitID {
                 editingTextID = nil
             }
             clearTextSelection()
@@ -1537,6 +1558,10 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             self.model.recognizeText()
             self.model.recognizeQRCodes()
         }
+    }
+
+    func endInlineTextEditing() {
+        ScreenshotAnnotationTextEditor.endEditing(in: window)
     }
 
     func close() {
