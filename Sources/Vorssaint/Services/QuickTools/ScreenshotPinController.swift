@@ -16,7 +16,11 @@ final class ScreenshotPinController {
     private var hoverTimer: Timer?
     private var preferenceObserver: NSObjectProtocol?
     private var dragObservers: [NSObjectProtocol] = []
-    private init() {}
+    private init() {
+        ScreenshotPinWindow.onResetGestureState = { [weak self] in
+            self?.resetGestureState()
+        }
+    }
 
     var protectedWindowIDs: Set<CGWindowID> {
         var ids = Set<CGWindowID>()
@@ -156,8 +160,11 @@ final class ScreenshotPinController {
         if activeGesturePin == nil || time - lastGestureTime > 0.25
             || (gestureFinished && sequenceBegan) {
             activeGesturePin?.resetGestureTracking()
-            let windows = NSApp.orderedWindows.filter { window in
+            var windows = NSApp.orderedWindows.filter { window in
                 window.isVisible && pins.contains { $0 === window }
+            }
+            if windows.isEmpty {
+                windows = pins.filter(\.isVisible).reversed()
             }
             activeGesturePin = ScreenshotPinWindow.gestureTarget(at: location, windows: windows)
             activeGesturePin?.resetGestureTracking()
@@ -176,6 +183,13 @@ final class ScreenshotPinController {
                 $0.phase == .ended || $0.phase == .cancelled
             }) { gestureFinished = true }
         return true
+    }
+
+    func resetGestureState() {
+        activeGesturePin?.resetGestureTracking()
+        activeGesturePin = nil
+        gestureFinished = false
+        lastGestureTime = 0
     }
 
     private func refreshEscapeMonitor() {

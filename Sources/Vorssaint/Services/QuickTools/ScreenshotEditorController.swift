@@ -1337,7 +1337,7 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
 
 /// Hosts one editor window per capture and owns everything with a side
 /// effect: clipboard, files, pins, text recognition and the close-confirm.
-/// An editor window that positions traffic light buttons down 13px and right 5px within the top toolbar.
+/// Keeps the traffic lights aligned inside the editor's floating action band.
 final class ScreenshotEditorWindow: NSWindow {
     override func layoutIfNeeded() {
         super.layoutIfNeeded()
@@ -1365,8 +1365,8 @@ final class ScreenshotEditorWindow: NSWindow {
             titlebarView.frame = titlebarFrame
         }
 
-        let targetY: CGFloat = 18.0
-        var currentX: CGFloat = 25.0
+        let targetY: CGFloat = 23.0
+        var currentX: CGFloat = 13.0
         let buttonSpacing: CGFloat = 9.0
 
         for buttonType in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
@@ -1424,8 +1424,6 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
-        // Keep the editor dark so canvas contrast and popovers stay consistent.
-        window.appearance = NSAppearance(named: .darkAqua)
         // Content drags edit annotations. Only the title strip moves the window.
         window.isMovableByWindowBackground = false
         window.isReleasedWhenClosed = false
@@ -1764,22 +1762,20 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     func saveAs() {
         guard let window else { return }
         let panel = NSSavePanel()
-        panel.level = ScreenshotWindowLayering.dialogLevel(above: window)
         panel.allowedContentTypes = [.png]
         panel.nameFieldStringValue = ScreenshotSupport.fileName(
             prefix: strings.fileNamePrefix, date: Date())
-        panel.beginSheetModal(for: window) { [weak self] response in
-            guard let self, response == .OK, let url = panel.url else { return }
-            guard let export = self.model.exportImage(),
-                  let data = ScreenshotRenderer.pngData(from: export.image, scale: export.scale)
-            else { return }
-            do {
-                try data.write(to: url, options: .atomic)
-                self.model.markExported()
-                self.window?.close()
-            } catch {
-                NSSound.beep()
-            }
+        let response = ScreenshotWindowLayering.runModalPanel(panel, above: window)
+        guard response == .OK, let url = panel.url else { return }
+        guard let export = model.exportImage(),
+              let data = ScreenshotRenderer.pngData(from: export.image, scale: export.scale)
+        else { return }
+        do {
+            try data.write(to: url, options: .atomic)
+            model.markExported()
+            self.window?.close()
+        } catch {
+            NSSound.beep()
         }
     }
 
@@ -1872,13 +1868,12 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard model.isDirty else { return true }
         let alert = NSAlert()
-        alert.window.level = ScreenshotWindowLayering.dialogLevel(above: sender)
         alert.messageText = strings.discardTitle
         alert.informativeText = strings.discardMessage
         alert.addButton(withTitle: strings.discardConfirm)
         alert.addButton(withTitle: strings.cancel)
         alert.alertStyle = .warning
-        return alert.runModal() == .alertFirstButtonReturn
+        return NotchIslandAlert.run(alert, above: sender) == .alertFirstButtonReturn
     }
 
     func windowWillClose(_ notification: Notification) {
