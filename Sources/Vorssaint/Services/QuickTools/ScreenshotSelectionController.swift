@@ -60,6 +60,7 @@ final class ScreenshotSelectionController {
     }
 
     private var panels: [ScreenshotOverlayPanel] = []
+    private var captureFocus: ScreenshotCaptureFocusSession?
     private weak var waitingRecordingPanel: ScreenshotOverlayPanel?
     private var waitingRecordingWindowID: CGWindowID?
     private var waitingControls: RecorderWaitingControls?
@@ -244,10 +245,10 @@ final class ScreenshotSelectionController {
     }
 
     func begin(completion: @escaping (Outcome) -> Void) {
+        captureFocus = ScreenshotCaptureFocusSession()
         Self.isSessionOnScreen = true
         Self.activeSession = self
         self.completion = completion
-        self.previousFrontmostApp = NSWorkspace.shared.frontmostApplication
         screenCaptureOptions?.onSelectionChange = { [weak self] in
             self?.screenCaptureToolDidChange()
         }
@@ -313,10 +314,16 @@ final class ScreenshotSelectionController {
         // resigning a full-screen key panel can flash the surrounding chrome.
         screenCaptureOptions?.onPresentationReady?()
         guard !finished else { return }
-        panels.forEach { $0.orderFrontRegardless() }
-        NSApp.activate(ignoringOtherApps: true)
-        if let keyPanel = keyPanelUnderMouse() ?? panels.first {
-            keyPanel.makeKeyAndOrderFront(nil)
+        panels.forEach {
+            $0.orderFrontRegardless()
+            $0.displayIfNeeded()
+        }
+        CATransaction.flush()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) { [weak self] in
+            guard let self, !self.finished else { return }
+            if let keyPanel = self.keyPanelUnderMouse() ?? self.panels.first {
+                self.captureFocus?.acquire(keyPanel)
+            }
         }
         panels.forEach { panel in
             panel.invalidateCursorRects(for: panel.overlayView)
@@ -803,6 +810,7 @@ final class ScreenshotSelectionController {
             cancel: { [weak self] in self?.finish(.cancelled) })
         waitingControls?.show(in: region.anchorRect, screen: panel.screenFrame)
         setSelectionInProgress(false)
+        refreshCursorState()
         return true
     }
 
@@ -811,6 +819,17 @@ final class ScreenshotSelectionController {
         waitingControls = nil
         waitingRecordingPanel = nil
         waitingRecordingWindowID = nil
+        refreshCursorState()
+    }
+
+    fileprivate func refreshCursorState() {
+        panels.forEach { panel in
+            panel.invalidateCursorRects(for: panel.overlayView)
+            panel.resetCursorRects()
+        }
+        if let keyPanel = keyPanelUnderMouse() ?? panels.first {
+            keyPanel.overlayView.activeCursor.set()
+        }
     }
 
     fileprivate var isWaitingForRecording: Bool { waitingRecordingPanel != nil }
@@ -1062,6 +1081,7 @@ final class ScreenshotSelectionController {
     }
 
     deinit {
+        captureFocus?.release(completion: {})
         // A session that goes away without ending would otherwise leave the
         // screen marked as taken and every capture feature dead until the app
         // is restarted. The wrong flag is always the one that lets a capture
@@ -1086,16 +1106,11 @@ final class ScreenshotSelectionController {
         }
         finished = true
         selectedWindows.removeAll()
-        Self.isSessionOnScreen = false
-        if Self.activeSession === self { Self.activeSession = nil }
+        multiWindowShiftMonitor.stop()
         screenCaptureOptions?.onSelectionChange = nil
         if let keyMonitor {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
-        }
-        if let flagsMonitor {
-            NSEvent.removeMonitor(flagsMonitor)
-            self.flagsMonitor = nil
         }
         if let globalKeyMonitor {
             NSEvent.removeMonitor(globalKeyMonitor)
@@ -1105,6 +1120,15 @@ final class ScreenshotSelectionController {
         // inert before they leave the screen: whatever arrives after this
         // point finds nothing left to act on.
         markCapturePending()
+        captureFocus?.release { [self] in
+            completeFinish(outcome)
+        }
+    }
+
+    private func completeFinish(_ outcome: Outcome) {
+        captureFocus = nil
+        Self.isSessionOnScreen = false
+        if Self.activeSession === self { Self.activeSession = nil }
         panels.forEach { $0.orderOut(nil) }
         panels.removeAll()
         if cursorPushed {
@@ -1112,10 +1136,6 @@ final class ScreenshotSelectionController {
             cursorPushed = false
         }
         NSCursor.arrow.set()
-        if let previous = previousFrontmostApp, previous.bundleIdentifier != Bundle.main.bundleIdentifier {
-            previous.activate(options: [])
-        }
-        self.previousFrontmostApp = nil
         let completion = completion
         self.completion = nil
         completion?(outcome)
@@ -1125,7 +1145,7 @@ final class ScreenshotSelectionController {
 // MARK: - Panel
 
 /// Full-screen borderless panel for one display.
-private final class ScreenshotOverlayPanel: OverlayPanel {
+private final class ScreenshotOverlayPanel: ScreenshotCapturePanel {
     let screenFrame: CGRect
     let displayID: CGDirectDisplayID
     /// Height reserved by macOS chrome at the top of this display. The
@@ -1160,13 +1180,10 @@ private final class ScreenshotOverlayPanel: OverlayPanel {
                               screen.frame.maxY - screen.visibleFrame.maxY)
         self.frozenImage = frozenImage
         pixelScale = screen.backingScaleFactor
-        super.init(contentRect: screen.frame,
-                   styleMask: [.borderless],
-                   backing: .buffered,
-                   defer: false)
+        super.init(screenRect: screen.frame)
         isReleasedWhenClosed = false
-        isOpaque = false
-        backgroundColor = .clear
+        isOpaque = frozenImage != nil
+        backgroundColor = frozenImage != nil ? .black : .clear
         hasShadow = false
         level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
@@ -1179,7 +1196,9 @@ private final class ScreenshotOverlayPanel: OverlayPanel {
         // layer configured before the view joins a window can lose its
         // contents, and the chrome's dim must paint over the image anyway.
         let container = ScreenshotOverlayContainerView(frame: CGRect(origin: .zero, size: screen.frame.size))
+        container.wantsLayer = true
         let imageView = NSImageView(frame: container.bounds)
+        imageView.wantsLayer = true
         imageView.image = frozenImage.map { NSImage(cgImage: $0, size: screen.frame.size) }
         imageView.imageScaling = .scaleAxesIndependently
         imageView.autoresizingMask = [.width, .height]
@@ -1194,6 +1213,7 @@ private final class ScreenshotOverlayPanel: OverlayPanel {
                                          strings: strings,
                                          purpose: purpose,
                                          screenCaptureOptions: screenCaptureOptions)
+        view.wantsLayer = true
         view.autoresizingMask = [.width, .height]
         container.addSubview(view)
         overlayViewStorage = view
@@ -1204,27 +1224,30 @@ private final class ScreenshotOverlayPanel: OverlayPanel {
     /// panel ever leaving the screen.
     func update(frozenImage: CGImage?, windows: [ScreenshotSupport.PickableWindow]) {
         self.frozenImage = frozenImage
-        isOpaque = false
-        backgroundColor = .clear
+        isOpaque = frozenImage != nil
+        backgroundColor = frozenImage != nil ? .black : .clear
         backdropView.image = frozenImage.map { NSImage(cgImage: $0, size: screenFrame.size) }
         overlayView.update(frozenImage: frozenImage, windows: windows)
     }
 
-    override var canBecomeKey: Bool { true }
     override func becomeKey() {
         super.becomeKey()
-        NSCursor.crosshair.set()
+        overlayView.activeCursor.set()
     }
 }
 
 private class ScreenshotOverlayContainerView: NSView {
+    private var activeCursor: NSCursor {
+        (window as? ScreenshotOverlayPanel)?.overlayView.activeCursor ?? .crosshair
+    }
+
     override func resetCursorRects() {
         discardCursorRects()
-        addCursorRect(bounds, cursor: .crosshair)
+        addCursorRect(bounds, cursor: activeCursor)
     }
 
     override func cursorUpdate(with event: NSEvent) {
-        NSCursor.crosshair.set()
+        activeCursor.set()
     }
 }
 
@@ -1379,25 +1402,25 @@ private final class ScreenshotOverlayView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { nil }
 
+    fileprivate var activeCursor: NSCursor {
+        controller?.isWaitingForRecording == true ? .arrow : .crosshair
+    }
+
     override func resetCursorRects() {
         discardCursorRects()
-        addCursorRect(bounds, cursor: .crosshair)
+        addCursorRect(bounds, cursor: activeCursor)
     }
 
     override func cursorUpdate(with event: NSEvent) {
-        NSCursor.crosshair.set()
+        activeCursor.set()
     }
 
     override func layout() {
         super.layout()
-        let width = min(620, max(280, bounds.width - 32))
         let targetHeight: CGFloat = screenCaptureOptions != nil
             ? (screenCaptureOptions?.showsCaptureMenu == false ? 82 : 146)
             : 72
-        guideHost.frame = CGRect(x: bounds.midX - width / 2,
-                                 y: bounds.maxY - targetHeight - 32,
-                                 width: width,
-                                 height: targetHeight)
+        guideHost.frame = ScreenshotCapturePanel.guideFrame(in: bounds, preferredHeight: targetHeight)
         let availableWidth = max(1, bounds.width - 32)
         let fullScreenFitting = fullScreenHost.fittingSize
         let fullScreenWidth = min(max(fullScreenFitting.width, 1), availableWidth)
@@ -1489,7 +1512,7 @@ private final class ScreenshotOverlayView: NSView {
     // MARK: Mouse
 
     override func mouseMoved(with event: NSEvent) {
-        NSCursor.crosshair.set()
+        activeCursor.set()
         pointerHasMoved = true
         controller?.currentPointerLocation = nil
         updatePointerHover(convert(event.locationInWindow, from: nil))
@@ -1498,7 +1521,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     override func mouseEntered(with event: NSEvent) {
-        NSCursor.crosshair.set()
+        activeCursor.set()
         refreshPointerState()
         refreshGuideVisibility()
         refreshFullScreenControlVisibility()
@@ -1541,7 +1564,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
-        NSCursor.crosshair.set()
+        activeCursor.set()
         guard acceptsPointerInput else { return }
         controller?.currentPointerLocation = nil
         let point = convert(event.locationInWindow, from: nil)
@@ -1559,7 +1582,7 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        NSCursor.crosshair.set()
+        activeCursor.set()
         if controller?.isWaitingForRecording == true {
             if recordingDraft?.drag(to: convert(event.locationInWindow, from: nil), within: bounds) == true,
                let rect = recordingDraft?.rect, let panel {
