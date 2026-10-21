@@ -37,8 +37,6 @@ final class NotchLockScreenService {
 
     private init() {}
 
-    var isShowing: Bool { space != nil }
-
     func sync(_ session: NotchSessionState) {
         let locking = session.locked && !wasLocked
         wasLocked = session.locked

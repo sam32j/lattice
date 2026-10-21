@@ -367,16 +367,6 @@ enum NotchLayout {
         }
     }
 
-    /// The island as a preset presents it on a display whose camera leaves
-    /// the usual clearance; custom keeps the chosen height.
-    static func nominalHeight(_ layout: NotchSize, custom: CGFloat) -> CGFloat {
-        switch layout {
-        case .compact: return nominalContentTop + chromeHeight + compactContentHeight
-        case .spacious: return nominalContentTop + chromeHeight + spaciousContentHeight
-        case .custom: return custom
-        }
-    }
-
     /// Balance complete rows across the available width, keeping reading order
     /// left to right and allowing each row to fill its width without empty cells.
     static func systemRowRanges(count: Int, width: CGFloat) -> [Range<Int>] {
