@@ -101,7 +101,7 @@ extension AppFeature {
 
     var group: FeatureGroup {
         switch self {
-        case .switcher, .dockPreview, .dockClick, .windowMaximizer, .windowLayout, .autoQuit, .spacesOrder, .wallpaper:
+        case .switcher, .dockPreview, .dockClick, .windowMaximizer, .windowLayout, .autoQuit, .spacesOrder:
             return .windowsDock
         case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts, .middleClick,
              .keyboardDebounce, .superKey, .quitWindowProtection, .mouseClickDebounce, .cleaningMode:
@@ -111,7 +111,7 @@ extension AppFeature {
             return .clipboardFiles
         case .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock:
             return .sound
-        case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep:
+        case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .wallpaper:
             return .energyDisplay
         case .quickLauncher, .colorPicker, .screenOCR, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .radialMenu,
@@ -242,6 +242,18 @@ extension AppFeature {
              .extraBrightness, .fanControl:
             return true
         default: return false
+        }
+    }
+
+    /// Features with dedicated page-level install/enable controls, excluded from the Features hub.
+    var isManagedOnDedicatedPage: Bool {
+        switch self {
+        case .screenshot, .screenRecorder,
+             .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock,
+             .wallpaper, .windowLayout, .switcher, .dockPreview:
+            return true
+        default:
+            return false
         }
     }
 
@@ -492,7 +504,7 @@ extension AppFeature {
 
     static func hubFeatures(in group: FeatureGroup) -> [AppFeature] {
         features(in: group).filter {
-            $0 != .colorPicker && $0 != .screenOCR && !$0.isToggleOwned
+            $0 != .colorPicker && $0 != .screenOCR && !$0.isToggleOwned && !$0.isManagedOnDedicatedPage
         }
     }
 

@@ -2,7 +2,6 @@
 // Copyright (C) 2026 Vorssaint
 
 import AppKit
-import ImageIO
 import SwiftUI
 
 /// Wallpaper tab in the menu panel.
@@ -100,13 +99,6 @@ struct WallpaperSection: View {
             }
             .labelsHidden()
             .pickerStyle(.menu)
-
-            Toggle(text.applyAllDisplays, isOn: Binding(
-                get: { service.applyAllDisplays },
-                set: { service.applyAllDisplays = $0 }
-            ))
-            .toggleStyle(.switch)
-            .controlSize(.small)
 
             HStack(spacing: 8) {
                 Button(text.addImage) { service.addImages() }
@@ -262,16 +254,6 @@ struct WallpaperSection: View {
                 .help(text.nextPage)
                 .accessibilityLabel(text.nextPage)
             }
-
-            Spacer(minLength: 8)
-            Button(text.openSystemSettings) {
-                service.openSystemWallpaperSettings()
-            }
-            .buttonStyle(.plain)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .minimumScaleFactor(0.85)
         }
         .frame(height: 22)
     }
