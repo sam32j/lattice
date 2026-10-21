@@ -30,6 +30,8 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     var zoomMultiplier: CGFloat { frame.width / (CGFloat(image.width) / captureScale) }
     var cornerRadius: CGFloat { surface.layer?.cornerRadius ?? 0 }
 
+    static var onResetGestureState: (() -> Void)?
+
     func updateImage(_ newImage: CGImage, baseImage: CGImage? = nil, annotations: [ScreenshotSupport.Annotation] = []) {
         guard !isClosed else { return }
         self.image = newImage
@@ -37,6 +39,12 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         self.annotations = annotations
         surface.layer?.contents = newImage
         contentAspectRatio = CGSize(width: newImage.width, height: newImage.height)
+        let native = CGSize(width: CGFloat(newImage.width) / captureScale,
+                            height: CGFloat(newImage.height) / captureScale)
+        minSize = CGSize(width: min(140, native.width * 0.5), height: min(90, native.height * 0.5))
+        surface.resetGestureTracking()
+        Self.onResetGestureState?()
+        invalidateCursorRects(for: surface)
     }
 
     init(image: CGImage, scale: CGFloat, preferences: UserDefaults = .standard, captureID: UUID = UUID(), baseImage: CGImage? = nil, annotations: [ScreenshotSupport.Annotation] = []) {
@@ -116,6 +124,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
             makeKeyAndOrderFront(nil)
             orderFrontRegardless()
             makeFirstResponder(surface)
+            Self.onResetGestureState?()
         }
         attachChrome()
         updateHover(at: NSEvent.mouseLocation)
@@ -196,7 +205,10 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     override func performClose(_ sender: Any?) { closePin() }
 
     func windowDidMove(_ notification: Notification) { chrome.layout() }
-    func windowDidResize(_ notification: Notification) { chrome.layout() }
+    func windowDidResize(_ notification: Notification) {
+        chrome.layout()
+        invalidateCursorRects(for: surface)
+    }
     func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
         isPositionLocked || NSEvent.modifierFlags.contains(.option) ? frame.size : frameSize
     }
