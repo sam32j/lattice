@@ -33,12 +33,7 @@ struct WindowLayoutActionRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Button {
-                    WindowLayoutService.shared.apply(action)
-                } label: {
-                    Label(title, systemImage: symbol)
-                }
-                .disabled(!applyEnabled)
+                Label(title, systemImage: symbol)
                 if !actionsEnabled, shortcut != nil {
                     Text(FeatureStrings.shortcuts(l10n.language).inactive)
                         .font(.caption)

@@ -40,7 +40,7 @@ struct CentralWindowLayoutShortcutRow: View {
             HStack(alignment: .top, spacing: 8) {
                 ShortcutRowLabel(
                     title: action.title(windowText),
-                    symbolName: AppFeature.windowLayout.symbolName,
+                    symbolName: action.symbolName,
                     contextLabel: nil,
                     statusText: isActive ? text.active : text.inactive,
                     statusIsActive: isActive

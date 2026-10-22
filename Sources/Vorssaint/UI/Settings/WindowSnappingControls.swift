@@ -3,139 +3,142 @@ import SwiftUI
 extension WindowLayoutSettings {
     var snappingControls: some View {
         VStack(alignment: .leading, spacing: 16) {
+            Divider()
+            VStack(alignment: .leading, spacing: 13) {
+                Toggle(isOn: $edgeSnapEnabled) {
+                    Text("Screen Edge Snapping").font(.headline)
+                }
+                .onChange(of: edgeSnapEnabled) { _, _ in
+                    WindowLayoutService.shared.syncWithPreferences()
+                }
+                WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
+                                         zoneActionsStorage: $edgeSnapZoneActions,
+                                         text: text,
+                                         resetTitle: l10n.s.shortcutReset)
+                    .disabled(!edgeSnapEnabled)
+                    .opacity(edgeSnapEnabled ? 1 : 0.45)
+                    .onChange(of: edgeSnapDisabledZones) { _, _ in
+                        WindowLayoutService.shared.syncWithPreferences()
+                    }
+                if systemTilingEnabled {
+                    Label(text.edgeSnapSystemConflict, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                    if edgeSnapEnabled {
+                        Text(text.edgeSnapWaitingForSystem)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Button(text.edgeSnapOpenSystemSettings) {
+                        NSWorkspace.shared.open(WindowEdgeSnapSupport.desktopAndDockSettingsURL)
+                    }
+                    .controlSize(.small)
+                }
+            }
+
+            Divider()
+            VStack(alignment: .leading, spacing: 13) {
+                Toggle(isOn: $gestureEnabled) {
+                    Text(text.gestureEnable).font(.headline)
+                }
+                .onChange(of: gestureEnabled) { _, _ in
+                    WindowLayoutService.shared.syncWithPreferences()
+                }
                 VStack(alignment: .leading, spacing: 13) {
-                    Toggle(text.edgeSnapEnable, isOn: $edgeSnapEnabled)
-                        .onChange(of: edgeSnapEnabled) { _, _ in
+                    WindowGestureModifierPicker(storageValue: $gestureModifiers,
+                                                title: text.gestureModifiers)
+                        .onChange(of: gestureModifiers) { _, _ in
                             WindowLayoutService.shared.syncWithPreferences()
                         }
-                    WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
-                                             zoneActionsStorage: $edgeSnapZoneActions,
-                                             text: text,
-                                             resetTitle: l10n.s.shortcutReset)
-                        .disabled(!edgeSnapEnabled)
-                        .opacity(edgeSnapEnabled ? 1 : 0.45)
-                        .onChange(of: edgeSnapDisabledZones) { _, _ in
-                            WindowLayoutService.shared.syncWithPreferences()
-                        }
-                    if systemTilingEnabled {
-                        Label(text.edgeSnapSystemConflict, systemImage: "exclamationmark.triangle.fill")
+                    WindowGestureHints(modifierStorage: gestureModifiers,
+                                       moveText: text.gestureMove,
+                                       resizeText: text.gestureResize)
+                    Toggle(text.gestureRaiseWindow, isOn: $gestureRaiseWindow)
+                }
+                .disabled(!gestureEnabled)
+                .opacity(gestureEnabled ? 1 : 0.45)
+            }
+
+            Divider()
+            VStack(alignment: .leading, spacing: 13) {
+                Text(text.gapsSection).font(.headline)
+                gapPicker(text.windowGap, selection: $windowGap)
+                gapPicker(text.screenGap, selection: $screenGap)
+            }
+
+            Divider()
+            VStack(alignment: .leading, spacing: 13) {
+                Text(text.shortcuts).font(.headline)
+                if !service.failedShortcutActions.isEmpty {
+                    Text(l10n.s.shortcutUnavailable)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                HStack {
+                    Text(WindowDirectionalStrings.localized(l10n.language).title)
+                    Spacer()
+                    CompactShortcutBindingRecorder(
+                        recordingID: "window-layout-directional",
+                        shortcut: directionalDisplayShortcut,
+                        isEnabled: permissions.accessibility,
+                        width: 140,
+                        emptyTitle: directionalEnabled ? directionalTrigger.displayString : l10n.s.shortcutNone,
+                        canClear: directionalEnabled,
+                        canReset: true,
+                        captureModifiers: { saveDirectionalTrigger(.modifiers($0)) },
+                        errorText: $directionalError,
+                        onClear: {
+                            directionalEnabled = false
+                            service.syncWithPreferences()
+                        },
+                        onReset: { saveDirectionalShortcut(.windowDirectionalDefault) },
+                        onCapture: saveDirectionalShortcut)
+                    if let directionalError {
+                        Text(directionalError)
                             .font(.caption)
                             .foregroundStyle(.orange)
-                        if edgeSnapEnabled {
-                            Text(text.edgeSnapWaitingForSystem)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Button(text.edgeSnapOpenSystemSettings) {
-                            NSWorkspace.shared.open(WindowEdgeSnapSupport.desktopAndDockSettingsURL)
-                        }
-                        .controlSize(.small)
                     }
-                    Toggle(text.gestureEnable, isOn: $gestureEnabled)
-                        .onChange(of: gestureEnabled) { _, _ in
-                            WindowLayoutService.shared.syncWithPreferences()
-                        }
-                    if gestureEnabled {
-                        WindowGestureModifierPicker(storageValue: $gestureModifiers,
-                                                    title: text.gestureModifiers)
-                            .onChange(of: gestureModifiers) { _, _ in
-                                WindowLayoutService.shared.syncWithPreferences()
-                            }
-                        WindowGestureHints(modifierStorage: gestureModifiers,
-                                           moveText: text.gestureMove,
-                                           resizeText: text.gestureResize)
-                        Toggle(text.gestureRaiseWindow, isOn: $gestureRaiseWindow)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 13) {
-                    WindowLayoutIgnoredAppsList()
-                }
-
-                Divider()
-                VStack(alignment: .leading, spacing: 13) {
-                    Text(text.gapsSection).font(.headline)
-                    gapPicker(text.windowGap, selection: $windowGap)
-                    gapPicker(text.screenGap, selection: $screenGap)
-                }
-
-                Divider()
-                VStack(alignment: .leading, spacing: 13) {
-                    Text(text.shortcuts).font(.headline)
-                    if !service.failedShortcutActions.isEmpty {
-                        Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
-                    HStack {
-                        Text(WindowDirectionalStrings.localized(l10n.language).title)
-                        Spacer()
-                        CompactShortcutBindingRecorder(
-                            recordingID: "window-layout-directional",
-                            shortcut: directionalDisplayShortcut,
-                            isEnabled: permissions.accessibility,
-                            width: 140,
-                            emptyTitle: directionalEnabled ? directionalTrigger.displayString : l10n.s.shortcutNone,
-                            canClear: directionalEnabled,
-                            canReset: true,
-                            captureModifiers: { saveDirectionalTrigger(.modifiers($0)) },
-                            errorText: $directionalError,
-                            onClear: {
-                                directionalEnabled = false
-                                service.syncWithPreferences()
-                            },
-                            onReset: { saveDirectionalShortcut(.windowDirectionalDefault) },
-                            onCapture: saveDirectionalShortcut)
-                        if let directionalError {
-                            Text(directionalError)
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                        }
-                        if service.directionalShortcutRegistrationFailed {
-                            Text(l10n.s.shortcutUnavailable)
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                        }
-                    }
-                }
-
-                // The pointer moves without Accessibility, so this sits outside
-                // the window shortcuts toggle and works before that grant.
-                VStack(alignment: .leading, spacing: 13) {
-                    ShortcutPreferenceRow(role: .pointerNextDisplay,
-                                          additionalConflict: {
-                                              service.shortcutConflictTitle($0)
-                                          }) {
-                        pointerDisplay.syncWithPreferences()
-                    }
-                    if pointerDisplayEnabled, pointerDisplay.shortcutRegistrationFailed {
+                    if service.directionalShortcutRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
                 }
+            }
 
-                VStack(alignment: .leading, spacing: 13) { WindowLayoutShortcutActivation() }
-                placementSections
-
-                Divider()
-                VStack(alignment: .leading, spacing: 13) {
-                    Text(text.other).font(.headline)
-                    actionRow(.maximize)
-                    actionRow(.marginMaximize)
-                    marginSlider
-                    actionRow(.fullScreen)
-                    actionRow(.center)
-                    actionRow(.previousDisplay)
-                    actionRow(.nextDisplay)
-                    actionRow(.restore)
-                    if let message = resultMessage {
-                        Text(message)
-                            .font(.caption)
-                            .foregroundStyle(resultColor)
-                    }
+            // The pointer moves without Accessibility, so this sits outside
+            // the window shortcuts toggle and works before that grant.
+            VStack(alignment: .leading, spacing: 13) {
+                ShortcutPreferenceRow(role: .pointerNextDisplay,
+                                      label: PointerDisplayStrings.localized(l10n.language).title,
+                                      additionalConflict: {
+                                          service.shortcutConflictTitle($0)
+                                      }) {
+                    pointerDisplay.syncWithPreferences()
                 }
+                if pointerDisplayEnabled, pointerDisplay.shortcutRegistrationFailed {
+                    Text(l10n.s.shortcutUnavailable)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 13) { WindowLayoutShortcutActivation() }
+            placementSections
+
+            Divider()
+            VStack(alignment: .leading, spacing: 13) {
+                Text(text.other).font(.headline)
+                actionRow(.maximize)
+                actionRow(.marginMaximize)
+                marginSlider
+                    .disclosureIndent()
+                actionRow(.fullScreen)
+                actionRow(.center)
+                actionRow(.previousDisplay)
+                actionRow(.nextDisplay)
+                actionRow(.restore)
+            }
         }
     }
-
 }

@@ -2994,7 +2994,7 @@ private final class WindowDirectionalIndicatorCanvasView: NSView {
         case .topLeft: return CGRect(x: rect.minX, y: rect.midY, width: rect.width / 2, height: rect.height / 2)
         case .topRight: return CGRect(x: rect.midX, y: rect.midY, width: rect.width / 2, height: rect.height / 2)
         case .bottomLeft: return CGRect(x: rect.minX, y: rect.minY, width: rect.width / 2, height: rect.height / 2)
-        case .bottomRight: return CGRect(x: rect.midX, y: rect.midY, width: rect.width / 2, height: rect.height / 2)
+        case .bottomRight: return CGRect(x: rect.midX, y: rect.minY, width: rect.width / 2, height: rect.height / 2)
         case .maximize: return rect
         case .minimize: return nil
         }
