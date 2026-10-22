@@ -176,31 +176,13 @@ struct MixerSection: View {
                         .frame(width: 16)
 
                     Text(l10n.s.mixerOutputLevelLabel)
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(.system(size: 11.5, weight: .medium))
                         .foregroundStyle(.secondary)
-
-                    MixerVolumeSlider(value: systemOutputVolumeBinding,
-                                      normalTint: normalSliderTint,
-                                      boostTint: normalSliderTint,
-                                      isBoosting: false,
-                                      accentRevision: accentRevision,
-                                      glassEnabled: glassEnabled,
-                                      maximum: 1,
-                                      accessibilityLabel: l10n.s.mixerOutputLevelLabel)
-
-                    EditableVolumePercent(currentPercent: Int((volume * 100).rounded()),
-                                          maximumPercent: 100,
-                                          width: 36,
-                                          editorID: "system-output",
-                                          editingID: $editingVolumeID,
-                                          accessibilityLabel: l10n.s.mixerOutputLevelLabel) {
-                        Text("\(Int((volume * 100).rounded()))%")
-                            .font(.system(size: 10.5, weight: .medium))
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                    } onCommit: {
-                        setSystemOutputVolume($0)
-                    }
+                    Spacer(minLength: 12)
+                    SettingsValueSlider(title: l10n.s.mixerOutputLevelLabel,
+                                        value: systemOutputVolumeBinding, range: 0...1, step: 0.01,
+                                        readout: "\(Int((volume * 100).rounded()))%")
+                        .frame(width: settingsMode ? 220 : 164)
                 }
                 .padding(.vertical, 4)
             }
