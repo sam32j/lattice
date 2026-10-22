@@ -130,7 +130,7 @@ extension SettingsDirectory {
                                       icon: "mic",
                                       keywords: [settingsPages.audioInputDescription, s.microphoneControlEnable],
                                       featureKeywords: [
-                                        (.micMute, [s.micMuteName, s.micMuteCaption, s.micMuteMenuBarToggle, s.muteAudioInputSubtitle, s.showInMenuBarLabel]),
+                                        (.micMute, [s.micMuteName, s.micMuteCaption, s.micMuteMenuBarToggle, s.muteAudioInputSubtitle]),
                                         (.audioPriority, [s.audioPriorityInputList, s.manageAudioInputPriorityTitle]),
                                         (.mixer, [s.mixerInputTitle, s.mixerInputTooltip, s.microphoneControlEnable, s.mixerInputSourceLabel]),
                                       ]),
@@ -192,7 +192,6 @@ extension SettingsDirectory {
                                                  FeatureStrings.wallpaper(language).enableManagement],
                                       featureKeywords: [
                                         (.brightness, [FeatureStrings.brightness(language).pageTitle,
-                                                       FeatureStrings.brightness(language).osdToggle,
                                                        FeatureStrings.brightness(language).keyStep,
                                                        FeatureStrings.brightness(language).keyStepHalf,
                                                        FeatureStrings.brightness(language).keyStepQuarter,
@@ -261,7 +260,11 @@ extension SettingsDirectory {
             ]),
             (categories.system, [
                 SettingsDirectoryItem(page: .monitor, title: s.tabMonitor, icon: "chart.line.uptrend.xyaxis",
-                                      keywords: [s.menuBarSpacingLabel, s.menuBarHideIconToggle],
+                                      keywords: [s.menuBarSpacingLabel, s.menuBarHideIconToggle,
+                                                 s.monitorShowCPU, s.monitorShowGPU, s.monitorShowMemory,
+                                                 s.monitorShowNetwork, s.diskSection, s.powerSection,
+                                                 FeatureStrings.connectedDevices(language).title,
+                                                 FeatureStrings.fanControl(language).title],
                                       featureKeywords: [
                                         (.monitorMemory, [s.monitorMemoryPressureDot]),
                                         (.monitorNetwork, [FeatureStrings.monitorLayout(language).networkSpeedUnit]),
