@@ -15,24 +15,34 @@ import SwiftUI
 /// What drives the feature is the polling demand on each page; see
 /// `SecureInputObservation`.
 struct SecureInputRow: View {
+    enum Blocked {
+        case typing
+        case switcher
+    }
+
+    var blocking: Blocked = .typing
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var monitor = SecureInputMonitor.shared
 
     var body: some View {
+        let switcher = blocking == .switcher
         switch monitor.holder {
         case .off:
             EmptyView()
         case .app(let name, _):
-            row(caption: String(format: l10n.s.secureInputHeldFormat, name)) {
+            row(caption: String(format: switcher ? l10n.s.secureInputSwitcherHeldFormat
+                                                 : l10n.s.secureInputHeldFormat, name)) {
                 Button(String(format: l10n.s.secureInputRevealFormat, name)) {
                     monitor.revealHolder()
                 }
                 .controlSize(.small)
             }
         case .unattributed:
-            row(caption: l10n.s.secureInputUnattributed) { EmptyView() }
+            row(caption: switcher ? l10n.s.secureInputSwitcherUnattributed
+                                  : l10n.s.secureInputUnattributed) { EmptyView() }
         case .unknown:
-            row(caption: l10n.s.secureInputUnidentified) { EmptyView() }
+            row(caption: switcher ? l10n.s.secureInputSwitcherUnidentified
+                                  : l10n.s.secureInputUnidentified) { EmptyView() }
         }
     }
 

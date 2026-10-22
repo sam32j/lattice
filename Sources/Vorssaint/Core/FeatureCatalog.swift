@@ -304,6 +304,12 @@ extension AppFeature {
         if self == .pastePlain {
             return AppFeature.clipboardHistory.isAvailable(in: defaults) && isToggledOn(in: defaults)
         }
+        if self == .fanControl {
+            if let explicit = defaults.object(forKey: availabilityKey) as? Bool {
+                return explicit
+            }
+            return isToggledOn(in: defaults)
+        }
         if isToggleOwned {
             return isToggledOn(in: defaults)
         }

@@ -91,8 +91,6 @@ enum ReleaseChangeAliases {
         case .clipboardHistory: return ["clipboard history", .exact("Clipboard"), .island("clipboard"),
             "clear unpinned", "clipboard previews", "clipboard items"]
         case .pastePlain: return ["paste as plain text", "paste plain text"]
-        case .finderCutPaste: return ["cut & paste", "cut and paste", "cut files", "finder cut", "cut operations"]
-        case .finderRename: return ["finder shortcuts", "rename shortcut", "renames selected files"]
         case .shelf: return [.exact("Shelf"), .island("shelf"), "drop zone", "docked shelf", "temporary shelf",
             "on the shelf", "shelf files"]
         case .urlCleaner: return ["clean url", "url cleaner", "url cleaning"]
@@ -112,7 +110,6 @@ enum ReleaseChangeAliases {
         case .extraBrightness: return ["extra brightness", "xdr"]
         case .bluetoothSleep: return ["bluetooth on sleep", "bluetooth power", "bluetooth off during sleep"]
         case .quickLauncher: return ["quick panel", "quick launcher"]
-        case .quickToggles: return ["quick toggles"]
         case .colorPicker: return ["color picker"]
         case .screenOCR: return ["copy text from screen", "screen ocr"]
         case .cleaningMode: return ["cleaning mode"]

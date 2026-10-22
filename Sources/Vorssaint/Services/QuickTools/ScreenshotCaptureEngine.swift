@@ -236,10 +236,23 @@ enum ScreenshotCaptureEngine {
                 return (image, scale)
             }
         }
+        let capture = await captureIndependentWindow(windowID, scale: scale)
+        // WindowServer quality decides whether to retry with ScreenCaptureKit.
+        // The chooser makes the final composed-display fallback decision once,
+        // including for an intentionally uniform but otherwise valid window.
+        if let capture {
+            return (capture, scale)
+        }
+        return capturedImage.map { ($0, scale) }
+    }
+
+    /// The window drawn on its own by ScreenCaptureKit, whole wherever it
+    /// sits. Watch reads a window through this as well, in its capture turn.
+    static func captureIndependentWindow(_ windowID: CGWindowID, scale: CGFloat) async -> CGImage? {
         guard let content = try? await SCShareableContent.excludingDesktopWindows(
             false, onScreenWindowsOnly: true),
             let window = content.windows.first(where: { $0.windowID == windowID })
-        else { return capturedImage.map { ($0, scale) } }
+        else { return nil }
         let configuration = SCStreamConfiguration()
         configuration.width = max(1, Int((window.frame.width * scale).rounded()))
         configuration.height = max(1, Int((window.frame.height * scale).rounded()))
@@ -254,15 +267,7 @@ enum ScreenshotCaptureEngine {
         // Requested dimensions alone do not restore pixels clipped there.
         configuration.ignoreGlobalClipSingleWindow = true
         let filter = SCContentFilter(desktopIndependentWindow: window)
-        let capture = try? await SCScreenshotManager.captureImage(contentFilter: filter,
-                                                                  configuration: configuration)
-        // WindowServer quality decides whether to retry with ScreenCaptureKit.
-        // The chooser makes the final composed-display fallback decision once,
-        // including for an intentionally uniform but otherwise valid window.
-        if let capture {
-            return (capture, scale)
-        }
-        return capturedImage.map { ($0, scale) }
+        return try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
     }
 
     /// Resolve each selected layer before compositing. Empty space between

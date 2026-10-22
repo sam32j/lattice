@@ -551,7 +551,6 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/ScreenshotMultiWindowShiftMonitor.swift
         Sources/Vorssaint/Services/QuickTools/CapturePresentationDeferral.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotSupport.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotCanvasSupport.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotWindowFallback.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotEditorGeometry.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotCropAspect.swift
@@ -580,7 +579,6 @@ if (( TEST )); then
         Sources/Vorssaint/Core/ScreenshotPinStrings.swift
         Sources/Vorssaint/UI/Settings/MonitorToken.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotRenderer.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotImageLayerRendering.swift
         Sources/Vorssaint/UI/Screenshot/ScreenshotEditorResizeCursor.swift
         Sources/Vorssaint/Services/QuickTools/RecentCaptureRetention.swift
         Sources/Vorssaint/Services/QuickTools/RecentCaptureStore.swift

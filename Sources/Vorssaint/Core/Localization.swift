@@ -3157,3 +3157,92 @@ extension Strings {
         spacesOrderCaption: "Stops macOS from rearranging Spaces by most recent use, so they stay in the order you set. Your previous setting returns when this is turned off. The Dock may restart once to apply the change."
     )
 }
+
+extension Strings {
+    var tabAdvanced: String { "Advanced" }
+    var uninstallerRefusedNotApp: String { "Only apps can be uninstalled." }
+    var uninstallerRefusedSystemFormat: String { "%@ can’t be uninstalled because it’s part of macOS." }
+    var uninstallerRefusedSharedFormat: String { "%@ can’t be uninstalled here because it shares files with macOS or other apps." }
+    var uninstallerRefusedNestedFormat: String { "%@ can’t be uninstalled on its own because it’s part of another app." }
+    var uninstallerRefusedSelfFormat: String { "Lattice can’t uninstall itself here. Use Settings › %@ instead." }
+    var uninstallerRefusedLinkFormat: String { "%@ can’t be uninstalled because it’s a link to an app stored elsewhere." }
+    var uninstallerRefusedUnidentifiedFormat: String { "%@ can’t be uninstalled because it can’t be identified as an app." }
+    var uninstallerPickerHiddenNote: String { "Apps that are part of macOS or made by Apple aren’t listed." }
+
+    var monitorMenuBarPreview: String {
+        switch L10n.shared.language {
+        case .ptBR: return "Prévia da barra de menus"
+        case .zhHans: return "菜单栏预览"
+        case .zhHK, .zhTW: return "選單列預覽"
+        case .fr: return "Aperçu de la barre des menus"
+        case .de: return "Vorschau der Menüleiste"
+        case .it: return "Anteprima della barra dei menu"
+        case .ja: return "メニューバーのプレビュー"
+        case .ko: return "메뉴 막대 미리보기"
+        case .ru: return "Предпросмотр строки меню"
+        case .sk: return "Náhľad lišty s ponukami"
+        case .es: return "Vista previa de la barra de menús"
+        case .tr: return "Menü çubuğu önizlemesi"
+        case .uk: return "Попередній перегляд смуги меню"
+        case .enUS: return "Menu bar preview"
+        }
+    }
+
+    var secureInputSwitcherHeldFormat: String {
+        switch L10n.shared.language {
+        case .ptBR: return "%@ era o app em primeiro plano quando ela foi ligada e pode estar mantendo-a ativa. Até ela ser desativada, o macOS esconde do alternador as teclas que você pressiona e o ⌘Tab abre o alternador do macOS. Saia do campo de senha do app, ou encerre-o, para liberá-la."
+        case .zhHans: return "它开启时 %@ 位于前台，可能正在占用它。在安全输入关闭前，macOS 会对切换器隐藏你的按键，⌘Tab 会改为打开 macOS 的切换器。退出其密码栏或退出该 App 即可释放。"
+        case .zhHK, .zhTW: return "它開啟時 %@ 位於前景，可能正在佔用它。在安全輸入關閉前，macOS 會對切換器隱藏你的按鍵，⌘Tab 會改為開啟 macOS 的切換器。離開其密碼欄位或結束該 App 即可釋放。"
+        case .fr: return "%@ était l’app au premier plan quand elle s’est activée et la maintient peut-être. Tant que la saisie sécurisée reste activée, macOS cache au sélecteur les touches que vous tapez et ⌘Tab ouvre le sélecteur de macOS à la place. Quittez son champ de mot de passe, ou fermez l’app, pour la libérer."
+        case .de: return "%@ war die aktive App, als sie eingeschaltet wurde, und hält sie möglicherweise. Solange die sichere Eingabe aktiv ist, verbirgt macOS deine Tastenanschläge vor dem Umschalter und ⌘Tab öffnet stattdessen den macOS-Umschalter. Verlasse das Passwortfeld oder beende die App, um sie freizugeben."
+        case .it: return "%@ era l’app in primo piano quando si è attivato e potrebbe trattenerlo. Finché resta attivo, macOS nasconde al commutatore i tasti che premi e ⌘Tab apre invece il commutatore di macOS. Esci dal suo campo password, o chiudi l’app, per rilasciarlo."
+        case .ja: return "オンになったときに最前面にあったのは %@ で、このアプリが保持している可能性があります。セキュア入力がオンの間は、macOS がスイッチャーからキー入力を隠し、⌘Tab では代わりに macOS のスイッチャーが開きます。パスワード欄からフォーカスを外すか、アプリを終了すると解除されます。"
+        case .ko: return "보안 입력이 켜질 때 %@이(가) 활성 앱이었으며, 이 앱이 보안 입력을 유지하고 있을 수 있습니다. 보안 입력이 켜져 있는 동안 macOS가 전환기에서 키 입력을 숨기고, ⌘Tab을 누르면 대신 macOS 전환기가 열립니다. 암호 필드에서 포커스를 옮기거나 앱을 종료하면 해제됩니다."
+        case .ru: return "Когда он включился, активным приложением было %@, и, возможно, именно оно его удерживает. Пока он включён, macOS скрывает нажатия клавиш от переключателя и ⌘Tab вместо него открывает переключатель macOS. Снимите фокус с поля пароля или завершите работу приложения, чтобы освободить его."
+        case .sk: return "Keď sa zapol, aktívnou aplikáciou bola %@ a možno ho drží. Kým je zapnutý, macOS skrýva stlačené klávesy pred prepínačom a ⌘Tab namiesto neho otvára prepínač macOS. Zavrite jej pole s heslom alebo ju ukončite, aby ho uvoľnila."
+        case .es: return "%@ era la app en primer plano cuando se activó y puede que la esté reteniendo. Mientras la entrada segura siga activada, macOS oculta al selector las teclas que pulsas y ⌘Tab abre el selector de macOS en su lugar. Sal de su campo de contraseña, o ciérrala, para liberarla."
+        case .tr: return "Açıldığında etkin uygulama %@ idi ve bunu o açık tutuyor olabilir. Güvenli giriş açık kaldıkça macOS bastığın tuşları değiştiriciden gizliyor ve ⌘Tab onun yerine macOS değiştiricisini açıyor. Serbest bırakmak için parola alanından çık ya da uygulamayı kapat."
+        case .uk: return "Коли його було увімкнено, активною програмою була %@, і, можливо, саме вона його утримує. Поки воно увімкнене, macOS приховує натискання клавіш від перемикача і ⌘Tab натомість відкриває перемикач macOS. Приберіть поле пароля програми або завершіть її, щоб звільнити."
+        case .enUS: return "%@ was the active app when it turned on and may be holding it. Until it turns off, macOS hides your keystrokes from the switcher and ⌘Tab opens the macOS switcher instead. Dismiss its password field, or quit it, to release it."
+        }
+    }
+
+    var secureInputSwitcherUnattributed: String {
+        switch L10n.shared.language {
+        case .ptBR: return "Não é possível dizer qual app a está mantendo ativa. Até ela ser desativada, o macOS esconde do alternador as teclas que você pressiona e o ⌘Tab abre o alternador do macOS. Saia de qualquer campo de senha aberto, ou encerre a sessão e entre novamente, para limpá-la."
+        case .zhHans: return "无法确定占用它的 App。在安全输入关闭前，macOS 会对切换器隐藏你的按键，⌘Tab 会改为打开 macOS 的切换器。退出已打开的密码栏，或注销后重新登录即可清除。"
+        case .zhHK, .zhTW: return "無法確定佔用它的 App。在安全輸入關閉前，macOS 會對切換器隱藏你的按鍵，⌘Tab 會改為開啟 macOS 的切換器。離開已開啟的密碼欄位，或登出後重新登入即可清除。"
+        case .fr: return "Impossible de savoir quelle app la maintient. Tant que la saisie sécurisée reste activée, macOS cache au sélecteur les touches que vous tapez et ⌘Tab ouvre le sélecteur de macOS à la place. Quittez tout champ de mot de passe ouvert, ou déconnectez-vous puis reconnectez-vous, pour l’effacer."
+        case .de: return "Die App, die sie hält, lässt sich nicht bestimmen. Solange die sichere Eingabe aktiv ist, verbirgt macOS deine Tastenanschläge vor dem Umschalter und ⌘Tab öffnet stattdessen den macOS-Umschalter. Verlasse ein offenes Passwortfeld oder melde dich ab und wieder an, um sie zurückzusetzen."
+        case .it: return "Non è possibile sapere quale app lo stia trattenendo. Finché resta attivo, macOS nasconde al commutatore i tasti che premi e ⌘Tab apre invece il commutatore di macOS. Chiudi qualsiasi campo password aperto, oppure esci e accedi di nuovo, per azzerarlo."
+        case .ja: return "保持しているアプリを特定できません。セキュア入力がオンの間は、macOS がスイッチャーからキー入力を隠し、⌘Tab では代わりに macOS のスイッチャーが開きます。開いているパスワード欄からフォーカスを外すか、ログアウトしてから再度ログインすると解除されます。"
+        case .ko: return "보안 입력을 유지하는 앱을 알 수 없습니다. 보안 입력이 켜져 있는 동안 macOS가 전환기에서 키 입력을 숨기고, ⌘Tab을 누르면 대신 macOS 전환기가 열립니다. 열려 있는 암호 필드에서 포커스를 옮기거나 로그아웃한 후 다시 로그인하면 해제됩니다."
+        case .ru: return "Не удаётся определить, какое приложение его удерживает. Пока он включён, macOS скрывает нажатия клавиш от переключателя и ⌘Tab вместо него открывает переключатель macOS. Снимите фокус с открытого поля пароля или выйдите из системы и войдите снова, чтобы сбросить его."
+        case .sk: return "Nedá sa určiť, ktorá aplikácia ho drží. Kým je zapnutý, macOS skrýva stlačené klávesy pred prepínačom a ⌘Tab namiesto neho otvára prepínač macOS. Zavrite otvorené pole s heslom alebo sa odhláste a znova prihláste, aby sa uvoľnil."
+        case .es: return "No se puede saber qué app la está reteniendo. Mientras la entrada segura siga activada, macOS oculta al selector las teclas que pulsas y ⌘Tab abre el selector de macOS en su lugar. Sal de cualquier campo de contraseña abierto, o cierra la sesión y vuelve a iniciarla, para borrarla."
+        case .tr: return "Bunu açık tutan uygulama belirlenemiyor. Güvenli giriş açık kaldıkça macOS bastığın tuşları değiştiriciden gizliyor ve ⌘Tab onun yerine macOS değiştiricisini açıyor. Temizlemek için açık bir parola alanı varsa ondan çık ya da oturumu kapatıp yeniden aç."
+        case .uk: return "Не вдається визначити, яка програма його утримує. Поки воно увімкнене, macOS приховує натискання клавіш від перемикача і ⌘Tab натомість відкриває перемикач macOS. Приберіть відкрите поле пароля або вийдіть із сеансу та увійдіть знову, щоб скинути."
+        case .enUS: return "The app holding it cannot be named. Until it turns off, macOS hides your keystrokes from the switcher and ⌘Tab opens the macOS switcher instead. Dismiss any open password field, or log out and back in, to clear it."
+        }
+    }
+
+    var secureInputSwitcherUnidentified: String {
+        switch L10n.shared.language {
+        case .ptBR: return "Não foi possível identificar o app que a está mantendo ativa. Até ela ser desativada, o macOS esconde do alternador as teclas que você pressiona e o ⌘Tab abre o alternador do macOS."
+        case .zhHans: return "无法识别占用它的 App。在安全输入关闭前，macOS 会对切换器隐藏你的按键，⌘Tab 会改为打开 macOS 的切换器。"
+        case .zhHK, .zhTW: return "無法辨識佔用它的 App。在安全輸入關閉前，macOS 會對切換器隱藏你的按鍵，⌘Tab 會改為開啟 macOS 的切換器。"
+        case .fr: return "L’app qui la maintient n’a pas pu être identifiée. Tant que la saisie sécurisée reste activée, macOS cache au sélecteur les touches que vous tapez et ⌘Tab ouvre le sélecteur de macOS à la place."
+        case .de: return "Die App, die sie hält, konnte nicht identifiziert werden. Solange die sichere Eingabe aktiv ist, verbirgt macOS deine Tastenanschläge vor dem Umschalter und ⌘Tab öffnet stattdessen den macOS-Umschalter."
+        case .it: return "Non è stato possibile identificare l’app che lo sta trattenendo. Finché resta attivo, macOS nasconde al commutatore i tasti che premi e ⌘Tab apre invece il commutatore di macOS."
+        case .ja: return "保持しているアプリを特定できません。セキュア入力がオンの間は、macOS がスイッチャーからキー入力を隠し、⌘Tab では代わりに macOS のスイッチャーが開きます。"
+        case .ko: return "보안 입력을 유지하는 앱을 확인할 수 없습니다. 보안 입력이 켜져 있는 동안 macOS가 전환기에서 키 입력을 숨기고, ⌘Tab을 누르면 대신 macOS 전환기가 열립니다."
+        case .ru: return "Не удалось определить приложение, которое его удерживает. Пока он включён, macOS скрывает нажатия клавиш от переключателя и ⌘Tab вместо него открывает переключатель macOS."
+        case .sk: return "Aplikáciu, ktorá ho drží, sa nepodarilo identifikovať. Kým je zapnutý, macOS skrýva stlačené klávesy pred prepínačom a ⌘Tab namiesto neho otvára prepínač macOS."
+        case .es: return "No se ha podido identificar la app que la está reteniendo. Mientras la entrada segura siga activada, macOS oculta al selector las teclas que pulsas y ⌘Tab abre el selector de macOS en su lugar."
+        case .tr: return "Bunu açık tutan uygulama belirlenemedi. Güvenli giriş açık kaldıkça macOS bastığın tuşları değiştiriciden gizliyor ve ⌘Tab onun yerine macOS değiştiricisini açıyor."
+        case .uk: return "Програму, що утримує його, не вдалося розпізнати. Поки воно увімкнене, macOS приховує натискання клавіш від перемикача і ⌘Tab натомість відкриває перемикач macOS."
+        case .enUS: return "The app holding it could not be identified. Until it turns off, macOS hides your keystrokes from the switcher and ⌘Tab opens the macOS switcher instead."
+        }
+    }
+}
+

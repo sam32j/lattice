@@ -112,6 +112,16 @@ struct NotchAgentStrings {
     func pricesFrom(_ day: String) -> String { String(format: pricesFromFormat, day) }
     func resetsExpiry(_ when: String) -> String { String(format: resetsExpiryFormat, when) }
 
+    /// Why Claude Code could not check the account's limits.
+    func claudeCode(_ failure: AgentClaudeServer.Failure) -> String {
+        switch failure {
+        case .missing: return "Claude Code missing"
+        case .needsSignIn: return "Claude Code needs sign in"
+        case .outdated: return "Claude Code outdated"
+        case .unreachable: return "Claude Code unreachable"
+        }
+    }
+
     func period(_ period: AgentPeriod) -> String {
         switch period {
         case .today: return today

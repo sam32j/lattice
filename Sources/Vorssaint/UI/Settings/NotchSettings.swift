@@ -650,7 +650,7 @@ struct NotchSettings: View {
                     hoverDelayControl
                     if hoverExpand { closeDelayControl }
                 }
-                switchRow("keyboard", l10n.s.quickToolShortcutToggle, isOn: $shortcutEnabled)
+                switchRow("keyboard", l10n.s.globalHotkeySection, isOn: $shortcutEnabled)
                 if shortcutEnabled {
                     ShortcutPreferenceRow(role: .notch) {
                         NotchService.shared.syncWithPreferences()

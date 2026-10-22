@@ -61,14 +61,14 @@ final class ScrollWheelHIDStage {
             return current
         }
         if let port {
-            CGEvent.tapEnable(tap: port, enable: false)
+            InputEventTap.enable(tap: port, enable: false)
             if let source {
                 PointerTapRunLoop.remove(source, invalidating: port)
             }
             return
         }
         guard wanted, lock.withLock({ tap == nil }) else { return }
-        guard let created = CGEvent.tapCreate(
+        guard let created = InputEventTap.create(
             tap: .cghidEventTap,
             place: .tailAppendEventTap,
             options: .defaultTap,
@@ -101,7 +101,7 @@ final class ScrollWheelHIDStage {
         if let createdSource {
             PointerTapRunLoop.add(createdSource)
         }
-        CGEvent.tapEnable(tap: created, enable: true)
+        InputEventTap.enable(tap: created, enable: true)
         // Nothing is noted before the tap is on, so until then every event
         // still counts as having come through.
         lock.withLock { ledger.isWatching = true }
@@ -112,7 +112,7 @@ final class ScrollWheelHIDStage {
         // away from, where they are about to hand this tap back.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if SessionActivity.shared.isActive, let port = lock.withLock({ tap }) {
-                CGEvent.tapEnable(tap: port, enable: true)
+                InputEventTap.enable(tap: port, enable: true)
             }
             return
         }

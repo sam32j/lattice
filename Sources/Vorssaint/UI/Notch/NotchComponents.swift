@@ -777,8 +777,8 @@ struct NotchBandBackButton: View {
             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
         .buttonStyle(NotchButtonStyle(cornerRadius: 9))
-        .help(l10n.s.obBack)
-        .accessibilityLabel(l10n.s.obBack)
+        .help(l10n.s.navigationBack)
+        .accessibilityLabel(l10n.s.navigationBack)
         .accessibilityValue(title)
     }
 }

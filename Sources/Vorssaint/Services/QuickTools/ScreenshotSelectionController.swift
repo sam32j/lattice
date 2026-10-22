@@ -1050,7 +1050,7 @@ final class ScreenshotSelectionController {
                              pixelRect: CGRect?,
                              scale: CGFloat,
                              anchorRect: CGRect) {
-        panels.forEach { $0.orderOut(nil) }
+        retirePanels()
         Task { @MainActor [weak self] in
             guard let self else { return }
             try? await Task.sleep(nanoseconds: 120_000_000)
@@ -1081,6 +1081,18 @@ final class ScreenshotSelectionController {
 
     func cancel() {
         finish(.cancelled)
+    }
+
+    /// A panel takes every press until its window is really gone, and AppKit
+    /// fades it out after `orderOut`, so a quick click or the first scroll
+    /// after a capture landed on the leaving panel. A session never shows its
+    /// panels again, so they let go of the mouse first. Set alone, the flag
+    /// reaches the window server only with the next commit, too late for a
+    /// panel already fading, so the flush sends it before the panels leave.
+    private func retirePanels() {
+        panels.forEach { $0.ignoresMouseEvents = true }
+        CATransaction.flush()
+        panels.forEach { $0.orderOut(nil) }
     }
 
     deinit {
@@ -1123,6 +1135,7 @@ final class ScreenshotSelectionController {
         // inert before they leave the screen: whatever arrives after this
         // point finds nothing left to act on.
         markCapturePending()
+        retirePanels()
         captureFocus?.release { [self] in
             completeFinish(outcome)
         }
@@ -1132,7 +1145,6 @@ final class ScreenshotSelectionController {
         captureFocus = nil
         Self.isSessionOnScreen = false
         if Self.activeSession === self { Self.activeSession = nil }
-        panels.forEach { $0.orderOut(nil) }
         panels.removeAll()
         if cursorPushed {
             NSCursor.pop()
@@ -1236,6 +1248,21 @@ private final class ScreenshotOverlayPanel: ScreenshotCapturePanel {
     override func becomeKey() {
         super.becomeKey()
         overlayView.activeCursor.set()
+    }
+
+    /// Tool chrome lives in hosting views whose ideal size is a small bar.
+    /// Accepting that size pulls this window in from every edge.
+    override func setFrame(_ frameRect: NSRect, display displayFlag: Bool) {
+        super.setFrame(Self.frameCoveringScreen(screenFrame, insteadOf: frameRect), display: displayFlag)
+    }
+
+    private static func frameCoveringScreen(_ screen: NSRect, insteadOf requested: NSRect) -> NSRect {
+        guard !screen.isEmpty else { return requested }
+        let drifted = abs(requested.width - screen.width) > 1
+            || abs(requested.height - screen.height) > 1
+            || abs(requested.minX - screen.minX) > 1
+            || abs(requested.minY - screen.minY) > 1
+        return drifted ? screen : requested
     }
 }
 
@@ -1350,7 +1377,7 @@ private final class ScreenshotOverlayView: NSView {
         guideModel.scrollingCaptureEnabled = controller.scrollingCaptureEnabled
         guideModel.loupeEnabled = controller.loupeEnabled
         guideModel.selectedWindowsCount = controller.selectedWindows.count
-        let host = PassThroughHostingView(interactiveRootView: CaptureGuideView(
+        let host = PassThroughHostingView(fixedFrameRootView: CaptureGuideView(
             strings: strings,
             purpose: purpose,
             model: guideModel,
@@ -2336,9 +2363,17 @@ private final class PassThroughHostingView<Content: View>: NSHostingView<Content
     var passesThrough = true
     var acceptsFirstClick = false
     var isHovered = false
+    /// The guide gets its frame from the overlay's layout. Its changing
+    /// ideal size must not resize the shielding window. Other hosts keep
+    /// intrinsic sizing, including the full-screen button measured by layout.
+    convenience init(fixedFrameRootView rootView: Content) {
+        self.init(rootView: rootView)
+        sizingOptions = []
+        safeAreaRegions = []
+        translatesAutoresizingMaskIntoConstraints = true
+    }
     /// Capture actions remain clickable while the Dynamic Island panel owns
-    /// key focus. Keep that policy attached to the interactive host itself so
-    /// a caller cannot accidentally forget one half of the setup.
+    /// key focus. Keep both parts of that policy on the interactive host.
     convenience init(interactiveRootView rootView: Content) {
         self.init(rootView: rootView)
         passesThrough = false
