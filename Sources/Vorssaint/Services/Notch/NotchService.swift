@@ -1168,7 +1168,7 @@ final class NotchService: ObservableObject {
             bindEvents()
             if AppFeature.shelf.isAvailable { ShelfService.shared.syncWithPreferences() }
         }
-        if !NotchSupport.routes(.capture), captureContent != nil {
+        if !NotchSupport.routesCapturePreviews(), captureContent != nil {
             let fallback = captureFallback
             clearCapture()
             fallback?()
@@ -2551,7 +2551,7 @@ final class NotchService: ObservableObject {
     func presentCapture(id: UUID, content: AnyView, actions: AnyView? = nil, height: CGFloat,
                         takeFocus: Bool, closeOnCollapse: Bool, fallback: @escaping () -> Void,
                         close: @escaping () -> Void, hover: @escaping (Bool) -> Void) -> Bool {
-        guard acceptsSystemFeedback, NotchSupport.routes(.capture) else { return false }
+        guard acceptsSystemFeedback, NotchSupport.routesCapturePreviews() else { return false }
         let keepOpen = expanded && pinned
         let replacesPage = expanded && selected == .captures && captureID != id
         if captureID != id {
@@ -3932,12 +3932,13 @@ final class NotchService: ObservableObject {
         let y = NotchGestureSupport.movement(Double(event.scrollingDeltaY), precise: event.hasPreciseScrollingDeltas,
                                              inverted: event.isDirectionInvertedFromDevice)
         let action = gesture.handle(x: x, y: y, timestamp: event.timestamp,
-                                          began: event.phase.contains(.began),
-                                          ended: !event.phase.intersection([.ended, .cancelled]).isEmpty,
-                                          momentum: !event.momentumPhase.isEmpty,
-                                          precise: event.hasPreciseScrollingDeltas,
-                                          hasPhase: !event.phase.isEmpty,
-                                          allowVertical: vertical, allowHorizontal: horizontal, expanded: expanded)
+                                    began: event.phase.contains(.began),
+                                    ended: !event.phase.intersection([.ended, .cancelled]).isEmpty,
+                                    momentum: !event.momentumPhase.isEmpty,
+                                    precise: event.hasPreciseScrollingDeltas,
+                                    hasPhase: !event.phase.isEmpty,
+                                    allowVertical: vertical, allowHorizontal: horizontal, expanded: expanded,
+                                    naturalScrolling: event.isDirectionInvertedFromDevice)
         guard let action else { return false }
         switch action {
         case .open: open()

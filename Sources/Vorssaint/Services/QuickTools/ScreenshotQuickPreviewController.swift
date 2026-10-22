@@ -92,11 +92,11 @@ final class ScreenshotQuickPreviewController {
 
     func show(inNotch: Bool = true) {
         guard panel == nil, !shownInNotch, !closed else { return }
-        if inNotch && NotchSupport.routes(.capture),
+        if inNotch && NotchSupport.routesCapturePreviews(),
            NotchService.shared.deferCaptureUntilMissionControlRestores(id: presentationID, present: { [weak self] in
                self?.show(inNotch: true)
            }) { return }
-        let wantsNotch = inNotch && NotchSupport.routes(.capture)
+        let wantsNotch = inNotch && NotchSupport.routesCapturePreviews()
             && NotchService.shared.acceptsSystemFeedback
         let presentationPolicy = ScreenshotSupport.confirmationPreviewPresentationPolicy(
             dismissInterval: baseDismissDuration,

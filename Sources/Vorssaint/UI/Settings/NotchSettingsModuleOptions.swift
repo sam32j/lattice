@@ -123,8 +123,9 @@ extension NotchSettings {
                 }
             }
         case .captures:
-            SettingsFeatureSwitchRow(symbol: "camera.viewfinder", title: text.captureActivity, isOn: $capture, feature: .screenshot)
-            if capture, AppFeature.screenshot.isAvailable {
+            SettingsToggleRow(title: text.captureControls, isOn: $captureControls)
+                .disabled(!AppFeature.screenshot.isAvailable && !AppFeature.screenRecorder.isAvailable)
+            if AppFeature.screenshot.isAvailable {
                 ScreenshotDefaultActionPicker(strings: FeatureStrings.screenshot(l10n.language), selection: $captureAction)
                     .padding(.leading, settingsRowTextInset)
             }
@@ -177,10 +178,9 @@ extension NotchSettings {
                 let accessoriesAvailable = AppFeature.monitorPower.isAvailable
                 let clipboardAvailable = AppFeature.clipboardHistory.isAvailable && clipboardHistoryEnabled
                     && NotchSupport.modules().contains(.clipboard)
-                let capturesAvailable = AppFeature.screenshot.isAvailable && NotchSupport.modules().contains(.captures)
                 let musicAvailable = NotchSupport.modules().contains(.music)
                 let reserves = ![volumeAvailable, brightnessAvailable, keyboardLightAvailable, microphoneAvailable,
-                                 batteryAvailable || !hasBattery, accessoriesAvailable, clipboardAvailable, capturesAvailable,
+                                 batteryAvailable || !hasBattery, accessoriesAvailable, clipboardAvailable,
                                  musicAvailable].allSatisfy { $0 }
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), spacing: 10)], spacing: 10) {
                     toggleCard(text.volume, symbol: "speaker.wave.2", value: $volume, available: volumeAvailable,
@@ -219,9 +219,6 @@ extension NotchSettings {
                     toggleCard(FeatureStrings.clipboard(l10n.language).title, symbol: "doc.on.clipboard", value: $clipboard,
                                available: clipboardAvailable, reason: clipboardFeedbackReason, reservesReason: reserves,
                                unavailableAction: { openClipboardFeedbackSetup() })
-                    toggleCard(text.captures, symbol: "camera.viewfinder", value: $capture, available: capturesAvailable,
-                               reason: pageReason(.captures, feature: .screenshot), reservesReason: reserves,
-                               unavailableAction: pageAction(.captures, feature: .screenshot))
                     toggleCard(text.newTrack, symbol: "music.note", value: $trackChange, available: musicAvailable,
                                reason: pageReason(.music, feature: nil), reservesReason: reserves,
                                unavailableAction: pageAction(.music, feature: nil))
