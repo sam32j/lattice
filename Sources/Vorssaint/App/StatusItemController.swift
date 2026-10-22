@@ -885,7 +885,7 @@ final class StatusItemController {
 /// A system symbol named in the menu bar settings can take the mark's place.
 enum BlackHoleGlyph {
     /// Logical size of the glyph in the menu bar, in points. Wide because the
-    /// mark is ~1.97:1 and sized from its height. Tools/MakeIcon.swift writes
+    /// mark is ~1.97:1 and sized from its height. Tools/MakeLatticeIcon.swift writes
     /// the bundled PNGs at this size; `--selftest` checks the two still agree.
     static let pointSize = NSSize(width: 26, height: 20)
 
