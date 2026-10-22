@@ -25,6 +25,7 @@ enum FeatureAvailabilityTransitionTests {
         init(_ runtime: Runtime) { self.runtime = runtime }
         var dockClickHideEnabled = false
         var dockClickEnabled = false
+        var dockClickCycleEnabled = false
         func requestAccessibilityIfNeeded(_ enabled: Bool) {}
         func startDirect(_ feature: AppFeature) { State.bindings[feature]?() }
     }
