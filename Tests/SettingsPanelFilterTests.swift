@@ -52,8 +52,8 @@ enum SettingsPanelFilterTests {
         suite.expect(utilities.items(editing: false) == [.screenshot]
                      && utilities.items(editing: true) == [.screenshot],
                      "actual Utilities never offers disabled Cleaning Mode, including in edit mode")
-        defaults.set(true, forKey: DefaultsKey.cleaningModeEnabled)
+        defaults.set(true, forKey: DefaultsKey.cleaningModeShortcutEnabled)
         suite.expect(utilities.items(editing: false) == [.cleaning, .screenshot],
-                     "enabled Cleaning Mode keeps its utility tile")
+                     "a configured Cleaning Mode shortcut keeps its utility tile")
     }
 }
