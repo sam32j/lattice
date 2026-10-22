@@ -27,7 +27,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchWatchEnabled) var watchEnabled = true
     @AppStorage(DefaultsKey.notchLyricsEnabled) var lyricsEnabled = true
     @AppStorage(DefaultsKey.notchLyricsOnline) var lyricsOnline = false
-    @AppStorage(DefaultsKey.notchBrowserCovers) var browserCovers = false
     @AppStorage(DefaultsKey.notchQueueEnabled) var queueEnabled = true
     @AppStorage(DefaultsKey.notchLiveEqualizer) var liveEqualizer = false
     @AppStorage(DefaultsKey.notchEnabled) var enabled = false
@@ -40,10 +39,8 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchDisplay) var display = NotchDisplay.automatic.rawValue
     @AppStorage(DefaultsKey.notchSilhouette) var silhouette = NotchSilhouette.capsule.rawValue
     @AppStorage(DefaultsKey.notchOpenOnHover) var hover = false
-    @AppStorage(DefaultsKey.notchShortcutEnabled) var shortcutEnabled = false
     @AppStorage(DefaultsKey.notchHideInFullscreen) var hideInFullscreen = false
     @AppStorage(DefaultsKey.notchHideUntilHover) var hideUntilHover = false
-    @AppStorage(DefaultsKey.notchHiddenShowsActivity) var hiddenShowsActivity = false
     @AppStorage(DefaultsKey.notchCoversMenus) var coversMenus = true
     @AppStorage(DefaultsKey.notchHoverDelay) var hoverDelay = NotchSupport.defaultHoverDelay
     @AppStorage(DefaultsKey.notchCloseDelay) var closeDelay = NotchSupport.defaultCloseDelay
@@ -59,7 +56,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchBattery) var battery = true
     @AppStorage(DefaultsKey.notchClipboard) var clipboard = true
     @AppStorage(DefaultsKey.notchClipboardWindow) var clipboardWindow = true
-    @AppStorage(DefaultsKey.notchClipboardCardSize) var clipboardCardSize = NotchClipboardCardSize.comfortable.rawValue
     @AppStorage(DefaultsKey.screenshotDefaultAction) var captureAction = ""
     @AppStorage(DefaultsKey.notchCapture) var capture = true
     @AppStorage(DefaultsKey.notchTrackChange) var trackChange = true
@@ -121,13 +117,13 @@ struct NotchSettings: View {
          String(customWidth), String(customHeight), String(cameraFitWidth), String(cameraFitHeight),
          String(capsuleFitWidth), String(capsuleFitHeight), String(capsuleFitDrop), String(hapticFeedback),
          String(shelfWindow), String(dragReveal), String(captureControls), String(quickPanel), String(appPanel),
-         String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(hideInFullscreen), String(coversMenus),
+         String(hoverExpand), String(hideUntilHover), String(hideInFullscreen), String(coversMenus),
          display, silhouette, String(hover), hidden, order, String(volume), String(inputSource),
          String(brightness), String(keyboardLight),
-         String(microphone), String(battery), String(clipboard), String(clipboardWindow), clipboardCardSize,
+         String(microphone), String(battery), String(clipboard), String(clipboardWindow),
          String(capture), String(trackChange), captureAction, String(showInCaptures),
          String(returnHome), homeModule, String(opensActivity), String(scratchpad),
-         String(agentsEnabled), String(watchEnabled), String(keepAwakeActivity), String(shortcutEnabled)]
+         String(agentsEnabled), String(watchEnabled), String(keepAwakeActivity)]
     }
 
     var access: Binding<NotchQuickAccessConfiguration> {
@@ -146,33 +142,13 @@ struct NotchSettings: View {
         if case .module(let module) = initialContent { _selectedModule = State(initialValue: module) }
     }
 
+    @ViewBuilder
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            SettingsCard {
-                SettingsRow(symbol: AppFeature.notch.symbolName, title: text.enable,
-                            experimentalBadge: FeatureStrings.hub(l10n.language).experimentalBadge,
-                            caption: text.description) {
-                    Toggle(text.enable, isOn: islandFeatureBinding(.notch, value: $enabled))
-                        .labelsHidden().toggleStyle(.switch)
-                }
-            }
-            if enabled, AppFeature.notch.isAvailable, !(hover && hideUntilHover && !hiddenShowsActivity), !notch.geometry.isNotched, !permissions.accessibility {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(text.menuBarAccessHint)
-                        .font(.callout).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    PermissionRow(kind: .accessibility)
-                }
-            }
-            NotchSettingsTabRow(tab: Binding(get: { tab }, set: { tab = $0; contentSelection = nil }), language: l10n.language,
-                                canOpen: enabled) { NotchService.shared.open() }
-                .fixedSize(horizontal: false, vertical: true)
-                .layoutPriority(1)
-            if tab == .content {
-                contentEditor
-
+        Group {
+            if let selection = contentSelection {
+                contentDetailView(selection: selection)
             } else {
-                pageScroll
+                combinedPageView
             }
         }
         .padding(.horizontal, 22).padding(.top, 22)
@@ -186,7 +162,6 @@ struct NotchSettings: View {
         .onChange(of: router.notchModule) { _, _ in consumeModuleHint() }
         .onAppear(perform: consumeCompanionHint)
         .onChange(of: router.notchCompanion) { _, _ in consumeCompanionHint() }
-
     }
 
     func consumeTabHint() {
@@ -204,17 +179,84 @@ struct NotchSettings: View {
         contentSelection = .companion
     }
 
-    var pageScroll: some View {
+    @ViewBuilder
+    var combinedPageView: some View {
         ScrollView {
-            Group {
-                switch tab {
-                case .layout: layoutPage
-                case .content: EmptyView()
-                case .activity: activityPage
-                case .behavior: behaviorPage
+            VStack(alignment: .leading, spacing: 20) {
+                SettingsCard {
+                    SettingsRow(symbol: AppFeature.notch.symbolName, title: text.enable,
+                                experimentalBadge: FeatureStrings.hub(l10n.language).experimentalBadge,
+                                caption: text.description) {
+                        Toggle(text.enable, isOn: islandFeatureBinding(.notch, value: $enabled))
+                            .labelsHidden().toggleStyle(.switch)
+                    }
                 }
-            }.padding(.bottom, 22)
-        }.id(tab)
+                if enabled, AppFeature.notch.isAvailable, !(hover && hideUntilHover && !hiddenShowsActivity), !notch.geometry.isNotched, !permissions.accessibility {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(text.menuBarAccessHint)
+                            .font(.callout).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        PermissionRow(kind: .accessibility)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 28) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(editor.layout).font(.title3.weight(.semibold))
+                        layoutPage
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(editor.content).font(.title3.weight(.semibold))
+                        sectionList
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(editor.activity).font(.title3.weight(.semibold))
+                        activityPage
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(editor.behavior).font(.title3.weight(.semibold))
+                        behaviorPage
+                    }
+                }
+                .disabled(!enabled)
+                .opacity(enabled ? 1.0 : 0.5)
+            }
+            .frame(maxWidth: 760)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 22)
+        }
+    }
+
+    @ViewBuilder
+    func contentDetailView(selection: NotchContentDestination) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Button {
+                contentSelection = nil
+            } label: {
+                Label(FeatureStrings.notch(l10n.language).title, systemImage: "chevron.left")
+            }
+            .buttonStyle(.plain)
+            .fixedSize(horizontal: false, vertical: true)
+            .layoutPriority(1)
+
+            if selection == .companion {
+                NotchMascotSettings(embedded: true)
+                    .frame(minHeight: 0, maxHeight: .infinity)
+            } else {
+                moduleDetail
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
+        .clipped()
     }
 
     /// A section of the island can ask for its own options; the hint is one-shot.

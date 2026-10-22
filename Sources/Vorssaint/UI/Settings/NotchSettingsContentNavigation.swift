@@ -67,28 +67,6 @@ extension NotchSettings {
         }
     }
 
-    var contentEditor: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            if let selection = contentSelection {
-                Button { contentSelection = nil } label: {
-                    Label(editor.content, systemImage: "chevron.left")
-                }
-                .buttonStyle(.plain)
-                .fixedSize(horizontal: false, vertical: true)
-                .layoutPriority(1)
-                if selection == .companion {
-                    NotchMascotSettings(embedded: true)
-                        .frame(minHeight: 0, maxHeight: .infinity)
-                } else {
-                    moduleDetail
-                }
-            } else {
-                sectionList
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
-        .clipped()
-    }
 
     var moduleDetail: some View {
         ScrollView {
@@ -121,35 +99,29 @@ extension NotchSettings {
     }
 
     var sectionList: some View {
-        ScrollView {
-            SettingsCard {
-                ForEach(orderedModules) { module in
-                    PanelReorderableItem(item: module,
-                        order: Binding(get: { orderedModules }, set: { order = $0.map(\.rawValue).joined(separator: ",") }),
-                        dragging: $draggingModule) {
-                        NotchContentNavigationRow(symbol: module.symbol, title: module.title(l10n.language)) {
-                            showModule(module)
-                        }
-                        .contextMenu {
-                            Button(FeatureStrings.clipboard(l10n.language).moveUp) { moveModule(module, by: -1) }
-                                .disabled(orderedModules.first == module)
-                            Button(FeatureStrings.clipboard(l10n.language).moveDown) { moveModule(module, by: 1) }
-                                .disabled(orderedModules.last == module)
-                        }
-                        .accessibilityAction(named: FeatureStrings.clipboard(l10n.language).moveUp) { moveModule(module, by: -1) }
-                        .accessibilityAction(named: FeatureStrings.clipboard(l10n.language).moveDown) { moveModule(module, by: 1) }
+        SettingsCard {
+            ForEach(orderedModules) { module in
+                PanelReorderableItem(item: module,
+                    order: Binding(get: { orderedModules }, set: { order = $0.map(\.rawValue).joined(separator: ",") }),
+                    dragging: $draggingModule) {
+                    NotchContentNavigationRow(symbol: module.symbol, title: module.title(l10n.language)) {
+                        showModule(module)
                     }
-                }
-                NotchContentNavigationRow(symbol: AppFeature.notchMascot.symbolName,
-                                          title: FeatureStrings.notchMascot(l10n.language).title) {
-                    contentSelection = .companion
+                    .contextMenu {
+                        Button(FeatureStrings.clipboard(l10n.language).moveUp) { moveModule(module, by: -1) }
+                            .disabled(orderedModules.first == module)
+                        Button(FeatureStrings.clipboard(l10n.language).moveDown) { moveModule(module, by: 1) }
+                            .disabled(orderedModules.last == module)
+                    }
+                    .accessibilityAction(named: FeatureStrings.clipboard(l10n.language).moveUp) { moveModule(module, by: -1) }
+                    .accessibilityAction(named: FeatureStrings.clipboard(l10n.language).moveDown) { moveModule(module, by: 1) }
                 }
             }
-            .frame(maxWidth: 760)
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, 22)
+            NotchContentNavigationRow(symbol: AppFeature.notchMascot.symbolName,
+                                      title: FeatureStrings.notchMascot(l10n.language).title) {
+                contentSelection = .companion
+            }
         }
-        .frame(minHeight: 0, maxHeight: .infinity)
     }
 
     func moduleEnableBinding(_ module: NotchModule) -> Binding<Bool> {
