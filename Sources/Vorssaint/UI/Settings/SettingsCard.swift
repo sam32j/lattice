@@ -105,14 +105,16 @@ struct SettingsRow<Accessory: View>: View {
     let symbol: String?
     let title: String
     let badge: String?
+    let experimentalBadge: String?
     let caption: String?
     let accessory: Accessory
 
-    init(symbol: String?, title: String, badge: String? = nil, caption: String? = nil,
+    init(symbol: String?, title: String, badge: String? = nil, experimentalBadge: String? = nil, caption: String? = nil,
          @ViewBuilder accessory: () -> Accessory) {
         self.symbol = symbol
         self.title = title
         self.badge = badge
+        self.experimentalBadge = experimentalBadge
         self.caption = caption
         self.accessory = accessory()
     }
@@ -123,6 +125,7 @@ struct SettingsRow<Accessory: View>: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(title)
+                    if let experimentalBadge { ExperimentalBadge(title: experimentalBadge) }
                     if let badge {
                         Text(badge)
                             .font(.system(size: 8, weight: .bold))

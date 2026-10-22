@@ -529,6 +529,9 @@ final class WindowPreviewProvider {
     }
 
     private static func captureIsPaused(excludedAppsKey: String) -> Bool {
+        // Dock exclusions are checked against the target app before a panel
+        // opens. An excluded foreground app must not freeze other apps' previews.
+        guard excludedAppsKey != DefaultsKey.windowPreviewExcludedApps else { return false }
         let excluded = Defaults.sanitizedBundleIdentifierList(
             UserDefaults.standard.stringArray(forKey: excludedAppsKey) ?? [])
         let front = NSWorkspace.shared.frontmostApplication

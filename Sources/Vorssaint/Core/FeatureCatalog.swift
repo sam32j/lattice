@@ -248,7 +248,9 @@ extension AppFeature {
         switch self {
         case .screenshot, .screenRecorder,
              .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock,
-             .wallpaper, .windowLayout, .switcher, .dockPreview:
+             .wallpaper, .windowLayout, .switcher, .dockPreview,
+             .notch, .notchTimer, .notchCalendar, .notchNotifications, .notchDownloads, .notchAgents, .notchWatch,
+             .notchMascot, .notchGestures, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchAccessories:
             return true
         default:
             return false

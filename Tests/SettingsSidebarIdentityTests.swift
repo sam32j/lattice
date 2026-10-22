@@ -45,6 +45,14 @@ enum SettingsSidebarIdentityTests {
                      && off.first { $0.id == 1 }?.items.contains { $0.id == .feature(.switcher) } == true
                      && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.windowLayout) } == true,
                      "dock, switcher, window layout, screenshot, and screen recorder remain visible on sidebar even when uninstalled")
+        suite.expect(off.flatMap(\.items).contains { $0.id == .page(.notch) },
+                     "Dynamic Island remains in the sidebar when it and every extension are uninstalled")
+        for feature in [AppFeature.notch, .notchTimer] {
+            let item = SettingsSearchItem(id: .feature(feature), destination: feature.settingsDestination,
+                                         title: feature.rawValue, icon: feature.symbolName, feature: feature)
+            suite.expect(SettingsSearchSupport.route(for: item, isAvailable: { _ in false }).destination.page == .notch,
+                         "uninstalled Island controls stay discoverable through search")
+        }
         suite.expect(off.first { $0.id == 2 }?.items.contains { $0.id == .feature(.brightness) } == true,
                      "supported XDR controls keep Displays discoverable when optional features are off")
         let dockClick = SettingsSearchItem(id: .feature(.dockClick), destination: AppFeature.dockClick.settingsDestination,

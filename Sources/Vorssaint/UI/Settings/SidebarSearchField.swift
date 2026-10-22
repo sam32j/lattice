@@ -5,7 +5,6 @@ import SwiftUI
 struct SidebarSearchField: View {
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @AppStorage(DefaultsKey.liquidGlassEnabled) private var liquidGlassEnabled = false
     @Binding var query: String
     var isFocused: FocusState<Bool>.Binding
     @State private var hovered = false
@@ -50,7 +49,7 @@ struct SidebarSearchField: View {
             Capsule().fill(Color(nsColor: .controlBackgroundColor))
         } else {
 #if compiler(>=6.2)
-            if #available(macOS 26, *), liquidGlassEnabled {
+            if #available(macOS 26, *) {
                 Capsule().fill(.clear).glassEffect(.regular, in: Capsule())
             } else {
                 Capsule().fill(.ultraThinMaterial)

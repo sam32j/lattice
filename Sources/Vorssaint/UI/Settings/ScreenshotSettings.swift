@@ -102,13 +102,6 @@ struct ScreenshotSettings: View {
     private var shortcutsCard: some View {
         SettingsCard(title: strings.pageTitle, headerAccessory: {
             HStack(spacing: 8) {
-                Text(screenshotInstalled ? l10n.s.homebrewInstalledBadge : l10n.s.homebrewNotInstalledBadge)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(screenshotInstalled ? Color.green : Color.secondary)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(Capsule().fill((screenshotInstalled ? Color.green : Color.secondary).opacity(0.12)))
-
                 Toggle(l10n.s.screenshotEnable, isOn: Binding(
                     get: { screenshotInstalled },
                     set: { enabled in
@@ -121,7 +114,7 @@ struct ScreenshotSettings: View {
                 ))
                     .labelsHidden()
                     .toggleStyle(.switch)
-                    .controlSize(.mini)
+                    .controlSize(.regular)
                     .help(l10n.s.screenshotEnable)
                     .accessibilityLabel(l10n.s.screenshotEnable)
             }

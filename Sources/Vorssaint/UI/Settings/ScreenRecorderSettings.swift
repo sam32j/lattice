@@ -87,13 +87,6 @@ struct ScreenRecorderSettings: View {
     private var shortcutsCard: some View {
         SettingsCard(title: strings.pageTitle, headerAccessory: {
             HStack(spacing: 8) {
-                Text(screenRecorderInstalled ? l10n.s.homebrewInstalledBadge : l10n.s.homebrewNotInstalledBadge)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(screenRecorderInstalled ? Color.green : Color.secondary)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(Capsule().fill((screenRecorderInstalled ? Color.green : Color.secondary).opacity(0.12)))
-
                 Toggle(l10n.s.screenRecorderEnable, isOn: Binding(
                     get: { screenRecorderInstalled },
                     set: { enabled in
@@ -105,7 +98,7 @@ struct ScreenRecorderSettings: View {
                 ))
                     .labelsHidden()
                     .toggleStyle(.switch)
-                    .controlSize(.mini)
+                    .controlSize(.regular)
                     .help(l10n.s.screenRecorderEnable)
                     .accessibilityLabel(l10n.s.screenRecorderEnable)
             }

@@ -75,6 +75,7 @@ final class DockPreviewService: ObservableObject {
     }
 
     func syncWithPreferences() {
+        syncExcludedApps()
         if !UserDefaults.standard.bool(forKey: DefaultsKey.dockPreviewKeepDockVisible),
            dockAutohideHold.isHolding {
             endSession()
@@ -123,6 +124,18 @@ final class DockPreviewService: ObservableObject {
 
         startTap()
         syncSpaceObservation()
+    }
+
+    private func syncExcludedApps() {
+        if let pendingHover, DockPreviewExclusions.contains(pendingHover.app) {
+            cancelPendingHover()
+        }
+        if let currentSessionPID, DockPreviewExclusions.contains(pid: currentSessionPID) {
+            endSession()
+        }
+        for id in pinnedPanels.compactMap({ $0.value.isExcluded ? $0.key : nil }) {
+            closePinnedPanel(id)
+        }
     }
 
     private func syncSpaceObservation() {
@@ -663,6 +676,11 @@ final class DockPreviewService: ObservableObject {
     }
 
     private func scheduleHover(_ hit: DockHit, delay: TimeInterval? = nil) {
+        guard !DockPreviewExclusions.contains(hit.app) else {
+            cancelPendingHover()
+            if isVisible, !isPinned { endSession() }
+            return
+        }
         // Same app already arming: let the existing timer run to completion rather
         // than restarting it on every move, so a resting cursor isn't starved by
         // a one-frame Dock hit-test miss.
@@ -705,6 +723,7 @@ final class DockPreviewService: ObservableObject {
     }
 
     private static func previewableWindows(for pid: pid_t) -> [SwitcherItem] {
+        guard !DockPreviewExclusions.contains(pid: pid) else { return [] }
         let windows = WindowEnumerator.listWindowsForDockPreview(for: pid, maximumCount: 12)
             .filter { $0.windowID != nil }
         let order = DockPreviewWindowOrder.fromDefaults(
@@ -726,6 +745,11 @@ final class DockPreviewService: ObservableObject {
 
     private func beginSession(_ hit: DockHit) {
         guard !(isPinned && isVisible) else { return }
+        // Recheck after the hover delay, even if its window list was prefetched.
+        guard !DockPreviewExclusions.contains(hit.app) else {
+            endSession()
+            return
+        }
         // A prefetched list counts only for the app it was taken for: a hover
         // handed over to a neighbouring icon must not open on the previous
         // app's windows.
@@ -1504,6 +1528,8 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
     @Published private(set) var selectedWindowID: CGWindowID?
     let currentAppName: String?
 
+    var isExcluded: Bool { DockPreviewExclusions.contains(pid: appPID) }
+
     weak var panel: NSPanel?
 
     private let appPID: pid_t
@@ -1687,6 +1713,10 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
     }
 
     private func refreshWindows() {
+        guard !isExcluded else {
+            closePreviewPanel()
+            return
+        }
         let previousIDs = windows.compactMap(\.windowID)
         let refreshed = DockPreviewSupport.orderedWindows(
             WindowEnumerator.listWindowsForDockPreview(for: appPID, maximumCount: Self.maximumWindowCount)

@@ -6,12 +6,31 @@ import Foundation
 extension AppFeature {
     /// What an option that needs this feature says while it is uninstalled.
     func enableReason(_ l10n: L10n) -> String {
-        FeatureStrings.notchEditor(l10n.language).enableFeature(hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language)))
+        let editor = FeatureStrings.notchEditor(l10n.language)
+        let title = hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language))
+        return isManagedOnDedicatedPage ? editor.enableSetting(title) : editor.enableFeature(title)
     }
 
-    /// Features, at this feature, for an option that needs it.
+    /// Opens the installation owner for an option that needs this feature.
     func showInFeatures() {
-        SettingsRouter.shared.request(FeatureSettingsDestination(.features), targetFeature: self)
+        let router = SettingsRouter.shared
+        guard isManagedOnDedicatedPage else {
+            router.request(FeatureSettingsDestination(.features), targetFeature: self)
+            return
+        }
+        router.request(settingsDestination)
+        switch self {
+        case .notchTimer: router.notchModule = .timer
+        case .notchCalendar: router.notchModule = .calendar
+        case .notchNotifications: router.notchModule = .notifications
+        case .notchDownloads: router.notchModule = .downloads
+        case .notchAgents: router.notchModule = .agents
+        case .notchWatch: router.notchModule = .watch
+        case .notchLyrics, .notchQueue, .notchLiveEqualizer: router.notchModule = .music
+        case .notchGestures: router.notchSettingsTab = "behavior"
+        case .notchAccessories: router.notchSettingsTab = "activity"
+        default: break
+        }
     }
 
     /// Titles reuse the strings users already see across the app; only names

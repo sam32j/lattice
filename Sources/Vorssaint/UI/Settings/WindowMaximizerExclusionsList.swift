@@ -13,13 +13,14 @@ struct WindowMaximizerExclusionsList: View {
 
     var body: some View {
         AppBundleList(title: text.listTitle,
-                      caption: text.caption,
+                      caption: SettingsAppListDescriptions.text(l10n.language).maximizeWindows,
                       addTitle: text.addButton,
                       removeLabel: text.removeButton,
                       bundleIDs: apps,
                       // Games often live outside the Applications folders,
                       // so the picker offers running apps and browsing too.
                       reachesEveryApp: true,
+                      usesSheet: true,
                       onAdd: { save(apps + [$0]) },
                       onRemove: { bundleID in save(apps.filter { $0 != bundleID }) })
     }

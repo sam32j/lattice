@@ -1466,10 +1466,10 @@ struct WindowLayoutFeatureStrings {
 
     static let enUS = WindowLayoutFeatureStrings(
         title: "Window Management",
-        enable: "Enable Window Management",
+        enable: "Enable Window Snapping",
         caption: "Arrange windows into screen sections or move and resize them with a trackpad or mouse.",
         showInPanel: "Show in utilities menu",
-        gestureSection: "Window dragging",
+        gestureSection: "Window Snapping",
         gestureEnable: "Move and resize by dragging",
         gestureCaption: "On a trackpad or mouse, hold the shown modifier keys and drag anywhere inside a window.",
         gestureModifiers: "Keys to move",

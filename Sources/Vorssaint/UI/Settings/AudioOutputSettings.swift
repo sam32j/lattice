@@ -34,7 +34,7 @@ struct AudioOutputSettings: View {
             ))
             .labelsHidden()
             .toggleStyle(.switch)
-            .controlSize(.mini)
+            .controlSize(.regular)
             .help(l10n.s.audioPriorityOutputEnable)
             .accessibilityLabel(l10n.s.audioPriorityOutputEnable)
         }) {

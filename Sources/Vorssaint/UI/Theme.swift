@@ -172,7 +172,6 @@ private struct PanelGlassSurface: View {
     @Environment(\.notchPresentation) private var notchPresentation
     @Environment(\.notchGlassSurface) private var notchGlassSurface
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @AppStorage(DefaultsKey.liquidGlassEnabled) private var liquidGlassEnabled = false
 
     var body: some View {
         // AppKit hands the hosted panel a safe area for the popover's border and
@@ -196,7 +195,7 @@ private struct PanelGlassSurface: View {
     @ViewBuilder
     private var surface: some View {
 #if compiler(>=6.2)
-        if #available(macOS 26.0, *), liquidGlassEnabled, !reduceTransparency {
+        if #available(macOS 26.0, *), !reduceTransparency {
             Rectangle()
                 .fill(Color.clear)
                 .glassEffect(.regular, in: Rectangle())

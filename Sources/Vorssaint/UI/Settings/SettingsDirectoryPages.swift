@@ -73,7 +73,6 @@ extension SettingsDirectory {
                                         (.dockClick, [FeatureStrings.hub(language).titleDockClick,
                                                       s.dockClickMinimize, s.dockClickHide,
                                                       s.dockClickCycleWindows]),
-                                        (.autoQuit, [s.autoQuitName, s.autoQuitEnable]),
                                       ]),
                 SettingsDirectoryItem(page: .switcher, title: s.tabSwitcher, icon: "rectangle.on.rectangle",
                                       featureKeywords: [
@@ -91,11 +90,12 @@ extension SettingsDirectory {
                                       title: FeatureStrings.windowLayout(language).title,
                                       icon: "rectangle.3.group",
                                       featureKeywords: [
-                                        (.windowLayout, [s.dockClickCycleWindows,
+                                        (.windowLayout, [FeatureStrings.windowLayout(language).enable,
                                                          FeatureStrings.windowLayout(language).edgeSnapEnable,
                                                          FeatureStrings.windowLayout(language).gestureEnable,
                                                          FeatureStrings.windowLayout(language).gestureResize,
                                                          FeatureStrings.windowLayoutIgnoredApps(language).listTitle]),
+                                        (.autoQuit, [s.autoQuitName, s.autoQuitEnable]),
                                         (.spacesOrder, [s.spacesOrderName]),
                                         (.windowMaximizer,
                                          [s.windowMaximizeName,

@@ -35,7 +35,7 @@ struct AudioInputSettings: View {
             Toggle(l10n.s.microphoneControlEnable, isOn: $microphoneControlEnabled)
                 .labelsHidden()
                 .toggleStyle(.switch)
-                .controlSize(.mini)
+                .controlSize(.regular)
                 .help(l10n.s.microphoneControlEnable)
                 .accessibilityLabel(l10n.s.microphoneControlEnable)
                 .onChange(of: microphoneControlEnabled) { _, enabled in
@@ -78,7 +78,7 @@ struct AudioInputSettings: View {
             ))
             .labelsHidden()
             .toggleStyle(.switch)
-            .controlSize(.mini)
+            .controlSize(.regular)
             .help(l10n.s.audioPriorityInputEnable)
             .accessibilityLabel(l10n.s.audioPriorityInputEnable)
         }) {

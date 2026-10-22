@@ -20,12 +20,14 @@ struct WindowPreviewExclusionsList: View {
 
     var body: some View {
         AppBundleList(title: text.listTitle,
-                      caption: text.caption,
+                      caption: key == DefaultsKey.windowPreviewExcludedApps
+                        ? SettingsAppListDescriptions.text(l10n.language).dockPreview : text.caption,
                       addTitle: text.addButton,
                       removeLabel: text.removeButton,
                       bundleIDs: apps,
                       reachesEveryApp: true,
                       acceptsExecutables: true,
+                      usesSheet: true,
                       onAdd: { save(apps + [$0]) },
                       onRemove: { bundleID in save(apps.filter { $0 != bundleID }) })
     }
@@ -34,5 +36,6 @@ struct WindowPreviewExclusionsList: View {
         let sanitized = Defaults.sanitizedBundleIdentifierList(bundleIDs)
         UserDefaults.standard.set(sanitized, forKey: key)
         apps = sanitized
+        if key == DefaultsKey.windowPreviewExcludedApps { DockPreviewService.shared.syncWithPreferences() }
     }
 }

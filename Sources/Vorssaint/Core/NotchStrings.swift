@@ -92,9 +92,6 @@ struct NotchStrings {
     let sectionKeyboardHint: String
     let quickAccessLeft: String
     let quickAccessRight: String
-    let translucentBackground: String
-    let translucentBackgroundHint: String
-    let translucentBackgroundGlassHint: String
 }
 
 extension FeatureStrings {
@@ -124,7 +121,7 @@ extension NotchStrings {
         title: "Dynamic Island",
         combineActivities: "Combine",
         enable: "Enable Dynamic Island",
-        description: "Your music, controls and everyday tools, together at the top of your screen. Optional. Turn it off to keep using the separate panels.",
+        description: "Your music, controls and everyday tools, together at the top of your screen.",
         menuBarAccessHint: "Allow Accessibility so Dynamic Island can appear on this display without covering the menus.",
         display: "Display",
         automatic: "Automatic",
@@ -169,7 +166,7 @@ extension NotchStrings {
         shelfWindow: "Open the file shelf in the Dynamic Island",
         dragReveal: "Show a drop target while dragging",
         captureControls: "Show screen capture controls in the Dynamic Island",
-        quickPanel: "Open the quick panel in the Dynamic Island",
+        quickPanel: "Open the Launcher Grid in the Dynamic Island",
         appPanel: "Open the app panel in the Dynamic Island",
         idleContent: "While inactive",
         idleNone: "Nothing",
@@ -208,17 +205,14 @@ extension NotchStrings {
         searchSections: "Find a section",
         sectionKeyboardHint: "Use the arrow keys, then press Return",
         quickAccessLeft: "Left",
-        quickAccessRight: "Right",
-        translucentBackground: "Translucent background",
-        translucentBackgroundHint: "When open, Dynamic Island blurs what is behind it with the system’s own material.",
-        translucentBackgroundGlassHint: "Liquid Glass is on, so Dynamic Island uses it instead."
+        quickAccessRight: "Right"
     )
 
     static let ptBR = NotchStrings(
         title: "Ilha Dinâmica",
         combineActivities: "Combinar",
         enable: "Ativar Dynamic Island",
-        description: "Sua música, controles e ferramentas do dia a dia, juntos no topo da tela. Opcional. Desative para continuar usando os painéis separados.",
+        description: "Sua música, controles e ferramentas do dia a dia, juntos no topo da tela.",
         menuBarAccessHint: "Permita Acessibilidade para a Dynamic Island aparecer nesta tela sem cobrir os menus.",
         display: "Tela",
         automatic: "Automática",
@@ -302,17 +296,14 @@ extension NotchStrings {
         searchSections: "Encontrar uma seção",
         sectionKeyboardHint: "Use as setas e pressione Return",
         quickAccessLeft: "Esquerdo",
-        quickAccessRight: "Direito",
-        translucentBackground: "Fundo translúcido",
-        translucentBackgroundHint: "Quando aberta, a Dynamic Island desfoca o que está atrás dela com o material do próprio sistema.",
-        translucentBackgroundGlassHint: "O Liquid Glass está ativado, então a Dynamic Island o usa no lugar."
+        quickAccessRight: "Direito"
     )
 
     static let es = NotchStrings(
         title: "Isla Dinámica",
         combineActivities: "Combinar",
         enable: "Activar Dynamic Island",
-        description: "Tu música, controles y herramientas cotidianas, juntos en la parte superior de la pantalla. Opcional. Desactívalo para seguir usando los paneles por separado.",
+        description: "Tu música, controles y herramientas cotidianas, juntos en la parte superior de la pantalla.",
         menuBarAccessHint: "Permite Accesibilidad para que Dynamic Island aparezca en esta pantalla sin cubrir los menús.",
         display: "Pantalla",
         automatic: "Automática",
@@ -396,17 +387,14 @@ extension NotchStrings {
         searchSections: "Buscar una sección",
         sectionKeyboardHint: "Usa las flechas y pulsa Intro",
         quickAccessLeft: "Izquierdo",
-        quickAccessRight: "Derecho",
-        translucentBackground: "Fondo translúcido",
-        translucentBackgroundHint: "Al abrirse, Dynamic Island desenfoca lo que hay detrás con el material del propio sistema.",
-        translucentBackgroundGlassHint: "Liquid Glass está activado, así que Dynamic Island lo usa en su lugar."
+        quickAccessRight: "Derecho"
     )
 
     static let sk = NotchStrings(
         title: "Dynamický ostrov",
         combineActivities: "Kombinovať",
         enable: "Zapnúť Dynamic Island",
-        description: "Vaša hudba, ovládacie prvky a bežné nástroje na jednom mieste v hornej časti obrazovky. Voliteľné. Vypnutím budete naďalej používať samostatné panely.",
+        description: "Vaša hudba, ovládacie prvky a bežné nástroje na jednom mieste v hornej časti obrazovky.",
         menuBarAccessHint: "Povoľte Prístupnosť, aby sa Dynamic Island mohol zobraziť na tomto displeji bez prekrývania ponúk.",
         display: "Displej",
         automatic: "Automaticky",
@@ -490,17 +478,14 @@ extension NotchStrings {
         searchSections: "Nájsť sekciu",
         sectionKeyboardHint: "Použite šípky a stlačte Return",
         quickAccessLeft: "Vľavo",
-        quickAccessRight: "Vpravo",
-        translucentBackground: "Priesvitné pozadie",
-        translucentBackgroundHint: "Otvorený Dynamic Island rozmazáva obsah za sebou pomocou systémového materiálu.",
-        translucentBackgroundGlassHint: "Liquid Glass je zapnuté, preto ho Dynamic Island používa namiesto systémového materiálu."
+        quickAccessRight: "Vpravo"
     )
 
     static let de = NotchStrings(
         title: "Dynamic Island",
         combineActivities: "Kombinieren",
         enable: "Dynamic Island aktivieren",
-        description: "Musik, Steuerelemente und alltägliche Werkzeuge am oberen Bildschirmrand. Optional. Deaktiviere die Funktion, um die separaten Bereiche weiter zu nutzen.",
+        description: "Musik, Steuerelemente und alltägliche Werkzeuge am oberen Bildschirmrand.",
         menuBarAccessHint: "Erlaube die Bedienungshilfen, damit Dynamic Island auf diesem Bildschirm erscheint, ohne die Menüs zu verdecken.",
         display: "Bildschirm",
         automatic: "Automatisch",
@@ -584,17 +569,14 @@ extension NotchStrings {
         searchSections: "Bereich finden",
         sectionKeyboardHint: "Mit den Pfeiltasten wählen, mit Eingabe öffnen",
         quickAccessLeft: "Links",
-        quickAccessRight: "Rechts",
-        translucentBackground: "Durchscheinender Hintergrund",
-        translucentBackgroundHint: "Geöffnet zeichnet Dynamic Island den Hintergrund mit dem Material des Systems unscharf.",
-        translucentBackgroundGlassHint: "Liquid Glass ist aktiv, daher verwendet Dynamic Island stattdessen Liquid Glass."
+        quickAccessRight: "Rechts"
     )
 
     static let fr = NotchStrings(
         title: "Dynamic Island",
         combineActivities: "Combiner",
         enable: "Activer Dynamic Island",
-        description: "Votre musique, vos commandes et vos outils du quotidien, réunis en haut de l’écran. Facultatif. Désactivez cette option pour continuer à utiliser les panneaux séparés.",
+        description: "Votre musique, vos commandes et vos outils du quotidien, réunis en haut de l’écran.",
         menuBarAccessHint: "Autorisez l’accessibilité pour afficher Dynamic Island sur cet écran sans masquer les menus.",
         display: "Écran",
         automatic: "Automatique",
@@ -678,17 +660,14 @@ extension NotchStrings {
         searchSections: "Rechercher une section",
         sectionKeyboardHint: "Utilisez les flèches, puis appuyez sur Retour",
         quickAccessLeft: "Gauche",
-        quickAccessRight: "Droite",
-        translucentBackground: "Fond translucide",
-        translucentBackgroundHint: "Ouverte, Dynamic Island floute ce qui se trouve derrière avec le matériau du système.",
-        translucentBackgroundGlassHint: "Liquid Glass est activé, Dynamic Island l’utilise donc à la place."
+        quickAccessRight: "Droite"
     )
 
     static let it = NotchStrings(
         title: "Dynamic Island",
         combineActivities: "Combina",
         enable: "Attiva Dynamic Island",
-        description: "Musica, controlli e strumenti quotidiani, insieme nella parte superiore dello schermo. Facoltativo. Disattiva questa opzione per continuare a usare i pannelli separati.",
+        description: "Musica, controlli e strumenti quotidiani, insieme nella parte superiore dello schermo.",
         menuBarAccessHint: "Consenti Accessibilità per mostrare Dynamic Island su questo schermo senza coprire i menu.",
         display: "Schermo",
         automatic: "Automatico",
@@ -772,17 +751,14 @@ extension NotchStrings {
         searchSections: "Trova una sezione",
         sectionKeyboardHint: "Usa le frecce, poi premi Invio",
         quickAccessLeft: "Sinistra",
-        quickAccessRight: "Destra",
-        translucentBackground: "Sfondo traslucido",
-        translucentBackgroundHint: "Quando è aperta, Dynamic Island sfoca ciò che si trova dietro con il materiale del sistema.",
-        translucentBackgroundGlassHint: "Liquid Glass è attivo, quindi Dynamic Island usa quello."
+        quickAccessRight: "Destra"
     )
 
     static let ru = NotchStrings(
         title: "Динамический остров",
         combineActivities: "Объединить",
         enable: "Включить Dynamic Island",
-        description: "Музыка, управление и повседневные инструменты в верхней части экрана. Необязательно. Отключите, чтобы продолжить пользоваться отдельными панелями.",
+        description: "Музыка, управление и повседневные инструменты в верхней части экрана.",
         menuBarAccessHint: "Разрешите универсальный доступ, чтобы Dynamic Island отображалась на этом экране, не закрывая меню.",
         display: "Экран",
         automatic: "Автоматически",
@@ -866,17 +842,14 @@ extension NotchStrings {
         searchSections: "Найти раздел",
         sectionKeyboardHint: "Выберите стрелками и нажмите Return",
         quickAccessLeft: "Слева",
-        quickAccessRight: "Справа",
-        translucentBackground: "Полупрозрачный фон",
-        translucentBackgroundHint: "Открытый Dynamic Island размывает то, что под ним, системным материалом.",
-        translucentBackgroundGlassHint: "Включено Liquid Glass, поэтому Dynamic Island использует его."
+        quickAccessRight: "Справа"
     )
 
     static let tr = NotchStrings(
         title: "Dinamik Ada",
         combineActivities: "Birleştir",
         enable: "Dynamic Island’u etkinleştir",
-        description: "Müziğiniz, denetimleriniz ve günlük araçlarınız ekranın üst kısmında bir arada. İsteğe bağlıdır. Ayrı panelleri kullanmaya devam etmek için kapatın.",
+        description: "Müziğiniz, denetimleriniz ve günlük araçlarınız ekranın üst kısmında bir arada.",
         menuBarAccessHint: "Dynamic Island’ın bu ekranda menüleri kapatmadan görünmesi için Erişilebilirlik izni verin.",
         display: "Ekran",
         automatic: "Otomatik",
@@ -960,17 +933,14 @@ extension NotchStrings {
         searchSections: "Bölüm bul",
         sectionKeyboardHint: "Ok tuşlarıyla seçin, Return ile açın",
         quickAccessLeft: "Sol",
-        quickAccessRight: "Sağ",
-        translucentBackground: "Yarı saydam arka plan",
-        translucentBackgroundHint: "Dynamic Island açıkken arkasındakini sistemin kendi malzemesiyle bulanıklaştırır.",
-        translucentBackgroundGlassHint: "Liquid Glass açık olduğundan Dynamic Island onu kullanır."
+        quickAccessRight: "Sağ"
     )
 
     static let ja = NotchStrings(
         title: "Dynamic Island",
         combineActivities: "組み合わせる",
         enable: "Dynamic Islandを有効にする",
-        description: "音楽、コントロール、毎日のツールを画面上部にまとめます。 必要に応じて有効にできます。オフにすると、個別のパネルを引き続き使用できます。",
+        description: "音楽、コントロール、毎日のツールを画面上部にまとめます。",
         menuBarAccessHint: "メニューを隠さずにこのディスプレイにDynamic Islandを表示するには、アクセシビリティを許可してください。",
         display: "ディスプレイ",
         automatic: "自動",
@@ -1054,17 +1024,14 @@ extension NotchStrings {
         searchSections: "セクションを検索",
         sectionKeyboardHint: "矢印キーで選び、Returnキーで開きます",
         quickAccessLeft: "左",
-        quickAccessRight: "右",
-        translucentBackground: "半透明の背景",
-        translucentBackgroundHint: "開いた Dynamic Island の背後をシステムの素材でぼかします。",
-        translucentBackgroundGlassHint: "Liquid Glass がオンのため、Dynamic Island はそちらを使います。"
+        quickAccessRight: "右"
     )
 
     static let ko = NotchStrings(
         title: "Dynamic Island",
         combineActivities: "함께 표시",
         enable: "Dynamic Island 활성화",
-        description: "음악, 제어 기능과 일상 도구를 화면 상단에 모아 보세요. 선택 기능입니다. 끄면 기존의 개별 패널을 계속 사용할 수 있습니다.",
+        description: "음악, 제어 기능과 일상 도구를 화면 상단에 모아 보세요.",
         menuBarAccessHint: "이 디스플레이에서 메뉴를 가리지 않고 Dynamic Island를 표시하려면 손쉬운 사용을 허용하세요.",
         display: "디스플레이",
         automatic: "자동",
@@ -1148,17 +1115,14 @@ extension NotchStrings {
         searchSections: "섹션 찾기",
         sectionKeyboardHint: "방향키로 선택하고 Return 키로 열기",
         quickAccessLeft: "왼쪽",
-        quickAccessRight: "오른쪽",
-        translucentBackground: "반투명 배경",
-        translucentBackgroundHint: "열린 Dynamic Island가 시스템 재질로 뒤쪽을 흐리게 표시합니다.",
-        translucentBackgroundGlassHint: "Liquid Glass가 켜져 있어 Dynamic Island가 대신 사용합니다."
+        quickAccessRight: "오른쪽"
     )
 
     static let zhHans = NotchStrings(
         title: "灵动岛",
         combineActivities: "组合显示",
         enable: "启用Dynamic Island",
-        description: "音乐、控制和日常工具，汇聚在屏幕顶部。 可选功能。关闭后可继续使用独立面板。",
+        description: "音乐、控制和日常工具，汇聚在屏幕顶部。",
         menuBarAccessHint: "请允许辅助功能权限，让 Dynamic Island 在此显示器上显示而不遮挡菜单。",
         display: "显示器",
         automatic: "自动",
@@ -1242,17 +1206,14 @@ extension NotchStrings {
         searchSections: "查找分区",
         sectionKeyboardHint: "使用方向键选择，然后按回车键打开",
         quickAccessLeft: "左侧",
-        quickAccessRight: "右侧",
-        translucentBackground: "半透明背景",
-        translucentBackgroundHint: "展开的 Dynamic Island 会用系统材质模糊其背后的内容。",
-        translucentBackgroundGlassHint: "Liquid Glass 已开启，Dynamic Island 将改用 Liquid Glass。"
+        quickAccessRight: "右侧"
     )
 
     static let zhTW = NotchStrings(
         title: "動態島",
         combineActivities: "組合顯示",
         enable: "啟用Dynamic Island",
-        description: "音樂、控制項與日常工具，匯聚在螢幕頂端。 選用功能。關閉後可繼續使用獨立面板。",
+        description: "音樂、控制項與日常工具，匯聚在螢幕頂端。",
         menuBarAccessHint: "請允許輔助使用權限，讓 Dynamic Island 在此顯示器上顯示而不遮擋選單。",
         display: "顯示器",
         automatic: "自動",
@@ -1336,17 +1297,14 @@ extension NotchStrings {
         searchSections: "尋找區域",
         sectionKeyboardHint: "使用方向鍵選取，再按 Return 鍵開啟",
         quickAccessLeft: "左側",
-        quickAccessRight: "右側",
-        translucentBackground: "半透明背景",
-        translucentBackgroundHint: "展開的 Dynamic Island 會以系統材質模糊背後的內容。",
-        translucentBackgroundGlassHint: "Liquid Glass 已開啟，Dynamic Island 會改用 Liquid Glass。"
+        quickAccessRight: "右側"
     )
 
     static let zhHK = NotchStrings(
         title: "動態島",
         combineActivities: "組合顯示",
         enable: "啟用Dynamic Island",
-        description: "音樂、控制項與日常工具，集中在螢幕頂端。 選用功能。關閉後可繼續使用獨立面板。",
+        description: "音樂、控制項與日常工具，集中在螢幕頂端。",
         menuBarAccessHint: "請允許輔助使用權限，讓 Dynamic Island 在此顯示器上顯示而不遮擋選單。",
         display: "顯示器",
         automatic: "自動",
@@ -1430,17 +1388,14 @@ extension NotchStrings {
         searchSections: "尋找區域",
         sectionKeyboardHint: "使用方向鍵選取，再按 Return 鍵開啟",
         quickAccessLeft: "左側",
-        quickAccessRight: "右側",
-        translucentBackground: "半透明背景",
-        translucentBackgroundHint: "展開的 Dynamic Island 會以系統材質模糊背後的內容。",
-        translucentBackgroundGlassHint: "Liquid Glass 已開啟，Dynamic Island 會改用 Liquid Glass。"
+        quickAccessRight: "右側"
     )
 
     static let uk = NotchStrings(
         title: "Динамічний острів",
         combineActivities: "Поєднати",
         enable: "Увімкнути Dynamic Island",
-        description: "Ваша музика, елементи керування та повсякденні інструменти, зібрані у верхній частині екрана. Необов’язково. Вимкніть, щоб і надалі користуватися окремими панелями.",
+        description: "Ваша музика, елементи керування та повсякденні інструменти, зібрані у верхній частині екрана.",
         menuBarAccessHint: "Надайте дозвіл «Доступність», щоб Dynamic Island з’являвся на цьому дисплеї, не затуляючи меню.",
         display: "Дисплей",
         automatic: "Автоматично",
@@ -1524,10 +1479,7 @@ extension NotchStrings {
         searchSections: "Знайти розділ",
         sectionKeyboardHint: "Використовуйте стрілки, потім натисніть Return",
         quickAccessLeft: "Ліворуч",
-        quickAccessRight: "Праворуч",
-        translucentBackground: "Напівпрозоре тло",
-        translucentBackgroundHint: "Відкритий Dynamic Island розмиває вміст позаду за допомогою системного матеріалу.",
-        translucentBackgroundGlassHint: "Liquid Glass увімкнено, тому Dynamic Island використовує його."
+        quickAccessRight: "Праворуч"
     )
 
 }

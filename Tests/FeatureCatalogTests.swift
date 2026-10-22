@@ -633,8 +633,8 @@ enum FeatureCatalogTests {
                     ?? (AppFeature.availabilityDefaults[feature.availabilityKey] as? Bool ?? false)
             }
             suite.expect(watchDefaults.object(forKey: AppFeature.notchWatch.availabilityKey) as? Bool == false
-                    && !FeatureVisibilitySupport.isPageVisible(.notch, isAvailable: isAvailable),
-                   "a setup that left the island out keeps Watch and the Dynamic Island page out after updating")
+                    && FeatureVisibilitySupport.isPageVisible(.notch, isAvailable: isAvailable),
+                   "a setup that left the island out keeps Watch off while retaining access to Island settings")
             watchDefaults.set(true, forKey: AppFeature.notchWatch.availabilityKey)
             Defaults.migrateNotchWatchAvailability(in: watchDefaults)
             suite.expect(watchDefaults.object(forKey: AppFeature.notchWatch.availabilityKey) as? Bool == true,
@@ -1977,8 +1977,8 @@ enum FeatureCatalogTests {
                      && pageVisible(companionRouter.page, available: [.notchMascot]),
                      "the companion's settings remain reachable when it alone is installed, including the install-island prompt")
         suite.expect(pageVisible(companionRouter.page, available: [.notch, .notchMascot])
-                     && !pageVisible(companionRouter.page, available: []),
-                     "the companion shares the installed island's page without exposing it when every extension is uninstalled")
+                     && pageVisible(companionRouter.page, available: []),
+                     "the companion shares the Island settings page even when every extension is uninstalled")
         var settingsRequestCount = 0
         var settingsRequestsPublishedReady = true
         let settingsRequestObservation = settingsRouter.$requestID

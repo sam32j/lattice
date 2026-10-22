@@ -188,7 +188,7 @@ enum SettingsSearchSupport {
     /// Case-, diacritic- and width-insensitive containment: "métr" finds
     /// "Metrics", "moni" finds "Monitor". A blank query matches everything.
     /// Keywords let a page match by what lives inside it ("lid" finds
-    /// Energy, "quick panel" finds Quick tools), not just by its name.
+    /// Energy, "Launcher Grid" finds Quick tools), not just by its name.
     static func matches(query: String, title: String, keywords: [String] = []) -> Bool {
         let foldedQuery = fold(query)
         guard !foldedQuery.isEmpty else { return true }

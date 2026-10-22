@@ -235,8 +235,12 @@ enum CommandBarCatalog {
                 isActive: isOn,
                 trouble: needsAccessibility ? .needsPermission : nil,
                 run: { _ in
-                    UserDefaults.standard.set(!isOn, forKey: key)
-                    FeatureRuntime.shared.sync([feature])
+                    if feature.group == .dynamicIsland {
+                        FeatureRuntime.shared.setIslandFeature(feature, enabled: !isOn)
+                    } else {
+                        UserDefaults.standard.set(!isOn, forKey: key)
+                        FeatureRuntime.shared.sync([feature])
+                    }
                     QuickToolHUD.show(icon: feature.symbolName, message: name)
                 })
         }

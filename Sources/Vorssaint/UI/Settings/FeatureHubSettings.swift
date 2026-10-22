@@ -30,7 +30,6 @@ struct FeatureHubSettings: View {
     /// gives an ordinary page anchor.
     @State private var highlightedFeature: AppFeature?
     @State private var expandedGroups = Set(FeatureGroup.allCases)
-    @State private var islandExtensionsExpanded = true
     /// Installed switches never once turned on, read when the page appears
     /// and after every install change rather than on every redraw.
     @State private var neverUsed: [AppFeature] = []
@@ -84,8 +83,7 @@ struct FeatureHubSettings: View {
                     summaryCard
                     neverUsedCard
                 }
-                dynamicIslandCard
-                ForEach(FeatureGroup.allCases.filter { $0 != .dynamicIsland && !AppFeature.hubFeatures(in: $0).isEmpty }, id: \.self) { group in
+                ForEach(FeatureGroup.allCases.filter { !AppFeature.hubFeatures(in: $0).isEmpty }, id: \.self) { group in
                     groupCard(group)
                 }
                 VStack(alignment: .leading, spacing: 4) {
@@ -111,11 +109,7 @@ struct FeatureHubSettings: View {
         if let request = router.pendingFeatureTarget {
             router.consumeFeatureTarget(id: request.id)
             revealID = request.id
-            if request.feature.group == .dynamicIsland {
-                if request.feature != .notch { islandExtensionsExpanded = true }
-            } else {
-                expandedGroups.insert(request.feature.group)
-            }
+            expandedGroups.insert(request.feature.group)
             DispatchQueue.main.async {
                 guard self.revealID == request.id else { return }
                 proxy.scrollTo(request.feature.group, anchor: .top)
@@ -134,11 +128,7 @@ struct FeatureHubSettings: View {
             }
         } else if let lastFeature = FeatureHubNavigationState.shared.lastNavigatedFeature {
             FeatureHubNavigationState.shared.lastNavigatedFeature = nil
-            if lastFeature.group == .dynamicIsland {
-                if lastFeature != .notch { islandExtensionsExpanded = true }
-            } else {
-                expandedGroups.insert(lastFeature.group)
-            }
+            expandedGroups.insert(lastFeature.group)
             DispatchQueue.main.async {
                 proxy.scrollTo(lastFeature.group, anchor: .top)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
@@ -284,40 +274,6 @@ struct FeatureHubSettings: View {
         }
     }
 
-
-
-
-    /// The island stays near the top, with its additions in a group the user
-    /// can close when they want a shorter catalog.
-    private var dynamicIslandCard: some View {
-        let members = AppFeature.features(in: .dynamicIsland)
-        let installed = members.filter(\.isAvailable).count
-        return SettingsCard {
-            groupHeader(.dynamicIsland, installed: installed, total: members.count)
-            FeatureHubRow(feature: .notch, hub: hub,
-                          isHighlighted: highlightedFeature == .notch)
-                .id(AppFeature.notch)
-            DisclosureGroup(
-                FeatureStrings.notch(l10n.language).modules,
-                isExpanded: $islandExtensionsExpanded
-            ) {
-                if islandExtensionsExpanded {
-                    VStack(spacing: 0) {
-                        ForEach(members.filter { $0 != .notch }, id: \.self) { feature in
-                            FeatureHubRow(feature: feature, hub: hub,
-                                          isHighlighted: highlightedFeature == feature)
-                                .id(feature)
-                            if feature != members.last {
-                                Divider().padding(.leading, 8)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        .id(FeatureGroup.dynamicIsland)
-    }
-
     /// Groups start open; LazyVStack builds distant groups as they enter view.
     /// Closing a group removes its feature rows until the user reopens it.
     private func groupCard(_ group: FeatureGroup) -> some View {
@@ -429,7 +385,6 @@ private struct InstalledShareBar: View {
 private struct FeatureHubRow: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
-    @State private var confirmingExtensions = false
     @State private var hovering = false
     @State private var showingMetadata = false
     let feature: AppFeature
@@ -440,13 +395,6 @@ private struct FeatureHubRow: View {
 
     private var opensSettings: Bool { installed && feature.hasNavigableSettingsDestination }
 
-    /// Extensions still installed under this row's feature; only the Dynamic
-    /// Island has any. They do nothing without it, so its uninstall asks
-    /// whether they leave too.
-    private var installedExtensions: [AppFeature] {
-        feature == .notch ? AppFeature.dynamicIslandExtensions.filter(\.isAvailable) : []
-    }
-
     /// Set only while this Mac cannot run the feature and it is not yet
     /// installed, so an install that predates the check keeps an ordinary
     /// row with its settings and Uninstall reachable.
@@ -454,7 +402,6 @@ private struct FeatureHubRow: View {
 
     private var accessibilityTitle: String {
         let title = feature.hubTitle(l10n.s, hub: hub)
-        if feature == .notch { return "\(title). \(hub.experimentalBadge)" }
         return feature.isBeta ? "\(title). \(l10n.s.betaFeatureWarning)" : title
     }
 
@@ -509,15 +456,6 @@ private struct FeatureHubRow: View {
         .padding(.horizontal, 8)
         .background(rowFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .onHover { hovering = $0 }
-        .alert(hub.notchUninstallTitle, isPresented: $confirmingExtensions) {
-            Button(hub.notchUninstallWithExtensions) { flip(to: false, alongside: installedExtensions) }
-            Button(hub.notchUninstallKeepExtensions) { flip(to: false) }
-            Button(l10n.s.mediaCancel, role: .cancel) {}
-        } message: {
-            Text(String(format: hub.notchUninstallMessageFormat,
-                        installedExtensions.map { $0.hubTitle(l10n.s, hub: hub) }
-                            .joined(separator: ", ")))
-        }
     }
 
     private var rowFill: Color {
@@ -531,15 +469,6 @@ private struct FeatureHubRow: View {
                 HStack(spacing: 6) {
                     Text(feature.hubTitle(l10n.s, hub: hub))
                         .foregroundStyle(installed ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-                    if feature == .notch {
-                        Text(hub.experimentalBadge.uppercased())
-                            .font(.system(size: 9, weight: .bold))
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 3)
-                            .foregroundStyle(.orange)
-                            .background(Capsule().fill(Color.orange.opacity(0.14)))
-                            .accessibilityHidden(true)
-                    }
                     if feature.isBeta {
                         Text(l10n.s.betaBadge)
                             .font(.system(size: 8, weight: .bold))
@@ -606,7 +535,7 @@ private struct FeatureHubRow: View {
     private var installAction: some View {
         if installed {
             Button(hub.uninstallButton) {
-                if installedExtensions.isEmpty { flip(to: false) } else { confirmingExtensions = true }
+                flip(to: false)
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
@@ -631,9 +560,9 @@ private struct FeatureHubRow: View {
         }
     }
 
-    private func flip(to install: Bool, alongside companions: [AppFeature] = []) {
+    private func flip(to install: Bool) {
         withAnimation(.easeOut(duration: 0.22)) {
-            FeatureRuntime.shared.setAvailable([feature] + companions, install)
+            FeatureRuntime.shared.setAvailable([feature], install)
         }
     }
 }
