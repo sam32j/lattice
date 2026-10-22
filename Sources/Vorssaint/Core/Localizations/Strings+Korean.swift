@@ -198,7 +198,7 @@ extension Strings {
         micUnmutedHUD: "음소거를 해제했습니다",
         micMutePartialHUD: "일부 마이크를 음소거하지 못했습니다",
         micUnmutePartialHUD: "일부 마이크가 아직 음소거되어 있습니다",
-        micMuteMenuBarToggle: "음소거 중 메뉴 막대에 표시",
+        micMuteMenuBarToggle: "메뉴 막대에 음소거 상태 표시",
         micMuteMenuBarCaption: "이 기능으로 마이크를 음소거하는 동안 메뉴 막대의 앱 아이콘 옆에 빨간 줄이 그어진 마이크가 표시됩니다.",
 
         pastePlainName: "일반 텍스트로 붙여넣기",
@@ -257,7 +257,7 @@ extension Strings {
         dockClickMinimize: "Dock 클릭으로 최소화",
         dockClickMinimizeCaption: "앞에 있는 앱의 Dock 아이콘을 클릭하면 윈도우를 최소화합니다. 다시 클릭하면 복원됩니다.",
         dockClickCycleWindows: "Dock 클릭으로 윈도우 전환",
-        dockClickCycleWindowsCaption: "앞에 있는 앱의 Dock 아이콘을 클릭하면 윈도우를 차례로 전환합니다(⌘`과 동일).",
+        dockClickCycleWindowsCaption: "앞에 있는 앱의 Dock 아이콘을 클릭하면 윈도우를 차례로 전환합니다.",
         dockPreviewActiveNow: "Dock에서 활성화됨",
         dockPreviewDockUnavailable: "Dock 항목을 읽을 수 없습니다.",
         dockPreviewAutohideBeta: "베타 기능입니다. 일부 문제가 남아 있을 수 있습니다.",
