@@ -34,7 +34,7 @@ enum SettingsSidebarSupport {
         let pageItem = SettingsSidebarItem(id: .page(page),
                                            destination: FeatureSettingsDestination(page),
                                            title: title, icon: icon)
-        if page == .dock || page == .windowLayout || page == .clipboard || page == .wallpaper || page == .screenshot || page == .screenRecorder || page == .shortcuts || page == .mouse || page == .keyboard || page == .audioInput || page == .audioOutput || page == .scratchpad {
+        if page == .monitor || page == .dock || page == .windowLayout || page == .clipboard || page == .wallpaper || page == .screenshot || page == .screenRecorder || page == .shortcuts || page == .mouse || page == .keyboard || page == .audioInput || page == .audioOutput || page == .scratchpad {
             return [pageItem]
         }
         var rows = includePage ? [pageItem] : []
@@ -46,7 +46,7 @@ enum SettingsSidebarSupport {
             guard destination.page == page, destination.sectionAnchor != nil,
                   feature != .extraBrightness,
                   feature != .wallpaper,
-                  (feature == .switcher || feature.isVisibleInSettings(isAvailable: isAvailable)) else { continue }
+                  (feature == .brightness || feature == .bluetoothSleep || feature == .switcher || feature.isVisibleInSettings(isAvailable: isAvailable)) else { continue }
             rows.append(SettingsSidebarItem(id: .feature(feature),
                                             destination: destination,
                                             title: featureTitle(feature),
