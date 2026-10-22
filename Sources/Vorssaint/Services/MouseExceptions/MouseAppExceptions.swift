@@ -91,6 +91,8 @@ final class MouseAppExceptions: ObservableObject {
             lock.withLock { lookups[scope] = Set(sanitized) }
         }
         lock.withLock {
+            let shortcutLists = defaults.dictionary(forKey: MouseShortcutExceptions.defaultsKey) as? [String: [String]] ?? [:]
+            lookups[.buttonShortcuts, default: []].formUnion(shortcutLists.values.flatMap { $0 })
             allEmpty = lookups.values.allSatisfy(\.isEmpty)
             listsNamePath = lookups.values.contains {
                 $0.contains(where: MouseAppExceptionSupport.isExecutablePathIdentity)
@@ -156,11 +158,18 @@ final class MouseAppExceptions: ObservableObject {
     /// off.
     func excludesActionTarget(_ scope: MouseExceptionScope,
                               at point: CGPoint,
-                              sourceProcessID: Int64 = 0) -> Bool {
-        let (exceptions, sources) = lookup(scope)
+                              sourceProcessID: Int64 = 0,
+                              exceptionsOverride: Set<String>? = nil) -> Bool {
+        let (storedExceptions, sources) = lookup(scope)
+        let exceptions = exceptionsOverride ?? storedExceptions
         guard !exceptions.isEmpty else { return false }
         if let pid = MouseAppExceptionSupport.sourceProcessID(sourceProcessID),
-           sources.contains(pid) {
+           exceptionsOverride != nil,
+           MouseAppExceptionSupport.isExcepted(Self.onMain { identities(forProcess: pid) }, exceptions: exceptions) {
+            return true
+        }
+        if let pid = MouseAppExceptionSupport.sourceProcessID(sourceProcessID),
+           sources.contains(pid), exceptionsOverride == nil {
             return true
         }
         let answer = pointerIdentity(at: point)
