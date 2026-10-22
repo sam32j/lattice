@@ -11,7 +11,6 @@ struct BrightnessSection: View {
     @ObservedObject private var service = BrightnessService.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var features = FeatureRuntime.shared
-    @AppStorage(DefaultsKey.brightnessOSDEnabled) private var brightnessOSDEnabled = false
     @AppStorage(DefaultsKey.brightnessKeysEnabled) private var brightnessKeysEnabled = false
     @State private var optionsExpanded = false
     var collapsible = true
@@ -38,18 +37,6 @@ struct BrightnessSection: View {
                 if service.keyboardLightEnabled != nil {
                     Divider()
                     keyboardLightRow
-                }
-                if service.brightnessOSDSupported {
-                    Divider()
-                    Toggle(strings.osdToggle, isOn: $brightnessOSDEnabled)
-                        .font(.system(size: 10.5, weight: .medium))
-                        .toggleStyle(.switch)
-                        .controlSize(.mini)
-                        .help(strings.osdCaption)
-                        .onChange(of: brightnessOSDEnabled) { _, isOn in
-                            if isOn { permissions.requestAccessibility() }
-                            service.syncWithPreferences()
-                        }
                 }
                 if AppFeature.extraBrightness.isPresentInControls() {
                     Divider()
@@ -180,8 +167,7 @@ struct BrightnessSection: View {
 
     private func brightnessBinding(_ display: BrightnessDisplay) -> Binding<Double> {
         Binding(get: { display.brightness },
-                set: { service.setBrightness($0, for: display.id,
-                                             showOSD: brightnessOSDEnabled) })
+                set: { service.setBrightness($0, for: display.id) })
     }
 }
 
