@@ -69,7 +69,7 @@ extension SuperKeyStrings {
         pageTitle: "Super key",
         hubDescription: "Turns one key into the modifier combination you choose.",
         enableToggle: "Use this key as the super key",
-        enableCaption: "Hold it and press any key. Choose one or more modifiers below.",
+        enableCaption: "Hold your chosen key to send a combination of modifier keys.",
         modifierKeysNote: "Keep this key set to its default action in System Settings › Keyboard › Modifier Keys.",
         sourceKey: "Key to hold",
         capsLockKey: "Caps Lock",

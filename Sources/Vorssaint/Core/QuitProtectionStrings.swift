@@ -82,7 +82,7 @@ extension QuitProtectionStrings {
         description: "Protects ⌘Q and ⌘W from accidental presses",
         intro: "Configure each shortcut independently. The original action passes only after the selected confirmation.",
         enabled: "Protect this shortcut",
-        enabledCaption: "Other Command shortcuts continue to work normally.",
+        enabledCaption: "Require a deliberate action before quitting or closing a window.",
         mode: "Confirmation mode",
         hold: "Hold to confirm",
         doublePress: "Double press",
