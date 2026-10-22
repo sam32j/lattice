@@ -92,7 +92,7 @@ final class FeatureRuntime: ObservableObject {
     /// strands someone's settings costs far more than one that leaves a
     /// feature reporting itself unsupported.
     private func mayFlip(_ feature: AppFeature, to available: Bool) -> Bool {
-        guard !feature.isToggleOwned else { return false }
+        guard !feature.isToggleOwned || feature.group == .monitor else { return false }
         guard feature.isAvailable != available else { return false }
         return !available || feature.isHardwareSupported
     }

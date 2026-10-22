@@ -59,6 +59,7 @@ enum DefaultsKey {
     static let mouseNavigationEnabled = "mouseNavigationEnabled" // side buttons trigger Back and Forward
     static let mouseButtonShortcutsEnabled = "mouseButtonShortcutsEnabled" // extra buttons press a key combination (issue #282)
     static let mouseButtonShortcuts = "mouseButtonShortcuts" // [button number: GlobalShortcut storage value]
+    static let mouseShortcutAppExceptions = "mouseShortcutAppExceptions"
     static let mouseSpacesGestureEnabled = "mouseSpacesGestureEnabled" // hold a button and drag to switch Spaces (issue #1012)
     static let mouseSpacesGestureButton = "mouseSpacesGestureButton"   // button number, 0 while none is chosen
     static let mouseSpacesGestureFollowsDrag = "mouseSpacesGestureFollowsDrag" // the Space moves with the hand, the way natural scrolling does
@@ -195,7 +196,6 @@ enum DefaultsKey {
     static let extraBrightnessLevel = "extraBrightnessLevel"   // Int percent 0-100
     static let brightnessControlEnabled = "brightnessControlEnabled" // sliders for every display
     static let brightnessKeysEnabled = "brightnessKeysEnabled" // brightness keys act on the display under the pointer
-    static let brightnessOSDEnabled = "brightnessOSDEnabled" // brightness adjustment overlay
     static let brightnessKeyStep = "brightnessKeyStep" // BrightnessSupport.KeyStep raw value
     static let displayBrightnessShortcutsEnabled = "displayBrightnessShortcutsEnabled"
     static let displayBrightnessDecreaseShortcut = "displayBrightnessDecreaseShortcut"
@@ -1111,6 +1111,7 @@ enum Defaults {
         DefaultsKey.mouseNavigationEnabled: false,
         DefaultsKey.mouseButtonShortcutsEnabled: false,
         DefaultsKey.mouseButtonShortcuts: [String: String](),
+        DefaultsKey.mouseShortcutAppExceptions: [String: [String]](),
         DefaultsKey.mouseSpacesGestureEnabled: false,
         DefaultsKey.mouseSpacesGestureButton: 0,
         DefaultsKey.mouseSpacesGestureFollowsDrag: false,
@@ -1228,7 +1229,6 @@ enum Defaults {
         DefaultsKey.extraBrightnessLevel: 100,
         DefaultsKey.brightnessControlEnabled: false,
         DefaultsKey.brightnessKeysEnabled: false,
-        DefaultsKey.brightnessOSDEnabled: false,
         DefaultsKey.brightnessKeyStep: BrightnessSupport.KeyStep.standard.rawValue,
         DefaultsKey.displayBrightnessShortcutsEnabled: false,
         DefaultsKey.displayBrightnessDecreaseShortcut: "shift+command:27",
@@ -1398,7 +1398,6 @@ enum Defaults {
         DefaultsKey.keyboardDebounceWindowMs: defaultKeyboardDebounceWindowMs,
         DefaultsKey.keyboardDebounceKeyWindows: "",
         DefaultsKey.panelUtilityCleaning: true,
-        DefaultsKey.cleaningModeEnabled: true,
         DefaultsKey.cleaningModeShortcutEnabled: false,
         DefaultsKey.cleaningModeShortcut: GlobalShortcut.cleaningModeDefault.storageValue,
         DefaultsKey.cleaningModeKeepScreenVisible: false,
@@ -1834,6 +1833,7 @@ enum Defaults {
         migrateSwitcherPreviewExcludedApps(in: defaults)
         migrateNotchWatchAvailability(in: defaults)
         migratePermanentInputControls(in: defaults)
+        migrateCleaningModeShortcut(in: defaults)
         migratePageOwnedControls(in: defaults)
         migrateAudioControls(in: defaults)
         migrateCaptureControls(in: defaults)
