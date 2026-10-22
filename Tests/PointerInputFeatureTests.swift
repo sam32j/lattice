@@ -1641,6 +1641,10 @@ enum PointerInputFeatureTests {
                    && Defaults.sanitizedMiddleClickTapFingers(2) == 0
                    && Defaults.sanitizedMiddleClickTapFingers(-1) == 0,
                "any other tap finger count means off")
+        suite.expect(MiddleClickSupport.availableTapSelection(3, systemDragEnabled: true) == 0
+                     && MiddleClickSupport.availableTapSelection(3, systemDragEnabled: false) == 3
+                     && MiddleClickSupport.availableTapSelection(4, systemDragEnabled: true) == 4,
+                     "trackpad picker always presents a supported selection without rewriting saved preferences")
         suite.expect(MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                 exceededFingerCount: false, buttonPressedDuring: false,
                                                 positionUnavailable: false, systemDragGestureEnabled: false,
@@ -2075,7 +2079,7 @@ enum PointerInputFeatureTests {
         func appStorageProperty(_ key: String, in lines: [String]) -> String? {
             guard let line = lines.first(where: {
                 isCodeLine($0) && $0.contains("@AppStorage(\(key))")
-            }), let declaration = line.range(of: "private var ") else { return nil }
+            }), let declaration = line.range(of: "var ") else { return nil }
             return line[declaration.upperBound...].split(whereSeparator: { $0.isWhitespace || $0 == "=" }).first
                 .map(String.init)
         }
@@ -2199,9 +2203,9 @@ enum PointerInputFeatureTests {
         }, "a capture holds the tap up by itself: the press asked for may be the drag's, "
             + "whose switch is not the shortcut switch")
 
-        let mouseSettingsLines = ((try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Settings/MouseButtonSettings.swift",
-            encoding: .utf8)) ?? "").components(separatedBy: "\n")
+        let mouseSettingsLines = ["MouseButtonSettings", "MouseButtonSettingsRows", "MouseButtonSettingsCapture"]
+            .map { (try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/\($0).swift", encoding: .utf8)) ?? "" }
+            .joined(separator: "\n").components(separatedBy: "\n")
         // Matched as the whole line, indentation included: at Section-child
         // depth no outer `if enabled` can quietly re-gate the list behind the
         // shortcut switch alone.
@@ -2215,8 +2219,9 @@ enum PointerInputFeatureTests {
             exceptionsListCoversBothSwitches = cursor < mouseSettingsLines.count
                 && mouseSettingsLines[cursor].contains("MouseExceptionsList(scope: .buttonShortcuts)")
         }
-        suite.expect(exceptionsListCoversBothSwitches,
-               "the exception list the tap consults for the drag stays on screen while either switch is on")
+        suite.expect(!exceptionsListCoversBothSwitches
+                     && mouseSettingsLines.contains { $0.contains("MouseShortcutExceptionEditor(button: button)") },
+               "shortcut exclusions belong to each mapping, never the Space-drag gesture")
         var spacesSwitchOffDropsBinding = false
         for (index, line) in mouseSettingsLines.enumerated()
         where isCodeLine(line) && line.contains(".onChange(of: spacesEnabled)") {
@@ -2236,7 +2241,7 @@ enum PointerInputFeatureTests {
         // point at a list that is off screen with the shortcut switch off.
         var spacesPromptIsOwn = false
         for (index, line) in mouseSettingsLines.enumerated()
-        where isCodeLine(line) && line.contains("private var spacesRow: some View {") {
+        where isCodeLine(line) && line.contains("var spacesRow: some View {") {
             let window = mouseSettingsLines[index...].prefix(10)
             spacesPromptIsOwn = window.contains {
                 isCodeLine($0) && $0.contains("Text(text.spacesCaptureWaiting)")
@@ -2248,7 +2253,7 @@ enum PointerInputFeatureTests {
                "the drag capture's waiting prompt never invites the side wheel the drag refuses")
         var spacesRefusalsAreOwn = false
         for (index, line) in mouseSettingsLines.enumerated()
-        where isCodeLine(line) && line.contains("private func handleSpacesCapture") {
+        where isCodeLine(line) && line.contains("func handleSpacesCapture") {
             let window = mouseSettingsLines[index...].prefix(16)
             spacesRefusalsAreOwn = window.contains {
                 isCodeLine($0) && $0.contains("text.spacesCaptureUnsupported")
@@ -2268,7 +2273,7 @@ enum PointerInputFeatureTests {
         // to nil while the drag's row goes on naming the button.
         var spacesCaptureRefusesPending = false
         for (index, line) in mouseSettingsLines.enumerated()
-        where isCodeLine(line) && line.contains("private func handleSpacesCapture") {
+        where isCodeLine(line) && line.contains("func handleSpacesCapture") {
             let window = mouseSettingsLines[index...].prefix(16)
             spacesCaptureRefusesPending = window.contains {
                 isCodeLine($0) && $0.contains("pendingButton == seen")
@@ -2589,7 +2594,7 @@ enum PointerInputFeatureTests {
         // The page is the only place a refused mapping is visible, so the
         // reason has to reach it and be spelled out there.
         let superKeySettingsSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Settings/KeyboardSettings.swift",
+            contentsOfFile: "Sources/Vorssaint/UI/Settings/KeyboardSuperKeySettings.swift",
             encoding: .utf8)) ?? ""
         let failureMark = superKeySettingsSource.range(of: "superKey.mappingFailure")
         let runningMark = superKeySettingsSource.range(of: "superKey.isRunning")
@@ -3461,6 +3466,13 @@ enum PointerInputFeatureTests {
             suite.expect(excluded(["com.example.modeler"], [menuBar, app], hit: 45).verdict
                     && excluded(["com.example.modeler"], [ownPanel, app], hit: 46).verdict,
                    "a surface no app owns, or one of this app's windows, leaves the usual answer in place")
+            setLists([])
+            let shortcutExceptions = MouseAppExceptions(
+                onScreenWindows: { [app] }, receivingWindow: { _ in 41 },
+                identitiesForProcess: { identities[$0].map { [$0] } ?? [] })
+            suite.expect(shortcutExceptions.excludesActionTarget(.buttonShortcuts, at: point,
+                sourceProcessID: 11, exceptionsOverride: ["com.apple.dock"]),
+                "per-shortcut exclusions match the event source even when pointer and foreground differ")
             let empty = excluded([], [launchpad, app], hit: 40)
             suite.expect(!empty.verdict && empty.lookups == 0,
                    "an empty list stands nothing down and never asks the window server")
