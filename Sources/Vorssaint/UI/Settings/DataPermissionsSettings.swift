@@ -21,17 +21,60 @@ struct DataPermissionsSettings: View {
         FeatureStrings.backup(l10n.language)
     }
 
+    private var clearActionTitle: String {
+        switch l10n.language {
+        case .enUS: return "Clear"
+        case .ptBR: return "Limpar"
+        case .es: return "Borrar"
+        case .de: return "Zurücksetzen"
+        case .fr: return "Effacer"
+        case .it: return "Cancella"
+        case .ja: return "消去"
+        case .ko: return "지우기"
+        case .zhHans: return "清除"
+        case .zhTW, .zhHK: return "清除"
+        case .ru: return "Сбросить"
+        case .uk: return "Скинути"
+        case .tr: return "Temizle"
+        case .sk: return "Vymazať"
+        }
+    }
+
+    private var uninstallActionTitle: String {
+        switch l10n.language {
+        case .enUS: return "Uninstall"
+        case .ptBR: return "Desinstalar"
+        case .es: return "Desinstalar"
+        case .de: return "Deinstallieren"
+        case .fr: return "Désinstaller"
+        case .it: return "Disinstalla"
+        case .ja: return "アンインストール"
+        case .ko: return "제거"
+        case .zhHans: return "卸载"
+        case .zhTW, .zhHK: return "解除安裝"
+        case .ru: return "Удалить"
+        case .uk: return "Видалити"
+        case .tr: return "Kaldır"
+        case .sk: return "Odinštalovať"
+        }
+    }
+
     var body: some View {
         Form {
             Section(DataPermissionsStrings.localized(l10n.language).data) {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 10) {
-                        Button {
-                            importFailed = false
-                            exported = SettingsBackup.runExportPanel()
-                        } label: {
-                            Label(backup.exportButton, systemImage: "square.and.arrow.up")
+                VStack(alignment: .leading, spacing: 12) {
+                    // Row 1: Import settings
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(backup.importButton)
+                                .font(.body)
+                            if importFailed {
+                                Text(backup.invalidFile)
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
                         }
+                        Spacer(minLength: 12)
                         Button {
                             exported = nil
                             importFailed = false
@@ -43,77 +86,118 @@ struct DataPermissionsSettings: View {
                                 importFailed = true
                             }
                         } label: {
-                            Label(backup.importButton, systemImage: "square.and.arrow.down")
+                            Label(l10n.language == .enUS ? "Import…" : backup.importButton,
+                                  systemImage: "square.and.arrow.down")
                         }
                     }
-                    Text(backup.description)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if exported == true {
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                            Text(backup.exported).font(.caption).foregroundStyle(.green)
+
+                    Divider()
+
+                    // Row 2: Export settings
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(backup.exportButton)
+                                .font(.body)
+                            Text(backup.description)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if exported == true {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                                    Text(backup.exported).font(.caption).foregroundStyle(.green)
+                                }
+                            } else if exported == false {
+                                Text(backup.exportFailed)
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
                         }
-                    } else if exported == false {
-                        Text(backup.exportFailed)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
-                    if importFailed {
-                        Text(backup.invalidFile)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
+                        Spacer(minLength: 12)
+                        Button {
+                            importFailed = false
+                            exported = SettingsBackup.runExportPanel()
+                        } label: {
+                            Label(l10n.language == .enUS ? "Export…" : backup.exportButton,
+                                  systemImage: "square.and.arrow.up")
+                        }
                     }
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 4)
             }
 
             Section(FeatureStrings.hub(l10n.language).tabPermissions) {
                 PermissionsPortalSections(hub: FeatureStrings.hub(l10n.language))
-                VStack(alignment: .leading, spacing: 10) {
-                    Button(role: .destructive) {
-                        showClearConfirm = true
-                    } label: {
-                        Label(l10n.s.advancedClearButton, systemImage: "lock.slash")
-                    }
-                    .foregroundStyle(.red)
-                    .disabled(working)
-                    Text(l10n.s.advancedResetDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if let cleared {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label(cleared ? l10n.s.advancedCleared : l10n.s.advancedClearFailed,
-                                  systemImage: cleared ? "arrow.clockwise.circle" : "exclamationmark.triangle")
-                                .font(.caption)
-                                .foregroundStyle(cleared ? Color.secondary : Color.orange)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Button(FeatureStrings.hub(l10n.language).restartButton) {
-                                FeatureRuntime.shared.relaunchApp()
-                            }
-                        }
-                    }
-                }
-                .padding(.vertical, 8)
             }
 
-            Section(l10n.s.advancedUninstallSection) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Button(role: .destructive) {
-                        showUninstallConfirm = true
-                    } label: {
-                        Label(l10n.s.advancedUninstallButton, systemImage: "trash")
+            Section(DataPermissionsStrings.localized(l10n.language).dangerZone) {
+                VStack(alignment: .leading, spacing: 12) {
+                    // Row 1: Clear all permissions
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(l10n.s.advancedClearButton)
+                                .font(.body)
+                            Text(l10n.s.advancedResetDescription)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if let cleared {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Label(cleared ? l10n.s.advancedCleared : l10n.s.advancedClearFailed,
+                                          systemImage: cleared ? "arrow.clockwise.circle" : "exclamationmark.triangle")
+                                        .font(.caption)
+                                        .foregroundStyle(cleared ? Color.secondary : Color.orange)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    Button(FeatureStrings.hub(l10n.language).restartButton) {
+                                        FeatureRuntime.shared.relaunchApp()
+                                    }
+                                }
+                                .padding(.top, 4)
+                            }
+                        }
+                        Spacer(minLength: 12)
+                        Button(role: .destructive) {
+                            showClearConfirm = true
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.2.circlepath")
+                                Spacer()
+                                Text(clearActionTitle)
+                            }
+                            .frame(width: 90)
+                        }
+                        .buttonStyle(DestructiveGhostButtonStyle())
+                        .disabled(working)
                     }
-                    .buttonStyle(DestructiveOutlineButtonStyle())
-                    .disabled(working)
-                    Text(l10n.s.advancedUninstallDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+
+                    Divider()
+
+                    // Row 2: Uninstall Lattice
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(l10n.s.advancedUninstallButton)
+                                .font(.body)
+                            Text(l10n.s.advancedUninstallDescription)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 12)
+                        Button(role: .destructive) {
+                            showUninstallConfirm = true
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "trash")
+                                Spacer()
+                                Text(uninstallActionTitle)
+                            }
+                            .frame(width: 90)
+                        }
+                        .buttonStyle(DestructiveSolidButtonStyle())
+                        .disabled(working)
+                    }
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 4)
             }
         }
         .formStyle(.grouped)
@@ -165,19 +249,38 @@ struct DataPermissionsSettings: View {
     }
 }
 
-private struct DestructiveOutlineButtonStyle: ButtonStyle {
+private struct DestructiveGhostButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .font(.body.weight(.medium))
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
+            .frame(width: 110, height: 28)
             .foregroundStyle(.red)
-            .background(.red.opacity(configuration.isPressed ? 0.12 : 0.03),
-                        in: RoundedRectangle(cornerRadius: 6))
+            .background(Color.red.opacity(configuration.isPressed ? 0.15 : 0.05),
+                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 6).strokeBorder(.red.opacity(0.7))
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(Color.red.opacity(0.65), lineWidth: 1)
             }
+            .opacity(isEnabled ? 1 : 0.45)
+    }
+}
+
+private struct DestructiveSolidButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.medium))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .frame(width: 110, height: 28)
+            .foregroundStyle(.white)
+            .background(Color.red.opacity(configuration.isPressed ? 0.82 : 1.0),
+                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .opacity(isEnabled ? 1 : 0.45)
     }
 }

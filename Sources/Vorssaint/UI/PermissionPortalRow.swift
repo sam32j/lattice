@@ -40,10 +40,6 @@ struct PermissionPortalRow: View {
                     .accessibilityIdentifier("permission.details.\(permission.rawValue)")
                     .help(detailsLabel)
                 }
-                Text(permission.explainer(hub))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     if status != .granted, hasRequestFlow {
                         Button(hub.requestButton) { request() }
@@ -59,7 +55,7 @@ struct PermissionPortalRow: View {
         .sheet(isPresented: $showsDetails) {
             PermissionDetailsSheet(title: permission.name(hub),
                                    explanation: permission.explainer(hub),
-                                   featureNames: activeFeatures.map { $0.hubTitle(l10n.s, hub: hub) },
+                                   features: activeFeatures.map { ($0.hubTitle(l10n.s, hub: hub), $0.symbolName) },
                                    isUnused: status == .granted && activeFeatures.isEmpty,
                                    hub: hub)
         }

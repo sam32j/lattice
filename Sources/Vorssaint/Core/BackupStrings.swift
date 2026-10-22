@@ -74,7 +74,7 @@ extension BackupFeatureStrings {
 extension BackupFeatureStrings {
     static let enUS = BackupFeatureStrings(
         title: "Backup",
-        description: "Take your setup to another Mac: export every preference to a file and import it there. Your Scratchpad notes, clipboard history, Shelf items and system permissions never leave this Mac.",
+        description: "Your local data including Scratchpad notes, clipboard history, shelf items, and system permissions will not be exported.",
         exportButton: "Export settings…",
         importButton: "Import settings…",
         exported: "Backup saved",
