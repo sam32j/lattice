@@ -9,7 +9,7 @@ struct SettingsAppListStrings {
 
     static func text(_ language: AppLanguage) -> Self {
         switch language {
-        case .enUS: return Self(disabledApps: "Disable for these apps", edit: "Edit…", done: "Done")
+        case .enUS: return Self(disabledApps: "Disable in these apps", edit: "Edit…", done: "Done")
         case .ptBR: return Self(disabledApps: "Desativar para estes apps", edit: "Editar…", done: "Concluído")
         case .tr: return Self(disabledApps: "Bu uygulamalarda devre dışı bırak", edit: "Düzenle…", done: "Bitti")
         case .ru: return Self(disabledApps: "Отключать в этих приложениях", edit: "Изменить…", done: "Готово")
