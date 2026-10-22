@@ -3349,7 +3349,7 @@ enum NotchTests {
         }
         // Settings asks that rule with the displays connected now, and its
         // button switches to every display (issue #1711).
-        let notchSettings = (try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/NotchSettings.swift",
+        let notchSettings = (try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/NotchSettingsContentNavigation.swift",
                                          encoding: .utf8)) ?? ""
         let notchServiceSource = (try? String(contentsOfFile: "Sources/Vorssaint/Services/Notch/NotchService.swift",
                                               encoding: .utf8)) ?? ""

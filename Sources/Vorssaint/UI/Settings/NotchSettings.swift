@@ -27,6 +27,7 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchWatchEnabled) var watchEnabled = true
     @AppStorage(DefaultsKey.notchLyricsEnabled) var lyricsEnabled = true
     @AppStorage(DefaultsKey.notchLyricsOnline) var lyricsOnline = false
+    @AppStorage(DefaultsKey.notchBrowserCovers) var browserCovers = false
     @AppStorage(DefaultsKey.notchQueueEnabled) var queueEnabled = true
     @AppStorage(DefaultsKey.notchLiveEqualizer) var liveEqualizer = false
     @AppStorage(DefaultsKey.notchEnabled) var enabled = false
@@ -39,8 +40,10 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchDisplay) var display = NotchDisplay.automatic.rawValue
     @AppStorage(DefaultsKey.notchSilhouette) var silhouette = NotchSilhouette.capsule.rawValue
     @AppStorage(DefaultsKey.notchOpenOnHover) var hover = false
+    @AppStorage(DefaultsKey.notchShortcutEnabled) var shortcutEnabled = false
     @AppStorage(DefaultsKey.notchHideInFullscreen) var hideInFullscreen = false
     @AppStorage(DefaultsKey.notchHideUntilHover) var hideUntilHover = false
+    @AppStorage(DefaultsKey.notchHiddenShowsActivity) var hiddenShowsActivity = false
     @AppStorage(DefaultsKey.notchCoversMenus) var coversMenus = true
     @AppStorage(DefaultsKey.notchHoverDelay) var hoverDelay = NotchSupport.defaultHoverDelay
     @AppStorage(DefaultsKey.notchCloseDelay) var closeDelay = NotchSupport.defaultCloseDelay
@@ -56,6 +59,7 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchBattery) var battery = true
     @AppStorage(DefaultsKey.notchClipboard) var clipboard = true
     @AppStorage(DefaultsKey.notchClipboardWindow) var clipboardWindow = true
+    @AppStorage(DefaultsKey.notchClipboardCardSize) var clipboardCardSize = NotchClipboardCardSize.comfortable.rawValue
     @AppStorage(DefaultsKey.screenshotDefaultAction) var captureAction = ""
     @AppStorage(DefaultsKey.notchCapture) var capture = true
     @AppStorage(DefaultsKey.notchTrackChange) var trackChange = true
@@ -110,20 +114,20 @@ struct NotchSettings: View {
     var configuration: [String] {
         [String(enabled), String(calendarEnabled), String(calendarCountdown), String(calendarTimeLeft),
          String(notificationsEnabled), String(dismissNativeNotifications), String(gesturesEnabled),
-         String(lyricsEnabled), String(lyricsOnline), String(queueEnabled), String(liveEqualizer),
+         String(lyricsEnabled), String(lyricsOnline), String(browserCovers), String(queueEnabled), String(liveEqualizer),
          String(showPlayingMusic), String(includeOtherPlayers), idle, hiddenControls, controlOrder, size,
          String(timerEnabled), String(timerSoundEnabled), String(hideTimerCountdown),
          String(cameraEnabled), String(accessoriesEnabled), String(outlineEnabled), String(hideMenuBarGap),
          String(customWidth), String(customHeight), String(cameraFitWidth), String(cameraFitHeight),
          String(capsuleFitWidth), String(capsuleFitHeight), String(capsuleFitDrop), String(hapticFeedback),
          String(shelfWindow), String(dragReveal), String(captureControls), String(quickPanel), String(appPanel),
-         String(hoverExpand), String(hideUntilHover), String(hideInFullscreen), String(coversMenus),
+         String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(hideInFullscreen), String(coversMenus),
          display, silhouette, String(hover), hidden, order, String(volume), String(inputSource),
          String(brightness), String(keyboardLight),
-         String(microphone), String(battery), String(clipboard), String(clipboardWindow),
+         String(microphone), String(battery), String(clipboard), String(clipboardWindow), clipboardCardSize,
          String(capture), String(trackChange), captureAction, String(showInCaptures),
          String(returnHome), homeModule, String(opensActivity), String(scratchpad),
-         String(agentsEnabled), String(watchEnabled), String(keepAwakeActivity)]
+         String(agentsEnabled), String(watchEnabled), String(keepAwakeActivity), String(shortcutEnabled)]
     }
 
     var access: Binding<NotchQuickAccessConfiguration> {
