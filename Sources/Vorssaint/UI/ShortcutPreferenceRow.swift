@@ -48,7 +48,7 @@ struct ShortcutPreferenceRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
-            ShortcutRowLabel(title: label ?? l10n.s.shelfHotkeyLabel,
+            ShortcutRowLabel(title: label ?? role.title(l10n.s),
                              symbolName: symbolName,
                              contextLabel: contextLabel,
                              statusText: statusText,
