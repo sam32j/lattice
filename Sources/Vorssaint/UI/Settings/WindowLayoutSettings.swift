@@ -67,9 +67,11 @@ struct WindowLayoutSettings: View {
                     WindowMaximizerExclusionsList()
                 }
                 .settingsSectionAnchor(.windowMaximizer, cornerRadius: 16)
+                Divider()
             }
             DockQuitOnCloseSettings()
             if AppFeature.spacesOrder.isPresentInControls() {
+                Divider()
                 SettingsRow(symbol: "square.stack.3d.up", title: l10n.s.spacesOrderName,
                             caption: l10n.s.spacesOrderCaption) {
                     Toggle(l10n.s.spacesOrderName, isOn: $spacesOrderEnabled).labelsHidden()
@@ -82,15 +84,19 @@ struct WindowLayoutSettings: View {
 
     var snappingCard: some View {
         SettingsCard(title: text.gestureSection) {
-            SettingsToggleRow(title: text.enable, isOn: Binding(
-                get: { windowLayoutInstalled },
-                set: { enabled in
-                    FeatureRuntime.shared.setAvailable([.windowLayout], enabled)
-                    WindowLayoutService.shared.syncWithPreferences()
-                }
-            ))
+            SettingsRow(symbol: "rectangle.3.group", title: text.enable, caption: text.caption) {
+                Toggle(text.enable, isOn: Binding(
+                    get: { windowLayoutInstalled },
+                    set: { enabled in
+                        FeatureRuntime.shared.setAvailable([.windowLayout], enabled)
+                        WindowLayoutService.shared.syncWithPreferences()
+                    }
+                ))
+                .labelsHidden()
+            }
             VStack(alignment: .leading, spacing: 16) {
                 Toggle(text.showInPanel, isOn: $showInPanel)
+                WindowLayoutIgnoredAppsList()
                 snappingControls
             }
             .toggleStyle(TrailingSwitchToggleStyle())
