@@ -11,7 +11,7 @@ struct ShortcutsSettings: View {
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var superKey = SuperKeyService.shared
     /// Keyed by group too: brightness has a row in two groups, and each opens on its own.
-    @State private var expandedFeatures: [FeatureGroup: Set<AppFeature>] = [.tools: [.screenshot]]
+    @State private var expandedFeatures: [FeatureGroup: Set<AppFeature>] = [:]
     @State private var showsAppShortcuts = false
     @AppStorage(DefaultsKey.radialMenuProfiles) private var radialMenuProfilesData: Data?
     @AppStorage(DefaultsKey.radialMenuEnabled) private var radialMenuEnabled = false
