@@ -21,16 +21,30 @@ enum SettingsRefactorProbe {
         }
         defaults.set(false, forKey: DefaultsKey.windowLayoutShortcutsEnabled)
         defaults.set(false, forKey: DefaultsKey.volumeMixerEnabled)
+        defaults.set(true, forKey: AppFeature.bluetoothSleep.availabilityKey)
         let pages: [(String, AnyView)] = [
+            ("mouse", AnyView(MouseSettings())),
+            ("keyboard", AnyView(KeyboardSettings())),
+            ("cleaning", AnyView(CleaningModeSettings())),
+            ("audio-input", AnyView(AudioInputSettings())),
+            ("data-permissions", AnyView(DataPermissionsSettings())),
+            ("displays-disabled", AnyView(DisplaySettings().settingsSectionFocus(for: .energy))),
+            ("bluetooth", AnyView(DisplaySettings(focus: .bluetoothSleep).settingsSectionFocus(for: .energy))),
+            ("monitor-modules-off", AnyView(MonitorSettings())),
             ("dock", AnyView(DockSettings())),
             ("windows", AnyView(WindowLayoutSettings())),
             ("content-list", AnyView(NotchSettings(initialTab: .content))),
+            ("indicators", AnyView(ScrollView {
+                NotchSettings().activityPage.padding(22)
+            }.toggleStyle(.switch))),
             ("content-timer", AnyView(NotchSettings(initialTab: .content, initialContent: .module(.timer)))),
             ("content-companion", AnyView(NotchSettings(initialTab: .content, initialContent: .companion))),
         ]
         var failures = [String]()
         for (name, view) in pages {
-            render(name, view: view, size: CGSize(width: 760, height: 838), output: output, failures: &failures)
+            if name == "displays-disabled" { SettingsRouter.shared.request(AppFeature.brightness.settingsDestination) }
+            if name == "bluetooth" { SettingsRouter.shared.request(AppFeature.bluetoothSleep.settingsDestination) }
+            render(name, view: view, size: CGSize(width: 760, height: name == "data-permissions" ? 1400 : 838), output: output, failures: &failures)
         }
         for count in [0, 30] {
             let sheet = AppListSheet(caption: SettingsAppListDescriptions.text(.enUS).dockPreview, centersContent: count == 0, onDone: {}) {
@@ -49,13 +63,14 @@ enum SettingsRefactorProbe {
             if measured != CGSize(width: 520, height: 460) { failures.append("sheet size changes for \(count) apps: \(measured)") }
             render("app-list-\(count)", view: AnyView(sheet), size: CGSize(width: 520, height: 460), output: output, failures: &failures)
         }
+        InputSettingsRenderingProbe.run(output: output, failures: &failures)
         defaults.removePersistentDomain(forName: identity)
         for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
         if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
         exit(failures.isEmpty ? 0 : 1)
     }
 
-    private static func render(_ name: String, view: AnyView, size: CGSize, output: URL, failures: inout [String]) {
+    static func render(_ name: String, view: AnyView, size: CGSize, output: URL, failures: inout [String]) {
         let host = NSHostingView(rootView: view.frame(width: size.width, height: size.height, alignment: .topLeading)
             .environment(\.controlActiveState, .active)
             .preferredColorScheme(.light).background(Color(nsColor: .windowBackgroundColor)))
