@@ -547,7 +547,7 @@ enum BrightnessSupport {
     }
 
     /// Plain brightness key presses reach the system unless this app answers
-    /// them: to follow the pointer, to show its own overlay or the island in
+    /// them: to follow the pointer, to show the island in
     /// place of the system's, or to take a finer step. Only then is their
     /// keystroke tap worth it.
     static func answersPlainBrightnessKeys(followsPointer: Bool, overlayReplacesNative: Bool,
@@ -603,25 +603,13 @@ enum BrightnessSupport {
         return overlayReplacesNative
     }
 
-    /// Whether this app shows a brightness change in place of the system:
-    /// with its overlay when that option is on, or in the island while the
-    /// island shows notices. An island hidden until hover or away in full
-    /// screen shows none, so the key keeps the system's own feedback rather
-    /// than bringing back the overlay its option turned off.
-    static func overlayReplacesNative(overlayEnabled: Bool, islandRoutes: Bool,
-                                      islandShowsNotices: Bool) -> Bool {
-        overlayEnabled || (islandRoutes && islandShowsNotices)
+    /// Replace native feedback only while the island can show the change.
+    /// Hidden or unavailable island notices leave the system's feedback intact.
+    static func islandReplacesNativeFeedback(islandRoutes: Bool, islandShowsNotices: Bool) -> Bool {
+        islandRoutes && islandShowsNotices
     }
 
-    /// Sixteen segments match the system brightness steps. A non-zero value
-    /// keeps at least one segment visible while exact zero stays empty.
-    static func filledBrightnessSegments(_ brightness: Double) -> Int {
-        let clamped = min(max(brightness, 0), 1)
-        guard clamped > 0 else { return 0 }
-        return min(Int((clamped * 16).rounded(.up)), 16)
-    }
-
-    /// Whole percentage used by the brightness overlay.
+    /// Whole percentage shared by display and keyboard-backlight island notices.
     static func wholePercent(_ brightness: Double) -> Int {
         guard brightness.isFinite else { return 0 }
         return Int((min(max(brightness, 0), 1) * 100).rounded())
