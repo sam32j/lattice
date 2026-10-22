@@ -56,12 +56,6 @@ struct SwitcherSettings: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(pages.switcherDescription)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
                 enableSwitcherCard
                     .settingsSectionAnchor(.switcher, cornerRadius: 16)
 
