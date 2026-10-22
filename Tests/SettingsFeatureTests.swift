@@ -22,7 +22,7 @@ enum SettingsFeatureTests {
         let dataPage = (try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/DataPermissionsSettings.swift",
                                    encoding: .utf8)) ?? ""
         let sections = ["Section(DataPermissionsStrings.localized", "PermissionsPortalSections(hub:",
-                        "Label(l10n.s.advancedClearButton", "Section(l10n.s.advancedUninstallSection)"]
+                        "l10n.s.advancedClearButton", "l10n.s.advancedUninstallButton"]
         let positions = sections.compactMap { dataPage.range(of: $0)?.lowerBound }
         suite.expect(positions.count == sections.count && positions == positions.sorted(),
                      "the page orders Lattice Data, permissions, permission reset, and uninstall")
