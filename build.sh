@@ -342,6 +342,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Notch/NotchCalendarSupport.swift
         Sources/Vorssaint/Services/Notch/NotchKeepAwakeSupport.swift
         Sources/Vorssaint/Services/Notch/NotchSupport.swift
+        Sources/Vorssaint/Services/Notch/NotchCaptureRouting.swift
         Sources/Vorssaint/Services/Notch/NotchAudioLevelSupport.swift
         Sources/Vorssaint/Services/Notch/NotchVolumeKeyGate.swift
         Sources/Vorssaint/Services/Notch/NotchMusicSupport.swift
@@ -517,6 +518,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/MouseClickDebounce/MouseClickDebounceSupport.swift
         Sources/Vorssaint/Services/MouseExceptions/MouseAppExceptionSupport.swift
         Sources/Vorssaint/Services/MouseExceptions/MouseAppExceptions.swift
+        Sources/Vorssaint/Services/MouseButtons/MouseShortcutExceptions.swift
         Sources/Vorssaint/Services/WindowServerSupport.swift
         Sources/Vorssaint/Services/WindowMaximizerSupport.swift
         Sources/Vorssaint/Core/MouseButtonStrings.swift
@@ -719,20 +721,18 @@ swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" -emit-library \
 echo "▸ Generating app icon…"
 ICON_FLAGS=()
 (( DEV )) && ICON_FLAGS+=(--dev)
-swift Tools/MakeLatticeIcon.swift build/AppIcon.iconset "${ICON_FLAGS[@]}"
-xattr -c -r build/AppIcon.iconset build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png 2>/dev/null || true
+swift Tools/MakeLatticeIcon.swift build "${ICON_FLAGS[@]}"
+xattr -c -r build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png 2>/dev/null || true
 ACTOOL_BIN="$(xcrun --find actool 2>/dev/null || true)"
 ICON_TMP="$(mktemp -d)"
 ADAPTIVE_SKIP=""
-if [[ "$APP_NAME" == Lattice* ]]; then
-    rm -f build/Assets.car
-    ADAPTIVE_SKIP="Lattice uses its independent iconset"
-elif [[ -z "$ACTOOL_BIN" ]]; then
+ICON_SOURCE="Resources/Brand/Lattice.icon"
+if [[ -z "$ACTOOL_BIN" ]]; then
     ADAPTIVE_SKIP="actool not found (adaptive icons need Xcode 26+)"
 else
     echo "▸ Compiling adaptive icon catalog…"
     # actool crashes on File Provider-synced paths, so compile a local copy.
-    ditto "Resources/Brand/AppIcon.icon" "$ICON_TMP/AppIcon.icon"
+    ditto "$ICON_SOURCE" "$ICON_TMP/AppIcon.icon"
     # Xcode 27 beta actool requires the --compile target directory to already exist.
     mkdir -p "$ICON_TMP/catalog"
     if "$ACTOOL_BIN" "$ICON_TMP/AppIcon.icon" \
@@ -743,13 +743,16 @@ else
             --minimum-deployment-target 14.0 \
             --enable-on-demand-resources NO \
             --output-partial-info-plist "$ICON_TMP/partial-info.plist" \
-            >"$ICON_TMP/actool.log" 2>&1 && [[ -s "$ICON_TMP/catalog/Assets.car" ]]; then
+            >"$ICON_TMP/actool.log" 2>&1 && [[ -s "$ICON_TMP/catalog/Assets.car" && -s "$ICON_TMP/catalog/AppIcon.icns" ]]; then
         mv "$ICON_TMP/catalog/Assets.car" build/Assets.car
+        cp "$ICON_TMP/catalog/AppIcon.icns" build/AppIcon.icns
     else
         ADAPTIVE_SKIP="actool could not compile the catalog"
     fi
 fi
 if [[ -n "$ADAPTIVE_SKIP" ]]; then
+    # Never package a stale catalog that disagrees with the current fallback.
+    rm -f build/Assets.car
     cp "$ICON_TMP/actool.log" build/actool-failure.log 2>/dev/null || true
     echo "  adaptive icon skipped: $ADAPTIVE_SKIP (Dock falls back to AppIcon.icns)"
 fi
