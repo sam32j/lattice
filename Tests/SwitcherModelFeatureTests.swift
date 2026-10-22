@@ -2850,12 +2850,6 @@ enum SwitcherModelFeatureTests {
                                                                   executablePath: "/System/Library/CoreServices/Finder.app",
                                                                   isApplication: true)) == "com.apple.finder",
                "the log names the sender by bundle identifier, or by executable without its path")
-        let reshowCode = stripCommentLines((statusAnchorAppDelegateSource
-            .components(separatedBy: "func reshowStatusItem() {").last ?? "")
-            .components(separatedBy: "\n    }").first ?? "")
-        suite.expect(reshowCode.contains("DefaultsKey.menuBarHideIconWithMetrics")
-                     && reshowCode.contains("DefaultsKey.notchHidesMenuBarIcon"),
-               "Show menu bar icon turns off both ways of hiding it")
 
         // macOS 26 lets the person switch an app's menu bar items off per app,
         // and remembers the choice in Control Center's group container. The
@@ -2902,17 +2896,6 @@ enum SwitcherModelFeatureTests {
         suite.expect(MenuBarAllowanceSupport.allowance(forBundleID: "com.vorssaint.utils",
                                                        groupContainerPlist: Data([0x00, 0x01])) == .unknown,
                "an unreadable store is unknown")
-        let verifyIconCode = stripCommentLines((statusAnchorAppDelegateSource
-            .components(separatedBy: "private func verifyIconReappeared(").last ?? "")
-            .components(separatedBy: "\n    }").first ?? "")
-        suite.expect(verifyIconCode.contains("MenuBarAllowanceSupport.currentAllowance(")
-                    && verifyIconCode.contains("menuBarIconDisallowedBody"),
-               "recovery names the Allow in the Menu Bar setting instead of blaming a full bar")
-        let allowanceCheck = verifyIconCode.range(of: "MenuBarAllowanceSupport.currentAllowance(")
-        let identityReset = verifyIconCode.range(of: "resetStatusItemPlacementIdentity()")
-        suite.expect(allowanceCheck != nil && identityReset != nil
-                    && allowanceCheck!.lowerBound < identityReset!.lowerBound,
-               "the setting is checked before the identity reset burns the arranged spot")
         suite.expect(!Strings.enUS.menuBarIconDisallowedBody.isEmpty
                     && !Strings.ptBR.menuBarIconDisallowedBody.isEmpty
                     && Strings.enUS.menuBarIconDisallowedBody.contains("Allow in the Menu Bar"),

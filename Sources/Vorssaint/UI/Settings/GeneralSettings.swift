@@ -91,11 +91,6 @@ struct GeneralSettings: View {
                     }
                 }
             }
-            Text(text.appearanceCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
         }
     }
 
