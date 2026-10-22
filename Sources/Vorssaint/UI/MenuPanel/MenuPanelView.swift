@@ -1627,7 +1627,10 @@ struct QuickControlsSection: View {
                            permissionButtonTitle: l10n.s.permissionRequest,
                            permissionAction: accessibilityPermissionAction(dockClickEnabled))
                 .onChange(of: dockClickEnabled) { _, enabled in
-                    if enabled { dockClickHideEnabled = false }
+                    if enabled {
+                        dockClickHideEnabled = false
+                        dockClickCycleEnabled = false
+                    }
                     FeatureRuntime.shared.sync([.dockClick])
                     requestAccessibilityIfNeeded(enabled)
                 }
@@ -1643,7 +1646,10 @@ struct QuickControlsSection: View {
                            permissionButtonTitle: l10n.s.permissionRequest,
                            permissionAction: accessibilityPermissionAction(dockClickHideEnabled))
                 .onChange(of: dockClickHideEnabled) { _, enabled in
-                    if enabled { dockClickEnabled = false }
+                    if enabled {
+                        dockClickEnabled = false
+                        dockClickCycleEnabled = false
+                    }
                     FeatureRuntime.shared.sync([.dockClick])
                     requestAccessibilityIfNeeded(enabled)
                 }
@@ -1659,6 +1665,10 @@ struct QuickControlsSection: View {
                            permissionButtonTitle: l10n.s.permissionRequest,
                            permissionAction: accessibilityPermissionAction(dockClickCycleEnabled))
                 .onChange(of: dockClickCycleEnabled) { _, enabled in
+                    if enabled {
+                        dockClickEnabled = false
+                        dockClickHideEnabled = false
+                    }
                     FeatureRuntime.shared.sync([.dockClick])
                     requestAccessibilityIfNeeded(enabled)
                 }

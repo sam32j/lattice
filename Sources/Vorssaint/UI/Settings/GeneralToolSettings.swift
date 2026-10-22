@@ -20,16 +20,8 @@ struct GeneralToolSettings: View {
                         .fixedSize(horizontal: false, vertical: true)
                     PanelLayoutEditor()
                     Divider()
-                    MenuBarIconSymbolRow()
-                    Divider()
-                    SettingsRow(symbol: nil, title: text.iconMissingTitle,
-                                caption: text.iconMissingCaption) {
-                        Button(l10n.s.showMenuBarIcon) {
-                            appDelegate()?.reshowStatusItem()
-                        }
-                    }
+                    MenuBarIconPickerRow()
                 }
-                .settingsSectionAnchor(.panelConfiguration, cornerRadius: 16)
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
@@ -37,65 +29,59 @@ struct GeneralToolSettings: View {
         }
     }
 }
-/// Draws a system symbol in the menu bar in place of the Vorssaint glyph,
-/// picked with one click from a gallery. The last cell takes any other symbol
-/// by name, and shows that symbol while it is the one in use.
-private struct MenuBarIconSymbolRow: View {
+
+/// A setting row with a button that presents a searchable SF Symbol picker popover.
+private struct MenuBarIconPickerRow: View {
     @ObservedObject private var l10n = L10n.shared
     @AppStorage(DefaultsKey.menuBarIconSymbol) private var savedName = ""
-    @State private var typingName = false
-
-    /// Filtered like the radial menu's icons, so a name a future macOS
-    /// drops leaves no empty cell.
-    private static let symbols = Defaults.menuBarIconGallery.filter {
-        NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil
-    }
+    @State private var showingPicker = false
+    @State private var isHovered = false
 
     private var text: GeneralSettingsStrings { FeatureStrings.generalSettings(l10n.language) }
 
     var body: some View {
         let name = Defaults.sanitizedMenuBarIconSymbol(savedName)
-        let otherName = name.isEmpty || Self.symbols.contains(name) ? "" : name
-        VStack(alignment: .leading, spacing: 10) {
-            SettingsRow(symbol: nil, title: text.menuBarIconTitle, caption: text.menuBarIconCaption) {
-                EmptyView()
+        SettingsControlRow(title: text.menuBarIconTitle, caption: text.menuBarIconCaption) {
+            Button {
+                showingPicker = true
+            } label: {
+                iconPreview(name: name)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(showingPicker ? Color.accentColor.opacity(0.12) : (isHovered ? Color.secondary.opacity(0.12) : Color.secondary.opacity(0.06)))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .strokeBorder(showingPicker ? Color.accentColor.opacity(0.6) : Color.secondary.opacity(0.16), lineWidth: 1)
+                    )
+                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
-            // Eager, so the cell the name popover hangs from is never
-            // released while the page scrolls.
-            FlowLayoutLite(spacing: 6) {
-                cell(selected: name.isEmpty) {
-                    savedName = ""
-                } label: {
-                    vorssaintMark
-                }
-                .help(text.menuBarIconReset)
-                .accessibilityLabel(text.menuBarIconReset)
-                ForEach(Self.symbols, id: \.self) { symbol in
-                    cell(selected: name == symbol) {
-                        savedName = symbol
-                    } label: {
-                        Image(systemName: symbol)
-                    }
-                    .help(symbol)
-                }
-                cell(selected: !otherName.isEmpty) {
-                    typingName = true
-                } label: {
-                    // A name from a newer macOS has nothing to draw here.
-                    let drawable = NSImage(systemSymbolName: otherName, accessibilityDescription: nil) != nil
-                    Image(systemName: drawable ? otherName : "ellipsis")
-                }
-                .help(otherName.isEmpty ? text.menuBarIconOther : otherName)
-                .accessibilityLabel(text.menuBarIconOther)
-                .popover(isPresented: $typingName, arrowEdge: .bottom) {
-                    MenuBarIconNameField()
-                }
+            .buttonStyle(.plain)
+            .onHover { isHovered = $0 }
+            .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
+                MenuBarIconSearchPopover(savedName: $savedName)
             }
-            .padding(.leading, settingsRowTextInset)
         }
     }
 
-    /// The bundled mark even while a symbol replaces it in the menu bar.
+    @ViewBuilder
+    private func iconPreview(name: String) -> some View {
+        if name.isEmpty {
+            vorssaintMark
+        } else if let custom = BlackHoleGlyph.customMark(named: name) {
+            Image(nsImage: custom)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 18, maxHeight: 16)
+        } else {
+            Image(systemName: name)
+                .font(.system(size: 14, weight: .semibold))
+                .frame(maxWidth: 18, maxHeight: 16)
+        }
+    }
+
     private var vorssaintMark: some View {
         Group {
             if let mark = BlackHoleGlyph.mark(symbolName: "") {
@@ -107,96 +93,147 @@ private struct MenuBarIconSymbolRow: View {
                 Image(systemName: "circle.fill")
             }
         }
-        .frame(maxWidth: 21, maxHeight: 16)
-    }
-
-    private func cell<Label: View>(selected: Bool, action: @escaping () -> Void,
-                                   @ViewBuilder label: () -> Label) -> some View {
-        Button(action: action) {
-            label()
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.primary)
-                .frame(width: 34, height: 30)
-                .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(selected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.06))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .strokeBorder(selected ? Color.accentColor.opacity(0.75) : Color.secondary.opacity(0.13),
-                                      lineWidth: selected ? 1.2 : 1)
-                )
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .frame(maxWidth: 18, maxHeight: 16)
     }
 }
 
-/// Takes any symbol by name. The icon follows the typing: a name this Mac has
-/// a symbol for is kept at once, and any other name brings back the icon the
-/// field opened with, so a typo never leaves a valid half of the name behind.
-private struct MenuBarIconNameField: View {
+/// Searchable icon picker popover for selecting menu bar icons.
+private struct MenuBarIconSearchPopover: View {
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.dismiss) private var dismiss
-    @AppStorage(DefaultsKey.menuBarIconSymbol) private var savedName = ""
-    @State private var draft = ""
-    @State private var openingName = ""
-    @FocusState private var focused: Bool
+    @Binding var savedName: String
+    @State private var searchQuery = ""
+    @FocusState private var isSearchFocused: Bool
+
+    private static let curatedSymbols: [String] = {
+        var set = Set<String>()
+        var list: [String] = []
+        let rawCandidates = Defaults.menuBarIconGallery + RadialMenuSupport.symbolNames + [
+            "apple.logo", "shield.fill", "lock.fill", "bell.fill", "pin.fill", "link",
+            "tag.fill", "bookmark.fill", "flag.fill", "pencil", "scissors", "lightbulb.fill",
+            "antenna.radiowaves.left.and.right", "wifi", "display", "printer.fill"
+        ]
+        for name in rawCandidates {
+            if set.insert(name).inserted,
+               NSImage(systemSymbolName: name, accessibilityDescription: nil) != nil {
+                list.append(name)
+            }
+        }
+        return list
+    }()
 
     private var text: GeneralSettingsStrings { FeatureStrings.generalSettings(l10n.language) }
 
+    private var filteredSymbols: [String] {
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        var results = Self.curatedSymbols
+        if !query.isEmpty {
+            results = results.filter { $0.lowercased().contains(query) }
+            // If the query itself matches a valid SF Symbol not in the curated list, add it at the top
+            if !results.contains(where: { $0.caseInsensitiveCompare(query) == .orderedSame }),
+               NSImage(systemSymbolName: query, accessibilityDescription: nil) != nil {
+                results.insert(query, at: 0)
+            }
+        }
+        return results
+    }
+
     var body: some View {
-        let name = Defaults.sanitizedMenuBarIconSymbol(draft)
-        VStack(alignment: .leading, spacing: 8) {
-            Text(text.menuBarIconOther)
-                .font(.headline)
+        let current = Defaults.sanitizedMenuBarIconSymbol(savedName)
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
-                TextField(text.menuBarIconOther, text: $draft, prompt: Text(verbatim: "bolt.fill"))
-                    .labelsHidden()
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    .focused($focused)
-                    .onSubmit { dismiss() }
-                // Kept in place while hidden, so the field does not change
-                // width as the name is typed or cleared.
-                Button {
-                    draft = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                TextField(text.menuBarIconTitle, text: $searchQuery, prompt: Text(verbatim: "Search icons…"))
+                    .textFieldStyle(.plain)
+                    .focused($isSearchFocused)
+                if !searchQuery.isEmpty {
+                    Button {
+                        searchQuery = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .help(text.menuBarIconReset)
-                .accessibilityLabel(text.menuBarIconReset)
-                .opacity(draft.isEmpty ? 0 : 1)
-                .disabled(draft.isEmpty)
-                .accessibilityHidden(draft.isEmpty)
             }
-            Text(text.menuBarIconOtherCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            if !name.isEmpty, BlackHoleGlyph.customMark(named: name) == nil {
-                Text(text.menuBarIconUnknown)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
+            .padding(8)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.secondary.opacity(0.08))
+            )
+
+            // Default icon choice button
+            Button {
+                savedName = ""
+                dismiss()
+            } label: {
+                HStack(spacing: 8) {
+                    if let mark = BlackHoleGlyph.mark(symbolName: "") {
+                        Image(nsImage: mark)
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 16, height: 16)
+                    } else {
+                        Image(systemName: "circle.fill")
+                            .frame(width: 16, height: 16)
+                    }
+                    Text(text.menuBarIconReset)
+                        .font(.callout)
+                    Spacer()
+                    if current.isEmpty {
+                        Image(systemName: "checkmark")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color.accentColor)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(current.isEmpty ? Color.accentColor.opacity(0.12) : Color.clear)
+                )
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+
+            Divider()
+
+            ScrollView {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 34), spacing: 6)], spacing: 6) {
+                    ForEach(filteredSymbols, id: \.self) { symbol in
+                        let selected = current == symbol
+                        Button {
+                            savedName = symbol
+                            dismiss()
+                        } label: {
+                            Image(systemName: symbol)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(selected ? Color.accentColor : Color.primary)
+                                .frame(width: 34, height: 32)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                        .fill(selected ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.06))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                        .strokeBorder(selected ? Color.accentColor.opacity(0.75) : Color.secondary.opacity(0.13),
+                                                      lineWidth: selected ? 1.2 : 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .help(symbol)
+                    }
+                }
+                .padding(2)
+            }
+            .frame(maxHeight: 220)
         }
-        .padding(16)
-        .frame(width: 280)
+        .padding(14)
+        .frame(width: 320)
         .onAppear {
-            openingName = BlackHoleGlyph.chosenSymbolName
-            draft = openingName
-            // The popover's window is not key yet while it appears.
-            DispatchQueue.main.async { focused = true }
-        }
-        .onChange(of: draft) { _, newValue in
-            let kept = Defaults.menuBarIconSymbolToSave(typed: newValue, opening: openingName) {
-                BlackHoleGlyph.customMark(named: $0) != nil
-            }
-            if kept != savedName { savedName = kept }
+            DispatchQueue.main.async { isSearchFocused = true }
         }
     }
 }

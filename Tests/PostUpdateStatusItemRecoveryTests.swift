@@ -71,7 +71,6 @@ enum PostUpdateStatusItemRecoveryTests {
         var statusController: StatusController? = StatusController()
         let popover = Popover()
         var isTerminating = false
-        var isReshowingStatusItem = false
         static let reshowVerifyInterval: TimeInterval = 0.8
         static var manager: String?
         static func runningMenuBarManagerName() -> String? { manager }
@@ -146,7 +145,6 @@ enum PostUpdateStatusItemRecoveryTests {
             ("context menu is open", { $0.statusController?.statusItem.menu = NSMenu() }),
             ("person is dragging an item", { _ in NSEvent.pressedMouseButtons = 1 }),
             ("app is quitting", { $0.isTerminating = true }),
-            ("manual recovery owns the item", { $0.isReshowingStatusItem = true }),
             ("reopen replaced the item", { $0.statusController?.statusItem = NSStatusItem() }),
             ("controller went away", { $0.statusController = nil }),
             ("menu bar hides", { _ in NSMenu.visible = false }),
