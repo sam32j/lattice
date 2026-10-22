@@ -51,9 +51,11 @@ struct AudioInputSettings: View {
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text(l10n.s.muteAudioInputSubtitle)
-                        .font(.subheadline.weight(.semibold))
+                        .font(.headline)
 
-                    ShortcutPreferenceRow(role: .micMute) {
+                    SettingsToggleRow(title: l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
+
+                    ShortcutPreferenceRow(role: .micMute, alignment: .center) {
                         MicMuteService.shared.syncWithPreferences()
                     }
                     if micShortcutEnabled, micMute.shortcutRegistrationFailed {
@@ -61,8 +63,6 @@ struct AudioInputSettings: View {
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
-
-                    SettingsToggleRow(title: l10n.s.showInMenuBarLabel, isOn: $micMenuBarIndicator)
                 }
             }
             .disabled(!microphoneControlEnabled)

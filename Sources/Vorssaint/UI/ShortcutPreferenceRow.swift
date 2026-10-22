@@ -8,6 +8,7 @@ struct ShortcutPreferenceRow: View {
     @ObservedObject private var superKey = SuperKeyService.shared
 
     private let role: GlobalShortcutRole
+    private let alignment: VerticalAlignment
     private let label: String?
     private let symbolName: String?
     private let contextLabel: String?
@@ -21,6 +22,7 @@ struct ShortcutPreferenceRow: View {
     @AppStorage private var rawValue: String
 
     init(role: GlobalShortcutRole,
+         alignment: VerticalAlignment = .top,
          label: String? = nil,
          symbolName: String? = nil,
          contextLabel: String? = nil,
@@ -32,6 +34,7 @@ struct ShortcutPreferenceRow: View {
          additionalConflict: @escaping (GlobalShortcut) -> String? = { _ in nil },
          onChange: @escaping () -> Void) {
         self.role = role
+        self.alignment = alignment
         self.label = label
         self.symbolName = symbolName
         self.contextLabel = contextLabel
@@ -47,7 +50,7 @@ struct ShortcutPreferenceRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: alignment, spacing: 8) {
             ShortcutRowLabel(title: label ?? role.title(l10n.s),
                              symbolName: symbolName,
                              contextLabel: contextLabel,
