@@ -58,14 +58,14 @@ extension MouseExceptionStrings {
         listTitle: "Apps to leave alone",
         addButton: "Add an app…",
         removeButton: "Remove",
-        captionSmoothScroll: "The wheel keeps its plain steps in these apps, for apps that read it their own way, like 3D and design tools.",
-        captionLinearScroll: "The wheel keeps the pace macOS gives it in these apps, for games and 3D tools that count the notches themselves.",
-        captionScrollDirection: "The wheel keeps the direction macOS gives it in these apps.",
-        captionNavigation: "The side buttons keep doing whatever these apps already do with them.",
+        captionSmoothScroll: "Smooth scrolling will not be applied to these apps",
+        captionLinearScroll: "Linear scrolling will not be applied to these apps",
+        captionScrollDirection: "Scrolling rules will not be applied to these apps",
+        captionNavigation: "Side buttons will keep their default behavior",
         captionButtonShortcuts: "Your extra mouse buttons stay quiet in these apps, and the press reaches them instead.",
-        captionMiddleClick: "A three finger click stays a normal click in these apps.",
-        captionFocusFollowsMouse: "Hovering does not change focus or raise a window in these apps.",
-        captionSuperKey: "While any of these apps is open, even in the background, Super Key pauses and the chosen key works normally.",
+        captionMiddleClick: "Trackpad gestures will not be modified for these apps",
+        captionFocusFollowsMouse: "Focus will not change to these apps when hovering over them",
+        captionSuperKey: "Super Key will not take effect for these apps",
         pausedSuperKey: "Paused while a selected app is open"
     )
 
