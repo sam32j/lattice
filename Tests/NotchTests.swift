@@ -1691,6 +1691,7 @@ enum NotchTests {
         railContracts(suite)
         presentationSpacingContracts(suite)
         captureControlsLayoutContracts(suite)
+        NotchCaptureRoutingTests.run(suite)
         pageTopContracts(suite)
         pageWidthContracts(suite)
         sectionsButtonContracts(suite)
@@ -2427,7 +2428,7 @@ enum NotchTests {
             suite.expect(tool.capturesAudio == (tool == .recording),
                    "only screen recording shows microphone and system-audio controls: \(tool.rawValue)")
         }
-        suite.expect(!NotchSupport.routes(.clipboard, in: defaults) && NotchSupport.routes(.capture, in: defaults),
+        suite.expect(!NotchSupport.routes(.clipboard, in: defaults) && NotchSupport.routesCapturePreviews(in: defaults),
                "clipboard activity still needs history capture while installed captures start enabled")
         defaults.set(true, forKey: DefaultsKey.clipboardHistoryEnabled)
         suite.expect(NotchSupport.routes(.clipboard, in: defaults), "installed clipboard activity starts once history capture is enabled")
@@ -3360,7 +3361,6 @@ enum NotchTests {
                "the Displays without a notch card offers All displays only while the chosen display keeps the island off them")
         suite.expect(NotchSupport.shouldReplace(.volume, with: .brightness), "continuous controls can replace each other")
         suite.expect(!NotchSupport.shouldReplace(.volume, with: .clipboard), "copy does not interrupt a volume adjustment")
-        suite.expect(NotchSupport.shouldReplace(.battery, with: .capture), "a capture takes precedence over passive battery status")
         suite.expect(NotchSupport.volumeLevel(current: 0.99, direction: 1, fine: false) == 1
                && NotchSupport.volumeLevel(current: 0, direction: -1, fine: false) == 0,
                "hardware volume steps clamp to audible limits")
