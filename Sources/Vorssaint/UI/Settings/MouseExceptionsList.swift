@@ -23,6 +23,7 @@ struct MouseExceptionsList: View {
                       bundleIDs: exceptions.list(scope),
                       reachesEveryApp: true,
                       acceptsExecutables: true,
+                      usesSheet: true,
                       onAdd: { exceptions.add($0, to: scope) },
                       onRemove: { exceptions.remove($0, from: scope) })
     }
