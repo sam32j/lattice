@@ -151,7 +151,10 @@ struct DockSettings: View {
                 Toggle(l10n.s.dockClickMinimize, isOn: $dockClickMinimize)
                     .labelsHidden()
                     .onChange(of: dockClickMinimize) { _, enabled in
-                        if enabled { dockClickHide = false }
+                        if enabled {
+                            dockClickHide = false
+                            dockClickCycleWindows = false
+                        }
                         FeatureRuntime.shared.sync([.dockClick])
                     }
             }
@@ -159,7 +162,10 @@ struct DockSettings: View {
                 Toggle(l10n.s.dockClickHide, isOn: $dockClickHide)
                     .labelsHidden()
                     .onChange(of: dockClickHide) { _, enabled in
-                        if enabled { dockClickMinimize = false }
+                        if enabled {
+                            dockClickMinimize = false
+                            dockClickCycleWindows = false
+                        }
                         FeatureRuntime.shared.sync([.dockClick])
                     }
             }
@@ -167,7 +173,11 @@ struct DockSettings: View {
                         caption: l10n.s.dockClickCycleWindowsCaption) {
                 Toggle(l10n.s.dockClickCycleWindows, isOn: $dockClickCycleWindows)
                     .labelsHidden()
-                    .onChange(of: dockClickCycleWindows) { _, _ in
+                    .onChange(of: dockClickCycleWindows) { _, enabled in
+                        if enabled {
+                            dockClickMinimize = false
+                            dockClickHide = false
+                        }
                         FeatureRuntime.shared.sync([.dockClick])
                     }
             }
