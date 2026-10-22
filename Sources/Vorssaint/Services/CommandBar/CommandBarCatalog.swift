@@ -1856,7 +1856,7 @@ enum CommandBarCatalog {
         let target = display ?? NSScreen.screens.first { NSMouseInRect(pointer, $0.frame, false) }
             .flatMap { ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value }
         if let id = target, service.displays.contains(where: { $0.id == id }) {
-            service.setBrightness(value, for: id, showOSD: true)
+            service.setBrightness(value, for: id)
             return
         }
         guard display == nil, let target else {
