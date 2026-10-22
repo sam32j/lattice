@@ -1,6 +1,18 @@
 import Foundation
 
 extension Defaults {
+    static let cleaningModeShortcutMigrationKey = "cleaningModeShortcutOwnershipMigrated"
+
+    /// Retire the old master switch without reviving a previously disabled shortcut.
+    static func migrateCleaningModeShortcut(in defaults: UserDefaults) {
+        guard !defaults.bool(forKey: cleaningModeShortcutMigrationKey) else { return }
+        if defaults.object(forKey: DefaultsKey.cleaningModeEnabled) as? Bool == false {
+            defaults.set(false, forKey: DefaultsKey.cleaningModeShortcutEnabled)
+        }
+        defaults.removeObject(forKey: DefaultsKey.cleaningModeEnabled)
+        defaults.set(true, forKey: cleaningModeShortcutMigrationKey)
+    }
+
     static let permanentInputControlsMigrationKey = "permanentInputControlsMigrated"
 
     /// Translate the old installation gate before registering defaults, after

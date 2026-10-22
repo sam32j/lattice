@@ -104,9 +104,8 @@ final class CleaningModeManager: ObservableObject {
                                             fallback: .cleaningModeDefault)
         shortcutRegistrationFailed = !hotkey.sync(enabled: enabled, shortcut: shortcut,
                                                   storageKey: DefaultsKey.cleaningModeShortcut)
-        if !available && isActive {
-            deactivate()
-        }
+        // Shortcut registration is independent of the temporary cleaning lock.
+        // Clearing its shortcut must leave the deliberate unlock paths intact.
     }
 
     func toggle() { isActive ? deactivate() : activate() }
