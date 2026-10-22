@@ -19,14 +19,9 @@ struct NotchSettingsTabRow: View {
     let open: () -> Void
 
     var body: some View {
-        let text = FeatureStrings.notch(language)
-        HStack {
-            ViewThatFits(in: .horizontal) {
-                picker.pickerStyle(.segmented)
-                picker.pickerStyle(.menu)
-            }
-            Button(action: open) { Image(systemName: "arrow.up.forward.app") }
-                .buttonStyle(.bordered).disabled(!canOpen).help(text.open).accessibilityLabel(text.open)
+        ViewThatFits(in: .horizontal) {
+            picker.pickerStyle(.segmented)
+            picker.pickerStyle(.menu)
         }
     }
 
