@@ -103,7 +103,7 @@ extension FeatureStrings {
         switch language {
         case .enUS: return NotchEditorStrings(
             layout: "Layout",
-            content: "Content",
+            content: "Widget",
             activity: "Activity",
             behavior: "Behavior",
             layoutHint: "Click + to add a button. Drag buttons around the island. Click a button to edit it.",
@@ -140,7 +140,7 @@ extension FeatureStrings {
             closeTimeHint: "Wait this long after the pointer leaves the island before closing it.",
             enableFeatureFormat: "Enable “%@” in Features.",
             enableSettingFormat: "Enable “%@” in its settings.",
-            showPageFormat: "Show “%@” on the Content tab.",
+            showPageFormat: "Show “%@” on the Widget tab.",
             keyboardLightUnavailable: "Keyboard backlight control is unavailable on this Mac.",
             appPanelHint: "Choose where clicking the Lattice menu bar icon opens the app panel, on any display.",
             hideMenuBarIcon: "Hide the menu bar icon",
@@ -171,7 +171,7 @@ extension FeatureStrings {
         )
         case .ptBR: return NotchEditorStrings(
             layout: "Layout",
-            content: "Conteúdo",
+            content: "Widgets",
             activity: "Atividade",
             behavior: "Comportamento",
             layoutHint: "Clique em + para adicionar. Arraste as bolinhas ao redor da ilha. Clique em uma para editar.",
@@ -208,7 +208,7 @@ extension FeatureStrings {
             closeTimeHint: "Aguarde esse tempo depois que o ponteiro sair da ilha antes de fechá-la.",
             enableFeatureFormat: "Ative “%@” em Recursos.",
             enableSettingFormat: "Ative “%@” nas configurações do recurso.",
-            showPageFormat: "Mostre “%@” na aba Conteúdo.",
+            showPageFormat: "Mostre “%@” na aba Widgets.",
             keyboardLightUnavailable: "O controle da luz do teclado não está disponível neste Mac.",
             appPanelHint: "Escolha onde o painel abre ao clicar no ícone do Lattice na barra de menus, em qualquer tela.",
             hideMenuBarIcon: "Ocultar o ícone da barra de menus",
@@ -239,7 +239,7 @@ extension FeatureStrings {
         )
         case .es: return NotchEditorStrings(
             layout: "Diseño",
-            content: "Contenido",
+            content: "Widgets",
             activity: "Actividad",
             behavior: "Comportamiento",
             layoutHint: "Pulsa + para añadir un botón. Arrastra los botones alrededor de la isla. Pulsa uno para editarlo.",
@@ -276,7 +276,7 @@ extension FeatureStrings {
             closeTimeHint: "Espera este tiempo después de que el puntero salga de la isla antes de cerrarla.",
             enableFeatureFormat: "Activa “%@” en Funciones.",
             enableSettingFormat: "Activa “%@” en sus ajustes.",
-            showPageFormat: "Muestra “%@” en la pestaña Contenido.",
+            showPageFormat: "Muestra “%@” en la pestaña Widgets.",
             keyboardLightUnavailable: "El control de la luz del teclado no está disponible en este Mac.",
             appPanelHint: "Elige dónde se abre el panel al pulsar el icono de Lattice en la barra de menús, en cualquier pantalla.",
             hideMenuBarIcon: "Ocultar el icono de la barra de menús",
@@ -307,7 +307,7 @@ extension FeatureStrings {
         )
         case .sk: return NotchEditorStrings(
             layout: "Rozloženie",
-            content: "Obsah",
+            content: "Widgety",
             activity: "Aktivita",
             behavior: "Správanie",
             layoutHint: "Kliknutím na + pridáte tlačidlo. Tlačidlá presúvajte po Dynamic Island. Kliknutím na tlačidlo ho upravíte.",
@@ -344,7 +344,7 @@ extension FeatureStrings {
             closeTimeHint: "Po odchode kurzora z Dynamic Island počkajte takto dlho, kým sa zatvorí.",
             enableFeatureFormat: "Zapnite „%@“ vo Funkciách.",
             enableSettingFormat: "Zapnite „%@“ v jeho nastaveniach.",
-            showPageFormat: "Zobrazte „%@“ na karte Obsah.",
+            showPageFormat: "Zobrazte „%@“ na karte Widgety.",
             keyboardLightUnavailable: "Ovládanie podsvietenia klávesnice nie je na tomto Macu k dispozícii.",
             appPanelHint: "Vyberte, kde sa otvorí panel aplikácie po kliknutí na ikonu Lattice v lište, na ktoromkoľvek displeji.",
             hideMenuBarIcon: "Skryť ikonu v lište",
@@ -375,7 +375,7 @@ extension FeatureStrings {
         )
         case .de: return NotchEditorStrings(
             layout: "Layout",
-            content: "Inhalt",
+            content: "Widgets",
             activity: "Aktivität",
             behavior: "Verhalten",
             layoutHint: "Mit + eine Taste hinzufügen. Tasten um die Insel ziehen. Zum Bearbeiten eine Taste anklicken.",
@@ -412,7 +412,7 @@ extension FeatureStrings {
             closeTimeHint: "Wartet nach dem Verlassen der Insel mit dem Zeiger so lange, bevor sie sich schließt.",
             enableFeatureFormat: "Aktiviere „%@“ unter Funktionen.",
             enableSettingFormat: "Aktiviere „%@“ in den zugehörigen Einstellungen.",
-            showPageFormat: "Blende „%@“ im Tab Inhalt ein.",
+            showPageFormat: "Blende „%@“ im Tab Widgets ein.",
             keyboardLightUnavailable: "Die Tastaturbeleuchtung lässt sich auf diesem Mac nicht steuern.",
             appPanelHint: "Wähle, wo ein Klick auf das Lattice-Menüleistensymbol das App-Panel öffnet, auf jedem Bildschirm.",
             hideMenuBarIcon: "Menüleistensymbol ausblenden",
@@ -443,7 +443,7 @@ extension FeatureStrings {
         )
         case .fr: return NotchEditorStrings(
             layout: "Disposition",
-            content: "Contenu",
+            content: "Widgets",
             activity: "Activité",
             behavior: "Comportement",
             layoutHint: "Cliquez sur + pour ajouter un bouton. Faites glisser les boutons autour de l’îlot. Cliquez pour modifier.",
@@ -480,7 +480,7 @@ extension FeatureStrings {
             closeTimeHint: "Après que le pointeur a quitté l’île, attendre cette durée avant de la fermer.",
             enableFeatureFormat: "Activez « %@ » dans Fonctionnalités.",
             enableSettingFormat: "Activez « %@ » dans ses réglages.",
-            showPageFormat: "Affichez « %@ » dans l’onglet Contenu.",
+            showPageFormat: "Affichez « %@ » dans l’onglet Widgets.",
             keyboardLightUnavailable: "Le contrôle du rétroéclairage du clavier est indisponible sur ce Mac.",
             appPanelHint: "Choisissez où un clic sur l’icône Lattice de la barre des menus ouvre le panneau, sur tout écran.",
             hideMenuBarIcon: "Masquer l’icône de la barre des menus",
@@ -511,7 +511,7 @@ extension FeatureStrings {
         )
         case .it: return NotchEditorStrings(
             layout: "Layout",
-            content: "Contenuto",
+            content: "Widget",
             activity: "Attività",
             behavior: "Comportamento",
             layoutHint: "Fai clic su + per aggiungere un pulsante. Trascina i pulsanti intorno all’isola. Fai clic per modificarli.",
@@ -548,7 +548,7 @@ extension FeatureStrings {
             closeTimeHint: "Dopo che il puntatore lascia l’isola, attendi questo tempo prima di chiuderla.",
             enableFeatureFormat: "Attiva “%@” in Funzioni.",
             enableSettingFormat: "Attiva “%@” nelle relative impostazioni.",
-            showPageFormat: "Mostra “%@” nella scheda Contenuto.",
+            showPageFormat: "Mostra “%@” nella scheda Widget.",
             keyboardLightUnavailable: "Il controllo della retroilluminazione della tastiera non è disponibile su questo Mac.",
             appPanelHint: "Scegli dove si apre il pannello facendo clic sull’icona di Lattice nella barra dei menu, su qualsiasi schermo.",
             hideMenuBarIcon: "Nascondi l’icona nella barra dei menu",
@@ -579,7 +579,7 @@ extension FeatureStrings {
         )
         case .ru: return NotchEditorStrings(
             layout: "Макет",
-            content: "Содержимое",
+            content: "Виджеты",
             activity: "Активность",
             behavior: "Поведение",
             layoutHint: "Нажмите +, чтобы добавить кнопку. Перетаскивайте кнопки вокруг острова. Нажмите для изменения.",
@@ -616,7 +616,7 @@ extension FeatureStrings {
             closeTimeHint: "После того как указатель покинет остров, ждать столько времени перед закрытием.",
             enableFeatureFormat: "Включите «%@» в разделе функций.",
             enableSettingFormat: "Включите «%@» в соответствующих настройках.",
-            showPageFormat: "Покажите «%@» на вкладке содержимого.",
+            showPageFormat: "Покажите «%@» на вкладке виджетов.",
             keyboardLightUnavailable: "Управление подсветкой клавиатуры недоступно на этом Mac.",
             appPanelHint: "Выберите, где открывать панель при нажатии значка Lattice в строке меню на любом экране.",
             hideMenuBarIcon: "Скрывать значок в строке меню",
@@ -647,7 +647,7 @@ extension FeatureStrings {
         )
         case .tr: return NotchEditorStrings(
             layout: "Yerleşim",
-            content: "İçerik",
+            content: "Araçlar",
             activity: "Etkinlik",
             behavior: "Davranış",
             layoutHint: "Düğme eklemek için + işaretine tıklayın. Düğmeleri adanın çevresine sürükleyin. Düzenlemek için tıklayın.",
@@ -684,7 +684,7 @@ extension FeatureStrings {
             closeTimeHint: "İmleç adadan ayrıldıktan sonra kapatmadan önce bu süre kadar bekleyin.",
             enableFeatureFormat: "Özellikler’de “%@” özelliğini etkinleştirin.",
             enableSettingFormat: "İlgili ayarlarda “%@” seçeneğini etkinleştirin.",
-            showPageFormat: "İçerik sekmesinde “%@” sayfasını gösterin.",
+            showPageFormat: "Araçlar sekmesinde “%@” sayfasını gösterin.",
             keyboardLightUnavailable: "Bu Mac’te klavye aydınlatması denetimi kullanılamıyor.",
             appPanelHint: "Herhangi bir ekranda menü çubuğundaki Lattice simgesine tıklanınca panelin nerede açılacağını seçin.",
             hideMenuBarIcon: "Menü çubuğu simgesini gizle",
@@ -715,7 +715,7 @@ extension FeatureStrings {
         )
         case .ja: return NotchEditorStrings(
             layout: "レイアウト",
-            content: "コンテンツ",
+            content: "ウィジェット",
             activity: "アクティビティ",
             behavior: "動作",
             layoutHint: "＋でボタンを追加します。島の周りにドラッグして移動し、クリックして編集します。",
@@ -752,7 +752,7 @@ extension FeatureStrings {
             closeTimeHint: "ポインタが島から離れてからこの時間が経つと閉じます。",
             enableFeatureFormat: "機能で「%@」を有効にしてください。",
             enableSettingFormat: "該当する設定で「%@」を有効にしてください。",
-            showPageFormat: "コンテンツタブで「%@」を表示してください。",
+            showPageFormat: "ウィジェットタブで「%@」を表示してください。",
             keyboardLightUnavailable: "このMacではキーボードのバックライトを制御できません。",
             appPanelHint: "どの画面でも、メニューバーのLatticeアイコンをクリックしたときにパネルを開く場所を選択します。",
             hideMenuBarIcon: "メニューバーのアイコンを隠す",
@@ -783,7 +783,7 @@ extension FeatureStrings {
         )
         case .ko: return NotchEditorStrings(
             layout: "레이아웃",
-            content: "콘텐츠",
+            content: "위젯",
             activity: "활동",
             behavior: "동작",
             layoutHint: "+를 눌러 버튼을 추가하세요. 섬 주변으로 드래그하여 옮기고 클릭하여 편집하세요.",
@@ -820,7 +820,7 @@ extension FeatureStrings {
             closeTimeHint: "포인터가 섬을 벗어난 후 이 시간이 지나면 닫힙니다.",
             enableFeatureFormat: "기능에서 “%@”을(를) 활성화하세요.",
             enableSettingFormat: "해당 설정에서 “%@”을(를) 활성화하세요.",
-            showPageFormat: "콘텐츠 탭에서 “%@”을(를) 표시하세요.",
+            showPageFormat: "위젯 탭에서 “%@”을(를) 표시하세요.",
             keyboardLightUnavailable: "이 Mac에서는 키보드 백라이트를 제어할 수 없습니다.",
             appPanelHint: "어느 화면에서든 메뉴 막대의 Lattice 아이콘을 클릭할 때 패널이 열릴 위치를 선택하세요.",
             hideMenuBarIcon: "메뉴 막대 아이콘 숨기기",
@@ -851,7 +851,7 @@ extension FeatureStrings {
         )
         case .zhHans: return NotchEditorStrings(
             layout: "布局",
-            content: "内容",
+            content: "小组件",
             activity: "活动",
             behavior: "行为",
             layoutHint: "点击 + 添加按钮。将按钮拖到岛的周围，点击按钮进行编辑。",
@@ -888,7 +888,7 @@ extension FeatureStrings {
             closeTimeHint: "指针离开岛后等待此时长再关闭。",
             enableFeatureFormat: "在功能中启用“%@”。",
             enableSettingFormat: "在相应设置中启用“%@”。",
-            showPageFormat: "在内容标签页中显示“%@”。",
+            showPageFormat: "在小组件标签页中显示“%@”。",
             keyboardLightUnavailable: "此 Mac 无法控制键盘背光。",
             appPanelHint: "选择在任意显示器上点击菜单栏的 Lattice 图标时打开面板的位置。",
             hideMenuBarIcon: "隐藏菜单栏图标",
@@ -919,7 +919,7 @@ extension FeatureStrings {
         )
         case .zhTW: return NotchEditorStrings(
             layout: "佈局",
-            content: "內容",
+            content: "小工具",
             activity: "活動",
             behavior: "行為",
             layoutHint: "按一下 + 新增按鈕。將按鈕拖到島的周圍，按一下按鈕即可編輯。",
@@ -956,7 +956,7 @@ extension FeatureStrings {
             closeTimeHint: "指標離開島後等待此時間再關閉。",
             enableFeatureFormat: "在功能中啟用「%@」。",
             enableSettingFormat: "在對應設定中啟用「%@」。",
-            showPageFormat: "在內容標籤頁中顯示「%@」。",
+            showPageFormat: "在小工具標籤頁中顯示「%@」。",
             keyboardLightUnavailable: "此 Mac 無法控制鍵盤背光。",
             appPanelHint: "選擇在任何螢幕上按一下選單列的 Lattice 圖像時開啟面板的位置。",
             hideMenuBarIcon: "隱藏選單列圖示",
@@ -987,7 +987,7 @@ extension FeatureStrings {
         )
         case .zhHK: return NotchEditorStrings(
             layout: "佈局",
-            content: "內容",
+            content: "小工具",
             activity: "活動",
             behavior: "行為",
             layoutHint: "按一下 + 新增按鈕。將按鈕拖到島的周圍，按一下按鈕即可編輯。",
@@ -1024,7 +1024,7 @@ extension FeatureStrings {
             closeTimeHint: "指標離開島後等待此時間再關閉。",
             enableFeatureFormat: "在功能中啟用「%@」。",
             enableSettingFormat: "在相應設定中啟用「%@」。",
-            showPageFormat: "在內容標籤頁中顯示「%@」。",
+            showPageFormat: "在小工具標籤頁中顯示「%@」。",
             keyboardLightUnavailable: "此 Mac 無法控制鍵盤背光。",
             appPanelHint: "選擇在任何螢幕上按一下選單列的 Lattice 圖像時開啟面板的位置。",
             hideMenuBarIcon: "隱藏選單列圖示",
@@ -1055,7 +1055,7 @@ extension FeatureStrings {
         )
         case .uk: return NotchEditorStrings(
             layout: "Розкладка",
-            content: "Вміст",
+            content: "Віджети",
             activity: "Активність",
             behavior: "Поведінка",
             layoutHint: "Натисніть +, щоб додати кнопку. Перетягуйте кнопки навколо острівця. Натисніть кнопку, щоб редагувати її.",
@@ -1092,7 +1092,7 @@ extension FeatureStrings {
             closeTimeHint: "Після того як вказівник покине острівець, чекати стільки часу перед закриттям.",
             enableFeatureFormat: "Увімкніть «%@» у Функціях.",
             enableSettingFormat: "Увімкніть «%@» у налаштуваннях функції.",
-            showPageFormat: "Покажіть «%@» на вкладці Вміст.",
+            showPageFormat: "Покажіть «%@» на вкладці Віджети.",
             keyboardLightUnavailable: "Керування підсвічуванням клавіатури недоступне на цьому Mac.",
             appPanelHint: "Виберіть, де на будь-якому дисплеї відкриватиметься панель програми після натискання значка Lattice на смузі меню.",
             hideMenuBarIcon: "Ховати значок на смузі меню",

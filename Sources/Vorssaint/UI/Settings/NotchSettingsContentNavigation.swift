@@ -111,7 +111,8 @@ extension NotchSettings {
                 PanelReorderableItem(item: module,
                     order: Binding(get: { orderedModules }, set: { order = $0.map(\.rawValue).joined(separator: ",") }),
                     dragging: $draggingModule) {
-                    NotchContentNavigationRow(symbol: module.symbol, title: module.title(l10n.language)) {
+                    NotchContentNavigationRow(symbol: module.symbol, title: module.title(l10n.language),
+                                              enabled: isShown(module), language: l10n.language) {
                         showModule(module)
                     }
                     .contextMenu {
@@ -125,7 +126,9 @@ extension NotchSettings {
                 }
             }
             NotchContentNavigationRow(symbol: AppFeature.notchMascot.symbolName,
-                                      title: FeatureStrings.notchMascot(l10n.language).title) {
+                                      title: FeatureStrings.notchMascot(l10n.language).title,
+                                      enabled: mascotEnabled && features.isAvailable(.notchMascot),
+                                      language: l10n.language) {
                 contentSelection = .companion
             }
         }
