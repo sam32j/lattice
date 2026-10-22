@@ -3,75 +3,55 @@
 
 import SwiftUI
 
-/// The Mouse & Trackpad page: a legend of every mouse feature and whether it
-/// is on, each one a click away from its card, then one card per feature.
+/// Mouse and trackpad controls grouped by scrolling, pointer and buttons.
 struct MouseSettings: View {
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var features = FeatureRuntime.shared
-    @ObservedObject private var permissions = Permissions.shared
-    @ObservedObject private var inverter = ScrollInverter.shared
-    @ObservedObject private var smoothScroll = SmoothScrollService.shared
-    @ObservedObject private var mouseNavigation = MouseNavigationService.shared
-    @ObservedObject private var middleClick = MiddleClickService.shared
-    @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(DefaultsKey.scrollInverterEnabled) private var invertVertical = false
-    @AppStorage(DefaultsKey.scrollInverterHorizontalEnabled) private var invertHorizontal = false
-    @AppStorage(DefaultsKey.scrollHorizontalEnabled) private var horizontalScrollEnabled = false
-    @AppStorage(DefaultsKey.scrollHorizontalModifier) private var horizontalScrollModifier =
+    @ObservedObject var l10n = L10n.shared
+    @ObservedObject var features = FeatureRuntime.shared
+    @ObservedObject var permissions = Permissions.shared
+    @ObservedObject var inverter = ScrollInverter.shared
+    @ObservedObject var smoothScroll = SmoothScrollService.shared
+    @ObservedObject var mouseNavigation = MouseNavigationService.shared
+    @ObservedObject var middleClick = MiddleClickService.shared
+    @Environment(\.colorScheme) var colorScheme
+    @AppStorage(DefaultsKey.scrollInverterEnabled) var invertVertical = false
+    @AppStorage(DefaultsKey.scrollInverterHorizontalEnabled) var invertHorizontal = false
+    @AppStorage(DefaultsKey.scrollHorizontalEnabled) var horizontalScrollEnabled = false
+    @AppStorage(DefaultsKey.scrollHorizontalModifier) var horizontalScrollModifier =
         ScrollHorizontalModifier.shift
-    @AppStorage(DefaultsKey.focusFollowsMouseEnabled) private var focusFollowsMouseEnabled = false
-    @AppStorage(DefaultsKey.focusFollowsMouseRaise) private var focusFollowsMouseRaise = true
-    @AppStorage(DefaultsKey.focusFollowsMouseWaitForStop) private var focusFollowsMouseWaitForStop = true
-    @AppStorage(DefaultsKey.focusFollowsMouseDelay) private var focusFollowsMouseDelay =
+    @AppStorage(DefaultsKey.focusFollowsMouseEnabled) var focusFollowsMouseEnabled = false
+    @AppStorage(DefaultsKey.focusFollowsMouseRaise) var focusFollowsMouseRaise = true
+    @AppStorage(DefaultsKey.focusFollowsMouseWaitForStop) var focusFollowsMouseWaitForStop = true
+    @AppStorage(DefaultsKey.focusFollowsMouseDelay) var focusFollowsMouseDelay =
         FocusFollowsMouseSupport.defaultDelayMilliseconds
-    @AppStorage(DefaultsKey.smoothScrollEnabled) private var smoothScrollEnabled = false
-    @AppStorage(DefaultsKey.smoothScrollStep) private var smoothScrollStep = SmoothScrollSupport.defaultStep
-    @AppStorage(DefaultsKey.mouseAccelerationDisabled) private var mouseAccelerationDisabled = false
-    @AppStorage(DefaultsKey.linearScrollEnabled) private var linearScrollEnabled = false
-    @AppStorage(DefaultsKey.linearScrollLines) private var linearScrollLines =
+    @AppStorage(DefaultsKey.smoothScrollEnabled) var smoothScrollEnabled = false
+    @AppStorage(DefaultsKey.smoothScrollStep) var smoothScrollStep = SmoothScrollSupport.defaultStep
+    @AppStorage(DefaultsKey.mouseAccelerationDisabled) var mouseAccelerationDisabled = false
+    @AppStorage(DefaultsKey.linearScrollEnabled) var linearScrollEnabled = false
+    @AppStorage(DefaultsKey.linearScrollLines) var linearScrollLines =
         ScrollWheelSupport.defaultLinesPerNotch
-    @AppStorage(DefaultsKey.smoothScrollResponse) private var smoothScrollResponse =
+    @AppStorage(DefaultsKey.smoothScrollResponse) var smoothScrollResponse =
         SmoothScrollSupport.defaultResponse
-    @AppStorage(DefaultsKey.smoothScrollCoast) private var smoothScrollCoast =
+    @AppStorage(DefaultsKey.smoothScrollCoast) var smoothScrollCoast =
         SmoothScrollSupport.defaultCoast
-    @AppStorage(DefaultsKey.mouseNavigationEnabled) private var mouseNavigationEnabled = false
-    @AppStorage(DefaultsKey.mouseButtonShortcutsEnabled) private var mouseButtonShortcutsEnabled = false
-    @AppStorage(DefaultsKey.mouseSpacesGestureEnabled) private var spacesEnabled = false
-    @AppStorage(DefaultsKey.middleClickEnabled) private var middleClickEnabled = false
-    @AppStorage(DefaultsKey.middleClickTapFingers) private var middleClickTapFingers = 0
-    @AppStorage(DefaultsKey.mouseClickDebounceEnabled) private var mouseClickDebounceEnabled = false
-    @AppStorage(DefaultsKey.mouseClickDebounceWindowMs) private var mouseClickDebounceWindow =
+    @AppStorage(DefaultsKey.mouseNavigationEnabled) var mouseNavigationEnabled = false
+    @AppStorage(DefaultsKey.mouseButtonShortcutsEnabled) var mouseButtonShortcutsEnabled = false
+    @AppStorage(DefaultsKey.mouseSpacesGestureEnabled) var spacesEnabled = false
+    @AppStorage(DefaultsKey.middleClickEnabled) var middleClickEnabled = false
+    @AppStorage(DefaultsKey.middleClickTapFingers) var middleClickTapFingers = 0
+    @AppStorage(DefaultsKey.mouseClickDebounceEnabled) var mouseClickDebounceEnabled = false
+    @AppStorage(DefaultsKey.mouseClickDebounceWindowMs) var mouseClickDebounceWindow =
         Defaults.defaultMouseClickDebounceWindowMs
-    @State private var smoothScrollMoreOptionsExpanded = false
 
-    private var mouseClickDebounceText: MouseClickDebounceStrings {
+    var mouseClickDebounceText: MouseClickDebounceStrings {
         FeatureStrings.mouseClickDebounce(l10n.language)
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(FeatureStrings.settingsPages(l10n.language).mouseDescription)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                scrollCard
-                    .settingsSectionAnchor(.scrollDirection, cornerRadius: 16)
-                focusFollowsMouseCard
-                    .settingsSectionAnchor(.focusFollowsMouse, cornerRadius: 16)
-                smoothScrollCard
-                    .settingsSectionAnchor(.smoothScroll, cornerRadius: 16)
-                linearScrollCard
-                    .settingsSectionAnchor(.linearScroll, cornerRadius: 16)
-                accelerationCard
-                    .settingsSectionAnchor(.mouseAcceleration, cornerRadius: 16)
-                navigationCard
-                    .settingsSectionAnchor(.mouseNavigation, cornerRadius: 16)
-                MouseButtonShortcutsSection()
-                clickDebounceCard
-                    .settingsSectionAnchor(.mouseClickDebounce, cornerRadius: 16)
+                mouseScrollingCard
+                mouseClicksCard
+                mouseButtonsCard
                 middleClickCard
                     .settingsSectionAnchor(.middleClick, cornerRadius: 16)
                 if accessibilityNoteVisible {
@@ -92,365 +72,37 @@ struct MouseSettings: View {
 
 
 
-    // MARK: - Scrolling
-
-    private var scrollCard: some View {
-        SettingsCard(title: l10n.s.scrollSection) {
-            SettingsRow(symbol: "arrow.up.arrow.down", title: l10n.s.invertVerticalScroll) {
-                Toggle(l10n.s.invertVerticalScroll, isOn: $invertVertical)
-                    .labelsHidden()
-                    .onChange(of: invertVertical) { _, _ in
-                        ScrollInverter.shared.syncWithPreferences()
-                        if scrollDirectionEnabled { permissions.requestAccessibility() }
-                    }
-            }
-            SettingsRow(symbol: "arrow.left.arrow.right", title: l10n.s.invertHorizontalScroll) {
-                Toggle(l10n.s.invertHorizontalScroll, isOn: $invertHorizontal)
-                    .labelsHidden()
-                    .onChange(of: invertHorizontal) { _, _ in
-                        ScrollInverter.shared.syncWithPreferences()
-                        if scrollDirectionEnabled { permissions.requestAccessibility() }
-                    }
-            }
-            SettingsRow(symbol: "arrow.left.and.right", title: l10n.s.scrollHorizontalName,
-                        caption: l10n.s.scrollHorizontalCaption) {
-                Toggle(l10n.s.scrollHorizontalName, isOn: $horizontalScrollEnabled)
-                    .labelsHidden()
-                    .onChange(of: horizontalScrollEnabled) { _, _ in
-                        ScrollInverter.shared.syncWithPreferences()
-                        if scrollDirectionEnabled { permissions.requestAccessibility() }
-                    }
-            }
-            if horizontalScrollEnabled {
-                modifierKeys
-                    .padding(.leading, settingsRowTextInset)
-            }
-            if scrollInversionEnabled, inverter.isRunning {
-                activeBadge(l10n.s.scrollActiveNow)
-            }
-            Text(l10n.s.scrollTrackpadNote)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            if scrollDirectionEnabled {
-                MouseExceptionsList(scope: .scrollDirection)
-            }
+    var mouseScrollingCard: some View {
+        SettingsCard(title: InputSettingsStrings.text(.mouseScrolling, l10n.language)) {
+            scrollControls.settingsSectionAnchor(.scrollDirection, cornerRadius: 12)
+            Divider()
+            smoothScrollControls.settingsSectionAnchor(.smoothScroll, cornerRadius: 12)
+            Divider()
+            linearScrollControls.settingsSectionAnchor(.linearScroll, cornerRadius: 12)
+            Divider()
+            accelerationControls.settingsSectionAnchor(.mouseAcceleration, cornerRadius: 12)
         }
     }
 
-    /// The key to hold, as keycaps: one glance says which key, no menu.
-    private var modifierKeys: some View {
-        let modifierStrings = FeatureStrings.quitProtection(l10n.language)
-        let choices: [(ScrollHorizontalModifier, String, String)] = [
-            (.shift, "⇧", modifierStrings.shiftKey),
-            (.option, "⌥", modifierStrings.optionKey),
-            (.control, "⌃", modifierStrings.controlKey),
-            (.command, "⌘", l10n.s.scrollHorizontalCommandKey),
-        ]
-        return VStack(alignment: .leading, spacing: 8) {
-            Text(l10n.s.scrollHorizontalModifierLabel)
-                .font(.subheadline.weight(.medium))
-            HStack(spacing: 8) {
-                ForEach(choices, id: \.0) { modifier, glyph, name in
-                    let selected = horizontalScrollModifier == modifier
-                    Button {
-                        horizontalScrollModifier = modifier
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(glyph)
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            Text(name)
-                                .font(.system(size: 11, weight: .medium))
-                        }
-                        .foregroundStyle(selected ? Color.accentColor : .primary)
-                        .padding(.horizontal, 10)
-                        .frame(height: 28)
-                        .background(selected ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.06),
-                                    in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .strokeBorder(selected ? Color.accentColor.opacity(0.7) : Color.primary.opacity(0.14),
-                                              lineWidth: 1)
-                        }
-                        .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(name)
-                    .accessibilityAddTraits(selected ? .isSelected : [])
-                }
-            }
+    var mouseClicksCard: some View {
+        SettingsCard(title: InputSettingsStrings.text(.mouseClicks, l10n.language)) {
+            focusFollowsMouseControls.settingsSectionAnchor(.focusFollowsMouse, cornerRadius: 12)
+            Divider()
+            clickFilterControls.settingsSectionAnchor(.mouseClickDebounce, cornerRadius: 12)
         }
     }
 
-    // MARK: - Focus follows mouse
-
-    private var focusFollowsMouseCard: some View {
-        SettingsCard {
-            SettingsRow(symbol: "macwindow.and.cursorarrow", title: l10n.s.focusFollowsMouseName,
-                        caption: l10n.s.focusFollowsMouseCaption) {
-                Toggle(l10n.s.focusFollowsMouseName, isOn: $focusFollowsMouseEnabled)
-                    .labelsHidden()
-                    .onChange(of: focusFollowsMouseEnabled) { _, enabled in
-                        FocusFollowsMouseService.shared.syncWithPreferences()
-                        if enabled { Permissions.shared.requestAccessibility() }
-                    }
-            }
-            if focusFollowsMouseEnabled {
-                VStack(alignment: .leading, spacing: 10) {
-                    sliderRow(l10n.s.focusFollowsMouseDelay,
-                              value: focusFollowsMouseDelayBinding,
-                              range: Double(FocusFollowsMouseSupport.delayRange.lowerBound)
-                                  ... Double(FocusFollowsMouseSupport.delayRange.upperBound),
-                              step: 50,
-                              readout: "\(focusFollowsMouseDelay) ms")
-                    Toggle(l10n.s.focusFollowsMouseRaise, isOn: $focusFollowsMouseRaise)
-                    if !focusFollowsMouseRaise {
-                        Toggle(l10n.s.focusFollowsMouseWaitForStop, isOn: $focusFollowsMouseWaitForStop)
-                    }
-                    MouseExceptionsList(scope: .focusFollowsMouse)
-                }
-                .padding(.leading, settingsRowTextInset)
-            }
+    var mouseButtonsCard: some View {
+        SettingsCard(title: InputSettingsStrings.text(.mouseButtons, l10n.language)) {
+            navigationControls.settingsSectionAnchor(.mouseNavigation, cornerRadius: 12)
+            Divider()
+            MouseButtonShortcutsSection()
         }
-    }
-
-    // MARK: - Smooth scrolling
-
-    private var smoothScrollCard: some View {
-        SettingsCard {
-            SettingsRow(symbol: "scroll", title: l10n.s.smoothScrollName, caption: l10n.s.smoothScrollCaption) {
-                Toggle(l10n.s.smoothScrollName, isOn: $smoothScrollEnabled)
-                    .labelsHidden()
-                    .onChange(of: smoothScrollEnabled) { _, enabled in
-                        SmoothScrollService.shared.syncWithPreferences()
-                        if enabled { permissions.requestAccessibility() }
-                    }
-            }
-            if smoothScrollEnabled {
-                VStack(alignment: .leading, spacing: 10) {
-                    sliderRow(l10n.s.smoothScrollStepLabel,
-                              value: smoothScrollStepBinding,
-                              range: Double(SmoothScrollSupport.stepRange.lowerBound)
-                                  ... Double(SmoothScrollSupport.stepRange.upperBound),
-                              step: 10,
-                              readout: "\(SmoothScrollSupport.sanitizedStep(smoothScrollStep))")
-                    DisclosureGroup(isExpanded: $smoothScrollMoreOptionsExpanded) {
-                        sliderRow(l10n.s.smoothScrollResponseLabel,
-                                  value: smoothScrollResponseBinding,
-                                  range: Double(SmoothScrollSupport.responseRange.lowerBound)
-                                      ... Double(SmoothScrollSupport.responseRange.upperBound),
-                                  step: 5,
-                                  readout: "\(SmoothScrollSupport.sanitizedResponse(smoothScrollResponse))%")
-                            .padding(.top, 6)
-                        sliderRow(l10n.s.smoothScrollCoastLabel,
-                                  value: smoothScrollCoastBinding,
-                                  range: Double(SmoothScrollSupport.coastRange.lowerBound)
-                                      ... Double(SmoothScrollSupport.coastRange.upperBound),
-                                  step: 5,
-                                  readout: "\(SmoothScrollSupport.sanitizedCoast(smoothScrollCoast))%")
-                            .padding(.top, 6)
-                    } label: {
-                        Text(mouseClickDebounceText.moreOptions)
-                            .font(.subheadline.weight(.medium))
-                    }
-                    MouseExceptionsList(scope: .smoothScroll)
-                }
-                .padding(.leading, settingsRowTextInset)
-            }
-        }
-    }
-
-    // MARK: - Linear scrolling
-
-    private var linearScrollCard: some View {
-        SettingsCard {
-            SettingsRow(symbol: AppFeature.linearScroll.symbolName, title: l10n.s.linearScrollName,
-                        caption: l10n.s.linearScrollCaption) {
-                Toggle(l10n.s.linearScrollName, isOn: $linearScrollEnabled)
-                    .labelsHidden()
-                    .onChange(of: linearScrollEnabled) { _, enabled in
-                        ScrollInverter.shared.syncWithPreferences()
-                        if enabled { permissions.requestAccessibility() }
-                    }
-            }
-            if linearScrollEnabled {
-                VStack(alignment: .leading, spacing: 10) {
-                    sliderRow(l10n.s.linearScrollLinesLabel,
-                              value: linearScrollLinesBinding,
-                              range: Double(ScrollWheelSupport.linesPerNotchRange.lowerBound)
-                                  ... Double(ScrollWheelSupport.linesPerNotchRange.upperBound),
-                              step: 1,
-                              readout: "\(ScrollWheelSupport.sanitizedLinesPerNotch(linearScrollLines))")
-                    MouseExceptionsList(scope: .linearScroll)
-                }
-                .padding(.leading, settingsRowTextInset)
-            }
-        }
-    }
-
-    private func sliderRow(_ title: String, value: Binding<Double>, range: ClosedRange<Double>,
-                           step: Double, readout: String) -> some View {
-        HStack(spacing: 12) {
-            Text(title)
-                .frame(minWidth: 96, alignment: .leading)
-            Slider(value: value, in: range, step: step) {
-                Text(title)
-            }
-            .labelsHidden()
-            Text(readout)
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .frame(width: 60, alignment: .trailing)
-        }
-    }
-
-    // MARK: - Acceleration, side buttons, click filter, middle click
-
-    private var accelerationCard: some View {
-        SettingsCard {
-            SettingsRow(symbol: "cursorarrow.motionlines", title: l10n.s.mouseAccelerationName,
-                        caption: l10n.s.mouseAccelerationCaption) {
-                Toggle(l10n.s.mouseAccelerationName, isOn: $mouseAccelerationDisabled)
-                    .labelsHidden()
-                    .onChange(of: mouseAccelerationDisabled) { _, _ in
-                        MouseAccelerationService.shared.syncWithPreferences()
-                    }
-            }
-        }
-    }
-
-    private var navigationCard: some View {
-        SettingsCard(title: l10n.s.mouseNavigationSection) {
-            SettingsRow(symbol: "arrowshape.turn.up.left", title: l10n.s.mouseNavigationEnable,
-                        caption: l10n.s.mouseNavigationCaption) {
-                Toggle(l10n.s.mouseNavigationEnable, isOn: $mouseNavigationEnabled)
-                    .labelsHidden()
-                    .onChange(of: mouseNavigationEnabled) { _, enabled in
-                        MouseNavigationService.shared.syncWithPreferences()
-                        if enabled { permissions.requestAccessibility() }
-                    }
-            }
-            if mouseNavigationEnabled, mouseNavigation.isRunning {
-                activeBadge(l10n.s.mouseNavigationActiveNow)
-            }
-            if mouseNavigationEnabled {
-                MouseExceptionsList(scope: .navigation)
-            }
-        }
-    }
-
-    private var clickDebounceCard: some View {
-        SettingsCard {
-            SettingsRow(symbol: "cursorarrow.click.badge.clock", title: mouseClickDebounceText.title,
-                        caption: mouseClickDebounceText.caption) {
-                Toggle(mouseClickDebounceText.title, isOn: $mouseClickDebounceEnabled)
-                    .labelsHidden()
-                    .onChange(of: mouseClickDebounceEnabled) { _, enabled in
-                        MouseClickDebounceService.shared.syncWithPreferences()
-                        if enabled { permissions.requestAccessibility() }
-                    }
-            }
-            if mouseClickDebounceEnabled {
-                VStack(alignment: .leading, spacing: 6) {
-                    Stepper(value: mouseClickDebounceWindowBinding,
-                            in: Defaults.allowedMouseClickDebounceWindowRange,
-                            step: 1) {
-                        HStack {
-                            Text(mouseClickDebounceText.windowLabel)
-                            Spacer()
-                            Text("\(Defaults.sanitizedMouseClickDebounceWindow(mouseClickDebounceWindow)) ms")
-                                .foregroundStyle(.secondary)
-                                .monospacedDigit()
-                        }
-                    }
-                    Text(mouseClickDebounceText.windowCaption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.leading, settingsRowTextInset)
-            }
-        }
-    }
-
-    private var middleClickCard: some View {
-        SettingsCard(title: l10n.s.middleClickSection) {
-            SettingsRow(symbol: "hand.tap", title: l10n.s.middleClickEnable,
-                        caption: l10n.s.middleClickEnableCaption) {
-                Toggle(l10n.s.middleClickEnable, isOn: $middleClickEnabled)
-                    .labelsHidden()
-                    .onChange(of: middleClickEnabled) { _, enabled in
-                        MiddleClickService.shared.syncWithPreferences()
-                        if enabled { permissions.requestAccessibility() }
-                    }
-            }
-            if middleClickEnabled {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(l10n.s.middleClickTapPicker)
-                        .font(.subheadline.weight(.medium))
-                    HStack(spacing: 8) {
-                        tapChip(0, title: l10n.s.middleClickTapOff, symbol: "hand.raised.slash")
-                        tapChip(3, title: l10n.s.middleClickTapThreeFingers, symbol: "hand.tap")
-                        tapChip(4, title: l10n.s.middleClickTapFourFingers, symbol: "hand.tap")
-                    }
-                    Text(l10n.s.middleClickTapCaption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if middleClick.systemDragGestureConflict {
-                        Text(l10n.s.middleClickDragConflict)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if middleClick.touchDeviceMissing {
-                        Text(l10n.s.middleClickNoTrackpad)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .padding(.leading, settingsRowTextInset)
-                MouseExceptionsList(scope: .middleClick)
-            }
-        }
-    }
-
-    private func tapChip(_ fingers: Int, title: String, symbol: String) -> some View {
-        let selected = middleClickTapFingers == fingers
-        return Button {
-            middleClickTapFingers = fingers
-            MiddleClickService.shared.syncWithPreferences()
-        } label: {
-            Label(title, systemImage: symbol)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(selected ? Color.accentColor : .primary)
-                .padding(.horizontal, 10)
-                .frame(height: 28)
-                .background(selected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06),
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(selected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1)
-                }
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-
-    private func activeBadge(_ text: String) -> some View {
-        Label(text, systemImage: "checkmark.circle.fill")
-            .font(.caption.weight(.medium))
-            .foregroundStyle(PanelMetricColor.green(for: colorScheme))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(PanelMetricColor.green(for: colorScheme).opacity(0.12), in: Capsule())
     }
 
     // MARK: - State
 
-    private var accessibilityNoteVisible: Bool {
+    var accessibilityNoteVisible: Bool {
         let anyEngaged = scrollDirectionEnabled
             || focusFollowsMouseEnabled
             || smoothScrollEnabled
@@ -463,43 +115,43 @@ struct MouseSettings: View {
         return anyEngaged && !permissions.accessibility
     }
 
-    private var scrollInversionEnabled: Bool {
+    var scrollInversionEnabled: Bool {
         invertVertical || invertHorizontal
     }
 
-    private var scrollDirectionEnabled: Bool {
+    var scrollDirectionEnabled: Bool {
         scrollInversionEnabled || horizontalScrollEnabled
     }
 
-    private var smoothScrollStepBinding: Binding<Double> {
+    var smoothScrollStepBinding: Binding<Double> {
         Binding(
             get: { Double(SmoothScrollSupport.sanitizedStep(smoothScrollStep)) },
             set: { smoothScrollStep = Int($0) }
         )
     }
 
-    private var smoothScrollResponseBinding: Binding<Double> {
+    var smoothScrollResponseBinding: Binding<Double> {
         Binding(
             get: { Double(SmoothScrollSupport.sanitizedResponse(smoothScrollResponse)) },
             set: { smoothScrollResponse = Int($0) }
         )
     }
 
-    private var smoothScrollCoastBinding: Binding<Double> {
+    var smoothScrollCoastBinding: Binding<Double> {
         Binding(
             get: { Double(SmoothScrollSupport.sanitizedCoast(smoothScrollCoast)) },
             set: { smoothScrollCoast = Int($0) }
         )
     }
 
-    private var linearScrollLinesBinding: Binding<Double> {
+    var linearScrollLinesBinding: Binding<Double> {
         Binding(
             get: { Double(ScrollWheelSupport.sanitizedLinesPerNotch(linearScrollLines)) },
             set: { linearScrollLines = Int($0) }
         )
     }
 
-    private var focusFollowsMouseDelayBinding: Binding<Double> {
+    var focusFollowsMouseDelayBinding: Binding<Double> {
         Binding(
             get: { Double(FocusFollowsMouseSupport.sanitizedDelay(focusFollowsMouseDelay)) },
             set: {
@@ -509,7 +161,7 @@ struct MouseSettings: View {
         )
     }
 
-    private var mouseClickDebounceWindowBinding: Binding<Int> {
+    var mouseClickDebounceWindowBinding: Binding<Int> {
         Binding(
             get: { Defaults.sanitizedMouseClickDebounceWindow(mouseClickDebounceWindow) },
             set: {
@@ -517,5 +169,4 @@ struct MouseSettings: View {
                 MouseClickDebounceService.shared.syncWithPreferences()
             }
         )
-    }
-}
+    }}
