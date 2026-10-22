@@ -1445,9 +1445,9 @@ enum WindowLayoutFeatureTests {
                "window layout top twice still maximizes while the side cycle is on")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.windowLayoutSideRepeatCyclesThirds] as? Bool == false,
                "window layout side repeat cycling stays off by default")
-        let sideRepeatSettingsSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Settings/WindowLayoutSettings.swift",
-            encoding: .utf8)) ?? ""
+        let sideRepeatSettingsSource = ["WindowLayoutSettings.swift", "WindowLayoutSettingsSupport.swift"]
+            .compactMap { try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/" + $0, encoding: .utf8) }
+            .joined(separator: "\n")
         let sideRepeatSettingsCode = sideRepeatSettingsSource.components(separatedBy: "\n")
             .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
             .joined(separator: "\n")

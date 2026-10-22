@@ -1652,6 +1652,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     // MARK: - Windows
 
     func openSettingsWindow() {
+        NotchService.shared.prepareForSettings()
         let targetScreen = (popover.isShown
             ? popoverAnchor?.screen ?? popover.contentViewController?.view.window?.screen
             : nil) ?? NSScreen.withMouse

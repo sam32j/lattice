@@ -33,6 +33,7 @@ enum FeatureAvailabilityTransitionTests {
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain); State.bindings = [:] }
         let service = Runtime(defaults)
+        islandExtensionTransitions(service, defaults: defaults, suite: suite)
         let bundle: [AppFeature] = [.screenshot, .colorPicker, .screenOCR]
         var calls: [AppFeature] = []
         var observed: [Bool] = []

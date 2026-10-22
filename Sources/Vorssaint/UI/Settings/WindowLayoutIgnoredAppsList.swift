@@ -19,6 +19,7 @@ struct WindowLayoutIgnoredAppsList: View {
                       bundleIDs: ignored.apps,
                       reachesEveryApp: true,
                       acceptsExecutables: true,
+                      usesSheet: true,
                       onAdd: {
                           ignored.add($0)
                           WindowLayoutService.shared.syncWithPreferences()

@@ -117,8 +117,9 @@ enum NotchAudioLevelSupport {
         return min(bands - 1, max(0, Int(position.rounded(.down))))
     }
 
-    /// Bars rise fast and fall slowly, and the loudest band sets the scale so
-    /// a quiet album still fills the meter. The scale itself relaxes slowly.
+    /// Bars rise fast and fall slowly. A shared scale fills the meter for quiet
+    /// sources; bounded per-band gain lifts quieter frequencies without inventing
+    /// energy in silent bands or making every frequency equally loud.
     struct Smoother {
         static let attack = 0.55
         static let decay = 0.12
@@ -126,15 +127,23 @@ enum NotchAudioLevelSupport {
         static let peakTarget = 0.92
         private var levels: [Double] = []
         private var ceiling = 0.05
+        private var bandCeilings: [Double] = []
 
         init() {}
 
         mutating func next(_ raw: [Double]) -> [Double] {
-            if levels.count != raw.count { levels = Array(repeating: 0, count: raw.count) }
+            if levels.count != raw.count {
+                levels = Array(repeating: 0, count: raw.count)
+                bandCeilings = Array(repeating: 0.12, count: raw.count)
+                ceiling = 0.05
+            }
             ceiling = max(raw.max() ?? 0, ceiling * Self.ceilingDecay, 0.05)
             let gain = Self.peakTarget / ceiling
             for index in raw.indices {
-                let target = min(1, max(0, raw[index] * gain))
+                bandCeilings[index] = max(raw[index], bandCeilings[index] * Self.ceilingDecay, 0.12)
+                let localGain = min(gain * 2.5, Self.peakTarget / bandCeilings[index])
+                let balancedGain = gain * 0.35 + localGain * 0.65
+                let target = min(1, max(0, raw[index] * balancedGain))
                 let rate = target > levels[index] ? Self.attack : Self.decay
                 levels[index] += (target - levels[index]) * rate
             }

@@ -240,7 +240,7 @@ extension Strings {
         dockPreviewOpenDelayCaption: "Скільки вказівник має залишатися на значку, перш ніж відкриється панель.",
         dockPreviewQuitAppOnClose: "Завершувати програму кнопкою ×",
         dockPreviewQuitAppOnCloseCaption: "У Dock Preview кнопка × завершує всю програму, а не закриває лише це вікно.",
-        dockPreviewKeepDockVisible: "Залишати Dock видимим (експериментально)",
+        dockPreviewKeepDockVisible: "Залишати Dock видимим",
         dockPreviewKeepDockVisibleCaption: "Призупиняє автоматичне приховування Dock, поки відкритий попередній перегляд, і відновлює його після закриття. Може змінити розмір вікон. Якщо роботу програми перервано, відкрийте її знову, щоб відновити Dock.",
         dockPreviewOrderByCreation: "Сортувати вікна за часом створення",
         dockPreviewOrderByCreationCaption: "Показувати старіші вікна першими, а не ті, якими ви користувалися нещодавно.",

@@ -887,6 +887,7 @@ enum SwitcherModelFeatureTests {
             }
         }
         DockPreviewScopeTests.run(suite)
+        DockPreviewExclusionTests.run(suite)
 
         // MARK: Windows whose Accessibility reads time out
 
@@ -3756,9 +3757,9 @@ enum SwitcherModelFeatureTests {
         previewDefaults.lists = [DefaultsKey.windowPreviewExcludedApps: ["com.example.vault"],
                                  DefaultsKey.switcherPreviewExcludedApps: ["com.example.game"]]
         PreviewProvider.NSWorkspace.shared.frontmostApplication = .init(bundleIdentifier: "com.example.vault")
-        suite.expect(PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.windowPreviewExcludedApps)
+        suite.expect(!PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.windowPreviewExcludedApps)
                 && !PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.switcherPreviewExcludedApps),
-               "an app on Dock Preview's list pauses only Dock Preview captures")
+               "a disabled Dock app in front does not pause captures for other Dock apps")
         PreviewProvider.NSWorkspace.shared.frontmostApplication = .init(bundleIdentifier: "com.example.game")
         suite.expect(!PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.windowPreviewExcludedApps)
                 && PreviewProvider.captureIsPaused(excludedAppsKey: DefaultsKey.switcherPreviewExcludedApps),

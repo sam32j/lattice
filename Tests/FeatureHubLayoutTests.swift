@@ -34,9 +34,6 @@ enum FeatureHubLayoutTests {
         @ViewBuilder var neverUsedCard: some View {
             if features.offersNeverUsed { Text("Never used").frame(height: 120) }
         }
-        var dynamicIslandCard: some View {
-            Text("Dynamic Island").frame(height: 900).id(FeatureGroup.dynamicIsland)
-        }
         func groupCard(_ group: FeatureGroup) -> some View {
             SettingsCard {
                 Text(group.rawValue)

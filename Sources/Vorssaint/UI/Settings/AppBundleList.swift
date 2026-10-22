@@ -3,15 +3,8 @@
 
 import SwiftUI
 
-/// The "apps this feature treats differently" block four Settings pages carry:
-/// a disclosure row with a count, one line per app with its icon and a minus
-/// button, an add button that opens the app picker, and a caption underneath.
-///
-/// Those pages differ only in where the list is kept, what a row shows next to
-/// the name and which apps the picker offers, so that is what they pass in.
-/// It stays a single quiet row while nothing is listed and comes up open when
-/// the feature already has entries, so a page with several of these never
-/// turns into a wall of lists (issues #358, #423).
+/// Shared app identity list and picker. Callers choose an inline disclosure or
+/// a fixed-size editor sheet; both keep the same sorting and picker semantics.
 struct AppBundleList<Accessory: View>: View {
     let title: String
     let caption: String
@@ -31,6 +24,9 @@ struct AppBundleList<Accessory: View>: View {
 
     @State private var isExpanded: Bool
     @State private var showingAppPicker = false
+    @State private var showingEditor = false
+    let usesSheet: Bool
+    let canRemove: (String) -> Bool
 
     init(title: String,
          caption: String,
@@ -39,9 +35,13 @@ struct AppBundleList<Accessory: View>: View {
          bundleIDs: [String],
          reachesEveryApp: Bool = false,
          acceptsExecutables: Bool = false,
+         usesSheet: Bool = false,
+         canRemove: @escaping (String) -> Bool = { _ in true },
          onAdd: @escaping (String) -> Void,
          onRemove: @escaping (String) -> Void,
          @ViewBuilder accessory: @escaping (String) -> Accessory) {
+        self.usesSheet = usesSheet
+        self.canRemove = canRemove
         self.title = title
         self.caption = caption
         self.addTitle = addTitle
@@ -56,7 +56,47 @@ struct AppBundleList<Accessory: View>: View {
     }
 
     var body: some View {
-        DisclosureGroup(isExpanded: $isExpanded) {
+        Group {
+            if usesSheet {
+                SettingsControlRow(title: SettingsAppListStrings.text(L10n.shared.language).disabledApps) {
+                    Button(SettingsAppListStrings.text(L10n.shared.language).edit) { showingEditor = true }
+                }
+                .sheet(isPresented: $showingEditor) { editorSheet }
+            } else {
+                DisclosureGroup(isExpanded: $isExpanded) {
+                    appRows
+                    addButton
+                    Text(caption).font(.caption).foregroundStyle(.secondary)
+                } label: {
+                    HStack {
+                        Text(title)
+                        Spacer()
+                        if !bundleIDs.isEmpty { Text("\(bundleIDs.count)").foregroundStyle(.secondary) }
+                    }
+                }
+                .sheet(isPresented: $showingAppPicker) { appPickerSheet }
+            }
+        }
+    }
+
+    private var editorSheet: some View {
+        AppListSheet(caption: caption, centersContent: bundleIDs.isEmpty, onDone: { showingEditor = false }) {
+            if bundleIDs.isEmpty {
+                ContentUnavailableView(SettingsAppListStrings.text(L10n.shared.language).disabledApps, systemImage: "app.dashed")
+            } else {
+                LazyVStack(spacing: 16) { appRows }.padding(16)
+            }
+        } footer: {
+            addButton
+        }
+        .sheet(isPresented: $showingAppPicker) { appPickerSheet }
+    }
+
+    private var addButton: some View {
+        Button { showingAppPicker = true } label: { Label(addTitle, systemImage: "plus") }
+    }
+
+    private var appRows: some View {
             ForEach(sortedBundleIDs, id: \.self) { bundleID in
                 HStack(spacing: 9) {
                     Image(nsImage: InstalledApps.icon(for: bundleID))
@@ -86,46 +126,18 @@ struct AppBundleList<Accessory: View>: View {
                     }
                     Spacer(minLength: 8)
                     accessory(bundleID)
-                    Button {
-                        onRemove(bundleID)
-                    } label: {
-                        Image(systemName: "minus.circle.fill")
-                            .foregroundStyle(.secondary)
+                    if canRemove(bundleID) {
+                        Button { onRemove(bundleID) } label: {
+                            Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(removeLabel + ": " + InstalledApps.name(for: bundleID))
+                    } else {
+                        Image(systemName: "lock.fill").foregroundStyle(.tertiary)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(removeLabel)
                 }
             }
 
-            Button {
-                showingAppPicker = true
-            } label: {
-                Label(addTitle, systemImage: "plus")
-            }
-            .controlSize(.small)
-            // Rows inside a disclosure group center themselves; the button
-            // belongs under the list it adds to.
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text(caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            HStack {
-                Text(title)
-                Spacer()
-                if !bundleIDs.isEmpty {
-                    Text("\(bundleIDs.count)")
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-            }
-        }
-        .sheet(isPresented: $showingAppPicker) {
-            appPickerSheet
-        }
     }
 
     private var sortedBundleIDs: [String] {
@@ -178,6 +190,8 @@ extension AppBundleList where Accessory == EmptyView {
          bundleIDs: [String],
          reachesEveryApp: Bool = false,
          acceptsExecutables: Bool = false,
+         usesSheet: Bool = false,
+         canRemove: @escaping (String) -> Bool = { _ in true },
          onAdd: @escaping (String) -> Void,
          onRemove: @escaping (String) -> Void) {
         self.init(title: title,
@@ -187,6 +201,7 @@ extension AppBundleList where Accessory == EmptyView {
                   bundleIDs: bundleIDs,
                   reachesEveryApp: reachesEveryApp,
                   acceptsExecutables: acceptsExecutables,
+                  usesSheet: usesSheet, canRemove: canRemove,
                   onAdd: onAdd,
                   onRemove: onRemove,
                   accessory: { _ in EmptyView() })

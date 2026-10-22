@@ -10,7 +10,7 @@ struct NotchView: View {
     @ObservedObject private var music = NotchMusicService.shared
     @ObservedObject private var launcher = QuickLauncherService.shared
     @ObservedObject private var updates = UpdateService.shared
-    @AppStorage(DefaultsKey.notchLiquidGlassEnabled) private var glass = false
+    private let glass = LiquidGlassSupport.isSupported
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -851,7 +851,7 @@ extension NotchModule: PanelOrderItem {
         case .captures: return FeatureStrings.recentCaptures(language).title
         case .files: return FeatureStrings.notch(language).files
         case .system: return FeatureStrings.notch(language).system
-        case .tools: return FeatureStrings.notch(language).tools
+        case .tools: return Strings.localized(language).launcherName
         case .scratchpad: return FeatureStrings.scratchpad(language).pageTitle
         case .agents: return FeatureStrings.notchAgents(language).title
         case .watch: return FeatureStrings.notchWatch(language).title

@@ -527,32 +527,28 @@ struct NotchBackdropShape: Shape {
 
 struct NotchWindowBackground: View {
     @ObservedObject var presentation: NotchBackdropPresentation
-    @AppStorage(DefaultsKey.notchLiquidGlassEnabled) private var glass = false
-    @AppStorage(DefaultsKey.notchTranslucentBackground) private var translucent = false
 
     var body: some View {
-        NotchSurfaceBackground(presentation: presentation, glass: glass, translucent: translucent)
+        NotchSurfaceBackground(presentation: presentation)
     }
 }
 
 /// Keep the upper content dark and open the lower surface into a refractive lip.
 struct NotchSurfaceBackground: View {
     @ObservedObject var presentation: NotchBackdropPresentation
-    let glass: Bool
-    var translucent = false
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     private var offersGlass: Bool {
 #if compiler(>=6.2)
-        if #available(macOS 26, *) { return glass && !reduceTransparency }
+        if #available(macOS 26, *) { return !reduceTransparency }
 #endif
         return false
     }
 
     private var showsGlass: Bool { offersGlass && presentation.usesGlass }
     private var showsTranslucent: Bool {
-        translucent && !offersGlass && presentation.usesGlass && !reduceTransparency
+        !offersGlass && presentation.usesGlass && !reduceTransparency
     }
 
     var body: some View {
@@ -605,7 +601,7 @@ extension NotchSurfaceBackground {
     /// the camera strip so every open state meets the housing as the resting
     /// island does. Reduce Transparency keeps it black.
     @ViewBuilder var translucentOrBlack: some View {
-        if translucent, presentation.usesGlass, !reduceTransparency {
+        if presentation.usesGlass, !reduceTransparency {
             let shape = NotchBackdropShape(contour: presentation.contour)
             let height = presentation.contourBottom
             let stops = NotchTranslucentTint.stops(height: height, stripHeight: presentation.stripHeight,
@@ -688,7 +684,6 @@ struct NotchControlSurface: ViewModifier {
     let cornerRadius: CGFloat
     var selected = false
     var interactive = true
-    @AppStorage(DefaultsKey.notchLiquidGlassEnabled) private var glass = false
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.notchGlassSurface) private var glassSurface
@@ -705,7 +700,7 @@ struct NotchControlSurface: ViewModifier {
                     }
             } else {
 #if compiler(>=6.2)
-                if #available(macOS 26, *), glass, !reduceTransparency {
+                if #available(macOS 26, *), !reduceTransparency {
                     content.background(.white.opacity(selected ? 0.12 : 0.065), in: shape)
                         .glassEffect(.regular.interactive(interactive), in: shape)
                 } else {

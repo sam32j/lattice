@@ -13,7 +13,7 @@ enum NotchPresentationProbe {
     /// Exercise the production backdrop, including its native glass rendering,
     /// without changing the app's preferences or making the test windows visible.
     private static func surface(_ presentation: NotchBackdropPresentation) -> AnyView {
-        AnyView(NotchSurfaceBackground(presentation: presentation, glass: CommandLine.arguments.contains("--glass"))
+        AnyView(NotchSurfaceBackground(presentation: presentation)
             .environment(\.colorScheme, .dark))
     }
 
@@ -21,7 +21,6 @@ enum NotchPresentationProbe {
     /// is only registered, so nothing is written to disk.
     private static let glassDefaults: UserDefaults = {
         let defaults = UserDefaults(suiteName: "com.vorssaint.tests.notch-presentation")!
-        defaults.register(defaults: [DefaultsKey.notchLiquidGlassEnabled: CommandLine.arguments.contains("--glass")])
         return defaults
     }()
 

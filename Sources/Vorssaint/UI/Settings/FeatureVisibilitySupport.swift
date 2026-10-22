@@ -77,7 +77,8 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
         case .scratchpad:
             return .scratchpad
         case .switcher: return .switcher
-        case .dock, .dockClick, .autoQuit: return .dock
+        case .dock, .dockClick: return .dock
+        case .autoQuit: return .windowLayout
         case .clipboardHistory, .pastePlain: return .clipboard
         case .quickLauncher, .cameraPreview: return .shortcuts
         case .screenshot, .colorPicker, .screenOCR:
@@ -171,7 +172,8 @@ final class SettingsRouter: ObservableObject {
     /// One-shot hint for the Dynamic Island page, so a section of the island
     /// can open its own options. Consumed and cleared on arrival.
     @Published var notchModule: NotchModule?
-    /// One-shot hint for the Dynamic Island page to show the companion's tab,
+    @Published var notchSettingsTab: String?
+    /// One-shot hint for the Dynamic Island page to show the companion's content page,
     /// where its settings live. Consumed and cleared on arrival.
     @Published var notchCompanion = false
 
@@ -186,7 +188,7 @@ final class SettingsRouter: ObservableObject {
     /// history entry, for a fallback when the visited tool went away.
     func request(_ destination: FeatureSettingsDestination, targetFeature: AppFeature? = nil,
                  sidebarFeature: AppFeature? = nil, replacingVisit: Bool = false) {
-        // The companion's settings are a tab of the Dynamic Island page.
+        // The companion's settings are a content destination of the Dynamic Island page.
         if destination.page == .notchMascot {
             request(FeatureSettingsDestination(.notch), targetFeature: targetFeature,
                     sidebarFeature: sidebarFeature, replacingVisit: replacingVisit)
@@ -195,6 +197,7 @@ final class SettingsRouter: ObservableObject {
         }
         // Any other request, history included, drops a hint nobody took.
         notchCompanion = false
+        notchSettingsTab = nil
         let requestID = UUID()
         let samePage = page == destination.page
         page = destination.page
@@ -295,7 +298,7 @@ extension AppFeature {
         case .windowMaximizer:
             return FeatureSettingsDestination(.windowLayout, sectionAnchor: .windowMaximizer)
         case .windowLayout: return FeatureSettingsDestination(.windowLayout)
-        case .autoQuit: return FeatureSettingsDestination(.dock, sectionAnchor: .autoQuit)
+        case .autoQuit: return FeatureSettingsDestination(.windowLayout, sectionAnchor: .autoQuit)
         case .quitWindowProtection:
             return FeatureSettingsDestination(.keyboard, sectionAnchor: .quitProtection)
 
@@ -404,8 +407,8 @@ enum FeatureVisibilitySupport {
         case .energy: return [.keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .wallpaper]
         case .monitor: return monitorFeatures
         case .switcher: return [.switcher]
-        case .dock: return [.dockPreview, .dockClick, .autoQuit]
-        case .windowLayout: return [.windowLayout, .windowMaximizer, .spacesOrder]
+        case .dock: return [.dockPreview, .dockClick]
+        case .windowLayout: return [.windowLayout, .windowMaximizer, .autoQuit, .spacesOrder]
         case .wallpaper: return [.wallpaper]
         case .clipboard: return [.clipboardHistory, .pastePlain]
         case .shelf: return [.shelf]
@@ -432,7 +435,7 @@ enum FeatureVisibilitySupport {
 
     static func isPageVisible(_ page: SettingsPage,
                               isAvailable: (AppFeature) -> Bool) -> Bool {
-        if page == .dock || page == .windowLayout || page == .switcher || page == .screenshot || page == .screenRecorder { return true }
+        if page == .notch || page == .dock || page == .windowLayout || page == .switcher || page == .screenshot || page == .screenRecorder { return true }
         let gate = features(for: page)
         return gate.isEmpty || gate.contains { $0.isVisibleInSettings(isAvailable: isAvailable) }
     }

@@ -4,6 +4,7 @@
 import AppKit
 
 #if VORSSAINT_DEVELOPMENT
+if CommandLine.arguments.contains("--settings-refactor-rendering") { SettingsRefactorProbe.runAndExit() }
 if CommandLine.arguments.contains("--capture-editor-presentation-test") {
     CaptureEditorPresentationProbe.runAndExit()
 }

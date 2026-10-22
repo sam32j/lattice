@@ -172,7 +172,6 @@ struct HUDBackdrop: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @AppStorage(DefaultsKey.liquidGlassEnabled) private var liquidGlassEnabled = false
 
     private var materialOpacity: Double {
         reduceTransparency ? 1 : min(max(opacity, 0), 1)
@@ -193,9 +192,9 @@ struct HUDBackdrop: View {
 
     /// Whether the backdrop is drawn as Liquid Glass instead of the classic
     /// material. Settings asks too, to know when `opacity` has nothing to fade.
-    static func drawsLiquidGlass(enabled: Bool, reduceTransparency: Bool) -> Bool {
+    static func drawsLiquidGlass(reduceTransparency: Bool) -> Bool {
 #if compiler(>=6.2)
-        if #available(macOS 26.0, *) { return enabled && !reduceTransparency }
+        if #available(macOS 26.0, *) { return !reduceTransparency }
 #endif
         return false
     }
@@ -203,7 +202,7 @@ struct HUDBackdrop: View {
     var body: some View {
 #if compiler(>=6.2)
         if #available(macOS 26.0, *),
-           Self.drawsLiquidGlass(enabled: liquidGlassEnabled, reduceTransparency: reduceTransparency) {
+           Self.drawsLiquidGlass(reduceTransparency: reduceTransparency) {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(Color.clear)
                 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))

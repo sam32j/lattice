@@ -19,7 +19,7 @@ struct MusicBlockingSettings: View {
             Toggle(l10n.s.musicBlockTitle, isOn: $enabled)
                 .labelsHidden()
                 .toggleStyle(.switch)
-                .controlSize(.mini)
+                .controlSize(.regular)
                 .help(l10n.s.musicBlockTitle)
                 .accessibilityLabel(l10n.s.musicBlockTitle)
                 .onChange(of: enabled) { _, enabled in

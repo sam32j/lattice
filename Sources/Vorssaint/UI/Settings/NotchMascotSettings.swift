@@ -28,7 +28,6 @@ struct NotchMascotSettings: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var text: NotchMascotStrings { FeatureStrings.notchMascot(l10n.language) }
-    private var editor: NotchEditorStrings { FeatureStrings.notchEditor(l10n.language) }
 
     private var look: NotchMascotLook {
         NotchMascotLook(style: NotchMascotStyle(rawValue: style) ?? .minimal,
@@ -72,7 +71,14 @@ struct NotchMascotSettings: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 12)
-            Toggle(text.title, isOn: $enabled).labelsHidden().toggleStyle(.switch)
+            Toggle(text.title, isOn: Binding(
+                get: { features.isAvailable(.notchMascot) && enabled },
+                set: { value in
+                    enabled = value
+                    features.setIslandFeature(.notchMascot, enabled: value)
+                    NotchService.shared.syncWithPreferences()
+                }
+            )).labelsHidden().toggleStyle(.switch)
                 .accessibilityLabel(text.title)
         }
     }
@@ -80,7 +86,6 @@ struct NotchMascotSettings: View {
     /// With the island off or uninstalled the companion has nowhere to live,
     /// so the page says so and offers the way to bring the island back.
     private var islandNote: some View {
-        let installed = features.isAvailable(.notch)
         let notch = FeatureStrings.notch(l10n.language)
         return HStack(spacing: 12) {
             Image(systemName: AppFeature.notch.symbolName)
@@ -90,18 +95,11 @@ struct NotchMascotSettings: View {
                 .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text(text.livesInIsland)
-                if !installed {
-                    Text(AppFeature.notch.enableReason(l10n)).font(.caption).foregroundStyle(.secondary)
-                }
             }
             Spacer(minLength: 12)
-            if installed {
-                Button(notch.enable) {
-                    islandEnabled = true
-                    NotchService.shared.syncWithPreferences()
-                }
-            } else {
-                Button(editor.openFeatures) { AppFeature.notch.showInFeatures() }
+            Button(notch.enable) {
+                islandEnabled = true
+                features.setIslandFeature(.notch, enabled: true)
             }
         }
         .padding(12)

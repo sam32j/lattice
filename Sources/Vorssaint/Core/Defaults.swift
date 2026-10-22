@@ -9,8 +9,6 @@ import Foundation
 enum DefaultsKey {
     static let language = "appLanguage"                   // AppLanguage.rawValue
     static let appearance = "appAppearance"               // AppAppearance.rawValue
-    static let liquidGlassEnabled = "liquidGlassEnabled"  // Liquid Glass in windows and panels on macOS 26+
-    static let notchLiquidGlassEnabled = "notchLiquidGlassEnabled" // Dynamic Island glass, independently controlled
     static let clamshellPreferred = "clamshellPreferred"  // apply closed-lid mode to every session
     static let dimScreenOnLidClose = "dimScreenOnLidClose" // dim the built-in display to zero while the lid is closed
     static let lastLaunchedVersion = "lastUpdateIntroVersion"
@@ -532,7 +530,7 @@ enum DefaultsKey {
     static let clipboardAutoClearOnDisplaySleep = "clipboardAutoClearOnDisplaySleep"
     static let clipboardAutoClearOnScreenLock = "clipboardAutoClearOnScreenLock"
 
-    static let windowPreviewExcludedApps = "windowPreviewExcludedApps" // pause Dock Preview thumbnail capture while these apps are in front (once shared with the app switcher)
+    static let windowPreviewExcludedApps = "windowPreviewExcludedApps" // disable Dock Preview for these apps (once shared with the app switcher)
     static let switcherPreviewExcludedApps = "switcherPreviewExcludedApps" // pause app switcher thumbnail capture while these apps are in front
     static let diskEjectExcludedVolumes = "diskEjectExcludedVolumes" // volume names/UUIDs excluded from Eject all disks
     // Quick tools: paste as plain text, color picker, screen OCR, mic mute.
@@ -785,7 +783,6 @@ enum DefaultsKey {
     static let notchCameraFitWidth = "notchCameraFitWidth"
     static let notchCameraFitHeight = "notchCameraFitHeight"
     static let notchHapticFeedback = "notchHapticFeedback"
-    static let notchTranslucentBackground = "notchTranslucentBackground"
     static let notchShelf = "notchShelf"
     static let notchDragReveal = "notchDragReveal"
     static let notchCaptureControls = "notchCaptureControls"
@@ -1073,8 +1070,6 @@ enum Defaults {
 
     static let registeredDefaults: [String: Any] = [
         DefaultsKey.appearance: AppAppearance.fallback.rawValue,
-        DefaultsKey.liquidGlassEnabled: false,
-        DefaultsKey.notchLiquidGlassEnabled: false,
         DefaultsKey.clamshellPreferred: false,
         DefaultsKey.dimScreenOnLidClose: false,
         DefaultsKey.defaultDuration: 0,
@@ -1281,7 +1276,6 @@ enum Defaults {
         DefaultsKey.notchCameraFitWidth: 0.0,
         DefaultsKey.notchCameraFitHeight: 0.0,
         DefaultsKey.notchHapticFeedback: true,
-        DefaultsKey.notchTranslucentBackground: false,
         DefaultsKey.notchShelf: true,
         DefaultsKey.notchDragReveal: true,
         DefaultsKey.notchCaptureControls: true,
@@ -1831,7 +1825,6 @@ enum Defaults {
         migrateClipboardSensitiveTextOptIn(in: defaults)
         migrateNotchAgentsOptIn(in: defaults)
         migrateExistingNotchDefaults(in: defaults)
-        migrateLiquidGlassIsland(in: defaults)
         migrateFanControlVisibility(in: defaults)
         migrateScrollInverterAxes(in: defaults)
         migrateLinearScrollAvailability(in: defaults)
@@ -1888,18 +1881,6 @@ enum Defaults {
             defaults.set(true, forKey: DefaultsKey.notchAgentsEnabled)
         }
         defaults.set(true, forKey: DefaultsKey.notchAgentsOptInMigrated)
-    }
-
-    /// Existing users keep the island's previous glass choice. The island
-    /// value is saved once, even when off, so turning on glass for other
-    /// windows later never reaches the island on the next launch.
-    static func migrateLiquidGlassIsland(in defaults: UserDefaults,
-                                         domainName: String? = Bundle.main.bundleIdentifier) {
-        guard let domainName else { return }
-        let saved = defaults.persistentDomain(forName: domainName) ?? [:]
-        guard saved[DefaultsKey.notchLiquidGlassEnabled] == nil else { return }
-        defaults.set(saved[DefaultsKey.liquidGlassEnabled] as? Bool ?? false,
-                     forKey: DefaultsKey.notchLiquidGlassEnabled)
     }
 
     /// Keep the previous implicit choices for people who already configured

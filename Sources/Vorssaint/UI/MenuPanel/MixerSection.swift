@@ -12,8 +12,6 @@ struct MixerSection: View {
     @Environment(\.notchPresentation) private var inNotch
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var mixer = AppVolumeMixer.shared
-    @AppStorage(DefaultsKey.liquidGlassEnabled) private var windowsGlass = false
-    @AppStorage(DefaultsKey.notchLiquidGlassEnabled) private var islandGlass = false
     @AppStorage(DefaultsKey.mixerAppArrangement)
     private var arrangementValue = ""
     @AppStorage(DefaultsKey.mixerHideInactiveApps)
@@ -30,7 +28,7 @@ struct MixerSection: View {
     var settingsMode = false
 
     private var glassEnabled: Bool {
-        LiquidGlassSupport.isEnabled(inNotch: inNotch, windows: windowsGlass, island: islandGlass)
+        LiquidGlassSupport.isSupported
     }
 
     var body: some View {
@@ -40,7 +38,7 @@ struct MixerSection: View {
                     Toggle(l10n.s.volumeMixerEnable, isOn: $volumeMixerEnabled)
                         .labelsHidden()
                         .toggleStyle(.switch)
-                        .controlSize(.mini)
+                        .controlSize(.regular)
                         .help(l10n.s.volumeMixerEnable)
                         .accessibilityLabel(l10n.s.volumeMixerEnable)
                         .onChange(of: volumeMixerEnabled) { _, enabled in

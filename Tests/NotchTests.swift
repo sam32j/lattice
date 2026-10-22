@@ -2638,9 +2638,9 @@ enum NotchTests {
         let bottomRegion = NotchQuickAccessLayout.hoverRect(count: 3, edge: 300, top: 150, side: .bottom)
         suite.expect(bottomRegion.contains(CGPoint(x: 204, y: 307)) && bottomRegion.contains(CGPoint(x: 204, y: 364)),
                "bottom buttons retain a continuous forgiving path back to the island")
-        suite.expect(AppFeature.notch.settingsDestination.page == .notch, "hub routes to notch settings")
-        suite.expect(!FeatureVisibilitySupport.isPageVisible(.notch, isAvailable: { !FeatureVisibilitySupport.features(for: .notch).contains($0) }),
-               "notch settings disappear when uninstalled")
+        suite.expect(AppFeature.notch.settingsDestination.page == .notch, "the Island catalog entry routes to its settings")
+        suite.expect(FeatureVisibilitySupport.isPageVisible(.notch, isAvailable: { !FeatureVisibilitySupport.features(for: .notch).contains($0) }),
+               "Island settings stay available when it and every extension are uninstalled")
 
         for language in AppLanguage.allCases {
             for child in Mirror(reflecting: FeatureStrings.notch(language)).children {

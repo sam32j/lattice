@@ -329,6 +329,7 @@ final class FeatureRuntime: ObservableObject {
             else { NotchTimerService.shared.stop() }
         },
         .notchAccessories: {
+            if !AppFeature.notchAccessories.isAvailable { NotchAccessoryService.shared.stop() }
             if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }
             else { NotchAccessoryService.shared.stop() }
         },
@@ -338,22 +339,27 @@ final class FeatureRuntime: ObservableObject {
         .notchQueue: { NotchMusicService.shared.syncQueuePreference() },
         .notchLiveEqualizer: { NotchAudioLevelService.shared.syncWithPreferences() },
         .notchNotifications: {
+            if !AppFeature.notchNotifications.isAvailable { NotchNotificationService.shared.stop() }
             if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }
             else { NotchNotificationService.shared.stop() }
         },
         .notchDownloads: {
+            if !AppFeature.notchDownloads.isAvailable { NotchDownloadService.shared.stop() }
             if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }
             else { NotchDownloadService.shared.stop() }
         },
         .notchCalendar: {
+            if !AppFeature.notchCalendar.isAvailable { NotchCalendarService.shared.stop() }
             if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }
             else { NotchCalendarService.shared.stop() }
         },
         .notchAgents: {
+            if !AppFeature.notchAgents.isAvailable { AgentUsageService.shared.stop() }
             if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }
             else { AgentUsageService.shared.stop() }
         },
         .notchWatch: {
+            if !AppFeature.notchWatch.isAvailable { NotchWatchService.shared.stop() }
             if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }
             else { NotchWatchService.shared.stop() }
         },

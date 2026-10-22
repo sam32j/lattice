@@ -9,15 +9,13 @@ struct AudioInputDeviceControls: View {
     @ObservedObject private var inputManager = AudioInputDeviceManager.shared
     @ObservedObject private var audioPriority = AudioPriorityService.shared
     @ObservedObject private var micMute = MicMuteService.shared
-    @AppStorage(DefaultsKey.liquidGlassEnabled) private var windowsGlass = false
-    @AppStorage(DefaultsKey.notchLiquidGlassEnabled) private var islandGlass = false
     @State private var normalSliderTint = Color(nsColor: .controlAccentColor)
     @State private var accentRevision = 0
     @State private var lastResolvedAccent: NSColor?
     @State private var editingVolumeID: String?
 
     private var glassEnabled: Bool {
-        LiquidGlassSupport.isEnabled(inNotch: inNotch, windows: windowsGlass, island: islandGlass)
+        LiquidGlassSupport.isSupported
     }
 
     var body: some View {

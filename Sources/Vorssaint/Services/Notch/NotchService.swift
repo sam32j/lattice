@@ -1455,7 +1455,7 @@ final class NotchService: ObservableObject {
         installEventMonitors()
         syncVisibleConsumers()
         if takeFocus {
-            NSApp.activate(ignoringOtherApps: true)
+            // The nonactivating panel can take keys without raising other Lattice windows.
             panel.makeKey()
         }
         if feedback, changesPresentation { provideHapticFeedback() }
@@ -2246,10 +2246,24 @@ final class NotchService: ObservableObject {
 
     func cancelCaptureControls() { captureControlsCancel?() }
 
+    func prepareForSettings() {
+        // Settings is an explicit navigation request, including during an internal drag.
+        heldDrag = false
+        dragPlaceholder = false
+        if captureControls != nil {
+            // Keep the capture session alive, but withdraw its expanded controls and keys.
+            collapseCaptureControls()
+            panel?.acceptsKeyFocus = false
+            panel?.resignKey()
+        } else {
+            dismissForOutsideClick()
+        }
+        hoverState.close(pointerInside: true)
+    }
+
     func openSettings() {
         // Finish the Island dismissal before Settings activates the app.
-        dismissForOutsideClick()
-        hoverState.close(pointerInside: true)
+        prepareForSettings()
         let show = {
             SettingsRouter.shared.request(FeatureSettingsDestination(.notch))
             (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
