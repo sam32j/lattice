@@ -73,7 +73,7 @@ enum BrightnessStepTests {
         }
         func currentSystemBrightness(for id: UInt32, fallback: Double?) -> Double? { fallback }
         func commitStep(from current: Double, delta: Double, to displayID: UInt32,
-                        method: BrightnessDisplay.Method, showOSD: Bool) {
+                        method: BrightnessDisplay.Method) {
             committed.append(current + delta)
         }
         func ddcProbeLuminance(for id: UInt32, service: CFTypeRef) -> DDCProbe {
@@ -90,7 +90,7 @@ enum BrightnessStepTests {
         service.displays = [BrightnessDisplay(id: 2, brightness: 0.5)]
         service.reply = (80, 100)
 
-        service.step(2, method: .ddc, delta: 0.1, showOSD: false)
+        service.step(2, method: .ddc, delta: 0.1)
         service.workQueue.drain()
         DispatchQueue.main.drain()
         suite.expect(service.committed.last.map { abs($0 - 0.9) < 0.0001 } == true,
@@ -108,7 +108,7 @@ enum BrightnessStepTests {
                      "the island's brightness slider shows a key's display only when it is on and can show that display")
 
         service.levelKnownAt[2] = nil
-        service.step(2, method: .ddc, delta: 0.1, showOSD: false)
+        service.step(2, method: .ddc, delta: 0.1)
         service.workQueue.drain()
         service.levelKnownAt[2] = Date()
         service.displays[0].brightness = 0.3
@@ -120,14 +120,14 @@ enum BrightnessStepTests {
         service.routes[2]?.extendedDimming = true
         service.levelKnownAt[2] = nil
         service.displays[0].brightness = 0.125
-        service.step(2, method: .ddc, delta: 0.1, showOSD: false)
+        service.step(2, method: .ddc, delta: 0.1)
         suite.expect(service.workQueue.jobs.isEmpty
                      && service.committed.last.map { abs($0 - 0.225) < 0.0001 } == true,
                      "a step in the extended software range uses the known picture level")
 
         service.displays[0].brightness = 0.625
         service.reply = (80, 100)
-        service.step(2, method: .ddc, delta: 0.1, showOSD: false)
+        service.step(2, method: .ddc, delta: 0.1)
         service.workQueue.drain()
         DispatchQueue.main.drain()
         suite.expect(service.committed.last.map { abs($0 - 0.95) < 0.0001 } == true,
@@ -137,7 +137,7 @@ enum BrightnessStepTests {
         service.levelKnownAt[2] = nil
         service.displays[0].brightness = 0.625
         service.reply = (58, 100)
-        service.step(2, method: .ddc, delta: -BrightnessSupport.brightnessKeyStep, showOSD: false)
+        service.step(2, method: .ddc, delta: -BrightnessSupport.brightnessKeyStep)
         service.workQueue.drain()
         DispatchQueue.main.drain()
         let written = service.writeExtendedBrightness(service.committed.last!, to: 2,

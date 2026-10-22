@@ -1332,7 +1332,7 @@ enum FeatureCatalogTests {
         suite.expect(activeSet(.accessibility)
                 == [.windowLayout, .commandBar, .screenRecorder],
                "with nothing enabled only on-demand features use accessibility")
-        suite.expect(activeSet(.accessibility, on: [DefaultsKey.cleaningModeEnabled])
+        suite.expect(activeSet(.accessibility, on: [DefaultsKey.cleaningModeShortcutEnabled])
                 == [.windowLayout, .cleaningMode, .commandBar, .screenRecorder],
                "cleaning mode uses accessibility when enabled")
         func radialMenuUsesAccessibility(_ profile: RadialMenuProfile, legacyItems: [RadialMenuItem]) -> Bool {
@@ -1384,9 +1384,6 @@ enum FeatureCatalogTests {
         suite.expect(activeSet(.accessibility, on: [DefaultsKey.brightnessControlEnabled,
                                               DefaultsKey.brightnessKeysEnabled]).contains(.brightness),
                "brightness uses accessibility only for the key option")
-        suite.expect(activeSet(.accessibility, on: [DefaultsKey.brightnessControlEnabled,
-                                              DefaultsKey.brightnessOSDEnabled]).contains(.brightness),
-               "brightness uses accessibility for the adjustment overlay")
         suite.expect(!activeSet(.accessibility, on: [DefaultsKey.brightnessControlEnabled])
                 .contains(.brightness),
                "brightness sliders alone never use accessibility")
@@ -1757,19 +1754,17 @@ enum FeatureCatalogTests {
                 && AppFeature.keepAwake.energyProfile == .idle
                 && AppFeature.scratchpad.energyProfile == .idle,
                "energy badges tell the honest mechanism per feature")
-        let brightnessEnergyKeys = [DefaultsKey.brightnessKeysEnabled, DefaultsKey.brightnessOSDEnabled,
+        let brightnessEnergyKeys = [DefaultsKey.brightnessKeysEnabled,
                                     DefaultsKey.brightnessKeyStep]
         let previousBrightnessEnergy = brightnessEnergyKeys.map { UserDefaults.standard.object(forKey: $0) }
-        func brightnessEnergy(followsPointer: Bool = false, overlay: Bool = false,
+        func brightnessEnergy(followsPointer: Bool = false,
                               step: BrightnessSupport.KeyStep = .standard) -> FeatureEnergyProfile {
             UserDefaults.standard.set(followsPointer, forKey: DefaultsKey.brightnessKeysEnabled)
-            UserDefaults.standard.set(overlay, forKey: DefaultsKey.brightnessOSDEnabled)
             UserDefaults.standard.set(step.rawValue, forKey: DefaultsKey.brightnessKeyStep)
             return AppFeature.brightness.energyProfile
         }
         suite.expect(brightnessEnergy() == .idle
                 && brightnessEnergy(followsPointer: true) == .keyboard
-                && brightnessEnergy(overlay: true) == .keyboard
                 && brightnessEnergy(step: .half) == .keyboard,
                "brightness listens to the keyboard only while an option answers its keys")
         for (key, value) in zip(brightnessEnergyKeys, previousBrightnessEnergy) {
@@ -2802,36 +2797,24 @@ enum FeatureCatalogTests {
                 && BrightnessSupport.plainKeyTarget(followsPointer: true, pointerDisplay: nil, systemTarget: 1) == nil
                 && BrightnessSupport.plainKeyTarget(followsPointer: false, pointerDisplay: 2, systemTarget: nil) == nil,
                "without pointer routing a plain key moves the system's own target, never the pointer's display")
-        suite.expect(BrightnessSupport.filledBrightnessSegments(0) == 0
-                && BrightnessSupport.filledBrightnessSegments(0.01) == 1
-                && BrightnessSupport.filledBrightnessSegments(0.5) == 8
-                && BrightnessSupport.filledBrightnessSegments(1.2) == 16,
-               "brightness overlay segments clamp and preserve non-zero levels")
         suite.expect(BrightnessSupport.wholePercent(-0.2) == 0
                 && BrightnessSupport.wholePercent(0.634) == 63
                 && BrightnessSupport.wholePercent(0.999) == 100
                 && BrightnessSupport.wholePercent(1.2) == 100
                 && BrightnessSupport.wholePercent(.infinity) == 0,
-               "brightness overlay percentage rounds and clamps safely")
-        // Show brightness when adjusting governs the app's overlay. The island
-        // stands in for the system only while it shows notices.
-        suite.expect(BrightnessSupport.overlayReplacesNative(overlayEnabled: true, islandRoutes: false,
-                                                             islandShowsNotices: false),
-               "the opt-in overlay replaces the system's brightness feedback")
-        suite.expect(BrightnessSupport.overlayReplacesNative(overlayEnabled: false, islandRoutes: true,
+               "island brightness percentage rounds and clamps safely")
+        suite.expect(BrightnessSupport.islandReplacesNativeFeedback(islandRoutes: true,
                                                              islandShowsNotices: true),
                "an island that shows notices stands in for the system's brightness feedback")
-        let hiddenIsland = BrightnessSupport.overlayReplacesNative(overlayEnabled: false, islandRoutes: true,
+        let hiddenIsland = BrightnessSupport.islandReplacesNativeFeedback(islandRoutes: true,
                                                                    islandShowsNotices: false)
         suite.expect(!hiddenIsland && !BrightnessSupport.stepsSystemRoutedDisplay(followsPointer: false,
                                                                                   displayIsBuiltIn: true,
                                                                                   overlayReplacesNative: hiddenIsland),
-               "with the overlay off, an island hidden until hover leaves the built-in panel's key to the system")
-        suite.expect(!BrightnessSupport.overlayReplacesNative(overlayEnabled: false, islandRoutes: false,
+               "an island hidden until hover leaves the built-in panel's key to the system")
+        suite.expect(!BrightnessSupport.islandReplacesNativeFeedback(islandRoutes: false,
                                                               islandShowsNotices: true),
                "an island without brightness leaves the key to the system")
-        suite.expect(!brightnessWorkQueueCode.contains("NotchSupport.routes(.brightness)"),
-               "the app's overlay appears only with its own option, never in place of an island that shows nothing")
 
     }
 }

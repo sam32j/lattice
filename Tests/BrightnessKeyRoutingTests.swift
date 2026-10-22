@@ -48,18 +48,18 @@ enum BrightnessKeyRoutingTests {
     }
     final class UserDefaults {
         static let standard = UserDefaults()
-        var overlay = false
+        // No preference can enable the removed standalone overlay.
         func bool(forKey key: String) -> Bool {
-            key == DefaultsKey.brightnessKeysEnabled || overlay
+            key == DefaultsKey.brightnessKeysEnabled
         }
     }
     enum NotchSupport {
         enum Kind { case brightness }
-        static func routes(_ kind: Kind) -> Bool { false }
+        static func routes(_ kind: Kind) -> Bool { true }
     }
     final class NotchService {
         static let shared = NotchService()
-        let showsSystemFeedback = false
+        var showsSystemFeedback = false
     }
     final class SessionActivity {
         static let shared = SessionActivity()
@@ -90,8 +90,7 @@ enum BrightnessKeyRoutingTests {
         var functionKeysAdjustBrightness = true
         var functionKeysFollowPointer = true
         var functionKeySystemTarget: UInt32? = 1
-        var overlayReplacesNativeOSD = false
-        var brightnessOSDSupported = true
+        var islandReplacesNativeOSD = false
         let stateLock = NSLock()
         let keyThreadLock = NSLock()
         let displays = [Display(id: 1, isBuiltIn: true, brightness: 0.5),
@@ -107,8 +106,8 @@ enum BrightnessKeyRoutingTests {
         func scheduleKeyboardLightNotice() {}
         static func postSystemQuarterSteps(increase: Bool, count: Int) { forwardedSteps += count }
         func currentSystemBrightness(for id: UInt32, fallback: Double?) -> Double? { fallback }
-        func setBrightness(_ value: Double, for id: UInt32, showOSD: Bool, smooth: Bool) { steps += 1 }
-        func step(_ id: UInt32, method: Method, delta: Double, showOSD: Bool) { steps += 1 }
+        func setBrightness(_ value: Double, for id: UInt32, smooth: Bool) { steps += 1 }
+        func step(_ id: UInt32, method: Method, delta: Double) { steps += 1 }
         func applyKeyStep(_ press: BrightnessSupport.BrightnessKeyEvent, to id: UInt32, method: Method) {
             steps += 1
         }
@@ -125,7 +124,7 @@ enum BrightnessKeyRoutingTests {
         for mediaKey in [true, false] {
             func service() -> Service {
                 NSScreen.current = 1
-                UserDefaults.standard.overlay = false
+                NotchService.shared.showsSystemFeedback = false
                 Service.forwardedSteps = 0
                 return Service()
             }
@@ -171,14 +170,14 @@ enum BrightnessKeyRoutingTests {
                          "\(kind): losing a route stops adjustment without leaking half a native key")
 
             let visibility = service()
-            suite.expect(!press(visibility), "\(kind): a native press begins with the overlay off")
-            UserDefaults.standard.overlay = true
-            visibility.overlayReplacesNativeOSD = true
+            suite.expect(!press(visibility), "\(kind): a native press begins with island feedback hidden")
+            NotchService.shared.showsSystemFeedback = true
+            visibility.islandReplacesNativeOSD = true
             suite.expect(!press(visibility, repeated: true) && !press(visibility, down: false),
                          "\(kind): showing replacement feedback cannot take a native held key")
             suite.expect(press(visibility), "\(kind): fresh presses can use replacement feedback")
-            UserDefaults.standard.overlay = false
-            visibility.overlayReplacesNativeOSD = false
+            NotchService.shared.showsSystemFeedback = false
+            visibility.islandReplacesNativeOSD = false
             suite.expect(press(visibility, repeated: true) && press(visibility, down: false),
                          "\(kind): hiding replacement feedback cannot leak a handled key")
 
