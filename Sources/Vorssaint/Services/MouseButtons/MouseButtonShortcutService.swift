@@ -158,7 +158,10 @@ final class MouseButtonShortcutService: ObservableObject {
     /// raise the tap before the first mapping exists, and the way out drops
     /// it again when nothing is mapped.
     func setCapturing(_ capturing: Bool) {
-        guard isCapturing != capturing else { return }
+        guard isCapturing != capturing else {
+            if capturing { syncWithPreferences() }
+            return
+        }
         isCapturing = capturing
         Self.isCaptureActive = capturing
         lastInputSeen = nil
@@ -342,11 +345,12 @@ final class MouseButtonShortcutService: ObservableObject {
             // through whole and no shortcut is sent (issue #358). Capture is
             // above on purpose, so a button can still be added from Settings
             // while such an app is in front.
-            guard !MouseAppExceptions.shared.excludesActionTarget(.buttonShortcuts, at: event.location) else {
-                return Unmanaged.passUnretained(event)
-            }
             if button == spacesButton {
                 return armSpacesGesture(event, button: button)
+            }
+            guard !MouseAppExceptions.shared.excludesActionTarget(.buttonShortcuts, at: event.location,
+                exceptionsOverride: Set(MouseShortcutExceptions.list(for: button))) else {
+                return Unmanaged.passUnretained(event)
             }
             guard let shortcut = MouseButtonShortcutSupport.firesShortcut(
                 for: button,
@@ -511,7 +515,8 @@ final class MouseButtonShortcutService: ObservableObject {
         guard let shortcut = mappings[input] else { return Unmanaged.passUnretained(event) }
         let sourceProcessID = event.getIntegerValueField(.eventSourceUnixProcessID)
         if MouseAppExceptions.shared.excludesActionTarget(
-            .buttonShortcuts, at: event.location, sourceProcessID: sourceProcessID) {
+            .buttonShortcuts, at: event.location, sourceProcessID: sourceProcessID,
+            exceptionsOverride: Set(MouseShortcutExceptions.list(for: input))) {
             return Unmanaged.passUnretained(event)
         }
         guard sideWheelGesture.shouldFire(input, at: timestamp) else { return nil }
