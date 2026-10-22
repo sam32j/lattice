@@ -47,6 +47,9 @@ enum SettingsBackupSupport {
     /// the built-in behavior"), still part of how the user set the app up.
     static let unregisteredPreferenceKeys: Set<String> = [
         Defaults.permanentInputControlsMigrationKey,
+        Defaults.cleaningModeShortcutMigrationKey,
+        // Accepted only to preserve opt-outs when restoring an older backup.
+        DefaultsKey.cleaningModeEnabled,
         Defaults.pageOwnedControlsMigrationKey,
         DefaultsKey.autoQuitEnabled,
         DefaultsKey.shelfEnabled,
@@ -430,6 +433,14 @@ enum SettingsBackupSupport {
     /// code that trusts its own settings.
     static func valueLooksRight(_ key: String, _ value: Any) -> Bool {
         switch key {
+        case DefaultsKey.mouseShortcutAppExceptions:
+            guard let lists = value as? [String: [String]] else { return false }
+            return lists.allSatisfy { key, apps in
+                guard let button = Int64(key), MouseButtonShortcutSupport.canMap(button) else { return false }
+                return apps == Defaults.sanitizedBundleIdentifierList(apps)
+            }
+        case DefaultsKey.cleaningModeEnabled, Defaults.cleaningModeShortcutMigrationKey:
+            return isBoolean(value)
         case DefaultsKey.notchQuickAccessSide, DefaultsKey.notchQuickAccessSecond, DefaultsKey.notchQuickAccessThird:
             return value is String
         default: break
