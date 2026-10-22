@@ -237,7 +237,7 @@ extension AppFeature {
         if isMouseFeature || isKeyboardFeature { return true }
         switch self {
         case .dockClick, .spacesOrder, .windowMaximizer, .autoQuit, .pastePlain,
-             .extraBrightness, .fanControl:
+             .brightness, .bluetoothSleep, .extraBrightness, .fanControl:
             return true
         default: return false
         }
@@ -245,6 +245,7 @@ extension AppFeature {
 
     /// Features with dedicated page-level install/enable controls, excluded from the Features hub.
     var isManagedOnDedicatedPage: Bool {
+        if group == .monitor { return true }
         switch self {
         case .screenshot, .screenRecorder,
              .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock,
@@ -262,6 +263,11 @@ extension AppFeature {
         case .scrollInverter:
             return defaults.bool(forKey: DefaultsKey.scrollInverterEnabled)
                 || defaults.bool(forKey: DefaultsKey.scrollInverterHorizontalEnabled)
+        case .bluetoothSleep:
+            return defaults.bool(forKey: DefaultsKey.bluetoothSleepEnabled)
+                || defaults.bool(forKey: DefaultsKey.bluetoothSleepRestoreOnWake)
+        case .brightness:
+            return defaults.bool(forKey: DefaultsKey.brightnessControlEnabled)
         case .scrollHorizontal:
             return defaults.bool(forKey: DefaultsKey.scrollHorizontalEnabled)
         case .focusFollowsMouse:
@@ -289,7 +295,11 @@ extension AppFeature {
             return defaults.bool(forKey: DefaultsKey.quitProtectionQuitEnabled)
                 || defaults.bool(forKey: DefaultsKey.quitProtectionCloseEnabled)
         case .cleaningMode:
-            return (defaults.object(forKey: DefaultsKey.cleaningModeEnabled) as? Bool) ?? true
+            guard defaults.bool(forKey: DefaultsKey.cleaningModeShortcutEnabled) else { return false }
+            if let raw = defaults.string(forKey: DefaultsKey.cleaningModeShortcut) {
+                return GlobalShortcut(storageValue: raw)?.isValid == true
+            }
+            return GlobalShortcut.cleaningModeDefault.isValid
         default:
             return enabledKeys.contains { defaults.bool(forKey: $0) }
         }
@@ -396,7 +406,7 @@ extension AppFeature {
         case .extraBrightness: return [DefaultsKey.extraBrightnessEnabled]
         case .fanControl: return [DefaultsKey.panelShowFanControl]
         case .bluetoothSleep: return [DefaultsKey.bluetoothSleepEnabled]
-        case .cleaningMode: return [DefaultsKey.cleaningModeEnabled]
+        case .cleaningMode: return [DefaultsKey.cleaningModeShortcutEnabled]
         case .windowLayout, .diskImageInstaller, .mixer, .micMute, .keepAwake,
              .quickLauncher, .colorPicker, .screenOCR, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .scratchpad,
@@ -645,7 +655,6 @@ extension AppFeature {
                 return boolFor(DefaultsKey.preciseVolumeRollerEnabled)
             case (.brightness, .accessibility):
                 return boolFor(DefaultsKey.brightnessKeysEnabled)
-                    || boolFor(DefaultsKey.brightnessOSDEnabled)
                     || BrightnessSupport.KeyStep.sanitized(stringFor(DefaultsKey.brightnessKeyStep)) != .standard
             case (.monitorCPU, .notifications):
                 return boolFor(DefaultsKey.monitorAlertCPU) || boolFor(DefaultsKey.monitorAlertCPUTemperature)
