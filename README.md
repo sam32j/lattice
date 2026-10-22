@@ -28,6 +28,9 @@
 
 Per app volume, a real system monitor, a better app switcher, window snapping, Dock previews, clipboard history, text snippets, a file shelf, an uninstaller. The utilities Mac users usually buy one by one, together behind a single menu bar icon, with no account, no telemetry and no subscription.
 
+> [!IMPORTANT]
+> **First launch: Lattice is not notarized by Apple.** macOS may block it because Apple cannot verify the developer or check the app for malicious software. Only proceed if you trust the download. After copying Lattice to Applications and trying to open it, go to **System Settings > Privacy & Security > Open Anyway**. See the [first-launch guide](TROUBLESHOOTING.md) for details and an app-specific quarantine workaround. The guide is also included in the DMG.
+
 ## About Lattice
 
 Hey! I’m [Samuel](https://github.com/sam32j). **Lattice** is my daily-driver Mac utility app—an opinionated, personal fork of the wonderful [Vorssaint](https://github.com/vorssaint/vorssaint-utils).
@@ -63,7 +66,7 @@ Xcode Command Line Tools are the only requirement.
 
 ### Releases
 
-Lattice releases use the `vX.Y.Z-d.N` scheme and will be published on [GitHub Releases](https://github.com/sam32j/lattice/releases) once fork-level Developer ID signing and notarization are configured.
+Lattice releases use the `vX.Y.Z-d.N` scheme. Look for downloads on [GitHub Releases](https://github.com/sam32j/lattice/releases). Current Lattice builds are not Apple-notarized; read the [first-launch guide](TROUBLESHOOTING.md) before opening a downloaded build.
 
 > [!NOTE]
 > If you are looking for official upstream builds of Vorssaint with maintainer Developer ID signatures, install upstream via Homebrew (`brew install --cask vorssaint`) or download from [vorssaint/vorssaint-utils](https://github.com/vorssaint/vorssaint-utils/releases).
@@ -78,7 +81,7 @@ To remove Lattice completely, including its isolated settings, data, and helper 
 
 ## Private by default
 
-Lattice is local-first, with no account, analytics or tracking. The network is touched only by things you can see: update checks, the speed test, Homebrew actions, optional online lyric lookup, temporary screenshot or recording links and feedback you explicitly send. The full story is in the [privacy notes](docs/PRIVACY.md).
+Lattice is local-first, with no account, analytics or tracking. Core utilities run on your Mac, and settings and clipboard history stay there. Some features use the network, including update checks, the speed test, Homebrew actions, optional lyrics and artwork lookups, AI price and account-limit checks, AirPlay on your local network, temporary capture links and feedback you explicitly send. See the [privacy notes](docs/PRIVACY.md) for the data and controls involved. Local-first does not mean entirely offline or a guarantee of safety.
 
 Permissions get the same treatment. Every one is optional, the app explains each in plain words, shows which features actually use it, and even tells you when a permission you granted is no longer needed by anything, with a shortcut to revoke it. See the [permissions guide](docs/PERMISSIONS.md) for which features need access and what remains available without it.
 
