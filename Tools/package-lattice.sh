@@ -36,6 +36,7 @@ else
     trap 'rm -rf "$STAGE"' EXIT
     ditto "$APP" "$STAGE/Lattice.app"
     ln -s /Applications "$STAGE/Applications"
+    cp TROUBLESHOOTING.md "$STAGE/TROUBLESHOOTING.md"
     hdiutil create -volname Lattice -srcfolder "$STAGE" -format UDZO "$DMG"
 fi
 
