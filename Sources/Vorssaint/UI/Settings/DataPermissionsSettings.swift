@@ -159,14 +159,11 @@ struct DataPermissionsSettings: View {
                         Button(role: .destructive) {
                             showClearConfirm = true
                         } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "arrow.2.circlepath")
-                                Spacer()
-                                Text(clearActionTitle)
-                            }
-                            .frame(width: 90)
+                            Text(clearActionTitle).frame(minWidth: 100)
                         }
-                        .buttonStyle(DestructiveGhostButtonStyle())
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                        .foregroundStyle(.red)
                         .disabled(working)
                     }
 
@@ -186,14 +183,11 @@ struct DataPermissionsSettings: View {
                         Button(role: .destructive) {
                             showUninstallConfirm = true
                         } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "trash")
-                                Spacer()
-                                Text(uninstallActionTitle)
-                            }
-                            .frame(width: 90)
+                            Text(uninstallActionTitle).frame(minWidth: 100)
                         }
-                        .buttonStyle(DestructiveSolidButtonStyle())
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                        .foregroundStyle(.red)
                         .disabled(working)
                     }
                 }
@@ -246,41 +240,5 @@ struct DataPermissionsSettings: View {
             Text(SettingsBackupSupport.omitsDynamicIslandSettings(pendingImport ?? [:])
                  ? backup.importMissingIslandBody : backup.importConfirmBody)
         }
-    }
-}
-
-private struct DestructiveGhostButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.body.weight(.medium))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .frame(width: 110, height: 28)
-            .foregroundStyle(.red)
-            .background(Color.red.opacity(configuration.isPressed ? 0.15 : 0.05),
-                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(Color.red.opacity(0.65), lineWidth: 1)
-            }
-            .opacity(isEnabled ? 1 : 0.45)
-    }
-}
-
-private struct DestructiveSolidButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.body.weight(.medium))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .frame(width: 110, height: 28)
-            .foregroundStyle(.white)
-            .background(Color.red.opacity(configuration.isPressed ? 0.82 : 1.0),
-                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .opacity(isEnabled ? 1 : 0.45)
     }
 }
