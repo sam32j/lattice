@@ -3,13 +3,13 @@
 
 // Renders the installer (DMG) window background: a clean light panel with the
 // app title and an arrow pointing from the app icon toward the Applications
-// folder. The two icons themselves are placed by Finder on top of this image.
+// folder, with a first-launch guide below. Finder places the icons on this image.
 // Usage: swift Tools/MakeDMGBackground.swift <output.png>
 import AppKit
 
-// Window is 600×400 pt; render at 2× for Retina sharpness.
+// Window is 600×540 pt; render at 2× for Retina sharpness.
 let scale: CGFloat = 2
-let widthPt: CGFloat = 600, heightPt: CGFloat = 400
+let widthPt: CGFloat = 600, heightPt: CGFloat = 540
 let px = Int(widthPt * scale), py = Int(heightPt * scale)
 
 let out = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "dmg-background.png"
@@ -45,16 +45,19 @@ let titleSize = title.size(withAttributes: titleAttrs)
 title.draw(at: NSPoint(x: (widthPt - titleSize.width) / 2, y: heightPt - 70), withAttributes: titleAttrs)
 
 // Subtitle / instruction.
-let subtitle = "Arraste o app para a pasta Aplicativos · Drag the app to Applications"
+let subtitle = "First launch blocked? Open TROUBLESHOOTING.md above."
 let subAttrs: [NSAttributedString.Key: Any] = [
     .font: NSFont.systemFont(ofSize: 12, weight: .regular),
     .foregroundColor: NSColor(calibratedWhite: 0.45, alpha: 1),
 ]
 let subSize = subtitle.size(withAttributes: subAttrs)
 subtitle.draw(at: NSPoint(x: (widthPt - subSize.width) / 2, y: 54), withAttributes: subAttrs)
+let installHint = "Drag Lattice to Applications"
+let installHintSize = installHint.size(withAttributes: subAttrs)
+installHint.draw(at: NSPoint(x: (widthPt - installHintSize.width) / 2, y: 235), withAttributes: subAttrs)
 
 // Arrow between the icon columns (icons sit at x≈150 and x≈450, centered at y≈200
-// from the top → y≈200 from the bottom in this 400-tall canvas).
+// from the top).
 let arrowY: CGFloat = heightPt - 200
 let arrow = NSBezierPath()
 arrow.lineWidth = 9

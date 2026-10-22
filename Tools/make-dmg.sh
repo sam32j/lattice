@@ -3,7 +3,7 @@
 # Copyright (C) 2026 Vorssaint
 
 # Packages the built app into a styled, distributable DMG
-# (dist/Vorssaint-<version>.dmg): a window with the app icon, an arrow and
+# (dist/Lattice-<version>.dmg): a window with the app icon, an arrow and
 # the Applications folder for drag-and-drop install. Run ./build.sh first.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -45,6 +45,7 @@ ditto "$APP" "$STAGING/$APP_NAME.app"
 xattr -cr "$STAGING/$APP_NAME.app"
 codesign --verify --deep --strict "$STAGING/$APP_NAME.app"
 ln -s /Applications "$STAGING/Applications"
+cp TROUBLESHOOTING.md "$STAGING/TROUBLESHOOTING.md"
 mkdir "$STAGING/.background"
 cp build/dmg-background.png "$STAGING/.background/background.png"
 
@@ -87,7 +88,7 @@ tell application "Finder"
         set current view of container window to icon view
         set toolbar visible of container window to false
         set statusbar visible of container window to false
-        set the bounds of container window to {200, 120, 800, 520}
+        set the bounds of container window to {200, 120, 800, 660}
         set theOptions to the icon view options of container window
         set arrangement of theOptions to not arranged
         set icon size of theOptions to 128
@@ -95,6 +96,7 @@ tell application "Finder"
         set background picture of theOptions to file ".background:background.png"
         set position of item "$APP_NAME.app" of container window to {150, 200}
         set position of item "Applications" of container window to {450, 200}
+        set position of item "TROUBLESHOOTING.md" of container window to {300, 390}
         update without registering applications
         delay 1
         close
