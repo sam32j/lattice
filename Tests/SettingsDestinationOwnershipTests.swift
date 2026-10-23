@@ -4,6 +4,11 @@ import Foundation
 
 enum SettingsDestinationOwnershipTests {
     static func run(_ suite: TestSuite) {
+        var entries: [String] = []
+        AppMenuReopenCoordinator.open(destination: { .none }, iconHidden: { false }, iconVisible: { true },
+            recreateIcon: { entries.append("recreate") }, presentMenu: { entries.append("menu"); return true },
+            openSettings: { entries.append("settings") }, schedule: { $0() })
+        suite.expect(entries == ["settings"], "Don't show opens Settings on reopen even with a visible menu bar icon")
         let domain = "com.vorssaint.tests.destinations.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }

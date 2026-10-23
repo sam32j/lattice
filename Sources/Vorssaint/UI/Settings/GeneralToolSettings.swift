@@ -17,7 +17,7 @@ struct GeneralToolSettings: View {
                 SettingsCard(title: l10n.s.menuBarSection) {
                     SettingsToggleRow(title: SettingsFollowupStrings.text(.showMenuIcon, l10n.language),
                                       isOn: Binding(get: { !hideMenuIcon }, set: { hideMenuIcon = !$0 }))
-                    if !hideMenuIcon { MenuBarIconPickerRow().padding(.leading, settingsRowTextInset) }
+                    if !hideMenuIcon { MenuBarIconPickerRow() }
                     Divider()
                     Text(text.panelIntro)
                         .font(.callout)

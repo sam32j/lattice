@@ -317,36 +317,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             Self.menuBarLog.log("reopen ignored from \(ReopenRequestSupport.logName(requester), privacy: .public)")
             return false
         }
+        if AppMenuDestination.selected(in: .standard) == .none {
+            toggleMainPopover()
+            return true
+        }
         guard !flag else { return true }
-        // A deliberate reopen with no windows showing is the user's recovery action.
-        // Rebuild the menu bar item only when it is actually missing: the
-        // pre-rebuild item has a settled frame, so iconIsOnScreen() is trustworthy
-        // here (the not-ready-frame caveat below only applies to a freshly created
-        // item), and a dropped icon reads off-screen/zero, so recovery still gets
-        // its rebuild with fresh placement. A healthy icon is left alone: on
-        // macOS 27 a rebuilt item's window can keep reporting the slot it was
-        // born in (the far right of the status area) while the icon draws at the
-        // user's arranged spot, and that mismatch strands the panel against the
-        // screen edge and survives relaunches. An item the app took out of the
-        // bar itself, for Dynamic Island or for metrics, is not missing either:
-        // a rebuild would only hide it again, and Settings opens below.
-        if statusController?.mainItemHiddenByChoice != true, !iconIsOnScreen() {
-            statusController?.recreateStatusItem()
-        }
-        // Decide on the next run-loop turn: a freshly rebuilt status item has no
-        // laid-out on-screen frame yet this turn, so iconIsOnScreen() would read a
-        // not-ready frame and wrongly skip the panel. After layout: pop the panel
-        // when the icon is genuinely on screen, else fall back to the Settings
-        // window. Either way the user ALWAYS gets back in.
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            if self.iconIsOnScreen(), !self.popover.isShown {
-                self.togglePopover()
-            }
-            if !self.popover.isShown {
-                self.openSettingsWindow()
-            }
-        }
+        AppMenuReopenCoordinator.open(destination: { AppMenuDestination.selected(in: .standard) },
+            iconHidden: { [weak self] in self?.statusController?.mainItemHiddenByChoice == true },
+            iconVisible: { [weak self] in self?.iconIsOnScreen() == true },
+            recreateIcon: { [weak self] in self?.statusController?.recreateStatusItem() },
+            presentMenu: { [weak self] in
+                guard let self else { return false }
+                if !self.popover.isShown { self.togglePopover() }
+                return self.popover.isShown
+            }, openSettings: { [weak self] in self?.openSettingsWindow() })
         return true
     }
 
@@ -440,7 +424,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     }
 
     private func toggleMainPopover() {
-        guard AppMenuDestination.selected(in: .standard) != .none else { return }
+        guard AppMenuDestination.selected(in: .standard) != .none else {
+            closePopover(reason: .statusItem)
+            openSettingsWindow()
+            return
+        }
         if NotchSupport.routesAppPanel(), NotchService.shared.acceptsSystemFeedback {
             NotchService.shared.openAppPanel(toggle: true); return
         }

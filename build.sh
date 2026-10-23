@@ -390,6 +390,7 @@ if (( TEST )); then
         Sources/Vorssaint/Core/SettingsFollowupStrings.swift
         Sources/Vorssaint/Core/IslandDestinationSupport.swift
         Sources/Vorssaint/Core/AppMenuDestination.swift
+        Sources/Vorssaint/Core/AppMenuReopenCoordinator.swift
         Sources/Vorssaint/Core/PermissionResetState.swift
         Sources/Vorssaint/UI/Settings/ShortcutSettingsObserver.swift
         Sources/Vorssaint/Core/RadialMenuStrings.swift
