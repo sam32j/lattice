@@ -5,6 +5,7 @@ import SwiftUI
 /// A stable sheet shell shared by settings app lists. Only the list scrolls.
 struct AppListSheet<Content: View, Footer: View>: View {
     let caption: String
+    var title: String? = nil
     var centersContent = false
     let onDone: () -> Void
     @ViewBuilder let content: () -> Content
@@ -13,7 +14,7 @@ struct AppListSheet<Content: View, Footer: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(SettingsAppListStrings.text(l10n.language).disabledApps).font(.title2.weight(.semibold))
+            Text(title ?? SettingsAppListStrings.text(l10n.language).disabledApps).font(.title2.weight(.semibold))
             Text(punctuatedCaption).font(.callout).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             GeometryReader { proxy in

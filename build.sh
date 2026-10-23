@@ -471,6 +471,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/DockPreview/DockPreviewExclusions.swift
         Sources/Vorssaint/Core/SettingsAppListDescriptions.swift
         Sources/Vorssaint/Core/SettingsAppListStrings.swift
+        Sources/Vorssaint/UI/Settings/QuitProtectionAppListStrings.swift
         Sources/Vorssaint/Services/DockPreview/DockAutohideHold.swift
         Sources/Vorssaint/Services/SpacesOrder/SpacesOrderHold.swift
         Sources/Vorssaint/Services/Homebrew/HomebrewSupport.swift

@@ -27,6 +27,7 @@ struct AppBundleList<Accessory: View>: View {
     @State private var showingEditor = false
     let usesSheet: Bool
     let canRemove: (String) -> Bool
+    let sheetTitle: String?
 
     init(title: String,
          caption: String,
@@ -36,11 +37,13 @@ struct AppBundleList<Accessory: View>: View {
          reachesEveryApp: Bool = false,
          acceptsExecutables: Bool = false,
          usesSheet: Bool = false,
+         sheetTitle: String? = nil,
          canRemove: @escaping (String) -> Bool = { _ in true },
          onAdd: @escaping (String) -> Void,
          onRemove: @escaping (String) -> Void,
          @ViewBuilder accessory: @escaping (String) -> Accessory) {
         self.usesSheet = usesSheet
+        self.sheetTitle = sheetTitle
         self.canRemove = canRemove
         self.title = title
         self.caption = caption
@@ -58,7 +61,7 @@ struct AppBundleList<Accessory: View>: View {
     var body: some View {
         Group {
             if usesSheet {
-                SettingsControlRow(title: title) {
+                SettingsControlRow(title: editorTitle) {
                     Button(SettingsAppListStrings.text(L10n.shared.language).edit) { showingEditor = true }
                 }
                 .sheet(isPresented: $showingEditor) { editorSheet }
@@ -80,9 +83,9 @@ struct AppBundleList<Accessory: View>: View {
     }
 
     private var editorSheet: some View {
-        AppListSheet(caption: caption, centersContent: bundleIDs.isEmpty, onDone: { showingEditor = false }) {
+        AppListSheet(caption: caption, title: sheetTitle, centersContent: bundleIDs.isEmpty, onDone: { showingEditor = false }) {
             if bundleIDs.isEmpty {
-                ContentUnavailableView(SettingsAppListStrings.text(L10n.shared.language).disabledApps, systemImage: "app.dashed")
+                ContentUnavailableView(editorTitle, systemImage: "app.dashed")
             } else {
                 LazyVStack(spacing: 16) { appRows }.padding(16)
             }
@@ -94,6 +97,10 @@ struct AppBundleList<Accessory: View>: View {
 
     private var addButton: some View {
         Button { showingAppPicker = true } label: { Label(addTitle, systemImage: "plus") }
+    }
+
+    private var editorTitle: String {
+        sheetTitle ?? SettingsAppListStrings.text(L10n.shared.language).disabledApps
     }
 
     private var appRows: some View {
@@ -191,6 +198,7 @@ extension AppBundleList where Accessory == EmptyView {
          reachesEveryApp: Bool = false,
          acceptsExecutables: Bool = false,
          usesSheet: Bool = false,
+         sheetTitle: String? = nil,
          canRemove: @escaping (String) -> Bool = { _ in true },
          onAdd: @escaping (String) -> Void,
          onRemove: @escaping (String) -> Void) {
@@ -201,7 +209,7 @@ extension AppBundleList where Accessory == EmptyView {
                   bundleIDs: bundleIDs,
                   reachesEveryApp: reachesEveryApp,
                   acceptsExecutables: acceptsExecutables,
-                  usesSheet: usesSheet, canRemove: canRemove,
+                  usesSheet: usesSheet, sheetTitle: sheetTitle, canRemove: canRemove,
                   onAdd: onAdd,
                   onRemove: onRemove,
                   accessory: { _ in EmptyView() })
