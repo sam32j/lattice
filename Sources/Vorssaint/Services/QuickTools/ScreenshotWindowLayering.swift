@@ -5,13 +5,16 @@ import AppKit
 import Carbon.HIToolbox
 
 enum ScreenshotWindowLayering {
-    // Liftoff uses the screen-saver level (1000). Keep the capture workspace
-    // immediately below it, with room for its editors and modal dialogs.
-    static let pinLevel = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue - 3)
-    private static let editorBase = NSWindow.Level.screenSaver.rawValue - 2
-    private static let dialogBase = NSWindow.Level.screenSaver.rawValue - 1
+    // Liftoff's full-size launcher uses level 26. Its level-1000 window is only
+    // a 2x2 helper, not the launcher. Keep the workspace below the menu-bar band.
+    static let pinLevel = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue - 3)
+    private static let editorBase = NSWindow.Level.statusBar.rawValue - 2
+    private static let dialogBase = NSWindow.Level.statusBar.rawValue - 1
     static func previewLevel(above owner: NSWindow?) -> NSWindow.Level {
-        NSWindow.Level(rawValue: min(dialogBase, max(pinLevel.rawValue, (owner?.level.rawValue ?? 0) + 1)))
+        // Native Quick Look also serves the island; unlike pins/editors, it
+        // must clear that higher owner while its preview is open.
+        NSWindow.Level(rawValue: min(NSWindow.Level.screenSaver.rawValue - 1,
+            max(pinLevel.rawValue, (owner?.level.rawValue ?? 0) + 1)))
     }
     static func editorLevel(above owner: NSWindow?) -> NSWindow.Level {
         NSWindow.Level(rawValue: editorBase)

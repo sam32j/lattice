@@ -41,7 +41,8 @@ enum ScreenshotExposeSelectionTests {
         }
         suite.expect(!ScreenshotCapturePolicy.isPickableWindowLayer(20, ownerName: "Dock")
                      && !ScreenshotCapturePolicy.isPickableWindowLayer(24, ownerName: "Window Server")
-                     && !ScreenshotCapturePolicy.isPickableWindowLayer(26, ownerName: "Floating app")
+                     && ScreenshotCapturePolicy.isPickableWindowLayer(26, ownerName: "Floating app")
+                     && !ScreenshotCapturePolicy.isPickableWindowLayer(1001, ownerName: "Floating app")
                      && !ScreenshotCapturePolicy.isPickableWindowLayer(-1, ownerName: "Floating app"),
                      "existing system-overlay and layer-range exclusions remain enforced")
     }
