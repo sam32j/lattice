@@ -30,6 +30,10 @@ struct PermissionsPortalSections: View {
                     Divider().padding(.leading, 42)
                 }
             }
+            if visiblePermissions == AppPermission.allCases {
+                Divider().padding(.leading, 42)
+                MediaMusicPermissionRow(hub: hub)
+            }
         }
         .onAppear {
             // Statuses that only refresh at launch/activation get a fresh
