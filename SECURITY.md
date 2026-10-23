@@ -1,22 +1,29 @@
 # Security Policy
 
-Thanks for helping keep Vorssaint and the people who use it safe.
+Thanks for helping keep Lattice and the people who use it safe. This policy
+applies to [sam32j/lattice](https://github.com/sam32j/lattice), not the upstream
+Vorssaint project.
 
 ## Reporting a vulnerability
 
 Please report security vulnerabilities in private. Do not open a public issue, pull request or discussion for them.
 
-Use GitHub's private vulnerability reporting for this repository.
+Use GitHub's private vulnerability reporting when it is available for this repository:
 
-- **[Report a vulnerability privately](https://github.com/vorssaint/vorssaint-utils/security/advisories/new)**
+- **[Report a vulnerability privately](https://github.com/sam32j/lattice/security/advisories/new)**
 
-That opens a private security advisory that only you and the maintainer can see.
+Private reporting is currently disabled. Until it is enabled, open a
+[Lattice issue](https://github.com/sam32j/lattice/issues/new) asking only for a
+private security contact. Do not include vulnerability details, affected
+components, reproduction steps, logs or exploit code in that public request.
+Do not use the in-app feedback form for security reports: it opens a public
+GitHub issue draft, not a private security report.
 
 When you write it up, please include as much as you can.
 
 - A description of the issue and the impact it could have.
 - Steps to reproduce, or a proof of concept.
-- The Vorssaint version from Settings under About and your macOS version.
+- The Lattice version from Settings under About and your macOS version.
 
 ## What to expect
 
@@ -26,8 +33,17 @@ When you write it up, please include as much as you can.
 
 ## Supported versions
 
-Security fixes land on the latest released version. Before you report, please make sure you can reproduce the issue on the most recent release.
+Security fixes target the latest Lattice release. Include the affected version
+and, if you can safely do so, whether the issue also affects the latest release.
+Do not delay reporting a serious vulnerability just to upgrade or reproduce it.
 
 ## Scope
 
-Vorssaint runs locally and ships as a signed and notarized macOS app. The reports that matter most are the ones that could affect the integrity of the app or its self update flow, or that could let the app's permissions be misused. Issues in the outside services the app merely talks to, like GitHub's releases API or the speed test endpoint, are best taken to those providers.
+Lattice is a local-first macOS app with optional network features. Lattice builds
+are not currently notarized by Apple. Local-first operation and local signing
+are not guarantees of safety; see the [first-launch guide](TROUBLESHOOTING.md).
+
+Relevant reports include misuse of macOS permissions, exposure of clipboard or
+capture content, unsafe file handling, and weaknesses in downloads or the update
+verification flow. Issues in external services should be reported to their
+operators, but report any unsafe handling of those services by Lattice here.
