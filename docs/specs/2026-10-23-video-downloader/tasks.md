@@ -16,5 +16,13 @@
 
 ## Status
 
-Baseline branch: refactor/settings-refactor-III at 590fd058. Baseline targeted tests running. Detailed files and red/green results are recorded as each vertical slice is implemented.
+Complete. Baseline: refactor/settings-refactor-III at 590fd058.
+
+- URL, quality, dependency discovery, metadata/probe and containment checks pass.
+- Local executable fixtures cover real process launch, encoded argument safety, progress, download publication, collisions, cancellation, shutdown and pipe-holding descendants. No network download or package installation was performed.
+- RED reproduced orphaned descendants after leader exit; GREEN after terminating the recorded process group before dropping ownership. Final full `./build.sh --test`: 102621 checks passed, plus preference cleanup, uninstall-spaces and developer-install-isolation checks.
+- Final `./build.sh --dev` passed; `codesign --verify --deep --strict` passed.
+- Isolated test bundle rendered setup/details using local protocol fixtures, visually inspected; `SETTINGS_RENDERING_OK`. Isolated `--selftest`: `SELFTEST OK`.
+- Independent source review: ready, no remaining actionable findings. Review did not independently execute tests or contact video sites.
+- Runtime limitation: real site compatibility depends on yt-dlp/site behavior. Browser credentials, playlists/live streams and DRM bypass are intentionally unsupported. Actual Homebrew installation was not exercised against the user's machine.
 
