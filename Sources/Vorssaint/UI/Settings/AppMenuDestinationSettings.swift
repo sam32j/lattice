@@ -20,9 +20,16 @@ struct AppMenuDestinationSettings: View {
                     SettingsStatusDot(status: SettingsFeatureStatus(color: .red,
                         message: SettingsOwnershipStrings.text(.noMenuTarget, l10n.language)))
                 }
-                Picker(label, selection: Binding(
-                    get: { AppMenuDestination.selected(in: .standard) },
-                    set: { $0.save(in: .standard) })) {
+                Picker(label, selection: Binding<AppMenuDestination>(
+                    get: {
+                        guard !disabled else { return .none }
+                        let requested: AppMenuDestination = islandPanel ? .island : .menuBar
+                        return options.contains(requested) ? requested : .none
+                    },
+                    set: {
+                        disabled = $0 == .none
+                        islandPanel = $0 == .island
+                    })) {
                     ForEach(options, id: \.self) { target in
                         Text(title(target)).tag(target)
                     }
