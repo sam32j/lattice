@@ -1165,6 +1165,7 @@ enum Defaults {
         DefaultsKey.quitProtectionCloseShowFeedback: true,
         // When the shelf is on, the shake gesture is on too (still toggleable).
         DefaultsKey.shelfShortcutEnabled: true,
+        MediaHUDLocation.preferenceKey: MediaHUDLocation.followFileCache.rawValue,
         DefaultsKey.shelfShortcut: "control+option+command:2",
         DefaultsKey.shelfShakeToOpen: true,
         // On by default (owner's call): it costs nothing until the shelf itself

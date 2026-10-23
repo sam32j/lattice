@@ -278,6 +278,11 @@ if (( TEST )); then
         Sources/Vorssaint/Services/InputEventTap.swift
         Sources/Vorssaint/Services/ActivationHandoff.swift
         Sources/Vorssaint/Services/Media/MediaOptimizerPolicy.swift
+        Sources/Vorssaint/Services/Media/FileUtilitySession.swift
+        Sources/Vorssaint/Services/Media/MediaOutputFormat.swift
+        Sources/Vorssaint/Services/Media/MediaHUDModel.swift
+        Sources/Vorssaint/Services/Media/MediaHUDLocation.swift
+        Sources/Vorssaint/Services/Media/MediaHUDPayload.swift
         Sources/Vorssaint/Services/Media/MediaService.swift
         Sources/Vorssaint/Services/Media/MediaOptimizerClient.swift
         Sources/Vorssaint/Services/Media/NativeMediaOptimizer.swift
