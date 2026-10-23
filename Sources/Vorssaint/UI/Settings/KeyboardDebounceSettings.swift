@@ -31,30 +31,6 @@ extension KeyboardSettings {
                     Text(l10n.s.keyDebouncePerKeySection).font(.subheadline.weight(.semibold))
                         .help(l10n.s.keyDebouncePerKeyCaption)
 
-                    HStack(spacing: 8) {
-                        Spacer(minLength: 0)
-                        Picker(l10n.s.keyDebounceKeyLabel, selection: $selectedKeyCode) {
-                            Text(l10n.s.keyDebounceKeyLabel).tag(Int64?.none)
-                            ForEach(KeyboardDebounceKeyCatalog.common) { key in
-                                Text(key.label).tag(Optional(key.code))
-                            }
-                        }
-                        .labelsHidden().pickerStyle(.menu)
-                        .frame(width: 160)
-
-                        Stepper(value: $selectedWindow,
-                                in: Defaults.allowedKeyboardDebounceWindowRange,
-                                step: Defaults.keyboardDebounceWindowStep) {
-                            Text("\(selectedWindow) ms").monospacedDigit()
-                        }
-                        .fixedSize()
-
-                        Button(l10n.s.keyDebounceAddKey) {
-                            if let selectedKeyCode { setWindow(selectedWindow, for: selectedKeyCode) }
-                        }
-                        .disabled(!debounceEnabled || selectedKeyCode == nil)
-                    }
-
                     if !keyWindows.isEmpty {
                         ForEach(keyWindows) { row in
                             HStack(spacing: 8) {
@@ -68,15 +44,36 @@ extension KeyboardSettings {
                                     Text("\(row.window) ms").foregroundStyle(.secondary).monospacedDigit()
                                 }
                                 .fixedSize()
-                                Button {
+                                Button(l10n.s.keyDebounceRemoveKey) {
                                     removeWindow(for: row.keyCode)
-                                } label: {
-                                    Image(systemName: "trash")
                                 }
-                                .buttonStyle(.borderless)
                                 .help(l10n.s.keyDebounceRemoveKey)
                             }
                         }
+                    }
+
+                    HStack(spacing: 8) {
+                        Picker(l10n.s.keyDebounceKeyLabel, selection: $selectedKeyCode) {
+                            Text(l10n.s.keyDebounceKeyLabel).tag(Int64?.none)
+                            ForEach(KeyboardDebounceKeyCatalog.common) { key in
+                                Text(key.label).tag(Optional(key.code))
+                            }
+                        }
+                        .labelsHidden().pickerStyle(.menu)
+                        .frame(width: 160)
+
+                        Spacer(minLength: 12)
+                        Stepper(value: $selectedWindow,
+                                in: Defaults.allowedKeyboardDebounceWindowRange,
+                                step: Defaults.keyboardDebounceWindowStep) {
+                            Text("\(selectedWindow) ms").monospacedDigit()
+                        }
+                        .fixedSize()
+
+                        Button(l10n.s.keyDebounceAddKey) {
+                            if let selectedKeyCode { setWindow(selectedWindow, for: selectedKeyCode) }
+                        }
+                        .disabled(!debounceEnabled || selectedKeyCode == nil)
                     }
                 }
                 .padding(.leading, settingsRowTextInset)

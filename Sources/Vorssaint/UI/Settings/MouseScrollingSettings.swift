@@ -31,11 +31,10 @@ extension MouseSettings {
                         if scrollDirectionEnabled { permissions.requestAccessibility() }
                     }
             }
-            modifierKeys
-                .padding(.leading, settingsRowTextInset)
-                .disabled(!horizontalScrollEnabled)
+            if horizontalScrollEnabled {
+                modifierKeys.padding(.leading, settingsRowTextInset)
+            }
             MouseExceptionsList(scope: .scrollDirection)
-                .padding(.leading, settingsRowTextInset)
                 .disabled(!scrollDirectionEnabled)
         }
     }
