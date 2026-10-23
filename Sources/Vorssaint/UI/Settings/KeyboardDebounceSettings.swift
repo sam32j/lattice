@@ -101,11 +101,8 @@ extension KeyboardSettings {
     }
 
     var keyWindows: [KeyWindowRow] {
-        KeyboardDebounceConfig.decodeKeyWindows(keyWindowsRaw)
-            .map { KeyWindowRow(keyCode: $0.key, window: $0.value) }
-            .sorted {
-                KeyboardDebounceKeyCatalog.label(for: $0.keyCode) < KeyboardDebounceKeyCatalog.label(for: $1.keyCode)
-            }
+        KeyboardDebounceOverrides.decode(keyWindowsRaw)
+            .map { KeyWindowRow(keyCode: $0.keyCode, window: $0.window) }
     }
 
     func debounceBinding(for keyCode: Int64) -> Binding<Int> {
@@ -118,16 +115,12 @@ extension KeyboardSettings {
     }
 
     func setWindow(_ value: Int, for keyCode: Int64) {
-        var windows = KeyboardDebounceConfig.decodeKeyWindows(keyWindowsRaw)
-        windows[keyCode] = Defaults.sanitizedKeyboardDebounceWindow(value)
-        keyWindowsRaw = KeyboardDebounceConfig.encodeKeyWindows(windows)
+        keyWindowsRaw = KeyboardDebounceOverrides.setting(value, for: keyCode, in: keyWindowsRaw)
         debounce.syncWithPreferences()
     }
 
     func removeWindow(for keyCode: Int64) {
-        var windows = KeyboardDebounceConfig.decodeKeyWindows(keyWindowsRaw)
-        windows.removeValue(forKey: keyCode)
-        keyWindowsRaw = KeyboardDebounceConfig.encodeKeyWindows(windows)
+        keyWindowsRaw = KeyboardDebounceOverrides.removing(keyCode, from: keyWindowsRaw)
         debounce.syncWithPreferences()
     }
 
