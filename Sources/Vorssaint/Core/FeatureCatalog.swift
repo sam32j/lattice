@@ -45,7 +45,7 @@ enum FeatureGroup: String, CaseIterable {
 /// System permissions surfaced by the hub's transparency portal.
 enum AppPermission: String, CaseIterable {
     case accessibility, screenRecording, fullDiskAccess, filesAndFolders, notifications,
-         automationFinder, automationTerminal, automationPlayback, audioCapture, microphone, camera, appManagement, calendar
+         automationFinder, automationTerminal, automationPlayback, audioCapture, microphone, camera, appManagement, calendar, bluetooth
 }
 
 enum PermissionPollingSupport {
@@ -381,7 +381,8 @@ extension AppFeature {
     var permissions: [AppPermission] {
         switch self {
         case .notchGestures: return []
-        case .notchTimer, .notchAccessories: return []
+        case .notchTimer: return []
+        case .notchAccessories: return [.bluetooth]
         case .notchLyrics, .notchQueue: return []
         // Session logs and the saved limits sit in the home folder, outside
         // every protected location, and no sign-in or keychain item is used.
@@ -426,7 +427,8 @@ extension AppFeature {
         case .diskImageInstaller: return [.appManagement]
         case .mixer: return [.audioCapture, .accessibility]
         case .musicBlock: return [.accessibility]
-        case .monitorCPU, .monitorMemory, .monitorDisk, .monitorPower: return [.notifications]
+        case .monitorCPU, .monitorMemory, .monitorDisk: return [.notifications]
+        case .monitorPower: return [.notifications, .bluetooth]
         case .clipboardHistory, .shelf, .urlCleaner,
              .soundOutputSwitcher, .audioPriority,
              .extraBrightness, .bluetoothSleep, .quickLauncher, .colorPicker, .micMute, .mediaTools,
@@ -593,6 +595,9 @@ extension AppFeature {
             case (.monitorPower, .notifications):
                 return boolFor(DefaultsKey.monitorAlertBattery)
                     || boolFor(DefaultsKey.monitorAlertBatteryTemperature)
+            case (.monitorPower, .bluetooth): return boolFor(DefaultsKey.monitorPwrPeripherals)
+            case (.notchAccessories, .bluetooth):
+                return isAvailable(.notch) && isAvailable(.monitorPower) && boolFor(DefaultsKey.notchEnabled)
             case (.appUpdates, .notifications):
                 return AppUpdatesSupport.CheckFrequency
                     .sanitized(stringFor(DefaultsKey.appUpdatesCheckFrequency)) != .off
@@ -654,6 +659,7 @@ extension AppPermission {
         case .calendar: return "calendar"
         case .camera: return "camera"
         case .appManagement: return "app.badge"
+        case .bluetooth: return "antenna.radiowaves.left.and.right"
         }
     }
 }

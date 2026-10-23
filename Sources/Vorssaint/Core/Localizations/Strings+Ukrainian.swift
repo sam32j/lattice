@@ -709,7 +709,7 @@ extension Strings {
         monitorShowCPUTemperature: "Температура CPU",
         monitorShowGPUTemperature: "Температура GPU",
         monitorShowBatteryTemperature: "Температура акумулятора",
-        monitorShowPeripheralBattery: "Акумулятор аксесуарів",
+        monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .uk),
         peripheralBatteryNoDevices: "Пристрої не знайдені",
         monitorGraphsSection: "Графіки",
         updateBannerTitle: "Доступне оновлення",
