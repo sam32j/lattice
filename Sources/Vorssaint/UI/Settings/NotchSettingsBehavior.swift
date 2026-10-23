@@ -77,11 +77,7 @@ extension NotchSettings {
                 }
             }
             SettingsCard(title: editor.destinations) {
-                destination(text.panel, symbol: "bubble.middle.top", value: $appPanel)
-                Text(editor.appPanelHint).font(.caption).foregroundStyle(.secondary)
-                switchRow("menubar.rectangle", editor.hideMenuBarIcon, caption: editor.hideMenuBarIconHint,
-                          isOn: $hidesMenuBarIcon)
-                destination(text.tools, symbol: NotchModule.tools.symbol, value: $quickPanel, available: AppFeature.quickLauncher.isAvailable)
+                destination(l10n.s.launcherName, symbol: NotchModule.tools.symbol, value: $quickPanel, available: AppFeature.quickLauncher.isAvailable)
                 destination(FeatureStrings.clipboard(l10n.language).title, symbol: "doc.on.clipboard", value: $clipboardWindow, available: AppFeature.clipboardHistory.isAvailable)
                 destination(text.files, symbol: "tray.full", value: $shelfWindow, available: AppFeature.shelf.isAvailable)
                 destination(text.captures, symbol: "camera.viewfinder", value: $capture,

@@ -79,13 +79,14 @@ extension NotchSettings {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 SettingsCard(title: selectedModule.title(l10n.language)) {
-                    SettingsToggleRow(title: SettingsContentStrings.enable(selectedModule.title(l10n.language), language: l10n.language),
-                                      isOn: moduleEnableBinding(selectedModule))
+                    PermissionGatedSettingsRow(title: SettingsContentStrings.enable(selectedModule.title(l10n.language), language: l10n.language),
+                                      isOn: moduleEnableBinding(selectedModule),
+                                      requiring: moduleFeature(selectedModule)?.activationPermissions ?? [])
                     if selectedModule == .captures || selectedModule == .system {
                         Divider()
                         ForEach(contentFeatures(selectedModule), id: \.self) { feature in
-                            SettingsToggleRow(title: feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language)),
-                                              isOn: contentFeatureBinding(feature))
+                            PermissionGatedSettingsRow(title: feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language)),
+                                              isOn: contentFeatureBinding(feature), requiring: feature.activationPermissions)
                         }
                     }
                 }
