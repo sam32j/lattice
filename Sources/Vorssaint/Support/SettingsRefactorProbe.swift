@@ -24,6 +24,14 @@ enum SettingsRefactorProbe {
         defaults.set(true, forKey: AppFeature.bluetoothSleep.availabilityKey)
         defaults.set(CommandLine.arguments.contains("--bluetooth-sleep-enabled"),
                      forKey: DefaultsKey.bluetoothSleepEnabled)
+        if CommandLine.arguments.contains("--video-downloader-only") {
+            var failures = [String]()
+            VideoDownloaderRenderingProbe.run(output: output, failures: &failures)
+            defaults.removePersistentDomain(forName: identity)
+            for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
+            if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
+            exit(failures.isEmpty ? 0 : 1)
+        }
         if CommandLine.arguments.contains("--refactor-followup-only") {
             setPreviewAvailability(.notch, enabled: true)
             var failures = [String]()
