@@ -39,10 +39,11 @@ struct DedicatedUtilitySettings: View {
                         .padding(.leading, settingsRowTextInset)
                 }
                 if let shortcut {
-                    ShortcutPreferenceRow(role: shortcut, label: UtilitySettingsCopy.globalShortcut(l10n)) {
+                    ShortcutPreferenceRow(role: shortcut, label: UtilitySettingsCopy.open(title, l10n.language)) {
                         FeatureRuntime.shared.sync([feature])
                     }
                     .disabled(!enabled)
+                    .padding(.leading, settingsRowTextInset)
                 }
             }
             .padding(22)

@@ -593,8 +593,8 @@ struct ClipboardFeatureStrings {
     let historyLayoutList: String
 
     static let enUS = ClipboardFeatureStrings(
-        title: "Clipboard",
-        enable: "Save clipboard history",
+        title: "Clipboard History",
+        enable: "Enable Clipboard History",
         caption: "Stores copied text so you can reuse it later. Everything stays local and can be cleared anytime.",
         localNote: "Everything stays on this Mac. Very large items are ignored.",
         skipSensitive: "Skip text that looks sensitive",

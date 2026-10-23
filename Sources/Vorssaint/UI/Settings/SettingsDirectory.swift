@@ -58,7 +58,7 @@ enum SettingsDirectory {
                     includePage: !toolOnlyPages.contains(pageItem.page),
                     isAvailable: isAvailable) { feature in
                         if feature == .clipboardHistory {
-                            return FeatureStrings.commandBar(language).sourceClipboard
+                            return FeatureStrings.clipboard(language).title
                         }
                         return feature.hubTitle(s, hub: hub)
                     }

@@ -17,19 +17,24 @@ struct ScratchpadSettings: View {
         Form {
             Section {
                 VStack(alignment: .leading, spacing: 16) {
-                Toggle(SettingsOwnershipStrings.enable(FeatureStrings.scratchpad(l10n.language).pageTitle, l10n.language), isOn: $enabled)
+                SettingsRow(symbol: AppFeature.scratchpad.symbolName,
+                    title: SettingsOwnershipStrings.enable(FeatureStrings.scratchpad(l10n.language).pageTitle, l10n.language)) {
+                Toggle("", isOn: $enabled).labelsHidden()
                     .onChange(of: enabled) { _, _ in
                         ScratchpadService.shared.syncWithPreferences()
                         FeatureRuntime.shared.finishAvailabilityChange()
                     }
+                }
                 if enabled {
                     IslandDestinationSettings(destination: .scratchpad)
                         .padding(.leading, settingsRowTextInset)
                 }
-                ShortcutPreferenceRow(role: .scratchpad, label: UtilitySettingsCopy.globalShortcut(l10n)) {
+                ShortcutPreferenceRow(role: .scratchpad,
+                    label: UtilitySettingsCopy.open(FeatureStrings.scratchpad(l10n.language).pageTitle, l10n.language)) {
                     ScratchpadService.shared.syncWithPreferences()
                 }
                 .disabled(!enabled)
+                .padding(.leading, settingsRowTextInset)
                 if enabled, scratchpadShortcutEnabled, scratchpad.shortcutRegistrationFailed {
                     Text(l10n.s.shortcutUnavailable).font(.caption).foregroundStyle(.orange)
                 }

@@ -25,7 +25,8 @@ struct ShelfSettings: View {
         Form {
             Section {
                 VStack(alignment: .leading, spacing: 16) {
-                    SettingsControlRow(title: SettingsOwnershipStrings.enable(SettingsOwnershipStrings.text(.fileCache, l10n.language), l10n.language),
+                    SettingsRow(symbol: AppFeature.shelf.symbolName,
+                        title: SettingsOwnershipStrings.enable(SettingsOwnershipStrings.text(.fileCache, l10n.language), l10n.language),
                         caption: SettingsOwnershipStrings.text(.cacheCaption, l10n.language)) {
                         HStack(spacing: 6) {
                             if enabled && !islandOn {
@@ -45,10 +46,12 @@ struct ShelfSettings: View {
                         IslandDestinationSettings(destination: .files)
                             .padding(.leading, settingsRowTextInset)
                     }
-                    ShortcutPreferenceRow(role: .shelf, label: UtilitySettingsCopy.globalShortcut(l10n)) {
+                    ShortcutPreferenceRow(role: .shelf,
+                        label: UtilitySettingsCopy.open(SettingsOwnershipStrings.text(.fileCache, l10n.language), l10n.language)) {
                         ShelfService.shared.syncHotkey()
                     }
                     .disabled(!enabled)
+                    .padding(.leading, settingsRowTextInset)
                 }
             }
 

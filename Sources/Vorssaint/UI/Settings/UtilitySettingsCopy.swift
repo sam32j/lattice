@@ -1,8 +1,23 @@
 import SwiftUI
 
 enum UtilitySettingsCopy {
-    static func globalShortcut(_ l10n: L10n) -> String {
-        l10n.language == .enUS ? "Global keyboard shortcut" : l10n.s.globalHotkeySection
+    static func open(_ name: String, _ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "Open \(name)"
+        case .ptBR: return "Abrir \(name)"
+        case .es: return "Abrir \(name)"
+        case .de: return "\(name) öffnen"
+        case .fr: return "Ouvrir \(name)"
+        case .it: return "Apri \(name)"
+        case .ja: return "\(name)を開く"
+        case .ko: return "\(name) 열기"
+        case .zhHans: return "打开\(name)"
+        case .zhTW, .zhHK: return "開啟\(name)"
+        case .ru: return "Открыть \(name)"
+        case .uk: return "Відкрити \(name)"
+        case .tr: return "\(name) aç"
+        case .sk: return "Otvoriť \(name)"
+        }
     }
 
     static func fileCacheHint(_ language: AppLanguage) -> String {

@@ -41,24 +41,23 @@ struct ClipboardSettings: View {
             Group {
                 Section {
                     VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 5) {
-                    Toggle(l10n.language == .enUS ? "Enable Clipboard History" : text.enable, isOn: $enabled)
+                    SettingsRow(symbol: AppFeature.clipboardHistory.symbolName, title: text.enable,
+                        caption: SettingsOwnershipStrings.text(.clipboardCaption, l10n.language)) {
+                    Toggle("", isOn: $enabled).labelsHidden()
                         .onChange(of: enabled) { _, _ in
                             FeatureRuntime.shared.sync([.clipboardHistory])
                             FeatureRuntime.shared.finishAvailabilityChange()
                         }
-                    Text(SettingsOwnershipStrings.text(.clipboardCaption, l10n.language))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                     }
                     if enabled {
                         IslandDestinationSettings(destination: .clipboard)
                             .padding(.leading, settingsRowTextInset)
                     }
-                    ShortcutPreferenceRow(role: .clipboard, label: UtilitySettingsCopy.globalShortcut(l10n),
+                    ShortcutPreferenceRow(role: .clipboard, label: UtilitySettingsCopy.open(text.title, l10n.language),
                         additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
                         ClipboardHistoryService.shared.syncHotkey()
                     }.disabled(!enabled)
+                    .padding(.leading, settingsRowTextInset)
                     }
                 }
                 .settingsFormSectionAnchor(.clipboardHistory)
