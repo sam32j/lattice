@@ -76,8 +76,7 @@ extension AppFeature {
             // notices are counted under the island.
             let defaults = UserDefaults.standard
             return defaults.bool(forKey: DefaultsKey.brightnessKeysEnabled)
-                || BrightnessSupport.KeyStep.sanitized(
-                    defaults.string(forKey: DefaultsKey.brightnessKeyStep)) != .standard
+                || BrightnessKeyStepActivation.effective(in: defaults) != .standard
                 ? .keyboard : .idle
         case .mouseAcceleration, .spacesOrder, .pastePlain, .soundOutputSwitcher, .audioPriority, .micMute,
              .bluetoothSleep, .keepAwake, .quickLauncher, .colorPicker,

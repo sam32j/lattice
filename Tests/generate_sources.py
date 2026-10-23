@@ -466,6 +466,11 @@ def main():
                     for prefix in ["    private func handleKeyEvent(",
                                    "    private func routeFunctionKey("])
           + "}\n}\n")
+    write("BrightnessKeyStepReader.swift", "import Foundation\n"
+          + "struct BrightnessKeyStepReader { let defaults: UserDefaults\n"
+          + declaration("Sources/Vorssaint/Services/Display/BrightnessKeyStepPreferences.swift", "    var keyStep:")
+              .replace("UserDefaults.standard", "defaults")
+          + "}\n")
     activator = "Sources/Vorssaint/Services/Switcher/WindowActivator.swift"
     write("SwitcherActivationBodies.swift", "import AppKit\nimport ApplicationServices\n"
           + "extension SwitcherActivationTests.Activator {\n"

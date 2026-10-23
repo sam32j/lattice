@@ -510,11 +510,6 @@ final class BrightnessService: ObservableObject {
         step(id, method: method, delta: keyStep.limited(delta))
     }
 
-    /// Read at each press, like the other key options.
-    private var keyStep: BrightnessSupport.KeyStep {
-        .sanitized(UserDefaults.standard.string(forKey: DefaultsKey.brightnessKeyStep))
-    }
-
     private func syncKeyboardBrightnessHotkeys() {
         let enabled = UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
             && keyboardLightBridge != nil

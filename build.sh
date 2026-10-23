@@ -383,6 +383,7 @@ if (( TEST )); then
         Sources/Vorssaint/Core/FeedbackDraftStrings.swift
         Sources/Vorssaint/Core/PermissionActivationSupport.swift
         Sources/Vorssaint/Core/PermissionRevocationPolicy.swift
+        Sources/Vorssaint/Core/BrightnessKeyStepActivation.swift
         Sources/Vorssaint/Core/PermissionPreflight.swift
         Sources/Vorssaint/Core/BluetoothPermissionAccess.swift
         Sources/Vorssaint/Core/SettingsOwnershipStrings.swift

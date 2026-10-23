@@ -45,13 +45,10 @@ enum PermissionRevocationPolicy {
         if verified[.accessibility] == false {
             result.endsCleaningLock = true
             disable([DefaultsKey.brightnessKeysEnabled], feature: .brightness)
+            if BrightnessKeyStepActivation.pause(in: defaults) { result.affected.insert(.brightness) }
             disable([DefaultsKey.keepAwakeMouseJiggleEnabled], feature: .keepAwake)
             disable([DefaultsKey.notchDismissNativeNotifications], feature: .notchNotifications)
-            let standard = BrightnessSupport.KeyStep.standard.rawValue
-            if let step = defaults.string(forKey: DefaultsKey.brightnessKeyStep), step != standard {
-                defaults.set(standard, forKey: DefaultsKey.brightnessKeyStep)
-                result.affected.insert(.brightness)
-            }
+            // Saved tuning remains intact; restoration alone never rearms it.
         }
         if verified[.microphone] == false { disable([DefaultsKey.recorderMicrophone], feature: .screenRecorder) }
         return result

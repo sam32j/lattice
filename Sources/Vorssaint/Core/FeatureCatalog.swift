@@ -585,7 +585,8 @@ extension AppFeature {
                 return boolFor(DefaultsKey.preciseVolumeRollerEnabled)
             case (.brightness, .accessibility):
                 return boolFor(DefaultsKey.brightnessKeysEnabled)
-                    || BrightnessSupport.KeyStep.sanitized(stringFor(DefaultsKey.brightnessKeyStep)) != .standard
+                    || BrightnessKeyStepActivation.effective(raw: stringFor(DefaultsKey.brightnessKeyStep),
+                        paused: boolFor(DefaultsKey.brightnessKeyStepPaused)) != .standard
             case (.monitorCPU, .notifications):
                 return boolFor(DefaultsKey.monitorAlertCPU) || boolFor(DefaultsKey.monitorAlertCPUTemperature)
             case (.monitorMemory, .notifications):
