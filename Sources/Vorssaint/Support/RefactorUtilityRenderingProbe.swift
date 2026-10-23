@@ -37,16 +37,20 @@ enum RefactorUtilityRenderingProbe {
                     PermissionResetSettingsRow(state: PermissionResetState(phase: phase), reset: { _ in }, restart: {})
                 }.padding(22)), size: CGSize(width: 760, height: 240), output: output, failures: &failures)
         }
+        SettingsRefactorProbe.render("media-music-permission",
+            view: AnyView(SettingsCard { MediaMusicPermissionRow(hub: FeatureStrings.hub(.enUS)) }.padding(22)),
+            size: CGSize(width: 760, height: 200), output: output, failures: &failures)
         for overlaps in [false, true] {
-            for hovered in [false, true] {
+            for dragging in [false, true] {
                 let model = CaptureGuideViewModel()
-                model.overlapsSelection = overlaps; model.isHovered = hovered
+                model.overlapsSelection = overlaps
+                model.isAreaDragging = dragging
                 let options = ScreenCaptureSelectionOptions(availableTools: [.screenshot, .recording],
                     selectedTool: .screenshot, showsCaptureMenu: true)
                 let view = CaptureGuideView(strings: FeatureStrings.screenshot(.enUS), purpose: nil, model: model,
                     screenCaptureOptions: options, onFullScreen: {}, onToggleScrolling: {}, onToggleLoupe: {},
                     onRepeatLastRegion: {}, onToggleMode: {}, onCancel: {})
-                SettingsRefactorProbe.render("actual-toolbar-overlap-\(overlaps)-hover-\(hovered)",
+                SettingsRefactorProbe.render("actual-toolbar-overlap-\(overlaps)-dragging-\(dragging)",
                     view: AnyView(ZStack {
                         LinearGradient(colors: [.blue, .yellow, .red], startPoint: .leading, endPoint: .trailing)
                         view.frame(width: 620)
