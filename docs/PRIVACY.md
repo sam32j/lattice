@@ -23,6 +23,17 @@ Recent Captures keeps up to 12 screenshots, within a 256 MB limit, in the app's 
 
 When a feature needs a macOS permission such as Accessibility, Screen Recording or Microphone, that access is used only for the feature it belongs to. Captured content leaves the Mac only when you explicitly share it, from the Share menu or with a temporary link, and the audio of apps you route to AirPlay goes only to the speaker you pick on your local network. The [permissions guide](PERMISSIONS.md) breaks down each permission.
 
+## Video Downloader
+
+Fetching video information and downloading contacts the URL and the site's media
+servers through local yt-dlp and FFmpeg tools. These servers see ordinary network
+request data, including your public IP address. Lattice does not upload the link
+to a Lattice backend, automatically read browser cookies, enable yt-dlp plugins,
+or load your yt-dlp configuration. Links and job details stay in memory; files
+are saved only to the folder you choose. Owned partial files are removed after
+cancellation or failure; existing files are never overwritten. Installing missing
+tools is an explicit Homebrew action and contacts Homebrew's distribution servers.
+
 ## Optional notch features
 
 Calendar access is requested only from the permission button. The notch reads upcoming events through the system calendar service; it does not create, change or delete events. Event text stays in memory and is cleared when the notch stops or the Mac locks. The optional countdown and time left can show the title of the next event, or of the one in progress, in the closed notch, including in screen captures when notch capture is enabled. Events you choose for the countdown are remembered on this Mac by their calendar identifiers and end times, without their text, are forgotten once they end and are left out of settings backups. While the island is open, the Calendar shortcut on its Controls page shows the next appointment's start time and title, which also appear in screen captures when notch capture is enabled.
