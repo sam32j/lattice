@@ -93,6 +93,7 @@ final class SnippetLibraryService: ObservableObject {
     }
 
     func show() {
+        guard AppFeature.textSnippets.isAvailable else { hide(); return }
         reloadSnippets()
         let panel = ensurePanel()
         TextSnippetService.shared.setLibraryVisible(true)
@@ -148,6 +149,7 @@ final class SnippetLibraryService: ObservableObject {
     }
 
     func insert(_ snippet: TextSnippet) {
+        guard AppFeature.textSnippets.isAvailable else { hide(); return }
         hide()
         // The panel never activates, so focus normally sits in the target
         // app. When Vorssaint itself is frontmost (its Settings window, for

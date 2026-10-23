@@ -1782,6 +1782,10 @@ def main():
           + "final class Snippets: PresentationState {\n"
           + page_service_body(snippet_service, "    func syncWithPreferences()")
           + declaration(snippet_service, "    func hide()")
+          + page_service_body(snippet_service, "    func show()").split("        reloadSnippets()")[0]
+          + "        panel?.isVisible = true\n}\n"
+          + page_service_body(snippet_service, "    func insert(_ snippet:").split("        hide()")[0]
+          + "        inserted = true\n}\n"
           + "}\nfinal class Launcher: PresentationState {\n"
           + page_service_body(service, "    func syncWithPreferences()")
           + declaration(service, "    func suspend()") + declaration(service, "    func hide()")
