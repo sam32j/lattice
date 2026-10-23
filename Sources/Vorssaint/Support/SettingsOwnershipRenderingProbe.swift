@@ -24,6 +24,13 @@ enum SettingsOwnershipRenderingProbe {
             defaults.set(false, forKey: feature.availabilityKey)
             render(name, AnyView(DedicatedUtilitySettings(feature: feature)), height: 300,
                    output: output, failures: &failures)
+            if feature == .cameraPreview || feature == .quickLauncher {
+                defaults.set(true, forKey: feature.availabilityKey)
+                (feature == .cameraPreview ? IslandDestination.cameraPreview : .launcherGrid).setShown(true, in: defaults)
+                render(name + "-enabled", AnyView(DedicatedUtilitySettings(feature: feature)), height: 420,
+                       output: output, failures: &failures)
+                defaults.set(false, forKey: feature.availabilityKey)
+            }
         }
         defaults.set(false, forKey: DefaultsKey.notchHidesMenuBarIcon)
         AppMenuDestination.menuBar.save(in: defaults)
@@ -48,6 +55,7 @@ enum SettingsOwnershipRenderingProbe {
                 }
             }
         }.padding(22)), height: 220, output: output, failures: &failures)
+        SettingsFollowupRenderingProbe.run(output: output, failures: &failures)
     }
 
     private static func render(_ name: String, _ view: AnyView, height: CGFloat,

@@ -382,7 +382,11 @@ if (( TEST )); then
         Sources/Vorssaint/Core/FeedbackStrings.swift
         Sources/Vorssaint/Core/FeedbackDraftStrings.swift
         Sources/Vorssaint/Core/PermissionActivationSupport.swift
+        Sources/Vorssaint/Core/PermissionRevocationPolicy.swift
+        Sources/Vorssaint/Core/PermissionPreflight.swift
+        Sources/Vorssaint/Core/BluetoothPermissionAccess.swift
         Sources/Vorssaint/Core/SettingsOwnershipStrings.swift
+        Sources/Vorssaint/Core/SettingsFollowupStrings.swift
         Sources/Vorssaint/Core/IslandDestinationSupport.swift
         Sources/Vorssaint/Core/AppMenuDestination.swift
         Sources/Vorssaint/UI/Settings/ShortcutSettingsObserver.swift
@@ -559,6 +563,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/MicMuteSupport.swift
         Sources/Vorssaint/Services/QuickTools/QuickTogglesSupport.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotCapturePolicy.swift
+        Sources/Vorssaint/Services/QuickTools/CapturePresentationPolicy.swift
         Sources/Vorssaint/App/MediaEditorFileSupport.swift
         Sources/Vorssaint/Core/MediaEditorFileStrings.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotCapturePanel.swift
@@ -604,6 +609,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/ScreenshotSharingSupport.swift
         Sources/Vorssaint/Services/QuickTools/WindowActivationPolicy.swift
         Sources/Vorssaint/Services/KeyboardDebounce/KeyboardDebounceSupport.swift
+        Sources/Vorssaint/Services/KeyboardDebounce/KeyboardDebounceOverrides.swift
         Sources/Vorssaint/Services/SuperKey/SuperKeySupport.swift
         Sources/Vorssaint/Services/SuperKey/SuperKeyMappingGuard.swift
         Sources/Vorssaint/Core/SuperKeyStrings.swift
