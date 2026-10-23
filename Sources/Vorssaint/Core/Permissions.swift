@@ -14,6 +14,7 @@ import UserNotifications
 /// Screen Recording powers window titles and thumbnails in the switcher.
 final class Permissions: ObservableObject {
     static let shared = Permissions()
+    @Published private(set) var verifiedPermissions: [SettingsPermission: Bool] = [:]
 
     @Published private(set) var accessibility = false
     @Published private(set) var screenRecording = false
@@ -136,6 +137,7 @@ final class Permissions: ObservableObject {
         refreshNotificationPermission()
         refreshCameraPermission()
         calendarAccess = EKEventStore.authorizationStatus(for: .event)
+        verifiedPermissions[.calendar] = calendarAccess == .fullAccess
         refreshMicrophonePermission()
         // Checking Full Disk Access means asking the system about protected
         // folders, and every refused answer costs time. Doing that where the
@@ -159,6 +161,7 @@ final class Permissions: ObservableObject {
         }
         DispatchQueue.main.async {
             if self.camera != state { self.camera = state }
+            if state != .unknown { self.verifiedPermissions[.camera] = state == .granted }
         }
     }
 
@@ -172,6 +175,7 @@ final class Permissions: ObservableObject {
         }
         DispatchQueue.main.async {
             if self.microphone != state { self.microphone = state }
+            if state != .unknown { self.verifiedPermissions[.microphone] = state == .granted }
         }
     }
 
@@ -207,6 +211,7 @@ final class Permissions: ObservableObject {
         DispatchQueue.main.async {
             if self.accessibility != ax { self.accessibility = ax }
             if self.screenRecording != sr { self.screenRecording = sr }
+            self.verifiedPermissions.merge([.accessibility: ax, .screenRecording: sr]) { _, new in new }
             // A flip can change which cadence applies (e.g. the last grant
             // landed while the app was in the background).
             self.scheduleActivePermissionPolling()
@@ -358,6 +363,7 @@ final class Permissions: ObservableObject {
                 let status = EKEventStore.authorizationStatus(for: .event)
                 self?.calendarRequestFailed = NotchCalendarSupport.requestFailed(status: status, hasError: error != nil)
                 self?.calendarAccess = status
+                self?.verifiedPermissions[.calendar] = status == .fullAccess
             }
         }
     }

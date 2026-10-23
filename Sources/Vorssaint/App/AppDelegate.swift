@@ -156,6 +156,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
 
         // If Accessibility is granted while the app is running, bring the input
         // features up without a relaunch.
+        PermissionRevocationRuntime.observe().store(in: &cancellables)
         Permissions.shared.$accessibility
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
