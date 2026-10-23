@@ -111,25 +111,28 @@ extension MouseSettings {
             if middleClickEnabled {
                 VStack(alignment: .leading, spacing: 8) {
                     SettingsControlRow(title: l10n.s.middleClickTapPicker) {
-                        if middleClick.systemDragGestureConflict {
+                        HStack(spacing: 6) {
                             Image(systemName: "info.circle")
-                                .help("Three-finger drag is enabled in macOS. Use four fingers for middle-click.")
-                        }
-                        Picker(l10n.s.middleClickTapPicker, selection: Binding(
-                            get: { MiddleClickSupport.availableTapSelection(middleClickTapFingers,
-                                systemDragEnabled: middleClick.systemDragGestureConflict) },
-                            set: { middleClickTapFingers = $0 })) {
-                            Text(l10n.s.middleClickTapOff).tag(0)
-                            if !middleClick.systemDragGestureConflict {
-                                Text(l10n.s.middleClickTapThreeFingers).tag(3)
+                                .frame(width: 20, height: 20)
+                                .overlay { StatusTooltip(message: middleClick.systemDragGestureConflict
+                                    ? "Three-finger drag is enabled in macOS. Use four fingers for middle-click."
+                                    : l10n.s.middleClickTapCaption) }
+                                .accessibilityLabel(l10n.s.middleClickTapCaption)
+                            Picker(l10n.s.middleClickTapPicker, selection: Binding(
+                                get: { MiddleClickSupport.availableTapSelection(middleClickTapFingers,
+                                    systemDragEnabled: middleClick.systemDragGestureConflict) },
+                                set: { middleClickTapFingers = $0 })) {
+                                Text(l10n.s.middleClickTapOff).tag(0)
+                                if !middleClick.systemDragGestureConflict {
+                                    Text(l10n.s.middleClickTapThreeFingers).tag(3)
+                                }
+                                Text(l10n.s.middleClickTapFourFingers).tag(4)
                             }
-                            Text(l10n.s.middleClickTapFourFingers).tag(4)
+                            .labelsHidden().pickerStyle(.menu).fixedSize()
+                            .onChange(of: middleClickTapFingers) { _, _ in middleClick.syncWithPreferences() }
                         }
-                        .labelsHidden().pickerStyle(.menu)
                         .frame(width: 220, alignment: .trailing)
-                        .onChange(of: middleClickTapFingers) { _, _ in middleClick.syncWithPreferences() }
                     }
-                    .help(l10n.s.middleClickTapCaption)
                     if middleClick.touchDeviceMissing {
                         Text(l10n.s.middleClickNoTrackpad)
                             .font(.caption)
