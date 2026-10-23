@@ -86,7 +86,7 @@ enum PointerOnDisplayContract {
     /// One display's capture overlay deciding whether its guide shows.
     final class Overlay {
         typealias NSEvent = Event
-        struct Options { let controlsInNotch: Bool }
+        struct Options {}
         final class Controller {
             var isWaitingForRecording = false
             var currentPointerLocation: CGPoint?

@@ -120,9 +120,9 @@ enum NotchCaptureKeyboardTests {
         notch.expanded = false
         check("a collapsed capture cannot consume keyboard input", accepts: false)
         notch.expanded = true
-        notch.captureControls = 1
+        Contract.NotchService.ScreenshotSelectionController.isSessionOnScreen = true
         check("an active chooser cannot trigger actions on the previous capture", accepts: false)
-        notch.captureControls = nil
+        Contract.NotchService.ScreenshotSelectionController.isSessionOnScreen = false
         notch.captureID = UUID()
         check("a replaced preview cannot act on its successor", accepts: false)
         notch.captureID = preview.presentationID
@@ -170,42 +170,25 @@ enum NotchCaptureKeyboardTests {
         let selection = Contract.Selection()
         let notch = Contract.NotchService()
         Contract.NotchService.shared = notch
-        let panel = notch.presentationWindow!
+        let panel = Contract.ScreenshotOverlayPanel()
         selection.attach()
-        for focused in [false, true] {
-            selection.screenCaptureOptions?.hasFocusedControl = focused
-            for key in [kVK_Tab, kVK_Space, kVK_LeftArrow, kVK_RightArrow, kVK_UpArrow, kVK_DownArrow] {
-                for phase in [Event.EventType.keyDown, .keyUp] {
-                    let event = Event(window: panel, keyCode: UInt16(key), type: phase)
-                    suite.expect(Event.handler?(event) != nil, "unhandled navigation and activation keys reach native controls")
-                }
-            }
-        }
         let enter = Event(window: panel, keyCode: UInt16(kVK_Return))
-        suite.expect(Event.handler?(enter) != nil && selection.actions.isEmpty,
-               "Return activates the focused control instead of taking an unexpected full-screen capture")
-        selection.screenCaptureOptions?.hasFocusedControl = false
         suite.expect(Event.handler?(enter) == nil && selection.actions == ["fullDisplay"],
-               "Return still captures the display when no control owns it")
+                     "Return captures the display in the on-screen chooser")
         selection.actions = []
-        for focused in [false, true] {
-            selection.screenCaptureOptions?.hasFocusedControl = focused
-            let dragging = Contract.ScreenshotOverlayPanel()
-            dragging.overlayView.isDragging = true
-            selection.draggingPanel = dragging
-            suite.expect(Event.handler?(Event(window: panel, keyCode: UInt16(kVK_Space))) == nil && selection.spaceIsDown,
-                   "Space still moves a selection even while a chooser control has focus")
-            dragging.overlayView.isDragging = false
-            suite.expect(Event.handler?(Event(window: panel, keyCode: UInt16(kVK_Space), type: .keyUp)) == nil && !selection.spaceIsDown,
-                   "releasing Space clears movement after the drag has ended")
-        }
+        let dragging = Contract.ScreenshotOverlayPanel()
+        dragging.overlayView.isDragging = true
+        selection.draggingPanel = dragging
+        suite.expect(Event.handler?(Event(window: panel, keyCode: UInt16(kVK_Space))) == nil && selection.spaceIsDown,
+                     "Space moves an on-screen selection")
+        dragging.overlayView.isDragging = false
+        suite.expect(Event.handler?(Event(window: panel, keyCode: UInt16(kVK_Space), type: .keyUp)) == nil && !selection.spaceIsDown,
+                     "releasing Space clears movement after dragging ends")
         suite.expect(Event.handler?(Event(window: panel, keyCode: UInt16(kVK_Escape))) == nil && selection.actions == ["cancel"],
-               "Escape retains chooser cancellation while controls are focused")
+                     "Escape cancels the on-screen chooser")
         selection.actions = []
-        selection.screenCaptureOptions?.hasFocusedControl = false
-        panel.firstResponder = Contract.NSText()
-        suite.expect(Event.handler?(enter) != nil && selection.actions.isEmpty, "a chooser text editor retains Return")
-        panel.firstResponder = nil
+        suite.expect(Event.handler?(Event(window: notch.presentationWindow, keyCode: UInt16(kVK_Return))) != nil,
+                     "the Dynamic Island is not a capture-control input surface")
         let unrelated = Contract.NSPanel()
         suite.expect(Event.handler?(Event(window: unrelated, keyCode: UInt16(kVK_Return))) != nil,
                "capture selection leaves unrelated windows alone")
@@ -228,7 +211,6 @@ enum NotchCaptureKeyboardTests {
             }
         }
         selection.actions = []
-        selection.screenCaptureOptions?.controlsInNotch = false
         for key in [kVK_Return, kVK_ANSI_KeypadEnter] {
             selection.actions = []
             suite.expect(Event.handler?(Event(window: overlay, keyCode: UInt16(key))) == nil

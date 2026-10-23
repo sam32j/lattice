@@ -18,9 +18,9 @@ enum UtilitySettingsTests {
                == FeatureSettingsDestination(.audioOutput, sectionAnchor: .mixer),
                "selecting Volume Mixer opens its Audio Output section")
         expect(AppFeature.quickLauncher.settingsDestination
-               == FeatureSettingsDestination(.shortcuts, sectionAnchor: .quickLauncher)
+               == FeatureSettingsDestination(.launcherGrid)
                && AppFeature.cameraPreview.settingsDestination
-               == FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview),
+               == FeatureSettingsDestination(.cameraPreview),
                "shortcut-only tools open their exact Keyboard Shortcuts rows")
         expect(!AppFeature.allCases.contains { $0.rawValue == "quickToggles" },
                "Quick Toggles is not independently installable")

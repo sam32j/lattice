@@ -1445,7 +1445,8 @@ enum RepositoryFeatureTests {
         var availabilityWriters: Set<String> = []
         for path in repository.swiftPaths {
             if path.hasSuffix("/Support/SettingsPresentationProbe.swift")
-                || path.hasSuffix("/Support/SettingsRefactorProbe.swift") { continue }
+                || path.hasSuffix("/Support/SettingsRefactorProbe.swift")
+                || path.hasSuffix("/Support/SettingsOwnershipRenderingProbe.swift") { continue }
             let writes = repository.lines(at: path).contains {
                 $0.contains(".set(") && $0.contains("availabilityKey")
             }

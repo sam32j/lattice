@@ -95,7 +95,6 @@ enum NotchDownloadFolderChoiceContract {
         var selected: NotchModule = .downloads
         var showingAppPanel = false
         var selectedMetric: Bool?
-        var captureControls: Bool?
         var pinned = false
         var syncs = 0
         func syncWithPreferences() { syncs += 1 }
