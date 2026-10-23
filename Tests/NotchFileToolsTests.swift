@@ -73,7 +73,6 @@ enum NotchFileToolsTests {
         publicationContracts(suite)
         renamedPublicationContracts(suite)
         archiveCancellationContracts(suite)
-        durationLoadingContracts(suite)
         dropGeometryContracts(suite)
         MediaWorkspaceLayoutTests.run(suite)
     }
@@ -344,38 +343,6 @@ enum NotchFileToolsTests {
         } catch { suite.expect(false, "archive cancellation fixture failed: \(error)") }
     }
 
-    private static func durationLoadingContracts(_ suite: TestSuite) {
-        let first = URL(fileURLWithPath: "/tmp/first-duration-fixture.mov")
-        let second = URL(fileURLWithPath: "/tmp/second-duration-fixture.mov")
-        var loading = MediaDurationLoading()
-        let cancelled = loading.start(url: first, tool: .videoCompressor)!
-        loading.cancel()
-        suite.expect(loading.finish(cancelled, duration: 10) == nil,
-               "a duration reply cannot apply after its view has cancelled the lookup")
-        let resumed = loading.start(url: first, tool: .videoCompressor)!
-        suite.expect(resumed != cancelled && loading.finish(resumed, duration: 120.25) == 120.3,
-               "reopening the same input retries a cancelled duration lookup with a new identity")
-        loading.cancel()
-        suite.expect(loading.start(url: first, tool: .videoCompressor) == nil,
-               "reopening after a successful lookup preserves the user's trim instead of reapplying defaults")
-        loading.reset()
-        let replaced = loading.start(url: first, tool: .videoCompressor)!
-        let replacement = loading.start(url: second, tool: .videoCompressor)!
-        suite.expect(loading.finish(replaced, duration: 15) == nil && loading.finish(replacement, duration: 300) == 300,
-               "an older input cannot replace the duration of the newly selected video")
-        let gif = loading.start(url: second, tool: .gifMaker)!
-        suite.expect(loading.finish(gif, duration: nil) == nil,
-               "an unavailable duration never marks media defaults as loaded")
-        let retry = loading.start(url: second, tool: .gifMaker)!
-        suite.expect(loading.finish(retry, duration: .infinity) == nil,
-               "a non-finite duration remains retryable")
-        suite.expect(loading.start(url: first, tool: .textExtractor) == nil && loading.pending == nil,
-               "switching to a non-video tool invalidates pending video defaults")
-        let untrimmed = MediaSupport.sanitizedTrim(start: 0, end: 0, assetDuration: 300)
-        suite.expect(untrimmed.start == 0 && untrimmed.end == 300,
-               "a new input's cleared range exports the full recording while its duration lookup is pending")
-    }
-
     private static func collisionContracts(_ suite: TestSuite) {
         let fm = FileManager.default
         let directory = fm.temporaryDirectory.appendingPathComponent("notch-output-contract-\(UUID().uuidString)", isDirectory: true)
@@ -390,7 +357,7 @@ enum NotchFileToolsTests {
             suite.expect(stagedIdentity != nil && stagedIdentity != NotchDownloadSupport.fileIdentity(at: existing),
                    "file identities distinguish unrelated files without relying on description strings")
             do {
-                try MediaSupport.installStagedOutput(staged, at: existing, replacingExisting: false)
+                try FileOutputSupport.installStagedOutput(staged, at: existing, replacingExisting: false)
                 suite.expect(false, "an output collision must fail")
             } catch {
                 suite.expect(try Data(contentsOf: existing) == Data("original".utf8),
@@ -398,7 +365,7 @@ enum NotchFileToolsTests {
                 suite.expect(fm.fileExists(atPath: staged.path), "a rejected install leaves staged data available for cleanup")
             }
             let newOutput = directory.appendingPathComponent("new-output.txt")
-            try MediaSupport.installStagedOutput(staged, at: newOutput, replacingExisting: false)
+            try FileOutputSupport.installStagedOutput(staged, at: newOutput, replacingExisting: false)
             suite.expect(try Data(contentsOf: newOutput) == Data("generated".utf8),
                    "a unique shelf output is installed intact")
             suite.expect(!fm.fileExists(atPath: staged.path), "installing output does not retain a redundant staged copy")

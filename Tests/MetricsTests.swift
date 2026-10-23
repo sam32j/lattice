@@ -46,7 +46,7 @@ struct MetricsTests {
                 DiskImageHomebrewTests.run(suite)
             }),
             ("window-layout", { WindowLayoutFeatureTests.run(suite) }),
-            ("media", { MediaFeatureTests.run(suite) }),
+            ("media", { MediaOptimizerTests.run(suite); NativeMediaOptimizerTests.run(suite) }),
             ("mixer", {
                 MixerNativeDragTests.run(suite)
                 MixerOutputAdjustmentContract.run(suite)

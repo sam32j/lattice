@@ -824,21 +824,21 @@ enum UpdateFeatureTests {
         suite.expect(WindowLayoutAction.hiddenActions(from: "").isEmpty,
                "an empty stored value hides nothing")
 
-        suite.expect(MediaSupport.inputMatchesTool(contentType: .jpeg, inputTypes: [.image]),
+        suite.expect(FileOutputSupport.inputMatchesTool(contentType: .jpeg, inputTypes: [.image]),
                "a JPEG drop fits the image tool")
-        suite.expect(!MediaSupport.inputMatchesTool(contentType: .pdf, inputTypes: [.image]),
+        suite.expect(!FileOutputSupport.inputMatchesTool(contentType: .pdf, inputTypes: [.image]),
                "a PDF drop does not fit the image tool")
-        suite.expect(!MediaSupport.inputMatchesTool(contentType: nil, inputTypes: [.image]),
+        suite.expect(!FileOutputSupport.inputMatchesTool(contentType: nil, inputTypes: [.image]),
                "an unreadable content type is rejected")
-        suite.expect(MediaSupport.inputMatchesTool(contentType: .quickTimeMovie,
+        suite.expect(FileOutputSupport.inputMatchesTool(contentType: .quickTimeMovie,
                                              inputTypes: [.movie, .video]),
                "a movie drop fits the video tools")
 
-        suite.expect(MediaSupport.outputGrew(originalBytes: 9_000, outputBytes: 12_000),
+        suite.expect(FileOutputSupport.outputGrew(originalBytes: 9_000, outputBytes: 12_000),
                "a larger output earns the grew caption")
-        suite.expect(!MediaSupport.outputGrew(originalBytes: 12_000, outputBytes: 9_000),
+        suite.expect(!FileOutputSupport.outputGrew(originalBytes: 12_000, outputBytes: 9_000),
                "a smaller output does not")
-        suite.expect(!MediaSupport.outputGrew(originalBytes: 0, outputBytes: 12_000),
+        suite.expect(!FileOutputSupport.outputGrew(originalBytes: 0, outputBytes: 12_000),
                "an unknown original size never triggers the grew caption")
 
         suite.expect(UpdateInstallerSupport.shellSingleQuoted("/Applications/My App.app")

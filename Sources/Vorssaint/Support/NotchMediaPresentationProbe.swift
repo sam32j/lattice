@@ -70,7 +70,7 @@ enum NotchMediaPresentationProbe {
     }
 
     private static func picker(in view: NSView) -> NSSegmentedControl? {
-        if let picker = view as? NSSegmentedControl, picker.segmentCount == 4 { return picker }
+        if let picker = view as? NSSegmentedControl, picker.segmentCount == 2 { return picker }
         return view.subviews.lazy.compactMap { picker(in: $0) }.first
     }
 
@@ -86,6 +86,10 @@ enum NotchMediaPresentationProbe {
         let host = NotchWindowHost(content: AnyView(Content(model: model)), geometry: geometry, size: model.size,
                                    quickAccess: { _, _ in AnyView(Color.clear) })
         model.host = host
+        // SwiftUI can report its first intrinsic size inside host construction,
+        // before the model has a host to resize. Replay that measured size once
+        // attached, just as the real service presents after constructing a host.
+        host.present(size: model.size, geometry: geometry, animated: false, quickAccess: model.shortcuts)
         host.panel.alphaValue = 0
         host.panel.ignoresMouseEvents = true
         host.panel.orderFrontRegardless()
@@ -131,7 +135,7 @@ enum NotchMediaPresentationProbe {
             failures.append("layout resizes concealed the island \(backing.concealedFrameChanges) times outside Mission Control")
         }
         backing.close()
-        for index in [3, 2, 1, 0, 2, 3] {
+        for index in [1, 0, 1, 0] {
             guard let picker = host.panel.contentView.flatMap({ picker(in: $0) }) else {
                 failures.append("media picker was not mounted")
                 break

@@ -50,7 +50,7 @@ enum ScreenTextCompletionTests {
         let language = Language()
         let s = Strings()
     }
-    enum MediaSupport {
+    enum OCRRecognitionSupport {
         static func recognitionLanguages(for language: String) -> [String] { [language] }
     }
     final class NSPasteboard {

@@ -35,7 +35,7 @@ enum PreferencesFeatureTests {
         suite.expect(!SettingsBackupSupport.exportKeys().contains(DefaultsKey.commandBarFileScopes)
             && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.notchDownloadsFolderBookmark)
             && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.wallpaperOwnBookmarks)
-            && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.mediaImageWatermarkLogoPath),
+            && !SettingsBackupSupport.exportKeys().contains("mediaImageWatermarkLogoPath"),
                "every chosen folder already excluded from backups stays excluded")
         suite.expect(!SettingsBackupSupport.keysToClear(whenImporting: [:]).contains(DefaultsKey.recorderSaveFolder)
             && !SettingsBackupSupport.keysToClear(whenImporting: [:]).contains(DefaultsKey.screenshotSaveFolder)

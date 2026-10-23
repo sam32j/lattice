@@ -1128,7 +1128,7 @@ enum RecorderFeatureTests {
         suite.expect(storedPicture != nil && secondPicture != nil && storedPicture != secondPicture,
                "images with the same filename get independent copies inside the recording")
         if let storedPicture {
-            suite.expect(MediaSupport.imageThumbnail(at: storedPicture, maxPixel: 2) != nil,
+            suite.expect(ImageFileSupport.imageThumbnail(at: storedPicture, maxPixel: 2) != nil,
                    "the picked filename is decoded without trimming away meaningful whitespace")
             let attributes = try? FileManager.default.attributesOfItem(atPath: storedPicture.path)
             let permissions = attributes?[.posixPermissions] as? NSNumber

@@ -1109,26 +1109,6 @@ enum AppManagementFeatureTests {
                                                                executables: [],
                                                                executableExists: { _ in false }),
                "system agents and undecidable plists are never offered")
-        suite.expect(registeredDefaults[DefaultsKey.mediaLastTool] as? String == MediaTool.videoCompressor.rawValue,
-               "Media defaults to video compressor")
-        suite.expect(registeredDefaults[DefaultsKey.mediaVideoCodec] as? String == MediaVideoCodec.h264.rawValue,
-               "Media video codec defaults to H.264")
-        suite.expect(registeredDefaults[DefaultsKey.mediaImageFormat] as? String == MediaImageFormat.jpeg.rawValue,
-               "Media image format defaults to JPEG")
-        suite.expect(registeredDefaults[DefaultsKey.mediaImageResizeKind] as? String == MediaImageResizeKind.maxDimension.rawValue,
-               "Media image resize defaults to max side")
-        suite.expect(registeredDefaults[DefaultsKey.mediaImageExactResizeMode] as? String == MediaImageExactResizeMode.stretch.rawValue,
-               "Media image exact resize defaults to stretch for existing behavior")
-        suite.expect(registeredDefaults[DefaultsKey.mediaImageWatermarkKind] as? String == MediaImageWatermarkKind.off.rawValue,
-               "Media image watermark starts off")
-        suite.expect(registeredDefaults[DefaultsKey.mediaImageBackground] as? String == MediaImageBackground.transparent.rawValue,
-               "Media image background starts transparent")
-        suite.expect(registeredDefaults[DefaultsKey.mediaImagePreserveModificationDate] as? Bool == false,
-               "Media image conversion does not preserve modification dates by default")
-        suite.expect(registeredDefaults[DefaultsKey.mediaImageSaveInSubfolder] as? Bool == false,
-               "Media image batches keep their current output folder by default")
-        suite.expect(registeredDefaults[DefaultsKey.mediaImageProfiles] as? String == "[]",
-               "Media image profiles start empty")
         suite.expect((registeredDefaults[DefaultsKey.autoQuitExceptions] as? [String]) == Defaults.mandatoryAutoQuitExceptionBundleIDs,
                "Finder and Phone stay in the default auto-quit exception list")
         suite.expect(Defaults.mandatoryAutoQuitExceptionBundleIDs.contains(Defaults.finderBundleIdentifier)

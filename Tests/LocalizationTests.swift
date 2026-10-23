@@ -78,7 +78,6 @@ enum LocalizationTests {
             }
             check(strings, against: Strings.enUS, name: "strings/\(language.rawValue)", suite: suite)
             let additional: [(String, (AppLanguage) -> Any)] = [
-                ("imageConverter", { MediaImageConverterStrings.localized($0) }),
                 ("directionalLayout", { WindowDirectionalStrings.localized($0) }),
                 ("pointerDisplay", { PointerDisplayStrings.localized($0) }),
                 ("graphScale", { GraphScaleStrings.localized($0) }),

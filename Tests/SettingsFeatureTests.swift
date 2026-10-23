@@ -32,14 +32,6 @@ enum SettingsFeatureTests {
         let isCodeLine: (String) -> Bool = {
             !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//")
         }
-        let profileOptions = MediaImageOptions(
-            quality: 0.8,
-            maxDimension: 1400,
-            format: .png,
-            stripMetadata: false,
-            resizeMode: .exact(width: 900, height: 600, mode: .fit),
-            watermark: MediaImageWatermark(kind: .text, text: "Sample", opacity: 0.5),
-            renamePattern: MediaImageRenamePattern("{name}-{index}"))
         // MARK: Settings backup
 
         let backupKeys = SettingsBackupSupport.exportKeys()
@@ -152,27 +144,7 @@ enum SettingsFeatureTests {
                "the cleaning mode keep screen visible choice travels with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.appearance),
                "the light or dark choice travels with the settings backup")
-        suite.expect(Set([
-            DefaultsKey.mediaImageResizeKind,
-            DefaultsKey.mediaImageResizeWidth,
-            DefaultsKey.mediaImageResizeHeight,
-            DefaultsKey.mediaImageExactResizeMode,
-            DefaultsKey.mediaImageWatermarkKind,
-            DefaultsKey.mediaImageWatermarkText,
-            DefaultsKey.mediaImageWatermarkPosition,
-            DefaultsKey.mediaImageWatermarkOpacity,
-            DefaultsKey.mediaImageWatermarkMargin,
-            DefaultsKey.mediaImageWatermarkScale,
-            DefaultsKey.mediaImageRenamePattern,
-            DefaultsKey.mediaImageBackground,
-            DefaultsKey.mediaImagePreserveModificationDate,
-            DefaultsKey.mediaImageSaveInSubfolder,
-            DefaultsKey.mediaImageProfiles,
-            DefaultsKey.mediaImageSelectedProfileID,
-        ]).isSubset(of: backupKeys),
-               "image converter choices and profiles travel with the settings backup")
-        suite.expect(!backupKeys.contains(DefaultsKey.mediaImageWatermarkLogoPath),
-               "a local watermark file path never travels in a settings backup")
+        suite.expect(!backupKeys.contains("mediaImageProfiles"), "retired image profiles are not exported")
         suite.expect(backupKeys.contains(DefaultsKey.dockClickHide)
                 && backupKeys.contains(DefaultsKey.panelControlDockClickHide),
                "Dock hiding and its panel visibility travel with the settings backup")
@@ -354,32 +326,6 @@ enum SettingsFeatureTests {
         let roundTrip = SettingsBackupSupport.sanitizedSettings(from: backupPayload)
         suite.expect(roundTrip?[DefaultsKey.switcherEnabled] as? Bool == true,
                "a backup round-trips its settings")
-        var logoProfileOptions = profileOptions
-        logoProfileOptions.watermark = MediaImageWatermark(kind: .textAndLogo,
-                                                           text: "Portable",
-                                                           logoPath: "/Users/private/Brand.png")
-        let logoProfilesRaw = String(data: try! JSONEncoder().encode([
-            MediaImageProfile(id: "logo", name: "Logo", options: logoProfileOptions),
-        ]), encoding: .utf8)!
-        let portableMediaBackup = SettingsBackupSupport.payload(appVersion: "test") { key in
-            switch key {
-            case DefaultsKey.mediaImageWatermarkLogoPath: return "/Users/private/Brand.png"
-            case DefaultsKey.mediaImageWatermarkKind: return MediaImageWatermarkKind.textAndLogo.rawValue
-            case DefaultsKey.mediaImageWatermarkText: return "Portable"
-            case DefaultsKey.mediaImageProfiles: return logoProfilesRaw
-            default: return nil
-            }
-        }
-        let portableMediaSettings = SettingsBackupSupport.sanitizedSettings(from: portableMediaBackup)
-        let portableProfiles = (portableMediaSettings?[DefaultsKey.mediaImageProfiles] as? String)
-            .flatMap { $0.data(using: .utf8) }
-            .flatMap { try? JSONDecoder().decode([MediaImageProfile].self, from: $0) }
-        suite.expect(portableMediaSettings?[DefaultsKey.mediaImageWatermarkLogoPath] == nil
-               && portableMediaSettings?[DefaultsKey.mediaImageWatermarkKind] as? String
-                    == MediaImageWatermarkKind.text.rawValue
-               && portableProfiles?.first?.options.watermark.logoPath.isEmpty == true
-               && portableProfiles?.first?.options.watermark.kind == .text,
-               "media backups remove local logo paths while preserving portable watermark text")
         // A mouse exception list holds bundle ids and, since issue #1009, the
         // resolved path of a program that has none. The path carries the short
         // username and names nothing on another Mac, and `valueLooksRight`
