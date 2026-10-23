@@ -22,6 +22,16 @@ enum SettingsRefactorProbe {
         defaults.set(false, forKey: DefaultsKey.windowLayoutShortcutsEnabled)
         defaults.set(false, forKey: DefaultsKey.volumeMixerEnabled)
         defaults.set(true, forKey: AppFeature.bluetoothSleep.availabilityKey)
+        if CommandLine.arguments.contains("--media-hud-only") {
+            defaults.set(true, forKey: AppFeature.shelf.availabilityKey)
+            defaults.set(true, forKey: AppFeature.mediaTools.availabilityKey)
+            var failures = [String]()
+            MediaHUDRenderingProbe.run(output: output, failures: &failures)
+            defaults.removePersistentDomain(forName: identity)
+            for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
+            if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
+            exit(failures.isEmpty ? 0 : 1)
+        }
         if CommandLine.arguments.contains("--media-optimizer-only") {
             var failures = [String]()
             MediaOptimizerRenderingProbe.run(output: output, failures: &failures)
