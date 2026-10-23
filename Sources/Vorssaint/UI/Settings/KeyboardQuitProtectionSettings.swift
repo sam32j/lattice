@@ -105,34 +105,15 @@ extension KeyboardSettings {
                                    scope: QuitProtectionScope,
                                    enabled: Bool) -> some View {
         if scope != .all {
-            VStack(alignment: .leading, spacing: 7) {
-                Text(quitStrings.exceptions).font(.subheadline.weight(.semibold))
-                let values = quitService.exceptions(for: shortcut)
-                if values.isEmpty {
-                    Text(quitStrings.noExceptions).font(.caption).foregroundStyle(.secondary)
-                } else {
-                    ForEach(values, id: \.self) { bundleID in
-                        HStack(spacing: 8) {
-                            Image(nsImage: InstalledApps.icon(for: bundleID))
-                                .resizable().frame(width: 20, height: 20)
-                            Text(InstalledApps.name(for: bundleID))
-                            Spacer()
-                            Button {
-                                quitService.removeException(bundleID, for: shortcut)
-                            } label: {
-                                Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                Button { pickerShortcut = shortcut } label: {
-                    Label(quitStrings.addApp, systemImage: "plus")
-                }
-                .frame(maxWidth: .infinity, alignment: .trailing)
+            let copy = QuitProtectionAppListStrings.text(enabledOnly: scope == .selectedOnly,
+                                                        shortcut: shortcut.symbol, language: l10n.language)
+            AppBundleList(title: copy.title, caption: copy.caption,
+                          addTitle: quitStrings.addApp, removeLabel: FeatureStrings.mouseExceptions(l10n.language).removeButton,
+                          bundleIDs: quitService.exceptions(for: shortcut), reachesEveryApp: true,
+                          usesSheet: true, sheetTitle: copy.title,
+                          onAdd: { quitService.addException($0, for: shortcut) },
+                          onRemove: { quitService.removeException($0, for: shortcut) })
                 .disabled(!enabled)
-            }
-            .disabled(!enabled)
         }
     }
 
