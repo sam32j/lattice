@@ -185,9 +185,7 @@ struct NotchFilesView: View {
     private func toolTitle(_ tool: MediaTool) -> String {
         switch tool {
         case .videoCompressor: return l10n.s.mediaToolVideo
-        case .gifMaker: return l10n.s.mediaToolGIF
         case .imageCompressor: return l10n.s.mediaToolImage
-        case .textExtractor: return l10n.s.mediaToolText
         }
     }
 
@@ -205,7 +203,7 @@ struct NotchFilesView: View {
         } else {
             panel = NSSavePanel()
             panel.allowedContentTypes = [.zip]
-            panel.nameFieldStringValue = MediaSupport.uniqueOutputURL(
+            panel.nameFieldStringValue = FileOutputSupport.uniqueOutputURL(
                 in: inputs[0].deletingLastPathComponent(), baseName: inputs[0].lastPathComponent,
                 fileExtension: "zip").lastPathComponent
         }

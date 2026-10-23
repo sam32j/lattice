@@ -92,7 +92,6 @@ final class NotchFileToolsService: ObservableObject {
         isRunning = false
         mediaResults = nil
         media.cancel(immediately: true)
-        mediaSelection.durationLoading.cancel()
         mediaSelection = MediaWorkspaceSelection()
         mediaSession = nil
         mediaPresented = false
@@ -117,7 +116,6 @@ final class NotchFileToolsService: ObservableObject {
     func closeMedia() {
         mediaResults = nil
         media.reset()
-        mediaSelection.durationLoading.cancel()
         mediaSelection = MediaWorkspaceSelection()
         mediaSession = nil
         mediaPresented = false
@@ -153,7 +151,7 @@ final class NotchFileToolsService: ObservableObject {
             if !safeDestination { failure = CocoaError(.fileWriteInvalidFileName).localizedDescription }
             for input in inputs where safeDestination {
                 let output = directory
-                    ? MediaSupport.uniqueOutputURL(in: destination, baseName: input.lastPathComponent, fileExtension: "zip")
+                    ? FileOutputSupport.uniqueOutputURL(in: destination, baseName: input.lastPathComponent, fileExtension: "zip")
                     : destination
                 do {
                     try job.archive(input, to: output)

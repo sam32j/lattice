@@ -605,64 +605,11 @@ struct Strings {
     // MARK: Feature — local media tools
     let mediaName: String
     let mediaEnableCaption: String
-    let mediaLocalNote: String
     let mediaToolVideo: String
-    let mediaToolGIF: String
     let mediaToolImage: String
-    let mediaToolText: String
-    let mediaSelectFile: String
-    let mediaDropHint: String
-    let mediaOutput: String
-    let mediaOutputAutomatic: String
-    let mediaChooseOutput: String
-    let mediaStartVideo: String
-    let mediaStartGIF: String
-    let mediaStartImage: String
-    let mediaStartConvertPDF: String
-    let mediaStartText: String
     let mediaCancel: String
-    let mediaStartTime: String
-    let mediaEndTime: String
-    let mediaQuality: String
-    let mediaCompressionLow: String
-    let mediaCompressionMedium: String
-    let mediaCompressionHigh: String
-    let mediaCompressionLowDescription: String
-    let mediaCompressionMediumDescription: String
-    let mediaCompressionHighDescription: String
-    let mediaMaxSize: String
-    let mediaSizingResolution: String
-    let mediaSizingFileSize: String
-    let mediaTargetSize: String
-    let mediaTargetSizeHint: String
-    let mediaErrorTargetTooSmall: String
-    let mediaMegabytesSuffix: String
-    let mediaWidth: String
-    let mediaFPS: String
-    let mediaKeepAudio: String
-    let mediaCodec: String
-    let mediaFormat: String
-    let mediaStripMetadata: String
-    let mediaLoopGIF: String
-    let mediaOCRMode: String
-    let mediaOCRAccurate: String
-    let mediaOCRFast: String
-    let mediaLanguageCorrection: String
-    let mediaTextOutputNote: String
-    let mediaRunning: String
-    let mediaCompleted: String
     let mediaCancelled: String
     let mediaOpenInFinder: String
-    let mediaCopyText: String
-    let mediaRunAgain: String
-    let mediaEmptyText: String
-    let mediaResultSavedFormat: String
-    let mediaResultSizeFormat: String
-    let mediaResultGrewCaption: String
-    let mediaErrorNoFile: String
-    let mediaErrorNoVideo: String
-    let mediaErrorSameOutput: String
-    let mediaErrorUnsupported: String
 
     // MARK: Feature — temporary shelf
     let shelfName: String
@@ -1620,66 +1567,13 @@ extension Strings {
         homebrewOperationTechnicalLog: "Detalhes técnicos",
         homebrewOperationProgressUnknown: "O Homebrew ainda não informou uma porcentagem.",
 
-        mediaName: "Media",
-        mediaEnableCaption: "Comprima vídeos, converta e processe imagens, crie GIFs e extraia texto localmente.",
-        mediaLocalNote: "Local. Sem rede.",
+        mediaName: MediaOptimizerStrings.title(.ptBR),
+        mediaEnableCaption: MediaOptimizerStrings.caption(.ptBR),
         mediaToolVideo: "Vídeo",
-        mediaToolGIF: "GIF",
         mediaToolImage: "Imagem",
-        mediaToolText: "Texto",
-        mediaSelectFile: "Escolher arquivo",
-        mediaDropHint: "Arraste um arquivo aqui ou clique para escolher.",
-        mediaOutput: "Saída",
-        mediaOutputAutomatic: "Automática",
-        mediaChooseOutput: "Destino",
-        mediaStartVideo: "Comprimir vídeo",
-        mediaStartGIF: "Criar GIF",
-        mediaStartImage: "Processar imagem",
-        mediaStartConvertPDF: "Converter em PDF",
-        mediaStartText: "Extrair texto",
         mediaCancel: "Cancelar",
-        mediaStartTime: "Início",
-        mediaEndTime: "Fim",
-        mediaQuality: "Compressão",
-        mediaCompressionLow: "Baixa",
-        mediaCompressionMedium: "Média",
-        mediaCompressionHigh: "Alta",
-        mediaCompressionLowDescription: "Alta qualidade, arquivo grande",
-        mediaCompressionMediumDescription: "Equilíbrio entre qualidade e tamanho do arquivo",
-        mediaCompressionHighDescription: "Baixa qualidade, arquivo pequeno",
-        mediaMaxSize: "Tamanho",
-        mediaSizingResolution: "Resolução",
-        mediaSizingFileSize: "Tamanho do arquivo",
-        mediaTargetSize: "Tamanho alvo",
-        mediaTargetSizeHint: "A resolução se ajusta para ficar abaixo do limite.",
-        mediaErrorTargetTooSmall: "Tamanho alvo pequeno demais para este clipe. Encurte-o ou aumente o limite.",
-        mediaMegabytesSuffix: " MB",
-        mediaWidth: "Largura",
-        mediaFPS: "FPS",
-        mediaKeepAudio: "Manter áudio",
-        mediaCodec: "Codec",
-        mediaFormat: "Formato",
-        mediaStripMetadata: "Remover metadados",
-        mediaLoopGIF: "Repetir GIF",
-        mediaOCRMode: "OCR",
-        mediaOCRAccurate: "Preciso",
-        mediaOCRFast: "Rápido",
-        mediaLanguageCorrection: "Correção de idioma",
-        mediaTextOutputNote: "O texto extraído pode ser copiado e salvo em TXT.",
-        mediaRunning: "Processando",
-        mediaCompleted: "Concluído",
         mediaCancelled: "Cancelado.",
         mediaOpenInFinder: "Mostrar",
-        mediaCopyText: "Copiar texto",
-        mediaRunAgain: "Rodar de novo",
-        mediaEmptyText: "Nenhum texto encontrado.",
-        mediaResultSavedFormat: "Salvo como %@",
-        mediaResultSizeFormat: "%@ para %@",
-        mediaResultGrewCaption: "O arquivo convertido ficou maior que o original.",
-        mediaErrorNoFile: "Escolha um arquivo primeiro.",
-        mediaErrorNoVideo: "Este arquivo não tem trilha de vídeo.",
-        mediaErrorSameOutput: "Escolha um destino diferente do arquivo original.",
-        mediaErrorUnsupported: "Formato não suportado pelo macOS.",
 
         shelfName: SettingsOwnershipStrings.text(.fileCache, .ptBR),
         shelfEnable: "Área temporária para arrastar arquivos",
@@ -2604,66 +2498,13 @@ extension Strings {
         homebrewOperationTechnicalLog: "Technical details",
         homebrewOperationProgressUnknown: "Homebrew has not reported a percentage yet.",
 
-        mediaName: "Media",
-        mediaEnableCaption: "Compress videos, convert and process images, make GIFs and extract text locally.",
-        mediaLocalNote: "Local. No network.",
+        mediaName: MediaOptimizerStrings.title(.enUS),
+        mediaEnableCaption: MediaOptimizerStrings.caption(.enUS),
         mediaToolVideo: "Video",
-        mediaToolGIF: "GIF",
         mediaToolImage: "Image",
-        mediaToolText: "Text",
-        mediaSelectFile: "Choose file",
-        mediaDropHint: "Drop a file here or click to choose one.",
-        mediaOutput: "Output",
-        mediaOutputAutomatic: "Automatic",
-        mediaChooseOutput: "Destination",
-        mediaStartVideo: "Compress video",
-        mediaStartGIF: "Make GIF",
-        mediaStartImage: "Process image",
-        mediaStartConvertPDF: "Convert to PDF",
-        mediaStartText: "Extract text",
         mediaCancel: "Cancel",
-        mediaStartTime: "Start",
-        mediaEndTime: "End",
-        mediaQuality: "Compression",
-        mediaCompressionLow: "Low",
-        mediaCompressionMedium: "Medium",
-        mediaCompressionHigh: "High",
-        mediaCompressionLowDescription: "High quality, large file size",
-        mediaCompressionMediumDescription: "Balanced quality and file size",
-        mediaCompressionHighDescription: "Low quality, small file size",
-        mediaMaxSize: "Size",
-        mediaSizingResolution: "Resolution",
-        mediaSizingFileSize: "File size",
-        mediaTargetSize: "Target size",
-        mediaTargetSizeHint: "Resolution adapts to stay under the limit.",
-        mediaErrorTargetTooSmall: "Target size too small for this clip. Trim it or raise the limit.",
-        mediaMegabytesSuffix: " MB",
-        mediaWidth: "Width",
-        mediaFPS: "FPS",
-        mediaKeepAudio: "Keep audio",
-        mediaCodec: "Codec",
-        mediaFormat: "Format",
-        mediaStripMetadata: "Remove metadata",
-        mediaLoopGIF: "Loop GIF",
-        mediaOCRMode: "OCR",
-        mediaOCRAccurate: "Accurate",
-        mediaOCRFast: "Fast",
-        mediaLanguageCorrection: "Language correction",
-        mediaTextOutputNote: "Extracted text can be copied and saved as TXT.",
-        mediaRunning: "Processing",
-        mediaCompleted: "Done",
         mediaCancelled: "Cancelled.",
         mediaOpenInFinder: "Show",
-        mediaCopyText: "Copy text",
-        mediaRunAgain: "Run again",
-        mediaEmptyText: "No text found.",
-        mediaResultSavedFormat: "Saved as %@",
-        mediaResultSizeFormat: "%@ to %@",
-        mediaResultGrewCaption: "The converted file came out larger than the original.",
-        mediaErrorNoFile: "Choose a file first.",
-        mediaErrorNoVideo: "This file has no video track.",
-        mediaErrorSameOutput: "Choose a destination different from the original file.",
-        mediaErrorUnsupported: "Format not supported by macOS.",
 
         shelfName: SettingsOwnershipStrings.text(.fileCache, .enUS),
         shelfEnable: "Temporary area for dragging files",

@@ -11,7 +11,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     func presentationTitle(_ language: AppLanguage, hasCapturePreview: Bool) -> String {
-        self == .captures && hasCapturePreview ? MediaImageConverterStrings.localized(language).preview : title(language)
+        self == .captures && hasCapturePreview ? MediaOptimizerStrings.preview(language) : title(language)
     }
 
     var symbol: String {

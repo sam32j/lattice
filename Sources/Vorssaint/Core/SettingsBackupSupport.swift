@@ -135,8 +135,6 @@ enum SettingsBackupSupport {
         DefaultsKey.recorderSaveFolder,
         DefaultsKey.screenshotSaveFolder,
         DefaultsKey.musicBlockReplacementPath,
-        // A local watermark file is authority on this Mac, not portable data.
-        DefaultsKey.mediaImageWatermarkLogoPath,
         DefaultsKey.unifiedScreenCaptureShortcutMigrated,
         DefaultsKey.restoredScreenCaptureShortcutsMigrated,
         DefaultsKey.orphanedCaptureShortcutMigrated,
@@ -272,7 +270,7 @@ enum SettingsBackupSupport {
     /// of a program that has no identifier to be named by (issue #1009). The
     /// never-exported list above already refuses the second kind wherever it
     /// has a key to itself -- `commandBarFileScopes`,
-    /// `mediaImageWatermarkLogoPath`, `brightnessDDCWriteOnlyPaths`, all for
+    /// `brightnessDDCWriteOnlyPaths`, all for
     /// the same stated reason: authority on one Mac, not portable
     /// configuration. Here the two kinds share one array, so the refusal has
     /// to be per value rather than per key. Left in, a backup would carry the
@@ -361,27 +359,6 @@ enum SettingsBackupSupport {
                 presets[index].images = nil
             }
             settings[DefaultsKey.recorderEditorPresets] = try? JSONEncoder().encode(presets)
-        }
-        if let rawProfiles = settings[DefaultsKey.mediaImageProfiles] as? String {
-            if let portableProfiles = MediaSupport.portableImageProfiles(rawProfiles) {
-                settings[DefaultsKey.mediaImageProfiles] = portableProfiles
-            } else {
-                settings.removeValue(forKey: DefaultsKey.mediaImageProfiles)
-            }
-        }
-        guard let kind = settings[DefaultsKey.mediaImageWatermarkKind] as? String else {
-            return settings
-        }
-        let hasText = ((settings[DefaultsKey.mediaImageWatermarkText] as? String) ?? "")
-            .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-        switch MediaImageWatermarkKind.sanitized(kind) {
-        case .logo:
-            settings[DefaultsKey.mediaImageWatermarkKind] = MediaImageWatermarkKind.off.rawValue
-        case .textAndLogo:
-            settings[DefaultsKey.mediaImageWatermarkKind] = hasText
-                ? MediaImageWatermarkKind.text.rawValue : MediaImageWatermarkKind.off.rawValue
-        case .off, .text:
-            break
         }
         return settings
     }

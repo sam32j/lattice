@@ -462,48 +462,6 @@ enum DefaultsKey {
     static let panelCollapsedSections = "panelCollapsedSections"
     static let panelCollapsedResetVersion = "panelCollapsedResetVersion"
 
-    // Media utility — local video, GIF, image and OCR tools.
-    static let mediaLastTool = "mediaLastTool"
-    static let mediaVideoStart = "mediaVideoStart"
-    static let mediaVideoEnd = "mediaVideoEnd"
-    static let mediaVideoQuality = "mediaVideoQuality"
-    static let mediaVideoMaxDimension = "mediaVideoMaxDimension"
-    static let mediaVideoFPS = "mediaVideoFPS"
-    static let mediaVideoKeepAudio = "mediaVideoKeepAudio"
-    static let mediaVideoCodec = "mediaVideoCodec"
-    static let mediaVideoSizing = "mediaVideoSizing"
-    static let mediaVideoTargetMegabytes = "mediaVideoTargetMegabytes"
-    static let mediaGIFStart = "mediaGIFStart"
-    static let mediaGIFEnd = "mediaGIFEnd"
-    static let mediaGIFQuality = "mediaGIFQuality"
-    static let mediaGIFWidth = "mediaGIFWidth"
-    static let mediaGIFFPS = "mediaGIFFPS"
-    static let mediaGIFLoops = "mediaGIFLoops"
-    static let mediaGIFSizing = "mediaGIFSizing"
-    static let mediaGIFTargetMegabytes = "mediaGIFTargetMegabytes"
-    static let mediaImageQuality = "mediaImageQuality"
-    static let mediaImageMaxDimension = "mediaImageMaxDimension"
-    static let mediaImageFormat = "mediaImageFormat"
-    static let mediaImageStripMetadata = "mediaImageStripMetadata"
-    static let mediaImageResizeKind = "mediaImageResizeKind"
-    static let mediaImageResizeWidth = "mediaImageResizeWidth"
-    static let mediaImageResizeHeight = "mediaImageResizeHeight"
-    static let mediaImageExactResizeMode = "mediaImageExactResizeMode"
-    static let mediaImageWatermarkKind = "mediaImageWatermarkKind"
-    static let mediaImageWatermarkText = "mediaImageWatermarkText"
-    static let mediaImageWatermarkLogoPath = "mediaImageWatermarkLogoPath"
-    static let mediaImageWatermarkPosition = "mediaImageWatermarkPosition"
-    static let mediaImageWatermarkOpacity = "mediaImageWatermarkOpacity"
-    static let mediaImageWatermarkMargin = "mediaImageWatermarkMargin"
-    static let mediaImageWatermarkScale = "mediaImageWatermarkScale"
-    static let mediaImageRenamePattern = "mediaImageRenamePattern"
-    static let mediaImageBackground = "mediaImageBackground"
-    static let mediaImagePreserveModificationDate = "mediaImagePreserveModificationDate"
-    static let mediaImageSaveInSubfolder = "mediaImageSaveInSubfolder"
-    static let mediaImageProfiles = "mediaImageProfiles"
-    static let mediaImageSelectedProfileID = "mediaImageSelectedProfileID"
-    static let mediaTextAccurate = "mediaTextAccurate"
-    static let mediaTextLanguageCorrection = "mediaTextLanguageCorrection"
 
     // Clipboard history — text only, opt-in and local.
     static let clipboardHistoryEnabled = "clipboardHistoryEnabled"
@@ -1563,47 +1521,6 @@ enum Defaults {
         DefaultsKey.monitorAlertDiskFreePercent: 10,
         DefaultsKey.monitorAlertBatteryPercent: 15,
         DefaultsKey.monitorAlertCooldownMinutes: 15,
-        DefaultsKey.mediaLastTool: MediaTool.videoCompressor.rawValue,
-        DefaultsKey.mediaVideoStart: 0.0,
-        DefaultsKey.mediaVideoEnd: 0.0,
-        DefaultsKey.mediaVideoQuality: 0.68,
-        DefaultsKey.mediaVideoMaxDimension: 1280,
-        DefaultsKey.mediaVideoFPS: 30.0,
-        DefaultsKey.mediaVideoKeepAudio: true,
-        DefaultsKey.mediaVideoCodec: MediaVideoCodec.h264.rawValue,
-        DefaultsKey.mediaVideoSizing: MediaSizingMode.resolution.rawValue,
-        DefaultsKey.mediaVideoTargetMegabytes: 20,
-        DefaultsKey.mediaGIFStart: 0.0,
-        DefaultsKey.mediaGIFEnd: 0.0,
-        DefaultsKey.mediaGIFQuality: 0.74,
-        DefaultsKey.mediaGIFWidth: 720,
-        DefaultsKey.mediaGIFFPS: 12.0,
-        DefaultsKey.mediaGIFLoops: true,
-        DefaultsKey.mediaGIFSizing: MediaSizingMode.resolution.rawValue,
-        DefaultsKey.mediaGIFTargetMegabytes: 10,
-        DefaultsKey.mediaImageQuality: 0.72,
-        DefaultsKey.mediaImageMaxDimension: 1600,
-        DefaultsKey.mediaImageFormat: MediaImageFormat.jpeg.rawValue,
-        DefaultsKey.mediaImageStripMetadata: true,
-        DefaultsKey.mediaImageResizeKind: MediaImageResizeKind.maxDimension.rawValue,
-        DefaultsKey.mediaImageResizeWidth: 1600,
-        DefaultsKey.mediaImageResizeHeight: 1200,
-        DefaultsKey.mediaImageExactResizeMode: MediaImageExactResizeMode.stretch.rawValue,
-        DefaultsKey.mediaImageWatermarkKind: MediaImageWatermarkKind.off.rawValue,
-        DefaultsKey.mediaImageWatermarkText: "",
-        DefaultsKey.mediaImageWatermarkLogoPath: "",
-        DefaultsKey.mediaImageWatermarkPosition: MediaImageWatermarkPosition.bottomRight.rawValue,
-        DefaultsKey.mediaImageWatermarkOpacity: 0.45,
-        DefaultsKey.mediaImageWatermarkMargin: 32,
-        DefaultsKey.mediaImageWatermarkScale: 0.18,
-        DefaultsKey.mediaImageRenamePattern: "",
-        DefaultsKey.mediaImageBackground: MediaImageBackground.transparent.rawValue,
-        DefaultsKey.mediaImagePreserveModificationDate: false,
-        DefaultsKey.mediaImageSaveInSubfolder: false,
-        DefaultsKey.mediaImageProfiles: "[]",
-        DefaultsKey.mediaImageSelectedProfileID: "",
-        DefaultsKey.mediaTextAccurate: true,
-        DefaultsKey.mediaTextLanguageCorrection: true,
         DefaultsKey.clipboardHistoryEnabled: false,
         DefaultsKey.clipboardHistoryLimit: 50,
         DefaultsKey.clipboardHistoryRetentionDays: 0,
