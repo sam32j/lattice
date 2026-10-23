@@ -15,9 +15,9 @@ enum SettingsSidebarIdentityTests {
                      && lattice?.items.map(\.id) == [.page(.about), .page(.dataPermissions)],
                      "Lattice contains only About followed by Data and Permissions")
         let interface = sections.first { $0.id == 0 }?.items.map(\.id) ?? []
-        suite.expect(interface.firstIndex(of: .page(.features))
+        suite.expect(interface.firstIndex(of: .page(.commandBar))
                      == interface.firstIndex(of: .page(.launcherGrid)).map { $0 + 1 },
-                     "Features follows Launcher Grid in Interface")
+                     "Launcher Grid immediately precedes Command Bar in Interface")
         let withKeyboard = Directory.sidebarSections(.enUS, language: .enUS,
                             keyboardLightSupported: true, isAvailable: { _ in true })
         let deviceControls = withKeyboard.first { $0.id == 2 }?.items ?? []
