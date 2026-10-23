@@ -6,12 +6,15 @@ import Foundation
 enum SettingsReviewRegressionTests {
     static func run(_ suite: TestSuite) {
         PermissionActivationTests.run(suite)
+        PermissionRevocationTests.run(suite)
+        BluetoothPermissionTests.run(suite)
         KeyboardPermissionLifecycleTests.run(suite)
         FeaturePageOwnershipTests.run(suite)
         PageOwnedServiceLifecycleTests.run(suite)
         SettingsDestinationOwnershipTests.run(suite)
         ShortcutSettingsRefreshTests.run(suite)
         InputSettingsControlTests.run(suite)
+        KeyboardOverrideOrderTests.run(suite)
         KeepAwakePointerPermissionTests.run(suite)
         RadialProfileActivationTests.run(suite)
         AudioPriorityPresentationTests.run(suite)
