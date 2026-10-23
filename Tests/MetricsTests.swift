@@ -212,6 +212,7 @@ struct MetricsTests {
                 InputEventTapTests.run(suite)
                 PermissionResetHotkeyTests.run(suite)
                 PermissionResetLoginTests.run(suite)
+                PermissionResetStateTests.run(suite)
             }),
             ("force-quit", { ProcessForceQuitTests.run(suite) }),
             ("launcher", { QuickLauncherContract.run(suite) }),
