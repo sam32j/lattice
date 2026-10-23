@@ -703,23 +703,11 @@ private struct MixerRow: View {
                         .truncationMode(.middle)
                         .help(arrangementStrings.arrange)
 
-                    if isPinned {
-                        Image(systemName: "pin.fill")
-                            .font(.system(size: 9))
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel(arrangementStrings.pin)
-                    }
                     Spacer(minLength: 4)
 
                     if app.persistenceID != nil {
-                        Menu { arrangementActions } label: {
-                            Image(systemName: "ellipsis")
-                        }
-                        .menuStyle(.borderlessButton)
-                        .menuIndicator(.hidden)
-                        .fixedSize()
-                        .help(isPinned ? arrangementStrings.unpin : arrangementStrings.pin)
-                        .accessibilityLabel("\(isPinned ? arrangementStrings.unpin : arrangementStrings.pin): \(app.name)")
+                        MixerPinButton(isPinned: isPinned, pinTitle: arrangementStrings.pin,
+                                       unpinTitle: arrangementStrings.unpin, appName: app.name, action: togglePin)
                     }
                     if !app.isBypassed {
                         outputPicker
