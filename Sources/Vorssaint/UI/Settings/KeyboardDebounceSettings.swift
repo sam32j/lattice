@@ -7,7 +7,7 @@ extension KeyboardSettings {
         SettingsCard(title: l10n.s.keyDebounceName) {
             VStack(alignment: .leading, spacing: 12) {
                 SettingsRow(symbol: "keyboard", title: l10n.s.keyDebounceEnable,
-                            caption: l10n.s.keyDebounceCaption, status: debounceStatus) {
+                            caption: l10n.s.keyDebounceCaption) {
                     Toggle(l10n.s.keyDebounceEnable, isOn: $debounceEnabled)
                         .labelsHidden()
                         .onChange(of: debounceEnabled) { _, value in
@@ -35,8 +35,11 @@ extension KeyboardSettings {
                         ForEach(keyWindows) { row in
                             HStack(spacing: 8) {
                                 Text(KeyboardDebounceKeyCatalog.label(for: row.keyCode))
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .frame(width: 70, alignment: .leading)
+                                    .font(.system(.body, design: .monospaced).weight(.semibold))
+                                    .frame(minWidth: 28, minHeight: 28)
+                                    .padding(.horizontal, 6)
+                                    .background(.background, in: RoundedRectangle(cornerRadius: 6))
+                                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.quaternary))
                                 Spacer(minLength: 12)
                                 Stepper(value: debounceBinding(for: row.keyCode),
                                         in: Defaults.allowedKeyboardDebounceWindowRange,
@@ -49,6 +52,8 @@ extension KeyboardSettings {
                                 }
                                 .help(l10n.s.keyDebounceRemoveKey)
                             }
+                            .padding(8)
+                            .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 9))
                         }
                     }
 
@@ -60,7 +65,8 @@ extension KeyboardSettings {
                             }
                         }
                         .labelsHidden().pickerStyle(.menu)
-                        .frame(width: 160)
+                        .fixedSize()
+                        .frame(width: 160, alignment: .leading)
 
                         Spacer(minLength: 12)
                         Stepper(value: $selectedWindow,
@@ -80,14 +86,6 @@ extension KeyboardSettings {
                 .disabled(!debounceEnabled)
             }
         }
-    }
-
-    var debounceStatus: SettingsFeatureStatus {
-        let key: InputSettingsStrings.Key = !debounceEnabled ? .off
-            : !permissions.accessibility ? .permissionRequired
-            : debounce.isRunning ? .filterActive : .waiting
-        return SettingsFeatureStatus(color: debounceEnabled && permissions.accessibility && debounce.isRunning ? .green : .secondary,
-                                     message: InputSettingsStrings.text(key, l10n.language))
     }
 
     var globalWindowBinding: Binding<Int> {
