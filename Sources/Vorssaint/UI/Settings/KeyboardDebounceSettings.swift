@@ -8,7 +8,7 @@ extension KeyboardSettings {
             VStack(alignment: .leading, spacing: 12) {
                 SettingsRow(symbol: "keyboard", title: l10n.s.keyDebounceEnable,
                             caption: l10n.s.keyDebounceCaption) {
-                    Toggle(l10n.s.keyDebounceEnable, isOn: $debounceEnabled)
+                    PermissionGatedToggle(l10n.s.keyDebounceEnable, isOn: $debounceEnabled)
                         .labelsHidden()
                         .onChange(of: debounceEnabled) { _, value in
                             debounce.syncWithPreferences()
@@ -19,6 +19,7 @@ extension KeyboardSettings {
                         }
                 }
 
+                if debounceEnabled {
                 SettingsSliderRow(title: l10n.s.keyDebounceGlobalWindow,
                                   value: Binding(get: { Double(globalWindowBinding.wrappedValue) },
                                                  set: { globalWindowBinding.wrappedValue = Int($0.rounded()) }),
@@ -52,15 +53,13 @@ extension KeyboardSettings {
                                 }
                                 .help(l10n.s.keyDebounceRemoveKey)
                             }
-                            .padding(8)
-                            .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 9))
                         }
                     }
 
                     HStack(spacing: 8) {
                         Picker(l10n.s.keyDebounceKeyLabel, selection: $selectedKeyCode) {
                             Text(l10n.s.keyDebounceKeyLabel).tag(Int64?.none)
-                            ForEach(KeyboardDebounceKeyCatalog.common) { key in
+                            ForEach(KeyboardDebounceKeyCatalog.available(excluding: Set(keyWindows.map(\.keyCode)))) { key in
                                 Text(key.label).tag(Optional(key.code))
                             }
                         }
@@ -77,13 +76,17 @@ extension KeyboardSettings {
                         .fixedSize()
 
                         Button(l10n.s.keyDebounceAddKey) {
-                            if let selectedKeyCode { setWindow(selectedWindow, for: selectedKeyCode) }
+                            if let selectedKeyCode {
+                                setWindow(selectedWindow, for: selectedKeyCode)
+                                self.selectedKeyCode = nil
+                            }
                         }
                         .disabled(!debounceEnabled || selectedKeyCode == nil)
                     }
                 }
                 .padding(.leading, settingsRowTextInset)
                 .disabled(!debounceEnabled)
+                }
             }
         }
     }

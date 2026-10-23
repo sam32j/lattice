@@ -23,15 +23,15 @@ enum SettingsShortcutConsumerTests {
         let menu = MenuHint(defaults), toggle = ToggleHint(defaults)
         let catalog = Catalog(defaults), group = GroupStatus(defaults)
         let inventory = Inventory(defaults)
-        defaults.set(true, forKey: AppFeature.clipboardHistory.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.clipboardHistoryEnabled)
         defaults.set(false, forKey: DefaultsKey.pastePlainEnabled)
         defaults.set("", forKey: GlobalShortcutRole.pastePlain.storageKey)
         suite.expect(inventory.availableRoles.contains(.pastePlain),
                      "the central editor retains disabled and cleared Plain Paste while Clipboard History is installed")
-        defaults.set(false, forKey: AppFeature.clipboardHistory.availabilityKey)
+        defaults.set(false, forKey: DefaultsKey.clipboardHistoryEnabled)
         suite.expect(!inventory.availableRoles.contains(.pastePlain),
                      "Plain Paste leaves the central editor when its Clipboard History owner is uninstalled")
-        defaults.set(true, forKey: AppFeature.clipboardHistory.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.clipboardHistoryEnabled)
         suite.expect(menu.shortcutHint(role) == nil && toggle.shortcutHint(role) == nil
                      && catalog.roleShortcut(role) == nil,
                      "actual panel and Command Bar hint consumers hide cleared shortcuts even when enable keys stay on")

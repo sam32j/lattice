@@ -7,6 +7,7 @@ import SwiftUI
 /// feature. It writes the same preferences as each feature page, so there is
 /// still one setting and one registration path for every action.
 struct ShortcutsSettings: View {
+    @ObservedObject private var shortcutChanges = ShortcutSettingsObserver.shared
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var superKey = SuperKeyService.shared
