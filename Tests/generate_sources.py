@@ -1582,14 +1582,29 @@ def main():
     input_slider = "Sources/Vorssaint/UI/Settings/SettingsValueSlider.swift"
     status_dot = "Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift"
     write("InputSettingsControls.swift", "import AppKit\nimport SwiftUI\n\nextension InputSettingsControlTests {\n"
+          + "struct SheetCaption { let caption: String\nstruct Language { let language: AppLanguage }\nlet l10n: Language\n"
+          + declaration("Sources/Vorssaint/UI/Settings/AppListSheet.swift", "    private var punctuatedCaption:").replace("private var", "var", 1)
+          + "}\n"
           + declaration(status_dot, "struct SettingsFeatureStatus")
           + declaration(status_dot, "final class HoverHintView:")
           + declaration(status_dot, "struct StatusTooltip:")
           + declaration(status_dot, "struct SettingsStatusDot:")
+          + "struct SuperKeyOptions { let superKeyEnabled: Bool; let superKeyStatus: SettingsFeatureStatus\n"
+          + declaration("Sources/Vorssaint/UI/Settings/KeyboardSuperKeySettings.swift", "    var superKeyOptionsDisabled:")
+          + "}\n"
           + "final class Capture {\nvar isCapturing = false\nstatic var isCaptureActive = false\nvar lastInputSeen: Int64?\nvar syncCount = 0\nfunc syncWithPreferences() { syncCount += 1 }\n"
           + declaration("Sources/Vorssaint/Services/MouseButtons/MouseButtonShortcutService.swift", "    func setCapturing(")
           + "}\n"
           + declaration(input_slider, "struct SettingsValueSlider:")
+          + declaration(settings_card, "struct SettingsControlRow<")
+          + declaration(input_slider, "struct SettingsSliderRow:")
+          + "final class LightState { var keyboardLightLevel: Float? = 0; var keyboardLightEnabled: Bool? = false\n"
+          + "func setKeyboardLightLevel(_ value: Float) { keyboardLightLevel = value; keyboardLightEnabled = value > 0 }\n"
+          + "func keyboardLightDragChanged(_ editing: Bool) {}\n}\n"
+          + "struct LightControl: View { let brightness: LightState\nstruct Language { var language: AppLanguage = .enUS }; let l10n = Language()\n"
+          + "var body: some View { keyboardLightSlider }\n"
+          + declaration("Sources/Vorssaint/UI/Settings/KeyboardLightSettings.swift", "    var keyboardLightSlider:")
+          + "}\n"
           + declaration(input_slider, "private struct NativeSettingsSlider:")
           + declaration(input_slider, "private final class TrackingSettingsSlider:")
           + "}\n")

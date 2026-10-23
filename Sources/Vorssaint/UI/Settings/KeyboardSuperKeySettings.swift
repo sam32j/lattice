@@ -20,6 +20,10 @@ extension KeyboardSettings {
                                      message: message(superKey.isRunning ? .superKeyActive : .waiting))
     }
 
+    var superKeyOptionsDisabled: Bool {
+        !superKeyEnabled || superKeyStatus.color == .red
+    }
+
     var superKeyCard: some View {
         SettingsCard(title: text.pageTitle) {
             VStack(alignment: .leading, spacing: 12) {
@@ -35,19 +39,17 @@ extension KeyboardSettings {
                         }
                 }
 
-                HStack(spacing: 12) {
-                    HStack(spacing: 4) {
-                        Text(InputSettingsStrings.text(.superKey, l10n.language))
-                        SettingsStatusDot(status: superKeyStatus)
-                    }
+                HStack(spacing: 6) {
+                    Text(InputSettingsStrings.text(.superKey, l10n.language))
                     Spacer(minLength: 12)
+                    SettingsStatusDot(status: superKeyStatus)
                     Picker(InputSettingsStrings.text(.superKey, l10n.language), selection: sourceBinding) {
                         ForEach(SuperKeySource.allCases) { source in
                             Text(text.sourceLabel(source)).tag(source)
                         }
                     }
                     .labelsHidden().pickerStyle(.menu)
-                    .frame(width: 220, alignment: .trailing)
+                    .fixedSize()
                     .disabled(!superKeyEnabled)
                 }
                 .padding(.leading, settingsRowTextInset)
@@ -67,11 +69,11 @@ extension KeyboardSettings {
                 }
                 .padding(.leading, settingsRowTextInset)
                 .help(text.soloCaption)
-                .disabled(!superKeyEnabled)
+                .disabled(superKeyOptionsDisabled)
 
                 MouseExceptionsList(scope: .superKey)
                     .padding(.leading, settingsRowTextInset)
-                    .disabled(!superKeyEnabled)
+                    .disabled(superKeyOptionsDisabled)
             }
         }
     }
@@ -90,8 +92,8 @@ extension KeyboardSettings {
             }
             .padding(.bottom, 14)
         }
-        .opacity(superKeyEnabled ? 1 : 0.5)
-        .animation(.easeInOut(duration: 0.18), value: superKeyEnabled)
+        .opacity(superKeyOptionsDisabled ? 0.5 : 1)
+        .animation(.easeInOut(duration: 0.18), value: superKeyOptionsDisabled)
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, 4)
     }
@@ -117,7 +119,7 @@ extension KeyboardSettings {
                 .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(selected ? Color.accentColor.opacity(0.45) : Color.primary.opacity(0.1)))
         }
         .buttonStyle(.plain)
-        .disabled(!superKeyEnabled || (selected && !canRemoveModifier(choice.modifier)))
+        .disabled(superKeyOptionsDisabled || (selected && !canRemoveModifier(choice.modifier)))
         .help(choice.name)
         .accessibilityLabel(choice.name)
         .accessibilityAddTraits(selected ? .isSelected : [])
