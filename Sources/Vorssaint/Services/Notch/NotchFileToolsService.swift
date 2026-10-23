@@ -16,6 +16,7 @@ final class NotchFileToolsService: ObservableObject {
     let media = MediaService(replacesExistingOutputs: false)
     @Published private(set) var mediaSession: NotchMediaSession?
     @Published private(set) var mediaPresented = false
+    @Published private(set) var usesHUD = false
     @Published private(set) var mediaContentHeight: CGFloat?
     private(set) var mediaSelection = MediaWorkspaceSelection()
     private var mediaResults: AnyCancellable?
@@ -74,6 +75,7 @@ final class NotchFileToolsService: ObservableObject {
     }
 
     func syncWithPreferences() {
+        FileUtilityPresentation.shared.syncWithPreferences()
         guard NotchSupport.showsFiles(),
               AppFeature.mediaTools.isAvailable, AppFeature.shelf.isAvailable else {
             stop()
@@ -104,6 +106,7 @@ final class NotchFileToolsService: ObservableObject {
               AppFeature.mediaTools.isAvailable, AppFeature.shelf.isAvailable,
               NotchFileToolsSupport.accepts(inputs, for: tool) else { return false }
         closeMedia()
+        usesHUD = false
         mediaSession = NotchMediaSession(inputs: inputs, tool: tool)
         mediaPresented = true
         mediaResults = media.$state.dropFirst().sink { state in
@@ -111,6 +114,15 @@ final class NotchFileToolsService: ObservableObject {
             _ = ShelfService.shared.addFiles(result.outputURLs)
         }
         return true
+    }
+
+    func showHUD() {
+        guard NotchSupport.showsFiles(), AppFeature.mediaTools.isAvailable else { return }
+        if !usesHUD || mediaSession == nil {
+            mediaSession = NotchMediaSession(inputs: [], tool: .imageCompressor)
+            mediaContentHeight = 300
+        }
+        usesHUD = true; mediaPresented = true
     }
 
     func closeMedia() {

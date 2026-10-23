@@ -22,7 +22,22 @@ struct NotchFilesView: View {
 
     var body: some View {
         VStack(spacing: NotchLayout.rowSpacing) {
+            if AppFeature.mediaTools.isAvailable {
+                HStack {
+                    Button("File Cache") { archives.hideMedia() }
+                        .tint(archives.mediaPresented ? nil : Color.accentColor)
+                    Button("Optimize") { FileUtilityPresentation.shared.openOptimizer() }
+                        .tint(archives.mediaPresented ? Color.accentColor : nil)
+                    Spacer()
+                }.controlSize(.small).buttonStyle(.bordered)
+            }
             if let session = archives.mediaSession, archives.mediaPresented, AppFeature.mediaTools.isAvailable {
+                if archives.usesHUD {
+                    ScrollView {
+                        MediaHUDView(model: MediaHUDModel.shared, onClose: archives.hideMedia,
+                                     onHeight: { mediaHeightChanged($0 + 32, id: session.id) })
+                    }
+                } else {
                 MediaWorkspaceView(compact: true, onClose: archives.closeMedia,
                                    media: media, initialInputs: session.inputs,
                                    initialTool: session.tool, preservesServiceState: true,
@@ -30,6 +45,7 @@ struct NotchFilesView: View {
                                    onContentHeightChange: { mediaHeightChanged($0, id: session.id) },
                                    onToolChange: { service.refreshPresentation(transitionContent: .replace) })
                     .id(session.id)
+                }
             } else if shelf.items.isEmpty {
                 NotchEmptyView(symbol: "tray.and.arrow.down", message: FeatureStrings.notch(l10n.language).dropHint)
                     .frame(maxHeight: .infinity)
@@ -148,7 +164,7 @@ struct NotchFilesView: View {
                 ForEach(supportedTools) { tool in
                     Button {
                         showingActions = false
-                        archives.openMedia(tool, inputs: actionInputs)
+                        FileUtilityPresentation.shared.openOptimizer(inputs: actionInputs)
                     } label: { Text(toolTitle(tool)) }
                 }
             }

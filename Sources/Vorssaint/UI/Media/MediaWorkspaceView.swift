@@ -2,13 +2,10 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct MediaSettings: View {
-    var body: some View { MediaWorkspaceView(compact: false).padding(22) }
-}
 struct PanelMediaView: View {
     var onClose: () -> Void
     var body: some View {
-        MediaWorkspaceView(compact: true, onClose: onClose)
+        MediaHUDView(model: MediaHUDModel.shared, onClose: onClose)
             .onAppear { PanelInteractionState.shared.viewKeepsPopoverOpen = true }
             .onDisappear { PanelInteractionState.shared.viewKeepsPopoverOpen = false }
     }

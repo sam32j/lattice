@@ -158,7 +158,7 @@ final class ShelfService: ObservableObject {
     @Published private(set) var isPinned = false
     @Published private(set) var automaticExclusions: [String] = []
 
-    private var panel: NSPanel?
+    var panel: NSPanel?
     private var hotKeyRef: EventHotKeyRef?
     private var hotKeyHandler: EventHandlerRef?
     private var registeredShortcut: GlobalShortcut?
@@ -329,7 +329,10 @@ final class ShelfService: ObservableObject {
 
     func syncWithPreferences() {
         reloadAutomaticExclusions()
-        if NotchSupport.routesShelf() { hide(); hideDocked(); retractEdgePeek() }
+        if NotchSupport.routesShelf() {
+            if !FileUtilityPresentation.shared.keepsStandaloneSurface { hide() }
+            hideDocked(); retractEdgePeek()
+        }
         if AppFeature.shelf.isAvailable, UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled) {
             syncHotkey()
             syncDragMonitor()
@@ -338,7 +341,7 @@ final class ShelfService: ObservableObject {
             cancelPendingPromiseDeliveries()
             unregisterHotkey()
             stopDragMonitor()
-            hide()
+            if !FileUtilityPresentation.shared.keepsStandaloneSurface { hide() }
             hideDocked()
         }
         syncDockedShelf()
@@ -539,7 +542,7 @@ final class ShelfService: ObservableObject {
             guard automaticOpenAllowed else { return }
             lastSummon = t
             shakeSamples.removeAll()
-            DispatchQueue.main.async { [weak self] in self?.summon() }
+            DispatchQueue.main.async { [weak self] in self?.summonFromDrag() }
         }
     }
 
@@ -1006,52 +1009,6 @@ final class ShelfService: ObservableObject {
                        display: true)
         panel.alphaValue = 1
         panel.orderFrontRegardless()
-    }
-
-    /// Borderless Shelf panels need key status after a tile click so standard
-    /// keyboard selection commands can reach them without activating the app.
-    private final class KeyableShelfPanel: OverlayPanel, NSDraggingDestination {
-        func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-            let shelf = ShelfService.shared
-            let accepts = !shelf.isInternalDragActive && shelf.canAcceptPasteboard(sender.draggingPasteboard)
-            shelf.setDropTargeted(accepts)
-            return accepts ? .copy : []
-        }
-
-        func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation { draggingEntered(sender) }
-
-        func draggingExited(_ sender: NSDraggingInfo?) { ShelfService.shared.setDropTargeted(false) }
-
-        func prepareForDragOperation(_ sender: NSDraggingInfo) -> Bool { draggingEntered(sender) != [] }
-
-        func concludeDragOperation(_ sender: NSDraggingInfo?) { ShelfService.shared.setDropTargeted(false) }
-
-        func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
-            defer { ShelfService.shared.setDropTargeted(false) }
-            return ShelfService.shared.accept(draggingInfo: sender)
-        }
-
-        override var canBecomeKey: Bool { true }
-
-        override func performKeyEquivalent(with event: NSEvent) -> Bool {
-            let modifiers = event.modifierFlags.intersection([.command, .option, .shift, .control])
-            if ShelfSelectionSupport.isClearSelectionShortcut(
-                keyCode: event.keyCode,
-                hasSelectionModifiers: !modifiers.isEmpty
-            ) {
-                ShelfService.shared.clearSelection()
-                return true
-            }
-            if modifiers == [.command], event.charactersIgnoringModifiers?.lowercased() == "a" {
-                ShelfService.shared.selectAllVisibleItems()
-                return true
-            }
-            return super.performKeyEquivalent(with: event)
-        }
-
-        override func cancelOperation(_ sender: Any?) {
-            ShelfService.shared.clearSelection()
-        }
     }
 
     private func ensureDockedPanel() -> NSPanel {
@@ -2496,24 +2453,6 @@ final class ShelfService: ObservableObject {
         }
     }
 
-    /// Opens the classic shelf at the cursor. The shake and the shortcut mean
-    /// "bring it to me, here", so they keep working exactly the same with the
-    /// docked option on; the docked shelf just steps aside while this panel is
-    /// up and comes back when it closes.
-    func summon() {
-        guard AppFeature.shelf.isAvailable,
-              UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled) else { return }
-        if NotchService.shared.openShelf() { return }
-        let panel = ensurePanel()
-        cancelAutoHide()
-        position(panel)
-        panel.alphaValue = 1
-        panel.orderFrontRegardless()
-        updatePointerInsidePanel()
-        scheduleAutoHideIfIdle()
-        scheduleDockedSync()
-    }
-
     func hide() {
         resetAutoHide()
         isPinned = false
@@ -2593,7 +2532,7 @@ final class ShelfService: ObservableObject {
         edgePeekMatch = nil
     }
 
-    private func cancelAutoHide() {
+    func cancelAutoHide() {
         autoHideTimer?.invalidate()
         autoHideTimer = nil
         cancelAutoHideFade()
@@ -2607,11 +2546,11 @@ final class ShelfService: ObservableObject {
     }
 
     private var shouldHoldOpen: Bool {
-        isPinned || !items.isEmpty || pointerInsidePanel || dropTargeted || interactionDepth > 0
+        FileUtilityPresentation.shared.holdsStandaloneOpen || isPinned || !items.isEmpty || pointerInsidePanel || dropTargeted || interactionDepth > 0
             || edgePeekMatch != nil
     }
 
-    private func scheduleAutoHideIfIdle() {
+    func scheduleAutoHideIfIdle() {
         autoHideTimer?.invalidate()
         autoHideTimer = nil
         guard panel?.isVisible == true, !shouldHoldOpen else { return }
@@ -2634,7 +2573,7 @@ final class ShelfService: ObservableObject {
         fadeOutAndHide()
     }
 
-    private func updatePointerInsidePanel() {
+    func updatePointerInsidePanel() {
         guard let panel, panel.isVisible else {
             pointerInsidePanel = false
             return
@@ -2694,7 +2633,7 @@ final class ShelfService: ObservableObject {
     /// Keeps the docked shelf in step with the items: appears with the first
     /// one, re-anchors as its height changes, and hides when the last leaves.
     /// Deferred so SwiftUI has laid the new content out before we measure.
-    private func scheduleDockedSync() {
+    func scheduleDockedSync() {
         DispatchQueue.main.async { [weak self] in self?.syncDockedShelf() }
     }
 
@@ -2708,7 +2647,7 @@ final class ShelfService: ObservableObject {
                        display: true, animate: false)
     }
 
-    private func position(_ panel: NSPanel) {
+    func position(_ panel: NSPanel) {
         let view = panel.contentViewController!.view
         view.layoutSubtreeIfNeeded()
         let size = view.fittingSize
@@ -2721,26 +2660,4 @@ final class ShelfService: ObservableObject {
         panel.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height), display: true)
     }
 
-    private func ensurePanel() -> NSPanel {
-        if let panel { return panel }
-        let panel = KeyableShelfPanel(contentRect: .zero,
-                                      styleMask: [.borderless, .nonactivatingPanel],
-                                      backing: .buffered, defer: false)
-        panel.level = .floating
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.becomesKeyOnlyIfNeeded = true
-        panel.registerForDraggedTypes(Self.tileDropTypes)
-        panel.hasShadow = false
-        // Not movable by background: dragging a tile must start an item drag,
-        // not move the whole panel.
-        panel.hidesOnDeactivate = false
-        panel.isReleasedWhenClosed = false
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
-        let host = NSHostingController(rootView: ShelfView().environmentObject(self))
-        host.sizingOptions = .preferredContentSize
-        panel.contentViewController = host
-        self.panel = panel
-        return panel
-    }
 }

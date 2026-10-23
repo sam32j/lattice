@@ -962,7 +962,7 @@ enum ShelfFeatureTests {
                "a floating overlay stays an accessible window for assistive technology")
         let tooltipSource = (try? String(
             contentsOfFile: "Sources/Vorssaint/UI/Shelf/ShelfTooltipPopover.swift", encoding: .utf8)) ?? ""
-        suite.expect(shelfServiceSource.contains("class KeyableShelfPanel: OverlayPanel")
+        suite.expect(((try? String(contentsOfFile: "Sources/Vorssaint/Services/Shelf/KeyableShelfPanel.swift", encoding: .utf8)) ?? "").contains("class KeyableShelfPanel: OverlayPanel")
                 && !shelfServiceSource.contains("NSPanel(contentRect")
                 && tooltipSource.contains("OverlayPanel(contentRect") && !tooltipSource.contains("NSPanel(contentRect"),
                "every Shelf window, the pill, card, edge peek and item tooltip, is a floating overlay")
