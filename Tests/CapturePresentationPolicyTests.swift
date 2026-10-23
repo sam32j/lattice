@@ -3,6 +3,7 @@ import CoreGraphics
 
 enum CapturePresentationPolicyTests {
     static func run(_ suite: TestSuite) {
+        ScreenshotDialogGeometryTests.run(suite)
         suite.expect(ScreenshotCapturePolicy.isPickableWindowLayer(102, ownerName: "CoreServicesUIAgent")
                      && ScreenshotCapturePolicy.isPickableWindowLayer(1000, ownerName: "SecurityAgent")
                      && !ScreenshotCapturePolicy.isPickableWindowLayer(1000, ownerName: "Window Server")
@@ -17,9 +18,10 @@ enum CapturePresentationPolicyTests {
         suite.expect(CapturePresentationPolicy.overlaps(chrome: CGRect(x: 50, y: 50, width: 30, height: 20), selection: selection)
                      && !CapturePresentationPolicy.overlaps(chrome: CGRect(x: 200, y: 50, width: 30, height: 20), selection: selection)
                      && !CapturePresentationPolicy.overlaps(chrome: selection, selection: .zero),
-                     "only a nonempty selection intersecting the capture chrome requests its stronger backing")
-        suite.expect(CapturePresentationPolicy.plateOpacity(dark: true, overlapsSelection: true, reduceTransparency: false) >= 0.96
-                     && CapturePresentationPolicy.plateOpacity(dark: false, overlapsSelection: false, reduceTransparency: true) == 1,
-                     "overlap is nearly opaque and Reduce Transparency is fully opaque")
+                     "only a nonempty selection intersecting capture chrome requests a clear preview")
+        suite.expect(CapturePresentationPolicy.toolbarOpacity(overlapsSelection: true, hovered: false) <= 0.2
+                     && CapturePresentationPolicy.toolbarOpacity(overlapsSelection: true, hovered: true) == 1
+                     && CapturePresentationPolicy.toolbarOpacity(overlapsSelection: false, hovered: false) == 1,
+                     "overlapping toolbar fades as a whole, restores on hover and otherwise stays readable")
     }
 }

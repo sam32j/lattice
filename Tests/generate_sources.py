@@ -1912,8 +1912,8 @@ def main():
           + declaration(selection, "    private func fullScreenControlHoverChanged(").replace("private func", "func", 1)
           + declaration(selection, "    private func resetFullScreenControlHover(").replace("private func", "func", 1)
           + "}\n"
-          + declaration(selection, "private final class PassThroughHostingView<")
-              .replace("private final class", "final class", 1))
+          + declaration("Sources/Vorssaint/UI/Screenshot/PassThroughHostingView.swift",
+                        "final class PassThroughHostingView<"))
     write("NotchCaptureKeyboard.swift", "import Foundation\nimport Carbon.HIToolbox\n\nextension NotchCaptureKeyboardContract {\n"
           + "final class NotchService {\nstatic var shared = NotchService()\n"
           + "var presentationWindow: NSPanel? = NSPanel()\nvar acceptsSystemFeedback = true\n"

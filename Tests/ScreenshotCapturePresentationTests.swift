@@ -39,6 +39,7 @@ enum ScreenshotCapturePresentationTests {
         let panel = ScreenshotCapturePanel(screenRect: CGRect(x: -10000, y: -10000, width: 320, height: 240))
         panel.isReleasedWhenClosed = false
         defer { panel.orderOut(nil); panel.close() }
+        suite.expect(panel.worksWhenModal, "capture remains interactive while the app has a modal permission dialog")
         suite.expect(panel.styleMask.contains(.nonactivatingPanel),
                      "capture takes keyboard focus without activating all Lattice windows")
         suite.expect(panel.canBecomeKey && !panel.canBecomeMain,
