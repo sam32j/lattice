@@ -13,3 +13,9 @@ Accessory startup currently calls IOBluetooth and the shared battery sampler cre
 ## Verification
 
 Approved seams: isolated filesystem fixtures and injected metadata reads; Bluetooth authorization/client-start boundaries; permission reset/recovery. Use RED before each behavior correction, focused suites, developer build, full regression suite and independent review. No real permission resets/requests, radio clients, hardware changes, or cleanup.
+
+## Approved follow-up UI changes
+
+Only an actively dragged area overlapping the bottom capture toolbar fades it. Hovered windows and completed selections never fade it. Keep permission status shades consistent, use Permissions Cleared. as the successful reset title, and indent Open Feature shortcuts below the island option on the five utility pages. Clipboard History, Scratchpad and File Cache enable rows have icons. Camera Preview and Clipboard History use their canonical English title casing.
+
+App-menu preference and availability are separate. New settings default to Menu Bar; a temporarily unavailable preferred target renders no menu, with a restoration hint, then resumes when that same target returns. Explicit Don't show and replacement choices always win. Don't restore remains available even if both rendering targets are off and the picker is disabled. Historical explicit opt-outs are not guessed or overwritten.
