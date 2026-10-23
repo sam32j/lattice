@@ -262,6 +262,10 @@ discard_test_preferences() {
 
 # Standalone automated tests: pure contracts plus isolated disk, subprocess,
 # keyboard-data and media fixtures. No application windows or device capture.
+mkdir -p build
+sh Scripts/build-media-tools.sh > build/media-tools-build.log 2>&1 || {
+    cat build/media-tools-build.log >&2; exit 1
+}
 if (( TEST )); then
     if command -v uv >/dev/null 2>&1; then
         uv run --no-project --quiet --python "$(command -v python3)" python3 Tests/generate_sources.py
@@ -273,7 +277,14 @@ if (( TEST )); then
     TEST_SOURCES=(
         Sources/Vorssaint/Services/InputEventTap.swift
         Sources/Vorssaint/Services/ActivationHandoff.swift
-        Sources/Vorssaint/Services/Media/MediaSupport.swift
+        Sources/Vorssaint/Services/Media/MediaOptimizerPolicy.swift
+        Sources/Vorssaint/Services/Media/MediaService.swift
+        Sources/Vorssaint/Services/Media/MediaOptimizerClient.swift
+        Sources/Vorssaint/Services/Media/NativeMediaOptimizer.swift
+        Sources/Vorssaint/Services/Media/NativeVideoOptimizer.swift
+        Sources/Vorssaint/Services/ImageFileSupport.swift
+        Sources/Vorssaint/Services/FileOutputSupport.swift
+        Sources/Vorssaint/Services/OCRRecognitionSupport.swift
         Sources/Vorssaint/Core/QuitProtectionSupport.swift
         Sources/Vorssaint/Core/QuitProtectionStrings.swift
         Sources/Vorssaint/Core/Defaults.swift
@@ -367,7 +378,7 @@ if (( TEST )); then
         Sources/Vorssaint/Core/SnippetStrings.swift
         Sources/Vorssaint/Core/AlertSoundStrings.swift
         Sources/Vorssaint/Core/BrightnessStrings.swift
-        Sources/Vorssaint/Core/MediaImageStrings.swift
+        Sources/Vorssaint/Core/MediaOptimizerStrings.swift
         Sources/Vorssaint/Core/QuickToggleStrings.swift
         Sources/Vorssaint/Core/CaptureWorkflowStrings.swift
         Sources/Vorssaint/Core/ScreenshotStrings.swift
@@ -696,7 +707,7 @@ if (( ! DEV )); then
     # build left behind (an old icon catalog, a staged bundle) can reach it.
     # Only the compiler's incremental records stay: they rebuild whatever
     # changed since, and a fresh checkout has none.
-    find build -mindepth 1 -maxdepth 1 ! -name objects -exec rm -rf {} + 2>/dev/null || true
+    find build -mindepth 1 -maxdepth 1 ! -name objects ! -name media-tools -exec rm -rf {} + 2>/dev/null || true
 fi
 APP_OBJECT_DIR="build/objects/$EXECUTABLE"
 mkdir -p build "$APP_OBJECT_DIR"
@@ -787,6 +798,10 @@ cp Resources/com.vorssaint.utils.fan-control.plist \
     "$STAGE/Contents/Library/LaunchDaemons/$FAN_HELPER_ID.plist"
 cp Resources/Info.plist "$STAGE/Contents/Info.plist"
 cp CHANGELOG.md "$STAGE/Contents/Resources/CHANGELOG.md"
+mkdir -p "$STAGE/Contents/Helpers/MediaTools" "$STAGE/Contents/Resources/MediaTools"
+cp build/media-tools/pngquant build/media-tools/gifsicle "$STAGE/Contents/Helpers/MediaTools/"
+cp -R Vendor/MediaTools/Sources build/media-tools/Licenses "$STAGE/Contents/Resources/MediaTools/"
+cp Vendor/MediaTools/README.md Scripts/build-media-tools.sh "$STAGE/Contents/Resources/MediaTools/"
 if [[ -f Downstream/CHANGELOG.md ]]; then
     cp Downstream/CHANGELOG.md "$STAGE/Contents/Resources/LatticeChangelog.md"
 fi
@@ -897,6 +912,7 @@ sign_bundle() {
     else
         echo "  signing ad-hoc (no configured Lattice Developer ID or local identity)"
     fi
+    for tool in "$bundle"/Contents/Helpers/MediaTools/*(N); do sign_target "$tool"; done
     [[ -f "$helper" ]] && codesign_fan_helper "$helper"
     [[ -f "$adapter" ]] && codesign_now_playing_adapter "$adapter"
     codesign_app "$bundle"
@@ -906,6 +922,7 @@ sign_bundle() {
     if ! codesign --verify --deep --strict "$bundle" >/dev/null 2>&1; then
         echo "  re-signing after filesystem metadata settled"
         xattr -c -r "$bundle" 2>/dev/null || true
+        for tool in "$bundle"/Contents/Helpers/MediaTools/*(N); do sign_target "$tool"; done
         [[ -f "$helper" ]] && codesign_fan_helper "$helper"
         [[ -f "$adapter" ]] && codesign_now_playing_adapter "$adapter"
         codesign_app "$bundle"
