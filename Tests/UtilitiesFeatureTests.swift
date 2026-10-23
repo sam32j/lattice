@@ -732,7 +732,7 @@ enum UtilitiesFeatureTests {
                "slice centers land on the unit circle from the top clockwise")
 
         let starter = RadialMenuSupport.starterItems
-        suite.expect(starter.count == 6 && RadialMenuSupport.sanitized(starter) == starter,
+        suite.expect(starter.count == 5 && RadialMenuSupport.sanitized(starter) == starter,
                "the starter wheel is already clean")
         suite.expect(starter.allSatisfy { !$0.effectiveSymbolName.isEmpty },
                "every starter slice has a symbol to draw")
@@ -967,9 +967,9 @@ enum UtilitiesFeatureTests {
                 && Set(allPresets.map(\.rawValue)).count == 6
                 && allPresets.allSatisfy { $0.id == $0.rawValue },
                "six distinct radial profile presets")
-        suite.expect(RadialMenuProfilePreset.general.makeItems().count == 6
+        suite.expect(RadialMenuProfilePreset.general.makeItems().count == 5
                 && RadialMenuProfilePreset.media.makeItems().count == 4
-                && RadialMenuProfilePreset.tools.makeItems().count == 6
+                && RadialMenuProfilePreset.tools.makeItems().count == 4
                 && RadialMenuProfilePreset.windowLayout.makeItems().count == 5
                 && RadialMenuProfilePreset.quickToggles.makeItems().count == 5
                 && RadialMenuProfilePreset.blank.makeItems().isEmpty,
@@ -1030,7 +1030,7 @@ enum UtilitiesFeatureTests {
         suite.expect(emptySanitized.count == 1
                 && emptySanitized[0].color == .accent
                 && !emptySanitized[0].shortcut.isEmpty
-                && emptySanitized[0].items.count == 6,
+                && emptySanitized[0].items.count == 5,
                "sanitizing empty profile list provides one default starter profile")
 
         let appOnlyProfile = RadialMenuProfile(

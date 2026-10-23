@@ -14,12 +14,9 @@ enum IslandSettingsFocusTests {
     final class Service {
         var heldDrag = false
         var dragPlaceholder = false
-        var captureControls: Bool?
         var panel: Panel? = Panel()
         let hoverState = Hover()
         var expanded = true
-        var captureControlsCollapsed = false
-        func collapseCaptureControls() { captureControlsCollapsed = true }
         func dismissForOutsideClick() { if !heldDrag { expanded = false } }
     }
     static func run(_ suite: TestSuite) {
@@ -30,13 +27,6 @@ enum IslandSettingsFocusTests {
         suite.expect(!ordinary.expanded && !ordinary.heldDrag && !ordinary.dragPlaceholder
                      && ordinary.hoverState.suppressed,
                      "explicit Settings navigation collapses Island even during an internal drag")
-        let capture = Service()
-        capture.captureControls = true
-        capture.prepareForSettings()
-        suite.expect(capture.captureControls == true && capture.captureControlsCollapsed
-                     && capture.panel?.acceptsKeyFocus == false && capture.panel?.resigned == true
-                     && capture.hoverState.suppressed,
-                     "Settings withdraws expanded capture controls and keyboard focus while preserving the session")
         let runtime = (try? String(contentsOfFile: "Sources/Vorssaint/App/FeatureRuntime.swift", encoding: .utf8)) ?? ""
         for (feature, owner) in [
             ("notchCalendar", "NotchCalendarService"), ("notchNotifications", "NotchNotificationService"),

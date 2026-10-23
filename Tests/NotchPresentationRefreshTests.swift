@@ -33,7 +33,6 @@ enum NotchPresentationRefreshContract {
         @Published var selectedTool: Tool = .screenshot
         var hasFocusedControl = false
         var onSelectionProgressChange: ((Bool) -> Void)?
-        var onCaptureControlsSurfaceChange: ((CGRect, CGFloat) -> Void)?
     }
     enum UserDefaults {
         static var standard = Preferences()
@@ -223,16 +222,8 @@ enum NotchPresentationRefreshContract {
         var musicDepartureWork: DispatchWorkItem?
         var noticeExpanded = false
         var notice: Bool?
-        var captureControls: CaptureOptions?
-        var captureControlsCollapsed = false, captureSelectionInProgress = false
+        var captureSelectionInProgress = false
         var inside = false, trackingMenu = false
-        var captureControlsWork: DispatchWorkItem?
-        var captureControlsSubscription: AnyCancellable?
-        var captureControlsCancel: (() -> Void)?
-        var captureControlsMonitors: [Any] = []
-        func installCaptureControlsClickThrough() {
-            if captureControlsMonitors.isEmpty { captureControlsMonitors = [1] }
-        }
         func removeEventMonitors() {}
         func syncVisibleConsumers() {}
         var hoverWork: DispatchWorkItem?
@@ -248,7 +239,6 @@ enum NotchPresentationRefreshContract {
         var compactActivityGeometry: NotchGeometry { geometry.compactTimerGeometry(showsDownloads: false) }
         var surfaceSize: CGSize {
             if fullscreenCompact { return geometry.restingSize(showsContent: false) }
-            if captureControls != nil { return captureControlsCollapsed ? geometry.collapsed : geometry.peek }
             if !expanded, compactActivityIsVisible { return compactActivityGeometry.compactActivitySize }
             if !expanded { return geometry.collapsed }
             return expandedGeometry.expandedSize(module: selected, capturePreviewHeight: captureContent == nil ? nil : captureContentHeight,
@@ -464,7 +454,6 @@ enum NotchPresentationRefreshContract {
         page.expandedPageTop = .wrapsCamera
         suite.expect(page.expandedGeometry.headerCameraGap == 210 && page.expandedGeometry.pageTopInset == 0,
                      "a page that wraps the camera starts at the top of the row")
-        captureControlsChecks(suite)
         let picker = Service()
         picker.expanded = false
         picker.compactActivityIsVisible = true
@@ -750,12 +739,6 @@ enum NotchPresentationRefreshContract {
             suite.expect(hidden.windowHost?.revealFromHidden == true,
                    "opening a hidden island requests a reveal from the screen edge")
             hidden.expanded = false
-            hidden.captureControls = CaptureOptions()
-            hidden.refreshPresentation()
-            suite.expect(hidden.panel?.isVisible == true, "capture controls remain visible until dismissed")
-            suite.expect(hidden.windowHost?.revealFromHidden == false,
-                   "capture controls keep their own presentation in hidden-until-hover mode")
-            hidden.captureControls = nil
             hidden.dragPlaceholder = true
             hidden.refreshPresentation()
             suite.expect(hidden.panel?.isVisible == true, "an explicit file drag can still reveal its destination")

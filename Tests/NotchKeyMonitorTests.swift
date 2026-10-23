@@ -78,7 +78,6 @@ enum NotchKeyMonitorTests {
         var captureClose: (() -> Void)?
         let panel: Panel? = Panel()
         var windowHost: Host? = Host()
-        var captureControls: Int?
         var modules = NotchModule.allCases
         var selected = NotchModule.controls
         var showingAppPanel = false

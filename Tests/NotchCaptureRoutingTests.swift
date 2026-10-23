@@ -10,20 +10,14 @@ enum NotchCaptureRoutingTests {
         defaults.set(true, forKey: AppFeature.screenshot.availabilityKey)
         defaults.set(true, forKey: DefaultsKey.screenshotEnabled)
         defaults.set("", forKey: DefaultsKey.notchHiddenModules)
-        for controls in [false, true] {
-            for previews in [false, true] {
-                defaults.set(controls, forKey: DefaultsKey.notchCaptureControls)
-                defaults.set(previews, forKey: DefaultsKey.notchCapture)
-                suite.expect(NotchSupport.routesCaptureControls(in: defaults) == controls,
-                             "live capture controls follow their own switch regardless of preview placement")
-                suite.expect(NotchSupport.routesCapturePreviews(in: defaults) == previews,
-                             "capture previews follow their destination regardless of the live controls switch")
-            }
+        for previews in [false, true] {
+            defaults.set(previews, forKey: DefaultsKey.notchCapture)
+            suite.expect(NotchSupport.routesCapturePreviews(in: defaults) == previews,
+                         "capture previews retain their own destination")
         }
         defaults.set(false, forKey: AppFeature.screenshot.availabilityKey)
         defaults.set(true, forKey: AppFeature.screenRecorder.availabilityKey)
-        suite.expect(NotchSupport.routesCapturePreviews(in: defaults)
-                     && NotchSupport.routesCaptureControls(in: defaults),
+        suite.expect(NotchSupport.routesCapturePreviews(in: defaults),
                      "recording previews and live controls remain usable in a recorder-only setup")
     }
 }
