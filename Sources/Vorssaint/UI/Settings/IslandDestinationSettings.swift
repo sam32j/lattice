@@ -4,7 +4,6 @@ import SwiftUI
 
 struct IslandDestinationSettings: View {
     let destination: IslandDestination
-    var includeDivider = false
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.notchEnabled) private var islandEnabled = false
@@ -34,7 +33,6 @@ struct IslandDestinationSettings: View {
     var body: some View {
         if islandEnabled && features.isAvailable(.notch) {
             VStack(alignment: .leading, spacing: 13) {
-            if includeDivider { Divider() }
             SettingsToggleRow(title: SettingsOwnershipStrings.text(.showIsland, l10n.language), isOn: shown)
             if shown.wrappedValue {
                 if destination == .files {

@@ -16,12 +16,25 @@ struct ScratchpadSettings: View {
     var body: some View {
         Form {
             Section {
+                VStack(alignment: .leading, spacing: 16) {
                 Toggle(SettingsOwnershipStrings.enable(FeatureStrings.scratchpad(l10n.language).pageTitle, l10n.language), isOn: $enabled)
                     .onChange(of: enabled) { _, _ in
                         ScratchpadService.shared.syncWithPreferences()
                         FeatureRuntime.shared.finishAvailabilityChange()
                     }
-                IslandDestinationSettings(destination: .scratchpad)
+                if enabled {
+                    IslandDestinationSettings(destination: .scratchpad)
+                        .padding(.leading, settingsRowTextInset)
+                }
+                ShortcutPreferenceRow(role: .scratchpad, label: UtilitySettingsCopy.globalShortcut(l10n)) {
+                    ScratchpadService.shared.syncWithPreferences()
+                }
+                .disabled(!enabled)
+                if enabled, scratchpadShortcutEnabled, scratchpad.shortcutRegistrationFailed {
+                    Text(l10n.s.shortcutUnavailable).font(.caption).foregroundStyle(.orange)
+                }
+                }
+                Group {
                 Picker(FeatureStrings.scratchpad(l10n.language).retentionTitle,
                        selection: $scratchpadRetention) {
                     Text(FeatureStrings.scratchpad(l10n.language).retentionNever)
@@ -66,20 +79,15 @@ struct ScratchpadSettings: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
-                ShortcutPreferenceRow(role: .scratchpad) {
-                    ScratchpadService.shared.syncWithPreferences()
-                }
-                if scratchpadShortcutEnabled, scratchpad.shortcutRegistrationFailed {
-                    Text(l10n.s.shortcutUnavailable)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
+                }.disabled(!enabled)
             } header: {
                 Text(FeatureStrings.scratchpad(l10n.language).pageTitle)
             }
             .settingsFormSectionAnchor(.scratchpad)
         }
         .formStyle(.grouped)
+        .toggleStyle(.switch)
+        .controlSize(.regular)
     }
 
     private var scratchpadBackgroundOpacityBinding: Binding<Double> {

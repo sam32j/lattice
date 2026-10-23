@@ -40,6 +40,7 @@ struct ClipboardSettings: View {
         Form {
             Group {
                 Section {
+                    VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 5) {
                     Toggle(l10n.language == .enUS ? "Enable Clipboard History" : text.enable, isOn: $enabled)
                         .onChange(of: enabled) { _, _ in
@@ -50,11 +51,19 @@ struct ClipboardSettings: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     }
-                    IslandDestinationSettings(destination: .clipboard)
+                    if enabled {
+                        IslandDestinationSettings(destination: .clipboard)
+                            .padding(.leading, settingsRowTextInset)
+                    }
+                    ShortcutPreferenceRow(role: .clipboard, label: UtilitySettingsCopy.globalShortcut(l10n),
+                        additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
+                        ClipboardHistoryService.shared.syncHotkey()
+                    }.disabled(!enabled)
+                    }
                 }
                 .settingsFormSectionAnchor(.clipboardHistory)
 
-                clipboardShortcutSection
+                clipboardShortcutSection.disabled(!enabled)
                 clipboardMenuBarPreviewSection
 
                 Section {
@@ -87,15 +96,11 @@ struct ClipboardSettings: View {
                         .foregroundStyle(.secondary)
                 }
 
-                // Its own section because it is the one setting here that keeps
-                // working with capture off: the panel entry stays, saying so,
-                // and still opens the saved items. Sitting among the disabled
-                // rows it read as one that had been missed.
                 Section {
                     Toggle(text.showInPanel, isOn: $showInPanel)
-                }
+                }.disabled(!enabled)
 
-                clipboardAutoClearSection
+                clipboardAutoClearSection.disabled(!enabled)
             }
 
             if AppFeature.pastePlain.isPresentInControls() {
@@ -114,13 +119,14 @@ struct ClipboardSettings: View {
                     Text(l10n.s.pastePlainName)
                 }
                 .settingsFormSectionAnchor(.pastePlain)
+                .disabled(!enabled)
             }
 
-            if AppFeature.clipboardHistory.isAvailable {
-                clipboardStatsSection
-            }
+            clipboardStatsSection.disabled(!enabled)
         }
         .formStyle(.grouped)
+        .toggleStyle(.switch)
+        .controlSize(.regular)
         .onAppear {
             limit = Defaults.sanitizedClipboardHistoryLimit(limit)
             retentionDays = Defaults.sanitizedClipboardHistoryRetentionDays(retentionDays)
@@ -154,10 +160,6 @@ struct ClipboardSettings: View {
     @ViewBuilder
     private var clipboardShortcutSection: some View {
         Section(text.shortcut) {
-            ShortcutPreferenceRow(role: .clipboard,
-                                  additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
-                ClipboardHistoryService.shared.syncHotkey()
-            }
             if enabled, shortcutEnabled, history.shortcutRegistrationFailed {
                 Text(l10n.s.shortcutUnavailable)
                     .font(.caption)
@@ -166,8 +168,6 @@ struct ClipboardSettings: View {
             Text(text.shortcutCaption)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            // Not disabled with capture off: the window still opens on the
-            // saved items, like the button below.
             Picker(text.historyLayout, selection: $historyLayout) {
                 Text(text.historyLayoutList).tag(ClipboardHistoryLayout.list)
                 Text(text.historyLayoutCards).tag(ClipboardHistoryLayout.cards)
@@ -213,9 +213,6 @@ struct ClipboardSettings: View {
         return formatter
     }()
 
-    // Never disabled by the capture toggle, unlike the sections above it:
-    // emptying the pasteboard is a security setting in its own right, and
-    // someone who keeps no history is exactly who reaches for it.
     @ViewBuilder
     private var clipboardAutoClearSection: some View {
         Section {

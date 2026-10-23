@@ -34,13 +34,12 @@ struct DedicatedUtilitySettings: View {
                             FeatureRuntime.shared.finishAvailabilityChange()
                         }
                 }
-                if let destination {
-                    IslandDestinationSettings(destination: destination, includeDivider: true)
-                        .disabled(!enabled)
+                if enabled, let destination {
+                    IslandDestinationSettings(destination: destination)
+                        .padding(.leading, settingsRowTextInset)
                 }
                 if let shortcut {
-                    Divider()
-                    ShortcutPreferenceRow(role: shortcut) {
+                    ShortcutPreferenceRow(role: shortcut, label: UtilitySettingsCopy.globalShortcut(l10n)) {
                         FeatureRuntime.shared.sync([feature])
                     }
                     .disabled(!enabled)
@@ -49,6 +48,7 @@ struct DedicatedUtilitySettings: View {
             .padding(22)
         }
         .toggleStyle(.switch)
+        .controlSize(.regular)
     }
 
     private var destination: IslandDestination? {

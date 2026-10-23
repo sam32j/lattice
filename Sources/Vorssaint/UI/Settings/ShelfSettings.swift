@@ -13,6 +13,8 @@ struct ShelfSettings: View {
     @AppStorage(DefaultsKey.shelfDropZoneEnabled) private var dropZone = true
     @AppStorage(DefaultsKey.shelfDockPlacement) private var dockPlacement = ShelfDockPlacement.menuBar.rawValue
     @AppStorage(DefaultsKey.notchEnabled) private var islandEnabled = false
+    @AppStorage(DefaultsKey.notchShelf) private var islandFileCache = true
+    @AppStorage(DefaultsKey.notchHiddenModules) private var islandHiddenModules = ""
     @AppStorage(DefaultsKey.shelfEdgeDragEnabled) private var edgeDrag = false
     @AppStorage(DefaultsKey.shelfCloseAfterDrop) private var closeAfterDrop = false
     @AppStorage(DefaultsKey.shelfRemoveAfterDrop) private var removeAfterDrop = true
@@ -22,31 +24,35 @@ struct ShelfSettings: View {
     var body: some View {
         Form {
             Section {
-                VStack(alignment: .leading, spacing: 5) {
-                Toggle(SettingsOwnershipStrings.enable(SettingsOwnershipStrings.text(.fileCache, l10n.language), l10n.language), isOn: $enabled)
-                    .onChange(of: enabled) { _, _ in
-                        FeatureRuntime.shared.sync([.shelf])
-                        FeatureRuntime.shared.finishAvailabilityChange()
+                VStack(alignment: .leading, spacing: 16) {
+                    SettingsControlRow(title: SettingsOwnershipStrings.enable(SettingsOwnershipStrings.text(.fileCache, l10n.language), l10n.language),
+                        caption: SettingsOwnershipStrings.text(.cacheCaption, l10n.language)) {
+                        HStack(spacing: 6) {
+                            if enabled && !islandOn {
+                                Image(systemName: "info.circle").foregroundStyle(.secondary)
+                                    .frame(width: 21, height: 21)
+                                    .overlay { StatusTooltip(message: UtilitySettingsCopy.fileCacheHint(l10n.language)) }
+                                    .accessibilityLabel(UtilitySettingsCopy.fileCacheHint(l10n.language))
+                            }
+                            Toggle("", isOn: $enabled).labelsHidden()
+                                .onChange(of: enabled) { _, _ in
+                                    FeatureRuntime.shared.sync([.shelf])
+                                    FeatureRuntime.shared.finishAvailabilityChange()
+                                }
+                        }
                     }
-                Text(SettingsOwnershipStrings.text(.cacheCaption, l10n.language))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
-                IslandDestinationSettings(destination: .files)
-            }
-
-            Section(l10n.s.shelfHowTitle) {
-                bullet("1", l10n.s.shelfStep1)
-                bullet("2", l10n.s.shelfStep2)
-                bullet("3", l10n.s.shelfStep3)
-            }
-
-            if enabled {
-
-                Section {
-                    ShortcutPreferenceRow(role: .shelf) {
+                    if enabled {
+                        IslandDestinationSettings(destination: .files)
+                            .padding(.leading, settingsRowTextInset)
+                    }
+                    ShortcutPreferenceRow(role: .shelf, label: UtilitySettingsCopy.globalShortcut(l10n)) {
                         ShelfService.shared.syncHotkey()
                     }
+                    .disabled(!enabled)
+                }
+            }
+
+                Section {
                     if shortcutEnabled, shelf.hotkeyRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
                             .font(.caption)
@@ -115,7 +121,7 @@ struct ShelfSettings: View {
                     } label: {
                         Label(l10n.s.shelfOpenNow, systemImage: "tray.and.arrow.down")
                     }
-                }
+                }.disabled(!enabled)
 
                 Section(l10n.s.shelfBehaviorTitle) {
                     VStack(alignment: .leading, spacing: 3) {
@@ -136,7 +142,7 @@ struct ShelfSettings: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                }
+                }.disabled(!enabled)
 
                 Section(l10n.s.shelfExclusionsTitle) {
                     if sortedExclusions.isEmpty {
@@ -169,17 +175,19 @@ struct ShelfSettings: View {
                     Text(l10n.s.shelfExclusionsCaption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                }
-            }
+                }.disabled(!enabled)
         }
         .formStyle(.grouped)
+        .toggleStyle(.switch)
+        .controlSize(.regular)
         .sheet(isPresented: $showingAppPicker) {
             appPickerSheet
         }
     }
 
     private var islandOn: Bool {
-        islandEnabled && NotchSupport.isEnabled()
+        islandEnabled && islandFileCache && NotchSupport.isEnabled()
+            && !islandHiddenModules.split(separator: ",").contains(Substring(IslandDestination.files.rawValue))
     }
 
     private var sortedExclusions: [String] {
@@ -202,16 +210,4 @@ struct ShelfSettings: View {
         }
     }
 
-    private func bullet(_ number: String, _ text: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Text(number)
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .frame(width: 18, height: 18)
-                .background(Circle().fill(Color.accentColor))
-            Text(text)
-                .font(.callout)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
 }
