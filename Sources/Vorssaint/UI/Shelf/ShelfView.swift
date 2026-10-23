@@ -16,10 +16,10 @@ struct ShelfView: View {
     /// The docked shelf shows the brand mark as a quiet watermark, so it reads
     /// as the app's own tray rather than a plain floating card.
     var brandWatermark: Bool = false
+    var embeddedInSharedSurface = false
 
     @EnvironmentObject private var shelf: ShelfService
     @ObservedObject private var l10n = L10n.shared
-    @Environment(\.colorScheme) private var colorScheme
     @State private var clearButtonHovered = false
     @State private var shareButtonHovered = false
     /// The system share sheet points at a real view, which SwiftUI does not
@@ -41,18 +41,22 @@ struct ShelfView: View {
         }
         .padding(14)
         .frame(width: Self.panelWidth)
-        .background(
-            ZStack {
-                HUDBackdrop(cornerRadius: 18)
-                if brandWatermark { brandWatermarkLayer }
+        .background {
+            if !embeddedInSharedSurface {
+                ZStack {
+                    HUDBackdrop(cornerRadius: 18)
+                    if brandWatermark { ShelfBrandWatermark() }
+                }
             }
-        )
+        }
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(isDropTargeted ? Color.accentColor : Color.white.opacity(0.12),
-                              lineWidth: isDropTargeted ? 2 : 1)
-        )
+        .overlay {
+            if !embeddedInSharedSurface || isDropTargeted {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(isDropTargeted ? Color.accentColor : Color.white.opacity(0.12),
+                                  lineWidth: isDropTargeted ? 2 : 1)
+            }
+        }
         .overlay(alignment: .topLeading) {
             topMoveHandle
         }
@@ -66,17 +70,6 @@ struct ShelfView: View {
 
     private var isDropTargeted: Bool {
         shelf.dropTargeted
-    }
-
-    /// The official mark, large and faint in the corner: unmistakably ours,
-    /// never loud enough to fight the tiles.
-    private var brandWatermarkLayer: some View {
-        BrandMark(width: 128, tint: colorScheme == .light ? Color.black : Color.white)
-            .opacity(colorScheme == .light ? 0.05 : 0.08)
-            .rotationEffect(.degrees(-8))
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-            .offset(x: 34, y: 26)
-            .allowsHitTesting(false)
     }
 
     private var header: some View {

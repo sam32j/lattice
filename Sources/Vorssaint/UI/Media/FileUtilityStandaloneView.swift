@@ -6,17 +6,12 @@ struct FileUtilityStandaloneView: View {
     @ObservedObject private var features = FeatureRuntime.shared
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 4) {
-                ForEach(FileUtilityMode.allCases) { mode in
-                    Button(mode == .cache ? "File Cache" : "Optimize") { FileUtilityPresentation.shared.select(mode) }
-                        .buttonStyle(.bordered)
-                        .tint(session.effectiveMode == mode ? Color.accentColor : nil)
-                        .disabled(mode == .cache ? !features.isAvailable(.shelf) : !features.isAvailable(.mediaTools))
-                }
-                Spacer(minLength: 0)
-                Text("⌥").font(.caption).foregroundStyle(.secondary)
-                    .help("While dragging after a shake, hold Option to optimize instead of caching.")
-            }.padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 6)
+            FileUtilityModeBar(selected: session.effectiveMode,
+                cacheAvailable: features.isAvailable(.shelf), optimizerAvailable: features.isAvailable(.mediaTools),
+                showOptionHint: features.isAvailable(.shelf) && features.isAvailable(.mediaTools)
+                    && !NotchSupport.routesShelf() && !FileUtilityPresentation.shared.usesIsland,
+                select: FileUtilityPresentation.shared.select)
+                .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 6)
             if session.effectiveMode == .optimizer {
                 MediaHUDView(model: model, onClose: { ShelfService.shared.hide() }, onHeight: { _ in
                     ShelfService.shared.refitSharedUtility()
@@ -24,7 +19,7 @@ struct FileUtilityStandaloneView: View {
                    canReceiveDrop: FileUtilityPresentation.shared.canAccept,
                    receiveDrop: FileUtilityPresentation.shared.accept)
             } else {
-                ShelfView().environmentObject(ShelfService.shared)
+                ShelfView(embeddedInSharedSurface: true).environmentObject(ShelfService.shared)
             }
         }
         .frame(width: session.effectiveMode == .optimizer ? 350 : 304)

@@ -23,13 +23,10 @@ struct NotchFilesView: View {
     var body: some View {
         VStack(spacing: NotchLayout.rowSpacing) {
             if AppFeature.mediaTools.isAvailable {
-                HStack {
-                    Button("File Cache") { archives.hideMedia() }
-                        .tint(archives.mediaPresented ? nil : Color.accentColor)
-                    Button("Optimize") { FileUtilityPresentation.shared.openOptimizer() }
-                        .tint(archives.mediaPresented ? Color.accentColor : nil)
-                    Spacer()
-                }.controlSize(.small).buttonStyle(.bordered)
+                FileUtilityModeBar(selected: archives.mediaPresented ? .optimizer : .cache) { mode in
+                    if mode == .cache { archives.hideMedia() }
+                    else { FileUtilityPresentation.shared.openOptimizer() }
+                }
             }
             if let session = archives.mediaSession, archives.mediaPresented, AppFeature.mediaTools.isAvailable {
                 if archives.usesHUD {
