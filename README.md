@@ -54,9 +54,22 @@ Optimize JPEG, PNG, HEIC, animated GIFs and macOS-compatible videos in
 needed. JPEG/HEIC and video use Apple's native engines; small bundled PNG/GIF
 tools are built from pinned source with licenses and source included in the app.
 Videos export as HEVC MP4 up to 1080p, or 720p with stronger compression.
+The quick-action format bar also offers H.264 MP4 for wider compatibility,
+and JPEG, PNG or HEIC conversion for still images. GIFs remain animated GIFs.
 Input compatibility depends on the codec, not just the extension; MKV/WebM are
 not guaranteed. Lattice processes copies and keeps your originals. If encoding
 does not reduce the size, it saves an original-quality copy instead.
+Explicit format conversion honors your selection even if the result is larger.
+
+The compact optimizer HUD offers progress, size savings, original preview and
+Copy, Reveal and drag-out actions. Choose a standalone window or Dynamic Island
+in Media Optimizer settings; the island presentation requires its Files widget.
+When File Cache and the optimizer both use standalone windows, drag and shake
+as usual, then hold Option to switch the same window to optimization. Release
+Option before dropping to return to File Cache; dropping keeps the optimizer
+result open. This does not change keyboard shortcuts. Quick drops save copies
+beside their originals, asking for a folder if needed. Clipboard access is
+explicit through Copy; the optimizer does not monitor your clipboard.
 The former converter, GIF maker and media text-extraction workspace are removed.
 
 Lattice inherits the full suite of 50+ built-in Mac utilities from Vorssaint—including per-app volume, system monitor, window snapping, clipboard history, app uninstaller, and much more.

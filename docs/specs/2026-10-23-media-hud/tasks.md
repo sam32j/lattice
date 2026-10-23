@@ -39,4 +39,16 @@
 
 ## Status
 
-Design approved; initial checkout clean at 8fca5ae2. Implementation starting.
+Design approved; initial checkout clean at 8fca5ae2. Implementation complete.
+
+- Interaction policy: transient Option mode applies only to the shared standalone drag session. Drop-time modifier resolution prevents a stale optimizer preview from swallowing a File Cache drop. Keyboard shortcut registration is unchanged.
+- Encoding/publication: real JPEG-to-PNG and H.264 codec checks pass, with explicit larger conversion, source-adjacent copies, original preservation, EXIF orientation and transparent-to-white JPEG coverage.
+- HUD: batch/result selection, native format bar, progress/cancellation, size savings, stronger compression, explicit Copy/Reveal/drag-out and original preview implemented. Pending file dialogs cannot restart after disable/re-enable because their intent tickets are invalidated.
+- Presentation: shared classic NSPanel retains identity, File Cache contents and completed jobs across Option release and explicit mode switching. Docked File Cache remains cache-only. MO supports Follow File Cache, standalone and available island Files presentation, with a standalone fallback.
+- Review: independent whole-diff source review completed with no remaining actionable blockers. Two findings (stale child-drop modifiers and stale dialog completion) were fixed with regressions and re-reviewed. Unfinished batch selections now return no result instead of another file's output.
+- Focused media suite: `./build.sh --test-suite=media`, 60 checks passed. Expected RED was observed for the selection fallback regression before correcting it.
+- Developer build: `./build.sh --dev` passed. Strict deep signature verification passed, including bundled media tools. Isolated `--selftest` passed; `--media-layout` reported `MEDIA MOTION OK`.
+- Isolated `--settings-refactor-rendering --media-hud-only` passed: actual native child receiver, immediate Option release, shared NSPanel identity, cache/result preservation, valid geometry, and five rendered light/island/shared states. Fixtures used a test-only bundle identity and unique pasteboard, without posting input or changing real settings, permissions or clipboard.
+- An initial full run exposed the new renderer's availability writes in the production-writer audit. Fixture setup now lives in the existing test-identity-guarded renderer, preserving that audit rather than widening its allowlist. Final `./build.sh --test`: **102304 checks passed**, including media (60), File Cache (473), island (56127), settings (780), repository (320), preference cleanup, uninstall Spaces and developer-install isolation checks.
+- Runtime boundary: the drag fixture exercises native destination callbacks without generating a live Finder shake. Image renders validate HUD content; the existing native island geometry/motion probe checks the production host separately. No claim of end-to-end physical drag automation is made.
+- Ready for the authorized push: topic commits cover encoding/publication, HUD state, shared-window/island presentation, native integration checks and documentation. Push target is `feat/media-optimizer` only. No merge or PR; downloader/refactor branches remain untouched.
