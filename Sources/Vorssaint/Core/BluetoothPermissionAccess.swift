@@ -22,22 +22,40 @@ final class BluetoothPermissionAccess: NSObject, ObservableObject, CBCentralMana
     static let shared = BluetoothPermissionAccess()
     @Published private(set) var authorization = CBManager.authorization
     private var requestManager: CBCentralManager?
+    private var completions: [(SettingsPermissionResult) -> Void] = []
+    private var activationObserver: NSObjectProtocol?
+
+    private override init() {
+        super.init()
+        activationObserver = NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification,
+            object: nil, queue: .main) { [weak self] _ in self?.refresh() }
+    }
+
+    deinit { if let activationObserver { NotificationCenter.default.removeObserver(activationObserver) } }
 
     func refresh() {
         let value = CBManager.authorization
         if value != authorization { authorization = value }
     }
 
-    func request() {
+    func request(completion: ((SettingsPermissionResult) -> Void)? = nil) {
         refresh()
-        guard BluetoothAuthorizationPolicy.canRequest(authorization), requestManager == nil else { return }
+        guard authorization != .allowedAlways else { completion?(.granted); return }
+        guard BluetoothAuthorizationPolicy.canRequest(authorization) else { completion?(.needsSettings); return }
+        if let completion { completions.append(completion) }
+        guard requestManager == nil else { return }
         requestManager = CBCentralManager(delegate: self, queue: .main,
             options: [CBCentralManagerOptionShowPowerAlertKey: false])
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         refresh()
-        if authorization != .notDetermined { requestManager = nil }
+        if authorization != .notDetermined {
+            requestManager = nil
+            let pending = completions
+            completions.removeAll()
+            pending.forEach { $0(authorization == .allowedAlways ? .granted : .denied) }
+        }
     }
 
     func openSettings() {

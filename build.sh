@@ -648,6 +648,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Metrics/NetworkAddressService.swift
         Sources/Vorssaint/Services/Metrics/SpeedTest.swift
         Sources/Vorssaint/Services/Metrics/PeripheralBatterySampler.swift
+        Sources/Vorssaint/Services/Metrics/BluetoothBatteryRead.swift
         Sources/Vorssaint/Services/Metrics/PeripheralBatterySupport.swift
         Sources/Vorssaint/Services/Metrics/DiskSupport.swift
         Sources/Vorssaint/Services/Metrics/MonitorSamplingPolicy.swift

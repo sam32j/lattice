@@ -23,7 +23,7 @@ enum PermissionRevocationPolicy {
                 .dockClick, .windowMaximizer, .windowLayout, .autoQuit, .radialMenu, .musicBlock,
                 .notch, .switcher, .dockPreview, .cleaningMode],
             .screenRecording: [.switcher, .dockPreview, .screenshot, .screenRecorder, .notchWatch],
-            .camera: [.cameraPreview], .calendar: [.notchCalendar],
+            .camera: [.cameraPreview], .calendar: [.notchCalendar], .bluetooth: [.notchAccessories],
         ]
         func disable(_ keys: [String], feature: AppFeature) {
             for key in keys where defaults.bool(forKey: key) {

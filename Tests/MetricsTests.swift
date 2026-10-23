@@ -19,6 +19,7 @@ struct MetricsTests {
                 PreferenceNamespaceTests.run(suite)
             }),
             ("metrics", {
+                BluetoothPermissionLifecycleTests.run(suite)
                 MetricsFeatureTests.run(suite)
                 MenuBarBatteryWarningTests.run(suite)
                 ProcessNameContract.run(suite)

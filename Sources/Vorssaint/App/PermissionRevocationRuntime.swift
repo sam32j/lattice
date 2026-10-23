@@ -1,10 +1,16 @@
 import Combine
 import Foundation
+import CoreBluetooth
 
 /// An application-lifetime subscriber, independent of whether Settings is open.
 enum PermissionRevocationRuntime {
     static func observe() -> AnyCancellable {
-        Permissions.shared.$verifiedPermissions
+        Publishers.CombineLatest(Permissions.shared.$verifiedPermissions, BluetoothPermissionAccess.shared.$authorization)
+            .map { verified, authorization in
+                var all = verified
+                all[.bluetooth] = authorization == .allowedAlways
+                return all
+            }
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { verified in

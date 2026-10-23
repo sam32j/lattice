@@ -4,6 +4,7 @@
 import AppKit
 import Combine
 import IOBluetooth
+import CoreBluetooth
 
 /// The system monitor remains the only battery sampler. Native connection
 /// notifications report an actual connection, independently of missing readings.
@@ -22,7 +23,7 @@ final class NotchAccessoryService: NSObject {
     private override init() { super.init() }
 
     func syncWithPreferences() {
-        guard NotchAccessorySupport.isEnabled() else { stop(); return }
+        guard NotchAccessorySupport.isEnabled(), CBManager.authorization == .allowedAlways else { stop(); return }
         guard !active else { return }
         active = true
         activationTime = ProcessInfo.processInfo.systemUptime

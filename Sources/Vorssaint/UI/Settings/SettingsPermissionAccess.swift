@@ -62,6 +62,11 @@ enum SettingsPermissionAccess {
                     completion(granted && error == nil ? .granted : .denied)
                 }
             }
+        case .bluetooth:
+            BluetoothPermissionAccess.shared.request { result in
+                if case .needsSettings = result { BluetoothPermissionAccess.shared.openSettings() }
+                completion(result)
+            }
         }
     }
 }
