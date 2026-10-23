@@ -201,6 +201,7 @@ struct MetricsTests {
             }),
             ("cleaner", {
                 CleanerEligibilityTests.run(suite)
+                CleanerPrivacyTests.run(suite)
                 CleanerLastRunContract.run(suite)
                 CleanerScanFlowTests.run(suite)
                 CleanerLayoutTests.run(suite)
