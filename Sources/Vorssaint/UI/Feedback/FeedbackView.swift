@@ -10,8 +10,7 @@ struct FeedbackView: View {
     @State private var kind: FeedbackKind
     @State private var message = ""
     @State private var includeDiagnostics = false
-    @State private var isSending = false
-    @State private var wasSent = false
+    @State private var draftOpened = false
     @State private var errorMessage: String?
 
     private let diagnostics = FeedbackDiagnostics.current()
@@ -22,17 +21,18 @@ struct FeedbackView: View {
     }
 
     private var strings: FeedbackStrings { FeatureStrings.feedback(l10n.language) }
+    private var draftStrings: FeedbackDraftStrings { .text(l10n.language) }
     private var count: Int { message.utf16.count }
     private var canSend: Bool {
         let trimmedCount = message.trimmingCharacters(in: .whitespacesAndNewlines).utf16.count
-        return trimmedCount >= 10 && count <= 2_000 && !isSending
+        return trimmedCount >= 10 && count <= 2_000
     }
 
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider()
-            if wasSent {
+            if draftOpened {
                 sentView
             } else {
                 form
@@ -111,10 +111,10 @@ struct FeedbackView: View {
                                 .padding(.leading, 26)
                         }
                         Divider()
-                        Label(strings.privacyNote, systemImage: "hand.raised")
+                        Label(draftStrings.privacy, systemImage: "hand.raised")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Label(strings.retentionNote, systemImage: "clock")
+                        Label(draftStrings.review, systemImage: "arrow.up.right.square")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -133,13 +133,7 @@ struct FeedbackView: View {
                         .lineLimit(2)
                 }
                 Spacer()
-                if isSending {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text(strings.sending)
-                        .foregroundStyle(.secondary)
-                }
-                Button(strings.sendButton) { send() }
+                Button(draftStrings.button) { send() }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
                     .disabled(!canSend)
@@ -167,7 +161,7 @@ struct FeedbackView: View {
 
     private var diagnosticsPreview: some View {
         Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 5) {
-            diagnosticRow("Vorssaint", "\(diagnostics.appVersion) (\(diagnostics.appBuild))")
+            diagnosticRow(DownstreamIdentity.name, "\(diagnostics.appVersion) (\(diagnostics.appBuild))")
             diagnosticRow("macOS", diagnostics.macOS)
             if let model = diagnostics.macModel { diagnosticRow("Mac", model) }
             diagnosticRow(l10n.s.languageLabel, diagnostics.language)
@@ -188,12 +182,12 @@ struct FeedbackView: View {
 
     private var sentView: some View {
         VStack(spacing: 14) {
-            Image(systemName: "checkmark.circle.fill")
+            Image(systemName: "arrow.up.right.square")
                 .font(.system(size: 54))
-                .foregroundStyle(.green)
-            Text(strings.sentTitle)
+                .foregroundStyle(.tint)
+            Text(draftStrings.opened)
                 .font(.title2.weight(.semibold))
-            Text(strings.sentCaption)
+            Text(draftStrings.openedCaption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 400)
@@ -208,25 +202,18 @@ struct FeedbackView: View {
 
     private func send() {
         guard canSend else { return }
-        isSending = true
         errorMessage = nil
-        Task {
-            do {
-                try await FeedbackService.shared.submit(
-                    kind: kind,
-                    message: message,
-                    diagnostics: includeDiagnostics ? diagnostics : nil
-                )
-                wasSent = true
-                message = ""
-            } catch FeedbackError.rateLimited {
-                errorMessage = strings.rateLimitError
-            } catch FeedbackError.unavailable {
-                errorMessage = strings.unavailableError
-            } catch {
-                errorMessage = strings.genericError
-            }
-            isSending = false
+        do {
+            try FeedbackService.shared.openDraft(
+                kind: kind,
+                message: message,
+                diagnostics: includeDiagnostics ? diagnostics : nil
+            )
+            draftOpened = true
+        } catch FeedbackError.tooLong {
+            errorMessage = draftStrings.tooLong
+        } catch {
+            errorMessage = draftStrings.error
         }
     }
 }
