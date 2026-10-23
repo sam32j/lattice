@@ -22,7 +22,7 @@ enum DockPreviewExclusionTests {
         defaults.set([], forKey: DefaultsKey.windowPreviewExcludedApps)
         suite.expect(!DockPreviewExclusions.contains(bundleIdentifier: "com.example.private", in: defaults),
                      "removing an exclusion takes effect immediately without cached membership")
-        suite.expect(SettingsAppListStrings.text(.enUS).disabledApps == "Disable for these apps",
+        suite.expect(SettingsAppListStrings.text(.enUS).disabledApps == "Disable in these apps",
                      "every app list sheet uses the shared disable title")
         let copy = SettingsAppListDescriptions.text(.enUS)
         suite.expect(copy.dockPreview == "Apps in this list will not show dock preview"

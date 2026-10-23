@@ -10,7 +10,7 @@ enum InputSettingsStrings {
         let labels: [String]
         switch language {
         case .enUS:
-            labels = ["Mouse Scrolling", "Mouse Clicks", "Mouse Buttons", "Enable super key", "Super Key", "Super Key active", "Another app's key mapping uses the same key. Please reset.", "Duplicate-key filter active", "Off", "Allow Accessibility access to activate this feature.", "Not active. Check permissions and try enabling it again.", "Use the extra thumb buttons usually assigned to Back and Forward. Your mouse software may remap them."]
+            labels = ["Mouse Scrolling", "Mouse Clicks", "Mouse Buttons", "Enable super key", "Super Key", "Super Key active", "Another app’s key mapping uses the same key. Please reset.", "Duplicate-key filter active", "Off", "Allow Accessibility access to activate this feature.", "Not active. Check permissions and try enabling it again.", "Use the extra thumb buttons usually assigned to Back and Forward. Your mouse software may remap them."]
         case .ptBR:
             labels = ["Rolagem do mouse", "Cliques do mouse", "Botões do mouse", "Ativar tecla super", "Tecla super", "Tecla super ativa", "Outro app usa a mesma tecla. Redefina o mapeamento nesse app.", "Filtro de teclas duplicadas ativo", "Desativado", "Permita o acesso de Acessibilidade para ativar este recurso.", "Inativo. Verifique as permissões e tente ativar novamente.", "Use os botões extras do polegar, normalmente usados para Voltar e Avançar. O software do mouse pode remapeá-los."]
         case .es:
