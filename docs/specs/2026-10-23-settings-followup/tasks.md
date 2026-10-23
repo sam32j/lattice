@@ -46,6 +46,46 @@
 
 - [x] Approved design, seams and branch outcome.
 - [x] Verified clean baseline in both checkouts; reused attached worktree.
-- [ ] Baseline focused checks.
-- [ ] Tasks 1-6 with targeted red/green evidence.
-- [ ] Review, final checks, topic commits and push.
+- [x] Baseline focused checks: features/settings, 1,913 checks.
+- [x] Tasks 1-6 with targeted red/green evidence.
+- [x] Independent review, final checks and topic commits. Publication status is
+  recorded in the final handoff after the authorized branch push.
+
+## Implementation and verification evidence
+
+- Permission lifecycle is owned by an application-lifetime subscriber rather than
+  mounted settings controls. Unknown state is not treated as denial; queued states
+  are revalidated before clearing activation. Restored permission does not rearm a
+  feature. Cleaning Mode releases its lock while retaining the shortcut definition.
+  Regression coverage includes optional capabilities, stale denial and global
+  revocation. Direct keyboard brightness and its Carbon shortcuts retain access.
+- Ordered duplicate-key overrides: missing-helper regression failed first; settings
+  passed after preserving insertion, replacement and remove/re-add order.
+- Quick Snippets: generated real-service boundary regression failed on delayed
+  presentation/insertion after disable, then passed with canonical-owner guards.
+- Camera/launcher combined destination tests and sidebar order checks failed before
+  implementation, then passed. The menu picker now reads and writes its observed
+  AppStorage values, rather than reading raw defaults without view invalidation.
+- Bluetooth authorization and permission attribution are covered without creating
+  a radio manager. The review regression failed with an uninstalled power module,
+  then passed after attribution matched the actual accessory service dependency.
+- Capture tests cover elevated eligible dialogs, protected/excluded layers,
+  selection/chrome overlap, contrast opacity and pin/editor/dialog levels. Read-only
+  WindowServer metadata showed Liftoff's full-size launcher at level 26; its level
+  1000 surface was a 2x2 helper. Workspace levels are now 22/23/24.
+- Focused final settings/features: 1,939 checks passed. Broader focused capture,
+  feature, settings, repository and pin suites also passed during implementation.
+- Full `./build.sh --test`: 102,587 checks passed, followed by preference cleanup,
+  uninstall-spaces and developer-install isolation checks. AppKit/sandbox diagnostic
+  warnings did not fail any suite.
+- `./build.sh --dev` and strict deep signature verification passed. Independent
+  source review cleared all findings after stale-permission, Cleaning Mode and
+  Bluetooth-attribution corrections.
+- Final isolated rendering passed all 49 fixtures. Inspected camera/launcher,
+  menu-bar visible/hidden, permission rows, duplicate-key rows and light/dark
+  capture contrast. The same-host accessible popup value followed None, Menu Bar
+  and Dynamic Island without rebuilding the settings view. Isolated selftest:
+  `SELFTEST OK`. Final whitespace validation passed.
+- Validation does not change real grants, shortcuts, brightness or Bluetooth state.
+  Protected macOS content remains subject to system capture restrictions. Native
+  Liftoff interaction and actual permission revocation were not performed.
