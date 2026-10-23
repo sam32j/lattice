@@ -10,12 +10,23 @@ struct AppMenuDestinationSettings: View {
     @AppStorage(DefaultsKey.notchAppPanel) private var islandPanel = false
     @AppStorage(AppMenuDestination.disabledKey) private var disabled = false
 
-    private var options: [AppMenuDestination] { AppMenuDestination.available(in: .standard) }
+    private var options: [AppMenuDestination] {
+        _ = islandEnabled
+        _ = hideMenuIcon
+        return AppMenuDestination.available(in: .standard)
+    }
     private var label: String { SettingsOwnershipStrings.text(.appMenu, l10n.language) }
 
     var body: some View {
-        SettingsRow(symbol: "line.3.horizontal", title: label) {
+        SettingsRow(symbol: "line.3.horizontal", title: label, caption: restorationHint) {
             HStack(spacing: 6) {
+                if restorationHint != nil {
+                    Button(AppMenuRestorationCopy.cancel(l10n.language)) {
+                        disabled = true
+                        islandPanel = false
+                    }
+                    .accessibilityIdentifier("app-menu.discard-remembered-target")
+                }
                 if options.count == 1 {
                     SettingsStatusDot(status: SettingsFeatureStatus(color: .red,
                         message: SettingsOwnershipStrings.text(.noMenuTarget, l10n.language)))
@@ -39,12 +50,13 @@ struct AppMenuDestinationSettings: View {
                 .disabled(options.count == 1)
             }
         }
-        .onChange(of: islandEnabled) { _, _ in reconcile() }
-        .onChange(of: hideMenuIcon) { _, _ in reconcile() }
-        .onAppear { reconcile() }
     }
 
-    private func reconcile() { AppMenuDestination.reconcile(in: .standard) }
+    private var restorationHint: String? {
+        let preferred: AppMenuDestination = disabled ? .none : islandPanel ? .island : .menuBar
+        guard preferred != .none, !options.contains(preferred) else { return nil }
+        return AppMenuRestorationCopy.hint(preferred, language: l10n.language)
+    }
     private func title(_ target: AppMenuDestination) -> String {
         switch target {
         case .none: return SettingsOwnershipStrings.text(.none, l10n.language)

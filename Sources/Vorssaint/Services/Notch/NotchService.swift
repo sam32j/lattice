@@ -1090,7 +1090,6 @@ final class NotchService: ObservableObject {
     }
 
     func syncWithPreferences() {
-        AppMenuDestination.reconcile(in: .standard)
         preferenceSyncWork?.cancel(); preferenceSyncWork = nil
         guard NotchSupport.isEnabled() else { stop(); return }
         if !running {

@@ -14,9 +14,14 @@ enum AppMenuDestination: String, CaseIterable {
     }
 
     static func selected(in defaults: UserDefaults) -> Self {
-        guard !defaults.bool(forKey: disabledKey) else { return .none }
-        let requested: Self = defaults.bool(forKey: DefaultsKey.notchAppPanel) ? .island : .menuBar
+        let requested = requested(in: defaults)
         return available(in: defaults).contains(requested) ? requested : .none
+    }
+
+    /// Availability never overwrites an explicit destination or opt-out.
+    static func requested(in defaults: UserDefaults) -> Self {
+        guard !defaults.bool(forKey: disabledKey) else { return .none }
+        return defaults.bool(forKey: DefaultsKey.notchAppPanel) ? .island : .menuBar
     }
 
     func save(in defaults: UserDefaults) {
@@ -24,7 +29,4 @@ enum AppMenuDestination: String, CaseIterable {
         defaults.set(self == .island, forKey: DefaultsKey.notchAppPanel)
     }
 
-    static func reconcile(in defaults: UserDefaults) {
-        if selected(in: defaults) == .none { Self.none.save(in: defaults) }
-    }
 }

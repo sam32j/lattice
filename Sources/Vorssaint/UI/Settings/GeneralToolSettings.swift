@@ -30,7 +30,6 @@ struct GeneralToolSettings: View {
             .frame(maxWidth: .infinity)
             .padding(22)
         }
-        .onChange(of: hideMenuIcon) { _, _ in AppMenuDestination.reconcile(in: .standard) }
     }
 }
 
