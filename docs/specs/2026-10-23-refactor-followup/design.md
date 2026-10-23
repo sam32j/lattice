@@ -14,6 +14,8 @@ Both intentional app reopen and main menu-icon click open Settings when App Menu
 
 Permission reset retains preferences, asks for confirmation, and becomes a single neutral Restart now row only after the backend reports success. Failures stay observable; do not falsely claim success. Update Bluetooth/system-audio usage strings exactly, with trailing periods. Keep P6 system wording unchanged, trace its actual caller and expose a non-prompting Media & Music status row. Keyboard backlight already calls the system's private KeyboardBrightnessClient directly, without synthetic keys or an Accessibility requirement; explain the OS-compatibility caveat.
 
+Clarified reset semantics: preserve saved configuration, shortcuts, layout and tuning, while switching off permission-dependent activation. A finer brightness-key step is saved tuning, not authority to rearm interception. Keep its paused state across restart and backup/restore; display the effective Standard mode until an explicit permission-gated step selection rearms it. Permission-use reporting and energy attribution must use that same effective mode.
+
 ## Verification
 
 Approved seams: isolated permission/model/native-window/rendering tests. Never reset the user's real TCC grants or change hardware. Use tests before behavior fixes, real native fixtures for window ordering/input, focused and full suites, developer build, isolated rendering/selftest, and independent source review. Record any protected-surface or live-reproduction limitations rather than claim unsupported fixes. Descriptive/help copy ends in a period, labels remain natural, confirmation remains a question.
