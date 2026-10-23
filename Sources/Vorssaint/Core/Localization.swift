@@ -2429,7 +2429,7 @@ extension Strings {
         dockClickMinimize: "Click the dock tile to minimize",
         dockClickMinimizeCaption: "The active app’s windows minimize when you click its dock tile. Click again to bring them back.",
         dockClickCycleWindows: "Click the dock tile to cycle windows",
-        dockClickCycleWindowsCaption: "Click an active app's dock tile to rotate through its windows",
+        dockClickCycleWindowsCaption: "Click an active app’s dock tile to rotate through its windows",
         dockPreviewActiveNow: "Active in the Dock",
         dockPreviewDockUnavailable: "Could not read Dock items.",
         dockPreviewAutohideBeta: "Beta. You may run into some bugs.",
