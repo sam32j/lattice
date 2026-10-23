@@ -42,7 +42,6 @@ struct EnergyDisplaySettings: View {
                         }
                 }
                 Group {
-                    Divider()
                     if !brightnessEnabled && brightness.displays.isEmpty {
                         ForEach(NSScreen.screens, id: \.self) { display in
                             SettingsControlRow(title: display.localizedName) {
