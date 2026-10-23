@@ -67,7 +67,7 @@ final class ScreenTextService: ObservableObject {
         let generation = recognitionGeneration
         let pasteboardChangeCount = NSPasteboard.general.changeCount
         let removeLineBreaks = UserDefaults.standard.bool(forKey: DefaultsKey.screenOCRRemoveLineBreaks)
-        let fallbackLanguages = MediaSupport.recognitionLanguages(for: L10n.shared.language.rawValue)
+        let fallbackLanguages = OCRRecognitionSupport.recognitionLanguages(for: L10n.shared.language.rawValue)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let outcome = ScreenTextService.outcome(for: ScreenTextService.recognitionImage(image),
                                                     detectQRCodes: detectQRCodes,

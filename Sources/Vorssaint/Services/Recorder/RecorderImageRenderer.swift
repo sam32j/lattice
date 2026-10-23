@@ -26,11 +26,11 @@ enum RecorderImageRenderer {
                                                              .fileSizeKey,
                                                              .contentModificationDateKey]),
               values.isRegularFile == true,
-              let source = MediaSupport.imageDisplaySize(at: url),
+              let source = ImageFileSupport.imageDisplaySize(at: url),
               let drawn = RecorderImageOverlay.drawnSize(source: source,
                                                          size: overlay.size,
                                                          canvas: canvas),
-              MediaSupport.imageRenderSizeIsSafe(drawn)
+              ImageFileSupport.imageRenderSizeIsSafe(drawn)
         else { return nil }
 
         // The file's own size and date are part of the key: a logo replaced on
@@ -64,7 +64,7 @@ enum RecorderImageRenderer {
     private static func render(_ path: String, drawn: CGSize) -> CGImage? {
         let width = Int(drawn.width)
         let height = Int(drawn.height)
-        guard let picture = MediaSupport.imageThumbnail(at: URL(fileURLWithPath: path),
+        guard let picture = ImageFileSupport.imageThumbnail(at: URL(fileURLWithPath: path),
                                                         maxPixel: max(width, height)),
               let space = CGColorSpace(name: CGColorSpace.sRGB),
               let context = CGContext(data: nil,

@@ -24,11 +24,11 @@ enum NotchFileToolsSupport {
     static func accepts(_ urls: [URL], for tool: MediaTool) -> Bool {
         guard !urls.isEmpty, urls.allSatisfy(\.isFileURL),
               tool == .imageCompressor || urls.count == 1 else { return false }
-        let types: [UTType] = tool == .videoCompressor || tool == .gifMaker
+        let types: [UTType] = tool == .videoCompressor
             ? [.movie, .video] : [.image]
         return urls.allSatisfy { url in
             let type = (try? url.resourceValues(forKeys: [.contentTypeKey]))?.contentType
-            return MediaSupport.inputMatchesTool(contentType: type, inputTypes: types)
+            return FileOutputSupport.inputMatchesTool(contentType: type, inputTypes: types)
         }
     }
 
@@ -93,8 +93,8 @@ final class NotchArchiveOperation: @unchecked Sendable {
         guard values.isRegularFile == true || values.isDirectory == true || values.isSymbolicLink == true else {
             throw CocoaError(.fileReadUnsupportedScheme)
         }
-        let staged = try MediaSupport.temporaryOutputURL(for: output)
-        defer { MediaSupport.discardStagedOutput(staged) }
+        let staged = try FileOutputSupport.temporaryOutputURL(for: output)
+        defer { FileOutputSupport.discardStagedOutput(staged) }
         let child = makeProcess(input, staged, values.isDirectory == true)
         child.standardOutput = FileHandle.nullDevice
         child.standardError = FileHandle.nullDevice
@@ -111,7 +111,7 @@ final class NotchArchiveOperation: @unchecked Sendable {
         defer { process = nil; lock.unlock() }
         guard !cancelled else { throw CancellationError() }
         guard child.terminationStatus == 0 else { throw CocoaError(.fileWriteUnknown) }
-        try MediaSupport.installStagedOutput(staged, at: output, replacingExisting: false)
+        try FileOutputSupport.installStagedOutput(staged, at: output, replacingExisting: false)
     }
 
     private static func archiver(_ input: URL, _ output: URL, _ directory: Bool) -> Process {

@@ -332,7 +332,7 @@ final class NotchWatchService: ObservableObject {
             if let outcome = tracker.observe(signature: signature, reading: text, at: Date()) { finish(outcome) }
             return
         }
-        let languages = MediaSupport.recognitionLanguages(for: L10n.shared.language.rawValue)
+        let languages = OCRRecognitionSupport.recognitionLanguages(for: L10n.shared.language.rawValue)
         let (area, recognized) = await Task.detached(priority: .utility) { () -> (CGImage, String) in
             let area = NotchWatchSupport.standalone(image)
             let source = Self.scaledForRecognition(area) ?? area

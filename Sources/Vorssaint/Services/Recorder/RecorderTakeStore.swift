@@ -119,7 +119,7 @@ final class RecorderTakeStore: @unchecked Sendable {
                                         attributes: [.posixPermissions: 0o700])
             try manager.copyItem(at: sourceURL, to: destination)
             try manager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
-            guard MediaSupport.imageThumbnail(at: destination, maxPixel: 1) != nil else {
+            guard ImageFileSupport.imageThumbnail(at: destination, maxPixel: 1) != nil else {
                 try? manager.removeItem(at: folder)
                 return nil
             }

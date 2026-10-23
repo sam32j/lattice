@@ -323,7 +323,7 @@ struct ClipboardEntryPreviewSidebar: View {
     /// the entry; the copy itself lands in the history like any other.
     private func copyText(in url: URL, of entry: ClipboardHistoryEntry) {
         recognizingEntryID = entry.id
-        let languages = MediaSupport.recognitionLanguages(for: l10n.language.rawValue)
+        let languages = OCRRecognitionSupport.recognitionLanguages(for: l10n.language.rawValue)
         let removeLineBreaks = UserDefaults.standard.bool(forKey: DefaultsKey.screenOCRRemoveLineBreaks)
         let pasteboardChangeCount = NSPasteboard.general.changeCount
         let strings = l10n.s
