@@ -298,7 +298,7 @@ extension CommandBarFeatureStrings {
         selectionUpper: "UPPERCASE",
         selectionLower: "lowercase",
         selectionTitleCase: "Title Case",
-        selectionShelf: "Keep it on the shelf",
+        selectionShelf: "Keep it on the File Cache",
         selectionCount: "Count it",
         selectionCountFormat: "Words: %d, characters: %d",
         sourceSelection: "What is selected",

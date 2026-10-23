@@ -157,7 +157,7 @@ extension FeatureStrings {
             musicSummary: "The song playing now, with its controls.",
             clipboardSummary: "What you copied recently, ready to paste again.",
             capturesSummary: "Your latest screenshots and recordings.",
-            filesSummary: "A shelf for the files you drop on the island.",
+            filesSummary: "A File Cache for the files you drop on the island.",
             systemSummary: "CPU, memory, disk, network and battery at a glance.",
             toolsSummary: "Tools and utilities, one click away.",
             calendarSummary: "Today’s events and the month ahead.",
