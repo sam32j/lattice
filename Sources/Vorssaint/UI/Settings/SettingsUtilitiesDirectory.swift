@@ -29,6 +29,8 @@ extension SettingsDirectory {
                                                  FeatureStrings.snippets(language).addButton,
                                                  FeatureStrings.snippets(language).soundPickerLabel,
                                                  FeatureStrings.snippets(language).soundToggle]),
+                SettingsDirectoryItem(page: .videoDownloader, title: "Video Downloader", icon: "arrow.down.square",
+                                      keywords: ["yt-dlp", "download video", "quality", "ffmpeg"]),
                 SettingsDirectoryItem(page: .scratchpad,
                                       title: FeatureStrings.scratchpad(language).pageTitle,
                                       icon: "note.text",

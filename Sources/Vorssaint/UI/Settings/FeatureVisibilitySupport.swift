@@ -9,7 +9,7 @@ import Foundation
 enum SettingsPage: Hashable {
     case general, features, energy, monitor, cameraPreview, diskImageInstaller, launcherGrid
     case mouse, keyboard, switcher, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, portManager, notch, notchMascot
-    case shortcuts, dataPermissions, about
+    case shortcuts, dataPermissions, about, videoDownloader
 }
 
 /// Stable, non-localized identities for destinations inside shared Settings
@@ -428,7 +428,7 @@ enum FeatureVisibilitySupport {
         case .cameraPreview: return [.cameraPreview]
         case .diskImageInstaller: return [.diskImageInstaller]
         case .launcherGrid: return [.quickLauncher]
-        case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard, .audioInput, .audioOutput:
+        case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard, .audioInput, .audioOutput, .videoDownloader:
             return []
         }
     }

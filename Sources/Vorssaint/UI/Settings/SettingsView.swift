@@ -564,6 +564,7 @@ struct SettingsView: View {
         case .homebrew: HomebrewSettings()
         case .appUpdates: AppUpdatesSettings()
         case .media: MediaSettings()
+        case .videoDownloader: VideoDownloaderSettings()
         case .clipboard: ClipboardSettings()
         case .audioInput: AudioInputSettings()
         case .audioOutput: AudioOutputSettings()

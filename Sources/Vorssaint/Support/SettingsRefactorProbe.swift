@@ -22,6 +22,14 @@ enum SettingsRefactorProbe {
         defaults.set(false, forKey: DefaultsKey.windowLayoutShortcutsEnabled)
         defaults.set(false, forKey: DefaultsKey.volumeMixerEnabled)
         defaults.set(true, forKey: AppFeature.bluetoothSleep.availabilityKey)
+        if CommandLine.arguments.contains("--video-downloader-only") {
+            var failures = [String]()
+            VideoDownloaderRenderingProbe.run(output: output, failures: &failures)
+            defaults.removePersistentDomain(forName: identity)
+            for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
+            if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
+            exit(failures.isEmpty ? 0 : 1)
+        }
         if CommandLine.arguments.contains("--followup-only") {
             defaults.set(true, forKey: AppFeature.notch.availabilityKey)
             var failures = [String]()
