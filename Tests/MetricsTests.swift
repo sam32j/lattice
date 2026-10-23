@@ -48,6 +48,7 @@ struct MetricsTests {
             }),
             ("window-layout", { WindowLayoutFeatureTests.run(suite) }),
             ("media", { MediaFeatureTests.run(suite) }),
+            ("video-downloader", { VideoDownloaderTests.run(suite) }),
             ("mixer", {
                 MixerNativeDragTests.run(suite)
                 MixerOutputAdjustmentContract.run(suite)
