@@ -24,6 +24,11 @@ enum NativeMediaOptimizerTests {
             suite.expect(try Data(contentsOf: output).count < original.count,
                          "native JPEG compression reduces the size of the high-quality fixture")
             suite.expect(try Data(contentsOf: input) == original, "native encoder never modifies its input")
+            let png = try encoder.optimize(input, aggressive: false, directory: folder, format: .png)
+            let pngSource = CGImageSourceCreateWithURL(png as CFURL, nil)!
+            suite.expect(CGImageSourceGetType(pngSource) as String? == UTType.png.identifier,
+                         "requesting PNG produces actual PNG bytes, not a renamed JPEG")
+            try verifyConversionGeometry(suite, encoder: encoder, folder: folder)
             for type in [UTType.png, .gif, .heic] {
                 let file = folder.appendingPathComponent("fixture.\(type.preferredFilenameExtension!)")
                 let frames = type == .gif ? 2 : 1
@@ -63,5 +68,28 @@ enum NativeMediaOptimizerTests {
             }
             try NativeVideoOptimizerTests.run(suite, folder: folder)
         } catch { suite.expect(false, "native image optimization: \(error)") }
+    }
+    private static func verifyConversionGeometry(_ suite: TestSuite, encoder: NativeMediaOptimizer, folder: URL) throws {
+        let pixels = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 64, pixelsHigh: 32,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+        memset(pixels.bitmapData!, 0, pixels.bytesPerRow * pixels.pixelsHigh)
+        let transparent = folder.appendingPathComponent("transparent.png")
+        try pixels.representation(using: .png, properties: [:])!.write(to: transparent)
+        let jpeg = try encoder.optimize(transparent, aggressive: false, directory: folder, format: .jpeg)
+        let opaque = NSBitmapImageRep(data: try Data(contentsOf: jpeg))!
+        let color = opaque.colorAt(x: 16, y: 16)!.usingColorSpace(.deviceRGB)!
+        suite.expect(color.redComponent > 0.95 && color.greenComponent > 0.95 && color.blueComponent > 0.95,
+                     "transparent image conversion uses a white JPEG background rather than black")
+        memset(pixels.bitmapData!, 160, pixels.bytesPerRow * pixels.pixelsHigh)
+        let oriented = folder.appendingPathComponent("rotated.jpg")
+        let target = CGImageDestinationCreateWithURL(oriented as CFURL, UTType.jpeg.identifier as CFString, 1, nil)!
+        CGImageDestinationAddImage(target, pixels.cgImage!, [kCGImagePropertyOrientation: 6] as CFDictionary)
+        guard CGImageDestinationFinalize(target) else { throw NativeMediaError.invalidOutput }
+        let converted = try encoder.optimize(oriented, aggressive: false, directory: folder, format: .png)
+        let source = CGImageSourceCreateWithURL(converted as CFURL, nil)!
+        let result = CGImageSourceCreateImageAtIndex(source, 0, nil)!
+        suite.expect(result.width == 32 && result.height == 64,
+                     "format conversion bakes EXIF orientation into upright pixels without changing display size")
     }
 }

@@ -38,11 +38,15 @@ final class MediaService: ObservableObject {
     func cancel(immediately: Bool = false) {
         generation = UUID(); active?.cancel(); active = nil; state = .cancelled
     }
-    func optimize(inputs: [URL], destination: URL, tool: MediaTool, aggressive: Bool) {
+    func optimize(inputs: [URL], destination: URL, tool: MediaTool, aggressive: Bool,
+                  format: MediaOutputFormat = .original, besideOriginals: Bool = false) {
         guard active == nil else { return }
         guard !inputs.isEmpty, inputs.allSatisfy({
             MediaOptimizerPolicy.accepts((try? $0.resourceValues(forKeys: [.contentTypeKey]))?.contentType, tool: tool)
         }) else { state = .failed("Choose images (including GIFs) or videos for the selected category."); return }
+        guard format == .original || MediaOutputFormat.choices(for: inputs).contains(format) else {
+            state = .failed("This format is not available for the selected files."); return
+        }
         let id = UUID(); generation = id
         let client = makeClient(); active = client
         completedOutputs = []
@@ -52,26 +56,33 @@ final class MediaService: ObservableObject {
             var outputs: [URL] = [], originalBytes: Int64 = 0, outputBytes: Int64 = 0, unchanged = 0
             do {
                 for (index, input) in inputs.enumerated() {
+                    let outputDirectory = besideOriginals ? input.deletingLastPathComponent() : destination
                     guard self.isCurrent(id) else { throw CancellationError() }
                     DispatchQueue.main.async {
                         guard self.generation == id else { return }
                         self.state = .running(progress: Double(index) / Double(inputs.count),
                             message: "Optimizing \(index + 1) of \(inputs.count)…")
                     }
-                    let staged = try MediaOptimizerPolicy.stage(input, in: destination)
+                    let staged = try MediaOptimizerPolicy.stage(input, in: outputDirectory)
                     defer { try? FileManager.default.removeItem(at: staged.directory) }
                     guard self.isCurrent(id) else { throw CancellationError() }
-                    let optimized = try client.optimize(staged.input, aggressive, staged.directory)
+                    let optimized: URL
+                    if format == .original { optimized = try client.optimize(staged.input, aggressive, staged.directory) }
+                    else {
+                        guard let convert = client.convert else { throw NativeMediaError.unsupported }
+                        optimized = try convert(staged.input, format, aggressive, staged.directory)
+                    }
                     try MediaOptimizerPolicy.validateOutput(optimized, in: staged.directory)
                     let before = Int64((try staged.input.resourceValues(forKeys: [.fileSizeKey])).fileSize ?? 0)
                     let after = Int64((try optimized.resourceValues(forKeys: [.fileSizeKey])).fileSize ?? 0)
-                    let chosen = after < before ? optimized : staged.input
-                    if after >= before { unchanged += 1 }
+                    let keepOriginal = format == .original && after >= before
+                    let chosen = keepOriginal ? staged.input : optimized
+                    if keepOriginal { unchanged += 1 }
                     var saved: URL?, publicationError: Error?
                     DispatchQueue.main.sync {
                         guard self.generation == id else { return }
                         do {
-                            let output = FileOutputSupport.uniqueOutputURL(in: destination,
+                            let output = FileOutputSupport.uniqueOutputURL(in: outputDirectory,
                                 baseName: FileOutputSupport.visibleOutputBaseName(for: input) + "-optimized",
                                 fileExtension: chosen.pathExtension)
                             try FileOutputSupport.installStagedOutput(chosen, at: output, replacingExisting: false)

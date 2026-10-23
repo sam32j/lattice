@@ -23,11 +23,12 @@ final class NativeVideoOptimizer: @unchecked Sendable {
         lock.lock(); cancelled = true; let active = session; lock.unlock()
         active?.cancelExport()
     }
-    func optimize(_ input: URL, aggressive: Bool, directory: URL) throws -> URL {
+    func optimize(_ input: URL, aggressive: Bool, directory: URL, format: MediaOutputFormat = .original) throws -> URL {
+        guard [.original, .h264, .hevc].contains(format) else { throw NativeMediaError.unsupported }
         let asset = AVURLAsset(url: input)
         guard asset.isReadable, asset.isPlayable, !asset.tracks(withMediaType: .video).isEmpty,
               asset.duration.seconds.isFinite, asset.duration.seconds > 0 else { throw NativeMediaError.unsupported }
-        let preset = AVAssetExportPresetHEVC1920x1080
+        let preset = format == .h264 ? AVAssetExportPreset1920x1080 : AVAssetExportPresetHEVC1920x1080
         guard AVAssetExportSession.exportPresets(compatibleWith: asset).contains(preset),
               let export = AVAssetExportSession(asset: asset, presetName: preset),
               export.supportedFileTypes.contains(.mp4) else { throw NativeMediaError.unsupported }

@@ -60,6 +60,29 @@ enum MediaOptimizerTests {
                 suite.expect(try Data(contentsOf: result.outputURLs[0]) == Data("original".utf8),
                              "no-savings output is an intact copy with collision-safe naming")
             } else { suite.expect(false, "no-savings result completes") }
+            let photo = folder.appendingPathComponent("convert.jpg")
+            try Data("source".utf8).write(to: photo)
+            let otherFolder = folder.appendingPathComponent("second-folder", isDirectory: true)
+            try fm.createDirectory(at: otherFolder, withIntermediateDirectories: false)
+            let otherPhoto = otherFolder.appendingPathComponent("convert.jpg")
+            try Data("second source".utf8).write(to: otherPhoto)
+            let conversion = MediaService(makeClient: {
+                MediaOptimizerClient(optimize: client.optimize, cancel: {}, convert: { _, _, _, directory in
+                    let output = directory.appendingPathComponent("converted.png")
+                    try Data(repeating: 7, count: 100).write(to: output); return output
+                })
+            })
+            conversion.optimize(inputs: [photo, otherPhoto], destination: otherFolder, tool: .imageCompressor,
+                                aggressive: false, format: .png, besideOriginals: true)
+            wait(conversion)
+            if case .completed(let result) = conversion.state {
+                suite.expect(result.outputURLs[0].pathExtension == "png" && result.outputBytes == 200,
+                             "explicit format conversion honors the chosen format even when larger")
+                suite.expect(result.outputURLs[0].deletingLastPathComponent().standardizedFileURL.path == folder.standardizedFileURL.path && result.unchangedCount == 0,
+                             "quick conversion saves beside its source and never mislabels an original copy")
+                suite.expect(result.outputURLs[1].deletingLastPathComponent().path == otherFolder.path,
+                             "a multi-folder quick batch publishes each output beside its own source")
+            } else { suite.expect(false, "explicit conversion completes") }
             let second = folder.appendingPathComponent("second.gif")
             try Data("second original".utf8).write(to: second)
             let release = DispatchSemaphore(value: 0)

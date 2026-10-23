@@ -57,6 +57,11 @@ enum NativeVideoOptimizerTests {
             suite.expect(!result.tracks(withMediaType: .audio).isEmpty, "native video compression retains the audio track")
         }
         suite.expect(try Data(contentsOf: input) == original, "native video export preserves original bytes")
+        let compatible = try NativeVideoOptimizer().optimize(withAudio, aggressive: false, directory: folder, format: .h264)
+        let compatibleTrack = AVURLAsset(url: compatible).tracks(withMediaType: .video)[0]
+        let description = compatibleTrack.formatDescriptions[0] as! CMFormatDescription
+        suite.expect(CMFormatDescriptionGetMediaSubType(description) == kCMVideoCodecType_H264,
+                     "the H.264 format action exports actual H.264 video, not HEVC with a different label")
         let cancelling = NativeVideoOptimizer()
         let started = DispatchSemaphore(value: 0), done = DispatchSemaphore(value: 0)
         let cancellation = CancellationResult()
