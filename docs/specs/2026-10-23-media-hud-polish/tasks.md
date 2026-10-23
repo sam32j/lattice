@@ -32,4 +32,12 @@
 
 ## Status
 
-Design approved. Baseline clean at 7d4bc437 with existing renders inspected. Implementation pending.
+Complete. Baseline clean at 7d4bc437; baseline renders inspected before implementation.
+
+- Shared shell: File Cache's embedded mode omits its own backdrop/border; default/docked chrome, watermark and drag-target feedback are preserved. A common selected-state mode bar serves the standalone and island views. The hint explicitly describes drag and shake, then Option.
+- HUD clarity: visible Copy/Reveal labels, explicit original-preview help, accessible drag action, natural file-count/result copy, full-width progress, conversion scope and shorter footer. No encoder, model, routing or saving-policy changes.
+- Visual verification: isolated native probe passed 15 rendered cases, including light/dark empty/completed, original preview, batch, running, failure, destination, unsupported drop, shared modes, island and original File Cache chrome. Images were inspected; measured heights stayed within the fixture bounds. Native immediate-Option-release, panel identity, cache items and result-preservation assertions passed.
+- Regression verification: focused media/File Cache/island/settings run passed 57440 checks. Full `./build.sh --test` passed **102304 checks**, plus preference cleanup, uninstall Spaces and developer-install isolation checks. Media 60, File Cache 473, island 56127, settings 780, repository 320.
+- Final developer build passed; strict deep codesign verification, isolated selftest and `--media-layout` motion checks passed. Final post-review copy/chrome renders used the final developer build.
+- Independent source review identified one P2 hint-copy issue: Option was described too broadly. Corrected to qualify drag and shake; re-review found no remaining actionable blockers. No live Finder input was generated; the native destination fixture checks the callback boundary instead.
+- Commits separated into design/plan, shared chrome/mode selector, HUD clarity and rendering verification topics. Publish only `feat/media-optimizer`; no PR or merge and no changes to downloader or settings-refactor branches.

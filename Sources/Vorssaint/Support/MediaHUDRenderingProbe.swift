@@ -16,9 +16,15 @@ enum MediaHUDRenderingProbe {
             size: CGSize(width: 370, height: 400), output: output, failures: &failures)
         do {
             let image = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 512, pixelsHigh: 256,
-                bitsPerSample: 8, samplesPerPixel: 3, hasAlpha: false, isPlanar: false,
+                bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
                 colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
-            memset(image.bitmapData!, 160, image.bytesPerRow * image.pixelsHigh)
+            let context = CGContext(data: image.bitmapData!, width: 512, height: 256, bitsPerComponent: 8,
+                bytesPerRow: image.bytesPerRow, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+            context.setFillColor(CGColor(red: 0.12, green: 0.4, blue: 0.85, alpha: 1))
+            context.fill(CGRect(x: 0, y: 0, width: 512, height: 256))
+            context.setFillColor(CGColor(red: 1, green: 0.8, blue: 0.2, alpha: 1))
+            context.fillEllipse(in: CGRect(x: 250, y: 30, width: 190, height: 190))
             let input = output.appendingPathComponent("sample.jpg")
             try image.representation(using: .jpeg, properties: [.compressionFactor: 1])!.write(to: input)
             let shelf = ShelfService.shared
@@ -27,6 +33,8 @@ enum MediaHUDRenderingProbe {
             shelf.summon(); settle(0.3)
             SettingsRefactorProbe.render("shared-cache", view: AnyView(FileUtilityStandaloneView()),
                 size: CGSize(width: 370, height: 500), output: output, failures: &failures)
+            SettingsRefactorProbe.render("cache-original-chrome", view: AnyView(ShelfView(brandWatermark: true)
+                .environmentObject(shelf)), size: CGSize(width: 370, height: 500), output: output, failures: &failures)
             let panel = shelf.ensurePanel()
             let kept = shelf.items.map(\.id)
             let session = FileUtilitySession.shared
@@ -77,7 +85,8 @@ enum MediaHUDRenderingProbe {
             SettingsRefactorProbe.render("hud-island", view: AnyView(MediaHUDView(model: model)
                 .environment(\.notchPresentation, true).foregroundStyle(.white).colorScheme(.dark)
                 .background(.black).clipShape(RoundedRectangle(cornerRadius: 28))),
-                size: CGSize(width: 500, height: 500), output: output, failures: &failures)
+                size: CGSize(width: 500, height: 500), output: output, failures: &failures, colorScheme: .dark)
+            try MediaHUDStateRenderingProbe.run(input: input, output: output, failures: &failures)
             FileUtilityPresentation.shared.select(.cache); settle(0.2)
             FileUtilityPresentation.shared.select(.optimizer); settle(0.2)
             if shelf.ensurePanel() !== panel || shelf.items.map(\.id) != retained || model.outputs.isEmpty {
