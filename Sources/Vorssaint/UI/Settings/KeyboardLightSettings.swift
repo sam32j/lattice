@@ -6,7 +6,6 @@ import SwiftUI
 struct KeyboardLightSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var brightness = BrightnessService.shared
-    @ObservedObject private var permissions = Permissions.shared
     @AppStorage(DefaultsKey.keyboardBrightnessShortcutsEnabled) private var enabled = false
 
     var body: some View {
@@ -46,9 +45,6 @@ struct KeyboardLightSettings: View {
                     Text(l10n.s.shortcutUnavailable)
                         .font(.caption)
                         .foregroundStyle(.red)
-                }
-                if enabled, !permissions.accessibility {
-                    PermissionRow(kind: .accessibility)
                 }
             }
         }
