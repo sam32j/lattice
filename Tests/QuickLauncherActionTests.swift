@@ -90,6 +90,7 @@ enum QuickLauncherContract {
         }
         for feature in AppFeature.allCases { defaults.set(true, forKey: feature.availabilityKey) }
         defaults.set(true, forKey: DefaultsKey.microphoneLevelControlEnabled)
+        defaults.set(true, forKey: DefaultsKey.cleaningModeShortcutEnabled)
         cameraInNotch = false
         let cases: [(QuickLauncherItem, AppFeature, String?, Double?)] = [
             (.keepAwake, .keepAwake, "keepAwake.toggle", nil),
@@ -173,7 +174,7 @@ enum QuickLauncherContract {
         grouping.refreshAvailability()
         suite.expect(grouping.activeUtility == nil,
                      "removing the final action owner closes an already-open grouping")
-        defaults.set(true, forKey: AppFeature.brightness.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.brightnessControlEnabled)
         grouping.run(.toggles)
         suite.expect(grouping.visibleItems.contains(.toggles) && grouping.activeUtility == .toggles,
                      "installing Displays alone restores the grouping and its appearance actions")
