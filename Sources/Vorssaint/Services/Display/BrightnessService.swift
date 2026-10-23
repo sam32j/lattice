@@ -414,8 +414,7 @@ final class BrightnessService: ObservableObject {
     }
 
     func stepKeyboardLight(direction: Int) {
-        guard AppFeature.brightness.isAvailable,
-              UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled),
+        guard UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled),
               direction != 0,
               let keyboardLightBridge,
               let current = keyboardLightLevel(using: keyboardLightBridge)
@@ -517,8 +516,7 @@ final class BrightnessService: ObservableObject {
     }
 
     private func syncKeyboardBrightnessHotkeys() {
-        let enabled = AppFeature.brightness.isAvailable
-            && UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
+        let enabled = UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
             && keyboardLightBridge != nil
         let decreaseShortcut = GlobalShortcutRole.keyboardBrightnessDecrease.savedShortcut
         let increaseShortcut = GlobalShortcutRole.keyboardBrightnessIncrease.savedShortcut

@@ -183,6 +183,11 @@ final class FeatureRuntime: ObservableObject {
         for feature in AppFeature.allCases where feature.isAvailable {
             Self.bindings[feature]?()
         }
+        if !AppFeature.brightness.isAvailable,
+           UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
+            || NotchSupport.routes(.keyboardLight, in: .standard) {
+            Self.bindings[.brightness]?()
+        }
     }
 
     /// Capability changes can enable a saved preference without constructing
@@ -195,7 +200,7 @@ final class FeatureRuntime: ObservableObject {
     /// directly from Settings, so an off change must always reach teardown.
     func sync(_ features: [AppFeature]) {
         guard !InputEventTap.isBlocked else { return }
-        for feature in features where feature.isMouseFeature || feature.isKeyboardFeature || feature.isAvailable || loadedThisSession.contains(feature) {
+        for feature in features where feature == .brightness || feature.isMouseFeature || feature.isKeyboardFeature || feature.isAvailable || loadedThisSession.contains(feature) {
             if feature.isAvailable { loadedThisSession.insert(feature) }
             Self.bindings[feature]?()
             if feature == .clipboardHistory, loadedThisSession.contains(.pastePlain) || AppFeature.pastePlain.isAvailable {
