@@ -56,9 +56,9 @@ struct MediaHUDView: View {
                 Label(error, systemImage: "exclamationmark.circle").font(.caption).foregroundStyle(.red)
             }
             HStack {
-                Text("Originals stay unchanged.").font(.caption2).foregroundStyle(.secondary)
+                Text("Originals are kept.").font(.caption2).foregroundStyle(.secondary)
                 Spacer()
-                if !model.inputs.isEmpty { Button("Add files…", action: chooseFiles).controlSize(.small).disabled(model.busy) }
+                if !model.inputs.isEmpty { Button("Choose files…", action: chooseFiles).controlSize(.small).disabled(model.busy) }
             }
         }
         .padding(14)
@@ -89,11 +89,14 @@ struct MediaHUDView: View {
                 let url = model.showsOriginal ? model.selectedOriginal : model.selectedOutput ?? model.selectedOriginal
                 if let url { MediaHUDThumbnail(url: url).frame(width: 58, height: 58) }
                 VStack(alignment: .leading, spacing: 5) {
-                    Text((model.selectedOutput ?? model.selectedOriginal)?.lastPathComponent ?? "")
+                    Text(url?.lastPathComponent ?? "")
                         .font(.system(size: 12, weight: .medium)).lineLimit(2).truncationMode(.middle)
                     if let original = model.selectedOriginal, let output = model.selectedOutput {
                         Text("\(size(original)) → \(size(output))").font(.caption).foregroundStyle(.secondary)
-                    } else { Text("\(model.inputs.count) file(s)").font(.caption).foregroundStyle(.secondary) }
+                    } else {
+                        Text(model.inputs.count == 1 ? "1 file" : "\(model.inputs.count) files")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }
                 Spacer(minLength: 0)
             }
@@ -102,44 +105,61 @@ struct MediaHUDView: View {
     @ViewBuilder private var status: some View {
         switch model.service.state {
         case .running(let progress, let message):
-            HStack { ProgressView(value: progress); Text(message).font(.caption); Button("Cancel", action: model.cancel) }
+            VStack(alignment: .leading, spacing: 6) {
+                ProgressView(value: progress)
+                HStack {
+                    Text(message).font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Cancel", action: model.cancel).controlSize(.small)
+                }
+            }
         case .completed(let result):
             let saved = max(0, result.originalBytes - result.outputBytes)
             let percent = result.originalBytes > 0 ? Int((Double(saved) / Double(result.originalBytes) * 100).rounded()) : 0
             Label(saved > 0 ? "Saved \(ByteCountFormatter.string(fromByteCount: saved, countStyle: .file)) · \(percent)%"
-                  : "Saved copies · no size reduction", systemImage: "checkmark.circle")
+                  : result.outputBytes > result.originalBytes ? "Converted · larger total size"
+                  : result.outputURLs.count == 1 ? "Copy saved · no size reduction" : "Copies saved · no size reduction",
+                  systemImage: saved > 0 ? "checkmark.circle" : "doc")
                 .font(.caption).foregroundStyle(.secondary)
         case .failed(let error):
             Label(error, systemImage: "exclamationmark.circle").font(.caption).foregroundStyle(.red)
             Button("Choose another save folder…", action: chooseDestination).controlSize(.small)
-        case .cancelled: Text("Cancelled. Completed files are kept.").font(.caption).foregroundStyle(.secondary)
+        case .cancelled: Text("Cancelled. Finished copies are kept.").font(.caption).foregroundStyle(.secondary)
         case .idle: EmptyView()
         }
     }
     private var actions: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             if let output = model.selectedOutput {
                 Button { NSPasteboard.general.clearContents(); NSPasteboard.general.writeObjects([output as NSURL]) }
-                    label: { Image(systemName: "doc.on.doc") }.help("Copy file")
+                    label: { Label("Copy", systemImage: "doc.on.doc") }.help("Copy the optimized file")
                 Button { NSWorkspace.shared.activateFileViewerSelecting([output]) }
-                    label: { Image(systemName: "folder") }.help("Show in Finder")
+                    label: { Label("Reveal", systemImage: "folder") }.help("Show the optimized file in Finder")
                 Image(systemName: "hand.draw").padding(5).contentShape(Rectangle())
                     .onDrag { NSItemProvider(contentsOf: output) ?? NSItemProvider() }.help("Drag the optimized file")
+                    .accessibilityLabel("Drag the optimized file")
             }
             Spacer()
-            Toggle("Original", isOn: $model.showsOriginal).toggleStyle(.button).controlSize(.small)
-        }.buttonStyle(.borderless)
+            Toggle("Preview original", isOn: $model.showsOriginal).toggleStyle(.button).controlSize(.small)
+                .help("Preview the original. Copy, Reveal and drag still use the optimized file.")
+        }.font(.caption).buttonStyle(.borderless)
     }
     private var formatBar: some View {
         VStack(alignment: .leading, spacing: 6) {
             Divider()
-            if model.inputs.count > 1 { Text("Format · applies to all files").font(.caption2).foregroundStyle(.secondary) }
+            HStack {
+                Text(model.formats == [.gif] ? "Optimize as" : "Convert to").font(.caption.weight(.medium))
+                Spacer()
+                if model.inputs.count > 1 { Text("All \(model.inputs.count) files").font(.caption2).foregroundStyle(.secondary) }
+            }
             HStack(spacing: 6) {
                 ForEach(model.formats) { format in
                     Button(format.title) { model.run(format: format) }
                         .buttonStyle(.bordered).controlSize(.small)
                         .tint(model.format == format ? .accentColor : nil)
-                        .help(format == .jpeg ? "Convert to JPEG. Transparent areas become white." : "Convert to \(format.title).")
+                        .help(format == .gif ? "Optimize GIF without removing animation."
+                              : format == .jpeg ? "Convert to a JPEG copy. Transparent areas become white."
+                              : "Convert to a \(format.title) copy.")
                 }
                 Spacer(minLength: 0)
             }.disabled(model.busy || model.needsDestination)
