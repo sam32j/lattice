@@ -62,7 +62,7 @@ struct EnergyDisplaySettings: View {
                     }
                     Divider()
                     SettingsRow(symbol: "cursorarrow.rays", title: strings.keysToggle, caption: strings.keysCaption) {
-                        Toggle(strings.keysToggle, isOn: $brightnessKeysEnabled)
+                        PermissionGatedToggle(strings.keysToggle, isOn: $brightnessKeysEnabled)
                             .labelsHidden()
                             .onChange(of: brightnessKeysEnabled) { _, isOn in
                                 if isOn { Permissions.shared.requestAccessibility() }
@@ -70,7 +70,8 @@ struct EnergyDisplaySettings: View {
                             }
                     }
                     SettingsRow(symbol: "sun.min", title: strings.keyStep, caption: strings.keyStepCaption) {
-                        Picker(strings.keyStep, selection: brightnessKeyStepBinding) {
+                        PermissionGatedPicker(title: strings.keyStep, selection: brightnessKeyStepBinding,
+                                              requiring: { $0 == .standard ? [] : [.accessibility] }) {
                             Text(strings.keyStepStandard).tag(BrightnessSupport.KeyStep.standard)
                             Text(strings.keyStepHalf).tag(BrightnessSupport.KeyStep.half)
                             Text(strings.keyStepQuarter).tag(BrightnessSupport.KeyStep.quarter)
@@ -98,7 +99,6 @@ struct EnergyDisplaySettings: View {
             BrightnessSupport.KeyStep.sanitized(brightnessKeyStep)
         } set: { step in
             brightnessKeyStep = step.rawValue
-            if step != .standard { Permissions.shared.requestAccessibility() }
             BrightnessService.shared.syncWithPreferences()
         }
     }
