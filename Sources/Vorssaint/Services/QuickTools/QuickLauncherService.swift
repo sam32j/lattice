@@ -18,7 +18,7 @@ enum QuickLauncherItem: String, PanelOrderItem, Identifiable {
     var id: String { rawValue }
 
     func isAvailable(in defaults: UserDefaults = .standard) -> Bool {
-        guard feature.isAvailable(in: defaults) else { return false }
+        guard self != .screenOCR, self != .colorPicker, feature.isAvailable(in: defaults) else { return false }
         return self != .toggles || [AppFeature.brightness, .commandBar, .micMute].contains {
             $0.isAvailable(in: defaults)
         }
@@ -89,6 +89,10 @@ final class QuickLauncherService: ObservableObject {
     }
 
     func syncWithPreferences() {
+        guard AppFeature.quickLauncher.isAvailable else {
+            suspend()
+            return
+        }
         let enabled = AppFeature.quickLauncher.isAvailable
             && UserDefaults.standard.bool(forKey: DefaultsKey.quickLauncherShortcutEnabled)
         let shortcut = GlobalShortcut.saved(for: DefaultsKey.quickLauncherShortcut,
@@ -282,11 +286,8 @@ final class QuickLauncherService: ObservableObject {
             KeepAwakeManager.shared.toggle()
         case .micMute:
             MicMuteService.shared.toggle()
-        case .screenOCR:
-            hide()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                ScreenTextService.shared.capture()
-            }
+        case .screenOCR, .colorPicker:
+            return
         case .screenshot:
             hide()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -296,11 +297,6 @@ final class QuickLauncherService: ObservableObject {
             hide()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 ScreenRecorderService.shared.toggle()
-            }
-        case .colorPicker:
-            hide()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                ColorSamplerService.shared.pick()
             }
         case .cameraPreview:
             let embedded = CameraPreviewService.shared.showInNotchIfEnabled()

@@ -28,9 +28,10 @@ struct TextSnippetsSettings: View {
     var body: some View {
         Form {
             Section {
-                Toggle(text.enable, isOn: $enabled)
+                PermissionGatedToggle(SettingsOwnershipStrings.enable(text.pageTitle, l10n.language), isOn: $enabled)
                     .onChange(of: enabled) { _, _ in
-                        TextSnippetService.shared.syncWithPreferences()
+                        FeatureRuntime.shared.sync([.textSnippets])
+                        FeatureRuntime.shared.finishAvailabilityChange()
                     }
                 Text(text.enableCaption)
                     .font(.caption)
