@@ -734,7 +734,7 @@ extension Strings {
         monitorShowCPUTemperature: "CPU sıcaklığı",
         monitorShowGPUTemperature: "GPU sıcaklığı",
         monitorShowBatteryTemperature: "Pil sıcaklığı",
-        monitorShowPeripheralBattery: "Çevre birimi pili",
+        monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .tr),
         peripheralBatteryNoDevices: "Aygıt bulunamadı",
         monitorGraphsSection: "Grafikler",
 

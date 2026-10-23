@@ -8,6 +8,7 @@ import SwiftUI
 struct PermissionsPortalSections: View {
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var permissions = Permissions.shared
+    @ObservedObject private var bluetooth = BluetoothPermissionAccess.shared
     let hub: FeatureHubStrings
     let visiblePermissions: [AppPermission]
     @State private var automation: [Permissions.AutomationTarget: Permissions.AutomationStatus] = [:]
@@ -35,6 +36,7 @@ struct PermissionsPortalSections: View {
             // read the moment the portal shows; automation is checked off the
             // main thread because the AE round trip can block briefly.
             permissions.refresh()
+            bluetooth.refresh()
             if visiblePermissions.contains(.accessibility)
                 || visiblePermissions.contains(.screenRecording) {
                 permissions.setActivePermissionSurface(pollingDemandID, visible: true)
@@ -50,6 +52,7 @@ struct PermissionsPortalSections: View {
         .onDisappear {
             permissions.setActivePermissionSurface(pollingDemandID, visible: false)
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in bluetooth.refresh() }
     }
 
     private func status(for permission: AppPermission) -> PermissionPortalRow.Status {
@@ -86,6 +89,12 @@ struct PermissionsPortalSections: View {
             switch permissions.camera {
             case .granted: return .granted
             case .denied, .undetermined: return .missing
+            case .unknown: return .unknown
+            }
+        case .bluetooth:
+            switch BluetoothAuthorizationPolicy.status(bluetooth.authorization) {
+            case .granted: return .granted
+            case .missing: return .missing
             case .unknown: return .unknown
             }
         case .appManagement:

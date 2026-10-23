@@ -734,7 +734,7 @@ extension Strings {
         monitorShowCPUTemperature: "CPU温度",
         monitorShowGPUTemperature: "GPU温度",
         monitorShowBatteryTemperature: "バッテリー温度",
-        monitorShowPeripheralBattery: "周辺機器のバッテリー",
+        monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .ja),
         peripheralBatteryNoDevices: "周辺機器が見つかりません",
         monitorGraphsSection: "グラフ",
 
