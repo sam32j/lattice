@@ -30,7 +30,7 @@ enum SettingsFollowupRenderingProbe {
                     .background(CaptureChromeBackdrop(material: .ultraThinMaterial,
                         shape: RoundedRectangle(cornerRadius: 16)))
                     .environment(\.colorScheme, dark ? .dark : .light)
-                    .opacity(CapturePresentationPolicy.toolbarOpacity(overlapsSelection: overlaps, hovered: false))
+                    .opacity(CapturePresentationPolicy.toolbarOpacity(overlapsSelection: overlaps, isDragging: overlaps))
                 }.frame(height: 150).padding(22)
                 render(label, AnyView(chrome), height: 200, output: output, failures: &failures)
             }

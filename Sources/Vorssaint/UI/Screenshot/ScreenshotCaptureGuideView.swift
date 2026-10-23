@@ -7,6 +7,7 @@ import Carbon.HIToolbox
 
 final class CaptureGuideViewModel: ObservableObject {
     @Published var overlapsSelection = false
+    @Published var isAreaDragging = false
     @Published var offersScrollingCapture = false
     @Published var offersRepeatLastRegion = false
     @Published var requiresDraggedRegion = false
@@ -53,7 +54,7 @@ struct CaptureGuideView: View {
         }
         }
         .opacity(CapturePresentationPolicy.toolbarOpacity(overlapsSelection: model.overlapsSelection,
-                                                          hovered: model.isHovered))
+                                                          isDragging: model.isAreaDragging))
         .animation(.easeOut(duration: 0.12), value: model.overlapsSelection)
         .animation(.easeOut(duration: 0.12), value: model.isHovered)
     }

@@ -1293,13 +1293,13 @@ private final class ScreenshotOverlayView: NSView {
     private let fullScreenHost: PassThroughHostingView<FullScreenCaptureButton>
     private var fullScreenControlHovered = false
 
-    private var dragOrigin: CGPoint?
+    private var dragOrigin: CGPoint? { didSet { refreshChromeContrast() } }
     private var lastDragPoint: CGPoint = .zero
     private var selection: CGRect = .zero { didSet { refreshChromeContrast() } }
     fileprivate private(set) var recordingDraft: RecorderSelectionDraft?
     private var hoverPoint: CGPoint = .zero
     private var pointerIsInside = false
-    private var hoveredWindow: ScreenshotSupport.PickableWindow? { didSet { refreshChromeContrast() } }
+    private var hoveredWindow: ScreenshotSupport.PickableWindow?
     private let highlightWindows = true
     /// The value just copied with C, shown briefly in the loupe's info bar
     /// because the regular HUD sits under these shielding-level panels.
@@ -1451,12 +1451,8 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     private func refreshChromeContrast() {
-        var regions = [selection]
-        if let hoveredWindow { regions.append(hoveredWindow.frame) }
-        if let controller {
-            regions += controller.selectedWindows.values.filter { $0.panel === panel }.map { $0.window.frame }
-        }
-        let guideOverlap = regions.contains { CapturePresentationPolicy.overlaps(chrome: guideHost.frame, selection: $0) }
+        if guideModel.isAreaDragging != isDragging { guideModel.isAreaDragging = isDragging }
+        let guideOverlap = CapturePresentationPolicy.overlaps(chrome: guideHost.frame, selection: selection)
         if guideModel.overlapsSelection != guideOverlap { guideModel.overlapsSelection = guideOverlap }
     }
 

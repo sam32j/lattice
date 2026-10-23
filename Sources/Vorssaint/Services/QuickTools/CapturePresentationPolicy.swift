@@ -8,8 +8,8 @@ enum CapturePresentationPolicy {
         selection.width > 0 && selection.height > 0 && chrome.intersects(selection)
     }
 
-    static func toolbarOpacity(overlapsSelection: Bool, hovered: Bool) -> Double {
-        overlapsSelection && !hovered ? 0.12 : 1
+    static func toolbarOpacity(overlapsSelection: Bool, isDragging: Bool) -> Double {
+        overlapsSelection && isDragging ? 0.12 : 1
     }
 
     static func plateOpacity(dark: Bool, reduceTransparency: Bool) -> Double {

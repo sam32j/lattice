@@ -19,9 +19,9 @@ enum CapturePresentationPolicyTests {
                      && !CapturePresentationPolicy.overlaps(chrome: CGRect(x: 200, y: 50, width: 30, height: 20), selection: selection)
                      && !CapturePresentationPolicy.overlaps(chrome: selection, selection: .zero),
                      "only a nonempty selection intersecting capture chrome requests a clear preview")
-        suite.expect(CapturePresentationPolicy.toolbarOpacity(overlapsSelection: true, hovered: false) <= 0.2
-                     && CapturePresentationPolicy.toolbarOpacity(overlapsSelection: true, hovered: true) == 1
-                     && CapturePresentationPolicy.toolbarOpacity(overlapsSelection: false, hovered: false) == 1,
-                     "overlapping toolbar fades as a whole, restores on hover and otherwise stays readable")
+        suite.expect(CapturePresentationPolicy.toolbarOpacity(overlapsSelection: true, isDragging: true) <= 0.2
+                     && CapturePresentationPolicy.toolbarOpacity(overlapsSelection: true, isDragging: false) == 1
+                     && CapturePresentationPolicy.toolbarOpacity(overlapsSelection: false, isDragging: true) == 1,
+                     "only an actively dragged overlapping area fades the toolbar; hover and completed selection stay readable")
     }
 }
