@@ -39,6 +39,7 @@ enum PageOwnedServiceLifecycleTests {
         var panel: Panel? = Panel()
         var isVisible: Bool { panel?.isVisible == true }
         var shortcutRegistrationFailed = false
+        var inserted = false
         var monitors = 2
         var isEditing = true
         var editingOptionsItem: Int? = 1
@@ -84,6 +85,10 @@ enum PageOwnedServiceLifecycleTests {
         snippets.syncWithPreferences()
         suite.expect(!snippets.hotkey.registered && !snippets.isVisible && snippets.monitors == 0,
                      "disabling Text Snippets unregisters its library shortcut and closes its presentation")
+        snippets.show()
+        snippets.insert(TextSnippet())
+        suite.expect(!snippets.isVisible && !snippets.inserted,
+                     "a delayed Quick Snippets action cannot open or insert after disabling Text Snippets")
         defaults.set(true, forKey: AppFeature.quickLauncher.availabilityKey)
         defaults.set(true, forKey: DefaultsKey.quickLauncherShortcutEnabled)
         let launcher = Launcher()
