@@ -606,7 +606,7 @@ final class ScreenRecorderService: ObservableObject {
             // Recording is exempt from the screenshot visibility preference,
             // so editors and pins stay out of the stream either way.
             var chrome = Set(ScreenshotService.shared
-                .protectedWindowIDsForCapture(honoursVisibilityPreference: false)
+                .protectedWindowIDsForCapture(keepingContentOut: true)
                 .map(Int.init))
             chrome.formUnion(indicator.excludedWindowNumbers)
             chrome.formUnion(RecorderOverlayController.shared.excludedWindowNumbers)

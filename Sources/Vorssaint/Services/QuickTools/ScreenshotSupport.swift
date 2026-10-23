@@ -100,7 +100,7 @@ enum ScreenCaptureTool: String, CaseIterable {
 
     static func available(isAvailable: (AppFeature) -> Bool = { $0.isAvailable })
         -> [ScreenCaptureTool] {
-        allCases.filter { isAvailable($0.feature) }
+        [Self.screenshot, .recording].filter { isAvailable($0.feature) }
     }
 }
 
@@ -113,10 +113,7 @@ enum ScreenshotSupport {
     struct UnifiedCapturePolicy: Equatable {
         let freeze: Bool
         let includePointer: Bool
-        let hideVorssaintWindows: Bool
-        /// Whether editors and pinned captures stay out of the picture and the
-        /// pickable windows. Recording keeps them out even while "Hide
-        /// Vorssaint windows" is off, which that flag alone cannot tell apart.
+        /// Recording protects editors and pinned captures from recording themselves.
         let keepsContentWindowsOut: Bool
         let usesGeometry: Bool
 
@@ -126,15 +123,13 @@ enum ScreenshotSupport {
         func sharesSource(with other: UnifiedCapturePolicy) -> Bool {
             freeze == other.freeze
                 && includePointer == other.includePointer
-                && hideVorssaintWindows == other.hideVorssaintWindows
                 && keepsContentWindowsOut == other.keepsContentWindowsOut
         }
     }
 
     static func unifiedCapturePolicy(for tool: ScreenCaptureTool,
                                      screenshotFreeze: Bool,
-                                     screenshotIncludePointer: Bool,
-                                     screenshotHideVorssaintWindows: Bool)
+                                     screenshotIncludePointer: Bool)
         -> UnifiedCapturePolicy {
         let freeze: Bool
         switch tool {
@@ -148,8 +143,7 @@ enum ScreenshotSupport {
         return UnifiedCapturePolicy(
             freeze: freeze,
             includePointer: tool == .screenshot && screenshotIncludePointer,
-            hideVorssaintWindows: tool != .recording && screenshotHideVorssaintWindows,
-            keepsContentWindowsOut: tool == .recording || screenshotHideVorssaintWindows,
+            keepsContentWindowsOut: tool == .recording,
             usesGeometry: tool == .recording)
     }
 
@@ -165,8 +159,7 @@ enum ScreenshotSupport {
         isAvailable(selected.feature)
     }
 
-    static func selectionDimAlpha(notchControls: Bool, isFrozen: Bool, isDragging: Bool) -> CGFloat {
-        if notchControls { return isDragging ? 0.18 : 0 }
+    static func selectionDimAlpha(isFrozen: Bool, isDragging: Bool) -> CGFloat {
         return isFrozen ? 0.22 : 0.18
     }
 
@@ -191,11 +184,9 @@ enum ScreenshotSupport {
         isAvailable && pointerOnDisplay && !selectionInProgress && !capturePending
     }
 
-    static func fullScreenCaptureControlTopInset(screenChromeHeight: CGFloat,
-                                                 notchControlsHeight: CGFloat?) -> CGFloat {
+    static func fullScreenCaptureControlTopInset(screenChromeHeight: CGFloat) -> CGFloat {
         let chrome = screenChromeHeight.isFinite ? max(0, screenChromeHeight) : 0
-        let controls = notchControlsHeight.flatMap { $0.isFinite ? max(0, $0) : nil } ?? 0
-        return max(chrome, controls) + 12
+        return chrome + 12
     }
 
     /// Whether the guide should advertise repeating the last capture region.
