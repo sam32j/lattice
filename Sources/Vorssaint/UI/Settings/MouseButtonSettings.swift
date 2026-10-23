@@ -63,10 +63,13 @@ struct MouseButtonShortcutsSection: View {
             Divider()
             SettingsRow(symbol: "rectangle.3.group", title: text.spacesEnableLabel,
                         caption: text.spacesEnableCaption) {
+                if !spacesCommandsAreReachable {
+                    SettingsStatusDot(status: SettingsFeatureStatus(color: .red,
+                                                                  message: text.spacesShortcutsOffNote))
+                }
                 Toggle(text.spacesEnableLabel, isOn: $spacesEnabled)
                     .labelsHidden()
-                    .disabled(!spacesCommandsAreReachable && !spacesEnabled)
-                    .help(spacesCommandsAreReachable ? text.spacesEnableCaption : text.spacesShortcutsOffNote)
+                    .disabled(!spacesCommandsAreReachable)
                     .onChange(of: spacesEnabled) { _, on in
                         if !on {
                             stopSpacesCapture()
