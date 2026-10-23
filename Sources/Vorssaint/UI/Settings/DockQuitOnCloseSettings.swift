@@ -10,7 +10,7 @@ struct DockQuitOnCloseSettings: View {
         VStack(alignment: .leading, spacing: 13) {
             SettingsRow(symbol: "xmark.rectangle", title: l10n.s.autoQuitName,
                         caption: l10n.s.autoQuitEnableCaption) {
-                Toggle(l10n.s.autoQuitName, isOn: $enabled).labelsHidden()
+                PermissionGatedToggle(l10n.s.autoQuitName, isOn: $enabled).labelsHidden()
                     .onChange(of: enabled) { _, _ in FeatureRuntime.shared.sync([.autoQuit]) }
             }
             if enabled {

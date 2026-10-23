@@ -16,7 +16,7 @@ struct MusicBlockingSettings: View {
 
     var body: some View {
         SettingsCard(title: l10n.s.musicBlockSection, headerAccessory: {
-            Toggle(l10n.s.musicBlockTitle, isOn: $enabled)
+            PermissionGatedToggle(l10n.s.musicBlockTitle, isOn: $enabled)
                 .labelsHidden()
                 .toggleStyle(.switch)
                 .controlSize(.regular)

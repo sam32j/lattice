@@ -7,7 +7,7 @@ extension MouseSettings {
         VStack(alignment: .leading, spacing: 12) {
             SettingsRow(symbol: "macwindow.and.cursorarrow", title: l10n.s.focusFollowsMouseName,
                         caption: l10n.s.focusFollowsMouseCaption) {
-                Toggle(l10n.s.focusFollowsMouseName, isOn: $focusFollowsMouseEnabled)
+                PermissionGatedToggle(l10n.s.focusFollowsMouseName, isOn: $focusFollowsMouseEnabled)
                     .labelsHidden()
                     .onChange(of: focusFollowsMouseEnabled) { _, enabled in
                         FocusFollowsMouseService.shared.syncWithPreferences()
@@ -52,7 +52,7 @@ extension MouseSettings {
         VStack(alignment: .leading, spacing: 12) {
             SettingsRow(symbol: "arrowshape.turn.up.left", title: l10n.s.mouseNavigationEnable,
                         caption: InputSettingsStrings.text(.sideButtonsHelp, l10n.language)) {
-                Toggle(l10n.s.mouseNavigationEnable, isOn: $mouseNavigationEnabled)
+                PermissionGatedToggle(l10n.s.mouseNavigationEnable, isOn: $mouseNavigationEnabled)
                     .labelsHidden()
                     .onChange(of: mouseNavigationEnabled) { _, enabled in
                         MouseNavigationService.shared.syncWithPreferences()
@@ -70,7 +70,7 @@ extension MouseSettings {
         VStack(alignment: .leading, spacing: 12) {
             SettingsRow(symbol: "cursorarrow.click.badge.clock", title: mouseClickDebounceText.title,
                         caption: mouseClickDebounceText.caption) {
-                Toggle(mouseClickDebounceText.title, isOn: $mouseClickDebounceEnabled)
+                PermissionGatedToggle(mouseClickDebounceText.title, isOn: $mouseClickDebounceEnabled)
                     .labelsHidden()
                     .onChange(of: mouseClickDebounceEnabled) { _, enabled in
                         MouseClickDebounceService.shared.syncWithPreferences()
@@ -101,7 +101,7 @@ extension MouseSettings {
         SettingsCard(title: l10n.s.middleClickSection) {
             SettingsRow(symbol: "hand.tap", title: l10n.s.middleClickEnable,
                         caption: l10n.s.middleClickEnableCaption) {
-                Toggle(l10n.s.middleClickEnable, isOn: $middleClickEnabled)
+                PermissionGatedToggle(l10n.s.middleClickEnable, isOn: $middleClickEnabled)
                     .labelsHidden()
                     .onChange(of: middleClickEnabled) { _, enabled in
                         MiddleClickService.shared.syncWithPreferences()
