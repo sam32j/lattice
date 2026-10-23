@@ -5,23 +5,27 @@ import SwiftUI
 /// Inspecting authorization never calls MusicAuthorization.request(). This
 /// also avoids touching a library file just to decide which status to show.
 struct MediaMusicPermissionRow: View {
+    @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var l10n = L10n.shared
     @State private var status = MusicAuthorization.currentStatus
     @State private var details = false
     let hub: FeatureHubStrings
 
     private var granted: Bool { status == .authorized }
+    private var statusColor: Color {
+        granted ? PanelMetricColor.green(for: colorScheme) : PanelMetricColor.orange(for: colorScheme)
+    }
     private var title: String { "Media & Music" }
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "music.note").font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(granted ? Color.green : Color.orange)
+                .foregroundStyle(statusColor)
                 .frame(width: 30, height: 30)
-                .background((granted ? Color.green : Color.orange).opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
+                .background(statusColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Text(title).fontWeight(.medium)
-                    Circle().fill(granted ? Color.green : Color.orange).frame(width: 6, height: 6)
+                    Circle().fill(statusColor).frame(width: 6, height: 6)
                     Text(granted ? hub.statusGranted : hub.statusMissing).font(.caption).foregroundStyle(.secondary)
                     Spacer()
                     Button { details = true } label: { Image(systemName: "info.circle") }
