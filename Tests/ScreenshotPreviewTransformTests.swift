@@ -30,8 +30,8 @@ enum ScreenshotPreviewTransformTests {
         owner.level = ScreenshotPinWindow.pinLevel
         defer { owner.close() }
         suite.expect(ScreenshotWindowLayering.editorLevel(above: owner).rawValue > owner.level.rawValue
-                     && ScreenshotWindowLayering.editorLevel(above: nil) == .normal,
-                     "only a pin-owned editor is elevated above its owner")
+                     && ScreenshotWindowLayering.editorLevel(above: nil).rawValue > ScreenshotPinWindow.pinLevel.rawValue,
+                     "all capture editors sit above pins and ordinary app windows")
         let editorWindow = NSWindow()
         editorWindow.isReleasedWhenClosed = false
         editorWindow.level = ScreenshotWindowLayering.editorLevel(above: owner)
@@ -40,8 +40,10 @@ enum ScreenshotPreviewTransformTests {
         suite.expect(dialogLevel.rawValue > editorWindow.level.rawValue
                      && dialogLevel.rawValue >= NSWindow.Level.modalPanel.rawValue,
                      "dialogs sit strictly above the editor window level even when editor is above a pinned window")
-        suite.expect(ScreenshotWindowLayering.dialogLevel(above: nil) == .modalPanel,
-                     "dialog level defaults to modalPanel when owner window is nil")
+        suite.expect(ScreenshotWindowLayering.dialogLevel(above: nil).rawValue
+                     > ScreenshotWindowLayering.editorLevel(above: nil).rawValue
+                     && dialogLevel.rawValue < NSWindow.Level.screenSaver.rawValue,
+                     "capture dialogs stay above editors but below Liftoff's screen-saver-level window")
         let rawFinderPaths = "/tmp/file\nwith\nnewlines.png\0/tmp/other.png\0"
         let parsed = rawFinderPaths.split(separator: "\0").map { String($0) }.filter { !$0.isEmpty }.map { URL(fileURLWithPath: $0) }
         suite.expect(parsed.count == 2 && parsed.first?.path == "/tmp/file\nwith\nnewlines.png",
