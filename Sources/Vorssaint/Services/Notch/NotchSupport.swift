@@ -1308,7 +1308,8 @@ enum NotchControlItem: String, CaseIterable, Identifiable {
     var setupRequirement: NotchControlSetupRequirement {
         switch self {
         case .volume: return .feature(.mixer)
-        case .brightness, .keyboardLight: return .feature(.brightness)
+        case .brightness: return .feature(.brightness)
+        case .keyboardLight: return .none
         case .keepAwake: return .feature(.keepAwake)
         case .microphone: return .feature(.micMute)
         case .screenshot: return .feature(.screenshot)
@@ -1329,7 +1330,7 @@ enum NotchControlItem: String, CaseIterable, Identifiable {
         case .volume: return AppFeature.mixer.isAvailable(in: defaults)
         case .mixer: return AppFeature.mixer.isAvailable(in: defaults) && NotchSupport.modules(in: defaults).contains(.mixer)
         case .brightness: return AppFeature.brightness.isAvailable(in: defaults)
-        case .keyboardLight: return AppFeature.brightness.isAvailable(in: defaults) && Self.keyboardLightIsSupported()
+        case .keyboardLight: return Self.keyboardLightIsSupported()
         case .keepAwake: return AppFeature.keepAwake.isAvailable(in: defaults)
         case .microphone: return AppFeature.micMute.isAvailable(in: defaults)
         case .screenshot: return AppFeature.screenshot.isAvailable(in: defaults)
@@ -2015,7 +2016,7 @@ enum NotchSupport {
         case .agents: return AppFeature.notchAgents.isAvailable(in: defaults)
             && modules(in: defaults).contains(.agents)
         case .systemNotification: return NotchNotificationSupport.isEnabled(in: defaults)
-        case .keyboardLight: return AppFeature.brightness.isAvailable(in: defaults)
+        case .keyboardLight: return true
         case .volume: return AppFeature.mixer.isAvailable(in: defaults)
         case .microphone: return AppFeature.micMute.isAvailable(in: defaults)
         case .brightness:
