@@ -274,6 +274,10 @@ if (( TEST )); then
         Sources/Vorssaint/Services/InputEventTap.swift
         Sources/Vorssaint/Services/ActivationHandoff.swift
         Sources/Vorssaint/Services/Media/MediaSupport.swift
+        Sources/Vorssaint/Services/VideoDownloader/VideoDownloadRequest.swift
+        Sources/Vorssaint/Services/VideoDownloader/VideoDownloadProcess.swift
+        Sources/Vorssaint/Services/VideoDownloader/VideoDownloadDependencies.swift
+        Sources/Vorssaint/Services/VideoDownloader/VideoDownloader.swift
         Sources/Vorssaint/Core/QuitProtectionSupport.swift
         Sources/Vorssaint/Core/QuitProtectionStrings.swift
         Sources/Vorssaint/Core/Defaults.swift
