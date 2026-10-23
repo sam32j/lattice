@@ -1171,7 +1171,7 @@ private final class ScreenshotOverlayPanel: ScreenshotCapturePanel {
         isOpaque = frozenImage != nil
         backgroundColor = frozenImage != nil ? .black : .clear
         hasShadow = false
-        level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
+        level = CapturePresentationPolicy.overlayLevel
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         hidesOnDeactivate = false
         acceptsMouseMovedEvents = true
@@ -1277,11 +1277,11 @@ private final class ScreenshotOverlayView: NSView {
 
     private var dragOrigin: CGPoint?
     private var lastDragPoint: CGPoint = .zero
-    private var selection: CGRect = .zero
+    private var selection: CGRect = .zero { didSet { refreshChromeContrast() } }
     fileprivate private(set) var recordingDraft: RecorderSelectionDraft?
     private var hoverPoint: CGPoint = .zero
     private var pointerIsInside = false
-    private var hoveredWindow: ScreenshotSupport.PickableWindow?
+    private var hoveredWindow: ScreenshotSupport.PickableWindow? { didSet { refreshChromeContrast() } }
     private let highlightWindows = true
     /// The value just copied with C, shown briefly in the loupe's info bar
     /// because the regular HUD sits under these shielding-level panels.
@@ -1372,6 +1372,7 @@ private final class ScreenshotOverlayView: NSView {
         guideHost = host
         let hoverRelay = FullScreenControlHoverRelay()
         let fullScreen = PassThroughHostingView(interactiveRootView: FullScreenCaptureButton(
+            model: guideModel,
             action: { [weak controller, weak panel] in
                 guard let controller, let panel else { return }
                 controller.captureFullScreenFromControl(on: panel)
@@ -1429,6 +1430,19 @@ private final class ScreenshotOverlayView: NSView {
                                       y: topInset,
                                       width: fullScreenWidth,
                                       height: fullScreenHeight)
+        refreshChromeContrast()
+    }
+
+    private func refreshChromeContrast() {
+        var regions = [selection]
+        if let hoveredWindow { regions.append(hoveredWindow.frame) }
+        if let controller {
+            regions += controller.selectedWindows.values.filter { $0.panel === panel }.map { $0.window.frame }
+        }
+        let guideOverlap = regions.contains { CapturePresentationPolicy.overlaps(chrome: guideHost.frame, selection: $0) }
+        let fullOverlap = regions.contains { CapturePresentationPolicy.overlaps(chrome: fullScreenHost.frame, selection: $0) }
+        if guideModel.overlapsSelection != guideOverlap { guideModel.overlapsSelection = guideOverlap }
+        if guideModel.fullScreenOverlapsSelection != fullOverlap { guideModel.fullScreenOverlapsSelection = fullOverlap }
     }
 
     /// An explicit location covers pointer warps, whose new position may not
@@ -2338,6 +2352,7 @@ private final class PassThroughHostingView<Content: View>: NSHostingView<Content
 }
 
 private struct FullScreenCaptureButton: View {
+    @ObservedObject var model: CaptureGuideViewModel
     let action: () -> Void
     let hoverChanged: (Bool) -> Void
     @ObservedObject private var l10n = L10n.shared
@@ -2374,40 +2389,13 @@ private struct FullScreenCaptureButton: View {
         .shadow(color: .black.opacity(0.20), radius: 12, y: 5)
         .help(FeatureStrings.screenshot(l10n.language).fullScreenShortcutTitle)
         .accessibilityLabel(FeatureStrings.screenshot(l10n.language).fullScreenCaptureButton)
-    }
-}
-
-/// The backing plate the capture chrome draws behind its text.
-///
-/// The shared `HUDBackdrop` cannot serve here: its material blends with what
-/// sits behind the window, and this chrome lives inside the overlay window,
-/// which is opaque while it shows the frozen still. Blending there would read
-/// the live desktop instead of the still the person is aiming at. The plate is
-/// the part that fixes contrast anyway, so keep the material these panels
-/// already draw and add only the plate over it.
-private struct CaptureChromeBackdrop<S: Shape>: View {
-    let material: Material
-    let shape: S
-
-    @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    /// Reduced transparency already gives an opaque material, so the plate
-    /// steps aside; otherwise it carries the same calibration the shared
-    /// backdrop documents.
-    private var plateOpacity: Double {
-        guard !reduceTransparency else { return 0 }
-        return HUDBackdrop.plateOpacity(dark: colorScheme == .dark)
-    }
-
-    var body: some View {
-        shape.fill(material)
-            .overlay(shape.fill(colorScheme == .dark ? Color.black : Color.white)
-                        .opacity(plateOpacity))
+        .environment(\.captureChromeOverlapsSelection, model.fullScreenOverlapsSelection)
     }
 }
 
 final class CaptureGuideViewModel: ObservableObject {
+    @Published var overlapsSelection = false
+    @Published var fullScreenOverlapsSelection = false
     @Published var offersScrollingCapture = false
     @Published var offersRepeatLastRegion = false
     @Published var requiresDraggedRegion = false
@@ -2437,6 +2425,7 @@ private struct CaptureGuideView: View {
     let onCancel: () -> Void
 
     var body: some View {
+        Group {
         if let screenCaptureOptions {
             UnifiedCaptureGuideContent(strings: strings,
                                        options: screenCaptureOptions,
@@ -2451,6 +2440,8 @@ private struct CaptureGuideView: View {
         } else {
             standardGuide
         }
+        }
+        .environment(\.captureChromeOverlapsSelection, model.overlapsSelection)
     }
 
     private var standardGuide: some View {
