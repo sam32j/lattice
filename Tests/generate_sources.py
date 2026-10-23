@@ -1583,7 +1583,8 @@ def main():
     status_dot = "Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift"
     write("InputSettingsControls.swift", "import AppKit\nimport SwiftUI\n\nextension InputSettingsControlTests {\n"
           + declaration(status_dot, "struct SettingsFeatureStatus")
-          + declaration(status_dot, "private struct StatusTooltip:").replace("private struct", "struct", 1)
+          + declaration(status_dot, "final class HoverHintView:")
+          + declaration(status_dot, "struct StatusTooltip:")
           + declaration(status_dot, "struct SettingsStatusDot:")
           + "final class Capture {\nvar isCapturing = false\nstatic var isCaptureActive = false\nvar lastInputSeen: Int64?\nvar syncCount = 0\nfunc syncWithPreferences() { syncCount += 1 }\n"
           + declaration("Sources/Vorssaint/Services/MouseButtons/MouseButtonShortcutService.swift", "    func setCapturing(")
@@ -1608,7 +1609,8 @@ def main():
           + declaration(settings_card, "struct SettingsCard<")
           + declaration("Sources/Vorssaint/UI/Settings/ExperimentalBadge.swift", "struct ExperimentalBadge:")
           + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "struct SettingsFeatureStatus")
-          + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "private struct StatusTooltip:").replace("private struct", "struct", 1)
+          + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "final class HoverHintView:")
+          + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "struct StatusTooltip:")
           + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "struct SettingsStatusDot")
           + declaration(settings_card, "struct SettingsRow<")
           + feature_row
