@@ -47,6 +47,18 @@ If you appreciate a tidy, cohesive Mac setup that feels effortless every day, yo
 
 ## Features
 
+### Media Optimizer
+
+Optimize JPEG, PNG, HEIC, animated GIFs and macOS-compatible videos in
+**Utilities > Media Optimizer**. No Clop app, FFmpeg or Homebrew installation is
+needed. JPEG/HEIC and video use Apple's native engines; small bundled PNG/GIF
+tools are built from pinned source with licenses and source included in the app.
+Videos export as HEVC MP4 up to 1080p, or 720p with stronger compression.
+Input compatibility depends on the codec, not just the extension; MKV/WebM are
+not guaranteed. Lattice processes copies and keeps your originals. If encoding
+does not reduce the size, it saves an original-quality copy instead.
+The former converter, GIF maker and media text-extraction workspace are removed.
+
 Lattice inherits the full suite of 50+ built-in Mac utilities from Vorssaint—including per-app volume, system monitor, window snapping, clipboard history, app uninstaller, and much more.
 
 👉 **Check out the full feature catalog on [Vorssaint](https://github.com/vorssaint/vorssaint-utils#everything-it-does).**

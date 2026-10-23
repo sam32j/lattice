@@ -4,15 +4,17 @@ User delegated design and plan approval while unavailable. No approval dialogs a
 
 ## Goal
 
-Replace the old media workspace with safe local Clop SDK image/GIF and video optimization.
+Replace the old media workspace with standalone local image/GIF optimization and native macOS video compression.
 
 ## Design
 
-Use the official pinned MIT ClopSDK as a separately compiled module. Preserve originals by staging copies, validate responses and publish unique outputs. Shared image/OCR/archive helpers move out of the removed media engine. Keep feature identity and island entry points, but expose only Images and Videos.
+User approved the native-video pivot on 2026-10-23 after comparing native and bundled FFmpeg. Remove ClopSDK and all Clop.app requirements. Use AVFoundation export for video, ImageIO for JPEG/HEIC, and bundled source-built pngquant/gifsicle for PNG/GIF. GIF remains in Images. Preserve originals by staging copies, validate outputs and publish unique files. When encoding is not smaller, publish the unchanged staged copy and report it as already optimized. Shared image/OCR/archive helpers live outside the removed media engine. Keep feature identity and island entry points, but expose only Images and Videos.
+
+Videos export as MP4 using Apple's HEVC presets (up to 1080p normally, 720p for stronger compression). Explain this in the UI, preserve audio and orientation, validate playable output and duration, and fail unsupported inputs explicitly. Native is not a universal MKV/WebM decoder. No Clop, FFmpeg or Homebrew is needed by Media Optimizer. Tiny image executables are compiled from checked-in, hash-pinned upstream source, link only system libraries, and are signed before the enclosing app. Include licenses and full corresponding source archives in the bundle.
 
 ## Alternatives
 
-Prefer the requested local integration over a cloud service, which adds uploads and credentials. Prefer a focused MVP over retaining the old multi-tool/editor surface. Dependencies are not installed on the developer's Mac by verification. The app requires explicit user action for installation or launching Clop.
+Native video keeps the app lightweight and handles everyday phone videos and screen recordings. Bundled FFmpeg would broaden container/codec support and software quality controls at a much larger size. Clop SDK requires a separate application and was rejected by the user. No cloud uploads or dependency installation occur in optimizer verification.
 
 ## Verification seams
 
@@ -20,5 +22,4 @@ Selected under delegated discretion: actual command/request construction, decodi
 
 ## Acceptance
 
-Usable consistent card-based utility, visible prerequisite status, actionable errors, cancellation, no original-file changes, no silent failure. Local execution is not a promise that a video site will permit download. Only download content the user is authorized to save.
-
+Usable consistent card-based utility, no separate app prerequisite, actionable errors, cancellation, no original-file changes, no silent failure. Video Downloader is a separate branch and utility with separate dependencies.
