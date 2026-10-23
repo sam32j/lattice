@@ -4,14 +4,13 @@
 import SwiftUI
 /// Screenshot Settings page.
 struct ScreenshotSettings: View {
-    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var service = ScreenshotService.shared
     @ObservedObject private var sharing = ScreenshotShareService.shared
     @ObservedObject private var runtime = FeatureRuntime.shared
-    @AppStorage(DefaultsKey.screenshotEnabled) private var screenshotEnabled = true
+    @AppStorage(DefaultsKey.screenshotEnabled) var screenshotEnabled = true
     @AppStorage(DefaultsKey.screenshotFreeze) private var freeze = true
-    @AppStorage(DefaultsKey.screenshotHideVorssaintWindows) private var hideVorssaintWindows = true
     @AppStorage(DefaultsKey.screenshotSaveFolder) private var saveFolder = ""
     @AppStorage(DefaultsKey.screenshotSaveSubfolder) private var saveSubfolder = ""
     @AppStorage(DefaultsKey.screenshotFileNamePattern) private var fileNamePattern = ""
@@ -38,17 +37,13 @@ struct ScreenshotSettings: View {
     @AppStorage(DefaultsKey.screenshotPreviewEnabled) private var previewEnabled = true
     @AppStorage(DefaultsKey.screenshotPreviewDuration) private var previewDuration =
         ScreenshotSupport.defaultConfirmationPreviewDuration
-    @AppStorage(DefaultsKey.screenshotSharingEnabled) private var sharingEnabled = true
+    @AppStorage(DefaultsKey.screenshotSharingEnabled) var sharingEnabled = true
     @AppStorage(DefaultsKey.screenshotUploadDuration) private var uploadDuration = ScreenshotShareDuration.oneHour.rawValue
     @AppStorage(DefaultsKey.screenshotPinRoundedCorners) private var pinRoundedCorners = true
-    @AppStorage(DefaultsKey.screenOCRRemoveLineBreaks) private var removesLineBreaks = false
-    @AppStorage(DefaultsKey.screenOCRDetectQRCodes) private var detectsQRCodes = true
-    @AppStorage(DefaultsKey.colorPickerFormat) private var colorFormat = "hex"
-    @AppStorage(DefaultsKey.colorPickerBareHex) private var usesBareHex = false
     @State private var showingSharedLinks = false
     @State private var showingSharePrivacy = false
 
-    private var strings: ScreenshotFeatureStrings {
+    var strings: ScreenshotFeatureStrings {
         FeatureStrings.screenshot(l10n.language)
     }
 
@@ -68,10 +63,6 @@ struct ScreenshotSettings: View {
                     destinationCard
                     toolsCard
                     sharingCard
-                    ocrCard
-                        .settingsSectionAnchor(.screenOCR, cornerRadius: 16)
-                    colorPickerCard
-                        .settingsSectionAnchor(.colorPicker, cornerRadius: 16)
                 }
                 .disabled(!screenshotInstalled)
                 .opacity(screenshotInstalled ? 1 : 0.55)
@@ -89,81 +80,6 @@ struct ScreenshotSettings: View {
         }
     }
 
-    private var screenshotInstalled: Bool {
-        AppFeature.screenshot.isAvailable
-    }
-
-    private var shortcutsCard: some View {
-        SettingsCard(title: strings.pageTitle, headerAccessory: {
-            HStack(spacing: 8) {
-                Toggle(l10n.s.screenshotEnable, isOn: Binding(
-                    get: { screenshotInstalled },
-                    set: { enabled in
-                        screenshotEnabled = enabled
-                        FeatureRuntime.shared.setAvailable([.screenshot], enabled)
-                        ScreenshotService.shared.syncWithPreferences()
-                        ScreenTextService.shared.syncWithPreferences()
-                        ScreenCaptureService.shared.syncWithPreferences()
-                    }
-                ))
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.regular)
-                    .help(l10n.s.screenshotEnable)
-                    .accessibilityLabel(l10n.s.screenshotEnable)
-            }
-        }) {
-            VStack(alignment: .leading, spacing: 10) {
-                CompactShortcutPreferenceRow(title: strings.pageTitle,
-                                             role: .screenshot,
-                                             enabledKey: DefaultsKey.screenshotShortcutEnabled) {
-                    ScreenCaptureService.shared.syncWithPreferences()
-                    ScreenshotService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: strings.fullScreenShortcutTitle,
-                                             role: .screenshotFullScreen,
-                                             enabledKey: DefaultsKey.screenshotFullScreenShortcutEnabled) {
-                    ScreenshotService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: strings.editLastCapture,
-                                             role: .screenshotLastCapture,
-                                             enabledKey: DefaultsKey.screenshotLastCaptureShortcutEnabled) {
-                    ScreenshotService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: strings.editClipboardImage,
-                                             role: .screenshotClipboard,
-                                             enabledKey: DefaultsKey.screenshotClipboardShortcutEnabled) {
-                    ScreenshotService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: strings.uploadLastCapture,
-                                             role: .screenshotUpload,
-                                             enabledKey: DefaultsKey.screenshotUploadShortcutEnabled) {
-                    ScreenshotService.shared.syncWithPreferences()
-                }
-                .disabled(!sharingEnabled)
-                CompactShortcutPreferenceRow(title: l10n.s.ocrName,
-                                             role: .screenOCR,
-                                             enabledKey: DefaultsKey.screenOCRShortcutEnabled) {
-                    ScreenTextService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: l10n.s.colorPickerName,
-                                             role: .colorPicker,
-                                             enabledKey: DefaultsKey.colorPickerShortcutEnabled) {
-                    ScreenCaptureService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: FeatureStrings.recentCaptures(l10n.language).title,
-                                             role: .recentCaptures,
-                                             enabledKey: DefaultsKey.recentCapturesShortcutEnabled) {
-                    RecentCaptureService.shared.syncWithPreferences()
-                }
-                if !permissions.screenRecording {
-                    PermissionRow(kind: .screenRecording)
-                }
-            }
-            .disabled(!screenshotEnabled)
-            .opacity(screenshotEnabled ? 1 : 0.55)
-        }
-    }
 
     // MARK: - Selection
 
@@ -174,8 +90,6 @@ struct ScreenshotSettings: View {
                                   caption: strings.freezeCaption,
                                   isOn: $freeze)
 
-                SettingsToggleRow(title: strings.hideVorssaintWindowsToggle,
-                                  isOn: $hideVorssaintWindows)
 
                 SettingsControlRow(title: strings.delayLabel) {
                     Picker(strings.delayLabel, selection: $delay) {
@@ -379,46 +293,6 @@ struct ScreenshotSettings: View {
                         }
                         .buttonStyle(.plain)
                     }
-                }
-            }
-        }
-    }
-
-    // MARK: - Screen OCR
-
-    private var ocrCard: some View {
-        SettingsCard(title: l10n.s.ocrName) {
-            VStack(alignment: .leading, spacing: 14) {
-                SettingsToggleRow(title: l10n.s.ocrRemoveLineBreaksToggle,
-                                  caption: l10n.s.ocrRemoveLineBreaksCaption,
-                                  isOn: $removesLineBreaks)
-
-                SettingsToggleRow(title: l10n.s.ocrQRToggle,
-                                  caption: l10n.s.ocrQRCaption,
-                                  isOn: $detectsQRCodes)
-            }
-        }
-    }
-
-    // MARK: - Color Picker
-
-    private var colorPickerCard: some View {
-        SettingsCard(title: l10n.s.colorPickerName) {
-            VStack(alignment: .leading, spacing: 14) {
-                SettingsControlRow(title: l10n.s.colorPickerFormatLabel) {
-                    Picker(l10n.s.colorPickerFormatLabel, selection: $colorFormat) {
-                        ForEach(ColorCopyFormat.allCases) { format in
-                            Text(format.label).tag(format.rawValue)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
-                }
-
-                if colorFormat == ColorCopyFormat.hex.rawValue {
-                    SettingsToggleRow(title: l10n.s.colorPickerBareHexToggle,
-                                      isOn: $usesBareHex)
                 }
             }
         }

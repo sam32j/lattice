@@ -14,9 +14,6 @@ final class ColorSamplerService: ObservableObject {
 
     private init() {}
 
-    func pick() {
-        ScreenCaptureService.shared.capture(initial: .color)
-    }
 
     func pickNative() {
         guard activeSampler == nil else { return }

@@ -315,7 +315,7 @@ enum ScreenshotScrollingCapture {
 
     static func capture(region: RecorderSupport.Region,
                         includePointer: Bool,
-                        hideVorssaintWindows: Bool,
+                        excludingAppWindows: Bool = false,
                         protectedWindowIDs: Set<CGWindowID>,
                         finishSignal: FinishSignal,
                         onProgress: @escaping @MainActor (Int) -> Void = { _ in },
@@ -323,7 +323,7 @@ enum ScreenshotScrollingCapture {
         do {
             guard let source = await ScreenshotCaptureEngine.prepareDisplayRegion(
                 displayID: region.displayID, pixelRect: region.pixelRect,
-                includePointer: includePointer, hideVorssaintWindows: hideVorssaintWindows,
+                includePointer: includePointer, excludingAppWindows: excludingAppWindows,
                 protectedWindowIDs: protectedWindowIDs),
                   let firstFrame = await source.image(),
                   let first = contentFrame(firstFrame)

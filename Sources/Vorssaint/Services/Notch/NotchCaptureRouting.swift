@@ -9,8 +9,4 @@ extension NotchSupport {
             && modules(in: defaults).contains(.captures)
     }
 
-    static func routesCaptureControls(in defaults: UserDefaults = .standard) -> Bool {
-        isEnabled(in: defaults) && defaults.bool(forKey: DefaultsKey.notchCaptureControls)
-            && modules(in: defaults).contains(.captures)
-    }
 }

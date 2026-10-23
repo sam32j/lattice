@@ -121,7 +121,7 @@ private struct SettingsSectionFocusModifier: ViewModifier {
     private func focus(_ anchor: SettingsSectionAnchor, using proxy: ScrollViewProxy) {
         // These destinations render just the selected tool at the top.
         // Scrolling their newly created view twice only delays navigation.
-        if page == .energy {
+        if page == .energy || page == .switcher {
             focusedAnchor = nil
             return
         }

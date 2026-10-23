@@ -359,25 +359,6 @@ enum CommandBarCatalog {
                     RecentCaptureService.shared.showHistoryWindow()
                 } }))
         }
-        if AppFeature.screenOCR.isAvailable {
-            entries.append(CommandBarEntry(
-                id: "action.screenOCR",
-                title: s.ocrName,
-                subtitle: area(.screenOCR, under: s.ocrName),
-                icon: .symbol("text.viewfinder"),
-                shortcut: roleShortcut(.screenOCR),
-                trouble: Permissions.shared.screenRecording ? nil : .needsPermission,
-                run: { _ in afterBeat { ScreenTextService.shared.capture() } }))
-        }
-        if AppFeature.colorPicker.isAvailable {
-            entries.append(CommandBarEntry(
-                id: "action.colorPicker",
-                title: s.colorPickerName,
-                subtitle: area(.colorPicker, under: s.colorPickerName),
-                icon: .symbol("eyedropper"),
-                shortcut: roleShortcut(.colorPicker),
-                run: { _ in afterBeat { ColorSamplerService.shared.pick() } }))
-        }
         if AppFeature.clipboardHistory.isAvailable {
             let clipboard = FeatureStrings.clipboard(language)
             let keepsHistory = UserDefaults.standard.bool(forKey: DefaultsKey.clipboardHistoryEnabled)

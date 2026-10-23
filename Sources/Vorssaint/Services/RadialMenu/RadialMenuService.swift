@@ -775,8 +775,7 @@ final class RadialMenuService: ObservableObject {
             switch tool {
             case .screenshot: ScreenshotService.shared.capture()
             case .screenRecorder: ScreenRecorderService.shared.toggle()
-            case .colorPicker: ColorSamplerService.shared.pick()
-            case .screenOCR: ScreenTextService.shared.capture()
+            case .colorPicker, .screenOCR: return
             case .micMute: MicMuteService.shared.toggle()
             case .clipboardHistory: ClipboardHistoryService.shared.showHistoryWindow()
             case .quickLauncher: QuickLauncherService.shared.show()

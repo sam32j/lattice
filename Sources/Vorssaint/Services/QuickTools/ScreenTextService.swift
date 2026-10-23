@@ -35,9 +35,6 @@ final class ScreenTextService: ObservableObject {
         recognitionGeneration += 1
     }
 
-    func capture() {
-        ScreenCaptureService.shared.capture(initial: .text)
-    }
 
     func receiveUnifiedCapture(_ capture: ScreenshotSelectionController.Capture) {
         recognize(capture.image,
