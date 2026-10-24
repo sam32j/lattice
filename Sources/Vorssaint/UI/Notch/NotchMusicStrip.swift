@@ -27,6 +27,7 @@ struct NotchMusicStrip: View {
     /// The island's own strip answers the pointer. A copy on another display
     /// or a strip on its way out only shows the song.
     var interactive = false
+    @ObservedObject private var swipe = NotchMusicSwipeState.shared
     @ObservedObject private var music = NotchMusicService.shared
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -126,17 +127,19 @@ struct NotchMusicStrip: View {
     /// The bars, or the button they become while the pointer rests on them.
     /// Both stay in place and cross-fade, and hidden bars hold still.
     private var bars: some View {
-        ZStack {
-            NotchLiveEqualizerBars(isPlaying: playing && !showsControl,
-                                   bars: NotchLayout.compactMusicBarCount,
-                                   barWidth: NotchLayout.compactMusicBarWidth,
-                                   height: geometry.compactMusicBarHeight,
-                                   tint: tint?.color ?? .white)
-                .opacity(showsControl ? 0 : 1)
-            if showsControl {
-                NotchMusicStripButton(playing: playing, tint: tint?.color ?? .white,
-                                      height: geometry.compactMusicBarHeight)
-                    .transition(.opacity)
+        NotchMusicSwipeVisualizer(frame: live ? swipe.frame : .init(), height: geometry.compactMusicBarHeight) {
+            ZStack {
+                NotchLiveEqualizerBars(isPlaying: playing && !showsControl,
+                                       bars: NotchLayout.compactMusicBarCount,
+                                       barWidth: NotchLayout.compactMusicBarWidth,
+                                       height: geometry.compactMusicBarHeight,
+                                       tint: tint?.color ?? .white)
+                    .opacity(showsControl ? 0 : 1)
+                if showsControl {
+                    NotchMusicStripButton(playing: playing, tint: tint?.color ?? .white,
+                                          height: geometry.compactMusicBarHeight)
+                        .transition(.opacity)
+                }
             }
         }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: showsControl)
@@ -204,31 +207,6 @@ struct NotchMusicStripButton: View {
             }
             .frame(width: NotchLayout.compactMusicBarsWidth, height: height)
             .accessibilityHidden(true)
-    }
-}
-
-/// A brief directional nudge acknowledges the command without predicting the
-/// next track or waiting for the player's artwork. No repeating work survives it.
-struct NotchMusicSwipeFeedback: ViewModifier {
-    var enabled = true
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var trigger = 0
-    @State private var direction: CGFloat = -1
-
-    func body(content: Content) -> some View {
-        let displacement = reduceMotion ? 0 : direction
-        return content
-            .keyframeAnimator(initialValue: CGFloat.zero, trigger: trigger) { view, travel in
-                view.offset(x: displacement * travel)
-            } keyframes: { _ in
-                CubicKeyframe(8, duration: 0.09)
-                SpringKeyframe(0, duration: 0.25, spring: .smooth)
-            }
-            .onReceive(NotchMusicService.shared.gestureSkips) { forward in
-                guard enabled, !reduceMotion else { return }
-                direction = forward ? -1 : 1
-                trigger &+= 1
-            }
     }
 }
 
