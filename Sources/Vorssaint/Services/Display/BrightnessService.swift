@@ -83,7 +83,6 @@ final class BrightnessService: ObservableObject {
     @Published private(set) var softwareDimmingPreferred = Set<CGDirectDisplayID>()
     @Published private(set) var extendedDimmingPreferred = Set<CGDirectDisplayID>()
     @Published private(set) var displayControlFailure: DisplayControlFailure?
-    @Published private(set) var brightnessOSDSupported = false
     @Published private(set) var keyboardLightEnabled: Bool?
     @Published private(set) var displayBrightnessShortcutRegistrationFailed = false
     @Published private(set) var keyboardBrightnessShortcutRegistrationFailed = false
@@ -158,9 +157,9 @@ final class BrightnessService: ObservableObject {
     /// Whether F14 and F15 still mean brightness for the system. Sampled when
     /// the tap goes up, never from the tap thread.
     private var functionKeysAdjustBrightness = true
-    /// Whether the app's own overlay stands in for the system's, sampled with
+    /// Whether the island stands in for the system's feedback, sampled with
     /// the tap so the tap thread never reads published state.
-    private var overlayReplacesNativeOSD = false
+    private var islandReplacesNativeOSD = false
     /// Where a plain key press lands, sampled the same way: the display under
     /// the pointer, or the one the system's own keys move.
     private var functionKeysFollowPointer = false
@@ -178,14 +177,11 @@ final class BrightnessService: ObservableObject {
     private var routes: [CGDirectDisplayID: Route] = [:]
     private struct PendingWrite {
         let value: Double
-        let showOSD: Bool
-        let sequence: UInt64
         /// A key step, which a system display eases into like the system's
         /// own keys. Slider drags land at once.
         let smooth: Bool
     }
     private var pendingLevels: [CGDirectDisplayID: PendingWrite] = [:]
-    private var writeSequence: UInt64 = 0
     /// Keeps fast system-key repeats based on the newest requested value while
     /// DisplayServices is still applying the previous asynchronous write.
     private var systemWritesInFlight = Set<CGDirectDisplayID>()
@@ -418,8 +414,7 @@ final class BrightnessService: ObservableObject {
     }
 
     func stepKeyboardLight(direction: Int) {
-        guard AppFeature.brightness.isAvailable,
-              UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled),
+        guard UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled),
               direction != 0,
               let keyboardLightBridge,
               let current = keyboardLightLevel(using: keyboardLightBridge)
@@ -512,8 +507,7 @@ final class BrightnessService: ObservableObject {
             followsPointer: UserDefaults.standard.bool(forKey: DefaultsKey.brightnessKeysEnabled),
             pointerDisplay: pointerDisplay, primaryDisplay: CGMainDisplayID(), eligible: eligible),
               let method = displays.first(where: { $0.id == id })?.method else { return }
-        step(id, method: method, delta: keyStep.limited(delta),
-             showOSD: UserDefaults.standard.bool(forKey: DefaultsKey.brightnessOSDEnabled))
+        step(id, method: method, delta: keyStep.limited(delta))
     }
 
     /// Read at each press, like the other key options.
@@ -522,8 +516,7 @@ final class BrightnessService: ObservableObject {
     }
 
     private func syncKeyboardBrightnessHotkeys() {
-        let enabled = AppFeature.brightness.isAvailable
-            && UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
+        let enabled = UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
             && keyboardLightBridge != nil
         let decreaseShortcut = GlobalShortcutRole.keyboardBrightnessDecrease.savedShortcut
         let increaseShortcut = GlobalShortcutRole.keyboardBrightnessIncrease.savedShortcut
@@ -577,7 +570,6 @@ final class BrightnessService: ObservableObject {
         rebuildingTopology = nil
         routes = [:]
         pendingLevels = [:]
-        writeSequence = 0
         systemWritesInFlight = []
         lastApplied = [:]
         knownTopology = []
@@ -587,8 +579,6 @@ final class BrightnessService: ObservableObject {
         ddcPendingSteps = [:]
         pendingDisplayIDs = []
         displayControlFailure = nil
-        brightnessOSDSupported = false
-        BrightnessOSD.teardown()
         if !displays.isEmpty { displays = [] }
         if !drawableDisplays.isEmpty { drawableDisplays = [] }
         // Queue on the work queue first so this lands AFTER any operation
@@ -663,19 +653,16 @@ final class BrightnessService: ObservableObject {
     /// step passes `smooth`, so a system display eases into it. A slider
     /// that shows the level itself passes `announces: false`.
     func setBrightness(_ value: Double, for id: CGDirectDisplayID,
-                       showOSD: Bool = false, smooth: Bool = false, announces: Bool = true) {
+                       smooth: Bool = false, announces: Bool = true) {
         guard value.isFinite else { return }
         let clamped = min(max(value, 0), 1)
-        let shownInNotch = announces ? NotchService.shared.showBrightness(clamped) : false
+        if announces { _ = NotchService.shared.showBrightness(clamped) }
         if let index = displays.firstIndex(where: { $0.id == id }),
            displays[index].brightness != clamped {
             displays[index].brightness = clamped
         }
         stateLock.lock()
-        writeSequence &+= 1
-        pendingLevels[id] = PendingWrite(value: clamped,
-                                         showOSD: showOSD && !shownInNotch,
-                                         sequence: writeSequence, smooth: smooth)
+        pendingLevels[id] = PendingWrite(value: clamped, smooth: smooth)
         lastApplied[id] = RememberedLevel(value: clamped,
                                           fingerprint: Self.displayFingerprint(id))
         levelKnownAt[id] = Date()
@@ -1191,11 +1178,10 @@ final class BrightnessService: ObservableObject {
         // keys keep the system's own feedback. The plain key tap runs on its
         // own thread and keeps this sample; the island asks for a new one
         // when full screen hides it.
-        let wantsBrightnessOSD = BrightnessSupport.overlayReplacesNative(
-            overlayEnabled: defaults.bool(forKey: DefaultsKey.brightnessOSDEnabled),
+        let wantsBrightnessFeedback = BrightnessSupport.islandReplacesNativeFeedback(
             islandRoutes: NotchSupport.routes(.brightness),
             islandShowsNotices: NotchService.shared.acceptsSystemFeedback
-                && !NotchSupport.hidesNoticesUntilHover(in: defaults)) && brightnessOSDSupported
+                && !NotchSupport.hidesNoticesUntilHover(in: defaults))
         let wantsKeyboardLight = NotchSupport.routes(.keyboardLight) && keyboardLightBridge != nil
         if !wantsKeyboardLight || !SessionActivity.shared.isActive {
             keyboardNoticeWork?.cancel(); keyboardNoticeWork = nil
@@ -1203,26 +1189,25 @@ final class BrightnessService: ObservableObject {
         let keyStep = self.keyStep
         let wantsFinerSteps = keyStep != .standard
         let wanted = SessionActivitySupport.tapShouldRun(
-            featureWanted: (running && (wantsKeyRouting || wantsBrightnessOSD || wantsFinerSteps))
+            featureWanted: (running && (wantsKeyRouting || wantsBrightnessFeedback || wantsFinerSteps))
                 || wantsKeyboardLight,
             accessibilityGranted: AXIsProcessTrusted(),
             sessionIsActive: SessionActivity.shared.isActive)
         if wanted { installKeyTap() } else { removeKeyTap() }
         // Other keyboards send brightness as plain key presses. Their
         // keystroke tap is only earned when this app answers a brightness key
-        // instead of the system: the pointer decides the target, an overlay
-        // or the island stands in for the system's own, or a finer step.
+        // instead of the system: the pointer decides the target, the island
+        // stands in for the system's own feedback, or a finer step.
         if wanted, running, BrightnessSupport.answersPlainBrightnessKeys(followsPointer: wantsKeyRouting,
-                                                                          overlayReplacesNative: wantsBrightnessOSD,
+                                                                          overlayReplacesNative: wantsBrightnessFeedback,
                                                                           finerSteps: wantsFinerSteps) {
             let hotKeys = UserDefaults(suiteName: "com.apple.symbolichotkeys")?
                 .dictionary(forKey: "AppleSymbolicHotKeys")
             let adjusts = BrightnessSupport.functionKeysAdjustBrightness(symbolicHotKeys: hotKeys)
-            let overlayReplaces = wantsBrightnessOSD
             let systemTarget = systemKeyTarget?.id
             keyThreadLock.withLock {
                 functionKeysAdjustBrightness = adjusts
-                overlayReplacesNativeOSD = overlayReplaces
+                islandReplacesNativeOSD = wantsBrightnessFeedback
                 functionKeysFollowPointer = wantsKeyRouting
                 functionKeySystemTarget = systemTarget
                 functionKeyStep = keyStep
@@ -1279,7 +1264,7 @@ final class BrightnessService: ObservableObject {
 
     /// Stops only the media-key and ordinary-function-key event taps before a
     /// permission reset. This intentionally leaves display routes, observers,
-    /// OSD state, disabled displays and gamma curves untouched. The guard
+    /// feedback state, disabled displays and gamma curves untouched. The guard
     /// keeps session/rebuild callbacks from bringing either tap back while
     /// the reset is in progress. MUST run on the main thread.
     func suspendInputTaps() {
@@ -1464,7 +1449,7 @@ final class BrightnessService: ObservableObject {
         }
 
         let (followsPointer, systemTarget, overlayReplacesNative) = keyThreadLock.withLock {
-            (functionKeysFollowPointer, functionKeySystemTarget, overlayReplacesNativeOSD)
+            (functionKeysFollowPointer, functionKeySystemTarget, islandReplacesNativeOSD)
         }
         var pointerDisplay: CGDirectDisplayID = 0
         var matched: UInt32 = 0
@@ -1482,7 +1467,7 @@ final class BrightnessService: ObservableObject {
         if route.method == .system {
             // Same rule the media keys follow, so both kinds of keyboard
             // behave alike: the built-in panel keeps the system's own handling
-            // and its animation unless the app's own overlay replaces it, and
+            // and its animation unless the island replaces its feedback, and
             // every other system-routed display has to be stepped here,
             // because the system only ever moves its native target.
             guard BrightnessSupport.stepsSystemRoutedDisplay(
@@ -1504,9 +1489,8 @@ final class BrightnessService: ObservableObject {
     private func applyKeyStep(_ press: BrightnessSupport.BrightnessKeyEvent,
                               to displayID: CGDirectDisplayID,
                               method: BrightnessDisplay.Method) {
-        // The island shows the step on its own; the overlay needs its option.
-        let showOSD = UserDefaults.standard.bool(forKey: DefaultsKey.brightnessOSDEnabled)
-        step(displayID, method: method, delta: keyStep.limited(press.delta), showOSD: showOSD)
+        // The island shows the step when brightness notices are enabled.
+        step(displayID, method: method, delta: keyStep.limited(press.delta))
     }
 
     /// One brightness key press sent on as the system's own Option-Shift
@@ -1531,13 +1515,12 @@ final class BrightnessService: ObservableObject {
     /// a key stays smooth and does not put a read between every press.
     private func step(_ displayID: CGDirectDisplayID,
                       method: BrightnessDisplay.Method,
-                      delta: Double,
-                      showOSD: Bool) {
+                      delta: Double) {
         focusKeyDisplay(displayID)
         let cached = displays.first(where: { $0.id == displayID })?.brightness
         if method == .system {
             guard let current = currentSystemBrightness(for: displayID, fallback: cached) else { return }
-            commitStep(from: current, delta: delta, to: displayID, method: method, showOSD: showOSD)
+            commitStep(from: current, delta: delta, to: displayID, method: method)
             return
         }
         stateLock.lock()
@@ -1552,7 +1535,7 @@ final class BrightnessService: ObservableObject {
               (!route.extendedDimming || (cached ?? 1) >= BrightnessSupport.extendedDimmingRange),
               let service = route.service else {
             guard let current = cached else { return }
-            commitStep(from: current, delta: delta, to: displayID, method: method, showOSD: showOSD)
+            commitStep(from: current, delta: delta, to: displayID, method: method)
             return
         }
         // A press that lands while the monitor is being read joins the step
@@ -1619,7 +1602,7 @@ final class BrightnessService: ObservableObject {
                 }
                 guard let current else { return }
                 self.commitStep(from: current, delta: delta + queued, to: displayID,
-                                method: method, showOSD: showOSD)
+                                method: method)
             }
         }
     }
@@ -1627,11 +1610,10 @@ final class BrightnessService: ObservableObject {
     private func commitStep(from current: Double,
                             delta: Double,
                             to displayID: CGDirectDisplayID,
-                            method: BrightnessDisplay.Method,
-                            showOSD: Bool) {
+                            method: BrightnessDisplay.Method) {
         let stepped = BrightnessSupport.steppedBrightness(current, delta: delta)
         Self.log.log("key step display \(displayID) route \(String(describing: method), privacy: .public) \(current) to \(stepped)")
-        setBrightness(stepped, for: displayID, showOSD: showOSD, smooth: true)
+        setBrightness(stepped, for: displayID, smooth: true)
     }
 
     /// Routes a handled brightness key press to the pointer display when that
@@ -1683,7 +1665,6 @@ final class BrightnessService: ObservableObject {
 
         let defaults = UserDefaults.standard
         let followsPointer = defaults.bool(forKey: DefaultsKey.brightnessKeysEnabled)
-        let showsOverlay = defaults.bool(forKey: DefaultsKey.brightnessOSDEnabled)
         let keyStep = self.keyStep
         let delta = keyStep.limited(ownedDelta)
         // A press left to the system still takes a finer step, as the
@@ -1700,8 +1681,8 @@ final class BrightnessService: ObservableObject {
         }
         // This tap runs on the main thread, so every press asks the island
         // whether it shows notices right now.
-        let wantsBrightnessOSD = BrightnessSupport.overlayReplacesNative(
-            overlayEnabled: showsOverlay, islandRoutes: NotchSupport.routes(.brightness),
+        let wantsBrightnessFeedback = BrightnessSupport.islandReplacesNativeFeedback(
+            islandRoutes: NotchSupport.routes(.brightness),
             islandShowsNotices: NotchService.shared.showsSystemFeedback)
         let displayID: CGDirectDisplayID
         if followsPointer {
@@ -1713,7 +1694,7 @@ final class BrightnessService: ObservableObject {
                 return leaveToSystem()
             }
             displayID = id
-        } else if wantsBrightnessOSD, let systemTarget = systemKeyTarget {
+        } else if wantsBrightnessFeedback, let systemTarget = systemKeyTarget {
             // With pointer routing off, keep the native target. In clamshell
             // mode this can be a system-managed external display.
             displayID = systemTarget.id
@@ -1739,7 +1720,7 @@ final class BrightnessService: ObservableObject {
             guard BrightnessSupport.stepsSystemRoutedDisplay(
                 followsPointer: followsPointer,
                 displayIsBuiltIn: isBuiltIn,
-                overlayReplacesNative: wantsBrightnessOSD && brightnessOSDSupported
+                overlayReplacesNative: wantsBrightnessFeedback
             ), BrightnessBridge.setBrightness != nil else {
                 // The built-in panel keeps the system's native brightness
                 // handling and animation unless the overlay replaces it.
@@ -1753,7 +1734,7 @@ final class BrightnessService: ObservableObject {
             ) {
                 let stepped = BrightnessSupport.steppedBrightness(current, delta: delta)
                 Self.log.log("key step display \(displayID) route system \(current) to \(stepped)")
-                setBrightness(stepped, for: displayID, showOSD: showsOverlay, smooth: true)
+                setBrightness(stepped, for: displayID, smooth: true)
             }
             // Both halves are replaced so the system never draws a second OSD.
             return nil
@@ -1762,7 +1743,7 @@ final class BrightnessService: ObservableObject {
             return leaveToSystem()
         }
         swallowedMediaKeys.insert(increases)
-        step(displayID, method: route.method, delta: delta, showOSD: showsOverlay)
+        step(displayID, method: route.method, delta: delta)
         return nil
     }
 
@@ -2231,7 +2212,6 @@ final class BrightnessService: ObservableObject {
             _ = applySoftwareDim(id, value: 1)
         }
         var resolved: [BrightnessDisplay] = []
-        var supportsBrightnessOSD = false
         let stale: Bool
         stateLock.lock()
         stale = generation != rebuildGeneration
@@ -2251,17 +2231,6 @@ final class BrightnessService: ObservableObject {
                 resolved[index].brightness = BrightnessSupport.brightnessAfterRebuild(
                     probed: resolved[index].brightness,
                     pending: pendingLevels[id]?.value)
-            }
-            supportsBrightnessOSD = resolved.contains { display in
-                guard display.isActive, newRoutes[display.id] != nil else { return false }
-                switch display.method {
-                case .system:
-                    return BrightnessBridge.setBrightness != nil
-                case .ddc, .software:
-                    return true
-                case nil:
-                    return false
-                }
             }
             routes = newRoutes
             recordDiscoveredTopology(online: seenTopology, active: activeTopology,
@@ -2290,9 +2259,6 @@ final class BrightnessService: ObservableObject {
                 self.extendedDimmingPreferred = extendedDimmingIDs
             }
             if self.drawableDisplays != drawableIDs { self.drawableDisplays = drawableIDs }
-            if self.brightnessOSDSupported != supportsBrightnessOSD {
-                self.brightnessOSDSupported = supportsBrightnessOSD
-            }
             self.refreshKeyboardLight()
             self.syncKeyTap()
         }
@@ -2310,9 +2276,7 @@ final class BrightnessService: ObservableObject {
             }
             pendingLevels.removeValue(forKey: id)
             let value = pending.value
-            let osdLevel = pending.showOSD ? value : nil
             let route = routes[id]
-            let writeGeneration = rebuildGeneration
             if route?.method == .system { systemWritesInFlight.insert(id) }
             stateLock.unlock()
             guard let route else { continue }
@@ -2348,20 +2312,6 @@ final class BrightnessService: ObservableObject {
                 stateLock.lock()
                 if pendingLevels[id] == nil { systemWritesInFlight.remove(id) }
                 stateLock.unlock()
-            }
-            if writeSucceeded, let osdLevel {
-                DispatchQueue.main.async { [weak self] in
-                    guard let self, self.running,
-                          UserDefaults.standard.bool(forKey: DefaultsKey.brightnessOSDEnabled) else { return }
-                    self.stateLock.lock()
-                    let current = self.rebuildGeneration
-                    let latestWrite = self.writeSequence
-                    self.stateLock.unlock()
-                    guard current == writeGeneration,
-                          latestWrite == pending.sequence else { return }
-                    BrightnessOSD.show(displayID: id,
-                                       brightness: osdLevel)
-                }
             }
         }
     }

@@ -1168,7 +1168,7 @@ final class NotchService: ObservableObject {
             bindEvents()
             if AppFeature.shelf.isAvailable { ShelfService.shared.syncWithPreferences() }
         }
-        if !NotchSupport.routes(.capture), captureContent != nil {
+        if !NotchSupport.routesCapturePreviews(), captureContent != nil {
             let fallback = captureFallback
             clearCapture()
             fallback?()
@@ -1194,7 +1194,7 @@ final class NotchService: ObservableObject {
         let fade = mascotToggled && expanded && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         withAnimation(fade ? .easeInOut(duration: 0.22) : nil) { objectWillChange.send() }
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
-        if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+        if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
         resumeDeferredCaptureIfReady()
     }
 
@@ -1258,7 +1258,7 @@ final class NotchService: ObservableObject {
         observers.removeAll()
         session = NotchSessionState()
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
-        if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+        if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
         if AppFeature.shelf.isAvailable { ShelfService.shared.syncWithPreferences() }
         fallback?()
     }
@@ -2551,7 +2551,7 @@ final class NotchService: ObservableObject {
     func presentCapture(id: UUID, content: AnyView, actions: AnyView? = nil, height: CGFloat,
                         takeFocus: Bool, closeOnCollapse: Bool, fallback: @escaping () -> Void,
                         close: @escaping () -> Void, hover: @escaping (Bool) -> Void) -> Bool {
-        guard acceptsSystemFeedback, NotchSupport.routes(.capture) else { return false }
+        guard acceptsSystemFeedback, NotchSupport.routesCapturePreviews() else { return false }
         let keepOpen = expanded && pinned
         let replacesPage = expanded && selected == .captures && captureID != id
         if captureID != id {
@@ -3482,7 +3482,7 @@ final class NotchService: ObservableObject {
         NotchTimerService.shared.suspend()
         // The keys go back to the system while nothing can show them.
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
-        if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+        if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
         fallback?()
     }
 
@@ -3571,7 +3571,7 @@ final class NotchService: ObservableObject {
         // and brightness key routing when the island becomes eligible for
         // feedback again, and hand the keys back while it is away.
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
-        if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+        if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
     }
 
     private func fullscreenEnvironmentDidChange() {
@@ -3729,7 +3729,7 @@ final class NotchService: ObservableObject {
                 tearDownPresentation()
                 // The keys go back to the system while nothing can show them.
                 if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
-                if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+                if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
             }
         }
         // After the island's own teardown or return: what the lock screen
@@ -3932,12 +3932,13 @@ final class NotchService: ObservableObject {
         let y = NotchGestureSupport.movement(Double(event.scrollingDeltaY), precise: event.hasPreciseScrollingDeltas,
                                              inverted: event.isDirectionInvertedFromDevice)
         let action = gesture.handle(x: x, y: y, timestamp: event.timestamp,
-                                          began: event.phase.contains(.began),
-                                          ended: !event.phase.intersection([.ended, .cancelled]).isEmpty,
-                                          momentum: !event.momentumPhase.isEmpty,
-                                          precise: event.hasPreciseScrollingDeltas,
-                                          hasPhase: !event.phase.isEmpty,
-                                          allowVertical: vertical, allowHorizontal: horizontal, expanded: expanded)
+                                    began: event.phase.contains(.began),
+                                    ended: !event.phase.intersection([.ended, .cancelled]).isEmpty,
+                                    momentum: !event.momentumPhase.isEmpty,
+                                    precise: event.hasPreciseScrollingDeltas,
+                                    hasPhase: !event.phase.isEmpty,
+                                    allowVertical: vertical, allowHorizontal: horizontal, expanded: expanded,
+                                    naturalScrolling: event.isDirectionInvertedFromDevice)
         guard let action else { return false }
         switch action {
         case .open: open()

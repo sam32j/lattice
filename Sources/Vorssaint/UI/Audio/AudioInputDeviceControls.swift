@@ -4,6 +4,8 @@ import SwiftUI
 /// Shared microphone controls used by Audio Input and the live menu panel.
 struct AudioInputDeviceControls: View {
     var title: String? = nil
+    var sliderWidth: CGFloat = 164
+    var showsUnavailableLabel = false
     @Environment(\.notchPresentation) private var inNotch
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var inputManager = AudioInputDeviceManager.shared
@@ -64,35 +66,16 @@ struct AudioInputDeviceControls: View {
                     .frame(width: 16)
 
                 Text(l10n.s.mixerInputLevelLabel)
-                    .font(.system(size: 10.5, weight: .medium))
+                    .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(.secondary)
-
-                MixerVolumeSlider(value: inputVolumeBinding,
-                                  normalTint: normalSliderTint,
-                                  boostTint: normalSliderTint,
-                                  isBoosting: false,
-                                  accentRevision: accentRevision,
-                                  glassEnabled: glassEnabled,
-                                  maximum: 1,
-                                  accessibilityLabel: l10n.s.mixerInputLevelLabel)
+                Spacer(minLength: 12)
+                SettingsValueSlider(title: l10n.s.mixerInputLevelLabel,
+                                    value: inputVolumeBinding, range: 0...1, step: 0.01,
+                                    readout: "\(Int((volume * 100).rounded()))%")
+                    .frame(width: sliderWidth)
                     .disabled(!hasVolume)
-                    .opacity(hasVolume ? 1 : 0.45)
-
-                if hasVolume {
-                    EditableVolumePercent(currentPercent: Int((volume * 100).rounded()),
-                                          maximumPercent: 100,
-                                          width: 36,
-                                          editorID: "microphone-input",
-                                          editingID: $editingVolumeID,
-                                          accessibilityLabel: l10n.s.mixerInputLevelLabel) {
-                        Text("\(Int((volume * 100).rounded()))%")
-                            .font(.system(size: 10.5, weight: .medium))
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
-                    } onCommit: {
-                        inputManager.setInputVolume($0)
-                    }
-                } else {
+                    .help(hasVolume ? "" : l10n.s.sliderUnavailable)
+                if !hasVolume && showsUnavailableLabel {
                     Text(l10n.s.sliderUnavailable)
                         .font(.system(size: 10.5, weight: .medium))
                         .foregroundStyle(.secondary)

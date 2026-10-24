@@ -77,6 +77,10 @@ enum MiddleClickSupport {
     /// the user's chosen count (3 or 4); with the system three-finger drag
     /// gesture enabled a three-finger tap belongs to macOS, so only the
     /// four-finger option stays available.
+    static func availableTapSelection(_ stored: Int, systemDragEnabled: Bool) -> Int {
+        stored == 3 && systemDragEnabled ? 0 : stored
+    }
+
     static func tapShouldFire(duration: TimeInterval,
                               maxMovement: Float,
                               maxSpreadChange: Float,

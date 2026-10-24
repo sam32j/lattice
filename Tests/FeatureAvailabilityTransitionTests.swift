@@ -30,10 +30,77 @@ enum FeatureAvailabilityTransitionTests {
         func startDirect(_ feature: AppFeature) { State.bindings[feature]?() }
     }
     static func run(_ suite: TestSuite) {
+        CleaningModePreferencesTests.run(suite)
         let domain = "vorss.tests.pr3-availability.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain); State.bindings = [:] }
         let service = Runtime(defaults)
+        defaults.set(false, forKey: DefaultsKey.brightnessControlEnabled)
+        defaults.set(true, forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
+        var keyboardOnlySyncs = 0
+        State.bindings[.brightness] = { keyboardOnlySyncs += 1 }
+        service.syncAtLaunch()
+        suite.expect(keyboardOnlySyncs == 1 && !AppFeature.brightness.isAvailable(in: defaults),
+                     "keyboard-only registration starts without installing display controls")
+        service.sync([.brightness])
+        suite.expect(keyboardOnlySyncs == 2 && !service.loadedThisSession.contains(.brightness),
+                     "permission and recording changes resync keyboard controls without installing Displays")
+        defaults.set(false, forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
+        service.sync([.brightness])
+        suite.expect(keyboardOnlySyncs == 3,
+                     "turning the final keyboard-only preference off still reaches teardown")
+        suite.expect(GlobalShortcutRole.keyboardBrightnessDecrease.isAvailable(using: { _ in false })
+                     && GlobalShortcutRole.keyboardBrightnessIncrease.isAvailable(using: { _ in false }),
+                     "keyboard-light shortcuts remain reachable independently of display installation")
+        State.bindings.removeValue(forKey: .brightness)
+        for sleep in [false, true] {
+            for restore in [false, true] {
+                defaults.set(sleep, forKey: DefaultsKey.bluetoothSleepEnabled)
+                defaults.set(restore, forKey: DefaultsKey.bluetoothSleepRestoreOnWake)
+                suite.expect(AppFeature.bluetoothSleep.isAvailable(in: defaults, hardwareSupported: true) == (sleep || restore),
+                             "Bluetooth installation follows either page toggle")
+            }
+        }
+        for enabled in [false, true] {
+            defaults.set(enabled, forKey: DefaultsKey.brightnessControlEnabled)
+            suite.expect(AppFeature.brightness.isAvailable(in: defaults, hardwareSupported: true) == enabled,
+                         "Display controls own brightness installation")
+        }
+        defaults.set(["com.example.legacy"], forKey: MouseExceptionScope.buttonShortcuts.defaultsKey)
+        suite.expect(MouseShortcutExceptions.list(for: 3, in: defaults) == ["com.example.legacy"],
+                     "existing button exceptions are preserved for each shortcut")
+        MouseShortcutExceptions.set([], for: 3, in: defaults)
+        suite.expect(MouseShortcutExceptions.list(for: 3, in: defaults).isEmpty
+                     && MouseShortcutExceptions.list(for: 4, in: defaults) == ["com.example.legacy"],
+                     "each shortcut has independent exclusions including explicit empty lists")
+        defaults.set(false, forKey: DefaultsKey.cleaningModeShortcutEnabled)
+        suite.expect(!AppFeature.cleaningMode.isAvailable(in: defaults, hardwareSupported: true),
+                     "cleaning mode needs no persistent installation without a shortcut")
+        defaults.set(true, forKey: DefaultsKey.cleaningModeShortcutEnabled)
+        defaults.set(GlobalShortcut.cleaningModeDefault.storageValue, forKey: DefaultsKey.cleaningModeShortcut)
+        suite.expect(AppFeature.cleaningMode.isAvailable(in: defaults, hardwareSupported: true),
+                     "assigning a cleaning shortcut installs its persistent registration")
+        defaults.set("", forKey: DefaultsKey.cleaningModeShortcut)
+        suite.expect(!AppFeature.cleaningMode.isAvailable(in: defaults, hardwareSupported: true),
+                     "an explicitly cleared cleaning shortcut removes persistent registration")
+        defaults.set("invalid", forKey: DefaultsKey.cleaningModeShortcut)
+        suite.expect(!AppFeature.cleaningMode.isAvailable(in: defaults, hardwareSupported: true),
+                     "a malformed saved shortcut cannot install Cleaning Mode")
+        defaults.removeObject(forKey: DefaultsKey.cleaningModeShortcut)
+        defaults.removeObject(forKey: DefaultsKey.cleaningModeShortcutEnabled)
+        suite.expect(AppFeature.features(in: .monitor).allSatisfy(\.isManagedOnDedicatedPage)
+                     && AppFeature.hubFeatures(in: .monitor).isEmpty,
+                     "monitor module installation belongs exclusively to Activity Monitor")
+        suite.expect(FeatureVisibilitySupport.isPageVisible(.monitor, isAvailable: { _ in false }),
+                     "Activity Monitor stays reachable with every module uninstalled")
+        var moduleUpdates = 0
+        State.bindings[.monitorCPU] = { moduleUpdates += 1 }
+        defaults.set(false, forKey: AppFeature.monitorCPU.availabilityKey)
+        service.setAvailable([.monitorCPU], true)
+        service.setAvailable([.monitorCPU], false)
+        suite.expect(moduleUpdates == 2 && !AppFeature.monitorCPU.isAvailable(in: defaults),
+                     "module installation and removal both synchronize the sensor runtime")
+        State.bindings.removeValue(forKey: .monitorCPU)
         islandExtensionTransitions(service, defaults: defaults, suite: suite)
         let bundle: [AppFeature] = [.screenshot, .colorPicker, .screenOCR]
         var calls: [AppFeature] = []

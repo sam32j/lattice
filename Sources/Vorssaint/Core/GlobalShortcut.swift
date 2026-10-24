@@ -916,7 +916,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .snippetLibrary: return [DefaultsKey.snippetLibraryEnabled]
         case .commandBar: return [DefaultsKey.commandBarShortcutEnabled]
         case .screenRecorder: return [DefaultsKey.recorderShortcutEnabled]
-        case .cleaningMode: return [DefaultsKey.cleaningModeEnabled, DefaultsKey.cleaningModeShortcutEnabled]
+        case .cleaningMode: return [DefaultsKey.cleaningModeShortcutEnabled]
         case .displayBrightnessDecrease, .displayBrightnessIncrease:
             return [DefaultsKey.brightnessControlEnabled, DefaultsKey.displayBrightnessShortcutsEnabled]
         case .keyboardBrightnessDecrease, .keyboardBrightnessIncrease:
@@ -995,7 +995,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     }
 
     func isAvailable(using isAvailable: (AppFeature) -> Bool) -> Bool {
-        availabilityFeatures.contains(where: isAvailable)
+        isKeyboardBrightness || availabilityFeatures.contains(where: isAvailable)
     }
 
     /// The features whose own shortcuts have to go quiet while the user is

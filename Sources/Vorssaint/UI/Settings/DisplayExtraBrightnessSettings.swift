@@ -15,8 +15,7 @@ struct DisplayExtraBrightnessSettings: View {
                         .labelsHidden()
                         .onChange(of: enabled) { _, _ in FeatureRuntime.shared.sync([.extraBrightness]) }
                 }
-                if enabled {
-                    HStack(spacing: 12) {
+                HStack(spacing: 12) {
                         Text(l10n.s.extraBrightnessLevelLabel)
                         Slider(value: Binding(get: { Double(level) }, set: {
                             level = Int($0)
@@ -25,8 +24,9 @@ struct DisplayExtraBrightnessSettings: View {
                         Text("\(level)%")
                             .monospacedDigit().foregroundStyle(.secondary)
                             .frame(width: 42, alignment: .trailing)
-                    }
                 }
+                .disabled(!enabled)
+                .opacity(enabled ? 1 : 0.5)
             }
             .settingsSectionAnchor(.extraBrightness, cornerRadius: 12)
         }

@@ -12,6 +12,7 @@ struct NotchGestureSupport {
         let vertical: Bool
         let horizontal: Bool
         let expanded: Bool
+        let naturalScrolling: Bool
     }
     private var origin: Origin?
     private var axis: Axis?
@@ -55,7 +56,8 @@ struct NotchGestureSupport {
 
     mutating func handle(x: Double, y: Double, timestamp: TimeInterval,
                          began: Bool, ended: Bool, momentum: Bool, precise: Bool, hasPhase: Bool,
-                         allowVertical: Bool, allowHorizontal: Bool, expanded: Bool) -> Action? {
+                         allowVertical: Bool, allowHorizontal: Bool, expanded: Bool,
+                         naturalScrolling: Bool = true) -> Action? {
         guard timestamp.isFinite, x.isFinite, y.isFinite else { self = Self(); return nil }
         // A quick flick lifts the fingers before the swipe has travelled far
         // enough. Its momentum can finish the opening or closing it began,
@@ -82,7 +84,8 @@ struct NotchGestureSupport {
         if hasPhase {
             if began {
                 self = Self()
-                origin = Origin(vertical: allowVertical, horizontal: allowHorizontal, expanded: expanded)
+                origin = Origin(vertical: allowVertical, horizontal: allowHorizontal, expanded: expanded,
+                                naturalScrolling: naturalScrolling)
             }
             // AppKit keeps a phased scroll attached to its original view.
             // A blocked beginning stays blocked, and an interrupted sequence
@@ -98,6 +101,7 @@ struct NotchGestureSupport {
         let allowVertical = origin?.vertical ?? allowVertical
         let allowHorizontal = origin?.horizontal ?? allowHorizontal
         let expanded = origin?.expanded ?? expanded
+        let naturalScrolling = origin?.naturalScrolling ?? naturalScrolling
         if axis == nil {
             // Establish intent from a little accumulated travel, not the first
             // fraction of a point as the fingers touch the trackpad.
@@ -119,7 +123,8 @@ struct NotchGestureSupport {
         case .horizontal where allowHorizontal:
             guard abs(distance) >= 40 else { return nil }
             fired = true
-            return distance < 0 ? .nextTrack : .previousTrack
+            let forward = naturalScrolling ? (distance < 0) : (distance > 0)
+            return forward ? .nextTrack : .previousTrack
         case .vertical where allowVertical:
             return verticalAction(expanded: expanded)
         default:

@@ -6,14 +6,11 @@ The permission and uninstall commands below all point at Vorssaint's bundle iden
 
 ## The app will not open
 
-Official Vorssaint builds are signed with an Apple Developer ID and notarized, so they open with no security warning.
+Lattice builds are not currently notarized by Apple. For a trusted download, try opening the installed app, then use System Settings > Privacy & Security > Open Anyway. Read the [Lattice first-launch guide](../TROUBLESHOOTING.md) for the full instructions, an app-specific quarantine workaround and warnings you should not bypass. That guide is also included in the DMG.
 
-If you built the app yourself or grabbed an unofficial copy, macOS Gatekeeper may stop it on the first launch. To open it anyway, do one of these.
+Official upstream Vorssaint releases have their own signing and notarization; those assurances do not apply to Lattice builds.
 
-1. Right click, or Control click, Vorssaint in Applications, choose Open, and confirm.
-2. Or open System Settings, Privacy and Security, find the note about Vorssaint being blocked, and click Open Anyway.
-
-Vorssaint lives in the menu bar, so once it starts, look for its icon up there rather than in the Dock.
+Lattice lives in the menu bar, so once it starts, look for its icon up there rather than in the Dock.
 
 ## A feature does nothing, or a permission will not stick
 

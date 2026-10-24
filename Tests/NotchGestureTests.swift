@@ -5,6 +5,7 @@ import AppKit
 
 enum NotchGestureTests {
     static func run(_ suite: TestSuite) {
+        NotchGestureNaturalScrollingTests.run(suite)
         nativeInteractionContracts(suite)
         NotchCaptureTrackpadGestureTests.run(suite)
         suite.expect(NotchGestureSupport.allowsVertical(expanded: true, inHeader: false,
@@ -39,11 +40,13 @@ enum NotchGestureTests {
         var time = 1.0
         func feed(_ x: Double = 0, _ y: Double = 0, began: Bool = false,
                   ended: Bool = false, momentum: Bool = false, precise: Bool = true, phased: Bool = true,
-                  vertical: Bool = true, horizontal: Bool = true, expanded: Bool = false) -> NotchGestureSupport.Action? {
+                  vertical: Bool = true, horizontal: Bool = true, expanded: Bool = false,
+                  naturalScrolling: Bool = true) -> NotchGestureSupport.Action? {
             time += 0.01
             return gesture.handle(x: x, y: y, timestamp: time, began: began, ended: ended,
                                   momentum: momentum, precise: precise, hasPhase: phased, allowVertical: vertical,
-                                  allowHorizontal: horizontal, expanded: expanded)
+                                  allowHorizontal: horizontal, expanded: expanded,
+                                  naturalScrolling: naturalScrolling)
         }
         suite.expect(feed(0, 5, began: true) == nil && feed(0, 10) == nil && feed(0, 10) == .open,
                "small vertical movement accumulates into one intentional opening")
@@ -57,6 +60,17 @@ enum NotchGestureTests {
                "a left swipe changes one track after its threshold")
         for _ in 0..<100 { suite.expect(feed(-50, 0) == nil, "one physical swipe never skips multiple tracks") }
         suite.expect(feed(45, 0, began: true) == .previousTrack, "a right swipe selects the previous track")
+        suite.expect(feed(45, 0, began: true, naturalScrolling: false) == .nextTrack,
+               "with natural scrolling disabled, swipe from left to right selects next track")
+        suite.expect(feed(-45, 0, began: true, naturalScrolling: false) == .previousTrack,
+               "with natural scrolling disabled, swipe from right to left selects previous track")
+        suite.expect(feed(45, 0, began: true, naturalScrolling: true) == .previousTrack,
+               "with natural scrolling enabled, swipe from left to right selects previous track")
+        suite.expect(feed(-45, 0, began: true, naturalScrolling: true) == .nextTrack,
+               "with natural scrolling enabled, swipe from right to left selects next track")
+        suite.expect(feed(20, 0, began: true, naturalScrolling: false) == nil
+               && feed(25, 0, naturalScrolling: true) == .nextTrack,
+               "a swipe keeps the natural scrolling setting captured at its beginning")
         suite.expect(feed(40, 40, began: true) == nil, "diagonal motion is not guessed as a track or panel gesture")
         suite.expect(feed(1, 0, began: true, expanded: true) == nil
                && feed(0, -24, expanded: true) == .close,

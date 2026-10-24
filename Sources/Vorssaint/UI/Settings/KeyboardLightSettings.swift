@@ -27,23 +27,12 @@ struct KeyboardLightSettings: View {
                     .foregroundStyle(.secondary)
 
                 if brightness.keyboardLightEnabled != nil {
-                    HStack(spacing: 10) {
-                        Image(systemName: "light.min")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Slider(value: Binding(
-                            get: { Double(brightness.keyboardLightLevel ?? 0) },
-                            set: { brightness.setKeyboardLightLevel(Float($0)) }
-                        ), in: 0...1, onEditingChanged: brightness.keyboardLightDragChanged)
-                        .accessibilityLabel(strings.keyboardLight)
-                        Image(systemName: "light.max")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text("\(Int(((brightness.keyboardLightLevel ?? 0) * 100).rounded()))%")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                            .frame(width: 36, alignment: .trailing)
-                    }
+                    SettingsSliderRow(title: strings.keyboardLight, value: Binding(
+                        get: { Double(brightness.keyboardLightLevel ?? 0) },
+                        set: { brightness.setKeyboardLightLevel(Float($0)) }
+                    ), range: 0...1,
+                        readout: "\(Int(((brightness.keyboardLightLevel ?? 0) * 100).rounded()))%",
+                        onEditingChanged: brightness.keyboardLightDragChanged)
                     .disabled(brightness.keyboardLightEnabled != true)
 
                     Divider()

@@ -92,7 +92,7 @@ final class FeatureRuntime: ObservableObject {
     /// strands someone's settings costs far more than one that leaves a
     /// feature reporting itself unsupported.
     private func mayFlip(_ feature: AppFeature, to available: Bool) -> Bool {
-        guard !feature.isToggleOwned else { return false }
+        guard !feature.isToggleOwned || feature.group == .monitor else { return false }
         guard feature.isAvailable != available else { return false }
         return !available || feature.isHardwareSupported
     }
@@ -183,6 +183,11 @@ final class FeatureRuntime: ObservableObject {
         for feature in AppFeature.allCases where feature.isAvailable {
             Self.bindings[feature]?()
         }
+        if !AppFeature.brightness.isAvailable,
+           UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
+            || NotchSupport.routes(.keyboardLight, in: .standard) {
+            Self.bindings[.brightness]?()
+        }
     }
 
     /// Capability changes can enable a saved preference without constructing
@@ -195,7 +200,7 @@ final class FeatureRuntime: ObservableObject {
     /// directly from Settings, so an off change must always reach teardown.
     func sync(_ features: [AppFeature]) {
         guard !InputEventTap.isBlocked else { return }
-        for feature in features where feature.isMouseFeature || feature.isKeyboardFeature || feature.isAvailable || loadedThisSession.contains(feature) {
+        for feature in features where feature == .brightness || feature.isMouseFeature || feature.isKeyboardFeature || feature.isAvailable || loadedThisSession.contains(feature) {
             if feature.isAvailable { loadedThisSession.insert(feature) }
             Self.bindings[feature]?()
             if feature == .clipboardHistory, loadedThisSession.contains(.pastePlain) || AppFeature.pastePlain.isAvailable {

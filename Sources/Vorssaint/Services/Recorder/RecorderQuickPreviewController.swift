@@ -35,7 +35,7 @@ final class RecorderQuickPreviewController {
         self.menuOpen = false
         model.show(url: url, initialThumbnail: initialThumbnail)
 
-        let wantsNotch = inNotch && NotchSupport.routes(.capture)
+        let wantsNotch = inNotch && NotchSupport.routesCapturePreviews()
             && NotchService.shared.acceptsSystemFeedback
 
         let content = RecorderQuickPreviewView(

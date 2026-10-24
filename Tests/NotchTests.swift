@@ -1691,6 +1691,7 @@ enum NotchTests {
         railContracts(suite)
         presentationSpacingContracts(suite)
         captureControlsLayoutContracts(suite)
+        NotchCaptureRoutingTests.run(suite)
         pageTopContracts(suite)
         pageWidthContracts(suite)
         sectionsButtonContracts(suite)
@@ -1888,7 +1889,7 @@ enum NotchTests {
                      "a saved island choice stays configured even if the master switch was never used")
 
         suite.expect(!NotchSupport.isEnabled(in: defaults), "notch is opt-in")
-        suite.expect(NotchSupport.controls(in: defaults) == [.volume, .brightness, .music, .mixer, .keepAwake, .timer, .calendar],
+        suite.expect(NotchSupport.controls(in: defaults) == [.volume, .music, .mixer, .keepAwake, .timer, .calendar],
                "home defaults prioritize playback and everyday system controls")
         defaults.set(false, forKey: DefaultsKey.notchTimerEnabled)
         defaults.set(false, forKey: DefaultsKey.notchCalendarEnabled)
@@ -2203,8 +2204,8 @@ enum NotchTests {
                && !NotchSupport.controls(in: defaults).contains(.volume), "mixer availability gates its module and volume control")
         defaults.set(true, forKey: AppFeature.mixer.availabilityKey)
         defaults.set(true, forKey: DefaultsKey.volumeMixerEnabled)
-        suite.expect(NotchControlItem.allCases.filter { $0.setupRequirement == .none } == [.panel],
-                     "every unavailable island control with a setup path has a navigation target")
+        suite.expect(NotchControlItem.allCases.filter { $0.setupRequirement == .none } == [.keyboardLight, .panel],
+                     "hardware-only keyboard light needs no installation target; other gated controls retain setup paths")
         suite.expect(NotchControlItem.allCases.filter(\.isLevel) == [.volume, .brightness, .keyboardLight]
                      && !NotchQuickAction.optionalActions.contains(.control(.keyboardLight)),
                      "levels draw as sliders in the card row and are not offered as shortcuts")
@@ -2218,13 +2219,13 @@ enum NotchTests {
         let supportsKeyboardLight = NotchControlItem.keyboardLightIsSupported
         NotchControlItem.keyboardLightIsSupported = { false }
         let lightNeedsHardware = !NotchSupport.controls(in: defaults).contains(.keyboardLight)
-            && NotchSupport.controls(in: defaults).contains(.brightness)
+            && !AppFeature.brightness.isAvailable(in: defaults)
         NotchControlItem.keyboardLightIsSupported = supportsKeyboardLight
         defaults.set(false, forKey: AppFeature.brightness.availabilityKey)
-        let lightGated = !NotchSupport.controls(in: defaults).contains(.keyboardLight)
-        suite.expect(lightHiddenByDefault && lightShown && lightGated
-                     && NotchControlItem.keyboardLight.setupRequirement == .feature(.brightness),
-                     "the keyboard light level is opt-in and follows the brightness feature")
+        let lightIndependent = NotchSupport.controls(in: defaults).contains(.keyboardLight)
+        suite.expect(lightHiddenByDefault && lightShown && lightIndependent
+                     && NotchControlItem.keyboardLight.setupRequirement == .none,
+                     "the keyboard light level is opt-in and independent of display controls")
         suite.expect(lightNeedsHardware,
                      "a level restored from a Mac with a keyboard light stays out of an island without one")
         let launch = (try? String(contentsOfFile: "Sources/Vorssaint/main.swift", encoding: .utf8)) ?? ""
@@ -2427,7 +2428,7 @@ enum NotchTests {
             suite.expect(tool.capturesAudio == (tool == .recording),
                    "only screen recording shows microphone and system-audio controls: \(tool.rawValue)")
         }
-        suite.expect(!NotchSupport.routes(.clipboard, in: defaults) && NotchSupport.routes(.capture, in: defaults),
+        suite.expect(!NotchSupport.routes(.clipboard, in: defaults) && NotchSupport.routesCapturePreviews(in: defaults),
                "clipboard activity still needs history capture while installed captures start enabled")
         defaults.set(true, forKey: DefaultsKey.clipboardHistoryEnabled)
         suite.expect(NotchSupport.routes(.clipboard, in: defaults), "installed clipboard activity starts once history capture is enabled")
@@ -3360,7 +3361,6 @@ enum NotchTests {
                "the Displays without a notch card offers All displays only while the chosen display keeps the island off them")
         suite.expect(NotchSupport.shouldReplace(.volume, with: .brightness), "continuous controls can replace each other")
         suite.expect(!NotchSupport.shouldReplace(.volume, with: .clipboard), "copy does not interrupt a volume adjustment")
-        suite.expect(NotchSupport.shouldReplace(.battery, with: .capture), "a capture takes precedence over passive battery status")
         suite.expect(NotchSupport.volumeLevel(current: 0.99, direction: 1, fine: false) == 1
                && NotchSupport.volumeLevel(current: 0, direction: -1, fine: false) == 0,
                "hardware volume steps clamp to audible limits")

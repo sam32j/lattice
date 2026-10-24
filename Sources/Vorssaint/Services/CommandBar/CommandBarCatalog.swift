@@ -459,15 +459,13 @@ enum CommandBarCatalog {
                 trouble: accessibilityTrouble(),
                 run: { _ in afterBeat { PastePlainService.shared.performPastePlain() } }))
         }
-        if AppFeature.cleaningMode.isAvailable {
-            entries.append(CommandBarEntry(
-                id: "action.cleaningMode",
-                title: s.cleaningMenuItem,
-                subtitle: area(.cleaningMode, under: s.cleaningMenuItem),
-                icon: .symbol("keyboard"),
-                trouble: accessibilityTrouble(),
-                run: { _ in afterBeat(0.1) { CleaningModeManager.shared.activate() } }))
-        }
+        entries.append(CommandBarEntry(
+            id: "action.cleaningMode",
+            title: s.cleaningMenuItem,
+            subtitle: area(.cleaningMode, under: s.cleaningMenuItem),
+            icon: .symbol("keyboard"),
+            trouble: accessibilityTrouble(),
+            run: { _ in afterBeat(0.1) { CleaningModeManager.shared.activate() } }))
 
         if AppFeature.keepAwake.isAvailable {
             let awake = KeepAwakeManager.shared
@@ -1856,7 +1854,7 @@ enum CommandBarCatalog {
         let target = display ?? NSScreen.screens.first { NSMouseInRect(pointer, $0.frame, false) }
             .flatMap { ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value }
         if let id = target, service.displays.contains(where: { $0.id == id }) {
-            service.setBrightness(value, for: id, showOSD: true)
+            service.setBrightness(value, for: id)
             return
         }
         guard display == nil, let target else {

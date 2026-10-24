@@ -40,7 +40,7 @@ extension FeatureStrings {
 
 extension BluetoothSleepStrings {
     static let enUS = BluetoothSleepStrings(
-        pageTitle: "Bluetooth Behavior",
+        pageTitle: "Bluetooth Control",
         hubDescription: "Switches Bluetooth off while the Mac sleeps, so headphones in a bag stop connecting to it.",
         enable: "Turn Bluetooth off when the Mac sleeps",
         enableCaption: "Bluetooth already off before sleep is left alone and stays off on wake.",

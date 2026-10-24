@@ -46,12 +46,6 @@ struct ScreenRecorderSettings: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(strings.hubDescription)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
 
                 shortcutsCard
                     .settingsSectionAnchor(.screenRecorder, cornerRadius: 16)

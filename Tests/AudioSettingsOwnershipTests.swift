@@ -52,6 +52,8 @@ enum AudioSettingsOwnershipTests {
     }
     struct AudioInputDeviceControls: View {
         var title: String? = nil
+        var sliderWidth: CGFloat = 164
+        var showsUnavailableLabel = false
         var body: some View { Marker(name: "microphone") }
     }
     struct AudioInputMuteCard: View { var body: some View { Marker(name: "mute") } }

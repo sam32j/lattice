@@ -100,7 +100,7 @@ enum CommandBarFeatureTests {
             var displays = [Display(id: 1), Display(id: 2)]
             var set: [CGDirectDisplayID] = []
             var onRefresh: (() -> Void)?
-            func setBrightness(_ value: Double, for id: CGDirectDisplayID, showOSD: Bool) { set.append(id) }
+            func setBrightness(_ value: Double, for id: CGDirectDisplayID) { set.append(id) }
             func refresh() { onRefresh?() }
         }
         typealias BrightnessService = Service

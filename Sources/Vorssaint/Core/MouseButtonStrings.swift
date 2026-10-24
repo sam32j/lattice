@@ -89,15 +89,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "Extra buttons and side-wheel directions press key combinations you choose.",
         sideWheelLeftName: "Side wheel left",
         sideWheelRightName: "Side wheel right",
-        spacesEnableLabel: "Switch Spaces by dragging a button",
+        spacesEnableLabel: "Hold a mouse button to switch Spaces",
         spacesEnableCaption: "Hold the chosen button and drag: left or right moves one Space over, up opens Mission Control, down opens App Exposé. A short click still does what it always did.",
         spacesPickButton: "Choose a button",
         spacesShortcutsOffNote: "The Mission Control keyboard shortcuts are switched off in System Settings, so this gesture has nothing to ask for.",
         spacesCaptureWaiting: "Now press an extra button.",
         spacesCaptureUnsupported: "That input cannot be held for a drag. Use an extra button.",
         spacesCaptureExists: "That button already has a shortcut. Pick another one.",
-        spacesFollowsDragLabel: "Spaces follow the drag",
-        spacesFollowsDragCaption: "Dragging right brings the Space on the left, the way a trackpad swipe carries it along with your fingers."
+        spacesFollowsDragLabel: "Reverse horizontal drag direction",
+        spacesFollowsDragCaption: "When on, dragging right switches to the Space on the left."
     )
 
     static let ptBR = MouseButtonFeatureStrings(
@@ -124,15 +124,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "Botões extras e os sentidos da roda lateral apertam combinações de teclas que você escolher.",
         sideWheelLeftName: "Roda lateral para a esquerda",
         sideWheelRightName: "Roda lateral para a direita",
-        spacesEnableLabel: "Trocar de Espaço arrastando um botão",
+        spacesEnableLabel: "Segurar um botão do mouse para trocar de Espaço",
         spacesEnableCaption: "Segure o botão escolhido e arraste: para a esquerda ou a direita muda um Espaço, para cima abre o Mission Control, para baixo abre o Exposé do app. Um clique curto continua fazendo o que sempre fez.",
         spacesPickButton: "Escolher um botão",
         spacesShortcutsOffNote: "Os atalhos de teclado do Mission Control estão desligados nos Ajustes do Sistema, então este gesto não tem o que pedir.",
         spacesCaptureWaiting: "Agora aperte um botão extra.",
         spacesCaptureUnsupported: "Esse controle não dá para segurar e arrastar. Use um botão extra.",
         spacesCaptureExists: "Esse botão já tem um atalho. Escolha outro.",
-        spacesFollowsDragLabel: "Espaços acompanham o arrasto",
-        spacesFollowsDragCaption: "Arrastar para a direita traz o Espaço da esquerda, como um deslize no trackpad leva o Espaço junto com os dedos."
+        spacesFollowsDragLabel: "Inverter a direção horizontal do arrasto",
+        spacesFollowsDragCaption: "Quando ativado, arrastar para a direita muda para o Espaço à esquerda."
     )
 
     static let tr = MouseButtonFeatureStrings(
@@ -159,15 +159,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "Ekstra düğmeler ve yan teker yönleri seçtiğiniz tuş birleşimlerine basar.",
         sideWheelLeftName: "Yan teker sola",
         sideWheelRightName: "Yan teker sağa",
-        spacesEnableLabel: "Düğmeyi sürükleyerek Alanlar arasında geçiş yap",
+        spacesEnableLabel: "Alan değiştirmek için fare düğmesini basılı tut",
         spacesEnableCaption: "Seçtiğiniz düğmeyi basılı tutup sürükleyin: sola veya sağa bir Alan kaydırır, yukarı Mission Control’ü, aşağı Uygulama Exposé’sini açar. Kısa bir tıklama eskiden yaptığını yapmaya devam eder.",
         spacesPickButton: "Bir düğme seç",
         spacesShortcutsOffNote: "Mission Control klavye kısayolları Sistem Ayarları’nda kapalı, bu yüzden bu hareketin isteyeceği bir şey yok.",
         spacesCaptureWaiting: "Şimdi ek bir düğmeye basın.",
         spacesCaptureUnsupported: "Bu giriş basılı tutulup sürüklenemez. Ek bir düğme kullanın.",
         spacesCaptureExists: "Bu düğmenin zaten bir kısayolu var. Başka bir düğme seçin.",
-        spacesFollowsDragLabel: "Alanlar sürüklemeyi izler",
-        spacesFollowsDragCaption: "Sağa sürüklemek soldaki Alanı getirir; izleme dörtgeninde kaydırmanın Alanı parmaklarınızla birlikte taşıması gibi."
+        spacesFollowsDragLabel: "Yatay sürükleme yönünü tersine çevir",
+        spacesFollowsDragCaption: "Açıkken sağa sürüklemek soldaki Alana geçer."
     )
 
     static let ru = MouseButtonFeatureStrings(
@@ -194,15 +194,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "Дополнительные кнопки и направления бокового колёсика нажимают выбранные вами сочетания клавиш.",
         sideWheelLeftName: "Боковое колёсико влево",
         sideWheelRightName: "Боковое колёсико вправо",
-        spacesEnableLabel: "Переключать рабочие столы перетаскиванием кнопки",
+        spacesEnableLabel: "Удерживать кнопку мыши для переключения Spaces",
         spacesEnableCaption: "Удерживайте выбранную кнопку и перетаскивайте: влево или вправо переключает на соседний рабочий стол, вверх открывает Mission Control, вниз открывает Exposé приложения. Короткое нажатие по-прежнему делает то, что делало раньше.",
         spacesPickButton: "Выбрать кнопку",
         spacesShortcutsOffNote: "Сочетания клавиш Mission Control отключены в Системных настройках, поэтому этому жесту не о чем просить.",
         spacesCaptureWaiting: "Теперь нажмите дополнительную кнопку.",
         spacesCaptureUnsupported: "Этот элемент нельзя удерживать для перетаскивания. Используйте дополнительную кнопку.",
         spacesCaptureExists: "У этой кнопки уже есть сочетание. Выберите другую.",
-        spacesFollowsDragLabel: "Рабочие столы следуют за перетаскиванием",
-        spacesFollowsDragCaption: "Перетаскивание вправо открывает рабочий стол слева, как жест на трекпаде уводит его вместе с пальцами."
+        spacesFollowsDragLabel: "Обратить направление горизонтального перетаскивания",
+        spacesFollowsDragCaption: "Если включено, перетаскивание вправо переключает на Space слева."
     )
 
     static let es = MouseButtonFeatureStrings(
@@ -229,15 +229,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "Los botones extra y las direcciones de la rueda lateral pulsan combinaciones de teclas que tú eliges.",
         sideWheelLeftName: "Rueda lateral a la izquierda",
         sideWheelRightName: "Rueda lateral a la derecha",
-        spacesEnableLabel: "Cambiar de Espacio arrastrando un botón",
+        spacesEnableLabel: "Mantener un botón del ratón para cambiar de Space",
         spacesEnableCaption: "Mantén pulsado el botón elegido y arrastra: a la izquierda o a la derecha cambia un Espacio, hacia arriba abre Mission Control y hacia abajo abre Exposé de apps. Un clic corto sigue haciendo lo de siempre.",
         spacesPickButton: "Elegir un botón",
         spacesShortcutsOffNote: "Los atajos de teclado de Mission Control están desactivados en Ajustes del Sistema, así que este gesto no tiene nada que pedir.",
         spacesCaptureWaiting: "Ahora pulsa un botón extra.",
         spacesCaptureUnsupported: "Esa entrada no se puede mantener pulsada para arrastrar. Usa un botón extra.",
         spacesCaptureExists: "Ese botón ya tiene un atajo. Elige otro.",
-        spacesFollowsDragLabel: "Los Espacios siguen el arrastre",
-        spacesFollowsDragCaption: "Arrastrar a la derecha trae el Espacio de la izquierda, igual que un deslizamiento en el trackpad lo lleva con tus dedos."
+        spacesFollowsDragLabel: "Invertir la dirección horizontal del arrastre",
+        spacesFollowsDragCaption: "Al activarlo, arrastrar a la derecha cambia al Space de la izquierda."
     )
 
     static let sk = MouseButtonFeatureStrings(
@@ -264,15 +264,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "Extra tlačidlá a smery bočného kolieska stláčajú kombinácie klávesov, ktoré si vyberiete.",
         sideWheelLeftName: "Bočné koliesko vľavo",
         sideWheelRightName: "Bočné koliesko vpravo",
-        spacesEnableLabel: "Prepínať plochy presunutím tlačidla",
+        spacesEnableLabel: "Podržať tlačidlo myši na prepínanie plôch",
         spacesEnableCaption: "Podržte zvolené tlačidlo a presuňte: vľavo alebo vpravo prejde o jednu plochu, hore otvorí Mission Control, dole otvorí Exposé aplikácie. Krátke kliknutie naďalej robí to, čo vždy.",
         spacesPickButton: "Vybrať tlačidlo",
         spacesShortcutsOffNote: "Klávesové skratky pre Mission Control sú v Systémových nastaveniach vypnuté, takže toto gesto nemá o čo požiadať.",
         spacesCaptureWaiting: "Teraz stlačte extra tlačidlo.",
         spacesCaptureUnsupported: "Tento vstup nemožno podržať pre presunutie. Použite extra tlačidlo.",
         spacesCaptureExists: "Toto tlačidlo už má skratku. Vyberte iné.",
-        spacesFollowsDragLabel: "Plochy sledujú presun",
-        spacesFollowsDragCaption: "Presunutie doprava privedie plochu vľavo, rovnako ako ju ťah po trackpade unáša spolu s vašimi prstami."
+        spacesFollowsDragLabel: "Obrátiť vodorovný smer ťahania",
+        spacesFollowsDragCaption: "Keď je zapnuté, ťahanie doprava prepne na plochu vľavo."
     )
 
     static let de = MouseButtonFeatureStrings(
@@ -299,15 +299,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "Zusätzliche Maustasten und Richtungen des seitlichen Rads drücken Tastaturkurzbefehle deiner Wahl.",
         sideWheelLeftName: "Seitliches Rad nach links",
         sideWheelRightName: "Seitliches Rad nach rechts",
-        spacesEnableLabel: "Spaces durch Ziehen einer Taste wechseln",
+        spacesEnableLabel: "Maustaste zum Wechseln von Spaces gedrückt halten",
         spacesEnableCaption: "Halte die gewählte Taste gedrückt und ziehe: nach links oder rechts einen Space weiter, nach oben öffnet Mission Control, nach unten App-Exposé. Ein kurzer Klick tut weiterhin, was er immer tat.",
         spacesPickButton: "Taste wählen",
         spacesShortcutsOffNote: "Die Tastaturkurzbefehle für Mission Control sind in den Systemeinstellungen ausgeschaltet, also hat diese Geste nichts, worum sie bitten könnte.",
         spacesCaptureWaiting: "Drücke jetzt eine Zusatztaste.",
         spacesCaptureUnsupported: "Diese Eingabe lässt sich nicht gedrückt halten und ziehen. Verwende eine Zusatztaste.",
         spacesCaptureExists: "Diese Taste hat schon einen Kurzbefehl. Wähle eine andere.",
-        spacesFollowsDragLabel: "Spaces folgen der Ziehbewegung",
-        spacesFollowsDragCaption: "Nach rechts ziehen holt den Space links daneben, so wie eine Streichbewegung auf dem Trackpad ihn mit den Fingern mitnimmt."
+        spacesFollowsDragLabel: "Horizontale Ziehrichtung umkehren",
+        spacesFollowsDragCaption: "Wenn aktiviert, wechselt Ziehen nach rechts zum Space links."
     )
 
     static let fr = MouseButtonFeatureStrings(
@@ -334,15 +334,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "Les boutons supplémentaires et les directions de la molette latérale appuient sur des combinaisons de touches de votre choix.",
         sideWheelLeftName: "Molette latérale vers la gauche",
         sideWheelRightName: "Molette latérale vers la droite",
-        spacesEnableLabel: "Changer d’espace en faisant glisser un bouton",
+        spacesEnableLabel: "Maintenir un bouton de souris pour changer d’espace",
         spacesEnableCaption: "Maintenez le bouton choisi et faites glisser\u{00A0}: à gauche ou à droite pour changer d’espace, vers le haut pour Mission Control, vers le bas pour Exposé d’app. Un clic bref fait toujours ce qu’il faisait avant.",
         spacesPickButton: "Choisir un bouton",
         spacesShortcutsOffNote: "Les raccourcis clavier de Mission Control sont désactivés dans Réglages Système, donc ce geste n’a rien à demander.",
         spacesCaptureWaiting: "Appuyez sur un bouton supplémentaire.",
         spacesCaptureUnsupported: "Cette commande ne peut pas être maintenue pour un glissement. Utilisez un bouton supplémentaire.",
         spacesCaptureExists: "Ce bouton a déjà un raccourci. Choisissez-en un autre.",
-        spacesFollowsDragLabel: "Les espaces suivent le glissement",
-        spacesFollowsDragCaption: "Glisser vers la droite amène l’espace de gauche, comme un balayage sur le trackpad qui l’emporte avec les doigts."
+        spacesFollowsDragLabel: "Inverser le sens du glissement horizontal",
+        spacesFollowsDragCaption: "Une fois activé, glisser vers la droite ouvre l’espace de gauche."
     )
 
     static let it = MouseButtonFeatureStrings(
@@ -369,15 +369,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "I pulsanti extra e le direzioni della rotella laterale premono combinazioni di tasti a tua scelta.",
         sideWheelLeftName: "Rotella laterale a sinistra",
         sideWheelRightName: "Rotella laterale a destra",
-        spacesEnableLabel: "Cambiare Spazio trascinando un pulsante",
+        spacesEnableLabel: "Tieni premuto un pulsante del mouse per cambiare spazio",
         spacesEnableCaption: "Tieni premuto il pulsante scelto e trascina: a sinistra o a destra cambi Spazio, in alto apri Mission Control, in basso Exposé app. Un clic breve continua a fare quello che ha sempre fatto.",
         spacesPickButton: "Scegli un pulsante",
         spacesShortcutsOffNote: "Le abbreviazioni da tastiera di Mission Control sono disattivate in Impostazioni di Sistema, quindi questo gesto non ha nulla da chiedere.",
         spacesCaptureWaiting: "Ora premi un pulsante extra.",
         spacesCaptureUnsupported: "Questo comando non si può tenere premuto per trascinare. Usa un pulsante extra.",
         spacesCaptureExists: "Quel pulsante ha già un’abbreviazione. Scegline un altro.",
-        spacesFollowsDragLabel: "Gli Spazi seguono il trascinamento",
-        spacesFollowsDragCaption: "Trascinare a destra porta lo Spazio di sinistra, come uno scorrimento sul trackpad che lo trascina con le dita."
+        spacesFollowsDragLabel: "Inverti la direzione del trascinamento orizzontale",
+        spacesFollowsDragCaption: "Se attivo, trascinando a destra passi allo spazio a sinistra."
     )
 
     static let ja = MouseButtonFeatureStrings(
@@ -404,15 +404,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "拡張ボタンとサイドホイールの左右が、選んだキーの組み合わせを押します。",
         sideWheelLeftName: "サイドホイールを左へ",
         sideWheelRightName: "サイドホイールを右へ",
-        spacesEnableLabel: "ボタンをドラッグしてスペースを切り替える",
+        spacesEnableLabel: "マウスボタンを押したまま操作スペースを切り替える",
         spacesEnableCaption: "選んだボタンを押したままドラッグします。左右で1つ隣のスペースへ、上で Mission Control、下で App Exposé が開きます。短いクリックは今までどおりの動きのままです。",
         spacesPickButton: "ボタンを選ぶ",
         spacesShortcutsOffNote: "Mission Control のキーボードショートカットがシステム設定でオフになっているため、このジェスチャは何も呼び出せません。",
         spacesCaptureWaiting: "拡張ボタンを押してください。",
         spacesCaptureUnsupported: "この入力は押したままドラッグできません。拡張ボタンを使ってください。",
         spacesCaptureExists: "そのボタンにはすでにショートカットがあります。別のボタンを選んでください。",
-        spacesFollowsDragLabel: "スペースがドラッグに追従",
-        spacesFollowsDragCaption: "右にドラッグすると左のスペースが現れます。トラックパッドのスワイプが指と一緒にスペースを動かすのと同じ向きです。"
+        spacesFollowsDragLabel: "横方向のドラッグを反転する",
+        spacesFollowsDragCaption: "オンの場合、右にドラッグすると左の操作スペースに切り替わります。"
     )
 
     static let ko = MouseButtonFeatureStrings(
@@ -439,15 +439,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "추가 버튼과 측면 휠 방향이 선택한 키 조합을 누릅니다.",
         sideWheelLeftName: "측면 휠 왼쪽",
         sideWheelRightName: "측면 휠 오른쪽",
-        spacesEnableLabel: "버튼을 드래그해 스페이스 전환",
+        spacesEnableLabel: "마우스 버튼을 누른 채로 Space 전환",
         spacesEnableCaption: "선택한 버튼을 누른 채 드래그하세요. 좌우로는 한 칸 옆 스페이스로, 위로는 미션 컨트롤, 아래로는 앱 엑스포제가 열립니다. 짧게 누르면 원래 하던 동작을 그대로 합니다.",
         spacesPickButton: "버튼 선택",
         spacesShortcutsOffNote: "미션 컨트롤 키보드 단축키가 시스템 설정에서 꺼져 있어 이 제스처가 요청할 것이 없습니다.",
         spacesCaptureWaiting: "이제 추가 버튼을 누르세요.",
         spacesCaptureUnsupported: "이 입력은 누른 채 드래그할 수 없습니다. 추가 버튼을 사용하세요.",
         spacesCaptureExists: "그 버튼에는 이미 단축키가 있습니다. 다른 버튼을 고르세요.",
-        spacesFollowsDragLabel: "스페이스가 드래그를 따라감",
-        spacesFollowsDragCaption: "오른쪽으로 드래그하면 왼쪽 스페이스가 나타납니다. 트랙패드 쓸어넘기기가 손가락과 함께 스페이스를 옮기는 방향과 같습니다."
+        spacesFollowsDragLabel: "가로 드래그 방향 반전",
+        spacesFollowsDragCaption: "켜면 오른쪽으로 드래그할 때 왼쪽 Space로 전환됩니다."
     )
 
     static let zhHans = MouseButtonFeatureStrings(
@@ -474,15 +474,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "额外按键和侧滚轮方向会按下你选择的按键组合。",
         sideWheelLeftName: "侧滚轮向左",
         sideWheelRightName: "侧滚轮向右",
-        spacesEnableLabel: "拖动按键切换桌面",
+        spacesEnableLabel: "按住鼠标按钮以切换空间",
         spacesEnableCaption: "按住所选按键并拖动：向左或向右切换一个桌面，向上打开调度中心，向下打开应用程序窗口。短按仍然做它一直做的事。",
         spacesPickButton: "选择一个按键",
         spacesShortcutsOffNote: "调度中心的键盘快捷键在系统设置中已关闭，所以这个手势无从调用。",
         spacesCaptureWaiting: "现在请按下额外按键。",
         spacesCaptureUnsupported: "该输入无法按住拖动。请使用额外按键。",
         spacesCaptureExists: "该按键已设有快捷键。请换一个。",
-        spacesFollowsDragLabel: "桌面跟着拖动走",
-        spacesFollowsDragCaption: "向右拖动会带来左边的桌面，就像在触控板上滑动时桌面跟着手指移动一样。"
+        spacesFollowsDragLabel: "反转水平拖动方向",
+        spacesFollowsDragCaption: "开启后，向右拖动会切换到左侧的空间。"
     )
 
     static let zhTW = MouseButtonFeatureStrings(
@@ -509,15 +509,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "額外按鍵和側滾輪方向會按下你選擇的按鍵組合。",
         sideWheelLeftName: "側滾輪向左",
         sideWheelRightName: "側滾輪向右",
-        spacesEnableLabel: "拖曳按鍵切換桌面",
+        spacesEnableLabel: "按住滑鼠按鈕來切換空間",
         spacesEnableCaption: "按住所選按鍵並拖曳：向左或向右切換一個桌面，向上開啟指揮中心，向下開啟 App Exposé。短按仍然做它一直做的事。",
         spacesPickButton: "選擇一個按鍵",
         spacesShortcutsOffNote: "指揮中心的鍵盤快速鍵在系統設定中已關閉，所以這個手勢無從呼叫。",
         spacesCaptureWaiting: "現在請按下額外按鍵。",
         spacesCaptureUnsupported: "此操作無法按住拖曳。請使用額外按鍵。",
         spacesCaptureExists: "該按鍵已設有快速鍵。請換一個。",
-        spacesFollowsDragLabel: "桌面跟著拖曳走",
-        spacesFollowsDragCaption: "向右拖曳會帶來左邊的桌面，就像在觸控式軌跡板上滑動時桌面跟著手指移動一樣。"
+        spacesFollowsDragLabel: "反轉水平拖移方向",
+        spacesFollowsDragCaption: "開啟後，向右拖移會切換到左側的空間。"
     )
 
     static let zhHK = MouseButtonFeatureStrings(
@@ -544,15 +544,15 @@ extension MouseButtonFeatureStrings {
         panelCaption: "額外按鍵和側滾輪方向會按下你選擇的按鍵組合。",
         sideWheelLeftName: "側滾輪向左",
         sideWheelRightName: "側滾輪向右",
-        spacesEnableLabel: "拖曳按鍵切換桌面",
+        spacesEnableLabel: "按住滑鼠按鈕來切換空間",
         spacesEnableCaption: "按住所選按鍵並拖曳：向左或向右切換一個桌面，向上開啟指揮中心，向下開啟 App Exposé。短按仍然做它一直做的事。",
         spacesPickButton: "選擇一個按鍵",
         spacesShortcutsOffNote: "指揮中心的鍵盤快捷鍵在系統設定中已關閉，所以這個手勢無從呼叫。",
         spacesCaptureWaiting: "現在請按下額外按鍵。",
         spacesCaptureUnsupported: "此操作無法按住拖曳。請使用額外按鍵。",
         spacesCaptureExists: "該按鍵已設有快捷鍵。請換一個。",
-        spacesFollowsDragLabel: "桌面跟著拖曳走",
-        spacesFollowsDragCaption: "向右拖曳會帶來左邊的桌面，就像在觸控式軌跡板上滑動時桌面跟著手指移動一樣。"
+        spacesFollowsDragLabel: "反轉水平拖移方向",
+        spacesFollowsDragCaption: "開啟後，向右拖移會切換到左側的空間。"
     )
     static let uk = MouseButtonFeatureStrings(
         pageTitle: "Клавіатурні скорочення кнопок миші",
@@ -578,14 +578,14 @@ extension MouseButtonFeatureStrings {
         panelCaption: "Додаткові кнопки та напрямки бокового колеса натискають обрані вами клавіатурні скорочення.",
         sideWheelLeftName: "Бокове колесо ліворуч",
         sideWheelRightName: "Бокове колесо праворуч",
-        spacesEnableLabel: "Перемикати Space перетягуванням кнопки",
+        spacesEnableLabel: "Утримувати кнопку миші для перемикання Spaces",
         spacesEnableCaption: "Утримуйте обрану кнопку та перетягуйте: вліво або вправо перемикає на один Space, вгору відкриває Mission Control, вниз відкриває App Exposé. Короткий клац все ще робить те, що робив раніше.",
         spacesPickButton: "Виберіть кнопку",
         spacesShortcutsOffNote: "Клавіатурні скорочення Mission Control вимкнені в Системних параметрах, тому цей жест нічого не може викликати.",
         spacesCaptureWaiting: "Тепер натисніть додаткову кнопку.",
         spacesCaptureUnsupported: "Це введення не можна утримувати для перетягування. Використовуйте додаткову кнопку.",
         spacesCaptureExists: "Ця кнопка вже має клавіатурне скорочення. Виберіть іншу.",
-        spacesFollowsDragLabel: "Space слідує за перетягуванням",
-        spacesFollowsDragCaption: "Перетягування вправо підтягує Space ліворуч, як на трекпеді, коли робочий стіл слідує за пальцем."
+        spacesFollowsDragLabel: "Обернути напрямок горизонтального перетягування",
+        spacesFollowsDragCaption: "Якщо ввімкнено, перетягування праворуч перемикає на Space ліворуч."
     )
 }

@@ -50,7 +50,16 @@ def availability_declaration(path, prefix):
 
 
 def main():
+    write("MouseShortcutBackup.swift", "import Foundation\nextension MouseShortcutBackupTests {\nfinal class Backup {\n"
+          + declaration("Sources/Vorssaint/Services/SettingsBackup.swift", "    static func applyAndRelaunch(")
+              .replace("UserDefaults.standard", "ReviewDefaults.current!") + "}\n}\n")
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    write("CleaningModePreferences.swift", "import Foundation\nextension CleaningModePreferencesTests {\nfinal class Service: State {\n"
+          + declaration("Sources/Vorssaint/Services/CleaningMode/CleaningModeManager.swift", "    func syncWithPreferences()")
+              .replace("AppFeature.cleaningMode.isAvailable", "AppFeature.cleaningMode.isAvailable(in: defaults)")
+              .replace("UserDefaults.standard", "defaults")
+              .replace("fallback: .cleaningModeDefault)", "fallback: .cleaningModeDefault, in: defaults)")
+          + "}\n}\n")
     write("RecorderScreen.swift", "import AppKit\n" + declaration(
         "Sources/Vorssaint/Services/QuickTools/ScreenshotCaptureEngine.swift", "extension NSScreen {"))
     recorder = "Sources/Vorssaint/Services/Recorder/ScreenRecorderService.swift"
@@ -1427,7 +1436,7 @@ def main():
           + declaration(notch, "    private func applyMenuSpace(").replace("private func", "func", 1)
           + declaration(notch, "    func presentCapture(")
               .replace("content: AnyView, actions: AnyView? = nil", "content: Bool, actions: Bool? = nil")
-              .replace("NotchSupport.routes(.capture)", "routesCaptures")
+              .replace("NotchSupport.routesCapturePreviews()", "routesCaptures")
           + declaration(notch, "    func updateCaptureHeight(")
           + declaration(notch, "    func removeCapture(")
           + declaration(notch, "    func showCaptureHistory()")
@@ -1573,6 +1582,19 @@ def main():
           + declaration("Sources/Vorssaint/UI/Settings/ShortcutsSettings.swift", "    private func expansionBinding(").replace("private func", "func", 1)
           + "}\n}\n")
     settings_card = "Sources/Vorssaint/UI/Settings/SettingsCard.swift"
+    input_slider = "Sources/Vorssaint/UI/Settings/SettingsValueSlider.swift"
+    status_dot = "Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift"
+    write("InputSettingsControls.swift", "import AppKit\nimport SwiftUI\n\nextension InputSettingsControlTests {\n"
+          + declaration(status_dot, "struct SettingsFeatureStatus")
+          + declaration(status_dot, "private struct StatusTooltip:").replace("private struct", "struct", 1)
+          + declaration(status_dot, "struct SettingsStatusDot:")
+          + "final class Capture {\nvar isCapturing = false\nstatic var isCaptureActive = false\nvar lastInputSeen: Int64?\nvar syncCount = 0\nfunc syncWithPreferences() { syncCount += 1 }\n"
+          + declaration("Sources/Vorssaint/Services/MouseButtons/MouseButtonShortcutService.swift", "    func setCapturing(")
+          + "}\n"
+          + declaration(input_slider, "struct SettingsValueSlider:")
+          + declaration(input_slider, "private struct NativeSettingsSlider:")
+          + declaration(input_slider, "private final class TrackingSettingsSlider:")
+          + "}\n")
     text_inset = next(line for line in (ROOT / settings_card).read_text().splitlines()
                       if line.startswith("let settingsRowTextInset:"))
     # The Features page's wording and route live outside the tests, so the
@@ -1588,6 +1610,9 @@ def main():
           + "func isAvailable(_ feature: AppFeature) -> Bool { installed }\n}\n"
           + declaration(settings_card, "struct SettingsCard<")
           + declaration("Sources/Vorssaint/UI/Settings/ExperimentalBadge.swift", "struct ExperimentalBadge:")
+          + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "struct SettingsFeatureStatus")
+          + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "private struct StatusTooltip:").replace("private struct", "struct", 1)
+          + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "struct SettingsStatusDot")
           + declaration(settings_card, "struct SettingsRow<")
           + feature_row
           + declaration(settings_card, "struct SettingsChoiceRow<")

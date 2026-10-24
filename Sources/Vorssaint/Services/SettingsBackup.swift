@@ -92,6 +92,8 @@ enum SettingsBackup {
             }
         let windowLayoutPaths = SettingsBackupSupport.pathIdentities(
             in: defaults.stringArray(forKey: DefaultsKey.windowLayoutIgnoredApps) ?? [])
+        let localMouseShortcuts = defaults.dictionary(forKey: DefaultsKey.mouseShortcutAppExceptions)
+            as? [String: [String]] ?? [:]
         for key in SettingsBackupSupport.keysToClear(whenImporting: settings) {
             defaults.removeObject(forKey: key)
         }
@@ -121,6 +123,11 @@ enum SettingsBackup {
                 restored: defaults.stringArray(forKey: DefaultsKey.windowLayoutIgnoredApps) ?? [],
                 carried: windowLayoutPaths), forKey: DefaultsKey.windowLayoutIgnoredApps)
         }
+        defaults.set(SettingsBackupSupport.restoredMouseShortcutExceptions(
+            restored: defaults.dictionary(forKey: DefaultsKey.mouseShortcutAppExceptions) as? [String: [String]] ?? [:],
+            local: localMouseShortcuts,
+            inherited: defaults.stringArray(forKey: MouseExceptionScope.buttonShortcuts.defaultsKey) ?? []),
+            forKey: DefaultsKey.mouseShortcutAppExceptions)
         FeatureRuntime.shared.relaunchApp()
     }
 }

@@ -62,8 +62,11 @@ enum SettingsSidebarIdentityTests {
         FeatureHardwareBoundary.unsupported = [.extraBrightness, .fanControl]
         let unsupported = Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in false })
         suite.expect(!unsupported.flatMap(\.items).contains {
-            $0.id == .feature(.fanControl) || $0.id == .feature(.extraBrightness) || $0.id == .feature(.brightness)
+            $0.id == .feature(.fanControl) || $0.id == .feature(.extraBrightness)
         }, "unsupported hardware controls are absent from the actual sidebar")
+        suite.expect(unsupported.flatMap(\.items).contains { $0.id == .feature(.brightness) }
+                     && unsupported.flatMap(\.items).contains { $0.id == .feature(.bluetoothSleep) },
+                     "Displays and Bluetooth remain reachable independently of optional hardware controls")
         FeatureHardwareBoundary.unsupported = []
         let clipboardFiles = sections.first { $0.id == 3 }?.items.map(\.id) ?? []
         suite.expect(clipboardFiles.contains(.page(.scratchpad))

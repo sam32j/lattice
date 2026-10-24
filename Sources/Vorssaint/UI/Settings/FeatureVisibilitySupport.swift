@@ -435,7 +435,7 @@ enum FeatureVisibilitySupport {
 
     static func isPageVisible(_ page: SettingsPage,
                               isAvailable: (AppFeature) -> Bool) -> Bool {
-        if page == .notch || page == .dock || page == .windowLayout || page == .switcher || page == .screenshot || page == .screenRecorder { return true }
+        if page == .energy || page == .monitor || page == .notch || page == .dock || page == .windowLayout || page == .switcher || page == .screenshot || page == .screenRecorder { return true }
         let gate = features(for: page)
         return gate.isEmpty || gate.contains { $0.isVisibleInSettings(isAvailable: isAvailable) }
     }
