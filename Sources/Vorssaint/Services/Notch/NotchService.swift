@@ -3460,12 +3460,6 @@ final class NotchService: ObservableObject {
         let timerCouldRun = session.canRunTimer
         let wasLocked = session.locked
         change(&session)
-        // An unlock is someone at the Mac, even when the display's wake is
-        // announced after it.
-        if session.locked != wasLocked, session.locked ? session.hearsLockChange : session.onConsole,
-           NotchLockScreenSupport.playsSounds() {
-            NotchLockScreenService.shared.playSound(locking: session.locked)
-        }
         // The lock screen starts leaving before the island comes back, since
         // rebuilding the island holds the main thread for a moment. It stops
         // none of the sources an island that returns takes back.

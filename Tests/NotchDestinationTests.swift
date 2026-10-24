@@ -722,31 +722,31 @@ enum NotchDestinationContract {
                                "sync after 1 teardowns, 1 returns"]
                      && lockScreen.syncs.count == 3 && lockScreen.syncs.dropFirst().allSatisfy { !$0.locked && $0.canPresent },
                      "on unlock the lock screen starts leaving before the island returns and stops nothing it takes back")
-        suite.expect(lockScreen.sounds == [true, false], "locking and unlocking at the Mac each play their padlock")
+        suite.expect(lockScreen.sounds.isEmpty, "island transitions never play the independently owned padlock sound")
         service.updateSession { $0.displaysSleeping = true }
         service.updateSession { $0.locked = true }
-        suite.expect(lockScreen.sounds == [true, false] && lockScreen.syncs.last?.showsLockScreen == false,
+        suite.expect(lockScreen.sounds.isEmpty && lockScreen.syncs.last?.showsLockScreen == false,
                      "a lock that comes with a dark display plays nothing and shows nothing")
         service.updateSession { $0.displaysSleeping = false }
         suite.expect(lockScreen.syncs.last?.showsLockScreen == true, "waking the display shows the lock screen")
         service.updateSession { $0.screenSaverRunning = true }
-        suite.expect(lockScreen.syncs.last?.showsLockScreen == false && lockScreen.sounds.count == 2,
+        suite.expect(lockScreen.syncs.last?.showsLockScreen == false && lockScreen.sounds.isEmpty,
                      "a screen saver hides the lock screen without a sound")
         service.updateSession { $0.screenSaverRunning = false }
         defaults.set(false, forKey: DefaultsKey.notchLockSounds)
         service.updateSession { $0.locked = false }
-        suite.expect(lockScreen.sounds.count == 2, "with the sounds off, unlocking is silent")
+        suite.expect(lockScreen.sounds.isEmpty, "the island never owns unlock playback")
         defaults.set(true, forKey: DefaultsKey.notchLockSounds)
         service.updateSession { $0.locked = true }
         service.updateSession { $0.displaysSleeping = true }
         service.updateSession { $0.locked = false }
         service.updateSession { $0.displaysSleeping = false }
-        suite.expect(lockScreen.sounds == [true, false, true, false],
-                     "an unlock announced before the display wakes still plays its padlock")
+        suite.expect(lockScreen.sounds.isEmpty,
+                     "an unlock before display wake still leaves playback to the sound service")
         service.running = false
         let syncs = lockScreen.syncs.count
         service.updateSession { $0.locked = true }
-        suite.expect(lockScreen.syncs.count == syncs && lockScreen.sounds.count == 4,
+        suite.expect(lockScreen.syncs.count == syncs && lockScreen.sounds.isEmpty,
                      "a stopped island leaves the lock screen alone")
     }
 

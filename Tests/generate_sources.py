@@ -1534,7 +1534,6 @@ def main():
           + declaration(notch, "    var reopeningModule:")
           + declaration(notch, "    private func updateSession(").replace("private func", "func", 1)
               .replace("AppFeature.mixer.isAvailable", "AppFeature.mixer.isAvailable(in: ReviewDefaults.current)")
-              .replace("NotchLockScreenSupport.playsSounds()", "NotchLockScreenSupport.playsSounds(in: ReviewDefaults.current)")
           # The press handler the initializer installs, run on demand.
           + declaration(notch, "    private init() {").replace("    private init()", "    func installHotkey()", 1)
           + declaration(notch, "    func toggleFromShortcut()") + toggle[0]
