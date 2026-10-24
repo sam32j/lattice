@@ -5,6 +5,7 @@ import AppKit
 
 enum NotchGestureTests {
     static func run(_ suite: TestSuite) {
+        NotchGestureNaturalScrollingTests.run(suite)
         nativeInteractionContracts(suite)
         NotchCaptureTrackpadGestureTests.run(suite)
         suite.expect(NotchGestureSupport.allowsVertical(expanded: true, inHeader: false,
