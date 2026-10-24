@@ -542,10 +542,12 @@ final class NotchMusicService: ObservableObject {
         send(command, context: playback?.commandContext)
     }
 
-    func skipFromGesture(forward: Bool) {
+    @discardableResult
+    func skipFromGesture(forward: Bool) -> Bool {
         let command: Command = forward ? .next : .previous
-        guard canPerform(command), send(command) else { return }
+        guard canPerform(command), send(command) else { return false }
         gestureSkips.send(forward)
+        return true
     }
 
     @discardableResult
