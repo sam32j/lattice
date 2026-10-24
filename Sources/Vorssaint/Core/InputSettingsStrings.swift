@@ -1,6 +1,25 @@
 import Foundation
 
 enum InputSettingsStrings {
+    static func trackpadDragConflict(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "Three-finger drag is enabled in macOS. Use four fingers for middle-click."
+        case .ptBR: return "O arrasto com três dedos está ativo no macOS. Use quatro dedos para o clique do meio."
+        case .es: return "El arrastre con tres dedos está activado en macOS. Usa cuatro dedos para el clic central."
+        case .de: return "Dreifingerziehen ist in macOS aktiviert. Verwende vier Finger für den Mittelklick."
+        case .fr: return "Le glissement à trois doigts est activé dans macOS. Utilisez quatre doigts pour le clic central."
+        case .it: return "Il trascinamento con tre dita è attivo in macOS. Usa quattro dita per il clic centrale."
+        case .ja: return "macOSの3本指ドラッグが有効です。中クリックには4本指を使ってください。"
+        case .ko: return "macOS에서 세 손가락 드래그가 켜져 있습니다. 가운데 클릭에는 네 손가락을 사용하세요."
+        case .zhHans: return "macOS 已开启三指拖移。请使用四指进行中键点击。"
+        case .zhTW, .zhHK: return "macOS 已開啟三指拖移。請使用四指進行中鍵點按。"
+        case .ru: return "В macOS включено перетягивание тремя пальцами. Для среднего клика используйте четыре пальца."
+        case .uk: return "У macOS увімкнено перетягування трьома пальцями. Для середнього клацання використовуйте чотири пальці."
+        case .tr: return "macOS’te üç parmakla sürükleme açık. Orta tıklama için dört parmağınızı kullanın."
+        case .sk: return "V macOS je zapnuté ťahanie tromi prstami. Na stredné kliknutie použite štyri prsty."
+        }
+    }
+
     enum Key: Int, CaseIterable {
         case mouseScrolling, mouseClicks, mouseButtons, enableSuperKey, superKey
         case superKeyActive, superKeyConflict, filterActive, off, permissionRequired, waiting, sideButtonsHelp
@@ -10,7 +29,7 @@ enum InputSettingsStrings {
         let labels: [String]
         switch language {
         case .enUS:
-            labels = ["Mouse Scrolling", "Mouse Clicks", "Mouse Buttons", "Enable super key", "Super Key", "Super Key active", "Another app's key mapping uses the same key. Please reset.", "Duplicate-key filter active", "Off", "Allow Accessibility access to activate this feature.", "Not active. Check permissions and try enabling it again.", "Use the extra thumb buttons usually assigned to Back and Forward. Your mouse software may remap them."]
+            labels = ["Mouse Scrolling", "Mouse Clicks", "Mouse Buttons", "Enable super key", "Super Key", "Super Key active", "Another app’s key mapping uses the same key. Please reset.", "Duplicate-key filter active", "Off", "Allow Accessibility access to activate this feature.", "Not active. Check permissions and try enabling it again.", "Use the extra thumb buttons usually assigned to Back and Forward. Your mouse software may remap them."]
         case .ptBR:
             labels = ["Rolagem do mouse", "Cliques do mouse", "Botões do mouse", "Ativar tecla super", "Tecla super", "Tecla super ativa", "Outro app usa a mesma tecla. Redefina o mapeamento nesse app.", "Filtro de teclas duplicadas ativo", "Desativado", "Permita o acesso de Acessibilidade para ativar este recurso.", "Inativo. Verifique as permissões e tente ativar novamente.", "Use os botões extras do polegar, normalmente usados para Voltar e Avançar. O software do mouse pode remapeá-los."]
         case .es:

@@ -113,7 +113,8 @@ extension MouseSettings {
                     SettingsControlRow(title: l10n.s.middleClickTapPicker) {
                         if middleClick.systemDragGestureConflict {
                             Image(systemName: "info.circle")
-                                .help("Three-finger drag is enabled in macOS. Use four fingers for middle-click.")
+                                .help(InputSettingsStrings.trackpadDragConflict(l10n.language))
+                                .accessibilityLabel(InputSettingsStrings.trackpadDragConflict(l10n.language))
                         }
                         Picker(l10n.s.middleClickTapPicker, selection: Binding(
                             get: { MiddleClickSupport.availableTapSelection(middleClickTapFingers,
