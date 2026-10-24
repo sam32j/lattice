@@ -6,6 +6,13 @@ import SwiftUI
 /// installing input taps, remapping a real key, or changing display hardware.
 enum InputSettingsRenderingProbe {
     static func run(output: URL, failures: inout [String]) {
+        SettingsRefactorProbe.render("audio-input-compact-panel",
+            view: AnyView(AudioInputDeviceControls().padding(12)),
+            size: CGSize(width: 340, height: 260), output: output, failures: &failures)
+        SettingsRefactorProbe.render("audio-input-wide-settings",
+            view: AnyView(AudioInputDeviceControls(title: "Input", sliderWidth: 220,
+                                                  showsUnavailableLabel: true).padding(12)),
+            size: CGSize(width: 760, height: 260), output: output, failures: &failures)
         let enabledKeys = [DefaultsKey.scrollInverterEnabled, DefaultsKey.scrollInverterHorizontalEnabled,
                            DefaultsKey.scrollHorizontalEnabled, DefaultsKey.smoothScrollEnabled,
                            DefaultsKey.linearScrollEnabled, DefaultsKey.mouseAccelerationDisabled,

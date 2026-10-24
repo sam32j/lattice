@@ -45,7 +45,8 @@ struct AudioInputSettings: View {
                 }
         }) {
             VStack(alignment: .leading, spacing: 14) {
-                AudioInputDeviceControls(title: l10n.s.mixerInputSourceLabel)
+                AudioInputDeviceControls(title: l10n.s.mixerInputSourceLabel, sliderWidth: 220,
+                                         showsUnavailableLabel: true)
 
                 Divider()
 
