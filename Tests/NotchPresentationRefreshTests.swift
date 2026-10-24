@@ -218,6 +218,7 @@ enum NotchPresentationRefreshContract {
             set { compactActivityOverride = newValue }
         }
         var compactMusicIsVisible: Bool { compactActivityIsVisible && compactActivity == .music }
+        var compactMusicSwipeIsVisible: Bool { compactMusicIsVisible }
         var presentedMusic: NotchCompactMusicSnapshot?
         var heldMusic: NotchCompactMusicSnapshot?
         var departingMusic: NotchCompactMusicSnapshot?

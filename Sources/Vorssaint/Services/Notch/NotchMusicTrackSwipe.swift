@@ -8,32 +8,55 @@ struct NotchMusicTrackSwipe {
     struct Contact {
         let id: Int
         let position: CGPoint
+        let isResting: Bool
+
+        init(id: Int, position: CGPoint, isResting: Bool = false) {
+            self.id = id
+            self.position = position
+            self.isResting = isResting
+        }
     }
     private var origins: [Contact] = []
     private var blocked = false
-    private(set) var fired = false
+    private(set) var armed: Direction?
     private var scrollDistance = 0.0
     private(set) var progress = 0.0
     var direction: Direction? {
-        scrollDistance == 0 ? nil : (scrollDistance < 0 ? .next : .previous)
+        armed ?? (scrollDistance == 0 ? nil : (scrollDistance < 0 ? .next : .previous))
     }
     var horizontal: Bool { progress > 0 }
 
     mutating func cancel() {
+        armed = nil
         blocked = true
         progress = 0
         scrollDistance = 0
     }
 
     mutating func update(_ contacts: [Contact], enabled: Bool) -> Direction? {
-        if contacts.isEmpty { self = Self(); return nil }
+        if contacts.isEmpty {
+            let action = enabled && !blocked ? armed : nil
+            self = Self()
+            return action
+        }
         guard enabled else { cancel(); return nil }
-        guard !blocked, !fired else { return nil }
+        guard !blocked else { return nil }
+        if armed != nil {
+            let ids = Set(origins.map(\.id))
+            guard contacts.count <= 2, Set(contacts.map(\.id)).count == contacts.count,
+                  contacts.allSatisfy({ ids.contains($0.id) && $0.position.x.isFinite && $0.position.y.isFinite }) else {
+                cancel(); return nil
+            }
+            // Once armed, retain the cue while either original finger remains.
+            return nil
+        }
+        // Resting is still physical contact, never a lift. Only active touches
+        // may establish or advance an unarmed stroke.
+        let contacts = contacts.filter { !$0.isResting }.sorted { $0.id < $1.id }
         guard contacts.count == 2 else {
             if !origins.isEmpty || contacts.count > 2 { cancel() }
             return nil
         }
-        let contacts = contacts.sorted { $0.id < $1.id }
         guard Set(contacts.map(\.id)).count == 2,
               contacts.allSatisfy({ $0.position.x.isFinite && $0.position.y.isFinite }) else {
             cancel(); return nil
@@ -48,20 +71,21 @@ struct NotchMusicTrackSwipe {
         if vertical >= 4, vertical > horizontal * 1.5 { cancel(); return nil }
         let aligned = travel[0].x * travel[1].x > 0 && vertical <= max(4, horizontal * 0.67)
         progress = aligned && horizontal >= 4 ? min(1, horizontal / 54) : 0
-        return complete()
+        armIfReady()
+        return nil
     }
 
     mutating func scroll(_ deltaX: Double, precise: Bool, momentum: Bool) -> Direction? {
         guard deltaX.isFinite else { cancel(); return nil }
-        guard precise, !momentum, !blocked, !fired else { return nil }
+        guard precise, !momentum, !blocked, armed == nil else { return nil }
         // AppKit already applies the user's natural-scrolling preference.
         scrollDistance += deltaX
-        return complete()
+        armIfReady()
+        return nil
     }
 
-    private mutating func complete() -> Direction? {
-        guard progress == 1, let direction, !fired else { return nil }
-        fired = true
-        return direction
+    private mutating func armIfReady() {
+        guard progress == 1, armed == nil, let direction else { return }
+        armed = direction
     }
 }

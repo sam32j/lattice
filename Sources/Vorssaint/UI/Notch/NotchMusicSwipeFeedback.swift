@@ -75,3 +75,24 @@ struct NotchMusicSwipeVisualizer<Content: View>: View {
         .animation(.easeOut(duration: 0.12), value: amount)
     }
 }
+
+
+/// A title/artist notice stays swipeable, with its artwork giving way to the
+/// same held cue as the compact visualizer. Both island silhouettes share it.
+struct NotchMusicSwipeNoticeArtwork: View {
+    let size: CGFloat
+    var capsule = false
+    @ObservedObject private var music = NotchMusicService.shared
+    @ObservedObject private var swipe = NotchMusicSwipeState.shared
+    @Environment(\.notchSettingsPreview) private var preview
+
+    var body: some View {
+        NotchMusicSwipeVisualizer(frame: preview ? .init() : swipe.frame, height: size) {
+            if capsule {
+                NotchMusicCover(artwork: music.artwork, side: size, radius: size * 0.24, source: music.playback?.track)
+            } else {
+                NotchArtwork(image: music.artwork, size: size, source: music.playback?.track)
+            }
+        }
+    }
+}

@@ -16,7 +16,8 @@ enum NotchGestureNaturalScrollingTests {
             }
             _ = gesture.update(contacts(0), enabled: true)
             _ = gesture.scroll(delta, precise: true, momentum: false)
-            suite.expect(gesture.update(contacts(travel), enabled: true) == expected,
+            _ = gesture.update(contacts(travel), enabled: true)
+            suite.expect(gesture.update([], enabled: true) == expected,
                          "raw AppKit direction honors \(name) without a second inversion")
         }
     }
