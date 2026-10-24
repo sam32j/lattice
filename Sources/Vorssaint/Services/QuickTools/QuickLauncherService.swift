@@ -18,6 +18,7 @@ enum QuickLauncherItem: String, PanelOrderItem, Identifiable {
     var id: String { rawValue }
 
     func isAvailable(in defaults: UserDefaults = .standard) -> Bool {
+        if self == .cleaning { return true } // Manual activation does not install a shortcut.
         guard feature.isAvailable(in: defaults) else { return false }
         return self != .toggles || [AppFeature.brightness, .commandBar, .micMute].contains {
             $0.isAvailable(in: defaults)

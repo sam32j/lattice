@@ -459,15 +459,13 @@ enum CommandBarCatalog {
                 trouble: accessibilityTrouble(),
                 run: { _ in afterBeat { PastePlainService.shared.performPastePlain() } }))
         }
-        if AppFeature.cleaningMode.isAvailable {
-            entries.append(CommandBarEntry(
-                id: "action.cleaningMode",
-                title: s.cleaningMenuItem,
-                subtitle: area(.cleaningMode, under: s.cleaningMenuItem),
-                icon: .symbol("keyboard"),
-                trouble: accessibilityTrouble(),
-                run: { _ in afterBeat(0.1) { CleaningModeManager.shared.activate() } }))
-        }
+        entries.append(CommandBarEntry(
+            id: "action.cleaningMode",
+            title: s.cleaningMenuItem,
+            subtitle: area(.cleaningMode, under: s.cleaningMenuItem),
+            icon: .symbol("keyboard"),
+            trouble: accessibilityTrouble(),
+            run: { _ in afterBeat(0.1) { CleaningModeManager.shared.activate() } }))
 
         if AppFeature.keepAwake.isAvailable {
             let awake = KeepAwakeManager.shared
