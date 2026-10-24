@@ -4,6 +4,8 @@ import SwiftUI
 /// Shared microphone controls used by Audio Input and the live menu panel.
 struct AudioInputDeviceControls: View {
     var title: String? = nil
+    var sliderWidth: CGFloat = 164
+    var showsUnavailableLabel = false
     @Environment(\.notchPresentation) private var inNotch
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var inputManager = AudioInputDeviceManager.shared
@@ -70,9 +72,10 @@ struct AudioInputDeviceControls: View {
                 SettingsValueSlider(title: l10n.s.mixerInputLevelLabel,
                                     value: inputVolumeBinding, range: 0...1, step: 0.01,
                                     readout: "\(Int((volume * 100).rounded()))%")
-                    .frame(width: 220)
+                    .frame(width: sliderWidth)
                     .disabled(!hasVolume)
-                if !hasVolume {
+                    .help(hasVolume ? "" : l10n.s.sliderUnavailable)
+                if !hasVolume && showsUnavailableLabel {
                     Text(l10n.s.sliderUnavailable)
                         .font(.system(size: 10.5, weight: .medium))
                         .foregroundStyle(.secondary)
