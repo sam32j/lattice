@@ -2775,7 +2775,11 @@ enum SwitcherModelFeatureTests {
         let reopenCode = stripCommentLines((statusAnchorAppDelegateSource
             .components(separatedBy: "func applicationShouldHandleReopen(").last ?? "")
             .components(separatedBy: "\n    }").first ?? "")
-        suite.expect(reopenCode.contains("mainItemHiddenByChoice != true, !iconIsOnScreen()"),
+        let reopenCoordinator = (try? String(contentsOfFile:
+            "Sources/Vorssaint/Core/AppMenuReopenCoordinator.swift", encoding: .utf8)) ?? ""
+        suite.expect(reopenCode.contains("AppMenuReopenCoordinator.open(")
+                     && reopenCode.contains("iconHidden: { [weak self] in self?.statusController?.mainItemHiddenByChoice == true }")
+                     && reopenCoordinator.contains("if !iconHidden(), !iconVisible() { recreateIcon() }"),
                "reopening the app leaves an item hidden by choice alone and opens Settings")
         // macOS 27's Siri app reopens running apps on almost every interaction;
         // only a reopen the person asked for may rebuild the icon or open anything.

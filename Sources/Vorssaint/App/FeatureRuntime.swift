@@ -217,7 +217,6 @@ final class FeatureRuntime: ObservableObject {
     /// One bump for Settings, and the Command Bar drops rows of features that
     /// just left the hub so a pin cannot linger as a bare id.
     func finishAvailabilityChange() {
-        AppMenuDestination.reconcile(in: .standard)
         revision += 1
         if AppFeature.commandBar.isAvailable { CommandBarService.shared.noteHubChange() }
         if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }

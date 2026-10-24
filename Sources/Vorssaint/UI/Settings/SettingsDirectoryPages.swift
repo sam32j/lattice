@@ -34,6 +34,7 @@ extension SettingsDirectory {
                                           + (NotchSupport.hasDisplayWithoutNotch
                                              ? [FeatureStrings.notch(language).withoutNotch,
                                                 FeatureStrings.notch(language).capsuleFit] : [])),
+                SettingsDirectoryItem(page: .launcherGrid, title: s.launcherName, icon: "square.grid.2x2"),
                 SettingsDirectoryItem(page: .commandBar,
                                       title: FeatureStrings.commandBar(language).pageTitle,
                                       icon: "chevron.right.square",
@@ -53,7 +54,6 @@ extension SettingsDirectory {
                                                  FeatureStrings.radialMenu(language).mouseTriggerRequirement]),
                 SettingsDirectoryItem(page: .shortcuts, title: s.shortcutsPageTitle, icon: "command",
                                       keywords: [s.hotkeyToggle]),
-                SettingsDirectoryItem(page: .launcherGrid, title: s.launcherName, icon: "square.grid.2x2"),
                 SettingsDirectoryItem(page: .features, title: FeatureStrings.hub(language).pageTitle,
                                       icon: "square.grid.2x2",
                                        featureKeywords: AppFeature.hubInstallableFeatures.map {

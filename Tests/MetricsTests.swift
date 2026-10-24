@@ -19,6 +19,7 @@ struct MetricsTests {
                 PreferenceNamespaceTests.run(suite)
             }),
             ("metrics", {
+                BluetoothPermissionLifecycleTests.run(suite)
                 MetricsFeatureTests.run(suite)
                 MenuBarBatteryWarningTests.run(suite)
                 ProcessNameContract.run(suite)
@@ -201,6 +202,7 @@ struct MetricsTests {
             }),
             ("cleaner", {
                 CleanerEligibilityTests.run(suite)
+                CleanerPrivacyTests.run(suite)
                 CleanerLastRunContract.run(suite)
                 CleanerScanFlowTests.run(suite)
                 CleanerLayoutTests.run(suite)
@@ -212,6 +214,7 @@ struct MetricsTests {
                 InputEventTapTests.run(suite)
                 PermissionResetHotkeyTests.run(suite)
                 PermissionResetLoginTests.run(suite)
+                PermissionResetStateTests.run(suite)
             }),
             ("force-quit", { ProcessForceQuitTests.run(suite) }),
             ("launcher", { QuickLauncherContract.run(suite) }),

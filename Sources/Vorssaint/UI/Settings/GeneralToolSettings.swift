@@ -15,23 +15,21 @@ struct GeneralToolSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 SettingsCard(title: l10n.s.menuBarSection) {
-                    SettingsToggleRow(title: FeatureStrings.notchEditor(l10n.language).hideMenuBarIcon,
-                                      isOn: $hideMenuIcon)
+                    SettingsToggleRow(title: SettingsFollowupStrings.text(.showMenuIcon, l10n.language),
+                                      isOn: Binding(get: { !hideMenuIcon }, set: { hideMenuIcon = !$0 }))
+                    if !hideMenuIcon { MenuBarIconPickerRow() }
                     Divider()
                     Text(text.panelIntro)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     PanelLayoutEditor()
-                    Divider()
-                    MenuBarIconPickerRow()
                 }
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
             .padding(22)
         }
-        .onChange(of: hideMenuIcon) { _, _ in AppMenuDestination.reconcile(in: .standard) }
     }
 }
 

@@ -4,12 +4,16 @@ import Foundation
 
 enum IslandDestination: String {
     case clipboard, files, scratchpad
+    case cameraPreview = "camera"
+    case launcherGrid = "tools"
 
     var routeKey: String {
         switch self {
         case .clipboard: return DefaultsKey.notchClipboardWindow
         case .files: return DefaultsKey.notchShelf
         case .scratchpad: return DefaultsKey.notchScratchpad
+        case .cameraPreview: return DefaultsKey.notchCameraEnabled
+        case .launcherGrid: return DefaultsKey.notchQuickPanel
         }
     }
 

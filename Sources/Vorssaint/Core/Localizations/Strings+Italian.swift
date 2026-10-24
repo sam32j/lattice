@@ -734,7 +734,7 @@ extension Strings {
         monitorShowCPUTemperature: "Temperatura CPU",
         monitorShowGPUTemperature: "Temperatura GPU",
         monitorShowBatteryTemperature: "Temperatura batteria",
-        monitorShowPeripheralBattery: "Batteria periferiche",
+        monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .it),
         peripheralBatteryNoDevices: "Nessuna periferica trovata",
         monitorGraphsSection: "Grafici",
 

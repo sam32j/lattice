@@ -11,6 +11,8 @@ struct IslandDestinationSettings: View {
     @AppStorage(DefaultsKey.notchClipboardWindow) private var clipboardRoute = true
     @AppStorage(DefaultsKey.notchShelf) private var fileRoute = true
     @AppStorage(DefaultsKey.notchScratchpad) private var scratchpadRoute = true
+    @AppStorage(DefaultsKey.notchCameraEnabled) private var cameraRoute = true
+    @AppStorage(DefaultsKey.notchQuickPanel) private var launcherRoute = true
     @AppStorage(DefaultsKey.notchDragReveal) private var dragReveal = true
     @AppStorage(DefaultsKey.notchClipboard) private var clipboardActivity = true
     @AppStorage(DefaultsKey.notchClipboardCardSize) private var cardSize = NotchClipboardCardSize.comfortable.rawValue
@@ -20,6 +22,8 @@ struct IslandDestinationSettings: View {
         _ = clipboardRoute
         _ = fileRoute
         _ = scratchpadRoute
+        _ = cameraRoute
+        _ = launcherRoute
         return Binding(get: { destination.isShown(in: .standard) }, set: {
             destination.setShown($0, in: .standard)
             sync()
@@ -66,5 +70,7 @@ struct IslandDestinationSettings: View {
         NotchService.shared.syncWithPreferences()
         ShelfService.shared.syncWithPreferences()
         ScratchpadService.shared.syncWithPreferences()
+        CameraPreviewService.shared.syncWithPreferences()
+        QuickLauncherService.shared.syncWithPreferences()
     }
 }

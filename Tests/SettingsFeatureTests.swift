@@ -14,18 +14,7 @@ import VMStatisticsCompat
 enum SettingsFeatureTests {
     static func run(_ suite: TestSuite) {
         FinderRemovalTests.run(suite)
-        suite.expect(FeatureVisibilitySupport.isPageVisible(.dataPermissions, isAvailable: { _ in false }),
-                     "Data and Permissions remains available with every optional feature removed")
-        suite.expect(DataPermissionsStrings.localized(.enUS).title == "Data & Permissions"
-                     && DataPermissionsStrings.localized(.enUS).data == "Lattice Data",
-                     "the consolidated page and backup section use their requested names")
-        let dataPage = (try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/DataPermissionsSettings.swift",
-                                   encoding: .utf8)) ?? ""
-        let sections = ["Section(DataPermissionsStrings.localized", "PermissionsPortalSections(hub:",
-                        "l10n.s.advancedClearButton", "l10n.s.advancedUninstallButton"]
-        let positions = sections.compactMap { dataPage.range(of: $0)?.lowerBound }
-        suite.expect(positions.count == sections.count && positions == positions.sorted(),
-                     "the page orders Lattice Data, permissions, permission reset, and uninstall")
+        SettingsPageOrderTests.run(suite)
         suite.expect(Strings.enUS.permissionAccessibility == "Device Control and Data Access"
                      && FeatureStrings.hub(.enUS).permAccessibility == Strings.enUS.permissionAccessibility,
                      "permission labels consistently use Device Control and Data Access")

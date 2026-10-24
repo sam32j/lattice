@@ -734,7 +734,7 @@ extension Strings {
         monitorShowCPUTemperature: "CPU 温度",
         monitorShowGPUTemperature: "GPU 温度",
         monitorShowBatteryTemperature: "电池温度",
-        monitorShowPeripheralBattery: "外设电池",
+        monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .zhHans),
         peripheralBatteryNoDevices: "未找到外设",
         monitorGraphsSection: "图表",
 

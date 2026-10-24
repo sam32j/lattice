@@ -1228,6 +1228,7 @@ enum Defaults {
         DefaultsKey.brightnessControlEnabled: false,
         DefaultsKey.brightnessKeysEnabled: false,
         DefaultsKey.brightnessKeyStep: BrightnessSupport.KeyStep.standard.rawValue,
+        DefaultsKey.brightnessKeyStepPaused: false,
         DefaultsKey.displayBrightnessShortcutsEnabled: false,
         DefaultsKey.displayBrightnessDecreaseShortcut: "shift+command:27",
         DefaultsKey.displayBrightnessIncreaseShortcut: "shift+command:24",

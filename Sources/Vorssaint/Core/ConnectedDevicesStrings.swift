@@ -45,7 +45,7 @@ extension FeatureStrings {
 private extension ConnectedDevicesFeatureStrings {
     static let enUS = ConnectedDevicesFeatureStrings(
         title: "Connected Devices",
-        hubDescription: "Count connected external USB peripherals",
+        hubDescription: "Count connected USB accessories.",
         noDevices: "No external devices connected",
         unnamedDevice: "USB Device",
         menuBarLabel: "USB",
@@ -55,7 +55,7 @@ private extension ConnectedDevicesFeatureStrings {
 
     static let ptBR = ConnectedDevicesFeatureStrings(
         title: "Dispositivos conectados",
-        hubDescription: "Contar periféricos USB externos conectados",
+        hubDescription: "Contar acessórios USB conectados.",
         noDevices: "Nenhum dispositivo externo conectado",
         unnamedDevice: "Dispositivo USB",
         menuBarLabel: "USB",
@@ -85,7 +85,7 @@ private extension ConnectedDevicesFeatureStrings {
 
     static let es = ConnectedDevicesFeatureStrings(
         title: "Dispositivos conectados",
-        hubDescription: "Contar periféricos USB externos conectados",
+        hubDescription: "Contar accesorios USB conectados.",
         noDevices: "No hay dispositivos externos conectados",
         unnamedDevice: "Dispositivo USB",
         menuBarLabel: "USB",
@@ -114,7 +114,7 @@ private extension ConnectedDevicesFeatureStrings {
 
     static let fr = ConnectedDevicesFeatureStrings(
         title: "Appareils connectés",
-        hubDescription: "Compter les périphériques USB externes connectés",
+        hubDescription: "Compter les accessoires USB connectés.",
         noDevices: "Aucun appareil externe connecté",
         unnamedDevice: "Appareil USB",
         menuBarLabel: "USB",
@@ -124,7 +124,7 @@ private extension ConnectedDevicesFeatureStrings {
 
     static let it = ConnectedDevicesFeatureStrings(
         title: "Dispositivi collegati",
-        hubDescription: "Conta le periferiche USB esterne collegate",
+        hubDescription: "Conta gli accessori USB collegati.",
         noDevices: "Nessun dispositivo esterno collegato",
         unnamedDevice: "Dispositivo USB",
         menuBarLabel: "USB",

@@ -208,7 +208,8 @@ extension NotchSettings {
                                    reason: AppFeature.monitorPower.enableReason(l10n), reservesReason: reserves,
                                    unavailableAction: { AppFeature.monitorPower.showInFeatures() })
                     }
-                    toggleCard(FeatureStrings.notchActivities(l10n.language).accessories, symbol: "headphones", value: islandFeatureBinding(.notchAccessories, value: $accessoriesEnabled),
+                    NotchAccessorySettingsItem(title: FeatureStrings.notchActivities(l10n.language).accessories,
+                              enabled: islandFeatureBinding(.notchAccessories, value: $accessoriesEnabled),
                               available: accessoriesAvailable,
                               reason: AppFeature.monitorPower.enableReason(l10n),
                               reservesReason: reserves,

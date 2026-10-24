@@ -1923,7 +1923,7 @@ extension Strings {
         monitorShowCPUTemperature: "Temperatura da CPU",
         monitorShowGPUTemperature: "Temperatura da GPU",
         monitorShowBatteryTemperature: "Temperatura da bateria",
-        monitorShowPeripheralBattery: "Bateria dos periféricos",
+        monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .ptBR),
         peripheralBatteryNoDevices: "Nenhum periférico encontrado",
         monitorGraphsSection: "Gráficos",
 
@@ -2907,7 +2907,7 @@ extension Strings {
         monitorShowCPUTemperature: "CPU temperature",
         monitorShowGPUTemperature: "GPU temperature",
         monitorShowBatteryTemperature: "Battery temperature",
-        monitorShowPeripheralBattery: "Peripheral battery",
+        monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .enUS),
         peripheralBatteryNoDevices: "No devices found",
         monitorGraphsSection: "Graphs",
 

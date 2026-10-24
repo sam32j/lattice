@@ -422,8 +422,8 @@ enum UpdateFeatureTests {
                         == FeatureSettingsDestination(.clipboard, sectionAnchor: .clipboardHistory),
                    "\(language.rawValue) labels and routes Clipboard history as a section result")
             suite.expect(items.contains { $0.id == .page(.clipboard) }
-                    && clipboardPage.title != clipboardHistory?.title,
-                   "\(language.rawValue) distinguishes Clipboard page and history search labels")
+                    && clipboardHistory?.id != clipboardPage.id,
+                   "\(language.rawValue) keeps clipboard page and history identities distinct even when their labels match")
         }
 
         // MARK: Settings search structural deduplication

@@ -382,9 +382,16 @@ if (( TEST )); then
         Sources/Vorssaint/Core/FeedbackStrings.swift
         Sources/Vorssaint/Core/FeedbackDraftStrings.swift
         Sources/Vorssaint/Core/PermissionActivationSupport.swift
+        Sources/Vorssaint/Core/PermissionRevocationPolicy.swift
+        Sources/Vorssaint/Core/BrightnessKeyStepActivation.swift
+        Sources/Vorssaint/Core/PermissionPreflight.swift
+        Sources/Vorssaint/Core/BluetoothPermissionAccess.swift
         Sources/Vorssaint/Core/SettingsOwnershipStrings.swift
+        Sources/Vorssaint/Core/SettingsFollowupStrings.swift
         Sources/Vorssaint/Core/IslandDestinationSupport.swift
         Sources/Vorssaint/Core/AppMenuDestination.swift
+        Sources/Vorssaint/Core/AppMenuReopenCoordinator.swift
+        Sources/Vorssaint/Core/PermissionResetState.swift
         Sources/Vorssaint/UI/Settings/ShortcutSettingsObserver.swift
         Sources/Vorssaint/Core/RadialMenuStrings.swift
         Sources/Vorssaint/Core/MenuBarAppearanceStrings.swift
@@ -559,6 +566,8 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/MicMuteSupport.swift
         Sources/Vorssaint/Services/QuickTools/QuickTogglesSupport.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotCapturePolicy.swift
+        Sources/Vorssaint/Services/QuickTools/CapturePresentationPolicy.swift
+        Sources/Vorssaint/Services/QuickTools/ScreenshotDialogGeometry.swift
         Sources/Vorssaint/App/MediaEditorFileSupport.swift
         Sources/Vorssaint/Core/MediaEditorFileStrings.swift
         Sources/Vorssaint/Services/QuickTools/ScreenshotCapturePanel.swift
@@ -604,6 +613,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/QuickTools/ScreenshotSharingSupport.swift
         Sources/Vorssaint/Services/QuickTools/WindowActivationPolicy.swift
         Sources/Vorssaint/Services/KeyboardDebounce/KeyboardDebounceSupport.swift
+        Sources/Vorssaint/Services/KeyboardDebounce/KeyboardDebounceOverrides.swift
         Sources/Vorssaint/Services/SuperKey/SuperKeySupport.swift
         Sources/Vorssaint/Services/SuperKey/SuperKeyMappingGuard.swift
         Sources/Vorssaint/Core/SuperKeyStrings.swift
@@ -638,6 +648,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Metrics/NetworkAddressService.swift
         Sources/Vorssaint/Services/Metrics/SpeedTest.swift
         Sources/Vorssaint/Services/Metrics/PeripheralBatterySampler.swift
+        Sources/Vorssaint/Services/Metrics/BluetoothBatteryRead.swift
         Sources/Vorssaint/Services/Metrics/PeripheralBatterySupport.swift
         Sources/Vorssaint/Services/Metrics/DiskSupport.swift
         Sources/Vorssaint/Services/Metrics/MonitorSamplingPolicy.swift
@@ -659,6 +670,8 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Display/LidDimmingSupport.swift
         Sources/Vorssaint/Services/Cleaner/CleanerSupport.swift
         Sources/Vorssaint/Services/Cleaner/CleanerPolicy.swift
+        Sources/Vorssaint/Services/Cleaner/CleanerOwnership.swift
+        Sources/Vorssaint/Services/Cleaner/CleanerScanPrivacy.swift
         Sources/Vorssaint/Services/Cleaner/CleanerSchedule.swift
         Sources/Vorssaint/Services/Uninstall/UninstallerSupport.swift
         Sources/Vorssaint/Core/SecureInputSupport.swift

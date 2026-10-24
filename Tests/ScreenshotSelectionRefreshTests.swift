@@ -29,6 +29,12 @@ enum ScreenshotSelectionRefreshContract {
         let height = 100
         func cropping(to: CGRect) -> CGImage? { self }
     }
+    /// Window-server metadata is outside this controller contract. Actual
+    /// dialog-buffer trimming is covered with native CGImages separately.
+    enum ScreenshotSystemDialogCapture {
+        static func normalize(_ capture: (image: CGImage, scale: CGFloat)?, windowID: CGWindowID)
+            -> (image: CGImage, scale: CGFloat)? { capture }
+    }
     enum DefaultsKey {
         static let screenshotFreeze = "freeze", screenshotIncludePointer = "pointer",
             unused = "unused"
@@ -145,11 +151,13 @@ enum ScreenshotSelectionRefreshContract {
         }
     }
     @MainActor final class Chooser {
+        var dialogFrames: [CGWindowID: (source: CGRect, visible: CGRect)] = [:]
         var isWaitingForRecording = false
         func resetWaitingRecording() {}
         func prepareWaitingRecording(_ rect: CGRect, on panel: ScreenshotOverlayPanel, windowID: CGWindowID?) -> Bool { false }
         typealias CGImage = ScreenshotSelectionRefreshContract.CGImage
         typealias ScreenshotCaptureEngine = ScreenshotSelectionRefreshContract.ScreenshotCaptureEngine
+        typealias ScreenshotSystemDialogCapture = ScreenshotSelectionRefreshContract.ScreenshotSystemDialogCapture
         typealias DefaultsKey = ScreenshotSelectionRefreshContract.DefaultsKey
         typealias ReviewDefaults = ScreenshotSelectionRefreshContract.ReviewDefaults
         typealias NSScreen = ScreenshotSelectionRefreshContract.NSScreen
