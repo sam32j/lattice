@@ -1194,7 +1194,7 @@ final class NotchService: ObservableObject {
         let fade = mascotToggled && expanded && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         withAnimation(fade ? .easeInOut(duration: 0.22) : nil) { objectWillChange.send() }
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
-        if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+        if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
         resumeDeferredCaptureIfReady()
     }
 
@@ -1258,7 +1258,7 @@ final class NotchService: ObservableObject {
         observers.removeAll()
         session = NotchSessionState()
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
-        if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+        if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
         if AppFeature.shelf.isAvailable { ShelfService.shared.syncWithPreferences() }
         fallback?()
     }
@@ -3482,7 +3482,7 @@ final class NotchService: ObservableObject {
         NotchTimerService.shared.suspend()
         // The keys go back to the system while nothing can show them.
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
-        if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+        if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
         fallback?()
     }
 
@@ -3571,7 +3571,7 @@ final class NotchService: ObservableObject {
         // and brightness key routing when the island becomes eligible for
         // feedback again, and hand the keys back while it is away.
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
-        if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+        if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
     }
 
     private func fullscreenEnvironmentDidChange() {
@@ -3729,7 +3729,7 @@ final class NotchService: ObservableObject {
                 tearDownPresentation()
                 // The keys go back to the system while nothing can show them.
                 if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
-                if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+                if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
             }
         }
         // After the island's own teardown or return: what the lock screen
