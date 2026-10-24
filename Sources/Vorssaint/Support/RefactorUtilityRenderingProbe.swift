@@ -37,9 +37,6 @@ enum RefactorUtilityRenderingProbe {
                     PermissionResetSettingsRow(state: PermissionResetState(phase: phase), reset: { _ in }, restart: {})
                 }.padding(22)), size: CGSize(width: 760, height: 240), output: output, failures: &failures)
         }
-        SettingsRefactorProbe.render("media-music-permission",
-            view: AnyView(SettingsCard { MediaMusicPermissionRow(hub: FeatureStrings.hub(.enUS)) }.padding(22)),
-            size: CGSize(width: 760, height: 200), output: output, failures: &failures)
         for overlaps in [false, true] {
             for dragging in [false, true] {
                 let model = CaptureGuideViewModel()
