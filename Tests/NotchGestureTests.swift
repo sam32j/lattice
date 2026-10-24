@@ -5,6 +5,7 @@ import AppKit
 
 enum NotchGestureTests {
     static func run(_ suite: TestSuite) {
+        NotchMusicTrackSwipeTests.run(suite)
         NotchGestureNaturalScrollingTests.run(suite)
         nativeInteractionContracts(suite)
         NotchCaptureTrackpadGestureTests.run(suite)
@@ -40,13 +41,11 @@ enum NotchGestureTests {
         var time = 1.0
         func feed(_ x: Double = 0, _ y: Double = 0, began: Bool = false,
                   ended: Bool = false, momentum: Bool = false, precise: Bool = true, phased: Bool = true,
-                  vertical: Bool = true, horizontal: Bool = true, expanded: Bool = false,
-                  naturalScrolling: Bool = true) -> NotchGestureSupport.Action? {
+                  vertical: Bool = true, horizontal: Bool = true, expanded: Bool = false) -> NotchGestureSupport.Action? {
             time += 0.01
             return gesture.handle(x: x, y: y, timestamp: time, began: began, ended: ended,
                                   momentum: momentum, precise: precise, hasPhase: phased, allowVertical: vertical,
-                                  allowHorizontal: horizontal, expanded: expanded,
-                                  naturalScrolling: naturalScrolling)
+                                  allowHorizontal: horizontal, expanded: expanded)
         }
         suite.expect(feed(0, 5, began: true) == nil && feed(0, 10) == nil && feed(0, 10) == .open,
                "small vertical movement accumulates into one intentional opening")
@@ -56,27 +55,14 @@ enum NotchGestureTests {
                "momentum after a swipe that already acted never changes presentation")
         suite.expect(feed(0, -30, began: true, expanded: true) == .close,
                "a separate upward gesture closes an expanded panel")
-        suite.expect(feed(-10, 0, began: true) == nil && feed(-15, 0) == nil && feed(-20, 0) == .nextTrack,
-               "a left swipe changes one track after its threshold")
-        for _ in 0..<100 { suite.expect(feed(-50, 0) == nil, "one physical swipe never skips multiple tracks") }
-        suite.expect(feed(45, 0, began: true) == .previousTrack, "a right swipe selects the previous track")
-        suite.expect(feed(45, 0, began: true, naturalScrolling: false) == .nextTrack,
-               "with natural scrolling disabled, swipe from left to right selects next track")
-        suite.expect(feed(-45, 0, began: true, naturalScrolling: false) == .previousTrack,
-               "with natural scrolling disabled, swipe from right to left selects previous track")
-        suite.expect(feed(45, 0, began: true, naturalScrolling: true) == .previousTrack,
-               "with natural scrolling enabled, swipe from left to right selects previous track")
-        suite.expect(feed(-45, 0, began: true, naturalScrolling: true) == .nextTrack,
-               "with natural scrolling enabled, swipe from right to left selects next track")
-        suite.expect(feed(20, 0, began: true, naturalScrolling: false) == nil
-               && feed(25, 0, naturalScrolling: true) == .nextTrack,
-               "a swipe keeps the natural scrolling setting captured at its beginning")
+        suite.expect(feed(-1000, 0, began: true) == nil,
+                     "scroll deltas alone cannot skip music without measured touches")
         suite.expect(feed(40, 40, began: true) == nil, "diagonal motion is not guessed as a track or panel gesture")
         suite.expect(feed(1, 0, began: true, expanded: true) == nil
                && feed(0, -24, expanded: true) == .close,
                "small horizontal touchdown noise cannot lock out a vertical closing swipe")
-        suite.expect(feed(0, 1, began: true) == nil && feed(-40, 0) == .nextTrack,
-               "small vertical touchdown noise cannot lock out a track swipe")
+        suite.expect(feed(0, 1, began: true) == nil && feed(-40, 0) == nil,
+               "small vertical touchdown noise does not turn scroll deltas into track skips")
         suite.expect(feed(0, 0.1, began: true) == nil, "a slow swipe begins below direction slop")
         for _ in 0..<7 { suite.expect(feed(0, 0.5) == nil, "subpoint travel accumulates without firing") }
         suite.expect(feed(0, 21) == .open, "slow travel contributes to the action threshold")
@@ -137,8 +123,8 @@ enum NotchGestureTests {
                "a wheel tick after a lifted swipe starts its own sequence instead of finishing the flick")
         suite.expect(feed(0, 5, began: true) == nil && feed(-80, 0) == nil,
                "an established vertical gesture cannot become a track skip")
-        suite.expect(feed(-20, 0, began: true) == nil && feed(-19, 0) == nil && feed(-1, 0) == .nextTrack,
-               "direction selection counts each delta once toward the track threshold")
+        suite.expect(feed(-20, 0, began: true) == nil && feed(-19, 0) == nil && feed(-1, 0) == nil,
+               "horizontal scroll intent never substitutes for physical touch travel")
         suite.expect(feed(-50, 0, began: true, horizontal: false) == nil,
                "lists, sliders and the navigation row can keep horizontal scrolling")
         suite.expect(feed(0, -50, began: true, vertical: false, expanded: true) == nil,
@@ -150,14 +136,14 @@ enum NotchGestureTests {
         time += 0.4
         suite.expect(feed(0, -24, precise: false, phased: false, expanded: true) == .close,
                "wheel sequences expire from their timestamps without a background timer")
-        suite.expect(feed(-45, 0, began: true) == .nextTrack, "a phased gesture can begin after a wheel sequence")
+        suite.expect(feed(-45, 0, began: true) == nil, "a phased gesture can begin after a wheel sequence")
         time += 5
         suite.expect(feed(-100, 0) == nil,
                "holding fingers still does not unlock a second track change in the same phased gesture")
         suite.expect(feed(-15, 0, began: true) == nil, "a new phased gesture starts with its own distance")
         time += 5
-        suite.expect(feed(-30, 0) == .nextTrack,
-               "a paused phased gesture retains its distance until its actual end")
+        suite.expect(feed(-30, 0) == nil,
+               "a paused horizontal scroll remains reserved for the physical recognizer")
 
         suite.expect(feed(0, 0, began: true, vertical: false, horizontal: false, expanded: true) == nil,
                "a gesture that begins over a list or slider is recorded as ineligible")
@@ -168,7 +154,7 @@ enum NotchGestureTests {
                "a pause cannot make an ineligible phased origin eligible")
         suite.expect(feed(0, 0, ended: true) == nil && feed(-80, 0) == nil,
                "an ended or cancelled phased sequence cannot resume from an orphan changed event")
-        suite.expect(feed(-80, 0, began: true) == .nextTrack,
+        suite.expect(feed(-80, 0, began: true) == nil,
                "lifting fingers and starting again on music creates a new eligible gesture")
         suite.expect(feed(0, 0, began: true, horizontal: false, expanded: true) == nil
                && feed(-80, 0, expanded: true) == nil,
@@ -176,15 +162,15 @@ enum NotchGestureTests {
         suite.expect(feed(-15, 0, began: true, vertical: false, expanded: true) == nil
                && feed(0, -80, expanded: true) == nil,
                "a horizontal player origin does not acquire collapse behavior after entering the header")
-        suite.expect(feed(-30, 0, vertical: false, horizontal: false, expanded: true) == .nextTrack,
+        suite.expect(feed(-30, 0, vertical: false, horizontal: false, expanded: true) == nil,
                "an eligible phased scroll remains attached to its original surface as the pointer moves")
 
         suite.expect(feed(-15, 0, began: true) == nil, "interruption fixture begins below the threshold")
         gesture = NotchGestureSupport()
         suite.expect(feed(-80, 0) == nil,
                "discarding a sequence for exit, modifiers, capture, or suspension rejects its continued events")
-        suite.expect(feed(-80, 0, began: true) == .nextTrack,
-               "a fresh physical gesture works after an interruption")
+        suite.expect(feed(-80, 0, began: true) == nil,
+               "a fresh scroll still requires physical touches to change tracks")
         suite.expect(feed(-15, 0, began: true) == nil, "clock-regression fixture begins below the threshold")
         time -= 1
         suite.expect(feed(-80, 0) == nil, "an out-of-order event discards a phased gesture")

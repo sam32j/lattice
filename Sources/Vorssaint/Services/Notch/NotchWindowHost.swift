@@ -879,7 +879,7 @@ final class NotchPanel: NSPanel {
     static let fullscreenLevel = NSWindow.Level.floating
     var acceptsKeyFocus = false
     var handleScroll: ((NSEvent) -> Bool)?
-    var handleCaptureTouches: ((NSEvent, NSView) -> Bool)?
+    var handleIndirectTouches: ((NSEvent, NSView) -> Bool)?
     var visibilityDidChange: (() -> Void)?
     override var canBecomeKey: Bool { acceptsKeyFocus }
     override var canBecomeMain: Bool { false }
@@ -954,16 +954,16 @@ private final class NotchQuickAccessContainer: NSView {
     required init?(coder: NSCoder) { nil }
 
     override func touchesBegan(with event: NSEvent) {
-        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesBegan(with: event) }
+        if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesBegan(with: event) }
     }
     override func touchesMoved(with event: NSEvent) {
-        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesMoved(with: event) }
+        if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesMoved(with: event) }
     }
     override func touchesEnded(with event: NSEvent) {
-        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesEnded(with: event) }
+        if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesEnded(with: event) }
     }
     override func touchesCancelled(with event: NSEvent) {
-        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesCancelled(with: event) }
+        if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesCancelled(with: event) }
     }
 
     override func layout() {
@@ -1817,15 +1817,15 @@ final class NotchActivationButton: NSButton {
 private final class NotchHostingView: NSHostingView<AnyView> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func touchesBegan(with event: NSEvent) {
-        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesBegan(with: event) }
+        if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesBegan(with: event) }
     }
     override func touchesMoved(with event: NSEvent) {
-        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesMoved(with: event) }
+        if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesMoved(with: event) }
     }
     override func touchesEnded(with event: NSEvent) {
-        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesEnded(with: event) }
+        if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesEnded(with: event) }
     }
     override func touchesCancelled(with event: NSEvent) {
-        if (window as? NotchPanel)?.handleCaptureTouches?(event, self) != true { super.touchesCancelled(with: event) }
+        if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesCancelled(with: event) }
     }
 }

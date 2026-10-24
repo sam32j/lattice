@@ -108,7 +108,7 @@ final class NotchService: ObservableObject {
 
     @Published private(set) var geometry = NotchGeometry(
         screen: CGRect(x: 0, y: 0, width: 1440, height: 900), safeAreaTop: 0, cameraWidth: 0)
-    @Published private(set) var expanded = false
+    @Published private(set) var expanded = false { didSet { if oldValue != expanded { musicSwipe.cancel() } } }
     @Published private(set) var showsKeyboardFocus = false
     /// True when macOS refused the island's own shortcut, so Settings can say so.
     @Published private(set) var shortcutRegistrationFailed = false
@@ -125,9 +125,9 @@ final class NotchService: ObservableObject {
     @Published private(set) var captureControlsCollapsed = false
     @Published private(set) var captureSelectionInProgress = false
     @Published var pinned = false
-    @Published private(set) var selected: NotchModule = .controls
-    @Published private(set) var showingAppPanel = false
-    @Published private(set) var showingSections = false
+    @Published private(set) var selected: NotchModule = .controls { didSet { if oldValue != selected { musicSwipe.cancel() } } }
+    @Published private(set) var showingAppPanel = false { didSet { if oldValue != showingAppPanel { musicSwipe.cancel() } } }
+    @Published private(set) var showingSections = false { didSet { if oldValue != showingSections { musicSwipe.cancel() } } }
     @Published private(set) var sectionQuery = ""
     @Published var highlightedSection: NotchModule? { didSet { revealHighlightedSection() } }
     /// The gallery's first visible row; the rows above it have stepped away.
@@ -176,7 +176,7 @@ final class NotchService: ObservableObject {
     private var captureControlsCancel: (() -> Void)?
     private var captureControlsSubscription: AnyCancellable?
     private var captureControlsWork: DispatchWorkItem?
-    private var heldDrag = false
+    private var heldDrag = false { didSet { if oldValue != heldDrag { musicSwipe.cancel() } } }
     private var shelfDragExitWork: DispatchWorkItem?
     private var observers: [(NotificationCenter, NSObjectProtocol)] = []
     private var subscriptions = Set<AnyCancellable>()
@@ -222,7 +222,7 @@ final class NotchService: ObservableObject {
     /// What a page shows over its own content, such as the mixer's options or
     /// the month grid, and how to close it; Escape closes it before the page.
     private var pageLayers: [NotchModule: () -> Void] = [:]
-    private var trackingMenu = false
+    private var trackingMenu = false { didSet { if oldValue != trackingMenu { musicSwipe.cancel() } } }
     /// The home page's controls as the preferences last saved them, read with
     /// the preferences: the open page's geometry is read on every layout pass.
     private var homeControls: [NotchControlItem] = []
@@ -262,6 +262,7 @@ final class NotchService: ObservableObject {
         }
     }
     private var settingsSignature = ""
+    private let musicSwipe = NotchMusicSwipeController { NotchMusicService.shared.skipFromGesture(forward: $0) }
     private var gesture = NotchGestureSupport()
     private var captureTrackpadGesture = NotchCaptureTrackpadGesture()
     private var sectionScroll = NotchSectionScroll()
@@ -404,7 +405,7 @@ final class NotchService: ObservableObject {
         return false
     }
     /// The Command Bar open inside the island, in place of its pages.
-    @Published private(set) var showingCommandBar = false
+    @Published private(set) var showingCommandBar = false { didSet { if oldValue != showingCommandBar { musicSwipe.cancel() } } }
     @Published private var commandBarHeight: CGFloat?
     /// The bar's height as SwiftUI measured it, until the next turn of the main loop.
     private var measuredCommandBarHeight: CGFloat?
@@ -2679,6 +2680,8 @@ final class NotchService: ObservableObject {
     }
 
     func refreshPresentation(animated: Bool = true, transitionContent: NotchContentTransition = .none) {
+        musicSwipe.synchronizeSurface(expanded ? "expanded-\(selected.rawValue)-\(showingSections)-\(showingAppPanel)-\(showingCommandBar)"
+                                     : "compact-\(compactMusicIsVisible)")
         // A notice with a new reading, or the music strip naming its song,
         // fits its new width in place.
         let fitsInPlace = noticeFitsInPlace && notice != nil && !noticeExpanded
@@ -3851,9 +3854,27 @@ final class NotchService: ObservableObject {
     }
 
     private func syncGestures() {
-        if !NotchGestureSupport.isEnabled() { gesture = NotchGestureSupport() }
+        if !NotchGestureSupport.isEnabled() { gesture = NotchGestureSupport(); musicSwipe.cancel() }
         panel?.handleScroll = { [weak self] event in self?.handleScroll(event) ?? false }
-        panel?.handleCaptureTouches = { [weak self] event, view in self?.handleCaptureTouches(event, in: view) ?? false }
+        panel?.handleIndirectTouches = { [weak self] event, view in
+            guard let self else { return false }
+            let music = self.musicSwipe.handle(event, in: view, enabled: self.musicSwipeEnabled(event), expanded: self.expanded)
+            return self.handleCaptureTouches(event, in: view) || music
+        }
+    }
+
+    private func musicSwipeEnabled(_ event: NSEvent) -> Bool {
+        guard running, !suspended, NotchGestureSupport.isEnabled(), let panel,
+              !trackingMenu, captureControls == nil, !heldDrag,
+              !showingAppPanel, !showingSections, !showingCommandBar, selectedMetric == nil,
+              modules.contains(.music), compactMusicIsVisible || (expanded && selected == .music),
+              event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else { return false }
+        let point = panel.convertPoint(toScreen: event.locationInWindow)
+        let interaction = NotchGestureSupport.nativeInteraction(at: panel.contentView?.hitTest(event.locationInWindow))
+        let header = NotchSupport.gestureIsOverHeader(expanded: expanded, peeking: peeking,
+            fromTop: panel.frame.maxY - point.y, safeTop: expanded ? expandedGeometry.headerTopInset : geometry.safeContentTop,
+            height: expanded ? expandedGeometry.headerRowHeight : NotchLayout.headerHeight)
+        return windowHost?.contains(point) == true && !header && !interaction.control && !interaction.scroll
     }
 
     private func handleCaptureTouches(_ event: NSEvent, in view: NSView) -> Bool {
@@ -3901,12 +3922,14 @@ final class NotchService: ObservableObject {
               !trackingMenu, captureControls == nil, !heldDrag,
               event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else {
             gesture = NotchGestureSupport()
+            musicSwipe.cancel()
             captureHistoryGestureProgress = 0
             return false
         }
         let screenPoint = panel.convertPoint(toScreen: event.locationInWindow)
         guard windowHost?.contains(screenPoint) == true else {
             gesture = NotchGestureSupport()
+            musicSwipe.cancel()
             captureHistoryGestureProgress = 0
             return false
         }
@@ -3927,8 +3950,11 @@ final class NotchService: ObservableObject {
                                                           musicSurface: musicSurface,
                                                           control: interaction.control, scroll: interaction.scroll)
         let horizontal = !interaction.control && !interaction.scroll && !inHeader && musicSurface
-        let x = NotchGestureSupport.movement(Double(event.scrollingDeltaX), precise: event.hasPreciseScrollingDeltas,
-                                             inverted: event.isDirectionInvertedFromDevice)
+        let x = Double(event.scrollingDeltaX) * (event.hasPreciseScrollingDeltas ? 1 : 24)
+        let musicConsumed = musicSwipe.scroll(Double(event.scrollingDeltaX), precise: event.hasPreciseScrollingDeltas,
+            momentum: !event.momentumPhase.isEmpty, cancelled: event.phase.contains(.cancelled),
+            enabled: musicSwipeEnabled(event), expanded: expanded,
+            began: event.phase.contains(.began), ended: event.phase.contains(.ended), timestamp: event.timestamp)
         let y = NotchGestureSupport.movement(Double(event.scrollingDeltaY), precise: event.hasPreciseScrollingDeltas,
                                              inverted: event.isDirectionInvertedFromDevice)
         let action = gesture.handle(x: x, y: y, timestamp: event.timestamp,
@@ -3937,20 +3963,17 @@ final class NotchService: ObservableObject {
                                     momentum: !event.momentumPhase.isEmpty,
                                     precise: event.hasPreciseScrollingDeltas,
                                     hasPhase: !event.phase.isEmpty,
-                                    allowVertical: vertical, allowHorizontal: horizontal, expanded: expanded,
-                                    naturalScrolling: event.isDirectionInvertedFromDevice)
-        guard let action else { return false }
+                                    allowVertical: vertical && !musicConsumed, allowHorizontal: horizontal, expanded: expanded)
+        guard let action else { return musicConsumed }
         switch action {
         case .open: open()
         case .close: collapse()
-        case .nextTrack, .previousTrack:
-            guard musicSurface else { gesture = NotchGestureSupport(); return false }
-            NotchMusicService.shared.skipFromGesture(forward: action == .nextTrack)
         }
         return true
     }
 
     private func removeEventMonitors() {
+        musicSwipe.cancel()
         eventMonitors.forEach(NSEvent.removeMonitor)
         eventMonitors.removeAll()
     }

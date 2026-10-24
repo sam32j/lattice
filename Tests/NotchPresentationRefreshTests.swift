@@ -176,6 +176,7 @@ enum NotchPresentationRefreshContract {
         var captureContent: Bool?
         var captureContentHeight: CGFloat?
         var captureHistoryGestureProgress = 0.0
+        let musicSwipe = NotchMusicSwipeController(state: NotchMusicSwipeState(), commit: { _ in false })
         var captureTrackpadGesture = NotchCaptureTrackpadGesture()
         var captureFallback: (() -> Void)?
         var captureClose: (() -> Void)?
