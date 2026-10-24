@@ -237,7 +237,7 @@ struct ShortcutsSettings: View {
             role: role,
             label: title,
             symbolName: role.isKeyboardBrightness ? "keyboard" : role.feature.symbolName,
-            contextLabel: showsFeatureContext && title != featureTitle ? featureTitle : nil,
+            contextLabel: showsFeatureContext && role != .snippetLibrary && title != featureTitle ? featureTitle : nil,
             statusText: active ? text.active : text.inactive,
             statusIsActive: active,
             showsSuperKeyAlternative: superKey.isRunning,
