@@ -30,6 +30,9 @@ enum VideoDownloaderServiceTests {
             suite.expect(try Data(contentsOf: existing) == Data("existing".utf8), "pre-existing downloads remain untouched")
             suite.expect(try fm.contentsOfDirectory(atPath: folder.path).allSatisfy { !$0.hasPrefix(".lattice-download-") },
                          "owned staging is cleaned after successful publication")
+            suite.expect(model.destination == folder, "destination selection is preserved on the model")
+            model.pause()
+            suite.expect(!model.isPaused, "cannot pause when not actively downloading")
             model.link = "https://example.invalid/different"; model.linkChanged()
             suite.expect(model.info == nil && model.output == nil, "editing a link invalidates old quality/results")
         } catch { suite.expect(false, "isolated downloader workflow: \(error)") }
