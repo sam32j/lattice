@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Samuel Ji
+
+import Foundation
+
+enum VideoDownloaderStrings {
+    static let pageTitle = "Video Downloader"
+    static let urlPlaceholder = "https://www.youtube.com/watch?v=…"
+    static let paste = "Paste"
+    static let quality = "Quality"
+    static let saveTo = "Save to"
+    static let defaultFolder = "~/Downloads"
+    static let bestQuality = "Best"
+    static let audioQuality = "Audio"
+    static let downloading = "Downloading…"
+    static let paused = "Paused"
+    static let downloadComplete = "Download complete"
+    static let finishingVideo = "Finishing video…"
+    static let pause = "Pause"
+    static let resume = "Resume"
+    static let cancel = "Cancel"
+    static let download = "Download"
+    static let showInFinder = "Show in Finder"
+    static let recent = "RECENT"
+    static let gettingReady = "Preparing video downloader…"
+    static let gettingReadySubtitle = "Lattice is setting up the tools needed for video downloads."
+    static let repairTitle = "Video download unavailable"
+    static let repairSubtitle = "One of Lattice's download components is missing or damaged."
+    static let repairAction = "Repair"
+    static let technicalDetails = "Technical details"
+    static let advanced = "Advanced"
+    static let useSystemTools = "Use system / custom tools"
+    static let checkUpdates = "Check for updates"
+    static let clearHistory = "Clear history"
+    static let invalidURL = "Paste a complete http:// or https:// video link without a username or password."
+    static let unsupportedMetadata = "No downloadable video was found. Use a single video link, not a playlist or live stream."
+    static let missingTools = "Install the missing tools below, then check again."
+    static let invalidOutput = "The download did not produce a complete video file. Try another quality or link."
+    static let timedOut = "The operation took too long. Check your connection and try again."
+    static let denoRequired = "This video site requires an additional component (Deno). Lattice is setting it up…"
+    static let singleVideoOnlyNotice = "Using this video only (playlists are not supported)."
+}

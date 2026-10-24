@@ -918,6 +918,9 @@ enum DefaultsKey {
     // Dev-build only: force the "update available" UI for local testing.
     static let simulateBetaUI = "simulateBetaUI"
 
+    static let videoDownloaderDestination = "videoDownloaderDestination"
+    static let videoDownloaderUseSystemTools = "videoDownloaderUseSystemTools"
+
     /// Features hub availability layer, one key per AppFeature raw value.
     /// Registered true: unavailable features vanish from every surface and
     /// hold no resources, without ever touching their own enable keys.

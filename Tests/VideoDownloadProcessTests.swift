@@ -59,6 +59,12 @@ enum VideoDownloadProcessTests {
             } catch { suite.expect(true, "unclosed descendant output fails rather than hanging") }
             RunLoop.main.run(until: Date().addingTimeInterval(1.2))
             suite.expect(!fm.fileExists(atPath: leaked.path), "output-drain failure terminates its owned descendants before dropping group ownership")
+            let pauseProcess = VideoDownloadProcess()
+            suite.expect(!pauseProcess.isPaused, "process is not paused initially")
+            pauseProcess.pause()
+            suite.expect(pauseProcess.isPaused, "process is marked paused after pause()")
+            pauseProcess.resume()
+            suite.expect(!pauseProcess.isPaused, "process is marked active after resume()")
         } catch { suite.expect(false, "isolated cancellation fixture: \(error)") }
     }
 }

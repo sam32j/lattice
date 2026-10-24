@@ -24,6 +24,35 @@ final class VideoDownloadProcess: @unchecked Sendable {
         }
     }
 
+    private var paused = false
+    var isPaused: Bool { lock.lock(); defer { lock.unlock() }; return paused }
+
+    func pause() {
+        lock.lock()
+        guard !cancelled, !paused else { lock.unlock(); return }
+        paused = true
+        let ownedGroups = groups
+        let process = child
+        lock.unlock()
+        for group in ownedGroups { kill(-group, SIGSTOP) }
+        if let process, process.isRunning, !ownedGroups.contains(process.processIdentifier) {
+            kill(process.processIdentifier, SIGSTOP)
+        }
+    }
+
+    func resume() {
+        lock.lock()
+        guard !cancelled, paused else { lock.unlock(); return }
+        paused = false
+        let ownedGroups = groups
+        let process = child
+        lock.unlock()
+        for group in ownedGroups { kill(-group, SIGCONT) }
+        if let process, process.isRunning, !ownedGroups.contains(process.processIdentifier) {
+            kill(process.processIdentifier, SIGCONT)
+        }
+    }
+
     private func signal(_ process: Process, _ signal: Int32) {
         let pid = process.processIdentifier
         // Foundation starts Process in its own group on macOS. Check before

@@ -39,6 +39,23 @@ enum VideoDownloaderTests {
                          "empty results are rejected before ffprobe")
             suite.expect((try? VideoDownloadRequest.validatedOutput(URL(fileURLWithPath: "/etc/hosts"), from: folder)) == nil,
                          "reported paths outside owned staging cannot be probed or published")
+            let audioArgs = VideoDownloadRequest.downloadArguments(url: try VideoDownloadRequest.validatedURL("https://example.com/v"),
+                                                                  quality: .audio, staging: folder, ffmpeg: "/tools/ffmpeg")
+            suite.expect(audioArgs.contains("--extract-audio") && audioArgs.contains("m4a"),
+                         "audio quality requests audio stream extraction to m4a format")
+            let parsedProgress = VideoDownloadRequest.parseProgress("LATTICE_PROGRESS:42%|612000000|1400000000|8400000|60")
+            suite.expect(parsedProgress?.fraction == 0.42 && parsedProgress?.downloadedBytes == 612000000 && parsedProgress?.totalBytes == 1400000000,
+                         "detailed progress line parses fraction, bytes, and rate")
+            suite.expect(VideoDownloadRequest.hasPlayableMedia(Data(#"{"streams":[{"codec_type":"audio"}],"format":{"duration":"10"}}"#.utf8), isAudio: true),
+                         "audio extraction verifies playable audio duration and stream")
+            let history = DownloadHistoryStore(storeURL: folder.appendingPathComponent("history.json"))
+            let sampleFile = folder.appendingPathComponent("sample.mp4")
+            try Data("sample".utf8).write(to: sampleFile)
+            history.record(fileURL: sampleFile, title: "Sample Video", qualityTag: "1080p")
+            suite.expect(history.items.first?.title == "Sample Video" && history.items.first?.qualityTag == "1080p",
+                         "recent downloads store records file, title and quality")
+            history.clear()
+            suite.expect(history.items.isEmpty, "history store clear removes records")
         } catch { suite.expect(false, "contained publication validation: \(error)") }
         VideoDownloadProcessTests.run(suite)
         VideoDownloaderServiceTests.run(suite)
