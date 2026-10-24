@@ -37,9 +37,9 @@ enum FeatureHubLayoutTests {
         func groupCard(_ group: FeatureGroup) -> some View {
             SettingsCard {
                 Text(group.rawValue)
-                ForEach(AppFeature.features(in: group), id: \.self) { feature in
-                    if feature == .fanControl {
-                        FanRow().frame(height: 44)
+                ForEach(AppFeature.hubInstallableFeatures.filter { $0.group == group }, id: \.self) { feature in
+                    if feature == .portManager {
+                        TargetRow().frame(height: 44)
                     } else {
                         Text(feature.rawValue).frame(height: 44)
                     }
@@ -54,10 +54,10 @@ enum FeatureHubLayoutTests {
         var body: some View { Text("Permissions") }
     }
 
-    final class FanRowView: NSView {}
-    struct FanRow: NSViewRepresentable {
-        func makeNSView(context: Context) -> FanRowView { FanRowView() }
-        func updateNSView(_ view: FanRowView, context: Context) {}
+    final class TargetRowView: NSView {}
+    struct TargetRow: NSViewRepresentable {
+        func makeNSView(context: Context) -> TargetRowView { TargetRowView() }
+        func updateNSView(_ view: TargetRowView, context: Context) {}
     }
 
     static func run(_ suite: TestSuite) {
@@ -87,7 +87,7 @@ enum FeatureHubLayoutTests {
             suite.expect(false, "the Features page draws a scroll view")
             return
         }
-        // Visit the intervening cards, as when scrolling down to Fan Control.
+        // Visit the intervening cards, as when scrolling down to Port Manager.
         for _ in 0..<24 {
             let bottom = max(0, (scroll.documentView?.frame.height ?? 0) - scroll.contentView.bounds.height)
             scroll.contentView.scroll(to: NSPoint(x: 0, y: min(bottom, scroll.contentView.bounds.minY + 500)))
@@ -95,11 +95,11 @@ enum FeatureHubLayoutTests {
             settle()
         }
         func rowFrame() -> NSRect? {
-            guard let row = descendant(FanRowView.self, in: host) else { return nil }
+            guard let row = descendant(TargetRowView.self, in: host) else { return nil }
             return row.convert(row.bounds, to: host)
         }
         guard let initial = rowFrame(), host.bounds.contains(initial) else {
-            suite.expect(false, "Fan Control is visible before changing availability")
+            suite.expect(false, "Port Manager is visible before changing availability")
             return
         }
         // Uninstall adds the restart notice above the viewport; reinstall
@@ -111,7 +111,7 @@ enum FeatureHubLayoutTests {
             settle()
             let current = rowFrame()
             suite.expect(current.map { host.bounds.contains($0) } == true,
-                         "Fan Control stays visible when the offscreen restart notice is \(restart ? "added" : "removed")")
+                         "Port Manager stays visible when the offscreen restart notice is \(restart ? "added" : "removed")")
             suite.expect(current.map { abs($0.midY - initial.midY) < 2 } == true,
                          "changing the restart notice preserves the visible row's position: \(String(describing: current)) vs \(initial)")
         }
@@ -126,7 +126,7 @@ enum FeatureHubLayoutTests {
             settle()
             let current = rowFrame()
             suite.expect(current.map { host.bounds.contains($0) } == true,
-                         "Fan Control stays visible when the offscreen never-used offer is \(offers ? "added" : "removed")")
+                         "Port Manager stays visible when the offscreen never-used offer is \(offers ? "added" : "removed")")
             suite.expect(current.map { abs($0.midY - initial.midY) < 2 } == true,
                          "changing the never-used offer preserves the visible row's position: \(String(describing: current)) vs \(initial)")
         }

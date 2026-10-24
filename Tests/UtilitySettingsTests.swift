@@ -32,11 +32,11 @@ enum UtilitySettingsTests {
         defer { defaults.removePersistentDomain(forName: domain) }
         for feature in AppFeature.allCases { defaults.set(false, forKey: feature.availabilityKey) }
         defaults.set(false, forKey: DefaultsKey.featureAvailable("quickToggles"))
-        defaults.set(true, forKey: AppFeature.brightness.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.brightnessControlEnabled)
         expect(Action.allCases.filter { $0.feature.isAvailable(in: defaults) }
                == [.darkMode, .keyboardLight, .displayOff],
                "Displays actions stay reachable even when the retired Quick Toggles flag is off")
-        defaults.set(false, forKey: AppFeature.brightness.availabilityKey)
+        defaults.set(false, forKey: DefaultsKey.brightnessControlEnabled)
         defaults.set(true, forKey: AppFeature.commandBar.availabilityKey)
         expect(Action.ejectDisks.feature.isAvailable(in: defaults)
                && !Action.darkMode.feature.isAvailable(in: defaults),
