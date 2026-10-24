@@ -363,6 +363,7 @@ enum RadialMenuTool: String, Codable, CaseIterable, Identifiable {
     /// returns automatically when the user enables it again.
     func isRunnable(isFeatureAvailable: (AppFeature) -> Bool = { $0.isAvailable },
                     boolFor: (String) -> Bool = { UserDefaults.standard.bool(forKey: $0) }) -> Bool {
+        if self == .cleaningMode { return true } // This manual action needs no persistent shortcut.
         guard isFeatureAvailable(feature) else { return false }
         return self != .shelf || boolFor(DefaultsKey.shelfEnabled)
     }

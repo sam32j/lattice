@@ -1469,12 +1469,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             menu.addItem(durationsItem)
         }
 
-        if AppFeature.cleaningMode.isAvailable {
-            let cleaningItem = NSMenuItem(title: strings.cleaningMenuItem,
-                                          action: #selector(menuCleaningMode), keyEquivalent: "")
-            cleaningItem.target = self
-            menu.addItem(cleaningItem)
-        }
+        let cleaningItem = NSMenuItem(title: strings.cleaningMenuItem,
+                                      action: #selector(menuCleaningMode), keyEquivalent: "")
+        cleaningItem.target = self
+        menu.addItem(cleaningItem)
 
         if menu.items.isEmpty == false {
             menu.addItem(.separator())
