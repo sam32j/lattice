@@ -106,6 +106,7 @@ struct NotchSettings: View {
     @State var draggingModule: NotchModule?
     @State var draggingControl: NotchControlItem?
     @State var preferredPlayers: [NotchPreferredPlayer.Choice]?
+    @State var scrollTarget: String?
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.accessibilityReduceTransparency) var reduceTransparency
     var text: NotchStrings { FeatureStrings.notch(l10n.language) }
@@ -173,6 +174,7 @@ struct NotchSettings: View {
         router.notchSettingsTab = nil
         tab = requested == "behavior" ? .behavior : .activity
         contentSelection = nil
+        scrollTarget = requested
     }
 
     /// The companion's own settings were asked for; the hint is one-shot.
@@ -185,58 +187,71 @@ struct NotchSettings: View {
 
     @ViewBuilder
     var combinedPageView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                SettingsCard {
-                    SettingsRow(symbol: AppFeature.notch.symbolName, title: text.enable,
-                                experimentalBadge: FeatureStrings.hub(l10n.language).experimentalBadge,
-                                caption: text.description) {
-                        Toggle(text.enable, isOn: islandFeatureBinding(.notch, value: $enabled))
-                            .labelsHidden().toggleStyle(.switch)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    SettingsCard {
+                        SettingsRow(symbol: AppFeature.notch.symbolName, title: text.enable,
+                                    experimentalBadge: FeatureStrings.hub(l10n.language).experimentalBadge,
+                                    caption: text.description) {
+                            Toggle(text.enable, isOn: islandFeatureBinding(.notch, value: $enabled))
+                                .labelsHidden().toggleStyle(.switch)
+                        }
                     }
+                    if enabled, AppFeature.notch.isAvailable, !(hover && hideUntilHover && !hiddenShowsActivity), !notch.geometry.isNotched, !permissions.accessibility {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(text.menuBarAccessHint)
+                                .font(.callout).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            PermissionRow(kind: .accessibility)
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 28) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(editor.layout).font(.title3.weight(.semibold))
+                            layoutPage
+                        }
+                        .id("layout")
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(editor.content).font(.title3.weight(.semibold))
+                            sectionList
+                        }
+                        .id("content")
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(editor.activity).font(.title3.weight(.semibold))
+                            activityPage
+                        }
+                        .id("activity")
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(editor.behavior).font(.title3.weight(.semibold))
+                            behaviorPage
+                        }
+                        .id("behavior")
+                    }
+                    .disabled(!enabled)
+                    .opacity(enabled ? 1.0 : 0.5)
                 }
-                if enabled, AppFeature.notch.isAvailable, !(hover && hideUntilHover && !hiddenShowsActivity), !notch.geometry.isNotched, !permissions.accessibility {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(text.menuBarAccessHint)
-                            .font(.callout).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        PermissionRow(kind: .accessibility)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 28) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(editor.layout).font(.title3.weight(.semibold))
-                        layoutPage
-                    }
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(editor.content).font(.title3.weight(.semibold))
-                        sectionList
-                    }
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(editor.activity).font(.title3.weight(.semibold))
-                        activityPage
-                    }
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(editor.behavior).font(.title3.weight(.semibold))
-                        behaviorPage
-                    }
-                }
-                .disabled(!enabled)
-                .opacity(enabled ? 1.0 : 0.5)
+                .frame(maxWidth: 760)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 22)
             }
-            .frame(maxWidth: 760)
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, 22)
+            .onChange(of: scrollTarget) { _, target in
+                guard let target else { return }
+                scrollTarget = nil
+                withAnimation {
+                    proxy.scrollTo(target, anchor: .top)
+                }
+            }
         }
     }
 

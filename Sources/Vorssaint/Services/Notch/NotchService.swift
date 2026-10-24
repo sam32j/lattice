@@ -2250,6 +2250,10 @@ final class NotchService: ObservableObject {
         // Settings is an explicit navigation request, including during an internal drag.
         heldDrag = false
         dragPlaceholder = false
+        guard running else {
+            hoverState.close(pointerInside: true)
+            return
+        }
         if captureControls != nil {
             // Keep the capture session alive, but withdraw its expanded controls and keys.
             collapseCaptureControls()

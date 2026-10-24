@@ -139,17 +139,12 @@ extension NotchSettings {
             } else {
                 ownedFeatures = []
             }
-            if !ownedFeatures.isEmpty {
-                for feature in ownedFeatures {
-                    if AppFeature.dynamicIslandExtensions.contains(feature) {
-                        FeatureRuntime.shared.setIslandFeature(feature, enabled: enabled)
-                    } else if let key = feature.enabledKeys.first {
-                        UserDefaults.standard.set(enabled, forKey: key)
-                    }
-                }
-                if module == .mixer { UserDefaults.standard.set(enabled, forKey: DefaultsKey.volumeMixerEnabled) }
-                FeatureRuntime.shared.setAvailable(ownedFeatures, enabled)
-                FeatureRuntime.shared.sync(ownedFeatures)
+            for feature in ownedFeatures where AppFeature.dynamicIslandExtensions.contains(feature) {
+                FeatureRuntime.shared.setIslandFeature(feature, enabled: enabled)
+            }
+            if enabled, let feature = ownedFeatures.first,
+               !AppFeature.dynamicIslandExtensions.contains(feature), !feature.isAvailable {
+                feature.showInFeatures()
             }
             moduleBinding(module).wrappedValue = enabled
             sync()

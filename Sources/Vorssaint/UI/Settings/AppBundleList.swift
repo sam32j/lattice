@@ -58,7 +58,7 @@ struct AppBundleList<Accessory: View>: View {
     var body: some View {
         Group {
             if usesSheet {
-                SettingsControlRow(title: SettingsAppListStrings.text(L10n.shared.language).disabledApps) {
+                SettingsControlRow(title: title) {
                     Button(SettingsAppListStrings.text(L10n.shared.language).edit) { showingEditor = true }
                 }
                 .sheet(isPresented: $showingEditor) { editorSheet }

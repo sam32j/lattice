@@ -12,6 +12,7 @@ enum IslandSettingsFocusTests {
         func close(pointerInside: Bool) { suppressed = pointerInside }
     }
     final class Service {
+        var running = true
         var heldDrag = false
         var dragPlaceholder = false
         var captureControls: Bool?
@@ -23,6 +24,14 @@ enum IslandSettingsFocusTests {
         func dismissForOutsideClick() { if !heldDrag { expanded = false } }
     }
     static func run(_ suite: TestSuite) {
+        let stopped = Service()
+        stopped.running = false
+        stopped.heldDrag = true
+        stopped.dragPlaceholder = true
+        stopped.prepareForSettings()
+        suite.expect(stopped.expanded && !stopped.heldDrag && !stopped.dragPlaceholder
+                     && stopped.hoverState.suppressed,
+                     "when Island is not running, prepareForSettings cleans up drag and hover without dismissing")
         let ordinary = Service()
         ordinary.heldDrag = true
         ordinary.dragPlaceholder = true

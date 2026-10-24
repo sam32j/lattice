@@ -66,25 +66,28 @@ struct PermissionDetailsSheet: View {
                                 .foregroundStyle(.secondary)
                         }
                     } else {
-                        VStack(spacing: 6) {
-                            ForEach(items) { item in
-                                HStack(spacing: 10) {
-                                    Image(systemName: item.symbolName ?? "app.fill")
-                                        .font(.system(size: 13, weight: .medium))
-                                        .foregroundStyle(.tint)
-                                        .frame(width: 24, height: 24)
-                                        .background(Color.accentColor.opacity(0.12),
-                                                    in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                                    Text(item.name)
-                                        .font(.body)
-                                    Spacer()
+                        ScrollView {
+                            VStack(spacing: 6) {
+                                ForEach(items) { item in
+                                    HStack(spacing: 10) {
+                                        Image(systemName: item.symbolName ?? "app.fill")
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundStyle(.tint)
+                                            .frame(width: 24, height: 24)
+                                            .background(Color.accentColor.opacity(0.12),
+                                                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                        Text(item.name)
+                                            .font(.body)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Color.secondary.opacity(0.08),
+                                                in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                                 }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(Color.secondary.opacity(0.08),
-                                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                             }
                         }
+                        .frame(maxHeight: 360)
                     }
                 }
             }

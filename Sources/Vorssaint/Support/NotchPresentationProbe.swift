@@ -26,9 +26,9 @@ enum NotchPresentationProbe {
 
     /// Reduce Transparency and Increase Contrast keep the buttons solid.
     private static var quickAccessGlass: Bool {
-        guard #available(macOS 26, *) else { return false }
+        guard LiquidGlassSupport.isSupported else { return false }
         let workspace = NSWorkspace.shared
-        return CommandLine.arguments.contains("--glass") && !workspace.accessibilityDisplayShouldReduceTransparency
+        return !workspace.accessibilityDisplayShouldReduceTransparency
             && !workspace.accessibilityDisplayShouldIncreaseContrast
     }
 

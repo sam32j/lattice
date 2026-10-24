@@ -76,7 +76,6 @@ struct NotchMascotSettings: View {
                 set: { value in
                     enabled = value
                     features.setIslandFeature(.notchMascot, enabled: value)
-                    NotchService.shared.syncWithPreferences()
                 }
             )).labelsHidden().toggleStyle(.switch)
                 .accessibilityLabel(text.title)

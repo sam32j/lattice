@@ -161,10 +161,8 @@ struct DataPermissionsSettings: View {
                         } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "arrow.2.circlepath")
-                                Spacer()
                                 Text(clearActionTitle)
                             }
-                            .frame(width: 90)
                         }
                         .buttonStyle(DestructiveGhostButtonStyle())
                         .disabled(working)
@@ -188,10 +186,8 @@ struct DataPermissionsSettings: View {
                         } label: {
                             HStack(spacing: 6) {
                                 Image(systemName: "trash")
-                                Spacer()
                                 Text(uninstallActionTitle)
                             }
-                            .frame(width: 90)
                         }
                         .buttonStyle(DestructiveSolidButtonStyle())
                         .disabled(working)
@@ -257,7 +253,7 @@ private struct DestructiveGhostButtonStyle: ButtonStyle {
             .font(.body.weight(.medium))
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .frame(width: 110, height: 28)
+            .frame(minWidth: 110, minHeight: 28)
             .foregroundStyle(.red)
             .background(Color.red.opacity(configuration.isPressed ? 0.15 : 0.05),
                         in: RoundedRectangle(cornerRadius: 6, style: .continuous))
@@ -277,7 +273,7 @@ private struct DestructiveSolidButtonStyle: ButtonStyle {
             .font(.body.weight(.medium))
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .frame(width: 110, height: 28)
+            .frame(minWidth: 110, minHeight: 28)
             .foregroundStyle(.white)
             .background(Color.red.opacity(configuration.isPressed ? 0.82 : 1.0),
                         in: RoundedRectangle(cornerRadius: 6, style: .continuous))
