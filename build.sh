@@ -280,7 +280,6 @@ if (( TEST )); then
         Sources/Vorssaint/Core/PermanentInputMigration.swift
         Sources/Vorssaint/Core/PageOwnedControlsMigration.swift
         Sources/Vorssaint/Core/AudioControlsMigration.swift
-        Sources/Vorssaint/Core/CaptureControlsMigration.swift
         Sources/Vorssaint/UI/Settings/SettingsHostingController.swift
         Sources/Vorssaint/Core/WindowLayoutShortcutEditor.swift
         Sources/Vorssaint/Core/NotchStrings.swift
@@ -358,6 +357,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Notch/NotchPlaybackCommand.swift
         Sources/Vorssaint/Services/Notch/NotchMusicCommandWriter.swift
         Sources/Vorssaint/Core/FeatureCatalog.swift
+        Sources/Vorssaint/Core/FeatureInstallationPolicy.swift
         Sources/Vorssaint/Core/FeatureEnergyProfile.swift
         Sources/Vorssaint/Core/FeatureHubStrings.swift
         Sources/Vorssaint/Core/ShortcutSettingsStrings.swift
@@ -381,6 +381,11 @@ if (( TEST )); then
         Sources/Vorssaint/Core/CommandBarStrings.swift
         Sources/Vorssaint/Core/FeedbackStrings.swift
         Sources/Vorssaint/Core/FeedbackDraftStrings.swift
+        Sources/Vorssaint/Core/PermissionActivationSupport.swift
+        Sources/Vorssaint/Core/SettingsOwnershipStrings.swift
+        Sources/Vorssaint/Core/IslandDestinationSupport.swift
+        Sources/Vorssaint/Core/AppMenuDestination.swift
+        Sources/Vorssaint/UI/Settings/ShortcutSettingsObserver.swift
         Sources/Vorssaint/Core/RadialMenuStrings.swift
         Sources/Vorssaint/Core/MenuBarAppearanceStrings.swift
         Sources/Vorssaint/Core/AppAppearance.swift
@@ -399,6 +404,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/FanControl/FanControlResumeSupport.swift
         Sources/Vorssaint/Services/Snippets/TextSnippetSupport.swift
         Sources/Vorssaint/Services/RadialMenu/RadialMenuSupport.swift
+        Sources/Vorssaint/Services/RadialMenu/RadialProfileActivation.swift
         Sources/Vorssaint/Services/QuickTools/ScratchpadSupport.swift
         Sources/Vorssaint/Services/QuickTools/ScratchpadStore.swift
         Sources/Vorssaint/Services/KillProcess/KillProcessSupport.swift

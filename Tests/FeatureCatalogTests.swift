@@ -1484,8 +1484,8 @@ enum FeatureCatalogTests {
                "an alert with its metric off in the hub stays disarmed")
 
         suite.expect(GlobalShortcutRole.activeRoles(isOn: { _ in true }).count
-                == GlobalShortcutRole.allCases.count,
-               "the availability-free overload keeps every enabled current role")
+                == GlobalShortcutRole.allCases.count - 2,
+               "standalone OCR and color-picker shortcuts are no longer offered")
         suite.expect(!GlobalShortcutRole.activeRoles(isOn: { _ in true },
                                                isAvailable: { $0 != .shelf }).contains(.shelf),
                "a role leaves the shortcuts page when its feature is off in the hub")
@@ -1900,8 +1900,8 @@ enum FeatureCatalogTests {
         suite.expect(pageVisible(.general, available: []) && pageVisible(.about, available: [])
                 && pageVisible(.shortcuts, available: []),
                "app pages never hide")
-        suite.expect(!pageVisible(.shelf, available: allFeatures.subtracting([.shelf])),
-               "single-feature pages follow their feature")
+        suite.expect(pageVisible(.shelf, available: allFeatures.subtracting([.shelf])),
+               "File Cache remains reachable while disabled")
         suite.expect(!pageVisible(.cleaner,
                             available: allFeatures.subtracting([.cleaner])),
                "cleaner settings follow the cleaner module")
@@ -1914,7 +1914,7 @@ enum FeatureCatalogTests {
                "every feature anchor belongs to its destination page")
         suite.expect(Set(AppFeature.allCases.compactMap(\.settingsDestination.sectionAnchor))
                 == Set(SettingsSectionAnchor.allCases).subtracting([
-                    .panelConfiguration, .keyboardBrightnessShortcuts, .audioOutputPriority,
+                    .panelConfiguration, .keyboardBrightnessShortcuts, .audioOutputPriority, .quickLauncher, .cameraPreview,
                 ])
                 && SettingsSectionAnchor.panelConfiguration.page == .general
                 && SettingsSectionAnchor.keyboardBrightnessShortcuts.page == .keyboard,
@@ -1955,12 +1955,10 @@ enum FeatureCatalogTests {
         suite.expect(AppFeature.musicBlock.settingsDestination
                 == FeatureSettingsDestination(.audioOutput, sectionAnchor: .musicBlocking)
                 && AppFeature.diskImageInstaller.settingsDestination
-                == FeatureSettingsDestination(.features),
-               "features without dedicated pages use explicit nearest Settings destinations")
-        suite.expect(!AppFeature.diskImageInstaller.hasNavigableSettingsDestination
-                && AppFeature.allCases.filter { $0 != .diskImageInstaller }
-                    .allSatisfy(\.hasNavigableSettingsDestination),
-               "a feature without a separate configuration surface does not show a dead-end link")
+                == FeatureSettingsDestination(.diskImageInstaller),
+               "DMG Installer has a dedicated Settings destination")
+        suite.expect(AppFeature.allCases.allSatisfy(\.hasNavigableSettingsDestination),
+               "every feature destination remains navigable")
         suite.expect(AppFeature.monitorCPU.settingsDestination == FeatureSettingsDestination(.monitor)
                 && AppFeature.fanControl.settingsDestination
                 == FeatureSettingsDestination(.monitor, sectionAnchor: .fanControl),

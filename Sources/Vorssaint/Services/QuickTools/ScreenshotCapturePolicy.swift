@@ -7,40 +7,26 @@ import CoreGraphics
 /// Protected IDs are intersected with the actual own IDs from the same
 /// shareable-content snapshot, so stale window numbers cannot affect another app.
 enum ScreenshotCapturePolicy {
-    /// The app's own windows one capture has to keep out before the "Hide
-    /// Vorssaint windows" preference narrows what is left.
-    ///
-    /// Workflow surfaces — the selection overlays, the countdown and scrolling
-    /// HUDs and the quick preview — are the tool taking the capture and can
-    /// never be its subject, so they stay out whatever the preference says.
-    /// Content windows — editors and pinned captures — are ordinary windows
-    /// somebody left on screen, so the preference owns them (issue #780).
-    ///
-    /// Recording is exempt from that preference in
-    /// `ScreenshotSupport.unifiedCapturePolicy`, so it passes
-    /// `honoursVisibilityPreference: false` and keeps both kinds out.
+    /// Recording excludes content windows as well as its own workflow surfaces.
     static func protectedWindowIDs(workflowWindowIDs: Set<CGWindowID>,
                                    contentWindowIDs: Set<CGWindowID>,
-                                   honoursVisibilityPreference: Bool) -> Set<CGWindowID> {
-        honoursVisibilityPreference
-            ? workflowWindowIDs
-            : workflowWindowIDs.union(contentWindowIDs)
+                                   keepingContentOut: Bool) -> Set<CGWindowID> {
+        keepingContentOut ? workflowWindowIDs.union(contentWindowIDs) : workflowWindowIDs
     }
 
     /// `islandWindowIDs` are the Dynamic Island windows that show in captures.
-    /// The island has its own preference for that, so "Hide Vorssaint windows"
-    /// leaves them in, but a caller that protects them keeps them out.
-    static func excludedWindowIDs(hideVorssaintWindows: Bool,
+    /// Its separate visibility setting applies even when a workflow excludes
+    /// app windows. Explicitly protected preview surfaces still stay out.
+    static func excludedWindowIDs(excludingAppWindows: Bool = false,
                                   ownWindowIDs: Set<CGWindowID>,
                                   protectedWindowIDs: Set<CGWindowID>,
                                   islandWindowIDs: Set<CGWindowID> = []) -> Set<CGWindowID> {
-        let excluded = hideVorssaintWindows ? ownWindowIDs : ownWindowIDs.intersection(protectedWindowIDs)
+        let excluded = excludingAppWindows ? ownWindowIDs : ownWindowIDs.intersection(protectedWindowIDs)
         return excluded.subtracting(islandWindowIDs.subtracting(protectedWindowIDs))
     }
 
     /// The island windows that show in captures, as the island normally looks.
-    /// While the main island offers the capture controls or shows a capture
-    /// just taken, it is the tool taking the picture and stays out of it, even
+    /// While the main island shows a capture just taken, it stays out, even
     /// with the preference on (issue #2501). Copies on other displays only
     /// ever show activities.
     static func islandCaptureWindowIDs(islandWindowIDs: Set<CGWindowID>,
@@ -54,10 +40,10 @@ enum ScreenshotCapturePolicy {
 
     static func canPickWindow(_ windowID: CGWindowID,
                               isOwnWindow: Bool,
-                              hideVorssaintWindows: Bool,
+                              excludingAppWindows: Bool = false,
                               protectedWindowIDs: Set<CGWindowID>) -> Bool {
         !isOwnWindow
-            || (!hideVorssaintWindows && !protectedWindowIDs.contains(windowID))
+            || (!excludingAppWindows && !protectedWindowIDs.contains(windowID))
     }
 
     static func isPickableWindowLayer(_ layer: Int, ownerName: String) -> Bool {

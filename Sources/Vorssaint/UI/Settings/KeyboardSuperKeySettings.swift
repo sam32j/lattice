@@ -28,7 +28,7 @@ extension KeyboardSettings {
         SettingsCard(title: text.pageTitle) {
             VStack(alignment: .leading, spacing: 12) {
                 SettingsRow(symbol: "keyboard", title: InputSettingsStrings.text(.enableSuperKey, l10n.language), caption: text.enableCaption) {
-                    Toggle(InputSettingsStrings.text(.enableSuperKey, l10n.language), isOn: $superKeyEnabled)
+                    PermissionGatedToggle(InputSettingsStrings.text(.enableSuperKey, l10n.language), isOn: $superKeyEnabled)
                         .labelsHidden()
                         .onChange(of: superKeyEnabled) { _, value in
                             superKey.syncWithPreferences()
@@ -39,6 +39,7 @@ extension KeyboardSettings {
                         }
                 }
 
+                if superKeyEnabled {
                 HStack(spacing: 6) {
                     Text(InputSettingsStrings.text(.superKey, l10n.language))
                     Spacer(minLength: 12)
@@ -74,6 +75,7 @@ extension KeyboardSettings {
                 MouseExceptionsList(scope: .superKey)
                     .padding(.leading, settingsRowTextInset)
                     .disabled(superKeyOptionsDisabled)
+                }
             }
         }
     }

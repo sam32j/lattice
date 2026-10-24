@@ -74,7 +74,7 @@ extension BackupFeatureStrings {
 extension BackupFeatureStrings {
     static let enUS = BackupFeatureStrings(
         title: "Backup",
-        description: "Your local data including Scratchpad notes, clipboard history, shelf items, and system permissions will not be exported.",
+        description: "Your local data including Scratchpad notes, clipboard history, File Cache items, and system permissions will not be exported.",
         exportButton: "Export settings…",
         importButton: "Import settings…",
         exported: "Backup saved",

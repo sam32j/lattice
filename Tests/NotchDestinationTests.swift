@@ -122,23 +122,18 @@ enum NotchDestinationContract {
         var requestedDetail: MetricDetailKind?
         var detailHasPage = false
         var pageLayers: [NotchModule: () -> Void] = [:]
-        var captureControls: AnyObject?
         var heldDrag = false
         var presentationSyncs = 0
         var presentationTearDowns = 0
-        var captureControlsCancel: (() -> Void)?
         var captureClose: (() -> Void)?
         func mutatePresentation(transitionContent: NotchContentTransition, _ change: () -> Void) { change() }
         func installEventMonitors() {}
         func syncVisibleConsumers() { requestedDetail = selectedMetric }
         func provideHapticFeedback() {}
-        func endCaptureControls() {}
         let hotkey = Hotkey()
         var shortcutFailureWrites = 0
         var shortcutRegistrationFailed = false { didSet { shortcutFailureWrites += 1 } }
-        var captureControlsExpansions = 0
-        func expandCaptureControls() { captureControlsExpansions += 1 }
-        func clearCapture() { captureControlsCancel = nil; captureClose = nil }
+        func clearCapture() { captureClose = nil }
         func tearDownPresentation() { expanded = false; presentationTearDowns += 1 }
     }
 
@@ -158,6 +153,7 @@ enum NotchDestinationContract {
         }
         for (key, value) in Defaults.registeredDefaults where key.hasPrefix("notch") { defaults.set(value, forKey: key) }
         for feature in AppFeature.allCases { defaults.set(true, forKey: feature.availabilityKey) }
+        for key in [DefaultsKey.shelfEnabled, DefaultsKey.clipboardHistoryEnabled, DefaultsKey.urlCleanerEnabled] { defaults.set(true, forKey: key) }
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
         let focus = Service()
         focus.showsKeyboardFocus = true
@@ -251,7 +247,7 @@ enum NotchDestinationContract {
         suite.expect(launcher.activeUtility == .urlCleaner,
                "navigation preserves a still-available hosted utility")
         service.open(.controls)
-        defaults.set(false, forKey: AppFeature.urlCleaner.availabilityKey)
+        defaults.set(false, forKey: DefaultsKey.urlCleanerEnabled)
         service.open(.tools)
         suite.expect(launcher.activeUtility == nil,
                "returning to Tools after removal cannot revive its previous utility")
@@ -262,34 +258,6 @@ enum NotchDestinationContract {
         sessionContracts(suite)
         lockScreenContracts(defaults: defaults, suite: suite)
         shortcutContracts(defaults: defaults, suite: suite)
-        captureControlsContracts(suite)
-    }
-
-    /// The capture controls cover the open page and hold collapsing off. While
-    /// they are up, a route that opens the island expands them instead, so no
-    /// page waits behind them to open by itself once they end.
-    private static func captureControlsContracts(_ suite: TestSuite) {
-        let shortcuts: [(String, NotchModule, (Service) -> Bool)] = [
-            ("Clipboard", .clipboard, { $0.showClipboard(toggle: true) }),
-            ("Scratchpad", .scratchpad, { $0.showScratchpad(toggle: true) }),
-            ("quick panel", .tools, { $0.openQuickPanel(toggle: true) }),
-            ("shelf", .files, { $0.openShelf(toggle: true) }),
-        ]
-        for (name, module, press) in shortcuts {
-            let service = Service()
-            service.captureControls = NSObject()
-            let presses = (0..<2).map { _ in press(service) && !service.expanded }
-            suite.expect(presses == [true, true] && service.captureControlsExpansions == 2,
-                         "the \(name) shortcut expands the capture controls on every press instead of opening the island behind them")
-            service.captureControls = nil
-            suite.expect(press(service) && service.expanded && service.selected == module,
-                         "once the capture controls end, the \(name) shortcut opens its page")
-        }
-        let page = Service()
-        page.captureControls = NSObject()
-        page.open(.music)
-        suite.expect(!page.expanded && page.captureControlsExpansions == 1,
-                     "opening a page while the capture controls are up expands them instead")
     }
 
     /// Escape steps back through what the island shows, then closes it.
@@ -383,11 +351,11 @@ enum NotchDestinationContract {
         suite.expect(covered.selectedMetric == nil && closes == [.music],
                      "a detail steps back before a layer of the page it covers")
 
-        for blocker in ["drag", "capture"] {
+        for blocker in ["drag"] {
             let held = Service()
             held.open(.system)
             held.open(.system, metric: .cpu)
-            if blocker == "drag" { held.heldDrag = true } else { held.captureControls = NSObject() }
+            held.heldDrag = true
             held.stepBack()
             suite.expect(held.expanded && held.selectedMetric == .cpu,
                          "Escape leaves the island as it is during a \(blocker), like closing does")
@@ -848,20 +816,15 @@ enum NotchDestinationContract {
             ShortcutCapture.isCapturing = false
             defaults.set(false, forKey: DefaultsKey.notchShortcutEnabled)
         }
-        func pressed(captureControls: Bool = false, interactive: Bool = true, presses: Int = 1) -> Service {
+        func pressed(interactive: Bool = true, presses: Int = 1) -> Service {
             let service = Service()
             service.installHotkey()
-            if captureControls { service.captureControls = NSObject() }
             service.acceptsUserInteraction = interactive
             for _ in 0..<presses { service.hotkey.onPress?() }
             return service
         }
-        let capture = pressed(captureControls: true)
-        suite.expect(capture.captureControlsExpansions == 1 && !capture.expanded,
-                     "the island shortcut expands the capture controls instead of opening the island behind them")
-        let away = [pressed(interactive: false), pressed(captureControls: true, interactive: false)]
-        suite.expect(away.allSatisfy { !$0.expanded && $0.captureControlsExpansions == 0 },
-                     "the island shortcut does nothing while the island does not accept user interaction")
+        suite.expect(!pressed(interactive: false).expanded,
+                     "the island shortcut does nothing while interaction is unavailable")
         suite.expect(pressed().expanded && !pressed(presses: 2).expanded,
                      "the island shortcut opens the island and a second press closes it")
 

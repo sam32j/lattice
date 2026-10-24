@@ -76,7 +76,7 @@ enum SettingsSearchSupport {
     /// distinguishable from the containing Clipboard page.
     static func featureItems(language: AppLanguage,
                              title: (AppFeature) -> String) -> [SettingsSearchItem] {
-        AppFeature.allCases.filter(\.isHardwareSupported).map { feature in
+        AppFeature.allCases.filter { $0.isHardwareSupported && $0 != .screenOCR && $0 != .colorPicker }.map { feature in
             SettingsSearchItem(id: .feature(feature),
                                destination: feature.settingsDestination,
                                title: feature == .clipboardHistory
@@ -352,8 +352,6 @@ enum SettingsSearchSupport {
                                screenshot.previewPositionLabel,
                                recorder.systemAudioToggle, recorder.microphoneToggle,
                                recorder.qualityLabel, recorder.frameRateLabel]),
-            (.screenOCR, [strings.ocrName, strings.ocrRemoveLineBreaksToggle, strings.ocrQRToggle]),
-            (.colorPicker, [strings.colorPickerName, strings.colorPickerFormatLabel]),
         ]
     }
 
