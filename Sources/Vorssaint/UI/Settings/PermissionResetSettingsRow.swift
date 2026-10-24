@@ -44,11 +44,14 @@ struct PermissionResetSettingsRow: View {
         .controlSize(.regular)
         .onAppear { onWorkingChange(state.phase == .working) }
         .onChange(of: state.phase) { _, phase in onWorkingChange(phase == .working) }
-        .alert(copy(.confirmation), isPresented: $confirming) {
+        .alert(l10n.language == .enUS ? "Clear All Permissions" : l10n.s.advancedClearButton,
+               isPresented: $confirming) {
             Button(l10n.s.uninstallerCancel, role: .cancel) {}
             Button(l10n.language == .enUS ? "Clear" : l10n.s.advancedClearButton, role: .destructive) {
                 state.begin(using: reset)
             }
+        } message: {
+            Text(copy(.confirmation))
         }
     }
 }

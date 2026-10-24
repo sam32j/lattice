@@ -7,8 +7,8 @@ enum PermissionResetCopy {
         switch language {
         case .enUS: values = [
             "Reset permissions and disable Launch at login. Your preference settings will not reset.",
-            "Reset permissions and disable Launch at login?",
-            "Permissions Cleared.", "Restart Lattice for the reset to take effect.", "Restart now"]
+            "Reset permissions and disable Launch at login? Some of the features may stop working.",
+            "All permissions have been cleared", "Restart Lattice for the reset to take effect.", "Restart now"]
         case .ptBR: values = ["Redefine as permissões e desativa a inicialização ao entrar. Suas preferências serão mantidas.",
             "Redefinir as permissões e desativar a inicialização ao entrar?", "Permissões redefinidas.",
             "Reinicie o Lattice para aplicar a redefinição.", "Reiniciar agora"]
