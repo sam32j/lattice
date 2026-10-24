@@ -5,6 +5,9 @@ import Foundation
 
 enum VideoDownloaderStrings {
     static let pageTitle = "Video Downloader"
+    static let enableTitle = "Enable Video Downloader"
+    static let enableSubtitle = "Download videos and audio locally using self-managed tools. Turning this off removes downloaded tools."
+    static let featureDisabledNotice = "Video Downloader is turned off and its tools have been removed. Turn on above to use."
     static let urlPlaceholder = "https://www.youtube.com/watch?v=…"
     static let paste = "Paste"
     static let quality = "Quality"

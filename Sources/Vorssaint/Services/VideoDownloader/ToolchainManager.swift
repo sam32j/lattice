@@ -42,6 +42,15 @@ final class ToolchainManager: ObservableObject {
         }
     }
 
+    /// Removes downloaded tool binaries from Application Support upon uninstall
+    func removeTools() {
+        let fm = FileManager.default
+        try? fm.removeItem(at: binURL)
+        let previous = binURL.deletingLastPathComponent().appendingPathComponent("bin.previous")
+        try? fm.removeItem(at: previous)
+        checkHealth()
+    }
+
     /// Auto-setup or repair the toolchain into Application Support/Lattice/VideoDownloader/bin/
     func repair() {
         state = .installing(step: 1, of: 3, fraction: 0.1, message: VideoDownloaderStrings.gettingReady)

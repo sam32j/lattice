@@ -143,6 +143,17 @@ final class VideoDownloader: ObservableObject {
         phase = output == nil ? "Cancelled. Partial files will be removed." : "Download complete."
     }
 
+    func teardown() {
+        cancel()
+        link = ""
+        info = nil
+        inspectedURL = nil
+        thumbnailImage = nil
+        output = nil
+        error = nil
+        phase = ""
+    }
+
     func installTools() {
         ToolchainManager.shared.repair()
     }
