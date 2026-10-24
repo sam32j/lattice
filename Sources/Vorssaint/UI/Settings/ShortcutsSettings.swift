@@ -32,14 +32,6 @@ struct ShortcutsSettings: View {
         }
     }
 
-    private var availableRoles: [GlobalShortcutRole] {
-        GlobalShortcutRole.availableRoles(isAvailable: {
-            $0.isVisibleInSettings(isAvailable: { $0.isAvailable })
-        }).filter {
-            !$0.isKeyboardBrightness || BrightnessService.keyboardLightIsSupported
-        }
-    }
-
     private var captureRoles: [GlobalShortcutRole] {
         GlobalShortcutRole.captureRoles(in: availableRoles)
     }

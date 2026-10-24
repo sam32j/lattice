@@ -37,12 +37,10 @@ struct IslandDestinationSettings: View {
             if shown.wrappedValue {
                 if destination == .files {
                     SettingsToggleRow(title: FeatureStrings.notch(l10n.language).dragReveal, isOn: $dragReveal)
-                        .padding(.leading, settingsRowTextInset)
                         .onChange(of: dragReveal) { _, _ in sync() }
                 }
                 if destination == .clipboard {
                     SettingsToggleRow(title: activityTitle, isOn: $clipboardActivity)
-                        .padding(.leading, settingsRowTextInset)
                         .onChange(of: clipboardActivity) { _, _ in sync() }
                     SettingsControlRow(title: styleTitle) {
                         Picker(styleTitle, selection: $cardSize) {
@@ -50,7 +48,6 @@ struct IslandDestinationSettings: View {
                             Text(SettingsOwnershipStrings.text(.regular, l10n.language)).tag(NotchClipboardCardSize.comfortable.rawValue)
                         }.labelsHidden().pickerStyle(.menu)
                     }
-                    .padding(.leading, settingsRowTextInset)
                     .onChange(of: cardSize) { _, _ in sync() }
                 }
             }

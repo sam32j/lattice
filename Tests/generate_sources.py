@@ -569,8 +569,9 @@ def main():
           + "final class ToggleHint: State {\n" + shortcut_consumer("Sources/Vorssaint/UI/MenuPanel/QuickTogglesSection.swift", "    private func shortcutHint(") + "}\n"
           + "final class Catalog: State {\n" + shortcut_consumer("Sources/Vorssaint/Services/CommandBar/CommandBarCatalog.swift", "        func roleShortcut(") + "}\n"
           + "final class GroupStatus: State {\n" + shortcut_consumer("Sources/Vorssaint/UI/Settings/ShortcutsSettings.swift", "    private func featureHasActiveShortcut(") + "}\n"
-          + "final class Inventory: State {\n" + declaration("Sources/Vorssaint/UI/Settings/ShortcutsSettings.swift", "    private var availableRoles:")
-              .replace("private var", "var", 1).replace("$0.isAvailable", "$0.isAvailable(in: defaults)")
+          + "final class Inventory: State {\n" + declaration("Sources/Vorssaint/UI/Settings/ShortcutSettingsInventory.swift", "    var availableRoles:")
+              .replace("feature.isAvailable", "feature.isAvailable(in: defaults)")
+              .replace("$0.isAvailable", "$0.isAvailable(in: defaults)")
               .replace("BrightnessService.keyboardLightIsSupported", "true") + "}\n"
           + "struct Launcher: View {\nlet defaults: UserDefaults\nvar body: some View { footer }\n" + launcher_footer + "}\n}\n")
     def panel_filter(scope):
