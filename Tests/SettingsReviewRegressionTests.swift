@@ -7,6 +7,7 @@ enum SettingsReviewRegressionTests {
     static func run(_ suite: TestSuite) {
         PermissionActivationTests.run(suite)
         PermissionRevocationTests.run(suite)
+        CameraPermissionRevocationTests.run(suite)
         BluetoothRevocationTests.run(suite)
         BluetoothPermissionTests.run(suite)
         KeyboardPermissionLifecycleTests.run(suite)

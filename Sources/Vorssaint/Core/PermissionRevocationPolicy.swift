@@ -33,7 +33,9 @@ enum PermissionRevocationPolicy {
         }
         for (permission, features) in essential where verified[permission] == false {
             for feature in features {
-                let keys = feature == .textSnippets ? [DefaultsKey.textSnippetsEnabled] : feature.enabledKeys
+                let keys = feature == .textSnippets ? [DefaultsKey.textSnippetsEnabled]
+                    : feature.enabledKeys.isEmpty && feature.isToggleOwned ? [feature.availabilityKey]
+                    : feature.enabledKeys
                 disable(keys, feature: feature)
                 if keys.isEmpty { result.uninstall.insert(feature) }
             }
