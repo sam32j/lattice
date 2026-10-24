@@ -12,10 +12,11 @@ final class NotchMusicSwipeState: ObservableObject {
     @Published private(set) var frame = Frame()
     private var expiry: DispatchWorkItem?
 
-    func show(_ frame: Frame, completed: Bool = false) {
+    func show(_ frame: Frame, completed: Bool = false, held: Bool = false) {
         expiry?.cancel()
+        expiry = nil
         self.frame = frame
-        guard frame.progress > 0 else { return }
+        guard frame.progress > 0, !held else { return }
         let work = DispatchWorkItem { [weak self] in self?.clear() }
         expiry = work
         DispatchQueue.main.asyncAfter(deadline: .now() + (completed ? 0.22 : 0.5), execute: work)
@@ -32,6 +33,11 @@ final class NotchMusicSwipeState: ObservableObject {
 /// A single owner joins native touch travel and preference-adjusted scroll
 /// direction. Neither event stream alone can skip a track.
 final class NotchMusicSwipeController {
+    static func permitsCompact(stripVisible: Bool, expanded: Bool, peeking: Bool,
+                               trackNotice: Bool, noticeExpanded: Bool, noticeCanPresent: Bool) -> Bool {
+        !expanded && !peeking && (stripVisible || (trackNotice && !noticeExpanded && noticeCanPresent))
+    }
+
     private var gesture = NotchMusicTrackSwipe()
     private var identities: [any NSObjectProtocol] = []
     private var device: NSObject?
@@ -75,7 +81,11 @@ final class NotchMusicSwipeController {
                 cancelled: Bool = false, enabled: Bool, expanded: Bool,
                 timestamp: TimeInterval = ProcessInfo.processInfo.systemUptime, freshSequence: Bool = false) -> Bool {
         if cancelled { cancel(); return false }
+        if let presentation, presentation != expanded { cancel() }
         if contacts.isEmpty {
+            let action = gesture.update([], enabled: enabled)
+            if let action { publish(action, expanded: expanded) }
+            else { state.clear() }
             pending = nil
             blockedUntilLift = false
             gesture = NotchMusicTrackSwipe()
@@ -83,9 +93,7 @@ final class NotchMusicSwipeController {
             device = nil
             presentation = nil
             awaitingBegin = true
-            // Keep the short accepted-command acknowledgement after lift.
-            if state.frame.progress < 1 { state.clear() }
-            return false
+            return action != nil
         }
         guard enabled else {
             cancel(); blockedUntilLift = true; return false
@@ -108,7 +116,7 @@ final class NotchMusicSwipeController {
         }
         guard presentation == expanded else { cancel(); return false }
         publish(gesture.update(contacts, enabled: true), expanded: expanded)
-        return gesture.horizontal || gesture.fired
+        return gesture.horizontal || gesture.armed != nil
     }
 
     @discardableResult
@@ -132,7 +140,7 @@ final class NotchMusicSwipeController {
             return false
         }
         publish(gesture.scroll(deltaX, precise: precise, momentum: momentum), expanded: expanded)
-        return gesture.horizontal || gesture.fired
+        return gesture.horizontal || gesture.armed != nil
     }
 
     private func publish(_ action: NotchMusicTrackSwipe.Direction?, expanded: Bool) {
@@ -140,8 +148,8 @@ final class NotchMusicSwipeController {
             if commit(action == .next) {
                 state.show(.init(direction: action, progress: 1, expanded: expanded), completed: true)
             } else { state.clear() }
-        } else if !gesture.fired {
-            state.show(.init(direction: gesture.direction, progress: gesture.progress, expanded: expanded))
+        } else {
+            state.show(.init(direction: gesture.direction, progress: gesture.progress, expanded: expanded), held: true)
         }
     }
 
@@ -151,9 +159,9 @@ final class NotchMusicSwipeController {
         if lastNativeEvent === event { return enabled }
         lastNativeEvent = event
         let touching = event.touches(matching: .touching, in: view)
-            .filter { $0.type == .indirect && !$0.isResting }
+            .filter { $0.type == .indirect }
         let ended = event.touches(matching: .ended, in: view)
-            .filter { $0.type == .indirect && !$0.isResting }
+            .filter { $0.type == .indirect }
         let cancelled = !event.touches(matching: .cancelled, in: view).isEmpty
         let touches = touching.union(ended)
         if cancelled {
@@ -175,15 +183,17 @@ final class NotchMusicSwipeController {
             if let index = identities.firstIndex(where: { $0.isEqual(touch.identity) }) { id = index }
             else { id = identities.count; identities.append(touch.identity) }
             return .init(id: id, position: CGPoint(x: touch.normalizedPosition.x * touch.deviceSize.width,
-                                                    y: touch.normalizedPosition.y * touch.deviceSize.height))
+                                                    y: touch.normalizedPosition.y * touch.deviceSize.height), isResting: touch.isResting)
         }
         _ = update(contacts, began: touches.contains { $0.phase == .began },
                               enabled: enabled, expanded: expanded, timestamp: event.timestamp,
                               freshSequence: !touches.isEmpty && touches.allSatisfy { $0.phase == .began })
         if !ended.isEmpty {
-            // An intermediate finger lift blocks the sequence until all lift.
-            if touching.isEmpty { _ = update([], began: false, enabled: enabled, expanded: expanded) }
-            else if !gesture.fired { gesture.cancel(); state.clear() }
+            let remaining = Set(touching.compactMap { touch in
+                identities.firstIndex { $0.isEqual(touch.identity) }
+            })
+            _ = update(contacts.filter { remaining.contains($0.id) }, began: false,
+                       enabled: enabled, expanded: expanded, timestamp: event.timestamp)
         }
         return enabled
     }

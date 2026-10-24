@@ -15,6 +15,7 @@ enum NotchMusicSwipeRenderingProbe {
         let output = URL(fileURLWithPath: CommandLine.arguments[index + 1], isDirectory: true)
         do {
             try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+            try verifyRestingDelivery()
             for reduced in [false, true] {
                 for scheme in [ColorScheme.light, .dark] {
                     let view = VStack(alignment: .leading, spacing: 16) {
@@ -47,6 +48,23 @@ enum NotchMusicSwipeRenderingProbe {
             fputs("MUSIC_SWIPE_RENDERING_FAILED \(error)\n", stderr)
             exit(1)
         }
+    }
+
+    private static func verifyRestingDelivery() throws {
+        let geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1440, height: 900),
+                                     safeAreaTop: 0, cameraWidth: 0)
+        let host = NotchWindowHost(content: AnyView(Color.black), geometry: geometry, size: geometry.collapsed,
+                                  quickAccess: { _, _ in AnyView(Color.clear) })
+        defer { host.close() }
+        func receivers(in view: NSView) -> Int {
+            let own = view.allowedTouchTypes.contains(.indirect) && view.wantsRestingTouches ? 1 : 0
+            return own + view.subviews.reduce(0) { $0 + receivers(in: $1) }
+        }
+        guard let root = host.panel.contentView, receivers(in: root) >= 2 else {
+            throw NSError(domain: "MusicSwipeProbe", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "The hosting view and container must retain resting touches."])
+        }
+        print("MUSIC_SWIPE_RESTING_RECEIVERS_OK")
     }
 
     private static func forDirection(_ direction: NotchMusicTrackSwipe.Direction, progress: Double, reduced: Bool) -> some View {

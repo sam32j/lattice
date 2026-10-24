@@ -60,3 +60,23 @@ Run affected vertical/capture/music/native input suites, full regressions, devel
 - `git diff --check` passed. New handwritten modules are below 300 lines.
 - No real media command, scrolling preference, hardware setting or permission grant was changed. Real trackpad delivery/playback remains a manual runtime check; synthetic/native-boundary tests and source review do not claim that live verification.
 - User selected topic commits and pushing `refactor/settings-refactor-III-part-2` only, with no PR edits or merge. Publication is verified separately after committing. Main and other branches remain outside this task.
+
+## Follow-up: lift to commit and rapid skipping
+
+User explicitly requested the behavior update after the initial implementation. Continue on part 2 / PR #11, baseline `049ce204` (preserving an unrelated completed Bluetooth fix). The system-icon permission fix is separately committed/pushed to part 5 / PR #14 at `305b84b3`.
+
+- [x] RED: crossing 54 points previously sent immediately; new assertion required no action while held.
+- [x] Arm on the same physical threshold; latch direction/progress while original fingers remain down. Commit once at the last lift, discard short or invalid/cancelled strokes. Process final ended positions before remaining contacts.
+- [x] Keep active feedback alive until lift/cancellation rather than expiring after 0.5 seconds. Test a 0.6-second hold and staggered release using injected command callbacks only.
+- [x] RED: compact track-notice availability policy was absent. Add the shared policy, use it in touch/scroll eligibility and stable compact surface identity, and cover three immediate separate strokes while the title/artist notice covers the strip.
+- [x] Share the compact artwork cue between track notices in both island silhouettes, preserving appearance and settings-preview isolation. Keep existing playback authorization/command-busy checks.
+- [x] Final affected regressions, developer build/signature, isolated rendering/selftest and independent review. Commit/publish this follow-up on part 2 only.
+
+Initial isolated follow-up result: `MUSIC_LIFT_TESTS checks=42 failures=0`. No real media command, permission or hardware action was exercised.
+
+
+Follow-up final verification:
+- Independent review caught that AppKit's default resting-touch policy synthesizes an end when a finger rests. Enabled resting delivery on both native receiver sites; native snapshots retain resting contacts and the recognizer retains armed original identities through resting/partial lift. Inactive resting fingers cannot establish or advance the distance threshold. Added the resting snapshot to the sustained-hold regression. Re-review found no remaining actionable issues.
+- Final notch regressions: `TESTS OK (66291 checks)` including vertical/capture, natural-scrolling direction, short/armed/cancelled/reordered strokes, sustained/resting/partial-lift feedback, notice availability and repeated notice-time gestures.
+- Final Developer build and strict signature verification passed. Isolated native receiver probe: `MUSIC_SWIPE_RESTING_RECEIVERS_OK`; production overlay rendering: `MUSIC_SWIPE_RENDERING_OK`; isolated copied-bundle selftest: `SELFTEST OK`.
+- `git diff --check` passed. No real player commands or permission/hardware changes were used for verification. The installed app is unchanged; these are branch/build outputs. No stack restack or PR metadata edit is included.

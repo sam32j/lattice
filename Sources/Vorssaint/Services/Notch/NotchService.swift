@@ -623,6 +623,11 @@ final class NotchService: ObservableObject {
 
     private var compactMusicIsVisible: Bool { compactActivityIsVisible && compactActivity == .music }
 
+    private var compactMusicSwipeIsVisible: Bool {
+        NotchMusicSwipeController.permitsCompact(stripVisible: compactMusicIsVisible, expanded: expanded, peeking: peeking,
+            trackNotice: notice?.event == .track, noticeExpanded: noticeExpanded, noticeCanPresent: noticeCanPresent)
+    }
+
     /// The song the closed island drew at its last refresh, for the frames
     /// between the music stopping and the refresh that lets it depart. The
     /// view reads playback live, so it kept drawing what rests under the
@@ -2681,7 +2686,7 @@ final class NotchService: ObservableObject {
 
     func refreshPresentation(animated: Bool = true, transitionContent: NotchContentTransition = .none) {
         musicSwipe.synchronizeSurface(expanded ? "expanded-\(selected.rawValue)-\(showingSections)-\(showingAppPanel)-\(showingCommandBar)"
-                                     : "compact-\(compactMusicIsVisible)")
+                                     : "compact-\(compactMusicSwipeIsVisible)")
         // A notice with a new reading, or the music strip naming its song,
         // fits its new width in place.
         let fitsInPlace = noticeFitsInPlace && notice != nil && !noticeExpanded
@@ -3867,7 +3872,7 @@ final class NotchService: ObservableObject {
         guard running, !suspended, NotchGestureSupport.isEnabled(), let panel,
               !trackingMenu, captureControls == nil, !heldDrag,
               !showingAppPanel, !showingSections, !showingCommandBar, selectedMetric == nil,
-              modules.contains(.music), compactMusicIsVisible || (expanded && selected == .music),
+              modules.contains(.music), compactMusicSwipeIsVisible || (expanded && selected == .music),
               event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else { return false }
         let point = panel.convertPoint(toScreen: event.locationInWindow)
         let interaction = NotchGestureSupport.nativeInteraction(at: panel.contentView?.hitTest(event.locationInWindow))
@@ -3939,7 +3944,7 @@ final class NotchService: ObservableObject {
                                                        height: expanded ? expandedGeometry.headerRowHeight : NotchLayout.headerHeight)
         let interaction = NotchGestureSupport.nativeInteraction(at: panel.contentView?.hitTest(event.locationInWindow))
         let musicSurface = modules.contains(.music)
-            && (compactMusicIsVisible || (expanded && selected == .music && !showingAppPanel && !showingSections
+            && (compactMusicSwipeIsVisible || (expanded && selected == .music && !showingAppPanel && !showingSections
                                           && !showingCommandBar))
         let captureSurface = expanded && selected == .captures && captureContent != nil
             && !showingSections && !showingAppPanel && !showingCommandBar && selectedMetric == nil

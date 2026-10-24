@@ -150,7 +150,7 @@ struct NotchCapsuleNoticeView: View {
         } else if notice.event == .agents, let agent = notice.agent, notice.symbol == agent.symbol {
             NotchAgentMark(provider: agent, size: CapsuleLayout.symbolSize).frame(width: CapsuleLayout.symbolWidth)
         } else if notice.event == .track {
-            NotchCapsuleTrackArtwork(side: min(CapsuleLayout.symbolWidth, CapsuleLayout.artworkSide(geometry)))
+            NotchMusicSwipeNoticeArtwork(size: min(CapsuleLayout.symbolWidth, CapsuleLayout.artworkSide(geometry)), capsule: true)
                 .frame(width: CapsuleLayout.symbolWidth)
         } else {
             NotchCapsuleSymbol(name: notice.symbol, tint: tint)
@@ -159,14 +159,6 @@ struct NotchCapsuleNoticeView: View {
 }
 
 /// The new song's cover, read as it arrives: it often lands after the title.
-private struct NotchCapsuleTrackArtwork: View {
-    @ObservedObject private var music = NotchMusicService.shared
-    let side: CGFloat
-
-    var body: some View { NotchMusicCover(artwork: music.artwork, side: side, radius: side * 0.24,
-                                          source: music.playback?.track) }
-}
-
 /// The closed capsule at rest: bare, or with the charge or the AI allowance
 /// the person chose, in its middle. The companion rests in its middle when
 /// nothing else is there, and walks through on its visits.

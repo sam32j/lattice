@@ -13,3 +13,10 @@ Approved October 24, 2026. Continue on the existing PR 11 branch, `refactor/sett
 - Verification: synthetic contact/event traces, existing vertical/capture and playback regressions, isolated compact/expanded progress rendering including Reduce Motion, developer build/selftest and independent source review. Never send a real media command, change scrolling preferences or permissions during tests.
 
 Design and implementation records remain local until the final branch outcome is selected or authorized.
+
+
+## Requested follow-up: release to skip
+
+The user changed the commit point after testing: reaching ¾ inch arms the next/previous action and sustains its cue while the original fingers remain down. Send exactly one command when the last original finger lifts. A partial lift preserves an armed stroke; cancellation, disabled eligibility, replaced/extra contacts or presentation interruption discard it. Short swipes do not commit. Ordinary track-info notices remain a music swipe surface so another stroke can begin immediately, including while a prior title/artist notice is shown. Preserve the existing permission/command-busy checks. This belongs to part 2 / PR #11, separate from the part 5 icon-permission fix.
+
+Resting-touch clarification: enable native delivery of resting touches and retain their original identities once armed. AppKit's resting transition is not a physical release. Only non-resting travel can establish the threshold; resting contacts keep an already armed cue until the original fingers lift.

@@ -944,6 +944,7 @@ private final class NotchQuickAccessContainer: NSView {
         quickView.isHidden = true
         super.init(frame: canvas.frame)
         allowedTouchTypes = [.indirect]
+        wantsRestingTouches = true
         wantsLayer = true
         autoresizesSubviews = false
         addSubview(quickView)
@@ -1074,6 +1075,7 @@ private final class NotchCanvas: NSView {
         backdrop.autoresizingMask = []
         host = NotchHostingView(rootView: content)
         host.allowedTouchTypes = [.indirect]
+        host.wantsRestingTouches = true
         host.sizingOptions = []
         host.wantsLayer = true
         host.autoresizingMask = []
