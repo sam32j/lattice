@@ -7,10 +7,14 @@ enum DockPreviewExclusionTests {
         let domain = "com.vorssaint.tests.dock-preview-target-exclusions.\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: domain) else { return }
         defer { defaults.removePersistentDomain(forName: domain) }
-        defaults.set([" com.example.private ", "com.example.private"], forKey: DefaultsKey.windowPreviewExcludedApps)
+        defaults.set([" com.example.private ", "com.example.private", "/usr/bin/python3"], forKey: DefaultsKey.windowPreviewExcludedApps)
         defaults.set(["com.example.other"], forKey: DefaultsKey.switcherPreviewExcludedApps)
         suite.expect(DockPreviewExclusions.contains(bundleIdentifier: "com.example.private", in: defaults),
                      "a listed Dock app is excluded independently of which app is in front")
+        suite.expect(DockPreviewExclusions.contains(bundleIdentifier: nil, executablePath: "/usr/bin/python3", in: defaults),
+                     "an app identified by executable path is excluded")
+        suite.expect(!DockPreviewExclusions.contains(bundleIdentifier: nil, executablePath: "/usr/bin/other", in: defaults),
+                     "an unlisted executable path is not excluded")
         suite.expect(!DockPreviewExclusions.contains(bundleIdentifier: "com.example.other", in: defaults),
                      "other Dock apps remain available, including an app excluded only from switcher capture")
         suite.expect(!DockPreviewExclusions.contains(bundleIdentifier: nil, in: defaults),

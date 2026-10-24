@@ -6,7 +6,7 @@ extension WindowLayoutSettings {
             Divider()
             VStack(alignment: .leading, spacing: 13) {
                 Toggle(isOn: $edgeSnapEnabled) {
-                    Text("Screen Edge Snapping").font(.headline)
+                    Text(text.edgeSnapSection).font(.headline)
                 }
                 .onChange(of: edgeSnapEnabled) { _, _ in
                     WindowLayoutService.shared.syncWithPreferences()

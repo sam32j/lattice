@@ -56,7 +56,7 @@ extension WindowLayoutSettings {
     }
 
     var marginSlider: some View {
-        WindowLayoutMarginSlider(marginPercent: $marginPercent)
+        WindowLayoutMarginSlider(title: text.marginEdge, marginPercent: $marginPercent)
     }
 
     func refreshSystemTilingState() {
@@ -161,6 +161,7 @@ extension WindowLayoutSettings {
 }
 
 private struct WindowLayoutMarginSlider: View {
+    let title: String
     @Binding var marginPercent: Double
     @State private var isSliding = false
 
@@ -173,7 +174,7 @@ private struct WindowLayoutMarginSlider: View {
 
     var body: some View {
         HStack {
-            Label("Margin edge", systemImage: "rectangle.inset.filled")
+            Label(title, systemImage: "rectangle.inset.filled")
             Spacer()
             ZStack(alignment: .topLeading) {
                 Slider(

@@ -144,7 +144,7 @@ private struct MenuBarIconSearchPopover: View {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-                TextField(text.menuBarIconTitle, text: $searchQuery, prompt: Text(verbatim: "Search icons…"))
+                TextField(text.menuBarIconTitle, text: $searchQuery, prompt: Text(text.menuBarIconSearchPlaceholder))
                     .textFieldStyle(.plain)
                     .focused($isSearchFocused)
                 if !searchQuery.isEmpty {
