@@ -72,7 +72,7 @@ extension SettingsPageStrings {
         mouseDescription: "Give the wheel, the side buttons and the trackpad new jobs.",
         switcherDescription: "Switch between apps and windows your way.",
         dockTitle: "Dock",
-        dockDescription: "See an app's windows from its dock tile.",
+        dockDescription: "See an app’s windows from its dock tile.",
         switcherLayoutWindows: "Window previews",
         switcherLayoutWindowsCaption: "One preview per window, minimized ones included.",
         switcherLayoutIcons: "Large icons",
