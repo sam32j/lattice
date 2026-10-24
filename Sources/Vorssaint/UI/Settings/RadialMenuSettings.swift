@@ -65,7 +65,7 @@ struct RadialMenuSettings: View {
     var body: some View {
         Form {
             Section {
-                Toggle(text.enableLabel, isOn: $enabled)
+                PermissionGatedToggle(text.enableLabel, isOn: $enabled)
                 Text(text.hubDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -116,7 +116,7 @@ struct RadialMenuSettings: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                profileConfigurationRows
+                profileConfigurationRows.id(selectedProfile.id)
             } header: {
                 Text(text.profilesHeader)
             }
@@ -343,19 +343,17 @@ struct RadialMenuSettings: View {
             }
         )
 
-        Picker(text.profileMouseTriggerLabel, selection: Binding(
+        PermissionGatedPicker(title: text.profileMouseTriggerLabel, selection: Binding(
             get: { profile.mouseButton },
             set: { newTrigger in
-                guard profiles.indices.contains(pIndex) else { return }
+                guard RadialProfileActivation.index(requestedID: profile.id, selectedID: selectedProfile.id,
+                    enabled: enabled, profiles: profiles) != nil else { return }
                 // One wheel owns each button: claiming it here releases the others.
                 profiles = RadialMenuSupport.assigning(mouseButton: newTrigger,
-                                                       to: profiles[pIndex].id, in: profiles)
+                                                       to: profile.id, in: profiles)
                 persist()
-                if RadialMenuMouseTrigger.sanitized(newTrigger) != .off, !permissions.accessibility {
-                    permissions.requestAccessibility()
-                }
             }
-        )) {
+        ), requiring: { RadialMenuMouseTrigger.sanitized($0) == .off ? [] : [.accessibility] }) {
             Text(text.mouseTriggerOff).tag(RadialMenuMouseTrigger.off.rawValue)
             ForEach(Array(MouseButtonShortcutSupport.buttonRange), id: \.self) { button in
                 Text(mouseTriggerName(for: button))
@@ -379,14 +377,14 @@ struct RadialMenuSettings: View {
             buttonTestRow(for: profile.mouseButton)
         }
 
-        Toggle(text.trackpadTapLabel, isOn: Binding(
+        PermissionGatedToggle(text.trackpadTapLabel, isOn: Binding(
             get: { profile.trackpadTap },
             set: { on in
-                guard profiles.indices.contains(pIndex) else { return }
+                guard let pIndex = RadialProfileActivation.index(requestedID: profile.id, selectedID: selectedProfile.id,
+                    enabled: enabled, profiles: profiles) else { return }
                 // One wheel owns the tap: claiming it here releases the others.
                 for index in profiles.indices { profiles[index].trackpadTap = on && index == pIndex }
                 persist()
-                if on, !permissions.accessibility { permissions.requestAccessibility() }
             }
         ))
         .disabled(!enabled)

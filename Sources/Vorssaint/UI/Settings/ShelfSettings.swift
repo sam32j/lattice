@@ -17,27 +17,22 @@ struct ShelfSettings: View {
     @AppStorage(DefaultsKey.shelfCloseAfterDrop) private var closeAfterDrop = false
     @AppStorage(DefaultsKey.shelfRemoveAfterDrop) private var removeAfterDrop = true
     @AppStorage(DefaultsKey.shelfClearOnClose) private var clearOnClose = false
-    @AppStorage(DefaultsKey.notchShelf) private var opensInIsland = true
     @State private var showingAppPicker = false
-    @State private var islandShowsFiles = NotchSupport.showsFiles()
 
     var body: some View {
         Form {
             Section {
-                Toggle(l10n.s.shelfEnable, isOn: $enabled)
+                VStack(alignment: .leading, spacing: 5) {
+                Toggle(SettingsOwnershipStrings.enable(SettingsOwnershipStrings.text(.fileCache, l10n.language), l10n.language), isOn: $enabled)
                     .onChange(of: enabled) { _, _ in
-                        ShelfService.shared.syncWithPreferences()
+                        FeatureRuntime.shared.sync([.shelf])
+                        FeatureRuntime.shared.finishAvailabilityChange()
                     }
-                Text(l10n.s.shelfEnableCaption)
+                Text(SettingsOwnershipStrings.text(.cacheCaption, l10n.language))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                // Adding the Finder selection asks to control Finder, so the
-                // promise only holds while that option is off.
-                if !(shortcutEnabled && shortcutAddsFinderSelection) {
-                    Label(l10n.s.shelfNoPermission, systemImage: "checkmark.shield")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
+                IslandDestinationSettings(destination: .files)
             }
 
             Section(l10n.s.shelfHowTitle) {
@@ -47,16 +42,6 @@ struct ShelfSettings: View {
             }
 
             if enabled {
-                // Mirrors the island page's Files choice, which only matters while the island shows Files.
-                if islandShowsFiles {
-                    Section {
-                        Picker(FeatureStrings.notchEditor(l10n.language).destinations, selection: $opensInIsland) {
-                            Text(FeatureStrings.notch(l10n.language).title).tag(true)
-                            Text(FeatureStrings.notchEditor(l10n.language).separate).tag(false)
-                        }
-                        .pickerStyle(.segmented)
-                    }
-                }
 
                 Section {
                     ShortcutPreferenceRow(role: .shelf) {
@@ -188,11 +173,6 @@ struct ShelfSettings: View {
             }
         }
         .formStyle(.grouped)
-        // The island can be switched on or its modules changed elsewhere while this page is open.
-        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
-            .receive(on: RunLoop.main)) { _ in
-            islandShowsFiles = NotchSupport.showsFiles()
-        }
         .sheet(isPresented: $showingAppPicker) {
             appPickerSheet
         }

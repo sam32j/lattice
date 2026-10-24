@@ -32,7 +32,7 @@ enum NotchKeyboardLightTests {
         suite.expect(NotchSupport.routes(.keyboardLight, in: defaults),
                "keyboard light does not depend on enabling display control")
         defaults.set(false, forKey: AppFeature.brightness.availabilityKey)
-        suite.expect(!NotchSupport.routes(.keyboardLight, in: defaults), "removing brightness also gates its keyboard light notices")
+        suite.expect(NotchSupport.routes(.keyboardLight, in: defaults), "keyboard light notices remain independent of display installation")
         defaults.set(true, forKey: AppFeature.brightness.availabilityKey)
         defaults.set(false, forKey: DefaultsKey.notchEnabled)
         suite.expect(!NotchSupport.routes(.keyboardLight, in: defaults), "the notch master switch suppresses keyboard light notices")

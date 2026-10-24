@@ -38,7 +38,7 @@ enum FeatureHubLayoutTests {
             SettingsCard {
                 Text(group.rawValue)
                 ForEach(AppFeature.features(in: group), id: \.self) { feature in
-                    if feature == .fanControl {
+                    if feature == .portManager {
                         FanRow().frame(height: 44)
                     } else {
                         Text(feature.rawValue).frame(height: 44)

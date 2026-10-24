@@ -232,78 +232,6 @@ extension AppFeature {
         }
     }
 
-    /// Controls owned by a Settings page, not a separately installed hub item.
-    var isToggleOwned: Bool {
-        if isMouseFeature || isKeyboardFeature { return true }
-        switch self {
-        case .dockClick, .spacesOrder, .windowMaximizer, .autoQuit, .pastePlain,
-             .brightness, .bluetoothSleep, .extraBrightness, .fanControl:
-            return true
-        default: return false
-        }
-    }
-
-    /// Features with dedicated page-level install/enable controls, excluded from the Features hub.
-    var isManagedOnDedicatedPage: Bool {
-        if group == .monitor { return true }
-        switch self {
-        case .screenshot, .screenRecorder,
-             .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock,
-             .wallpaper, .windowLayout, .switcher, .dockPreview,
-             .notch, .notchTimer, .notchCalendar, .notchNotifications, .notchDownloads, .notchAgents, .notchWatch,
-             .notchMascot, .notchGestures, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchAccessories:
-            return true
-        default:
-            return false
-        }
-    }
-
-    func isToggledOn(in defaults: UserDefaults = .standard) -> Bool {
-        switch self {
-        case .scrollInverter:
-            return defaults.bool(forKey: DefaultsKey.scrollInverterEnabled)
-                || defaults.bool(forKey: DefaultsKey.scrollInverterHorizontalEnabled)
-        case .bluetoothSleep:
-            return defaults.bool(forKey: DefaultsKey.bluetoothSleepEnabled)
-                || defaults.bool(forKey: DefaultsKey.bluetoothSleepRestoreOnWake)
-        case .brightness:
-            return defaults.bool(forKey: DefaultsKey.brightnessControlEnabled)
-        case .scrollHorizontal:
-            return defaults.bool(forKey: DefaultsKey.scrollHorizontalEnabled)
-        case .focusFollowsMouse:
-            return defaults.bool(forKey: DefaultsKey.focusFollowsMouseEnabled)
-        case .smoothScroll:
-            return defaults.bool(forKey: DefaultsKey.smoothScrollEnabled)
-        case .linearScroll:
-            return defaults.bool(forKey: DefaultsKey.linearScrollEnabled)
-        case .mouseAcceleration:
-            return defaults.bool(forKey: DefaultsKey.mouseAccelerationDisabled)
-        case .mouseNavigation:
-            return defaults.bool(forKey: DefaultsKey.mouseNavigationEnabled)
-        case .mouseButtonShortcuts:
-            return defaults.bool(forKey: DefaultsKey.mouseButtonShortcutsEnabled)
-                || defaults.bool(forKey: DefaultsKey.mouseSpacesGestureEnabled)
-        case .middleClick:
-            return defaults.bool(forKey: DefaultsKey.middleClickEnabled)
-        case .mouseClickDebounce:
-            return defaults.bool(forKey: DefaultsKey.mouseClickDebounceEnabled)
-        case .keyboardDebounce:
-            return defaults.bool(forKey: DefaultsKey.keyboardDebounceEnabled)
-        case .superKey:
-            return defaults.bool(forKey: DefaultsKey.superKeyEnabled)
-        case .quitWindowProtection:
-            return defaults.bool(forKey: DefaultsKey.quitProtectionQuitEnabled)
-                || defaults.bool(forKey: DefaultsKey.quitProtectionCloseEnabled)
-        case .cleaningMode:
-            guard defaults.bool(forKey: DefaultsKey.cleaningModeShortcutEnabled) else { return false }
-            if let raw = defaults.string(forKey: DefaultsKey.cleaningModeShortcut) {
-                return GlobalShortcut(storageValue: raw)?.isValid == true
-            }
-            return GlobalShortcut.cleaningModeDefault.isValid
-        default:
-            return enabledKeys.contains { defaults.bool(forKey: $0) }
-        }
-    }
 
     /// Input controls use their own switches; other features use installation
     /// preferences, retaining existing installations across app updates.
@@ -338,7 +266,7 @@ extension AppFeature {
     func isPresentInControls(in defaults: UserDefaults = .standard, hardwareSupported: Bool? = nil) -> Bool {
         guard hardwareSupported ?? isHardwareSupported else { return false }
         if self == .pastePlain { return AppFeature.clipboardHistory.isAvailable(in: defaults) }
-        return isToggleOwned || isAvailable(in: defaults)
+        return retainsControlWhenOff || isAvailable(in: defaults)
     }
 
     /// Configuration remains reachable while behavior is off. Unsupported

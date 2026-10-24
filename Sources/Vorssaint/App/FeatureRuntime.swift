@@ -183,6 +183,11 @@ final class FeatureRuntime: ObservableObject {
         for feature in AppFeature.allCases where feature.isAvailable {
             Self.bindings[feature]?()
         }
+        if !AppFeature.brightness.isAvailable,
+           UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
+            || NotchSupport.routes(.keyboardLight, in: .standard) {
+            Self.bindings[.brightness]?()
+        }
     }
 
     /// Capability changes can enable a saved preference without constructing
@@ -195,7 +200,7 @@ final class FeatureRuntime: ObservableObject {
     /// directly from Settings, so an off change must always reach teardown.
     func sync(_ features: [AppFeature]) {
         guard !InputEventTap.isBlocked else { return }
-        for feature in features where feature.isMouseFeature || feature.isKeyboardFeature || feature.isAvailable || loadedThisSession.contains(feature) {
+        for feature in features where feature.isToggleOwned || feature.isAvailable || loadedThisSession.contains(feature) {
             if feature.isAvailable { loadedThisSession.insert(feature) }
             Self.bindings[feature]?()
             if feature == .clipboardHistory, loadedThisSession.contains(.pastePlain) || AppFeature.pastePlain.isAvailable {
@@ -212,6 +217,7 @@ final class FeatureRuntime: ObservableObject {
     /// One bump for Settings, and the Command Bar drops rows of features that
     /// just left the hub so a pin cannot linger as a bare id.
     func finishAvailabilityChange() {
+        AppMenuDestination.reconcile(in: .standard)
         revision += 1
         if AppFeature.commandBar.isAvailable { CommandBarService.shared.noteHubChange() }
         if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }
@@ -255,9 +261,7 @@ final class FeatureRuntime: ObservableObject {
         },
         .clipboardHistory: {
             ClipboardHistoryService.shared.syncWithPreferences()
-            // Auto clear rides the clipboard feature's availability but not its
-            // capture toggle: uninstalling the feature stops it, turning history
-            // off does not.
+            // History's page toggle also owns auto-clear timers and observers.
             ClipboardAutoClearService.shared.syncWithPreferences()
         },
         .mediaTools: {

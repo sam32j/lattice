@@ -22,7 +22,7 @@ struct AboutSettings: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(feedbackStrings.sectionTitle)
                             .font(.body)
-                        Text(feedbackStrings.sectionCaption)
+                        Text(FeedbackDraftStrings.text(l10n.language).review)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

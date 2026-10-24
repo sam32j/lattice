@@ -380,6 +380,7 @@ if (( TEST )); then
         Sources/Vorssaint/Core/ScratchpadStrings.swift
         Sources/Vorssaint/Core/CommandBarStrings.swift
         Sources/Vorssaint/Core/FeedbackStrings.swift
+        Sources/Vorssaint/Core/FeedbackDraftStrings.swift
         Sources/Vorssaint/Core/RadialMenuStrings.swift
         Sources/Vorssaint/Core/MenuBarAppearanceStrings.swift
         Sources/Vorssaint/Core/AppAppearance.swift
@@ -460,6 +461,8 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Clipboard/ClipboardHistoryWrite.swift
         Sources/Vorssaint/Services/Audio/AirPlayRouteManager.swift
         Sources/Vorssaint/Services/Audio/MixerRoutingSupport.swift
+        Sources/Vorssaint/Services/Audio/AudioPriorityPresentation.swift
+        Sources/Vorssaint/Services/Feedback/FeedbackDraft.swift
         Sources/Vorssaint/Services/Audio/MusicLaunchSupport.swift
         Sources/Vorssaint/Services/Bluetooth/BluetoothSleepSupport.swift
         Sources/Vorssaint/UI/MenuPanel/MixerPercentNativeTextField.swift
@@ -471,6 +474,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/DockPreview/DockPreviewExclusions.swift
         Sources/Vorssaint/Core/SettingsAppListDescriptions.swift
         Sources/Vorssaint/Core/SettingsAppListStrings.swift
+        Sources/Vorssaint/UI/Settings/QuitProtectionAppListStrings.swift
         Sources/Vorssaint/Services/DockPreview/DockAutohideHold.swift
         Sources/Vorssaint/Services/SpacesOrder/SpacesOrderHold.swift
         Sources/Vorssaint/Services/Homebrew/HomebrewSupport.swift

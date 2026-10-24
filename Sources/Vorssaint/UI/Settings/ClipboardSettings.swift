@@ -38,23 +38,19 @@ struct ClipboardSettings: View {
 
     var body: some View {
         Form {
-            if AppFeature.clipboardHistory.isAvailable {
+            Group {
                 Section {
-                    Toggle(text.enable, isOn: $enabled)
+                    VStack(alignment: .leading, spacing: 5) {
+                    Toggle(l10n.language == .enUS ? "Enable Clipboard History" : text.enable, isOn: $enabled)
                         .onChange(of: enabled) { _, _ in
-                            ClipboardHistoryService.shared.syncWithPreferences()
+                            FeatureRuntime.shared.sync([.clipboardHistory])
+                            FeatureRuntime.shared.finishAvailabilityChange()
                         }
-                    Text(text.caption)
+                    Text(SettingsOwnershipStrings.text(.clipboardCaption, l10n.language))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(text.localNote)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                    if enabled, history.isRunning {
-                        Label(text.active, systemImage: "checkmark.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.green)
                     }
+                    IslandDestinationSettings(destination: .clipboard)
                 }
                 .settingsFormSectionAnchor(.clipboardHistory)
 
