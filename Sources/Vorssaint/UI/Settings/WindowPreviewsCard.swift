@@ -8,11 +8,13 @@ struct WindowPreviewsCard: View {
     @AppStorage private var previewSize: String
     private let excludedAppsKey: String
     let embedded: Bool
+    let showsExclusions: Bool
 
-    init(sizeKey: String, excludedAppsKey: String, embedded: Bool = false) {
+    init(sizeKey: String, excludedAppsKey: String, embedded: Bool = false, showsExclusions: Bool = true) {
         _previewSize = AppStorage(wrappedValue: "normal", sizeKey)
         self.excludedAppsKey = excludedAppsKey
         self.embedded = embedded
+        self.showsExclusions = showsExclusions
     }
 
     var body: some View {
@@ -39,7 +41,7 @@ struct WindowPreviewsCard: View {
                         caption: l10n.s.minimalWindowPreviewsCaption) {
                 Toggle(l10n.s.minimalWindowPreviews, isOn: $minimalPreviews).labelsHidden()
             }
-            WindowPreviewExclusionsList(key: excludedAppsKey)
+            if showsExclusions { WindowPreviewExclusionsList(key: excludedAppsKey) }
         }
     }
 

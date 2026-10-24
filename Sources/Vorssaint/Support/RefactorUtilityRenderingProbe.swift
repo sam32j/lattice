@@ -8,6 +8,7 @@ enum RefactorUtilityRenderingProbe {
             failures.append("Utility rendering requires an isolated test bundle."); return
         }
         let defaults = UserDefaults.standard
+        DockClickSettingsProbe.run(output: output, failures: &failures)
         for island in [true, false] {
             defaults.set(island, forKey: DefaultsKey.notchEnabled)
             for enabled in [true, false] {
