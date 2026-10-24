@@ -37,15 +37,6 @@ enum NotchLockScreenTests {
         var saver = NotchSessionState()
         saver.screenSaverRunning = true
         suite.expect(saver.canPresent && saver.canRunTimer, "a screen saver alone leaves the island as it was")
-        suite.expect(NotchSessionState().hearsLockChange && locked.hearsLockChange,
-                     "a lock or unlock at the keyboard is heard")
-        var closing = NotchSessionState()
-        closing.sleeping = true
-        var dark = NotchSessionState()
-        dark.displaysSleeping = true
-        suite.expect(!closing.hearsLockChange && !dark.hearsLockChange && !switched.hearsLockChange,
-                     "closing the lid, a dark display or a switched user plays no padlock")
-        suite.expect(!saver.hearsLockChange, "a lock that follows an idle screen saver plays no padlock")
     }
 
     static func preferenceContracts(_ suite: TestSuite) {
@@ -63,14 +54,14 @@ enum NotchLockScreenTests {
         defaults.set(true, forKey: DefaultsKey.notchLockScreen)
         defaults.set(true, forKey: DefaultsKey.notchLockSounds)
         defaults.set(false, forKey: DefaultsKey.notchEnabled)
-        suite.expect(!NotchLockScreenSupport.isEnabled(in: defaults) && !NotchLockScreenSupport.playsSounds(in: defaults),
-                     "the island's own switch turns off the lock screen and the sounds")
+        suite.expect(!NotchLockScreenSupport.isEnabled(in: defaults),
+                     "the island's own switch turns off its lock screen")
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
-        suite.expect(NotchLockScreenSupport.isEnabled(in: defaults) && NotchLockScreenSupport.playsSounds(in: defaults),
-                     "with the island on, each follows its own switch")
+        suite.expect(NotchLockScreenSupport.isEnabled(in: defaults),
+                     "with the island on, the lock screen follows its own switch")
         defaults.set(false, forKey: DefaultsKey.notchLockScreen)
-        suite.expect(!NotchLockScreenSupport.isEnabled(in: defaults) && NotchLockScreenSupport.playsSounds(in: defaults),
-                     "the sounds do not need the lock screen")
+        suite.expect(!NotchLockScreenSupport.isEnabled(in: defaults),
+                     "turning off the lock screen hides its presentation")
         suite.expect(NotchLockScreenSupport.showsMusic(in: defaults), "music shows while the island has its Music section")
         defaults.set(NotchIdleContent.none.rawValue, forKey: DefaultsKey.notchIdleContent)
         suite.expect(NotchLockScreenSupport.showsMusic(in: defaults), "an island resting empty still shows music when locked")
@@ -188,8 +179,8 @@ enum NotchLockScreenTests {
     }
 
     static func soundContracts(_ suite: TestSuite) {
-        let lock = NotchLockScreenSupport.soundURL(locking: true)
-        let unlock = NotchLockScreenSupport.soundURL(locking: false)
+        let lock = PadlockSound.url(locking: true)
+        let unlock = PadlockSound.url(locking: false)
         suite.expect(lock != nil && unlock != nil && lock != unlock, "locking and unlocking each have their own sound")
         suite.expect([lock, unlock].allSatisfy { $0.map { FileManager.default.fileExists(atPath: $0.path) } == true },
                      "both sounds are files this Mac has")

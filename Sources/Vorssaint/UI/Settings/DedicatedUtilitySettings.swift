@@ -6,6 +6,8 @@ import SwiftUI
 struct DedicatedUtilitySettings: View {
     let feature: AppFeature
     @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var permissions = Permissions.shared
+    @Environment(\.settingsPermissionAccess) private var access
     @AppStorage private var enabled: Bool
 
     init(feature: AppFeature) {
@@ -21,29 +23,36 @@ struct DedicatedUtilitySettings: View {
         }
     }
 
+    private var requirements: [SettingsPermission] { feature == .cameraPreview ? [.camera] : [] }
+    private var childrenEnabled: Bool {
+        _ = permissions.camera // Invalidate on permission publication, but verify the live grant below.
+        return enabled && requirements.allSatisfy(access.verify)
+    }
+
     var body: some View {
         ScrollView {
             SettingsCard {
                 SettingsRow(symbol: feature.symbolName,
                             title: SettingsOwnershipStrings.enable(title, l10n.language)) {
                     PermissionGatedToggle(SettingsOwnershipStrings.enable(title, l10n.language),
-                        isOn: $enabled, requiring: feature == .cameraPreview ? [.camera] : [])
+                        isOn: $enabled, requiring: requirements)
                         .labelsHidden()
                         .onChange(of: enabled) { _, _ in
                             FeatureRuntime.shared.sync([feature])
                             FeatureRuntime.shared.finishAvailabilityChange()
                         }
                 }
-                if enabled, let destination {
-                    IslandDestinationSettings(destination: destination)
+                if childrenEnabled {
+                    if let shortcut {
+                        ShortcutPreferenceRow(role: shortcut, label: UtilitySettingsCopy.open(title, l10n.language)) {
+                            FeatureRuntime.shared.sync([feature])
+                        }
                         .padding(.leading, settingsRowTextInset)
-                }
-                if let shortcut {
-                    ShortcutPreferenceRow(role: shortcut, label: UtilitySettingsCopy.open(title, l10n.language)) {
-                        FeatureRuntime.shared.sync([feature])
                     }
-                    .disabled(!enabled)
-                    .padding(.leading, settingsRowTextInset)
+                    if let destination {
+                        IslandDestinationSettings(destination: destination)
+                            .padding(.leading, settingsRowTextInset)
+                    }
                 }
             }
             .padding(22)

@@ -177,9 +177,10 @@ final class FeatureRuntime: ObservableObject {
         return UserDefaults.standard.persistentDomain(forName: domain) ?? [:]
     }
 
-    /// Launch path: replaces the old unconditional sync block. Only available
-    /// features get their binding run, so nothing else even instantiates.
+    /// App-wide sounds register their opt-in listener independently. Feature
+    /// bindings run only for available features.
     func syncAtLaunch() {
+        LockSoundService.shared.syncWithPreferences()
         for feature in AppFeature.allCases where feature.isAvailable {
             Self.bindings[feature]?()
         }

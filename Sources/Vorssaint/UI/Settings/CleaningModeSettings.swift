@@ -16,7 +16,8 @@ struct CleaningModeSettings: View {
                 Toggle(l10n.s.cleaningKeepScreenVisibleToggle, isOn: $keepScreenVisible)
                     .labelsHidden()
             }
-            ShortcutPreferenceRow(role: .cleaningMode, alignment: .center, label: l10n.s.globalHotkeySection) {
+            ShortcutPreferenceRow(role: .cleaningMode, alignment: .center,
+                label: l10n.language == .enUS ? "Activate cleaning mode with shortcut" : l10n.s.globalHotkeySection) {
                 cleaning.syncWithPreferences()
                 FeatureRuntime.shared.finishAvailabilityChange()
             }

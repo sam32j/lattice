@@ -1,25 +1,6 @@
 import Foundation
 
 enum AppMenuRestorationCopy {
-    static func cancel(_ language: AppLanguage) -> String {
-        switch language {
-        case .enUS: return "Don’t restore"
-        case .ptBR: return "Não restaurar"
-        case .es: return "No restaurar"
-        case .de: return "Nicht wiederherstellen"
-        case .fr: return "Ne pas restaurer"
-        case .it: return "Non ripristinare"
-        case .ja: return "復元しない"
-        case .ko: return "복원하지 않기"
-        case .zhHans: return "不恢复"
-        case .zhTW, .zhHK: return "不恢復"
-        case .ru: return "Не восстанавливать"
-        case .uk: return "Не відновлювати"
-        case .tr: return "Geri yükleme"
-        case .sk: return "Neobnovovať"
-        }
-    }
-
     static func hint(_ target: AppMenuDestination, language: AppLanguage) -> String {
         let island = target == .island
         switch language {

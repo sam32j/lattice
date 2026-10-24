@@ -77,12 +77,8 @@ extension NotchSettings {
                 }
             }
             SettingsCard(title: editor.destinations) {
-                destination(l10n.s.launcherName, symbol: NotchModule.tools.symbol, value: $quickPanel, available: AppFeature.quickLauncher.isAvailable)
-                destination(FeatureStrings.clipboard(l10n.language).title, symbol: "doc.on.clipboard", value: $clipboardWindow, available: AppFeature.clipboardHistory.isAvailable)
-                destination(text.files, symbol: "tray.full", value: $shelfWindow, available: AppFeature.shelf.isAvailable)
                 destination(text.captures, symbol: "camera.viewfinder", value: $capture,
                             available: AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable)
-                destination(FeatureStrings.scratchpad(l10n.language).pageTitle, symbol: "note.text", value: $scratchpad, available: AppFeature.scratchpad.isAvailable)
             }
             SettingsCard(title: editor.privacy) {
                 switchRow("camera.viewfinder", text.showInCaptures, isOn: $showInCaptures)

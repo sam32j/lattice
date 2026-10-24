@@ -182,7 +182,7 @@ struct QuickTogglesList: View {
         case .keyboardLight:
             let brightnessStrings = FeatureStrings.brightness(l10n.language)
             PanelToggleRow(title: brightnessStrings.keyboardLight,
-                           caption: brightnessStrings.keyboardLightCaption,
+                           caption: "",
                            systemImage: "keyboard",
                            isOn: Binding(
                                get: { brightness.keyboardLightEnabled ?? false },

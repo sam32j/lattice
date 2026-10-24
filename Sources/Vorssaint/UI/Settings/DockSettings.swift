@@ -19,9 +19,6 @@ struct DockSettings: View {
     @AppStorage(DefaultsKey.dockPreviewOrderByCreation) private var dockPreviewOrderByCreation = false
     @AppStorage(DefaultsKey.dockPreviewKeepDockVisible) private var dockPreviewKeepDockVisible = false
     @State private var showingDockInfo = false
-    @AppStorage(DefaultsKey.dockClickMinimize) private var dockClickMinimize = false
-    @AppStorage(DefaultsKey.dockClickHide) private var dockClickHide = false
-    @AppStorage(DefaultsKey.dockClickCycleWindows) private var dockClickCycleWindows = false
 
     private var pages: SettingsPageStrings { FeatureStrings.settingsPages(l10n.language) }
     private var dockPreviewInstalled: Bool { AppFeature.dockPreview.isAvailable }
@@ -32,10 +29,6 @@ struct DockSettings: View {
             VStack(alignment: .leading, spacing: 20) {
                 dockPreviewCard
                     .settingsSectionAnchor(.dock, cornerRadius: 16)
-                if AppFeature.dockClick.isPresentInControls() {
-                    dockClickCard
-                        .settingsSectionAnchor(.dockClick, cornerRadius: 16)
-                }
                 if needsAccessibility, !permissions.accessibility {
                     SettingsCard(title: l10n.s.permissionRequired) {
                         PermissionRow(kind: .accessibility)
@@ -74,6 +67,10 @@ struct DockSettings: View {
                 ), requiring: [.accessibility, .screenRecording])
                     .labelsHidden()
             }
+            WindowPreviewExclusionsList(key: DefaultsKey.windowPreviewExcludedApps)
+                .padding(.leading, settingsRowTextInset)
+                .disabled(!dockPreviewEngaged)
+                .opacity(dockPreviewEngaged ? 1 : 0.55)
             Group {
                 SettingsRow(symbol: "rectangle.3.group", title: l10n.s.switcherCurrentSpaceOnly,
                             caption: l10n.s.dockPreviewCurrentSpaceOnlyCaption) {
@@ -137,49 +134,14 @@ struct DockSettings: View {
                 Divider()
                 WindowPreviewsCard(sizeKey: DefaultsKey.previewSize,
                                    excludedAppsKey: DefaultsKey.windowPreviewExcludedApps,
-                                   embedded: true)
+                                   embedded: true, showsExclusions: false)
             }
             .disabled(!dockPreviewInstalled)
             .opacity(dockPreviewInstalled ? 1 : 0.55)
-        }
-    }
-
-    private var dockClickCard: some View {
-        SettingsCard(title: FeatureStrings.hub(l10n.language).titleDockClick) {
-            SettingsRow(symbol: "dock.arrow.down.rectangle", title: l10n.s.dockClickMinimize,
-                        caption: l10n.s.dockClickMinimizeCaption) {
-                PermissionGatedToggle(l10n.s.dockClickMinimize, isOn: $dockClickMinimize)
-                    .labelsHidden()
-                    .onChange(of: dockClickMinimize) { _, enabled in
-                        if enabled {
-                            dockClickHide = false
-                            dockClickCycleWindows = false
-                        }
-                        FeatureRuntime.shared.sync([.dockClick])
-                    }
-            }
-            SettingsRow(symbol: "eye.slash", title: l10n.s.dockClickHide, caption: l10n.s.dockClickHideCaption) {
-                PermissionGatedToggle(l10n.s.dockClickHide, isOn: $dockClickHide)
-                    .labelsHidden()
-                    .onChange(of: dockClickHide) { _, enabled in
-                        if enabled {
-                            dockClickMinimize = false
-                            dockClickCycleWindows = false
-                        }
-                        FeatureRuntime.shared.sync([.dockClick])
-                    }
-            }
-            SettingsRow(symbol: "arrow.triangle.2.circlepath", title: l10n.s.dockClickCycleWindows,
-                        caption: l10n.s.dockClickCycleWindowsCaption) {
-                PermissionGatedToggle(l10n.s.dockClickCycleWindows, isOn: $dockClickCycleWindows)
-                    .labelsHidden()
-                    .onChange(of: dockClickCycleWindows) { _, enabled in
-                        if enabled {
-                            dockClickMinimize = false
-                            dockClickHide = false
-                        }
-                        FeatureRuntime.shared.sync([.dockClick])
-                    }
+            if AppFeature.dockClick.isPresentInControls() {
+                Divider()
+                DockClickSettings()
+                    .settingsSectionAnchor(.dockClick, cornerRadius: 16)
             }
         }
     }

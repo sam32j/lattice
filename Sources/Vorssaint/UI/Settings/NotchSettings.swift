@@ -76,7 +76,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchControlOrder) var controlOrder = ""
     @AppStorage(DefaultsKey.notchShowInCaptures) var showInCaptures = true
     @AppStorage(DefaultsKey.notchLockScreen) var lockScreen = false
-    @AppStorage(DefaultsKey.notchLockSounds) var lockSounds = false
     @AppStorage(DefaultsKey.notchSize) var size = NotchSize.spacious.rawValue
     @AppStorage(DefaultsKey.notchOutlineEnabled) var outlineEnabled = false
     @AppStorage(DefaultsKey.notchHideMenuBarGap) var hideMenuBarGap = true
@@ -90,7 +89,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchHapticFeedback) var hapticFeedback = true
     @AppStorage(DefaultsKey.notchShelf) var shelfWindow = true
     @AppStorage(DefaultsKey.notchDragReveal) var dragReveal = true
-    @AppStorage(DefaultsKey.notchQuickPanel) var quickPanel = true
     @AppStorage(DefaultsKey.notchAppPanel) var appPanel = false
     @AppStorage(DefaultsKey.notchHidesMenuBarIcon) var hidesMenuBarIcon = false
     @AppStorage(DefaultsKey.notchKeepAwakeActivity) var keepAwakeActivity = false
@@ -120,7 +118,7 @@ struct NotchSettings: View {
          String(cameraEnabled), String(accessoriesEnabled), String(outlineEnabled), String(hideMenuBarGap),
          String(customWidth), String(customHeight), String(cameraFitWidth), String(cameraFitHeight),
          String(capsuleFitWidth), String(capsuleFitHeight), String(capsuleFitDrop), String(hapticFeedback),
-         String(shelfWindow), String(dragReveal), String(quickPanel), String(appPanel),
+         String(shelfWindow), String(dragReveal), String(appPanel),
          String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(hideInFullscreen), String(coversMenus),
          display, silhouette, String(hover), hidden, order, String(volume), String(inputSource),
          String(brightness), String(keyboardLight),

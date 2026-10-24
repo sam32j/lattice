@@ -23,6 +23,23 @@ enum SettingsShortcutConsumerTests {
         let menu = MenuHint(defaults), toggle = ToggleHint(defaults)
         let catalog = Catalog(defaults), group = GroupStatus(defaults)
         let inventory = Inventory(defaults)
+        let utilityRoles: [(GlobalShortcutRole, String)] = [
+            (.clipboard, DefaultsKey.clipboardHistoryEnabled), (.shelf, DefaultsKey.shelfEnabled),
+            (.cameraPreview, AppFeature.cameraPreview.availabilityKey),
+            (.quickLauncher, AppFeature.quickLauncher.availabilityKey),
+            (.scratchpad, AppFeature.scratchpad.availabilityKey)
+        ]
+        for (utility, enableKey) in utilityRoles {
+            defaults.set(utility.defaultShortcut.storageValue, forKey: utility.storageKey)
+            defaults.set(true, forKey: utility.requiredEnableKeys.last!)
+            defaults.set(false, forKey: enableKey)
+            suite.expect(!inventory.availableRoles.contains(utility),
+                         "\(utility) is hidden on Keyboard Shortcuts while its page toggle is off, even with a configured shortcut")
+            defaults.set(true, forKey: enableKey)
+            suite.expect(inventory.availableRoles.contains(utility),
+                         "\(utility) returns to Keyboard Shortcuts when its page toggle is on")
+        }
+        defaults.set("", forKey: role.storageKey)
         defaults.set(true, forKey: DefaultsKey.clipboardHistoryEnabled)
         defaults.set(false, forKey: DefaultsKey.pastePlainEnabled)
         defaults.set("", forKey: GlobalShortcutRole.pastePlain.storageKey)

@@ -23,10 +23,6 @@ enum NotchLockScreenSupport {
         NotchSupport.isEnabled(in: defaults) && defaults.bool(forKey: DefaultsKey.notchLockScreen)
     }
 
-    static func playsSounds(in defaults: UserDefaults = .standard) -> Bool {
-        NotchSupport.isEnabled(in: defaults) && defaults.bool(forKey: DefaultsKey.notchLockSounds)
-    }
-
     /// Music follows the island's Music section, not its resting choice: an
     /// island that rests empty still has music to show when locked.
     static func showsMusic(in defaults: UserDefaults = .standard) -> Bool {
@@ -64,16 +60,6 @@ enum NotchLockScreenSupport {
             : String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 
-    /// The padlock sounds macOS plays in its own settings. A release that
-    /// moves them falls back to alert sounds rather than going quiet.
-    static func soundURL(locking: Bool, fileManager: FileManager = .default) -> URL? {
-        if let padlock = Bundle(path: "/System/Library/Frameworks/SecurityInterface.framework")?
-            .url(forResource: locking ? "lock" : "unlock", withExtension: "aif") {
-            return padlock
-        }
-        let alert = URL(fileURLWithPath: "/System/Library/Sounds/\(locking ? "Tink" : "Pop").aiff")
-        return fileManager.fileExists(atPath: alert.path) ? alert : nil
-    }
 }
 
 /// macOS draws the lock screen's date, clock and login controls in one window

@@ -22,7 +22,7 @@ struct ShortcutPreferenceRow: View {
     @AppStorage private var rawValue: String
 
     init(role: GlobalShortcutRole,
-         alignment: VerticalAlignment = .top,
+         alignment: VerticalAlignment = .center,
          label: String? = nil,
          symbolName: String? = nil,
          contextLabel: String? = nil,
@@ -97,7 +97,7 @@ struct ShortcutRowLabel: View {
     let statusIsActive: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: 7) {
+        HStack(alignment: .center, spacing: 7) {
             if let symbolName {
                 Image(systemName: symbolName)
                     .foregroundStyle(Color.accentColor)
