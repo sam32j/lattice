@@ -35,6 +35,24 @@ enum FeatureAvailabilityTransitionTests {
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain); State.bindings = [:] }
         let service = Runtime(defaults)
+        defaults.set(false, forKey: DefaultsKey.brightnessControlEnabled)
+        defaults.set(true, forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
+        var keyboardOnlySyncs = 0
+        State.bindings[.brightness] = { keyboardOnlySyncs += 1 }
+        service.syncAtLaunch()
+        suite.expect(keyboardOnlySyncs == 1 && !AppFeature.brightness.isAvailable(in: defaults),
+                     "keyboard-only registration starts without installing display controls")
+        service.sync([.brightness])
+        suite.expect(keyboardOnlySyncs == 2 && !service.loadedThisSession.contains(.brightness),
+                     "permission and recording changes resync keyboard controls without installing Displays")
+        defaults.set(false, forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
+        service.sync([.brightness])
+        suite.expect(keyboardOnlySyncs == 3,
+                     "turning the final keyboard-only preference off still reaches teardown")
+        suite.expect(GlobalShortcutRole.keyboardBrightnessDecrease.isAvailable(using: { _ in false })
+                     && GlobalShortcutRole.keyboardBrightnessIncrease.isAvailable(using: { _ in false }),
+                     "keyboard-light shortcuts remain reachable independently of display installation")
+        State.bindings.removeValue(forKey: .brightness)
         for sleep in [false, true] {
             for restore in [false, true] {
                 defaults.set(sleep, forKey: DefaultsKey.bluetoothSleepEnabled)

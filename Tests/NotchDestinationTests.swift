@@ -788,7 +788,7 @@ enum NotchDestinationContract {
         let timer = NotchTimerService.shared
         // The production branch reads the brightness feature from the app's
         // own defaults; keep it installed for these checks only.
-        let brightnessKey = AppFeature.brightness.availabilityKey
+        let brightnessKey = DefaultsKey.brightnessControlEnabled
         let previousBrightness = UserDefaults.standard.object(forKey: brightnessKey)
         UserDefaults.standard.set(true, forKey: brightnessKey)
         defer {

@@ -1549,9 +1549,9 @@ enum FeatureCatalogTests {
         suite.expect(!GlobalShortcutRole.activeRoles(isOn: { _ in false })
                 .contains(where: \.isKeyboardBrightness),
                "keyboard brightness shortcuts reserve no combination before opt-in")
-        suite.expect(!GlobalShortcutRole.activeRoles(isOn: { _ in true }, isAvailable: { $0 != .brightness })
+        suite.expect(GlobalShortcutRole.activeRoles(isOn: { _ in true }, isAvailable: { $0 != .brightness })
                 .contains(where: \.isKeyboardBrightness),
-               "removing the brightness feature releases both keyboard shortcuts")
+               "turning off display controls does not release opted-in keyboard-light shortcuts")
 
         let superSpace = GlobalShortcut(keyCode: Int64(kVK_Space), modifiers: .validMask)
         let customSuperSpace = GlobalShortcut(keyCode: Int64(kVK_Space),
