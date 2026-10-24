@@ -918,6 +918,7 @@ enum DefaultsKey {
     // Dev-build only: force the "update available" UI for local testing.
     static let simulateBetaUI = "simulateBetaUI"
 
+    static let videoDownloaderEnabled = "videoDownloaderEnabled"
     static let videoDownloaderDestination = "videoDownloaderDestination"
     static let videoDownloaderUseSystemTools = "videoDownloaderUseSystemTools"
 
