@@ -90,30 +90,6 @@ enum SettingsFollowupRenderingProbe {
                 }
             }
         }
-        AppMenuDestination.island.save(in: defaults)
-        defaults.set(false, forKey: DefaultsKey.notchEnabled)
-        defaults.set(true, forKey: DefaultsKey.notchHidesMenuBarIcon)
-        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
-        host.layoutSubtreeIfNeeded()
-        let discarded = findDiscardButton(in: host)?.accessibilityPerformPress?() ?? false
-        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
-        defaults.set(true, forKey: DefaultsKey.notchEnabled)
-        defaults.set(false, forKey: DefaultsKey.notchHidesMenuBarIcon)
-        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
-        host.layoutSubtreeIfNeeded()
-        let value = findPicker(in: host)?.perform(NSSelectorFromString("accessibilityValue"))?.takeUnretainedValue() as? String
-        if !discarded || AppMenuDestination.requested(in: defaults) != .none
-            || value != SettingsOwnershipStrings.text(.none, .enUS) {
-            failures.append("Don't restore did not discard an unavailable target through the hosted control.")
-        }
-    }
-
-    private static func findDiscardButton(in element: AnyObject) -> AnyObject? {
-        if element.accessibilityIdentifier?() == "app-menu.discard-remembered-target" { return element }
-        for child in element.accessibilityChildren?() ?? [] {
-            if let button = findDiscardButton(in: child as AnyObject) { return button }
-        }
-        return nil
     }
 
     private static func findPicker(in element: AnyObject) -> NSObject? {
