@@ -177,11 +177,17 @@ final class FeatureRuntime: ObservableObject {
         return UserDefaults.standard.persistentDomain(forName: domain) ?? [:]
     }
 
-    /// Launch path: replaces the old unconditional sync block. Only available
-    /// features get their binding run, so nothing else even instantiates.
+    /// Launch only available features, plus narrow recovery and keyboard-light
+    /// paths that must remain independent of their page's enable switch.
     func syncAtLaunch() {
         for feature in AppFeature.allCases where feature.isAvailable {
             Self.bindings[feature]?()
+        }
+        // Repay Bluetooth switched off by an earlier run, even when sleep
+        // handling has since been disabled. Recovery does not enable it.
+        if !AppFeature.bluetoothSleep.isAvailable,
+           UserDefaults.standard.bool(forKey: DefaultsKey.bluetoothSleepRestorePending) {
+            Self.bindings[.bluetoothSleep]?()
         }
         if !AppFeature.brightness.isAvailable,
            UserDefaults.standard.bool(forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)

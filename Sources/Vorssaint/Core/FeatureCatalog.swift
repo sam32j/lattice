@@ -265,7 +265,6 @@ extension AppFeature {
                 || defaults.bool(forKey: DefaultsKey.scrollInverterHorizontalEnabled)
         case .bluetoothSleep:
             return defaults.bool(forKey: DefaultsKey.bluetoothSleepEnabled)
-                || defaults.bool(forKey: DefaultsKey.bluetoothSleepRestoreOnWake)
         case .brightness:
             return defaults.bool(forKey: DefaultsKey.brightnessControlEnabled)
         case .scrollHorizontal:

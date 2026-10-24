@@ -31,6 +31,7 @@ enum FeatureAvailabilityTransitionTests {
     }
     static func run(_ suite: TestSuite) {
         CleaningModePreferencesTests.run(suite)
+        BluetoothSleepPreferencesTests.run(suite)
         let domain = "vorss.tests.pr3-availability.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain); State.bindings = [:] }
@@ -57,10 +58,29 @@ enum FeatureAvailabilityTransitionTests {
             for restore in [false, true] {
                 defaults.set(sleep, forKey: DefaultsKey.bluetoothSleepEnabled)
                 defaults.set(restore, forKey: DefaultsKey.bluetoothSleepRestoreOnWake)
-                suite.expect(AppFeature.bluetoothSleep.isAvailable(in: defaults, hardwareSupported: true) == (sleep || restore),
-                             "Bluetooth installation follows either page toggle")
+                suite.expect(AppFeature.bluetoothSleep.isAvailable(in: defaults, hardwareSupported: true) == sleep,
+                             "Bluetooth availability follows sleep handling, independently of its saved restore option")
             }
         }
+        defaults.set(false, forKey: DefaultsKey.bluetoothSleepEnabled)
+        defaults.set(true, forKey: DefaultsKey.bluetoothSleepRestoreOnWake)
+        var bluetoothSyncs = 0
+        State.bindings[.bluetoothSleep] = { bluetoothSyncs += 1 }
+        service.syncAtLaunch()
+        suite.expect(bluetoothSyncs == 0,
+                     "a saved restore option alone does not construct Bluetooth at launch")
+        defaults.set(true, forKey: DefaultsKey.bluetoothSleepRestorePending)
+        service.syncAtLaunch()
+        suite.expect(bluetoothSyncs == 1 && !AppFeature.bluetoothSleep.isAvailable(in: defaults)
+                     && !service.loadedThisSession.contains(.bluetoothSleep),
+                     "launch settles a pending restore without marking disabled Bluetooth sleep as enabled")
+        defaults.set(true, forKey: DefaultsKey.bluetoothSleepEnabled)
+        bluetoothSyncs = 0
+        service.syncAtLaunch()
+        suite.expect(bluetoothSyncs == 1,
+                     "enabled sleep handling with a pending restore synchronizes exactly once at launch")
+        defaults.set(false, forKey: DefaultsKey.bluetoothSleepRestorePending)
+        State.bindings.removeValue(forKey: .bluetoothSleep)
         for enabled in [false, true] {
             defaults.set(enabled, forKey: DefaultsKey.brightnessControlEnabled)
             suite.expect(AppFeature.brightness.isAvailable(in: defaults, hardwareSupported: true) == enabled,

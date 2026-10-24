@@ -51,6 +51,15 @@ def availability_declaration(path, prefix):
 
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    bluetooth = "Sources/Vorssaint/Services/Bluetooth/BluetoothSleepService.swift"
+    write("BluetoothSleepPreferences.swift", "import Foundation\nextension BluetoothSleepPreferencesTests {\nfinal class Service: State {\n"
+          + "".join(declaration(bluetooth, prefix) for prefix in [
+              "    func syncWithPreferences()", "    private func restoreIfOwed()"])
+              .replace("UserDefaults.standard", "defaults")
+              .replace("AppFeature.bluetoothSleep.isAvailable", "AppFeature.bluetoothSleep.isAvailable(in: defaults)")
+              .replace("Self.isSupported", "isSupported").replace("Self.isPoweredOn", "isPoweredOn")
+              .replace("Self.setPowered(", "setPowered(")
+          + "}\n}\n")
     write("MouseShortcutBackup.swift", "import Foundation\nextension MouseShortcutBackupTests {\nfinal class Backup {\n"
           + declaration("Sources/Vorssaint/Services/SettingsBackup.swift", "    static func applyAndRelaunch(")
               .replace("UserDefaults.standard", "ReviewDefaults.current!") + "}\n}\n")

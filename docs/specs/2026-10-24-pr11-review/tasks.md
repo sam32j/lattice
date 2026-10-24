@@ -10,7 +10,9 @@ Independent read-only review of the original baseline and final review-fix commi
 
 ## PR 11 threads
 
-- Bluetooth engagement: investigate against the explicit rule that either page toggle owns installation. Do not disable independent restore or change the agreed OR gate merely because restore defaults on.
+Bluetooth decision superseded by the owner's follow-up approval: sleep handling alone controls feature availability. Restore-on-wake is a saved subordinate option, greyed out while sleep handling is off. Pending restoration must still complete independently. The original OR-gate decision is replaced by this contract.
+
+- Bluetooth engagement: the sleep toggle owns availability. Keep the saved restore option subordinate and preserve already owed restoration independently, including at launch.
 - Cleaning Mode manual entry points: investigate lost application-menu/Command Bar actions when shortcut registration is off. Manual activation is intended to remain available.
 - Per-button backup exceptions: investigate nonportable executable paths in export and local-path preservation during restore.
 - Brightness confirmation: preserve the explicit removal of standalone brightness feedback and retain island notices; do not silently reintroduce a HUD.
@@ -23,7 +25,7 @@ User approved isolated backup export/restore, manual-action availability, gestur
 
 ## Findings and dispositions
 
-- Thread `PRRT_kwDOVKaLVc6v1fHi`: retain Bluetooth's OR gate. The owner explicitly requested either toggle to count as installed, including restore-on-wake independently; the registered default is not evidence to override that contract. Existing transition tests cover all four toggle combinations.
+- Thread `PRRT_kwDOVKaLVc6v1fHi`: accept the engagement concern following the owner's revised approval. The original OR gate reported the feature available by default even though the service only monitored sleep when its sleep toggle was on. Availability now follows the sleep toggle; restore-on-wake is disabled while sleep handling is off without losing its saved value. A narrow launch exception settles pending restores without marking the feature enabled.
 - Thread `PRRT_kwDOVKaLVc6v1fHq`: fixed manual Cleaning Mode availability in the application menu, Command Bar, Launcher Grid, and configured radial actions. Shortcut registration remains opt-in and clearing it does not end an active cleaning session. Existing launcher behavior tests reproduced three failures; an additional radial availability test reproduced the same stale gate.
 - Thread `PRRT_kwDOVKaLVc6v1fHt`: fixed per-button export/import filtering and local-path preservation during restore. Cohesive exception helpers moved to `SettingsBackupSupport+MouseExceptions.swift` rather than extending the oversized owner. Export RED reproduced the username/path leak. Actual generated `SettingsBackup.applyAndRelaunch` with isolated defaults reproduced an older-backup fallback bug found by independent review. Missing button entries now inherit the restored shared list before carrying local paths; explicit empty overrides retain their meaning. No real restore/relaunch performed.
 - Thread `PRRT_kwDOVKaLVc6v1fHw`: no standalone brightness HUD. The approved design explicitly removes the overlay and retains optional island notices and native key behavior. Adding a generic fallback would reintroduce removed feedback.
@@ -54,3 +56,13 @@ Focused affected suites passed 68,715 checks. The first full regression run pass
 - CI run `40063886908` passed build, selftest, packaging and downstream workflow tests, then failed before compiling unit tests: the generator wrote `MouseShortcutBackup.swift` before creating its output directory. Reproduced the same failure with a fresh temporary output directory. Moved the existing directory creation before the first write; clean generation now produces all 206 fixtures, and repeated generation is identical.
 - Final regression verification uses a temporary snapshot of the published revision plus these follow-up changes, excluding unrelated in-progress physical music-swipe tests from the shared checkout. No hardware or real preference changes are involved.
 - Follow-up verification passed: `./build.sh --test` reported **112,624 checks**, preference cleanup, uninstall-spaces and developer-install isolation all passed. Independent review of the generator and troubleshooting changes returned ready with no actionable findings. Fresh GitHub CI after publication remains separate from these local results.
+
+## Bluetooth follow-up implementation
+
+Approved behavior: sleep handling owns availability; restore-on-wake is disabled while sleep handling is off without clearing its saved value; already owed restoration remains independent. Reuse PR 11's branch. Baseline `65aa438d` includes the separately completed music-swipe work; preserve it.
+
+- Complete: availability follows sleep handling; the restore group is disabled while off without changing the saved restore value. All four toggle combinations use isolated catalog/runtime tests. The new expectation failed against the original OR condition before correction.
+- Complete: launch dispatches disabled Bluetooth only when recovery is pending, without reporting it enabled or synchronizing twice when already enabled. A standalone extraction of production `syncAtLaunch` reproduced the skipped recovery before the narrow exception and passed afterward. Production service sync/recovery tests use an inert controller and verify saved preferences, stopped monitoring, already-on Bluetooth, pending recovery with either restore option and no duplicate power writes.
+- Full isolated regression passed **112,573 checks**, preference cleanup, uninstall-spaces and developer-install isolation. The preliminary RED run also hit a capture-matching timing threshold under concurrent compilation load; the same screenshots suite passed all 1,832 checks in the final full run. Independent source review returned ready with no actionable findings.
+- Developer build and strict signature verification passed. Both isolated Bluetooth rendering runs reported `SETTINGS_RENDERING_OK`; inspected `/tmp/lattice-pr11-bluetooth-render.Zb223H/off/bluetooth.png` and `on/bluetooth.png`. The saved-on restore switch is disabled with sleep handling off and becomes editable when on. The isolated test app reported `SELFTEST OK`. No real Bluetooth power changes or installed-app preference changes were performed.
+- Publish this correction on PR 11 and reply to the original Bluetooth thread to supersede its earlier decline. No merge or other stack-branch update.
