@@ -42,5 +42,7 @@ Read the full privacy and permissions details before enabling features:
 
 - Privacy: https://github.com/sam32j/lattice/blob/lattice/main/docs/PRIVACY.md
 - Permissions: https://github.com/sam32j/lattice/blob/lattice/main/docs/PERMISSIONS.md
-- Other troubleshooting: https://github.com/sam32j/lattice/blob/lattice/main/docs/TROUBLESHOOTING.md
+- Other troubleshooting (includes upstream Vorssaint instructions): https://github.com/sam32j/lattice/blob/lattice/main/docs/TROUBLESHOOTING.md
 - Report a problem: https://github.com/sam32j/lattice/issues
+
+The upstream permission-reset commands target Vorssaint's `com.vorssaint.utils` bundle identifier. For Lattice, substitute `io.github.sam32j.lattice`, or `io.github.sam32j.lattice.dev` for a Developer build. For permission prompts, look for Lattice in System Settings.

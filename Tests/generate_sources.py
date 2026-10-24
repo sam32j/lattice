@@ -50,10 +50,10 @@ def availability_declaration(path, prefix):
 
 
 def main():
+    OUTPUT.mkdir(parents=True, exist_ok=True)
     write("MouseShortcutBackup.swift", "import Foundation\nextension MouseShortcutBackupTests {\nfinal class Backup {\n"
           + declaration("Sources/Vorssaint/Services/SettingsBackup.swift", "    static func applyAndRelaunch(")
               .replace("UserDefaults.standard", "ReviewDefaults.current!") + "}\n}\n")
-    OUTPUT.mkdir(parents=True, exist_ok=True)
     write("CleaningModePreferences.swift", "import Foundation\nextension CleaningModePreferencesTests {\nfinal class Service: State {\n"
           + declaration("Sources/Vorssaint/Services/CleaningMode/CleaningModeManager.swift", "    func syncWithPreferences()")
               .replace("AppFeature.cleaningMode.isAvailable", "AppFeature.cleaningMode.isAvailable(in: defaults)")
