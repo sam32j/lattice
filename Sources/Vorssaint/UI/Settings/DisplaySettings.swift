@@ -99,6 +99,7 @@ struct DisplaySettings: View {
                             }
                     }
                 }
+                .disabled(!bluetoothSleepEnabled)
             } else {
                 SettingsRow(symbol: "dot.radiowaves.left.and.right", title: strings.pageTitle,
                             caption: strings.unsupported) {

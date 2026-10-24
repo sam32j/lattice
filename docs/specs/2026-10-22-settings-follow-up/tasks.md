@@ -9,7 +9,7 @@
 ## Approved design
 - Apply all 26 requested refinements, correcting obvious English typos.
 - Duplicate-key protection: toggle, indented repeat-delay control and compact per-key override Add/Remove list. Disabled options remain visible.
-- Bluetooth installation follows either setting, but wake restoration still only repays Bluetooth changes made by Lattice. Display installation follows Control displays. Both pages remain reachable without installation.
+- Bluetooth availability follows Turn Bluetooth off on sleep. Restore on wake is a saved subordinate option, disabled while sleep handling is off; pending restoration still repays Bluetooth changes made by Lattice independently. This supersedes the original either-toggle rule following the owner's October 24 review. Display installation follows Control displays. Both pages remain reachable without installation.
 - Extra-button exclusions live in each configured shortcut editor. Space-drag gestures have no exclusions. Preserve existing exclusions through migration rather than silently dropping them.
 - Investigate event-tap recovery and tooltip hit testing before selecting fixes.
 - Import the latest Desktop/Lattice.icon once, update active app and README branding references, verify, commit by topic and push the existing branch. No merge to main or force-push is authorized by default.

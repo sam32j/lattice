@@ -22,6 +22,8 @@ enum SettingsRefactorProbe {
         defaults.set(false, forKey: DefaultsKey.windowLayoutShortcutsEnabled)
         defaults.set(false, forKey: DefaultsKey.volumeMixerEnabled)
         defaults.set(true, forKey: AppFeature.bluetoothSleep.availabilityKey)
+        defaults.set(CommandLine.arguments.contains("--bluetooth-sleep-enabled"),
+                     forKey: DefaultsKey.bluetoothSleepEnabled)
         let pages: [(String, AnyView)] = [
             ("mouse", AnyView(MouseSettings())),
             ("keyboard", AnyView(KeyboardSettings())),
@@ -42,11 +44,12 @@ enum SettingsRefactorProbe {
         ]
         var failures = [String]()
         for (name, view) in pages {
+            if CommandLine.arguments.contains("--bluetooth-only"), name != "bluetooth" { continue }
             if name == "displays-disabled" { SettingsRouter.shared.request(AppFeature.brightness.settingsDestination) }
             if name == "bluetooth" { SettingsRouter.shared.request(AppFeature.bluetoothSleep.settingsDestination) }
             render(name, view: view, size: CGSize(width: 760, height: name == "data-permissions" ? 1400 : 838), output: output, failures: &failures)
         }
-        for count in [0, 30] {
+        for count in CommandLine.arguments.contains("--bluetooth-only") ? [] : [0, 30] {
             let sheet = AppListSheet(caption: SettingsAppListDescriptions.text(.enUS).dockPreview, centersContent: count == 0, onDone: {}) {
                 if count == 0 {
                     ContentUnavailableView(SettingsAppListStrings.text(.enUS).disabledApps, systemImage: "app.dashed")
@@ -63,7 +66,9 @@ enum SettingsRefactorProbe {
             if measured != CGSize(width: 520, height: 460) { failures.append("sheet size changes for \(count) apps: \(measured)") }
             render("app-list-\(count)", view: AnyView(sheet), size: CGSize(width: 520, height: 460), output: output, failures: &failures)
         }
-        InputSettingsRenderingProbe.run(output: output, failures: &failures)
+        if !CommandLine.arguments.contains("--bluetooth-only") {
+            InputSettingsRenderingProbe.run(output: output, failures: &failures)
+        }
         defaults.removePersistentDomain(forName: identity)
         for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
         if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
