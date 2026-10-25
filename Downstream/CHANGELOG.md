@@ -2,6 +2,83 @@
 
 ## [3.4.1-d.2] - 2026-10-17
 
+## [3.4.2-d.2] - 2026-10-25
+
+### Added
+- **Sound**: Standalone padlock sounds, dock action tiles, and final settings polish
+- **Permissions**: Verified permission activation and page-owned installation
+- **Notch**: Animate compact and expanded music swipe progress
+- **Notch**: Require physical travel for music track swipes
+- **Branding**: Adopt latest Lattice icon across app and README
+- **Monitor**: Install individual sensors from Activity Monitor modules
+- **Displays**: Expose page-owned controls and inline brightness sliders
+- **Mouse**: Support independent exclusions for each button shortcut
+- **Mouse**: Edit scoped app exclusions in app-list sheets
+- **Keyboard**: Offer on-demand Cleaning Mode activation
+- **Cleaning**: Register persistent mode only with a valid shortcut
+- **Features**: Derive display and Bluetooth installation from page toggles
+- **Settings**: Add native tick-free value sliders
+- **Permissions**: Add Danger Zone section and improve permissions details UX
+- **Dock**: Make dock tile click actions mutually exclusive and refine labels
+- **Settings**: Settings refactor III baseline implementation
+
+### Changed
+- **Settings**: Unify destinations, routing, and capture entrypoints
+- **Settings**: Remove redundant capture and switcher introductions
+- **Island**: Label widgets and show enabled status
+- **Monitor**: Extract menu bar appearance and usage controls
+- **Brightness**: Remove standalone adjustment overlay and dependencies
+- **Audio**: Align output and microphone level sliders
+- **Keyboard**: Compose focused settings cards
+- **Keyboard**: Align backlight controls with native sliders
+- **Keyboard**: Indent enabled quit and close protection options
+- **Keyboard**: Simplify duplicate-key protection and delay controls
+- **Keyboard**: Group Super Key setup and app exclusions
+- **Mouse**: Streamline button configuration and Space capability feedback
+- **Mouse**: Organize scrolling clicks and buttons into cards
+- **Mouse**: Simplify click and trackpad gesture controls
+- **Mouse**: Group scrolling controls and keep disabled options visible
+- **Settings**: Simplify localized control and Dock copy
+- **Input**: Clarify mouse buttons and Super Key labels
+- **Settings**: Add localized task-oriented section labels
+- **Window Layout**: Refine snapping dial, margin edge slider, and shortcuts layout
+- **Notch**: Consolidate dynamic island settings and handle disabled state
+- **General**: Update menu bar icon picker and simplify general settings
+
+### Fixed
+- **Sound**: Respect macOS interface sound preference
+- **Capture**: Raise save dialogs above their preview owner
+- **Capture**: Preserve preview exclusion during new selections
+- **Cleaner**: Omit protected trees from leftover and log scans
+- **Permissions**: Preserve Simple Switcher on recording access loss
+- **Permissions**: Permission prompt safeguards and capture toolbar layering
+- **Notch**: Correct music swipe threshold to three-quarter inch
+- **Notch**: Adjust music swipe haptic and arming distances
+- **Notch**: Announce the displayed track notice artist
+- **Notch**: Retain music hover during track notices
+- **Notch**: Preserve accepted swipe feedback through final lift
+- **Notch**: Recover music swipes and unify track-change feedback
+- **Notch**: Skip tracks on finger lift and keep track notices swipeable
+- **Bluetooth**: Make wake restore depend on sleep handling
+- **Review**: Support clean test generation and clarify Lattice permissions
+- **Keyboard**: Keep lighting independent of display controls
+- **Settings**: Localize concise trackpad conflict guidance
+- **Audio**: Fit input controls in compact menu panels
+- **Cleaning**: Keep manual actions available without a shortcut
+- **Backup**: Preserve portable per-button mouse exceptions
+- **Permissions**: Align native Danger Zone action buttons
+- **Captures**: Separate preview routing from capture controls
+- **Island**: Respect natural scrolling for track gestures
+- **Settings**: Remove energy-page landing highlight
+- **Settings**: Keep page-owned controls discoverable in navigation
+- **Audio**: Align microphone mute and shortcut controls
+- **Mouse**: Retry button capture and exempt Space drags from exclusions
+- **Preferences**: Preserve cleaning migration and shortcut app exclusions
+- **Settings**: Provide native status tooltips and accessible dots
+- **Settings**: Address review feedback on baseline, controls, and localization
+- **Settings**: Preserve upstream behavior after refactor rebase
+- **Shortcuts**: Disable capture section auto-expansion and fix row title fallback
+
 ## [3.4.2-d.1] - 2026-10-22
 
 ### Added
