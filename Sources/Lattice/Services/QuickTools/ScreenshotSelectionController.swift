@@ -241,6 +241,7 @@ final class ScreenshotSelectionController {
 
     func begin(completion: @escaping (Outcome) -> Void) {
         captureFocus = ScreenshotCaptureFocusSession()
+        if AppFeature.screenOCR.isAvailable { VisionTextRecognition.prepare() }
         Self.isSessionOnScreen = true
         Self.activeSession = self
         self.completion = completion
@@ -1125,10 +1126,12 @@ final class ScreenshotSelectionController {
         // inert before they leave the screen: whatever arrives after this
         // point finds nothing left to act on.
         markCapturePending()
-        retirePanels()
-        captureFocus?.release { [self] in
+        let complete = { [self] in
+            retirePanels()
             completeFinish(outcome)
         }
+        if let captureFocus { captureFocus.release(completion: complete) }
+        else { complete() }
     }
 
     private func completeFinish(_ outcome: Outcome) {
