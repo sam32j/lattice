@@ -3720,6 +3720,7 @@ final class NotchService: ObservableObject {
                                                           control: interaction.control, scroll: interaction.scroll)
         let horizontal = !interaction.control && !interaction.scroll && !inHeader && musicSurface
         let x = Double(event.scrollingDeltaX) * (event.hasPreciseScrollingDeltas ? 1 : 24)
+        if musicSwipe.handleMouseScroll(event, enabled: musicSwipeEnabled(event), expanded: expanded) { return true }
         let musicConsumed = musicSwipe.scroll(Double(event.scrollingDeltaX), precise: event.hasPreciseScrollingDeltas,
             momentum: !event.momentumPhase.isEmpty, cancelled: event.phase.contains(.cancelled),
             enabled: musicSwipeEnabled(event), expanded: expanded,
