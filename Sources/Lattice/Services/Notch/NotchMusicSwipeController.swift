@@ -11,6 +11,7 @@ final class NotchMusicSwipeController {
     }
 
     private var gesture = NotchMusicTrackSwipe()
+    private let mouseSwipe: NotchMusicMouseSwipeController
     private var identities: [any NSObjectProtocol] = []
     private var device: NSObject?
     private weak var lastNativeEvent: NSEvent?
@@ -44,6 +45,7 @@ final class NotchMusicSwipeController {
              DispatchQueue.main.asyncAfter(deadline: .now() + $0, execute: $1)
          }, commit: @escaping (Bool) -> Bool) {
         self.state = state
+        self.mouseSwipe = NotchMusicMouseSwipeController(state: state, schedule: scheduleExpiry, commit: commit)
         self.onArm = onArm
         self.onStart = onStart
         self.scheduleExpiry = scheduleExpiry
@@ -71,6 +73,7 @@ final class NotchMusicSwipeController {
     deinit { inactivityWork?.cancel() }
 
     func cancel() {
+        mouseSwipe.cancel()
         inactivityWork?.cancel(); inactivityWork = nil
         started = false
         blockedUntilLift = blockedUntilLift || !awaitingBegin
@@ -176,6 +179,11 @@ final class NotchMusicSwipeController {
         }
     }
 
+    func handleMouseScroll(_ event: NSEvent, enabled: Bool, expanded: Bool) -> Bool {
+        mouseSwipe.handle(event, enabled: enabled, expanded: expanded,
+            hasTouches: !awaitingBegin || blockedUntilLift || device != nil)
+    }
+
     func handle(_ event: NSEvent, in view: NSView, enabled: Bool, expanded: Bool) -> Bool {
         // A hosting view can forward an unhandled touch to its container.
         // Do not restart an all-began snapshot or count its travel twice.
@@ -188,6 +196,7 @@ final class NotchMusicSwipeController {
             .filter { $0.type == .indirect }
         let cancelled = !event.touches(matching: .cancelled, in: view).isEmpty
         let touches = touching.union(ended)
+        if !touches.isEmpty { mouseSwipe.cancel() }
         if cancelled {
             cancel()
             if touching.isEmpty { _ = update([], began: false, enabled: false, expanded: expanded) }
