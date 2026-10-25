@@ -20,8 +20,9 @@ cd lattice
 ./build.sh --test
 ```
 
-To install and launch the separate Developer app, use `./build.sh --dev --install`.
-It has its own preferences and permissions and does not replace the official app.
+To install the separate Developer app, use `./build.sh --dev --install`, then open
+Lattice (Developer) from Applications. It has its own preferences and permissions
+and does not replace the production Lattice app.
 A plain `./build.sh` builds the optimized variant used by CI; its health check is
 `./build/Lattice --selftest`.
 
