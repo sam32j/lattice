@@ -203,7 +203,7 @@ final class VideoDownloader: ObservableObject {
             }
         } catch {
             self.isFetching = false
-            self.error = error.localizedDescription
+            self.error = VideoDownloaderStrings.fetchFailedNotice
         }
     }
 
@@ -363,6 +363,7 @@ final class VideoDownloader: ObservableObject {
                 DispatchQueue.main.async {
                     self?.terminatingJobs.removeAll { $0 === process }
                     guard self?.generation == id else { return }
+                    let wasFetching = self?.isFetching == true
                     self?.busy = false
                     self?.isFetching = false
                     self?.isDownloading = false
@@ -371,7 +372,13 @@ final class VideoDownloader: ObservableObject {
                     self?.progress = nil
                     self?.downloadProgress = nil
                     self?.phase = ""
-                    self?.error = error is CancellationError ? "Cancelled." : error.localizedDescription
+                    if error is CancellationError {
+                        self?.error = "Cancelled."
+                    } else if wasFetching {
+                        self?.error = VideoDownloaderStrings.fetchFailedNotice
+                    } else {
+                        self?.error = error.localizedDescription
+                    }
                     if let self { self.dependencies = self.discover() }
                 }
             }

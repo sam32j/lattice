@@ -256,19 +256,26 @@ struct VideoDownloaderSettings: View {
                             // Fetching Video Details Skeleton Screen
                             if model.isFetching {
                                 skeletonMediaCard(isCompact: isCompact)
-                            } else if let error = model.error {
-                                HStack(spacing: 10) {
-                                    Image(systemName: "exclamationmark.circle.fill")
-                                        .foregroundStyle(.red)
-                                    Text(error)
-                                        .font(.callout)
-                                        .foregroundStyle(.red)
-                                        .fixedSize(horizontal: false, vertical: true)
+                            } else if let error = model.error, error != "Cancelled." {
+                                VStack(spacing: 8) {
+                                    Image(systemName: "exclamationmark.circle")
+                                        .font(.system(size: 26, weight: .regular))
+                                        .foregroundStyle(.secondary)
+
+                                    Text(error == VideoDownloaderStrings.fetchFailedNotice || error.contains("Command failed") || error.contains("ERROR:") ? VideoDownloaderStrings.fetchFailedNotice : error)
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.center)
                                 }
-                                .padding(14)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.red.opacity(0.08))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 28)
+                                .padding(.horizontal, 20)
+                                .background(Color(nsColor: .controlBackgroundColor))
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(Color.secondary.opacity(0.10), lineWidth: 1)
+                                )
                             }
 
                             // Media Preview Card
