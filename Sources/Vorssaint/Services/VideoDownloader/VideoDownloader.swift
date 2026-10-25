@@ -17,6 +17,8 @@ final class VideoDownloader: ObservableObject {
     @Published private(set) var info: VideoDownloadInfo?
     @Published private(set) var destination: URL?
     @Published private(set) var busy = false
+    @Published private(set) var isFetching = false
+    @Published private(set) var isDownloading = false
     @Published private(set) var isPaused = false
     @Published private(set) var phase = ""
     @Published private(set) var progress: Double?
@@ -81,6 +83,8 @@ final class VideoDownloader: ObservableObject {
             output = nil
             error = nil
             thumbnailImage = nil
+            isFetching = false
+            isDownloading = false
         }
     }
 
@@ -93,7 +97,6 @@ final class VideoDownloader: ObservableObject {
               !text.isEmpty else { return }
         link = text
         linkChanged()
-        fetchInfo()
     }
 
     func chooseDestination() {
@@ -140,6 +143,8 @@ final class VideoDownloader: ObservableObject {
         }
         job = nil
         busy = false
+        isFetching = false
+        isDownloading = false
         isPaused = false
         progress = nil
         downloadProgress = nil
@@ -173,7 +178,11 @@ final class VideoDownloader: ObservableObject {
             info = nil
             inspectedURL = nil
             thumbnailImage = nil
-            perform("Fetching video details…") { [weak self] process, id in
+            output = nil
+            error = nil
+            isFetching = true
+            isDownloading = false
+            perform(VideoDownloaderStrings.fetchingDetails) { [weak self] process, id in
                 let result = try process.run(
                     executable: ytdlp,
                     arguments: tools.runtimeArguments + VideoDownloadRequest.metadataArguments(url: url),
@@ -183,6 +192,7 @@ final class VideoDownloader: ObservableObject {
                 let details = try VideoDownloadInfo.decode(result.stdout)
                 return { [weak self] in
                     guard let self else { return }
+                    self.isFetching = false
                     self.info = details
                     self.inspectedURL = url
                     self.selectedQuality = details.qualities.first ?? .best
@@ -192,6 +202,7 @@ final class VideoDownloader: ObservableObject {
                 }
             }
         } catch {
+            self.isFetching = false
             self.error = error.localizedDescription
         }
     }
@@ -230,6 +241,11 @@ final class VideoDownloader: ObservableObject {
         let tools = dependencies
         let videoTitle = info?.title ?? "video"
         let qualityTag = quality.title
+
+        isDownloading = true
+        isFetching = false
+        output = nil
+        error = nil
 
         perform(VideoDownloaderStrings.downloading) { [weak self] process, id in
             let manager = FileManager.default
@@ -301,6 +317,7 @@ final class VideoDownloader: ObservableObject {
             guard let saved else { throw CancellationError() }
 
             return { [weak self] in
+                self?.isDownloading = false
                 self?.output = saved
                 self?.phase = VideoDownloaderStrings.downloadComplete
                 self?.progress = nil
@@ -308,6 +325,10 @@ final class VideoDownloader: ObservableObject {
                 self?.historyStore.record(fileURL: saved, title: videoTitle, qualityTag: qualityTag)
             }
         }
+    }
+
+    func resetDownloadState() {
+        output = nil
     }
 
     private func perform(_ title: String,
@@ -332,6 +353,8 @@ final class VideoDownloader: ObservableObject {
                     self?.terminatingJobs.removeAll { $0 === process }
                     guard self?.generation == id else { return }
                     self?.busy = false
+                    self?.isFetching = false
+                    self?.isDownloading = false
                     self?.isPaused = false
                     self?.job = nil
                     finish()
@@ -341,6 +364,8 @@ final class VideoDownloader: ObservableObject {
                     self?.terminatingJobs.removeAll { $0 === process }
                     guard self?.generation == id else { return }
                     self?.busy = false
+                    self?.isFetching = false
+                    self?.isDownloading = false
                     self?.isPaused = false
                     self?.job = nil
                     self?.progress = nil
