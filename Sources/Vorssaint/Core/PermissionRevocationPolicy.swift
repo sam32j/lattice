@@ -32,6 +32,8 @@ enum PermissionRevocationPolicy {
         }
         for (permission, features) in essential where verified[permission] == false {
             for feature in features {
+                if permission == .screenRecording, feature == .switcher,
+                   defaults.bool(forKey: DefaultsKey.switcherSimpleMode) { continue }
                 let keys: [String]
                 switch feature {
                 case .textSnippets: keys = [DefaultsKey.textSnippetsEnabled]
