@@ -17,10 +17,21 @@ struct VideoDownloadDependencies: Equatable {
     var brew: String? { tools["brew"] }
     var hasDeno: Bool { tools["deno"] != nil }
 
-    static var managedDirectory: URL {
+    static var appSupportDirectory: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
-        return appSupport.appendingPathComponent("Lattice/VideoDownloader/bin", isDirectory: true)
+        let bundleID = Bundle.main.bundleIdentifier ?? {
+            #if VORSSAINT_DEVELOPMENT
+            return "io.github.sam32j.lattice.dev"
+            #else
+            return "io.github.sam32j.lattice"
+            #endif
+        }()
+        return appSupport.appendingPathComponent(bundleID, isDirectory: true)
+    }
+
+    static var managedDirectory: URL {
+        appSupportDirectory.appendingPathComponent("VideoDownloader/bin", isDirectory: true)
     }
 
     init(tools: [String: String], environment: [String: String], isManaged: Bool = false) {

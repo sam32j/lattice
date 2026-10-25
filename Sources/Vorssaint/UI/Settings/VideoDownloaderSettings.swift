@@ -11,6 +11,7 @@ struct VideoDownloaderSettings: View {
     @ObservedObject private var history: DownloadHistoryStore = .shared
 
     @AppStorage(DefaultsKey.videoDownloaderEnabled) private var enabled = true
+    @State private var showDownloadConfirmation = false
     @State private var detectedClipboardURL: String? = nil
     @State private var pasteboardChangeCount = -1
     @State private var skeletonPulsing = false
@@ -40,13 +41,16 @@ struct VideoDownloaderSettings: View {
                         Toggle("", isOn: $enabled)
                             .labelsHidden()
                             .toggleStyle(.switch)
-                            .onChange(of: enabled) { _, isNowEnabled in
+                            .onChange(of: enabled) { oldValue, isNowEnabled in
                                 if !isNowEnabled {
                                     model.teardown()
                                     toolchain.removeTools()
-                                } else {
+                                } else if !oldValue && isNowEnabled {
                                     model.refreshDependencies()
                                     toolchain.checkHealth()
+                                    if !toolchain.dependencies.ready {
+                                        showDownloadConfirmation = true
+                                    }
                                 }
                             }
                     }
@@ -83,37 +87,36 @@ struct VideoDownloaderSettings: View {
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                                     .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
                             )
-                        } else if !toolchain.dependencies.ready || toolchain.state == .needsApproval {
-                            // Needs User Approval State: [Keep Off, Install]
-                            VStack(alignment: .leading, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(VideoDownloaderStrings.installComponentsTitle)
-                                        .font(.headline)
-                                    Text(VideoDownloaderStrings.installComponentsSubtitle)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                                HStack {
-                                    Spacer()
-                                    Button(VideoDownloaderStrings.keepOff) {
-                                        enabled = false
+                        } else if !toolchain.dependencies.ready {
+                            if !showDownloadConfirmation {
+                                // Containerized section: "Some tools are missing"
+                                VStack(alignment: .leading, spacing: 10) {
+                                    HStack(alignment: .center) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(VideoDownloaderStrings.missingToolsTitle)
+                                                .font(.headline)
+                                            Text(VideoDownloaderStrings.missingToolsBody)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                        Spacer()
+                                        Button(VideoDownloaderStrings.repairAction) {
+                                            toolchain.install()
+                                        }
+                                        .buttonStyle(.bordered)
+                                        .tint(.orange)
+                                        .foregroundStyle(.orange)
                                     }
-                                    .buttonStyle(.bordered)
-
-                                    Button(VideoDownloaderStrings.install) {
-                                        toolchain.install()
-                                    }
-                                    .buttonStyle(.borderedProminent)
                                 }
+                                .padding(14)
+                                .background(Color(nsColor: .controlBackgroundColor))
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
+                                )
                             }
-                            .padding(16)
-                            .background(Color(nsColor: .controlBackgroundColor))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
-                            )
                         } else if case .failed(let error) = toolchain.state {
                             // Failed State
                             VStack(alignment: .leading, spacing: 12) {
@@ -257,6 +260,21 @@ struct VideoDownloaderSettings: View {
                 .padding(.horizontal, isCompact ? 14 : 20)
                 .padding(.vertical, 16)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+        }
+        .alert(VideoDownloaderStrings.downloadRequiredTitle, isPresented: $showDownloadConfirmation) {
+            Button(VideoDownloaderStrings.cancel, role: .cancel) {
+                enabled = false
+            }
+            Button(VideoDownloaderStrings.continueAction) {
+                toolchain.install()
+            }
+        } message: {
+            Text(VideoDownloaderStrings.downloadRequiredBody)
+        }
+        .onChange(of: showDownloadConfirmation) { wasShowing, isNowShowing in
+            if wasShowing && !isNowShowing && !toolchain.dependencies.ready && !toolchain.isInstalling {
+                enabled = false
             }
         }
         .onAppear {
