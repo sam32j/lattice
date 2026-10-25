@@ -49,8 +49,8 @@ enum ScreenshotCapturePolicy {
     static func isPickableWindowLayer(_ layer: Int, ownerName: String) -> Bool {
         // Exposé's WindowManager surfaces include a full-screen background.
         // They are compositor chrome, not floating app windows to capture.
-        layer == 0 || (layer > 0 && layer <= 25
-            && !["Window Server", "Dock", "WindowManager"].contains(ownerName))
+        layer == 0 || (layer > 0 && layer <= Int(CGWindowLevelForKey(.screenSaverWindow))
+            && !["Window Server", "Dock", "WindowManager", "Control Center", "Notification Center"].contains(ownerName))
     }
 
     /// One on-screen window as the capture decision needs it.

@@ -478,6 +478,11 @@ def main():
                     for prefix in ["    private func handleKeyEvent(",
                                    "    private func routeFunctionKey("])
           + "}\n}\n")
+    write("BrightnessKeyStepReader.swift", "import Foundation\n"
+          + "struct BrightnessKeyStepReader { let defaults: UserDefaults\n"
+          + declaration("Sources/Vorssaint/Services/Display/BrightnessKeyStepPreferences.swift", "    var keyStep:")
+              .replace("UserDefaults.standard", "defaults")
+          + "}\n")
     activator = "Sources/Vorssaint/Services/Switcher/WindowActivator.swift"
     write("SwitcherActivationBodies.swift", "import AppKit\nimport ApplicationServices\n"
           + "extension SwitcherActivationTests.Activator {\n"
@@ -1064,11 +1069,9 @@ def main():
                     for name in ["appendLeftovers(", "scanCaches(", "scanLogs(",
                                  "directorySize(", "fileSize(", "sorted(",
                                  "scanScreenshots(", "isScreenCapture(", "extendedAttribute("])
-          + declaration(cleaner, "    private static func leftoverOwner(")
-          + declaration(cleaner, "    private static func containerOwner(")
           + declaration(cleaner, "    private static func mayRemove(")
           + "static func owner(_ url: URL, metadata: Bool = false) -> String? {\n"
-          + "leftoverOwner(entry: url.lastPathComponent, url: url, usesContainerMetadata: metadata)\n}\n"
+          + "CleanerOwnership.owner(at: url, usesContainerMetadata: metadata)\n}\n"
           + "static func canRemove(_ item: Item, installed: Set<String> = []) -> Bool {\n"
           + "mayRemove(item, installed: installed)\n}\n}\n")
     write("CleanerScanFlow.swift", "import Foundation\nextension CleanerScanFlowTests {\n"
@@ -1796,12 +1799,23 @@ def main():
             "AppFeature.textSnippets.isAvailable", "AppFeature.textSnippets.isAvailable(in: ReviewDefaults.current!)").replace(
             "AppFeature.quickLauncher.isAvailable", "AppFeature.quickLauncher.isAvailable(in: ReviewDefaults.current!)").replace(
             "AppFeature.clipboardHistory.isAvailable", "AppFeature.clipboardHistory.isAvailable(in: ReviewDefaults.current!)")
+    write("PermissionRevocationObserver.swift", "import Foundation\nimport Combine\nimport CoreBluetooth\nextension PermissionRevocationRuntimeTests {\nenum Observer {\n"
+          + declaration("Sources/Vorssaint/App/PermissionRevocationRuntime.swift", "    static func observe()")
+              .replace("in: .standard", "in: defaults").replace("defaults: .standard", "defaults: defaults")
+          + "}\n}\n")
     snippet_service = "Sources/Vorssaint/Services/Snippets/SnippetLibraryService.swift"
+    write("SnippetDelayedInsertion.swift", "import Foundation\nimport CoreGraphics\nextension SnippetDelayedInsertionTests {\nfinal class Service {\n"
+          + page_service_body(snippet_service, "    private func postWhenModifiersReleased(").replace("private func", "func", 1)
+          + "}\n}\n")
     clipboard_clear = "Sources/Vorssaint/Services/Clipboard/ClipboardAutoClearService.swift"
     write("PageOwnedServiceLifecycle.swift", "import Foundation\nextension PageOwnedServiceLifecycleTests {\n"
           + "final class Snippets: PresentationState {\n"
           + page_service_body(snippet_service, "    func syncWithPreferences()")
           + declaration(snippet_service, "    func hide()")
+          + page_service_body(snippet_service, "    func show()").split("        reloadSnippets()")[0]
+          + "        panel?.isVisible = true\n}\n"
+          + page_service_body(snippet_service, "    func insert(_ snippet:").split("        hide()")[0]
+          + "        inserted = true\n}\n"
           + "}\nfinal class Launcher: PresentationState {\n"
           + page_service_body(service, "    func syncWithPreferences()")
           + declaration(service, "    func suspend()") + declaration(service, "    func hide()")
@@ -1928,8 +1942,8 @@ def main():
           + declaration(selection, "    private func fullScreenControlHoverChanged(").replace("private func", "func", 1)
           + declaration(selection, "    private func resetFullScreenControlHover(").replace("private func", "func", 1)
           + "}\n"
-          + declaration(selection, "private final class PassThroughHostingView<")
-              .replace("private final class", "final class", 1))
+          + declaration("Sources/Vorssaint/UI/Screenshot/PassThroughHostingView.swift",
+                        "final class PassThroughHostingView<"))
     write("NotchCaptureKeyboard.swift", "import Foundation\nimport Carbon.HIToolbox\n\nextension NotchCaptureKeyboardContract {\n"
           + "final class NotchService {\nstatic var shared = NotchService()\n"
           + "var presentationWindow: NSPanel? = NSPanel()\nvar acceptsSystemFeedback = true\n"

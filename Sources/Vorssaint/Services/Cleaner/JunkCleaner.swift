@@ -270,6 +270,7 @@ final class JunkCleaner: ObservableObject {
               UninstallerSupport.fileIdentity(at: url) == expectedIdentity,
               !UninstallerSupport.isSymbolicLink(url),
               url.resolvingSymlinksInPath().standardizedFileURL.path == path else { return false }
+        guard CleanerScanPrivacy.mayRemoveTree(url, fm: .default) else { return false }
         if item.category == .leftovers {
             guard isDirectLeftoverRootChild(url),
                   CleanerSupport.isAttributableBundleID(item.detail),
@@ -450,15 +451,14 @@ final class JunkCleaner: ObservableObject {
         let root = URL(fileURLWithPath: dir, isDirectory: true)
         let keys: Set<URLResourceKey> = [.isSymbolicLinkKey]
         guard let entries = try? fm.contentsOfDirectory(at: root,
-                                                        includingPropertiesForKeys: Array(keys),
+                                                        includingPropertiesForKeys: nil,
                                                         options: []) else { return }
         for url in entries {
             let entry = url.lastPathComponent
-            guard !entry.hasPrefix(".") else { continue }
+            guard !entry.hasPrefix("."), CleanerScanPrivacy.mayInspect(entry) else { continue }
             let values = try? url.resourceValues(forKeys: keys)
             guard values?.isSymbolicLink != true else { continue }
-            if let owner = leftoverOwner(entry: entry, url: url,
-                                         usesContainerMetadata: usesContainerMetadata) {
+            if let owner = CleanerOwnership.owner(at: url, usesContainerMetadata: usesContainerMetadata) {
                 if CleanerSupport.isProtectedBundleID(owner)
                     || hasLivingOwner(owner, installed: installed) {
                     continue
@@ -469,28 +469,6 @@ final class JunkCleaner: ObservableObject {
                                   recommended: CleanerPolicy.precheckLeftovers))
             }
         }
-    }
-
-    private static func leftoverOwner(entry: String,
-                                      url: URL,
-                                      usesContainerMetadata: Bool) -> String? {
-        // Finder uses this suffix for display names, not application ownership.
-        guard !entry.lowercased().hasSuffix(".localized") else { return nil }
-        if usesContainerMetadata, let owner = containerOwner(at: url) {
-            return owner
-        }
-        guard !CleanerSupport.hasSharedContainerWrapper(entry) else { return nil }
-        return CleanerSupport.bundleIDCandidate(fromEntryName: entry)
-    }
-
-    /// The owning bundle identifier of a container folder, from the metadata
-    /// the container manager writes inside it.
-    private static func containerOwner(at url: URL) -> String? {
-        let metadata = url.appendingPathComponent(".com.apple.containermanagerd.metadata.plist")
-        guard let dict = NSDictionary(contentsOf: metadata),
-              let owner = dict["MCMMetadataIdentifier"] as? String,
-              !CleanerSupport.hasSharedContainerWrapper(owner) else { return nil }
-        return CleanerSupport.bundleIDCandidate(fromEntryName: owner)
     }
 
     /// Launch agents and daemons whose every referenced executable is gone
@@ -538,6 +516,7 @@ final class JunkCleaner: ObservableObject {
             guard !CleanerPolicy.isExcludedCacheEntry(entry) else { continue }
             let url = URL(fileURLWithPath: dir).appendingPathComponent(entry)
             guard !claimed.contains(url.standardizedFileURL.path) else { continue }
+            guard CleanerScanPrivacy.mayRemoveTree(url, fm: fm) else { continue }
             let size = directorySize(of: url, fm: fm)
             guard size > 0 else { continue }
             found.append(Item(url: url, category: .caches, size: size,
@@ -733,15 +712,20 @@ final class JunkCleaner: ObservableObject {
     }
 
     private static func directorySize(of url: URL, fm: FileManager) -> Int64 {
+        guard CleanerScanPrivacy.mayInspect(url.lastPathComponent) else { return 0 }
         if UninstallerSupport.isSymbolicLink(url) { return 0 }
         var isDir: ObjCBool = false
         guard fm.fileExists(atPath: url.path, isDirectory: &isDir) else { return 0 }
         if !isDir.boolValue { return fileSize(url) }
         var total: Int64 = 0
         if let enumerator = fm.enumerator(at: url,
-                                          includingPropertiesForKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey],
+                                          includingPropertiesForKeys: nil,
                                           options: [], errorHandler: nil) {
             for case let item as URL in enumerator {
+                guard CleanerScanPrivacy.mayInspect(item.lastPathComponent) else {
+                    enumerator.skipDescendants()
+                    continue
+                }
                 if UninstallerSupport.isSymbolicLink(item) {
                     enumerator.skipDescendants()
                     continue

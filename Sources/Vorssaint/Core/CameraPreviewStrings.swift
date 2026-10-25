@@ -39,7 +39,7 @@ extension FeatureStrings {
 
 extension CameraPreviewFeatureStrings {
     static let enUS = CameraPreviewFeatureStrings(
-        pageTitle: "Camera preview",
+        pageTitle: "Camera Preview",
         hubDescription: "Opens a floating mirror with your camera",
         panelCaption: "Check how you look before a call",
         cameraMenuLabel: "Camera",

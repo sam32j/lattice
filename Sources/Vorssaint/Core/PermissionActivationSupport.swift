@@ -22,7 +22,7 @@ struct PermissionActivationRequest {
 }
 
 enum SettingsPermission: Hashable {
-    case accessibility, screenRecording, camera, microphone, calendar
+    case accessibility, screenRecording, camera, microphone, calendar, bluetooth
 }
 
 enum SettingsPermissionResult { case granted, denied, needsSettings }

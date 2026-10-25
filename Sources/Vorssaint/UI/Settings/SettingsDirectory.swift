@@ -58,7 +58,7 @@ enum SettingsDirectory {
                     includePage: !toolOnlyPages.contains(pageItem.page),
                     isAvailable: isAvailable) { feature in
                         if feature == .clipboardHistory {
-                            return FeatureStrings.commandBar(language).sourceClipboard
+                            return FeatureStrings.clipboard(language).title
                         }
                         return feature.hubTitle(s, hub: hub)
                     }
@@ -125,7 +125,8 @@ enum SettingsDirectory {
             destination: FeatureSettingsDestination(
                 .general, sectionAnchor: .panelConfiguration),
             title: s.menuBarSection, icon: "menubar.rectangle",
-            keywords: [FeatureStrings.generalSettings(language).menuBarIconTitle, "SF Symbols"]))
+            keywords: [SettingsFollowupStrings.text(.showMenuIcon, language),
+                       FeatureStrings.generalSettings(language).menuBarIconTitle, "SF Symbols"]))
         if BrightnessService.keyboardLightIsSupported {
             items.append(SettingsSearchSupport.keyboardBrightnessShortcutItem(language: language))
         }

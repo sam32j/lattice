@@ -573,9 +573,12 @@ enum DirectCaptureRequirementsComprehensiveTests {
     // MARK: - 10. Selection Controller HUD & Multi-Window Capture
 
     private static func testSelectionControllerHUDAndMultiWindowCapture(_ suite: TestSuite) {
-        let selectionSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift",
-            encoding: .utf8)) ?? ""
+        let selectionSource = (["Services/QuickTools/ScreenshotSelectionController.swift"] + [
+            "PassThroughHostingView", "ScreenshotCaptureGuideView", "UnifiedCaptureGuideContent",
+            "CaptureKeyHint", "FullScreenCaptureButton", "RecorderSelectionAudioControls"
+        ].map { "UI/Screenshot/\($0).swift" }).map {
+            (try? String(contentsOfFile: "Sources/Vorssaint/\($0)", encoding: .utf8)) ?? ""
+        }.joined(separator: "\n")
         suite.expect(!selectionSource.isEmpty, "ScreenshotSelectionController.swift is readable")
 
         // 1. Persistent crosshair cursor

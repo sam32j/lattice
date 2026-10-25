@@ -79,6 +79,7 @@ struct TextSnippetsSettings: View {
                     ShortcutPreferenceRow(role: .snippetLibrary) {
                         SnippetLibraryService.shared.syncWithPreferences()
                     }
+                    .disabled(!enabled)
                     if library.shortcutRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
                             .font(.caption)

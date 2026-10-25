@@ -1677,7 +1677,8 @@ struct QuickControlsSection: View {
                                appDelegate()?.openSettingsWindow()
                            })
                 .onChange(of: textSnippetsEnabled) { _, enabled in
-                    TextSnippetService.shared.syncWithPreferences()
+                    FeatureRuntime.shared.sync([.textSnippets])
+                    FeatureRuntime.shared.finishAvailabilityChange()
                     requestAccessibilityIfNeeded(enabled)
                 }
         case .notch:

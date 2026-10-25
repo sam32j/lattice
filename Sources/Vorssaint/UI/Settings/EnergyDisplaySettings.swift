@@ -13,6 +13,7 @@ struct EnergyDisplaySettings: View {
     @AppStorage(DefaultsKey.brightnessKeysEnabled) private var brightnessKeysEnabled = false
     @AppStorage(DefaultsKey.brightnessKeyStep)
     private var brightnessKeyStep = BrightnessSupport.KeyStep.standard.rawValue
+    @AppStorage(DefaultsKey.brightnessKeyStepPaused) private var brightnessKeyStepPaused = false
 
     // MARK: - Displays
 
@@ -80,7 +81,7 @@ struct EnergyDisplaySettings: View {
                     }
                     DisplayBrightnessShortcutControls(showsSettingsRow: true)
                     if brightnessKeysEnabled
-                        || BrightnessSupport.KeyStep.sanitized(brightnessKeyStep) != .standard,
+                        || brightnessKeyStepBinding.wrappedValue != .standard,
                        !permissions.accessibility {
                         PermissionRow(kind: .accessibility)
                     }
@@ -96,9 +97,11 @@ struct EnergyDisplaySettings: View {
     /// same permission as the other key options.
     private var brightnessKeyStepBinding: Binding<BrightnessSupport.KeyStep> {
         Binding {
-            BrightnessSupport.KeyStep.sanitized(brightnessKeyStep)
+            // Show the effective mode, retaining the saved tuning separately.
+            brightnessKeyStepPaused ? .standard : BrightnessSupport.KeyStep.sanitized(brightnessKeyStep)
         } set: { step in
             brightnessKeyStep = step.rawValue
+            brightnessKeyStepPaused = false
             BrightnessService.shared.syncWithPreferences()
         }
     }

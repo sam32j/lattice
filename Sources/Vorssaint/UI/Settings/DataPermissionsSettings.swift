@@ -6,12 +6,10 @@ import SwiftUI
 /// Permission status, permission reset, portable settings, and self-uninstall.
 struct DataPermissionsSettings: View {
     @ObservedObject private var l10n = L10n.shared
-    @State private var showClearConfirm = false
     @State private var showUninstallConfirm = false
     @State private var uninstallFailed = false
     @State private var uninstallFailedBody = ""
     @State private var working = false
-    @State private var cleared: Bool?
     @State private var exported: Bool?
     @State private var importFailed = false
     @State private var pendingImport: [String: Any]?
@@ -21,24 +19,6 @@ struct DataPermissionsSettings: View {
         FeatureStrings.backup(l10n.language)
     }
 
-    private var clearActionTitle: String {
-        switch l10n.language {
-        case .enUS: return "Clear"
-        case .ptBR: return "Limpar"
-        case .es: return "Borrar"
-        case .de: return "Zurücksetzen"
-        case .fr: return "Effacer"
-        case .it: return "Cancella"
-        case .ja: return "消去"
-        case .ko: return "지우기"
-        case .zhHans: return "清除"
-        case .zhTW, .zhHK: return "清除"
-        case .ru: return "Сбросить"
-        case .uk: return "Скинути"
-        case .tr: return "Temizle"
-        case .sk: return "Vymazať"
-        }
-    }
 
     private var uninstallActionTitle: String {
         switch l10n.language {
@@ -132,40 +112,7 @@ struct DataPermissionsSettings: View {
 
             Section(DataPermissionsStrings.localized(l10n.language).dangerZone) {
                 VStack(alignment: .leading, spacing: 12) {
-                    // Row 1: Clear all permissions
-                    HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(l10n.s.advancedClearButton)
-                                .font(.body)
-                            Text(l10n.s.advancedResetDescription)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            if let cleared {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Label(cleared ? l10n.s.advancedCleared : l10n.s.advancedClearFailed,
-                                          systemImage: cleared ? "arrow.clockwise.circle" : "exclamationmark.triangle")
-                                        .font(.caption)
-                                        .foregroundStyle(cleared ? Color.secondary : Color.orange)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                    Button(FeatureStrings.hub(l10n.language).restartButton) {
-                                        FeatureRuntime.shared.relaunchApp()
-                                    }
-                                }
-                                .padding(.top, 4)
-                            }
-                        }
-                        Spacer(minLength: 12)
-                        Button(role: .destructive) {
-                            showClearConfirm = true
-                        } label: {
-                            Text(clearActionTitle).frame(minWidth: 100)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .foregroundStyle(.red)
-                        .disabled(working)
-                    }
+                    PermissionResetSettingsRow(onWorkingChange: { working = $0 }).disabled(working)
 
                     Divider()
 
@@ -195,19 +142,6 @@ struct DataPermissionsSettings: View {
             }
         }
         .formStyle(.grouped)
-        .alert(l10n.s.advancedClearConfirmTitle, isPresented: $showClearConfirm) {
-            Button(l10n.s.uninstallerCancel, role: .cancel) {}
-            Button(l10n.s.advancedClearButton, role: .destructive) {
-                working = true
-                cleared = nil
-                SelfUninstall.clearPermissions { succeeded in
-                    working = false
-                    cleared = succeeded
-                }
-            }
-        } message: {
-            Text(l10n.s.advancedClearConfirmBody)
-        }
         .alert(l10n.s.advancedUninstallConfirmTitle, isPresented: $showUninstallConfirm) {
             Button(l10n.s.uninstallerCancel, role: .cancel) {}
             Button(l10n.s.advancedUninstallButton, role: .destructive) {
