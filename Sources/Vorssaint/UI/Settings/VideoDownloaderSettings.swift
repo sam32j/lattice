@@ -15,6 +15,7 @@ struct VideoDownloaderSettings: View {
     @State private var detectedClipboardURL: String? = nil
     @State private var pasteboardChangeCount = -1
     @State private var skeletonPulsing = false
+    @State private var isSearchHovered = false
     private let clipboardTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
     init(model: VideoDownloader = .shared) {
@@ -211,19 +212,44 @@ struct VideoDownloaderSettings: View {
                                     }
                                 }
 
+                                let canSearch = !model.busy && !model.link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                 Button {
                                     model.fetchInfo()
                                 } label: {
-                                    HStack(spacing: 5) {
+                                    HStack(spacing: 6) {
                                         Image(systemName: "magnifyingglass")
+                                            .font(.system(size: 12.5, weight: .semibold))
                                         Text(VideoDownloaderStrings.search)
+                                            .font(.system(size: 13, weight: .semibold))
                                     }
+                                    .padding(.horizontal, 16)
+                                    .frame(height: 44)
+                                    .foregroundStyle(
+                                        canSearch
+                                            ? Color(nsColor: .controlAccentColor)
+                                            : Color.secondary.opacity(0.4)
+                                    )
+                                    .background(
+                                        canSearch
+                                            ? Color(nsColor: .controlAccentColor).opacity(isSearchHovered ? 0.20 : 0.12)
+                                            : Color(nsColor: .controlBackgroundColor)
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .stroke(
+                                                canSearch
+                                                    ? Color(nsColor: .controlAccentColor).opacity(isSearchHovered ? 0.50 : 0.30)
+                                                    : Color.secondary.opacity(0.18),
+                                                lineWidth: 1
+                                            )
+                                    )
                                 }
-                                .buttonStyle(.bordered)
-                                .controlSize(.regular)
-                                .frame(height: 44)
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                .disabled(model.busy || model.link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                .buttonStyle(.plain)
+                                .disabled(!canSearch)
+                                .onHover { hovering in
+                                    isSearchHovered = hovering
+                                }
                             }
                             .disabled(model.busy)
 
