@@ -163,61 +163,19 @@ extension WindowLayoutSettings {
 private struct WindowLayoutMarginSlider: View {
     let title: String
     @Binding var marginPercent: Double
-    @State private var isSliding = false
 
     private var marginPixelValue: Int {
         let screenWidth = NSScreen.main?.visibleFrame.width ?? 1440
         return Int(round(screenWidth * (WindowLayoutMargin.sanitizedPercent(marginPercent) / 100.0)))
     }
 
-    private let sliderWidth: CGFloat = 140
-
     var body: some View {
         HStack {
             Label(title, systemImage: "rectangle.inset.filled")
             Spacer()
-            ZStack(alignment: .topLeading) {
-                Slider(
-                    value: Binding(
-                        get: { WindowLayoutMargin.sanitizedPercent(marginPercent) },
-                        set: { marginPercent = round(WindowLayoutMargin.sanitizedPercent($0)) }
-                    ),
-                    in: WindowLayoutMargin.percentRange,
-                    onEditingChanged: { editing in
-                        withAnimation(.easeInOut(duration: 0.12)) {
-                            isSliding = editing
-                        }
-                    }
-                )
-                .frame(width: sliderWidth)
-                .help("\(marginPixelValue) px")
-
-                if isSliding {
-                    let fraction = CGFloat(WindowLayoutMargin.sanitizedPercent(marginPercent) / WindowLayoutMargin.percentRange.upperBound)
-                    let thumbX = 8 + fraction * (sliderWidth - 16)
-                    let clampedX = min(max(thumbX - 22, 0), sliderWidth - 44)
-
-                    Text("\(marginPixelValue) px")
-                        .font(.system(size: 11, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2.5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                .fill(Color(nsColor: .windowBackgroundColor))
-                                .shadow(color: .black.opacity(0.18), radius: 3, x: 0, y: 1.5)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
-                        )
-                        .fixedSize()
-                        .offset(x: clampedX, y: -24)
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                        .allowsHitTesting(false)
-                }
-            }
-            .frame(width: sliderWidth)
+            SettingsValueSlider(title: title, value: $marginPercent,
+                range: WindowLayoutMargin.percentRange, step: 1, readout: "\(marginPixelValue) px", usesSystemAppearance: true)
+                .frame(width: 140)
         }
     }
 }

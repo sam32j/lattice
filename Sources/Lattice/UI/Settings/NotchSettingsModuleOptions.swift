@@ -218,7 +218,7 @@ extension NotchSettings {
                               unavailableAction: {
                                   AppFeature.monitorPower.showInFeatures()
                               })
-                    toggleCard(FeatureStrings.clipboard(l10n.language).title, symbol: "doc.on.clipboard", value: $clipboard,
+                    toggleCard(SettingsFollowupLabels.text(.clipboardActivity, l10n.language), symbol: "doc.on.clipboard", value: $clipboard,
                                available: clipboardAvailable, reason: clipboardFeedbackReason, reservesReason: reserves,
                                unavailableAction: { openClipboardFeedbackSetup() })
                     toggleCard(text.newTrack, symbol: "music.note", value: $trackChange, available: musicAvailable,

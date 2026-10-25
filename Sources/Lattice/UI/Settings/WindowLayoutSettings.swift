@@ -25,6 +25,7 @@ struct WindowLayoutSettings: View {
     @AppStorage(DefaultsKey.windowLayoutMarginPercent) var marginPercent = WindowLayoutMargin.defaultPercent
     @AppStorage(DefaultsKey.windowLayoutSideRepeatCyclesThirds) var sideRepeatCyclesThirds = false
     @AppStorage(DefaultsKey.spacesOrderEnabled) var spacesOrderEnabled = false
+    @AppStorage(DefaultsKey.windowLayoutShortcutMarginMaximize) var marginShortcutRaw = WindowLayoutAction.marginMaximize.defaultShortcut?.storageValue ?? WindowLayoutAction.clearedShortcutStorageValue
     @State var directionalError: String?
     @State var systemTilingEnabled = WindowEdgeSnapSupport.isSystemTilingEnabled
     var text: WindowLayoutFeatureStrings {

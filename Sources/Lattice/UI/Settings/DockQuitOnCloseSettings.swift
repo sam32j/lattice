@@ -17,7 +17,7 @@ struct DockQuitOnCloseSettings: View {
                 DockQuitOnCloseExceptions()
                     .padding(.leading, settingsRowTextInset)
             } else {
-                SettingsControlRow(title: SettingsAppListStrings.text(l10n.language).disabledApps) {
+                SettingsControlRow(title: SettingsFollowupLabels.text(.dontQuitApps, l10n.language)) {
                     Button(SettingsAppListStrings.text(l10n.language).edit) {}
                 }
                 .padding(.leading, settingsRowTextInset)
@@ -41,12 +41,13 @@ private struct DockQuitOnCloseExceptions: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if !permissions.accessibility { PermissionRow(kind: .accessibility) }
-            AppBundleList(title: l10n.s.autoQuitName,
+            AppBundleList(title: SettingsFollowupLabels.text(.dontQuitApps, l10n.language),
                           caption: SettingsAppListDescriptions.text(l10n.language).autoQuit,
                           addTitle: l10n.s.autoQuitAddApp,
                           removeLabel: l10n.s.autoQuitExceptionsTitle,
                           bundleIDs: exceptions,
                           usesSheet: true,
+                          sheetTitle: SettingsFollowupLabels.text(.dontQuitApps, l10n.language),
                           canRemove: { !service.isMandatoryException($0) },
                           onAdd: { service.addException($0) },
                           onRemove: { service.removeException($0) })

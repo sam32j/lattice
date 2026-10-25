@@ -15,9 +15,11 @@ struct GeneralToolSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 SettingsCard(title: l10n.s.menuBarSection) {
-                    SettingsToggleRow(title: SettingsFollowupStrings.text(.showMenuIcon, l10n.language),
-                                      isOn: Binding(get: { !hideMenuIcon }, set: { hideMenuIcon = !$0 }))
-                    if !hideMenuIcon { MenuBarIconPickerRow() }
+                    SettingsRow(symbol: "menubar.rectangle", title: SettingsFollowupStrings.text(.showMenuIcon, l10n.language)) {
+                        Toggle("", isOn: Binding(get: { !hideMenuIcon }, set: { hideMenuIcon = !$0 }))
+                            .labelsHidden().toggleStyle(.switch)
+                    }
+                    if !hideMenuIcon { MenuBarIconPickerRow().padding(.leading, settingsRowTextInset) }
                     Divider()
                     Text(text.panelIntro)
                         .font(.callout)

@@ -664,7 +664,7 @@ enum RadialMenuSupport {
         case .app, .file: return !item.payload.isEmpty
         case .url: return normalizedURL(item.payload) != nil
         case .shortcut: return GlobalShortcut(storageValue: item.payload) != nil
-        case .tool: return item.tool != nil
+        case .tool: return item.tool.map { $0 != .colorPicker && $0 != .screenOCR } ?? false
         case .quickToggle: return item.quickToggle != nil
         case .windowLayout: return item.windowLayoutAction != nil
         case .media: return item.mediaKey != nil

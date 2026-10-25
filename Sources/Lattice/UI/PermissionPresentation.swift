@@ -18,7 +18,7 @@ extension AppPermission {
         case .microphone: return FeatureStrings.recorder(L10n.shared.language).microphonePermissionName
         case .calendar: return FeatureStrings.notchCalendar(L10n.shared.language).title
         case .camera: return FeatureStrings.cameraPreview(L10n.shared.language).permName
-        case .appManagement: return FeatureStrings.settingsCategories(L10n.shared.language).appManagement
+        case .appManagement: return SettingsFollowupLabels.text(.appManagement, L10n.shared.language)
         case .bluetooth: return "Bluetooth"
         }
     }

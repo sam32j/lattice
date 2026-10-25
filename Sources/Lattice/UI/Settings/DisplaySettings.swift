@@ -89,7 +89,7 @@ struct DisplaySettings: View {
                             FeatureRuntime.shared.finishAvailabilityChange()
                         }
                 }
-                Group {
+                if bluetoothSleepEnabled {
                     SettingsRow(symbol: "arrow.counterclockwise", title: strings.restoreToggle,
                                 caption: strings.restoreCaption) {
                         Toggle(strings.restoreToggle, isOn: $bluetoothSleepRestoreOnWake).labelsHidden()

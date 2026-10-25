@@ -181,7 +181,7 @@ struct MixerSection: View {
                     Spacer(minLength: 12)
                     SettingsValueSlider(title: l10n.s.mixerOutputLevelLabel,
                                         value: systemOutputVolumeBinding, range: 0...1, step: 0.01,
-                                        readout: "\(Int((volume * 100).rounded()))%")
+                                        readout: "\(Int((volume * 100).rounded()))%", usesSystemAppearance: true)
                         .frame(width: settingsMode ? 220 : 164)
                 }
                 .padding(.vertical, 4)
@@ -730,7 +730,6 @@ private struct MixerRow: View {
                                           boostTint: boostColor,
                                           isBoosting: isBoosting,
                                           accentRevision: accentRevision,
-                                          glassEnabled: glassEnabled,
                                           maximum: AppVolumeMixer.maxVolume,
                                           accessibilityLabel: app.name)
 

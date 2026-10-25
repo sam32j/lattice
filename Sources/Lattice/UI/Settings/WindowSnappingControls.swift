@@ -127,10 +127,15 @@ extension WindowLayoutSettings {
             Divider()
             VStack(alignment: .leading, spacing: 13) {
                 Text(text.other).font(.headline)
+                Text(text.shortcutsCaption).font(.caption).foregroundStyle(.secondary)
                 actionRow(.maximize)
                 actionRow(.marginMaximize)
                 marginSlider
                     .disclosureIndent()
+                    .disabled(WindowLayoutAction.resolvedShortcut(storedValue: marginShortcutRaw,
+                        defaultShortcut: WindowLayoutAction.marginMaximize.defaultShortcut) == nil)
+                    .opacity(WindowLayoutAction.resolvedShortcut(storedValue: marginShortcutRaw,
+                        defaultShortcut: WindowLayoutAction.marginMaximize.defaultShortcut) == nil ? 0.55 : 1)
                 actionRow(.fullScreen)
                 actionRow(.center)
                 actionRow(.previousDisplay)
