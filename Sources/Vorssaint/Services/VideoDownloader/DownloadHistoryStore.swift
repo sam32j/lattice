@@ -12,15 +12,6 @@ struct RecentDownloadItem: Identifiable, Codable, Equatable {
     let fileSize: Int64
     let date: Date
 
-    var destinationFolderFormatted: String {
-        let folderPath = fileURL.deletingLastPathComponent().path
-        let home = NSHomeDirectory()
-        if folderPath.hasPrefix(home) {
-            return "~" + folderPath.dropFirst(home.count)
-        }
-        return folderPath
-    }
-
     var formattedSubtitle: String {
         let df = ByteCountFormatter()
         df.countStyle = .file
@@ -39,7 +30,7 @@ struct RecentDownloadItem: Identifiable, Codable, Equatable {
             dateStr = dateFormatter.string(from: date)
         }
 
-        return "\(qualityTag) · \(sizeStr) · \(dateStr) · \(destinationFolderFormatted)"
+        return "\(qualityTag) · \(sizeStr) · \(dateStr)"
     }
 }
 
@@ -70,6 +61,22 @@ final class DownloadHistoryStore: ObservableObject {
         items = valid
         if valid.count != decoded.count {
             save()
+        }
+    }
+
+    func pruneMissingFiles() {
+        let valid = items.filter { FileManager.default.fileExists(atPath: $0.fileURL.path) }
+        if valid.count != items.count {
+            items = valid
+            save()
+        }
+    }
+
+    func showInFinder(_ item: RecentDownloadItem) {
+        if FileManager.default.fileExists(atPath: item.fileURL.path) {
+            NSWorkspace.shared.activateFileViewerSelecting([item.fileURL])
+        } else {
+            pruneMissingFiles()
         }
     }
 
