@@ -27,3 +27,7 @@ The user approved first-original-finger release, 36 physical points (half an inc
 
 
 Latest steering: remove the remaining directional position nudge entirely. Haptics are gesture-driven, not a timed pair: one tap at recognized sideways activation (physical intent slop), then one tap when the half-inch threshold arms the command. No delayed pulse survives cancellation. Track notices reuse the same notched/capsule music strip components and metadata ordering; notice lifecycle and expanded player remain separate.
+
+### Distance adjustment after PR 11 review
+
+Latest user steering supersedes the earlier distances: emit the first haptic at 18 physical points (¼ inch), then arm the second haptic and track command at 96 physical points (4/3 inch). Keep the existing small visual-intent slop, first-original-finger-lift commit and cancellation behavior. Both fingers must satisfy the travel requirement; no timed pulse is added.
