@@ -199,10 +199,10 @@ enum VideoDownloadRequest {
     }
 
     static let common = ["--ignore-config", "--no-plugin-dirs", "--no-playlist", "--no-color",
-                         "--socket-timeout", "20", "--retries", "2", "--no-cache-dir"]
+                         "--socket-timeout", "20", "--retries", "2", "--no-cache-dir", "--no-write-comments"]
 
     static func metadataArguments(url: URL) -> [String] {
-        common + ["--skip-download", "--dump-single-json", "--", url.absoluteString]
+        common + ["--skip-download", "--dump-single-json", "--playlist-items", "1", "--", url.absoluteString]
     }
 
     static func downloadArguments(url: URL, quality: VideoDownloadQuality, staging: URL, ffmpeg: String) -> [String] {

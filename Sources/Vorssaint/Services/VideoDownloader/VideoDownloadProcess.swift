@@ -62,7 +62,7 @@ final class VideoDownloadProcess: @unchecked Sendable {
     }
 
     func run(executable: String, arguments: [String], environment: [String: String],
-             timeout: TimeInterval, stdoutLimit: Int = 8_000_000,
+             timeout: TimeInterval, stdoutLimit: Int = 64_000_000,
              line: ((String) -> Void)? = nil) throws -> Output {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
@@ -72,7 +72,7 @@ final class VideoDownloadProcess: @unchecked Sendable {
         let out = Pipe(), err = Pipe()
         process.standardOutput = out; process.standardError = err
         let output = DownloadOutputBuffer(limit: stdoutLimit, line: line)
-        let errors = DownloadOutputBuffer(limit: 32_768, line: nil)
+        let errors = DownloadOutputBuffer(limit: 65_536, line: nil)
         let drained = DispatchGroup()
         func drain(_ pipe: Pipe, to buffer: DownloadOutputBuffer) {
             drained.enter()
@@ -116,7 +116,7 @@ final class VideoDownloadProcess: @unchecked Sendable {
         guard finishedDrain, !output.overflowed else { throw VideoDownloadError.command("The tool returned too much data or did not close its output. Try another link.") }
         let errorText = String(decoding: errors.data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
         guard process.terminationStatus == 0 else {
-            throw VideoDownloadError.command(errorText.isEmpty ? "The tool failed. Check the link and update yt-dlp in Homebrew." : String(errorText.suffix(4000)))
+            throw VideoDownloadError.command(errorText.isEmpty ? "The download tool failed. Please check the link." : String(errorText.suffix(4000)))
         }
         return Output(stdout: output.data, stderr: errorText)
     }
@@ -133,16 +133,37 @@ private final class DownloadOutputBuffer: @unchecked Sendable {
     var overflowed: Bool { lock.lock(); defer { lock.unlock() }; return exceeded }
     func append(_ chunk: Data) {
         lock.lock()
-        if stored.count + chunk.count > limit { exceeded = true }
-        stored.append(chunk.prefix(max(0, limit - stored.count)))
+        if line != nil {
+            // When streaming lines (e.g. download progress), stored is only needed for trailing markers (e.g. LATTICE_FILE:).
+            // Keep a rolling buffer of the latest output up to limit, and never overflow from streaming progress lines.
+            stored.append(chunk)
+            if stored.count > limit {
+                let excess = stored.count - limit
+                stored.removeSubrange(..<excess)
+            }
+        } else {
+            if stored.count + chunk.count > limit { exceeded = true }
+            stored.append(chunk.prefix(max(0, limit - stored.count)))
+        }
+
         guard let line else { lock.unlock(); return }
         pending.append(chunk)
         var lines: [String] = []
-        while let newline = pending.firstIndex(of: 10) {
-            lines.append(String(decoding: pending[..<newline], as: UTF8.self))
-            pending.removeSubrange(...newline)
+        // Handle both \n (10) and \r (13) delimiters so terminal progress updates don't pile up in pending
+        while let idx = pending.firstIndex(where: { $0 == 10 || $0 == 13 }) {
+            let lineData = pending[..<idx]
+            if !lineData.isEmpty {
+                lines.append(String(decoding: lineData, as: UTF8.self))
+            }
+            if pending[idx] == 13 && pending.indices.contains(idx + 1) && pending[idx + 1] == 10 {
+                pending.removeSubrange(...(idx + 1))
+            } else {
+                pending.removeSubrange(...idx)
+            }
         }
-        if pending.count > 65_536 { pending.removeAll(); exceeded = true }
+        if pending.count > 131_072 {
+            pending.removeAll()
+        }
         lock.unlock()
         lines.forEach(line)
     }
