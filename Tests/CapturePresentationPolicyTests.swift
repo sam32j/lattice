@@ -4,6 +4,7 @@ import CoreGraphics
 enum CapturePresentationPolicyTests {
     static func run(_ suite: TestSuite) {
         ScreenshotDialogGeometryTests.run(suite)
+        ScreenshotDialogLevelTests.run(suite)
         suite.expect(ScreenshotCapturePolicy.isPickableWindowLayer(102, ownerName: "CoreServicesUIAgent")
                      && ScreenshotCapturePolicy.isPickableWindowLayer(1000, ownerName: "SecurityAgent")
                      && !ScreenshotCapturePolicy.isPickableWindowLayer(1000, ownerName: "Window Server")

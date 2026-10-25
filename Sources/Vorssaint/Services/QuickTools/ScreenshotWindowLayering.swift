@@ -20,7 +20,8 @@ enum ScreenshotWindowLayering {
         NSWindow.Level(rawValue: editorBase)
     }
     static func dialogLevel(above window: AnyObject?) -> NSWindow.Level {
-        NSWindow.Level(rawValue: dialogBase)
+        guard let owner = window as? NSWindow else { return NSWindow.Level(rawValue: dialogBase) }
+        return NSWindow.Level(rawValue: max(dialogBase, owner.level.rawValue + 1))
     }
     static func runModalPanel(_ panel: NSSavePanel, above window: NSWindow?) -> NSApplication.ModalResponse {
         var observers: [NSObjectProtocol] = []
