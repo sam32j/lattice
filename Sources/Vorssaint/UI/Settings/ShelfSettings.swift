@@ -43,15 +43,14 @@ struct ShelfSettings: View {
                         }
                     }
                     if enabled {
+                        ShortcutPreferenceRow(role: .shelf,
+                            label: UtilitySettingsCopy.open(SettingsOwnershipStrings.text(.fileCache, l10n.language), l10n.language)) {
+                            ShelfService.shared.syncHotkey()
+                        }
+                        .padding(.leading, settingsRowTextInset)
                         IslandDestinationSettings(destination: .files)
                             .padding(.leading, settingsRowTextInset)
                     }
-                    ShortcutPreferenceRow(role: .shelf,
-                        label: UtilitySettingsCopy.open(SettingsOwnershipStrings.text(.fileCache, l10n.language), l10n.language)) {
-                        ShelfService.shared.syncHotkey()
-                    }
-                    .disabled(!enabled)
-                    .padding(.leading, settingsRowTextInset)
                 }
             }
 

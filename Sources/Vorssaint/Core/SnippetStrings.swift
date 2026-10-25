@@ -257,7 +257,7 @@ extension SnippetFeatureStrings {
         saveButton: "Save",
         manageButton: "Manage snippets",
         ignoreCaseLabel: "Ignore capitalization",
-        libraryTitle: "Quick snippet menu",
+        libraryTitle: "Search snippets",
         libraryCaption: "The shortcut opens a searchable menu. Picking a snippet types it right where your cursor is.",
         librarySearchPlaceholder: "Search snippets",
         libraryNoResults: "No snippet matches the search.",

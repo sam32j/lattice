@@ -2762,9 +2762,6 @@ struct NotchSessionState {
     var canPresent: Bool { canRunTimer && !displaysSleeping }
     /// The lock screen itself is on screen, awake and in front of this user.
     var showsLockScreen: Bool { locked && !sleeping && onConsole && !displaysSleeping && !screenSaverRunning }
-    /// Someone is at the Mac to hear it lock or unlock, rather than closing
-    /// the lid or leaving it to a screen saver or to fall asleep.
-    var hearsLockChange: Bool { !sleeping && onConsole && !displaysSleeping && !screenSaverRunning }
 }
 
 /// Reserve enough backing space for both ends. The visible silhouette moves

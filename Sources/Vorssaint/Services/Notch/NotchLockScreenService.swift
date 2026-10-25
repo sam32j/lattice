@@ -2,13 +2,12 @@
 // Copyright (C) 2026 Vorssaint
 
 import AppKit
-import AudioToolbox
 import Combine
 import SwiftUI
 
 /// The island over the lock screen: music on a pane of Liquid Glass between
 /// the clock and the login controls, the activities as a line under the
-/// clock, the padlock at the camera, and the padlock sounds. The
+/// clock and the padlock at the camera. The
 /// island drives it from its own session state. On locking it follows the
 /// island's teardown, which stops the sources this service then restarts.
 /// On unlocking the scene starts leaving before the island comes back, and
@@ -57,19 +56,6 @@ final class NotchLockScreenService {
         wasLocked = false
         model.playedWhileLocked = false
         hide(unlocking: false, stopsSources: true)
-    }
-
-    func playSound(locking: Bool) {
-        guard let url = NotchLockScreenSupport.soundURL(locking: locking) else { return }
-        var sound: SystemSoundID = 0
-        guard AudioServicesCreateSystemSoundID(url as CFURL, &sound) == noErr else { return }
-        // Asked for here, so it plays even with interface sound effects off
-        // in System Settings. The alert volume and the sound effects output
-        // still apply, as they do to the Mac's own sounds.
-        var interface: UInt32 = 0
-        AudioServicesSetProperty(kAudioServicesPropertyIsUISound, UInt32(MemoryLayout<SystemSoundID>.size), &sound,
-                                 UInt32(MemoryLayout<UInt32>.size), &interface)
-        AudioServicesPlaySystemSoundWithCompletion(sound) { AudioServicesDisposeSystemSoundID(sound) }
     }
 
     /// Where each part goes on the displays as they are now.

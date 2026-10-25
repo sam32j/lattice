@@ -177,9 +177,10 @@ final class FeatureRuntime: ObservableObject {
         return UserDefaults.standard.persistentDomain(forName: domain) ?? [:]
     }
 
-    /// Launch only available features, plus narrow recovery and keyboard-light
-    /// paths that must remain independent of their page's enable switch.
+    /// App-wide sounds register independently. Feature bindings launch only
+    /// when available, with narrow recovery and keyboard-light exceptions.
     func syncAtLaunch() {
+        LockSoundService.shared.syncWithPreferences()
         for feature in AppFeature.allCases where feature.isAvailable {
             Self.bindings[feature]?()
         }

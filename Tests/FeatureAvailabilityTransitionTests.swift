@@ -5,6 +5,11 @@ import Foundation
 
 /// Production availability mutations with isolated preferences and service bindings.
 enum FeatureAvailabilityTransitionTests {
+    final class LockSoundService {
+        static let shared = LockSoundService()
+        var syncs = 0
+        func syncWithPreferences() { syncs += 1 }
+    }
     enum InputEventTap { static var isBlocked = false }
     class State {
         static var bindings: [AppFeature: () -> Void] = [:]
@@ -40,7 +45,11 @@ enum FeatureAvailabilityTransitionTests {
         defaults.set(true, forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
         var keyboardOnlySyncs = 0
         State.bindings[.brightness] = { keyboardOnlySyncs += 1 }
+        let soundSyncs = LockSoundService.shared.syncs
+        defaults.set(false, forKey: DefaultsKey.notchEnabled)
         service.syncAtLaunch()
+        suite.expect(LockSoundService.shared.syncs == soundSyncs + 1,
+                     "app-wide sound startup is independent of the island being installed")
         suite.expect(keyboardOnlySyncs == 1 && !AppFeature.brightness.isAvailable(in: defaults),
                      "keyboard-only registration starts without installing display controls")
         service.sync([.brightness])

@@ -16,7 +16,8 @@ extension SettingsDirectory {
                 SettingsDirectoryItem(page: .general, title: s.tabGeneral, icon: "gearshape",
                                       keywords: [s.launchAtLogin, s.languageLabel,
                                                  FeatureStrings.appearance(language).label,
-                                                 FeatureStrings.appearance(language).dark]),
+                                                 FeatureStrings.appearance(language).dark,
+                                                 GeneralSoundCopy.label(language)]),
                 SettingsDirectoryItem(page: .notch,
                                       title: FeatureStrings.notch(language).title,
                                       icon: "macbook",
@@ -28,8 +29,7 @@ extension SettingsDirectory {
                                                  "notch", "camera", "music", "clipboard",
                                                  FeatureStrings.notchAgents(language).title, "Claude", "Codex", "OpenCode", "GitHub Copilot", "AI", "tokens",
                                                  FeatureStrings.notchAgents(language).resetsCard,
-                                                 FeatureStrings.notchLockScreen(language).title,
-                                                 FeatureStrings.notchLockScreen(language).sounds]
+                                                 FeatureStrings.notchLockScreen(language).title]
                                           + (NotchSupport.hasNotchedDisplay ? [FeatureStrings.notch(language).cameraFit] : [])
                                           + (NotchSupport.hasDisplayWithoutNotch
                                              ? [FeatureStrings.notch(language).withoutNotch,

@@ -24,6 +24,7 @@ struct GeneralSettings: View {
             VStack(alignment: .leading, spacing: 20) {
                 basicsCard
                 appearanceCard
+                GeneralSoundSettings()
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)

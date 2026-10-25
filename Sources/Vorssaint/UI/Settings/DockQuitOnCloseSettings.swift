@@ -15,10 +15,12 @@ struct DockQuitOnCloseSettings: View {
             }
             if enabled {
                 DockQuitOnCloseExceptions()
+                    .padding(.leading, settingsRowTextInset)
             } else {
                 SettingsControlRow(title: SettingsAppListStrings.text(l10n.language).disabledApps) {
                     Button(SettingsAppListStrings.text(l10n.language).edit) {}
                 }
+                .padding(.leading, settingsRowTextInset)
                 .disabled(true)
                 .opacity(0.55)
             }
