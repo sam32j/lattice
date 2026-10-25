@@ -49,7 +49,15 @@ struct NotchVideoDownloaderView: View {
             }
         })
         .onAppear {
+            if downloader.output != nil && !downloader.isCompletedSustaining {
+                downloader.resetDownloadState()
+            }
             refreshClipboard()
+        }
+        .onDisappear {
+            if downloader.output != nil && !downloader.isCompletedSustaining {
+                downloader.resetDownloadState()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             refreshClipboard()
@@ -301,7 +309,7 @@ struct NotchVideoDownloaderView: View {
         }
     }
 
-    // MARK: - Completed Controls Row (Temporary 10s state in original preview section)
+    // MARK: - Completed Controls Row (Prominent complete status banner)
 
     private var completedControlsRow: some View {
         Button {
@@ -309,37 +317,49 @@ struct NotchVideoDownloaderView: View {
                 NSWorkspace.shared.activateFileViewerSelecting([output])
             }
         } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.green)
-
-                Text(VideoDownloaderStrings.downloadComplete)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white)
-
-                Spacer()
-
-                if let output = downloader.output {
-                    let sizeStr = outputFileSizeText(url: output)
-                    if !sizeStr.isEmpty {
-                        Text(sizeStr)
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color.green.opacity(0.2))
+                        .frame(width: 28, height: 28)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.green)
                 }
 
-                Text(VideoDownloaderStrings.showInFinder)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(VideoDownloaderStrings.downloadComplete)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white)
 
-                Image(systemName: "arrow.up.forward.square")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+                    let sizeStr = downloader.output.map { outputFileSizeText(url: $0) } ?? ""
+                    let detail = sizeStr.isEmpty ? "Saved · Click to reveal in Finder" : "\(sizeStr) · Click to reveal in Finder"
+                    Text(detail)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.white.opacity(0.65))
+                }
+
+                Spacer(minLength: 4)
+
+                HStack(spacing: 5) {
+                    Text(VideoDownloaderStrings.showInFinder)
+                        .font(.system(size: 11, weight: .semibold))
+                    Image(systemName: "arrow.up.forward.square.fill")
+                        .font(.system(size: 11))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color.green.opacity(0.85), in: Capsule())
             }
             .padding(.horizontal, 10)
-            .frame(height: 28)
-            .background(Color.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity)
+            .background(Color.green.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.green.opacity(0.35), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }
@@ -466,6 +486,7 @@ struct NotchVideoDownloaderStrip: View {
     @ObservedObject var service: NotchService
     var displayGeometry: NotchGeometry? = nil
     @ObservedObject private var downloader = VideoDownloader.shared
+    @State private var isCheckmarkHovered = false
 
     private var geometry: NotchGeometry { displayGeometry ?? service.compactActivityGeometry }
     private var wing: CGFloat { geometry.compactActivityWingWidth }
@@ -509,12 +530,27 @@ struct NotchVideoDownloaderStrip: View {
                 Color.clear
                     .frame(width: geometry.compactActivityCameraGap, height: geometry.compactActivityContentHeight)
 
-                // Right wing: completion checkmark or circular progress ring
+                // Right wing: completion checkmark (hover -> "Open" green button) or circular progress ring
                 HStack(spacing: 0) {
                     if downloader.output != nil || downloader.isCompletedSustaining {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: iconSize))
-                            .foregroundStyle(.green)
+                        ZStack {
+                            if isCheckmarkHovered {
+                                Text("Open")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .background(Color.green, in: Capsule())
+                                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                            } else {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: iconSize))
+                                    .foregroundStyle(.green)
+                                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                            }
+                        }
+                        .animation(.easeInOut(duration: 0.16), value: isCheckmarkHovered)
+                        .onHover { isCheckmarkHovered = $0 }
                     } else if let fraction = downloader.progress {
                         CircleProgressRing(fraction: fraction, size: iconSize)
                     } else {
@@ -539,6 +575,7 @@ struct NotchCapsuleVideoDownloaderStrip: View {
     let size: CGSize
     var displayGeometry: NotchGeometry? = nil
     @ObservedObject private var downloader = VideoDownloader.shared
+    @State private var isCheckmarkHovered = false
 
     private var geometry: NotchGeometry { displayGeometry ?? service.geometry }
     private var iconSize: CGFloat { min(16, geometry.stripHeight - 10) }
@@ -570,9 +607,24 @@ struct NotchCapsuleVideoDownloaderStrip: View {
                 Spacer(minLength: 12)
 
                 if downloader.output != nil || downloader.isCompletedSustaining {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: iconSize))
-                        .foregroundStyle(.green)
+                    ZStack {
+                        if isCheckmarkHovered {
+                            Text("Open")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Color.green, in: Capsule())
+                                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                        } else {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: iconSize))
+                                .foregroundStyle(.green)
+                                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                        }
+                    }
+                    .animation(.easeInOut(duration: 0.16), value: isCheckmarkHovered)
+                    .onHover { isCheckmarkHovered = $0 }
                 } else if let fraction = downloader.progress {
                     CircleProgressRing(fraction: fraction, size: iconSize)
                 } else {

@@ -2452,8 +2452,8 @@ struct NotchGeometry: Equatable {
         var compact = self
         compact.allowsActivityFooter = false
         let room = compactSideRoom ?? 0
-        let wing = isNotched ? compact.compactMusicContentWing : 44
-        compact.compactSideRoom = room.isFinite && room >= wing ? min(isNotched ? wing : 56, room) : 0
+        let wing: CGFloat = 52
+        compact.compactSideRoom = room.isFinite && room >= wing ? min(wing, room) : 0
         compact.minimumWing = wing
         return compact
     }

@@ -3870,6 +3870,9 @@ final class NotchService: ObservableObject {
             }
             NotchDownloadService.shared.onFailure = { [weak self] in self?.reactMascot(.confused) }
         }
+        VideoDownloader.shared.isExpandedFocused = { [weak self] in
+            self?.expanded == true && self?.selected == .videoDownloader
+        }
         VideoDownloader.shared.$isDownloading
             .combineLatest(
                 VideoDownloader.shared.$isPaused,
