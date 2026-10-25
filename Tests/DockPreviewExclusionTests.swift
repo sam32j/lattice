@@ -4,7 +4,7 @@ import Foundation
 
 enum DockPreviewExclusionTests {
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.dock-preview-target-exclusions.\(UUID().uuidString)"
+        let domain = "io.github.sam32j.lattice.tests.dock-preview-target-exclusions.\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: domain) else { return }
         defer { defaults.removePersistentDomain(forName: domain) }
         defaults.set([" com.example.private ", "com.example.private", "/usr/bin/python3"], forKey: DefaultsKey.windowPreviewExcludedApps)

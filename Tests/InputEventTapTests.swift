@@ -57,7 +57,7 @@ enum InputEventTapTests {
         suite.expect(settled && concurrent.isBlocked && !concurrentPort.valid,
                      "a racing background tap creation cannot escape permission-reset teardown")
 
-        let root = "Sources/Vorssaint"
+        let root = "Sources/Lattice"
         let paths = (try? FileManager.default.subpathsOfDirectory(atPath: root)) ?? []
         let bypasses = paths.filter { $0.hasSuffix(".swift") && !$0.hasSuffix("/InputEventTap.swift") }
             .filter {

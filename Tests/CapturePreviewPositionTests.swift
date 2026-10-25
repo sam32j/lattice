@@ -5,7 +5,7 @@ import Foundation
 
 enum CapturePreviewPositionTests {
     static func run(_ suite: TestSuite) {
-        let name = "com.vorssaint.tests.preview-position.\(UUID())"
+        let name = "io.github.sam32j.lattice.tests.preview-position.\(UUID())"
         let defaults = UserDefaults(suiteName: name)!
         defer { defaults.removePersistentDomain(forName: name) }
         suite.expect(ScreenshotSupport.QuickPreviewPosition.current(in: defaults) == .automatic,

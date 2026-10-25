@@ -9,7 +9,7 @@ enum ScreenshotPinWindowTests {
                                       bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
                                       bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
               let image = context.makeImage() else { suite.expect(false, "pin fixture image"); return }
-        let namespace = "com.vorssaint.tests.pin-window-\(UUID().uuidString)"
+        let namespace = "io.github.sam32j.lattice.tests.pin-window-\(UUID().uuidString)"
         guard let preferences = UserDefaults(suiteName: namespace) else { return }
         defer { preferences.removePersistentDomain(forName: namespace) }
         let pin = ScreenshotPinWindow(image: image, scale: 2, preferences: preferences)

@@ -36,7 +36,7 @@ enum IslandSettingsFocusTests {
         suite.expect(!ordinary.expanded && !ordinary.heldDrag && !ordinary.dragPlaceholder
                      && ordinary.hoverState.suppressed,
                      "explicit Settings navigation collapses Island even during an internal drag")
-        let runtime = (try? String(contentsOfFile: "Sources/Vorssaint/App/FeatureRuntime.swift", encoding: .utf8)) ?? ""
+        let runtime = (try? String(contentsOfFile: "Sources/Lattice/App/FeatureRuntime.swift", encoding: .utf8)) ?? ""
         for (feature, owner) in [
             ("notchCalendar", "NotchCalendarService"), ("notchNotifications", "NotchNotificationService"),
             ("notchDownloads", "NotchDownloadService"), ("notchAgents", "AgentUsageService"),
@@ -45,9 +45,9 @@ enum IslandSettingsFocusTests {
             suite.expect(runtime.contains(".\(feature): {\n            if !AppFeature.\(feature).isAvailable { \(owner).shared.stop() }"),
                          "removing \(feature) stops its service before suspended presentation can return")
         }
-        let service = (try? String(contentsOfFile: "Sources/Vorssaint/Services/Notch/NotchService.swift", encoding: .utf8)) ?? ""
-        let delegate = (try? String(contentsOfFile: "Sources/Vorssaint/App/AppDelegate.swift", encoding: .utf8)) ?? ""
-        let host = (try? String(contentsOfFile: "Sources/Vorssaint/Services/Notch/NotchWindowHost.swift", encoding: .utf8)) ?? ""
+        let service = (try? String(contentsOfFile: "Sources/Lattice/Services/Notch/NotchService.swift", encoding: .utf8)) ?? ""
+        let delegate = (try? String(contentsOfFile: "Sources/Lattice/App/AppDelegate.swift", encoding: .utf8)) ?? ""
+        let host = (try? String(contentsOfFile: "Sources/Lattice/Services/Notch/NotchWindowHost.swift", encoding: .utf8)) ?? ""
         let opening = service.components(separatedBy: "    func open(_ module:").dropFirst().first?
             .components(separatedBy: "    func collapse()").first ?? ""
         suite.expect(opening.contains("panel.makeKey()") && !opening.contains("NSApp.activate(")

@@ -1446,7 +1446,7 @@ enum WindowLayoutFeatureTests {
         suite.expect(Defaults.registeredDefaults[DefaultsKey.windowLayoutSideRepeatCyclesThirds] as? Bool == false,
                "window layout side repeat cycling stays off by default")
         let sideRepeatSettingsSource = ["WindowLayoutSettings.swift", "WindowLayoutSettingsSupport.swift"]
-            .compactMap { try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/" + $0, encoding: .utf8) }
+            .compactMap { try? String(contentsOfFile: "Sources/Lattice/UI/Settings/" + $0, encoding: .utf8) }
             .joined(separator: "\n")
         let sideRepeatSettingsCode = sideRepeatSettingsSource.components(separatedBy: "\n")
             .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
@@ -1456,7 +1456,7 @@ enum WindowLayoutFeatureTests {
                 && sideRepeatSettingsCode.contains("text.sideRepeatCycleCaption"),
                "window layout settings expose the side repeat cycle toggle with its caption")
         let sideRepeatServiceSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/WindowLayout/WindowLayoutService.swift",
+            contentsOfFile: "Sources/Lattice/Services/WindowLayout/WindowLayoutService.swift",
             encoding: .utf8)) ?? ""
         let sideRepeatPlacement = sideRepeatServiceSource.components(separatedBy: "private func applyPlacement")
             .dropFirst().first?.components(separatedBy: "WindowLayoutGeometry.effectiveAction").first ?? ""

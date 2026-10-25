@@ -7,9 +7,9 @@ const preflight = resolve("Tools/lattice-release-info.ts");
 function refused(team: string, metadata: unknown) {
   const root = mkdtempSync(join(tmpdir(), "lattice-release-test-"));
   try {
-    mkdirSync(join(root, "Sources/Vorssaint/Core"), { recursive: true });
+    mkdirSync(join(root, "Sources/Lattice/Core"), { recursive: true });
     mkdirSync(join(root, "Downstream"));
-    writeFileSync(join(root, "Sources/Vorssaint/Core/DownstreamIdentity.swift"),
+    writeFileSync(join(root, "Sources/Lattice/Core/DownstreamIdentity.swift"),
       `static let signingTeamID = "${team}"\n`);
     writeFileSync(join(root, "Downstream/release.json"), JSON.stringify(metadata));
     return Bun.spawnSync(["bun", preflight], { cwd: root, stdout: "pipe", stderr: "pipe" });

@@ -2,7 +2,7 @@ import Foundation
 
 enum CleaningModeManualAvailabilityTests {
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.manual-cleaning.\(UUID())"
+        let domain = "io.github.sam32j.lattice.tests.manual-cleaning.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
         defaults.set(false, forKey: DefaultsKey.cleaningModeShortcutEnabled)

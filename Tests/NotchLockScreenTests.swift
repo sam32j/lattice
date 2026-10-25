@@ -45,7 +45,7 @@ enum NotchLockScreenTests {
                      "the lock screen and its sounds are both opt-in")
         suite.expect(SettingsBackupSupport.exportKeys().isSuperset(of: [DefaultsKey.notchLockScreen, DefaultsKey.notchLockSounds]),
                      "settings backups carry the lock screen preferences")
-        let domain = "com.vorssaint.tests.notch-lock-screen"
+        let domain = "io.github.sam32j.lattice.tests.notch-lock-screen"
         let defaults = UserDefaults(suiteName: domain)!
         defaults.removePersistentDomain(forName: domain)
         defer { defaults.removePersistentDomain(forName: domain) }

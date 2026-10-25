@@ -3,9 +3,9 @@ import Foundation
 enum ScreenshotCaptureChromeStructureTests {
     static func run(_ suite: TestSuite) {
         let captureSelectionSource = (try? String(contentsOfFile:
-            "Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift", encoding: .utf8)) ?? ""
+            "Sources/Lattice/Services/QuickTools/ScreenshotSelectionController.swift", encoding: .utf8)) ?? ""
         let guide = (try? String(contentsOfFile:
-            "Sources/Vorssaint/UI/Screenshot/UnifiedCaptureGuideContent.swift", encoding: .utf8)) ?? ""
+            "Sources/Lattice/UI/Screenshot/UnifiedCaptureGuideContent.swift", encoding: .utf8)) ?? ""
         suite.expect(captureSelectionSource.contains(
             "screenCaptureOptions?.showsCaptureMenu == false ? 82 : 146")
                 && guide.contains(

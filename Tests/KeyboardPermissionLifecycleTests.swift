@@ -18,7 +18,7 @@ enum KeyboardPermissionLifecycleTests {
     }
 
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.keyboard-permission.\(UUID().uuidString)"
+        let domain = "io.github.sam32j.lattice.tests.keyboard-permission.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
         ReviewDefaults.current = defaults
         defer { defaults.removePersistentDomain(forName: domain); ReviewDefaults.current = nil }

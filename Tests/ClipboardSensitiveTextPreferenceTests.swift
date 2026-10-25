@@ -14,7 +14,7 @@ enum ClipboardSensitiveTextPreferenceTests {
 
         let registrationDomain = UserDefaults.standard.volatileDomain(
             forName: UserDefaults.registrationDomain)
-        let domain = "com.vorssaint.tests.clipboard-sensitive-opt-in.\(UUID().uuidString)"
+        let domain = "io.github.sam32j.lattice.tests.clipboard-sensitive-opt-in.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
         defer {
             defaults.removePersistentDomain(forName: domain)

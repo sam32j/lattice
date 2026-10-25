@@ -23,7 +23,7 @@ enum NotchMusicExtrasTests {
                      "a chosen or last player that is no longer installed gives way to the automatic order")
         suite.expect(resolve(Player.automatic, last: spotify, installed: []) == nil && resolve(other, installed: []) == nil,
                      "with no music app installed nothing is offered to open")
-        let domain = "com.vorssaint.tests.notch-preferred-player"
+        let domain = "io.github.sam32j.lattice.tests.notch-preferred-player"
         let defaults = UserDefaults(suiteName: domain)!
         defaults.removePersistentDomain(forName: domain)
         defer { defaults.removePersistentDomain(forName: domain) }
@@ -807,7 +807,7 @@ enum NotchMusicExtrasTests {
         suite.expect(NotchPlayback.decode(noPosition)?.hasPosition == false,
                "missing player position never masquerades as a synchronized lyric clock")
 
-        let domain = "com.vorssaint.tests.notch-music-extras"
+        let domain = "io.github.sam32j.lattice.tests.notch-music-extras"
         let defaults = UserDefaults(suiteName: domain)!
         defaults.removePersistentDomain(forName: domain)
         defer { defaults.removePersistentDomain(forName: domain) }

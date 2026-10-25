@@ -2,7 +2,7 @@ import Foundation
 
 enum UtilityShortcutAssignmentTests {
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.utility-shortcut.\(UUID())"
+        let domain = "io.github.sam32j.lattice.tests.utility-shortcut.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
         let roles: [(GlobalShortcutRole, String)] = [

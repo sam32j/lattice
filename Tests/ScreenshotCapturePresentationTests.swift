@@ -22,7 +22,7 @@ enum ScreenshotCapturePresentationTests {
         suite.expect(Payload.Capture(image: original, scale: 1).presentationCapture.image === original,
                      "unmodified captures present the original without an unnecessary render")
         let source = (try? String(contentsOfFile:
-            "Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift", encoding: .utf8)) ?? ""
+            "Sources/Lattice/Services/QuickTools/ScreenshotSelectionController.swift", encoding: .utf8)) ?? ""
         suite.expect(source.contains("captureFocus?.acquire(keyPanel)")
                      && source.contains("captureFocus?.release")
                      && !source.contains("NSApp.activate("),

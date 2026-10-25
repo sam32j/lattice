@@ -33,7 +33,7 @@ static func run(_ suite: TestSuite) {
     defer { GlobalShortcut.refreshLayoutLabels() }
 
     let workflowSource = (try? String(
-        contentsOfFile: "Sources/Vorssaint/Core/CaptureWorkflowStrings.swift",
+        contentsOfFile: "Sources/Lattice/Core/CaptureWorkflowStrings.swift",
         encoding: .utf8)) ?? ""
     suite.expect(workflowSource.contains("shortcutUnavailable: \"Unavailable\"")
                  && !workflowSource.contains("shortcutUnavailable: \"Shortcut Unavailable\""),

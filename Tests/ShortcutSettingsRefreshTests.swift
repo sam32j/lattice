@@ -7,7 +7,7 @@ enum ShortcutSettingsRefreshTests {
     static func run(_ suite: TestSuite) {
         let center = NotificationCenter()
         let observer = ShortcutSettingsObserver(center: center)
-        let domain = "com.vorssaint.tests.shortcut-refresh.\(UUID().uuidString)"
+        let domain = "io.github.sam32j.lattice.tests.shortcut-refresh.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
         let role = GlobalShortcutRole.cleaningMode

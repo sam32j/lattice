@@ -16,7 +16,7 @@ enum PermissionResetStateTests {
         state.begin { _ in requests += 1 }
         suite.expect(state.phase == .restartRequired && requests == 2,
                      "successful reset becomes a restart action and cannot reset again before restart")
-        let domain = "com.vorssaint.tests.reset-configuration.\(UUID())"
+        let domain = "io.github.sam32j.lattice.tests.reset-configuration.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
         defaults.set(true, forKey: DefaultsKey.keyboardDebounceEnabled)
@@ -38,7 +38,7 @@ enum PermissionResetStateTests {
                      "restoring permission retains Quarter tuning without rearming finer-step interception")
         let backup = SettingsBackupSupport.payload(appVersion: "test", valueFor: defaults.object(forKey:))
         let restored = SettingsBackupSupport.sanitizedSettings(from: backup) ?? [:]
-        let restoredDomain = "com.vorssaint.tests.reset-configuration-restored.\(UUID())"
+        let restoredDomain = "io.github.sam32j.lattice.tests.reset-configuration-restored.\(UUID())"
         let restoredDefaults = UserDefaults(suiteName: restoredDomain)!
         defer { restoredDefaults.removePersistentDomain(forName: restoredDomain) }
         restored.forEach { restoredDefaults.set($0.value, forKey: $0.key) }

@@ -24,7 +24,7 @@ enum SnippetDelayedInsertionTests {
                                   trailingKeyCode: CGKeyCode?, trailingFlags: CGEventFlags) { posted.append(text) }
     }
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.delayed-snippets.\(UUID())"
+        let domain = "io.github.sam32j.lattice.tests.delayed-snippets.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         ReviewDefaults.current = defaults
         defer {

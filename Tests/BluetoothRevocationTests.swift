@@ -2,7 +2,7 @@ import Foundation
 
 enum BluetoothRevocationTests {
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.bluetooth-revocation.\(UUID())"
+        let domain = "io.github.sam32j.lattice.tests.bluetooth-revocation.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
