@@ -218,7 +218,8 @@ enum NotchPresentationRefreshContract {
             set { compactActivityOverride = newValue }
         }
         var compactMusicIsVisible: Bool { compactActivityIsVisible && compactActivity == .music }
-        var compactMusicSwipeIsVisible: Bool { compactMusicIsVisible }
+        var trackNoticeVisible = false
+        var compactMusicSwipeIsVisible: Bool { compactMusicIsVisible || trackNoticeVisible }
         var presentedMusic: NotchCompactMusicSnapshot?
         var heldMusic: NotchCompactMusicSnapshot?
         var departingMusic: NotchCompactMusicSnapshot?
@@ -420,6 +421,7 @@ enum NotchPresentationRefreshContract {
     }
 
     static func run(_ suite: TestSuite) {
+        NotchMusicNoticeHoverRefreshTests.run(suite)
         compactMusicDepartureChecks(suite)
         mascotYieldChecks(suite)
         UserDefaults.standard.hides = false
