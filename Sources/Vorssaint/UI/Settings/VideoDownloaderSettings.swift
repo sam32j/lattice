@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Samuel Ji
 
 import AppKit
+import Combine
 import SwiftUI
 
 struct VideoDownloaderSettings: View {
@@ -13,6 +14,8 @@ struct VideoDownloaderSettings: View {
     @AppStorage(DefaultsKey.videoDownloaderUseSystemTools) private var useSystemTools = false
     @State private var showAdvanced = false
     @State private var detectedClipboardURL: String? = nil
+    @State private var pasteboardChangeCount = -1
+    private let clipboardTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
     init(model: VideoDownloader = .shared) {
         self.model = model
@@ -299,6 +302,13 @@ struct VideoDownloaderSettings: View {
             updateClipboardURL()
             if enabled {
                 model.refreshDependencies()
+            }
+        }
+        .onReceive(clipboardTimer) { _ in
+            let count = NSPasteboard.general.changeCount
+            if count != pasteboardChangeCount {
+                pasteboardChangeCount = count
+                updateClipboardURL()
             }
         }
     }
@@ -671,16 +681,25 @@ struct VideoDownloaderSettings: View {
     }
 
     private func updateClipboardURL() {
-        guard let text = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !text.isEmpty else {
+        pasteboardChangeCount = NSPasteboard.general.changeCount
+        guard let raw = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty,
+              !raw.contains(where: { $0.isWhitespace || $0.isNewline }),
+              !raw.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) else {
             detectedClipboardURL = nil
             return
         }
-        let candidate = text.contains("://") ? text : "https://" + text
-        if (try? VideoDownloadRequest.validatedURL(candidate)) != nil {
-            detectedClipboardURL = candidate
-        } else {
+        let candidate = raw.contains("://") ? raw : "https://" + raw
+        guard let parts = URLComponents(string: candidate),
+              ["http", "https"].contains(parts.scheme?.lowercased() ?? ""),
+              let host = parts.host,
+              host.contains("."),
+              !host.hasPrefix("."),
+              !host.hasSuffix("."),
+              parts.user == nil, parts.password == nil else {
             detectedClipboardURL = nil
+            return
         }
+        detectedClipboardURL = parts.url?.absoluteString ?? candidate
     }
 }
