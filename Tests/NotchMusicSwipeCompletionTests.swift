@@ -17,8 +17,8 @@ enum NotchMusicSwipeCompletionTests {
             _ = controller.update(contacts(0), began: true, enabled: true, expanded: false)
             _ = controller.scroll(-1, precise: true, momentum: false, cancelled: false,
                                   enabled: true, expanded: false)
-            _ = controller.update(contacts(36), began: false, enabled: true, expanded: false)
-            _ = controller.update(Array(contacts(36).prefix(1)), began: false,
+            _ = controller.update(contacts(96), began: false, enabled: true, expanded: false)
+            _ = controller.update(Array(contacts(96).prefix(1)), began: false,
                                   enabled: true, expanded: false)
             _ = controller.update([], began: false, cancelled: interruption == 3,
                                   enabled: interruption != 1, expanded: interruption == 2)

@@ -102,3 +102,7 @@ Final recovery verification and self-review:
 - Actual full-view captures at 0/50/100% for physical notch, capsule and simulated cutout are in `/tmp/lattice-music-consistency-render`. Inspected title/artist/artwork and right-side cue/waveform placement. Full captures use an invisible, noninteractive native hosting window because ImageRenderer cannot draw the native waveform; pure overlay fixtures retain ImageRenderer. No live playback service was started.
 - No real media command, haptic output, permission reset or hardware change was used for verification. The installed app was not replaced. Independent review remains unavailable; this batch received a documented self-review.
 - Final source lookup found no `gestureSkips` or `NotchMusicSwipeFeedback` modifier references. The two haptic taps are tied to activation and arming, with no delayed haptic work or directional position offset.
+
+### Quarter-inch feedback / four-thirds-inch arming
+
+Baseline 685b5c92, part 2. Updated the recognizer and first-haptic gate to 18/96 physical points. Updated only directly affected gesture fixtures, including natural-scrolling, release/recovery, surface continuity and completion lifetime. RED reproduced 5 failures; the standalone focused gesture runner passed all 78 checks after correction. Skipped unrelated suites, full app build and rendering as requested for this localized distance adjustment. No real playback or haptic calls.

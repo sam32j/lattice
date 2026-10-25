@@ -26,7 +26,7 @@ enum NotchMusicSwipeSurfaceTests {
             _ = controller.update(contacts(18), began: false, enabled: true, expanded: false)
             // Track-info covers the strip, but remains the same usable music surface.
             controller.synchronizeSurface("compact-\(available())")
-            _ = controller.update(contacts(36), began: false, enabled: true, expanded: false)
+            _ = controller.update(contacts(96), began: false, enabled: true, expanded: false)
             suite.expect(commands == index && state.frame.progress == 1,
                          "each rapid swipe stays armed while the track-info notice is displayed")
             _ = controller.update([], began: false, enabled: true, expanded: false)

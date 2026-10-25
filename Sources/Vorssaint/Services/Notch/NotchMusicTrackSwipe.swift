@@ -4,6 +4,8 @@ import Foundation
 /// NSTouch device coordinates are physical points at 72 ppi, independent of
 /// display scale and scroll acceleration. Scroll events supply direction only.
 struct NotchMusicTrackSwipe {
+    private static let feedbackDistance = 18.0 // ¼ inch at 72 physical points per inch.
+    private static let trackChangeDistance = 96.0 // 4/3 inch.
     enum Direction { case next, previous }
     struct Contact {
         let id: Int
@@ -25,6 +27,7 @@ struct NotchMusicTrackSwipe {
         armed ?? (scrollDistance == 0 ? nil : (scrollDistance < 0 ? .next : .previous))
     }
     var horizontal: Bool { progress > 0 }
+    var feedbackReady: Bool { progress >= Self.feedbackDistance / Self.trackChangeDistance }
 
     mutating func cancel() {
         armed = nil
@@ -76,7 +79,7 @@ struct NotchMusicTrackSwipe {
         let vertical = travel.map { abs($0.y) }.max() ?? 0
         if vertical >= 4, vertical > horizontal * 1.5 { cancel(); return nil }
         let aligned = travel[0].x * travel[1].x > 0 && vertical <= max(4, horizontal * 0.67)
-        progress = aligned && horizontal >= 4 ? min(1, horizontal / 36) : 0
+        progress = aligned && horizontal >= 4 ? min(1, horizontal / Self.trackChangeDistance) : 0
         armIfReady()
         return nil
     }
