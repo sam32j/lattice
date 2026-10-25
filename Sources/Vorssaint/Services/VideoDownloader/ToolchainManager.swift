@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Samuel Ji
 
 import AppKit
+import CryptoKit
 import Foundation
 
 enum ToolchainState: Equatable, Sendable {
@@ -34,9 +35,19 @@ final class ToolchainManager: ObservableObject {
     #endif
 
     private static let downloadSources: [String: URL] = [
-        "yt-dlp": URL(string: "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos")!,
+        "yt-dlp": URL(string: "https://github.com/yt-dlp/yt-dlp/releases/download/2026.10.21/yt-dlp_macos")!,
         "ffmpeg": URL(string: "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-darwin-\(arch)")!,
         "ffprobe": URL(string: "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffprobe-darwin-\(arch)")!
+    ]
+
+    private static let expectedSHA256: [String: String] = [
+        "yt-dlp": "7a6fe71d7d680f1fb0ac18d4949873d77db2859e90017c0f44bd94b23be4ee40",
+        "ffmpeg": arch == "arm64"
+            ? "a90e3db6a3fd35f6074b013f948b1aa45b31c6375489d39e572bea3f18336584"
+            : "ebdddc936f61e14049a2d4b549a412b8a40deeff6540e58a9f2a2da9e6b18894",
+        "ffprobe": arch == "arm64"
+            ? "bb2db6f5d8cef919da12fbf592119a987202a8c060a886f3cab091f9cab90b64"
+            : "fa3add0ce901f7241abe0dfc0155d958fc834aca3f8ce61f87cc712ae669c1e0"
     ]
 
     init(discover: @escaping () -> VideoDownloadDependencies = { .discover() },
@@ -108,6 +119,15 @@ final class ToolchainManager: ObservableObject {
                     guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
                         throw NSError(domain: "ToolchainManager", code: 1, userInfo: [
                             NSLocalizedDescriptionKey: "Failed to download \(tool) (HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1))"
+                        ])
+                    }
+
+                    // Verify SHA-256 digest before moving or making executable
+                    let data = try Data(contentsOf: tempURL, options: .mappedIfSafe)
+                    let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+                    guard let expected = Self.expectedSHA256[tool], digest.lowercased() == expected.lowercased() else {
+                        throw NSError(domain: "ToolchainManager", code: 2, userInfo: [
+                            NSLocalizedDescriptionKey: "Downloaded \(tool) failed integrity verification (SHA-256 mismatch)."
                         ])
                     }
 
