@@ -9,6 +9,11 @@ enum ToolchainState: Equatable, Sendable {
     case needsApproval
     case installing(step: Int, of: Int, fraction: Double, message: String)
     case failed(String)
+
+    var isInstalling: Bool {
+        if case .installing = self { return true }
+        return false
+    }
 }
 
 final class ToolchainManager: ObservableObject {
@@ -16,6 +21,8 @@ final class ToolchainManager: ObservableObject {
 
     @Published private(set) var state: ToolchainState = .ready
     @Published private(set) var dependencies: VideoDownloadDependencies
+
+    var isInstalling: Bool { state.isInstalling }
 
     private let discoverDependencies: () -> VideoDownloadDependencies
     private let binURL: URL

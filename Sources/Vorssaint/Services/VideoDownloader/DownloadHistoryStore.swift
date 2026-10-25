@@ -44,9 +44,8 @@ final class DownloadHistoryStore: ObservableObject {
         if let storeURL {
             self.storeURL = storeURL
         } else {
-            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-                ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
-            self.storeURL = appSupport.appendingPathComponent("Lattice/VideoDownloader/history.json")
+            let appSupport = VideoDownloadDependencies.appSupportDirectory
+            self.storeURL = appSupport.appendingPathComponent("VideoDownloader/history.json")
         }
         load()
     }
