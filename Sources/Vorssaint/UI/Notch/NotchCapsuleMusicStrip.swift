@@ -93,7 +93,7 @@ struct NotchCapsuleMusicStrip: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel([title, playback?.track.artist].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityLabel([title, artist].compactMap { $0 }.joined(separator: ", "))
         .accessibilityAction(named: Text(FeatureStrings.radialMenu(l10n.language).mediaPlayPause)) {
             if !service.toggleMusicStripSong() { service.openActivity(.music) }
         }

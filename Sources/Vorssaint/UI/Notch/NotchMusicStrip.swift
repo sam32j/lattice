@@ -119,7 +119,7 @@ struct NotchMusicStrip: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel([title, playback?.track.artist].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityLabel([title, artist].compactMap { $0 }.joined(separator: ", "))
         .accessibilityHint(FeatureStrings.notch(l10n.language).open)
         .accessibilityAction(named: Text(FeatureStrings.radialMenu(l10n.language).mediaPlayPause)) {
             if !service.toggleMusicStripSong() { service.openActivity(.music) }
