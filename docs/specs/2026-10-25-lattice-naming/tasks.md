@@ -59,3 +59,27 @@ Resolved the build test-source-array conflict by keeping the incoming downloader
 Fresh verification on the updated base: 103,219 Swift checks passed; preference cleanup, uninstall-spaces and Developer-install isolation passed. Developer build and strict signature verification passed. Independent source/compatibility review found no actionable issues. No dependency installation, real permissions or hardware state changes. The earlier production-build result belongs to the pre-downloader naming snapshot and was not repeated for this base update.
 
 The user subsequently authorized committing/publishing this naming branch and opening its PR, followed by a separate fix branch and PR stacked on it. Keep the requested settings/capture fixes out of the naming PR.
+
+## Corrective semantic audit after PR review
+
+The earlier doc/support review was insufficient. The user identified semantic errors that mechanical naming and build checks did not catch.
+
+Acceptance: distinguish Lattice from upstream Vorssaint; current docs and permission prompts must match implemented features and ownership; preserve copyright, compatibility wire values, actual upstream endpoints and dated history.
+
+Confirmed and corrected:
+- Upstream attribution was incorrectly relabeled Lattice in the downstream guide and release-assurance wording; the root reset instructions also conflated identities.
+- Permissions described removed first-run onboarding, standalone Color Picker UI, outdated settings locations and automatic feature reactivation after a grant. Rewrote against FeatureCatalog, PermissionRevocationPolicy, permission controls and current service owners.
+- Removed WhatsApp cleanup remained in 70 localized purpose strings and five base plist values. All 14 locales now match current file/download/capture/Cleaner uses; localized Bluetooth/audio purposes also match current base copy.
+- Support links still targeted upstream; feedback dependencies, Shelf branding, price-list provenance and the README full-upstream-feature claim were stale.
+- Lyrics request metadata named Lattice but linked upstream; corrected only its project URL. Actual sharing and price-list upstream endpoints remain unchanged.
+- Added an explicit provenance banner to the historical upstream changelog without rewriting its release entries.
+
+Verification completed:
+- Base and all 14 localized plists parse successfully. Permission keys, localization keys and non-permission metadata are unchanged. All 75 retired WhatsApp purpose strings are gone.
+- Current documentation local file links resolve; product/upstream mislabels and obsolete permission walkthrough/reset/reactivation instructions were checked explicitly.
+- Affected settings and notch suites: 57,354 checks passed.
+- Developer build and strict signature verification passed. Audited the built app’s Developer bundle identity and all 14 packaged permission localizations.
+- Independent source review found the stale downstream support link, root reset identity conflation and two downloader privacy mismatches (local history and direct binary installation). All corrected and re-reviewed as ready. Later workflow-doc review tied the old snapshot hold to current release provenance rather than claiming it still blocks publication.
+- No behavior, permission grant, identifier, stored preference or signing configuration changes. The only request metadata edit changes the lyric client’s project URL. Historical copyright, service endpoints, compatibility values and dated release entries remain intact.
+
+This audit covers current documentation, permission-purpose resources and active identity references; it is not a claim that every historical document describes the current app. No real grants, hardware or download installs were exercised.
