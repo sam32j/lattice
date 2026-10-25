@@ -213,7 +213,7 @@ extension NotchSettings {
     /// The one feature a page needs; Captures and System accept any of several.
     func moduleFeature(_ module: NotchModule) -> AppFeature? {
         switch module {
-        case .controls, .music, .captures, .system: return nil
+        case .controls, .music, .captures, .system, .videoDownloader: return nil
         case .mixer: return .mixer
         case .clipboard: return .clipboardHistory
         case .files: return .shelf

@@ -172,6 +172,7 @@ struct NotchPagePreview: View {
             }
         // The live area belongs to the island; the preview explains it instead.
         case .watch: NotchWatchView(size: size)
+        case .videoDownloader: NotchVideoDownloaderView(size: size)
         }
     }
 

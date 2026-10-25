@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Samuel Ji
 
+import AppKit
 import Darwin
 import Foundation
 
@@ -73,10 +74,10 @@ struct DownloadProgress: Equatable, Sendable {
 
         if let eta = etaSeconds, eta > 0 {
             if eta < 60 {
-                parts.append("about \(Int(eta))s left")
+                parts.append("\(Int(eta))s left")
             } else {
                 let mins = Int(ceil(eta / 60))
-                parts.append("about \(mins) min left")
+                parts.append("\(mins) min left")
             }
         }
 
@@ -93,6 +94,11 @@ struct VideoDownloadInfo: Equatable, Sendable {
     let qualities: [VideoDownloadQuality]
     let hasAudio: Bool
     let estimatedSizeBytes: [Int: Int64]
+
+    var formattedDuration: String? {
+        guard let duration, duration.isFinite, duration > 0 else { return nil }
+        return VideoDownloadRequest.formatDuration(duration)
+    }
 
     var segmentedOptions: [VideoDownloadQuality] {
         var options: [VideoDownloadQuality] = [.best]
@@ -189,6 +195,38 @@ struct VideoDownloadInfo: Equatable, Sendable {
 }
 
 enum VideoDownloadRequest {
+    static func formatDuration(_ seconds: Double) -> String {
+        let total = Int(seconds)
+        let s = total % 60
+        let m = (total / 60) % 60
+        let h = total / 3600
+        if h > 0 {
+            return String(format: "%d:%02d:%02d", h, m, s)
+        } else {
+            return String(format: "%d:%02d", m, s)
+        }
+    }
+
+    static func validClipboardURL() -> String? {
+        guard let raw = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty,
+              !raw.contains(where: { $0.isWhitespace || $0.isNewline }),
+              !raw.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) else {
+            return nil
+        }
+        let candidate = raw.contains("://") ? raw : "https://" + raw
+        guard let parts = URLComponents(string: candidate),
+              ["http", "https"].contains(parts.scheme?.lowercased() ?? ""),
+              let host = parts.host,
+              host.contains("."),
+              !host.hasPrefix("."),
+              !host.hasSuffix("."),
+              parts.user == nil, parts.password == nil else {
+            return nil
+        }
+        return raw
+    }
+
     static func validatedURL(_ text: String) throws -> URL {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains),

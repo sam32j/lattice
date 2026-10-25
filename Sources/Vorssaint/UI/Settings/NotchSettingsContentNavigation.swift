@@ -150,6 +150,9 @@ extension NotchSettings {
                !AppFeature.dynamicIslandExtensions.contains(feature), !feature.isAvailable {
                 feature.showInFeatures()
             }
+            if module == .videoDownloader {
+                UserDefaults.standard.set(enabled, forKey: DefaultsKey.videoDownloaderEnabled)
+            }
             moduleBinding(module).wrappedValue = enabled
             sync()
         })

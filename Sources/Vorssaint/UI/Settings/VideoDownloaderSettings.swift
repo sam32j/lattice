@@ -807,37 +807,11 @@ struct VideoDownloaderSettings: View {
     }
 
     private func formatDuration(_ seconds: Double) -> String {
-        let total = Int(seconds)
-        let s = total % 60
-        let m = (total / 60) % 60
-        let h = total / 3600
-        if h > 0 {
-            return String(format: "%d:%02d:%02d", h, m, s)
-        } else {
-            return String(format: "%d:%02d", m, s)
-        }
+        VideoDownloadRequest.formatDuration(seconds)
     }
 
     private func updateClipboardURL() {
         pasteboardChangeCount = NSPasteboard.general.changeCount
-        guard let raw = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !raw.isEmpty,
-              !raw.contains(where: { $0.isWhitespace || $0.isNewline }),
-              !raw.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) else {
-            detectedClipboardURL = nil
-            return
-        }
-        let candidate = raw.contains("://") ? raw : "https://" + raw
-        guard let parts = URLComponents(string: candidate),
-              ["http", "https"].contains(parts.scheme?.lowercased() ?? ""),
-              let host = parts.host,
-              host.contains("."),
-              !host.hasPrefix("."),
-              !host.hasSuffix("."),
-              parts.user == nil, parts.password == nil else {
-            detectedClipboardURL = nil
-            return
-        }
-        detectedClipboardURL = parts.url?.absoluteString ?? candidate
+        detectedClipboardURL = VideoDownloadRequest.validClipboardURL()
     }
 }

@@ -1353,6 +1353,7 @@ def main():
                                                 "NotchSupport.routes(.track, in: ReviewDefaults.current)")
     music_visibility = music_visibility.replace("UserDefaults.standard", "ReviewDefaults.current!")
     music_visibility = music_visibility.replace("calendar: hasCalendarActivity", "calendar: false")
+    music_visibility = music_visibility.replace("videoDownloader: hasVideoDownloadActivity", "videoDownloader: false")
     music_visibility = music_visibility.replace("playback?.isPlaying == true)",
                                                 "playback?.isPlaying == true, in: ReviewDefaults.current)")
     music_visibility = music_visibility.replace("appPanel: showingAppPanel)", "appPanel: showingAppPanel, in: ReviewDefaults.current)")

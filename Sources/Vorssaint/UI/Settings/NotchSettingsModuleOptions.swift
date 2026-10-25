@@ -135,6 +135,14 @@ extension NotchSettings {
         case .watch:
             NotchWatchSettingsControls()
                 .toggleStyle(TrailingSwitchToggleStyle())
+        case .videoDownloader:
+            HStack {
+                Label(VideoDownloaderStrings.saveTo, systemImage: "folder")
+                Spacer()
+                Button(VideoDownloader.shared.destination?.lastPathComponent ?? "Downloads") {
+                    VideoDownloader.shared.chooseDestination()
+                }
+            }
         case .mixer, .system, .tools:
             EmptyView()
         }
