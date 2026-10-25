@@ -195,8 +195,8 @@ final class VideoDownloader: ObservableObject {
                     self.isFetching = false
                     self.info = details
                     self.inspectedURL = url
-                    self.selectedQuality = details.qualities.first ?? .best
-                    self.selectedHeight = self.selectedQuality.height
+                    self.selectedQuality = .best
+                    self.selectedHeight = details.qualities.first?.height ?? 0
                     self.phase = ""
                     self.loadThumbnail(details.thumbnailURL, id: id)
                 }
@@ -228,9 +228,10 @@ final class VideoDownloader: ObservableObject {
     }
 
     func download() {
-        let quality = selectedQuality.height != 0
-            ? selectedQuality
-            : (info?.qualities.first(where: { $0.height == selectedHeight }) ?? selectedQuality)
+        let quality = selectedQuality
+        let qualityTag = quality.isBest
+            ? (info?.qualities.first?.title ?? quality.title)
+            : quality.title
 
         guard let url = inspectedURL,
               let destination, dependencies.ready,
@@ -240,7 +241,6 @@ final class VideoDownloader: ObservableObject {
 
         let tools = dependencies
         let videoTitle = info?.title ?? "video"
-        let qualityTag = quality.title
 
         isDownloading = true
         isFetching = false

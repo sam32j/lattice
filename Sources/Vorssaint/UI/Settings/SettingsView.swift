@@ -204,14 +204,31 @@ struct SettingsView: View {
                 toolbarTitle
             }
             .sharedBackgroundVisibility(.hidden)
+            if router.page == .videoDownloader {
+                ToolbarSpacer(.flexible)
+                ToolbarItem(placement: .primaryAction) {
+                    VideoDownloaderToolbarToggle()
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
         } else {
             ToolbarItem(placement: .navigation) {
                 toolbarTitle
+            }
+            if router.page == .videoDownloader {
+                ToolbarItem(placement: .primaryAction) {
+                    VideoDownloaderToolbarToggle()
+                }
             }
         }
 #else
         ToolbarItem(placement: .navigation) {
             toolbarTitle
+        }
+        if router.page == .videoDownloader {
+            ToolbarItem(placement: .primaryAction) {
+                VideoDownloaderToolbarToggle()
+            }
         }
 #endif
     }
