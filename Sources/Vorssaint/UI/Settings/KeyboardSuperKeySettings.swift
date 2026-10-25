@@ -36,6 +36,7 @@ extension KeyboardSettings {
                         }
                 }
 
+                if superKeyEnabled {
                 HStack(spacing: 6) {
                     Text(InputSettingsStrings.text(.superKey, l10n.language))
                     Spacer(minLength: 12)
@@ -71,6 +72,7 @@ extension KeyboardSettings {
                 MouseExceptionsList(scope: .superKey)
                     .padding(.leading, settingsRowTextInset)
                     .disabled(superKeyOptionsDisabled)
+                }
             }
         }
     }

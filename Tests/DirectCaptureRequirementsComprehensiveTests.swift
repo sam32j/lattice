@@ -327,16 +327,14 @@ enum DirectCaptureRequirementsComprehensiveTests {
         let recordingPolicy = ScreenshotSupport.unifiedCapturePolicy(
             for: .recording,
             screenshotFreeze: true,
-            screenshotIncludePointer: true,
-            screenshotHideVorssaintWindows: true)
+            screenshotIncludePointer: true)
         suite.expect(recordingPolicy.freeze == false,
                      "Recorder selection mode uses live capture source without freezing the screen, even if screenshotFreeze is true")
 
         let screenshotPolicy = ScreenshotSupport.unifiedCapturePolicy(
             for: .screenshot,
             screenshotFreeze: true,
-            screenshotIncludePointer: true,
-            screenshotHideVorssaintWindows: true)
+            screenshotIncludePointer: true)
         suite.expect(screenshotPolicy.freeze == true,
                      "Screenshot selection respects screenshotFreeze setting")
 

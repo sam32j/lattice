@@ -622,7 +622,6 @@ enum DefaultsKey {
     static let screenshotClipboardShortcutEnabled = "screenshotClipboardShortcutEnabled"
     static let screenshotClipboardShortcut = "screenshotClipboardShortcut"
     static let screenshotFreeze = "screenshotFreeze"
-    static let screenshotHideVorssaintWindows = "screenshotHideVorssaintWindows"
     static let screenshotSaveFolder = "screenshotSaveFolder"
     static let screenshotSaveSubfolder = "screenshotSaveSubfolder"
     static let screenshotFileNamePattern = "screenshotFileNamePattern"
@@ -785,7 +784,6 @@ enum DefaultsKey {
     static let notchHapticFeedback = "notchHapticFeedback"
     static let notchShelf = "notchShelf"
     static let notchDragReveal = "notchDragReveal"
-    static let notchCaptureControls = "notchCaptureControls"
     static let notchQuickPanel = "notchQuickPanel"
     static let notchAppPanel = "notchAppPanel"
     static let notchHidesMenuBarIcon = "notchHidesMenuBarIcon" // the island takes the glyph's place while it is on
@@ -1278,9 +1276,9 @@ enum Defaults {
         DefaultsKey.notchHapticFeedback: true,
         DefaultsKey.notchShelf: true,
         DefaultsKey.notchDragReveal: true,
-        DefaultsKey.notchCaptureControls: true,
         DefaultsKey.notchQuickPanel: true,
         DefaultsKey.notchAppPanel: false,
+        AppMenuDestination.disabledKey: false,
         DefaultsKey.notchHidesMenuBarIcon: false,
         DefaultsKey.notchKeepAwakeActivity: false,
         DefaultsKey.notchScratchpad: true,
@@ -1716,7 +1714,6 @@ enum Defaults {
         DefaultsKey.screenshotClipboardShortcutEnabled: false,
         DefaultsKey.screenshotClipboardShortcut: GlobalShortcut.screenshotClipboardDefault.storageValue,
         DefaultsKey.screenshotFreeze: true,
-        DefaultsKey.screenshotHideVorssaintWindows: true,
         DefaultsKey.screenshotSaveFolder: "",
         DefaultsKey.screenshotSaveSubfolder: "",
         DefaultsKey.screenshotFileNamePattern: "",
@@ -1836,7 +1833,6 @@ enum Defaults {
         migrateCleaningModeShortcut(in: defaults)
         migratePageOwnedControls(in: defaults)
         migrateAudioControls(in: defaults)
-        migrateCaptureControls(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         activateBetaChannelIfRunningBeta(in: defaults)

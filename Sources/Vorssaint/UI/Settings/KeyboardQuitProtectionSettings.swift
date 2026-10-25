@@ -34,7 +34,7 @@ extension KeyboardSettings {
 
         VStack(alignment: .leading, spacing: 10) {
             SettingsRow(symbol: "shield", title: shortcut.symbol, caption: quitStrings.enabledCaption) {
-                Toggle(quitStrings.enabled, isOn: enabled)
+                PermissionGatedToggle(quitStrings.enabled, isOn: enabled)
                     .labelsHidden()
                     .onChange(of: enabled.wrappedValue) { _, value in
                         quitService.syncWithPreferences()
@@ -47,6 +47,8 @@ extension KeyboardSettings {
 
             if enabled.wrappedValue {
                 VStack(alignment: .leading, spacing: 10) {
+                SettingsToggleRow(title: quitStrings.feedback, isOn: showFeedback)
+                    .onChange(of: showFeedback.wrappedValue) { _, _ in quitService.syncWithPreferences() }
                 SettingsControlRow(title: quitStrings.mode) {
                     Picker(quitStrings.mode, selection: mode) {
                         Text(quitStrings.hold).tag(QuitProtectionMode.hold.rawValue)
@@ -92,8 +94,6 @@ extension KeyboardSettings {
 
                 exceptionsSection(for: shortcut, scope: currentScope, enabled: enabled.wrappedValue)
 
-                SettingsToggleRow(title: quitStrings.feedback, isOn: showFeedback)
-                    .onChange(of: showFeedback.wrappedValue) { _, _ in quitService.syncWithPreferences() }
                 }
                 .padding(.leading, settingsRowTextInset)
             }

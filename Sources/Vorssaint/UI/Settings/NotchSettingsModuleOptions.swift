@@ -60,8 +60,9 @@ extension NotchSettings {
                 .disabled(!NotchAudioLevelSupport.isSupported)
         case .notifications:
             let notifications = FeatureStrings.notchNotifications(l10n.language)
-            switchRow("bell.slash", notifications.hideSystemBanner, caption: notifications.hideSystemBannerHint,
-                      isOn: $dismissNativeNotifications)
+            SettingsRow(symbol: "bell.slash", title: notifications.hideSystemBanner, caption: notifications.hideSystemBannerHint) {
+                PermissionGatedToggle(notifications.hideSystemBanner, isOn: $dismissNativeNotifications).labelsHidden()
+            }
             if notificationsEnabled, !permissions.accessibility { PermissionRow(kind: .accessibility) }
         case .downloads:
             NotchDownloadsSettingsControls()
@@ -123,8 +124,6 @@ extension NotchSettings {
                 }
             }
         case .captures:
-            SettingsToggleRow(title: text.captureControls, isOn: $captureControls)
-                .disabled(!AppFeature.screenshot.isAvailable && !AppFeature.screenRecorder.isAvailable)
             if AppFeature.screenshot.isAvailable {
                 ScreenshotDefaultActionPicker(strings: FeatureStrings.screenshot(l10n.language), selection: $captureAction)
                     .padding(.leading, settingsRowTextInset)

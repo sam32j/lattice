@@ -7,6 +7,7 @@ import SwiftUI
 /// Menu bar panel preferences, separate from General's app preferences.
 struct GeneralToolSettings: View {
     @ObservedObject private var l10n = L10n.shared
+    @AppStorage(DefaultsKey.notchHidesMenuBarIcon) private var hideMenuIcon = false
 
     private var text: GeneralSettingsStrings { FeatureStrings.generalSettings(l10n.language) }
 
@@ -14,6 +15,9 @@ struct GeneralToolSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 SettingsCard(title: l10n.s.menuBarSection) {
+                    SettingsToggleRow(title: FeatureStrings.notchEditor(l10n.language).hideMenuBarIcon,
+                                      isOn: $hideMenuIcon)
+                    Divider()
                     Text(text.panelIntro)
                         .font(.callout)
                         .foregroundStyle(.secondary)

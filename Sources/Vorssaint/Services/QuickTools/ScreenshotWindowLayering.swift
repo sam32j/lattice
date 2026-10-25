@@ -5,16 +5,19 @@ import AppKit
 import Carbon.HIToolbox
 
 enum ScreenshotWindowLayering {
+    // Liftoff uses the screen-saver level (1000). Keep the capture workspace
+    // immediately below it, with room for its editors and modal dialogs.
+    static let pinLevel = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue - 3)
+    private static let editorBase = NSWindow.Level.screenSaver.rawValue - 2
+    private static let dialogBase = NSWindow.Level.screenSaver.rawValue - 1
     static func previewLevel(above owner: NSWindow?) -> NSWindow.Level {
-        NSWindow.Level(rawValue: max(NSWindow.Level.popUpMenu.rawValue - 1, (owner?.level.rawValue ?? 0) + 1))
+        NSWindow.Level(rawValue: min(dialogBase, max(pinLevel.rawValue, (owner?.level.rawValue ?? 0) + 1)))
     }
     static func editorLevel(above owner: NSWindow?) -> NSWindow.Level {
-        guard let owner else { return .normal }
-        return NSWindow.Level(rawValue: max(NSWindow.Level.normal.rawValue, owner.level.rawValue + 1))
+        NSWindow.Level(rawValue: editorBase)
     }
     static func dialogLevel(above window: AnyObject?) -> NSWindow.Level {
-        guard let window = window as? NSWindow else { return .modalPanel }
-        return NSWindow.Level(rawValue: max(NSWindow.Level.modalPanel.rawValue, window.level.rawValue + 1))
+        NSWindow.Level(rawValue: dialogBase)
     }
     static func runModalPanel(_ panel: NSSavePanel, above window: NSWindow?) -> NSApplication.ModalResponse {
         var observers: [NSObjectProtocol] = []

@@ -93,7 +93,7 @@ enum NotchHoverTests {
         var running = true, suspended = false, inside = false, hoverEmphasized = false
         var pinned = false, heldDrag = false, keepsWorkingSurface = false
         var expanded = false, peeking = false, dragPlaceholder = false, openedByHover = false
-        var captureControls: Bool?, notice: NotchNotice?
+        var notice: NotchNotice?
         var noticeExpanded = false
         var noticeWork: DispatchWorkItem?
         var departingNotice: NotchNotice?
@@ -116,7 +116,7 @@ enum NotchHoverTests {
         var openedActivities: [NotchModule] = []
         func openActivity(_ module: NotchModule) { openedActivities.append(module) }
         var compactMusicIsVisible: Bool {
-            !fullscreenCompact && !expanded && !peeking && !dragPlaceholder && notice == nil && captureControls == nil
+            !fullscreenCompact && !expanded && !peeking && !dragPlaceholder && notice == nil
                 && compactActivity == .music
         }
         var capsuleMusicRefreshes = 0
@@ -130,8 +130,6 @@ enum NotchHoverTests {
         var hoverWork: DispatchWorkItem?
         var shelfDragExitWork: DispatchWorkItem?
         var captureHover: ((Bool) -> Void)?
-        func updateCaptureControlsHover(wasInside: Bool) {}
-        func updateCaptureControlsClickThrough() {}
         var childWindowFrames: [CGRect] = []
         func pointerOverChildWindow(_ point: CGPoint) -> Bool { childWindowFrames.contains { $0.contains(point) } }
         var windowHost: Host? = Host()
@@ -225,9 +223,6 @@ enum NotchHoverTests {
                 picker.inside = true
                 suite.expect(!picker.showsCompactActivityPicker, "the chooser does not cover an open page")
                 picker.expanded = false
-                picker.captureControls = true
-                suite.expect(!picker.showsCompactActivityPicker, "capture controls retain priority")
-                picker.captureControls = nil
                 picker.notice = volume
                 suite.expect(!picker.showsCompactActivityPicker, "system notices retain priority")
                 picker.notice = nil
@@ -926,7 +921,7 @@ enum NotchHoverTests {
 
         for protect: (Service) -> Void in [
             { $0.pinned = true }, { $0.heldDrag = true }, { $0.keepsWorkingSurface = true },
-            { $0.captureControls = true }, { $0.hoverState.close(pointerInside: true) },
+            { $0.hoverState.close(pointerInside: true) },
             { $0.notice = volume }, { $0.dragPlaceholder = true }, { $0.suspended = true }, { $0.running = false },
             { _ in UserDefaults.standard.enabled = false }
         ] {
@@ -942,7 +937,7 @@ enum NotchHoverTests {
         }
         for protect: (Service) -> Void in [
             { $0.pinned = true }, { $0.heldDrag = true }, { $0.keepsWorkingSurface = true },
-            { $0.captureControls = true }, { $0.suspended = true }, { $0.running = false }
+            { $0.suspended = true }, { $0.running = false }
         ] {
             let protected = fixture()
             protected.open(nil, takeFocus: false)
@@ -1418,7 +1413,7 @@ enum NotchHoverTests {
         expect(preview.musicStripAnswers(.cover) && preview.musicStripAnswers(.bars),
                "an island that only previews on hover keeps its strip's answers")
         for block: (Service) -> Void in [{ $0.expanded = true }, { $0.peeking = true }, { $0.dragPlaceholder = true },
-                                         { $0.captureControls = true }, { $0.compactActivity = .timer },
+                                         { $0.compactActivity = .timer },
                                          { $0.hiddenInFullscreen = true },
                                          { $0.notice = NotchNotice(event: .volume, title: "Volume", detail: "50%",
                                                                    symbol: "speaker.wave.2.fill", level: 0.5) }] {

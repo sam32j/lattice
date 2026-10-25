@@ -272,7 +272,7 @@ enum UpdateFeatureTests {
                     query: "screen recording",
                     title: FeatureStrings.screenshot(.enUS).screenCaptureTitle,
                     keywords: captureSearchKeywords)
-                && SettingsSearchSupport.matches(
+                && !SettingsSearchSupport.matches(
                     query: "line breaks",
                     title: FeatureStrings.screenshot(.enUS).screenCaptureTitle,
                     keywords: captureSearchKeywords),
@@ -402,8 +402,8 @@ enum UpdateFeatureTests {
             suite.expect(item?.icon == feature.symbolName,
                    "\(settingsFeatureTitles[feature] ?? feature.rawValue) uses its feature symbol")
         }
-        suite.expect(featureSearchItems.count == AppFeature.allCases.count
-                && Set(featureSearchItems.map(\.id)).count == AppFeature.allCases.count,
+        suite.expect(featureSearchItems.count == AppFeature.allCases.count - 2
+                && Set(featureSearchItems.map(\.id)).count == AppFeature.allCases.count - 2,
                "generated Settings feature results have one stable identity per feature")
 
         for language in AppLanguage.allCases {

@@ -203,7 +203,7 @@ extension Strings {
 
         pastePlainName: "일반 텍스트로 붙여넣기",
         pastePlainCaption: "색상, 글꼴, 서식 없이 복사한 내용을 붙여넣습니다. 원본은 클립보드에 유지됩니다.",
-        launcherName: "빠른 패널",
+        launcherName: "앱 그리드",
         launcherCaption: "즐겨 쓰는 도구를 모아 둔 떠 있는 패널입니다. 어디서나 단축키로 열 수 있습니다.",
         launcherEditHint: "조정 버튼에서 도구 선택, 숨기기, 드래그 이동을 할 수 있습니다.",
         launcherEmptyState: "모든 도구가 숨겨져 있습니다. 조정 버튼에서 다시 표시할 수 있습니다.",
@@ -493,7 +493,7 @@ extension Strings {
         mediaErrorSameOutput: "원본 파일과 다른 저장 위치를 선택하세요.",
         mediaErrorUnsupported: "macOS에서 지원하지 않는 형식입니다.",
 
-        shelfName: "선반",
+        shelfName: SettingsOwnershipStrings.text(.fileCache, .ko),
         shelfEnable: "파일을 드래그해 두는 임시 공간",
         shelfEnableCaption: "파일, 이미지, 텍스트를 모아 두었다가 나중에 어디든 드래그할 수 있는 떠 있는 공간입니다.",
         shelfHowTitle: "사용 방법",
@@ -529,7 +529,7 @@ extension Strings {
         shelfOpenNow: "지금 열기",
         shelfNoPermission: "권한이 필요하지 않습니다.",
         shelfMenuItem: "선반 열기",
-        shelfTitle: "선반",
+        shelfTitle: SettingsOwnershipStrings.text(.fileCache, .ko),
         shelfEmpty: "여기에 항목을 드래그하세요",
         shelfClearAll: "모두 지우기",
         shelfRemoveSelected: "선택 항목 제거",

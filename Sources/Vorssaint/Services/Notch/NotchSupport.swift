@@ -1184,10 +1184,6 @@ enum NotchCapsuleLayout {
         return surface(content: symbolWidth + spacing + right, maximum: Maximum.activity, geometry: geometry)
     }
 
-    /// Screen capture controls folded while an area is chosen: the tool and a chevron.
-    static func captureSurface(geometry: NotchGeometry) -> CGSize {
-        surface(content: symbolWidth * 2 + spacing, maximum: Maximum.activity, geometry: geometry)
-    }
 }
 
 struct NotchActivityPickerLayout {
@@ -1213,54 +1209,6 @@ struct NotchActivityPickerLayout {
                       height: headerHeight + CGFloat(rows) * Self.rowHeight
                         + CGFloat(rows - 1) * Self.spacing + Self.verticalInset * 2
                         + (hasCombinations ? Self.combinationHeight + Self.spacing : 0))
-    }
-}
-
-/// Screen capture controls keep their title and buttons where the open
-/// island keeps its header: at the top, beside a physical camera when the
-/// title and the buttons each fit whole on their side, or in a row below it.
-struct NotchCaptureControlsLayout {
-    /// The row below a camera, as tall as its buttons.
-    static let rowHeight: CGFloat = 28
-    static let buttonSpacing: CGFloat = 6
-    /// The repeat key, collapse and close at their narrowest, as squares.
-    static let narrowButtonsWidth: CGFloat = 28 * 3 + buttonSpacing * 2
-    /// Room the title and the buttons keep from the camera.
-    static let cameraClearance: CGFloat = 8
-    /// The title's font: the window is sized from it and the view draws it.
-    static let titleFont = NSFont.systemFont(ofSize: 12, weight: .semibold)
-
-    static func titleWidth(_ title: String) -> CGFloat {
-        (title as NSString).size(withAttributes: [.font: titleFont]).width.rounded(.up)
-    }
-    /// From the top of the island to the top of the title row.
-    let headerTop: CGFloat
-    let headerHeight: CGFloat
-    /// The camera between the title and the buttons; 0 when one row holds both.
-    let cameraGap: CGFloat
-    /// Each side of the camera, from the island's inset to the cutout.
-    let sideWidth: CGFloat
-    let size: CGSize
-
-    /// `titleWidth` is measured with the title's font.
-    init(geometry: NotchGeometry, titleWidth: CGFloat, capturesAudio: Bool) {
-        let side = (geometry.contentWidth - geometry.headerCameraGap) / 2
-        let fits = max(titleWidth, Self.narrowButtonsWidth) + Self.cameraClearance <= side
-        // Without a camera one row spans the top, as the open header does,
-        // below a capsule's rounded top corners.
-        if geometry.headerTopInset == 0 || geometry.floats, geometry.headerCameraGap == 0 || fits {
-            headerTop = geometry.headerTopInset
-            headerHeight = geometry.headerRowHeight
-            cameraGap = geometry.headerCameraGap
-        } else {
-            headerTop = geometry.safeContentTop
-            headerHeight = Self.rowHeight
-            cameraGap = 0
-        }
-        sideWidth = cameraGap > 0 ? side : 0
-        size = CGSize(width: geometry.expandedWidth,
-                      height: headerTop + headerHeight + 12 + NotchLayout.shortcutHeight + 16
-                        + (capturesAudio ? 40 : 0))
     }
 }
 
@@ -2058,7 +2006,7 @@ enum NotchSupport {
     }
 
     static func routesAppPanel(in defaults: UserDefaults = .standard) -> Bool {
-        isEnabled(in: defaults) && defaults.bool(forKey: DefaultsKey.notchAppPanel)
+        AppMenuDestination.selected(in: defaults) == .island
     }
 
     static func routesScratchpad(in defaults: UserDefaults = .standard) -> Bool {

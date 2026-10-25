@@ -4,6 +4,11 @@ import SwiftUI
 /// The same native-control rendering seam used by the Settings choice tests.
 enum InputSettingsControlTests {
     static func run(_ suite: TestSuite) {
+        let pinned = MixerPinButton(isPinned: true, pinTitle: "Pin", unpinTitle: "Unpin", appName: "App", action: {})
+        let unpinned = MixerPinButton(isPinned: false, pinTitle: "Pin", unpinTitle: "Unpin", appName: "App", action: {})
+        suite.expect(pinned.symbolName == "pin.fill" && pinned.tint == .blue
+                     && unpinned.symbolName == "pin" && unpinned.tint == .secondary,
+                     "audio pin state uses explicit blue rather than the configurable system accent")
         for (enabled, color, expected) in [(true, Color.red, true), (true, .green, false),
                                           (true, .secondary, false), (false, .red, true),
                                           (false, .green, true), (false, .secondary, true)] {
@@ -128,6 +133,11 @@ enum InputSettingsControlTests {
         hint.message = "Super Key active"
         window.contentView?.addSubview(hint)
         window.orderFrontRegardless()
+        hint.updateTrackingAreas()
+        let originalTrackingArea = hint.trackingAreas.first
+        for _ in 0..<3 { hint.updateTrackingAreas() }
+        suite.expect(hint.trackingAreas.count == 1 && hint.trackingAreas.first === originalTrackingArea,
+                     "layout updates preserve the hovered tracking area rather than synthesizing exits")
         let event = NSEvent.enterExitEvent(with: .mouseEntered, location: .zero, modifierFlags: [],
             timestamp: 0, windowNumber: window.windowNumber, context: nil, eventNumber: 0,
             trackingNumber: 0, userData: nil)!

@@ -168,8 +168,6 @@ enum RadialMenuProfilePreset: String, CaseIterable, Identifiable {
         case .tools:
             return [
                 RadialMenuItem(kind: .tool, payload: RadialMenuTool.screenshot.rawValue),
-                RadialMenuItem(kind: .tool, payload: RadialMenuTool.colorPicker.rawValue),
-                RadialMenuItem(kind: .tool, payload: RadialMenuTool.screenOCR.rawValue),
                 RadialMenuItem(kind: .tool, payload: RadialMenuTool.screenRecorder.rawValue),
                 RadialMenuItem(kind: .tool, payload: RadialMenuTool.micMute.rawValue),
                 RadialMenuItem(kind: .tool, payload: RadialMenuTool.scratchpad.rawValue),
@@ -364,7 +362,7 @@ enum RadialMenuTool: String, Codable, CaseIterable, Identifiable {
     func isRunnable(isFeatureAvailable: (AppFeature) -> Bool = { $0.isAvailable },
                     boolFor: (String) -> Bool = { UserDefaults.standard.bool(forKey: $0) }) -> Bool {
         if self == .cleaningMode { return true } // This manual action needs no persistent shortcut.
-        guard isFeatureAvailable(feature) else { return false }
+        guard self != .colorPicker, self != .screenOCR, isFeatureAvailable(feature) else { return false }
         return self != .shelf || boolFor(DefaultsKey.shelfEnabled)
     }
 }
@@ -760,7 +758,6 @@ enum RadialMenuSupport {
         RadialMenuItem(kind: .media, payload: RadialMenuMediaKey.nextTrack.rawValue),
         RadialMenuItem(kind: .tool, payload: RadialMenuTool.screenshot.rawValue),
         RadialMenuItem(kind: .file, payload: "~/Downloads"),
-        RadialMenuItem(kind: .tool, payload: RadialMenuTool.colorPicker.rawValue),
         RadialMenuItem(kind: .media, payload: RadialMenuMediaKey.previousTrack.rawValue),
     ]
 

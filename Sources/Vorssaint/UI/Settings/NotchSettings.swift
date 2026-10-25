@@ -90,8 +90,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchHapticFeedback) var hapticFeedback = true
     @AppStorage(DefaultsKey.notchShelf) var shelfWindow = true
     @AppStorage(DefaultsKey.notchDragReveal) var dragReveal = true
-    @AppStorage(DefaultsKey.notchCaptureControls) var captureControls = true
-    @AppStorage(DefaultsKey.notchQuickPanel) var quickPanel = true
     @AppStorage(DefaultsKey.notchAppPanel) var appPanel = false
     @AppStorage(DefaultsKey.notchHidesMenuBarIcon) var hidesMenuBarIcon = false
     @AppStorage(DefaultsKey.notchKeepAwakeActivity) var keepAwakeActivity = false
@@ -121,7 +119,7 @@ struct NotchSettings: View {
          String(cameraEnabled), String(accessoriesEnabled), String(outlineEnabled), String(hideMenuBarGap),
          String(customWidth), String(customHeight), String(cameraFitWidth), String(cameraFitHeight),
          String(capsuleFitWidth), String(capsuleFitHeight), String(capsuleFitDrop), String(hapticFeedback),
-         String(shelfWindow), String(dragReveal), String(captureControls), String(quickPanel), String(appPanel),
+         String(shelfWindow), String(dragReveal), String(appPanel),
          String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(hideInFullscreen), String(coversMenus),
          display, silhouette, String(hover), hidden, order, String(volume), String(inputSource),
          String(brightness), String(keyboardLight),
@@ -194,7 +192,7 @@ struct NotchSettings: View {
                         SettingsRow(symbol: AppFeature.notch.symbolName, title: text.enable,
                                     experimentalBadge: FeatureStrings.hub(l10n.language).experimentalBadge,
                                     caption: text.description) {
-                            Toggle(text.enable, isOn: islandFeatureBinding(.notch, value: $enabled))
+                            PermissionGatedToggle(text.enable, isOn: islandFeatureBinding(.notch, value: $enabled))
                                 .labelsHidden().toggleStyle(.switch)
                         }
                     }

@@ -935,6 +935,14 @@ def main():
               .replace("AppFeature.keyboardDebounce.isAvailable", "AppFeature.keyboardDebounce.isAvailable(in: ReviewDefaults.current!)")
           + "}\n}\n")
     # Entire input/mute services retain their production control flow. Only
+    write("KeyboardPermissionLifecycle.swift", "import Foundation\nextension KeyboardPermissionLifecycleTests {\nfinal class Service: State {\n"
+          + availability_declaration("Sources/Vorssaint/Services/KeyboardDebounce/KeyboardDebounceService.swift",
+                                     "    func syncWithPreferences()")
+              .replace("UserDefaults.standard", "ReviewDefaults.current!")
+              .replace("AXIsProcessTrusted()", "accessibilityGranted")
+              .replace("AppFeature.keyboardDebounce.isAvailable", "AppFeature.keyboardDebounce.isAvailable(in: ReviewDefaults.current!)")
+          + "}\n}\n")
+    # Entire input/mute services retain their production control flow. Only
     # visibility, scheduling, defaults and HAL transport are replaced by fixtures.
     input_source = "Sources/Vorssaint/Services/Audio/AudioInputDeviceManager.swift"
     mute_source = "Sources/Vorssaint/Services/QuickTools/MicMuteService.swift"
@@ -1332,7 +1340,7 @@ def main():
         "    var compactActivityGeometry:", "    private func compactGeometry(", "    var compactActivities:",
         "    var compactCompanion:",
         "    var surfaceSize:", "    var surfaceShift:", "    func collapse(",
-        "    private func detachCaptureIfClosingOnCollapse(", "    func endCaptureControls(",
+        "    private func detachCaptureIfClosingOnCollapse(",
         "    private func syncVisibleConsumers(", "    private func releaseMonitor("])
     for call in ["NotchSupport.controls", "NotchSupport.watchesMusicActivity", "NotchSupport.idleContent",
                  "NotchSupport.hiddenShowsActivity"]:
@@ -1343,8 +1351,7 @@ def main():
     music_visibility = music_visibility.replace("calendar: hasCalendarActivity", "calendar: false")
     music_visibility = music_visibility.replace("playback?.isPlaying == true)",
                                                 "playback?.isPlaying == true, in: ReviewDefaults.current)")
-    music_visibility = music_visibility.replace("captureControls: captureControls != nil)",
-                                                "captureControls: captureControls != nil, in: ReviewDefaults.current)")
+    music_visibility = music_visibility.replace("appPanel: showingAppPanel)", "appPanel: showingAppPanel, in: ReviewDefaults.current)")
     music_visibility = music_visibility.replace(
         "NotchDownloadService.shared.items.first { $0.active && !$0.completed }?.name", "downloadName")
     music_visibility = music_visibility.replace("AppFeature.monitorDisk.isAvailable",
@@ -1419,21 +1426,13 @@ def main():
           + "extension NotchPresentationRefreshContract {\nfinal class Service: State {\n"
           + "let deferredCapturePresentation = CapturePresentationDeferral()\nfunc fullscreenEnvironmentDidChange() {}\n"
           + "func resignPanelKey() { panel?.resignKey() }\n"
-          + "func hover(_ entered: Bool) {\nlet wasInside = inside\n"
+          + "func hover(_ entered: Bool) {\n"
           + "inside = windowHost?.containsHover(NSEvent.mouseLocation) == true\n"
-          + "hoverState.update(pointerInside: inside)\nupdateCaptureControlsHover(wasInside: wasInside)\n}\n"
+          + "hoverState.update(pointerInside: inside)\n}\n"
           + "".join(declaration(notch, prefix).replace("    private ", "    ", 1) for prefix in [
-              "    func collapseCaptureControls()", "    func expandCaptureControls()",
-              "    private func setCaptureSelectionInProgress(", "    func scheduleCaptureControlsCollapse(",
-              "    private func updateCaptureControlsHover(", "    private func updateCaptureControlsClickThrough()",
-              "    private func removeCaptureControlsClickThrough()", "    private func missionControlDidRestore()",
+              "    private func missionControlDidRestore()",
               "    func deferCaptureUntilMissionControlRestores(", "    func cancelDeferredCapturePresentation(",
-              "    func resumeDeferredCaptureIfReady()",
-              "    func endCaptureControls()"])
-          + declaration(notch, "    func presentCaptureControls(")
-              .replace("ScreenCaptureSelectionOptions", "CaptureOptions")
-              .replace(".receive(on: DispatchQueue.main)", "")
-              .replace("panel?.level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()) + 1)", "panel?.level = 2")
+              "    func resumeDeferredCaptureIfReady()"])
           + declaration(notch, "    private var hiddenUntilHover:").replace("private var", "var", 1)
               .replace("NotchSupport.hiddenShowsActivity()", "hiddenShowsActivity")
           + declaration(notch, "    private var hiddenAtRestInFullscreen:").replace("private var", "var", 1)
@@ -1603,6 +1602,7 @@ def main():
     input_slider = "Sources/Vorssaint/UI/Settings/SettingsValueSlider.swift"
     status_dot = "Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift"
     write("InputSettingsControls.swift", "import AppKit\nimport SwiftUI\n\nextension InputSettingsControlTests {\n"
+          + declaration("Sources/Vorssaint/UI/MenuPanel/MixerPinButton.swift", "struct MixerPinButton:")
           + "struct SheetCaption { let caption: String\nstruct Language { let language: AppLanguage }\nlet l10n: Language\n"
           + declaration("Sources/Vorssaint/UI/Settings/AppListSheet.swift", "    private var punctuatedCaption:").replace("private var", "var", 1)
           + "}\n"
@@ -1914,7 +1914,6 @@ def main():
           + declaration(selection, "    fileprivate var acceptsCaptureInput:").replace("fileprivate var", "var", 1)
           + declaration(selection, "    fileprivate var offersFullScreenCapture:").replace("fileprivate var", "var", 1)
           + declaration(selection, "    fileprivate var acceptsWindowClick:").replace("fileprivate var", "var", 1)
-          + declaration(selection, "    func placeFullScreenControlBelowNotch(")
           + declaration(selection, "    private var repeatTargetPanel:").replace("private var", "var", 1)
           + declaration(selection, "    fileprivate var offersRepeatLastRegion:").replace("fileprivate var", "var", 1)
           + "".join(declaration(selection, prefix).replace("fileprivate func", "func", 1)
@@ -1922,17 +1921,12 @@ def main():
                     for prefix in refresh_methods)
           + "}\nextension ScreenshotSelectionRefreshContract.View {\n"
           + declaration(selection, "    func captureToolDidChange()")
-          + declaration(selection, "    func setNotchCaptureControlsHeight(")
           + declaration(selection, "    func refreshFullScreenControlVisibility()")
           + declaration(selection, "    private func pointerIsOverFullScreenControl(").replace("private func", "func", 1)
           + declaration(selection, "    private func pointerIsOverTab(").replace("private func", "func", 1)
           + declaration(selection, "    private func updatePointerHover(").replace("private func", "func", 1)
           + declaration(selection, "    private func fullScreenControlHoverChanged(").replace("private func", "func", 1)
           + declaration(selection, "    private func resetFullScreenControlHover(").replace("private func", "func", 1)
-          + declaration(selection, "    private func applyDeferredNotchCaptureControlsHeight(").replace("private func", "func", 1)
-          + "}\nextension ScreenshotSelectionRefreshContract.SurfaceService {\n"
-          + declaration("Sources/Vorssaint/Services/QuickTools/ScreenCaptureService.swift",
-                        "    private func connectCaptureControlsSurface(").replace("private func", "func", 1)
           + "}\n"
           + declaration(selection, "private final class PassThroughHostingView<")
               .replace("private final class", "final class", 1))
@@ -1940,8 +1934,9 @@ def main():
           + "final class NotchService {\nstatic var shared = NotchService()\n"
           + "var presentationWindow: NSPanel? = NSPanel()\nvar acceptsSystemFeedback = true\n"
           + "var expanded = true\nvar selected = NotchModule.captures\nvar showingAppPanel = false\n"
-          + "var showingSections = false\nvar showingCommandBar = false\nvar selectedMetric: Int?\nvar captureControls: Int?\n"
+          + "var showingSections = false\nvar showingCommandBar = false\nvar selectedMetric: Int?\n"
           + "var captureID: UUID?\nvar captureContent: Bool? = true\n"
+          + "enum ScreenshotSelectionController { static var isSessionOnScreen = false }\n"
           + declaration("Sources/Vorssaint/Services/Notch/NotchService.swift", "    func isCaptureVisible(")
           + "}\nfinal class Preview {\n"
           + declaration(preview, "    enum Action {")
@@ -1956,7 +1951,7 @@ def main():
           + "enum ScreenCaptureTool { case area, recording, window, fullScreen }\n"
           + "final class AudioToggle { var enabled = false; func toggle() { enabled.toggle() } }\n"
           + "final class AudioSelection { var systemAudio = AudioToggle(); var microphone = AudioToggle() }\n"
-          + "final class Options { var controlsInNotch = true; var hasFocusedControl = false; var recorderAudio = AudioSelection() }\n"
+          + "final class Options { var recorderAudio = AudioSelection() }\n"
           + "enum Outcome { case cancelled }\nvar screenCaptureOptions: Options? = Options()\n"
           + "var activeTool = ScreenCaptureTool.area\n"
           + "final class WaitingControls { var panel: NSPanel? }\nvar waitingControls: WaitingControls?\n"

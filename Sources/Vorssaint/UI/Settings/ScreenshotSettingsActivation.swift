@@ -55,16 +55,6 @@ extension ScreenshotSettings {
                     ScreenshotService.shared.syncWithPreferences()
                 }
                 .disabled(!sharingEnabled)
-                CompactShortcutPreferenceRow(title: l10n.s.ocrName,
-                                             role: .screenOCR,
-                                             enabledKey: DefaultsKey.screenOCRShortcutEnabled) {
-                    ScreenTextService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: l10n.s.colorPickerName,
-                                             role: .colorPicker,
-                                             enabledKey: DefaultsKey.colorPickerShortcutEnabled) {
-                    ScreenCaptureService.shared.syncWithPreferences()
-                }
                 CompactShortcutPreferenceRow(title: FeatureStrings.recentCaptures(l10n.language).title,
                                              role: .recentCaptures,
                                              enabledKey: DefaultsKey.recentCapturesShortcutEnabled) {
