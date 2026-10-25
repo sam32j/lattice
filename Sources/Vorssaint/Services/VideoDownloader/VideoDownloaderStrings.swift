@@ -18,6 +18,7 @@ enum VideoDownloaderStrings {
     static let install = "Install"
     static let retry = "Retry"
     static let installationFailed = "Installation Failed"
+    static let fetchFailedNotice = "Couldn't fetch the video. Check the link and retry."
     static let featureDisabledNotice = "Video Downloader is turned off and its tools have been removed. Turn on above to use."
     static let urlPlaceholder = "Video URL"
     static let search = "Search"
