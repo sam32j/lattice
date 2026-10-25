@@ -2,7 +2,7 @@
 import AppKit
 import SwiftUI
 
-/// Renders the production overlays without instantiating any playback service,
+/// Renders production music content without starting any playback service,
 /// requesting grants, posting events or mounting the live island lifecycle.
 @MainActor
 enum NotchMusicSwipeRenderingProbe {
@@ -42,12 +42,64 @@ enum NotchMusicSwipeRenderingProbe {
                     try png.write(to: output.appendingPathComponent("swipe-\(scheme)-reduced-\(reduced).png"))
                 }
             }
+            try renderFullMusic(output: output)
             print("MUSIC_SWIPE_RENDERING_OK output=\(output.path)")
             exit(0)
         } catch {
             fputs("MUSIC_SWIPE_RENDERING_FAILED \(error)\n", stderr)
             exit(1)
         }
+    }
+
+    private static func renderFullMusic(output: URL) throws {
+        for kind in ["notch", "capsule", "simulated"] {
+            let capsule = kind == "capsule"
+            let physical = kind == "notch"
+            let geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1440, height: 900),
+                safeAreaTop: physical ? 32 : 0, cameraWidth: physical ? 210 : 0, menuBarHeight: 32,
+                compactSideRoom: 420, silhouette: capsule ? .capsule : .notch)
+            let notice = NotchNotice(event: .track, title: "Example track title", detail: "Artist name", symbol: "music.note")
+            let wings = notice.wings(in: geometry)
+            let size = capsule ? NotchMusicNoticeLayout.capsuleSize(title: notice.title, artist: notice.detail, geometry: geometry)
+                : geometry.noticeSize(wings: wings)
+            for progress in [0.0, 0.5, 1.0] {
+                NotchMusicSwipeState.shared.show(.init(direction: .next, progress: progress), held: true)
+                let view = NotchMusicNoticeView(service: .shared, notice: notice, displayGeometry: geometry)
+                    .frame(width: size.width, height: size.height)
+                    .foregroundStyle(.white)
+                    .background(Color.black.offset(x: capsule ? 0 : geometry.noticeShift(wings)))
+                    .frame(width: 720, height: 100)
+                    .background(Color(white: 0.2))
+                    .environment(\.notchSettingsPreview, true)
+                    .environment(\.colorScheme, .dark)
+                let png = try nativePNG(view)
+                try png.write(to: output.appendingPathComponent("full-music-\(kind)-\(Int(progress * 100)).png"))
+            }
+        }
+        NotchMusicSwipeState.shared.clear()
+    }
+
+    /// ImageRenderer cannot draw the native waveform view. Cache the actual
+    /// hosting hierarchy in an invisible, noninteractive window instead.
+    private static func nativePNG<Content: View>(_ view: Content) throws -> Data {
+        let host = NSHostingView(rootView: view)
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 720, height: 100),
+                              styleMask: [.borderless], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.alphaValue = 0
+        window.ignoresMouseEvents = true
+        window.contentView = host
+        window.orderFrontRegardless()
+        defer { window.orderOut(nil); window.contentView = nil; window.close() }
+        host.layoutSubtreeIfNeeded()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.15))
+        host.layoutSubtreeIfNeeded()
+        guard let bitmap = host.bitmapImageRepForCachingDisplay(in: host.bounds) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        host.cacheDisplay(in: host.bounds, to: bitmap)
+        guard let png = bitmap.representation(using: .png, properties: [:]) else { throw CocoaError(.fileWriteUnknown) }
+        return png
     }
 
     private static func verifyRestingDelivery() throws {

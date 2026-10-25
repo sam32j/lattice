@@ -80,3 +80,25 @@ Follow-up final verification:
 - Final notch regressions: `TESTS OK (66291 checks)` including vertical/capture, natural-scrolling direction, short/armed/cancelled/reordered strokes, sustained/resting/partial-lift feedback, notice availability and repeated notice-time gestures.
 - Final Developer build and strict signature verification passed. Isolated native receiver probe: `MUSIC_SWIPE_RESTING_RECEIVERS_OK`; production overlay rendering: `MUSIC_SWIPE_RENDERING_OK`; isolated copied-bundle selftest: `SELFTEST OK`.
 - `git diff --check` passed. No real player commands or permission/hardware changes were used for verification. The installed app is unchanged; these are branch/build outputs. No stack restack or PR metadata edit is included.
+
+
+## Recovery, unified music display and staged haptics
+
+Baseline `cf31fb32`, part 2. Approved plan: first-original-finger lift, half-inch travel, three-second inactivity cancellation, shared compact/full layout. Subsequent user steering replaces the timed haptic pair with start/armed taps and removes all soundtrack-change position nudges.
+
+- [x] RED: updated half-inch/first-lift behavior failed against the old recognizer. Added synthetic missing-release/recovery, one-action latch, stage-feedback and invalid/stale input coverage; hardware remains injected.
+- [x] Split the feedback state from the controller; add one cancel-only inactivity timer. Timeout never sends a track command. Distinguish same event identity at different timestamps. Resting contacts do not prevent a new active sequence after completion.
+- [x] Trigger one haptic at sideways activation, another at arming, respecting the existing haptic preference. Remove delayed haptic scheduling and obsolete position-nudge publisher/modifiers.
+- [x] RED: shared full-music layout helper absent. Route track notices through existing music strip renderers, force metadata visibility, place title/artist before artwork, retain right waveform/cue, measure artist width for capsule sizing, and retire alternate notice cue ownership.
+- [x] Verify affected/full regressions and actual isolated full-music rendering, build/signature and selftest. Inspect full diff and tests after corrections.
+- [x] Whole-diff self-review completed. Independent reviewer could not run due to a usage limit; report that limitation explicitly. Commit/push only part 2; preserve other stack slices.
+
+
+Final recovery verification and self-review:
+- Full regression run passed `TESTS OK (112603 checks)`, plus preference-cleanup, uninstall-space and developer-install-isolation checks. After the final native partial-packet release guard, focused notch regressions passed `TESTS OK (66305 checks)`.
+- Whole-diff self-review checked physical-distance/arming/release, timer cancellation, duplicate suppression, haptic phase ownership and preference gating, native event normalization, notice geometry/metadata/artwork, snapshot/hold preservation, generated fixtures and retired nudge/cue references. Fixed missing-packet ambiguity by requiring an observed ended touch before native data can commit. Added RED/GREEN coverage; unconfirmed missing contacts cancel instead of guessing a release. Live notice artwork bypasses the compact strip's held-cover snapshot, and simulated-cutout rendering avoids duplicate metadata.
+- Three capsule hold/identity regression expectations needed the new shared two-line sizing helper. Kept the original behavior assertions and moved their expected sizing to the approved renderer contract; all passed.
+- Final developer build and strict signature verification passed. Native probes reported `MUSIC_SWIPE_RESTING_RECEIVERS_OK`, `MUSIC_SWIPE_RENDERING_OK`; isolated selftest reported `SELFTEST OK`.
+- Actual full-view captures at 0/50/100% for physical notch, capsule and simulated cutout are in `/tmp/lattice-music-consistency-render`. Inspected title/artist/artwork and right-side cue/waveform placement. Full captures use an invisible, noninteractive native hosting window because ImageRenderer cannot draw the native waveform; pure overlay fixtures retain ImageRenderer. No live playback service was started.
+- No real media command, haptic output, permission reset or hardware change was used for verification. The installed app was not replaced. Independent review remains unavailable; this batch received a documented self-review.
+- Final source lookup found no `gestureSkips` or `NotchMusicSwipeFeedback` modifier references. The two haptic taps are tied to activation and arming, with no delayed haptic work or directional position offset.
