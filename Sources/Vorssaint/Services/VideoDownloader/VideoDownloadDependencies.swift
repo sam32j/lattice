@@ -36,13 +36,11 @@ struct VideoDownloadDependencies: Equatable {
         var paths: [String: String] = [:]
         let managedPath = managedBinURL.path
 
-        // Check managed directory first unless user explicitly configured system tools
-        if !useSystemTools {
-            for tool in coreRequired + conditional {
-                let candidate = (managedPath as NSString).appendingPathComponent(tool)
-                if executable(candidate) {
-                    paths[tool] = candidate
-                }
+        // Check managed directory first
+        for tool in coreRequired + conditional {
+            let candidate = (managedPath as NSString).appendingPathComponent(tool)
+            if executable(candidate) {
+                paths[tool] = candidate
             }
         }
 
