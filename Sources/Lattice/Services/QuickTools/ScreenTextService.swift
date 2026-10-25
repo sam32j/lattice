@@ -25,6 +25,7 @@ final class ScreenTextService: ObservableObject {
             cancelSession()
             return
         }
+        VisionTextRecognition.prepare()
     }
 
     func suspend() {
@@ -55,6 +56,7 @@ final class ScreenTextService: ObservableObject {
         case text(String)
         case both(BarcodeDetector.Reading, text: String)
         case empty
+        case unavailable
 
         static func readingPayload(from reading: BarcodeDetector.Reading) -> String {
             reading.payload
@@ -96,6 +98,9 @@ final class ScreenTextService: ObservableObject {
                     QuickToolHUD.show(icon: "text.viewfinder", message: strings.ocrCopied)
                 case .empty:
                     QuickToolHUD.show(icon: "text.viewfinder", message: strings.ocrNoText)
+                case .unavailable:
+                    QuickToolHUD.show(icon: "text.viewfinder",
+                        message: OCRRecoveryCopy.unavailable(language: L10n.shared.language.rawValue))
                 }
             }
         }
@@ -129,17 +134,14 @@ final class ScreenTextService: ObservableObject {
                         fallbackLanguages: [String] = ["en-US"]) -> Outcome {
         let reading = detectQRCodes ? BarcodeDetector.read(image) : nil
 
-        var lines = recognizedLines(in: image,
-                                    level: .accurate,
-                                    automaticallyDetectLanguage: true,
-                                    preferredLanguages: fallbackLanguages)
+        let accurate = recognizedLines(in: image, level: .accurate,
+            automaticallyDetectLanguage: true, preferredLanguages: fallbackLanguages)
+        var lines = accurate ?? []
         if lines.isEmpty {
-            // The fast path uses a different recognition model. It is a
-            // separate second chance when the accurate model returns no text.
-            lines = recognizedLines(in: image,
-                                    level: .fast,
-                                    automaticallyDetectLanguage: false,
-                                    preferredLanguages: fallbackLanguages)
+            let fast = recognizedLines(in: image, level: .fast,
+                automaticallyDetectLanguage: false, preferredLanguages: fallbackLanguages)
+            if accurate == nil && fast == nil && reading == nil { return .unavailable }
+            lines = fast ?? []
         }
         let text = QuickToolsSupport.joinedRecognizedText(lines,
                                                          removingLineBreaks: removeLineBreaks)
@@ -159,21 +161,10 @@ final class ScreenTextService: ObservableObject {
         level: VNRequestTextRecognitionLevel,
         automaticallyDetectLanguage: Bool,
         preferredLanguages: [String] = []
-    ) -> [QuickToolsSupport.RecognizedLine] {
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = level
-        request.usesLanguageCorrection = true
-        request.automaticallyDetectsLanguage = automaticallyDetectLanguage
-        if !preferredLanguages.isEmpty,
-           let supported = try? request.supportedRecognitionLanguages() {
-            let available = preferredLanguages.filter { supported.contains($0) }
-            if !available.isEmpty { request.recognitionLanguages = available }
-        }
-
-        let handler = VNImageRequestHandler(cgImage: image, options: [:])
-        guard (try? handler.perform([request])) != nil else { return [] }
-
-        return (request.results ?? []).compactMap { observation -> QuickToolsSupport.RecognizedLine? in
+    ) -> [QuickToolsSupport.RecognizedLine]? {
+        guard let observations = VisionTextRecognition.observations(in: image, level: level,
+            detectLanguage: automaticallyDetectLanguage, languages: preferredLanguages) else { return nil }
+        return observations.compactMap { observation -> QuickToolsSupport.RecognizedLine? in
             guard let candidate = observation.topCandidates(1).first else { return nil }
             return QuickToolsSupport.RecognizedLine(text: candidate.string,
                                                     x: observation.boundingBox.minX,

@@ -209,6 +209,15 @@ enum ScreenTextCompletionTests {
         }
 
         reset()
+        State.outcomes[1] = .unavailable
+        let unavailable = ScreenTextService()
+        unavailable.copyText(from: 1)
+        finish()
+        suite.expect(NSPasteboard.general.value == "original"
+                     && QuickToolHUD.messages == [OCRRecoveryCopy.unavailable(language: "en-US")],
+                     "terminal engine failure preserves the clipboard and is not misreported as an empty image")
+
+        reset()
         State.outcomes[1] = .empty
         let empty = ScreenTextService()
         empty.copyText(from: 1)

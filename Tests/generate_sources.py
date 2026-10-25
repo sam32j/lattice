@@ -1856,6 +1856,16 @@ def main():
           + declaration(preview, "    enum Action {")
           + declaration(preview, "    fileprivate static func size(").replace("fileprivate", "", 1)
           + "}\n}\n")
+    write("ScreenshotExitOrdering.swift", "import Foundation\n\nextension ScreenshotExitOrderingContract {\nfinal class Controller {\n"
+          + "enum Tool { case area, recording }\nenum Outcome { case cancelled, region }\n"
+          + "var waitingControls: Waiting?\nvar waitingRecordingPanel: Int?\nvar activeTool = Tool.area\n"
+          + "var finished = false\nvar selectedWindows: [Int] = []\nvar multiWindowShiftMonitor = Monitor()\n"
+          + "var screenCaptureOptions: Options?\nvar keyMonitor: Int?\nvar globalKeyMonitor: Int?\n"
+          + "var captureFocus: Focus?\nvar panels = [Window()]\nvar completed = false\n"
+          + "func markCapturePending() {}\nfunc completeFinish(_ outcome: Outcome) { completed = true }\n"
+          + declaration("Sources/Lattice/Services/QuickTools/ScreenshotSelectionController.swift", "    private func retirePanels()").replace("private func", "func", 1)
+          + declaration("Sources/Lattice/Services/QuickTools/ScreenshotSelectionController.swift", "    private func finish(_ outcome:").replace("private func", "func", 1)
+          + "}\n}\n")
     write("ScreenTextCompletion.swift", "import Foundation\n"
           + "extension ScreenTextCompletionTests {\nfinal class ScreenTextService: State {\n"
           + "".join(declaration(screen_text, prefix).replace("private func", "func", 1)

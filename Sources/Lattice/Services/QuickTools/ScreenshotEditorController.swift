@@ -490,14 +490,7 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                 let tileY = band.rect.minY
                 let currentHeight = band.rect.height
                 guard let tile = image.cropping(to: band.rect) else { break }
-                let request = VNRecognizeTextRequest()
-                request.recognitionLevel = .accurate
-                request.usesLanguageCorrection = true
-                request.automaticallyDetectsLanguage = true
-                let handler = VNImageRequestHandler(cgImage: tile, options: [:])
-                do {
-                    try handler.perform([request])
-                } catch {
+                guard let observations = VisionTextRecognition.observations(in: tile) else {
                     reads.append(nil)
                     continue
                 }
@@ -507,7 +500,6 @@ final class ScreenshotEditorModel: ObservableObject, BackdropEditing {
                            width: box.width * width,
                            height: box.height * currentHeight)
                 }
-                let observations = request.results ?? []
                 var read: [ScreenshotSupport.BandWord] = []
                 for (line, observation) in observations.enumerated() {
                     let lineBox = imageRect(observation.boundingBox)
