@@ -40,8 +40,6 @@ final class NotchMusicService: ObservableObject {
     /// outlasted its grace period, or another player's paused song took over
     /// from a pause. Sent before that reading is published.
     let trackEnds = PassthroughSubject<Void, Never>()
-    /// Immediate visual acknowledgement of an accepted swipe, before metadata arrives.
-    let gestureSkips = PassthroughSubject<Bool, Never>()
     private var trackChange = NotchTrackChange()
     private struct Reading {
         let playback: NotchPlayback?
@@ -546,7 +544,6 @@ final class NotchMusicService: ObservableObject {
     func skipFromGesture(forward: Bool) -> Bool {
         let command: Command = forward ? .next : .previous
         guard canPerform(command), send(command) else { return false }
-        gestureSkips.send(forward)
         return true
     }
 

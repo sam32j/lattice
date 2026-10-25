@@ -1086,7 +1086,7 @@ enum NotchHoverTests {
                           canSeek: false, commandContext: context, canSendCommandsDirectly: true)
         }
         func size(_ title: String?, geometry: NotchGeometry? = nil) -> CGSize {
-            NotchCapsuleLayout.musicSurface(title: title, geometry: geometry ?? service.geometry)
+            NotchMusicNoticeLayout.capsuleSize(title: title, artist: nil, geometry: geometry ?? service.geometry)
         }
         func holdSong() {
             music.playback = reading(title, context: context, playing: true)

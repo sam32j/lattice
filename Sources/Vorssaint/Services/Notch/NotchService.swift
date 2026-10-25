@@ -29,7 +29,8 @@ struct NotchNotice: Equatable {
 
     /// The sides this notice takes beside a camera, as its strip draws them.
     func wings(in geometry: NotchGeometry) -> NotchNoticeWings {
-        geometry.noticeWings(preferredWings(
+        if event == .track { return NotchMusicNoticeLayout.wings(title: title, artist: detail, geometry: geometry) }
+        return geometry.noticeWings(preferredWings(
             wrapsMessage: NotchNotificationBannerLayout.messageLines(stripHeight: geometry.stripHeight) > 1))
     }
 
@@ -262,7 +263,11 @@ final class NotchService: ObservableObject {
         }
     }
     private var settingsSignature = ""
-    private let musicSwipe = NotchMusicSwipeController { NotchMusicService.shared.skipFromGesture(forward: $0) }
+    private let musicSwipe = NotchMusicSwipeController(onStart: {
+        if NotchSupport.usesHapticFeedback() { NotchMusicSwipeHaptics.shared.tap() }
+    }, onArm: {
+        if NotchSupport.usesHapticFeedback() { NotchMusicSwipeHaptics.shared.tap() }
+    }, commit: { NotchMusicService.shared.skipFromGesture(forward: $0) })
     private var gesture = NotchGestureSupport()
     private var captureTrackpadGesture = NotchCaptureTrackpadGesture()
     private var sectionScroll = NotchSectionScroll()
@@ -1004,6 +1009,9 @@ final class NotchService: ObservableObject {
 
     /// A notice's own capsule, which it keeps while the island closes around it.
     func capsuleNoticeSurface(_ notice: NotchNotice) -> CGSize {
+        if notice.event == .track {
+            return NotchMusicNoticeLayout.capsuleSize(title: notice.title, artist: notice.detail, geometry: geometry)
+        }
         let layout = NotchCapsuleLayout.self
         guard let content = notice.notification else {
             return layout.surface(content: layout.noticeContent(title: notice.title, detail: notice.detail,
@@ -1039,9 +1047,9 @@ final class NotchService: ObservableObject {
             let live = NotchMusicService.shared.playback
             let shown = heldMusic ?? (ownDisplay ? musicStripStandIn(for: live) : nil)
             let playback = shown?.playback ?? live
-            return layout.musicSurface(title: named
+            return NotchMusicNoticeLayout.capsuleSize(title: named
                                         ? playback?.track.title ?? FeatureStrings.radialMenu(language).mediaNowPlaying : nil,
-                                       geometry: geometry)
+                                        artist: playback?.track.artist, geometry: geometry)
         case .timer:
             let timer = NotchTimerService.shared
             return layout.timerSurface(reading: NotchTimerSupport.compactText(for: timer.session, at: timer.now,
@@ -2960,7 +2968,7 @@ final class NotchService: ObservableObject {
     /// that opening while several activities run, keeps the bars' button, but
     /// the strip at its top has no room to name the song.
     func musicStripAnswers(_ part: NotchMusicStripPart) -> Bool {
-        guard compactMusicIsVisible, !hiddenUntilHover else { return false }
+        guard compactMusicSwipeIsVisible, !hiddenUntilHover else { return false }
         if showsCompactActivityPicker { return part == .bars }
         guard UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover) else { return true }
         // A preview opens over a strip without wings, as a capsule's is where

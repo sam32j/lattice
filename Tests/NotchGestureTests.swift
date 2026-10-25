@@ -6,6 +6,7 @@ import AppKit
 enum NotchGestureTests {
     static func run(_ suite: TestSuite) {
         NotchMusicTrackSwipeTests.run(suite)
+        NotchMusicNoticeLayoutTests.run(suite)
         NotchGestureNaturalScrollingTests.run(suite)
         nativeInteractionContracts(suite)
         NotchCaptureTrackpadGestureTests.run(suite)

@@ -1282,6 +1282,7 @@ def main():
         if line not in prefix:
             raise ValueError("Expected the non-music activity readings in capsuleStripSize")
         prefix = prefix.replace(line, "")
+    prefix = prefix.replace("        let layout = NotchCapsuleLayout.self\n", "")
     capsule_music = (prefix + "        switch activity {\n" + music_case
                      + '        default: preconditionFailure("Only music is measured by this fixture")\n'
                      + "        }\n    }\n#sourceLocation()\n")
@@ -1304,7 +1305,7 @@ def main():
               "    private func dismissNotice(", "    private func endDeparture(", "    private var noticeCanPresent:",
               "    private func syncHiddenHoverMonitoring(", "    private func removeHiddenHoverMonitors(",
               "    private func scheduleTrackNotice(", "    private func releaseTrackHold(",
-              "    private func holdEndingTrack(", "    func musicStripAnswers(", "    func hoverMusicStrip(",
+              "    private func holdEndingTrack(", "    private var compactMusicSwipeIsVisible:", "    func musicStripAnswers(", "    func hoverMusicStrip(",
               "    private func endMusicStripHover(", "    var musicStripShowsControl:",
               "    private var musicStripCanToggle:", "    func activateMusicStrip(", "    private func endMusicStripRequest(",
               "    var musicStripNamesSong:", "    private func fitNamedMusicStrip(", "    private func nameCapsuleSong(",
