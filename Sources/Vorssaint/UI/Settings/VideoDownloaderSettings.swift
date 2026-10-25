@@ -111,26 +111,6 @@ struct VideoDownloaderSettings: View {
                         }
                         .disabled(model.busy)
 
-                        // Default Save Destination Row (Always Visible)
-                        HStack(spacing: 6) {
-                            Image(systemName: "folder")
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
-                            Text(VideoDownloaderStrings.saveTo + ":")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text(displayDestinationPath(model.destination))
-                                .font(.caption.weight(.medium))
-                                .lineLimit(1)
-                            Spacer()
-                            Button("Change…", action: model.chooseDestination)
-                                .buttonStyle(.borderless)
-                                .font(.caption)
-                                .foregroundStyle(Color.accentColor)
-                        }
-                        .padding(.horizontal, 4)
-                        .disabled(model.busy)
-
                         // Toolchain Installing / Setup State
                         if case .installing(_, _, let fraction, let message) = toolchain.state {
                             VStack(alignment: .leading, spacing: 10) {
@@ -209,14 +189,14 @@ struct VideoDownloaderSettings: View {
                                     Text(output.lastPathComponent)
                                         .font(.caption.weight(.medium))
                                         .lineLimit(1)
-                                    Text("Saved to " + displayDestinationPath(output.deletingLastPathComponent()))
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
                                 }
                                 Spacer()
                                 Button(VideoDownloaderStrings.showInFinder) {
-                                    NSWorkspace.shared.activateFileViewerSelecting([output])
+                                    if FileManager.default.fileExists(atPath: output.path) {
+                                        NSWorkspace.shared.activateFileViewerSelecting([output])
+                                    } else {
+                                        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: output.deletingLastPathComponent().path)
+                                    }
                                 }
                                 .buttonStyle(.bordered)
                             }
@@ -262,11 +242,13 @@ struct VideoDownloaderSettings: View {
             }
         }
         .onAppear {
+            history.pruneMissingFiles()
             if enabled {
                 model.refreshDependencies()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            history.pruneMissingFiles()
             if enabled {
                 model.refreshDependencies()
             }
@@ -556,7 +538,7 @@ struct VideoDownloaderSettings: View {
                     Spacer()
 
                     Button(VideoDownloaderStrings.showInFinder) {
-                        NSWorkspace.shared.activateFileViewerSelecting([item.fileURL])
+                        history.showInFinder(item)
                     }
                     .buttonStyle(.borderless)
                     .font(.system(size: 12, weight: .medium))
