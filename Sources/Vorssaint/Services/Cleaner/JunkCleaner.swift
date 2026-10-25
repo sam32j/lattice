@@ -463,6 +463,7 @@ final class JunkCleaner: ObservableObject {
                     || hasLivingOwner(owner, installed: installed) {
                     continue
                 }
+                guard CleanerScanPrivacy.mayRemoveTree(url, fm: fm) else { continue }
                 found.append(Item(url: url, category: .leftovers,
                                   size: directorySize(of: url, fm: fm),
                                   detail: owner,
@@ -535,7 +536,8 @@ final class JunkCleaner: ObservableObject {
                 && !entry.hasPrefix(".")
                 && !CleanerPolicy.isExcludedCacheEntry(entry) {
                 let url = URL(fileURLWithPath: logsDir).appendingPathComponent(entry)
-                guard !claimed.contains(url.standardizedFileURL.path) else { continue }
+                guard !claimed.contains(url.standardizedFileURL.path),
+                      CleanerScanPrivacy.mayRemoveTree(url, fm: fm) else { continue }
                 let size = directorySize(of: url, fm: fm)
                 guard size > 0 else { continue }
                 found.append(Item(url: url, category: .logs, size: size,
@@ -544,7 +546,8 @@ final class JunkCleaner: ObservableObject {
         }
         let reports = logsDir + "/DiagnosticReports"
         let reportsURL = URL(fileURLWithPath: reports)
-        let reportsSize = directorySize(of: reportsURL, fm: fm)
+        let reportsSize = CleanerScanPrivacy.mayRemoveTree(reportsURL, fm: fm)
+            ? directorySize(of: reportsURL, fm: fm) : 0
         if reportsSize > 0 {
             found.append(Item(url: reportsURL, category: .logs, size: reportsSize,
                               detail: "DiagnosticReports", recommended: CleanerPolicy.precheckLogs))
