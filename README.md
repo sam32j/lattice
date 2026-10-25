@@ -133,4 +133,6 @@ If you enjoy this software, please support the upstream project:
 
 [GPL 3.0 or later](LICENSE), Copyright (C) 2026 Vorssaint and contributors. Downstream modifications and branding Copyright (C) 2026 Samuel Ji.
 
+On October 25, 2026, the downstream source, package, build tooling and app-facing names were renamed to Lattice. Original copyright and license notices remain intact. Existing Lattice bundle IDs and stored-data formats are preserved. See [the naming and compatibility notes](docs/LATTICE-NAMING.md).
+
 Per [TRADEMARKS.md](TRADEMARKS.md), this fork uses independent branding ("Lattice"), custom icon artwork, and isolated bundle identifiers (`io.github.sam32j.lattice`) to avoid confusion with official upstream releases.

@@ -4,7 +4,7 @@ import AppKit
 
 enum LockSoundServiceTests {
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.lock-sounds.\(UUID())"
+        let domain = "io.github.sam32j.lattice.tests.lock-sounds.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
         let workspace = NotificationCenter(), distributed = NotificationCenter()

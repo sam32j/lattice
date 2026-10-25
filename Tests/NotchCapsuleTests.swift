@@ -82,7 +82,7 @@ enum NotchCapsuleTests {
     }
 
     private static func preferenceContracts(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.notch-capsule"
+        let domain = "io.github.sam32j.lattice.tests.notch-capsule"
         let defaults = UserDefaults(suiteName: domain)!
         defaults.removePersistentDomain(forName: domain)
         defer { defaults.removePersistentDomain(forName: domain) }
@@ -350,7 +350,7 @@ enum NotchCapsuleTests {
     /// A fitted capsule grows from its top edge, keeps its margins, lowers
     /// open and closed alike, and leaves every other island untouched.
     private static func fitContracts(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.notch-capsule-fit"
+        let domain = "io.github.sam32j.lattice.tests.notch-capsule-fit"
         let defaults = UserDefaults(suiteName: domain)!
         defaults.removePersistentDomain(forName: domain)
         defer { defaults.removePersistentDomain(forName: domain) }

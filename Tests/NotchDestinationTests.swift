@@ -9,7 +9,7 @@ import Carbon.HIToolbox
 enum NotchDestinationContract {
     enum ReviewDefaults { static var current: UserDefaults! }
     enum NotchContentTransition { case none, reveal, replace }
-    /// Like AppKit while Vorssaint stays active, makeKey and resignKey leave
+    /// Like AppKit while Lattice stays active, makeKey and resignKey leave
     /// the app's key window as it was; tests set that record by hand.
     final class Panel {
         var isKeyWindow = true
@@ -138,7 +138,7 @@ enum NotchDestinationContract {
     }
 
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.notch-destinations"
+        let domain = "io.github.sam32j.lattice.tests.notch-destinations"
         let defaults = UserDefaults(suiteName: domain)!
         defaults.removePersistentDomain(forName: domain)
         ReviewDefaults.current = defaults
@@ -363,9 +363,9 @@ enum NotchDestinationContract {
     }
 
     /// The island resigns by hand while it stays on screen. The keyboard goes
-    /// back to a regular Vorssaint window only while Vorssaint is in front.
+    /// back to a regular Lattice window only while Lattice is in front.
     private static func keyHandoffContracts(suite: TestSuite) {
-        let vorssaint = RunningApplication(processIdentifier: ProcessInfo.processInfo.processIdentifier)
+        let lattice = RunningApplication(processIdentifier: ProcessInfo.processInfo.processIdentifier)
         /// Returns the windows that were made key, front to back.
         func handoff(frontmost: RunningApplication?, keyIsPanel: Bool = true, settingsVisible: Bool = true,
                      settingsIsRegular: Bool = true, otherSpaceInFront: Bool = false,
@@ -394,16 +394,16 @@ enum NotchDestinationContract {
             guard !panel.isKeyWindow else { return ["island"] }
             return named.flatMap { name, window in Array(repeating: name, count: window.keyRequests) }
         }
-        suite.expect(handoff(frontmost: vorssaint) == ["settings"],
-                     "closing the island hands the keyboard back to Settings while Vorssaint stays active")
-        suite.expect(handoff(frontmost: vorssaint, otherSpaceInFront: true, regularBehind: true) == ["settings"],
+        suite.expect(handoff(frontmost: lattice) == ["settings"],
+                     "closing the island hands the keyboard back to Settings while Lattice stays active")
+        suite.expect(handoff(frontmost: lattice, otherSpaceInFront: true, regularBehind: true) == ["settings"],
                      "closing the island hands the keyboard to the frontmost regular window on this Space")
         suite.expect(handoff(frontmost: RunningApplication(processIdentifier: 1)).isEmpty,
                      "closing the island leaves the keyboard alone while another app takes over")
-        suite.expect(handoff(frontmost: vorssaint, keyIsPanel: false).isEmpty,
+        suite.expect(handoff(frontmost: lattice, keyIsPanel: false).isEmpty,
                      "closing the island hands nothing over once AppKit has let it go")
-        suite.expect(handoff(frontmost: vorssaint, settingsVisible: false).isEmpty
-                     && handoff(frontmost: vorssaint, settingsIsRegular: false).isEmpty,
+        suite.expect(handoff(frontmost: lattice, settingsVisible: false).isEmpty
+                     && handoff(frontmost: lattice, settingsIsRegular: false).isEmpty,
                      "closing the island hands the keyboard only to a visible regular window")
     }
 
@@ -418,7 +418,7 @@ enum NotchDestinationContract {
         suite.expect(service.showScratchpad(toggle: true) && !service.expanded,
                      "the shortcut closes a Scratchpad that already owns the keyboard")
         keyHandoffContracts(suite: suite)
-        // While Vorssaint stays the active app, collapse() resigns by hand: the
+        // While Lattice stays the active app, collapse() resigns by hand: the
         // flag clears, AppKit keeps the island key, and makeKey changes neither.
         NSApp.keyWindow = service.panel
         service.panel?.isKeyWindow = false

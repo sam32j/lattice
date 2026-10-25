@@ -11,7 +11,7 @@ enum FeaturePageOwnershipTests {
                      && !GlobalShortcutRole.availableRoles(isAvailable: { _ in true }).contains(.colorPicker)
                      && ScreenCaptureTool.available(isAvailable: { _ in true }) == [.screenshot, .recording],
                      "standalone OCR and color entry points are absent while shared tool operations remain")
-        let name = "com.vorssaint.tests.page-ownership.\(UUID().uuidString)"
+        let name = "io.github.sam32j.lattice.tests.page-ownership.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!
         defer { defaults.removePersistentDomain(forName: name) }
         let controls: [(AppFeature, String)] = [

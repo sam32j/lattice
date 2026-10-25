@@ -1,7 +1,7 @@
 # Lattice
 
 Lattice is Samuel Ji's unofficial GPL-3.0-or-later downstream distribution of
-[Vorssaint](https://github.com/vorssaint/vorssaint-utils). It has its own app
+[Lattice](https://github.com/vorssaint/vorssaint-utils). It has its own app
 icon, bundle identity (`io.github.sam32j.lattice`), helper identities and release
 feed. Original copyright/license notices remain as attribution.
 

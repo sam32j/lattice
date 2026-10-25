@@ -36,7 +36,7 @@ enum PermissionRevocationRuntimeTests {
     }
     static var defaults: UserDefaults!
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.revocation-observer.\(UUID())"
+        let domain = "io.github.sam32j.lattice.tests.revocation-observer.\(UUID())"
         defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain); defaults = nil }
         defaults.set(true, forKey: DefaultsKey.keyboardDebounceEnabled)

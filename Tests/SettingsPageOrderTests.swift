@@ -7,7 +7,7 @@ enum SettingsPageOrderTests {
         suite.expect(DataPermissionsStrings.localized(.enUS).title == "Data & Permissions"
                      && DataPermissionsStrings.localized(.enUS).data == "Lattice Data",
                      "the consolidated page and backup section use their requested names")
-        let dataPage = (try? String(contentsOfFile: "Sources/Vorssaint/UI/Settings/DataPermissionsSettings.swift",
+        let dataPage = (try? String(contentsOfFile: "Sources/Lattice/UI/Settings/DataPermissionsSettings.swift",
                                    encoding: .utf8)) ?? ""
         let sections = ["Section(DataPermissionsStrings.localized", "PermissionsPortalSections(hub:",
                         "PermissionResetSettingsRow(", "l10n.s.advancedUninstallButton"]

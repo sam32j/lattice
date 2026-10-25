@@ -4,7 +4,7 @@ import { readFileSync, appendFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 try {
-  const identity = readFileSync("Sources/Vorssaint/Core/DownstreamIdentity.swift", "utf8");
+  const identity = readFileSync("Sources/Lattice/Core/DownstreamIdentity.swift", "utf8");
   const team = identity.match(/static let signingTeamID = "([A-Za-z0-9]*)"/)?.[1] || "";
   const isAdhoc = team.toUpperCase() === "ADHOC" || process.env.LATTICE_ALLOW_ADHOC === "true";
   if (!isAdhoc && (!team || !/^[A-Z0-9]{10}$/.test(team) || team === "3D485NHW29"))

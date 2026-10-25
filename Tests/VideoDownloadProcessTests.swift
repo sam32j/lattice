@@ -14,7 +14,7 @@ enum VideoDownloadProcessTests {
             suite.expect(output.stdout.count == 100000, "metadata output may be larger than a progress line without being truncated")
         } catch { suite.expect(false, "large metadata response: \(error)") }
         let fm = FileManager.default
-        let folder = fm.temporaryDirectory.appendingPathComponent("com.vorssaint.tests.video-process-\(UUID())")
+        let folder = fm.temporaryDirectory.appendingPathComponent("io.github.sam32j.lattice.tests.video-process-\(UUID())")
         defer { try? fm.removeItem(at: folder) }
         do {
             try fm.createDirectory(at: folder, withIntermediateDirectories: false)

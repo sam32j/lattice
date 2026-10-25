@@ -2,7 +2,7 @@ import Foundation
 
 enum SwitcherPermissionRevocationTests {
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.switcher-revocation.\(UUID())"
+        let domain = "io.github.sam32j.lattice.tests.switcher-revocation.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
         for simple in [true, false] {

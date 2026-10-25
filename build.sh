@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Vorssaint
 
-# Builds Vorssaint, assembles the .app bundle, signs it and (with --install)
+# Builds Lattice, assembles the .app bundle, signs it and (with --install)
 # installs it into /Applications.
 #
 # The bundle is staged in a temporary directory outside ~/Documents: folders synced
@@ -26,7 +26,7 @@ trap cleanup EXIT
 # into the build sweeps like any other ending.
 trap 'exit 1' INT TERM HUP
 
-# Flags: --dev builds the local-only "Vorssaint (Developer)" variant (its own
+# Flags: --dev builds the local-only "Lattice (Developer)" variant (its own
 # bundle id, so it coexists with the official app); --install puts it in /Applications.
 DEV=0
 INSTALL=0
@@ -46,7 +46,7 @@ if (( DEV )); then
     APP_NAME="Lattice (Developer)"
     EXECUTABLE="LatticeDeveloper"
     APP_BUNDLE_ID="io.github.sam32j.lattice.dev"
-    BUILD_VARIANT_FLAGS=(-D VORSSAINT_DEVELOPMENT)
+    BUILD_VARIANT_FLAGS=(-D LATTICE_DEVELOPMENT)
     APP_OPTIMIZATION_FLAGS=(-Onone)
     BUILD_CONFIGURATION="debug"
 else
@@ -61,14 +61,14 @@ FAN_HELPER_ID="$APP_BUNDLE_ID.fan-control"
 # Now Playing is read through /usr/bin/perl loading this library; see
 # Sources/NowPlayingAdapter. Staged under Contents/Frameworks, signed on its own.
 NOW_PLAYING_ADAPTER_ID="$APP_BUNDLE_ID.now-playing"
-NOW_PLAYING_ADAPTER="libVorssaintNowPlaying.dylib"
+NOW_PLAYING_ADAPTER="libLatticeNowPlaying.dylib"
 TARGET="arm64-apple-macosx14.0"
-ENTITLEMENTS="Resources/Vorssaint.entitlements"
+ENTITLEMENTS="Resources/Lattice.entitlements"
 LEGACY_IDENTITY="Lattice Local Signing"
 
 developer_id_identity() {
     local team
-    team="$(sed -n 's/.*static let signingTeamID = "\([A-Z0-9]*\)".*/\1/p' Sources/Vorssaint/Core/DownstreamIdentity.swift)"
+    team="$(sed -n 's/.*static let signingTeamID = "\([A-Z0-9]*\)".*/\1/p' Sources/Lattice/Core/DownstreamIdentity.swift)"
     [[ "$team" =~ '^[A-Z0-9]{10}$' && "$team" != '3D485NHW29' ]] || return 0
     security find-identity -v -p codesigning 2>/dev/null \
         | grep 'Developer ID Application' | grep -F "($team)" | head -1 \
@@ -201,8 +201,8 @@ finalize_installed_bundle_after_child() {
     echo "✓ Signature ready: $bundle"
 }
 
-if (( INSTALL && ! TEST )) && [[ "${VORSSAINT_INSTALL_CHILD:-0}" != "1" ]]; then
-    VORSSAINT_INSTALL_CHILD=1 "$0" "$@"
+if (( INSTALL && ! TEST )) && [[ "${LATTICE_INSTALL_CHILD:-0}" != "1" ]]; then
+    LATTICE_INSTALL_CHILD=1 "$0" "$@"
     child_status=$?
     if (( child_status != 0 )); then
         exit "$child_status"
@@ -241,13 +241,13 @@ discard_test_preferences() {
     # cfprefsd can recreate an emptied domain after the first removal. Require
     # two quiet checks, but keep a hard limit so persistent failures still fail CI.
     for attempt in {1..10}; do
-        for name in "vorss.tests." "com.vorssaint.tests."; do
+        for name in "vorss.tests." "io.github.sam32j.lattice.tests."; do
             rm -f "$preferences"/$name*.plist(N)
         done
         rm -f "$preferences/metrics-tests.plist"
         sleep 0.2
         survivors=$(find "$preferences" -maxdepth 1 \
-            \( -name "vorss.tests.*.plist" -o -name "com.vorssaint.tests.*.plist" \
+            \( -name "vorss.tests.*.plist" -o -name "io.github.sam32j.lattice.tests.*.plist" \
                -o -name "metrics-tests.plist" \) 2>/dev/null | wc -l | tr -d ' ')
         if [[ "$survivors" == "0" ]]; then
             quiet_passes=$((quiet_passes + 1))
@@ -271,427 +271,427 @@ if (( TEST )); then
     TEST_OBJECT_DIR="build/objects/tests"
     mkdir -p "$TEST_OBJECT_DIR"
     TEST_SOURCES=(
-        Sources/Vorssaint/Services/InputEventTap.swift
-        Sources/Vorssaint/Services/ActivationHandoff.swift
-        Sources/Vorssaint/Services/Media/MediaSupport.swift
-        Sources/Vorssaint/Services/VideoDownloader/VideoDownloaderStrings.swift
-        Sources/Vorssaint/Services/VideoDownloader/VideoDownloadRequest.swift
-        Sources/Vorssaint/Services/VideoDownloader/VideoDownloadProcess.swift
-        Sources/Vorssaint/Services/VideoDownloader/VideoDownloadDependencies.swift
-        Sources/Vorssaint/Services/VideoDownloader/DownloadHistoryStore.swift
-        Sources/Vorssaint/Services/VideoDownloader/ToolchainManager.swift
-        Sources/Vorssaint/Services/VideoDownloader/VideoDownloader.swift
-        Sources/Vorssaint/Core/QuitProtectionSupport.swift
-        Sources/Vorssaint/Core/QuitProtectionStrings.swift
-        Sources/Vorssaint/Core/Defaults.swift
-        Sources/Vorssaint/Core/PermanentInputMigration.swift
-        Sources/Vorssaint/Core/PageOwnedControlsMigration.swift
-        Sources/Vorssaint/Core/AudioControlsMigration.swift
-        Sources/Vorssaint/UI/Settings/SettingsHostingController.swift
-        Sources/Vorssaint/Core/WindowLayoutShortcutEditor.swift
-        Sources/Vorssaint/Core/NotchStrings.swift
-        Sources/Vorssaint/Core/NotchEditorStrings.swift
-        Sources/Vorssaint/UI/Settings/NotchSettingsTabRow.swift
-        Sources/Vorssaint/Core/NotchActivityStrings.swift
-        Sources/Vorssaint/Services/Notch/NotchTimerSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchTimerAlert.swift
-        Sources/Vorssaint/UI/Notch/NotchIslandAlert.swift
-        Sources/Vorssaint/Services/Notch/NotchAccessorySupport.swift
-        Sources/Vorssaint/Services/QuickTools/CameraPreviewSupport.swift
-        Sources/Vorssaint/Core/NotchMusicExtrasStrings.swift
-        Sources/Vorssaint/Core/NotchClipboardSizeStrings.swift
-        Sources/Vorssaint/Services/Notch/NotchLyricsSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchQueueSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchPreferredPlayer.swift
-        Sources/Vorssaint/Core/NotchFilesStrings.swift
-        Sources/Vorssaint/Core/NotchWatchStrings.swift
-        Sources/Vorssaint/Services/Notch/NotchWatchSupport.swift
-        Sources/Vorssaint/Core/NotchMascotStrings.swift
-        Sources/Vorssaint/Services/Notch/NotchMascotSupport.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarDropletMotion.swift
-        Sources/Vorssaint/Services/Notch/NotchFileToolsSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchDownloadSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchDownloadProgressObserver.swift
-        Sources/Vorssaint/Core/NotchCalendarStrings.swift
-        Sources/Vorssaint/Core/NotchNotificationStrings.swift
-        Sources/Vorssaint/Core/NotchGestureStrings.swift
-        Sources/Vorssaint/Core/NotchAgentStrings.swift
-        Sources/Vorssaint/Core/CodexAccountStrings.swift
-        Sources/Vorssaint/Services/Notch/NotchAgentSupport.swift
-        Sources/Vorssaint/Core/NotchLockScreenStrings.swift
-        Sources/Vorssaint/Services/Notch/NotchLockScreenSupport.swift
-        Sources/Vorssaint/Services/LockSoundService.swift
-        Sources/Vorssaint/Services/PadlockSound.swift
-        Sources/Vorssaint/Core/GeneralSoundCopy.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentUsageModels.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentPricing.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentLogObject.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentLogParser.swift
-        Sources/Vorssaint/Services/AgentUsage/Harness/AgentHarnessReader.swift
-        Sources/Vorssaint/Services/AgentUsage/Harness/ClaudeReader.swift
-        Sources/Vorssaint/Services/AgentUsage/Harness/CodexReader.swift
-        Sources/Vorssaint/Services/AgentUsage/Harness/OpenCodeReader.swift
-        Sources/Vorssaint/Services/AgentUsage/Harness/CopilotReader.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentUsageSummary.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentUsageStore.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentUsageArchive.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentClaudeAppUsage.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentCLIConversation.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentClaudeServer.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentCodexServer.swift
-        Sources/Vorssaint/Services/AgentUsage/CodexAccountLimits.swift
-        Sources/Vorssaint/Services/AgentUsage/CodexProfileLimitsService.swift
-        Sources/Vorssaint/Services/AgentUsage/AgentOpenCodeReader.swift
-        Sources/Vorssaint/Services/Notch/NotchMusicNoticeLayout.swift
-        Sources/Vorssaint/Services/Notch/NotchMusicSwipeState.swift
-        Sources/Vorssaint/Services/Notch/NotchMusicSwipeHaptics.swift
-        Sources/Vorssaint/Services/Notch/NotchMusicSwipeController.swift
-        Sources/Vorssaint/Services/Notch/NotchMusicTrackSwipe.swift
-        Sources/Vorssaint/Services/Notch/NotchGestureSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchCaptureTrackpadGesture.swift
-        Sources/Vorssaint/Services/Notch/NotchSectionPaging.swift
-        Sources/Vorssaint/Services/Notch/NotchSliderEditing.swift
-        Sources/Vorssaint/Services/Notch/NotchNotificationSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchNotificationReaderCore.swift
-        Sources/Vorssaint/Services/Notch/NotchCalendarSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchKeepAwakeSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchCaptureRouting.swift
-        Sources/Vorssaint/Services/Notch/NotchAudioLevelSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchVolumeKeyGate.swift
-        Sources/Vorssaint/Services/Notch/NotchMusicSupport.swift
-        Sources/Vorssaint/UI/Notch/NotchDecorativeClock.swift
-        Sources/Vorssaint/Services/Notch/NotchBrowserArtworkSupport.swift
-        Sources/Vorssaint/UI/Notch/NotchEqualizerBars.swift
-        Sources/Vorssaint/UI/Notch/NotchScrollEdgeFade.swift
-        Sources/Vorssaint/UI/Notch/NotchAgentAnimationView.swift
-        Sources/Vorssaint/UI/WindowVisibilityReader.swift
-        Sources/Vorssaint/Services/Notch/NotchMusicAutomationSupport.swift
-        Sources/Vorssaint/Services/Notch/NotchMusicAutomation.swift
-        Sources/Vorssaint/Services/Notch/NotchPlaybackSource.swift
-        Sources/Vorssaint/Services/Notch/NotchPlaybackCommand.swift
-        Sources/Vorssaint/Services/Notch/NotchMusicCommandWriter.swift
-        Sources/Vorssaint/Core/FeatureCatalog.swift
-        Sources/Vorssaint/Core/FeatureInstallationPolicy.swift
-        Sources/Vorssaint/Core/IslandDestinationSupport.swift
-        Sources/Vorssaint/Core/SettingsOwnershipStrings.swift
-        Sources/Vorssaint/Core/FeatureEnergyProfile.swift
-        Sources/Vorssaint/Core/FeatureHubStrings.swift
-        Sources/Vorssaint/Core/ShortcutSettingsStrings.swift
-        Sources/Vorssaint/Core/SettingsBackupSupport.swift
-        Sources/Vorssaint/Core/SettingsBackupSupport+MouseExceptions.swift
-        Sources/Vorssaint/Core/BackupStrings.swift
-        Sources/Vorssaint/Core/DataPermissionsStrings.swift
-        Sources/Vorssaint/Core/SnippetStrings.swift
-        Sources/Vorssaint/Core/AlertSoundStrings.swift
-        Sources/Vorssaint/Core/BrightnessStrings.swift
-        Sources/Vorssaint/Core/MediaImageStrings.swift
-        Sources/Vorssaint/Core/QuickToggleStrings.swift
-        Sources/Vorssaint/Core/CaptureWorkflowStrings.swift
-        Sources/Vorssaint/Core/ScreenshotStrings.swift
-        Sources/Vorssaint/Core/RecentCaptureStrings.swift
-        Sources/Vorssaint/Core/RecorderStrings.swift
-        Sources/Vorssaint/Core/RecorderShareStrings.swift
-        Sources/Vorssaint/Core/CameraPreviewStrings.swift
-        Sources/Vorssaint/Core/WallpaperStrings.swift
-        Sources/Vorssaint/Services/Wallpaper/WallpaperSupport.swift
-        Sources/Vorssaint/Core/ScratchpadStrings.swift
-        Sources/Vorssaint/Core/CommandBarStrings.swift
-        Sources/Vorssaint/Core/FeedbackStrings.swift
-        Sources/Vorssaint/Core/FeedbackDraftStrings.swift
-        Sources/Vorssaint/Core/PermissionActivationSupport.swift
-        Sources/Vorssaint/Core/PermissionRevocationPolicy.swift
-        Sources/Vorssaint/Core/PermissionRevocationTracker.swift
-        Sources/Vorssaint/Core/BrightnessKeyStepActivation.swift
-        Sources/Vorssaint/Core/PermissionPreflight.swift
-        Sources/Vorssaint/Core/BluetoothPermissionAccess.swift
-        Sources/Vorssaint/Core/SettingsFollowupStrings.swift
-        Sources/Vorssaint/Core/AppMenuDestination.swift
-        Sources/Vorssaint/Core/AppMenuReopenCoordinator.swift
-        Sources/Vorssaint/Core/PermissionResetState.swift
-        Sources/Vorssaint/UI/Settings/ShortcutSettingsObserver.swift
-        Sources/Vorssaint/Core/RadialMenuStrings.swift
-        Sources/Vorssaint/Core/MenuBarAppearanceStrings.swift
-        Sources/Vorssaint/Core/AppAppearance.swift
-        Sources/Vorssaint/Core/AppearanceStrings.swift
-        Sources/Vorssaint/Core/GeneralSettingsStrings.swift
-        Sources/Vorssaint/Core/SettingsPageStrings.swift
-        Sources/Vorssaint/Core/BatteryTimeStrings.swift
-        Sources/Vorssaint/Core/CPUCoreStrings.swift
-        Sources/Vorssaint/Core/MonitorLayoutStrings.swift
-        Sources/Vorssaint/Core/KeepAwakeStrings.swift
-        Sources/Vorssaint/Core/BluetoothSleepStrings.swift
-        Sources/Vorssaint/Core/PermissionGuideStrings.swift
-        Sources/Vorssaint/Core/FanControlStrings.swift
-        Sources/Vorssaint/Core/ConnectedDevicesStrings.swift
-        Sources/Vorssaint/Services/FanControl/FanControlSupport.swift
-        Sources/Vorssaint/Services/FanControl/FanControlResumeSupport.swift
-        Sources/Vorssaint/Services/Snippets/TextSnippetSupport.swift
-        Sources/Vorssaint/Services/RadialMenu/RadialMenuSupport.swift
-        Sources/Vorssaint/Services/RadialMenu/RadialProfileActivation.swift
-        Sources/Vorssaint/Services/QuickTools/ScratchpadSupport.swift
-        Sources/Vorssaint/Services/QuickTools/ScratchpadStore.swift
-        Sources/Vorssaint/Services/KillProcess/KillProcessSupport.swift
-        Sources/Vorssaint/Services/Recorder/RecorderSupport.swift
-        Sources/Vorssaint/Services/Recorder/RecorderSampleTiming.swift
-        Sources/Vorssaint/Services/Recorder/RecorderWriter.swift
-        Sources/Vorssaint/Services/Recorder/RecorderCaptureEngine.swift
-        Sources/Vorssaint/Core/RecorderExportStrings.swift
-        Sources/Vorssaint/Services/Recorder/RecorderComposer.swift
-        Sources/Vorssaint/Services/Recorder/RecorderComposerPlan.swift
-        Sources/Vorssaint/Services/Recorder/RecorderCursorSprite.swift
-        Sources/Vorssaint/Services/Recorder/RecorderTextRenderer.swift
-        Sources/Vorssaint/Services/Recorder/RecorderImageRenderer.swift
-        Sources/Vorssaint/Services/Recorder/RecorderExporter.swift
-        Sources/Vorssaint/Services/Recorder/RecorderGIFClipboard.swift
-        Sources/Vorssaint/Services/Recorder/RecorderGIFWriter.swift
-        Sources/Vorssaint/Services/Recorder/RecorderGIFWorkspace.swift
-        Sources/Vorssaint/Services/Recorder/RecorderComposition.swift
-        Sources/Vorssaint/Services/Recorder/RecordingSharingSupport.swift
-        Sources/Vorssaint/Services/PrivateFileStore.swift
-        Sources/Vorssaint/Services/Recorder/RecorderTakeStore.swift
-        Sources/Vorssaint/Services/Recorder/RecorderPresetImageStore.swift
-        Sources/Vorssaint/Services/Recorder/RecorderMotion.swift
-        Sources/Vorssaint/Services/Recorder/RecorderPointerTrack.swift
-        Sources/Vorssaint/Services/Recorder/RecorderTypingTrack.swift
-        Sources/Vorssaint/Services/Recorder/RecorderCameraLayout.swift
-        Sources/Vorssaint/Core/RecorderOverlayStrings.swift
-        Sources/Vorssaint/Services/Recorder/RecorderSelectionDraft.swift
-        Sources/Vorssaint/Services/Recorder/RecorderSelectionAudioOptions.swift
-        Sources/Vorssaint/Services/Recorder/RecorderOverlayCompositor.swift
-        Sources/Vorssaint/Services/Recorder/RecorderCameraCapture.swift
-        Sources/Vorssaint/Services/Recorder/RecorderNativeCameraSource.swift
-        Sources/Vorssaint/Services/Recorder/RecorderKeystrokeOverlay.swift
-        Sources/Vorssaint/Services/Recorder/RecorderOverlayController.swift
-        Sources/Vorssaint/Services/Recorder/RecorderCameraOverlayView.swift
-        Sources/Vorssaint/Services/Recorder/RecorderIndicator.swift
-        Sources/Vorssaint/UI/Recorder/RecorderCaptureInputControls.swift
-        Sources/Vorssaint/UI/Recorder/RecorderWaitingControls.swift
-        Sources/Vorssaint/Services/Recorder/RecorderTimeline.swift
-        Sources/Vorssaint/Services/Recorder/RecorderTextOverlay.swift
-        Sources/Vorssaint/Services/Recorder/RecorderImageOverlay.swift
-        Sources/Vorssaint/Services/Recorder/RecorderBlurRegion.swift
-        Sources/Vorssaint/Services/Recorder/RecorderEditDocument.swift
-        Sources/Vorssaint/Core/AppInfo.swift
-        Sources/Vorssaint/Core/DownstreamIdentity.swift
-        Sources/Vorssaint/Core/GlobalShortcut.swift
-        Sources/Vorssaint/Core/SymbolicHotKeys.swift
-        Sources/Vorssaint/Services/SystemShortcutTakeoverSupport.swift
-        Sources/Vorssaint/Core/Localization.swift
-        Sources/Vorssaint/Core/Localizations/Strings+*.swift
-        Sources/Vorssaint/Core/FeatureStrings.swift
-        Sources/Vorssaint/Core/KillProcessStrings.swift
-        Sources/Vorssaint/Core/PortManagerStrings.swift
-        Sources/Vorssaint/Core/ReleaseNotes.swift
-        Sources/Vorssaint/Core/ReleaseDigest.swift
-        Sources/Vorssaint/Core/ReleaseChangeAliases.swift
-        Sources/Vorssaint/Core/WhatsNewStrings.swift
-        Sources/Vorssaint/Core/URLCleaning.swift
-        Sources/Vorssaint/Services/GeneralPasteboardAccess.swift
-        Sources/Vorssaint/Services/Clipboard/ClipboardHistoryWrite.swift
-        Sources/Vorssaint/Services/Audio/AirPlayRouteManager.swift
-        Sources/Vorssaint/Services/Audio/MixerRoutingSupport.swift
-        Sources/Vorssaint/Services/Audio/AudioPriorityPresentation.swift
-        Sources/Vorssaint/Services/Feedback/FeedbackDraft.swift
-        Sources/Vorssaint/Services/Audio/MusicLaunchSupport.swift
-        Sources/Vorssaint/Services/Bluetooth/BluetoothSleepSupport.swift
-        Sources/Vorssaint/UI/MenuPanel/MixerPercentNativeTextField.swift
-        Sources/Vorssaint/UI/MenuPanel/MixerAppDragSource.swift
-        Sources/Vorssaint/Services/Audio/BoostLimiter.swift
-        Sources/Vorssaint/Services/Audio/MixerRender.swift
-        Sources/Vorssaint/Services/Audio/PreciseVolumeRollerSupport.swift
-        Sources/Vorssaint/Services/DockPreview/DockPreviewSupport.swift
-        Sources/Vorssaint/Services/DockPreview/DockPreviewExclusions.swift
-        Sources/Vorssaint/Core/SettingsAppListDescriptions.swift
-        Sources/Vorssaint/Core/SettingsAppListStrings.swift
-        Sources/Vorssaint/UI/Settings/QuitProtectionAppListStrings.swift
-        Sources/Vorssaint/Services/DockPreview/DockAutohideHold.swift
-        Sources/Vorssaint/Services/SpacesOrder/SpacesOrderHold.swift
-        Sources/Vorssaint/Services/Homebrew/HomebrewSupport.swift
-        Sources/Vorssaint/Services/Homebrew/HomebrewEnvironment.swift
-        Sources/Vorssaint/Services/AppUpdates/AppUpdatesSupport.swift
-        Sources/Vorssaint/Services/AppUpdates/AppUpdateFeedSupport.swift
-        Sources/Vorssaint/Core/AppUpdateStrings.swift
-        Sources/Vorssaint/Core/DiskImageInstallerStrings.swift
-        Sources/Vorssaint/Services/DiskImageInstaller/DiskImageInstallerSupport.swift
-        Sources/Vorssaint/UI/NonModalAlert.swift
-        Sources/Vorssaint/Services/Clipboard/ClipboardHistorySupport.swift
-        Sources/Vorssaint/Core/ColorValue.swift
-        Sources/Vorssaint/Services/Clipboard/ClipboardAutoClearSupport.swift
-        Sources/Vorssaint/Services/AutoQuit/AutoQuitSupport.swift
-        Sources/Vorssaint/Services/Shelf/ShelfSupport.swift
-        Sources/Vorssaint/Services/Shelf/ShelfFilePromiseTransfer.swift
-        Sources/Vorssaint/Core/ShelfPromiseDeliveryStrings.swift
-        Sources/Vorssaint/Services/Update/UpdateInstallerSupport.swift
-        Sources/Vorssaint/Services/Update/UpdateServiceSupport.swift
-        Sources/Vorssaint/Services/Update/UpdateCheckResponse.swift
-        Sources/Vorssaint/Core/UpdateSettingsPresentation.swift
-        Sources/Vorssaint/Core/UpdateSettingsStrings.swift
-        Sources/Vorssaint/Services/InstalledApps.swift
-        Sources/Vorssaint/Services/LaunchAtLoginSupport.swift
-        Sources/Vorssaint/UI/Settings/SettingsSearchSupport.swift
-        Sources/Vorssaint/UI/Settings/SettingsSidebarSupport.swift
-        Sources/Vorssaint/UI/Settings/FeatureVisibilitySupport.swift
-        Sources/Vorssaint/UI/Onboarding/WhatsNewSupport.swift
-        Sources/Vorssaint/UI/Settings/SettingsWindow.swift
-        Sources/Vorssaint/UI/Settings/SettingsDetailViewport.swift
-        Sources/Vorssaint/UI/Settings/ReleaseNotesSettings.swift
-        Sources/Vorssaint/UI/Settings/UpdateSettingsStatusRow.swift
-        Sources/Vorssaint/UI/PermissionDetailsSheet.swift
-        Sources/Vorssaint/Core/SettingsNavigationStrings.swift
-        Sources/Vorssaint/App/MenuBarSpacingSupport.swift
-        Sources/Vorssaint/App/MenuBarAllowanceSupport.swift
-        Sources/Vorssaint/App/ReopenRequestSupport.swift
-        Sources/Vorssaint/App/StatusItemAnchorSupport.swift
-        Sources/Vorssaint/Services/DockClick/DockClickSupport.swift
-        Sources/Vorssaint/Services/MiddleClick/MiddleClickSupport.swift
-        Sources/Vorssaint/Services/MouseNavigation/MouseNavigationSupport.swift
-        Sources/Vorssaint/Services/MouseNavigation/MouseNavigationKeys.swift
-        Sources/Vorssaint/Services/MouseButtons/MouseButtonShortcutSupport.swift
-        Sources/Vorssaint/Services/MouseButtons/MouseSpacesGestureSupport.swift
-        Sources/Vorssaint/Services/MouseClickDebounce/MouseClickDebounceSupport.swift
-        Sources/Vorssaint/Services/MouseExceptions/MouseAppExceptionSupport.swift
-        Sources/Vorssaint/Services/MouseExceptions/MouseAppExceptions.swift
-        Sources/Vorssaint/Services/MouseButtons/MouseShortcutExceptions.swift
-        Sources/Vorssaint/Services/WindowServerSupport.swift
-        Sources/Vorssaint/Services/WindowMaximizerSupport.swift
-        Sources/Vorssaint/Core/MouseButtonStrings.swift
-        Sources/Vorssaint/Core/MouseClickDebounceStrings.swift
-        Sources/Vorssaint/Core/MouseExceptionStrings.swift
-        Sources/Vorssaint/Core/ClipboardIgnoredAppsStrings.swift
-        Sources/Vorssaint/Core/ClipboardRetentionStrings.swift
-        Sources/Vorssaint/Core/DiskExclusionStrings.swift
-        Sources/Vorssaint/Core/WindowLayoutIgnoredAppsStrings.swift
-        Sources/Vorssaint/Services/WindowLayout/WindowLayoutIgnoredApps.swift
-        Sources/Vorssaint/Core/WindowPreviewExclusionStrings.swift
-        Sources/Vorssaint/Core/WindowMaximizerExclusionStrings.swift
-        Sources/Vorssaint/Core/SwitcherAppRulesStrings.swift
-        Sources/Vorssaint/Services/QuickTools/QuickToolsSupport.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarSupport.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarPreferences.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarMath.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarUnits.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarColors.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarEmoji.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarLinks.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarDates.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarRowShortcuts.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarSystemSettingsSupport.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarFileSearchSupport.swift
-        Sources/Vorssaint/Services/CommandBar/CommandBarQueryMemory.swift
-        Sources/Vorssaint/Services/SpotlightNamesSupport.swift
-        Sources/Vorssaint/Services/QuickTools/MicMuteSupport.swift
-        Sources/Vorssaint/Services/QuickTools/QuickTogglesSupport.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotCapturePolicy.swift
-        Sources/Vorssaint/Services/QuickTools/CapturePresentationPolicy.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotDialogGeometry.swift
-        Sources/Vorssaint/App/MediaEditorFileSupport.swift
-        Sources/Vorssaint/Core/MediaEditorFileStrings.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotCapturePanel.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotCaptureFocusSession.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotMultiWindowShiftMonitor.swift
-        Sources/Vorssaint/Services/QuickTools/CapturePresentationDeferral.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotSupport.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotWindowFallback.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotEditorGeometry.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotCropAspect.swift
-        Sources/Vorssaint/Core/ScreenshotEditorRefinementStrings.swift
-        Sources/Vorssaint/Core/ScreenshotWatermarkDraft.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotPinPinchTracker.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotPinGestureView.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotPinFeedbackView.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotPinWindow.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotQuickLookController.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotWindowLayering.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotPreviewImageActions.swift
-        Sources/Vorssaint/UI/Screenshot/ScreenshotPreviewContextMenu.swift
-        Sources/Vorssaint/UI/Screenshot/ScreenshotEditorControlFeedback.swift
-        Sources/Vorssaint/UI/Screenshot/ScreenshotFontSizeControl.swift
-        Sources/Vorssaint/UI/Screenshot/ScreenshotFontSizePalette.swift
-        Sources/Vorssaint/UI/Screenshot/ScreenshotCanvasInput.swift
-        Sources/Vorssaint/UI/Screenshot/ScreenshotFontSizeSlider.swift
-        Sources/Vorssaint/UI/Screenshot/ScreenshotFontSizeField.swift
-        Sources/Vorssaint/UI/Screenshot/ScreenshotSelectionChrome.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotPinContentView.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotPinChrome.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotPinFilePromise.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotPinDragView.swift
-        Sources/Vorssaint/Core/ScreenshotPinPreferences.swift
-        Sources/Vorssaint/Core/ScreenshotPinStrings.swift
-        Sources/Vorssaint/UI/Settings/MonitorToken.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotRenderer.swift
-        Sources/Vorssaint/UI/Screenshot/ScreenshotEditorResizeCursor.swift
-        Sources/Vorssaint/Services/QuickTools/RecentCaptureRetention.swift
-        Sources/Vorssaint/Services/QuickTools/RecentCaptureStore.swift
-        Sources/Vorssaint/Services/QuickTools/RecentCaptureEditableImage.swift
-        Sources/Vorssaint/Services/Recorder/RecorderFileCopy.swift
-        Sources/Vorssaint/Services/Recorder/RecorderQuickPreviewModel.swift
-        Sources/Vorssaint/Services/Recorder/RecorderPreviewShortcut.swift
-        Sources/Vorssaint/Services/QuickTools/ScreenshotSharingSupport.swift
-        Sources/Vorssaint/Services/QuickTools/WindowActivationPolicy.swift
-        Sources/Vorssaint/Services/KeyboardDebounce/KeyboardDebounceSupport.swift
-        Sources/Vorssaint/Services/KeyboardDebounce/KeyboardDebounceOverrides.swift
-        Sources/Vorssaint/Services/SuperKey/SuperKeySupport.swift
-        Sources/Vorssaint/Services/SuperKey/SuperKeyMappingGuard.swift
-        Sources/Vorssaint/Core/SuperKeyStrings.swift
-        Sources/Vorssaint/Core/InputSourceSelection.swift
-        Sources/Vorssaint/Services/SessionActivity.swift
-        Sources/Vorssaint/Services/SessionActivitySupport.swift
-        Sources/Vorssaint/Services/EventTimestamp.swift
-        Sources/Vorssaint/Services/OwnKeyEvent.swift
-        Sources/Vorssaint/Services/ScrollWheelSupport.swift
-        Sources/Vorssaint/Services/HorizontalWheelScrolling.swift
-        Sources/Vorssaint/Services/SmoothScrollSupport.swift
-        Sources/Vorssaint/Services/MouseAcceleration/MouseAccelerationSupport.swift
-        Sources/Vorssaint/Services/FocusFollowsMouse/FocusFollowsMouseSupport.swift
-        Sources/Vorssaint/Services/AssistiveKeyboard.swift
-        Sources/Vorssaint/Services/Switcher/SwitcherModels.swift
-        Sources/Vorssaint/Services/Switcher/WindowServerCaptureQueue.swift
-        Sources/Vorssaint/Services/Switcher/SwitcherSupport.swift
-        Sources/Vorssaint/Services/Switcher/SpaceHopSupport.swift
-        Sources/Vorssaint/Services/Switcher/WindowUseOrder.swift
-        Sources/Vorssaint/Services/Metrics/MetricFormat.swift
-        Sources/Vorssaint/Services/Metrics/VMStatisticsDecoder.swift
-        Sources/Vorssaint/Services/KeepAwakeAutomationSupport.swift
-        Sources/Vorssaint/Services/SudoersSupport.swift
-        Sources/Vorssaint/Services/Metrics/BatteryTimeSupport.swift
-        Sources/Vorssaint/Services/Metrics/BatteryPowerSupport.swift
-        Sources/Vorssaint/Services/BoundedProcessRunner.swift
-        Sources/Vorssaint/Services/DetachedProcess.swift
-        Sources/Vorssaint/Services/ShellSupport.swift
-        Sources/Vorssaint/Services/PortManager/PortManagerSupport.swift
-        Sources/Vorssaint/Services/Metrics/NetworkProcessSupport.swift
-        Sources/Vorssaint/Services/Metrics/NetworkSampler.swift
-        Sources/Vorssaint/Services/Metrics/NetworkAddressService.swift
-        Sources/Vorssaint/Services/Metrics/SpeedTest.swift
-        Sources/Vorssaint/Services/Metrics/PeripheralBatterySampler.swift
-        Sources/Vorssaint/Services/Metrics/BluetoothBatteryRead.swift
-        Sources/Vorssaint/Services/Metrics/PeripheralBatterySupport.swift
-        Sources/Vorssaint/Services/Metrics/DiskSupport.swift
-        Sources/Vorssaint/Services/Metrics/MonitorSamplingPolicy.swift
-        Sources/Vorssaint/Services/Metrics/USBDeviceSampler.swift
-        Sources/Vorssaint/Services/Metrics/CPUCoreSampler.swift
-        Sources/Vorssaint/Services/Metrics/MaxCapacityProbe.swift
-        Sources/Vorssaint/Services/Metrics/TemperatureSensorSelector.swift
-        Sources/Vorssaint/Services/Metrics/SustainedAlertGate.swift
-        Sources/Vorssaint/Services/WindowLayout/WindowLayoutSupport.swift
-        Sources/Vorssaint/Services/WindowLayout/WindowGestureSupport.swift
-        Sources/Vorssaint/Core/WindowDirectionalStrings.swift
-        Sources/Vorssaint/Core/PointerDisplayStrings.swift
-        Sources/Vorssaint/Core/GraphScaleStrings.swift
-        Sources/Vorssaint/Core/NotchLowBatteryStrings.swift
-        Sources/Vorssaint/Services/CleaningMode/CleaningUnlockCounter.swift
-        Sources/Vorssaint/Services/CleaningMode/CleaningMouseReleaseGate.swift
-        Sources/Vorssaint/Services/Display/ExtraBrightnessSupport.swift
-        Sources/Vorssaint/Services/Display/BrightnessSupport.swift
-        Sources/Vorssaint/Services/Display/LidDimmingSupport.swift
-        Sources/Vorssaint/Services/Cleaner/CleanerSupport.swift
-        Sources/Vorssaint/Services/Cleaner/CleanerPolicy.swift
-        Sources/Vorssaint/Services/Cleaner/CleanerOwnership.swift
-        Sources/Vorssaint/Services/Cleaner/CleanerScanPrivacy.swift
-        Sources/Vorssaint/Services/Cleaner/CleanerSchedule.swift
-        Sources/Vorssaint/Services/Uninstall/UninstallerSupport.swift
-        Sources/Vorssaint/Core/SecureInputSupport.swift
+        Sources/Lattice/Services/InputEventTap.swift
+        Sources/Lattice/Services/ActivationHandoff.swift
+        Sources/Lattice/Services/Media/MediaSupport.swift
+        Sources/Lattice/Services/VideoDownloader/VideoDownloaderStrings.swift
+        Sources/Lattice/Services/VideoDownloader/VideoDownloadRequest.swift
+        Sources/Lattice/Services/VideoDownloader/VideoDownloadProcess.swift
+        Sources/Lattice/Services/VideoDownloader/VideoDownloadDependencies.swift
+        Sources/Lattice/Services/VideoDownloader/DownloadHistoryStore.swift
+        Sources/Lattice/Services/VideoDownloader/ToolchainManager.swift
+        Sources/Lattice/Services/VideoDownloader/VideoDownloader.swift
+        Sources/Lattice/Core/QuitProtectionSupport.swift
+        Sources/Lattice/Core/QuitProtectionStrings.swift
+        Sources/Lattice/Core/Defaults.swift
+        Sources/Lattice/Core/PermanentInputMigration.swift
+        Sources/Lattice/Core/PageOwnedControlsMigration.swift
+        Sources/Lattice/Core/AudioControlsMigration.swift
+        Sources/Lattice/UI/Settings/SettingsHostingController.swift
+        Sources/Lattice/Core/WindowLayoutShortcutEditor.swift
+        Sources/Lattice/Core/NotchStrings.swift
+        Sources/Lattice/Core/NotchEditorStrings.swift
+        Sources/Lattice/UI/Settings/NotchSettingsTabRow.swift
+        Sources/Lattice/Core/NotchActivityStrings.swift
+        Sources/Lattice/Services/Notch/NotchTimerSupport.swift
+        Sources/Lattice/Services/Notch/NotchTimerAlert.swift
+        Sources/Lattice/UI/Notch/NotchIslandAlert.swift
+        Sources/Lattice/Services/Notch/NotchAccessorySupport.swift
+        Sources/Lattice/Services/QuickTools/CameraPreviewSupport.swift
+        Sources/Lattice/Core/NotchMusicExtrasStrings.swift
+        Sources/Lattice/Core/NotchClipboardSizeStrings.swift
+        Sources/Lattice/Services/Notch/NotchLyricsSupport.swift
+        Sources/Lattice/Services/Notch/NotchQueueSupport.swift
+        Sources/Lattice/Services/Notch/NotchPreferredPlayer.swift
+        Sources/Lattice/Core/NotchFilesStrings.swift
+        Sources/Lattice/Core/NotchWatchStrings.swift
+        Sources/Lattice/Services/Notch/NotchWatchSupport.swift
+        Sources/Lattice/Core/NotchMascotStrings.swift
+        Sources/Lattice/Services/Notch/NotchMascotSupport.swift
+        Sources/Lattice/Services/CommandBar/CommandBarDropletMotion.swift
+        Sources/Lattice/Services/Notch/NotchFileToolsSupport.swift
+        Sources/Lattice/Services/Notch/NotchDownloadSupport.swift
+        Sources/Lattice/Services/Notch/NotchDownloadProgressObserver.swift
+        Sources/Lattice/Core/NotchCalendarStrings.swift
+        Sources/Lattice/Core/NotchNotificationStrings.swift
+        Sources/Lattice/Core/NotchGestureStrings.swift
+        Sources/Lattice/Core/NotchAgentStrings.swift
+        Sources/Lattice/Core/CodexAccountStrings.swift
+        Sources/Lattice/Services/Notch/NotchAgentSupport.swift
+        Sources/Lattice/Core/NotchLockScreenStrings.swift
+        Sources/Lattice/Services/Notch/NotchLockScreenSupport.swift
+        Sources/Lattice/Services/LockSoundService.swift
+        Sources/Lattice/Services/PadlockSound.swift
+        Sources/Lattice/Core/GeneralSoundCopy.swift
+        Sources/Lattice/Services/AgentUsage/AgentUsageModels.swift
+        Sources/Lattice/Services/AgentUsage/AgentPricing.swift
+        Sources/Lattice/Services/AgentUsage/AgentLogObject.swift
+        Sources/Lattice/Services/AgentUsage/AgentLogParser.swift
+        Sources/Lattice/Services/AgentUsage/Harness/AgentHarnessReader.swift
+        Sources/Lattice/Services/AgentUsage/Harness/ClaudeReader.swift
+        Sources/Lattice/Services/AgentUsage/Harness/CodexReader.swift
+        Sources/Lattice/Services/AgentUsage/Harness/OpenCodeReader.swift
+        Sources/Lattice/Services/AgentUsage/Harness/CopilotReader.swift
+        Sources/Lattice/Services/AgentUsage/AgentUsageSummary.swift
+        Sources/Lattice/Services/AgentUsage/AgentUsageStore.swift
+        Sources/Lattice/Services/AgentUsage/AgentUsageArchive.swift
+        Sources/Lattice/Services/AgentUsage/AgentClaudeAppUsage.swift
+        Sources/Lattice/Services/AgentUsage/AgentCLIConversation.swift
+        Sources/Lattice/Services/AgentUsage/AgentClaudeServer.swift
+        Sources/Lattice/Services/AgentUsage/AgentCodexServer.swift
+        Sources/Lattice/Services/AgentUsage/CodexAccountLimits.swift
+        Sources/Lattice/Services/AgentUsage/CodexProfileLimitsService.swift
+        Sources/Lattice/Services/AgentUsage/AgentOpenCodeReader.swift
+        Sources/Lattice/Services/Notch/NotchMusicNoticeLayout.swift
+        Sources/Lattice/Services/Notch/NotchMusicSwipeState.swift
+        Sources/Lattice/Services/Notch/NotchMusicSwipeHaptics.swift
+        Sources/Lattice/Services/Notch/NotchMusicSwipeController.swift
+        Sources/Lattice/Services/Notch/NotchMusicTrackSwipe.swift
+        Sources/Lattice/Services/Notch/NotchGestureSupport.swift
+        Sources/Lattice/Services/Notch/NotchCaptureTrackpadGesture.swift
+        Sources/Lattice/Services/Notch/NotchSectionPaging.swift
+        Sources/Lattice/Services/Notch/NotchSliderEditing.swift
+        Sources/Lattice/Services/Notch/NotchNotificationSupport.swift
+        Sources/Lattice/Services/Notch/NotchNotificationReaderCore.swift
+        Sources/Lattice/Services/Notch/NotchCalendarSupport.swift
+        Sources/Lattice/Services/Notch/NotchKeepAwakeSupport.swift
+        Sources/Lattice/Services/Notch/NotchSupport.swift
+        Sources/Lattice/Services/Notch/NotchCaptureRouting.swift
+        Sources/Lattice/Services/Notch/NotchAudioLevelSupport.swift
+        Sources/Lattice/Services/Notch/NotchVolumeKeyGate.swift
+        Sources/Lattice/Services/Notch/NotchMusicSupport.swift
+        Sources/Lattice/UI/Notch/NotchDecorativeClock.swift
+        Sources/Lattice/Services/Notch/NotchBrowserArtworkSupport.swift
+        Sources/Lattice/UI/Notch/NotchEqualizerBars.swift
+        Sources/Lattice/UI/Notch/NotchScrollEdgeFade.swift
+        Sources/Lattice/UI/Notch/NotchAgentAnimationView.swift
+        Sources/Lattice/UI/WindowVisibilityReader.swift
+        Sources/Lattice/Services/Notch/NotchMusicAutomationSupport.swift
+        Sources/Lattice/Services/Notch/NotchMusicAutomation.swift
+        Sources/Lattice/Services/Notch/NotchPlaybackSource.swift
+        Sources/Lattice/Services/Notch/NotchPlaybackCommand.swift
+        Sources/Lattice/Services/Notch/NotchMusicCommandWriter.swift
+        Sources/Lattice/Core/FeatureCatalog.swift
+        Sources/Lattice/Core/FeatureInstallationPolicy.swift
+        Sources/Lattice/Core/IslandDestinationSupport.swift
+        Sources/Lattice/Core/SettingsOwnershipStrings.swift
+        Sources/Lattice/Core/FeatureEnergyProfile.swift
+        Sources/Lattice/Core/FeatureHubStrings.swift
+        Sources/Lattice/Core/ShortcutSettingsStrings.swift
+        Sources/Lattice/Core/SettingsBackupSupport.swift
+        Sources/Lattice/Core/SettingsBackupSupport+MouseExceptions.swift
+        Sources/Lattice/Core/BackupStrings.swift
+        Sources/Lattice/Core/DataPermissionsStrings.swift
+        Sources/Lattice/Core/SnippetStrings.swift
+        Sources/Lattice/Core/AlertSoundStrings.swift
+        Sources/Lattice/Core/BrightnessStrings.swift
+        Sources/Lattice/Core/MediaImageStrings.swift
+        Sources/Lattice/Core/QuickToggleStrings.swift
+        Sources/Lattice/Core/CaptureWorkflowStrings.swift
+        Sources/Lattice/Core/ScreenshotStrings.swift
+        Sources/Lattice/Core/RecentCaptureStrings.swift
+        Sources/Lattice/Core/RecorderStrings.swift
+        Sources/Lattice/Core/RecorderShareStrings.swift
+        Sources/Lattice/Core/CameraPreviewStrings.swift
+        Sources/Lattice/Core/WallpaperStrings.swift
+        Sources/Lattice/Services/Wallpaper/WallpaperSupport.swift
+        Sources/Lattice/Core/ScratchpadStrings.swift
+        Sources/Lattice/Core/CommandBarStrings.swift
+        Sources/Lattice/Core/FeedbackStrings.swift
+        Sources/Lattice/Core/FeedbackDraftStrings.swift
+        Sources/Lattice/Core/PermissionActivationSupport.swift
+        Sources/Lattice/Core/PermissionRevocationPolicy.swift
+        Sources/Lattice/Core/PermissionRevocationTracker.swift
+        Sources/Lattice/Core/BrightnessKeyStepActivation.swift
+        Sources/Lattice/Core/PermissionPreflight.swift
+        Sources/Lattice/Core/BluetoothPermissionAccess.swift
+        Sources/Lattice/Core/SettingsFollowupStrings.swift
+        Sources/Lattice/Core/AppMenuDestination.swift
+        Sources/Lattice/Core/AppMenuReopenCoordinator.swift
+        Sources/Lattice/Core/PermissionResetState.swift
+        Sources/Lattice/UI/Settings/ShortcutSettingsObserver.swift
+        Sources/Lattice/Core/RadialMenuStrings.swift
+        Sources/Lattice/Core/MenuBarAppearanceStrings.swift
+        Sources/Lattice/Core/AppAppearance.swift
+        Sources/Lattice/Core/AppearanceStrings.swift
+        Sources/Lattice/Core/GeneralSettingsStrings.swift
+        Sources/Lattice/Core/SettingsPageStrings.swift
+        Sources/Lattice/Core/BatteryTimeStrings.swift
+        Sources/Lattice/Core/CPUCoreStrings.swift
+        Sources/Lattice/Core/MonitorLayoutStrings.swift
+        Sources/Lattice/Core/KeepAwakeStrings.swift
+        Sources/Lattice/Core/BluetoothSleepStrings.swift
+        Sources/Lattice/Core/PermissionGuideStrings.swift
+        Sources/Lattice/Core/FanControlStrings.swift
+        Sources/Lattice/Core/ConnectedDevicesStrings.swift
+        Sources/Lattice/Services/FanControl/FanControlSupport.swift
+        Sources/Lattice/Services/FanControl/FanControlResumeSupport.swift
+        Sources/Lattice/Services/Snippets/TextSnippetSupport.swift
+        Sources/Lattice/Services/RadialMenu/RadialMenuSupport.swift
+        Sources/Lattice/Services/RadialMenu/RadialProfileActivation.swift
+        Sources/Lattice/Services/QuickTools/ScratchpadSupport.swift
+        Sources/Lattice/Services/QuickTools/ScratchpadStore.swift
+        Sources/Lattice/Services/KillProcess/KillProcessSupport.swift
+        Sources/Lattice/Services/Recorder/RecorderSupport.swift
+        Sources/Lattice/Services/Recorder/RecorderSampleTiming.swift
+        Sources/Lattice/Services/Recorder/RecorderWriter.swift
+        Sources/Lattice/Services/Recorder/RecorderCaptureEngine.swift
+        Sources/Lattice/Core/RecorderExportStrings.swift
+        Sources/Lattice/Services/Recorder/RecorderComposer.swift
+        Sources/Lattice/Services/Recorder/RecorderComposerPlan.swift
+        Sources/Lattice/Services/Recorder/RecorderCursorSprite.swift
+        Sources/Lattice/Services/Recorder/RecorderTextRenderer.swift
+        Sources/Lattice/Services/Recorder/RecorderImageRenderer.swift
+        Sources/Lattice/Services/Recorder/RecorderExporter.swift
+        Sources/Lattice/Services/Recorder/RecorderGIFClipboard.swift
+        Sources/Lattice/Services/Recorder/RecorderGIFWriter.swift
+        Sources/Lattice/Services/Recorder/RecorderGIFWorkspace.swift
+        Sources/Lattice/Services/Recorder/RecorderComposition.swift
+        Sources/Lattice/Services/Recorder/RecordingSharingSupport.swift
+        Sources/Lattice/Services/PrivateFileStore.swift
+        Sources/Lattice/Services/Recorder/RecorderTakeStore.swift
+        Sources/Lattice/Services/Recorder/RecorderPresetImageStore.swift
+        Sources/Lattice/Services/Recorder/RecorderMotion.swift
+        Sources/Lattice/Services/Recorder/RecorderPointerTrack.swift
+        Sources/Lattice/Services/Recorder/RecorderTypingTrack.swift
+        Sources/Lattice/Services/Recorder/RecorderCameraLayout.swift
+        Sources/Lattice/Core/RecorderOverlayStrings.swift
+        Sources/Lattice/Services/Recorder/RecorderSelectionDraft.swift
+        Sources/Lattice/Services/Recorder/RecorderSelectionAudioOptions.swift
+        Sources/Lattice/Services/Recorder/RecorderOverlayCompositor.swift
+        Sources/Lattice/Services/Recorder/RecorderCameraCapture.swift
+        Sources/Lattice/Services/Recorder/RecorderNativeCameraSource.swift
+        Sources/Lattice/Services/Recorder/RecorderKeystrokeOverlay.swift
+        Sources/Lattice/Services/Recorder/RecorderOverlayController.swift
+        Sources/Lattice/Services/Recorder/RecorderCameraOverlayView.swift
+        Sources/Lattice/Services/Recorder/RecorderIndicator.swift
+        Sources/Lattice/UI/Recorder/RecorderCaptureInputControls.swift
+        Sources/Lattice/UI/Recorder/RecorderWaitingControls.swift
+        Sources/Lattice/Services/Recorder/RecorderTimeline.swift
+        Sources/Lattice/Services/Recorder/RecorderTextOverlay.swift
+        Sources/Lattice/Services/Recorder/RecorderImageOverlay.swift
+        Sources/Lattice/Services/Recorder/RecorderBlurRegion.swift
+        Sources/Lattice/Services/Recorder/RecorderEditDocument.swift
+        Sources/Lattice/Core/AppInfo.swift
+        Sources/Lattice/Core/DownstreamIdentity.swift
+        Sources/Lattice/Core/GlobalShortcut.swift
+        Sources/Lattice/Core/SymbolicHotKeys.swift
+        Sources/Lattice/Services/SystemShortcutTakeoverSupport.swift
+        Sources/Lattice/Core/Localization.swift
+        Sources/Lattice/Core/Localizations/Strings+*.swift
+        Sources/Lattice/Core/FeatureStrings.swift
+        Sources/Lattice/Core/KillProcessStrings.swift
+        Sources/Lattice/Core/PortManagerStrings.swift
+        Sources/Lattice/Core/ReleaseNotes.swift
+        Sources/Lattice/Core/ReleaseDigest.swift
+        Sources/Lattice/Core/ReleaseChangeAliases.swift
+        Sources/Lattice/Core/WhatsNewStrings.swift
+        Sources/Lattice/Core/URLCleaning.swift
+        Sources/Lattice/Services/GeneralPasteboardAccess.swift
+        Sources/Lattice/Services/Clipboard/ClipboardHistoryWrite.swift
+        Sources/Lattice/Services/Audio/AirPlayRouteManager.swift
+        Sources/Lattice/Services/Audio/MixerRoutingSupport.swift
+        Sources/Lattice/Services/Audio/AudioPriorityPresentation.swift
+        Sources/Lattice/Services/Feedback/FeedbackDraft.swift
+        Sources/Lattice/Services/Audio/MusicLaunchSupport.swift
+        Sources/Lattice/Services/Bluetooth/BluetoothSleepSupport.swift
+        Sources/Lattice/UI/MenuPanel/MixerPercentNativeTextField.swift
+        Sources/Lattice/UI/MenuPanel/MixerAppDragSource.swift
+        Sources/Lattice/Services/Audio/BoostLimiter.swift
+        Sources/Lattice/Services/Audio/MixerRender.swift
+        Sources/Lattice/Services/Audio/PreciseVolumeRollerSupport.swift
+        Sources/Lattice/Services/DockPreview/DockPreviewSupport.swift
+        Sources/Lattice/Services/DockPreview/DockPreviewExclusions.swift
+        Sources/Lattice/Core/SettingsAppListDescriptions.swift
+        Sources/Lattice/Core/SettingsAppListStrings.swift
+        Sources/Lattice/UI/Settings/QuitProtectionAppListStrings.swift
+        Sources/Lattice/Services/DockPreview/DockAutohideHold.swift
+        Sources/Lattice/Services/SpacesOrder/SpacesOrderHold.swift
+        Sources/Lattice/Services/Homebrew/HomebrewSupport.swift
+        Sources/Lattice/Services/Homebrew/HomebrewEnvironment.swift
+        Sources/Lattice/Services/AppUpdates/AppUpdatesSupport.swift
+        Sources/Lattice/Services/AppUpdates/AppUpdateFeedSupport.swift
+        Sources/Lattice/Core/AppUpdateStrings.swift
+        Sources/Lattice/Core/DiskImageInstallerStrings.swift
+        Sources/Lattice/Services/DiskImageInstaller/DiskImageInstallerSupport.swift
+        Sources/Lattice/UI/NonModalAlert.swift
+        Sources/Lattice/Services/Clipboard/ClipboardHistorySupport.swift
+        Sources/Lattice/Core/ColorValue.swift
+        Sources/Lattice/Services/Clipboard/ClipboardAutoClearSupport.swift
+        Sources/Lattice/Services/AutoQuit/AutoQuitSupport.swift
+        Sources/Lattice/Services/Shelf/ShelfSupport.swift
+        Sources/Lattice/Services/Shelf/ShelfFilePromiseTransfer.swift
+        Sources/Lattice/Core/ShelfPromiseDeliveryStrings.swift
+        Sources/Lattice/Services/Update/UpdateInstallerSupport.swift
+        Sources/Lattice/Services/Update/UpdateServiceSupport.swift
+        Sources/Lattice/Services/Update/UpdateCheckResponse.swift
+        Sources/Lattice/Core/UpdateSettingsPresentation.swift
+        Sources/Lattice/Core/UpdateSettingsStrings.swift
+        Sources/Lattice/Services/InstalledApps.swift
+        Sources/Lattice/Services/LaunchAtLoginSupport.swift
+        Sources/Lattice/UI/Settings/SettingsSearchSupport.swift
+        Sources/Lattice/UI/Settings/SettingsSidebarSupport.swift
+        Sources/Lattice/UI/Settings/FeatureVisibilitySupport.swift
+        Sources/Lattice/UI/Onboarding/WhatsNewSupport.swift
+        Sources/Lattice/UI/Settings/SettingsWindow.swift
+        Sources/Lattice/UI/Settings/SettingsDetailViewport.swift
+        Sources/Lattice/UI/Settings/ReleaseNotesSettings.swift
+        Sources/Lattice/UI/Settings/UpdateSettingsStatusRow.swift
+        Sources/Lattice/UI/PermissionDetailsSheet.swift
+        Sources/Lattice/Core/SettingsNavigationStrings.swift
+        Sources/Lattice/App/MenuBarSpacingSupport.swift
+        Sources/Lattice/App/MenuBarAllowanceSupport.swift
+        Sources/Lattice/App/ReopenRequestSupport.swift
+        Sources/Lattice/App/StatusItemAnchorSupport.swift
+        Sources/Lattice/Services/DockClick/DockClickSupport.swift
+        Sources/Lattice/Services/MiddleClick/MiddleClickSupport.swift
+        Sources/Lattice/Services/MouseNavigation/MouseNavigationSupport.swift
+        Sources/Lattice/Services/MouseNavigation/MouseNavigationKeys.swift
+        Sources/Lattice/Services/MouseButtons/MouseButtonShortcutSupport.swift
+        Sources/Lattice/Services/MouseButtons/MouseSpacesGestureSupport.swift
+        Sources/Lattice/Services/MouseClickDebounce/MouseClickDebounceSupport.swift
+        Sources/Lattice/Services/MouseExceptions/MouseAppExceptionSupport.swift
+        Sources/Lattice/Services/MouseExceptions/MouseAppExceptions.swift
+        Sources/Lattice/Services/MouseButtons/MouseShortcutExceptions.swift
+        Sources/Lattice/Services/WindowServerSupport.swift
+        Sources/Lattice/Services/WindowMaximizerSupport.swift
+        Sources/Lattice/Core/MouseButtonStrings.swift
+        Sources/Lattice/Core/MouseClickDebounceStrings.swift
+        Sources/Lattice/Core/MouseExceptionStrings.swift
+        Sources/Lattice/Core/ClipboardIgnoredAppsStrings.swift
+        Sources/Lattice/Core/ClipboardRetentionStrings.swift
+        Sources/Lattice/Core/DiskExclusionStrings.swift
+        Sources/Lattice/Core/WindowLayoutIgnoredAppsStrings.swift
+        Sources/Lattice/Services/WindowLayout/WindowLayoutIgnoredApps.swift
+        Sources/Lattice/Core/WindowPreviewExclusionStrings.swift
+        Sources/Lattice/Core/WindowMaximizerExclusionStrings.swift
+        Sources/Lattice/Core/SwitcherAppRulesStrings.swift
+        Sources/Lattice/Services/QuickTools/QuickToolsSupport.swift
+        Sources/Lattice/Services/CommandBar/CommandBarSupport.swift
+        Sources/Lattice/Services/CommandBar/CommandBarPreferences.swift
+        Sources/Lattice/Services/CommandBar/CommandBarMath.swift
+        Sources/Lattice/Services/CommandBar/CommandBarUnits.swift
+        Sources/Lattice/Services/CommandBar/CommandBarColors.swift
+        Sources/Lattice/Services/CommandBar/CommandBarEmoji.swift
+        Sources/Lattice/Services/CommandBar/CommandBarLinks.swift
+        Sources/Lattice/Services/CommandBar/CommandBarDates.swift
+        Sources/Lattice/Services/CommandBar/CommandBarRowShortcuts.swift
+        Sources/Lattice/Services/CommandBar/CommandBarSystemSettingsSupport.swift
+        Sources/Lattice/Services/CommandBar/CommandBarFileSearchSupport.swift
+        Sources/Lattice/Services/CommandBar/CommandBarQueryMemory.swift
+        Sources/Lattice/Services/SpotlightNamesSupport.swift
+        Sources/Lattice/Services/QuickTools/MicMuteSupport.swift
+        Sources/Lattice/Services/QuickTools/QuickTogglesSupport.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotCapturePolicy.swift
+        Sources/Lattice/Services/QuickTools/CapturePresentationPolicy.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotDialogGeometry.swift
+        Sources/Lattice/App/MediaEditorFileSupport.swift
+        Sources/Lattice/Core/MediaEditorFileStrings.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotCapturePanel.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotCaptureFocusSession.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotMultiWindowShiftMonitor.swift
+        Sources/Lattice/Services/QuickTools/CapturePresentationDeferral.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotSupport.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotWindowFallback.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotEditorGeometry.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotCropAspect.swift
+        Sources/Lattice/Core/ScreenshotEditorRefinementStrings.swift
+        Sources/Lattice/Core/ScreenshotWatermarkDraft.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotPinPinchTracker.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotPinGestureView.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotPinFeedbackView.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotPinWindow.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotQuickLookController.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotWindowLayering.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotPreviewImageActions.swift
+        Sources/Lattice/UI/Screenshot/ScreenshotPreviewContextMenu.swift
+        Sources/Lattice/UI/Screenshot/ScreenshotEditorControlFeedback.swift
+        Sources/Lattice/UI/Screenshot/ScreenshotFontSizeControl.swift
+        Sources/Lattice/UI/Screenshot/ScreenshotFontSizePalette.swift
+        Sources/Lattice/UI/Screenshot/ScreenshotCanvasInput.swift
+        Sources/Lattice/UI/Screenshot/ScreenshotFontSizeSlider.swift
+        Sources/Lattice/UI/Screenshot/ScreenshotFontSizeField.swift
+        Sources/Lattice/UI/Screenshot/ScreenshotSelectionChrome.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotPinContentView.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotPinChrome.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotPinFilePromise.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotPinDragView.swift
+        Sources/Lattice/Core/ScreenshotPinPreferences.swift
+        Sources/Lattice/Core/ScreenshotPinStrings.swift
+        Sources/Lattice/UI/Settings/MonitorToken.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotRenderer.swift
+        Sources/Lattice/UI/Screenshot/ScreenshotEditorResizeCursor.swift
+        Sources/Lattice/Services/QuickTools/RecentCaptureRetention.swift
+        Sources/Lattice/Services/QuickTools/RecentCaptureStore.swift
+        Sources/Lattice/Services/QuickTools/RecentCaptureEditableImage.swift
+        Sources/Lattice/Services/Recorder/RecorderFileCopy.swift
+        Sources/Lattice/Services/Recorder/RecorderQuickPreviewModel.swift
+        Sources/Lattice/Services/Recorder/RecorderPreviewShortcut.swift
+        Sources/Lattice/Services/QuickTools/ScreenshotSharingSupport.swift
+        Sources/Lattice/Services/QuickTools/WindowActivationPolicy.swift
+        Sources/Lattice/Services/KeyboardDebounce/KeyboardDebounceSupport.swift
+        Sources/Lattice/Services/KeyboardDebounce/KeyboardDebounceOverrides.swift
+        Sources/Lattice/Services/SuperKey/SuperKeySupport.swift
+        Sources/Lattice/Services/SuperKey/SuperKeyMappingGuard.swift
+        Sources/Lattice/Core/SuperKeyStrings.swift
+        Sources/Lattice/Core/InputSourceSelection.swift
+        Sources/Lattice/Services/SessionActivity.swift
+        Sources/Lattice/Services/SessionActivitySupport.swift
+        Sources/Lattice/Services/EventTimestamp.swift
+        Sources/Lattice/Services/OwnKeyEvent.swift
+        Sources/Lattice/Services/ScrollWheelSupport.swift
+        Sources/Lattice/Services/HorizontalWheelScrolling.swift
+        Sources/Lattice/Services/SmoothScrollSupport.swift
+        Sources/Lattice/Services/MouseAcceleration/MouseAccelerationSupport.swift
+        Sources/Lattice/Services/FocusFollowsMouse/FocusFollowsMouseSupport.swift
+        Sources/Lattice/Services/AssistiveKeyboard.swift
+        Sources/Lattice/Services/Switcher/SwitcherModels.swift
+        Sources/Lattice/Services/Switcher/WindowServerCaptureQueue.swift
+        Sources/Lattice/Services/Switcher/SwitcherSupport.swift
+        Sources/Lattice/Services/Switcher/SpaceHopSupport.swift
+        Sources/Lattice/Services/Switcher/WindowUseOrder.swift
+        Sources/Lattice/Services/Metrics/MetricFormat.swift
+        Sources/Lattice/Services/Metrics/VMStatisticsDecoder.swift
+        Sources/Lattice/Services/KeepAwakeAutomationSupport.swift
+        Sources/Lattice/Services/SudoersSupport.swift
+        Sources/Lattice/Services/Metrics/BatteryTimeSupport.swift
+        Sources/Lattice/Services/Metrics/BatteryPowerSupport.swift
+        Sources/Lattice/Services/BoundedProcessRunner.swift
+        Sources/Lattice/Services/DetachedProcess.swift
+        Sources/Lattice/Services/ShellSupport.swift
+        Sources/Lattice/Services/PortManager/PortManagerSupport.swift
+        Sources/Lattice/Services/Metrics/NetworkProcessSupport.swift
+        Sources/Lattice/Services/Metrics/NetworkSampler.swift
+        Sources/Lattice/Services/Metrics/NetworkAddressService.swift
+        Sources/Lattice/Services/Metrics/SpeedTest.swift
+        Sources/Lattice/Services/Metrics/PeripheralBatterySampler.swift
+        Sources/Lattice/Services/Metrics/BluetoothBatteryRead.swift
+        Sources/Lattice/Services/Metrics/PeripheralBatterySupport.swift
+        Sources/Lattice/Services/Metrics/DiskSupport.swift
+        Sources/Lattice/Services/Metrics/MonitorSamplingPolicy.swift
+        Sources/Lattice/Services/Metrics/USBDeviceSampler.swift
+        Sources/Lattice/Services/Metrics/CPUCoreSampler.swift
+        Sources/Lattice/Services/Metrics/MaxCapacityProbe.swift
+        Sources/Lattice/Services/Metrics/TemperatureSensorSelector.swift
+        Sources/Lattice/Services/Metrics/SustainedAlertGate.swift
+        Sources/Lattice/Services/WindowLayout/WindowLayoutSupport.swift
+        Sources/Lattice/Services/WindowLayout/WindowGestureSupport.swift
+        Sources/Lattice/Core/WindowDirectionalStrings.swift
+        Sources/Lattice/Core/PointerDisplayStrings.swift
+        Sources/Lattice/Core/GraphScaleStrings.swift
+        Sources/Lattice/Core/NotchLowBatteryStrings.swift
+        Sources/Lattice/Services/CleaningMode/CleaningUnlockCounter.swift
+        Sources/Lattice/Services/CleaningMode/CleaningMouseReleaseGate.swift
+        Sources/Lattice/Services/Display/ExtraBrightnessSupport.swift
+        Sources/Lattice/Services/Display/BrightnessSupport.swift
+        Sources/Lattice/Services/Display/LidDimmingSupport.swift
+        Sources/Lattice/Services/Cleaner/CleanerSupport.swift
+        Sources/Lattice/Services/Cleaner/CleanerPolicy.swift
+        Sources/Lattice/Services/Cleaner/CleanerOwnership.swift
+        Sources/Lattice/Services/Cleaner/CleanerScanPrivacy.swift
+        Sources/Lattice/Services/Cleaner/CleanerSchedule.swift
+        Sources/Lattice/Services/Uninstall/UninstallerSupport.swift
+        Sources/Lattice/Core/SecureInputSupport.swift
         Tests/*.swift
         build/generated-tests/*.swift
     )
@@ -699,7 +699,7 @@ if (( TEST )); then
     write_swift_output_file_map "$TEST_OUTPUT_FILE_MAP" "$TEST_OBJECT_DIR" "${TEST_SOURCES[@]}"
     echo "▸ Building & running tests against $(basename "$SDK")…"
     swiftc -Onone -incremental -enable-batch-mode -j "$(sysctl -n hw.logicalcpu)" \
-        -module-name VorssaintTests -output-file-map "$TEST_OUTPUT_FILE_MAP" \
+        -module-name LatticeTests -output-file-map "$TEST_OUTPUT_FILE_MAP" \
         -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" \
         "${VM_STATISTICS_COMPAT_FLAGS[@]}" "${TEST_SOURCES[@]}" -o build/metrics-tests
     test_status=0
@@ -714,7 +714,7 @@ if (( TEST )); then
 fi
 
 echo "▸ Compiling ($BUILD_CONFIGURATION) against $(basename "$SDK")…"
-APP_SOURCES=(Sources/Vorssaint/**/*.swift)
+APP_SOURCES=(Sources/Lattice/**/*.swift)
 if (( ! DEV )); then
     # A release starts from an empty build directory, so nothing an earlier
     # build left behind (an old icon catalog, a staged bundle) can reach it.
@@ -738,24 +738,24 @@ swiftc "${APP_OPTIMIZATION_FLAGS[@]}" -incremental -enable-batch-mode -j "$(sysc
 
 echo "▸ Compiling protected fan helper…"
 swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${BUILD_VARIANT_FLAGS[@]}" \
-    Sources/Vorssaint/Core/DownstreamIdentity.swift \
-    Sources/Vorssaint/Services/FanControl/FanControlSupport.swift \
-    Sources/Vorssaint/Services/FanControl/FanControlXPC.swift \
-    Sources/Vorssaint/Services/SystemMonitor/SMCClient.swift \
-    Sources/Vorssaint/Services/Metrics/TemperatureSensorSelector.swift \
-    Sources/Vorssaint/Services/FanControl/FanControlHardware.swift \
+    Sources/Lattice/Core/DownstreamIdentity.swift \
+    Sources/Lattice/Services/FanControl/FanControlSupport.swift \
+    Sources/Lattice/Services/FanControl/FanControlXPC.swift \
+    Sources/Lattice/Services/SystemMonitor/SMCClient.swift \
+    Sources/Lattice/Services/Metrics/TemperatureSensorSelector.swift \
+    Sources/Lattice/Services/FanControl/FanControlHardware.swift \
     Sources/FanControlHelper/main.swift \
     -o "build/$FAN_HELPER_ID"
 "build/$FAN_HELPER_ID" --selftest
 
 echo "▸ Compiling Now Playing adapter…"
 swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" -emit-library \
-    -module-name VorssaintNowPlaying \
+    -module-name LatticeNowPlaying \
     Sources/NowPlayingAdapter/NowPlayingAdapter.swift \
     Sources/NowPlayingAdapter/NowPlayingQueue.swift \
     Sources/NowPlayingAdapter/NowPlayingSelection.swift \
-    Sources/Vorssaint/Services/Notch/NotchPlaybackSource.swift \
-    Sources/Vorssaint/Services/Notch/NotchPlaybackCommand.swift \
+    Sources/Lattice/Services/Notch/NotchPlaybackSource.swift \
+    Sources/Lattice/Services/Notch/NotchPlaybackCommand.swift \
     -o "build/$NOW_PLAYING_ADAPTER"
 
 echo "▸ Generating app icon…"
@@ -807,7 +807,7 @@ mkdir -p "$STAGE/Contents/Frameworks"
 cp "build/$NOW_PLAYING_ADAPTER" "$STAGE/Contents/Frameworks/$NOW_PLAYING_ADAPTER"
 cp Resources/now-playing.pl "$STAGE/Contents/Resources/now-playing.pl"
 cp Resources/agent-prices.json "$STAGE/Contents/Resources/agent-prices.json"
-cp Resources/com.vorssaint.utils.fan-control.plist \
+cp Resources/io.github.sam32j.lattice.fan-control.plist \
     "$STAGE/Contents/Library/LaunchDaemons/$FAN_HELPER_ID.plist"
 cp Resources/Info.plist "$STAGE/Contents/Info.plist"
 cp CHANGELOG.md "$STAGE/Contents/Resources/CHANGELOG.md"
@@ -828,14 +828,14 @@ if true; then
     FAN_PLIST="$STAGE/Contents/Library/LaunchDaemons/$FAN_HELPER_ID.plist"
     /usr/libexec/PlistBuddy -c "Set :Label $FAN_HELPER_ID" "$FAN_PLIST"
     /usr/libexec/PlistBuddy -c "Set :BundleProgram Contents/Library/LaunchServices/$FAN_HELPER_ID" "$FAN_PLIST"
-    /usr/libexec/PlistBuddy -c "Delete :MachServices:com.vorssaint.utils.fan-control" "$FAN_PLIST"
+    /usr/libexec/PlistBuddy -c "Delete :MachServices:io.github.sam32j.lattice.fan-control" "$FAN_PLIST"
     /usr/libexec/PlistBuddy -c "Add :MachServices:$FAN_HELPER_ID bool true" "$FAN_PLIST"
     # Stamp the source commit + build time so the running dev app shows (in About)
     # exactly which code it was compiled from. Lets you verify it matches HEAD before
     # testing, instead of unknowingly running a stale build. Dev-only; never shipped.
     SHA="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
     [[ -n "$(git status --porcelain 2>/dev/null)" ]] && SHA="$SHA-dirty"
-    /usr/libexec/PlistBuddy -c "Add :VorssaintBuildCommit string '$SHA · $(date '+%Y-%m-%d %H:%M')'" "$STAGE/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c "Add :LatticeBuildCommit string '$SHA · $(date '+%Y-%m-%d %H:%M')'" "$STAGE/Contents/Info.plist"
     echo "  stamped dev build: $SHA"
 fi
 FAN_HELPER_VERSION="$(
@@ -846,7 +846,7 @@ FAN_HELPER_VERSION="$(
         | /usr/bin/awk '{print $1}' | /usr/bin/shasum -a 256 \
         | /usr/bin/awk '{print $1}'
 )"
-/usr/libexec/PlistBuddy -c "Add :VorssaintFanControlHelperVersion string '$FAN_HELPER_VERSION'" \
+/usr/libexec/PlistBuddy -c "Add :LatticeFanControlHelperVersion string '$FAN_HELPER_VERSION'" \
     "$STAGE/Contents/Info.plist"
 printf 'APPL????' > "$STAGE/Contents/PkgInfo"
 cp build/AppIcon.icns "$STAGE/Contents/Resources/AppIcon.icns"
@@ -870,7 +870,7 @@ xattr -c -r "$STAGE" 2>/dev/null || true
 #      notarization), the app's entitlements and a secure timestamp. Gives a
 #      stable, team-based designated requirement, so permissions persist across
 #      updates AND Gatekeeper shows no "unverified developer" warning.
-#   2. "Vorssaint Utils Signing" — the legacy stable self-signed identity, kept
+#   2. "Lattice Local Signing" — the legacy stable self-signed identity, kept
 #      as a fallback so contributors without a Developer ID still get a constant
 #      designated requirement across their local builds.
 #   3. Ad-hoc — fresh clone with no identity at all.

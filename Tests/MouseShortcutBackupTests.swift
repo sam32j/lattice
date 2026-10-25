@@ -31,7 +31,7 @@ enum MouseShortcutBackupTests {
         suite.expect(SettingsBackupSupport.sanitizedSettings(from: imported)?[DefaultsKey.mouseShortcutAppExceptions]
                      as? [String: [String]] == ["3": ["com.apple.Safari"]],
                      "import sanitization refuses executable authority from another Mac")
-        let domain = "com.vorssaint.tests.mouse-backup.\(UUID())"
+        let domain = "io.github.sam32j.lattice.tests.mouse-backup.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         ReviewDefaults.current = defaults
         defer { defaults.removePersistentDomain(forName: domain); ReviewDefaults.current = nil }

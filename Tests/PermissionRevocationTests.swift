@@ -3,7 +3,7 @@ import Foundation
 enum PermissionRevocationTests {
     static func run(_ suite: TestSuite) {
         SwitcherPermissionRevocationTests.run(suite)
-        let domain = "com.vorssaint.tests.revocation.\(UUID().uuidString)"
+        let domain = "io.github.sam32j.lattice.tests.revocation.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
         defaults.set(true, forKey: DefaultsKey.keyboardDebounceEnabled)

@@ -80,7 +80,7 @@ enum QuickLauncherContract {
     enum CleaningModeManager { static let shared = Spy(name: "cleaning") }
 
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.quick-launcher-presentation"
+        let domain = "io.github.sam32j.lattice.tests.quick-launcher-presentation"
         let defaults = UserDefaults(suiteName: domain)!
         defaults.removePersistentDomain(forName: domain)
         ReviewDefaults.current = defaults

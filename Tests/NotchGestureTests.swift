@@ -196,7 +196,7 @@ enum NotchGestureTests {
                && NotchGestureSupport.movement(-1, precise: false, inverted: false) == 24,
                "gesture direction is consistent across natural scrolling and wheel devices")
 
-        let domain = "com.vorssaint.tests.notch-gestures"
+        let domain = "io.github.sam32j.lattice.tests.notch-gestures"
         let defaults = UserDefaults(suiteName: domain)!
         defaults.removePersistentDomain(forName: domain)
         defer { defaults.removePersistentDomain(forName: domain) }

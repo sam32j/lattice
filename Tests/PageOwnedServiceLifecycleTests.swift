@@ -72,7 +72,7 @@ enum PageOwnedServiceLifecycleTests {
     }
 
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.page-service-lifecycle.\(UUID().uuidString)"
+        let domain = "io.github.sam32j.lattice.tests.page-service-lifecycle.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
         ReviewDefaults.current = defaults
         defer { defaults.removePersistentDomain(forName: domain); ReviewDefaults.current = nil }

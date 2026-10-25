@@ -339,10 +339,10 @@ enum LocalizationFeatureContractTests {
         // that is registered under the other name, and fan control would just
         // never answer.
         let helperTemplate = (try? String(
-            contentsOfFile: "Resources/com.vorssaint.utils.fan-control.plist",
+            contentsOfFile: "Resources/io.github.sam32j.lattice.fan-control.plist",
             encoding: .utf8)) ?? ""
         suite.expect(!helperTemplate.isEmpty, "the helper template reads back")
-        let releaseHelperID = "com.vorssaint.utils.fan-control"
+        let releaseHelperID = "io.github.sam32j.lattice.fan-control"
         let mentions = helperTemplate.components(separatedBy: releaseHelperID).count - 1
         suite.expect(mentions == 3,
                "the helper template names the release service exactly where the build rewrites it (\(mentions))")

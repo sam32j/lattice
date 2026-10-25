@@ -7,7 +7,7 @@ enum BluetoothPermissionLifecycleTests {
     }
 
     static func run(_ suite: TestSuite) {
-        let queue = DispatchQueue(label: "com.vorssaint.tests.bluetooth-permission")
+        let queue = DispatchQueue(label: "io.github.sam32j.lattice.tests.bluetooth-permission")
         var authorized = false
         var profilerReads = 0
         var clients = 0

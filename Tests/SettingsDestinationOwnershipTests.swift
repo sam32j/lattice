@@ -30,7 +30,7 @@ enum SettingsDestinationOwnershipTests {
             recreateIcon: {}, presentMenu: { false }, presentIsland: { false },
             openSettings: { entries.append("settings") }, schedule: { $0() })
         suite.expect(entries == ["settings"], "an unavailable island presentation opens Settings")
-        let domain = "com.vorssaint.tests.destinations.\(UUID().uuidString)"
+        let domain = "io.github.sam32j.lattice.tests.destinations.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
         suite.expect(AppMenuDestination.selected(in: defaults) == .menuBar,

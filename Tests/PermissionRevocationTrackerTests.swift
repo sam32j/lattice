@@ -2,7 +2,7 @@ import Foundation
 
 enum PermissionRevocationTrackerTests {
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.grant-history.\(UUID())"
+        let domain = "io.github.sam32j.lattice.tests.grant-history.\(UUID())"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
         var tracker = PermissionRevocationTracker(defaults: defaults)

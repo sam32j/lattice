@@ -29,7 +29,7 @@ enum VideoDownloaderTests {
                      "a machine without dependencies gets a concrete installation plan including ffprobe via ffmpeg")
         let onlyProbeMissing = VideoDownloadDependencies(tools: ["yt-dlp": "/tools/yt-dlp", "ffmpeg": "/tools/ffmpeg", "deno": "/tools/deno"], environment: [:])
         suite.expect(onlyProbeMissing.installArguments == ["install", "ffmpeg"], "a missing ffprobe is repaired by installing its owning formula")
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("com.vorssaint.tests.download-containment-\(UUID())")
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("io.github.sam32j.lattice.tests.download-containment-\(UUID())")
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
             defer { try? FileManager.default.removeItem(at: folder) }

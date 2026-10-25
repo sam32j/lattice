@@ -4,7 +4,7 @@ import Foundation
 enum VideoDownloaderServiceTests {
     static func run(_ suite: TestSuite) {
         let fm = FileManager.default
-        let folder = fm.temporaryDirectory.appendingPathComponent("com.vorssaint.tests.video-service-\(UUID())")
+        let folder = fm.temporaryDirectory.appendingPathComponent("io.github.sam32j.lattice.tests.video-service-\(UUID())")
         defer { try? fm.removeItem(at: folder) }
         func settle(_ model: VideoDownloader) {
             let deadline = Date().addingTimeInterval(5)

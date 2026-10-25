@@ -4,7 +4,7 @@ enum KeepAwakePointerPermissionTests {
     enum ReviewDefaults { static var current: UserDefaults! }
 
     static func run(_ suite: TestSuite) {
-        let domain = "com.vorssaint.tests.pointer-permission.\(UUID().uuidString)"
+        let domain = "io.github.sam32j.lattice.tests.pointer-permission.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
         ReviewDefaults.current = defaults
         let service = Service()

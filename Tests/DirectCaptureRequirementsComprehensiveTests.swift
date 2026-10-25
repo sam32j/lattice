@@ -30,7 +30,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
     private static func testSettingsAndSidebarOrganization(_ suite: TestSuite) {
         // Source checks for ScreenshotSettings.swift
         let screenshotSettingsSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Settings/ScreenshotSettings.swift",
+            contentsOfFile: "Sources/Lattice/UI/Settings/ScreenshotSettings.swift",
             encoding: .utf8)) ?? ""
         suite.expect(!screenshotSettingsSource.isEmpty, "ScreenshotSettings.swift exists and is readable")
 
@@ -55,7 +55,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // Source checks for ScreenRecorderSettings.swift
         let recorderSettingsSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Settings/ScreenRecorderSettings.swift",
+            contentsOfFile: "Sources/Lattice/UI/Settings/ScreenRecorderSettings.swift",
             encoding: .utf8)) ?? ""
         suite.expect(!recorderSettingsSource.isEmpty, "ScreenRecorderSettings.swift exists and is readable")
 
@@ -140,7 +140,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      "Screenshot initial install group bundles .screenshot, .colorPicker, and .screenOCR")
 
         // 4. Color picker and screen OCR availability tracks screenshot availability
-        let domain = "com.vorssaint.tests.feature-bundle-\(UUID().uuidString)"
+        let domain = "io.github.sam32j.lattice.tests.feature-bundle-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
 
@@ -158,7 +158,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // 5. FeatureRuntime bundle install test
         let featureRuntimeSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/App/FeatureRuntime.swift",
+            contentsOfFile: "Sources/Lattice/App/FeatureRuntime.swift",
             encoding: .utf8)) ?? ""
         suite.expect(featureRuntimeSource.contains("AppFeature.hubInstallableFeatures.filter(\\ .isAvailable).count")
                      || featureRuntimeSource.contains("AppFeature.hubInstallableFeatures.filter(\\.isAvailable).count"),
@@ -169,13 +169,13 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
     private static func testCompactShortcutRecordersAndConflictHandling(_ suite: TestSuite) {
         let compactRecorderSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/CompactShortcutRecorder.swift",
+            contentsOfFile: "Sources/Lattice/UI/CompactShortcutRecorder.swift",
             encoding: .utf8)) ?? ""
         let compactCoordinatorSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/CompactShortcutCoordinator.swift",
+            contentsOfFile: "Sources/Lattice/UI/CompactShortcutCoordinator.swift",
             encoding: .utf8)) ?? ""
         let compactFieldSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/CompactShortcutField.swift",
+            contentsOfFile: "Sources/Lattice/UI/CompactShortcutField.swift",
             encoding: .utf8)) ?? ""
 
         suite.expect(compactFieldSource.contains("struct CompactShortcutField: View")
@@ -266,7 +266,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // ScreenshotService plays shutter sound
         let screenshotServiceSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/QuickTools/ScreenshotService.swift",
+            contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenshotService.swift",
             encoding: .utf8)) ?? ""
         suite.expect(screenshotServiceSource.contains("DefaultsKey.screenshotPlayShutterSound")
                      && screenshotServiceSource.contains("NSSound(named: \"Shutter\")?.play()"),
@@ -274,7 +274,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // ScreenRecorderService plays begin_record and end_record sound
         let recorderServiceSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/Recorder/ScreenRecorderService.swift",
+            contentsOfFile: "Sources/Lattice/Services/Recorder/ScreenRecorderService.swift",
             encoding: .utf8)) ?? ""
         suite.expect(recorderServiceSource.contains("DefaultsKey.recorderPlaySound")
                      && recorderServiceSource.contains("begin_record.caf")
@@ -286,7 +286,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
     private static func testScreenRecordingDelayedStartDiscardAndLiveCapture(_ suite: TestSuite) {
         let indicatorSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/Recorder/RecorderIndicator.swift",
+            contentsOfFile: "Sources/Lattice/Services/Recorder/RecorderIndicator.swift",
             encoding: .utf8)) ?? ""
         suite.expect(!indicatorSource.isEmpty, "RecorderIndicator.swift is readable")
 
@@ -297,7 +297,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      "RecorderIndicator expanded to 182x32 and includes trash button for deleting/discarding recording")
 
         let waitingSource = (try? String(contentsOfFile:
-            "Sources/Vorssaint/UI/Recorder/RecorderWaitingControls.swift", encoding: .utf8)) ?? ""
+            "Sources/Lattice/UI/Recorder/RecorderWaitingControls.swift", encoding: .utf8)) ?? ""
         suite.expect(waitingSource.contains("RecorderOverlayInputControls()")
                      && waitingSource.contains("speaker.wave.2.fill") && waitingSource.contains("mic.fill")
                      && waitingSource.contains("play.fill") && waitingSource.contains("xmark"),
@@ -307,7 +307,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // 4. Discard action in ScreenRecorderService
         let recorderServiceSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/Recorder/ScreenRecorderService.swift",
+            contentsOfFile: "Sources/Lattice/Services/Recorder/ScreenRecorderService.swift",
             encoding: .utf8)) ?? ""
         let discardBody = recorderServiceSource.components(separatedBy: "func stopAndDiscard()").dropFirst().first?.components(separatedBy: "private func").first ?? ""
         suite.expect(recorderServiceSource.contains("func stopAndDiscard() {")
@@ -317,7 +317,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      "ScreenRecorderService stopAndDiscard deletes take from store without stashing into Recent Captures")
 
         let waitingSelectionSource = (try? String(contentsOfFile:
-            "Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift", encoding: .utf8)) ?? ""
+            "Sources/Lattice/Services/QuickTools/ScreenshotSelectionController.swift", encoding: .utf8)) ?? ""
         suite.expect(waitingSelectionSource.contains("DefaultsKey.recorderImmediateStartAfterSelection")
                      && waitingSelectionSource.contains("prepareWaitingRecording")
                      && waitingSelectionSource.contains("recordingDraft?.drag"),
@@ -340,7 +340,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // 7. Mouse up window click ignores shift in recording mode
         let selectionSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift",
+            contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenshotSelectionController.swift",
             encoding: .utf8)) ?? ""
         suite.expect(selectionSource.contains("controller.activeTool != .recording && event.modifierFlags.contains(.shift)"),
                      "Window click in ScreenshotSelectionController ignores Shift in recording mode, using first clicked window")
@@ -350,7 +350,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
     private static func testVideoStashAndEditorWindowBehavior(_ suite: TestSuite) {
         let recorderServiceSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/Recorder/ScreenRecorderService.swift",
+            contentsOfFile: "Sources/Lattice/Services/Recorder/ScreenRecorderService.swift",
             encoding: .utf8)) ?? ""
 
         // 1. Stash raw video in recent captures on deliver
@@ -359,7 +359,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // 2. Editor close confirmation logic
         let editorControllerSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/Recorder/RecorderEditorController.swift",
+            contentsOfFile: "Sources/Lattice/Services/Recorder/RecorderEditorController.swift",
             encoding: .utf8)) ?? ""
         suite.expect(!editorControllerSource.isEmpty, "RecorderEditorController.swift is readable")
 
@@ -385,7 +385,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // 4. RecorderEditorView padding
         let editorViewSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Recorder/RecorderEditorView.swift",
+            contentsOfFile: "Sources/Lattice/UI/Recorder/RecorderEditorView.swift",
             encoding: .utf8)) ?? ""
         suite.expect(editorViewSource.contains(".padding(.leading, 96)")
                      && editorControllerSource.contains("currentX: CGFloat = 20.0"),
@@ -397,13 +397,13 @@ enum DirectCaptureRequirementsComprehensiveTests {
     private static func testScreenshotOverlayAndPinWindow(_ suite: TestSuite) {
         // 1. OverlayPanel disables window opening zoom animation
         let overlayPanelSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/OverlayPanel.swift",
+            contentsOfFile: "Sources/Lattice/UI/OverlayPanel.swift",
             encoding: .utf8)) ?? ""
         suite.expect(overlayPanelSource.contains("animationBehavior = .none"),
                      "OverlayPanel sets animationBehavior = .none to prevent window zoom up animation")
 
         let selectionSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/QuickTools/ScreenshotSelectionController.swift",
+            contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenshotSelectionController.swift",
             encoding: .utf8)) ?? ""
         suite.expect(selectionSource.contains("animationBehavior = .none"),
                      "ScreenshotOverlayPanel sets animationBehavior = .none")
@@ -414,7 +414,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
                                     bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
                                     bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
             let image = context.makeImage()!
-            let domain = "com.vorssaint.tests.pin-req-\(UUID().uuidString)"
+            let domain = "io.github.sam32j.lattice.tests.pin-req-\(UUID().uuidString)"
             let prefs = UserDefaults(suiteName: domain)!
             defer { prefs.removePersistentDomain(forName: domain) }
 
@@ -459,7 +459,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // 3. Gesture monitoring in ScreenshotPinController
         let pinControllerSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/QuickTools/ScreenshotPinController.swift",
+            contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenshotPinController.swift",
             encoding: .utf8)) ?? ""
         suite.expect(pinControllerSource.contains("localGestureMonitor = NSEvent.addLocalMonitorForEvents")
                      && pinControllerSource.contains("gestureMonitor = NSEvent.addGlobalMonitorForEvents")
@@ -472,7 +472,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
     private static func testQuickPreviewLayoutShortcutsAndOCR(_ suite: TestSuite) {
         let previewSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/QuickTools/ScreenshotQuickPreviewController.swift",
+            contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenshotQuickPreviewController.swift",
             encoding: .utf8)) ?? ""
         suite.expect(!previewSource.isEmpty, "ScreenshotQuickPreviewController.swift is readable")
 
@@ -523,7 +523,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // 8. OCR QR code copy without modal & Dual text/QR recognition
         let screenTextSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/Services/QuickTools/ScreenTextService.swift",
+            contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenTextService.swift",
             encoding: .utf8)) ?? ""
         suite.expect(screenTextSource.contains("case both(BarcodeDetector.Reading, text: String)")
                      && screenTextSource.contains("let combined = text.contains(payload) ? text : \"\\(text)\\n\\n\\(payload)\"")
@@ -541,11 +541,11 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
     private static func testEditorTextToolMultilineAndBounding(_ suite: TestSuite) {
         let editorViewSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Screenshot/ScreenshotEditorView.swift",
+            contentsOfFile: "Sources/Lattice/UI/Screenshot/ScreenshotEditorView.swift",
             encoding: .utf8)) ?? ""
         suite.expect(!editorViewSource.isEmpty, "ScreenshotEditorView.swift is readable")
         let inlineTextSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Screenshot/ScreenshotInlineTextEditor.swift",
+            contentsOfFile: "Sources/Lattice/UI/Screenshot/ScreenshotInlineTextEditor.swift",
             encoding: .utf8)) ?? ""
 
         // 1. Multiline Enter vs Cmd+Return save
@@ -577,7 +577,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
             "PassThroughHostingView", "ScreenshotCaptureGuideView", "UnifiedCaptureGuideContent",
             "CaptureKeyHint", "FullScreenCaptureButton", "RecorderSelectionAudioControls"
         ].map { "UI/Screenshot/\($0).swift" }).map {
-            (try? String(contentsOfFile: "Sources/Vorssaint/\($0)", encoding: .utf8)) ?? ""
+            (try? String(contentsOfFile: "Sources/Lattice/\($0)", encoding: .utf8)) ?? ""
         }.joined(separator: "\n")
         suite.expect(!selectionSource.isEmpty, "ScreenshotSelectionController.swift is readable")
 
