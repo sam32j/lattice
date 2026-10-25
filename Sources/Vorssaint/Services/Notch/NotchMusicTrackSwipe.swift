@@ -43,11 +43,17 @@ struct NotchMusicTrackSwipe {
         guard !blocked else { return nil }
         if armed != nil {
             let ids = Set(origins.map(\.id))
-            guard contacts.count <= 2, Set(contacts.map(\.id)).count == contacts.count,
-                  contacts.allSatisfy({ ids.contains($0.id) && $0.position.x.isFinite && $0.position.y.isFinite }) else {
+            guard Set(contacts.map(\.id)).count == contacts.count,
+                  contacts.allSatisfy({ (ids.contains($0.id) || $0.isResting)
+                      && $0.position.x.isFinite && $0.position.y.isFinite }) else {
                 cancel(); return nil
             }
-            // Once armed, retain the cue while either original finger remains.
+            if !ids.isSubset(of: Set(contacts.map(\.id))) {
+                let action = armed
+                self = Self()
+                return action
+            }
+            // Resting is still down; the first missing original contact commits.
             return nil
         }
         // Resting is still physical contact, never a lift. Only active touches
@@ -70,7 +76,7 @@ struct NotchMusicTrackSwipe {
         let vertical = travel.map { abs($0.y) }.max() ?? 0
         if vertical >= 4, vertical > horizontal * 1.5 { cancel(); return nil }
         let aligned = travel[0].x * travel[1].x > 0 && vertical <= max(4, horizontal * 0.67)
-        progress = aligned && horizontal >= 4 ? min(1, horizontal / 54) : 0
+        progress = aligned && horizontal >= 4 ? min(1, horizontal / 36) : 0
         armIfReady()
         return nil
     }

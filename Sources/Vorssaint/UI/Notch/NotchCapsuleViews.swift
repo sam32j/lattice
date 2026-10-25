@@ -149,9 +149,7 @@ struct NotchCapsuleNoticeView: View {
                 .frame(width: CapsuleLayout.symbolWidth, height: side)
         } else if notice.event == .agents, let agent = notice.agent, notice.symbol == agent.symbol {
             NotchAgentMark(provider: agent, size: CapsuleLayout.symbolSize).frame(width: CapsuleLayout.symbolWidth)
-        } else if notice.event == .track {
-            NotchMusicSwipeNoticeArtwork(size: min(CapsuleLayout.symbolWidth, CapsuleLayout.artworkSide(geometry)), capsule: true)
-                .frame(width: CapsuleLayout.symbolWidth)
+
         } else {
             NotchCapsuleSymbol(name: notice.symbol, tint: tint)
         }

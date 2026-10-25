@@ -27,6 +27,7 @@ struct NotchMusicStrip: View {
     /// The island's own strip answers the pointer. A copy on another display
     /// or a strip on its way out only shows the song.
     var interactive = false
+    var trackNotice: NotchNotice? = nil
     @ObservedObject private var swipe = NotchMusicSwipeState.shared
     @ObservedObject private var music = NotchMusicService.shared
     @ObservedObject private var l10n = L10n.shared
@@ -37,7 +38,8 @@ struct NotchMusicStrip: View {
     /// A new song stays off the strip until its notice has shown it, and a
     /// held song through a reading from its player without a name.
     private var shown: NotchCompactMusicSnapshot? {
-        snapshot ?? service.heldMusic ?? (interactive ? service.musicStripStandIn(for: music.playback) : nil)
+        if trackNotice != nil { return snapshot }
+        return snapshot ?? service.heldMusic ?? (interactive ? service.musicStripStandIn(for: music.playback) : nil)
     }
     private var playback: NotchPlayback? { shown?.playback ?? music.playback }
     private var artwork: NSImage? { shown == nil ? music.artwork : shown?.artwork }
@@ -57,9 +59,9 @@ struct NotchMusicStrip: View {
                    geometry.compactActivityWingWidth - NotchLayout.compactMusicBarsWidth - innerInset))
     }
 
-    private var title: String { playback?.track.title ?? FeatureStrings.radialMenu(l10n.language).mediaNowPlaying }
+    private var title: String { trackNotice?.title ?? playback?.track.title ?? FeatureStrings.radialMenu(l10n.language).mediaNowPlaying }
     private var artist: String? {
-        guard let artist = playback?.track.artist?.trimmingCharacters(in: .whitespaces), !artist.isEmpty else { return nil }
+        guard let artist = (trackNotice?.detail ?? playback?.track.artist)?.trimmingCharacters(in: .whitespaces), !artist.isEmpty else { return nil }
         return artist
     }
     /// A simulated camera has room for the track even when its wings disappear.
@@ -67,7 +69,13 @@ struct NotchMusicStrip: View {
     private var showsArtist: Bool { Layout.showsArtist(geometry) }
     /// The left side while the pointer has the song named, nil otherwise. A
     /// strip on its way out keeps the name it had, which leaves with it.
-    private var namedWing: CGFloat? { live ? service.namedMusicWings?.leading : snapshot?.namedWing }
+    private var namedWing: CGFloat? {
+        if let trackNotice {
+            guard !fillsCameraGap else { return nil }
+            return NotchMusicNoticeLayout.wings(title: trackNotice.title, artist: trackNotice.detail, geometry: geometry).leading
+        }
+        return live ? service.namedMusicWings?.leading : snapshot?.namedWing
+    }
     private var showsControl: Bool { live && service.musicStripShowsControl }
     /// A click's request shows at once, before the player says so.
     private var playing: Bool { (live ? service.musicStripRequest : nil) ?? playback?.isPlaying == true }
@@ -108,7 +116,6 @@ struct NotchMusicStrip: View {
                 .onHover { if live { service.hoverMusicStrip(.bars, entered: $0) } }
             }
             .frame(height: geometry.compactActivityContentHeight)
-            .modifier(NotchMusicSwipeFeedback(enabled: snapshot == nil))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

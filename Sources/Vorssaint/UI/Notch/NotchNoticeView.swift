@@ -92,8 +92,7 @@ struct NotchNoticeView: View {
                             .animation(nil, value: hidesMascot)
                     } else if notice.event == .agents, let agent = notice.agent, notice.symbol == agent.symbol {
                         NotchAgentMark(provider: agent, size: 13)
-                    } else if notice.event == .track {
-                        NotchMusicSwipeNoticeArtwork(size: min(18, geometry.stripHeight - 6))
+
                     } else {
                         Image(systemName: notice.symbol)
                             .font(.system(size: 14, weight: .medium))

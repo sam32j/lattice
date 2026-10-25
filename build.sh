@@ -333,6 +333,9 @@ if (( TEST )); then
         Sources/Vorssaint/Services/AgentUsage/CodexAccountLimits.swift
         Sources/Vorssaint/Services/AgentUsage/CodexProfileLimitsService.swift
         Sources/Vorssaint/Services/AgentUsage/AgentOpenCodeReader.swift
+        Sources/Vorssaint/Services/Notch/NotchMusicNoticeLayout.swift
+        Sources/Vorssaint/Services/Notch/NotchMusicSwipeState.swift
+        Sources/Vorssaint/Services/Notch/NotchMusicSwipeHaptics.swift
         Sources/Vorssaint/Services/Notch/NotchMusicSwipeController.swift
         Sources/Vorssaint/Services/Notch/NotchMusicTrackSwipe.swift
         Sources/Vorssaint/Services/Notch/NotchGestureSupport.swift
