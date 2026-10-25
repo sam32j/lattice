@@ -322,6 +322,13 @@ if (( TEST )); then
         Sources/Lattice/Services/Notch/NotchLockScreenSupport.swift
         Sources/Lattice/Services/LockSoundService.swift
         Sources/Lattice/Services/PadlockSound.swift
+        Sources/Lattice/Services/QuickTools/VisionTextRecognition.swift
+        Sources/Lattice/Core/OCRRecoveryCopy.swift
+        Sources/Lattice/Services/QuickTools/TextRecognitionRecovery.swift
+        Sources/Lattice/Services/Notch/NotchMusicMouseSwipeController.swift
+        Sources/Lattice/Services/Notch/NotchMusicMouseSwipe.swift
+        Sources/Lattice/Core/DockClickMode.swift
+        Sources/Lattice/Core/SettingsFollowupLabels.swift
         Sources/Lattice/Core/GeneralSoundCopy.swift
         Sources/Lattice/Services/AgentUsage/AgentUsageModels.swift
         Sources/Lattice/Services/AgentUsage/AgentPricing.swift
