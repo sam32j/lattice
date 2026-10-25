@@ -28,6 +28,37 @@ struct VideoDownloaderSettings: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    // Enablement Card
+                    VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Label(VideoDownloaderStrings.enableTitle, systemImage: "arrow.down.square")
+                                    .font(.headline)
+                                Spacer()
+                                Toggle("", isOn: $enabled)
+                                    .labelsHidden()
+                                    .toggleStyle(.switch)
+                                    .onChange(of: enabled) { _, isNowEnabled in
+                                        if !isNowEnabled {
+                                            model.teardown()
+                                            toolchain.removeTools()
+                                        } else {
+                                            model.refreshDependencies()
+                                        }
+                                    }
+                            }
+                            Text(VideoDownloaderStrings.enableSubtitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(14)
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
+                        )
+
                     if !enabled {
                         // Uninstalled / Disabled Placeholder
                         VStack(spacing: 8) {
@@ -41,7 +72,7 @@ struct VideoDownloaderSettings: View {
                                 .padding(.horizontal, 24)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 60)
+                        .padding(.vertical, 40)
                     } else {
                         // Active Video Downloader Surfaces
 
@@ -367,10 +398,13 @@ struct VideoDownloaderSettings: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 6) {
-                chipView(model.selectedQuality.title)
-
-                if model.selectedQuality.isBest, let topQuality = info.qualities.first {
-                    chipView(topQuality.title)
+                if model.selectedQuality.isBest {
+                    chipView(VideoDownloaderStrings.bestQuality)
+                    if let actualRes = info.qualities.first?.title {
+                        chipView(actualRes)
+                    }
+                } else {
+                    chipView(model.selectedQuality.title)
                 }
 
                 if let size = info.estimatedSizeFormatted(for: model.selectedQuality) {
@@ -393,7 +427,7 @@ struct VideoDownloaderSettings: View {
                 ForEach(info.segmentedOptions) { q in
                     Button {
                         model.selectedQuality = q
-                        model.selectedHeight = q.isBest ? (info.qualities.first?.height ?? 0) : q.height
+                        model.selectedHeight = q.height != 0 ? q.height : (info.qualities.first?.height ?? 0)
                     } label: {
                         Text(q.title)
                             .font(.system(size: 12, weight: model.selectedQuality == q ? .semibold : .regular))
@@ -432,19 +466,19 @@ struct VideoDownloaderSettings: View {
                     Text(displayDestinationPath(model.destination))
                         .lineLimit(1)
                         .truncationMode(.middle)
-                        .frame(maxWidth: 210)
+                        .frame(maxWidth: 200)
                 }
                 .font(.system(size: 12))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .frame(maxWidth: 245)
+                .frame(maxWidth: 235)
                 .background(Color.secondary.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
             }
             .buttonStyle(.plain)
             .help(model.destination?.path ?? VideoDownloaderStrings.defaultFolder)
         }
-        .frame(maxWidth: 245, alignment: .leading)
+        .frame(maxWidth: 235, alignment: .leading)
     }
 
     @ViewBuilder
@@ -776,27 +810,5 @@ struct VideoDownloaderSettings: View {
             return
         }
         detectedClipboardURL = parts.url?.absoluteString ?? candidate
-    }
-}
-
-struct VideoDownloaderToolbarToggle: View {
-    @AppStorage(DefaultsKey.videoDownloaderEnabled) private var enabled = true
-    @ObservedObject private var model = VideoDownloader.shared
-    @ObservedObject private var toolchain = ToolchainManager.shared
-
-    var body: some View {
-        Toggle("", isOn: $enabled)
-            .labelsHidden()
-            .toggleStyle(.switch)
-            .controlSize(.small)
-            .help(VideoDownloaderStrings.enableSubtitle)
-            .onChange(of: enabled) { _, isNowEnabled in
-                if !isNowEnabled {
-                    model.teardown()
-                    toolchain.removeTools()
-                } else {
-                    model.refreshDependencies()
-                }
-            }
     }
 }

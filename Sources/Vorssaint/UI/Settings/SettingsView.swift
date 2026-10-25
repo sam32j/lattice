@@ -204,31 +204,14 @@ struct SettingsView: View {
                 toolbarTitle
             }
             .sharedBackgroundVisibility(.hidden)
-            if router.page == .videoDownloader {
-                ToolbarSpacer(.flexible)
-                ToolbarItem(placement: .primaryAction) {
-                    VideoDownloaderToolbarToggle()
-                }
-                .sharedBackgroundVisibility(.hidden)
-            }
         } else {
             ToolbarItem(placement: .navigation) {
                 toolbarTitle
-            }
-            if router.page == .videoDownloader {
-                ToolbarItem(placement: .primaryAction) {
-                    VideoDownloaderToolbarToggle()
-                }
             }
         }
 #else
         ToolbarItem(placement: .navigation) {
             toolbarTitle
-        }
-        if router.page == .videoDownloader {
-            ToolbarItem(placement: .primaryAction) {
-                VideoDownloaderToolbarToggle()
-            }
         }
 #endif
     }
@@ -242,9 +225,6 @@ struct SettingsView: View {
         Text(detailTitle)
             .font(.system(size: 17, weight: .semibold))
             .padding(.leading, 10)
-            .lineLimit(1)
-            .fixedSize(horizontal: true, vertical: false)
-            .layoutPriority(1)
             .accessibilityAddTraits(.isHeader)
     }
 

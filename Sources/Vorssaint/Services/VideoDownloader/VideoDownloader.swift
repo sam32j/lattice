@@ -228,10 +228,9 @@ final class VideoDownloader: ObservableObject {
     }
 
     func download() {
-        let quality = selectedQuality
-        let qualityTag = quality.isBest
-            ? (info?.qualities.first?.title ?? quality.title)
-            : quality.title
+        let quality = selectedQuality.height != 0
+            ? selectedQuality
+            : (info?.qualities.first(where: { $0.height == selectedHeight }) ?? selectedQuality)
 
         guard let url = inspectedURL,
               let destination, dependencies.ready,
@@ -241,6 +240,7 @@ final class VideoDownloader: ObservableObject {
 
         let tools = dependencies
         let videoTitle = info?.title ?? "video"
+        let qualityTag = quality.title
 
         isDownloading = true
         isFetching = false
