@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Samuel Ji
 import SwiftUI
 
-/// A single page-owned install switch; no second Features-page installation flag.
+/// Page-owned installation, shortcut and presentation destination.
 struct DedicatedUtilitySettings: View {
     let feature: AppFeature
     @ObservedObject private var l10n = L10n.shared
@@ -34,9 +34,37 @@ struct DedicatedUtilitySettings: View {
                             FeatureRuntime.shared.finishAvailabilityChange()
                         }
                 }
+                if enabled, let destination {
+                    IslandDestinationSettings(destination: destination)
+                        .padding(.leading, settingsRowTextInset)
+                }
+                if let shortcut {
+                    ShortcutPreferenceRow(role: shortcut, label: UtilitySettingsCopy.open(title, l10n.language)) {
+                        FeatureRuntime.shared.sync([feature])
+                    }
+                    .disabled(!enabled)
+                    .padding(.leading, settingsRowTextInset)
+                }
             }
             .padding(22)
         }
         .toggleStyle(.switch)
+        .controlSize(.regular)
+    }
+
+    private var destination: IslandDestination? {
+        switch feature {
+        case .cameraPreview: return .cameraPreview
+        case .quickLauncher: return .launcherGrid
+        default: return nil
+        }
+    }
+
+    private var shortcut: GlobalShortcutRole? {
+        switch feature {
+        case .cameraPreview: return .cameraPreview
+        case .quickLauncher: return .quickLauncher
+        default: return nil
+        }
     }
 }

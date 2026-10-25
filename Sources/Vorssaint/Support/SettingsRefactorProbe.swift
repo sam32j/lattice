@@ -24,6 +24,25 @@ enum SettingsRefactorProbe {
         defaults.set(true, forKey: AppFeature.bluetoothSleep.availabilityKey)
         defaults.set(CommandLine.arguments.contains("--bluetooth-sleep-enabled"),
                      forKey: DefaultsKey.bluetoothSleepEnabled)
+        if CommandLine.arguments.contains("--refactor-followup-only") {
+            setPreviewAvailability(.notch, enabled: true)
+            var failures = [String]()
+            RefactorUtilityRenderingProbe.run(output: output, failures: &failures)
+            SettingsFollowupRenderingProbe.run(output: output, failures: &failures)
+            defaults.removePersistentDomain(forName: identity)
+            for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
+            if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
+            exit(failures.isEmpty ? 0 : 1)
+        }
+        if CommandLine.arguments.contains("--followup-only") {
+            defaults.set(true, forKey: AppFeature.notch.availabilityKey)
+            var failures = [String]()
+            SettingsFollowupRenderingProbe.run(output: output, failures: &failures)
+            defaults.removePersistentDomain(forName: identity)
+            for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
+            if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
+            exit(failures.isEmpty ? 0 : 1)
+        }
         let pages: [(String, AnyView)] = [
             ("mouse", AnyView(MouseSettings())),
             ("keyboard", AnyView(KeyboardSettings())),
@@ -74,6 +93,11 @@ enum SettingsRefactorProbe {
         for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
         if failures.isEmpty { print("SETTINGS_RENDERING_OK output=\(output.path)") }
         exit(failures.isEmpty ? 0 : 1)
+    }
+
+    static func setPreviewAvailability(_ feature: AppFeature, enabled: Bool) {
+        guard Bundle.main.bundleIdentifier?.hasPrefix("com.vorssaint.tests.") == true else { return }
+        UserDefaults.standard.set(enabled, forKey: feature.availabilityKey)
     }
 
     static func render(_ name: String, view: AnyView, size: CGSize, output: URL, failures: inout [String]) {

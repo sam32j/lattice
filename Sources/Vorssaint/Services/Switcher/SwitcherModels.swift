@@ -16,71 +16,25 @@ enum SwitcherAppIconCache {
         lock.withLock { icons = nil }
     }
 
-    static func icon(for pid: pid_t) -> NSImage? {
+    /// Resolve only through system icon APIs. Reading a target app's preference
+    /// domain here can enter protected data and prompt merely from a Dock hover.
+    static func icon(for pid: pid_t,
+                     systemIcon: (pid_t) -> NSImage? = systemBundleIcon) -> NSImage? {
         if let cached = lock.withLock({ icons?[pid] }) { return cached }
-        guard let resolved = stableBundleIcon(pid: pid,
-                                              appearance: NSApplication.shared.effectiveAppearance)
-        else { return nil }
-        // Outside a switcher session, Dock previews must resolve the current icon.
+        guard let source = systemIcon(pid) else { return nil }
+        let appearance = NSApplication.shared.effectiveAppearance
+        let resolved = NSImage(size: source.size, flipped: false) { rect in
+            appearance.performAsCurrentDrawingAppearance { source.draw(in: rect) }
+            return true
+        }
+        // Outside a switcher session, Dock previews resolve the current icon.
         lock.withLock { icons?[pid] = resolved }
         return resolved
     }
 
-    static func declaredDockIconURL(bundleURL: URL,
-                                    resourceName: String?,
-                                    darkMode: Bool) -> URL? {
-        guard let resourceName = resourceName?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !resourceName.isEmpty,
-              !resourceName.hasPrefix("/") else { return nil }
-        let replacements: [(String, String)] = darkMode
-            ? [("-light.", "-dark-color."), ("-light.", "-dark.")]
-            : [("-dark-color.", "-light."), ("-dark.", "-light.")]
-        let names = replacements.compactMap { source, destination in
-            resourceName.contains(source)
-                ? resourceName.replacingOccurrences(of: source, with: destination)
-                : nil
-        } + [resourceName]
-
-        let resources = bundleURL.appendingPathComponent("Contents/Resources", isDirectory: true)
-            .resolvingSymlinksInPath().standardizedFileURL
-        let bundle = bundleURL.resolvingSymlinksInPath().standardizedFileURL
-        guard resources.path.hasPrefix(bundle.path + "/") else { return nil }
-        for name in names {
-            let candidate = resources.appendingPathComponent(name)
-                .resolvingSymlinksInPath().standardizedFileURL
-            guard candidate.path.hasPrefix(resources.path + "/") else { continue }
-            var isDirectory: ObjCBool = false
-            if FileManager.default.fileExists(atPath: candidate.path, isDirectory: &isDirectory),
-               !isDirectory.boolValue {
-                return candidate
-            }
-        }
-        return nil
-    }
-
-    private static func stableBundleIcon(pid: pid_t, appearance: NSAppearance) -> NSImage? {
+    private static func systemBundleIcon(pid: pid_t) -> NSImage? {
         guard let app = NSRunningApplication(processIdentifier: pid) else { return nil }
-        let darkMode = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        let declaredIcon = app.bundleURL.flatMap { bundleURL -> NSImage? in
-            guard let bundleIdentifier = app.bundleIdentifier,
-                  let resourceName = CFPreferencesCopyAppValue(
-                      "DockIconResourceName" as CFString,
-                      bundleIdentifier as CFString
-                  ) as? String,
-                  let resourceURL = declaredDockIconURL(bundleURL: bundleURL,
-                                                        resourceName: resourceName,
-                                                        darkMode: darkMode)
-            else { return nil }
-            return NSImage(contentsOf: resourceURL)
-        }
-        let source = declaredIcon
-            ?? app.bundleURL.map { NSWorkspace.shared.icon(forFile: $0.path) }
-            ?? app.icon
-        guard let source else { return nil }
-        return NSImage(size: source.size, flipped: false) { rect in
-            appearance.performAsCurrentDrawingAppearance { source.draw(in: rect) }
-            return true
-        }
+        return app.bundleURL.map { NSWorkspace.shared.icon(forFile: $0.path) } ?? app.icon
     }
 }
 
@@ -182,8 +136,8 @@ struct SwitcherItem: Identifiable, Equatable {
         return label
     }
 
-    /// Prefer an explicitly declared alternate icon, otherwise use the system
-    /// bundle icon. Reuse the image only while a switcher session is open.
+    /// Use the system icon without reading the target app's preferences.
+    /// Reuse the image only while a switcher session is open.
     var appIcon: NSImage? {
         SwitcherAppIconCache.icon(for: pid)
     }

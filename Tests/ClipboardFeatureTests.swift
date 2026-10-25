@@ -903,7 +903,7 @@ enum ClipboardFeatureTests {
                "a queued clear is invalidated when its setting changes before pasteboard access")
 
         let featureTitles: [(AppLanguage, String, String, String, String)] = [
-            (.enUS, "Clipboard", "Window Management", "Utilities", "Alerts"),
+            (.enUS, "Clipboard History", "Window Management", "Utilities", "Alerts"),
             (.ptBR, "Clipboard", "Gerenciamento de Janelas", "Utilitários", "Alertas"),
             (.tr, "Pano", "Pencere Yönetimi", "Araçlar", "Uyarılar"),
             (.es, "Portapapeles", "Gestión de ventanas", "Utilidades", "Alertas"),

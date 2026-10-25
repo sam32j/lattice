@@ -734,7 +734,7 @@ extension Strings {
         monitorShowCPUTemperature: "Teplota CPU",
         monitorShowGPUTemperature: "Teplota GPU",
         monitorShowBatteryTemperature: "Teplota batérie",
-        monitorShowPeripheralBattery: "Batéria príslušenstva",
+        monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .sk),
         peripheralBatteryNoDevices: "Nenašli sa žiadne zariadenia",
         monitorGraphsSection: "Grafy",
 

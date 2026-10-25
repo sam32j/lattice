@@ -78,7 +78,7 @@ enum PeripheralBatteryLifecycleTests {
                 let reader = Reader(cancellation: cancellation, completion: completion)
                 readers.append(reader)
                 return reader
-            }, currentTime: { clock })
+            }, currentTime: { clock }, bluetoothAuthorized: { true })
         defer { sampler.setEnabled(false); queue.sync {} }
         sampler.setEnabled(true)
         _ = sampler.sample(now: clock)
@@ -120,7 +120,7 @@ enum PeripheralBatteryLifecycleTests {
                 let reader = Reader(cancellation: cancellation, completion: completion)
                 readers.append(reader)
                 return reader
-            }, currentTime: { clock })
+            }, currentTime: { clock }, bluetoothAuthorized: { true })
         sampler.onBluetoothRefresh = { refreshes += 1 }
         defer { sampler.setEnabled(false); queue.sync {} }
         sampler.setEnabled(true)
@@ -160,7 +160,7 @@ enum PeripheralBatteryLifecycleTests {
                 let reader = Reader(cancellation: cancellation, completion: completion)
                 readers.append(reader)
                 return reader
-            }, currentTime: { 1 })
+            }, currentTime: { 1 }, bluetoothAuthorized: { true })
         sampler.setEnabled(true)
         _ = sampler.sample(now: 0)
         queue.sync {}
@@ -209,7 +209,7 @@ enum PeripheralBatteryLifecycleTests {
             }, makeBluetoothRead: { _, cancellation, completion in
                 readers += 1
                 return Reader(cancellation: cancellation, completion: completion)
-            })
+            }, bluetoothAuthorized: { true })
         sampler.setEnabled(true)
         _ = sampler.sample(now: 0)
         let didEnter = entered.wait(timeout: .now() + 2) == .success
@@ -229,7 +229,7 @@ enum PeripheralBatteryLifecycleTests {
             return [device(19)]
         }, readProfiler: { _ in Data() }, makeBluetoothRead: { _, cancellation, completion in
             Reader(cancellation: cancellation, completion: completion)
-        })
+        }, bluetoothAuthorized: { true })
         sampler.setEnabled(true)
         suite.expect(sampler.sample(now: 0).devices.isEmpty, "a fast read finishing after disable cannot repopulate the cache")
         queue.sync {}

@@ -13,6 +13,7 @@ class ScreenshotCapturePanel: OverlayPanel {
                    defer: false)
         hidesOnDeactivate = false
         becomesKeyOnlyIfNeeded = false
+        worksWhenModal = true
     }
 
     override var canBecomeKey: Bool { true }

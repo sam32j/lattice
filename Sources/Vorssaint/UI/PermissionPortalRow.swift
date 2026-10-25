@@ -106,6 +106,7 @@ struct PermissionPortalRow: View {
             || Permissions.shared.calendarAccess == .writeOnly
         case .camera: return Permissions.shared.camera == .undetermined
         case .microphone: return Permissions.shared.microphone == .undetermined
+        case .bluetooth: return BluetoothAuthorizationPolicy.canRequest(BluetoothPermissionAccess.shared.authorization)
         case .filesAndFolders, .automationFinder, .automationTerminal, .automationPlayback, .audioCapture,
              .appManagement: return false
         }
@@ -124,6 +125,7 @@ struct PermissionPortalRow: View {
         case .calendar: Permissions.shared.requestCalendar()
         case .camera: Permissions.shared.requestCamera()
         case .microphone: Permissions.shared.requestMicrophone()
+        case .bluetooth: BluetoothPermissionAccess.shared.request()
         case .filesAndFolders, .automationFinder, .automationTerminal, .automationPlayback, .audioCapture,
              .appManagement:
             break
@@ -143,6 +145,7 @@ struct PermissionPortalRow: View {
         case .calendar: Permissions.shared.openCalendarSettings()
         case .camera: Permissions.shared.openCameraSettings()
         case .appManagement: Permissions.shared.openAppManagementSettings()
+        case .bluetooth: BluetoothPermissionAccess.shared.openSettings()
         }
     }
 }

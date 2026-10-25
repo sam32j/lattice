@@ -735,7 +735,7 @@ extension Strings {
         monitorShowCPUTemperature: "CPU 온도",
         monitorShowGPUTemperature: "GPU 온도",
         monitorShowBatteryTemperature: "배터리 온도",
-        monitorShowPeripheralBattery: "주변 기기 배터리",
+        monitorShowPeripheralBattery: SettingsFollowupStrings.text(.accessoryBattery, .ko),
         peripheralBatteryNoDevices: "주변 기기를 찾을 수 없습니다",
         monitorGraphsSection: "그래프",
 

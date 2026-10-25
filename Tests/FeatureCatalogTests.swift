@@ -700,7 +700,7 @@ enum FeatureCatalogTests {
         suite.expect(AppPermission.allCases.map(\.rawValue) == [
             "accessibility", "screenRecording", "fullDiskAccess", "filesAndFolders", "notifications",
             "automationFinder", "automationTerminal", "automationPlayback", "audioCapture", "microphone", "camera",
-            "appManagement", "calendar",
+            "appManagement", "calendar", "bluetooth",
         ], "permission portal contains every supported permission")
         suite.expect(AppFeature.fanControl.group == .monitor
                 && AppFeature.fanControl.enabledKeys == [DefaultsKey.panelShowFanControl]

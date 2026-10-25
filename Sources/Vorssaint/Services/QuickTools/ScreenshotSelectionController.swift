@@ -15,6 +15,7 @@ import SwiftUI
 /// More than one feature picks an area this way, so the surface says what the
 /// area is for and only one session is ever on screen.
 final class ScreenshotSelectionController {
+    private var dialogFrames: [CGWindowID: (source: CGRect, visible: CGRect)] = [:]
 
     struct Capture {
         let id: UUID
@@ -269,6 +270,19 @@ final class ScreenshotSelectionController {
         let pickable = ScreenshotCaptureEngine.pickableWindows(
             excludingAppWindows: excludingAppWindows,
             protectedWindowIDs: captureExcludedWindowIDs)
+        let generation = sourceGeneration
+        Task { @MainActor [weak self] in
+            let refined = await ScreenshotSystemDialogCapture.refine(pickable)
+            guard let self, !self.finished, self.sourceGeneration == generation else { return }
+            self.dialogFrames = Dictionary(uniqueKeysWithValues: zip(pickable, refined).compactMap { source, visible in
+                source.bounds == visible.bounds ? nil : (source.id, (source: source.bounds, visible: visible.bounds))
+            })
+            self.presentPanels(frozenImages: frozenImages, pickable: refined)
+        }
+    }
+
+    private func presentPanels(frozenImages: [CGDirectDisplayID: CGImage],
+                               pickable: [(id: CGWindowID, bounds: CGRect)]) {
         let mainHeight = NSScreen.screens.first?.frame.height ?? 0
 
         for screen in NSScreen.screens {
@@ -393,7 +407,10 @@ final class ScreenshotSelectionController {
         }
         let pickable = ScreenshotCaptureEngine.pickableWindows(
             excludingAppWindows: excludingAppWindows,
-            protectedWindowIDs: captureExcludedWindowIDs)
+            protectedWindowIDs: captureExcludedWindowIDs).map { window in
+                guard let cached = dialogFrames[window.id], cached.source == window.bounds else { return window }
+                return (id: window.id, bounds: cached.visible)
+            }
         let mainHeight = NSScreen.screens.first?.frame.height ?? 0
         for panel in panels {
             let image = freeze ? frozenImages[panel.displayID] : nil
@@ -743,7 +760,8 @@ final class ScreenshotSelectionController {
                     let canCrop = ScreenshotSupport.canUseFrozenWindowCapture(windowID: id,
                         frame: entry.window.frame, viewSize: panel.screenFrame.size,
                         windows: panel.overlayView.windows)
-                    return ScreenshotSupport.resolvedWindowCapture(independent,
+                    let visibleDialog = ScreenshotSystemDialogCapture.normalize(independent, windowID: id)
+                    return ScreenshotSupport.resolvedWindowCapture(visibleDialog,
                         frozenImage: canCrop ? panel.frozenImage : nil, viewFrame: entry.window.frame,
                         viewSize: panel.screenFrame.size, fallbackScale: panel.pixelScale)
                 })
@@ -938,9 +956,10 @@ final class ScreenshotSelectionController {
             guard let self else { return }
             let independent = await ScreenshotCaptureEngine.captureWindow(
                 windowID, scale: panel.pixelScale)
+            let visibleDialog = ScreenshotSystemDialogCapture.normalize(independent, windowID: windowID)
             let canCrop = ScreenshotSupport.canUseFrozenWindowCapture(windowID: windowID,
                 frame: frame, viewSize: panel.screenFrame.size, windows: panel.overlayView.windows)
-            let capture = ScreenshotSupport.resolvedWindowCapture(independent,
+            let capture = ScreenshotSupport.resolvedWindowCapture(visibleDialog,
                 frozenImage: canCrop ? panel.frozenImage : nil, viewFrame: frame,
                 viewSize: panel.screenFrame.size, fallbackScale: panel.pixelScale)
 
@@ -1171,7 +1190,7 @@ private final class ScreenshotOverlayPanel: ScreenshotCapturePanel {
         isOpaque = frozenImage != nil
         backgroundColor = frozenImage != nil ? .black : .clear
         hasShadow = false
-        level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
+        level = CapturePresentationPolicy.overlayLevel
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         hidesOnDeactivate = false
         acceptsMouseMovedEvents = true
@@ -1275,9 +1294,9 @@ private final class ScreenshotOverlayView: NSView {
     private let fullScreenHost: PassThroughHostingView<FullScreenCaptureButton>
     private var fullScreenControlHovered = false
 
-    private var dragOrigin: CGPoint?
+    private var dragOrigin: CGPoint? { didSet { refreshChromeContrast() } }
     private var lastDragPoint: CGPoint = .zero
-    private var selection: CGRect = .zero
+    private var selection: CGRect = .zero { didSet { refreshChromeContrast() } }
     fileprivate private(set) var recordingDraft: RecorderSelectionDraft?
     private var hoverPoint: CGPoint = .zero
     private var pointerIsInside = false
@@ -1429,6 +1448,13 @@ private final class ScreenshotOverlayView: NSView {
                                       y: topInset,
                                       width: fullScreenWidth,
                                       height: fullScreenHeight)
+        refreshChromeContrast()
+    }
+
+    private func refreshChromeContrast() {
+        if guideModel.isAreaDragging != isDragging { guideModel.isAreaDragging = isDragging }
+        let guideOverlap = CapturePresentationPolicy.overlaps(chrome: guideHost.frame, selection: selection)
+        if guideModel.overlapsSelection != guideOverlap { guideModel.overlapsSelection = guideOverlap }
     }
 
     /// An explicit location covers pointer warps, whose new position may not
@@ -2296,603 +2322,4 @@ private final class ScreenshotOverlayView: NSView {
 private final class FullScreenControlHoverRelay {
     var changed: ((Bool) -> Void)?
     func update(_ hovered: Bool) { changed?(hovered) }
-}
-
-private final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
-    var passesThrough = true
-    var acceptsFirstClick = false
-    var isHovered = false
-    /// The guide gets its frame from the overlay's layout. Its changing
-    /// ideal size must not resize the shielding window. Other hosts keep
-    /// intrinsic sizing, including the full-screen button measured by layout.
-    convenience init(fixedFrameRootView rootView: Content) {
-        self.init(rootView: rootView)
-        sizingOptions = []
-        safeAreaRegions = []
-        translatesAutoresizingMaskIntoConstraints = true
-    }
-    /// Capture actions remain clickable while the Dynamic Island panel owns
-    /// key focus. Keep both parts of that policy on the interactive host.
-    convenience init(interactiveRootView rootView: Content) {
-        self.init(rootView: rootView)
-        passesThrough = false
-        acceptsFirstClick = true
-    }
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
-        acceptsFirstClick || super.acceptsFirstMouse(for: event)
-    }
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        guard !passesThrough else { return nil }
-        if !isHovered {
-            return nil
-        }
-        return super.hitTest(point)
-    }
-    override func resetCursorRects() {
-        discardCursorRects()
-        addCursorRect(bounds, cursor: .crosshair)
-    }
-    override func cursorUpdate(with event: NSEvent) {
-        NSCursor.crosshair.set()
-    }
-}
-
-private struct FullScreenCaptureButton: View {
-    let action: () -> Void
-    let hoverChanged: (Bool) -> Void
-    @ObservedObject private var l10n = L10n.shared
-    @State private var isHovered = false
-
-    var body: some View {
-        Button(action: action) {
-            Label(FeatureStrings.screenshot(l10n.language).fullScreenCaptureButton,
-                  systemImage: "rectangle.inset.filled")
-                .font(.callout.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .padding(.horizontal, 14)
-                .frame(minHeight: 32)
-                .contentShape(Capsule(style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .focusable(false)
-        .foregroundStyle(.primary)
-        .background(CaptureChromeBackdrop(
-            material: .regularMaterial,
-            shape: Capsule(style: .continuous)))
-        .overlay {
-            Capsule(style: .continuous)
-                .strokeBorder(Color.primary.opacity(isHovered ? 0.34 : 0.12),
-                              lineWidth: isHovered ? 1.5 : 1)
-        }
-        .scaleEffect(isHovered ? 1.02 : 1)
-        .animation(.easeOut(duration: 0.12), value: isHovered)
-        .onHover {
-            isHovered = $0
-            hoverChanged($0)
-        }
-        .shadow(color: .black.opacity(0.20), radius: 12, y: 5)
-        .help(FeatureStrings.screenshot(l10n.language).fullScreenShortcutTitle)
-        .accessibilityLabel(FeatureStrings.screenshot(l10n.language).fullScreenCaptureButton)
-    }
-}
-
-/// The backing plate the capture chrome draws behind its text.
-///
-/// The shared `HUDBackdrop` cannot serve here: its material blends with what
-/// sits behind the window, and this chrome lives inside the overlay window,
-/// which is opaque while it shows the frozen still. Blending there would read
-/// the live desktop instead of the still the person is aiming at. The plate is
-/// the part that fixes contrast anyway, so keep the material these panels
-/// already draw and add only the plate over it.
-private struct CaptureChromeBackdrop<S: Shape>: View {
-    let material: Material
-    let shape: S
-
-    @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    /// Reduced transparency already gives an opaque material, so the plate
-    /// steps aside; otherwise it carries the same calibration the shared
-    /// backdrop documents.
-    private var plateOpacity: Double {
-        guard !reduceTransparency else { return 0 }
-        return HUDBackdrop.plateOpacity(dark: colorScheme == .dark)
-    }
-
-    var body: some View {
-        shape.fill(material)
-            .overlay(shape.fill(colorScheme == .dark ? Color.black : Color.white)
-                        .opacity(plateOpacity))
-    }
-}
-
-final class CaptureGuideViewModel: ObservableObject {
-    @Published var offersScrollingCapture = false
-    @Published var offersRepeatLastRegion = false
-    @Published var requiresDraggedRegion = false
-    @Published var scrollingCaptureEnabled = false
-    @Published var loupeEnabled = false
-    @Published var selectedWindowsCount = 0
-    var onHoverChanged: ((Bool) -> Void)?
-    @Published var isHovered = false {
-        didSet {
-            if oldValue != isHovered {
-                onHoverChanged?(isHovered)
-            }
-        }
-    }
-}
-
-private struct CaptureGuideView: View {
-    let strings: ScreenshotFeatureStrings
-    let purpose: String?
-    @ObservedObject var model: CaptureGuideViewModel
-    let screenCaptureOptions: ScreenCaptureSelectionOptions?
-    let onFullScreen: () -> Void
-    let onToggleScrolling: () -> Void
-    let onToggleLoupe: () -> Void
-    let onRepeatLastRegion: () -> Void
-    let onToggleMode: () -> Void
-    let onCancel: () -> Void
-
-    var body: some View {
-        if let screenCaptureOptions {
-            UnifiedCaptureGuideContent(strings: strings,
-                                       options: screenCaptureOptions,
-                                       model: model,
-                                       onFullScreen: onFullScreen,
-                                       onToggleScrolling: onToggleScrolling,
-                                       onToggleLoupe: onToggleLoupe,
-                                       onRepeatLastRegion: onRepeatLastRegion,
-                                       onToggleMode: onToggleMode,
-                                       onCancel: onCancel)
-                .allowsHitTesting(true)
-        } else {
-            standardGuide
-        }
-    }
-
-    private var standardGuide: some View {
-        HStack(spacing: 8) {
-            Button(action: onCancel) {
-                HStack(spacing: 5) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("esc")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
-                }
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 10)
-                .frame(height: 30)
-                .background(CaptureChromeBackdrop(
-                    material: .regularMaterial,
-                    shape: RoundedRectangle(cornerRadius: 14, style: .continuous)))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
-                }
-                .shadow(color: .black.opacity(0.18), radius: 12, y: 5)
-            }
-            .buttonStyle(.plain)
-            .focusable(false)
-
-            HStack(spacing: 7) {
-                Text(subtitle)
-                    .font(.system(size: 10.5, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                CaptureKeyHint(key: "X",
-                               icon: "rectangle.dashed",
-                               isEnabled: model.offersRepeatLastRegion,
-                               action: model.offersRepeatLastRegion ? onRepeatLastRegion : nil)
-                CaptureKeyHint(key: "F", icon: "rectangle.inset.filled", action: onFullScreen)
-                if model.offersScrollingCapture {
-                    CaptureKeyHint(key: "S",
-                                   icon: "rectangle.stack",
-                                   isActive: model.scrollingCaptureEnabled,
-                                   action: onToggleScrolling)
-                }
-                CaptureKeyHint(key: "Z",
-                               icon: "plus.magnifyingglass",
-                               isActive: model.loupeEnabled,
-                               action: onToggleLoupe)
-            }
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .background(CaptureChromeBackdrop(material: .ultraThinMaterial,
-                                              shape: Capsule(style: .continuous)))
-            .overlay {
-                Capsule(style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
-            }
-            .shadow(color: .black.opacity(0.16), radius: 10, y: 4)
-            .contentShape(Capsule(style: .continuous))
-            .onTapGesture {}
-        }
-        .onHover { hovering in
-            model.isHovered = hovering
-        }
-        .allowsHitTesting(true)
-    }
-
-    private var subtitle: String {
-        if model.selectedWindowsCount > 0 {
-            return CaptureWorkflowStrings.localized(L10n.shared.language).selectedWindows(model.selectedWindowsCount)
-        }
-        return strings.hintDrag + "  ·  " + strings.hintClick
-    }
-}
-
-private struct UnifiedCaptureGuideContent: View {
-    let strings: ScreenshotFeatureStrings
-    @ObservedObject var options: ScreenCaptureSelectionOptions
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject var model: CaptureGuideViewModel
-    let onFullScreen: () -> Void
-    let onToggleScrolling: () -> Void
-    let onToggleLoupe: () -> Void
-    let onRepeatLastRegion: () -> Void
-    let onToggleMode: () -> Void
-    let onCancel: () -> Void
-
-    @State private var isTopHovered = false
-    @State private var isEscapeHovered = false
-    @State private var isGuideHovered = false
-    @State private var isModeHovered = false
-
-    private func updateHover() {
-        model.isHovered = isTopHovered || isEscapeHovered || isGuideHovered || isModeHovered
-    }
-
-    private var isMultiWindowMode: Bool { model.selectedWindowsCount > 0 }
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Spacer(minLength: 0)
-            topControlBar
-                .onHover { hovering in
-                    isTopHovered = hovering
-                    updateHover()
-                }
-            HStack(spacing: 8) {
-                escapeHint
-                    .onHover { hovering in
-                        isEscapeHovered = hovering
-                        updateHover()
-                    }
-                contextualGuide
-                    .onHover { hovering in
-                        isGuideHovered = hovering
-                        updateHover()
-                    }
-                modeSwitchHint
-                    .onHover { hovering in
-                        isModeHovered = hovering
-                        updateHover()
-                    }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var topControlBar: some View {
-        if options.selectedTool == .recording {
-            RecorderSelectionAudioControls(options: options.recorderAudio)
-                .opacity(options.selectedTool == .recording ? 1 : 0)
-                .allowsHitTesting(options.selectedTool == .recording)
-                .accessibilityHidden(options.selectedTool != .recording)
-        } else if model.offersScrollingCapture && options.selectedTool == .screenshot {
-            scrollToggleBar
-        }
-    }
-
-    private var scrollToggleBar: some View {
-        let isEnabled = !isMultiWindowMode
-        return Button(action: onToggleScrolling) {
-            HStack(spacing: 6) {
-                Image(systemName: "rectangle.stack")
-                    .font(.system(size: 11, weight: .semibold))
-                Text(CaptureWorkflowStrings.localized(l10n.language).scroll)
-                    .font(.system(size: 11, weight: .medium))
-            }
-            .foregroundStyle(
-                !isEnabled
-                    ? Color.secondary.opacity(0.4)
-                    : (model.scrollingCaptureEnabled ? Color.white : Color.primary)
-            )
-            .padding(.horizontal, 12)
-            .frame(height: 26)
-            .background(
-                !isEnabled
-                    ? Color.primary.opacity(0.02)
-                    : (model.scrollingCaptureEnabled ? Color.accentColor : Color.primary.opacity(0.06)),
-                in: Capsule(style: .continuous)
-            )
-            .overlay {
-                if isEnabled && model.scrollingCaptureEnabled {
-                    Capsule(style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .focusable(false)
-        .disabled(!isEnabled)
-        .padding(3)
-        .background(CaptureChromeBackdrop(material: .regularMaterial,
-                                          shape: Capsule(style: .continuous)))
-        .overlay {
-            Capsule(style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.16), radius: 10, y: 4)
-    }
-
-    private var contextualGuide: some View {
-        let isEnabled = !isMultiWindowMode
-        return HStack(spacing: 7) {
-            subtitleView
-            if options.selectedTool != .color {
-                CaptureKeyHint(key: "X",
-                               icon: "rectangle.dashed",
-                               isEnabled: model.offersRepeatLastRegion && isEnabled,
-                               action: model.offersRepeatLastRegion && isEnabled ? onRepeatLastRegion : nil)
-                CaptureKeyHint(key: "F",
-                               icon: "rectangle.inset.filled",
-                               isEnabled: isEnabled,
-                               action: isEnabled ? onFullScreen : nil)
-                CaptureKeyHint(key: "Z",
-                               icon: "plus.magnifyingglass",
-                               isActive: model.loupeEnabled,
-                               isEnabled: isEnabled,
-                               action: isEnabled ? onToggleLoupe : nil)
-            }
-        }
-        .padding(.horizontal, 10)
-        .frame(height: 30)
-        .background(CaptureChromeBackdrop(material: .ultraThinMaterial,
-                                          shape: Capsule(style: .continuous)))
-        .overlay {
-            Capsule(style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.16), radius: 10, y: 4)
-        .contentShape(Capsule(style: .continuous))
-        .onTapGesture {
-            // Absorb clicks on the bar text / background so it doesn't start a drag or hide the tab
-        }
-    }
-
-    private var escapeHint: some View {
-        Button(action: onCancel) {
-            HStack(spacing: 5) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
-                Text("esc")
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-            }
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .background(CaptureChromeBackdrop(
-                material: .regularMaterial,
-                shape: RoundedRectangle(cornerRadius: 14, style: .continuous)))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
-            }
-            .shadow(color: .black.opacity(0.18), radius: 12, y: 5)
-        }
-        .buttonStyle(.plain)
-        .focusable(false)
-    }
-
-    private var modeSwitchHint: some View {
-        let isRecording = options.selectedTool == .recording
-        let iconName = isRecording ? "camera.viewfinder" : "record.circle"
-        let isEnabled = !isMultiWindowMode
-        return Button(action: onToggleMode) {
-            HStack(spacing: 5) {
-                Image(systemName: iconName)
-                    .font(.system(size: 11, weight: .semibold))
-                Text("R")
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-            }
-            .foregroundStyle(isEnabled ? Color.secondary : Color.secondary.opacity(0.35))
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .background(CaptureChromeBackdrop(
-                material: .regularMaterial,
-                shape: RoundedRectangle(cornerRadius: 14, style: .continuous)))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(isEnabled ? 0.10 : 0.04), lineWidth: 1)
-            }
-            .shadow(color: .black.opacity(isEnabled ? 0.18 : 0.05), radius: 12, y: 5)
-        }
-        .buttonStyle(.plain)
-        .focusable(false)
-        .disabled(!isEnabled)
-    }
-
-    @ViewBuilder
-    private var subtitleView: some View {
-        switch options.selectedTool {
-        case .screenshot:
-            if model.selectedWindowsCount > 0 {
-                Text(CaptureWorkflowStrings.localized(L10n.shared.language).selectedWindows(model.selectedWindowsCount))
-                    .font(.system(size: 10.5, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-            } else {
-                HStack(spacing: 4) {
-                    Text(strings.hintDrag)
-                        .foregroundColor(.secondary)
-                    Text("·")
-                        .foregroundColor(.secondary.opacity(0.5))
-                    Text(strings.hintClick)
-                        .foregroundColor(model.scrollingCaptureEnabled ? .secondary.opacity(0.35) : .secondary)
-                }
-                .font(.system(size: 10.5, weight: .medium))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-            }
-        case .recording:
-            let clickText = CaptureWorkflowStrings.localized(l10n.language).recordWindow
-            HStack(spacing: 4) {
-                Text(strings.hintDrag)
-                    .foregroundColor(.secondary)
-                Text("·")
-                    .foregroundColor(.secondary.opacity(0.5))
-                Text(clickText)
-                    .foregroundColor(.secondary)
-            }
-            .font(.system(size: 10.5, weight: .medium))
-            .lineLimit(1)
-            .minimumScaleFactor(0.75)
-        case .text:
-            Text(l10n.s.ocrCaption)
-                .font(.system(size: 10.5, weight: .medium))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        case .color:
-            Text(l10n.s.colorPickerCaption)
-                .font(.system(size: 10.5, weight: .medium))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        }
-    }
-}
-
-private struct CaptureKeyHint: View {
-    let key: String
-    let icon: String
-    var isActive: Bool = false
-    var isEnabled: Bool = true
-    var action: (() -> Void)? = nil
-    @State private var isHovered = false
-
-    var body: some View {
-        let content = HStack(spacing: 5) {
-            Image(systemName: icon)
-                .font(.system(size: 10, weight: .semibold))
-            Text(key)
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-        }
-        .foregroundStyle(
-            !isEnabled
-                ? Color.secondary.opacity(0.4)
-                : (isActive ? Color.white : (isHovered && action != nil ? Color.primary : Color.secondary))
-        )
-        .padding(.horizontal, 8)
-        .frame(height: 24)
-        .background(
-            !isEnabled
-                ? Color.primary.opacity(0.02)
-                : (isActive
-                    ? Color.accentColor
-                    : Color.primary.opacity(isHovered && action != nil ? 0.12 : 0.06)),
-            in: Capsule(style: .continuous)
-        )
-        .overlay {
-            if isEnabled && isActive {
-                Capsule(style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
-            }
-        }
-
-        if isEnabled, let action {
-            Button(action: action) {
-                content
-            }
-            .buttonStyle(.plain)
-            .focusable(false)
-            .onHover { isHovered = $0 }
-        } else {
-            content
-        }
-    }
-}
-
-private struct RecorderSelectionAudioControls: View {
-    @ObservedObject var options: RecorderSelectionAudioOptions
-    @ObservedObject private var l10n = L10n.shared
-
-    private var strings: RecorderFeatureStrings { FeatureStrings.recorder(l10n.language) }
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Button {
-                options.systemAudio.toggle()
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "speaker.wave.2.fill")
-                        .font(.system(size: 10, weight: .semibold))
-                    Text(strings.systemAudioTrackLabel)
-                        .font(.system(size: 10.5, weight: .medium))
-                }
-                .foregroundStyle(options.systemAudio ? Color.white : Color.secondary)
-                .padding(.horizontal, 10)
-                .frame(height: 26)
-                .background(
-                    options.systemAudio
-                        ? Color.accentColor
-                        : Color.primary.opacity(0.06),
-                    in: Capsule(style: .continuous)
-                )
-                .overlay {
-                    if options.systemAudio {
-                        Capsule(style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
-                    }
-                }
-            }
-            .buttonStyle(.plain)
-            .focusable(false)
-
-            Button {
-                options.microphone.toggle()
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "mic.fill")
-                        .font(.system(size: 10, weight: .semibold))
-                    Text(strings.microphoneTrackLabel)
-                        .font(.system(size: 10.5, weight: .medium))
-                }
-                .foregroundStyle(options.microphone ? Color.white : Color.secondary)
-                .padding(.horizontal, 10)
-                .frame(height: 26)
-                .background(
-                    options.microphone
-                        ? Color.accentColor
-                        : Color.primary.opacity(0.06),
-                    in: Capsule(style: .continuous)
-                )
-                .overlay {
-                    if options.microphone {
-                        Capsule(style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
-                    }
-                }
-            }
-            .buttonStyle(.plain)
-            .focusable(false)
-            .contextMenu { RecorderInputSourceMenu(camera: false) }
-
-            RecorderOverlayInputControls()
-        }
-        .padding(3)
-        .background(CaptureChromeBackdrop(material: .regularMaterial,
-                                          shape: Capsule(style: .continuous)))
-        .overlay {
-            Capsule(style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.16), radius: 10, y: 4)
-    }
 }

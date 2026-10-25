@@ -1265,11 +1265,7 @@ enum ScreenshotFeatureTests {
         suite.expect(captureSelectionSource.contains(
             "override func mouseExited(with event: NSEvent) {\n        refreshPointerState()\n        refreshGuideVisibility()"),
                "system chrome cannot hide the capture chooser while the pointer remains on its display")
-        suite.expect(captureSelectionSource.contains(
-            "screenCaptureOptions?.showsCaptureMenu == false ? 82 : 146")
-                && captureSelectionSource.contains(
-                    ".opacity(options.selectedTool == .recording ? 1 : 0)"),
-               "capture modes reserve the recording controls' height so the chooser never jumps")
+        ScreenshotCaptureChromeStructureTests.run(suite)
         suite.expect(captureSelectionSource.contains("screenCaptureToolDidChange()")
                 && captureSelectionSource.contains("!nextPolicy.sharesSource(with: capturePolicy)")
                 && captureSelectionSource.contains("adoptCapturePolicy(nextPolicy)")

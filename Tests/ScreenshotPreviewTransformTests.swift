@@ -6,6 +6,7 @@ import CoreImage
 
 enum ScreenshotPreviewTransformTests {
     static func run(_ suite: TestSuite) {
+        CapturePresentationPolicyTests.run(suite)
         guard let context = CGContext(data: nil, width: 6, height: 4, bitsPerComponent: 8,
             bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }

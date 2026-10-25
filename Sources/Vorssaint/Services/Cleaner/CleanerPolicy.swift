@@ -81,6 +81,7 @@ enum CleanerPolicy {
     ]
 
     static func isExcludedCacheEntry(_ name: String) -> Bool {
+        guard CleanerScanPrivacy.mayInspect(name) else { return true }
         let lowered = name.lowercased()
         // A localization name is not evidence of disposable data. Keep the
         // leftover exclusion when the same entry is visited as caches or logs.
@@ -97,9 +98,7 @@ enum CleanerPolicy {
         "electron", "cypress", "typescript", "puppeteer",
     ]
 
-    /// Apple's own caches are safe to remove but the system rebuilds them
-    /// eagerly (slower first launches, re indexing), so they are listed for
-    /// the willing and pre checked for nobody. Third party caches start
+    /// Protected Apple caches are not inspected. Third party caches start
     /// checked unless they hold content worth keeping, and plain named
     /// folders only when they are known download or build caches.
     static func precheckCacheEntry(_ name: String) -> Bool {

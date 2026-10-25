@@ -93,6 +93,7 @@ final class SnippetLibraryService: ObservableObject {
     }
 
     func show() {
+        guard AppFeature.textSnippets.isAvailable else { hide(); return }
         reloadSnippets()
         let panel = ensurePanel()
         TextSnippetService.shared.setLibraryVisible(true)
@@ -148,6 +149,7 @@ final class SnippetLibraryService: ObservableObject {
     }
 
     func insert(_ snippet: TextSnippet) {
+        guard AppFeature.textSnippets.isAvailable else { hide(); return }
         hide()
         // The panel never activates, so focus normally sits in the target
         // app. When Vorssaint itself is frontmost (its Settings window, for
@@ -186,6 +188,7 @@ final class SnippetLibraryService: ObservableObject {
     /// (PastePlain's proven dance). Secure input means a password field:
     /// nothing may be typed there.
     private func postWhenModifiersReleased(text: String, attempt: Int) {
+        guard AppFeature.textSnippets.isAvailable else { return }
         let held = CGEventSource.flagsState(.combinedSessionState)
             .intersection([.maskCommand, .maskAlternate, .maskShift, .maskControl])
         // A modifier still pinned after ~1.5 s means the keyboard never came
@@ -202,6 +205,7 @@ final class SnippetLibraryService: ObservableObject {
             return
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+            guard AppFeature.textSnippets.isAvailable else { return }
             guard !IsSecureEventInputEnabled() else {
                 NSSound.beep()
                 return

@@ -9,13 +9,7 @@ import EventKit
 /// Live, synchronous verification separated from the asynchronously published UI cache.
 enum SettingsPermissionAccess {
     static func isGranted(_ permission: SettingsPermission) -> Bool {
-        switch permission {
-        case .accessibility: return AXIsProcessTrusted()
-        case .screenRecording: return CGPreflightScreenCaptureAccess()
-        case .camera: return AVCaptureDevice.authorizationStatus(for: .video) == .authorized
-        case .microphone: return AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
-        case .calendar: return EKEventStore.authorizationStatus(for: .event) == .fullAccess
-        }
+        PermissionPreflight.isGranted(permission)
     }
 
     static func request(_ permission: SettingsPermission,
@@ -67,6 +61,11 @@ enum SettingsPermissionAccess {
                     permissions.refresh()
                     completion(granted && error == nil ? .granted : .denied)
                 }
+            }
+        case .bluetooth:
+            BluetoothPermissionAccess.shared.request { result in
+                if case .needsSettings = result { BluetoothPermissionAccess.shared.openSettings() }
+                completion(result)
             }
         }
     }
