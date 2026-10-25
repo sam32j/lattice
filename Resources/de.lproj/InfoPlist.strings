@@ -2,10 +2,10 @@
 "NSAppleEventsUsageDescription" = "Lattice verwendet Automation, um Dateien zu verschieben, Objekte in den Papierkorb zu legen, angeforderte Befehle zu öffnen und die Wiedergabe in deinen Medienapps zu steuern.";
 
 /* macOS Screen & System Audio Recording permission prompt. */
-"NSAudioCaptureUsageDescription" = "Lattice nutzt den Ton jeder App, um ihre Lautstärke im Mixer zu regeln, die Musikbalken von Dynamic Island zu bewegen und den Ton des Mac in die Bildschirmaufnahmen aufzunehmen, die du startest. Nichts verlässt deinen Mac.";
+"NSAudioCaptureUsageDescription" = "Lattice nutzt Systemaudio, um die App-Lautstärke zu regeln, die Musik-Wellenform anzuzeigen und den Ton des Mac aufzunehmen.";
 
 /* macOS Bluetooth permission prompt. */
-"NSBluetoothAlwaysUsageDescription" = "Lattice verwendet Bluetooth nur, um den Akkustand verbundener Peripheriegeräte zu lesen. Nichts verlässt deinen Mac.";
+"NSBluetoothAlwaysUsageDescription" = "Lattice verwendet Bluetooth, um den Akkustand deines Zubehörs zu lesen.";
 
 /* macOS Microphone permission prompt. */
 "NSMicrophoneUsageDescription" = "Lattice nimmt dein Mikrofon nur auf, wenn du es für eine Bildschirmaufnahme einschaltest. Der Ton bleibt auf deinem Mac, außer du erstellst einen temporären Link.";
@@ -14,11 +14,11 @@
 "NSCameraUsageDescription" = "Lattice nutzt die Kamera, wenn du die Vorschau öffnest oder die Kameraüberlagerung für eine Bildschirmaufnahme aktivierst. Kameravideo wird nur nach Aktivierung aufgenommen und bleibt auf deinem Mac, sofern du es nicht teilst.";
 
 /* macOS Downloads folder permission prompt. */
-"NSDownloadsFolderUsageDescription" = "Lattice prüft lokale Metadaten in Downloads, um nur ausgewählte bestätigte WhatsApp-Dateien zu prüfen, zu organisieren oder in den Papierkorb zu verschieben. Aufräumen sucht außerdem nach vergessenen Bildschirmfotos, wenn du sie hier speicherst.";
+"NSDownloadsFolderUsageDescription" = "Lattice greift hier auf Dateien zu, wenn du Downloads überwachst, Dateifunktionen nutzt, Aufnahmen speicherst oder alte Bildschirmfotos mit Aufräumen prüfst.";
 
-/* macOS user-selected organizer destination prompts. */
-"NSDesktopFolderUsageDescription" = "Lattice organisiert bestätigte WhatsApp-Downloads in einem Zielordner, den du ausdrücklich auswählst. Aufräumen sucht außerdem nach vergessenen Bildschirmfotos, wenn du sie hier speicherst.";
-"NSDocumentsFolderUsageDescription" = "Lattice organisiert bestätigte WhatsApp-Downloads in einem Zielordner, den du ausdrücklich auswählst. Aufräumen sucht außerdem nach vergessenen Bildschirmfotos, wenn du sie hier speicherst.";
-"NSNetworkVolumesUsageDescription" = "Lattice organisiert bestätigte WhatsApp-Downloads in einem Zielordner, den du ausdrücklich auswählst. Aufräumen sucht außerdem nach vergessenen Bildschirmfotos, wenn du sie hier speicherst.";
-"NSRemovableVolumesUsageDescription" = "Lattice organisiert bestätigte WhatsApp-Downloads in einem Zielordner, den du ausdrücklich auswählst. Aufräumen sucht außerdem nach vergessenen Bildschirmfotos, wenn du sie hier speicherst.";
+/* macOS file-access permission prompts. */
+"NSDesktopFolderUsageDescription" = "Lattice greift hier auf Dateien zu, wenn du Downloads überwachst, Dateifunktionen nutzt, Aufnahmen speicherst oder alte Bildschirmfotos mit Aufräumen prüfst.";
+"NSDocumentsFolderUsageDescription" = "Lattice greift hier auf Dateien zu, wenn du Downloads überwachst, Dateifunktionen nutzt, Aufnahmen speicherst oder alte Bildschirmfotos mit Aufräumen prüfst.";
+"NSNetworkVolumesUsageDescription" = "Lattice greift hier auf Dateien zu, wenn du Downloads überwachst, Dateifunktionen nutzt, Aufnahmen speicherst oder alte Bildschirmfotos mit Aufräumen prüfst.";
+"NSRemovableVolumesUsageDescription" = "Lattice greift hier auf Dateien zu, wenn du Downloads überwachst, Dateifunktionen nutzt, Aufnahmen speicherst oder alte Bildschirmfotos mit Aufräumen prüfst.";
 "NSCalendarsFullAccessUsageDescription" = "Zeige deine anstehenden Termine im oberen Bildschirmbereich. Kalenderereignisse bleiben auf diesem Mac.";

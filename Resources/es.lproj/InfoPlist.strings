@@ -2,10 +2,10 @@
 "NSAppleEventsUsageDescription" = "Lattice usa Automatización para mover archivos, enviar elementos a la Papelera, abrir los comandos solicitados y controlar la reproducción en tus apps multimedia.";
 
 /* macOS Screen & System Audio Recording permission prompt. */
-"NSAudioCaptureUsageDescription" = "Lattice usa el audio de cada app para ajustar su volumen en el mezclador, para mover las barras de música de Dynamic Island y para incluir el sonido del Mac en las grabaciones de pantalla que inicies. Nada sale de tu Mac.";
+"NSAudioCaptureUsageDescription" = "Lattice usa el audio del sistema para controlar el volumen de las apps, mostrar la forma de onda de la música y grabar el sonido del Mac.";
 
 /* macOS Bluetooth permission prompt. */
-"NSBluetoothAlwaysUsageDescription" = "Lattice usa Bluetooth solo para leer la batería de los periféricos conectados. Nada sale de tu Mac.";
+"NSBluetoothAlwaysUsageDescription" = "Lattice usa Bluetooth para consultar el nivel de batería de tus accesorios.";
 
 /* macOS Microphone permission prompt. */
 "NSMicrophoneUsageDescription" = "Lattice graba tu micrófono solo cuando lo activas para una grabación de pantalla. El audio se queda en tu Mac salvo que elijas crear un enlace temporal.";
@@ -14,11 +14,11 @@
 "NSCameraUsageDescription" = "Lattice usa la cámara al abrir la vista previa o activar su superposición en una grabación de pantalla. El vídeo solo se graba si lo activas y permanece en tu Mac salvo que decidas compartirlo.";
 
 /* macOS Downloads folder permission prompt. */
-"NSDownloadsFolderUsageDescription" = "Lattice consulta metadatos locales en Descargas para revisar, organizar o enviar a la Papelera solo los archivos confirmados de WhatsApp que tú elijas. Limpieza también busca capturas olvidadas si guardas tus capturas aquí.";
+"NSDownloadsFolderUsageDescription" = "Lattice accede a los archivos de esta ubicación para seguir descargas, usar herramientas de archivos, guardar capturas y revisar capturas antiguas en Limpieza.";
 
-/* macOS user-selected organizer destination prompts. */
-"NSDesktopFolderUsageDescription" = "Lattice organiza las descargas confirmadas de WhatsApp en una carpeta de destino que tú eliges expresamente. Limpieza también busca capturas olvidadas si guardas tus capturas aquí.";
-"NSDocumentsFolderUsageDescription" = "Lattice organiza las descargas confirmadas de WhatsApp en una carpeta de destino que tú eliges expresamente. Limpieza también busca capturas olvidadas si guardas tus capturas aquí.";
-"NSNetworkVolumesUsageDescription" = "Lattice organiza las descargas confirmadas de WhatsApp en una carpeta de destino que tú eliges expresamente. Limpieza también busca capturas olvidadas si guardas tus capturas aquí.";
-"NSRemovableVolumesUsageDescription" = "Lattice organiza las descargas confirmadas de WhatsApp en una carpeta de destino que tú eliges expresamente. Limpieza también busca capturas olvidadas si guardas tus capturas aquí.";
+/* macOS file-access permission prompts. */
+"NSDesktopFolderUsageDescription" = "Lattice accede a los archivos de esta ubicación para seguir descargas, usar herramientas de archivos, guardar capturas y revisar capturas antiguas en Limpieza.";
+"NSDocumentsFolderUsageDescription" = "Lattice accede a los archivos de esta ubicación para seguir descargas, usar herramientas de archivos, guardar capturas y revisar capturas antiguas en Limpieza.";
+"NSNetworkVolumesUsageDescription" = "Lattice accede a los archivos de esta ubicación para seguir descargas, usar herramientas de archivos, guardar capturas y revisar capturas antiguas en Limpieza.";
+"NSRemovableVolumesUsageDescription" = "Lattice accede a los archivos de esta ubicación para seguir descargas, usar herramientas de archivos, guardar capturas y revisar capturas antiguas en Limpieza.";
 "NSCalendarsFullAccessUsageDescription" = "Muestra tus próximas citas en la parte superior de la pantalla. Los eventos del calendario se quedan en este Mac.";
