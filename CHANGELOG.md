@@ -1,5 +1,7 @@
 # Changelog
 
+This is the historical upstream Vorssaint changelog retained for provenance. It is not the current Lattice feature catalog or a signing/notarization assurance for Lattice. See [downstream changes](Downstream/CHANGELOG.md) and the [Lattice first-launch guide](TROUBLESHOOTING.md).
+
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).

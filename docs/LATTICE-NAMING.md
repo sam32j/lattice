@@ -4,7 +4,7 @@ The technical rebrand on October 25, 2026 renames the active source tree to `Sou
 
 Production remains `io.github.sam32j.lattice`; Developer remains `io.github.sam32j.lattice.dev`. No app-data or preference-domain migration is part of the naming change. Existing signing identities, helper installation identifiers and permission identities stay stable.
 
-The original GPL-3.0-or-later license, copyright notices, original artwork notices, upstream repository/service addresses and historical changelogs/specifications remain accurate. Those are attribution or history, not active Lattice branding. The upstream-only release workflow retains its original repository/signing guards; Lattice uses its dedicated release workflow.
+The original GPL-3.0-or-later license, copyright notices and upstream attribution remain. Genuine upstream service addresses and compatibility values are retained where still used. Historical changelogs/specifications describe their original revisions, not a current Lattice feature catalog. Current product links, support destinations and permission explanations must describe Lattice; references to the upstream product must name Vorssaint. The upstream-only release workflow retains its original repository/signing guards; Lattice uses its dedicated release workflow.
 
 Some compatibility wire values intentionally retain their original spelling:
 
@@ -16,3 +16,7 @@ Some compatibility wire values intentionally retain their original spelling:
 - Historical bundle migration names and conservative cleanup/uninstall protection domains.
 
 These values must not be replaced blindly: changing them can invalidate old backups, saved selections or shell safeguards. All active metadata readers/writers and helper-library consumers use the new technical names together. This does not move user content, reset permissions, replace signing certificates or modify other feature branches.
+
+## Corrective content audit
+
+The first naming pass missed semantic errors in upstream attribution and retained stale feature/permission copy. The corrective audit distinguishes product identity, upstream attribution, compatibility values and historical records instead of treating every old name as replaceable. It checks the base Info.plist and every localized InfoPlist.strings, current documentation, support links and active request metadata. Removed WhatsApp cleanup must not appear as a permission purpose. Permission documentation follows the current toggle-owned activation and permission-loss model. Historical release notes retain their original statements and do not establish signing, notarization or feature availability for current Lattice builds.

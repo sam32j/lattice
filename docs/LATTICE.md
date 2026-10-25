@@ -1,7 +1,7 @@
 # Lattice
 
 Lattice is Samuel Ji's unofficial GPL-3.0-or-later downstream distribution of
-[Lattice](https://github.com/vorssaint/vorssaint-utils). It has its own app
+[Vorssaint](https://github.com/vorssaint/vorssaint-utils). It has its own app
 icon, bundle identity (`io.github.sam32j.lattice`), helper identities and release
 feed. Original copyright/license notices remain as attribution.
 
@@ -19,10 +19,11 @@ refs are pushed atomically with explicit expected-old-SHA leases. Conflicts,
 diverged tracking main, rewritten upstream tags, missing provenance or concurrent
 edits stop the operation. No conflict resolution is guessed.
 
-The initial source snapshot `794608a5` contains 46 upstream commits after
-`v3.4.1`. Those changes are preserved. Release publication is held until an
-upstream stable tag contains this snapshot. The workflow may still advance
-tracking main while the personal branch waits for that stable release.
+The initial snapshot once included upstream commits beyond the stable release.
+That historical hold is not the current release state: `Downstream/release.json`
+records the adopted upstream tag and commits. The sync workflow holds a rebase
+when a proposed stable release predates the preserved base rather than dropping
+those commits. Read its result and current provenance before publishing.
 
 Schedules require this workflow on the repository's default branch and Actions
 enabled for the fork. If GitHub refuses a push that changes workflow files,
@@ -51,7 +52,7 @@ Publication is disabled until the repository variable
 1. Set `DownstreamIdentity.signingTeamID` to your own Developer ID team and review/commit the public pin. The upstream team is rejected.
 2. Create the protected GitHub environment `lattice-release`, restrict it to `lattice/main`, and configure required reviewers as desired.
 3. Add environment secrets `LATTICE_SIGNING_CERT_P12` (base64 Developer ID Application certificate and private key), `LATTICE_SIGNING_CERT_PASSWORD`, `LATTICE_NOTARY_API_KEY_P8` (base64), `LATTICE_NOTARY_KEY_ID`, and `LATTICE_NOTARY_ISSUER_ID`.
-4. Confirm the adopted upstream base exactly equals the published stable tag. The preserved initial snapshot is deliberately ineligible.
+4. Confirm the adopted base matches the recorded published stable tag for a normal release. The release tool also supports an explicit `allowSnapshotRelease` override; do not infer release eligibility from old snapshot documentation.
 5. Enable publication and dispatch the workflow. It tests before importing signing secrets, revalidates the source, builds, selftests, verifies the exact signer/bundle, notarizes the app and DMG, checks uploaded asset digests, then publishes.
 
 The workflow calls the reusable release job directly. It does not rely on a
@@ -72,7 +73,7 @@ additional repository-level protection if desired.
 bun test Tests/downstream-sync.test.ts Tests/lattice-release.test.ts
 ```
 
-Builds require Xcode/Command Line Tools, bun and uv. `--install` is an explicit
+Builds use Xcode/Command Line Tools. Downstream automation and its tests use bun; generated Swift tests use Python through uv when available. `--install` is an explicit
 local installation action; it replaces only the corresponding Lattice bundle.
 No installation is performed by ordinary build/test commands.
 
@@ -91,9 +92,9 @@ permission grants or Developer ID distribution. Apple Development signing is
 not a substitute for notarized Developer ID signing. Never weaken updater or
 helper checks to make unsigned builds install.
 
-The explicitly attributed upstream donation/community links and optional hosted
-feedback/file-sharing services remain upstream dependencies. They do not supply
-Lattice app updates. Developer screenshot and recording endpoint overrides use
+Upstream donation/community links remain explicitly attributed. Optional temporary
+screenshot and recording links use upstream-operated sharing services. Feedback
+opens an issue draft in sam32j/lattice. These services do not supply Lattice updates. Developer screenshot and recording endpoint overrides use
 the Lattice developer bundle ID.
 
 ## Conflict recovery

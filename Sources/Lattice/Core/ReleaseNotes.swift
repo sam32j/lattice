@@ -29,7 +29,7 @@ struct ReleaseNotes {
         return direct
     }
 
-    /// Release notes from the upstream Lattice foundation.
+    /// Release notes from the upstream Vorssaint foundation.
     static var currentUpstream: ReleaseNotes {
         let direct = notes(for: AppInfo.upstreamVersion, changelog: bundledChangelog())
         if !direct.sections.isEmpty { return direct }
