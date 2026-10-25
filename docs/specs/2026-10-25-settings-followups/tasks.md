@@ -55,3 +55,7 @@
 - Final affected notch suite passed: 56,482 checks. Isolated native settings rendering and Dock tile activation/denial checks passed (SETTINGS_RENDERING_OK).
 - Real Magic Mouse behavior and the user's settings-window flash were not exercised on live hardware. Native callback and focus-ordering contracts were verified with isolated boundaries.
 - README reference audit retained lattice-icon.png and removed 24 unused artwork files. Permission display label changed without changing its underlying route.
+
+## Quick Magic Mouse follow-up
+
+When macOS Swipe between pages is disabled, use phased horizontal scrolls with an 80-scroll-point threshold rather than rejecting the gesture. This is preference-adjusted scroll movement, not a physical inch measurement. Native tracking remains in use when enabled. Both paths hold the cue until lift; cancellation, momentum, trackpad contact exclusion and inactivity recovery remain in place. Focused actual-model/controller/state compilation and 26 mouse checks passed after reproducing seven failing fallback assertions. Independent source review found no actionable issues. Full suite and app rebuild intentionally omitted for this quick change; no live mouse or player control exercised.

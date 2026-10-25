@@ -46,5 +46,44 @@ enum NotchMusicMouseControllerTests {
         _ = update?(1, .ended, false)
         suite.expect(changes == [true] && state.frame.progress == 0,
                      "a missing native end times out safely instead of leaving a stuck icon")
+        func scroll(_ x: Double, phase: NSEvent.Phase, momentum: Bool = false, touches: Bool = false) {
+            _ = controller.receive(x: x, y: 0, phase: phase, precise: true, momentum: momentum,
+                enabled: true, expanded: false, hasTouches: touches, nativeTracking: false) { _ in
+                    suite.expect(false, "disabled system gestures must not invoke native swipe tracking")
+                }
+        }
+        scroll(0, phase: .began)
+        scroll(-100, phase: .changed)
+        suite.expect(changes == [true] && state.frame.progress == 1 && state.frame.direction == .next,
+                     "system-gesture-off fallback holds an armed cue without changing the track")
+        scroll(0, phase: .ended)
+        scroll(0, phase: .ended)
+        scroll(-100, phase: .changed, momentum: true)
+        suite.expect(changes == [true, true], "fallback commits once on lift and ignores momentum and repeated ends")
+        scroll(0, phase: .began)
+        scroll(10, phase: .changed)
+        scroll(0, phase: .ended)
+        suite.expect(changes == [true, true] && state.frame.progress == 0,
+                     "short fallback gestures clear without changing tracks")
+        scroll(0, phase: .began)
+        scroll(100, phase: .changed)
+        scroll(0, phase: .cancelled)
+        suite.expect(changes == [true, true] && state.frame.progress == 0,
+                     "cancelled fallback gestures clear without a skip")
+        scroll(0, phase: .began)
+        scroll(100, phase: .changed)
+        scroll(0, phase: .ended)
+        suite.expect(changes == [true, true, false], "positive AppKit deltas select the previous track without a second inversion")
+        scroll(0, phase: .mayBegin)
+        scroll(0, phase: .began)
+        scroll(-100, phase: .changed)
+        scroll(0, phase: .ended)
+        suite.expect(changes == [true, true, false], "trackpad may-begin sequences never use the mouse fallback")
+        scroll(0, phase: .began)
+        scroll(-100, phase: .changed)
+        timers.last?.perform()
+        scroll(0, phase: .ended)
+        suite.expect(changes == [true, true, false] && state.frame.progress == 0,
+                     "missing fallback lift times out and a late end cannot skip")
     }
 }
