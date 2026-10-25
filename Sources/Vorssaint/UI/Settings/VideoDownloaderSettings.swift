@@ -320,9 +320,10 @@ struct VideoDownloaderSettings: View {
                         saveToButton
                     }
                 } else {
-                    HStack(alignment: .top, spacing: 20) {
+                    HStack(alignment: .top, spacing: 16) {
                         qualityPicker(info: info)
-                        Spacer()
+                            .layoutPriority(1)
+                        Spacer(minLength: 8)
                         saveToButton
                     }
                 }
@@ -427,6 +428,8 @@ struct VideoDownloaderSettings: View {
                     } label: {
                         Text(q.title)
                             .font(.system(size: 12, weight: model.selectedQuality == q ? .semibold : .regular))
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
                             .background(
@@ -456,17 +459,23 @@ struct VideoDownloaderSettings: View {
             Button(action: model.chooseDestination) {
                 HStack(spacing: 5) {
                     Image(systemName: "folder")
+                        .font(.system(size: 12))
                     Text(displayDestinationPath(model.destination))
                         .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: 150)
                 }
                 .font(.system(size: 12))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
+                .frame(maxWidth: 185)
                 .background(Color.secondary.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
             }
             .buttonStyle(.plain)
+            .help(model.destination?.path ?? VideoDownloaderStrings.defaultFolder)
         }
+        .frame(maxWidth: 185, alignment: .leading)
     }
 
     @ViewBuilder
