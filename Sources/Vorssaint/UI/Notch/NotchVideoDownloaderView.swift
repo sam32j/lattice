@@ -9,25 +9,37 @@ struct NotchVideoDownloaderView: View {
     @ObservedObject private var downloader = VideoDownloader.shared
     @ObservedObject private var l10n = L10n.shared
     @State private var clipboardURL: String? = nil
-    @State private var inputFocused = false
 
     var body: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 10) {
             if !downloader.dependencies.ready {
                 missingToolsView
-            } else if let output = downloader.output {
-                completedView(output: output)
-            } else if downloader.isDownloading || downloader.isPaused || (downloader.busy && downloader.progress != nil) {
-                downloadingView
-            } else if let info = downloader.info {
-                reviewView(info: info)
             } else {
-                pasteLinkView
+                // Top row: search bar header
+                searchBarRow
+
+                if let output = downloader.output {
+                    completedView(output: output)
+                } else if let info = downloader.info {
+                    // Search successful: extends downwards with image preview & download/progress controls
+                    previewRow(info: info)
+
+                    if downloader.isDownloading || downloader.isPaused || (downloader.busy && downloader.progress != nil) {
+                        downloadingControlsRow
+                    } else {
+                        reviewControlsRow(info: info)
+                    }
+                } else if downloader.error != nil {
+                    errorView
+                }
             }
         }
         .frame(width: size.width, alignment: .top)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: downloader.info != nil)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: downloader.isDownloading)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: downloader.output != nil)
         .onAppear {
             refreshClipboard()
         }
@@ -40,99 +52,66 @@ struct NotchVideoDownloaderView: View {
         clipboardURL = VideoDownloadRequest.validClipboardURL()
     }
 
-    // MARK: - State A: Paste a Link
+    // MARK: - Search Bar Header
 
-    private var pasteLinkView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header (Download icon + "Video Downloader", no "All tools ready" as requested)
-            HStack(spacing: 7) {
-                Image(systemName: "arrow.down")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.white)
-                Text(VideoDownloaderStrings.pageTitle)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                Spacer()
-            }
-
-            // Input Row
+    private var searchBarRow: some View {
+        HStack(spacing: 8) {
+            // Text input container
             HStack(spacing: 8) {
-                // Text input container
-                HStack(spacing: 8) {
-                    Image(systemName: "link")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
+                Image(systemName: "link")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
 
-                    TextField("Paste a video link", text: $downloader.link)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white)
-                        .onSubmit {
-                            submitLink()
-                        }
-
-                    if let clip = clipboardURL, downloader.link.isEmpty {
-                        Button {
-                            downloader.link = clip
-                            downloader.fetchInfo()
-                        } label: {
-                            Text(VideoDownloaderStrings.pasteClipboardURL)
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(Color.blue, in: Capsule())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 10)
-                .frame(height: 38)
-                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                // Action Button (Paste / Search / Loading)
-                if downloader.isFetching {
-                    ProgressView()
-                        .controlSize(.small)
-                        .frame(width: 60, height: 38)
-                } else {
-                    Button {
+                TextField("Paste a video link", text: $downloader.link)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white)
+                    .onSubmit {
                         submitLink()
+                    }
+
+                if let clip = clipboardURL, downloader.link.isEmpty {
+                    Button {
+                        downloader.link = clip
+                        downloader.fetchInfo()
                     } label: {
-                        Text(downloader.link.isEmpty ? VideoDownloaderStrings.paste : VideoDownloaderStrings.search)
-                            .font(.system(size: 12, weight: .medium))
+                        Text(VideoDownloaderStrings.pasteClipboardURL)
+                            .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(.white)
-                            .padding(.horizontal, 14)
-                            .frame(height: 38)
-                            .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color.blue, in: Capsule())
                     }
                     .buttonStyle(.plain)
                 }
             }
+            .padding(.horizontal, 10)
+            .frame(height: 36)
+            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-            // Error State
-            if downloader.error != nil {
-                VStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.circle")
-                        .font(.system(size: 22))
-                        .foregroundStyle(.secondary)
-                    Text(VideoDownloaderStrings.fetchFailedNotice)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+            // Action Button (Search / Paste / Spinning while fetching)
+            Button {
+                if !downloader.isFetching {
+                    submitLink()
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-            } else if downloader.isFetching {
-                HStack(spacing: 8) {
-                    ProgressView().controlSize(.mini)
-                    Text(VideoDownloaderStrings.fetchingDetails)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
+            } label: {
+                Group {
+                    if downloader.isFetching {
+                        ProgressView()
+                            .controlSize(.small)
+                            .frame(width: 20, height: 20)
+                    } else {
+                        Text(downloader.link.isEmpty ? VideoDownloaderStrings.paste : VideoDownloaderStrings.search)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.white)
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 14)
+                .frame(height: 36)
+                .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
+            .buttonStyle(.plain)
+            .disabled(downloader.isFetching)
         }
     }
 
@@ -147,198 +126,174 @@ struct NotchVideoDownloaderView: View {
         }
     }
 
-    // MARK: - State B: Review & Download
+    // MARK: - Preview Row (Extended Downwards)
 
-    private func reviewView(info: VideoDownloadInfo) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // Media Preview row
-            HStack(alignment: .top, spacing: 12) {
-                // Thumbnail
-                thumbnailBox(duration: info.formattedDuration, width: 120, height: 68)
+    private func previewRow(info: VideoDownloadInfo) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            // Thumbnail with duration badge
+            thumbnailBox(duration: info.formattedDuration, width: 90, height: 52)
 
-                // Title + Provider
-                VStack(alignment: .leading, spacing: 4) {
-                    let source = info.sourceLabel.isEmpty ? info.creator : info.sourceLabel
-                    if !source.isEmpty {
-                        Text(source.uppercased())
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-
-                    Text(info.title)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
-            }
-
-            // Bottom control row
-            HStack(alignment: .center, spacing: 10) {
-                // Segmented quality options
-                HStack(spacing: 3) {
-                    ForEach(info.segmentedOptions) { q in
-                        let isSelected = downloader.selectedQuality == q
-                        Button {
-                            downloader.selectedQuality = q
-                            downloader.selectedHeight = q.height != 0 ? q.height : (info.qualities.first?.height ?? 0)
-                        } label: {
-                            Text(q.title)
-                                .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
-                                .foregroundStyle(isSelected ? .white : .white.opacity(0.65))
-                                .padding(.horizontal, 9)
-                                .padding(.vertical, 5)
-                                .background(isSelected ? Color.white.opacity(0.22) : Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(2)
-                .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                // Size & save location details
-                VStack(alignment: .leading, spacing: 2) {
-                    let est = info.estimatedSizeFormatted(for: downloader.selectedQuality) ?? "~1.4 GB"
-                    let format = downloader.selectedQuality.isAudio ? "M4A" : "MKV"
-                    Text("\(est) · \(format)")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Text("Saves to \(destinationFolderName)")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.secondary.opacity(0.8))
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 0)
-
-                // Download Button
-                Button {
-                    downloader.download()
-                } label: {
-                    Text(VideoDownloaderStrings.download)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 16)
-                        .frame(height: 30)
-                        .background(Color.blue, in: Capsule())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    // MARK: - State 2: Expanded while downloading
-
-    private var downloadingView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Media row
-            HStack(alignment: .center, spacing: 10) {
-                // Thumbnail
-                thumbnailBox(duration: downloader.info?.formattedDuration, width: 80, height: 48)
-
-                // Title + Subtitle
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(downloader.info?.title ?? "Video")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-
-                    let provider = downloader.info?.sourceLabel.isEmpty == false ? (downloader.info?.sourceLabel ?? "") : (downloader.info?.creator ?? "")
-                    let quality = downloader.selectedQuality.title
-                    let format = downloader.selectedQuality.isAudio ? "M4A" : "MKV"
-                    let subtitle = [provider, quality, format].filter { !$0.isEmpty }.joined(separator: " · ")
-                    Text(subtitle)
-                        .font(.system(size: 10))
+            // Title + Provider
+            VStack(alignment: .leading, spacing: 2) {
+                let source = info.sourceLabel.isEmpty ? info.creator : info.sourceLabel
+                if !source.isEmpty {
+                    Text(source.uppercased())
+                        .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
 
-                Spacer(minLength: 4)
+                Text(info.title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
-                // Large Percentage
+            Spacer(minLength: 4)
+
+            // Numeric percentage when downloading
+            if downloader.isDownloading || downloader.isPaused || (downloader.busy && downloader.progress != nil) {
                 let percentText = downloader.downloadProgress?.percentText ?? "\(Int((downloader.progress ?? 0) * 100))%"
                 Text(percentText)
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 22, weight: .bold))
                     .monospacedDigit()
                     .foregroundStyle(.white)
             }
-
-            // Linear Progress Bar
-            let fraction = downloader.progress ?? 0
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.14))
-                        .frame(height: 5)
-                    Capsule()
-                        .fill(Color.blue)
-                        .frame(width: max(5, proxy.size.width * min(1, max(0, fraction))), height: 5)
-                        .animation(.linear(duration: 0.2), value: fraction)
-                }
-            }
-            .frame(height: 5)
-
-            // Bottom stats & controls
-            HStack(alignment: .center, spacing: 8) {
-                Text(downloader.downloadProgress?.formattedDetails ?? downloader.phase)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-
-                Spacer(minLength: 4)
-
-                // Pause / Resume
-                Button {
-                    if downloader.isPaused {
-                        downloader.resume()
-                    } else {
-                        downloader.pause()
-                    }
-                } label: {
-                    Text(downloader.isPaused ? VideoDownloaderStrings.resume : VideoDownloaderStrings.pause)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .frame(height: 26)
-                        .background(Color.white.opacity(0.12), in: Capsule())
-                }
-                .buttonStyle(.plain)
-
-                // Cancel
-                Button {
-                    downloader.cancel()
-                } label: {
-                    Text(VideoDownloaderStrings.cancel)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color.red.opacity(0.9))
-                        .padding(.horizontal, 12)
-                        .frame(height: 26)
-                        .background(Color.red.opacity(0.18), in: Capsule())
-                }
-                .buttonStyle(.plain)
-            }
         }
     }
 
-    // MARK: - State 3: Finished
+    // MARK: - Controls Row (Review State: Quality Selector & Download Button)
+
+    private func reviewControlsRow(info: VideoDownloadInfo) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            // Quality options
+            HStack(spacing: 3) {
+                ForEach(info.segmentedOptions) { q in
+                    let isSelected = downloader.selectedQuality == q
+                    Button {
+                        downloader.selectedQuality = q
+                        downloader.selectedHeight = q.height != 0 ? q.height : (info.qualities.first?.height ?? 0)
+                    } label: {
+                        Text(q.title)
+                            .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                            .foregroundStyle(isSelected ? .white : .white.opacity(0.65))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(isSelected ? Color.white.opacity(0.22) : Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(2)
+            .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            // Estimated size and destination
+            VStack(alignment: .leading, spacing: 1) {
+                let est = info.estimatedSizeFormatted(for: downloader.selectedQuality) ?? "~1.4 GB"
+                let format = downloader.selectedQuality.isAudio ? "M4A" : "MKV"
+                Text("\(est) · \(format)")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Text("Saves to \(destinationFolderName)")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary.opacity(0.8))
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+
+            // Download Button
+            Button {
+                downloader.download()
+            } label: {
+                Text(VideoDownloaderStrings.download)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .frame(height: 28)
+                    .background(Color.blue, in: Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Controls Row (Downloading State: Converted to Progress Bar & Controls on Same Row)
+
+    private var downloadingControlsRow: some View {
+        HStack(alignment: .center, spacing: 8) {
+            // Progress Bar and Details
+            VStack(alignment: .leading, spacing: 3) {
+                let fraction = downloader.progress ?? 0
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.white.opacity(0.14))
+                            .frame(height: 5)
+                        Capsule()
+                            .fill(Color.blue)
+                            .frame(width: max(5, proxy.size.width * min(1, max(0, fraction))), height: 5)
+                            .animation(.linear(duration: 0.2), value: fraction)
+                    }
+                }
+                .frame(height: 5)
+
+                let details = downloader.downloadProgress?.formattedDetails ?? downloader.phase
+                Text(details)
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            // Pause / Resume
+            Button {
+                if downloader.isPaused {
+                    downloader.resume()
+                } else {
+                    downloader.pause()
+                }
+            } label: {
+                Text(downloader.isPaused ? VideoDownloaderStrings.resume : VideoDownloaderStrings.pause)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .frame(height: 24)
+                    .background(Color.white.opacity(0.14), in: Capsule())
+            }
+            .buttonStyle(.plain)
+
+            // Cancel
+            Button {
+                downloader.cancel()
+            } label: {
+                Text(VideoDownloaderStrings.cancel)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.red.opacity(0.95))
+                    .padding(.horizontal, 10)
+                    .frame(height: 24)
+                    .background(Color.red.opacity(0.2), in: Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Completed View
 
     private func completedView(output: URL) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 28))
+                .font(.system(size: 24))
                 .foregroundStyle(.green)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(VideoDownloaderStrings.downloadComplete)
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.white)
                 let sizeStr = outputFileSizeText(url: output)
                 let subtext = sizeStr.isEmpty ? "Saved to \(destinationFolderName)" : "\(sizeStr) saved to \(destinationFolderName)"
                 Text(subtext)
-                    .font(.system(size: 11))
+                    .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
 
@@ -348,10 +303,10 @@ struct NotchVideoDownloaderView: View {
                 NSWorkspace.shared.activateFileViewerSelecting([output])
             } label: {
                 Text(VideoDownloaderStrings.showInFinder)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.black)
-                    .padding(.horizontal, 14)
-                    .frame(height: 28)
+                    .padding(.horizontal, 12)
+                    .frame(height: 26)
                     .background(Color.white, in: Capsule())
             }
             .buttonStyle(.plain)
@@ -360,46 +315,60 @@ struct NotchVideoDownloaderView: View {
                 downloader.resetDownloadState()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(.secondary)
                     .padding(6)
             }
             .buttonStyle(.plain)
         }
+        .padding(.vertical, 2)
+    }
+
+    // MARK: - Error View
+
+    private var errorView: some View {
+        VStack(spacing: 4) {
+            Image(systemName: "exclamationmark.circle")
+                .font(.system(size: 18))
+                .foregroundStyle(.secondary)
+            Text(VideoDownloaderStrings.fetchFailedNotice)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
         .padding(.vertical, 4)
     }
 
     // MARK: - Missing Tools Gate
 
     private var missingToolsView: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "wrench.and.screwdriver")
-                    .font(.system(size: 20))
-                    .foregroundStyle(.orange)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(VideoDownloaderStrings.missingToolsTitle)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text(VideoDownloaderStrings.missingToolsBody)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button(VideoDownloaderStrings.repairAction) {
-                    SettingsRouter.shared.page = .videoDownloader
-                    (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
-                    NotchService.shared.collapse()
-                }
-                .font(.system(size: 12, weight: .medium))
+        HStack(spacing: 8) {
+            Image(systemName: "wrench.and.screwdriver")
+                .font(.system(size: 18))
                 .foregroundStyle(.orange)
-                .padding(.horizontal, 12)
-                .frame(height: 28)
-                .background(Color.orange.opacity(0.15), in: Capsule())
-                .buttonStyle(.plain)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(VideoDownloaderStrings.missingToolsTitle)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text(VideoDownloaderStrings.missingToolsBody)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
             }
+            Spacer()
+            Button(VideoDownloaderStrings.repairAction) {
+                SettingsRouter.shared.page = .videoDownloader
+                (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+                NotchService.shared.collapse()
+            }
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(.orange)
+            .padding(.horizontal, 10)
+            .frame(height: 26)
+            .background(Color.orange.opacity(0.15), in: Capsule())
+            .buttonStyle(.plain)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
     }
 
     // MARK: - Helpers
@@ -418,22 +387,22 @@ struct NotchVideoDownloaderView: View {
                     .frame(width: width, height: height)
                     .overlay(
                         Image(systemName: "play.rectangle.fill")
-                            .font(.system(size: 20))
+                            .font(.system(size: 18))
                             .foregroundStyle(.white.opacity(0.4))
                     )
             }
 
             if let duration, !duration.isEmpty {
                 Text(duration)
-                    .font(.system(size: 9, weight: .semibold).monospacedDigit())
+                    .font(.system(size: 8, weight: .semibold).monospacedDigit())
                     .foregroundStyle(.white)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
-                    .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 3.5, style: .continuous))
-                    .padding(4)
+                    .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 3, style: .continuous))
+                    .padding(3)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
     }
 
     private func outputFileSizeText(url: URL) -> String {
@@ -451,7 +420,7 @@ struct NotchVideoDownloaderView: View {
     }
 }
 
-// MARK: - Compact Strip Views (State 1: Circular Progress Ring, NO Center Text)
+// MARK: - Compact Strip Views
 
 struct CircleProgressRing: View {
     let fraction: Double
@@ -472,62 +441,68 @@ struct CircleProgressRing: View {
     }
 }
 
-/// Notched display compact activity strip
+/// Notched display compact activity strip (sits beside the camera in the wings)
 struct NotchVideoDownloaderStrip: View {
     @ObservedObject var service: NotchService
     var displayGeometry: NotchGeometry? = nil
     @ObservedObject private var downloader = VideoDownloader.shared
 
     private var geometry: NotchGeometry { displayGeometry ?? service.compactActivityGeometry }
+    private var wing: CGFloat { geometry.compactActivityWingWidth }
     private var iconSize: CGFloat {
-        min(16, geometry.compactActivityContentHeight - NotchLayout.compactEdgeGap * 2)
+        min(18, geometry.compactActivityContentHeight - NotchLayout.compactEdgeGap * 2)
     }
+    private var artworkInset: CGFloat { geometry.compactMusicArtworkInset }
+    private var rightInset: CGFloat { geometry.compactMusicBarsInset }
 
     var body: some View {
         Button {
             service.openActivity(.videoDownloader)
         } label: {
             HStack(spacing: 0) {
-                // Left wing: thumbnail or icon
-                HStack(spacing: 6) {
+                // Left wing: thumbnail or download icon
+                HStack(spacing: 0) {
                     if let thumb = downloader.thumbnailImage {
                         Image(nsImage: thumb)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: iconSize * 1.4, height: iconSize)
+                            .frame(width: iconSize * 1.35, height: iconSize)
                             .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
                     } else {
-                        Image(systemName: "arrow.down.square.fill")
+                        Image(systemName: "arrow.down.circle.fill")
                             .font(.system(size: iconSize))
                             .foregroundStyle(.white)
                     }
                 }
-                .padding(.leading, 8)
-                .frame(width: geometry.compactActivityWingWidth, alignment: .leading)
+                .padding(.leading, artworkInset)
+                .frame(width: wing, height: geometry.compactActivityContentHeight, alignment: .leading)
                 .clipped()
 
-                // Center camera gap: empty, no center text
-                Color.clear.frame(width: geometry.compactActivityCameraGap)
+                // Center camera cutout: empty, NO text
+                Color.clear
+                    .frame(width: geometry.compactActivityCameraGap, height: geometry.compactActivityContentHeight)
 
-                // Right wing: progress ring
-                HStack(spacing: 6) {
-                    Spacer(minLength: 0)
-                    if let fraction = downloader.progress {
+                // Right wing: completion checkmark or circular progress ring
+                HStack(spacing: 0) {
+                    if downloader.output != nil || downloader.isCompletedSustaining {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: iconSize))
+                            .foregroundStyle(.green)
+                    } else if let fraction = downloader.progress {
                         CircleProgressRing(fraction: fraction, size: iconSize)
                     } else {
                         ProgressView().controlSize(.mini)
                     }
                 }
-                .padding(.trailing, 8)
-                .frame(width: geometry.compactActivityWingWidth, alignment: .trailing)
+                .padding(.trailing, rightInset)
+                .frame(width: wing, height: geometry.compactActivityContentHeight, alignment: .trailing)
                 .clipped()
             }
             .frame(height: geometry.compactActivityContentHeight)
-            .padding(.horizontal, geometry.compactActivityHorizontalPadding)
-            .padding(.top, geometry.compactActivityTopPadding)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .frame(width: wing * 2 + geometry.compactActivityCameraGap, alignment: .center)
     }
 }
 
@@ -550,17 +525,21 @@ struct NotchCapsuleVideoDownloaderStrip: View {
                     Image(nsImage: thumb)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: iconSize * 1.4, height: iconSize)
+                        .frame(width: iconSize * 1.35, height: iconSize)
                         .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
                 } else {
-                    Image(systemName: "arrow.down.square.fill")
+                    Image(systemName: "arrow.down.circle.fill")
                         .font(.system(size: iconSize))
                         .foregroundStyle(.white)
                 }
 
                 Spacer(minLength: 12)
 
-                if let fraction = downloader.progress {
+                if downloader.output != nil || downloader.isCompletedSustaining {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: iconSize))
+                        .foregroundStyle(.green)
+                } else if let fraction = downloader.progress {
                     CircleProgressRing(fraction: fraction, size: iconSize)
                 } else {
                     ProgressView().controlSize(.mini)

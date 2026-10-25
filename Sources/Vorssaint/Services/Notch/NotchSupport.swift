@@ -2447,6 +2447,16 @@ struct NotchGeometry: Equatable {
         compact.minimumCompactWidth = cameraWidth + wing * 2
         return compact
     }
+    /// Video downloader stays beside the camera and never uses an activity footer below it.
+    var compactVideoDownloaderGeometry: NotchGeometry {
+        var compact = self
+        compact.allowsActivityFooter = false
+        let room = compactSideRoom ?? 0
+        let wing = isNotched ? compact.compactMusicContentWing : 44
+        compact.compactSideRoom = room.isFinite && room >= wing ? min(isNotched ? wing : 56, room) : 0
+        compact.minimumWing = wing
+        return compact
+    }
     static let calendarWingRange: ClosedRange<CGFloat> = 72...120
     /// Give the title useful space beside the camera, as wide as the title or
     /// the clock needs, so neither wing ends in a band of empty black. When
@@ -2703,8 +2713,17 @@ struct NotchGeometry: Equatable {
             case .agents:
                 // Only the cards a person chose; a short set leaves a short island.
                 contentHeight = min(budget, agentsHeight.map { $0 > 0 ? $0 : NotchLayout.emptyHeight } ?? budget)
+            case .videoDownloader:
+                let dl = VideoDownloader.shared
+                if dl.info != nil || dl.output != nil || dl.isDownloading || dl.isPaused {
+                    contentHeight = min(budget, 170)
+                } else if dl.error != nil {
+                    contentHeight = min(budget, 98)
+                } else {
+                    contentHeight = 52
+                }
             // Lists and previews fill the chosen content budget.
-            case .mixer, .calendar, .clipboard, .captures, .files, .notifications, .downloads, .camera, .scratchpad, .watch, .videoDownloader:
+            case .mixer, .calendar, .clipboard, .captures, .files, .notifications, .downloads, .camera, .scratchpad, .watch:
                 contentHeight = budget
             }
         }
