@@ -42,7 +42,6 @@ struct KeyboardSettings: View {
     @AppStorage(DefaultsKey.quitProtectionCloseScope) var closeScope = QuitProtectionScope.all.rawValue
     @AppStorage(DefaultsKey.quitProtectionCloseShowFeedback) var closeShowFeedback = true
 
-    @State var pickerShortcut: QuitProtectionShortcut?
 
     // MARK: - Keyboard Debounce State
     @AppStorage(DefaultsKey.keyboardDebounceEnabled) var debounceEnabled = false
@@ -97,16 +96,6 @@ struct KeyboardSettings: View {
             .padding(22)
         }
         .toggleStyle(.switch)
-        .sheet(item: $pickerShortcut) { shortcut in
-            AppPickerView(onCancel: { pickerShortcut = nil }, onSelect: { url in
-                pickerShortcut = nil
-                guard let bundleID = Bundle(url: url)?.bundleIdentifier else { return }
-                quitService.addException(bundleID, for: shortcut)
-            }, loadApps: {
-                let excluded = Set(quitService.exceptions(for: shortcut))
-                return InstalledApps.installedBundleApplications(excluding: excluded)
-            })
-        }
         .onAppear {
             quitService.syncWithPreferences()
             debounce.syncWithPreferences()

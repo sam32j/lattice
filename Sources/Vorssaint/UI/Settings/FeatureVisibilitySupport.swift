@@ -7,7 +7,7 @@ import Foundation
 /// The Settings pages. Lives here (without SwiftUI) so the visibility rules
 /// below and the unit tests can reason about pages without pulling UI in.
 enum SettingsPage: Hashable {
-    case general, features, energy, monitor
+    case general, features, energy, monitor, cameraPreview, diskImageInstaller, launcherGrid
     case mouse, keyboard, switcher, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, portManager, notch, notchMascot
     case shortcuts, dataPermissions, about
 }
@@ -44,8 +44,6 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
     case quickLauncher
     case screenshot
     case screenRecorder
-    case colorPicker
-    case screenOCR
     case micMute
     case cameraPreview
     case wallpaper
@@ -80,8 +78,9 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
         case .dock, .dockClick: return .dock
         case .autoQuit: return .windowLayout
         case .clipboardHistory, .pastePlain: return .clipboard
-        case .quickLauncher, .cameraPreview: return .shortcuts
-        case .screenshot, .colorPicker, .screenOCR:
+        case .quickLauncher: return .launcherGrid
+        case .cameraPreview: return .cameraPreview
+        case .screenshot:
             return .screenshot
         case .screenRecorder:
             return .screenRecorder
@@ -332,7 +331,7 @@ extension AppFeature {
             return FeatureSettingsDestination(.clipboard, sectionAnchor: .pastePlain)
         case .shelf: return FeatureSettingsDestination(.shelf)
         case .urlCleaner: return FeatureSettingsDestination(.urlCleaner)
-        case .diskImageInstaller: return FeatureSettingsDestination(.features)
+        case .diskImageInstaller: return FeatureSettingsDestination(.diskImageInstaller)
 
         case .mixer:
             return FeatureSettingsDestination(.audioOutput, sectionAnchor: .mixer)
@@ -355,11 +354,9 @@ extension AppFeature {
             return FeatureSettingsDestination(.energy, sectionAnchor: .bluetoothSleep)
 
         case .quickLauncher:
-            return FeatureSettingsDestination(.shortcuts, sectionAnchor: .quickLauncher)
-        case .colorPicker:
-            return FeatureSettingsDestination(.screenshot, sectionAnchor: .colorPicker)
-        case .screenOCR:
-            return FeatureSettingsDestination(.screenshot, sectionAnchor: .screenOCR)
+            return FeatureSettingsDestination(.launcherGrid)
+        case .colorPicker, .screenOCR:
+            return FeatureSettingsDestination(.screenshot)
         case .cleaningMode:
             return FeatureSettingsDestination(.keyboard, sectionAnchor: .cleaningMode)
         case .mediaTools: return FeatureSettingsDestination(.media)
@@ -372,7 +369,7 @@ extension AppFeature {
         case .screenshot:
             return FeatureSettingsDestination(.screenshot, sectionAnchor: .screenshot)
         case .cameraPreview:
-            return FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview)
+            return FeatureSettingsDestination(.cameraPreview)
         case .wallpaper:
             return FeatureSettingsDestination(.energy, sectionAnchor: .wallpaper)
         case .notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch: return FeatureSettingsDestination(.notch)
@@ -428,6 +425,9 @@ enum FeatureVisibilitySupport {
         case .commandBar: return [.commandBar]
         case .screenshot: return [.screenshot, .screenOCR, .colorPicker]
         case .screenRecorder: return [.screenRecorder]
+        case .cameraPreview: return [.cameraPreview]
+        case .diskImageInstaller: return [.diskImageInstaller]
+        case .launcherGrid: return [.quickLauncher]
         case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard, .audioInput, .audioOutput:
             return []
         }
@@ -435,6 +435,7 @@ enum FeatureVisibilitySupport {
 
     static func isPageVisible(_ page: SettingsPage,
                               isAvailable: (AppFeature) -> Bool) -> Bool {
+        if [.clipboard, .shelf, .textSnippets, .urlCleaner, .cameraPreview, .diskImageInstaller, .launcherGrid, .scratchpad].contains(page) { return true }
         if page == .energy || page == .monitor || page == .notch || page == .dock || page == .windowLayout || page == .switcher || page == .screenshot || page == .screenRecorder { return true }
         let gate = features(for: page)
         return gate.isEmpty || gate.contains { $0.isVisibleInSettings(isAvailable: isAvailable) }

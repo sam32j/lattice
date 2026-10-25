@@ -15,9 +15,12 @@ enum SettingsSidebarIdentityTests {
                      && lattice?.items.map(\.id) == [.page(.about), .page(.dataPermissions)],
                      "Lattice contains only About followed by Data and Permissions")
         let interface = sections.first { $0.id == 0 }?.items.map(\.id) ?? []
-        suite.expect(interface.firstIndex(of: .page(.features))
-                     == interface.firstIndex(of: .page(.shortcuts)).map { $0 + 1 },
-                     "Features follows Keyboard Shortcuts in Interface")
+        suite.expect(interface.contains(.page(.launcherGrid))
+                     && interface.firstIndex(of: .page(.launcherGrid))
+                        == interface.firstIndex(of: .page(.shortcuts)).map { $0 + 1 }
+                     && interface.firstIndex(of: .page(.features))
+                        == interface.firstIndex(of: .page(.launcherGrid)).map { $0 + 1 },
+                     "Launcher Grid appears between Keyboard Shortcuts and Features")
         let withKeyboard = Directory.sidebarSections(.enUS, language: .enUS,
                             keyboardLightSupported: true, isAvailable: { _ in true })
         let deviceControls = withKeyboard.first { $0.id == 2 }?.items ?? []

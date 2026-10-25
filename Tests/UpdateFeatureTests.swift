@@ -379,6 +379,7 @@ enum UpdateFeatureTests {
 
         let settingsFeatureTitles: [AppFeature: String] = [
             .homebrew: "Homebrew",
+            .portManager: "Port Manager",
             .cameraPreview: "Camera Preview",
             .screenRecorder: "Screen Recorder",
             .micMute: "Mic Mute",
@@ -389,10 +390,10 @@ enum UpdateFeatureTests {
         }
         let expectedFeatureSearchDestinations: [(AppFeature, FeatureSettingsDestination)] = [
             (.homebrew, FeatureSettingsDestination(.homebrew)),
-            (.cameraPreview, FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview)),
+            (.cameraPreview, FeatureSettingsDestination(.cameraPreview)),
             (.screenRecorder, FeatureSettingsDestination(.screenRecorder, sectionAnchor: .screenRecorder)),
             (.micMute, FeatureSettingsDestination(.audioInput, sectionAnchor: .micMute)),
-            (.diskImageInstaller, FeatureSettingsDestination(.features)),
+            (.diskImageInstaller, FeatureSettingsDestination(.diskImageInstaller)),
         ]
         for (feature, destination) in expectedFeatureSearchDestinations {
             let item = featureSearchItems.first { $0.id == .feature(feature) }
@@ -481,8 +482,8 @@ enum UpdateFeatureTests {
             SettingsSearchItem(id: .page(.features),
                                 destination: FeatureSettingsDestination(.features),
                                 title: "Features", icon: "square.grid.2x2",
-                                keywords: ["Homebrew", "Camera Preview"],
-                                keywordFeatures: [.homebrew, .cameraPreview]),
+                                keywords: ["Homebrew"],
+                                keywordFeatures: [.homebrew]),
             SettingsSearchItem(id: .page(.appUpdates),
                                 destination: FeatureSettingsDestination(.appUpdates),
                                 title: "App Updates", icon: "arrow.down.app",
@@ -495,8 +496,9 @@ enum UpdateFeatureTests {
                                 destination: FeatureSettingsDestination(.homebrew),
                                 title: "Homebrew", icon: "shippingbox"),
         ]
+        let cameraSettingsPage = SettingsSearchItem(id: .page(.cameraPreview), destination: FeatureSettingsDestination(.cameraPreview), title: "Camera Preview", icon: "web.camera")
         let combinedSettingsItems = SettingsSearchSupport.combinedItems(
-            pageItems: dedicatedSettingsItems,
+            pageItems: dedicatedSettingsItems + [cameraSettingsPage],
             featureItems: featureSearchItems)
         suite.expect(combinedSettingsItems.filter {
             $0.title == "Homebrew" && $0.destination == FeatureSettingsDestination(.homebrew)
@@ -532,20 +534,20 @@ enum UpdateFeatureTests {
 
         let cameraPreviewItem = featureSearchItems.first { $0.id == .feature(.cameraPreview) }!
         let unavailableCameraRoute = SettingsSearchSupport.route(for: cameraPreviewItem) { $0 != .cameraPreview }
-        suite.expect(unavailableCameraRoute.destination == FeatureSettingsDestination(.features)
-                && unavailableCameraRoute.targetFeature == .cameraPreview,
-               "an unavailable grouped feature targets its own row even while its shared page stays visible")
+        suite.expect(unavailableCameraRoute.destination == FeatureSettingsDestination(.cameraPreview)
+                && unavailableCameraRoute.targetFeature == nil,
+               "an unavailable page-owned feature opens its dedicated settings page")
         let availableCameraRoute = SettingsSearchSupport.route(for: cameraPreviewItem) { _ in true }
         suite.expect(availableCameraRoute.destination
-                == FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview)
+                == FeatureSettingsDestination(.cameraPreview)
                 && availableCameraRoute.targetFeature == nil,
-               "an available grouped feature keeps opening its anchored section directly")
+               "an available page-owned feature opens the same dedicated settings page")
 
         let diskImageItem = featureSearchItems.first { $0.id == .feature(.diskImageInstaller) }!
         let diskImageRoute = SettingsSearchSupport.route(for: diskImageItem) { _ in true }
-        suite.expect(diskImageRoute.destination == FeatureSettingsDestination(.features)
-                && diskImageRoute.targetFeature == .diskImageInstaller,
-               "Disk Image Installer, whose own destination is Features, still targets its exact row")
+        suite.expect(diskImageRoute.destination == FeatureSettingsDestination(.diskImageInstaller)
+                && diskImageRoute.targetFeature == nil,
+               "DMG Installer opens its dedicated installation page")
 
         let genericFeaturesItem = SettingsSearchItem(id: .page(.features),
                                                      destination: FeatureSettingsDestination(.features),
@@ -559,9 +561,9 @@ enum UpdateFeatureTests {
                                                 destination: FeatureSettingsDestination(.shelf),
                                                 title: "Shelf", icon: "tray.full")
         let hiddenPageRoute = SettingsSearchSupport.route(for: hiddenPageItem) { _ in false }
-        suite.expect(hiddenPageRoute.destination == FeatureSettingsDestination(.features)
+        suite.expect(hiddenPageRoute.destination == FeatureSettingsDestination(.shelf)
                 && hiddenPageRoute.targetFeature == nil,
-               "a page result with no merged feature identity still falls back to Features generically")
+               "a disabled File Cache page result remains directly navigable")
 
         // The dedicated page keeps Window Layout's identity and install control
         // searchable alongside the independent green button override.
@@ -606,10 +608,10 @@ enum UpdateFeatureTests {
         let cameraPreviewMatches = SettingsSearchSupport.matchingItems(
             query: "Camera Preview", items: combinedSettingsItems)
         suite.expect(cameraPreviewMatches.first?.destination
-                == FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview)
+                == FeatureSettingsDestination(.cameraPreview)
                 && cameraPreviewMatches.map(\.id)
-                    == [.feature(.cameraPreview), .page(.features), .page(.shortcuts)],
-               "an exact Camera Preview feature ranks before its page containers")
+                    == [.page(.cameraPreview), .page(.shortcuts)],
+               "the dedicated Camera Preview page ranks before keyword-only containers")
 
         let keywordBeforePartialTitle = SettingsSearchItem(
             id: .page(.features), destination: FeatureSettingsDestination(.features),
@@ -642,22 +644,16 @@ enum UpdateFeatureTests {
         let cameraGroups = SettingsSearchSupport.groupedMatchingItems(
             query: "Camera Preview", items: combinedSettingsItems,
             isAvailable: { _ in true })
-        suite.expect(cameraGroups.map(\.id) == [.shortcuts, .features]
-                && cameraGroups.first?.pageItem.title == "Keyboard Shortcuts",
-               "an exact utility match puts its main Settings page first")
-        suite.expect(cameraGroups.first?.parentMatches == false
-                && cameraGroups.first?.suggestions.map(\.title) == ["Camera Preview"]
-                && cameraGroups.first?.suggestions.first?.item.destination
-                    == FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview),
-               "a grouped utility row retains its exact anchored destination")
-        suite.expect(cameraGroups.last?.suggestions.map(\.title) == ["Camera Preview"],
-               "every other main page containing the query remains represented")
-        let installedCameraHubRoute = cameraGroups.last?.suggestions.first.map {
-            SettingsSearchSupport.route(for: $0, isAvailable: { _ in true })
+        suite.expect(cameraGroups.map(\.id) == [.cameraPreview, .shortcuts]
+                     && cameraGroups.first?.pageItem.title == "Camera Preview"
+                     && cameraGroups.first?.parentMatches == true,
+                     "Camera Preview search leads with its always-visible dedicated page")
+        let installedCameraRoute = cameraGroups.first.map {
+            SettingsSearchSupport.route(for: $0.pageItem, isAvailable: { _ in true })
         }
-        suite.expect(installedCameraHubRoute?.destination == FeatureSettingsDestination(.features)
-                && installedCameraHubRoute?.targetFeature == .cameraPreview,
-               "an installed utility's Features result reveals its exact uninstall row")
+        suite.expect(installedCameraRoute?.destination == FeatureSettingsDestination(.cameraPreview)
+                     && installedCameraRoute?.targetFeature == nil,
+                     "Camera Preview installation is edited on its page, not Features")
 
         let homebrewGroups = SettingsSearchSupport.groupedMatchingItems(
             query: "Homebrew", items: combinedSettingsItems,
@@ -687,20 +683,20 @@ enum UpdateFeatureTests {
         let availabilityPage = SettingsSearchItem(
             id: .page(.audioOutput), destination: FeatureSettingsDestination(.audioOutput),
             title: "Audio Output", icon: "speaker.wave.2",
-            keywords: ["Camera Preview", "Open camera automatically", "Mixer Volume"],
-            keywordFeatures: [.cameraPreview, .cameraPreview, .mixer])
+            keywords: ["Port Manager", "Open port automatically", "Mixer Volume"],
+            keywordFeatures: [.portManager, .portManager, .mixer])
         let availabilityHub = SettingsSearchItem(
             id: .page(.features), destination: FeatureSettingsDestination(.features),
             title: "Features", icon: "square.grid.2x2",
-            keywords: ["Camera Preview", "mixer"],
-            keywordFeatures: [.cameraPreview, .mixer])
+            keywords: ["Port Manager", "mixer"],
+            keywordFeatures: [.portManager, .mixer])
         let availabilityFeatures = featureSearchItems.filter {
-            $0.id == .feature(.cameraPreview) || $0.id == .feature(.mixer)
+            $0.id == .feature(.portManager) || $0.id == .feature(.mixer)
         }
         let availabilityItems = [availabilityHub, availabilityPage] + availabilityFeatures
         let onlyMixerAvailable: (AppFeature) -> Bool = { $0 == .mixer }
         let unavailableCameraGroups = SettingsSearchSupport.groupedMatchingItems(
-            query: "camera", items: availabilityItems,
+            query: "port", items: availabilityItems,
             isAvailable: onlyMixerAvailable)
         let unavailableCameraSuggestion = unavailableCameraGroups.first?.suggestions.first
         let groupedUnavailableCameraRoute = unavailableCameraSuggestion.map {
@@ -708,9 +704,9 @@ enum UpdateFeatureTests {
         }
         suite.expect(unavailableCameraGroups.count == 1
                 && unavailableCameraGroups[0].id == .features
-                && unavailableCameraGroups[0].suggestions.map(\.title) == ["Camera Preview"]
+                && unavailableCameraGroups[0].suggestions.map(\.title) == ["Port Manager"]
                 && groupedUnavailableCameraRoute?.destination == FeatureSettingsDestination(.features)
-                && groupedUnavailableCameraRoute?.targetFeature == .cameraPreview,
+                && groupedUnavailableCameraRoute?.targetFeature == .portManager,
                "an unavailable utility remains navigable through its exact Features row")
         suite.expect(SettingsSearchSupport.groupedMatchingItems(
                     query: "automatically", items: availabilityItems,
@@ -722,9 +718,9 @@ enum UpdateFeatureTests {
         let availableCameraSettingRoute = availableCameraSetting.map {
             SettingsSearchSupport.route(for: $0, isAvailable: { _ in true })
         }
-        suite.expect(availableCameraSetting?.title == "Open camera automatically"
+        suite.expect(availableCameraSetting?.title == "Open port automatically"
                 && availableCameraSettingRoute?.destination
-                    == FeatureSettingsDestination(.shortcuts, sectionAnchor: .cameraPreview)
+                    == FeatureSettingsDestination(.portManager)
                 && availableCameraSettingRoute?.targetFeature == nil,
                "a feature-owned setting keyword opens its exact anchored section")
         let availableMixerGroups = SettingsSearchSupport.groupedMatchingItems(
@@ -742,8 +738,8 @@ enum UpdateFeatureTests {
             keywords: ["Shelf"], keywordFeatures: [.shelf])
         suite.expect(SettingsSearchSupport.groupedMatchingItems(
                     query: "Shelf", items: availabilityItems + [shelfPage],
-                    isAvailable: { _ in false }).isEmpty,
-               "a main page with no installed utilities is not suggested")
+                    isAvailable: { _ in false }).map(\.id) == [.shelf],
+               "File Cache settings stay searchable when their page-owned toggle is off")
 
         let freshSize = SettingsWindowSupport.initialContentSize(savedHeight: 0,
                                                                  availableHeight: 1200)

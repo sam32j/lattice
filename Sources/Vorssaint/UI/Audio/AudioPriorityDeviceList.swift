@@ -14,15 +14,23 @@ struct PriorityDeviceList: View {
 
     @State private var draggingUID: String?
 
+    private var visibleUIDs: [String] {
+        AudioPriorityPresentation.visibleUIDs(priorityUIDs, isAvailable: isAvailable, displayName: displayName)
+    }
+
+    private func reorderVisible(_ uids: [String]) {
+        onMove(AudioPriorityPresentation.mergingVisibleOrder(uids, into: priorityUIDs))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            if priorityUIDs.isEmpty {
+            if visibleUIDs.isEmpty {
                 Text(emptyText)
                     .font(.system(size: 10.5))
                     .foregroundStyle(.secondary)
             } else {
                 VStack(spacing: 2) {
-                    ForEach(Array(priorityUIDs.enumerated()), id: \.element) { index, uid in
+                    ForEach(Array(visibleUIDs.enumerated()), id: \.element) { index, uid in
                         priorityRow(uid: uid, index: index)
                     }
                 }
@@ -108,18 +116,18 @@ struct PriorityDeviceList: View {
         .onDrop(of: [UTType.text],
                 delegate: PriorityDeviceDropDelegate(
                     targetUID: uid,
-                    priorityUIDs: priorityUIDs,
-                    onMove: onMove,
+                    priorityUIDs: visibleUIDs,
+                    onMove: reorderVisible,
                     draggingUID: $draggingUID))
     }
 
     private func move(_ uid: String, by offset: Int) {
-        guard let index = priorityUIDs.firstIndex(of: uid) else { return }
+        guard let index = visibleUIDs.firstIndex(of: uid) else { return }
         let destination = index + offset
-        guard priorityUIDs.indices.contains(destination) else { return }
-        var reordered = priorityUIDs
+        guard visibleUIDs.indices.contains(destination) else { return }
+        var reordered = visibleUIDs
         reordered.swapAt(index, destination)
-        onMove(reordered)
+        reorderVisible(reordered)
     }
 }
 

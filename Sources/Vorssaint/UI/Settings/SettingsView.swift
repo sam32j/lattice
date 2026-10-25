@@ -542,6 +542,9 @@ struct SettingsView: View {
             }
         case .features: FeatureHubSettings()
         case .textSnippets: TextSnippetsSettings()
+        case .cameraPreview: DedicatedUtilitySettings(feature: .cameraPreview)
+        case .diskImageInstaller: DedicatedUtilitySettings(feature: .diskImageInstaller)
+        case .launcherGrid: DedicatedUtilitySettings(feature: .quickLauncher)
         case .notch: NotchSettings()
         case .notchMascot: NotchMascotSettings()
         case .radialMenu: RadialMenuSettings()

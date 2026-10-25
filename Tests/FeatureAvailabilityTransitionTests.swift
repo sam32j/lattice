@@ -222,13 +222,14 @@ enum FeatureAvailabilityTransitionTests {
         defaults.set(true, forKey: DefaultsKey.pastePlainEnabled)
         suite.expect(!AppFeature.pastePlain.isAvailable(in: defaults),
                      "plain paste cannot run when its Clipboard History owner is uninstalled")
-        defaults.set(true, forKey: AppFeature.clipboardHistory.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.clipboardHistoryEnabled)
         suite.expect(AppFeature.pastePlain.isAvailable(in: defaults),
                      "plain paste retains its own toggle under Clipboard History")
         var plainPasteRunning = true
         State.bindings = [.pastePlain: { plainPasteRunning = AppFeature.pastePlain.isAvailable(in: defaults) }]
         service.loadedThisSession.insert(.pastePlain)
-        service.setAvailable([.clipboardHistory], false)
+        defaults.set(false, forKey: DefaultsKey.clipboardHistoryEnabled)
+        service.sync([.clipboardHistory])
         suite.expect(!plainPasteRunning,
                      "uninstalling Clipboard History also tears down its active plain-paste shortcut")
         defaults.set(true, forKey: DefaultsKey.extraBrightnessEnabled)

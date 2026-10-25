@@ -960,7 +960,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
 
     /// Keyboard-backlight shortcuts belong with keyboard controls in the
     /// editor, while their implementation remains part of the brightness
-    /// service and follows that feature's availability.
+    /// service and follows keyboard-light hardware support.
     var group: FeatureGroup {
         switch self {
         case .keyboardBrightnessDecrease, .keyboardBrightnessIncrease: return .mouseKeyboard
@@ -995,7 +995,8 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     }
 
     func isAvailable(using isAvailable: (AppFeature) -> Bool) -> Bool {
-        isKeyboardBrightness || availabilityFeatures.contains(where: isAvailable)
+        isKeyboardBrightness ? BrightnessService.keyboardLightIsSupported
+            : availabilityFeatures.contains(where: isAvailable)
     }
 
     /// The features whose own shortcuts have to go quiet while the user is

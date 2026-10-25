@@ -31,9 +31,10 @@ struct URLCleanerSettings: View {
     var body: some View {
         Form {
             Section {
-                Toggle(l10n.s.urlCleanerEnable, isOn: $enabled)
+                Toggle(SettingsOwnershipStrings.enable(l10n.s.urlCleanerName, l10n.language), isOn: $enabled)
                     .onChange(of: enabled) { _, _ in
                         URLCleanerService.shared.syncWithPreferences()
+                        FeatureRuntime.shared.finishAvailabilityChange()
                     }
                 Text(l10n.s.urlCleanerEnableCaption)
                     .font(.caption)

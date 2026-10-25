@@ -6,6 +6,7 @@ import SwiftUI
 struct ScratchpadSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var scratchpad = ScratchpadService.shared
+    @AppStorage(AppFeature.scratchpad.availabilityKey) private var enabled = false
     @AppStorage(DefaultsKey.scratchpadShortcutEnabled) private var scratchpadShortcutEnabled = false
     @AppStorage(DefaultsKey.scratchpadRetention) private var scratchpadRetention = ScratchpadRetention.never.rawValue
     @AppStorage(DefaultsKey.scratchpadCloseOnClickOutside) private var scratchpadCloseOnClickOutside = true
@@ -15,9 +16,12 @@ struct ScratchpadSettings: View {
     var body: some View {
         Form {
             Section {
-                Text(FeatureStrings.scratchpad(l10n.language).panelCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Toggle(SettingsOwnershipStrings.enable(FeatureStrings.scratchpad(l10n.language).pageTitle, l10n.language), isOn: $enabled)
+                    .onChange(of: enabled) { _, _ in
+                        ScratchpadService.shared.syncWithPreferences()
+                        FeatureRuntime.shared.finishAvailabilityChange()
+                    }
+                IslandDestinationSettings(destination: .scratchpad)
                 Picker(FeatureStrings.scratchpad(l10n.language).retentionTitle,
                        selection: $scratchpadRetention) {
                     Text(FeatureStrings.scratchpad(l10n.language).retentionNever)

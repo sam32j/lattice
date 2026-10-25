@@ -206,7 +206,7 @@ final class FeatureRuntime: ObservableObject {
     /// directly from Settings, so an off change must always reach teardown.
     func sync(_ features: [AppFeature]) {
         guard !InputEventTap.isBlocked else { return }
-        for feature in features where feature == .brightness || feature.isMouseFeature || feature.isKeyboardFeature || feature.isAvailable || loadedThisSession.contains(feature) {
+        for feature in features where feature.isToggleOwned || feature.isAvailable || loadedThisSession.contains(feature) {
             if feature.isAvailable { loadedThisSession.insert(feature) }
             Self.bindings[feature]?()
             if feature == .clipboardHistory, loadedThisSession.contains(.pastePlain) || AppFeature.pastePlain.isAvailable {
@@ -266,9 +266,7 @@ final class FeatureRuntime: ObservableObject {
         },
         .clipboardHistory: {
             ClipboardHistoryService.shared.syncWithPreferences()
-            // Auto clear rides the clipboard feature's availability but not its
-            // capture toggle: uninstalling the feature stops it, turning history
-            // off does not.
+            // History's page toggle also owns auto-clear timers and observers.
             ClipboardAutoClearService.shared.syncWithPreferences()
         },
         .mediaTools: {

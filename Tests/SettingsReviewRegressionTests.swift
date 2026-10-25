@@ -5,9 +5,18 @@ import Foundation
 
 enum SettingsReviewRegressionTests {
     static func run(_ suite: TestSuite) {
-        InputSettingsControlTests.run(suite)
+        PR12DestinationTests.run(suite)
+        PermissionActivationTests.run(suite)
+        KeyboardPermissionLifecycleTests.run(suite)
+        KeepAwakePointerPermissionTests.run(suite)
+        PageOwnedServiceLifecycleTests.run(suite)
+        RadialProfileActivationTests.run(suite)
+        KeyboardLightShortcutAvailabilityTests.run(suite)
         MouseShortcutBackupTests.run(suite)
         CleaningModeManualAvailabilityTests.run(suite)
+        InputSettingsControlTests.run(suite)
+        AudioPriorityPresentationTests.run(suite)
+        FeedbackDraftTests.run(suite)
         let pages = SettingsSidebarIdentityTests.Directory.sections(.enUS, language: .enUS).flatMap(\.items)
         suite.expect(Set(pages.map(\.page)).count == pages.count,
                      "the search directory contains each page exactly once")

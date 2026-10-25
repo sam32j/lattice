@@ -27,13 +27,7 @@ struct KeyboardLightSettings: View {
                     .foregroundStyle(.secondary)
 
                 if brightness.keyboardLightEnabled != nil {
-                    SettingsSliderRow(title: strings.keyboardLight, value: Binding(
-                        get: { Double(brightness.keyboardLightLevel ?? 0) },
-                        set: { brightness.setKeyboardLightLevel(Float($0)) }
-                    ), range: 0...1,
-                        readout: "\(Int(((brightness.keyboardLightLevel ?? 0) * 100).rounded()))%",
-                        onEditingChanged: brightness.keyboardLightDragChanged)
-                    .disabled(brightness.keyboardLightEnabled != true)
+                    keyboardLightSlider
 
                     Divider()
                 }
@@ -59,5 +53,15 @@ struct KeyboardLightSettings: View {
             }
         }
         .onAppear { brightness.refreshKeyboardLight() }
+    }
+
+    var keyboardLightSlider: some View {
+        let strings = FeatureStrings.brightness(l10n.language)
+        return SettingsSliderRow(title: strings.keyboardLight, value: Binding(
+            get: { Double(brightness.keyboardLightLevel ?? 0) },
+            set: { brightness.setKeyboardLightLevel(Float($0)) }
+        ), range: 0...1,
+            readout: "\(Int(((brightness.keyboardLightLevel ?? 0) * 100).rounded()))%",
+            onEditingChanged: brightness.keyboardLightDragChanged)
     }
 }

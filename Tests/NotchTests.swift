@@ -1814,6 +1814,7 @@ enum NotchTests {
             defaults.set(value, forKey: key)
         }
         for (key, value) in AppFeature.availabilityDefaults { defaults.set(value, forKey: key) }
+        defaults.set(true, forKey: DefaultsKey.shelfEnabled)
         let firstInstall = "com.vorssaint.tests.notch-new-\(UUID().uuidString)"
         let fresh = UserDefaults(suiteName: firstInstall)!
         defer { fresh.removePersistentDomain(forName: firstInstall) }
@@ -2029,7 +2030,7 @@ enum NotchTests {
         suite.expect(NotchSupport.closeDelay(in: defaults) == 0.18,
                      "removing the closing preference restores the original delay")
         suite.expect(!NotchSupport.routesAppPanel(in: defaults) && NotchSupport.routesQuickPanel(in: defaults)
-               && NotchSupport.routesClipboardWindow(in: defaults) && NotchSupport.routesShelf(in: defaults)
+               && !NotchSupport.routesClipboardWindow(in: defaults) && NotchSupport.routesShelf(in: defaults)
                && NotchSupport.routesCaptureControls(in: defaults),
                "enabling a fresh island keeps the app panel separate and routes the other available panels into it")
         suite.expect(NotchSupport.routes(.track, in: defaults), "a new song shows by default while music is on")
@@ -2469,7 +2470,7 @@ enum NotchTests {
                "removing the quick panel also removes its embedded tools and shortcut routing")
         defaults.set(false, forKey: DefaultsKey.notchQuickPanel)
         suite.expect(!NotchSupport.routesQuickPanel(in: defaults), "quick panel shortcut can keep its original destination")
-        defaults.set(false, forKey: AppFeature.shelf.availabilityKey)
+        defaults.set(false, forKey: DefaultsKey.shelfEnabled)
         suite.expect(!NotchSupport.modules(in: defaults).contains(.files), "unavailable shelf leaves no notch surface")
         defaults.set(false, forKey: AppFeature.notch.availabilityKey)
         suite.expect(!NotchSupport.isEnabled(in: defaults), "hub is stronger than the notch master switch")
@@ -3520,6 +3521,7 @@ enum NotchTests {
         defer { defaults.removePersistentDomain(forName: "com.vorssaint.tests.notch-calendar") }
         for (key, value) in Defaults.registeredDefaults where key.hasPrefix("notch") { defaults.set(value, forKey: key) }
         for (key, value) in AppFeature.availabilityDefaults { defaults.set(value, forKey: key) }
+        defaults.set(true, forKey: DefaultsKey.shelfEnabled)
         suite.expect(!NotchCalendarSupport.isEnabled(in: defaults), "calendar starts off")
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
         suite.expect(NotchSupport.modules(in: defaults).contains(.calendar), "calendar is available in the default home")

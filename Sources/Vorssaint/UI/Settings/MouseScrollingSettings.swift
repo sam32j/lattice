@@ -7,7 +7,7 @@ extension MouseSettings {
         VStack(alignment: .leading, spacing: 12) {
             SettingsRow(symbol: "arrow.up.arrow.down", title: l10n.s.invertVerticalScroll,
                         caption: l10n.s.scrollTrackpadNote) {
-                Toggle(l10n.s.invertVerticalScroll, isOn: $invertVertical)
+                PermissionGatedToggle(l10n.s.invertVerticalScroll, isOn: $invertVertical)
                     .labelsHidden()
                     .onChange(of: invertVertical) { _, _ in
                         ScrollInverter.shared.syncWithPreferences()
@@ -15,7 +15,7 @@ extension MouseSettings {
                     }
             }
             SettingsRow(symbol: "arrow.left.arrow.right", title: l10n.s.invertHorizontalScroll) {
-                Toggle(l10n.s.invertHorizontalScroll, isOn: $invertHorizontal)
+                PermissionGatedToggle(l10n.s.invertHorizontalScroll, isOn: $invertHorizontal)
                     .labelsHidden()
                     .onChange(of: invertHorizontal) { _, _ in
                         ScrollInverter.shared.syncWithPreferences()
@@ -24,18 +24,17 @@ extension MouseSettings {
             }
             SettingsRow(symbol: "arrow.left.and.right", title: l10n.s.scrollHorizontalName,
                         caption: l10n.s.scrollHorizontalCaption) {
-                Toggle(l10n.s.scrollHorizontalName, isOn: $horizontalScrollEnabled)
+                PermissionGatedToggle(l10n.s.scrollHorizontalName, isOn: $horizontalScrollEnabled)
                     .labelsHidden()
                     .onChange(of: horizontalScrollEnabled) { _, _ in
                         ScrollInverter.shared.syncWithPreferences()
                         if scrollDirectionEnabled { permissions.requestAccessibility() }
                     }
             }
-            modifierKeys
-                .padding(.leading, settingsRowTextInset)
-                .disabled(!horizontalScrollEnabled)
+            if horizontalScrollEnabled {
+                modifierKeys.padding(.leading, settingsRowTextInset)
+            }
             MouseExceptionsList(scope: .scrollDirection)
-                .padding(.leading, settingsRowTextInset)
                 .disabled(!scrollDirectionEnabled)
         }
     }
@@ -65,7 +64,7 @@ extension MouseSettings {
     var smoothScrollControls: some View {
         VStack(alignment: .leading, spacing: 12) {
             SettingsRow(symbol: "scroll", title: l10n.s.smoothScrollName, caption: l10n.s.smoothScrollCaption) {
-                Toggle(l10n.s.smoothScrollName, isOn: $smoothScrollEnabled)
+                PermissionGatedToggle(l10n.s.smoothScrollName, isOn: $smoothScrollEnabled)
                     .labelsHidden()
                     .onChange(of: smoothScrollEnabled) { _, enabled in
                         SmoothScrollService.shared.syncWithPreferences()
@@ -105,7 +104,7 @@ extension MouseSettings {
         VStack(alignment: .leading, spacing: 12) {
             SettingsRow(symbol: AppFeature.linearScroll.symbolName, title: l10n.s.linearScrollName,
                         caption: l10n.s.linearScrollCaption) {
-                Toggle(l10n.s.linearScrollName, isOn: $linearScrollEnabled)
+                PermissionGatedToggle(l10n.s.linearScrollName, isOn: $linearScrollEnabled)
                     .labelsHidden()
                     .onChange(of: linearScrollEnabled) { _, enabled in
                         ScrollInverter.shared.syncWithPreferences()

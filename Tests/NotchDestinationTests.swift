@@ -158,6 +158,7 @@ enum NotchDestinationContract {
         }
         for (key, value) in Defaults.registeredDefaults where key.hasPrefix("notch") { defaults.set(value, forKey: key) }
         for feature in AppFeature.allCases { defaults.set(true, forKey: feature.availabilityKey) }
+        for key in [DefaultsKey.shelfEnabled, DefaultsKey.clipboardHistoryEnabled, DefaultsKey.urlCleanerEnabled] { defaults.set(true, forKey: key) }
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
         let focus = Service()
         focus.showsKeyboardFocus = true
@@ -251,7 +252,7 @@ enum NotchDestinationContract {
         suite.expect(launcher.activeUtility == .urlCleaner,
                "navigation preserves a still-available hosted utility")
         service.open(.controls)
-        defaults.set(false, forKey: AppFeature.urlCleaner.availabilityKey)
+        defaults.set(false, forKey: DefaultsKey.urlCleanerEnabled)
         service.open(.tools)
         suite.expect(launcher.activeUtility == nil,
                "returning to Tools after removal cannot revive its previous utility")

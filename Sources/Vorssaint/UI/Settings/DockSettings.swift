@@ -64,14 +64,14 @@ struct DockSettings: View {
                 }
         }) {
             SettingsRow(symbol: "dock.rectangle", title: l10n.s.dockPreviewEnable, caption: dockPreviewCaption) {
-                Toggle(l10n.s.dockPreviewEnable, isOn: Binding(
+                PermissionGatedToggle(l10n.s.dockPreviewEnable, isOn: Binding(
                     get: { dockPreviewEngaged },
                     set: { enabled in
                         dockPreviewEnabled = enabled
                         FeatureRuntime.shared.setAvailable([.dockPreview], enabled)
                         DockPreviewService.shared.syncWithPreferences()
                     }
-                ))
+                ), requiring: [.accessibility, .screenRecording])
                     .labelsHidden()
             }
             Group {
@@ -148,7 +148,7 @@ struct DockSettings: View {
         SettingsCard(title: FeatureStrings.hub(l10n.language).titleDockClick) {
             SettingsRow(symbol: "dock.arrow.down.rectangle", title: l10n.s.dockClickMinimize,
                         caption: l10n.s.dockClickMinimizeCaption) {
-                Toggle(l10n.s.dockClickMinimize, isOn: $dockClickMinimize)
+                PermissionGatedToggle(l10n.s.dockClickMinimize, isOn: $dockClickMinimize)
                     .labelsHidden()
                     .onChange(of: dockClickMinimize) { _, enabled in
                         if enabled {
@@ -159,7 +159,7 @@ struct DockSettings: View {
                     }
             }
             SettingsRow(symbol: "eye.slash", title: l10n.s.dockClickHide, caption: l10n.s.dockClickHideCaption) {
-                Toggle(l10n.s.dockClickHide, isOn: $dockClickHide)
+                PermissionGatedToggle(l10n.s.dockClickHide, isOn: $dockClickHide)
                     .labelsHidden()
                     .onChange(of: dockClickHide) { _, enabled in
                         if enabled {
@@ -171,7 +171,7 @@ struct DockSettings: View {
             }
             SettingsRow(symbol: "arrow.triangle.2.circlepath", title: l10n.s.dockClickCycleWindows,
                         caption: l10n.s.dockClickCycleWindowsCaption) {
-                Toggle(l10n.s.dockClickCycleWindows, isOn: $dockClickCycleWindows)
+                PermissionGatedToggle(l10n.s.dockClickCycleWindows, isOn: $dockClickCycleWindows)
                     .labelsHidden()
                     .onChange(of: dockClickCycleWindows) { _, enabled in
                         if enabled {

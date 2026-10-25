@@ -257,6 +257,7 @@ def main():
               .replace("NotchSupport.hasNotchedDisplay", "true")
               .replace("NotchSupport.hasDisplayWithoutNotch", "false")
               .replace("$0.hubTitle(s, hub: FeatureStrings.hub(language))", "$0.rawValue")
+          + declaration("Sources/Vorssaint/UI/Settings/SettingsUtilitiesDirectory.swift", "    static func utilityPages(")
           + declaration(directory, "    static func sidebarSections(")
               .replace("SuperKeyService.shared.source", ".capsLock")
               .replace("BrightnessService.keyboardLightIsSupported", "false")
@@ -926,6 +927,13 @@ def main():
           + declaration("Sources/Vorssaint/Services/KeyboardDebounce/KeyboardDebounceService.swift",
                         "    private func handle(type:").replace("private func", "func", 1)
           + "}\n")
+    write("KeyboardPermissionLifecycle.swift", "import Foundation\nextension KeyboardPermissionLifecycleTests {\nfinal class Service: State {\n"
+          + availability_declaration("Sources/Vorssaint/Services/KeyboardDebounce/KeyboardDebounceService.swift",
+                                     "    func syncWithPreferences()")
+              .replace("UserDefaults.standard", "ReviewDefaults.current!")
+              .replace("AXIsProcessTrusted()", "accessibilityGranted")
+              .replace("AppFeature.keyboardDebounce.isAvailable", "AppFeature.keyboardDebounce.isAvailable(in: ReviewDefaults.current!)")
+          + "}\n}\n")
     # Entire input/mute services retain their production control flow. Only
     # visibility, scheduling, defaults and HAL transport are replaced by fixtures.
     input_source = "Sources/Vorssaint/Services/Audio/AudioInputDeviceManager.swift"
@@ -1595,13 +1603,29 @@ def main():
     input_slider = "Sources/Vorssaint/UI/Settings/SettingsValueSlider.swift"
     status_dot = "Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift"
     write("InputSettingsControls.swift", "import AppKit\nimport SwiftUI\n\nextension InputSettingsControlTests {\n"
+          + "struct SheetCaption { let caption: String\nstruct Language { let language: AppLanguage }\nlet l10n: Language\n"
+          + declaration("Sources/Vorssaint/UI/Settings/AppListSheet.swift", "    private var punctuatedCaption:").replace("private var", "var", 1)
+          + "}\n"
           + declaration(status_dot, "struct SettingsFeatureStatus")
-          + declaration(status_dot, "private struct StatusTooltip:").replace("private struct", "struct", 1)
+          + declaration(status_dot, "final class HoverHintView:")
+          + declaration(status_dot, "struct StatusTooltip:")
           + declaration(status_dot, "struct SettingsStatusDot:")
+          + "struct SuperKeyOptions { let superKeyEnabled: Bool; let superKeyStatus: SettingsFeatureStatus\n"
+          + declaration("Sources/Vorssaint/UI/Settings/KeyboardSuperKeySettings.swift", "    var superKeyOptionsDisabled:")
+          + "}\n"
           + "final class Capture {\nvar isCapturing = false\nstatic var isCaptureActive = false\nvar lastInputSeen: Int64?\nvar syncCount = 0\nfunc syncWithPreferences() { syncCount += 1 }\n"
           + declaration("Sources/Vorssaint/Services/MouseButtons/MouseButtonShortcutService.swift", "    func setCapturing(")
           + "}\n"
           + declaration(input_slider, "struct SettingsValueSlider:")
+          + declaration(settings_card, "struct SettingsControlRow<")
+          + declaration(input_slider, "struct SettingsSliderRow:")
+          + "final class LightState { var keyboardLightLevel: Float? = 0; var keyboardLightEnabled: Bool? = false\n"
+          + "func setKeyboardLightLevel(_ value: Float) { keyboardLightLevel = value; keyboardLightEnabled = value > 0 }\n"
+          + "func keyboardLightDragChanged(_ editing: Bool) {}\n}\n"
+          + "struct LightControl: View { let brightness: LightState\nstruct Language { var language: AppLanguage = .enUS }; let l10n = Language()\n"
+          + "var body: some View { keyboardLightSlider }\n"
+          + declaration("Sources/Vorssaint/UI/Settings/KeyboardLightSettings.swift", "    var keyboardLightSlider:")
+          + "}\n"
           + declaration(input_slider, "private struct NativeSettingsSlider:")
           + declaration(input_slider, "private final class TrackingSettingsSlider:")
           + "}\n")
@@ -1621,7 +1645,8 @@ def main():
           + declaration(settings_card, "struct SettingsCard<")
           + declaration("Sources/Vorssaint/UI/Settings/ExperimentalBadge.swift", "struct ExperimentalBadge:")
           + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "struct SettingsFeatureStatus")
-          + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "private struct StatusTooltip:").replace("private struct", "struct", 1)
+          + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "final class HoverHintView:")
+          + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "struct StatusTooltip:")
           + declaration("Sources/Vorssaint/UI/Settings/SettingsStatusDot.swift", "struct SettingsStatusDot")
           + declaration(settings_card, "struct SettingsRow<")
           + feature_row
@@ -1766,6 +1791,24 @@ def main():
           + declaration(view, "    private func icon(for item: QuickLauncherItem)")
           + declaration(view, "    private func isActive(_ item: QuickLauncherItem)")
           + "func display(_ item: QuickLauncherItem) -> (String, Bool) { (icon(for: item), isActive(item)) }\n}\n}\n")
+    def page_service_body(path, prefix):
+        return declaration(path, prefix).replace("UserDefaults.standard", "ReviewDefaults.current!").replace(
+            "AppFeature.textSnippets.isAvailable", "AppFeature.textSnippets.isAvailable(in: ReviewDefaults.current!)").replace(
+            "AppFeature.quickLauncher.isAvailable", "AppFeature.quickLauncher.isAvailable(in: ReviewDefaults.current!)").replace(
+            "AppFeature.clipboardHistory.isAvailable", "AppFeature.clipboardHistory.isAvailable(in: ReviewDefaults.current!)")
+    snippet_service = "Sources/Vorssaint/Services/Snippets/SnippetLibraryService.swift"
+    clipboard_clear = "Sources/Vorssaint/Services/Clipboard/ClipboardAutoClearService.swift"
+    write("PageOwnedServiceLifecycle.swift", "import Foundation\nextension PageOwnedServiceLifecycleTests {\n"
+          + "final class Snippets: PresentationState {\n"
+          + page_service_body(snippet_service, "    func syncWithPreferences()")
+          + declaration(snippet_service, "    func hide()")
+          + "}\nfinal class Launcher: PresentationState {\n"
+          + page_service_body(service, "    func syncWithPreferences()")
+          + declaration(service, "    func suspend()") + declaration(service, "    func hide()")
+          + "}\nfinal class Clipboard: ClipboardState {\n"
+          + page_service_body(clipboard_clear, "    func syncWithPreferences()")
+          + declaration(clipboard_clear, "    private func syncObserver(")
+          + "}\n}\n")
     # The panel's tabs and the rows they hold, as shipped. PanelOrderItem is
     # declared once, in QuickLauncherBodies.swift above.
     menu_panel = "Sources/Vorssaint/UI/MenuPanel/MenuPanelView.swift"
@@ -2145,6 +2188,18 @@ def main():
           + "}\n}\n")
 
     keep_awake = "Sources/Vorssaint/Services/KeepAwakeManager.swift"
+    pointer_activity = "Sources/Vorssaint/Services/KeepAwakePointerActivity.swift"
+    write("KeepAwakePointerPermission.swift", "import AppKit\nextension KeepAwakePointerPermissionTests {\n"
+          + "final class Service {\nstatic var permissionGranted = true\nstatic var posted: [CGPoint] = []\n"
+          + "var isActive = true\nvar sessionPausedForScreenLock = false\nvar mouseJiggleTimer: Timer?\nvar pendingMouseReturn: DispatchWorkItem?\n"
+          + "static func currentMouseLocation() -> CGPoint? { posted.last ?? .zero }\n"
+          + "static func mouseJiggleTarget(from point: CGPoint) -> CGPoint? { CGPoint(x: point.x + 1, y: point.y) }\n"
+          + "static func postMouseMove(to point: CGPoint) -> Bool { posted.append(point); return true }\n"
+          + "".join(declaration(pointer_activity, marker).replace("private func", "func", 1)
+                    .replace("UserDefaults.standard", "ReviewDefaults.current")
+                    .replace("AXIsProcessTrusted()", "Self.permissionGranted") for marker in [
+                        "    func syncMouseJiggleTimer(", "    func stopMouseJiggleTimer(", "    private func jiggleMousePointer("])
+          + "}\n}\n")
     keep_awake_methods = [
         "    func refreshPasswordlessStatus(",
         "    func activate(minutes:",

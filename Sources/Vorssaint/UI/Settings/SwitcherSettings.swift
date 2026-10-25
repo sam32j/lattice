@@ -95,14 +95,14 @@ struct SwitcherSettings: View {
         SettingsCard {
             SettingsRow(symbol: "rectangle.on.rectangle", title: l10n.s.switcherEnable,
                         caption: l10n.s.switcherEnableCaption) {
-                Toggle(l10n.s.switcherEnable, isOn: Binding(
+                PermissionGatedToggle(l10n.s.switcherEnable, isOn: Binding(
                     get: { switcherEngaged },
                     set: { enabled in
                         switcherEnabled = enabled
                         FeatureRuntime.shared.setAvailable([.switcher], enabled)
                         AppSwitcher.shared.syncWithPreferences()
                     }
-                ))
+                ), requiring: [.accessibility, .screenRecording])
                 .labelsHidden()
             }
         }
