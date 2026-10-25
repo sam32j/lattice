@@ -2,12 +2,16 @@
 // Copyright (C) 2026 Vorssaint
 
 import Foundation
+import CoreGraphics
 import Carbon.HIToolbox
 
 /// Production monitor bodies run against plain value doubles. No windows are
 /// shown, no native monitors are installed and no keyboard input is generated.
 enum NotchCaptureKeyboardContract {
+    enum ScreenshotSelectionController { static var isSessionOnScreen = false }
+    enum NotchSupport { static func showsInCaptures() -> Bool { true } }
     class NSPanel {
+        var windowNumber = 1
         var isVisible = true
         var attachedSheet: NSPanel?
         var firstResponder: Any?
@@ -61,6 +65,8 @@ enum NotchCaptureKeyboardTests {
             Contract.ShortcutCapture.isCapturing = false
             Contract.NotchService.shared = Contract.NotchService()
         }
+        NotchCaptureVisibilityTests.run(suite)
+        RecorderCaptureKeyboardTests.run(suite)
         preview(suite)
         chooser(suite)
     }
@@ -120,9 +126,9 @@ enum NotchCaptureKeyboardTests {
         notch.expanded = false
         check("a collapsed capture cannot consume keyboard input", accepts: false)
         notch.expanded = true
-        Contract.NotchService.ScreenshotSelectionController.isSessionOnScreen = true
+        Contract.ScreenshotSelectionController.isSessionOnScreen = true
         check("an active chooser cannot trigger actions on the previous capture", accepts: false)
-        Contract.NotchService.ScreenshotSelectionController.isSessionOnScreen = false
+        Contract.ScreenshotSelectionController.isSessionOnScreen = false
         notch.captureID = UUID()
         check("a replaced preview cannot act on its successor", accepts: false)
         notch.captureID = preview.presentationID
