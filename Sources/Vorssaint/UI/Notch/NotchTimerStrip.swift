@@ -136,7 +136,7 @@ struct NotchCompanionMark: View {
         case .music:
             NotchMusicCover(artwork: music.artwork, side: geometry.compactMusicArtworkSide,
                             radius: geometry.compactMusicArtworkRadius, source: music.playback?.track)
-        case .timer, .keepAwake, .watch:
+        case .timer, .keepAwake, .watch, .videoDownloader:
             EmptyView()
         }
     }
@@ -174,7 +174,7 @@ struct NotchCompanionMark: View {
             return geometry.compactMusicArtworkInset
         case .calendar:
             return geometry.compactActivityEdgeInset(boxHeight: 9, radius: 0)
-        case .downloads, .timer, .keepAwake, .watch:
+        case .downloads, .timer, .keepAwake, .watch, .videoDownloader:
             let side = min(13, NotchTimerSupport.stripIconSize(height: geometry.compactActivityContentHeight))
             return geometry.compactActivityEdgeInset(boxHeight: side, radius: side / 2)
         }
@@ -182,6 +182,8 @@ struct NotchCompanionMark: View {
 
     static func label(_ companion: NotchCompactActivity, language: AppLanguage) -> String {
         switch companion {
+        case .videoDownloader:
+            return VideoDownloaderStrings.pageTitle
         case .downloads:
             return FeatureStrings.notchFiles(language).downloadsTitle
         case .agents:

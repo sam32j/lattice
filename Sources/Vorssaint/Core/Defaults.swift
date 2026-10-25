@@ -1071,6 +1071,7 @@ enum Defaults {
     static let allowedMonitorAlertCooldowns = [2, 5, 15, 30, 60]
 
     static let registeredDefaults: [String: Any] = [
+        DefaultsKey.videoDownloaderEnabled: true,
         DefaultsKey.appearance: AppAppearance.fallback.rawValue,
         DefaultsKey.clamshellPreferred: false,
         DefaultsKey.dimScreenOnLidClose: false,

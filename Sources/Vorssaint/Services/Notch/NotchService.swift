@@ -525,6 +525,10 @@ final class NotchService: ObservableObject {
         NotchKeepAwakeSupport.showsActivity() && KeepAwakeManager.shared.isActive
     }
 
+    var hasVideoDownloadActivity: Bool {
+        (VideoDownloader.shared.isDownloading || VideoDownloader.shared.isPaused)
+    }
+
     var compactActivity: NotchCompactActivity? {
         // A new song waiting for its notice is not drawn yet.
         activitySelection.current(available: awaitsTrackNotice ? compactActivities.filter { $0 != .music } : compactActivities)
@@ -533,7 +537,8 @@ final class NotchService: ObservableObject {
     var compactActivities: [NotchCompactActivity] {
         NotchSupport.compactActivities(timer: hasTimerActivity, watch: hasWatchActivity, downloads: hasDownloadActivity,
                                       agents: hasAgentActivity, calendar: hasCalendarActivity,
-                                      music: hasMusicActivity, keepAwake: hasKeepAwakeActivity)
+                                      music: hasMusicActivity, keepAwake: hasKeepAwakeActivity,
+                                      videoDownloader: hasVideoDownloadActivity)
     }
 
     var showsCompactActivityPicker: Bool {
@@ -664,6 +669,8 @@ final class NotchService: ObservableObject {
                                                     paired: companion != nil)
         // Its reading is a countdown like the timer's, so it takes the timer's wings.
         case .keepAwake: return geometry.compactTimerGeometry(showsDownloads: false, wing: keepAwakeStripWing(in: geometry))
+        case .videoDownloader:
+            return geometry.compactDownloadGeometry(wing: 36)
         default: return geometry
         }
     }
@@ -1059,6 +1066,8 @@ final class NotchService: ObservableObject {
                 NotchKeepAwakeSupport.compactText(until: $0, now: Date(), locale: Locale(identifier: language.rawValue))
             }
             return layout.keepAwakeSurface(reading: reading, geometry: geometry)
+        case .videoDownloader:
+            return layout.surface(content: 54, maximum: layout.Maximum.activity, geometry: geometry)
         }
     }
 
@@ -3860,6 +3869,14 @@ final class NotchService: ObservableObject {
             }
             NotchDownloadService.shared.onFailure = { [weak self] in self?.reactMascot(.confused) }
         }
+        VideoDownloader.shared.$isDownloading
+            .combineLatest(VideoDownloader.shared.$isPaused)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.syncMenuSpaceMonitoring()
+                self?.objectWillChange.send()
+                self?.refreshPresentation()
+            }.store(in: &subscriptions)
         if modules.contains(.agents) {
             // Only what changes the island's size or strip: a turn starting or
             // ending, the first read landing, which agents have cards, and
