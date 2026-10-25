@@ -3,7 +3,8 @@
 import AppKit
 
 /// Magic Mouse supplies phased scrolls rather than NSTouch contacts. Deltas
-/// identify the axis/direction only; macOS decides whether the swipe completes.
+/// identify the axis/direction. Native tracking supplies completion when enabled;
+/// otherwise a scroll-point threshold is used, never a claimed physical distance.
 struct NotchMusicMouseSwipe {
     private(set) var tracking = false
     private(set) var direction: NotchMusicTrackSwipe.Direction?
@@ -45,6 +46,40 @@ struct NotchMusicMouseSwipe {
         }
         if complete { cancel() }
         return nil
+    }
+
+    mutating func fallback(x dx: Double, y dy: Double, phase: NSEvent.Phase, precise: Bool,
+                          momentum: Bool) -> (handled: Bool, action: NotchMusicTrackSwipe.Direction?) {
+        let wasTracking = tracking
+        guard precise, !momentum, dx.isFinite, dy.isFinite,
+              !phase.isEmpty, !phase.contains(.cancelled) else {
+            cancel(); return (wasTracking, nil)
+        }
+        if phase.contains(.mayBegin) { cancel(); trackpadSequence = true; return (false, nil) }
+        if phase.contains(.began) {
+            let trackpad = trackpadSequence
+            self = Self(); began = true; trackpadSequence = trackpad
+        }
+        guard began, !trackpadSequence, !vertical else {
+            if phase.contains(.ended) { cancel() }
+            return (wasTracking, nil)
+        }
+        x += dx; y += dy
+        if abs(y) >= 2 && abs(y) > abs(x) {
+            vertical = true; tracking = false; progress = 0
+        } else {
+            tracking = abs(x) >= 2 && abs(x) > abs(y)
+            direction = x == 0 ? nil : (x < 0 ? .next : .previous)
+            // Scroll points are preference-adjusted movement, not trackpad inches.
+            progress = tracking ? min(abs(x) / 80, 1) : 0
+        }
+        let handled = wasTracking || tracking
+        if phase.contains(.ended) {
+            let action = tracking && progress >= 1 ? direction : nil
+            cancel()
+            return (handled, action)
+        }
+        return (handled, nil)
     }
 
     mutating func cancel() { self = Self() }

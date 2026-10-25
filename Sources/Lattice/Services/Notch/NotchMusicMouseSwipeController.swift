@@ -2,7 +2,7 @@
 
 import AppKit
 
-/// Native Magic Mouse tracking shares the music cue, but never sends haptics
+/// Magic Mouse tracking shares the music cue, but never sends haptics
 /// to a separate trackpad. Generation checks reject late native callbacks.
 final class NotchMusicMouseSwipeController {
     typealias NativeUpdate = (Double, NSEvent.Phase, Bool) -> Bool
@@ -13,6 +13,7 @@ final class NotchMusicMouseSwipeController {
     private var epoch: UInt64 = 0
     private var expiry: DispatchWorkItem?
     private var ownsPresentation = false
+    private var usingFallback = false
 
     init(state: NotchMusicSwipeState, schedule: @escaping (TimeInterval, DispatchWorkItem) -> Void,
          commit: @escaping (Bool) -> Bool) {
@@ -25,15 +26,16 @@ final class NotchMusicMouseSwipeController {
         epoch &+= 1
         expiry?.cancel(); expiry = nil
         gesture.cancel()
+        usingFallback = false
         if ownsPresentation { state.clear() }
         ownsPresentation = false
     }
 
     func handle(_ event: NSEvent, enabled: Bool, expanded: Bool, hasTouches: Bool) -> Bool {
-        guard NSEvent.isSwipeTrackingFromScrollEventsEnabled else { cancel(); return false }
         return receive(x: Double(event.scrollingDeltaX), y: Double(event.scrollingDeltaY), phase: event.phase,
             precise: event.hasPreciseScrollingDeltas, momentum: !event.momentumPhase.isEmpty,
-            enabled: enabled, expanded: expanded, hasTouches: hasTouches) { update in
+            enabled: enabled, expanded: expanded, hasTouches: hasTouches,
+            nativeTracking: NSEvent.isSwipeTrackingFromScrollEventsEnabled) { update in
                 event.trackSwipeEvent(options: [.lockDirection], dampenAmountThresholdMin: -1, max: 1) {
                     amount, phase, complete, stop in
                     stop.pointee = ObjCBool(update(Double(amount), phase, complete))
@@ -46,8 +48,36 @@ final class NotchMusicMouseSwipeController {
     @discardableResult
     func receive(x: Double, y: Double, phase: NSEvent.Phase, precise: Bool, momentum: Bool,
                  enabled: Bool, expanded: Bool, hasTouches: Bool,
+                 nativeTracking: Bool = true,
                  track: (@escaping NativeUpdate) -> Void) -> Bool {
         if !enabled || hasTouches { cancel(); return false }
+        let fallback = !nativeTracking
+        if usingFallback != fallback { cancel() }
+        usingFallback = fallback
+        if !nativeTracking {
+            if phase.contains(.began) {
+                epoch &+= 1
+                expiry?.cancel(); expiry = nil
+            }
+            let result = gesture.fallback(x: x, y: y, phase: phase, precise: precise, momentum: momentum)
+            if !phase.intersection([.ended, .cancelled]).isEmpty {
+                expiry?.cancel(); expiry = nil
+            }
+            if let action = result.action {
+                expiry?.cancel(); expiry = nil
+                ownsPresentation = false
+                if commit(action == .next) {
+                    state.show(.init(direction: action, progress: 1, expanded: expanded), completed: true)
+                } else { state.clear() }
+            } else if gesture.tracking {
+                ownsPresentation = true
+                state.show(.init(direction: gesture.direction, progress: gesture.progress, expanded: expanded), held: true)
+                renewExpiry(epoch)
+            } else if ownsPresentation {
+                state.clear(); ownsPresentation = false
+            }
+            return result.handled
+        }
         if phase.contains(.began), gesture.tracking { cancel() }
         if gesture.tracking { return true }
         guard gesture.wheel(x: x, y: y, phase: phase, precise: precise, momentum: momentum,
