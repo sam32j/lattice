@@ -12,6 +12,7 @@ struct VideoDownloaderSettings: View {
     @AppStorage(DefaultsKey.videoDownloaderEnabled) private var enabled = true
     @AppStorage(DefaultsKey.videoDownloaderUseSystemTools) private var useSystemTools = false
     @State private var showAdvanced = false
+    @State private var detectedClipboardURL: String? = nil
 
     init(model: VideoDownloader = .shared) {
         self.model = model
@@ -85,7 +86,42 @@ struct VideoDownloaderSettings: View {
                                 TextField(VideoDownloaderStrings.urlPlaceholder, text: $model.link)
                                     .textFieldStyle(.plain)
                                     .onSubmit { model.fetchInfo() }
-                                    .onChange(of: model.link) { _, _ in model.linkChanged() }
+                                    .onChange(of: model.link) { _, newLink in
+                                        model.linkChanged()
+                                        if newLink.isEmpty { updateClipboardURL() }
+                                    }
+
+                                if let clip = detectedClipboardURL, model.link.isEmpty {
+                                    Button {
+                                        model.link = clip
+                                        model.linkChanged()
+                                        model.fetchInfo()
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "doc.on.clipboard")
+                                                .font(.system(size: 11, weight: .semibold))
+                                            Text(isCompact ? "Paste URL" : VideoDownloaderStrings.pasteClipboardURL)
+                                                .font(.system(size: 11.5, weight: .medium))
+                                        }
+                                        .foregroundStyle(Color.accentColor)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.accentColor.opacity(0.12))
+                                        .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                } else if !model.link.isEmpty {
+                                    Button {
+                                        model.link = ""
+                                        model.linkChanged()
+                                        updateClipboardURL()
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundStyle(.secondary)
+                                            .font(.system(size: 13))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
 
                                 if model.isValidURL {
                                     Image(systemName: "checkmark.circle.fill")
@@ -101,13 +137,25 @@ struct VideoDownloaderSettings: View {
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                                     .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
                             )
+                            .onHover { isHovering in
+                                if isHovering && model.link.isEmpty {
+                                    updateClipboardURL()
+                                }
+                            }
 
-                            Button(VideoDownloaderStrings.paste) {
-                                model.pasteFromClipboard()
+                            Button {
+                                model.fetchInfo()
+                            } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "magnifyingglass")
+                                    Text(VideoDownloaderStrings.search)
+                                }
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.regular)
+                            .frame(height: 44)
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .disabled(model.busy || model.link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
                         .disabled(model.busy)
 
@@ -242,11 +290,13 @@ struct VideoDownloaderSettings: View {
             }
         }
         .onAppear {
+            updateClipboardURL()
             if enabled {
                 model.refreshDependencies()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            updateClipboardURL()
             if enabled {
                 model.refreshDependencies()
             }
@@ -617,6 +667,20 @@ struct VideoDownloaderSettings: View {
             return String(format: "%d:%02d:%02d", h, m, s)
         } else {
             return String(format: "%d:%02d", m, s)
+        }
+    }
+
+    private func updateClipboardURL() {
+        guard let text = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty else {
+            detectedClipboardURL = nil
+            return
+        }
+        let candidate = text.contains("://") ? text : "https://" + text
+        if (try? VideoDownloadRequest.validatedURL(candidate)) != nil {
+            detectedClipboardURL = candidate
+        } else {
+            detectedClipboardURL = nil
         }
     }
 }
