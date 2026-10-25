@@ -26,7 +26,7 @@
   <a href="https://github.com/vorssaint/vorssaint-utils"><img src="https://img.shields.io/badge/upstream-vorssaint--utils-brightgreen" alt="Upstream vorssaint-utils"></a>
 </p>
 
-Per app volume, a real system monitor, a better app switcher, window snapping, Dock previews, clipboard history, text snippets, a file shelf, an uninstaller. The utilities Mac users usually buy one by one, together behind a single menu bar icon, with no account, no telemetry and no subscription.
+Per app volume, a real system monitor, a better app switcher, window snapping, Dock previews, clipboard history, text snippets, File Cache, an uninstaller. The utilities Mac users usually buy one by one, together behind a single menu bar icon, with no account, no telemetry and no subscription.
 
 > [!IMPORTANT]
 > **First launch: Lattice is not notarized by Apple.** macOS may block it because Apple cannot verify the developer or check the app for malicious software. Only proceed if you trust the download. After copying Lattice to Applications and trying to open it, go to **System Settings > Privacy & Security > Open Anyway**. See the [first-launch guide](TROUBLESHOOTING.md) for details and an app-specific quarantine workaround. The guide is also included in the DMG.
@@ -59,9 +59,9 @@ Only save content you own or have permission to download. Supported sites and
 available qualities depend on yt-dlp and the site; playlists, live streams,
 DRM bypass and automatic browser-cookie access are not included in this MVP.
 
-Lattice inherits the full suite of 50+ built-in Mac utilities from Vorssaint—including per-app volume, system monitor, window snapping, clipboard history, app uninstaller, and much more.
+Lattice builds on Vorssaint’s Mac utilities, including per-app volume, Activity Monitor, window snapping, Clipboard History and the app uninstaller. This fork changes the settings, workflow and available tools; the upstream feature catalog is not a list of everything available in Lattice.
 
-👉 **Check out the full feature catalog on [Vorssaint](https://github.com/vorssaint/vorssaint-utils#everything-it-does).**
+See Lattice’s settings for the tools available in your build. For background on the original project, see [Vorssaint](https://github.com/vorssaint/vorssaint-utils).
 
 ## Install
 
@@ -71,10 +71,10 @@ Lattice inherits the full suite of 50+ built-in Mac utilities from Vorssaint—i
 git clone https://github.com/sam32j/lattice.git
 cd lattice
 ./build.sh --dev            # build the separate Developer variant
-./build.sh --dev --install  # install and launch it
+./build.sh --dev --install  # install it in /Applications
 ```
 
-Xcode Command Line Tools are the only requirement.
+See [Contributing](CONTRIBUTING.md) for build and verification prerequisites.
 
 ### Releases
 
@@ -105,7 +105,7 @@ Permissions get the same treatment. Every one is optional, the app explains each
 
 ## When something misbehaves
 
-See [troubleshooting](docs/TROUBLESHOOTING.md) for launch problems, permissions and missing previews, or upstream [support](SUPPORT.md) for help.
+See [troubleshooting](docs/TROUBLESHOOTING.md) for launch problems, permissions and missing previews, or [Lattice support](SUPPORT.md) for help.
 
 ## Documentation
 

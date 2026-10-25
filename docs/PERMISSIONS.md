@@ -1,175 +1,75 @@
 # Permissions
 
-Lattice asks for a macOS permission only when a feature actually needs it, and every one of them is optional. Skip a permission and the feature that leans on it simply stays off or runs in a lighter mode, while the rest of the app carries on as normal. The first run walks you through each grant, and you can come back to it anytime from Settings under About.
+Lattice’s permission controls are in **Settings → Data & Permissions**. Permissions are optional for the app as a whole, but individual features require particular grants. There is no first-run permission walkthrough.
 
-You can review or change every grant in System Settings, under Privacy and Security, and reset them whenever you like. The [troubleshooting guide](TROUBLESHOOTING.md) shows how.
+When you enable a feature that requires verified access, Lattice requests that access before enabling it. If the request is denied or left unanswered, the switch stays off. If an essential permission is revoked later, affected features switch off while their saved configuration remains. Granting access again does not automatically re-enable them; return to their settings and turn them on.
 
-| Permission | Optional | Powers |
-|---|---|---|
-| Accessibility | Yes | Scroll direction, Window Layout, the app and window switcher, Dock Preview, Dock click to minimize, middle click, paste as plain text, Finder cut and paste, quit on close, radial menu key actions, optional notch notification mirroring and keyboard feedback |
-| Screen Recording | Yes | Window previews, screenshots, copy text from screen, magnified color picking and screen recordings |
-| System Audio Recording | Yes | Volume mixer, optional live equalizer and system audio capture for recordings |
-| Microphone | Yes | Your voice in a screen recording, only when you turn it on |
-| Camera | Yes | The camera preview mirror, floating or inside the notch |
-| Calendars | Yes | Upcoming appointments in the notch |
-| Bluetooth | Yes | Accessory battery levels in Monitor, optional accessory alerts in the notch and Bluetooth on sleep |
-| Files and Folders | Yes | Monitoring downloads in a folder you choose |
-| Notifications | Yes | Keep awake, battery, Monitor and update alerts |
-| Full Disk Access | Yes | A deeper uninstaller scan |
-| Administrator (one time) | Yes | Password free closed lid toggling |
-| Automation | Yes | Finder actions, Homebrew Terminal handoff and supported music playback controls |
-| App Management | Yes | App installs, updates and removal |
+System audio is an exception: macOS does not expose an equivalent reliable preflight check for audio taps. Access is handled when an audio feature starts, rather than treating silence as proof of a denied grant. Permissions for individual files and folders also depend on the operation and location.
 
-## Accessibility
+## Permission reference
 
-**Why it comes up.** macOS keeps control of keyboard and pointer input, along with the ability to read other apps' windows, behind the Accessibility permission.
+| Permission | Used by |
+|---|---|
+| Accessibility | Keyboard and mouse input features, Window Management, Lattice Switcher, Dock Preview and Dock clicks, automatic paste, supported Command Bar and Radial Menu actions, Dynamic Island notification mirroring and other optional input controls. |
+| Screen Recording | Screenshots, screen recordings, window previews, screenshot text recognition and Dynamic Island’s screen-watching tool. |
+| System Audio Recording | The Volume Mixer, live music waveform and recording Mac sound. |
+| Microphone | Microphone audio in a recording you start with that option enabled. |
+| Camera | Camera Preview and the camera overlay when enabled for a recording. |
+| Calendars | Upcoming appointments in Dynamic Island. |
+| Bluetooth | Accessory battery readings that require Bluetooth, accessory alerts and Bluetooth Control where macOS requires authorization. |
+| Files & Folders | Selected download-folder monitoring, file tools, saving captures and Cleaner’s old-screenshot review. |
+| Notifications | Alerts from Stay Awake, Activity Monitor, Cleaner, app updates and other notification features you enable. |
+| Full Disk Access | More complete Cleaner and app-uninstaller scans. |
+| Automation | Finder operations, Homebrew’s Terminal handoff and supported player-specific playback controls. |
+| App Management | Installing, replacing or removing other apps through Homebrew, App Updates or DMG Installer. |
+| Administrator authorization | Optional closed-lid setup and privileged hardware operations such as fan control. This is separate from macOS privacy grants. |
 
-**What uses it.**
+## Accessibility and Screen Recording
 
-- **Notch**, for optional mirroring of new visible notifications, opening their original native action and optionally hiding the original banner, plus system key feedback. Scrolling gestures inside the notch window need no global input permission.
-- **Scroll direction inverter**, which flips the mouse wheel.
-- **Window Layout**, which moves or resizes windows when you use a layout action, shortcut or optional trackpad or mouse gesture.
-- **App and window switcher**, which captures the switcher hotkey and reads the window list.
-- **Dock Preview**, which reads Dock items and brings windows forward for a temporary peek.
-- **Dock click to minimize**, which spots clicks on the Dock icon of the active app and minimizes or restores its windows.
-- **Middle click**, which turns a three finger press on the trackpad into a middle click.
-- **Paste as plain text**, which presses ⌘V for you after stripping the formatting.
-- **Finder cut and paste**, which steps in on ⌘X and ⌘V while Finder is in front.
-- **Quit on close**, which spots when an app's last window goes away.
-- **Radial menu**, for wheel actions that press a key combo or a media key
-  for you and for the optional side button trigger; opening apps, files and
-  links with the keyboard shortcut alone needs nothing.
+Accessibility allows input interception or simulation and control of other apps’ windows. For example, Filter duplicate keys, Super Key, Text Snippets, Cleaning Mode, mouse scrolling rules and window actions need it. A plain shortcut assignment does not itself grant permission or install an unloaded feature.
 
-**If you say no.** These features stay off. Lattice sees the moment you grant the permission and brings them to life with no relaunch.
+Screen Recording allows Lattice to capture screen content. Screenshots and recordings use the area, window or display you choose. Text recognition in capture tools uses Apple’s Vision framework locally. The standalone Color Picker and OCR screens are no longer offered; shared capture and recognition functionality remains available where used by other tools.
 
-**Optional.** Yes. macOS shows its prompt the first time a feature needs it, and you can also grant it later in System Settings, under Privacy and Security, Accessibility.
+App-only switcher mode can work without window thumbnails. Window previews and capture tools require their respective grants. Lattice does not automatically enable them after you restore permission in System Settings.
 
-## Screen Recording
+Captured content stays local unless you explicitly share it. Creating a temporary screenshot or recording link uploads that content to an upstream-operated service; see [Privacy](PRIVACY.md).
 
-**Why it comes up.** On macOS, reading other windows' titles and grabbing their thumbnails counts as screen recording.
+## Audio, microphone and camera
 
-**What uses it.** The window switcher and Dock Preview for live thumbnails and titles, screenshots and copy text from screen for the area you select, and the screen recorder for the area, window or display you choose.
+System Audio Recording is used to control per-app volume, show a live music waveform and include Mac sound in a recording. It is separate from Screen Recording and Microphone. Denying it does not mute your Mac’s ordinary playback. Audio features cannot assume access merely because their preference is on.
 
-The color picker also uses this permission for Lattice's magnifier and keyboard controls. Arrow keys select a pixel; Return or keypad Enter copies its color and closes the picker. C copies without closing. Without this permission, the native macOS color picker remains available.
+Microphone capture is used only when enabled for a recording. Camera Preview displays local camera frames; the recording camera overlay can save camera video as part of a recording when you enable it. Camera Preview does not start just because a shortcut is configured. Revoking Camera permission switches Camera Preview off; grant access and enable it again to resume.
 
-**If you say no.** The switcher falls back to app icons. Dock Preview, screenshots, copy text from screen and screen recording stay unavailable. Previews and text recognition remain local. A screenshot or recording is written only when you ask, and leaves your Mac only if you explicitly create a temporary link.
+## Calendar and Bluetooth
 
-**Optional.** Yes.
+Dynamic Island’s calendar requests access from its permission control. It reads appointments without changing them. Calendar content remains on this Mac.
 
-## System Audio Recording
+Some accessory batteries are available from existing system readings; others require a Bluetooth connection. Lattice does not start Bluetooth clients just because Dynamic Island opens while access is missing. Enable the accessory feature or use an explicit permission Request action to authorize it. Revoking or resetting Bluetooth access turns the accessory feature off. Bluetooth Control has its own behavior switches; permission still depends on macOS and the operation.
 
-**Why it comes up.** macOS gates app audio taps behind the System Audio Recording permission.
+Music playback controls may request **Automation** for the selected player. That is different from Apple Music’s **Media & Music** library permission. Lattice has no intended Music Library authorization flow. Cleaner avoids protected media containers, and Dock Preview and Switcher use system app icons without reading other apps’ preferences. If a Music Library prompt appears unexpectedly, report what action preceded it; it is not a required setup step.
 
-**What uses it.** The Volume Mixer, the optional live equalizer in Dynamic Island, and the screen recorder's system audio tap.
+## Files, Cleaner and Full Disk Access
 
-**If you say no.** Apps keep using normal system audio. The mixer cannot adjust or route individual apps, and the island uses animated music bars. The recorder can fall back to the screen capture stream's audio when available.
+Download monitoring watches the folder you choose in the system picker. Its local access bookmark is not included in settings backups. If access is lost, choose the folder again. Other file tools use the files or save destinations you select.
 
-**Optional.** Yes. The mixer and equalizer process audio in memory without saving or uploading it; apps you route to AirPlay are streamed from memory to the speaker you pick on your local network, through macOS's own AirPlay. The recorder saves audio only as part of a recording you start; sharing that recording is a separate action.
+Cleaner can review old screenshots in the configured screenshot locations. It does not organize or clean WhatsApp downloads; that feature was removed. Scheduled cleanup follows the categories and schedule you enable. Protected Apple and media containers are excluded from Cleaner scans to avoid unrelated permission prompts.
 
-## Microphone
+Cleaner and the app uninstaller can scan more locations with Full Disk Access. Without it, protected locations may be unavailable or a scan incomplete. Lattice cannot grant this access itself; manage it in System Settings → Privacy & Security → Full Disk Access.
 
-**Why it comes up.** macOS asks before an app can record your microphone.
+## Automation and App Management
 
-**What uses it.** The screen recorder, only when you turn on microphone audio. Your voice is kept on a separate track so you can adjust or remove it in the editor.
+Automation is granted separately for each target app. Finder file operations, Homebrew’s Terminal handoff and player-specific playback commands can require it. A denied player grant does not stop ordinary playback in that player. An explicit permission action does not replay a previously blocked command.
 
-**If you say no.** Screen recording still works without your microphone. System audio remains a separate choice.
+App Management protects installed application bundles. Installing or replacing an app can trigger a request. Lattice cannot reliably determine this permission’s status beforehand; it is not the same as Accessibility or administrator authorization.
 
-**Optional.** Yes. Microphone audio stays in the recording on your Mac unless you explicitly create a temporary link for the finished video.
+## Administrator authorization
 
-## Camera
+Closed-lid mode uses `pmset disablesleep`. Optional setup installs a narrowly scoped sudoers rule for that command, so you do not need to enter an administrator password for each toggle. Without the rule, the operation can request administrator authorization each time.
 
-**Why it comes up.** macOS asks before any app can show the camera image.
-
-**What uses it.** Camera preview, either in its floating mirror or inside the notch. The camera starts only from an explicit action and stops when the preview closes, its notch section is hidden, the feature is disabled or the Mac locks.
-
-**If you say no.** The preview window explains the state and offers the System Settings shortcut. Everything else in the app carries on as normal.
-
-**Optional.** Yes. The image goes straight to the local preview. This feature does not save or upload camera frames. Visible notch content can still appear in a screenshot or recording when you include the notch in captures.
-
-## Calendars
-
-The optional notch calendar asks for access when you press its permission button. macOS calls this full calendar access; Lattice uses it only to read appointments and never modifies them. If access is denied, the calendar shows a System Settings shortcut while the rest of the notch remains available. Event content stays on this Mac.
-
-## Bluetooth
-
-**Why it comes up.** macOS asks before an app can use Bluetooth. Some accessories report their battery level only when an app talks to them over Bluetooth, and recent macOS versions also ask before an app checks or switches Bluetooth itself.
-
-**What uses it.**
-
-- **Monitor**, for the battery level of keyboards, mice, headphones and other accessories. It is read only while the battery details are open or while you show it in the menu bar or in the Power card. Both stay off until you turn them on.
-- **Notch**, for the optional accessory alerts when an accessory connects or runs low.
-- **Bluetooth on sleep**, which checks and switches Bluetooth around sleep while you have it turned on.
-
-**If you say no.** Accessories that report their battery to macOS directly, as many keyboards, mice and trackpads do, still show it. Others can be missing from the list and from accessory alerts. Bluetooth on sleep may be unable to switch Bluetooth off and back on.
-
-**Optional.** Yes. Battery levels and the Bluetooth state are read on your Mac and never leave it.
-
-## Files and Folders
-
-Download monitoring watches only the folder you choose in the system picker. Folder access is stored as a local bookmark and does not travel in a settings backup. If the folder becomes unavailable or access is revoked, the notch asks you to choose it again. It does not scan other folders or need Full Disk Access for this feature.
-
-## Notifications
-
-**Why it comes up.** So the app can post the odd alert when something you set up actually happens.
-
-**What uses it.**
-
-- **Keep awake**, with a note when a keep awake timer finishes.
-- **Battery**, with the battery protection alerts.
-- **Monitor**, with optional alerts for the conditions you turn on.
-- **Updates**, with a one time note when a new version shows up, and only while automatic update checks are on.
-- **App updates**, with a note when other apps on the Mac have a newer version, and only while the background check is on.
-
-**If you say no.** These system notifications are not posted. Status remains available inside the app, and alarms from timers you start still work. Mirroring existing system banners uses Accessibility instead of this permission.
-
-**Optional.** Yes.
-
-## Full Disk Access
-
-**Why it comes up.** The uninstaller hunts down the files an app leaves behind, like caches, preferences and logs. Some of those spots are protected by macOS and only open up with Full Disk Access.
-
-**What uses it.** The uninstaller, for a deeper scan.
-
-**If you say no.** The uninstaller still works and scans the places it can reach. It just might not surface files tucked away in protected folders.
-
-**Optional.** Yes. There is no pop up for Full Disk Access. You add Lattice in System Settings, under Privacy and Security, Full Disk Access, and Lattice opens that pane for you when the feature calls for it.
-
-## Administrator, one time and optional
-
-**Why it comes up.** Keeping the Mac awake with the lid shut relies on `pmset disablesleep`, which needs administrator rights. So it does not have to ask for your password every time you flip closed lid mode, Lattice can install a tightly scoped `sudoers` rule that allows only that single command.
-
-**What uses it.** Closed lid keep awake.
-
-**If you say no.** Closed lid mode still works. macOS just asks for your administrator password each time you turn it on or off.
-
-**Optional.** Yes, and it is a one time choice. The rule is limited to `pmset disablesleep` and nothing else, and it goes away on its own when you uninstall Lattice or reset things from Settings under Advanced.
-
-## Automation
-
-**Why it comes up.** A few features ask another app to carry out an action you choose. macOS protects that interaction with permission for each target app.
-
-**What uses it.**
-
-- **Finder cut and paste**, which reads the current Finder selection and the destination folder, then moves the files.
-- **Uninstaller**, which moves leftover files to the Trash.
-- **Empty the Trash** in Quick toggles, which asks Finder to empty it. The other quick toggles, dark mode included, need no permission.
-- **Homebrew manager**, which can open Terminal with the exact Homebrew install or setup command when the app should not collect a password itself.
-- **Dynamic Island playback**, when a music app requires Automation to control its own playback while another app is active. Only playback commands declared by the selected app are used; an explicit button requests permission before a new action can be sent. The shuffle button on the music page reads and switches only the shuffle setting the app declares, and reads whether shuffle is available for what is playing when the app declares that too. Until the app is allowed, its first press only asks for this permission, even for an app whose playback controls work without it.
-
-**If you say no.** Those Finder or Terminal handoff steps will not go through. Music stays visible, and you can open its player to control it there. You can switch Automation back on in System Settings, under Privacy and Security, Automation.
-
-**Optional.** Yes.
-
-## App Management
-
-**Why it comes up.** macOS protects installed app bundles from changes by apps signed by another developer.
-
-**What uses it.** The package manager, App updates and disk image installer, when they install, replace or remove apps.
-
-**If you say no.** Package updates keep working, but operations that change installed apps can be blocked. You can grant access later in System Settings, under Privacy and Security, App Management.
-
-**Optional.** Yes. macOS records the request when an update first tries to change an installed app, so Lattice cannot check the status beforehand.
+Fan control uses a separately authenticated privileged helper. Neither the closed-lid rule nor the helper replaces macOS privacy permissions or gives unrelated tools unrestricted access.
 
 ## Resetting permissions
 
-To clear what you have granted and start over, follow the reset steps in the [troubleshooting guide](TROUBLESHOOTING.md#resetting-permissions), or use Settings under Advanced, which clears every permission, the login item and the closed lid rule while leaving the app in place.
+Use **Settings → Data & Permissions → Clear all permissions**. After confirmation, Lattice resets its macOS grants and disables Launch at login. Saved shortcuts, tuning and layout remain; features that lose essential permission switch off. Restart Lattice with **Restart now**, then grant access and enable the features you want.
+
+This is not a factory reset or uninstall. Production Lattice (`io.github.sam32j.lattice`) and Lattice (Developer) (`io.github.sam32j.lattice.dev`) have separate grants. See [Troubleshooting](TROUBLESHOOTING.md#resetting-permissions) for app-specific Terminal reset commands.
