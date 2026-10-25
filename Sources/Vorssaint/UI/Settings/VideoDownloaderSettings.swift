@@ -7,7 +7,7 @@ import SwiftUI
 
 struct VideoDownloaderSettings: View {
     @ObservedObject private var model: VideoDownloader
-    @ObservedObject private var toolchain: ToolchainManager = .shared
+    @ObservedObject private var toolchain: ToolchainManager
     @ObservedObject private var history: DownloadHistoryStore = .shared
     @ObservedObject private var router: SettingsRouter = .shared
 
@@ -19,8 +19,9 @@ struct VideoDownloaderSettings: View {
     @State private var isSearchHovered = false
     private let clipboardTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
-    init(model: VideoDownloader = .shared) {
+    init(model: VideoDownloader = .shared, toolchain: ToolchainManager = .shared) {
         self.model = model
+        self.toolchain = toolchain
     }
 
     var body: some View {
@@ -258,13 +259,13 @@ struct VideoDownloaderSettings: View {
                             // Fetching Video Details Skeleton Screen
                             if model.isFetching {
                                 skeletonMediaCard(isCompact: isCompact)
-                            } else if let error = model.error, error != "Cancelled." {
+                            } else if let error = model.error {
                                 VStack(spacing: 8) {
                                     Image(systemName: "exclamationmark.circle")
                                         .font(.system(size: 26, weight: .regular))
                                         .foregroundStyle(.secondary)
 
-                                    Text(error == VideoDownloaderStrings.fetchFailedNotice || error.contains("Command failed") || error.contains("ERROR:") ? VideoDownloaderStrings.fetchFailedNotice : error)
+                                    Text(error.contains("Command failed") || error.contains("ERROR:") ? VideoDownloaderStrings.fetchFailedNotice : error)
                                         .font(.system(size: 13, weight: .medium))
                                         .foregroundStyle(.secondary)
                                         .multilineTextAlignment(.center)

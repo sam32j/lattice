@@ -224,7 +224,7 @@ enum VideoDownloadRequest {
               parts.user == nil, parts.password == nil else {
             return nil
         }
-        return raw
+        return candidate
     }
 
     static func validatedURL(_ text: String) throws -> URL {

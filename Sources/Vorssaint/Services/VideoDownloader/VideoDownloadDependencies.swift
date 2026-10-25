@@ -47,22 +47,35 @@ struct VideoDownloadDependencies: Equatable {
         var paths: [String: String] = [:]
         let managedPath = managedBinURL.path
 
-        // Check managed directory first
-        for tool in coreRequired + conditional {
-            let candidate = (managedPath as NSString).appendingPathComponent(tool)
-            if executable(candidate) {
-                paths[tool] = candidate
-            }
-        }
-
-        // If core tools still missing, check system PATH and Homebrew locations
         let systemDirs = (["/opt/homebrew/bin", "/usr/local/bin", NSHomeDirectory() + "/.local/bin"]
             + (environment["PATH"] ?? "").split(separator: ":").map(String.init)
             + ["/usr/bin", "/bin", "/usr/sbin", "/sbin"]).filter { $0.hasPrefix("/") }
 
-        for tool in coreRequired + conditional + ["brew"] {
-            if paths[tool] == nil {
+        if useSystemTools {
+            // Check system PATH and Homebrew locations first
+            for tool in coreRequired + conditional + ["brew"] {
                 paths[tool] = systemDirs.map { URL(fileURLWithPath: $0).appendingPathComponent(tool).path }.first(where: executable)
+            }
+            // Fall back to managed directory if still missing
+            for tool in coreRequired + conditional {
+                if paths[tool] == nil {
+                    let candidate = (managedPath as NSString).appendingPathComponent(tool)
+                    if executable(candidate) { paths[tool] = candidate }
+                }
+            }
+        } else {
+            // Check managed directory first
+            for tool in coreRequired + conditional {
+                let candidate = (managedPath as NSString).appendingPathComponent(tool)
+                if executable(candidate) {
+                    paths[tool] = candidate
+                }
+            }
+            // Fall back to system PATH and Homebrew locations
+            for tool in coreRequired + conditional + ["brew"] {
+                if paths[tool] == nil {
+                    paths[tool] = systemDirs.map { URL(fileURLWithPath: $0).appendingPathComponent(tool).path }.first(where: executable)
+                }
             }
         }
 
