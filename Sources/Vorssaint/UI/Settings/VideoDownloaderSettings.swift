@@ -111,6 +111,26 @@ struct VideoDownloaderSettings: View {
                         }
                         .disabled(model.busy)
 
+                        // Default Save Destination Row (Always Visible)
+                        HStack(spacing: 6) {
+                            Image(systemName: "folder")
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                            Text(VideoDownloaderStrings.saveTo + ":")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(displayDestinationPath(model.destination))
+                                .font(.caption.weight(.medium))
+                                .lineLimit(1)
+                            Spacer()
+                            Button("Change…", action: model.chooseDestination)
+                                .buttonStyle(.borderless)
+                                .font(.caption)
+                                .foregroundStyle(Color.accentColor)
+                        }
+                        .padding(.horizontal, 4)
+                        .disabled(model.busy)
+
                         // Toolchain Installing / Setup State
                         if case .installing(_, _, let fraction, let message) = toolchain.state {
                             VStack(alignment: .leading, spacing: 10) {
@@ -187,7 +207,10 @@ struct VideoDownloaderSettings: View {
                                     Text(VideoDownloaderStrings.downloadComplete)
                                         .font(.headline)
                                     Text(output.lastPathComponent)
-                                        .font(.caption)
+                                        .font(.caption.weight(.medium))
+                                        .lineLimit(1)
+                                    Text("Saved to " + displayDestinationPath(output.deletingLastPathComponent()))
+                                        .font(.caption2)
                                         .foregroundStyle(.secondary)
                                         .lineLimit(1)
                                 }
@@ -547,6 +570,7 @@ struct VideoDownloaderSettings: View {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .stroke(Color.secondary.opacity(0.08), lineWidth: 1)
                 )
+                .help(item.fileURL.path)
             }
         }
     }

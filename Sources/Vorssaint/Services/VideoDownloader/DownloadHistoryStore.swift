@@ -12,6 +12,15 @@ struct RecentDownloadItem: Identifiable, Codable, Equatable {
     let fileSize: Int64
     let date: Date
 
+    var destinationFolderFormatted: String {
+        let folderPath = fileURL.deletingLastPathComponent().path
+        let home = NSHomeDirectory()
+        if folderPath.hasPrefix(home) {
+            return "~" + folderPath.dropFirst(home.count)
+        }
+        return folderPath
+    }
+
     var formattedSubtitle: String {
         let df = ByteCountFormatter()
         df.countStyle = .file
@@ -30,7 +39,7 @@ struct RecentDownloadItem: Identifiable, Codable, Equatable {
             dateStr = dateFormatter.string(from: date)
         }
 
-        return "\(qualityTag) · \(sizeStr) · \(dateStr)"
+        return "\(qualityTag) · \(sizeStr) · \(dateStr) · \(destinationFolderFormatted)"
     }
 }
 
@@ -56,7 +65,12 @@ final class DownloadHistoryStore: ObservableObject {
               let decoded = try? JSONDecoder().decode([RecentDownloadItem].self, from: data) else {
             return
         }
-        items = decoded
+        // Only retain records whose downloaded files still exist on disk
+        let valid = decoded.filter { FileManager.default.fileExists(atPath: $0.fileURL.path) }
+        items = valid
+        if valid.count != decoded.count {
+            save()
+        }
     }
 
     func record(fileURL: URL, title: String, qualityTag: String) {
@@ -70,7 +84,6 @@ final class DownloadHistoryStore: ObservableObject {
             date: Date()
         )
 
-        // Filter out if file already exists in recent, insert at front, limit to 5
         var current = items.filter { $0.fileURL != fileURL }
         current.insert(item, at: 0)
         if current.count > 5 {
