@@ -53,6 +53,7 @@ final class ToolchainManager: ObservableObject {
     }
 
     func checkHealth() {
+        guard !state.isInstalling else { return }
         let current = discoverDependencies()
         dependencies = current
         if current.ready {
@@ -73,6 +74,7 @@ final class ToolchainManager: ObservableObject {
 
     /// Download missing standalone binaries directly into Application Support/Lattice/VideoDownloader/bin/
     func install(completion: ((Bool) -> Void)? = nil) {
+        guard !state.isInstalling else { return }
         let missingTools = dependencies.missing
         guard !missingTools.isEmpty else {
             state = .ready
@@ -119,7 +121,7 @@ final class ToolchainManager: ObservableObject {
                     // Strip quarantine attribute so Gatekeeper allows execution
                     let xattr = Process()
                     xattr.executableURL = URL(fileURLWithPath: "/usr/bin/xattr")
-                    xattr.arguments = ["-c", targetURL.path]
+                    xattr.arguments = ["-d", "com.apple.quarantine", targetURL.path]
                     try? xattr.run()
                     xattr.waitUntilExit()
 

@@ -421,7 +421,7 @@ final class VideoDownloader: ObservableObject {
                     self?.downloadProgress = nil
                     self?.phase = ""
                     if error is CancellationError {
-                        self?.error = "Cancelled."
+                        self?.error = nil
                     } else if wasFetching {
                         self?.error = VideoDownloaderStrings.fetchFailedNotice
                     } else {

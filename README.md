@@ -51,14 +51,13 @@ If you appreciate a tidy, cohesive Mac setup that feels effortless every day, yo
 
 Open **Utilities > Video Downloader**, paste a single video link, fetch its
 details, choose quality and a destination, then download. Work runs locally with
-[yt-dlp](https://github.com/yt-dlp/yt-dlp), FFmpeg/ffprobe and Deno. The page checks
-for missing tools and offers an explicit Homebrew installation action. If
-Homebrew is absent, follow its official setup link and click **Check again**.
+[yt-dlp](https://github.com/yt-dlp/yt-dlp) and FFmpeg/ffprobe. Lattice manages these
+tools directly inside Application Support, with one-click setup and repair, and can also
+use your system tools if preferred.
 
 Only save content you own or have permission to download. Supported sites and
 available qualities depend on yt-dlp and the site; playlists, live streams,
 DRM bypass and automatic browser-cookie access are not included in this MVP.
-If a site changes, update yt-dlp using your package manager and retry.
 
 Lattice inherits the full suite of 50+ built-in Mac utilities from Vorssaint—including per-app volume, system monitor, window snapping, clipboard history, app uninstaller, and much more.
 
