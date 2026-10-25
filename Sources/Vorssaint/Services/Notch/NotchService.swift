@@ -526,6 +526,7 @@ final class NotchService: ObservableObject {
     }
 
     var hasVideoDownloadActivity: Bool {
+        guard modules.contains(.videoDownloader) else { return false }
         let dl = VideoDownloader.shared
         return dl.isDownloading || dl.isPaused || (dl.busy && dl.progress != nil) || dl.isCompletedSustaining
     }
@@ -3870,21 +3871,23 @@ final class NotchService: ObservableObject {
             }
             NotchDownloadService.shared.onFailure = { [weak self] in self?.reactMascot(.confused) }
         }
-        VideoDownloader.shared.isExpandedFocused = { [weak self] in
-            self?.expanded == true && self?.selected == .videoDownloader
+        if modules.contains(.videoDownloader) {
+            VideoDownloader.shared.isExpandedFocused = { [weak self] in
+                self?.expanded == true && self?.selected == .videoDownloader
+            }
+            VideoDownloader.shared.$isDownloading
+                .combineLatest(
+                    VideoDownloader.shared.$isPaused,
+                    VideoDownloader.shared.$isCompletedSustaining,
+                    VideoDownloader.shared.$info
+                )
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] _ in
+                    self?.syncMenuSpaceMonitoring()
+                    self?.objectWillChange.send()
+                    self?.refreshPresentation()
+                }.store(in: &subscriptions)
         }
-        VideoDownloader.shared.$isDownloading
-            .combineLatest(
-                VideoDownloader.shared.$isPaused,
-                VideoDownloader.shared.$isCompletedSustaining,
-                VideoDownloader.shared.$info
-            )
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.syncMenuSpaceMonitoring()
-                self?.objectWillChange.send()
-                self?.refreshPresentation()
-            }.store(in: &subscriptions)
         if modules.contains(.agents) {
             // Only what changes the island's size or strip: a turn starting or
             // ending, the first read landing, which agents have cards, and

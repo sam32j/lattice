@@ -136,13 +136,7 @@ extension NotchSettings {
             NotchWatchSettingsControls()
                 .toggleStyle(TrailingSwitchToggleStyle())
         case .videoDownloader:
-            HStack {
-                Label(VideoDownloaderStrings.saveTo, systemImage: "folder")
-                Spacer()
-                Button(VideoDownloader.shared.destination?.lastPathComponent ?? "Downloads") {
-                    VideoDownloader.shared.chooseDestination()
-                }
-            }
+            VideoDownloaderDestinationRow()
         case .mixer, .system, .tools:
             EmptyView()
         }
@@ -246,4 +240,18 @@ extension NotchSettings {
     }
 
 
+}
+
+private struct VideoDownloaderDestinationRow: View {
+    @ObservedObject private var downloader = VideoDownloader.shared
+
+    var body: some View {
+        HStack {
+            Label(VideoDownloaderStrings.saveTo, systemImage: "folder")
+            Spacer()
+            Button(downloader.destination?.lastPathComponent ?? VideoDownloaderStrings.defaultFolder) {
+                downloader.chooseDestination()
+            }
+        }
+    }
 }

@@ -145,6 +145,9 @@ extension NotchSettings {
             if module == .watch { watchEnabled = shown }
             if module == .videoDownloader {
                 UserDefaults.standard.set(shown, forKey: DefaultsKey.videoDownloaderEnabled)
+                if !shown {
+                    VideoDownloader.shared.teardown()
+                }
             }
             var values = Set(hidden.split(separator: ",").map(String.init))
             if shown { values.remove(module.rawValue) } else { values.insert(module.rawValue) }
