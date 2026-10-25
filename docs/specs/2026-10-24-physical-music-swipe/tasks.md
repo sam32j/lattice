@@ -106,3 +106,6 @@ Final recovery verification and self-review:
 ### Quarter-inch feedback / four-thirds-inch arming
 
 Baseline 685b5c92, part 2. Updated the recognizer and first-haptic gate to 18/96 physical points. Updated only directly affected gesture fixtures, including natural-scrolling, release/recovery, surface continuity and completion lifetime. RED reproduced 5 failures; the standalone focused gesture runner passed all 78 checks after correction. Skipped unrelated suites, full app build and rendering as requested for this localized distance adjustment. No real playback or haptic calls.
+
+User corrected the requested arming distance from 4/3 inch to ¾ inch. Baseline 8c5d5fac: changed only the threshold to 54 physical points and the directly affected gesture fixtures (53.99/54 boundary, 27-point halfway progress). First haptic remains at 18 points. Only the same isolated gesture runner is required; unrelated suites and app builds remain skipped.
+Focused verification passed all 78 checks. Independent source review found no actionable issues. No real media or hardware actions were performed.

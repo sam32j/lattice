@@ -18,10 +18,10 @@ enum NotchMusicSwipeRecoveryTests {
         suite.expect(starts == 0 && arms == 0, "no haptic occurs before a quarter inch")
         _ = controller.update(contacts(18), began: false, enabled: true, expanded: true)
         suite.expect(starts == 1 && arms == 0, "the first haptic occurs at exactly a quarter inch")
-        _ = controller.update(contacts(96), began: false, enabled: true, expanded: true)
+        _ = controller.update(contacts(54), began: false, enabled: true, expanded: true)
         _ = controller.update(contacts(50), began: false, enabled: true, expanded: true)
         suite.expect(starts == 1 && arms == 1 && commands == 0 && state.frame.progress == 1,
-                     "crossing one and a third inches emits one arming feedback, never one per held update")
+                     "crossing three quarters of an inch emits one arming feedback, never one per held update")
         suite.expect(expiry.last?.0 == 3 && expiry.dropLast().allSatisfy { $0.1.isCancelled },
                      "physical input renews a single three-second recovery deadline")
         expiry.last?.1.perform()
@@ -32,8 +32,8 @@ enum NotchMusicSwipeRecoveryTests {
         _ = controller.update([], began: false, enabled: true, expanded: true)
         _ = controller.update(contacts(0), began: true, enabled: true, expanded: true)
         _ = controller.scroll(-1, precise: true, momentum: false, cancelled: false, enabled: true, expanded: true)
-        _ = controller.update(contacts(96), began: false, enabled: true, expanded: true)
-        _ = controller.update(Array(contacts(96).prefix(1)), began: false, enabled: true, expanded: true)
+        _ = controller.update(contacts(54), began: false, enabled: true, expanded: true)
+        _ = controller.update(Array(contacts(54).prefix(1)), began: false, enabled: true, expanded: true)
         suite.expect(commands == 1 && arms == 2 && expiry.last?.1.isCancelled == true,
                      "a fresh stroke recovers and commits on its first original finger lift")
         _ = controller.update(contacts(60), began: false, enabled: true, expanded: true)
@@ -41,8 +41,8 @@ enum NotchMusicSwipeRecoveryTests {
         suite.expect(commands == 1, "remaining contacts and the final lift never duplicate an accepted stroke")
         _ = controller.update(contacts(0), began: true, enabled: true, expanded: true)
         _ = controller.scroll(-1, precise: true, momentum: false, cancelled: false, enabled: true, expanded: true)
-        _ = controller.update(contacts(96), began: false, enabled: true, expanded: true)
-        _ = controller.update(Array(contacts(96).prefix(1)), began: false, enabled: true, expanded: true, allowRelease: false)
+        _ = controller.update(contacts(54), began: false, enabled: true, expanded: true)
+        _ = controller.update(Array(contacts(54).prefix(1)), began: false, enabled: true, expanded: true, allowRelease: false)
         suite.expect(commands == 1 && state.frame.progress == 0,
                      "a partial native snapshot without an ended touch cancels instead of guessing a release")
         state.clear()
