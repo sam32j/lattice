@@ -82,15 +82,15 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Lattice uses your camera when you open camera preview or enable the camera overlay for a recording. Camera video is recorded only when you enable it for a screen recording and stays on your Mac unless you choose to share it.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
-	<string>Lattice checks local metadata in Downloads to review, organize or trash only confirmed WhatsApp files you choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
+	<string>Lattice accesses files here for download monitoring, file tools, saving captures and reviewing old screenshots in Cleaner.</string>
 	<key>NSDesktopFolderUsageDescription</key>
-	<string>Lattice organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
+	<string>Lattice accesses files here for download monitoring, file tools, saving captures and reviewing old screenshots in Cleaner.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
-	<string>Lattice organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
+	<string>Lattice accesses files here for download monitoring, file tools, saving captures and reviewing old screenshots in Cleaner.</string>
 	<key>NSNetworkVolumesUsageDescription</key>
-	<string>Lattice organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
+	<string>Lattice accesses files here for download monitoring, file tools, saving captures and reviewing old screenshots in Cleaner.</string>
 	<key>NSRemovableVolumesUsageDescription</key>
-	<string>Lattice organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
+	<string>Lattice accesses files here for download monitoring, file tools, saving captures and reviewing old screenshots in Cleaner.</string>
 	<key>NSCameraUseContinuityCameraDeviceType</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>

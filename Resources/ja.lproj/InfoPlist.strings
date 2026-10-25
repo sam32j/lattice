@@ -2,10 +2,10 @@
 "NSAppleEventsUsageDescription" = "Latticeは、ファイルの移動、項目をゴミ箱に入れる操作、要求されたコマンドの実行、お使いのメディアアプリの再生操作にオートメーションを使用します。";
 
 /* macOS Screen & System Audio Recording permission prompt. */
-"NSAudioCaptureUsageDescription" = "Latticeは、ミキサーで各アプリの音量を調整するため、Dynamic Islandの音楽バーを動かすため、また開始した画面収録にMacの音声を含めるために、各アプリの音声を使用します。Macの外に送信されることはありません。";
+"NSAudioCaptureUsageDescription" = "Latticeはシステムオーディオを使用して、アプリの音量調整、音楽の波形表示、Macの音声録音を行います。";
 
 /* macOS Bluetooth permission prompt. */
-"NSBluetoothAlwaysUsageDescription" = "Latticeは、接続済み周辺機器のバッテリー残量を読み取るためだけにBluetoothを使用します。データがMacの外に送信されることはありません。";
+"NSBluetoothAlwaysUsageDescription" = "LatticeはBluetoothを使用してアクセサリのバッテリー残量を読み取ります。";
 
 /* macOS Microphone permission prompt. */
 "NSMicrophoneUsageDescription" = "Latticeは、画面収録でマイクをオンにしたときだけ音声を収録します。一時リンクを作成しない限り、音声はMac上に保存されます。";
@@ -14,11 +14,11 @@
 "NSCameraUsageDescription" = "Latticeは、カメラプレビューを開くか画面収録でカメラ表示を有効にした場合にカメラを使用します。カメラ映像は有効にした場合のみ録画され、共有を選ばない限りMac内に保存されます。";
 
 /* macOS Downloads folder permission prompt. */
-"NSDownloadsFolderUsageDescription" = "Latticeは、ダウンロード内のローカルメタデータを確認し、選択した確認済みWhatsAppファイルだけを確認、整理、またはゴミ箱へ移動します。スクリーンショットをここに保存している場合、クリーンアップは忘れられたスクリーンショットも探します。";
+"NSDownloadsFolderUsageDescription" = "Latticeは、ダウンロードの監視、ファイルツールの使用、キャプチャの保存、クリーンアップでの古いスクリーンショットの確認に、この場所のファイルへアクセスします。";
 
-/* macOS user-selected organizer destination prompts. */
-"NSDesktopFolderUsageDescription" = "Latticeは、確認済みのWhatsAppダウンロードを、明示的に選択した保存先フォルダに整理します。スクリーンショットをここに保存している場合、クリーンアップは忘れられたスクリーンショットも探します。";
-"NSDocumentsFolderUsageDescription" = "Latticeは、確認済みのWhatsAppダウンロードを、明示的に選択した保存先フォルダに整理します。スクリーンショットをここに保存している場合、クリーンアップは忘れられたスクリーンショットも探します。";
-"NSNetworkVolumesUsageDescription" = "Latticeは、確認済みのWhatsAppダウンロードを、明示的に選択した保存先フォルダに整理します。スクリーンショットをここに保存している場合、クリーンアップは忘れられたスクリーンショットも探します。";
-"NSRemovableVolumesUsageDescription" = "Latticeは、確認済みのWhatsAppダウンロードを、明示的に選択した保存先フォルダに整理します。スクリーンショットをここに保存している場合、クリーンアップは忘れられたスクリーンショットも探します。";
+/* macOS file-access permission prompts. */
+"NSDesktopFolderUsageDescription" = "Latticeは、ダウンロードの監視、ファイルツールの使用、キャプチャの保存、クリーンアップでの古いスクリーンショットの確認に、この場所のファイルへアクセスします。";
+"NSDocumentsFolderUsageDescription" = "Latticeは、ダウンロードの監視、ファイルツールの使用、キャプチャの保存、クリーンアップでの古いスクリーンショットの確認に、この場所のファイルへアクセスします。";
+"NSNetworkVolumesUsageDescription" = "Latticeは、ダウンロードの監視、ファイルツールの使用、キャプチャの保存、クリーンアップでの古いスクリーンショットの確認に、この場所のファイルへアクセスします。";
+"NSRemovableVolumesUsageDescription" = "Latticeは、ダウンロードの監視、ファイルツールの使用、キャプチャの保存、クリーンアップでの古いスクリーンショットの確認に、この場所のファイルへアクセスします。";
 "NSCalendarsFullAccessUsageDescription" = "画面上部に今後の予定を表示します。カレンダーの予定がこのMacの外に送信されることはありません。";

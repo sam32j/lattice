@@ -2,10 +2,10 @@
 "NSAppleEventsUsageDescription" = "Lattice utilise Automatisation pour déplacer des fichiers, placer des éléments dans la Corbeille, ouvrir les commandes demandées et contrôler la lecture dans vos apps multimédias.";
 
 /* macOS Screen & System Audio Recording permission prompt. */
-"NSAudioCaptureUsageDescription" = "Lattice utilise le son de chaque app pour régler son volume dans le mixeur, pour animer les barres de musique de Dynamic Island et pour inclure le son du Mac dans les enregistrements d'écran que vous lancez. Rien ne quitte votre Mac.";
+"NSAudioCaptureUsageDescription" = "Lattice utilise l’audio système pour régler le volume des apps, afficher la forme d’onde de la musique et enregistrer le son du Mac.";
 
 /* macOS Bluetooth permission prompt. */
-"NSBluetoothAlwaysUsageDescription" = "Lattice utilise le Bluetooth uniquement pour lire la batterie des périphériques connectés. Rien ne quitte votre Mac.";
+"NSBluetoothAlwaysUsageDescription" = "Lattice utilise le Bluetooth pour lire le niveau de batterie de vos accessoires.";
 
 /* macOS Microphone permission prompt. */
 "NSMicrophoneUsageDescription" = "Lattice enregistre votre micro uniquement quand vous l’activez pour un enregistrement d’écran. Le son reste sur votre Mac, sauf si vous créez un lien temporaire.";
@@ -14,11 +14,11 @@
 "NSCameraUsageDescription" = "Lattice utilise la caméra lorsque vous ouvrez l’aperçu ou activez son incrustation dans un enregistrement. La vidéo n’est enregistrée que si vous l’activez et reste sur votre Mac sauf si vous choisissez de la partager.";
 
 /* macOS Downloads folder permission prompt. */
-"NSDownloadsFolderUsageDescription" = "Lattice consulte les métadonnées locales de Téléchargements pour examiner, organiser ou placer dans la Corbeille uniquement les fichiers WhatsApp confirmés que vous choisissez. Nettoyage cherche aussi les captures d’écran oubliées si vous les enregistrez ici.";
+"NSDownloadsFolderUsageDescription" = "Lattice accède aux fichiers de cet emplacement pour suivre les téléchargements, utiliser les outils de fichiers, enregistrer des captures et examiner les anciennes captures dans Nettoyage.";
 
-/* macOS user-selected organizer destination prompts. */
-"NSDesktopFolderUsageDescription" = "Lattice organise les téléchargements WhatsApp confirmés dans un dossier de destination que vous choisissez explicitement. Nettoyage cherche aussi les captures d’écran oubliées si vous les enregistrez ici.";
-"NSDocumentsFolderUsageDescription" = "Lattice organise les téléchargements WhatsApp confirmés dans un dossier de destination que vous choisissez explicitement. Nettoyage cherche aussi les captures d’écran oubliées si vous les enregistrez ici.";
-"NSNetworkVolumesUsageDescription" = "Lattice organise les téléchargements WhatsApp confirmés dans un dossier de destination que vous choisissez explicitement. Nettoyage cherche aussi les captures d’écran oubliées si vous les enregistrez ici.";
-"NSRemovableVolumesUsageDescription" = "Lattice organise les téléchargements WhatsApp confirmés dans un dossier de destination que vous choisissez explicitement. Nettoyage cherche aussi les captures d’écran oubliées si vous les enregistrez ici.";
+/* macOS file-access permission prompts. */
+"NSDesktopFolderUsageDescription" = "Lattice accède aux fichiers de cet emplacement pour suivre les téléchargements, utiliser les outils de fichiers, enregistrer des captures et examiner les anciennes captures dans Nettoyage.";
+"NSDocumentsFolderUsageDescription" = "Lattice accède aux fichiers de cet emplacement pour suivre les téléchargements, utiliser les outils de fichiers, enregistrer des captures et examiner les anciennes captures dans Nettoyage.";
+"NSNetworkVolumesUsageDescription" = "Lattice accède aux fichiers de cet emplacement pour suivre les téléchargements, utiliser les outils de fichiers, enregistrer des captures et examiner les anciennes captures dans Nettoyage.";
+"NSRemovableVolumesUsageDescription" = "Lattice accède aux fichiers de cet emplacement pour suivre les téléchargements, utiliser les outils de fichiers, enregistrer des captures et examiner les anciennes captures dans Nettoyage.";
 "NSCalendarsFullAccessUsageDescription" = "Affiche vos prochains rendez-vous en haut de l’écran. Les événements du calendrier restent sur ce Mac.";

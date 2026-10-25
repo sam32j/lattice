@@ -8,7 +8,7 @@ The permission and uninstall commands below all point at Lattice's bundle identi
 
 Lattice builds are not currently notarized by Apple. For a trusted download, try opening the installed app, then use System Settings > Privacy & Security > Open Anyway. Read the [Lattice first-launch guide](../TROUBLESHOOTING.md) for the full instructions, an app-specific quarantine workaround and warnings you should not bypass. That guide is also included in the DMG.
 
-Official upstream Lattice releases have their own signing and notarization; those assurances do not apply to Lattice builds.
+Vorssaint is the separate upstream project. Signing or notarization statements about its downloads do not establish the status of a Lattice build.
 
 Lattice lives in the menu bar, so once it starts, look for its icon up there rather than in the Dock.
 
@@ -20,7 +20,7 @@ Most features lean on a macOS permission, which the [permissions guide](PERMISSI
 2. Find the permission the feature needs and make sure Lattice is listed and switched on.
 3. If it is listed and still quiet, toggle it off and back on.
 
-Lattice keeps an eye on Accessibility and Screen Recording, so features tend to wake up within a second or two of a grant, with no relaunch needed.
+Lattice refreshes permission status while the app is active. If a required permission is revoked, affected features are switched off. After granting it again, return to the feature’s settings and enable it; a restored grant does not automatically reactivate it.
 
 ### Accessibility
 
@@ -76,7 +76,7 @@ starting a multiplexer or a slow prompt:
 
 To wipe Lattice's granted permissions and let macOS ask again from scratch, pick one of these.
 
-- **From the app.** Settings under Advanced has a reset that clears every permission you granted, the login item and the closed lid rule, while leaving the app installed.
+- **From the app.** Settings → Data & Permissions → Clear all permissions resets macOS grants and disables Launch at login. Saved configuration remains, but features that require missing permissions switch off. Restart Lattice when prompted, then grant access and enable the features you want to use.
 - **From Terminal.** Reset all of Lattice's privacy permissions at once.
 
   ```sh
@@ -114,7 +114,7 @@ tccutil reset All io.github.sam32j.lattice
 A clear report gets fixed faster. Try to include the following.
 
 - **What you did**, what you expected, and what actually happened.
-- **Your versions**, both the Lattice version from Settings under About and your macOS version.
+- **Your versions**, both the Lattice version from Settings → About and your macOS version.
 - **Steps to reproduce**, as specific as you can make them.
 - **A screenshot or short screen recording**, when the issue is something you can see.
 
@@ -124,4 +124,4 @@ If you have a build from source, the self test prints a quick health summary tha
 ./build/Lattice --selftest
 ```
 
-Open a report from the [new issue](https://github.com/vorssaint/vorssaint-utils/issues/new/choose) page, and see [support](../SUPPORT.md) for every way to get help.
+Open a report from the [new issue](https://github.com/sam32j/lattice/issues/new/choose) page, and see [support](../SUPPORT.md) for every way to get help.
