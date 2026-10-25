@@ -530,7 +530,8 @@ final class ScreenshotQuickPreviewController {
     private func installKeyMonitor(for panel: NSPanel) {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self, weak panel] event in
             guard let self, !self.closed, let panel, panel.isVisible, event.window === panel,
-                  !self.shownInNotch || NotchService.shared.isCaptureVisible(id: self.presentationID),
+                  !self.shownInNotch || (!ScreenshotSelectionController.isSessionOnScreen
+                      && NotchService.shared.isCaptureVisible(id: self.presentationID)),
                   panel.attachedSheet == nil, !(panel.firstResponder is NSText),
                   !ShortcutCapture.isCapturing else { return event }
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)

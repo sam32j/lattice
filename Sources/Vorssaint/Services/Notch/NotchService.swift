@@ -2361,7 +2361,7 @@ final class NotchService: ObservableObject {
     }
 
     func isCaptureVisible(id: UUID) -> Bool {
-        !ScreenshotSelectionController.isSessionOnScreen && acceptsSystemFeedback && expanded && selected == .captures
+        acceptsSystemFeedback && expanded && selected == .captures
             && !showingAppPanel && !showingSections && !showingCommandBar && selectedMetric == nil
             && captureID == id && captureContent != nil
     }

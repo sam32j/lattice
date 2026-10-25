@@ -1944,13 +1944,23 @@ def main():
           + "}\n"
           + declaration("Sources/Vorssaint/UI/Screenshot/PassThroughHostingView.swift",
                         "final class PassThroughHostingView<"))
-    write("NotchCaptureKeyboard.swift", "import Foundation\nimport Carbon.HIToolbox\n\nextension NotchCaptureKeyboardContract {\n"
+    write("RecorderCaptureKeyboard.swift", "import Foundation\nimport Carbon.HIToolbox\n\nextension RecorderCaptureKeyboardContract {\n"
+          + declaration("Sources/Vorssaint/Services/Recorder/RecorderPreviewShortcut.swift", "enum RecorderPreviewShortcut {")
+          + "final class Preview {\nvar keyMonitor: Any?\nvar closed = false\nvar shownInNotch = true\nlet presentationID = UUID()\n"
+          + "var copies = 0\nfunc performCopy() { copies += 1 }\nfunc performDownload() {}\nfunc performSaveAs() {}\n"
+          + "func close() { closed = true }\nfunc performQuickLook() {}\nfunc performEdit() {}\n"
+          + "func attach(_ panel: NSPanel) { installKeyMonitor(for: panel) }\n"
+          + declaration("Sources/Vorssaint/Services/Recorder/RecorderQuickPreviewController.swift", "    private func installKeyMonitor(for panel:")
+          + "}\n}\n")
+    write("NotchCaptureKeyboard.swift", "import Foundation\nimport CoreGraphics\nimport Carbon.HIToolbox\n\nextension NotchCaptureKeyboardContract {\n"
           + "final class NotchService {\nstatic var shared = NotchService()\n"
           + "var presentationWindow: NSPanel? = NSPanel()\nvar acceptsSystemFeedback = true\n"
           + "var expanded = true\nvar selected = NotchModule.captures\nvar showingAppPanel = false\n"
           + "var showingSections = false\nvar showingCommandBar = false\nvar selectedMetric: Int?\n"
           + "var captureID: UUID?\nvar captureContent: Bool? = true\n"
-          + "enum ScreenshotSelectionController { static var isSessionOnScreen = false }\n"
+          + "var panel: NSPanel? { presentationWindow }\nvar islandWindowIDs: Set<CGWindowID> = [1, 2]\n"
+          + declaration("Sources/Vorssaint/Services/Notch/NotchService.swift", "    var protectedWindowIDs:")
+          + declaration("Sources/Vorssaint/Services/Notch/NotchService.swift", "    var captureVisibleWindowIDs:")
           + declaration("Sources/Vorssaint/Services/Notch/NotchService.swift", "    func isCaptureVisible(")
           + "}\nfinal class Preview {\n"
           + declaration(preview, "    enum Action {")
