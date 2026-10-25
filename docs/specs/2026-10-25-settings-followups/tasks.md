@@ -30,6 +30,9 @@
 - [ ] File Cache caption Show drop zone on Dynamic Island while dragging.
 - [ ] Magic Mouse native swipe progress, native threshold, commit on end, natural scrolling, no momentum/duplicate actions/stuck cues; retain trackpad thresholds.
 
+- [ ] Permission label System becomes App Management without changing permission routing.
+- [x] Prune unused docs/assets/readme artwork; tracked-reference audit found only lattice-icon.png in use.
+
 ## Execution steps
 
 1. Inspect the exact owner files and existing tests. Record focus/OCR root causes and expected behavior. Parent baseline at 08297edd has 103,219 passing checks and a passing Developer build/signature.
