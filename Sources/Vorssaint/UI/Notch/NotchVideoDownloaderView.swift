@@ -8,6 +8,7 @@ struct NotchVideoDownloaderView: View {
     let size: CGSize
     @ObservedObject private var downloader = VideoDownloader.shared
     @ObservedObject private var l10n = L10n.shared
+    @Environment(\.notchSettingsPreview) private var isSettingsPreview
     @State private var clipboardURL: String? = nil
 
     var body: some View {
@@ -49,12 +50,14 @@ struct NotchVideoDownloaderView: View {
             }
         })
         .onAppear {
+            guard !isSettingsPreview else { return }
             if downloader.output != nil && !downloader.isCompletedSustaining {
                 downloader.resetDownloadState()
             }
             refreshClipboard()
         }
         .onDisappear {
+            guard !isSettingsPreview else { return }
             if downloader.output != nil && !downloader.isCompletedSustaining {
                 downloader.resetDownloadState()
             }
@@ -221,9 +224,9 @@ struct NotchVideoDownloaderView: View {
 
             // Estimated size and destination
             VStack(alignment: .leading, spacing: 1) {
-                let est = info.estimatedSizeFormatted(for: downloader.selectedQuality) ?? "~1.4 GB"
-                let format = downloader.selectedQuality.isAudio ? "M4A" : "MKV"
-                Text("\(est) · \(format)")
+                let format = downloader.selectedQuality.containerTag
+                let est = info.estimatedSizeFormatted(for: downloader.selectedQuality)
+                Text(est.map { "\($0) · \(format)" } ?? format)
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
