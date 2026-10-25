@@ -26,17 +26,16 @@ struct ScratchpadSettings: View {
                     }
                 }
                 if enabled {
+                    ShortcutPreferenceRow(role: .scratchpad,
+                        label: UtilitySettingsCopy.open(FeatureStrings.scratchpad(l10n.language).pageTitle, l10n.language)) {
+                        ScratchpadService.shared.syncWithPreferences()
+                    }
+                    .padding(.leading, settingsRowTextInset)
+                    if scratchpadShortcutEnabled, scratchpad.shortcutRegistrationFailed {
+                        Text(l10n.s.shortcutUnavailable).font(.caption).foregroundStyle(.orange)
+                    }
                     IslandDestinationSettings(destination: .scratchpad)
                         .padding(.leading, settingsRowTextInset)
-                }
-                ShortcutPreferenceRow(role: .scratchpad,
-                    label: UtilitySettingsCopy.open(FeatureStrings.scratchpad(l10n.language).pageTitle, l10n.language)) {
-                    ScratchpadService.shared.syncWithPreferences()
-                }
-                .disabled(!enabled)
-                .padding(.leading, settingsRowTextInset)
-                if enabled, scratchpadShortcutEnabled, scratchpad.shortcutRegistrationFailed {
-                    Text(l10n.s.shortcutUnavailable).font(.caption).foregroundStyle(.orange)
                 }
                 }
                 Group {

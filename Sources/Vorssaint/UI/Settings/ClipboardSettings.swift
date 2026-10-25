@@ -50,14 +50,14 @@ struct ClipboardSettings: View {
                         }
                     }
                     if enabled {
+                        ShortcutPreferenceRow(role: .clipboard, label: UtilitySettingsCopy.open(text.title, l10n.language),
+                            additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
+                            ClipboardHistoryService.shared.syncHotkey()
+                        }
+                        .padding(.leading, settingsRowTextInset)
                         IslandDestinationSettings(destination: .clipboard)
                             .padding(.leading, settingsRowTextInset)
                     }
-                    ShortcutPreferenceRow(role: .clipboard, label: UtilitySettingsCopy.open(text.title, l10n.language),
-                        additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
-                        ClipboardHistoryService.shared.syncHotkey()
-                    }.disabled(!enabled)
-                    .padding(.leading, settingsRowTextInset)
                     }
                 }
                 .settingsFormSectionAnchor(.clipboardHistory)

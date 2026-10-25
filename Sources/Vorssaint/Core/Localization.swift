@@ -2755,7 +2755,7 @@ extension Strings {
         preciseVolumeRollerTapFailed: "Could not listen for volume keys.",
         soundOutputSwitcherTitle: "Output switcher",
         soundOutputSwitcherEnable: "Switch outputs with shortcut",
-        soundOutputSwitcherCaption: "Choose outputs and use the shortcut to move to the next available one.",
+        soundOutputSwitcherCaption: "Use the shortcut to cycle through output devices.",
         soundOutputSwitcherDevices: "Outputs in cycle",
         soundOutputSwitcherNoAvailableSelection: "Select at least one available output.",
         mixerInputTitle: "Microphone",

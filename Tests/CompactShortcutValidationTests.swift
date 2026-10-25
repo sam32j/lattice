@@ -15,8 +15,27 @@ enum CompactShortcutValidationTests {
         struct Localization { let s = Strings.enUS }
         let l10n = Localization()
         var role = GlobalShortcutRole.screenshot
-        var rawValue = GlobalShortcut.screenshotDefault.storageValue
-        var isEnabled = false, systemConflict = false
+        var preferenceDefaults: UserDefaults?
+        private var fallbackRawValue = GlobalShortcut.screenshotDefault.storageValue
+        private var fallbackEnabled = false
+        var rawValue: String {
+            get { preferenceDefaults?.string(forKey: role.storageKey) ?? fallbackRawValue }
+            set {
+                if let preferenceDefaults { preferenceDefaults.set(newValue, forKey: role.storageKey) }
+                else { fallbackRawValue = newValue }
+            }
+        }
+        var isEnabled: Bool {
+            get {
+                guard let preferenceDefaults else { return fallbackEnabled }
+                return preferenceDefaults.bool(forKey: role.requiredEnableKeys.last!)
+            }
+            set {
+                if let preferenceDefaults { preferenceDefaults.set(newValue, forKey: role.requiredEnableKeys.last!) }
+                else { fallbackEnabled = newValue }
+            }
+        }
+        var systemConflict = false
         var errorText: String?
         var pendingTakeOver: GlobalShortcut?
         var conflictingRole: GlobalShortcutRole?
@@ -27,6 +46,7 @@ enum CompactShortcutValidationTests {
         func onChange() { notifications += 1 }
     }
     static func run(_ suite: TestSuite) {
+        UtilityShortcutAssignmentTests.run(suite)
         let clearedKey = "test.shortcut.cleared.\(UUID().uuidString)"
         defer { UserDefaults.standard.removeObject(forKey: clearedKey) }
         suite.expect(GlobalShortcut.saved(for: clearedKey, fallback: .screenshotDefault) == .screenshotDefault,

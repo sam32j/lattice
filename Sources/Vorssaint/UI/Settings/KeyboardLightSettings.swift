@@ -21,10 +21,6 @@ struct KeyboardLightSettings: View {
             }
         }) {
             VStack(alignment: .leading, spacing: 14) {
-                Text(strings.keyboardLightCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
                 if brightness.keyboardLightEnabled != nil {
                     keyboardLightSlider
 

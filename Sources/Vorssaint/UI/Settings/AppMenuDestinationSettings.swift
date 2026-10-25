@@ -20,13 +20,6 @@ struct AppMenuDestinationSettings: View {
     var body: some View {
         SettingsRow(symbol: "line.3.horizontal", title: label, caption: restorationHint) {
             HStack(spacing: 6) {
-                if restorationHint != nil {
-                    Button(AppMenuRestorationCopy.cancel(l10n.language)) {
-                        disabled = true
-                        islandPanel = false
-                    }
-                    .accessibilityIdentifier("app-menu.discard-remembered-target")
-                }
                 if options.count == 1 {
                     SettingsStatusDot(status: SettingsFeatureStatus(color: .red,
                         message: SettingsOwnershipStrings.text(.noMenuTarget, l10n.language)))

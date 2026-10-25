@@ -76,7 +76,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchControlOrder) var controlOrder = ""
     @AppStorage(DefaultsKey.notchShowInCaptures) var showInCaptures = true
     @AppStorage(DefaultsKey.notchLockScreen) var lockScreen = false
-    @AppStorage(DefaultsKey.notchLockSounds) var lockSounds = false
     @AppStorage(DefaultsKey.notchSize) var size = NotchSize.spacious.rawValue
     @AppStorage(DefaultsKey.notchOutlineEnabled) var outlineEnabled = false
     @AppStorage(DefaultsKey.notchHideMenuBarGap) var hideMenuBarGap = true

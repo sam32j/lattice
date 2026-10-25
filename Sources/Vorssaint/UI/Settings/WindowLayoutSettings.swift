@@ -65,6 +65,9 @@ struct WindowLayoutSettings: View {
                             .onChange(of: maximizeEnabled) { _, _ in FeatureRuntime.shared.sync([.windowMaximizer]) }
                     }
                     WindowMaximizerExclusionsList()
+                        .padding(.leading, settingsRowTextInset)
+                        .disabled(!maximizeEnabled)
+                        .opacity(maximizeEnabled ? 1 : 0.55)
                 }
                 .settingsSectionAnchor(.windowMaximizer, cornerRadius: 16)
                 Divider()
@@ -96,7 +99,9 @@ struct WindowLayoutSettings: View {
             }
             VStack(alignment: .leading, spacing: 16) {
                 Toggle(text.showInPanel, isOn: $showInPanel)
+                    .padding(.leading, settingsRowTextInset)
                 WindowLayoutIgnoredAppsList()
+                    .padding(.leading, settingsRowTextInset)
                 snappingControls
             }
             .toggleStyle(TrailingSwitchToggleStyle())
