@@ -32,7 +32,7 @@ enum FeatureHubLayoutTests {
         var body: some View { content }
         var summaryCard: some View { Text("Installed features").frame(height: 90) }
         @ViewBuilder var neverUsedCard: some View {
-            if features.offersNeverUsed { Text("Never used").frame(height: 120) }
+            if features.offersNeverUsed { Text("Never used").frame(height: 120).background(OfferMarker()) }
         }
         func groupCard(_ group: FeatureGroup) -> some View {
             SettingsCard {
@@ -54,6 +54,12 @@ enum FeatureHubLayoutTests {
         var body: some View { Text("Permissions") }
     }
 
+    final class OfferMarkerView: NSView {}
+    struct OfferMarker: NSViewRepresentable {
+        func makeNSView(context: Context) -> OfferMarkerView { OfferMarkerView() }
+        func updateNSView(_ view: OfferMarkerView, context: Context) {}
+    }
+
     final class TargetRowView: NSView {}
     struct TargetRow: NSViewRepresentable {
         func makeNSView(context: Context) -> TargetRowView { TargetRowView() }
@@ -66,7 +72,7 @@ enum FeatureHubLayoutTests {
         runtime.needsRestartToUnload = false
         runtime.offersNeverUsed = true
         let host = NSHostingView(rootView: Page())
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 848),
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 400),
                               styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.contentView = host
@@ -87,6 +93,9 @@ enum FeatureHubLayoutTests {
             suite.expect(false, "the Features page draws a scroll view")
             return
         }
+        suite.expect(descendant(OfferMarkerView.self, in: host) != nil,
+                     "the initial never-used offer is rendered before scrolling")
+        // The smaller inert catalog needs a compact viewport to exercise an offscreen header.
         // Visit the intervening cards, as when scrolling down to Port Manager.
         for _ in 0..<24 {
             let bottom = max(0, (scroll.documentView?.frame.height ?? 0) - scroll.contentView.bounds.height)
@@ -94,6 +103,11 @@ enum FeatureHubLayoutTests {
             scroll.reflectScrolledClipView(scroll.contentView)
             settle()
         }
+        let viewport = scroll.contentView.convert(scroll.contentView.bounds, to: host)
+        let offerFrame = descendant(OfferMarkerView.self, in: host).map { $0.convert($0.bounds, to: host) }
+        suite.expect(scroll.contentView.bounds.minY > 0
+                     && (offerFrame.map { $0.maxY <= viewport.minY } ?? true),
+                     "the never-used offer is above the viewport before checking offscreen layout changes")
         func rowFrame() -> NSRect? {
             guard let row = descendant(TargetRowView.self, in: host) else { return nil }
             return row.convert(row.bounds, to: host)

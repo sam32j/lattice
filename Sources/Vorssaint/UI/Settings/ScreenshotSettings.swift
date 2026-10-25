@@ -4,12 +4,12 @@
 import SwiftUI
 /// Screenshot Settings page.
 struct ScreenshotSettings: View {
-    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var service = ScreenshotService.shared
     @ObservedObject private var sharing = ScreenshotShareService.shared
     @ObservedObject private var runtime = FeatureRuntime.shared
-    @AppStorage(DefaultsKey.screenshotEnabled) private var screenshotEnabled = true
+    @AppStorage(DefaultsKey.screenshotEnabled) var screenshotEnabled = true
     @AppStorage(DefaultsKey.screenshotFreeze) private var freeze = true
     @AppStorage(DefaultsKey.screenshotHideVorssaintWindows) private var hideVorssaintWindows = true
     @AppStorage(DefaultsKey.screenshotSaveFolder) private var saveFolder = ""
@@ -38,7 +38,7 @@ struct ScreenshotSettings: View {
     @AppStorage(DefaultsKey.screenshotPreviewEnabled) private var previewEnabled = true
     @AppStorage(DefaultsKey.screenshotPreviewDuration) private var previewDuration =
         ScreenshotSupport.defaultConfirmationPreviewDuration
-    @AppStorage(DefaultsKey.screenshotSharingEnabled) private var sharingEnabled = true
+    @AppStorage(DefaultsKey.screenshotSharingEnabled) var sharingEnabled = true
     @AppStorage(DefaultsKey.screenshotUploadDuration) private var uploadDuration = ScreenshotShareDuration.oneHour.rawValue
     @AppStorage(DefaultsKey.screenshotPinRoundedCorners) private var pinRoundedCorners = true
     @AppStorage(DefaultsKey.screenOCRRemoveLineBreaks) private var removesLineBreaks = false
@@ -48,7 +48,7 @@ struct ScreenshotSettings: View {
     @State private var showingSharedLinks = false
     @State private var showingSharePrivacy = false
 
-    private var strings: ScreenshotFeatureStrings {
+    var strings: ScreenshotFeatureStrings {
         FeatureStrings.screenshot(l10n.language)
     }
 
@@ -69,9 +69,7 @@ struct ScreenshotSettings: View {
                     toolsCard
                     sharingCard
                     ocrCard
-                        .settingsSectionAnchor(.screenOCR, cornerRadius: 16)
                     colorPickerCard
-                        .settingsSectionAnchor(.colorPicker, cornerRadius: 16)
                 }
                 .disabled(!screenshotInstalled)
                 .opacity(screenshotInstalled ? 1 : 0.55)
@@ -86,82 +84,6 @@ struct ScreenshotSettings: View {
         }
         .sheet(isPresented: $showingSharePrivacy) {
             ScreenshotSharePrivacyView()
-        }
-    }
-
-    private var screenshotInstalled: Bool {
-        AppFeature.screenshot.isAvailable
-    }
-
-    private var shortcutsCard: some View {
-        SettingsCard(title: strings.pageTitle, headerAccessory: {
-            HStack(spacing: 8) {
-                Toggle(l10n.s.screenshotEnable, isOn: Binding(
-                    get: { screenshotInstalled },
-                    set: { enabled in
-                        screenshotEnabled = enabled
-                        FeatureRuntime.shared.setAvailable([.screenshot], enabled)
-                        ScreenshotService.shared.syncWithPreferences()
-                        ScreenTextService.shared.syncWithPreferences()
-                        ScreenCaptureService.shared.syncWithPreferences()
-                    }
-                ))
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.regular)
-                    .help(l10n.s.screenshotEnable)
-                    .accessibilityLabel(l10n.s.screenshotEnable)
-            }
-        }) {
-            VStack(alignment: .leading, spacing: 10) {
-                CompactShortcutPreferenceRow(title: strings.pageTitle,
-                                             role: .screenshot,
-                                             enabledKey: DefaultsKey.screenshotShortcutEnabled) {
-                    ScreenCaptureService.shared.syncWithPreferences()
-                    ScreenshotService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: strings.fullScreenShortcutTitle,
-                                             role: .screenshotFullScreen,
-                                             enabledKey: DefaultsKey.screenshotFullScreenShortcutEnabled) {
-                    ScreenshotService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: strings.editLastCapture,
-                                             role: .screenshotLastCapture,
-                                             enabledKey: DefaultsKey.screenshotLastCaptureShortcutEnabled) {
-                    ScreenshotService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: strings.editClipboardImage,
-                                             role: .screenshotClipboard,
-                                             enabledKey: DefaultsKey.screenshotClipboardShortcutEnabled) {
-                    ScreenshotService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: strings.uploadLastCapture,
-                                             role: .screenshotUpload,
-                                             enabledKey: DefaultsKey.screenshotUploadShortcutEnabled) {
-                    ScreenshotService.shared.syncWithPreferences()
-                }
-                .disabled(!sharingEnabled)
-                CompactShortcutPreferenceRow(title: l10n.s.ocrName,
-                                             role: .screenOCR,
-                                             enabledKey: DefaultsKey.screenOCRShortcutEnabled) {
-                    ScreenTextService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: l10n.s.colorPickerName,
-                                             role: .colorPicker,
-                                             enabledKey: DefaultsKey.colorPickerShortcutEnabled) {
-                    ScreenCaptureService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: FeatureStrings.recentCaptures(l10n.language).title,
-                                             role: .recentCaptures,
-                                             enabledKey: DefaultsKey.recentCapturesShortcutEnabled) {
-                    RecentCaptureService.shared.syncWithPreferences()
-                }
-                if !permissions.screenRecording {
-                    PermissionRow(kind: .screenRecording)
-                }
-            }
-            .disabled(!screenshotEnabled)
-            .opacity(screenshotEnabled ? 1 : 0.55)
         }
     }
 

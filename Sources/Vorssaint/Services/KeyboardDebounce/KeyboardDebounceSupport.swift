@@ -154,6 +154,10 @@ struct KeyboardDebounceKey: Identifiable, Hashable {
 }
 
 enum KeyboardDebounceKeyCatalog {
+    static func available(excluding configured: Set<Int64>) -> [KeyboardDebounceKey] {
+        common.filter { !configured.contains($0.code) }
+    }
+
     static let common: [KeyboardDebounceKey] = [
         KeyboardDebounceKey(code: 0, label: "A"),
         KeyboardDebounceKey(code: 11, label: "B"),

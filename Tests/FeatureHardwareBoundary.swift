@@ -9,3 +9,8 @@ enum FeatureHardwareBoundary {
 extension AppFeature {
     var isHardwareSupported: Bool { !FeatureHardwareBoundary.unsupported.contains(self) }
 }
+
+// Never opens a keyboard-light driver in the standalone test process.
+enum BrightnessService {
+    static var keyboardLightIsSupported = true
+}

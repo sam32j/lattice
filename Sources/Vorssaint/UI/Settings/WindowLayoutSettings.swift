@@ -61,7 +61,7 @@ struct WindowLayoutSettings: View {
                 VStack(alignment: .leading, spacing: 13) {
                     SettingsRow(symbol: "arrow.up.left.and.arrow.down.right", title: l10n.s.windowMaximizeName,
                                 caption: l10n.s.windowMaximizeCaption) {
-                        Toggle(l10n.s.windowMaximizeName, isOn: $maximizeEnabled).labelsHidden()
+                        PermissionGatedToggle(l10n.s.windowMaximizeName, isOn: $maximizeEnabled).labelsHidden()
                             .onChange(of: maximizeEnabled) { _, _ in FeatureRuntime.shared.sync([.windowMaximizer]) }
                     }
                     WindowMaximizerExclusionsList()
@@ -85,7 +85,7 @@ struct WindowLayoutSettings: View {
     var snappingCard: some View {
         SettingsCard(title: text.gestureSection) {
             SettingsRow(symbol: "rectangle.3.group", title: text.enable, caption: text.caption) {
-                Toggle(text.enable, isOn: Binding(
+                PermissionGatedToggle(text.enable, isOn: Binding(
                     get: { windowLayoutInstalled },
                     set: { enabled in
                         FeatureRuntime.shared.setAvailable([.windowLayout], enabled)

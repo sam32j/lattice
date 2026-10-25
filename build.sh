@@ -363,6 +363,9 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Notch/NotchPlaybackCommand.swift
         Sources/Vorssaint/Services/Notch/NotchMusicCommandWriter.swift
         Sources/Vorssaint/Core/FeatureCatalog.swift
+        Sources/Vorssaint/Core/FeatureInstallationPolicy.swift
+        Sources/Vorssaint/Core/IslandDestinationSupport.swift
+        Sources/Vorssaint/Core/SettingsOwnershipStrings.swift
         Sources/Vorssaint/Core/FeatureEnergyProfile.swift
         Sources/Vorssaint/Core/FeatureHubStrings.swift
         Sources/Vorssaint/Core/ShortcutSettingsStrings.swift
@@ -386,6 +389,8 @@ if (( TEST )); then
         Sources/Vorssaint/Core/ScratchpadStrings.swift
         Sources/Vorssaint/Core/CommandBarStrings.swift
         Sources/Vorssaint/Core/FeedbackStrings.swift
+        Sources/Vorssaint/Core/FeedbackDraftStrings.swift
+        Sources/Vorssaint/Core/PermissionActivationSupport.swift
         Sources/Vorssaint/Core/RadialMenuStrings.swift
         Sources/Vorssaint/Core/MenuBarAppearanceStrings.swift
         Sources/Vorssaint/Core/AppAppearance.swift
@@ -404,6 +409,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/FanControl/FanControlResumeSupport.swift
         Sources/Vorssaint/Services/Snippets/TextSnippetSupport.swift
         Sources/Vorssaint/Services/RadialMenu/RadialMenuSupport.swift
+        Sources/Vorssaint/Services/RadialMenu/RadialProfileActivation.swift
         Sources/Vorssaint/Services/QuickTools/ScratchpadSupport.swift
         Sources/Vorssaint/Services/QuickTools/ScratchpadStore.swift
         Sources/Vorssaint/Services/KillProcess/KillProcessSupport.swift
@@ -466,6 +472,8 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Clipboard/ClipboardHistoryWrite.swift
         Sources/Vorssaint/Services/Audio/AirPlayRouteManager.swift
         Sources/Vorssaint/Services/Audio/MixerRoutingSupport.swift
+        Sources/Vorssaint/Services/Audio/AudioPriorityPresentation.swift
+        Sources/Vorssaint/Services/Feedback/FeedbackDraft.swift
         Sources/Vorssaint/Services/Audio/MusicLaunchSupport.swift
         Sources/Vorssaint/Services/Bluetooth/BluetoothSleepSupport.swift
         Sources/Vorssaint/UI/MenuPanel/MixerPercentNativeTextField.swift
@@ -477,6 +485,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/DockPreview/DockPreviewExclusions.swift
         Sources/Vorssaint/Core/SettingsAppListDescriptions.swift
         Sources/Vorssaint/Core/SettingsAppListStrings.swift
+        Sources/Vorssaint/UI/Settings/QuitProtectionAppListStrings.swift
         Sources/Vorssaint/Services/DockPreview/DockAutohideHold.swift
         Sources/Vorssaint/Services/SpacesOrder/SpacesOrderHold.swift
         Sources/Vorssaint/Services/Homebrew/HomebrewSupport.swift

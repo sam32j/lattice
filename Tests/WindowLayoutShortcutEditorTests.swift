@@ -26,14 +26,14 @@ enum WindowLayoutShortcutEditorTests {
         suite.expect(defaults.string(forKey: WindowLayoutAction.leftHalf.shortcutKey)
                      == WindowLayoutAction.clearedShortcutStorageValue,
                      "clear writes the explicit empty binding rather than restoring a default")
-        defaults.set(true, forKey: AppFeature.clipboardHistory.availabilityKey)
-        defaults.set(shortcut.storageValue, forKey: GlobalShortcutRole.clipboard.storageKey)
-        for key in GlobalShortcutRole.clipboard.requiredEnableKeys { defaults.set(false, forKey: key) }
+        defaults.set(true, forKey: AppFeature.quickLauncher.availabilityKey)
+        defaults.set(shortcut.storageValue, forKey: GlobalShortcutRole.quickLauncher.storageKey)
+        for key in GlobalShortcutRole.quickLauncher.requiredEnableKeys { defaults.set(false, forKey: key) }
         let roleConflict = WindowLayoutShortcutEditor.save(shortcut, for: .leftHalf, in: defaults,
             language: .enUS, conflictsWithSystem: false, takenOver: false)
         if case .conflict = roleConflict { suite.expect(true, "inactive role conflict rejected") }
         else { suite.expect(false, "both editors reject an inactive role's binding from the same preference store") }
-        defaults.set("", forKey: GlobalShortcutRole.clipboard.storageKey)
+        defaults.set("", forKey: GlobalShortcutRole.quickLauncher.storageKey)
         let offer = WindowLayoutShortcutEditor.save(shortcut, for: .leftHalf, in: defaults,
             language: .enUS, conflictsWithSystem: true, takenOver: false)
         if case .offer = offer { suite.expect(true, "system conflict asks for takeover") }

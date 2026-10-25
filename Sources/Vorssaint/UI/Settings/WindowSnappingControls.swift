@@ -5,9 +5,8 @@ extension WindowLayoutSettings {
         VStack(alignment: .leading, spacing: 16) {
             Divider()
             VStack(alignment: .leading, spacing: 13) {
-                Toggle(isOn: $edgeSnapEnabled) {
-                    Text(text.edgeSnapSection).font(.headline)
-                }
+                PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
+                    .font(.headline)
                 .onChange(of: edgeSnapEnabled) { _, _ in
                     WindowLayoutService.shared.syncWithPreferences()
                 }
@@ -38,9 +37,8 @@ extension WindowLayoutSettings {
 
             Divider()
             VStack(alignment: .leading, spacing: 13) {
-                Toggle(isOn: $gestureEnabled) {
-                    Text(text.gestureEnable).font(.headline)
-                }
+                PermissionGatedToggle(text.gestureEnable, isOn: $gestureEnabled)
+                    .font(.headline)
                 .onChange(of: gestureEnabled) { _, _ in
                     WindowLayoutService.shared.syncWithPreferences()
                 }

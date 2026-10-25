@@ -5,11 +5,11 @@ import SwiftUI
 /// Settings for the screen recorder: how a recording starts, what it captures
 /// and where the file lands.
 struct ScreenRecorderSettings: View {
-    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var sharing = RecordingShareService.shared
     @ObservedObject private var runtime = FeatureRuntime.shared
-    @AppStorage(DefaultsKey.screenRecorderEnabled) private var screenRecorderEnabled = true
+    @AppStorage(DefaultsKey.screenRecorderEnabled) var screenRecorderEnabled = true
     @AppStorage(DefaultsKey.recorderCountdown) private var countdown = 3
     @AppStorage(DefaultsKey.recorderQuality) private var qualityRaw =
         RecorderSupport.Quality.balanced.rawValue
@@ -29,7 +29,7 @@ struct ScreenRecorderSettings: View {
     @State private var showingSharedLinks = false
     @State private var showingSharePrivacy = false
 
-    private var strings: RecorderFeatureStrings {
+    var strings: RecorderFeatureStrings {
         FeatureStrings.recorder(l10n.language)
     }
 
@@ -73,53 +73,6 @@ struct ScreenRecorderSettings: View {
     }
 
     // MARK: - Master Header & Shortcuts Card
-
-    private var screenRecorderInstalled: Bool {
-        AppFeature.screenRecorder.isAvailable
-    }
-
-    private var shortcutsCard: some View {
-        SettingsCard(title: strings.pageTitle, headerAccessory: {
-            HStack(spacing: 8) {
-                Toggle(l10n.s.screenRecorderEnable, isOn: Binding(
-                    get: { screenRecorderInstalled },
-                    set: { enabled in
-                        screenRecorderEnabled = enabled
-                        FeatureRuntime.shared.setAvailable([.screenRecorder], enabled)
-                        ScreenCaptureService.shared.syncWithPreferences()
-                        ScreenRecorderService.shared.syncWithPreferences()
-                    }
-                ))
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.regular)
-                    .help(l10n.s.screenRecorderEnable)
-                    .accessibilityLabel(l10n.s.screenRecorderEnable)
-            }
-        }) {
-            VStack(alignment: .leading, spacing: 10) {
-                CompactShortcutPreferenceRow(title: strings.pageTitle,
-                                             role: .screenRecorder,
-                                             enabledKey: DefaultsKey.recorderShortcutEnabled) {
-                    ScreenCaptureService.shared.syncWithPreferences()
-                    ScreenRecorderService.shared.syncWithPreferences()
-                }
-                CompactShortcutPreferenceRow(title: FeatureStrings.recentCaptures(l10n.language).title,
-                                             role: .recentCaptures,
-                                             enabledKey: DefaultsKey.recentCapturesShortcutEnabled) {
-                    RecentCaptureService.shared.syncWithPreferences()
-                }
-                if !permissions.screenRecording {
-                    PermissionRow(kind: .screenRecording)
-                }
-                if !permissions.accessibility {
-                    PermissionRow(kind: .accessibility)
-                }
-            }
-            .disabled(!screenRecorderEnabled)
-            .opacity(screenRecorderEnabled ? 1 : 0.55)
-        }
-    }
 
     // MARK: - Recording
 

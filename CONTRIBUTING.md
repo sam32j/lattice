@@ -1,6 +1,8 @@
-# Contributing to Vorssaint
+# Contributing to Lattice
 
-Vorssaint aims to stay small, native and readable. Contributions are accepted
+Lattice is maintained at [sam32j/lattice](https://github.com/sam32j/lattice),
+a downstream project based on Vorssaint. Send Lattice issues and pull requests
+to this repository, not upstream. Contributions are accepted
 under GPL-3.0-or-later unless stated otherwise.
 
 ## Getting started
@@ -11,17 +13,17 @@ dependencies. `Package.swift` supports editor indexing; it does not assemble or
 sign the app bundle.
 
 ```sh
-git clone https://github.com/vorssaint/vorssaint-utils.git
-cd vorssaint-utils
+git clone https://github.com/sam32j/lattice.git
+cd lattice
 ./build.sh --dev
-./build/VorssaintDeveloper --selftest
+./build/LatticeDeveloper --selftest
 ./build.sh --test
 ```
 
 To install and launch the separate Developer app, use `./build.sh --dev --install`.
 It has its own preferences and permissions and does not replace the official app.
 A plain `./build.sh` builds the optimized variant used by CI; its health check is
-`./build/Vorssaint --selftest`.
+`./build/Lattice --selftest`.
 
 ### Stable signing
 
@@ -31,8 +33,11 @@ Keep that identity across rebuilds: ad-hoc signatures change with the binary and
 can invalidate macOS permission grants. Check the build output for signing
 failures. For stale grants, see [troubleshooting](docs/TROUBLESHOOTING.md#resetting-permissions).
 
-Official releases use Developer ID signing and notarization through the protected
-release workflow. Local signing does not produce an official release.
+Local Lattice builds are not notarized by Apple. The release workflow can
+notarize the app and DMG before publication when the required credentials are
+configured. Local signing does not provide notarization or establish that a
+download is trustworthy. See the
+[first-launch guide](TROUBLESHOOTING.md) for distribution warnings and guidance.
 
 ## Scope and implementation
 
@@ -54,7 +59,7 @@ over a new subsystem. Keep each PR focused on one independently useful change.
   permission prompts where applicable, and coverage tests.
 - New source files retain the project's SPDX license and copyright headers.
 
-Sensor changes should include a dump from `./build/Vorssaint --sensors` and the
+Sensor changes should include a dump from `./build/Lattice --sensors` and the
 Mac model. Selection logic lives in `TemperatureSensorSelector` and `SystemMonitor`.
 
 ## Validation
@@ -97,22 +102,19 @@ a stable release carries the fix, and can close the issue after two weeks withou
 a response. If the PR addresses only part of an issue, say exactly which part.
 
 For agent-assisted work, see [contributing with an agent](docs/AI-CONTRIBUTIONS.md).
-Bug reports and feature requests use the [issue forms](https://github.com/vorssaint/vorssaint-utils/issues/new/choose).
-Report vulnerabilities through [private security reporting](SECURITY.md).
+Bug reports and feature requests use the [Lattice issue forms](https://github.com/sam32j/lattice/issues/new/choose).
+Report vulnerabilities according to the [security policy](SECURITY.md), never in public bug reports.
 
 ## Releases (maintainers)
 
 Integrating into `main`, pushing a branch and opening a PR do not publish a release.
 Publication requires an explicit release decision, including beta or stable.
 
-Before sending a version tag, validate the final commit on `main`, confirm its
-verified signature, and match `Resources/Info.plist` and the release notes to the
-chosen version. Use a signed tag such as `vX.Y.Z-beta.N` or `vX.Y.Z`.
-Sending the tag starts [the release workflow](.github/workflows/release.yml).
-
-The protected `release-signing` environment holds the signing and notarization
-credentials. The workflow builds, signs and notarizes the app and DMG, then
-publishes an immutable release. Confirm publication succeeded; a pushed tag alone
-is not a published version. Beta releases remain prereleases and do not replace
-the latest stable release or its Homebrew cask. Do not move published tags or
-replace published artifacts.
+Before publishing, validate the intended Lattice release commit, match
+`Resources/Info.plist` and release notes to the chosen version, and review
+[the Lattice release workflow](.github/workflows/lattice-release.yml).
+Do not assume the inherited upstream release workflow publishes Lattice or
+provides signing or notarization for this fork. Verify the resulting app, DMG
+and release page; a pushed tag alone is not a published version.
+Clearly disclose the signing and notarization status. Do not move published
+tags or replace published artifacts.

@@ -163,7 +163,7 @@ struct EnergyKeepAwakeSettings: View {
             }
             SettingsRow(symbol: "cursorarrow.motionlines", title: l10n.s.keepAwakeMouseJiggle,
                         caption: l10n.s.keepAwakeMouseJiggleCaption) {
-                Toggle(l10n.s.keepAwakeMouseJiggle, isOn: $keepAwakeMouseJiggle).labelsHidden()
+                PermissionGatedToggle(l10n.s.keepAwakeMouseJiggle, isOn: $keepAwakeMouseJiggle).labelsHidden()
             }
             if keepAwakeMouseJiggle {
                 VStack(alignment: .leading, spacing: 8) {

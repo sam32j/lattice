@@ -89,15 +89,15 @@ enum QuickLauncherContract {
             defaults.removePersistentDomain(forName: domain)
         }
         for feature in AppFeature.allCases { defaults.set(true, forKey: feature.availabilityKey) }
+        for key in [DefaultsKey.shelfEnabled, DefaultsKey.clipboardHistoryEnabled, DefaultsKey.urlCleanerEnabled] { defaults.set(true, forKey: key) }
         defaults.set(true, forKey: DefaultsKey.microphoneLevelControlEnabled)
+        defaults.set(false, forKey: DefaultsKey.cleaningModeShortcutEnabled)
         cameraInNotch = false
         let cases: [(QuickLauncherItem, AppFeature, String?, Double?)] = [
             (.keepAwake, .keepAwake, "keepAwake.toggle", nil),
             (.micMute, .micMute, "micMute.toggle", nil),
-            (.screenOCR, .screenOCR, "screenOCR.capture", 0.15),
             (.screenshot, .screenshot, "screenshot.capture", 0.15),
             (.screenRecorder, .screenRecorder, "recorder.toggle", 0.15),
-            (.colorPicker, .colorPicker, "colorPicker.pick", 0.15),
             (.cameraPreview, .cameraPreview, "camera.show", 0.15),
             (.scratchpad, .scratchpad, "scratchpad.show", 0.15),
             (.clipboard, .clipboardHistory, "clipboard.showHistoryWindow", 0.1),
@@ -110,7 +110,7 @@ enum QuickLauncherContract {
             (.cleaner, .cleaner, nil, nil),
             (.toggles, .quickLauncher, nil, nil),
         ]
-        suite.expect(Set(cases.map { $0.0 }) == Set(QuickLauncherItem.allCases),
+        suite.expect(Set(cases.map { $0.0 }) == Set(QuickLauncherItem.allCases).subtracting([.screenOCR, .colorPicker]),
                      "every launcher tile has an activation contract")
         for (item, feature, action, delay) in cases {
             events.removeAll()
@@ -142,6 +142,15 @@ enum QuickLauncherContract {
             DispatchQueue.main.drain()
             suite.expect(events.isEmpty && launcher.activeUtility == nil,
                          "editing \(item) never activates it")
+        }
+        for retired in [QuickLauncherItem.screenOCR, .colorPicker] {
+            events.removeAll()
+            DispatchQueue.main.jobs.removeAll()
+            let launcher = Launcher()
+            launcher.run(retired)
+            suite.expect(!retired.isAvailable(in: defaults) && events.isEmpty
+                         && DispatchQueue.main.jobs.isEmpty && launcher.activeUtility == nil,
+                         "retired standalone capture entries cannot execute a stale launcher action")
         }
         events.removeAll()
         DispatchQueue.main.jobs.removeAll()
@@ -201,7 +210,8 @@ enum QuickLauncherContract {
             launcher.prepareForPresentation()
             suite.expect(launcher.activeUtility == item,
                          "reopening preserves the working utility while its feature remains installed")
-            ReviewDefaults.current.set(false, forKey: item.feature.availabilityKey)
+            let key = item == .urlCleaner ? DefaultsKey.urlCleanerEnabled : item.feature.availabilityKey
+            ReviewDefaults.current.set(false, forKey: key)
             launcher.editingOptionsItem = item
             launcher.refreshAvailability()
             suite.expect(launcher.activeUtility == nil && launcher.editingOptionsItem == nil,
@@ -214,7 +224,7 @@ enum QuickLauncherContract {
             launcher.run(item)
             suite.expect(launcher.activeUtility == nil && events.isEmpty,
                          "a stale tile action cannot activate a removed feature")
-            ReviewDefaults.current.set(true, forKey: item.feature.availabilityKey)
+            ReviewDefaults.current.set(true, forKey: key)
         }
         launcher.candidates = []
         launcher.prepareForPresentation()

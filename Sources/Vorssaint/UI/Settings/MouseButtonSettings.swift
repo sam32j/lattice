@@ -38,7 +38,7 @@ struct MouseButtonShortcutsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             SettingsRow(symbol: "computermouse.fill", title: text.enableLabel, caption: text.enableCaption) {
-                Toggle(text.enableLabel, isOn: $enabled)
+                PermissionGatedToggle(text.enableLabel, isOn: $enabled)
                     .labelsHidden()
                     .onChange(of: enabled) { _, on in
                         if !on { stopCapture() }
@@ -63,10 +63,13 @@ struct MouseButtonShortcutsSection: View {
             Divider()
             SettingsRow(symbol: "rectangle.3.group", title: text.spacesEnableLabel,
                         caption: text.spacesEnableCaption) {
-                Toggle(text.spacesEnableLabel, isOn: $spacesEnabled)
+                if !spacesCommandsAreReachable {
+                    SettingsStatusDot(status: SettingsFeatureStatus(color: .red,
+                                                                  message: text.spacesShortcutsOffNote))
+                }
+                PermissionGatedToggle(text.spacesEnableLabel, isOn: $spacesEnabled)
                     .labelsHidden()
-                    .disabled(!spacesCommandsAreReachable && !spacesEnabled)
-                    .help(spacesCommandsAreReachable ? text.spacesEnableCaption : text.spacesShortcutsOffNote)
+                    .disabled(!spacesCommandsAreReachable)
                     .onChange(of: spacesEnabled) { _, on in
                         if !on {
                             stopSpacesCapture()

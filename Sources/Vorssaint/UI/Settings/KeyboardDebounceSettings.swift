@@ -7,7 +7,7 @@ extension KeyboardSettings {
         SettingsCard(title: l10n.s.keyDebounceName) {
             VStack(alignment: .leading, spacing: 12) {
                 SettingsRow(symbol: "keyboard", title: l10n.s.keyDebounceEnable,
-                            caption: l10n.s.keyDebounceCaption, status: debounceStatus) {
+                            caption: l10n.s.keyDebounceCaption) {
                     Toggle(l10n.s.keyDebounceEnable, isOn: $debounceEnabled)
                         .labelsHidden()
                         .onChange(of: debounceEnabled) { _, value in
@@ -31,8 +31,33 @@ extension KeyboardSettings {
                     Text(l10n.s.keyDebouncePerKeySection).font(.subheadline.weight(.semibold))
                         .help(l10n.s.keyDebouncePerKeyCaption)
 
+                    if !keyWindows.isEmpty {
+                        ForEach(keyWindows) { row in
+                            HStack(spacing: 8) {
+                                Text(KeyboardDebounceKeyCatalog.label(for: row.keyCode))
+                                    .font(.system(.body, design: .monospaced).weight(.semibold))
+                                    .frame(minWidth: 28, minHeight: 28)
+                                    .padding(.horizontal, 6)
+                                    .background(.background, in: RoundedRectangle(cornerRadius: 6))
+                                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.quaternary))
+                                Spacer(minLength: 12)
+                                Stepper(value: debounceBinding(for: row.keyCode),
+                                        in: Defaults.allowedKeyboardDebounceWindowRange,
+                                        step: Defaults.keyboardDebounceWindowStep) {
+                                    Text("\(row.window) ms").foregroundStyle(.secondary).monospacedDigit()
+                                }
+                                .fixedSize()
+                                Button(l10n.s.keyDebounceRemoveKey) {
+                                    removeWindow(for: row.keyCode)
+                                }
+                                .help(l10n.s.keyDebounceRemoveKey)
+                            }
+                            .padding(8)
+                            .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 9))
+                        }
+                    }
+
                     HStack(spacing: 8) {
-                        Spacer(minLength: 0)
                         Picker(l10n.s.keyDebounceKeyLabel, selection: $selectedKeyCode) {
                             Text(l10n.s.keyDebounceKeyLabel).tag(Int64?.none)
                             ForEach(KeyboardDebounceKeyCatalog.common) { key in
@@ -40,8 +65,10 @@ extension KeyboardSettings {
                             }
                         }
                         .labelsHidden().pickerStyle(.menu)
-                        .frame(width: 160)
+                        .fixedSize()
+                        .frame(width: 160, alignment: .leading)
 
+                        Spacer(minLength: 12)
                         Stepper(value: $selectedWindow,
                                 in: Defaults.allowedKeyboardDebounceWindowRange,
                                 step: Defaults.keyboardDebounceWindowStep) {
@@ -54,43 +81,11 @@ extension KeyboardSettings {
                         }
                         .disabled(!debounceEnabled || selectedKeyCode == nil)
                     }
-
-                    if !keyWindows.isEmpty {
-                        ForEach(keyWindows) { row in
-                            HStack(spacing: 8) {
-                                Text(KeyboardDebounceKeyCatalog.label(for: row.keyCode))
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .frame(width: 70, alignment: .leading)
-                                Spacer(minLength: 12)
-                                Stepper(value: debounceBinding(for: row.keyCode),
-                                        in: Defaults.allowedKeyboardDebounceWindowRange,
-                                        step: Defaults.keyboardDebounceWindowStep) {
-                                    Text("\(row.window) ms").foregroundStyle(.secondary).monospacedDigit()
-                                }
-                                .fixedSize()
-                                Button {
-                                    removeWindow(for: row.keyCode)
-                                } label: {
-                                    Image(systemName: "trash")
-                                }
-                                .buttonStyle(.borderless)
-                                .help(l10n.s.keyDebounceRemoveKey)
-                            }
-                        }
-                    }
                 }
                 .padding(.leading, settingsRowTextInset)
                 .disabled(!debounceEnabled)
             }
         }
-    }
-
-    var debounceStatus: SettingsFeatureStatus {
-        let key: InputSettingsStrings.Key = !debounceEnabled ? .off
-            : !permissions.accessibility ? .permissionRequired
-            : debounce.isRunning ? .filterActive : .waiting
-        return SettingsFeatureStatus(color: debounceEnabled && permissions.accessibility && debounce.isRunning ? .green : .secondary,
-                                     message: InputSettingsStrings.text(key, l10n.language))
     }
 
     var globalWindowBinding: Binding<Int> {

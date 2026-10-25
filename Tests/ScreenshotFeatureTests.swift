@@ -1073,7 +1073,7 @@ enum ScreenshotFeatureTests {
                 == [.screenshot, .recording, .text, .color],
                "the capture chooser keeps a stable order for every installed mode")
         let captureSettingsSource = (try? String(
-            contentsOfFile: "Sources/Vorssaint/UI/Settings/ScreenshotSettings.swift",
+            contentsOfFile: "Sources/Vorssaint/UI/Settings/ScreenshotSettingsActivation.swift",
             encoding: .utf8)) ?? ""
         suite.expect(captureSettingsSource.contains("CompactShortcutPreferenceRow")
                 && captureSettingsSource.contains("ocrName")
@@ -3375,8 +3375,8 @@ enum ScreenshotFeatureTests {
         suite.expect(capturesGoToShelf(option: true, installed: true, on: true)
                 && !capturesGoToShelf(option: false, installed: true, on: true)
                 && !capturesGoToShelf(option: true, installed: true, on: false)
-                && !capturesGoToShelf(option: true, installed: false, on: true),
-               "captures go to the shelf only with the option on and the shelf installed and switched on")
+                && capturesGoToShelf(option: true, installed: false, on: true),
+               "captures follow the shelf owner toggle and ignore its retired installation flag")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.screenshotSharingEnabled] as? Bool == true,
                "temporary screenshot links preserve their existing availability by default")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.screenshotToolOrder] as? String
