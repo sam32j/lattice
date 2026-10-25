@@ -202,6 +202,8 @@ struct VideoDownloaderSettings: View {
                                         model.refreshDependencies()
                                     }
 
+                                technicalDetailsContent
+
                                 HStack {
                                     Button(VideoDownloaderStrings.checkUpdates) {
                                         model.refreshDependencies()
@@ -693,17 +695,33 @@ struct VideoDownloaderSettings: View {
     private var technicalDetailsContent: some View {
         VStack(alignment: .leading, spacing: 6) {
             ForEach(VideoDownloadDependencies.coreRequired, id: \.self) { tool in
-                let isReady = model.dependencies.tools[tool] != nil
+                let path = model.dependencies.tools[tool]
                 HStack {
                     Text(tool)
                     Spacer()
-                    Text(isReady ? "Ready" : "Missing")
-                        .foregroundStyle(isReady ? Color.secondary : Color.red)
+                    if let path {
+                        Text(displayToolPath(path))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    } else {
+                        Text("Missing")
+                            .foregroundStyle(.red)
+                    }
                 }
                 .font(.caption)
+                .help(path ?? "Missing")
             }
         }
-        .padding(.top, 6)
+        .padding(.vertical, 4)
+    }
+
+    private func displayToolPath(_ path: String) -> String {
+        let home = NSHomeDirectory()
+        if path.hasPrefix(home) {
+            return "~" + path.dropFirst(home.count)
+        }
+        return path
     }
 
     private func chipView(_ text: String) -> some View {
