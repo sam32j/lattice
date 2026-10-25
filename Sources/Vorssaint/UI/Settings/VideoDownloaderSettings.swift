@@ -242,13 +242,11 @@ struct VideoDownloaderSettings: View {
             }
         }
         .onAppear {
-            history.pruneMissingFiles()
             if enabled {
                 model.refreshDependencies()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            history.pruneMissingFiles()
             if enabled {
                 model.refreshDependencies()
             }
@@ -515,6 +513,7 @@ struct VideoDownloaderSettings: View {
                 .foregroundStyle(.secondary)
 
             ForEach(history.items) { item in
+                let fileExists = FileManager.default.fileExists(atPath: item.fileURL.path)
                 HStack(spacing: 10) {
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
                         .fill(Color(nsColor: .windowBackgroundColor))
@@ -522,12 +521,13 @@ struct VideoDownloaderSettings: View {
                         .overlay(
                             Image(systemName: item.qualityTag == VideoDownloaderStrings.audioQuality ? "waveform" : "film")
                                 .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(fileExists ? Color.secondary : Color.secondary.opacity(0.45))
                         )
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(item.title)
                             .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(fileExists ? Color.primary : Color.secondary)
                             .lineLimit(1)
                         Text(item.formattedSubtitle)
                             .font(.caption2)
@@ -552,6 +552,19 @@ struct VideoDownloaderSettings: View {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .stroke(Color.secondary.opacity(0.08), lineWidth: 1)
                 )
+                .contextMenu {
+                    Button(VideoDownloaderStrings.showInFinder) {
+                        history.showInFinder(item)
+                    }
+                    Button("Copy File Path") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(item.fileURL.path, forType: .string)
+                    }
+                    Divider()
+                    Button("Remove from History", role: .destructive) {
+                        history.remove(item)
+                    }
+                }
                 .help(item.fileURL.path)
             }
         }

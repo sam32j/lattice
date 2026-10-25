@@ -56,28 +56,37 @@ final class DownloadHistoryStore: ObservableObject {
               let decoded = try? JSONDecoder().decode([RecentDownloadItem].self, from: data) else {
             return
         }
-        // Only retain records whose downloaded files still exist on disk
-        let valid = decoded.filter { FileManager.default.fileExists(atPath: $0.fileURL.path) }
-        items = valid
-        if valid.count != decoded.count {
-            save()
-        }
-    }
-
-    func pruneMissingFiles() {
-        let valid = items.filter { FileManager.default.fileExists(atPath: $0.fileURL.path) }
-        if valid.count != items.count {
-            items = valid
-            save()
-        }
+        items = decoded
     }
 
     func showInFinder(_ item: RecentDownloadItem) {
-        if FileManager.default.fileExists(atPath: item.fileURL.path) {
+        let manager = FileManager.default
+        if manager.fileExists(atPath: item.fileURL.path) {
             NSWorkspace.shared.activateFileViewerSelecting([item.fileURL])
         } else {
-            pruneMissingFiles()
+            let parentFolder = item.fileURL.deletingLastPathComponent()
+            if manager.fileExists(atPath: parentFolder.path) {
+                // If the file was moved or deleted, reveal its destination folder in Finder
+                NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: parentFolder.path)
+            } else {
+                // Neither the file nor its destination directory exists (e.g. unmounted external volume)
+                let alert = NSAlert()
+                alert.messageText = "File Not Found"
+                alert.informativeText = "The file \"\(item.fileURL.lastPathComponent)\" could not be found at:\n\(item.fileURL.path)\n\nIt may have been moved, renamed, or deleted."
+                alert.alertStyle = .informational
+                alert.addButton(withTitle: "OK")
+                alert.addButton(withTitle: "Remove from History")
+                let response = alert.runModal()
+                if response == .alertSecondButtonReturn {
+                    remove(item)
+                }
+            }
         }
+    }
+
+    func remove(_ item: RecentDownloadItem) {
+        items.removeAll(where: { $0.id == item.id })
+        save()
     }
 
     func record(fileURL: URL, title: String, qualityTag: String) {
