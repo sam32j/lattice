@@ -55,7 +55,7 @@ extension FeatureStrings {
 
 extension MouseExceptionStrings {
     static let enUS = MouseExceptionStrings(
-        listTitle: "Apps to leave alone",
+        listTitle: "Disable in these apps",
         addButton: "Add an app…",
         removeButton: "Remove",
         captionSmoothScroll: "Smooth scrolling will not be applied to these apps",

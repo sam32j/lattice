@@ -28,6 +28,7 @@ struct WindowPreviewExclusionsList: View {
                       reachesEveryApp: true,
                       acceptsExecutables: true,
                       usesSheet: true,
+                      sheetTitle: SettingsFollowupLabels.text(.pauseApps, l10n.language),
                       onAdd: { save(apps + [$0]) },
                       onRemove: { bundleID in save(apps.filter { $0 != bundleID }) })
     }

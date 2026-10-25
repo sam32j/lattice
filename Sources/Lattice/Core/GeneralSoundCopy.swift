@@ -5,7 +5,7 @@ import Foundation
 enum GeneralSoundCopy {
     static func label(_ language: AppLanguage) -> String {
         switch language {
-        case .enUS: return "Play a padlock sound on lock or unlock."
+        case .enUS: return "Play padlock sound on lock or unlock."
         case .ptBR: return "Tocar um som de cadeado ao bloquear ou desbloquear."
         case .es: return "Reproducir un sonido de candado al bloquear o desbloquear."
         case .de: return "Beim Sperren oder Entsperren einen Schlosston abspielen."
