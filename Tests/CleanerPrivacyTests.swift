@@ -4,6 +4,7 @@ enum CleanerPrivacyTests {
     static func run(_ suite: TestSuite) {
         CleanerPrivacyEnumerationTests.run(suite)
         CleanerProtectedRootTests.run(suite)
+        CleanerProtectedScanTests.run(suite)
         var reads = 0
         let owner = CleanerOwnership.owner(at: URL(fileURLWithPath: "/fixture/com.apple.Music"),
             usesContainerMetadata: true, readMetadata: { _ in reads += 1; return "com.vendor.example" })
