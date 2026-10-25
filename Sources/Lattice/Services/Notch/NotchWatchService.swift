@@ -333,7 +333,7 @@ final class NotchWatchService: ObservableObject {
             return
         }
         let languages = MediaSupport.recognitionLanguages(for: L10n.shared.language.rawValue)
-        let (area, recognized) = await Task.detached(priority: .utility) { () -> (CGImage, String) in
+        let reading = await Task.detached(priority: .utility) { () -> (CGImage, String)? in
             let area = NotchWatchSupport.standalone(image)
             let source = Self.scaledForRecognition(area) ?? area
             switch ScreenTextService.outcome(for: source, detectQRCodes: false, removeLineBreaks: false,
@@ -341,11 +341,13 @@ final class NotchWatchService: ObservableObject {
             case .text(let text): return (area, text)
             case .both(_, let text): return (area, text)
             case .qr, .empty: return (area, "")
+            case .unavailable: return nil
             }
         }.value
         // Kept only once read: a reading dropped halfway must not leave the
         // area marked as read, or a still area would never be read again.
         guard self.generation == generation, isActive else { return }
+        guard let (area, recognized) = reading else { return }
         fingerprint = picture
         readAt = Date()
         preview = area
