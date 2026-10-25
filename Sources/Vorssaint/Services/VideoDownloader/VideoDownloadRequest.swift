@@ -96,7 +96,7 @@ struct VideoDownloadInfo: Equatable, Sendable {
 
     var segmentedOptions: [VideoDownloadQuality] {
         var options: [VideoDownloadQuality] = [.best]
-        for q in qualities.prefix(3) {
+        for q in qualities.dropFirst().prefix(2) {
             options.append(q)
         }
         if hasAudio {
