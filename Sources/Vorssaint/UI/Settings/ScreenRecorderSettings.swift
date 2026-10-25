@@ -74,6 +74,7 @@ struct ScreenRecorderSettings: View {
 
     // MARK: - Master Header & Shortcuts Card
 
+
     // MARK: - Recording
 
     private var recordingCard: some View {
@@ -121,17 +122,14 @@ struct ScreenRecorderSettings: View {
                                   isOn: $systemAudio)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    SettingsToggleRow(title: strings.microphoneToggle,
+                    PermissionGatedSettingsRow(title: strings.microphoneToggle,
                                       caption: strings.microphoneCaption,
-                                      isOn: $microphone)
+                                      isOn: $microphone, requiring: [.microphone])
                         .onChange(of: microphone) { _, enabled in
                             if enabled, permissions.microphone == .undetermined {
                                 permissions.requestMicrophone()
                             }
                         }
-                    if microphone, permissions.microphone != .granted {
-                        PermissionRow(kind: .microphone)
-                    }
                 }
             }
         }

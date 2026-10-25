@@ -22,7 +22,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     var onCloseAll: (() -> Void)?
     var onClickThroughChanged: (() -> Void)?
     var onEdit: (() -> Void)?
-    static let pinLevel = NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue - 1)
+    static let pinLevel = ScreenshotWindowLayering.pinLevel
     private lazy var chrome = ScreenshotPinChrome(pin: self)
     private lazy var surface = ScreenshotPinContentView(image: image, pin: self)
 

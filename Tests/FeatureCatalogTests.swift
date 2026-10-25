@@ -1484,8 +1484,8 @@ enum FeatureCatalogTests {
                "an alert with its metric off in the hub stays disarmed")
 
         suite.expect(GlobalShortcutRole.activeRoles(isOn: { _ in true }).count
-                == GlobalShortcutRole.allCases.count,
-               "the availability-free overload keeps every enabled current role")
+                == GlobalShortcutRole.allCases.count - 2,
+               "standalone OCR and color-picker shortcuts are no longer offered")
         suite.expect(!GlobalShortcutRole.activeRoles(isOn: { _ in true },
                                                isAvailable: { $0 != .shelf }).contains(.shelf),
                "a role leaves the shortcuts page when its feature is off in the hub")

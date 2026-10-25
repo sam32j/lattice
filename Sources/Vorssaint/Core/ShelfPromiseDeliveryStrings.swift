@@ -15,9 +15,9 @@ struct ShelfPromiseDeliveryStrings {
         case .enUS:
             return .init(
                 failedTitle: "Couldn’t add attachment",
-                failedBody: "The file never finished saving to the shelf.",
-                fullTitle: "Shelf is full",
-                fullBody: "The attachment finished saving but there is no room left on the shelf.",
+                failedBody: "The file never finished saving to the File Cache.",
+                fullTitle: "File Cache is full",
+                fullBody: "The attachment finished saving but there is no room left on the File Cache.",
                 okButton: "OK")
         case .ptBR:
             return .init(

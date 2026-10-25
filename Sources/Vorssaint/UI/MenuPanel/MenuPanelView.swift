@@ -759,7 +759,7 @@ struct UtilitiesSection: View {
     }
 
     private func items(editing: Bool) -> [UtilityPanelItem] {
-        orderedItems.filter { $0.feature.isAvailable && (editing || isVisible($0)) }
+        orderedItems.filter { $0 != .screenOCR && $0 != .colorPicker && $0.feature.isAvailable && (editing || isVisible($0)) }
     }
 
     private func isVisible(_ item: UtilityPanelItem) -> Bool {
@@ -883,23 +883,8 @@ struct UtilitiesSection: View {
                                 permissionButtonTitle: l10n.s.permissionRequest,
                                 permissionAction: cleaningNeedsAccessibility ? grantAccessibility : nil,
                                 action: startCleaning)
-        case .screenOCR:
-            UtilityActionButton(title: l10n.s.ocrName,
-                                caption: ocrCaption,
-                                systemImage: "text.viewfinder",
-                                isEditing: editing,
-                                showsDragHandle: true,
-                                visibility: $showScreenOCR,
-                                needsAttention: !permissions.screenRecording,
-                                permissionButtonTitle: l10n.s.permissionRequest,
-                                permissionAction: permissions.screenRecording ? nil : grantScreenRecordingPermission,
-                                shortcutHint: shortcutHint(.screenOCR),
-                                action: {
-                                    appDelegate()?.closePopover()
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                        ScreenTextService.shared.capture()
-                                    }
-                                })
+        case .screenOCR, .colorPicker:
+            EmptyView()
         case .screenshot:
             UtilityActionButton(title: FeatureStrings.screenshot(l10n.language).pageTitle,
                                 caption: screenshotCaption,
@@ -941,20 +926,6 @@ struct UtilitiesSection: View {
                                     appDelegate()?.closePopover()
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                                         ScreenRecorderService.shared.toggle()
-                                    }
-                                })
-        case .colorPicker:
-            UtilityActionButton(title: l10n.s.colorPickerName,
-                                caption: l10n.s.colorPickerCaption,
-                                systemImage: "eyedropper",
-                                isEditing: editing,
-                                showsDragHandle: true,
-                                visibility: $showColorPicker,
-                                shortcutHint: shortcutHint(.colorPicker),
-                                action: {
-                                    appDelegate()?.closePopover()
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                        ColorSamplerService.shared.pick()
                                     }
                                 })
         case .cameraPreview:

@@ -69,7 +69,9 @@ final class HoverHintView: NSView {
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
-        trackingAreas.forEach(removeTrackingArea)
+        // inVisibleRect follows layout automatically. Replacing the area while
+        // hovered synthesizes exits and makes the information hint flash closed.
+        guard trackingAreas.isEmpty else { return }
         addTrackingArea(NSTrackingArea(rect: .zero,
             options: [.mouseEnteredAndExited, .activeInActiveApp, .inVisibleRect],
             owner: self, userInfo: nil))

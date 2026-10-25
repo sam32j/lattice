@@ -56,9 +56,6 @@ final class ScreenshotService: ObservableObject {
         case scrolling
     }
 
-    private var hideVorssaintWindows: Bool {
-        UserDefaults.standard.bool(forKey: DefaultsKey.screenshotHideVorssaintWindows)
-    }
 
     /// The surfaces that make up the act of capturing. The quick preview is
     /// here rather than with the content windows because it dismisses itself
@@ -89,14 +86,14 @@ final class ScreenshotService: ObservableObject {
     }
 
     private var protectedWindowIDs: Set<CGWindowID> {
-        protectedWindowIDsForCapture(honoursVisibilityPreference: true)
+        protectedWindowIDsForCapture(keepingContentOut: false)
     }
 
-    func protectedWindowIDsForCapture(honoursVisibilityPreference: Bool) -> Set<CGWindowID> {
+    func protectedWindowIDsForCapture(keepingContentOut: Bool) -> Set<CGWindowID> {
         ScreenshotCapturePolicy.protectedWindowIDs(
             workflowWindowIDs: workflowWindowIDs,
             contentWindowIDs: contentWindowIDs,
-            honoursVisibilityPreference: honoursVisibilityPreference)
+            keepingContentOut: keepingContentOut)
     }
 
     private var strings: ScreenshotFeatureStrings {
@@ -296,7 +293,6 @@ final class ScreenshotService: ObservableObject {
                 : defaults.bool(forKey: DefaultsKey.screenshotFreeze),
             includePointer: defaults.bool(forKey: DefaultsKey.screenshotIncludePointer),
             showLastRegion: defaults.bool(forKey: DefaultsKey.screenshotShowLastRegion),
-            hideVorssaintWindows: hideVorssaintWindows,
             protectedWindowIDs: { [weak self] in self?.protectedWindowIDs ?? [] },
             purpose: mode == .scrolling ? strings.scrollingCaptureTitle : nil,
             mode: mode == .scrolling ? .geometry : .image,
@@ -348,13 +344,12 @@ final class ScreenshotService: ObservableObject {
         let scale = screen.backingScaleFactor
         let frame = screen.frame
         let includePointer = UserDefaults.standard.bool(forKey: DefaultsKey.screenshotIncludePointer)
-        let hideWindows = hideVorssaintWindows
+
         let protectedIDs = protectedWindowIDs
         directCaptureTask = Task { @MainActor [weak self] in
             let image = await ScreenshotCaptureEngine.captureDisplay(
                 displayID,
                 includePointer: includePointer,
-                hideVorssaintWindows: hideWindows,
                 protectedWindowIDs: protectedIDs)
             guard let self, !Task.isCancelled else { return }
             self.directCaptureTask = nil
@@ -385,7 +380,7 @@ final class ScreenshotService: ObservableObject {
             onCancel: { [weak self] in self?.scrollingTask?.cancel() })
         // Read after the controls are on screen so their window is protected,
         // and once for the whole run: the picture must not change halfway.
-        let hideWindows = hideVorssaintWindows
+
         let protectedIDs = protectedWindowIDs
         let captureID = UUID()
         scrollingCaptureID = captureID
@@ -394,7 +389,6 @@ final class ScreenshotService: ObservableObject {
             let result = await ScreenshotScrollingCapture.capture(
                 region: region,
                 includePointer: false,
-                hideVorssaintWindows: hideWindows,
                 protectedWindowIDs: protectedIDs,
                 finishSignal: finishSignal,
                 onProgress: { _ in },

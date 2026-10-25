@@ -77,6 +77,8 @@ struct GeneralSettings: View {
                 .pickerStyle(.menu)
                 .labelsHidden()
             }
+            Divider()
+            AppMenuDestinationSettings()
         }
     }
 

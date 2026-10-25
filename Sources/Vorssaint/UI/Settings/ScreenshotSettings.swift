@@ -11,7 +11,6 @@ struct ScreenshotSettings: View {
     @ObservedObject private var runtime = FeatureRuntime.shared
     @AppStorage(DefaultsKey.screenshotEnabled) var screenshotEnabled = true
     @AppStorage(DefaultsKey.screenshotFreeze) private var freeze = true
-    @AppStorage(DefaultsKey.screenshotHideVorssaintWindows) private var hideVorssaintWindows = true
     @AppStorage(DefaultsKey.screenshotSaveFolder) private var saveFolder = ""
     @AppStorage(DefaultsKey.screenshotSaveSubfolder) private var saveSubfolder = ""
     @AppStorage(DefaultsKey.screenshotFileNamePattern) private var fileNamePattern = ""
@@ -41,10 +40,6 @@ struct ScreenshotSettings: View {
     @AppStorage(DefaultsKey.screenshotSharingEnabled) var sharingEnabled = true
     @AppStorage(DefaultsKey.screenshotUploadDuration) private var uploadDuration = ScreenshotShareDuration.oneHour.rawValue
     @AppStorage(DefaultsKey.screenshotPinRoundedCorners) private var pinRoundedCorners = true
-    @AppStorage(DefaultsKey.screenOCRRemoveLineBreaks) private var removesLineBreaks = false
-    @AppStorage(DefaultsKey.screenOCRDetectQRCodes) private var detectsQRCodes = true
-    @AppStorage(DefaultsKey.colorPickerFormat) private var colorFormat = "hex"
-    @AppStorage(DefaultsKey.colorPickerBareHex) private var usesBareHex = false
     @State private var showingSharedLinks = false
     @State private var showingSharePrivacy = false
 
@@ -68,8 +63,6 @@ struct ScreenshotSettings: View {
                     destinationCard
                     toolsCard
                     sharingCard
-                    ocrCard
-                    colorPickerCard
                 }
                 .disabled(!screenshotInstalled)
                 .opacity(screenshotInstalled ? 1 : 0.55)
@@ -87,6 +80,7 @@ struct ScreenshotSettings: View {
         }
     }
 
+
     // MARK: - Selection
 
     private var selectionCard: some View {
@@ -96,8 +90,6 @@ struct ScreenshotSettings: View {
                                   caption: strings.freezeCaption,
                                   isOn: $freeze)
 
-                SettingsToggleRow(title: strings.hideVorssaintWindowsToggle,
-                                  isOn: $hideVorssaintWindows)
 
                 SettingsControlRow(title: strings.delayLabel) {
                     Picker(strings.delayLabel, selection: $delay) {
@@ -301,46 +293,6 @@ struct ScreenshotSettings: View {
                         }
                         .buttonStyle(.plain)
                     }
-                }
-            }
-        }
-    }
-
-    // MARK: - Screen OCR
-
-    private var ocrCard: some View {
-        SettingsCard(title: l10n.s.ocrName) {
-            VStack(alignment: .leading, spacing: 14) {
-                SettingsToggleRow(title: l10n.s.ocrRemoveLineBreaksToggle,
-                                  caption: l10n.s.ocrRemoveLineBreaksCaption,
-                                  isOn: $removesLineBreaks)
-
-                SettingsToggleRow(title: l10n.s.ocrQRToggle,
-                                  caption: l10n.s.ocrQRCaption,
-                                  isOn: $detectsQRCodes)
-            }
-        }
-    }
-
-    // MARK: - Color Picker
-
-    private var colorPickerCard: some View {
-        SettingsCard(title: l10n.s.colorPickerName) {
-            VStack(alignment: .leading, spacing: 14) {
-                SettingsControlRow(title: l10n.s.colorPickerFormatLabel) {
-                    Picker(l10n.s.colorPickerFormatLabel, selection: $colorFormat) {
-                        ForEach(ColorCopyFormat.allCases) { format in
-                            Text(format.label).tag(format.rawValue)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
-                }
-
-                if colorFormat == ColorCopyFormat.hex.rawValue {
-                    SettingsToggleRow(title: l10n.s.colorPickerBareHexToggle,
-                                      isOn: $usesBareHex)
                 }
             }
         }

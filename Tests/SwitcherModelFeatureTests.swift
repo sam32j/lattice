@@ -2592,12 +2592,12 @@ enum SwitcherModelFeatureTests {
                 in: islandDefaults, hiddenInFullscreen: false),
                    "the saved icon preference resumes when the island leaves fullscreen")
             islandDefaults.set(false, forKey: DefaultsKey.notchEnabled)
-            suite.expect(!MenuBarSpacingSupport.islandHidesStatusIcon(in: islandDefaults),
-                   "switching the island off brings the icon back")
+            suite.expect(MenuBarSpacingSupport.islandHidesStatusIcon(in: islandDefaults),
+                   "Menu Bar visibility no longer depends on the island enable switch")
             islandDefaults.set(true, forKey: DefaultsKey.notchEnabled)
             islandDefaults.set(false, forKey: AppFeature.notch.availabilityKey)
-            suite.expect(!MenuBarSpacingSupport.islandHidesStatusIcon(in: islandDefaults),
-                   "removing the island in the hub brings the icon back")
+            suite.expect(MenuBarSpacingSupport.islandHidesStatusIcon(in: islandDefaults),
+                   "removing the island does not override the Menu Bar visibility preference")
         }
 
         // A pinned metric that momentarily has nothing to show keeps its item

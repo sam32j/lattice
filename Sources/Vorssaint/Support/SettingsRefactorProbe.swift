@@ -68,6 +68,7 @@ enum SettingsRefactorProbe {
         }
         if !CommandLine.arguments.contains("--bluetooth-only") {
             InputSettingsRenderingProbe.run(output: output, failures: &failures)
+            SettingsOwnershipRenderingProbe.run(output: output, failures: &failures)
         }
         defaults.removePersistentDomain(forName: identity)
         for failure in failures { print("SETTINGS_RENDERING_FAILED \(failure)") }
@@ -78,6 +79,8 @@ enum SettingsRefactorProbe {
     static func render(_ name: String, view: AnyView, size: CGSize, output: URL, failures: inout [String]) {
         let host = NSHostingView(rootView: view.frame(width: size.width, height: size.height, alignment: .topLeading)
             .environment(\.controlActiveState, .active)
+            .environment(\.settingsPermissionAccess, SettingsPermissionAccessors(
+                verify: { _ in true }, request: { _, complete in complete(.granted) }))
             .preferredColorScheme(.light).background(Color(nsColor: .windowBackgroundColor)))
         let window = NSWindow(contentRect: CGRect(origin: CGPoint(x: 80, y: 80), size: size),
                               styleMask: [.titled], backing: .buffered, defer: false)

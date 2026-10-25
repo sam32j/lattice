@@ -995,8 +995,9 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     }
 
     func isAvailable(using isAvailable: (AppFeature) -> Bool) -> Bool {
-        isKeyboardBrightness ? BrightnessService.keyboardLightIsSupported
-            : availabilityFeatures.contains(where: isAvailable)
+        self != .screenOCR && self != .colorPicker
+            && (isKeyboardBrightness ? BrightnessService.keyboardLightIsSupported
+                : availabilityFeatures.contains(where: isAvailable))
     }
 
     /// The features whose own shortcuts have to go quiet while the user is

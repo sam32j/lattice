@@ -439,6 +439,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     }
 
     private func toggleMainPopover() {
+        guard AppMenuDestination.selected(in: .standard) != .none else { return }
         if NotchSupport.routesAppPanel(), NotchService.shared.acceptsSystemFeedback {
             NotchService.shared.openAppPanel(toggle: true); return
         }
