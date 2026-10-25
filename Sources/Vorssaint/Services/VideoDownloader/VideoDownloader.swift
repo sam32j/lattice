@@ -325,17 +325,31 @@ final class VideoDownloader: ObservableObject {
                 self?.progress = nil
                 self?.downloadProgress = nil
                 self?.historyStore.record(fileURL: saved, title: videoTitle, qualityTag: qualityTag)
+                self?.playCompletionSound()
                 self?.startCompletionSustain()
             }
         }
     }
+
+    private func playCompletionSound() {
+        if let sound = NSSound(named: "Glass") {
+            sound.play()
+        } else if let sound = NSSound(contentsOfFile: "/System/Library/Sounds/Glass.aiff", byReference: false) {
+            sound.play()
+        }
+    }
+
+    var isExpandedFocused: () -> Bool = { false }
 
     func startCompletionSustain() {
         completionSustainTimer?.cancel()
         isCompletedSustaining = true
         let item = DispatchWorkItem { [weak self] in
             guard let self else { return }
-            self.resetDownloadState()
+            self.isCompletedSustaining = false
+            if !self.isExpandedFocused() {
+                self.resetDownloadState()
+            }
             self.objectWillChange.send()
         }
         completionSustainTimer = item
