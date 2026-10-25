@@ -92,10 +92,11 @@ final class NotchMusicSwipeController {
         if let presentation, presentation != expanded { cancel() }
         if contacts.isEmpty {
             guard allowRelease else { cancel(); return false }
+            let keepCompletion = enabled && state.completionPending && state.frame.expanded == expanded
             let action = gesture.update([], enabled: enabled)
             finishTracking(contactsRemain: false)
             if let action { publish(action, expanded: expanded) }
-            else { state.clear() }
+            else if !keepCompletion { state.clear() }
             return action != nil
         }
         guard enabled else {

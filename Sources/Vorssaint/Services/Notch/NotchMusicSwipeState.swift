@@ -10,22 +10,32 @@ final class NotchMusicSwipeState: ObservableObject {
         var expanded = false
     }
     @Published private(set) var frame = Frame()
+    private(set) var completionPending = false
     private var expiry: DispatchWorkItem?
+    private let scheduleExpiry: (TimeInterval, DispatchWorkItem) -> Void
+
+    init(scheduleExpiry: @escaping (TimeInterval, DispatchWorkItem) -> Void = {
+        DispatchQueue.main.asyncAfter(deadline: .now() + $0, execute: $1)
+    }) {
+        self.scheduleExpiry = scheduleExpiry
+    }
 
     func show(_ frame: Frame, completed: Bool = false, held: Bool = false) {
         expiry?.cancel()
         expiry = nil
-        self.frame = frame
+        completionPending = completed && frame.progress > 0
+        if self.frame != frame { self.frame = frame }
         guard frame.progress > 0, !held else { return }
         let work = DispatchWorkItem { [weak self] in self?.clear() }
         expiry = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + (completed ? 0.22 : 0.5), execute: work)
+        scheduleExpiry(completed ? 0.22 : 0.5, work)
     }
 
     func clear() {
         expiry?.cancel()
         expiry = nil
-        frame = Frame()
+        completionPending = false
+        if frame != Frame() { frame = Frame() }
     }
     deinit { expiry?.cancel() }
 }

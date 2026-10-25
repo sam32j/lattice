@@ -4,6 +4,7 @@ enum NotchMusicTrackSwipeTests {
     static func run(_ suite: TestSuite) {
         NotchMusicSwipeSurfaceTests.run(suite)
         NotchMusicSwipeRecoveryTests.run(suite)
+        NotchMusicSwipeCompletionTests.run(suite)
         func contacts(_ x: CGFloat, second: CGFloat? = nil) -> [NotchMusicTrackSwipe.Contact] {
             [.init(id: 1, position: CGPoint(x: x, y: 20)),
              .init(id: 2, position: CGPoint(x: second ?? x, y: 40))]
