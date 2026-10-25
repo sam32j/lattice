@@ -5,7 +5,7 @@ import Foundation
 /// display scale and scroll acceleration. Scroll events supply direction only.
 struct NotchMusicTrackSwipe {
     private static let feedbackDistance = 18.0 // ¼ inch at 72 physical points per inch.
-    private static let trackChangeDistance = 96.0 // 4/3 inch.
+    private static let trackChangeDistance = 54.0 // ¾ inch.
     enum Direction { case next, previous }
     struct Contact {
         let id: Int

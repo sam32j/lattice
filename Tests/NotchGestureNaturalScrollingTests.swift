@@ -3,10 +3,10 @@ import Foundation
 enum NotchGestureNaturalScrollingTests {
     static func run(_ suite: TestSuite) {
         let cases: [(Double, CGFloat, NotchMusicTrackSwipe.Direction, String)] = [
-            (-45, 96, .next, "physical right swipe, natural off"),
-            (45, -96, .previous, "physical left swipe, natural off"),
-            (45, 96, .previous, "physical right swipe, natural on"),
-            (-45, -96, .next, "physical left swipe, natural on")
+            (-45, 54, .next, "physical right swipe, natural off"),
+            (45, -54, .previous, "physical left swipe, natural off"),
+            (45, 54, .previous, "physical right swipe, natural on"),
+            (-45, -54, .next, "physical left swipe, natural on")
         ]
         for (delta, travel, expected, name) in cases {
             var gesture = NotchMusicTrackSwipe()

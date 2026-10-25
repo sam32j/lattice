@@ -31,3 +31,5 @@ Latest steering: remove the remaining directional position nudge entirely. Hapti
 ### Distance adjustment after PR 11 review
 
 Latest user steering supersedes the earlier distances: emit the first haptic at 18 physical points (¼ inch), then arm the second haptic and track command at 96 physical points (4/3 inch). Keep the existing small visual-intent slop, first-original-finger-lift commit and cancellation behavior. Both fingers must satisfy the travel requirement; no timed pulse is added.
+
+Correction: the user meant ¾ inch, so the final arming distance is 54 physical points. The first haptic remains at 18 physical points (¼ inch); lift-to-commit and all other behavior remain unchanged.
