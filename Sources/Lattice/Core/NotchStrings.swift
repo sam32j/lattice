@@ -161,7 +161,7 @@ extension NotchStrings {
         spacious: "Spacious",
         hoverExpand: "Expand fully on hover",
         shelfWindow: "Open the file File Cache in the Dynamic Island",
-        dragReveal: "Show a drop target while dragging",
+        dragReveal: "Show drop zone on Dynamic Island while dragging",
         quickPanel: "Open the Launcher Grid in the Dynamic Island",
         appPanel: "Open the app panel in the Dynamic Island",
         idleContent: "While inactive",

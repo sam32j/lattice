@@ -95,21 +95,15 @@ struct DockSettings: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                SettingsRow(symbol: "circle.lefthalf.filled", title: l10n.s.dockPreviewBackgroundOpacity,
-                            caption: dockPreviewBackgroundIsGlass
-                                ? l10n.s.dockPreviewBackgroundOpacityGlassCaption
-                                : l10n.s.dockPreviewBackgroundOpacityCaption) {
-                    HStack(spacing: 8) {
-                        Slider(value: dockPreviewBackgroundOpacityBinding,
-                               in: DockPreviewSupport.backgroundOpacityRange,
-                               step: 0.05)
+                if !dockPreviewBackgroundIsGlass {
+                    SettingsRow(symbol: "circle.lefthalf.filled", title: l10n.s.dockPreviewBackgroundOpacity,
+                                caption: l10n.s.dockPreviewBackgroundOpacityCaption) {
+                        SettingsValueSlider(title: l10n.s.dockPreviewBackgroundOpacity,
+                            value: dockPreviewBackgroundOpacityBinding,
+                            range: DockPreviewSupport.backgroundOpacityRange, step: 0.05,
+                            readout: "\(dockPreviewBackgroundOpacityPercent)%", usesSystemAppearance: true)
                             .frame(width: 140)
-                        Text("\(dockPreviewBackgroundOpacityPercent)%")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                            .frame(width: 44, alignment: .trailing)
                     }
-                    .disabled(dockPreviewBackgroundIsGlass)
                 }
                 SettingsRow(symbol: "xmark.circle", title: l10n.s.dockPreviewQuitAppOnClose,
                             caption: l10n.s.dockPreviewQuitAppOnCloseCaption) {

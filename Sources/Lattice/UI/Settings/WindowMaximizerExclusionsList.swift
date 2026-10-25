@@ -21,6 +21,7 @@ struct WindowMaximizerExclusionsList: View {
                       // so the picker offers running apps and browsing too.
                       reachesEveryApp: true,
                       usesSheet: true,
+                      sheetTitle: SettingsFollowupLabels.text(.fullScreenApps, l10n.language),
                       onAdd: { save(apps + [$0]) },
                       onRemove: { bundleID in save(apps.filter { $0 != bundleID }) })
     }

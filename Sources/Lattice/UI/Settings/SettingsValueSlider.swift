@@ -9,12 +9,27 @@ struct SettingsValueSlider: View {
     let range: ClosedRange<Double>
     var step: Double = 0
     let readout: String
+    var usesSystemAppearance = false
     var onEditingChanged: (Bool) -> Void = { _ in }
     @State private var tracking = false
 
     var body: some View {
-        NativeSettingsSlider(value: $value, tracking: $tracking, range: range, step: step,
-                             onEditingChanged: onEditingChanged)
+        Group {
+            if usesSystemAppearance {
+                Slider(value: Binding(get: { value }, set: { raw in
+                    let next = step > 0 ? range.lowerBound + ((raw - range.lowerBound) / step).rounded() * step : raw
+                    value = min(max(next, range.lowerBound), range.upperBound)
+                }), in: range, onEditingChanged: { editing in
+                    tracking = editing
+                    onEditingChanged(editing)
+                })
+                .labelsHidden()
+                .controlSize(.regular)
+            } else {
+                NativeSettingsSlider(value: $value, tracking: $tracking, range: range, step: step,
+                                     onEditingChanged: onEditingChanged)
+            }
+        }
             .frame(height: 22)
             .overlay {
                 if tracking {

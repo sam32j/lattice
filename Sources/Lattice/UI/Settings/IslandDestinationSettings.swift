@@ -15,7 +15,6 @@ struct IslandDestinationSettings: View {
     @AppStorage(DefaultsKey.notchCameraEnabled) private var cameraRoute = true
     @AppStorage(DefaultsKey.notchQuickPanel) private var launcherRoute = true
     @AppStorage(DefaultsKey.notchDragReveal) private var dragReveal = true
-    @AppStorage(DefaultsKey.notchClipboard) private var clipboardActivity = true
     @AppStorage(DefaultsKey.notchClipboardCardSize) private var cardSize = NotchClipboardCardSize.comfortable.rawValue
 
     private var shown: Binding<Bool> {
@@ -42,8 +41,6 @@ struct IslandDestinationSettings: View {
                         .onChange(of: dragReveal) { _, _ in sync() }
                 }
                 if destination == .clipboard {
-                    SettingsToggleRow(title: activityTitle, isOn: $clipboardActivity)
-                        .onChange(of: clipboardActivity) { _, _ in sync() }
                     SettingsControlRow(title: styleTitle) {
                         Picker(styleTitle, selection: $cardSize) {
                             Text(SettingsOwnershipStrings.text(.compact, l10n.language)).tag(NotchClipboardCardSize.compact.rawValue)
@@ -55,10 +52,6 @@ struct IslandDestinationSettings: View {
             }
             }
         }
-    }
-
-    private var activityTitle: String {
-        l10n.language == .enUS ? "Show clipboard activity" : FeatureStrings.notch(l10n.language).clipboardActivity
     }
 
     private var styleTitle: String {

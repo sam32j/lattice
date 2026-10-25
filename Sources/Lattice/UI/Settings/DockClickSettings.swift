@@ -12,17 +12,7 @@ struct DockClickSettings: View {
     @State private var coordinator: PermissionActivationCoordinator?
     var sync: () -> Void = { FeatureRuntime.shared.sync([.dockClick]) }
 
-    enum Action: CaseIterable {
-        case toggleWindows, hideApps, cycleWindows
-
-        var symbol: String {
-            switch self {
-            case .toggleWindows: return "dock.arrow.down.rectangle"
-            case .hideApps: return "eye.slash"
-            case .cycleWindows: return "arrow.triangle.2.circlepath"
-            }
-        }
-    }
+    typealias Action = DockClickMode
 
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
@@ -30,7 +20,7 @@ struct DockClickSettings: View {
                 .font(.headline)
             HStack(spacing: 8) {
                 ForEach(Action.allCases, id: \.self) { action in
-                    let selected = isSelected(action) && access.verify(.accessibility)
+                    let selected = isSelected(action)
                     Button { select(action) } label: {
                         VStack(spacing: 8) {
                             Image(systemName: action.symbol).font(.system(size: 20, weight: .medium))
@@ -58,6 +48,7 @@ struct DockClickSettings: View {
 
     private func title(_ action: Action) -> String {
         switch action {
+        case .off: return FeatureStrings.notchAgents(l10n.language).off
         case .toggleWindows: return l10n.language == .enUS ? "Toggle Windows" : l10n.s.dockClickMinimize
         case .hideApps: return l10n.language == .enUS ? "Hide/Unhide Apps" : l10n.s.dockClickHide
         case .cycleWindows: return l10n.language == .enUS ? "Cycle Windows" : l10n.s.dockClickCycleWindows
@@ -65,26 +56,27 @@ struct DockClickSettings: View {
     }
 
     private func isSelected(_ action: Action) -> Bool {
-        switch action {
-        case .toggleWindows: return minimize
-        case .hideApps: return hide
-        case .cycleWindows: return cycle
-        }
+        _ = minimize; _ = hide; _ = cycle
+        let current: Action = access.verify(.accessibility) ? .selected(in: .standard) : .off
+        return current == action
     }
 
     private func select(_ action: Action) {
         coordinator?.cancel()
-        let minimizeBinding = $minimize, hideBinding = $hide, cycleBinding = $cycle
+        if action == .off {
+            Action.off.store(in: .standard)
+            sync()
+            return
+        }
+        guard !isSelected(action) else { return }
         let synchronize = sync
         let next = PermissionActivationCoordinator(requirements: [.accessibility],
             verify: access.verify, requestAccess: access.request,
             applyEnabled: { enabled in
-                minimizeBinding.wrappedValue = enabled && action == .toggleWindows
-                hideBinding.wrappedValue = enabled && action == .hideApps
-                cycleBinding.wrappedValue = enabled && action == .cycleWindows
+                (enabled ? action : .off).store(in: .standard)
                 synchronize()
             })
         coordinator = next
-        next.setEnabled(!(isSelected(action) && access.verify(.accessibility)))
+        next.setEnabled(true)
     }
 }

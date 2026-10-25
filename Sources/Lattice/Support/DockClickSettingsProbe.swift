@@ -48,10 +48,10 @@ enum DockClickSettingsProbe {
                 failures.append("Dock tile \(label) did not exclusively select its action.")
             }
         }
-        _ = findButton("Cycle Windows", in: host)?.accessibilityPerformPress?()
+        _ = findButton("Off", in: host)?.accessibilityPerformPress?()
         settle()
         if keys.contains(where: { defaults.bool(forKey: $0) }) {
-            failures.append("Clicking the selected Dock tile must allow all actions off.")
+            failures.append("The Off tile must clear every Dock Click action.")
         }
         granted = false
         // A revoked grant can precede the persisted activation being cleared.

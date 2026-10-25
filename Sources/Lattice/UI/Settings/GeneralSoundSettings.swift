@@ -9,7 +9,7 @@ struct GeneralSoundSettings: View {
 
     var body: some View {
         SettingsCard(title: FeatureStrings.hub(l10n.language).groupSound) {
-            SettingsRow(symbol: "speaker.wave.2", title: title) {
+            SettingsRow(symbol: "speaker.wave.2", title: SettingsFollowupLabels.text(.lockSound, l10n.language), caption: title) {
                 Toggle(title, isOn: $enabled).labelsHidden()
                     .onChange(of: enabled) { _, _ in LockSoundService.shared.syncWithPreferences() }
             }
