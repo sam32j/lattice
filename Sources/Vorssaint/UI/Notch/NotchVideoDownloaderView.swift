@@ -18,13 +18,13 @@ struct NotchVideoDownloaderView: View {
                 // Top row: search bar header
                 searchBarRow
 
-                if let output = downloader.output {
-                    completedView(output: output)
-                } else if let info = downloader.info {
-                    // Search successful: extends downwards with image preview & download/progress controls
+                if let info = downloader.info {
+                    // Search successful: extends downwards with image preview & controls
                     previewRow(info: info)
 
-                    if downloader.isDownloading || downloader.isPaused || (downloader.busy && downloader.progress != nil) {
+                    if downloader.output != nil || downloader.isCompletedSustaining {
+                        completedControlsRow
+                    } else if downloader.isDownloading || downloader.isPaused || (downloader.busy && downloader.progress != nil) {
                         downloadingControlsRow
                     } else {
                         reviewControlsRow(info: info)
@@ -40,6 +40,14 @@ struct NotchVideoDownloaderView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: downloader.info != nil)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: downloader.isDownloading)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: downloader.output != nil)
+        .notchBand(trailing: {
+            NotchIconButton(symbol: "clock.arrow.circlepath", title: VideoDownloaderStrings.recent) {
+                SettingsRouter.shared.page = .videoDownloader
+                SettingsRouter.shared.videoDownloaderSection = "recent"
+                (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+                NotchService.shared.collapse()
+            }
+        })
         .onAppear {
             refreshClipboard()
         }
@@ -62,7 +70,7 @@ struct NotchVideoDownloaderView: View {
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
 
-                TextField("Paste a video link", text: $downloader.link)
+                TextField(VideoDownloaderStrings.urlPlaceholder, text: $downloader.link)
                     .textFieldStyle(.plain)
                     .font(.system(size: 12))
                     .foregroundStyle(.white)
@@ -72,8 +80,8 @@ struct NotchVideoDownloaderView: View {
 
                 if let clip = clipboardURL, downloader.link.isEmpty {
                     Button {
+                        // Paste clipboard URL into text field without triggering search
                         downloader.link = clip
-                        downloader.fetchInfo()
                     } label: {
                         Text(VideoDownloaderStrings.pasteClipboardURL)
                             .font(.system(size: 11, weight: .semibold))
@@ -89,29 +97,43 @@ struct NotchVideoDownloaderView: View {
             .frame(height: 36)
             .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-            // Action Button (Search / Paste / Spinning while fetching)
-            Button {
-                if !downloader.isFetching {
-                    submitLink()
+            // Action Button: Clear when results are shown, Search otherwise
+            if downloader.info != nil || downloader.output != nil {
+                Button {
+                    downloader.resetDownloadState()
+                } label: {
+                    Text(VideoDownloaderStrings.clear)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .frame(height: 36)
+                        .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
-            } label: {
-                Group {
-                    if downloader.isFetching {
-                        ProgressView()
-                            .controlSize(.small)
-                            .frame(width: 20, height: 20)
-                    } else {
-                        Text(downloader.link.isEmpty ? VideoDownloaderStrings.paste : VideoDownloaderStrings.search)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.white)
+                .buttonStyle(.plain)
+            } else {
+                Button {
+                    if !downloader.isFetching {
+                        submitLink()
                     }
+                } label: {
+                    Group {
+                        if downloader.isFetching {
+                            ProgressView()
+                                .controlSize(.small)
+                                .frame(width: 20, height: 20)
+                        } else {
+                            Text(VideoDownloaderStrings.search)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .frame(height: 36)
+                    .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
-                .padding(.horizontal, 14)
-                .frame(height: 36)
-                .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .buttonStyle(.plain)
+                .disabled(downloader.isFetching)
             }
-            .buttonStyle(.plain)
-            .disabled(downloader.isFetching)
         }
     }
 
@@ -152,8 +174,9 @@ struct NotchVideoDownloaderView: View {
 
             Spacer(minLength: 4)
 
-            // Numeric percentage when downloading
-            if downloader.isDownloading || downloader.isPaused || (downloader.busy && downloader.progress != nil) {
+            // Numeric percentage when actively downloading
+            if (downloader.isDownloading || downloader.isPaused || (downloader.busy && downloader.progress != nil))
+                && downloader.output == nil && !downloader.isCompletedSustaining {
                 let percentText = downloader.downloadProgress?.percentText ?? "\(Int((downloader.progress ?? 0) * 100))%"
                 Text(percentText)
                     .font(.system(size: 22, weight: .bold))
@@ -278,50 +301,47 @@ struct NotchVideoDownloaderView: View {
         }
     }
 
-    // MARK: - Completed View
+    // MARK: - Completed Controls Row (Temporary 10s state in original preview section)
 
-    private func completedView(output: URL) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 24))
-                .foregroundStyle(.green)
+    private var completedControlsRow: some View {
+        Button {
+            if let output = downloader.output {
+                NSWorkspace.shared.activateFileViewerSelecting([output])
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.green)
 
-            VStack(alignment: .leading, spacing: 2) {
                 Text(VideoDownloaderStrings.downloadComplete)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.white)
-                let sizeStr = outputFileSizeText(url: output)
-                let subtext = sizeStr.isEmpty ? "Saved to \(destinationFolderName)" : "\(sizeStr) saved to \(destinationFolderName)"
-                Text(subtext)
+
+                Spacer()
+
+                if let output = downloader.output {
+                    let sizeStr = outputFileSizeText(url: output)
+                    if !sizeStr.isEmpty {
+                        Text(sizeStr)
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Text(VideoDownloaderStrings.showInFinder)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                Image(systemName: "arrow.up.forward.square")
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
-
-            Spacer(minLength: 4)
-
-            Button {
-                NSWorkspace.shared.activateFileViewerSelecting([output])
-            } label: {
-                Text(VideoDownloaderStrings.showInFinder)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.black)
-                    .padding(.horizontal, 12)
-                    .frame(height: 26)
-                    .background(Color.white, in: Capsule())
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                downloader.resetDownloadState()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .padding(6)
-            }
-            .buttonStyle(.plain)
+            .padding(.horizontal, 10)
+            .frame(height: 28)
+            .background(Color.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .padding(.vertical, 2)
+        .buttonStyle(.plain)
     }
 
     // MARK: - Error View
@@ -457,7 +477,14 @@ struct NotchVideoDownloaderStrip: View {
 
     var body: some View {
         Button {
-            service.openActivity(.videoDownloader)
+            // When complete, clicking compact mode opens the file in Finder without expanding
+            if downloader.output != nil || downloader.isCompletedSustaining {
+                if let output = downloader.output {
+                    NSWorkspace.shared.activateFileViewerSelecting([output])
+                }
+            } else {
+                service.openActivity(.videoDownloader)
+            }
         } label: {
             HStack(spacing: 0) {
                 // Left wing: thumbnail or download icon
@@ -518,7 +545,14 @@ struct NotchCapsuleVideoDownloaderStrip: View {
 
     var body: some View {
         Button {
-            service.openActivity(.videoDownloader)
+            // When complete, clicking compact mode opens the file in Finder without expanding
+            if downloader.output != nil || downloader.isCompletedSustaining {
+                if let output = downloader.output {
+                    NSWorkspace.shared.activateFileViewerSelecting([output])
+                }
+            } else {
+                service.openActivity(.videoDownloader)
+            }
         } label: {
             HStack(spacing: 8) {
                 if let thumb = downloader.thumbnailImage {

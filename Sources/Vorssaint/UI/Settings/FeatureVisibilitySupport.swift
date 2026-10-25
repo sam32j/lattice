@@ -175,6 +175,8 @@ final class SettingsRouter: ObservableObject {
     /// One-shot hint for the Dynamic Island page to show the companion's content page,
     /// where its settings live. Consumed and cleared on arrival.
     @Published var notchCompanion = false
+    /// One-shot hint for the Video Downloader page to scroll to a specific section.
+    @Published var videoDownloaderSection: String?
 
     private var history = [HistoryEntry(destination: FeatureSettingsDestination(.general),
                                         sidebarFeature: nil)]
