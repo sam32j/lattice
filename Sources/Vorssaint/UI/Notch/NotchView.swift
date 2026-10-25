@@ -494,7 +494,14 @@ struct NotchView: View {
             // One shelf tile and its vertical insets; the actions are in the top row.
             size.height = max(size.height, 88 + 8)
         case .videoDownloader:
-            size.height = max(size.height, 140)
+            let dl = VideoDownloader.shared
+            if dl.info != nil || dl.output != nil || dl.isDownloading || dl.isPaused {
+                size.height = max(size.height, 170)
+            } else if dl.error != nil {
+                size.height = max(size.height, 98)
+            } else {
+                size.height = max(size.height, 52)
+            }
         default: break
         }
         return size

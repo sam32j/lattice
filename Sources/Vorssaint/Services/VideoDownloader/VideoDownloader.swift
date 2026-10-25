@@ -26,7 +26,9 @@ final class VideoDownloader: ObservableObject {
     @Published private(set) var error: String?
     @Published private(set) var output: URL?
     @Published private(set) var thumbnailImage: NSImage?
+    @Published private(set) var isCompletedSustaining = false
 
+    private var completionSustainTimer: DispatchWorkItem?
     private var inspectedURL: URL?
     private var job: VideoDownloadProcess?
     private var terminatingJobs: [VideoDownloadProcess] = []
@@ -323,17 +325,43 @@ final class VideoDownloader: ObservableObject {
                 self?.progress = nil
                 self?.downloadProgress = nil
                 self?.historyStore.record(fileURL: saved, title: videoTitle, qualityTag: qualityTag)
+                self?.startCompletionSustain()
             }
         }
     }
 
+    func startCompletionSustain() {
+        completionSustainTimer?.cancel()
+        isCompletedSustaining = true
+        let item = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.isCompletedSustaining = false
+            self.objectWillChange.send()
+        }
+        completionSustainTimer = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: item)
+    }
+
+    func cancelCompletionSustain() {
+        completionSustainTimer?.cancel()
+        completionSustainTimer = nil
+        if isCompletedSustaining {
+            isCompletedSustaining = false
+        }
+    }
+
     func resetDownloadState() {
+        cancelCompletionSustain()
         output = nil
+        info = nil
+        progress = nil
+        downloadProgress = nil
     }
 
     private func perform(_ title: String,
                          work: @escaping (VideoDownloadProcess, UUID) throws -> () -> Void) {
         guard !busy else { return }
+        cancelCompletionSustain()
         let process = VideoDownloadProcess()
         let id = UUID()
         generation = id

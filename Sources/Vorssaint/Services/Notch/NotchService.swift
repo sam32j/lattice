@@ -526,7 +526,8 @@ final class NotchService: ObservableObject {
     }
 
     var hasVideoDownloadActivity: Bool {
-        (VideoDownloader.shared.isDownloading || VideoDownloader.shared.isPaused)
+        let dl = VideoDownloader.shared
+        return dl.isDownloading || dl.isPaused || (dl.busy && dl.progress != nil) || dl.isCompletedSustaining
     }
 
     var compactActivity: NotchCompactActivity? {
@@ -670,7 +671,7 @@ final class NotchService: ObservableObject {
         // Its reading is a countdown like the timer's, so it takes the timer's wings.
         case .keepAwake: return geometry.compactTimerGeometry(showsDownloads: false, wing: keepAwakeStripWing(in: geometry))
         case .videoDownloader:
-            return geometry.compactDownloadGeometry(wing: 36)
+            return geometry.compactVideoDownloaderGeometry
         default: return geometry
         }
     }
@@ -3870,7 +3871,11 @@ final class NotchService: ObservableObject {
             NotchDownloadService.shared.onFailure = { [weak self] in self?.reactMascot(.confused) }
         }
         VideoDownloader.shared.$isDownloading
-            .combineLatest(VideoDownloader.shared.$isPaused)
+            .combineLatest(
+                VideoDownloader.shared.$isPaused,
+                VideoDownloader.shared.$isCompletedSustaining,
+                VideoDownloader.shared.$info
+            )
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.syncMenuSpaceMonitoring()
