@@ -335,7 +335,7 @@ final class VideoDownloader: ObservableObject {
         isCompletedSustaining = true
         let item = DispatchWorkItem { [weak self] in
             guard let self else { return }
-            self.isCompletedSustaining = false
+            self.resetDownloadState()
             self.objectWillChange.send()
         }
         completionSustainTimer = item
@@ -354,8 +354,14 @@ final class VideoDownloader: ObservableObject {
         cancelCompletionSustain()
         output = nil
         info = nil
+        link = ""
         progress = nil
         downloadProgress = nil
+        thumbnailImage = nil
+        phase = ""
+        error = nil
+        isDownloading = false
+        isPaused = false
     }
 
     private func perform(_ title: String,

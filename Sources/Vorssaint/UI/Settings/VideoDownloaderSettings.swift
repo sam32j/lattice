@@ -9,6 +9,7 @@ struct VideoDownloaderSettings: View {
     @ObservedObject private var model: VideoDownloader
     @ObservedObject private var toolchain: ToolchainManager = .shared
     @ObservedObject private var history: DownloadHistoryStore = .shared
+    @ObservedObject private var router: SettingsRouter = .shared
 
     @AppStorage(DefaultsKey.videoDownloaderEnabled) private var enabled = true
     @State private var showDownloadConfirmation = false
@@ -26,7 +27,8 @@ struct VideoDownloaderSettings: View {
         GeometryReader { geometry in
             let isCompact = geometry.size.width < 540
 
-            ScrollView {
+            ScrollViewReader { proxy in
+                ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     // Enablement Card
                     HStack(alignment: .center, spacing: 14) {
@@ -284,9 +286,8 @@ struct VideoDownloaderSettings: View {
                             }
 
                             // RECENT Section
-                            if !history.items.isEmpty {
-                                recentSection
-                            }
+                            recentSection
+                                .id("recentSection")
                         }
                     }
                 }
@@ -294,7 +295,28 @@ struct VideoDownloaderSettings: View {
                 .padding(.vertical, 16)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
+            .onAppear {
+                if router.videoDownloaderSection == "recent" {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            proxy.scrollTo("recentSection", anchor: .top)
+                        }
+                        router.videoDownloaderSection = nil
+                    }
+                }
+            }
+            .onChange(of: router.videoDownloaderSection) { _, section in
+                if section == "recent" {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            proxy.scrollTo("recentSection", anchor: .top)
+                        }
+                        router.videoDownloaderSection = nil
+                    }
+                }
+            }
         }
+    }
         .alert(VideoDownloaderStrings.downloadRequiredTitle, isPresented: $showDownloadConfirmation) {
             Button(VideoDownloaderStrings.cancel, role: .cancel) {
                 enabled = false
@@ -721,15 +743,23 @@ struct VideoDownloaderSettings: View {
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button(VideoDownloaderStrings.clearHistory) {
-                    history.clear()
+                if !history.items.isEmpty {
+                    Button(VideoDownloaderStrings.clearHistory) {
+                        history.clear()
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
             }
 
-            ForEach(history.items) { item in
+            if history.items.isEmpty {
+                Text(VideoDownloaderStrings.noHistory)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(history.items) { item in
                 let fileExists = FileManager.default.fileExists(atPath: item.fileURL.path)
                 HStack(spacing: 10) {
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
@@ -783,6 +813,7 @@ struct VideoDownloaderSettings: View {
                     }
                 }
                 .help(item.fileURL.path)
+            }
             }
         }
     }
