@@ -16,7 +16,8 @@ enum VideoDownloaderServiceTests {
             try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: tool.path)
             let tools = Dictionary(uniqueKeysWithValues: VideoDownloadDependencies.required.map { ($0, tool.path) })
             let dependencies = VideoDownloadDependencies(tools: tools, environment: ["PATH": "/usr/bin:/bin"])
-            let model = VideoDownloader(discover: { dependencies })
+            let testHistory = DownloadHistoryStore(storeURL: folder.appendingPathComponent("test-history.json"))
+            let model = VideoDownloader(discover: { dependencies }, historyStore: testHistory)
             model.link = "https://example.invalid/fixture"
             model.fetchInfo(); settle(model)
             suite.expect(model.info?.title == "Test video" && model.selectedHeight == 720 && model.error == nil,

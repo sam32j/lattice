@@ -31,11 +31,14 @@ final class VideoDownloader: ObservableObject {
     private var generation = UUID()
     private let queue = DispatchQueue(label: "com.lattice.video-downloader", qos: .userInitiated)
     private let discover: () -> VideoDownloadDependencies
+    private let historyStore: DownloadHistoryStore
     private var terminationObserver: NSObjectProtocol?
 
-    init(discover: @escaping () -> VideoDownloadDependencies = { .discover() }) {
+    init(discover: @escaping () -> VideoDownloadDependencies = { .discover() },
+         historyStore: DownloadHistoryStore = .shared) {
         self.discover = discover
         self.dependencies = discover()
+        self.historyStore = historyStore
 
         // Load saved destination or default to ~/Downloads
         if let savedPath = UserDefaults.standard.string(forKey: DefaultsKey.videoDownloaderDestination) {
@@ -302,7 +305,7 @@ final class VideoDownloader: ObservableObject {
                 self?.phase = VideoDownloaderStrings.downloadComplete
                 self?.progress = nil
                 self?.downloadProgress = nil
-                DownloadHistoryStore.shared.record(fileURL: saved, title: videoTitle, qualityTag: qualityTag)
+                self?.historyStore.record(fileURL: saved, title: videoTitle, qualityTag: qualityTag)
             }
         }
     }
