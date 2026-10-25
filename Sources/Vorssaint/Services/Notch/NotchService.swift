@@ -2706,7 +2706,7 @@ final class NotchService: ObservableObject {
         // song stay through a notice or an opening while the pointer does, and
         // a pointer left elsewhere as the island closes never reports leaving.
         var releasedMusicStrip = false
-        if !compactMusicIsVisible {
+        if !compactMusicSwipeIsVisible {
             musicNamingWork?.cancel(); musicNamingWork = nil
             if musicStripPointer != nil { musicStripPointer = nil }
             if !(inside && windowHost?.containsHover(NSEvent.mouseLocation) == true) {
