@@ -60,27 +60,16 @@ final class DownloadHistoryStore: ObservableObject {
     }
 
     func showInFinder(_ item: RecentDownloadItem) {
-        let manager = FileManager.default
-        if manager.fileExists(atPath: item.fileURL.path) {
+        if FileManager.default.fileExists(atPath: item.fileURL.path) {
             NSWorkspace.shared.activateFileViewerSelecting([item.fileURL])
         } else {
-            let parentFolder = item.fileURL.deletingLastPathComponent()
-            if manager.fileExists(atPath: parentFolder.path) {
-                // If the file was moved or deleted, reveal its destination folder in Finder
-                NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: parentFolder.path)
-            } else {
-                // Neither the file nor its destination directory exists (e.g. unmounted external volume)
-                let alert = NSAlert()
-                alert.messageText = "File Not Found"
-                alert.informativeText = "The file \"\(item.fileURL.lastPathComponent)\" could not be found at:\n\(item.fileURL.path)\n\nIt may have been moved, renamed, or deleted."
-                alert.alertStyle = .informational
-                alert.addButton(withTitle: "OK")
-                alert.addButton(withTitle: "Remove from History")
-                let response = alert.runModal()
-                if response == .alertSecondButtonReturn {
-                    remove(item)
-                }
-            }
+            let alert = NSAlert()
+            alert.messageText = "File Not Found"
+            alert.informativeText = "The file could not be found at:\n\(item.fileURL.path)"
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "Remove from History")
+            alert.runModal()
+            remove(item)
         }
     }
 
