@@ -15,10 +15,7 @@ enum PadlockSound {
         guard let url = url(locking: locking) else { return }
         var sound: SystemSoundID = 0
         guard AudioServicesCreateSystemSoundID(url as CFURL, &sound) == noErr else { return }
-        // Respect the system's sound-effects output and alert volume.
-        var interface: UInt32 = 0
-        AudioServicesSetProperty(kAudioServicesPropertyIsUISound, UInt32(MemoryLayout<SystemSoundID>.size), &sound,
-                                 UInt32(MemoryLayout<UInt32>.size), &interface)
+        // Keep the default UI-sound behavior, respecting macOS's sound-effects preference.
         AudioServicesPlaySystemSoundWithCompletion(sound) { AudioServicesDisposeSystemSoundID(sound) }
     }
 }
