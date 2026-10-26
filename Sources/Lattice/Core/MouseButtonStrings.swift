@@ -40,6 +40,25 @@ struct MouseButtonFeatureStrings {
     let spacesCaptureExists: String
     let spacesFollowsDragLabel: String
     let spacesFollowsDragCaption: String
+
+    func configureButton(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "Configure"
+        case .zhHans: return "配置"
+        case .zhTW, .zhHK: return "設定"
+        case .ja: return "設定"
+        case .ko: return "구성"
+        case .de: return "Konfigurieren"
+        case .fr: return "Configurer"
+        case .es: return "Configurar"
+        case .ptBR: return "Configurar"
+        case .it: return "Configura"
+        case .ru: return "Настроить"
+        case .uk: return "Налаштувати"
+        case .tr: return "Ayarla"
+        case .sk: return "Nastaviť"
+        }
+    }
 }
 
 extension FeatureStrings {

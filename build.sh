@@ -331,6 +331,7 @@ if (( TEST )); then
         Sources/Lattice/Services/Notch/NotchMusicMouseSwipeController.swift
         Sources/Lattice/Services/Notch/NotchMusicMouseSwipe.swift
         Sources/Lattice/Core/DockClickMode.swift
+        Sources/Lattice/Core/DockClickStrings.swift
         Sources/Lattice/Core/SettingsFollowupLabels.swift
         Sources/Lattice/Core/GeneralSoundCopy.swift
         Sources/Lattice/Services/AgentUsage/AgentUsageModels.swift

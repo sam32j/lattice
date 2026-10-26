@@ -58,7 +58,7 @@ struct IslandDestinationSettings: View {
     }
 
     private var styleTitle: String {
-        l10n.language == .enUS ? "Display style" : FeatureStrings.notchClipboardSize(l10n.language).entrySize
+        SettingsOwnershipStrings.text(.displayStyle, l10n.language)
     }
 
     private func sync() {

@@ -15,8 +15,9 @@ struct DockClickSettings: View {
     typealias Action = DockClickMode
 
     var body: some View {
+        let copy = DockClickCopy.strings(l10n.language)
         VStack(alignment: .leading, spacing: 13) {
-            Text(l10n.language == .enUS ? "Click Dock tile to perform an action." : FeatureStrings.hub(l10n.language).titleDockClick)
+            Text(copy.body)
                 .font(.body)
                 .foregroundStyle(.secondary)
             HStack(spacing: 8) {
@@ -25,7 +26,7 @@ struct DockClickSettings: View {
                     Button { select(action) } label: {
                         VStack(spacing: 8) {
                             Image(systemName: action.symbol).font(.system(size: 20, weight: .medium))
-                            Text(title(action)).font(.system(size: 11, weight: .medium))
+                            Text(title(action, copy: copy)).font(.system(size: 11, weight: .medium))
                                 .lineLimit(2).multilineTextAlignment(.center)
                         }
                         .frame(maxWidth: .infinity, minHeight: 68).padding(8)
@@ -39,7 +40,7 @@ struct DockClickSettings: View {
                         .contentShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(title(action))
+                    .accessibilityLabel(title(action, copy: copy))
                     .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }
@@ -47,12 +48,12 @@ struct DockClickSettings: View {
         .permissionActivationLifetime($coordinator)
     }
 
-    private func title(_ action: Action) -> String {
+    private func title(_ action: Action, copy: DockClickStrings) -> String {
         switch action {
-        case .off: return FeatureStrings.notchAgents(l10n.language).off
-        case .toggleWindows: return l10n.language == .enUS ? "Toggle Windows" : l10n.s.dockClickMinimize
-        case .hideApps: return l10n.language == .enUS ? "Hide/Show Apps" : l10n.s.dockClickHide
-        case .cycleWindows: return l10n.language == .enUS ? "Cycle Windows" : l10n.s.dockClickCycleWindows
+        case .off: return copy.off
+        case .toggleWindows: return copy.toggleWindows
+        case .hideApps: return copy.hideApps
+        case .cycleWindows: return copy.cycleWindows
         }
     }
 
