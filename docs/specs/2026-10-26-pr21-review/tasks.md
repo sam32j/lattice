@@ -38,3 +38,19 @@ All 15 inline comments were reviewed (11 distinct findings). Ten distinct findin
 - No real grants, taps, app termination, browser submission or hardware changes. Live many-window WindowServer latency was not benchmarked. Unrelated test suites were not run.
 
 Publication: user authorizes topic commits, push to fix/settings-followups and consolidated disposition on PR 21 covering the closed PR 20. Keep both PR states and base branches unchanged.
+
+## Follow-up review round
+
+Baseline: 204074ef, clean. User requested the new comments be addressed and a manual before/after test plan covering every review fix.
+
+- r4382192712: fix the preview renderer to accept the requested scheme and set matching SwiftUI preferred scheme plus native hosting/window appearance. Existing callers retain the light default.
+- r4382192734: reject restoring additional Request buttons. Section 7 of the user-supplied implementation spec explicitly marks Accessibility, Screen Recording, Notifications, Camera and Bluetooth as non-requestable on this page. Retain the approved policy and feature-specific request flows.
+- r4382192742: remove the redundant outline action tone, retaining compact native bordered Settings buttons per the user's visual correction. Status text, dot and tile continue to distinguish state.
+- r4382192749: add an always-selectable 2000 ms hold preset for both quit and close. The new regression failed before implementation; custom saved values and the 800 ms default remain intact.
+- Manual testing: manual-testing.md covers the old failure, reproduction steps and expected fixed behavior, including release-only update checks, legacy custom values, deliberate spec-driven non-changes and rendering-tool verification.
+
+Previous CI (40396129847) failed 3 of 103,479 checks. Reproduced all three locally: the new update-test domain was outside the cleanup sweep, and two pointer-input source guards did not follow Quit Protection's extracted extensions. Renamed the disposable domain into the existing swept namespace and taught the source reader to include both extensions, failing closed when a source is missing. Existing session/permission assertions are unchanged.
+
+Final verification: harness 518, pointer-input 1,037, settings 1,041, quit-protection 249; total 2,845 passed. Developer build and strict signature verification passed. Disposable light/dark previews rendered successfully and were visually inspected; diagnostics confirm matching Aqua/Dark Aqua appearance for both native window and host. Independent source review is ready with no remaining findings, including the CI harness corrections. Unrelated suites were not repeated locally; fresh CI remains separate.
+
+Manual test plan completed in manual-testing.md. Topic commits and publication authorized; post the follow-up disposition and resolve the four reviewed threads without changing PR state or base.
