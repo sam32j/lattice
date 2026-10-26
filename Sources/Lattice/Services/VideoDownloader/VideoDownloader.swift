@@ -108,15 +108,16 @@ final class VideoDownloader: ObservableObject {
 
     var hasCurrentSearchResult: Bool { inspectedURL != nil && (info != nil || output != nil) }
 
+    var isSearchInputEnabled: Bool { !isDownloading && !isPaused }
+
     var isValidURL: Bool {
         (try? VideoDownloadRequest.validatedURL(link)) != nil
     }
 
     func pasteFromClipboard() {
-        guard let text = readClipboard()?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !text.isEmpty else { return }
+        guard isSearchInputEnabled,
+              let text = VideoDownloadRequest.validClipboardURL(read: readClipboard) else { return }
         link = text
-        linkChanged()
     }
 
     func chooseDestination() {
