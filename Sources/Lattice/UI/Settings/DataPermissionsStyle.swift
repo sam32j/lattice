@@ -2,7 +2,7 @@
 import SwiftUI
 
 enum DataSettingsTone { case neutral, granted, missing, destructive }
-enum DataSettingsActionTone { case quiet, primary, outline, destructive }
+enum DataSettingsActionTone { case quiet, primary, destructive }
 
 /// Match the existing Settings colors and native controls in both appearances.
 struct DataPermissionsPalette {

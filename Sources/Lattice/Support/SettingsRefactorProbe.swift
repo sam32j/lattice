@@ -116,14 +116,19 @@ enum SettingsRefactorProbe {
         UserDefaults.standard.set(enabled, forKey: feature.availabilityKey)
     }
 
-    static func render(_ name: String, view: AnyView, size: CGSize, output: URL, failures: inout [String]) {
+    static func render(_ name: String, view: AnyView, size: CGSize, output: URL, failures: inout [String],
+                       colorScheme: ColorScheme = .light) {
         let host = NSHostingView(rootView: view.frame(width: size.width, height: size.height, alignment: .topLeading)
             .environment(\.controlActiveState, .active)
             .environment(\.settingsPermissionAccess, SettingsPermissionAccessors(
                 verify: { _ in true }, request: { _, complete in complete(.granted) }))
-            .preferredColorScheme(.light).background(Color(nsColor: .windowBackgroundColor)))
+            .preferredColorScheme(colorScheme).background(Color(nsColor: .windowBackgroundColor)))
         let window = NSWindow(contentRect: CGRect(origin: CGPoint(x: 80, y: 80), size: size),
                               styleMask: [.titled], backing: .buffered, defer: false)
+        let appearance = NSAppearance(named: colorScheme == .dark ? .darkAqua : .aqua)
+        window.appearance = appearance
+        host.appearance = appearance
+        print("SETTINGS_RENDERING_APPEARANCE \(name) window=\(window.effectiveAppearance.name.rawValue) host=\(host.effectiveAppearance.name.rawValue)")
         print("SETTINGS_RENDERING_PAGE \(name)")
         fflush(stdout)
         host.sizingOptions = []
