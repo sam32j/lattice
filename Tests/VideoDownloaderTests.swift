@@ -20,6 +20,9 @@ enum VideoDownloaderTests {
         for data in [Data("{}".utf8), Data(#"{"_type":"playlist","entries":[]}"#.utf8)] {
             suite.expect((try? VideoDownloadInfo.decode(data)) == nil, "empty and playlist results are not downloadable single videos")
         }
+        let absurdTbrJson = Data(#"{"id":"absurd","title":"Absurd TBR","duration":100,"formats":[{"format_id":"1","ext":"mp4","height":720,"vcodec":"avc1","acodec":"mp4a","tbr":1e300}]}"#.utf8)
+        suite.expect((try? VideoDownloadInfo.decode(absurdTbrJson)) != nil,
+                     "absurd bitrate estimate does not trap Int64 conversion")
         suite.expect(VideoDownloadRequest.hasPlayableVideo(Data(#"{"streams":[{"codec_type":"video","width":1280,"height":720}],"format":{"duration":"10.5"}}"#.utf8)),
                      "a probed video stream with dimensions and duration can be published")
         suite.expect(!VideoDownloadRequest.hasPlayableVideo(Data(#"{"streams":[{"codec_type":"audio"}],"format":{"duration":"10"}}"#.utf8)),

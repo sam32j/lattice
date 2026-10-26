@@ -78,7 +78,10 @@ struct VideoDownloadInfo: Equatable, Sendable {
         for format in formats {
             guard format.has_drm != true else { continue }
             let size = format.filesize ?? format.filesize_approx ?? (format.tbr.flatMap { tbr in
-                duration > 0 ? Int64(tbr * 1000 / 8 * duration) : nil
+                guard duration > 0, duration.isFinite, tbr > 0, tbr.isFinite else { return nil }
+                let bytes = tbr * 125 * duration
+                guard bytes > 0, bytes.isFinite, bytes <= Double(Int64.max) else { return nil }
+                return Int64(bytes)
             })
             if let size, size > 0 {
                 if let h = format.height, h > 0 {

@@ -40,3 +40,11 @@ Baseline 79230e28, clean. User accepts one download at a time and explicitly req
 - Refresh clipboard availability every 0.5 seconds only while the component is presented, not a preview, and its empty input is enabled. Read and validate the current clipboard again on Paste or empty-field submission, never the cached hint. Clipboard reads are injectable; native tests never modify the real clipboard.
 - Native tests reproduced five failures before correction: cached A instead of B, stale next paste, no availability refresh, editable input during download, and editable input while paused. All pass after correction.
 - Final affected suites passed: harness 522, downloader 80, settings 1,048; total 1,650. Independent source review: ready, no actionable findings. Developer build and strict signature verification passed.
+
+## Bitrate size estimate overflow check
+
+- CodeRabbit review identified that remote manifest metadata can supply extreme or non-finite `tbr` and `duration` values (e.g. `1e300`). Converting unchecked float values to `Int64` traps at runtime, crashing the process during metadata inspection.
+- Guarded `VideoDownloadInfo` fallback size calculation against non-finite floats and `Int64.max` overflow, returning `nil` when the calculation is out-of-bounds or non-finite.
+- Added a unit test in `VideoDownloaderTests` verifying that metadata containing `tbr: 1e300` decodes without trapping.
+- Verification: `./build.sh --test --test-suite=video-downloader` passed (81 checks).
+
