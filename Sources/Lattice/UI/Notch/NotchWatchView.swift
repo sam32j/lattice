@@ -5,6 +5,7 @@ import AppKit
 import SwiftUI
 
 struct NotchWatchSettingsControls: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var l10n = L10n.shared
     @AppStorage(DefaultsKey.notchWatchEnabled) private var enabled = true
@@ -13,7 +14,7 @@ struct NotchWatchSettingsControls: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Toggle(text.title, isOn: $enabled)
+            Toggle(text.title, isOn: $enabled.animation(reduceMotion ? nil : .settingsExpansion))
                 .disabled(!AppFeature.notchWatch.isAvailable)
             Text(text.description).font(.caption).foregroundStyle(.secondary)
             if enabled {

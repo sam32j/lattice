@@ -92,6 +92,7 @@ struct ScratchpadSettings: View {
         .formStyle(.grouped)
         .toggleStyle(.switch)
         .controlSize(.regular)
+        .settingsExpansionAnimation(value: [enabled, scratchpadShortcutEnabled])
     }
 
     private var scratchpadBackgroundOpacityBinding: Binding<Double> {

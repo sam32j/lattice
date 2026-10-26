@@ -132,6 +132,7 @@ struct URLCleanerSettings: View {
             }
         }
         .formStyle(.grouped)
+        .settingsExpansionAnimation(value: showingAddSite)
     }
 
     /// Two dozen names for one site is a lot of clicking to say "not this

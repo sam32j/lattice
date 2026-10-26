@@ -35,6 +35,8 @@ struct GeneralSettings: View {
             for: LaunchAtLoginSupport.settingsRefreshRequested)) { _ in
             refreshLaunchAtLogin()
         }
+        .settingsExpansionAnimation(value: loginRegistration)
+        .settingsExpansionAnimation(value: loginError)
     }
 
     private var basicsCard: some View {

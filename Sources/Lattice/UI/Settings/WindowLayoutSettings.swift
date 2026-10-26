@@ -56,6 +56,7 @@ struct WindowLayoutSettings: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             refreshSystemTilingState()
         }
+        .settingsExpansionAnimation(value: [systemTilingEnabled, edgeSnapEnabled, permissions.accessibility])
     }
 
     var windowsAndSpaces: some View {

@@ -275,6 +275,7 @@ private struct HUDBackdropMaterial: NSViewRepresentable {
 /// the row's one Spacer, so trailing accessories stay flush to the chevron.
 struct DisclosureHeaderRow<Label: View>: View {
     @ObservedObject private var l10n = L10n.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let isExpanded: Binding<Bool>
     private let label: () -> Label
@@ -286,7 +287,7 @@ struct DisclosureHeaderRow<Label: View>: View {
 
     var body: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.18)) {
+            withAnimation(reduceMotion ? nil : .settingsExpansion) {
                 isExpanded.wrappedValue.toggle()
             }
         } label: {

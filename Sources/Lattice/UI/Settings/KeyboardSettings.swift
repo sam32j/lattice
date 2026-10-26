@@ -104,6 +104,10 @@ struct KeyboardSettings: View {
             globalWindow = Defaults.sanitizedKeyboardDebounceWindow(globalWindow)
             selectedWindow = Defaults.sanitizedKeyboardDebounceWindow(selectedWindow)
         }
+        .settingsExpansionAnimation(value: [quitEnabled, closeEnabled, debounceEnabled, superKeyEnabled,
+            permissions.accessibility])
+        .settingsExpansionAnimation(value: [quitMode, closeMode, quitScope, closeScope])
+        .settingsExpansionAnimation(value: keyWindows.map(\.keyCode))
     }
 
 }

@@ -40,6 +40,7 @@ struct DisplaySettings: View {
             refreshVisibleServices()
         }
         .onChange(of: focus) { _, _ in refreshVisibleServices() }
+        .settingsExpansionAnimation(value: bluetoothSleepEnabled)
     }
 
     private func refreshVisibleServices() {

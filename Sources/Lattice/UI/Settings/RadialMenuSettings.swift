@@ -933,6 +933,7 @@ private struct RadialItemEditor: View {
         }
         .padding(18)
         .frame(width: 440)
+        .settingsExpansionAnimation(value: item.kind)
     }
 
     /// Changing the action type clears targets that no longer make sense but

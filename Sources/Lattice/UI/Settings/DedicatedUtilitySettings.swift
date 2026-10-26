@@ -59,6 +59,7 @@ struct DedicatedUtilitySettings: View {
         }
         .toggleStyle(.switch)
         .controlSize(.regular)
+        .settingsExpansionAnimation(value: childrenEnabled)
     }
 
     private var destination: IslandDestination? {
