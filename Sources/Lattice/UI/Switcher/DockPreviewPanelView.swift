@@ -19,6 +19,7 @@ struct DockPreviewPanelView: View {
             onEndPreview: service.endPreview,
             onCommit: service.commit,
             onCloseWindow: service.close,
+            onQuitApp: service.quitApplication,
             onMiddleClick: service.closeWindow,
             onToggleMinimized: service.toggleMinimized,
             onTogglePinned: service.togglePinned,
@@ -53,6 +54,7 @@ struct DockPreviewPinnedPanelView: View {
             onEndPreview: panel.endPreview,
             onCommit: panel.commit,
             onCloseWindow: panel.close,
+            onQuitApp: panel.quitApplication,
             onMiddleClick: panel.closeWindow,
             onToggleMinimized: panel.toggleMinimized,
             onTogglePinned: panel.closePreviewPanel,
@@ -85,6 +87,7 @@ private struct DockPreviewPanelContent: View {
     let onEndPreview: (SwitcherItem) -> Void
     let onCommit: (SwitcherItem) -> Void
     let onCloseWindow: (SwitcherItem) -> Void
+    let onQuitApp: (SwitcherItem) -> Void
     let onMiddleClick: (SwitcherItem) -> Void
     let onToggleMinimized: (SwitcherItem) -> Void
     let onTogglePinned: () -> Void
@@ -99,13 +102,6 @@ private struct DockPreviewPanelContent: View {
     @State private var draggingWindowID: CGWindowID?
     @AppStorage(DefaultsKey.minimalWindowPreviews) private var minimalPreviews = false
     @AppStorage(DefaultsKey.dockPreviewBackgroundOpacity) private var backgroundOpacity = 1.0
-    @AppStorage(DefaultsKey.dockPreviewQuitAppOnClose) private var quitAppOnClose = false
-
-    private var closeActionTitle: String {
-        DockPreviewSupport.closeAction(quitAppOnClose: quitAppOnClose) == .quitApp
-            ? l10n.s.panelQuit
-            : l10n.s.dockPreviewCloseWindow
-    }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -122,12 +118,14 @@ private struct DockPreviewPanelContent: View {
                                 isSelected: selectedWindowID == window.windowID,
                                 isPanelPinned: isPinned,
                                 onTogglePinned: onTogglePinned,
-                                closeActionTitle: closeActionTitle,
                                 onCommit: {
                                     onCommit(window)
                                 },
                                 onClose: {
                                     onCloseWindow(window)
+                                },
+                                onQuitApp: {
+                                    onQuitApp(window)
                                 },
                                 onMiddleClick: { onMiddleClick(window) },
                                 onToggleMinimized: {
@@ -382,9 +380,9 @@ private struct DockPreviewCard: View {
     let isSelected: Bool
     let isPanelPinned: Bool
     let onTogglePinned: () -> Void
-    let closeActionTitle: String
     let onCommit: () -> Void
     let onClose: () -> Void
+    let onQuitApp: () -> Void
     let onMiddleClick: () -> Void
     let onToggleMinimized: () -> Void
 
@@ -393,6 +391,7 @@ private struct DockPreviewCard: View {
     @State private var isHovering = false
     @State private var isCloseHovering = false
     @State private var isMinimizeHovering = false
+    @State private var isQuitHovering = false
     @State private var suppressNextCommit = false
 
     private var showsPreviewControls: Bool {
@@ -531,7 +530,12 @@ private struct DockPreviewCard: View {
         Button(role: .destructive) {
             onClose()
         } label: {
-            Label(closeActionTitle, systemImage: "xmark.circle")
+            Label(l10n.s.dockPreviewCloseWindow, systemImage: "xmark.circle")
+        }
+        Button(role: .destructive) {
+            onQuitApp()
+        } label: {
+            Label(l10n.s.dockPreviewQuitApplication, systemImage: "power")
         }
     }
 
@@ -563,8 +567,9 @@ private struct DockPreviewCard: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: 4) {
-                closeButton
                 minimizeButton
+                closeButton
+                quitButton
             }
         }
         .frame(width: DockPreviewSupport.cardThumbnailWidth,
@@ -609,7 +614,7 @@ private struct DockPreviewCard: View {
                 .font(.system(size: 13, weight: .medium))
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(Color.white.opacity(isCloseHovering ? 0.95 : 0.72),
-                                 Color(red: 1.0, green: 0.38, blue: 0.33).opacity(isCloseHovering ? 1 : 0.92))
+                                 isCloseHovering ? Color(red: 1.0, green: 0.38, blue: 0.33) : Color.black.opacity(0.46))
                 .frame(width: 16, height: 16)
                 .contentShape(Circle())
         }
@@ -617,8 +622,8 @@ private struct DockPreviewCard: View {
         .opacity(showsPreviewControls ? 1 : 0)
         .allowsHitTesting(showsPreviewControls)
         .onHover { isCloseHovering = $0 }
-        .help(closeActionTitle)
-        .accessibilityLabel(closeActionTitle)
+        .help(l10n.s.dockPreviewCloseWindow)
+        .accessibilityLabel(l10n.s.dockPreviewCloseWindow)
     }
 
     private var minimizeButton: some View {
@@ -643,6 +648,30 @@ private struct DockPreviewCard: View {
         .onHover { isMinimizeHovering = $0 }
         .help(window.isMinimized ? l10n.s.dockPreviewRestoreWindow : l10n.s.dockPreviewMinimizeWindow)
         .accessibilityLabel(window.isMinimized ? l10n.s.dockPreviewRestoreWindow : l10n.s.dockPreviewMinimizeWindow)
+    }
+
+    private var quitButton: some View {
+        Button {
+            suppressNextCommit = true
+            onQuitApp()
+            DispatchQueue.main.async {
+                suppressNextCommit = false
+            }
+        } label: {
+            Image(systemName: "power.circle.fill")
+                .font(.system(size: 13, weight: .medium))
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(Color.white.opacity(isQuitHovering ? 0.95 : 0.75),
+                                 Color(red: 1.0, green: 0.38, blue: 0.33).opacity(isQuitHovering ? 1 : 0.92))
+                .frame(width: 16, height: 16)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .opacity(showsPreviewControls ? 1 : 0)
+        .allowsHitTesting(showsPreviewControls)
+        .onHover { isQuitHovering = $0 }
+        .help(l10n.s.dockPreviewQuitApplication)
+        .accessibilityLabel(l10n.s.dockPreviewQuitApplication)
     }
 }
 

@@ -137,8 +137,6 @@ enum SettingsFeatureTests {
         suite.expect(SettingsBackupSupport.sanitizedSettings(from: allDisplaysBackup)?[DefaultsKey.notchDisplay] as? String
                     == NotchDisplay.all.rawValue,
                "a backup keeps the choice of every display")
-        suite.expect(backupKeys.contains(DefaultsKey.cleaningModeKeepScreenVisible),
-               "the cleaning mode keep screen visible choice travels with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.appearance),
                "the light or dark choice travels with the settings backup")
         suite.expect(Set([

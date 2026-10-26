@@ -14,6 +14,7 @@ final class DockAutohideHold {
     private(set) var isHolding = false
 
     static var isSupported: Bool { CoreDock.get != nil && CoreDock.set != nil }
+    static var isAutoHideEnabled: Bool { CoreDock.read() ?? false }
 
     init(defaults: UserDefaults = .standard,
          readAutohide: @escaping () -> Bool? = { CoreDock.read() },
@@ -28,8 +29,15 @@ final class DockAutohideHold {
     @discardableResult
     func begin() -> Bool {
         if isHolding { return true }
-        guard !defaults.bool(forKey: DefaultsKey.dockPreviewRestoreAutohide),
-              readAutohide() == true else { return false }
+        if defaults.bool(forKey: DefaultsKey.dockPreviewRestoreAutohide) {
+            if readAutohide() == true {
+                defaults.removeObject(forKey: DefaultsKey.dockPreviewRestoreAutohide)
+                defaults.synchronize()
+            } else {
+                return false
+            }
+        }
+        guard readAutohide() == true else { return false }
         // Persist the restoration before touching the system preference.
         defaults.set(true, forKey: DefaultsKey.dockPreviewRestoreAutohide)
         defaults.synchronize()
