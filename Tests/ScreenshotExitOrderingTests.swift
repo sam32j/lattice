@@ -15,9 +15,11 @@ enum ScreenshotExitOrderingContract {
     final class Focus {
         let window: Window
         var visibleDuringHandoff = false
+        var inertDuringHandoff = false
         init(_ window: Window) { self.window = window }
         func release(completion: () -> Void) {
             visibleDuringHandoff = window.visible
+            inertDuringHandoff = window.ignoresMouseEvents && CATransaction.flushes > 0
             window.restored = true
             completion()
         }
@@ -25,7 +27,10 @@ enum ScreenshotExitOrderingContract {
     final class Waiting { func hide() {} }
     final class Monitor { func stop() {} }
     final class Options { var onSelectionChange: (() -> Void)? }
-    enum CATransaction { static func flush() {} }
+    enum CATransaction {
+        static var flushes = 0
+        static func flush() { flushes += 1 }
+    }
     enum NSEvent { static func removeMonitor(_ token: Int) {} }
     final class RecorderOverlayController {
         static let shared = RecorderOverlayController()
@@ -40,7 +45,10 @@ enum ScreenshotExitOrderingTests {
         let window = controller.panels[0]
         let focus = Contract.Focus(window)
         controller.captureFocus = focus
+        Contract.CATransaction.flushes = 0
         controller.finish(.cancelled)
+        suite.expect(focus.inertDuringHandoff,
+                     "panels stop receiving clicks and flush that change before focus restoration begins")
         suite.expect(focus.visibleDuringHandoff && !window.hiddenBeforeHandoff,
                      "Escape restores the original app before hiding capture panels, preventing a settings flash")
         suite.expect(controller.completed && !window.visible && window.ignoresMouseEvents,

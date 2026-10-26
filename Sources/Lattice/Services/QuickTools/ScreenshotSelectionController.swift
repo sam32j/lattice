@@ -1122,16 +1122,16 @@ final class ScreenshotSelectionController {
             NSEvent.removeMonitor(globalKeyMonitor)
             self.globalKeyMonitor = nil
         }
-        // A gesture can still have events on the way, so the surfaces are made
-        // inert before they leave the screen: whatever arrives after this
-        // point finds nothing left to act on.
+        // Keep panels visible during focus handoff, but let pointer events
+        // through immediately rather than blocking the returning application.
         markCapturePending()
+        panels.forEach { $0.ignoresMouseEvents = true }
+        CATransaction.flush()
         let complete = { [self] in
             retirePanels()
             completeFinish(outcome)
         }
-        if let captureFocus { captureFocus.release(completion: complete) }
-        else { complete() }
+        if let captureFocus { captureFocus.release(completion: complete) } else { complete() }
     }
 
     private func completeFinish(_ outcome: Outcome) {
