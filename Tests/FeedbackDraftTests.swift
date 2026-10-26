@@ -68,6 +68,20 @@ enum FeedbackDraftTests {
                          && !copy.tooLong.isEmpty, "draft privacy, status and failure copy exists for \(language)")
         }
 
+        suite.expect(FeedbackDraft.validationError(kind: .bug, subject: "Useful title", message: "", diagnostics: nil) == nil,
+                     "a valid subject-only draft enables the handoff")
+        suite.expect(FeedbackDraft.validationError(kind: .bug, subject: String(repeating: "字", count: 1_000),
+                     message: "", diagnostics: nil) == .tooLong,
+                     "an encoded subject that exceeds the URL budget is rejected before handoff")
+        let boundaryTitle = String(repeating: "a", count: 7_800)
+        let longDetails = FeedbackDiagnostics(appVersion: "1", appBuild: "1", macOS: "26",
+            macModel: String(repeating: "M", count: 300), language: "en", isBeta: false, updateChannel: "stable")
+        suite.expect(FeedbackDraft.validationError(kind: .bug, subject: boundaryTitle, message: "", diagnostics: nil) == nil
+                     && FeedbackDraft.validationError(kind: .bug, subject: boundaryTitle, message: "", diagnostics: longDetails) == .tooLong,
+                     "the selected diagnostics consume the same URL budget used by Send validation")
+        suite.expect(FeedbackDraft.validationError(kind: .bug, message: "  ", diagnostics: nil) == .rejected,
+                     "an empty draft stays disabled")
+
         let visible = CGRect(x: 0, y: 0, width: 1920, height: 1080)
         let settings = CGRect(x: 300, y: 200, width: 700, height: 500)
         let frameOnSettings = FeedbackWindowGeometry.targetFrame(settingsFrame: settings, visibleFrame: visible)

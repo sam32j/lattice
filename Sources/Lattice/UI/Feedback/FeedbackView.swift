@@ -24,11 +24,11 @@ struct FeedbackView: View {
     private var strings: FeedbackStrings { FeatureStrings.feedback(l10n.language) }
     private var draftStrings: FeedbackDraftStrings { .text(l10n.language) }
     private var count: Int { message.utf16.count }
-    private var canSend: Bool {
-        let trimmedSubject = subject.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        return (!trimmedSubject.isEmpty || !trimmedMessage.isEmpty) && count <= 2_000
+    private var validationError: FeedbackError? {
+        FeedbackDraft.validationError(kind: kind, subject: subject, message: message,
+                                      diagnostics: includeDiagnostics ? diagnostics : nil)
     }
+    private var canSend: Bool { validationError == nil }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -78,6 +78,7 @@ struct FeedbackView: View {
                             }
                             TextField("", text: $subject)
                                 .textFieldStyle(.plain)
+                                .accessibilityLabel(strings.subjectLabel)
                         }
                         .font(.body)
                         .padding(8)
@@ -127,6 +128,7 @@ struct FeedbackView: View {
                             }
                             Spacer()
                             Toggle("", isOn: $includeDiagnostics)
+                                .accessibilityLabel(strings.includeDiagnostics)
                                 .toggleStyle(.switch)
                                 .labelsHidden()
                         }
@@ -159,7 +161,7 @@ struct FeedbackView: View {
 
             Divider()
             HStack(spacing: 12) {
-                if let errorMessage {
+                if let errorMessage = validationError == .tooLong ? draftStrings.tooLong : errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(.red)
