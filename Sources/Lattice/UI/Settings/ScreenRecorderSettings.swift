@@ -70,6 +70,7 @@ struct ScreenRecorderSettings: View {
         .sheet(isPresented: $showingSharePrivacy) {
             RecorderSharePrivacyView()
         }
+        .settingsExpansionAnimation(value: [sharingEnabled, sharing.records.isEmpty])
     }
 
     // MARK: - Master Header & Shortcuts Card

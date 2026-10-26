@@ -68,6 +68,9 @@ struct MouseSettings: View {
         .onAppear {
             MiddleClickService.shared.refreshDragGestureConflict()
         }
+        .settingsExpansionAnimation(value: [horizontalScrollEnabled, smoothScrollEnabled, linearScrollEnabled,
+            focusFollowsMouseEnabled, focusFollowsMouseRaise, mouseNavigationEnabled, mouseButtonShortcutsEnabled,
+            spacesEnabled, mouseClickDebounceEnabled, middleClickEnabled, accessibilityNoteVisible])
     }
 
 

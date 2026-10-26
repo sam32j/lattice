@@ -73,6 +73,8 @@ struct MusicBlockingSettings: View {
             .disabled(!enabled)
             .opacity(enabled ? 1 : 0.55)
         }
+        .settingsExpansionAnimation(value: [enabled, permissions.accessibility, musicBlocker.isMonitoring,
+            replacementPath.isEmpty, replacementRejected])
     }
 
     private var replacementName: String {

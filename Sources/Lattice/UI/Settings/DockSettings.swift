@@ -58,6 +58,8 @@ struct DockSettings: View {
         .onReceive(DistributedNotificationCenter.default().publisher(for: Notification.Name("com.apple.dock.prefchanged"))) { _ in
             isDockAutohideEnabled = DockAutohideHold.isAutoHideEnabled
         }
+        .settingsExpansionAnimation(value: [dockPreviewEngaged, permissions.accessibility,
+            permissions.screenRecording, dockPreviewBackgroundIsGlass])
     }
 
     private var dockPreviewCard: some View {

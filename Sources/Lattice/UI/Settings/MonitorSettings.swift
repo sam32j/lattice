@@ -76,6 +76,8 @@ struct MonitorSettings: View {
             }
             memoryMetric = Defaults.sanitizedMonitorMemoryMetric(memoryMetric)
         }
+        .settingsExpansionAnimation(value: metricAppearance)
+        .settingsExpansionAnimation(value: FeatureVisibilitySupport.monitorFeatures.map(\.isAvailable))
     }
 
     /// Splits the page into what the menu bar shows, what the panel shows,

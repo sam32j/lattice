@@ -9,6 +9,7 @@ import SwiftUI
 /// Mission Control drag (issue #1012) lives at the bottom of the same card,
 /// because it hands a button a job the same way and borrows the same capture.
 struct MouseButtonShortcutsSection: View {
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @ObservedObject var l10n = L10n.shared
     @ObservedObject var permissions = Permissions.shared
     @ObservedObject var service = MouseButtonShortcutService.shared

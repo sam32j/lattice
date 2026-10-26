@@ -24,6 +24,7 @@ enum AudioSettingsOwnershipTests {
         }
     }
     struct OutputPage: View {
+        let outputSwitcherEnabled = false
         typealias MixerSection = AudioSettingsOwnershipTests.MixerSection
         typealias MusicBlockingSettings = AudioSettingsOwnershipTests.MusicBlockingSettings
         typealias AudioOutputPriorityControls = AudioSettingsOwnershipTests.AudioOutputPriorityControls

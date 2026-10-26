@@ -195,5 +195,6 @@ struct DateVariableBuilder: View {
             }
         }
         .padding(16)
+        .settingsExpansionAnimation(value: style)
     }
 }

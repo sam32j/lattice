@@ -4,6 +4,7 @@
 import SwiftUI
 
 struct KeepAwakeAutomationEditor: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var awake = KeepAwakeManager.shared
     @AppStorage(DefaultsKey.keepAwakeExternalDisplay) private var externalDisplay = false
@@ -87,7 +88,9 @@ struct KeepAwakeAutomationEditor: View {
                                icon: String,
                                selected: Bool,
                                action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            withAnimation(reduceMotion ? nil : .settingsExpansion, action)
+        } label: {
             VStack(alignment: .leading, spacing: compact ? 5 : 7) {
                 HStack {
                     Image(systemName: icon)

@@ -145,6 +145,8 @@ struct TextSnippetsSettings: View {
                           save: { upsert($0) },
                           delete: { remove(id: snippet.id) })
         }
+        .settingsExpansionAnimation(value: [enabled, soundEnabled, permissions.accessibility, libraryEnabled,
+            secureInput.holder != .off])
     }
 
     private func upsert(_ snippet: TextSnippet) {

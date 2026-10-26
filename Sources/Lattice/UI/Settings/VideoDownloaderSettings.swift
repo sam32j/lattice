@@ -355,6 +355,7 @@ struct VideoDownloaderSettings: View {
                 updateClipboardURL()
             }
         }
+        .settingsExpansionAnimation(value: enabled)
     }
 
     // MARK: - Subviews

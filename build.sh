@@ -290,6 +290,7 @@ if (( TEST )); then
         Sources/Lattice/Core/PageOwnedControlsMigration.swift
         Sources/Lattice/Core/AudioControlsMigration.swift
         Sources/Lattice/UI/Settings/SettingsHostingController.swift
+        Sources/Lattice/UI/Settings/SettingsExpansionAnimation.swift
         Sources/Lattice/Core/WindowLayoutShortcutEditor.swift
         Sources/Lattice/Core/NotchStrings.swift
         Sources/Lattice/Core/NotchEditorStrings.swift

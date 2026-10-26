@@ -87,6 +87,9 @@ struct SwitcherSettings: View {
         }
         .toggleStyle(.switch)
         .observesSecureInput(isActive: switcherReplacesSystemShortcuts)
+        .settingsExpansionAnimation(value: [switcherEngaged, permissions.accessibility, permissions.screenRecording,
+            switcherSimpleMode, switcherIconRowMode, switcherTakeOverSystemShortcuts, secureInput.holder != .off])
+        .settingsExpansionAnimation(value: switcherMinimizedPlacement)
     }
 
     // MARK: - App switcher
