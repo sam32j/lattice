@@ -19,13 +19,13 @@ struct NotchMusicMouseSwipe {
                         momentum: Bool, enabled: Bool, hasTouches: Bool) -> NotchMusicTrackSwipe.Direction? {
         guard enabled, precise, !momentum, !hasTouches, dx.isFinite, dy.isFinite else { cancel(); return nil }
         if phase.contains(.mayBegin) { cancel(); trackpadSequence = true; return nil }
-        if !phase.intersection([.ended, .cancelled]).isEmpty { cancel(); return nil }
+        if !phase.isDisjoint(with: [.ended, .cancelled]) { cancel(); return nil }
         if phase.contains(.began) {
             let trackpad = trackpadSequence
             self = Self(); began = true; trackpadSequence = trackpad
         }
         guard began, !trackpadSequence, !vertical, !tracking,
-              !phase.intersection([.began, .changed]).isEmpty else { return nil }
+              !phase.isDisjoint(with: [.began, .changed]) else { return nil }
         x += dx; y += dy
         if abs(y) >= 2 && abs(y) > abs(x) { vertical = true; return nil }
         guard x != 0, abs(x) > abs(y) else { return nil }
@@ -39,6 +39,8 @@ struct NotchMusicMouseSwipe {
         guard tracking else { return nil }
         guard amount.isFinite, !phase.contains(.cancelled) else { cancel(); return nil }
         progress = min(abs(amount), 1)
+        // AppKit defines ended as a successful physical swipe. Commit on lift;
+        // isComplete is animation teardown, not another navigation decision.
         if phase.contains(.ended) {
             let result = direction
             cancel()
