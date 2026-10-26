@@ -291,6 +291,10 @@ if (( TEST )); then
         Sources/Lattice/Core/PageOwnedControlsMigration.swift
         Sources/Lattice/Core/AudioControlsMigration.swift
         Sources/Lattice/UI/Settings/SettingsHostingController.swift
+        Sources/Lattice/Core/PermissionRowActionPolicy.swift
+        Sources/Lattice/Core/DataPermissionsPageCopy.swift
+        Sources/Lattice/UI/Settings/DataPermissionsStyle.swift
+        Sources/Lattice/UI/Settings/DataPermissionsRow.swift
         Sources/Lattice/UI/Settings/SettingsExpansionAnimation.swift
         Sources/Lattice/Core/WindowLayoutShortcutEditor.swift
         Sources/Lattice/Core/NotchStrings.swift

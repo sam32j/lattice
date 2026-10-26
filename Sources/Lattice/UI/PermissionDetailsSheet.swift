@@ -18,29 +18,34 @@ struct PermissionDetailsSheet: View {
     let items: [Item]
     let isUnused: Bool
     let hub: FeatureHubStrings
+    let onOpenSystemSettings: (() -> Void)?
 
     init(title: String,
          explanation: String,
          features: [(name: String, symbolName: String?)],
          isUnused: Bool,
-         hub: FeatureHubStrings) {
+         hub: FeatureHubStrings,
+         onOpenSystemSettings: (() -> Void)? = nil) {
         self.title = title
         self.explanation = explanation
         self.items = features.map { Item(name: $0.name, symbolName: $0.symbolName) }
         self.isUnused = isUnused
         self.hub = hub
+        self.onOpenSystemSettings = onOpenSystemSettings
     }
 
     init(title: String,
          explanation: String,
          featureNames: [String],
          isUnused: Bool,
-         hub: FeatureHubStrings) {
+         hub: FeatureHubStrings,
+         onOpenSystemSettings: (() -> Void)? = nil) {
         self.title = title
         self.explanation = explanation
         self.items = featureNames.map { Item(name: $0, symbolName: nil) }
         self.isUnused = isUnused
         self.hub = hub
+        self.onOpenSystemSettings = onOpenSystemSettings
     }
 
     var body: some View {
@@ -96,6 +101,11 @@ struct PermissionDetailsSheet: View {
             .padding(24)
             Divider()
             HStack {
+                if let onOpenSystemSettings {
+                    Button(hub.openSystemSettings, action: onOpenSystemSettings)
+                        .buttonStyle(.link)
+                        .accessibilityIdentifier("permission.open-system-settings")
+                }
                 Spacer()
                 Button(l10n.s.doneButton) { dismiss() }
                     .keyboardShortcut(.cancelAction)

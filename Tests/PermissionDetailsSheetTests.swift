@@ -7,6 +7,7 @@ import SwiftUI
 enum PermissionDetailsSheetTests {
     final class Model: ObservableObject {
         @Published var presented = false
+        var settingsActions = 0
     }
 
     struct Host: View {
@@ -17,13 +18,19 @@ enum PermissionDetailsSheetTests {
                     PermissionDetailsSheet(title: "Accessibility",
                                            explanation: "Lets features react to clicks and keys.",
                                            featureNames: ["Window layout", "Displays"],
-                                           isUnused: false, hub: FeatureStrings.hub(.enUS))
+                                           isUnused: false, hub: FeatureStrings.hub(.enUS),
+                                           onOpenSystemSettings: { model.settingsActions += 1 })
                 }
         }
     }
 
     static func run(_ expect: (Bool, String) -> Void) {
         MainActor.assumeIsolated {
+            let getter = NSSelectorFromString("accessibilityAttributeValue:")
+            let setter = NSSelectorFromString("accessibilitySetValue:forAttribute:")
+            let prior = NSApp.perform(getter, with: "AXEnhancedUserInterface")?.takeUnretainedValue() as? NSNumber ?? false
+            NSApp.perform(setter, with: true, with: "AXEnhancedUserInterface")
+            defer { NSApp.perform(setter, with: prior, with: "AXEnhancedUserInterface") }
             let model = Model()
             let window = NSWindow(contentViewController: NSHostingController(rootView: Host(model: model)))
             window.isReleasedWhenClosed = false
@@ -39,6 +46,12 @@ enum PermissionDetailsSheetTests {
                 expect(false, "permission details opens a native sheet")
                 return
             }
+            expect(model.settingsActions == 0, "opening permission explanations does not request access or open System Settings")
+            pump { findSettingsButton(in: sheet.contentView!) != nil }
+            let action = findSettingsButton(in: sheet.contentView!)
+            expect(action != nil, "permission explanations retain the separate Open System Settings link")
+            _ = action?.accessibilityPerformPress?()
+            expect(model.settingsActions == 1, "the Settings link invokes only its explicit supplied action")
             let escape = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [],
                                           timestamp: 0, windowNumber: sheet.windowNumber, context: nil,
                                           characters: "\u{1b}", charactersIgnoringModifiers: "\u{1b}",
@@ -60,5 +73,13 @@ enum PermissionDetailsSheetTests {
         while !condition(), Date() < deadline {
             RunLoop.current.run(until: Date().addingTimeInterval(0.01))
         }
+    }
+
+    private static func findSettingsButton(in element: AnyObject) -> AnyObject? {
+        if element.accessibilityIdentifier?() == "permission.open-system-settings" { return element }
+        for child in element.accessibilityChildren?() ?? [] {
+            if let result = findSettingsButton(in: child as AnyObject) { return result }
+        }
+        return nil
     }
 }

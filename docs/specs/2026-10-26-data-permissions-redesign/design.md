@@ -1,13 +1,17 @@
 # Data & Permissions consistent rows
 
-Approved: use the supplied light reference and implementation spec; retain Settings for unknown states, put Open System Settings in each permission info popover, use the supplied Import copy, preserve confirmations and reset/restart behavior, and provide an adaptive dark palette. Use the latest current branch in the primary workspace; no worktree.
+Approved: use the supplied layout and behavior reference, refined to the existing compact native visual style; retain Settings for unknown states, put Open System Settings in each permission info popover, use the supplied Import copy, preserve confirmations and reset/restart behavior, and provide an adaptive dark palette. Use the latest current branch in the primary workspace; no worktree.
 
-Layout: 28-point page inset; uppercase 12-point section headers; Data, Permissions, Danger Zone order. Cards use 16-point corners, 18-point horizontal insets and full-row dividers. One shared row uses 40-point icon tiles, 14-point gaps and one fixed 112-by-34 action. Titles use 15-point semibold; secondary text uses 12.5 points. Permission title/info line remains 20 points high with a 28-point info hit target; status lives below it.
+Visual refinement approved by the user: the reference governs row structure and behavior, not a pixel-for-pixel visual replacement. Retain Lattice’s existing compact native Settings appearance.
+
+Layout: standard 22-point page inset and compact title-case section labels. Use the existing adaptive quaternary card surface, 16-point corners/insets, standard dividers, 30-point status tiles with 13-point icons, native body/caption text and 12-point column gaps. One shared row keeps all trailing actions aligned. Native bordered buttons share a fixed label width; Request uses native prominence. Info is beside the title in a compact fixed-height title line, with status below it. No custom monochrome button skin or hard-coded light/dark palette.
 
 Behavior: show Request only for missing Full Disk Access, Microphone or Calendar when that request path is available. Retain the existing manual Full Disk Access setup action. Denied microphone/calendar paths use Settings; granted/unknown states use quiet Settings. Popover explains the permission, retains active-feature context and always includes Open System Settings. Opening details never requests access.
 
 Data and destructive rows reuse the same row/action geometry and keep their existing import/export/uninstall/reset actions, alerts and error reporting. Successful reset retains the existing inline cleared/restart state and exact English title without a trailing period.
 
-Keyboard: disable the sidebar table's native type selection and keyboard focus, scoped to the sidebar only. Preserve click selection, programmatic routing, search editing/result navigation, text fields, shortcut recording and normal control focus.
+Keyboard: retain the existing native sidebar navigation. The user explicitly withdrew the keyboard-navigation change before delivery; no sidebar or Settings-hosting edits remain.
 
-Validation: isolated action-policy and native keyboard/layout tests; representative light/dark, long-label and reset-state rendering; affected tests and Developer build. No real permission prompts, reset, uninstall, clipboard writes, playback, hardware or ordinary application launch.
+Validation: isolated action-policy and native layout tests; representative light/dark, long-label and reset-state rendering; affected tests and Developer build. No real permission prompts, reset, uninstall, clipboard writes, playback, hardware or ordinary application launch.
+
+Scope correction: the user withdrew the sidebar keyboard-navigation request. All sidebar implementation/test edits were removed; retain native keyboard navigation and focus behavior.
