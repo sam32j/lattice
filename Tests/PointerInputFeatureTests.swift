@@ -3686,7 +3686,7 @@ enum PointerInputFeatureTests {
                          "Sources/Lattice/Services/Audio/PreciseVolumeRollerService.swift",
                          "Sources/Lattice/Services/DockClick/DockClickService.swift",
                          "Sources/Lattice/Services/Display/BrightnessService.swift"] {
-            let source = (try? String(contentsOfFile: tapOwner, encoding: .utf8)) ?? ""
+            let source = InputTapSessionSources.read(tapOwner)
             suite.expect(!source.isEmpty, "\(tapOwner) reads back for its session-switch check")
             let code = source.components(separatedBy: "\n")
                 .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
