@@ -36,7 +36,8 @@ enum DockClickSettingsProbe {
             RunLoop.main.run(until: Date().addingTimeInterval(0.15))
             host.layoutSubtreeIfNeeded()
         }
-        let labels = ["Toggle Windows", "Hide/Unhide Apps", "Cycle Windows"]
+        let copy = DockClickCopy.strings(.enUS)
+        let labels = [copy.toggleWindows, copy.hideApps, copy.cycleWindows]
         settle()
         for (index, label) in labels.enumerated() {
             guard let button = findButton(label, in: host) else {
@@ -48,7 +49,7 @@ enum DockClickSettingsProbe {
                 failures.append("Dock tile \(label) did not exclusively select its action.")
             }
         }
-        _ = findButton("Off", in: host)?.accessibilityPerformPress?()
+        _ = findButton(copy.off, in: host)?.accessibilityPerformPress?()
         settle()
         if keys.contains(where: { defaults.bool(forKey: $0) }) {
             failures.append("The Off tile must clear every Dock Click action.")
@@ -57,7 +58,7 @@ enum DockClickSettingsProbe {
         // A revoked grant can precede the persisted activation being cleared.
         defaults.set(true, forKey: DefaultsKey.dockClickMinimize)
         settle()
-        _ = findButton("Toggle Windows", in: host)?.accessibilityPerformPress?()
+        _ = findButton(copy.toggleWindows, in: host)?.accessibilityPerformPress?()
         settle()
         if requests != 1 || keys.contains(where: { defaults.bool(forKey: $0) }) {
             failures.append("Denied Dock permission must leave every tile off.")

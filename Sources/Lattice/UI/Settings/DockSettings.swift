@@ -31,7 +31,7 @@ struct DockSettings: View {
                 dockPreviewCard
                     .settingsSectionAnchor(.dock, cornerRadius: 16)
                 if AppFeature.dockClick.isPresentInControls() {
-                    SettingsCard(title: l10n.language == .enUS ? "Dock Tile" : FeatureStrings.hub(l10n.language).titleDockClick) {
+                    SettingsCard(title: DockClickCopy.strings(l10n.language).title) {
                         DockClickSettings()
                     }
                     .settingsSectionAnchor(.dockClick, cornerRadius: 16)

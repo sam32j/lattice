@@ -18,6 +18,44 @@ struct BackupFeatureStrings {
     let importMissingIslandBody: String
     let importAction: String
     let invalidFile: String
+
+    func compactImport(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "Import…"
+        case .zhHans: return "导入…"
+        case .zhTW, .zhHK: return "匯入…"
+        case .ja: return "読み込む…"
+        case .ko: return "가져오기…"
+        case .de: return "Importieren…"
+        case .fr: return "Importer…"
+        case .es: return "Importar…"
+        case .ptBR: return "Importar…"
+        case .it: return "Importa…"
+        case .ru: return "Импортировать…"
+        case .uk: return "Імпортувати…"
+        case .tr: return "İçe aktar…"
+        case .sk: return "Importovať…"
+        }
+    }
+
+    func compactExport(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "Export…"
+        case .zhHans: return "导出…"
+        case .zhTW, .zhHK: return "匯出…"
+        case .ja: return "書き出す…"
+        case .ko: return "내보내기…"
+        case .de: return "Exportieren…"
+        case .fr: return "Exporter…"
+        case .es: return "Exportar…"
+        case .ptBR: return "Exportar…"
+        case .it: return "Esporta…"
+        case .ru: return "Экспортировать…"
+        case .uk: return "Експортувати…"
+        case .tr: return "Dışa aktar…"
+        case .sk: return "Exportovať…"
+        }
+    }
 }
 
 extension FeatureStrings {

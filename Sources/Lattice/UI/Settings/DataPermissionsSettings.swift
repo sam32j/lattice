@@ -66,7 +66,7 @@ struct DataPermissionsSettings: View {
                                 importFailed = true
                             }
                         } label: {
-                            Label(l10n.language == .enUS ? "Import…" : backup.importButton,
+                            Label(backup.compactImport(l10n.language),
                                   systemImage: "square.and.arrow.down")
                         }
                     }
@@ -98,7 +98,7 @@ struct DataPermissionsSettings: View {
                             importFailed = false
                             exported = SettingsBackup.runExportPanel()
                         } label: {
-                            Label(l10n.language == .enUS ? "Export…" : backup.exportButton,
+                            Label(backup.compactExport(l10n.language),
                                   systemImage: "square.and.arrow.up")
                         }
                     }

@@ -27,5 +27,23 @@ enum DockClickModeTests {
                      && !defaults.bool(forKey: DefaultsKey.dockClickHide)
                      && !defaults.bool(forKey: DefaultsKey.dockClickCycleWindows),
                      "Off clears every action so the service unloads rather than keeping stale work armed")
+
+        for language in AppLanguage.allCases {
+            let copy = DockClickCopy.strings(language)
+            suite.expect(!copy.title.isEmpty && !copy.body.isEmpty && !copy.off.isEmpty
+                         && !copy.toggleWindows.isEmpty && !copy.hideApps.isEmpty && !copy.cycleWindows.isEmpty,
+                         "DockClickCopy provides non-empty strings for \(language.rawValue)")
+            suite.expect(!copy.title.contains("'") && !copy.body.contains("'")
+                         && !copy.toggleWindows.contains("'") && !copy.hideApps.contains("'") && !copy.cycleWindows.contains("'"),
+                         "DockClickCopy curls all apostrophes in \(language.rawValue)")
+        }
+        let zh = DockClickCopy.strings(.zhHans)
+        suite.expect(zh.title == "程序坞图标"
+                     && zh.body == "点按程序坞图标以执行"
+                     && zh.off == "关闭"
+                     && zh.toggleWindows == "最小化/恢复窗口"
+                     && zh.hideApps == "隐藏/关闭应用"
+                     && zh.cycleWindows == "切换",
+                     "Simplified Chinese Dock Click matches user specification")
     }
 }

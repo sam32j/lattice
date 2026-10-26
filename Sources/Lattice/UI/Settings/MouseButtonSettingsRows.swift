@@ -74,7 +74,7 @@ extension MouseButtonShortcutsSection {
             Button {
                 startCapture()
             } label: {
-                Label(l10n.language == .enUS ? "Configure" : text.addButton, systemImage: "plus")
+                Label(text.configureButton(l10n.language), systemImage: "plus")
             }
         }
     }
