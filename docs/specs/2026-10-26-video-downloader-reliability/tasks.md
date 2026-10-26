@@ -28,3 +28,15 @@ Baseline: fix/settings-followups at a18b712e, clean. Continue in the primary che
 - Live verification is a metadata lookup and bounded tool smoke test, not a full-quality download of the entire video. No dependencies were installed, credentials read or download history modified by live checks; test downloads live in temporary directories.
 
 Publication: commit the fixes and verification record, push fix/settings-followups and update PR 21. No merge or base change.
+
+## Audio and island-input follow-up
+
+Baseline 79230e28, clean. User accepts one download at a time and explicitly requests the island URL field be disabled during downloads; also reports audio-only progress stuck at zero and stale clipboard Paste after copying another URL without closing the island.
+
+- Reproduced the actual audio plan with the installed yt-dlp: projecting requested_formats returns [] for audio-only and therefore does not fall back to format_id. The old tracker registered no stream and discarded every update.
+- Emit an explicit JSON envelope containing both the selected stream list and the single selected format ID. Use that ID when the list is empty. Preserve the multi-stream/HLS tracker. Regression failed twice before implementation and passes now.
+- Completed an actual audio-only download of the provided URL into a temporary folder (about 4.7 MB), converted it to M4A, and verified an audio stream with about 311.4 seconds duration using ffprobe. Captured 11 progress events with intermediate percentages; replay fixture contains no URLs/output paths.
+- Extract the island's search header into a small shared-state component. Field and Paste are disabled/dim while downloading, paused or finishing. Search/Clear remain gated by the shared busy state; metadata-search edits still invalidate the old result.
+- Refresh clipboard availability every 0.5 seconds only while the component is presented, not a preview, and its empty input is enabled. Read and validate the current clipboard again on Paste or empty-field submission, never the cached hint. Clipboard reads are injectable; native tests never modify the real clipboard.
+- Native tests reproduced five failures before correction: cached A instead of B, stale next paste, no availability refresh, editable input during download, and editable input while paused. All pass after correction.
+- Final affected suites passed: harness 522, downloader 80, settings 1,048; total 1,650. Independent source review: ready, no actionable findings. Developer build and strict signature verification passed.
