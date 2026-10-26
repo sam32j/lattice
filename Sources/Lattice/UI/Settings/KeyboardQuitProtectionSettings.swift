@@ -6,6 +6,7 @@ enum QuitProtectionHoldPreset: Double, CaseIterable, Identifiable {
     case `default` = 800
     case long = 1200
     case veryLong = 1500
+    case maximum = 2000
 
     var id: Double { rawValue }
 
@@ -33,6 +34,7 @@ enum QuitProtectionHoldPreset: Double, CaseIterable, Identifiable {
         case .default: return titles[2]
         case .long: return titles[3]
         case .veryLong: return titles[4]
+        case .maximum: return "2000 ms"
         }
     }
 
