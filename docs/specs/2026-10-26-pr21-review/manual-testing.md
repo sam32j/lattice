@@ -74,3 +74,13 @@ These checks require a regular Lattice build. Developer builds intentionally byp
 Import/export, reset confirmations, uninstall and native sidebar keyboard navigation were preserved. Do not perform a destructive reset or uninstall merely to validate these review fixes.
 
 The test preference namespace and session-source guard corrections are CI-only fixes. They have no manual UI steps; automated harness and pointer-input checks verify them without changing real permissions or installing an input tap.
+
+## Video Downloader follow-ups
+
+| Check | Steps | Broken before | Expected now |
+| --- | --- | --- | --- |
+| HLS and separate audio progress | Search https://www.youtube.com/watch?v=6f7ojkd4_Wc and download to a chosen folder. Watch the percentage in Settings and Dynamic Island. | Fragment-size estimates and a separate audio stream could make the percentage move backwards or show finishing before audio started. | Whole-job progress stays monotonic. Finishing starts only after all transfer streams finish; validation/publication must succeed before completion is shown. Percentages remain estimates when stream sizes are unknown. |
+| Edit a completed search | Search a URL in Dynamic Island, then delete a character, replace the URL or clear the field manually. | The old result kept the action labeled Clear. | The action immediately returns to Search. Clipboard paste and Settings field edits follow the same state rule. |
+| Edit while inspecting | Start Search, then replace the URL before details arrive. | An old request could put its preview back after editing. | The old inspection is canceled/invalidated. Search uses the new URL; the old preview does not return. |
+| Edit during download | While a download is active, type the next URL. Wait for the current job to finish, then Search. | The action still said Clear and old completion cleanup could erase the next draft. | The current download continues. Search is shown but disabled until that job ends. The new URL survives completion and old-result cleanup. |
+| Older download fails after editing | If a download fails after you have already typed the next URL, inspect the resulting controls. | The old preview could leave a Retry action that had no valid inspected URL. | The failure stays visible, stale Retry controls disappear, and the new URL remains ready to search. |
