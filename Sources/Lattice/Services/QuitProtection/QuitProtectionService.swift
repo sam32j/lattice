@@ -546,8 +546,12 @@ final class QuitProtectionService: ObservableObject {
         } else {
             title = String(format: strings.doubleHUDFormat(for: shortcut), shortcut.symbol)
         }
+        let targetRect = NSWorkspace.shared.frontmostApplication.flatMap {
+            QuitProtectionHUD.targetWindowCocoaRect(forPID: $0.processIdentifier)
+        }
         hud.show(title: title, detail: strings.cancelHint,
-                 holdDeadline: configuration.mode == .hold ? holdTimer?.fireDate : nil)
+                 holdDeadline: configuration.mode == .hold ? holdTimer?.fireDate : nil,
+                 targetRect: targetRect)
     }
 
     private func hideHUD() { hud.hide() }
