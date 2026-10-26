@@ -47,7 +47,9 @@ enum QuitProtectionRoutingContract {
     }
     final class QuitProtectionHUD {
         private(set) var visible = false
-        func show(title: String, detail: String, holdDeadline: Date? = nil, on screen: NSScreen? = nil) {
+        static func targetWindowCocoaRect(forPID pid: pid_t) -> CGRect? { nil }
+        func show(title: String, detail: String, on screen: NSScreen? = nil,
+                  holdDeadline: Date? = nil, targetRect: CGRect? = nil) {
             visible = true
         }
         func hide() { visible = false }
