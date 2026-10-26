@@ -108,6 +108,9 @@ struct DockSettings: View {
                 SettingsRow(symbol: "timer", title: l10n.s.dockPreviewOpenDelay,
                             caption: l10n.s.dockPreviewOpenDelayCaption) {
                     Picker(l10n.s.dockPreviewOpenDelay, selection: dockPreviewHoverDelayBinding) {
+                        if ![200, 350].contains(dockPreviewHoverDelayBinding.wrappedValue) {
+                            Text("\(dockPreviewHoverDelayBinding.wrappedValue) ms").tag(dockPreviewHoverDelayBinding.wrappedValue)
+                        }
                         Text(l10n.s.dockPreviewDelayDefault).tag(200)
                         Text(l10n.s.dockPreviewDelayLonger).tag(350)
                     }
@@ -199,10 +202,10 @@ struct DockSettings: View {
     private var dockPreviewHoverDelayBinding: Binding<Int> {
         Binding(
             get: {
-                dockPreviewOpenDelay >= 300 ? 350 : 200
+                DockPreviewSupport.sanitizedOpenDelay(milliseconds: self.dockPreviewOpenDelay)
             },
             set: { newValue in
-                dockPreviewOpenDelay = newValue
+                self.dockPreviewOpenDelay = newValue
             }
         )
     }

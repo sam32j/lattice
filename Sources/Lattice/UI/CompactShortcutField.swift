@@ -155,7 +155,7 @@ struct CompactShortcutField: View {
         case .zhTW, .zhHK: return "esc 取消"
         case .ru: return "esc для отмены"
         case .uk: return "esc для скасування"
-        case .tr: return "esc iptal etmek için"
+        case .tr: return "İptal etmek için esc"
         case .sk: return "esc zrušiť"
         }
     }
