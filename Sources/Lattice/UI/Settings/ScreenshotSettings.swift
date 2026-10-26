@@ -78,6 +78,8 @@ struct ScreenshotSettings: View {
         .sheet(isPresented: $showingSharePrivacy) {
             ScreenshotSharePrivacyView()
         }
+        .settingsExpansionAnimation(value: [rememberLoupeZoom, usesAutomaticConfirmationPreview, previewEnabled,
+            sharingEnabled, sharing.records.isEmpty, ScreenshotSupport.fileNamePatternUsesNumber(fileNamePattern)])
     }
 
 

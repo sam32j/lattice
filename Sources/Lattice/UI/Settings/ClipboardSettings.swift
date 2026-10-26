@@ -154,6 +154,7 @@ struct ClipboardSettings: View {
             let sanitized = Defaults.sanitizedClipboardMenuBarPreviewLength(value)
             if sanitized != value { menuBarPreviewLength = sanitized }
         }
+        .settingsExpansionAnimation(value: [enabled, pastePlainEnabled, permissions.accessibility])
     }
 
     @ViewBuilder

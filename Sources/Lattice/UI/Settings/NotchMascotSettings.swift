@@ -46,7 +46,6 @@ struct NotchMascotSettings: View {
         NotchSupport.hasNotchedDisplay || NotchSilhouette(rawValue: silhouette) == .notch
     }
 
-    private var animation: Animation? { reduceMotion ? nil : .smooth(duration: 0.25) }
 
     var body: some View {
         ScrollView {
@@ -62,6 +61,9 @@ struct NotchMascotSettings: View {
             }
             .padding(embedded ? [.bottom] : .all, 22)
         }
+        .settingsExpansionAnimation(value: [islandOn, restsBesideCamera, visits,
+            features.isAvailable(.commandBar) && commandBar])
+        .settingsExpansionAnimation(value: style)
     }
 
     private var header: some View {
@@ -137,7 +139,6 @@ struct NotchMascotSettings: View {
             }
             swatches
         }
-        .animation(animation, value: look.style)
     }
 
     private var shapes: some View {
@@ -217,7 +218,6 @@ struct NotchMascotSettings: View {
             }
             switchRow("theatermasks", text.reactions, caption: text.reactionsHint, isOn: $reactions)
         }
-        .animation(animation, value: visits)
     }
 
     // MARK: Command Bar
@@ -245,7 +245,6 @@ struct NotchMascotSettings: View {
                 .transition(.opacity)
             }
         }
-        .animation(animation, value: available && commandBar)
     }
 
     /// An option with its icon, a line about it and a switch, like the rest of Settings.

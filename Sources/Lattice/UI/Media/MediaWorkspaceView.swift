@@ -237,6 +237,7 @@ struct MediaWorkspaceView: View {
                 cancelVideoImport()
             }
         }
+        .settingsExpansionAnimation(value: [videoSizingRaw, gifSizingRaw, imageResizeKindRaw, imageWatermarkKindRaw, imageFormatRaw])
     }
 
     private var layout: some View {
@@ -416,6 +417,7 @@ struct MediaWorkspaceView: View {
                 }
             }
             .panelCard()
+            .clipShape(RoundedRectangle(cornerRadius: inNotch ? 18 : 10, style: .continuous))
         case .gifMaker:
             VStack(alignment: .leading, spacing: 10) {
                 timeRangeRow(start: $gifStart, end: $gifEnd)
@@ -432,6 +434,7 @@ struct MediaWorkspaceView: View {
                     .toggleStyle(.checkbox)
             }
             .panelCard()
+            .clipShape(RoundedRectangle(cornerRadius: inNotch ? 18 : 10, style: .continuous))
         case .imageCompressor:
             VStack(alignment: .leading, spacing: 10) {
                 imageQuickPresetsRow
@@ -469,6 +472,7 @@ struct MediaWorkspaceView: View {
                 }
             }
             .panelCard()
+            .clipShape(RoundedRectangle(cornerRadius: inNotch ? 18 : 10, style: .continuous))
         case .textExtractor:
             VStack(alignment: .leading, spacing: 10) {
                 Picker(l10n.s.mediaOCRMode, selection: $textAccurate) {

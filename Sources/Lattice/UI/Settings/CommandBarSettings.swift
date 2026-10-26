@@ -373,6 +373,8 @@ struct CommandBarSettings: View {
                 editing = nil
             }
         }
+        .settingsExpansionAnimation(value: [showsLayoutOptions, showsFileOptions,
+            CommandBarPreferences.isEnabled(.emoji, disabledRaw: disabledSources)])
     }
 
     // MARK: - The places the person saved
@@ -650,6 +652,7 @@ private struct CommandBarLinkEditor: View {
         }
         .padding(20)
         .frame(width: 440)
+        .settingsExpansionAnimation(value: draft.kind)
     }
 
     private func meaning(of placeholder: CommandBarLinkPlaceholder) -> String {

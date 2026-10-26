@@ -164,6 +164,14 @@ struct NotchSettings: View {
         .onChange(of: router.notchModule) { _, _ in consumeModuleHint() }
         .onAppear(perform: consumeCompanionHint)
         .onChange(of: router.notchCompanion) { _, _ in consumeCompanionHint() }
+        .settingsExpansionAnimation(value: [hover, hideUntilHover, hoverExpand, shortcutEnabled, lowBatteryTint,
+            earlyBatteryWarning, lyricsEnabled, shelfWindow, clipboardWindow, accessoriesEnabled,
+            permissions.accessibility])
+        .settingsExpansionAnimation(value: [idle, size, silhouette, display])
+        .settingsExpansionAnimation(value: [enabled, hiddenShowsActivity, gesturesEnabled, notificationsEnabled,
+                                            volume, brightness, keyboardLight, watchEnabled])
+        .settingsExpansionAnimation(value: permissions.calendarAccess == .fullAccess)
+        .settingsExpansionAnimation(value: permissions.camera == .granted)
     }
 
     func consumeTabHint() {

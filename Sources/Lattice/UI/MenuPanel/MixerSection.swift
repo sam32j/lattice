@@ -9,6 +9,7 @@ import SwiftUI
 /// 100% is untouched passthrough; below it attenuates and above it (up to 200%)
 /// boosts, with the slider and percentage turning amber in the boost range.
 struct MixerSection: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.notchPresentation) private var inNotch
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var mixer = AppVolumeMixer.shared
@@ -104,7 +105,9 @@ struct MixerSection: View {
     private var optionsDisclosure: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
-                optionsExpanded.toggle()
+                withAnimation(reduceMotion ? nil : .settingsExpansion) {
+                    optionsExpanded.toggle()
+                }
             } label: {
                 HStack(spacing: 7) {
                     Image(systemName: "chevron.right")
@@ -424,6 +427,7 @@ struct MixerSection: View {
 /// both surfaces offer the same switches: idle rows, the headphone guard, the
 /// precise roller, the output switcher and the hidden apps.
 struct MixerOptionsControls: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var mixer = AppVolumeMixer.shared
     @ObservedObject private var preciseVolumeRoller = PreciseVolumeRollerService.shared
@@ -469,7 +473,7 @@ struct MixerOptionsControls: View {
     private var headphoneDisconnectProtectionToggle: some View {
         VStack(alignment: .leading, spacing: 3) {
             Toggle(l10n.s.mixerLowerOnHeadphonesDisconnect,
-                   isOn: $lowerOnHeadphonesDisconnect)
+                   isOn: $lowerOnHeadphonesDisconnect.animation(reduceMotion ? nil : .settingsExpansion))
                 .toggleStyle(.checkbox)
                 .font(.system(size: 11.5, weight: .medium))
 
@@ -511,7 +515,7 @@ struct MixerOptionsControls: View {
 
     private var preciseVolumeRollerToggle: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Toggle(l10n.s.preciseVolumeRollerEnable, isOn: $preciseVolumeRollerEnabled)
+            Toggle(l10n.s.preciseVolumeRollerEnable, isOn: $preciseVolumeRollerEnabled.animation(reduceMotion ? nil : .settingsExpansion))
                 .toggleStyle(.checkbox)
                 .font(.system(size: 11.5, weight: .medium))
                 .onChange(of: preciseVolumeRollerEnabled) { _, enabled in

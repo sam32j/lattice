@@ -6,6 +6,7 @@ import SwiftUI
 
 /// The AI page's options, under its row in the Dynamic Island settings.
 struct NotchAgentsSettingsControls: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var usage = AgentUsageService.shared
     @AppStorage(DefaultsKey.notchAgentsClaude) private var claude = true
@@ -45,8 +46,8 @@ struct NotchAgentsSettingsControls: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            providerRow(.claude, isOn: $claude)
-            providerRow(.codex, isOn: $codex)
+            providerRow(.claude, isOn: $claude.animation(reduceMotion ? nil : .settingsExpansion))
+            providerRow(.codex, isOn: $codex.animation(reduceMotion ? nil : .settingsExpansion))
             providerRow(.opencode, isOn: $opencode)
             providerRow(.copilot, isOn: $copilot)
             if codex { CodexAccountsSettings() }
@@ -87,7 +88,7 @@ struct NotchAgentsSettingsControls: View {
 
             Divider()
             Text(text.liveTitle).font(.subheadline.weight(.medium))
-            switchRow("waveform.path.ecg", text.liveActivity, isOn: $liveActivity)
+            switchRow("waveform.path.ecg", text.liveActivity, isOn: $liveActivity.animation(reduceMotion ? nil : .settingsExpansion))
             if liveActivity {
                 SettingsMenuRow(symbol: "camera.metering.center.weighted", title: text.readout, selection: $readout) {
                     ForEach(NotchAgentReadout.allCases) { option in
@@ -104,7 +105,7 @@ struct NotchAgentsSettingsControls: View {
 
             Divider()
             Text(text.alerts).font(.subheadline.weight(.medium))
-            switchRow("checkmark.circle", text.finishAlert, isOn: $finishAlert)
+            switchRow("checkmark.circle", text.finishAlert, isOn: $finishAlert.animation(reduceMotion ? nil : .settingsExpansion))
             if finishAlert {
                 SettingsMenuRow(symbol: "timer", title: text.finishAfter, selection: $finishMinimum) {
                     ForEach(NotchAgentSupport.finishMinimums, id: \.self) { seconds in
@@ -114,7 +115,7 @@ struct NotchAgentsSettingsControls: View {
                 }
                 .padding(.leading, settingsRowTextInset)
             }
-            switchRow("exclamationmark.triangle", text.limitAlert, isOn: $limitAlert)
+            switchRow("exclamationmark.triangle", text.limitAlert, isOn: $limitAlert.animation(reduceMotion ? nil : .settingsExpansion))
             if limitAlert {
                 SettingsMenuRow(symbol: "gauge.with.dots.needle.67percent", title: text.limitAt, selection: $limitThreshold) {
                     ForEach(NotchAgentSupport.limitThresholds, id: \.self) { value in
@@ -267,7 +268,9 @@ struct NotchAgentsSettingsControls: View {
         } set: { shown in
             var hidden = Set(hiddenCards.split(separator: ",").map(String.init))
             if shown { hidden.remove(card.rawValue) } else { hidden.insert(card.rawValue) }
-            hiddenCards = hidden.sorted().joined(separator: ",")
+            withAnimation(reduceMotion ? nil : .settingsExpansion) {
+                hiddenCards = hidden.sorted().joined(separator: ",")
+            }
         }
     }
 

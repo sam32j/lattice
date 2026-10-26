@@ -32,6 +32,7 @@ struct GeneralToolSettings: View {
             .frame(maxWidth: .infinity)
             .padding(22)
         }
+        .settingsExpansionAnimation(value: hideMenuIcon)
     }
 }
 

@@ -5,6 +5,7 @@ import SwiftUI
 import UserNotifications
 
 struct MonitorAlertsControls: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var l10n = L10n.shared
     let compact: Bool
     @State private var notificationsDenied = false
@@ -66,27 +67,27 @@ struct MonitorAlertsControls: View {
         VStack(alignment: .leading, spacing: 12) {
             LazyVGrid(columns: monitorTokenColumns, spacing: 8) {
                 if AppFeature.monitorCPU.isAvailable {
-                    alertToken(text.cpu, symbol: "cpu", isOn: $alertCPU,
+                    alertToken(text.cpu, symbol: "cpu", isOn: $alertCPU.animation(reduceMotion ? nil : .settingsExpansion),
                                limit: .init(label: text.cpuThreshold, value: $alertCPUThreshold,
                                             range: 50...100, step: 5, formatValue: { "\($0)%" }))
-                    alertToken(text.cpuTemperature, symbol: "thermometer.medium", isOn: $alertCPUTemperature,
+                    alertToken(text.cpuTemperature, symbol: "thermometer.medium", isOn: $alertCPUTemperature.animation(reduceMotion ? nil : .settingsExpansion),
                                limit: .init(label: text.cpuTemperatureThreshold, value: $alertCPUTemperatureThreshold,
                                             range: 70...105, step: 5, formatValue: formattedTemperature))
                 }
                 if AppFeature.monitorMemory.isAvailable {
-                    alertToken(text.memory, symbol: "memorychip", isOn: $alertMemory, limit: nil)
+                    alertToken(text.memory, symbol: "memorychip", isOn: $alertMemory.animation(reduceMotion ? nil : .settingsExpansion), limit: nil)
                 }
                 if AppFeature.monitorDisk.isAvailable {
-                    alertToken(text.disk, symbol: "internaldrive", isOn: $alertDisk,
+                    alertToken(text.disk, symbol: "internaldrive", isOn: $alertDisk.animation(reduceMotion ? nil : .settingsExpansion),
                                limit: .init(label: text.diskThreshold, value: $alertDiskFreePercent,
                                             range: 5...30, step: 5, formatValue: { "\($0)%" }))
                 }
                 if AppFeature.monitorPower.isAvailable, PowerSampler.hasInternalBattery {
-                    alertToken(text.batteryTemperature, symbol: "thermometer.high", isOn: $alertBatteryTemperature,
+                    alertToken(text.batteryTemperature, symbol: "thermometer.high", isOn: $alertBatteryTemperature.animation(reduceMotion ? nil : .settingsExpansion),
                                limit: .init(label: text.batteryTemperatureThreshold,
                                             value: $alertBatteryTemperatureThreshold,
                                             range: 30...50, step: 5, formatValue: formattedTemperature))
-                    alertToken(text.battery, symbol: "battery.25percent", isOn: $alertBattery,
+                    alertToken(text.battery, symbol: "battery.25percent", isOn: $alertBattery.animation(reduceMotion ? nil : .settingsExpansion),
                                limit: .init(label: text.batteryThreshold, value: $alertBatteryPercent,
                                             range: 5...50, step: 5, formatValue: { "\($0)%" }))
                 }
@@ -150,14 +151,14 @@ struct MonitorAlertsControls: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if AppFeature.monitorCPU.isAvailable {
-                Toggle(text.cpu, isOn: $alertCPU)
+                Toggle(text.cpu, isOn: $alertCPU.animation(reduceMotion ? nil : .settingsExpansion))
                 if alertCPU {
                     Stepper("\(text.cpuThreshold) \(alertCPUThreshold)%",
                             value: $alertCPUThreshold,
                             in: 50...100,
                             step: 5)
                 }
-                Toggle(text.cpuTemperature, isOn: $alertCPUTemperature)
+                Toggle(text.cpuTemperature, isOn: $alertCPUTemperature.animation(reduceMotion ? nil : .settingsExpansion))
                 if alertCPUTemperature {
                     Stepper("\(text.cpuTemperatureThreshold) \(formattedTemperature(alertCPUTemperatureThreshold))",
                             value: $alertCPUTemperatureThreshold,
@@ -166,10 +167,10 @@ struct MonitorAlertsControls: View {
                 }
             }
             if AppFeature.monitorMemory.isAvailable {
-                Toggle(text.memory, isOn: $alertMemory)
+                Toggle(text.memory, isOn: $alertMemory.animation(reduceMotion ? nil : .settingsExpansion))
             }
             if AppFeature.monitorDisk.isAvailable {
-                Toggle(text.disk, isOn: $alertDisk)
+                Toggle(text.disk, isOn: $alertDisk.animation(reduceMotion ? nil : .settingsExpansion))
                 if alertDisk {
                     Stepper("\(text.diskThreshold) \(alertDiskFreePercent)%",
                             value: $alertDiskFreePercent,
@@ -178,14 +179,14 @@ struct MonitorAlertsControls: View {
                 }
             }
             if AppFeature.monitorPower.isAvailable, PowerSampler.hasInternalBattery {
-                Toggle(text.batteryTemperature, isOn: $alertBatteryTemperature)
+                Toggle(text.batteryTemperature, isOn: $alertBatteryTemperature.animation(reduceMotion ? nil : .settingsExpansion))
                 if alertBatteryTemperature {
                     Stepper("\(text.batteryTemperatureThreshold) \(formattedTemperature(alertBatteryTemperatureThreshold))",
                             value: $alertBatteryTemperatureThreshold,
                             in: 30...50,
                             step: 5)
                 }
-                Toggle(text.battery, isOn: $alertBattery)
+                Toggle(text.battery, isOn: $alertBattery.animation(reduceMotion ? nil : .settingsExpansion))
                 if alertBattery {
                     Stepper("\(text.batteryThreshold) \(alertBatteryPercent)%",
                             value: $alertBatteryPercent,

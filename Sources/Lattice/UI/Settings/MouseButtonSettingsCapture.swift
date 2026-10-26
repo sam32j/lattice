@@ -6,7 +6,7 @@ extension MouseButtonShortcutsSection {
     func startCapture() {
         stopSpacesCapture()
         captureFeedback = nil
-        capturing = true
+        withAnimation(reduceMotion ? nil : .settingsExpansion) { capturing = true }
         MouseButtonShortcutService.shared.setCapturing(true)
         if !permissions.accessibility {
             permissions.requestAccessibility()
@@ -15,7 +15,7 @@ extension MouseButtonShortcutsSection {
 
     func stopCapture() {
         guard capturing else { return }
-        capturing = false
+        withAnimation(reduceMotion ? nil : .settingsExpansion) { capturing = false }
         captureFeedback = nil
         MouseButtonShortcutService.shared.setCapturing(false)
     }
@@ -30,7 +30,7 @@ extension MouseButtonShortcutsSection {
                     || (spacesEnabled && Int64(spacesButton) == seen) {
             captureFeedback = text.captureExists
         } else {
-            pendingButton = seen
+            withAnimation(reduceMotion ? nil : .settingsExpansion) { pendingButton = seen }
             recordError = nil
             stopCapture()
         }
@@ -39,7 +39,7 @@ extension MouseButtonShortcutsSection {
     func startSpacesCapture() {
         stopCapture()
         spacesFeedback = nil
-        spacesCapturing = true
+        withAnimation(reduceMotion ? nil : .settingsExpansion) { spacesCapturing = true }
         MouseButtonShortcutService.shared.setCapturing(true)
         if !permissions.accessibility {
             permissions.requestAccessibility()
@@ -48,7 +48,7 @@ extension MouseButtonShortcutsSection {
 
     func stopSpacesCapture() {
         guard spacesCapturing else { return }
-        spacesCapturing = false
+        withAnimation(reduceMotion ? nil : .settingsExpansion) { spacesCapturing = false }
         spacesFeedback = nil
         MouseButtonShortcutService.shared.setCapturing(false)
     }
@@ -80,7 +80,7 @@ extension MouseButtonShortcutsSection {
     }
 
     func save(button: Int64, shortcut: GlobalShortcut) {
-        mappings[button] = shortcut
+        withAnimation(reduceMotion ? nil : .settingsExpansion) { mappings[button] = shortcut }
         if pendingButton == button { pendingButton = nil }
         setRecordError(nil, button)
         persist()
@@ -92,7 +92,7 @@ extension MouseButtonShortcutsSection {
             pendingButton = nil
             return
         }
-        mappings.removeValue(forKey: button)
+        withAnimation(reduceMotion ? nil : .settingsExpansion) { _ = mappings.removeValue(forKey: button) }
         persist()
     }
 

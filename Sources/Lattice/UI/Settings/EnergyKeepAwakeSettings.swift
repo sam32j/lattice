@@ -34,6 +34,8 @@ struct EnergyKeepAwakeSettings: View {
             keepAwakeActiveIcon = Defaults.sanitizedKeepAwakeActiveIcon(keepAwakeActiveIcon).rawValue
             keepAwakeMouseJiggleInterval = Defaults.sanitizedKeepAwakeMouseJiggleInterval(keepAwakeMouseJiggleInterval)
         }
+        .settingsExpansionAnimation(value: [keepAwakeMouseJiggle, awake.clamshellPreferred,
+            awake.clamshellSetupFailed, permissions.accessibility])
     }
 
     // MARK: - Keep awake

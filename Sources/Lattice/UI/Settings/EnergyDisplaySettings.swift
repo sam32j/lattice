@@ -4,6 +4,7 @@
 import SwiftUI
 
 struct EnergyDisplaySettings: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
@@ -63,7 +64,7 @@ struct EnergyDisplaySettings: View {
                     }
                     Divider()
                     SettingsRow(symbol: "cursorarrow.rays", title: strings.keysToggle, caption: strings.keysCaption) {
-                        PermissionGatedToggle(strings.keysToggle, isOn: $brightnessKeysEnabled)
+                        PermissionGatedToggle(strings.keysToggle, isOn: $brightnessKeysEnabled.animation(reduceMotion ? nil : .settingsExpansion))
                             .labelsHidden()
                             .onChange(of: brightnessKeysEnabled) { _, isOn in
                                 if isOn { Permissions.shared.requestAccessibility() }
@@ -71,7 +72,7 @@ struct EnergyDisplaySettings: View {
                             }
                     }
                     SettingsRow(symbol: "sun.min", title: strings.keyStep, caption: strings.keyStepCaption) {
-                        PermissionGatedPicker(title: strings.keyStep, selection: brightnessKeyStepBinding,
+                        PermissionGatedPicker(title: strings.keyStep, selection: brightnessKeyStepBinding.animation(reduceMotion ? nil : .settingsExpansion),
                                               requiring: { $0 == .standard ? [] : [.accessibility] }) {
                             Text(strings.keyStepStandard).tag(BrightnessSupport.KeyStep.standard)
                             Text(strings.keyStepHalf).tag(BrightnessSupport.KeyStep.half)
@@ -91,6 +92,8 @@ struct EnergyDisplaySettings: View {
                 .opacity(brightnessEnabled && AppFeature.brightness.isAvailable ? 1 : 0.5)
             }
         }
+        .settingsExpansionAnimation(value: [brightnessKeysEnabled,
+            brightnessKeyStepBinding.wrappedValue != .standard, permissions.accessibility])
     }
 
     /// A finer step answers the keys in place of the system, which takes the

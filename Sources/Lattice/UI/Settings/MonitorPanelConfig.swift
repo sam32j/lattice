@@ -5,6 +5,7 @@ import SwiftUI
 
 /// Panel configuration tiles, with one master per block and per-item options.
 struct MonitorPanelConfig: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @State private var selectedBlock: PanelConfigBlock?
@@ -76,7 +77,9 @@ struct MonitorPanelConfig: View {
                                  included: master(block),
                                  selected: currentBlock == block,
                                  large: true) {
-                        selectedBlock = block
+                        withAnimation(reduceMotion ? nil : .settingsExpansion) {
+                            selectedBlock = block
+                        }
                     }
                 }
             }

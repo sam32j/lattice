@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct IslandDestinationSettings: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let destination: IslandDestination
     var includeDivider = false
     @ObservedObject private var l10n = L10n.shared
@@ -24,9 +25,11 @@ struct IslandDestinationSettings: View {
         _ = scratchpadRoute
         _ = cameraRoute
         _ = launcherRoute
-        return Binding(get: { destination.isShown(in: .standard) }, set: {
-            destination.setShown($0, in: .standard)
-            sync()
+        return Binding(get: { destination.isShown(in: .standard) }, set: { shown in
+            withAnimation(reduceMotion ? nil : .settingsExpansion) {
+                destination.setShown(shown, in: .standard)
+                sync()
+            }
         })
     }
 

@@ -185,6 +185,7 @@ struct ShelfSettings: View {
         .sheet(isPresented: $showingAppPicker) {
             appPickerSheet
         }
+        .settingsExpansionAnimation(value: [enabled, shortcutEnabled, shortcutAddsFinderSelection, dropZone, islandOn])
     }
 
     private var islandOn: Bool {

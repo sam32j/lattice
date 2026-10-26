@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct DockQuitOnCloseSettings: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var l10n = L10n.shared
     @AppStorage(DefaultsKey.autoQuitEnabled) private var enabled = false
 
@@ -10,7 +11,7 @@ struct DockQuitOnCloseSettings: View {
         VStack(alignment: .leading, spacing: 13) {
             SettingsRow(symbol: "xmark.rectangle", title: l10n.s.autoQuitName,
                         caption: l10n.s.autoQuitEnableCaption) {
-                PermissionGatedToggle(l10n.s.autoQuitName, isOn: $enabled).labelsHidden()
+                PermissionGatedToggle(l10n.s.autoQuitName, isOn: $enabled.animation(reduceMotion ? nil : .settingsExpansion)).labelsHidden()
                     .onChange(of: enabled) { _, _ in FeatureRuntime.shared.sync([.autoQuit]) }
             }
             if enabled {
