@@ -46,6 +46,8 @@ enum VideoDownloaderTests {
                                                                   quality: .audio, staging: folder, ffmpeg: "/tools/ffmpeg")
             suite.expect(audioArgs.contains("--extract-audio") && audioArgs.contains("m4a"),
                          "audio quality requests audio stream extraction to m4a format")
+            suite.expect(audioArgs.contains(#"before_dl:LATTICE_PARTS:{"parts":%(requested_formats.:.{format_id,filesize,filesize_approx}|[])j,"single":%(format_id)j}"#),
+                         "parts output template defaults absent requested formats to empty json array")
             let parsedProgress = VideoDownloadRequest.parseProgress("LATTICE_PROGRESS:42%|612000000|1400000000|8400000|60")
             suite.expect(parsedProgress?.fraction == 0.42 && parsedProgress?.downloadedBytes == 612000000 && parsedProgress?.totalBytes == 1400000000,
                          "detailed progress line parses fraction, bytes, and rate")
