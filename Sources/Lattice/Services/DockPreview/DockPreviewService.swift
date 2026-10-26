@@ -68,7 +68,15 @@ final class DockPreviewService: ObservableObject {
     private var currentSpaceOnly = false
     private var spaceChangeObserver: NSObjectProtocol?
 
-    private init() {}
+    private init() {
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.endSession()
+        }
+    }
 
     var isVisible: Bool {
         panel?.isVisible == true
@@ -234,38 +242,30 @@ final class DockPreviewService: ObservableObject {
     }
 
     func closeWindow(_ item: SwitcherItem) {
-        close(item, quitAppOnClose: false)
+        close(item)
     }
 
     func close(_ item: SwitcherItem) {
-        close(item, quitAppOnClose: UserDefaults.standard.bool(forKey: DefaultsKey.dockPreviewQuitAppOnClose))
-    }
-
-    private func close(_ item: SwitcherItem, quitAppOnClose: Bool) {
         guard isVisible,
               windows.contains(item),
               let windowID = item.windowID
         else { return }
 
-        DockPreviewSupport.performCloseAction(
-            quitAppOnClose: quitAppOnClose,
-            requestQuit: { [weak self] in
-                let accepted = requestDockPreviewApplicationQuit(item)
-                if accepted { self?.endSession() }
-                return accepted
-            },
-            closeWindow: {
-                WindowActivator.closeWindowIncludingHiddenState(item) { [weak self] didClose in
-                    guard didClose, let self else { return }
-                    if self.selectedWindowID == windowID {
-                        self.selectedWindowID = nil
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { [weak self] in
-                        self?.finishClosing(item, windowID: windowID, attempt: 0)
-                    }
-                }
+        WindowActivator.closeWindowIncludingHiddenState(item) { [weak self] didClose in
+            guard didClose, let self else { return }
+            if self.selectedWindowID == windowID {
+                self.selectedWindowID = nil
             }
-        )
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { [weak self] in
+                self?.finishClosing(item, windowID: windowID, attempt: 0)
+            }
+        }
+    }
+
+    func quitApplication(_ item: SwitcherItem) {
+        guard isVisible, windows.contains(item) else { return }
+        let accepted = requestDockPreviewApplicationQuit(item)
+        if accepted { endSession() }
     }
 
     func toggleMinimized(_ item: SwitcherItem) {
@@ -1582,34 +1582,26 @@ final class DockPreviewPinnedPanel: ObservableObject, Identifiable {
     }
 
     func closeWindow(_ item: SwitcherItem) {
-        close(item, quitAppOnClose: false)
+        close(item)
     }
 
     func close(_ item: SwitcherItem) {
-        close(item, quitAppOnClose: UserDefaults.standard.bool(forKey: DefaultsKey.dockPreviewQuitAppOnClose))
-    }
-
-    private func close(_ item: SwitcherItem, quitAppOnClose: Bool) {
         guard windows.contains(item),
               let windowID = item.windowID
         else { return }
 
-        DockPreviewSupport.performCloseAction(
-            quitAppOnClose: quitAppOnClose,
-            requestQuit: { [weak self] in
-                let accepted = requestDockPreviewApplicationQuit(item)
-                if accepted { self?.closePreviewPanel() }
-                return accepted
-            },
-            closeWindow: {
-                WindowActivator.closeWindowIncludingHiddenState(item) { [weak self] didClose in
-                    guard didClose else { return }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { [weak self] in
-                        self?.finishClosing(item, windowID: windowID, attempt: 0)
-                    }
-                }
+        WindowActivator.closeWindowIncludingHiddenState(item) { [weak self] didClose in
+            guard didClose else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { [weak self] in
+                self?.finishClosing(item, windowID: windowID, attempt: 0)
             }
-        )
+        }
+    }
+
+    func quitApplication(_ item: SwitcherItem) {
+        guard windows.contains(item) else { return }
+        let accepted = requestDockPreviewApplicationQuit(item)
+        if accepted { closePreviewPanel() }
     }
 
     func toggleMinimized(_ item: SwitcherItem) {

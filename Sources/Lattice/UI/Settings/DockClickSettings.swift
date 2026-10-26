@@ -16,8 +16,9 @@ struct DockClickSettings: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
-            Text(l10n.language == .enUS ? "Click Dock Tile" : FeatureStrings.hub(l10n.language).titleDockClick)
-                .font(.headline)
+            Text(l10n.language == .enUS ? "Click Dock tile to perform an action." : FeatureStrings.hub(l10n.language).titleDockClick)
+                .font(.body)
+                .foregroundStyle(.secondary)
             HStack(spacing: 8) {
                 ForEach(Action.allCases, id: \.self) { action in
                     let selected = isSelected(action)
@@ -50,7 +51,7 @@ struct DockClickSettings: View {
         switch action {
         case .off: return FeatureStrings.notchAgents(l10n.language).off
         case .toggleWindows: return l10n.language == .enUS ? "Toggle Windows" : l10n.s.dockClickMinimize
-        case .hideApps: return l10n.language == .enUS ? "Hide/Unhide Apps" : l10n.s.dockClickHide
+        case .hideApps: return l10n.language == .enUS ? "Hide/Show Apps" : l10n.s.dockClickHide
         case .cycleWindows: return l10n.language == .enUS ? "Cycle Windows" : l10n.s.dockClickCycleWindows
         }
     }

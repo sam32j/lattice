@@ -35,7 +35,7 @@ enum DockPreviewScrollTests {
                 currentAppName: "Test", isPinned: isPinned, orientation: orientation,
                 onPreview: model.preview,
                 onEndPreview: { _ in if !isPinned { model.selectedWindowID = nil } },
-                onCommit: { _ in }, onCloseWindow: { _ in }, onMiddleClick: { _ in },
+                onCommit: { _ in }, onCloseWindow: { _ in }, onQuitApp: { _ in }, onMiddleClick: { _ in },
                 onToggleMinimized: { _ in }, onTogglePinned: {}, onClosePanel: {},
                 onSelectPrevious: { model.select(-1) }, onSelectNext: { model.select(1) },
                 onBeginDrag: { _ in }, onUpdateDrag: {}, onEndDrag: { _ in })
@@ -48,9 +48,9 @@ enum DockPreviewScrollTests {
         let isSelected: Bool
         let isPanelPinned: Bool
         let onTogglePinned: () -> Void
-        let closeActionTitle: String
         let onCommit: () -> Void
         let onClose: () -> Void
+        let onQuitApp: () -> Void
         let onMiddleClick: () -> Void
         let onToggleMinimized: () -> Void
         var body: some View {

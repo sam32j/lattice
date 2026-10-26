@@ -407,14 +407,17 @@ struct Strings {
     let dockPreviewName: String
     let dockPreviewEnable: String
     let dockPreviewEnableCaption: String
+    let dockPreviewCurrentSpaceOnly: String
     let dockPreviewCurrentSpaceOnlyCaption: String
+    let dockPreviewCurrentSpaceOnlyInfo: String
     let dockPreviewBackgroundOpacity: String
     let dockPreviewBackgroundOpacityCaption: String
     let dockPreviewBackgroundOpacityGlassCaption: String
     let dockPreviewOpenDelay: String
     let dockPreviewOpenDelayCaption: String
-    let dockPreviewQuitAppOnClose: String
-    let dockPreviewQuitAppOnCloseCaption: String
+    let dockPreviewDelayDefault: String
+    let dockPreviewDelayLonger: String
+    let dockPreviewQuitApplication: String
     let dockPreviewKeepDockVisible: String
     let dockPreviewKeepDockVisibleCaption: String
     let dockPreviewOrderByCreation: String
@@ -1005,8 +1008,6 @@ struct Strings {
     let cleaningOverlaySubtitle: String
     let cleaningOverlayUnlock: String
     let cleaningOverlayMouseHint: String
-    let cleaningKeepScreenVisibleToggle: String
-    let cleaningKeepScreenVisibleCaption: String
     let cleaningNeedsAxTitle: String
     let cleaningNeedsAxBody: String
 
@@ -1305,8 +1306,8 @@ extension Strings {
         tabSwitcher: "Alternador do Lattice",
         tabAbout: "Sobre",
         tabReleaseNotes: "Novidades",
-        minimalWindowPreviews: "Prévias minimalistas",
-        minimalWindowPreviewsCaption: "Oculta títulos, botões e detalhes decorativos nas prévias do Dock e do alternador. A seleção continua visível.",
+        minimalWindowPreviews: "Mostrar prévia minimalista",
+        minimalWindowPreviewsCaption: "Mostra apenas a prévia da janela e oculta título e controles.",
         previewSizeLabel: "Tamanho dos previews",
         previewSizeNormal: "Normal",
         previewSizeLarge: "Grande",
@@ -1429,19 +1430,22 @@ extension Strings {
         switcherOtherDesktop: "Outra Mesa",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Pré-visualizar janelas no Dock",
-        dockPreviewEnableCaption: "Passe o mouse em um app aberto no Dock para ver suas janelas e clique na que quiser abrir.",
-        dockPreviewCurrentSpaceOnlyCaption: "Quando desligado, mostra janelas de todas as mesas. Escolher uma janela em outra mesa leva você até ela.",
+        dockPreviewEnableCaption: "Passe o cursor sobre o ícone do app para ver e alternar entre as janelas.",
+        dockPreviewCurrentSpaceOnly: "Mostrar apenas janelas da mesa atual",
+        dockPreviewCurrentSpaceOnlyCaption: "Ocultar janelas de outras mesas.",
+        dockPreviewCurrentSpaceOnlyInfo: "Selecionar uma janela em outra mesa alterna automaticamente para ela.",
         dockPreviewBackgroundOpacity: "Fundo do painel",
         dockPreviewBackgroundOpacityCaption: "Diminua para ver mais do que está atrás do painel.",
         dockPreviewBackgroundOpacityGlassCaption: "Com o Liquid Glass ligado, a transparência do painel é definida em Ajustes do Sistema > Aparência.",
-        dockPreviewOpenDelay: "Atraso de abertura",
-        dockPreviewOpenDelayCaption: "Quanto tempo o ponteiro precisa ficar sobre um ícone antes de o painel abrir.",
-        dockPreviewQuitAppOnClose: "Encerrar o app com o botão ×",
-        dockPreviewQuitAppOnCloseCaption: "No Dock Preview, × encerra o app inteiro em vez de fechar apenas aquela janela.",
-        dockPreviewKeepDockVisible: "Manter Dock visível",
-        dockPreviewKeepDockVisibleCaption: "Suspende o ocultamento automático enquanto o preview está aberto e restaura ao sair. Pode reajustar janelas. Se o app for interrompido, reabra-o para restaurar o Dock.",
-        dockPreviewOrderByCreation: "Ordenar janelas por criação",
-        dockPreviewOrderByCreationCaption: "Mostra primeiro as janelas mais antigas em vez das usadas mais recentemente.",
+        dockPreviewOpenDelay: "Atraso ao passar o mouse",
+        dockPreviewOpenDelayCaption: "Atraso antes de exibir prévias ao apontar para um ícone.",
+        dockPreviewDelayDefault: "Padrão",
+        dockPreviewDelayLonger: "Mais longo",
+        dockPreviewQuitApplication: "Encerrar aplicativo",
+        dockPreviewKeepDockVisible: "Manter Dock visível durante o preview",
+        dockPreviewKeepDockVisibleCaption: "Impede que o Dock se oculte enquanto o preview está aberto.",
+        dockPreviewOrderByCreation: "Mostrar janelas mais antigas primeiro",
+        dockPreviewOrderByCreationCaption: "Listar janelas na ordem em que foram abertas, em vez de por atividade recente.",
         dockClickMinimize: "Clicar no Dock minimiza",
         dockClickMinimizeCaption: "As janelas do app ativo são minimizadas ao clicar no ícone dele no Dock. Clique de novo para trazê-las de volta.",
         dockClickCycleWindows: "Clicar no Dock alterna janelas",
@@ -1997,8 +2001,6 @@ extension Strings {
         cleaningOverlaySubtitle: "Pressione Esc 5 vezes para desbloquear",
         cleaningOverlayUnlock: "Desbloquear",
         cleaningOverlayMouseHint: "O mouse e o trackpad continuam funcionando",
-        cleaningKeepScreenVisibleToggle: "Manter a tela visível",
-        cleaningKeepScreenVisibleCaption: "Exibe um indicador discreto no canto da tela em vez de escurecer o conteúdo.",
         cleaningNeedsAxTitle: "Precisa de Acessibilidade",
         cleaningNeedsAxBody: "Para bloquear o teclado com segurança, o Lattice precisa da permissão de Acessibilidade. Conceda em Ajustes do Sistema e tente de novo.",
         shortcutsPageTitle: "Atalhos de teclado",
@@ -2289,8 +2291,8 @@ extension Strings {
         tabSwitcher: "Lattice Switcher",
         tabAbout: "About",
         tabReleaseNotes: "What’s New",
-        minimalWindowPreviews: "Minimal previews",
-        minimalWindowPreviewsCaption: "Hide titles, buttons and decorative details in Dock and switcher previews. The selection stays visible.",
+        minimalWindowPreviews: "Show minimal preview",
+        minimalWindowPreviewsCaption: "Only show window preview and hide title and controls.",
         previewSizeLabel: "Preview size",
         previewSizeNormal: "Normal",
         previewSizeLarge: "Large",
@@ -2413,19 +2415,22 @@ extension Strings {
         switcherOtherDesktop: "Other desktop",
         dockPreviewName: "Dock Preview",
         dockPreviewEnable: "Enable Dock Preview",
-        dockPreviewEnableCaption: "Hover over an open app in the Dock to see its windows, then click to open.",
-        dockPreviewCurrentSpaceOnlyCaption: "When off, shows windows from all desktops. Choosing a window on another desktop takes you there.",
+        dockPreviewEnableCaption: "Hover over app icon to view and switch between windows.",
+        dockPreviewCurrentSpaceOnly: "Only show windows from the current desktop",
+        dockPreviewCurrentSpaceOnlyCaption: "Hide windows from other desktops.",
+        dockPreviewCurrentSpaceOnlyInfo: "Selecting a window on another desktop automatically switches to it.",
         dockPreviewBackgroundOpacity: "Panel background",
         dockPreviewBackgroundOpacityCaption: "Turn it down to see more of what sits behind the panel.",
         dockPreviewBackgroundOpacityGlassCaption: "Liquid Glass is on, so the panel’s transparency is set in System Settings > Appearance.",
-        dockPreviewOpenDelay: "Open delay",
-        dockPreviewOpenDelayCaption: "How long the pointer has to rest on an icon before its panel opens.",
-        dockPreviewQuitAppOnClose: "Quit the app with the × button",
-        dockPreviewQuitAppOnCloseCaption: "In Dock Preview, × quits the whole app instead of closing only that window.",
-        dockPreviewKeepDockVisible: "Keep Dock visible",
-        dockPreviewKeepDockVisibleCaption: "Pauses auto-hide while the preview is open and restores it when you leave. May resize windows. If the app is interrupted, reopen it to restore the Dock.",
-        dockPreviewOrderByCreation: "Order windows by creation time",
-        dockPreviewOrderByCreationCaption: "Show older windows first instead of the ones you used most recently.",
+        dockPreviewOpenDelay: "Hover delay",
+        dockPreviewOpenDelayCaption: "Delay before showing previews when pointing at an icon.",
+        dockPreviewDelayDefault: "Default",
+        dockPreviewDelayLonger: "Longer",
+        dockPreviewQuitApplication: "Quit application",
+        dockPreviewKeepDockVisible: "Keep Dock visible during preview",
+        dockPreviewKeepDockVisibleCaption: "Prevents the Dock from hiding while previews are open.",
+        dockPreviewOrderByCreation: "Show oldest windows first",
+        dockPreviewOrderByCreationCaption: "List windows in the order they were opened rather than by recent activity.",
         dockClickMinimize: "Click the dock tile to minimize",
         dockClickMinimizeCaption: "The active app’s windows minimize when you click its dock tile. Click again to bring them back.",
         dockClickCycleWindows: "Click the dock tile to cycle windows",
@@ -2981,8 +2986,6 @@ extension Strings {
         cleaningOverlaySubtitle: "Press Escape 5 times to unlock",
         cleaningOverlayUnlock: "Unlock",
         cleaningOverlayMouseHint: "Your mouse and trackpad still work",
-        cleaningKeepScreenVisibleToggle: "Keep screen visible",
-        cleaningKeepScreenVisibleCaption: "Shows a discreet indicator in the corner of the screen instead of blacking out content.",
         cleaningNeedsAxTitle: "Accessibility needed",
         cleaningNeedsAxBody: "To lock the keyboard safely, Lattice needs Accessibility permission. Grant it in System Settings and try again.",
         shortcutsPageTitle: "Keyboard Shortcuts",
