@@ -12,7 +12,7 @@ struct CleaningModeSettings: View {
             .disabled(cleaning.isActive)
         }) {
             ShortcutPreferenceRow(role: .cleaningMode, alignment: .center,
-                label: l10n.language == .enUS ? "Activate cleaning mode with shortcut" : l10n.s.globalHotkeySection) {
+                label: SettingsOrganizationStrings.text(.cleaningShortcut, l10n.language)) {
                 cleaning.syncWithPreferences()
                 FeatureRuntime.shared.finishAvailabilityChange()
             }

@@ -37,17 +37,17 @@ struct PermissionResetSettingsRow: View {
                     .buttonStyle(.bordered).foregroundStyle(.secondary)
             } else {
                 Button(role: .destructive) { confirming = true } label: {
-                    Text(l10n.language == .enUS ? "Clear" : l10n.s.advancedClearButton).frame(minWidth: 100)
+                    Text(copy(.clearButton)).frame(minWidth: 100)
                 }.buttonStyle(.bordered).foregroundStyle(.red).disabled(state.phase == .working)
             }
         }
         .controlSize(.regular)
         .onAppear { onWorkingChange(state.phase == .working) }
         .onChange(of: state.phase) { _, phase in onWorkingChange(phase == .working) }
-        .alert(l10n.language == .enUS ? "Clear All Permissions" : l10n.s.advancedClearButton,
+        .alert(copy(.clearTitle),
                isPresented: $confirming) {
             Button(l10n.s.uninstallerCancel, role: .cancel) {}
-            Button(l10n.language == .enUS ? "Clear" : l10n.s.advancedClearButton, role: .destructive) {
+            Button(copy(.clearButton), role: .destructive) {
                 state.begin(using: reset)
             }
         } message: {
