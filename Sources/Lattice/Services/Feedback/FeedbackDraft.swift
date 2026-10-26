@@ -19,7 +19,7 @@ struct FeedbackDiagnostics: Codable {
     let updateChannel: String
 }
 
-enum FeedbackError: Error {
+enum FeedbackError: Error, Equatable {
     case rejected
     case tooLong
     case unavailable
@@ -52,6 +52,19 @@ enum FeedbackDraft {
         // Use a conservative encoded URL budget, including Unicode expansion.
         guard url.absoluteString.utf8.count <= 8_000 else { throw FeedbackError.tooLong }
         return url
+    }
+
+    /// UI and browser handoff share the exact encoded URL validation.
+    static func validationError(kind: FeedbackKind, subject: String = "", message: String,
+                                diagnostics: FeedbackDiagnostics?) -> FeedbackError? {
+        do {
+            _ = try url(kind: kind, subject: subject, message: message, diagnostics: diagnostics)
+            return nil
+        } catch let error as FeedbackError {
+            return error
+        } catch {
+            return .rejected
+        }
     }
 
     static func open(kind: FeedbackKind, subject: String = "", message: String, diagnostics: FeedbackDiagnostics?,
