@@ -1,5 +1,29 @@
 import SwiftUI
 
+enum QuitProtectionHoldPreset: Double, CaseIterable, Identifiable {
+    case veryShort = 250
+    case short = 600
+    case `default` = 800
+    case long = 1200
+    case veryLong = 1500
+
+    var id: Double { rawValue }
+
+    var title: String {
+        switch self {
+        case .veryShort: return "Very short"
+        case .short: return "Short"
+        case .default: return "Default"
+        case .long: return "Long"
+        case .veryLong: return "Very long"
+        }
+    }
+
+    static func matching(_ value: Double) -> QuitProtectionHoldPreset {
+        allCases.min(by: { abs($0.rawValue - value) < abs($1.rawValue - value) }) ?? .default
+    }
+}
+
 extension KeyboardSettings {
     // MARK: - Quit & Close Protection Card
 
@@ -59,10 +83,23 @@ extension KeyboardSettings {
                     .onChange(of: mode.wrappedValue) { _, _ in quitService.syncWithPreferences() }
                 }
                 if currentMode == .hold {
-                    SettingsSliderRow(title: quitStrings.holdDuration, value: holdDuration,
-                                      range: QuitProtectionSupport.holdDurationRange, step: 50,
-                                      readout: "\(Int(holdDuration.wrappedValue.rounded())) ms")
-                        .onChange(of: holdDuration.wrappedValue) { _, _ in quitService.syncWithPreferences() }
+                    let presetBinding = Binding<Double>(
+                        get: { QuitProtectionHoldPreset.matching(holdDuration.wrappedValue).rawValue },
+                        set: { newValue in
+                            holdDuration.wrappedValue = newValue
+                            quitService.syncWithPreferences()
+                        }
+                    )
+                    SettingsControlRow(title: quitStrings.holdDuration) {
+                        Picker(quitStrings.holdDuration, selection: presetBinding) {
+                            ForEach(QuitProtectionHoldPreset.allCases) { preset in
+                                Text(preset.title).tag(preset.rawValue)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(width: 220, alignment: .trailing)
+                    }
                 }
                 if currentMode == .doublePress {
                     SettingsSliderRow(title: quitStrings.doublePressInterval, value: doubleInterval,

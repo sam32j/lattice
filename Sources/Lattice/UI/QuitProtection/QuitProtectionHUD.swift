@@ -22,10 +22,32 @@ final class QuitProtectionHUD {
                height: minimumSize.height + (content.showsProgress ? 8 : 0))
     }
 
+    /// Resolves the frontmost active window in Cocoa coordinates for the given process ID.
+    static func targetWindowCocoaRect(forPID pid: pid_t) -> CGRect? {
+        guard let primaryScreen = NSScreen.screens.first else { return nil }
+        guard let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
+                                                       kCGNullWindowID) as? [[String: Any]] else {
+            return nil
+        }
+        for window in windows {
+            guard let windowPID = (window[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value,
+                  windowPID == pid,
+                  let layer = (window[kCGWindowLayer as String] as? NSNumber)?.intValue,
+                  layer == 0,
+                  (window[kCGWindowAlpha as String] as? NSNumber)?.doubleValue ?? 1 > 0,
+                  let bounds = WindowServerSupport.bounds(from: window),
+                  bounds.width >= 80, bounds.height >= 80
+            else { continue }
+            let cocoaY = primaryScreen.frame.height - bounds.origin.y - bounds.height
+            return CGRect(x: bounds.origin.x, y: cocoaY, width: bounds.width, height: bounds.height)
+        }
+        return nil
+    }
+
     /// `screen` is for callers that already place a panel of their own, so the
     /// confirmation cannot land on a different display than what it confirms.
     func show(title: String, detail: String, on screen: NSScreen? = nil,
-              holdDeadline: Date? = nil) {
+              holdDeadline: Date? = nil, targetRect: CGRect? = nil) {
         if panel == nil {
             let panel = OverlayPanel(contentRect: CGRect(origin: .zero, size: size),
                                      styleMask: [.borderless, .nonactivatingPanel],
@@ -50,7 +72,7 @@ final class QuitProtectionHUD {
         content.update(title: title, detail: detail, showsProgress: holdDeadline != nil)
         size = Self.fittingSize(content)
         panel?.setContentSize(size)
-        positionPanel(on: screen)
+        positionPanel(on: screen, targetRect: targetRect)
         panel?.alphaValue = 1
         panel?.orderFrontRegardless()
         content.layoutSubtreeIfNeeded()
@@ -65,16 +87,35 @@ final class QuitProtectionHUD {
         panel?.orderOut(nil)
     }
 
-    private func positionPanel(on preferredScreen: NSScreen?) {
-        guard let panel,
-              let screen = preferredScreen
-                ?? NSScreen.screens.first(where: { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) })
-                ?? NSScreen.main
-                ?? NSScreen.screens.first
-        else { return }
+    private func positionPanel(on preferredScreen: NSScreen?, targetRect: CGRect? = nil) {
+        guard let panel else { return }
+        let screens = NSScreen.screens
+        let fallbackScreen = preferredScreen
+            ?? screens.first(where: { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) })
+            ?? NSScreen.main
+            ?? screens.first
+
+        if let targetRect, targetRect.width > 0, targetRect.height > 0 {
+            let targetCenter = CGPoint(x: targetRect.midX, y: targetRect.midY)
+            let screen = screens.first(where: { $0.frame.contains(targetCenter) }) ?? fallbackScreen
+            if let screen {
+                let frame = screen.visibleFrame
+                let desiredX = (targetRect.midX - size.width / 2).rounded()
+                let targetY = targetRect.height > size.height + 60
+                    ? targetRect.minY + 50
+                    : targetRect.midY - size.height / 2
+                let desiredY = targetY.rounded()
+                let clampedX = max(frame.minX, min(frame.maxX - size.width, desiredX))
+                let clampedY = max(frame.minY, min(frame.maxY - size.height, desiredY))
+                panel.setFrameOrigin(CGPoint(x: clampedX, y: clampedY))
+                return
+            }
+        }
+
+        guard let screen = fallbackScreen else { return }
         let frame = screen.visibleFrame
         panel.setFrameOrigin(CGPoint(x: (frame.midX - size.width / 2).rounded(),
-                                     y: (frame.minY + 18).rounded()))
+                                     y: (frame.minY + 50).rounded()))
     }
 
     private final class ContentView: NSView {
