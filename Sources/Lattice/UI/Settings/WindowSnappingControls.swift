@@ -91,11 +91,6 @@ extension WindowLayoutSettings {
                         },
                         onReset: { saveDirectionalShortcut(.windowDirectionalDefault) },
                         onCapture: saveDirectionalShortcut)
-                    if let directionalError {
-                        Text(directionalError)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
                     if service.directionalShortcutRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
                             .font(.caption)
@@ -127,7 +122,6 @@ extension WindowLayoutSettings {
             Divider()
             VStack(alignment: .leading, spacing: 13) {
                 Text(text.other).font(.headline)
-                Text(text.shortcutsCaption).font(.caption).foregroundStyle(.secondary)
                 actionRow(.maximize)
                 actionRow(.marginMaximize)
                 marginSlider
@@ -138,9 +132,14 @@ extension WindowLayoutSettings {
                         defaultShortcut: WindowLayoutAction.marginMaximize.defaultShortcut) == nil ? 0.55 : 1)
                 actionRow(.fullScreen)
                 actionRow(.center)
+                actionRow(.restore)
+            }
+
+            Divider()
+            VStack(alignment: .leading, spacing: 13) {
+                Text(text.moving).font(.headline)
                 actionRow(.previousDisplay)
                 actionRow(.nextDisplay)
-                actionRow(.restore)
             }
         }
     }

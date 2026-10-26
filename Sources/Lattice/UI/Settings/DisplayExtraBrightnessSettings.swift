@@ -16,14 +16,17 @@ struct DisplayExtraBrightnessSettings: View {
                         .onChange(of: enabled) { _, _ in FeatureRuntime.shared.sync([.extraBrightness]) }
                 }
                 HStack(spacing: 12) {
-                        Text(l10n.s.extraBrightnessLevelLabel)
-                        Slider(value: Binding(get: { Double(level) }, set: {
-                            level = Int($0)
-                            ExtraBrightnessService.shared.levelDidChange()
-                        }), in: 10...100, step: 5)
-                        Text("\(level)%")
-                            .monospacedDigit().foregroundStyle(.secondary)
-                            .frame(width: 42, alignment: .trailing)
+                    Text(l10n.s.extraBrightnessLevelLabel)
+                    Spacer(minLength: 12)
+                    SettingsValueSlider(title: l10n.s.extraBrightnessLevelLabel,
+                                        value: Binding(get: { Double(level) }, set: {
+                                            level = Int($0)
+                                            ExtraBrightnessService.shared.levelDidChange()
+                                        }),
+                                        range: 10...100, step: 5,
+                                        readout: "\(level)%",
+                                        usesSystemAppearance: true)
+                        .frame(width: 140)
                 }
                 .disabled(!enabled)
                 .opacity(enabled ? 1 : 0.5)

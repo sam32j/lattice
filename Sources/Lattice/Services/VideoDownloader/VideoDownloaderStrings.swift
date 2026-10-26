@@ -25,7 +25,6 @@ enum VideoDownloaderStrings {
     static let clear = "Clear"
     static let paste = "Paste"
     static let pasteClipboardURL = "Paste clipboard URL"
-    static let noHistory = "No recent downloads"
     static let quality = "Quality"
     static let saveTo = "Save to"
     static let defaultFolder = "~/Downloads"

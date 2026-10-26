@@ -29,7 +29,6 @@ struct KeyboardLightSettings: View {
 
                 ForEach([GlobalShortcutRole.keyboardBrightnessDecrease, .keyboardBrightnessIncrease]) { role in
                     ShortcutPreferenceRow(role: role, label: role.title(l10n.s),
-                                          includeInactiveConflicts: true,
                                           additionalConflict: { shortcut in
                         guard AppFeature.windowLayout.isAvailable else { return nil }
                         return WindowLayoutService.shared.shortcutConflictTitle(shortcut, excluding: nil)
@@ -54,6 +53,8 @@ struct KeyboardLightSettings: View {
             set: { brightness.setKeyboardLightLevel(Float($0)) }
         ), range: 0...1,
             readout: "\(Int(((brightness.keyboardLightLevel ?? 0) * 100).rounded()))%",
+            sliderWidth: 140,
+            usesSystemAppearance: true,
             onEditingChanged: brightness.keyboardLightDragChanged)
     }
 }
