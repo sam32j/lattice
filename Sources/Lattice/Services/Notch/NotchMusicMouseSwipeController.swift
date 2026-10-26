@@ -60,7 +60,7 @@ final class NotchMusicMouseSwipeController {
                 expiry?.cancel(); expiry = nil
             }
             let result = gesture.fallback(x: x, y: y, phase: phase, precise: precise, momentum: momentum)
-            if !phase.intersection([.ended, .cancelled]).isEmpty {
+            if !phase.isDisjoint(with: [.ended, .cancelled]) {
                 expiry?.cancel(); expiry = nil
             }
             if let action = result.action {
