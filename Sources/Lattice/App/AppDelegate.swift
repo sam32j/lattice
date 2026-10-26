@@ -1708,14 +1708,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             window.contentViewController = host
         } else {
             let window = NSWindow(contentViewController: host)
-            window.styleMask = [.titled, .closable]
+            window.styleMask = [.titled, .closable, .fullSizeContentView]
             window.titleVisibility = .hidden
+            window.titlebarAppearsTransparent = true
             window.isReleasedWhenClosed = false
             window.isRestorable = false
             window.delegate = self
             window.center()
             feedbackWindow = window
         }
+        feedbackWindow?.standardWindowButton(.closeButton)?.isHidden = true
+        feedbackWindow?.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        feedbackWindow?.standardWindowButton(.zoomButton)?.isHidden = true
         feedbackWindow?.title = FeatureStrings.feedback(L10n.shared.language).windowTitle
         NSApp.activate(ignoringOtherApps: true)
         feedbackWindow?.makeKeyAndOrderFront(nil)

@@ -33,27 +33,142 @@ struct FeedbackStrings {
     let commandFeature: String
     let commandSubtitle: String
     let diagnosticsChannelLabel: String
+    var cancel: String = "Cancel"
+    var subjectLabel: String = "Subject"
+    var bugSubjectPlaceholder: String = "Short summary of the bug"
+    var featureSubjectPlaceholder: String = "Short summary of the feature"
+    var bugMessageLabel: String = "Issue details"
+    var featureMessageLabel: String = "Feature details"
 }
 
 extension FeatureStrings {
     static func feedback(_ language: AppLanguage) -> FeedbackStrings {
+        var base: FeedbackStrings
         switch language {
-        case .enUS: return .enUS
-        case .ptBR: return .ptBR
-        case .tr: return .tr
-        case .ru: return .ru
-        case .es: return .es
-        case .sk: return .sk
-        case .de: return .de
-        case .fr: return .fr
-        case .it: return .it
-        case .ja: return .ja
-        case .ko: return .ko
-        case .zhHans: return .zhHans
-        case .zhTW: return .zhTW
-        case .zhHK: return .zhHK
-        case .uk: return .uk
+        case .enUS: base = .enUS
+        case .ptBR: base = .ptBR
+        case .tr: base = .tr
+        case .ru: base = .ru
+        case .es: base = .es
+        case .sk: base = .sk
+        case .de: base = .de
+        case .fr: base = .fr
+        case .it: base = .it
+        case .ja: base = .ja
+        case .ko: base = .ko
+        case .zhHans: base = .zhHans
+        case .zhTW: base = .zhTW
+        case .zhHK: base = .zhHK
+        case .uk: base = .uk
         }
+        switch language {
+        case .enUS:
+            base.cancel = "Cancel"
+            base.subjectLabel = "Subject"
+            base.bugSubjectPlaceholder = "Short summary of the bug"
+            base.featureSubjectPlaceholder = "Short summary of the feature"
+            base.bugMessageLabel = "Issue details"
+            base.featureMessageLabel = "Feature details"
+        case .ptBR:
+            base.cancel = "Cancelar"
+            base.subjectLabel = "Assunto"
+            base.bugSubjectPlaceholder = "Breve resumo do bug"
+            base.featureSubjectPlaceholder = "Breve resumo do recurso"
+            base.bugMessageLabel = "Detalhes do problema"
+            base.featureMessageLabel = "Detalhes do recurso"
+        case .tr:
+            base.cancel = "İptal"
+            base.subjectLabel = "Konu"
+            base.bugSubjectPlaceholder = "Hatanın kısa özeti"
+            base.featureSubjectPlaceholder = "Özelliğin kısa özeti"
+            base.bugMessageLabel = "Sorunun ayrıntıları"
+            base.featureMessageLabel = "Özelliğin ayrıntıları"
+        case .ru:
+            base.cancel = "Отмена"
+            base.subjectLabel = "Тема"
+            base.bugSubjectPlaceholder = "Краткое описание ошибки"
+            base.featureSubjectPlaceholder = "Краткое описание идеи"
+            base.bugMessageLabel = "Подробности ошибки"
+            base.featureMessageLabel = "Подробности идеи"
+        case .es:
+            base.cancel = "Cancelar"
+            base.subjectLabel = "Asunto"
+            base.bugSubjectPlaceholder = "Resumen breve del error"
+            base.featureSubjectPlaceholder = "Resumen breve de la función"
+            base.bugMessageLabel = "Detalles del problema"
+            base.featureMessageLabel = "Detalles de la función"
+        case .sk:
+            base.cancel = "Zrušiť"
+            base.subjectLabel = "Predmet"
+            base.bugSubjectPlaceholder = "Stručné zhrnutie chyby"
+            base.featureSubjectPlaceholder = "Stručné zhrnutie funkcie"
+            base.bugMessageLabel = "Podrobnosti chyby"
+            base.featureMessageLabel = "Podrobnosti funkcie"
+        case .de:
+            base.cancel = "Abbrechen"
+            base.subjectLabel = "Betreff"
+            base.bugSubjectPlaceholder = "Kurze Zusammenfassung des Fehlers"
+            base.featureSubjectPlaceholder = "Kurze Zusammenfassung der Idee"
+            base.bugMessageLabel = "Details zum Fehler"
+            base.featureMessageLabel = "Details zur Idee"
+        case .fr:
+            base.cancel = "Annuler"
+            base.subjectLabel = "Objet"
+            base.bugSubjectPlaceholder = "Bref résumé du problème"
+            base.featureSubjectPlaceholder = "Bref résumé de la fonctionnalité"
+            base.bugMessageLabel = "Détails du problème"
+            base.featureMessageLabel = "Détails de la fonctionnalité"
+        case .it:
+            base.cancel = "Annulla"
+            base.subjectLabel = "Oggetto"
+            base.bugSubjectPlaceholder = "Breve riassunto del problema"
+            base.featureSubjectPlaceholder = "Breve riassunto della funzionalità"
+            base.bugMessageLabel = "Dettagli del problema"
+            base.featureMessageLabel = "Dettagli della funzionalità"
+        case .ja:
+            base.cancel = "キャンセル"
+            base.subjectLabel = "件名"
+            base.bugSubjectPlaceholder = "不具合の概要"
+            base.featureSubjectPlaceholder = "機能の概要"
+            base.bugMessageLabel = "問題の詳細"
+            base.featureMessageLabel = "機能の詳細"
+        case .ko:
+            base.cancel = "취소"
+            base.subjectLabel = "제목"
+            base.bugSubjectPlaceholder = "버그 요약"
+            base.featureSubjectPlaceholder = "기능 요약"
+            base.bugMessageLabel = "문제 상세 내용"
+            base.featureMessageLabel = "기능 상세 내용"
+        case .zhHans:
+            base.cancel = "取消"
+            base.subjectLabel = "主题"
+            base.bugSubjectPlaceholder = "简要描述问题"
+            base.featureSubjectPlaceholder = "简要描述功能建议"
+            base.bugMessageLabel = "问题详情"
+            base.featureMessageLabel = "功能建议详情"
+        case .zhTW:
+            base.cancel = "取消"
+            base.subjectLabel = "主旨"
+            base.bugSubjectPlaceholder = "簡要描述問題"
+            base.featureSubjectPlaceholder = "簡要描述功能建議"
+            base.bugMessageLabel = "問題詳細資訊"
+            base.featureMessageLabel = "功能建議詳細資訊"
+        case .zhHK:
+            base.cancel = "取消"
+            base.subjectLabel = "主旨"
+            base.bugSubjectPlaceholder = "簡要描述問題"
+            base.featureSubjectPlaceholder = "簡要描述功能建議"
+            base.bugMessageLabel = "問題詳細資料"
+            base.featureMessageLabel = "功能建議詳細資料"
+        case .uk:
+            base.cancel = "Скасувати"
+            base.subjectLabel = "Тема"
+            base.bugSubjectPlaceholder = "Короткий опис помилки"
+            base.featureSubjectPlaceholder = "Короткий опис пропозиції"
+            base.bugMessageLabel = "Подробиці помилки"
+            base.featureMessageLabel = "Подробиці пропозиції"
+        }
+        return base
     }
 }
 
