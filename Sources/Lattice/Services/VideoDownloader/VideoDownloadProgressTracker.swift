@@ -10,6 +10,10 @@ struct VideoDownloadProgressTracker {
         var filesize: Int64?
         var filesize_approx: Int64?
     }
+    private struct Plan: Decodable {
+        let parts: [Part]
+        let single: String
+    }
     private struct Sample {
         var fraction = 0.0
         var bytes: Int64?
@@ -26,7 +30,9 @@ struct VideoDownloadProgressTracker {
             guard samples.isEmpty else { return nil }
             let data = Data(line.dropFirst("LATTICE_PARTS:".count).utf8)
             let decoded: [Part]
-            if let list = try? JSONDecoder().decode([Part].self, from: data) {
+            if let plan = try? JSONDecoder().decode(Plan.self, from: data) {
+                decoded = plan.parts.isEmpty ? [Part(format_id: plan.single)] : plan.parts
+            } else if let list = try? JSONDecoder().decode([Part].self, from: data) {
                 decoded = list
             } else if let id = try? JSONDecoder().decode(String.self, from: data) {
                 decoded = [Part(format_id: id)]

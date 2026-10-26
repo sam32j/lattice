@@ -98,8 +98,8 @@ enum VideoDownloadRequest {
         }
     }
 
-    static func validClipboardURL() -> String? {
-        guard let raw = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
+    static func validClipboardURL(read: () -> String? = { NSPasteboard.general.string(forType: .string) }) -> String? {
+        guard let raw = read()?.trimmingCharacters(in: .whitespacesAndNewlines),
               !raw.isEmpty,
               !raw.contains(where: { $0.isWhitespace || $0.isNewline }),
               !raw.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) else {
@@ -149,7 +149,7 @@ enum VideoDownloadRequest {
             "--restrict-filenames", "--windows-filenames",
             "--paths", staging.path, "--output", "%(title).120B [%(id).60B].%(ext)s",
             "--progress-template", "download:LATTICE_PROGRESS:%(progress._percent_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.speed)s|%(progress.eta)s|%(progress.fragment_index)s|%(progress.fragment_count)s|%(progress.status)s|%(info.format_id)j",
-            "--print", "before_dl:LATTICE_PARTS:%(requested_formats.:.{format_id,filesize,filesize_approx},format_id)j",
+            "--print", "before_dl:LATTICE_PARTS:{\"parts\":%(requested_formats.:.{format_id,filesize,filesize_approx})j,\"single\":%(format_id)j}",
             "--print", "after_move:LATTICE_FILE:%(filepath)s", "--", url.absoluteString
         ]
         return args

@@ -56,6 +56,16 @@ enum VideoDownloaderServiceTests {
             model.link = "https://example.invalid/different"; model.linkChanged()
             suite.expect(model.info == nil && model.output == nil, "editing a link invalidates old quality/results")
 
+            model.link = "https://example.invalid/audio"
+            model.fetchInfo(); settle(model)
+            model.selectedQuality = .audio
+            fractions = []
+            model.download(); settle(model)
+            suite.expect(fractions == [0.4, 0.75, 0.99], "selecting audio-only publishes advancing single-stream progress")
+            suite.expect(model.output?.pathExtension == "m4a" && model.error == nil,
+                         "audio-only download is verified as audio and published successfully")
+            model.resetDownloadState()
+
             model.pasteFromClipboard()
             suite.expect(model.link == "https://example.invalid/pasted-link" && !model.isFetching && model.info == nil,
                          "pasting from clipboard only populates the link without triggering fetch")

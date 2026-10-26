@@ -9,7 +9,6 @@ struct NotchVideoDownloaderView: View {
     @ObservedObject private var downloader = VideoDownloader.shared
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.notchSettingsPreview) private var isSettingsPreview
-    @State private var clipboardURL: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -17,7 +16,7 @@ struct NotchVideoDownloaderView: View {
                 missingToolsView
             } else {
                 // Top row: search bar header
-                searchBarRow
+                VideoDownloaderSearchBar(downloader: downloader, isSettingsPreview: isSettingsPreview)
 
                 if let info = downloader.info {
                     // Search successful: extends downwards with image preview & controls
@@ -54,109 +53,12 @@ struct NotchVideoDownloaderView: View {
             if downloader.output != nil && !downloader.isCompletedSustaining {
                 downloader.resetDownloadState()
             }
-            refreshClipboard()
         }
         .onDisappear {
             guard !isSettingsPreview else { return }
             if downloader.output != nil && !downloader.isCompletedSustaining {
                 downloader.resetDownloadState()
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            refreshClipboard()
-        }
-    }
-
-    private func refreshClipboard() {
-        clipboardURL = VideoDownloadRequest.validClipboardURL()
-    }
-
-    // MARK: - Search Bar Header
-
-    private var searchBarRow: some View {
-        HStack(spacing: 8) {
-            // Text input container
-            HStack(spacing: 8) {
-                Image(systemName: "link")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-
-                TextField(VideoDownloaderStrings.urlPlaceholder, text: $downloader.link)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white)
-                    .onSubmit {
-                        submitLink()
-                    }
-
-                if let clip = clipboardURL, downloader.link.isEmpty {
-                    Button {
-                        // Paste clipboard URL into text field without triggering search
-                        downloader.link = clip
-                    } label: {
-                        Text(VideoDownloaderStrings.pasteClipboardURL)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(Color.blue, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 10)
-            .frame(height: 36)
-            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-            // Action Button: Clear when results are shown, Search otherwise
-            if downloader.hasCurrentSearchResult {
-                Button {
-                    downloader.resetDownloadState()
-                } label: {
-                    Text(VideoDownloaderStrings.clear)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 14)
-                        .frame(height: 36)
-                        .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .disabled(downloader.busy)
-            } else {
-                Button {
-                    if !downloader.isFetching {
-                        submitLink()
-                    }
-                } label: {
-                    Group {
-                        if downloader.isFetching {
-                            ProgressView()
-                                .controlSize(.small)
-                                .frame(width: 20, height: 20)
-                        } else {
-                            Text(VideoDownloaderStrings.search)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(.white)
-                        }
-                    }
-                    .padding(.horizontal, 14)
-                    .frame(height: 36)
-                    .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .disabled(downloader.busy)
-            }
-        }
-    }
-
-    private func submitLink() {
-        if downloader.link.isEmpty {
-            if let clip = clipboardURL {
-                downloader.link = clip
-                downloader.fetchInfo()
-            }
-        } else {
-            downloader.fetchInfo()
         }
     }
 

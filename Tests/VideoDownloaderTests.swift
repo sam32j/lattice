@@ -61,5 +61,6 @@ enum VideoDownloaderTests {
         VideoDownloadProcessTests.run(suite)
         VideoDownloaderServiceTests.run(suite)
         VideoDownloaderInputTests.run(suite)
+        VideoDownloaderSearchBarTests.run(suite)
     }
 }

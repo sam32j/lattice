@@ -47,6 +47,20 @@ enum VideoDownloadProgressTests {
                      && zip(recordedFractions, recordedFractions.dropFirst()).allSatisfy { $0 <= $1 },
                      "the supplied YouTube URL's captured HLS and audio events produce monotonic whole-job progress")
 
+        var singleAudio = VideoDownloadProgressTracker()
+        _ = singleAudio.consume(#"LATTICE_PARTS:{"parts":[],"single":"251-20"}"#)
+        suite.expect(singleAudio.consume(line("40%", "40", "100", id: "251-20"))?.fraction == 0.4,
+                     "an empty requested_formats list still tracks the selected single audio format")
+        suite.expect(singleAudio.consume(line("100%", "100", "100", status: "finished", id: "251-20"))?.fraction == 0.99
+                     && singleAudio.isFinishing, "audio-only transfer enters conversion/finishing at completion")
+
+        var audioCapture = VideoDownloadProgressTracker()
+        let audioLog = (try? String(contentsOfFile: "Tests/Fixtures/VideoDownloader/audio-progress.txt", encoding: .utf8)) ?? ""
+        let audioFrames = audioLog.split(separator: "\n").compactMap { audioCapture.consume(String($0))?.fraction }
+        suite.expect(audioFrames.count == 11 && audioFrames.contains { $0 > 0 && $0 < 0.99 }
+                     && audioFrames.last == 0.99 && audioCapture.isFinishing,
+                     "the real audio-only download capture advances through intermediate progress")
+
         var audio = VideoDownloadProgressTracker()
         _ = audio.consume(#"LATTICE_PARTS:"audio""#)
         suite.expect(audio.consume(line("40%", "40", "100", id: "audio"))?.fraction == 0.4,
