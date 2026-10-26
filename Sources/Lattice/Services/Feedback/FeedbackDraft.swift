@@ -25,22 +25,26 @@ enum FeedbackError: Error {
 }
 
 enum FeedbackDraft {
-    static func url(kind: FeedbackKind, message: String, diagnostics: FeedbackDiagnostics?) throws -> URL {
+    static func url(kind: FeedbackKind, subject: String = "", message: String, diagnostics: FeedbackDiagnostics?) throws -> URL {
         let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard (10...2_000).contains(trimmed.utf16.count) else { throw FeedbackError.rejected }
+        let trimmedSubject = subject.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard (!trimmed.isEmpty || !trimmedSubject.isEmpty) && trimmed.utf16.count <= 2_000 else { throw FeedbackError.rejected }
         let category = kind == .bug ? "Bug report" : "Feature request"
-        var body = "## \(category)\n\n\(trimmed)"
+        var body = "## \(category)\n\n"
+        if !trimmed.isEmpty {
+            body += "\(trimmed)\n\n"
+        }
         if let details = diagnostics {
-            body += "\n\n## Technical details\n\n"
+            body += "## Technical details\n\n"
             body += "- Lattice: \(details.appVersion) (\(details.appBuild))\n"
             body += "- macOS: \(details.macOS)\n"
             if let model = details.macModel { body += "- Mac: \(model)\n" }
-            body += "- Language: \(details.language)\n- Beta: \(details.isBeta)\n"
-            body += "- Update channel: \(details.updateChannel)"
+            body += "- Language: \(details.language)\n"
         }
+        let title = trimmedSubject.isEmpty ? "[\(category)]" : "[\(category)] \(trimmedSubject)"
         var components = URLComponents(string: "https://github.com/\(DownstreamIdentity.repository)/issues/new")!
-        components.queryItems = [URLQueryItem(name: "title", value: "[\(category)]"),
-                                URLQueryItem(name: "body", value: body)]
+        components.queryItems = [URLQueryItem(name: "title", value: title),
+                                 URLQueryItem(name: "body", value: body.trimmingCharacters(in: .whitespacesAndNewlines))]
         // GitHub decodes form-style queries, where a literal '+' otherwise means a space.
         components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         guard let url = components.url else { throw FeedbackError.rejected }
@@ -49,9 +53,9 @@ enum FeedbackDraft {
         return url
     }
 
-    static func open(kind: FeedbackKind, message: String, diagnostics: FeedbackDiagnostics?,
+    static func open(kind: FeedbackKind, subject: String = "", message: String, diagnostics: FeedbackDiagnostics?,
                      using openURL: (URL) -> Bool) throws {
-        let draft = try url(kind: kind, message: message, diagnostics: diagnostics)
+        let draft = try url(kind: kind, subject: subject, message: message, diagnostics: diagnostics)
         guard openURL(draft) else { throw FeedbackError.unavailable }
     }
 }

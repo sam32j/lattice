@@ -35,9 +35,10 @@ final class FeedbackService {
     private init() {}
 
     func openDraft(kind: FeedbackKind,
-                message: String,
-                diagnostics: FeedbackDiagnostics?) throws {
-        try FeedbackDraft.open(kind: kind, message: message, diagnostics: diagnostics,
+                   subject: String = "",
+                   message: String,
+                   diagnostics: FeedbackDiagnostics?) throws {
+        try FeedbackDraft.open(kind: kind, subject: subject, message: message, diagnostics: diagnostics,
                                using: { NSWorkspace.shared.open($0) })
     }
 }

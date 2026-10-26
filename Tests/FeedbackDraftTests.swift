@@ -24,14 +24,24 @@ enum FeedbackDraftTests {
             let body = items.first { $0.name == "body" }!.value!
             suite.expect(body.contains("## Feature request") && body.contains("- Lattice: 1.2.3 (42)")
                          && body.contains("- macOS: 26.0") && body.contains("- Language: de")
-                         && body.contains("- Beta: false") && body.contains("- Update channel: developer")
+                         && !body.contains("- Beta:") && !body.contains("- Update channel:")
                          && !body.contains("- Mac:"), "only selected diagnostics appear and absent model is omitted")
             let maximum = try FeedbackDraft.url(kind: .bug, message: String(repeating: "a", count: 2_000), diagnostics: nil)
             suite.expect(maximum.host == "github.com", "the full ASCII message limit can be drafted")
             try FeedbackDraft.open(kind: .bug, message: "Open this valid report", diagnostics: nil, using: { _ in true })
             suite.expect(true, "browser acceptance completes the draft handoff without submitting an issue")
+
+            let withSubject = try FeedbackDraft.url(kind: .bug, subject: "App freezes", message: "Short", diagnostics: nil)
+            let withSubjectItems = URLComponents(url: withSubject, resolvingAgainstBaseURL: false)!.queryItems!
+            let titleWithSubject = withSubjectItems.first { $0.name == "title" }!.value!
+            suite.expect(titleWithSubject == "[Bug report] App freezes", "subject is included in issue title")
+
+            let subjectOnly = try FeedbackDraft.url(kind: .feature, subject: "Add dark mode", message: "", diagnostics: nil)
+            let subjectOnlyItems = URLComponents(url: subjectOnly, resolvingAgainstBaseURL: false)!.queryItems!
+            let titleSubjectOnly = subjectOnlyItems.first { $0.name == "title" }!.value!
+            suite.expect(titleSubjectOnly == "[Feature request] Add dark mode", "subject without message generates title")
         } catch { suite.expect(false, "valid draft handoff: \(error)") }
-        for invalid in ["", "   \n   ", "too short", String(repeating: "a", count: 2_001)] {
+        for invalid in ["", "   \n   ", String(repeating: "a", count: 2_001)] {
             do {
                 try FeedbackDraft.open(kind: .bug, message: invalid, diagnostics: nil, using: { _ in
                     suite.expect(false, "invalid feedback never reaches the browser")
