@@ -117,8 +117,9 @@ struct EnergyDisplaySettings: View {
                 SettingsValueSlider(title: display.name, value: Binding(get: { display.brightness },
                                                   set: { BrightnessService.shared.setBrightness($0, for: display.id) }),
                                     range: 0...1, step: 0.01,
-                                    readout: "\(Int((display.brightness * 100).rounded()))%")
-                    .frame(width: 220)
+                                    readout: "\(Int((display.brightness * 100).rounded()))%",
+                                    usesSystemAppearance: true)
+                    .frame(width: 140)
                     .disabled(brightness.isDisplayPending(display.id))
                     .accessibilityLabel(display.name)
             } else {

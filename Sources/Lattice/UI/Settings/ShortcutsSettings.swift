@@ -242,7 +242,6 @@ struct ShortcutsSettings: View {
             statusIsActive: active,
             showsSuperKeyAlternative: superKey.isRunning,
             superKeyModifiers: superKey.modifiers,
-            includeInactiveConflicts: true,
             additionalConflict: { shortcut in
                 guard AppFeature.windowLayout.isAvailable else { return nil }
                 return WindowLayoutService.shared.shortcutConflictTitle(shortcut, excluding: nil)

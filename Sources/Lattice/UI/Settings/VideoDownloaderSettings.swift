@@ -287,8 +287,10 @@ struct VideoDownloaderSettings: View {
                             }
 
                             // RECENT Section
-                            recentSection
-                                .id("recentSection")
+                            if !history.items.isEmpty {
+                                recentSection
+                                    .id("recentSection")
+                            }
                         }
                     }
                 }
@@ -754,13 +756,7 @@ struct VideoDownloaderSettings: View {
                 }
             }
 
-            if history.items.isEmpty {
-                Text(VideoDownloaderStrings.noHistory)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.vertical, 8)
-            } else {
-                ForEach(history.items) { item in
+            ForEach(history.items) { item in
                 let fileExists = FileManager.default.fileExists(atPath: item.fileURL.path)
                 HStack(spacing: 10) {
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
@@ -814,7 +810,6 @@ struct VideoDownloaderSettings: View {
                     }
                 }
                 .help(item.fileURL.path)
-            }
             }
         }
     }
