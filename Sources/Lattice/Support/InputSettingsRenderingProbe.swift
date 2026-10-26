@@ -10,7 +10,7 @@ enum InputSettingsRenderingProbe {
             view: AnyView(AudioInputDeviceControls().padding(12)),
             size: CGSize(width: 340, height: 260), output: output, failures: &failures)
         SettingsRefactorProbe.render("audio-input-wide-settings",
-            view: AnyView(AudioInputDeviceControls(title: "Input", sliderWidth: 220,
+            view: AnyView(AudioInputDeviceControls(title: "Input", sliderWidth: 140,
                                                   showsUnavailableLabel: true).padding(12)),
             size: CGSize(width: 760, height: 260), output: output, failures: &failures)
         let enabledKeys = [DefaultsKey.scrollInverterEnabled, DefaultsKey.scrollInverterHorizontalEnabled,

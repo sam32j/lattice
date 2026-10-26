@@ -59,13 +59,16 @@ struct SettingsSliderRow: View {
     let range: ClosedRange<Double>
     var step: Double = 0
     let readout: String
+    var sliderWidth: CGFloat = 140
+    var usesSystemAppearance = true
     var onEditingChanged: (Bool) -> Void = { _ in }
 
     var body: some View {
         SettingsControlRow(title: title) {
             SettingsValueSlider(title: title, value: $value, range: range, step: step,
-                                readout: readout, onEditingChanged: onEditingChanged)
-                .frame(width: 220)
+                                readout: readout, usesSystemAppearance: usesSystemAppearance,
+                                onEditingChanged: onEditingChanged)
+                .frame(width: sliderWidth)
         }
     }
 }
@@ -122,10 +125,65 @@ private struct NativeSettingsSlider: NSViewRepresentable {
 private final class TrackingSettingsSlider: NSSlider {
     var onTrackingChanged: ((Bool) -> Void)?
     var discreteStep = 0.0
+
     override func mouseDown(with event: NSEvent) {
+        guard isEnabled, let trackingWindow = window, let cell = cell as? NSSliderCell else {
+            super.mouseDown(with: event)
+            return
+        }
         onTrackingChanged?(true)
         defer { onTrackingChanged?(false) }
-        super.mouseDown(with: event)
+
+        // NSSliderCell's default tracking can cancel/reset or oscillate outside
+        // its tracking area or window boundary. Own the gesture until mouse-up,
+        // in screen coordinates, so crossing another window or leaving the window
+        // cannot reinterpret coordinates or cause value jiggling.
+        let bar = cell.barRect(flipped: isFlipped)
+        var knob = cell.knobRect(flipped: isFlipped)
+        let lower = bar.minX + knob.width / 2
+        let travel = bar.width - knob.width
+        guard travel > 0, maxValue > minValue else {
+            super.mouseDown(with: event)
+            return
+        }
+        func point(_ event: NSEvent) -> CGPoint {
+            let screen = event.window?.convertPoint(toScreen: event.locationInWindow) ?? event.locationInWindow
+            return convert(trackingWindow.convertPoint(fromScreen: screen), from: nil)
+        }
+        let start = point(event)
+        let center = lower + (doubleValue - minValue) / (maxValue - minValue) * travel
+        knob.origin.x = center - knob.width / 2
+        let offset = knob.contains(start) ? start.x - center : 0
+        func update(_ event: NSEvent) {
+            let fraction = min(1, max(0, (point(event).x - offset - lower) / travel))
+            doubleValue = minValue + fraction * (maxValue - minValue)
+            _ = sendAction(action, to: target)
+        }
+        if !knob.contains(start) { update(event) }
+        while window === trackingWindow && trackingWindow.isVisible && isEnabled {
+            guard let next = NSApp.nextEvent(matching: [.leftMouseDragged, .leftMouseUp, .keyDown, .appKitDefined],
+                until: Date().addingTimeInterval(0.1), inMode: .eventTracking, dequeue: true) else { continue }
+            guard window === trackingWindow && trackingWindow.isVisible && isEnabled else { break }
+            if next.type == .appKitDefined || next.type == .keyDown { NSApp.sendEvent(next); continue }
+            update(next)
+            if next.type == .leftMouseUp { break }
+        }
+    }
+
+    override func accessibilityPerformIncrement() -> Bool {
+        guard isEnabled else { return false }
+        let step = discreteStep > 0 ? discreteStep : (maxValue - minValue) / 10
+        doubleValue = min(maxValue, doubleValue + step)
+        _ = sendAction(action, to: target)
+        return true
+    }
+
+    override func accessibilityPerformDecrement() -> Bool {
+        guard isEnabled else { return false }
+        let step = discreteStep > 0 ? discreteStep : (maxValue - minValue) / 10
+        doubleValue = max(minValue, doubleValue - step)
+        _ = sendAction(action, to: target)
+        return true
     }
 
     override func keyDown(with event: NSEvent) {
