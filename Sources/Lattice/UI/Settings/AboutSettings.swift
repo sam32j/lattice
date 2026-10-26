@@ -17,23 +17,6 @@ struct AboutSettings: View {
                 aboutContent
             }
 
-            Section(feedbackStrings.sectionTitle) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(feedbackStrings.sectionTitle)
-                            .font(.body)
-                        Text(FeedbackDraftStrings.text(l10n.language).review)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button(feedbackStrings.openButton) {
-                        appDelegate()?.openFeedbackWindow()
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-
             UpdatesView()
         }
         .formStyle(.grouped)
@@ -83,6 +66,11 @@ struct AboutSettings: View {
                     NSWorkspace.shared.open(AppInfo.repositoryURL)
                 } label: {
                     Label("GitHub", systemImage: "link")
+                }
+                Button {
+                    appDelegate()?.openFeedbackWindow()
+                } label: {
+                    Label(feedbackStrings.openButton, systemImage: "questionmark.bubble")
                 }
             }
             Text("©️ Lattice")

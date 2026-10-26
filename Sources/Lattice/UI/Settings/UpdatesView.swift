@@ -13,10 +13,23 @@ struct UpdatesView: View {
 
     var body: some View {
         Section(l10n.s.updatesSection) {
-            Toggle(copy.automatic, isOn: $autoCheck)
-                .onChange(of: autoCheck) { _, value in
-                    updates.autoCheckEnabled = value
-                }
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: "clock.arrow.2.circlepath")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20)
+                Text(copy.automatic)
+                    .font(.callout.weight(.medium))
+                Spacer()
+                Toggle(copy.automatic, isOn: $autoCheck)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.regular)
+            }
+            .frame(minHeight: 40)
+            .onChange(of: autoCheck) { _, value in
+                updates.autoCheckEnabled = value
+            }
 
             VStack(alignment: .leading, spacing: 10) {
                 UpdateSettingsStatusRow(status: status, actions: actions)
