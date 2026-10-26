@@ -296,6 +296,9 @@ enum WindowLayoutFeatureTests {
         for language in AppLanguage.allCases {
             let layoutStrings = FeatureStrings.windowLayout(language)
             suite.expect(!layoutStrings.fullScreen.isEmpty && !layoutStrings.previousDisplay.isEmpty
+                    && !layoutStrings.nextDisplay.isEmpty
+                    && !layoutStrings.moving.isEmpty
+                    && !layoutStrings.other.isEmpty
                     && !layoutStrings.marginMaximize.isEmpty
                     && !layoutStrings.marginPerEdge.isEmpty
                     && !layoutStrings.centerHalf.isEmpty

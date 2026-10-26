@@ -29,10 +29,16 @@ enum WindowLayoutShortcutEditorTests {
         defaults.set(true, forKey: AppFeature.quickLauncher.availabilityKey)
         defaults.set(shortcut.storageValue, forKey: GlobalShortcutRole.quickLauncher.storageKey)
         for key in GlobalShortcutRole.quickLauncher.requiredEnableKeys { defaults.set(false, forKey: key) }
+        let inactiveRoleResult = WindowLayoutShortcutEditor.save(shortcut, for: .leftHalf, in: defaults,
+            language: .enUS, conflictsWithSystem: false, takenOver: false)
+        if case .saved = inactiveRoleResult { suite.expect(true, "inactive role does not conflict") }
+        else { suite.expect(false, "disabled features do not reserve shortcuts") }
+        for key in GlobalShortcutRole.quickLauncher.requiredEnableKeys { defaults.set(true, forKey: key) }
         let roleConflict = WindowLayoutShortcutEditor.save(shortcut, for: .leftHalf, in: defaults,
             language: .enUS, conflictsWithSystem: false, takenOver: false)
-        if case .conflict = roleConflict { suite.expect(true, "inactive role conflict rejected") }
-        else { suite.expect(false, "both editors reject an inactive role's binding from the same preference store") }
+        if case .conflict = roleConflict { suite.expect(true, "active role conflict rejected") }
+        else { suite.expect(false, "both editors reject an active role's binding from the same preference store") }
+        defaults.set(WindowLayoutAction.clearedShortcutStorageValue, forKey: WindowLayoutAction.leftHalf.shortcutKey)
         defaults.set("", forKey: GlobalShortcutRole.quickLauncher.storageKey)
         let offer = WindowLayoutShortcutEditor.save(shortcut, for: .leftHalf, in: defaults,
             language: .enUS, conflictsWithSystem: true, takenOver: false)

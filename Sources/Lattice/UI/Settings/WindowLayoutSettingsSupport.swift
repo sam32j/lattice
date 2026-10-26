@@ -12,7 +12,7 @@ extension WindowLayoutSettings {
 
     func saveDirectionalShortcut(_ shortcut: GlobalShortcut) {
         if let conflict = service.directionalShortcutConflictTitle(shortcut) {
-            directionalError = String(format: l10n.s.shortcutConflictFormat, conflict)
+            conflictAlert = ShortcutConflictAlert(shortcut: shortcut, assignedBehavior: conflict)
             return
         }
         saveDirectionalTrigger(.key(shortcut))
@@ -92,13 +92,17 @@ extension WindowLayoutSettings {
         Divider()
         VStack(alignment: .leading, spacing: 13) {
             Text(text.halves).font(.headline)
+            Toggle(isOn: $sideRepeatCyclesThirds) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(text.sideRepeatCycle)
+                    Text(text.sideRepeatCycleCaption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             ForEach(Self.halfActions) { action in
                 actionRow(action)
             }
-            Toggle(text.sideRepeatCycle, isOn: $sideRepeatCyclesThirds)
-            Text(text.sideRepeatCycleCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
         actionSection(text.thirds, Self.thirdActions)
         actionSection(text.quarterRows, Self.quarterRowActions)
@@ -129,7 +133,8 @@ extension WindowLayoutSettings {
                               title: title(for: action),
                               symbol: symbol(for: action),
                               applyEnabled: permissions.accessibility,
-                              shortcutEnabled: permissions.accessibility)
+                              shortcutEnabled: permissions.accessibility,
+                              onConflict: { conflictAlert = $0 })
     }
 
     func title(for action: WindowLayoutAction) -> String {
