@@ -7,6 +7,8 @@ enum ReviewTimingTests {
             suite.expect(dock.dockPreviewHoverDelayBinding.wrappedValue == expected,
                          "Dock Preview presents the effective delay for saved \(value) ms without mutating it")
         }
+        suite.expect(QuitProtectionHoldPreset.allCases.map(\.rawValue).contains(2_000),
+                     "the maximum supported two-second hold remains selectable after changing presets")
         suite.expect(QuitProtectionHoldPreset.default.rawValue == QuitProtectionSupport.defaultHoldDurationMilliseconds,
                      "the default hold preset uses the runtime default")
         suite.expect(QuitProtectionHoldPreset.short.title(.de) == "Kurz"
