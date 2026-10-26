@@ -1701,10 +1701,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
 
     func openFeedbackWindow(kind: FeedbackKind = .bug) {
         closePopover()
+        NSApp.activate(ignoringOtherApps: true)
+        let visible = (NSScreen.withMouse ?? NSScreen.main)?.visibleFrame ?? NSScreen.pointerVisibleFrame
+        if let window = feedbackWindow, window.isVisible {
+            FeedbackWindowPresentation.present(window, from: settingsWindow, fallbackVisibleFrame: visible)
+            return
+        }
         let host = NSHostingController(rootView: FeedbackView(initialKind: kind) { [weak self] in
             guard let self, let window = self.feedbackWindow else { return }
-            window.parent?.removeChildWindow(window)
-            window.close()
+            FeedbackWindowPresentation.dismiss(window)
         })
         let window: NSWindow
         if let existing = feedbackWindow {
@@ -1725,30 +1730,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         window.standardWindowButton(.miniaturizeButton)?.isHidden = true
         window.standardWindowButton(.zoomButton)?.isHidden = true
         window.title = FeatureStrings.feedback(L10n.shared.language).windowTitle
-        positionFeedbackWindow(window)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-    }
-
-    private func positionFeedbackWindow(_ window: NSWindow) {
-        window.setContentSize(FeedbackWindowGeometry.size)
-
-        if let settings = settingsWindow, settings.isVisible {
-            if window.parent !== settings {
-                window.parent?.removeChildWindow(window)
-                settings.addChildWindow(window, ordered: .above)
-            }
-            let screen = settings.screen ?? NSScreen.main
-            let visible = screen?.visibleFrame ?? NSScreen.pointerVisibleFrame
-            let targetRect = FeedbackWindowGeometry.targetFrame(settingsFrame: settings.frame, visibleFrame: visible)
-            window.setFrame(targetRect, display: true)
-        } else {
-            window.parent?.removeChildWindow(window)
-            let screen = NSScreen.withMouse ?? NSScreen.main
-            let visible = screen?.visibleFrame ?? NSScreen.pointerVisibleFrame
-            let targetRect = FeedbackWindowGeometry.targetFrame(settingsFrame: nil, visibleFrame: visible)
-            window.setFrame(targetRect, display: true)
-        }
+        FeedbackWindowPresentation.present(window, from: settingsWindow, fallbackVisibleFrame: visible)
     }
 
     private func positionSettingsWindow(_ window: NSWindow, force: Bool, on targetScreen: NSScreen? = nil) {
@@ -1992,9 +1974,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow else { return }
         if window === settingsWindow {
-            if let feedback = feedbackWindow, feedback.parent === settingsWindow {
-                settingsWindow?.removeChildWindow(feedback)
-                feedback.close()
+            if let feedback = feedbackWindow,
+               feedback.sheetParent === settingsWindow || feedback.parent === settingsWindow {
+                FeedbackWindowPresentation.dismiss(feedback)
             }
             // Covers size changes that end without a live resize (zoom).
             saveSettingsWindowSize(window)
@@ -2012,6 +1994,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             return
         }
         if window === feedbackWindow {
+            if let parent = window.sheetParent { parent.endSheet(window) }
             window.parent?.removeChildWindow(window)
             return
         }

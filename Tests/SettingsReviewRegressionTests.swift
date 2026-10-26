@@ -38,6 +38,7 @@ enum SettingsReviewRegressionTests {
         CleaningModeManualAvailabilityTests.run(suite)
         AudioPriorityPresentationTests.run(suite)
         FeedbackDraftTests.run(suite)
+        FeedbackWindowPresentationTests.run(suite)
         UpdateInitializationTests.run(suite)
         WindowLayoutFeedbackTests.run(suite)
         ReviewTimingTests.run(suite)

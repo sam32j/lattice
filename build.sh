@@ -509,6 +509,7 @@ if (( TEST )); then
         Sources/Lattice/Services/Audio/MixerRoutingSupport.swift
         Sources/Lattice/Services/Audio/AudioPriorityPresentation.swift
         Sources/Lattice/Services/Feedback/FeedbackDraft.swift
+        Sources/Lattice/UI/Feedback/FeedbackWindowPresentation.swift
         Sources/Lattice/Services/Audio/MusicLaunchSupport.swift
         Sources/Lattice/Services/Bluetooth/BluetoothSleepSupport.swift
         Sources/Lattice/UI/MenuPanel/MixerPercentNativeTextField.swift
