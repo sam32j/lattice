@@ -67,5 +67,23 @@ enum FeedbackDraftTests {
                          && !copy.opened.isEmpty && !copy.openedCaption.isEmpty && !copy.error.isEmpty
                          && !copy.tooLong.isEmpty, "draft privacy, status and failure copy exists for \(language)")
         }
+
+        let visible = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        let settings = CGRect(x: 300, y: 200, width: 700, height: 500)
+        let frameOnSettings = FeedbackWindowGeometry.targetFrame(settingsFrame: settings, visibleFrame: visible)
+        suite.expect(frameOnSettings.size == FeedbackWindowGeometry.size
+                     && frameOnSettings.midX == settings.midX
+                     && frameOnSettings.midY == settings.midY,
+                     "feedback window is centered on top of settings window")
+
+        let offscreenSettings = CGRect(x: -200, y: -200, width: 500, height: 400)
+        let clampedFrame = FeedbackWindowGeometry.targetFrame(settingsFrame: offscreenSettings, visibleFrame: visible)
+        suite.expect(clampedFrame.minX >= visible.minX && clampedFrame.minY >= visible.minY
+                     && clampedFrame.maxX <= visible.maxX && clampedFrame.maxY <= visible.maxY,
+                     "feedback window is clamped within visible screen frame")
+
+        let standalone = FeedbackWindowGeometry.targetFrame(settingsFrame: nil, visibleFrame: visible)
+        suite.expect(standalone.midX == visible.midX && standalone.midY == visible.midY,
+                     "feedback window centers on active visible screen when settings is hidden")
     }
 }

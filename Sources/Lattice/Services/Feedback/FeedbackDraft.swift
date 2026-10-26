@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Samuel Ji
 
+import CoreGraphics
 import Foundation
 
 enum FeedbackKind: String, Codable, CaseIterable {
@@ -57,5 +58,28 @@ enum FeedbackDraft {
                      using openURL: (URL) -> Bool) throws {
         let draft = try url(kind: kind, subject: subject, message: message, diagnostics: diagnostics)
         guard openURL(draft) else { throw FeedbackError.unavailable }
+    }
+}
+
+enum FeedbackWindowGeometry {
+    static let size = CGSize(width: 600, height: 680)
+
+    static func targetFrame(settingsFrame: CGRect?, visibleFrame: CGRect) -> CGRect {
+        let width = size.width
+        let height = size.height
+        let targetX: CGFloat
+        let targetY: CGFloat
+
+        if let settingsFrame {
+            targetX = settingsFrame.midX - width / 2
+            targetY = settingsFrame.midY - height / 2
+        } else {
+            targetX = visibleFrame.midX - width / 2
+            targetY = visibleFrame.midY - height / 2
+        }
+
+        let clampedX = max(visibleFrame.minX, min(targetX, max(visibleFrame.minX, visibleFrame.maxX - width)))
+        let clampedY = max(visibleFrame.minY, min(targetY, max(visibleFrame.minY, visibleFrame.maxY - height)))
+        return CGRect(x: clampedX, y: clampedY, width: width, height: height)
     }
 }

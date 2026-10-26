@@ -1073,6 +1073,8 @@ enum UpdateFeatureTests {
         // Defaults registered
         suite.expect(Defaults.registeredDefaults[DefaultsKey.includeBetaUpdates] as? Bool == false,
                "includeBetaUpdates defaults to false in registeredDefaults")
+        suite.expect(Defaults.registeredDefaults[DefaultsKey.lastUpdateCheckTime] as? Double == 0.0,
+               "lastUpdateCheckTime defaults to 0.0 in registeredDefaults")
 
         let testDefaults = UserDefaults(suiteName: "io.github.sam32j.lattice.tests.betaActivation")!
         testDefaults.removePersistentDomain(forName: "io.github.sam32j.lattice.tests.betaActivation")
