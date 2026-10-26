@@ -29,6 +29,45 @@ extension QuitProtectionRoutingContract.QuitProtectionService {
             return service.handle(type: type, event: event) != nil
         }
 
+        defaults.set("hold", forKey: DefaultsKey.quitProtectionQuitMode)
+        Contract.QuitProtectionHUD.lookupCount = 0
+        send(12)
+        suite.expect(Contract.QuitProtectionHUD.lookupCount == 0 && !service.hud.visible,
+                     "the protected key callback returns without querying windows or drawing a HUD")
+        send(12, .keyUp)
+
+        Contract.QuitProtectionHUD.finishLookup()
+        suite.expect(!service.hud.visible, "release prevents a late window lookup from reviving the HUD")
+        send(12)
+        Contract.QuitProtectionHUD.finishLookup()
+        suite.expect(service.hud.visible, "a still-pending press presents its deferred HUD")
+        send(12, .keyUp)
+        send(12)
+        send(12)
+        Contract.QuitProtectionHUD.finishLookup()
+        suite.expect(!service.hud.visible, "replacing an identical press invalidates its earlier HUD lookup")
+        Contract.QuitProtectionHUD.finishLookup()
+        suite.expect(service.hud.visible, "only the replacement press may present its HUD")
+        send(12, .keyUp)
+        for reason in 0..<5 {
+            send(12)
+            switch reason {
+            case 0: service.completeHold()
+            case 1: Contract.SessionActivity.shared.isActive = false
+            case 2: Contract.accessibilityGranted = false
+            case 3: Contract.AppSwitcher.shared.keyboardInputOwnership.generation += 1
+            default: service.stop()
+            }
+            Contract.QuitProtectionHUD.finishLookup()
+            suite.expect(!service.hud.visible, "late HUD lookup is ignored after cancellation boundary \(reason)")
+            Contract.SessionActivity.shared.isActive = true
+            Contract.accessibilityGranted = true
+            service.isRunning = true
+            service.cancelPending()
+            service.swallowShortcut = nil
+        }
+        Contract.QuitProtectionHUD.lookups = []
+
         // Chrome stays frontmost while the native switcher selects another app.
         // A held Q must reach the switcher, with no termination of Chrome.
         for mode in QuitProtectionMode.allCases {

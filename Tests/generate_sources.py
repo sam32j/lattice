@@ -1266,7 +1266,25 @@ def main():
               .replace("private var", "var", 1).replace("NotchSupport.controls()", "controls")
               .replace("BrightnessService.shared.islandSliderShowsFocusedDisplay", "brightnessSlider")
           + "}\n")
+    write("ReviewShortcutFeedback.swift", "import Foundation\nextension WindowLayoutFeedbackTests {\n"
+          + "".join("final class " + name + ": State {\n"
+                    + declaration("Sources/Lattice/UI/Settings/" + source, "    private func apply(")
+                        .replace("private func", "func", 1)
+                    + "}\n" for name, source in [
+                        ("CentralRow", "CentralWindowLayoutShortcutRow.swift"),
+                        ("ActionRow", "WindowLayoutActionRow.swift")])
+          + "}\n")
+    write("ReviewTiming.swift", "import SwiftUI\n"
+          + declaration("Sources/Lattice/UI/Settings/KeyboardQuitProtectionSettings.swift", "enum QuitProtectionHoldPreset:")
+          + "extension ReviewTimingTests {\nfinal class Dock {\nvar dockPreviewOpenDelay: Int\ninit(dockPreviewOpenDelay: Int) { self.dockPreviewOpenDelay = dockPreviewOpenDelay }\n"
+          + declaration("Sources/Lattice/UI/Settings/DockSettings.swift", "    private var dockPreviewHoverDelayBinding:")
+              .replace("private var", "var", 1)
+          + "}\n}\n")
     update = "Sources/Lattice/Services/Update/UpdateService.swift"
+    write("UpdateInitialization.swift", "import Foundation\nextension UpdateInitializationTests {\n"
+          + "final class Service {\nvar state: AppUpdateState = .idle\nvar lastChecked: Date?\n"
+          + declaration(update, "    private init()").replace("private init", "init", 1)
+          + "}\n}\n")
     update_view = "Sources/Lattice/UI/Notch/NotchUpdateControl.swift"
     write("NotchUpdate.swift", "import AppKit\nimport SwiftUI\nimport Combine\nextension NotchUpdateTests {\n"
           + "final class UpdateService: ObservableObject {\nstatic let shared = UpdateService()\n"
@@ -1281,7 +1299,7 @@ def main():
           + "}\n")
     write("UpdateAdminInstall.swift", "import Foundation\n\nextension UpdateAdminInstallContract {\n"
           + "final class Service: Fixture {\n"
-          + declaration(update, "    private func launchAdminInstaller(").replace("private ", "", 1)
+          + declaration("Sources/Lattice/Services/Update/UpdateInstallation.swift", "    func launchAdminInstaller(")
           + "}\n}\n")
     canvas = "Sources/Lattice/Services/Notch/NotchWindowHost.swift"
     write("NotchMissionControlPolling.swift", "import Foundation\n"
@@ -2541,8 +2559,12 @@ def main():
     checks = "Tests/Fixtures/QuitProtectionRoutingChecks.swift"
     write("QuitProtectionRouting.swift", "import AppKit\nimport ApplicationServices\nimport Combine\n"
           + "extension QuitProtectionRoutingContract {\n"
-          + declaration(service, "final class QuitProtectionService:")
-          + "}\n" + f'#sourceLocation(file: {json.dumps(checks)}, line: 1)\n'
+          + declaration(service, "final class QuitProtectionService:").rsplit("}", 1)[0]
+          + "".join(declaration("Sources/Lattice/Services/QuitProtection/" + name, "extension QuitProtectionService {")
+                    .split("{", 1)[1].rsplit("}", 1)[0]
+                    for name in ["QuitProtectionRouting.swift", "QuitProtectionPending.swift"])
+          + "}\n}\n"
+          + f'#sourceLocation(file: {json.dumps(checks)}, line: 1)\n'
           + (ROOT / checks).read_text() + "\n#sourceLocation()\n")
     hud = "Sources/Lattice/UI/QuitProtection/QuitProtectionHUD.swift"
     checks = "Tests/Fixtures/QuitProtectionHUDChecks.swift"
