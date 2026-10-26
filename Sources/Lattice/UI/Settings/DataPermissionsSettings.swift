@@ -6,6 +6,10 @@ import SwiftUI
 /// Permission status, permission reset, portable settings, and self-uninstall.
 struct DataPermissionsSettings: View {
     @ObservedObject private var l10n = L10n.shared
+    @Environment(\.colorScheme) private var scheme
+    private let permissionsContent: AnyView?
+
+    init(permissionsContent: AnyView? = nil) { self.permissionsContent = permissionsContent }
     @State private var showUninstallConfirm = false
     @State private var uninstallFailed = false
     @State private var uninstallFailedBody = ""
@@ -39,109 +43,54 @@ struct DataPermissionsSettings: View {
         }
     }
 
+    private func copy(_ key: DataPermissionsPageCopy.Key) -> String {
+        DataPermissionsPageCopy.text(key, l10n.language)
+    }
+
+    private var exportDescription: String {
+        if let exported { return exported ? backup.exported : backup.exportFailed }
+        return copy(.exportDescription)
+    }
+
     var body: some View {
-        Form {
-            Section(DataPermissionsStrings.localized(l10n.language).data) {
-                VStack(alignment: .leading, spacing: 12) {
-                    // Row 1: Import settings
-                    HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(backup.importButton)
-                                .font(.body)
-                            if importFailed {
-                                Text(backup.invalidFile)
-                                    .font(.caption)
-                                    .foregroundStyle(.orange)
-                            }
-                        }
-                        Spacer(minLength: 12)
-                        Button {
+        ScrollView {
+            VStack(spacing: 20) {
+                DataSettingsSection(title: DataPermissionsStrings.localized(l10n.language).data) {
+                    DataPermissionsRow(symbol: "square.and.arrow.down", title: backup.importButton,
+                        description: importFailed ? backup.invalidFile : copy(.importDescription),
+                        descriptionIsError: importFailed, actionTitle: backup.compactImport(l10n.language)) {
                             exported = nil
                             importFailed = false
                             guard let url = SettingsBackup.runImportPanel() else { return }
                             if let settings = SettingsBackup.readSettings(at: url) {
                                 pendingImport = settings
                                 showImportConfirm = true
-                            } else {
-                                importFailed = true
-                            }
-                        } label: {
-                            Label(backup.compactImport(l10n.language),
-                                  systemImage: "square.and.arrow.down")
+                            } else { importFailed = true }
                         }
-                    }
-
-                    Divider()
-
-                    // Row 2: Export settings
-                    HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(backup.exportButton)
-                                .font(.body)
-                            Text(backup.description)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            if exported == true {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                                    Text(backup.exported).font(.caption).foregroundStyle(.green)
-                                }
-                            } else if exported == false {
-                                Text(backup.exportFailed)
-                                    .font(.caption)
-                                    .foregroundStyle(.orange)
-                            }
-                        }
-                        Spacer(minLength: 12)
-                        Button {
+                    DataSettingsDivider()
+                    DataPermissionsRow(symbol: "square.and.arrow.up", title: backup.exportButton,
+                        description: exportDescription, descriptionIsError: exported == false,
+                        actionTitle: backup.compactExport(l10n.language)) {
                             importFailed = false
                             exported = SettingsBackup.runExportPanel()
-                        } label: {
-                            Label(backup.compactExport(l10n.language),
-                                  systemImage: "square.and.arrow.up")
                         }
-                    }
                 }
-                .padding(.vertical, 4)
-            }
-
-            Section(FeatureStrings.hub(l10n.language).tabPermissions) {
-                PermissionsPortalSections(hub: FeatureStrings.hub(l10n.language))
-            }
-
-            Section(DataPermissionsStrings.localized(l10n.language).dangerZone) {
-                VStack(alignment: .leading, spacing: 12) {
+                DataSettingsSection(title: FeatureStrings.hub(l10n.language).tabPermissions) {
+                    if let permissionsContent { permissionsContent }
+                    else { PermissionsPortalSections(hub: FeatureStrings.hub(l10n.language)) }
+                }
+                DataSettingsSection(title: DataPermissionsStrings.localized(l10n.language).dangerZone) {
                     PermissionResetSettingsRow(onWorkingChange: { working = $0 }).disabled(working)
-
-                    Divider()
-
-                    // Row 2: Uninstall Lattice
-                    HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(l10n.s.advancedUninstallButton)
-                                .font(.body)
-                            Text(l10n.s.advancedUninstallDescription)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer(minLength: 12)
-                        Button(role: .destructive) {
-                            showUninstallConfirm = true
-                        } label: {
-                            Text(uninstallActionTitle).frame(minWidth: 100)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .foregroundStyle(.red)
-                        .disabled(working)
-                    }
+                    DataSettingsDivider()
+                    DataPermissionsRow(symbol: "trash", title: l10n.s.advancedUninstallButton,
+                        description: l10n.s.advancedUninstallDescription, tone: .destructive,
+                        actionTitle: uninstallActionTitle, actionTone: .destructive,
+                        actionRole: .destructive, actionEnabled: !working) { showUninstallConfirm = true }
                 }
-                .padding(.vertical, 4)
             }
+            .padding(22)
         }
-        .formStyle(.grouped)
+        .background(DataPermissionsPalette(scheme).page)
         .alert(l10n.s.advancedUninstallConfirmTitle, isPresented: $showUninstallConfirm) {
             Button(l10n.s.uninstallerCancel, role: .cancel) {}
             Button(l10n.s.advancedUninstallButton, role: .destructive) {

@@ -1834,6 +1834,9 @@ def main():
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "enum QuickToggleAction:")
           + "}\n")
 
+    write("PanelMetricColor.swift", "import SwiftUI\n"
+          + declaration("Sources/Lattice/UI/Theme.swift", "enum PanelMetricColor {"))
+
     # The Developer probe's modes and argument check, outside its development-only file.
     probe = "Sources/Lattice/Support/NotchPresentationProbe.swift"
     write("NotchPresentationProbeArguments.swift", "import Foundation\n\nextension NotchPresentationProbeArgumentTests {\n"

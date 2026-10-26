@@ -25,9 +25,11 @@ struct PermissionsPortalSections: View {
             ForEach(visiblePermissions, id: \.self) { permission in
                 PermissionPortalRow(permission: permission,
                                     hub: hub,
-                                    status: status(for: permission))
+                                    status: status(for: permission),
+                                    requestAvailable: requestAvailable(for: permission),
+                                    requestInFlight: permission == .calendar && permissions.requestingCalendar)
                 if permission != visiblePermissions.last {
-                    Divider().padding(.leading, 42)
+                    DataSettingsDivider()
                 }
             }
         }
@@ -53,6 +55,15 @@ struct PermissionsPortalSections: View {
             permissions.setActivePermissionSurface(pollingDemandID, visible: false)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in bluetooth.refresh() }
+    }
+
+    private func requestAvailable(for permission: AppPermission) -> Bool {
+        switch permission {
+        case .fullDiskAccess: return true
+        case .microphone: return permissions.microphone == .undetermined
+        case .calendar: return permissions.calendarAccess == .notDetermined || permissions.calendarAccess == .writeOnly
+        default: return false
+        }
     }
 
     private func status(for permission: AppPermission) -> PermissionPortalRow.Status {

@@ -4,60 +4,90 @@
 import SwiftUI
 
 struct PermissionPortalRow: View {
-    enum Status { case granted, missing, unknown }
-
+    typealias Status = PermissionRowStatus
     @ObservedObject private var l10n = L10n.shared
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorScheme) private var scheme
     @State private var showsDetails = false
+    @State private var requestingMicrophone = false
+    @State private var attemptedManualRequest = false
     let permission: AppPermission
     let hub: FeatureHubStrings
     let status: Status
+    var requestAvailable = false
+    var requestInFlight = false
+
+    private var title: String {
+        switch permission {
+        case .accessibility: return copy(.deviceAccess)
+        case .audioCapture: return copy(.systemAudio)
+        default: return permission.name(hub)
+        }
+    }
+    private func copy(_ key: DataPermissionsPageCopy.Key) -> String {
+        DataPermissionsPageCopy.text(key, l10n.language)
+    }
+    private var symbol: String {
+        switch permission {
+        case .screenRecording: return "viewfinder"
+        case .fullDiskAccess: return "externaldrive"
+        case .filesAndFolders: return "folder"
+        case .notifications: return "bell"
+        case .bluetooth: return "dot.radiowaves.left.and.right"
+        default: return permission.symbolName
+        }
+    }
+    private var rowAction: PermissionRowAction {
+        PermissionRowActionPolicy.action(for: permission, status: status,
+            requestAvailable: requestAvailable && !attemptedManualRequest)
+    }
+    private var tone: DataSettingsTone {
+        switch status {
+        case .granted: return .granted
+        case .missing: return .missing
+        case .unknown: return .neutral
+        }
+    }
+    private var actionTone: DataSettingsActionTone {
+        switch rowAction {
+        case .request: return .primary
+        case .settingsRequired: return .outline
+        case .settings: return .quiet
+        }
+    }
+    private var statusText: String {
+        switch status {
+        case .granted: return hub.statusGranted
+        case .missing: return hub.statusMissing
+        case .unknown: return hub.statusUnknown
+        }
+    }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // The tile wears the status color, so a glance down the list
-            // shows what is granted before any word is read.
-            Image(systemName: permission.symbolName)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(statusColor)
-                .frame(width: 30, height: 30)
-                .background(statusColor.opacity(0.14),
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text(permission.name(hub))
-                        .fontWeight(.medium)
-                    statusChip
-                    Spacer(minLength: 8)
-                    Button {
-                        showsDetails = true
-                    } label: {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 14))
-                    }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(detailsLabel)
-                    .accessibilityIdentifier("permission.details.\(permission.rawValue)")
-                    .help(detailsLabel)
-                }
-                HStack(spacing: 8) {
-                    if status != .granted, hasRequestFlow {
-                        Button(hub.requestButton) { request() }
-                    }
-                    Button(hub.openSystemSettings) { openSystemSettings() }
-                }
-                .controlSize(.small)
-                .padding(.top, 2)
+        DataPermissionsRow(symbol: symbol, title: title, status: statusText,
+            tone: tone, information: AnyView(detailsButton),
+            actionTitle: rowAction == .request ? hub.requestButton : copy(.settings),
+            actionTone: actionTone,
+            actionAccessibleName: String(format: copy(rowAction == .request ? .requestAccess : .openSettings), title),
+            actionEnabled: !requestInFlight && !requestingMicrophone) {
+                if rowAction == .request { request() } else { openSystemSettings() }
             }
+            .accessibilityIdentifier("permission.row.\(permission.rawValue)")
+    }
+
+    private var detailsButton: some View {
+        Button { showsDetails = true } label: {
+            Image(systemName: "info.circle").font(.system(size: 14))
+                .foregroundStyle(DataPermissionsPalette(scheme).info)
+                .frame(width: 22, height: 22).contentShape(Rectangle())
         }
-        .padding(.vertical, 14)
-        .accessibilityElement(children: .contain)
-        .sheet(isPresented: $showsDetails) {
-            PermissionDetailsSheet(title: permission.name(hub),
-                                   explanation: permission.explainer(hub),
-                                   features: activeFeatures.map { ($0.hubTitle(l10n.s, hub: hub), $0.symbolName) },
-                                   isUnused: status == .granted && activeFeatures.isEmpty,
-                                   hub: hub)
+        .buttonStyle(.borderless)
+        .accessibilityLabel("\(title): \(DataPermissionsStrings.localized(l10n.language).details)")
+        .accessibilityIdentifier("permission.details.\(permission.rawValue)")
+        .popover(isPresented: $showsDetails, arrowEdge: .leading) {
+            PermissionDetailsSheet(title: title, explanation: permission.explainer(hub),
+                features: activeFeatures.map { ($0.hubTitle(l10n.s, hub: hub), $0.symbolName) },
+                isUnused: status == .granted && activeFeatures.isEmpty, hub: hub,
+                onOpenSystemSettings: openSystemSettings)
         }
     }
 
@@ -67,68 +97,16 @@ struct PermissionPortalRow: View {
         }
     }
 
-    private var detailsLabel: String {
-        "\(permission.name(hub)): \(DataPermissionsStrings.localized(l10n.language).details)"
-    }
-
-    private var statusChip: some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 6, height: 6)
-            Text(chipText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var statusColor: Color {
-        switch status {
-        case .granted: return PanelMetricColor.green(for: colorScheme)
-        case .missing: return PanelMetricColor.orange(for: colorScheme)
-        case .unknown: return .secondary
-        }
-    }
-
-    private var chipText: String {
-        switch status {
-        case .granted: return hub.statusGranted
-        case .missing: return hub.statusMissing
-        case .unknown: return hub.statusUnknown
-        }
-    }
-
-    private var hasRequestFlow: Bool {
-        switch permission {
-        case .accessibility, .screenRecording, .fullDiskAccess: return true
-        case .notifications: return Permissions.shared.notifications == .undetermined
-        case .calendar: return Permissions.shared.calendarAccess == .notDetermined
-            || Permissions.shared.calendarAccess == .writeOnly
-        case .camera: return Permissions.shared.camera == .undetermined
-        case .microphone: return Permissions.shared.microphone == .undetermined
-        case .bluetooth: return BluetoothAuthorizationPolicy.canRequest(BluetoothPermissionAccess.shared.authorization)
-        case .filesAndFolders, .automationFinder, .automationTerminal, .automationPlayback, .audioCapture,
-             .appManagement: return false
-        }
-    }
-
     private func request() {
         switch permission {
-        case .accessibility: Permissions.shared.requestAccessibility()
-        case .screenRecording: Permissions.shared.requestScreenRecording()
-        case .fullDiskAccess: Permissions.shared.requestFullDiskAccess()
-        case .notifications:
-            Notifier.requestPermission()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                Permissions.shared.refresh()
-            }
+        case .fullDiskAccess:
+            attemptedManualRequest = true
+            Permissions.shared.requestFullDiskAccess()
         case .calendar: Permissions.shared.requestCalendar()
-        case .camera: Permissions.shared.requestCamera()
-        case .microphone: Permissions.shared.requestMicrophone()
-        case .bluetooth: BluetoothPermissionAccess.shared.request()
-        case .filesAndFolders, .automationFinder, .automationTerminal, .automationPlayback, .audioCapture,
-             .appManagement:
-            break
+        case .microphone:
+            requestingMicrophone = true
+            Permissions.shared.requestMicrophone { _ in requestingMicrophone = false }
+        default: openSystemSettings()
         }
     }
 

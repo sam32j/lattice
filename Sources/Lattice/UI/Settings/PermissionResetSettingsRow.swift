@@ -21,27 +21,18 @@ struct PermissionResetSettingsRow: View {
     private func copy(_ key: PermissionResetCopy.Key) -> String { PermissionResetCopy.text(key, l10n.language) }
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(needsRestart ? copy(.restartTitle) : l10n.s.advancedClearButton).font(.body)
-                Text(copy(needsRestart ? .restartDescription : .description))
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                if state.phase == .failed {
-                    Label(l10n.s.advancedClearFailed, systemImage: "exclamationmark.circle")
-                        .font(.caption).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
-                }
+        DataPermissionsRow(symbol: needsRestart ? "arrow.clockwise" : "arrow.counterclockwise",
+            title: needsRestart ? copy(.restartTitle) : l10n.s.advancedClearButton,
+            description: state.phase == .failed ? l10n.s.advancedClearFailed
+                : copy(needsRestart ? .restartDescription : .description),
+            tone: needsRestart ? .neutral : .destructive,
+            descriptionIsError: state.phase == .failed,
+            actionTitle: copy(needsRestart ? .restartButton : .clearButton),
+            actionTone: needsRestart ? .quiet : .destructive,
+            actionRole: needsRestart ? nil : .destructive,
+            actionEnabled: state.phase != .working) {
+                if needsRestart { restart() } else { confirming = true }
             }
-            Spacer(minLength: 12)
-            if needsRestart {
-                Button(action: restart) { Text(copy(.restartButton)).frame(minWidth: 100) }
-                    .buttonStyle(.bordered).foregroundStyle(.secondary)
-            } else {
-                Button(role: .destructive) { confirming = true } label: {
-                    Text(copy(.clearButton)).frame(minWidth: 100)
-                }.buttonStyle(.bordered).foregroundStyle(.red).disabled(state.phase == .working)
-            }
-        }
-        .controlSize(.regular)
         .onAppear { onWorkingChange(state.phase == .working) }
         .onChange(of: state.phase) { _, phase in onWorkingChange(phase == .working) }
         .alert(copy(.clearTitle),

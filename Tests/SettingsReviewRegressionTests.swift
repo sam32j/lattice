@@ -5,6 +5,8 @@ import Foundation
 
 enum SettingsReviewRegressionTests {
     static func run(_ suite: TestSuite) {
+        PermissionRowActionPolicyTests.run(suite)
+        DataPermissionsLayoutTests.run(suite)
         SettingsFollowupBehaviorTests.run(suite)
         DockClickModeTests.run(suite)
         TextRecognitionRecoveryTests.run(suite)
