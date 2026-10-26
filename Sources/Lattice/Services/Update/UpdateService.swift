@@ -26,7 +26,21 @@ final class UpdateService: ObservableObject {
     private var notifiedVersion: String?   // last release we posted a notification for
     private var downloadSession: URLSession?
 
-    private init() {}
+    private init() {
+        let saved = UserDefaults.standard.double(forKey: DefaultsKey.lastUpdateCheckTime)
+        if saved > 0 {
+            let date = Date(timeIntervalSince1970: saved)
+            self.lastChecked = date
+            if Date().timeIntervalSince(date) < 24 * 60 * 60 {
+                self.state = .upToDate
+            }
+        }
+    }
+
+    private func recordLastChecked(_ date: Date = Date()) {
+        self.lastChecked = date
+        UserDefaults.standard.set(date.timeIntervalSince1970, forKey: DefaultsKey.lastUpdateCheckTime)
+    }
 
     var autoCheckEnabled: Bool {
         get { UserDefaults.standard.object(forKey: DefaultsKey.autoCheckUpdates) as? Bool ?? true }
@@ -56,8 +70,8 @@ final class UpdateService: ObservableObject {
         if AppInfo.isBeta && UserDefaults.standard.object(forKey: DefaultsKey.includeBetaUpdates) == nil {
             UserDefaults.standard.set(true, forKey: DefaultsKey.includeBetaUpdates)
         }
-        // The local dev build never auto-updates.
         if AppInfo.isDeveloperBuild {
+            check(manual: false)
             return
         }
         configureAutomaticChecks()
@@ -88,7 +102,7 @@ final class UpdateService: ObservableObject {
         if AppInfo.isDeveloperBuild {
             state = .upToDate
             availableNotes = nil
-            lastChecked = Date()
+            recordLastChecked()
             return
         }
         if case .checking = state { return }
@@ -108,7 +122,7 @@ final class UpdateService: ObservableObject {
         URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             guard let self else { return }
             DispatchQueue.main.async {
-                self.lastChecked = Date()
+                self.recordLastChecked()
                 if let failure = UpdateCheckResponse.failure(response: response, error: error) {
                     self.availableNotes = nil
                     self.state = .failed(failure)
@@ -176,13 +190,12 @@ final class UpdateService: ObservableObject {
     /// or the panel opens, so a new release surfaces promptly without hammering the
     /// API. The hourly timer is the floor; this makes it feel immediate.
     func checkIfStale(maxAge: TimeInterval = 15 * 60) {
-        if AppInfo.isDeveloperBuild { return }
         guard autoCheckEnabled else { return }
         switch state {
         case .checking, .downloading, .installing: return
         default: break
         }
-        if let last = lastChecked, Date().timeIntervalSince(last) < maxAge { return }
+        if state != .idle, let last = lastChecked, Date().timeIntervalSince(last) < maxAge { return }
         check(manual: false)
     }
 

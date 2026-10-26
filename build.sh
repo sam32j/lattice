@@ -9,6 +9,7 @@
 # by File Provider gain xattrs (com.apple.provenance etc.) that invalidate codesign.
 set -euo pipefail
 cd "$(dirname "$0")"
+unset TZ
 
 # The icon catalog and the bundle are staged in temp dirs; sweep both however
 # the script ends.

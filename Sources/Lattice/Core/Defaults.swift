@@ -132,6 +132,7 @@ enum DefaultsKey {
     static let autoCheckUpdates = "autoCheckUpdates"
     static let includeBetaUpdates = "includeBetaUpdates"
     static let releaseNotesOnUpdate = "releaseNotesOnUpdate" // show What's New after an update
+    static let lastUpdateCheckTime = "lastUpdateCheckTime"
     static let appVolumes = "appVolumes"                  // [bundle id: 0...2]
     static let appVolumesArePositions = "appVolumesArePositions" // appVolumes hold slider positions, not gains; travels with them so an older backup converts on restore
     static let appOutputDevices = "appOutputDevices"      // [bundle id: audio device UID]
@@ -1170,6 +1171,7 @@ enum Defaults {
         DefaultsKey.autoCheckUpdates: true,
         DefaultsKey.includeBetaUpdates: false,
         DefaultsKey.releaseNotesOnUpdate: true,
+        DefaultsKey.lastUpdateCheckTime: 0.0,
         DefaultsKey.mixerShowFinder: true,
         DefaultsKey.volumeMixerEnabled: true,
         DefaultsKey.microphoneLevelControlEnabled: true,

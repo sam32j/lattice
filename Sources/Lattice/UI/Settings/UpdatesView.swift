@@ -29,6 +29,9 @@ struct UpdatesView: View {
             .frame(minHeight: 40)
             .onChange(of: autoCheck) { _, value in
                 updates.autoCheckEnabled = value
+                if value {
+                    updates.checkIfStale()
+                }
             }
 
             VStack(alignment: .leading, spacing: 10) {
@@ -39,6 +42,11 @@ struct UpdatesView: View {
                 }
             }
             .padding(.vertical, 4)
+        }
+        .onAppear {
+            if autoCheck {
+                updates.checkIfStale()
+            }
         }
     }
 
@@ -76,7 +84,7 @@ struct UpdatesView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let lastChecked = updates.lastChecked {
-                    Text("\(l10n.s.updateLastChecked) \(lastChecked.formatted(date: .abbreviated, time: .shortened))")
+                    Text("\(l10n.s.updateLastChecked) \(UpdateSettingsPresentation.formattedLastChecked(lastChecked))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
