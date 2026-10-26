@@ -22,9 +22,22 @@ final class QuitProtectionHUD {
                height: minimumSize.height + (content.showsProgress ? 8 : 0))
     }
 
-    /// Resolves the frontmost active window in Cocoa coordinates for the given process ID.
-    static func targetWindowCocoaRect(forPID pid: pid_t) -> CGRect? {
-        guard let primaryScreen = NSScreen.screens.first else { return nil }
+    /// Keep WindowServer enumeration off the event-tap run loop. AppKit screen
+    /// geometry is captured on main; only CoreGraphics runs on the worker.
+    static func resolveTargetWindow(forPID pid: pid_t?, completion: @escaping (CGRect?) -> Void) {
+        let primaryHeight = NSScreen.screens.first?.frame.height
+        DispatchQueue.global(qos: .userInitiated).async {
+            let rect: CGRect?
+            if let pid, let primaryHeight {
+                rect = targetWindowCocoaRect(forPID: pid, primaryScreenHeight: primaryHeight)
+            } else {
+                rect = nil
+            }
+            DispatchQueue.main.async { completion(rect) }
+        }
+    }
+
+    private static func targetWindowCocoaRect(forPID pid: pid_t, primaryScreenHeight: CGFloat) -> CGRect? {
         guard let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
                                                        kCGNullWindowID) as? [[String: Any]] else {
             return nil
@@ -38,7 +51,7 @@ final class QuitProtectionHUD {
                   let bounds = WindowServerSupport.bounds(from: window),
                   bounds.width >= 80, bounds.height >= 80
             else { continue }
-            let cocoaY = primaryScreen.frame.height - bounds.origin.y - bounds.height
+            let cocoaY = primaryScreenHeight - bounds.origin.y - bounds.height
             return CGRect(x: bounds.origin.x, y: cocoaY, width: bounds.width, height: bounds.height)
         }
         return nil

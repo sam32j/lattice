@@ -38,6 +38,9 @@ enum SettingsReviewRegressionTests {
         CleaningModeManualAvailabilityTests.run(suite)
         AudioPriorityPresentationTests.run(suite)
         FeedbackDraftTests.run(suite)
+        UpdateInitializationTests.run(suite)
+        WindowLayoutFeedbackTests.run(suite)
+        ReviewTimingTests.run(suite)
         let pages = SettingsSidebarIdentityTests.Directory.sections(.enUS, language: .enUS).flatMap(\.items)
         suite.expect(Set(pages.map(\.page)).count == pages.count,
                      "the search directory contains each page exactly once")

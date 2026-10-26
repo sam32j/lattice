@@ -9,13 +9,15 @@ enum QuitProtectionRoutingContract {
     enum UserDefaults {
         static let standard = Foundation.UserDefaults(suiteName: "vorss.tests.quit-routing")!
     }
+    static var accessibilityGranted = true
+    static func AXIsProcessTrusted() -> Bool { accessibilityGranted }
     enum AppFeature {
         case quitWindowProtection
         var isAvailable: Bool { true }
     }
     final class SessionActivity {
         static let shared = SessionActivity()
-        let isActive = true
+        var isActive = true
         func onChange(_ action: @escaping (Bool) -> Void) {}
     }
     final class AppSwitcher {
@@ -47,7 +49,16 @@ enum QuitProtectionRoutingContract {
     }
     final class QuitProtectionHUD {
         private(set) var visible = false
-        static func targetWindowCocoaRect(forPID pid: pid_t) -> CGRect? { nil }
+        static var lookupCount = 0
+        static var lookups: [(CGRect?) -> Void] = []
+        static func resolveTargetWindow(forPID pid: pid_t?, completion: @escaping (CGRect?) -> Void) {
+            lookups.append(completion)
+        }
+        static func finishLookup() {
+            guard !lookups.isEmpty else { return }
+            lookupCount += 1
+            lookups.removeFirst()(CGRect(x: 0, y: 0, width: 600, height: 400))
+        }
         func show(title: String, detail: String, on screen: NSScreen? = nil,
                   holdDeadline: Date? = nil, targetRect: CGRect? = nil) {
             visible = true
