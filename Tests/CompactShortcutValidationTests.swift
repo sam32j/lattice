@@ -41,7 +41,12 @@ enum CompactShortcutValidationTests {
         var conflictingRole: GlobalShortcutRole?
         var includeInactiveConflicts = false
         var notifications = 0
+        var conflictAlert: ShortcutConflictAlert?
         func additionalConflict(_ shortcut: GlobalShortcut) -> String? { nil }
+        func showConflict(shortcut: GlobalShortcut, behavior: String) {
+            conflictAlert = ShortcutConflictAlert(shortcut: shortcut, assignedBehavior: behavior)
+            errorText = String(format: l10n.s.shortcutConflictFormat, behavior)
+        }
         func showError(_ text: String) { errorText = text }
         func onChange() { notifications += 1 }
     }

@@ -74,7 +74,7 @@ struct CompactShortcutField: View {
                 .minimumScaleFactor(0.65)
         } else if isRecording {
             Text(pressedModifiers.isEmpty
-                 ? l10n.s.shortcutPressKeys
+                 ? cancelPrompt
                  : pressedModifiers.keyCaps.joined(separator: " "))
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(Color.accentColor)
@@ -139,5 +139,24 @@ struct CompactShortcutField: View {
         .buttonStyle(.plain)
         .help(help)
         .accessibilityLabel(help)
+    }
+
+    private var cancelPrompt: String {
+        switch l10n.language {
+        case .enUS: return "esc to cancel"
+        case .ptBR: return "esc para cancelar"
+        case .es: return "esc para cancelar"
+        case .de: return "esc zum Abbrechen"
+        case .fr: return "esc pour annuler"
+        case .it: return "esc per annullare"
+        case .ja: return "esc でキャンセル"
+        case .ko: return "esc 취소"
+        case .zhHans: return "esc 取消"
+        case .zhTW, .zhHK: return "esc 取消"
+        case .ru: return "esc для отмены"
+        case .uk: return "esc для скасування"
+        case .tr: return "esc iptal etmek için"
+        case .sk: return "esc zrušiť"
+        }
     }
 }
