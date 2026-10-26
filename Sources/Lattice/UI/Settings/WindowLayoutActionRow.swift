@@ -109,16 +109,19 @@ struct WindowLayoutActionRow: View {
 
     private func apply(_ result: WindowLayoutShortcutEditor.Result, offered: GlobalShortcut? = nil) {
         switch result {
-        case .conflict(_, let assignedBehavior):
-            errorText = nil
+        case .conflict(let message, let assignedBehavior):
             pendingTakeOver = nil
-            if let offered {
-                let alert = ShortcutConflictAlert(shortcut: offered, assignedBehavior: assignedBehavior ?? "another action")
+            if let offered, let assignedBehavior {
+                errorText = nil
+                let alert = ShortcutConflictAlert(shortcut: offered, assignedBehavior: assignedBehavior)
                 if let onConflict {
                     onConflict(alert)
                 } else {
                     conflictAlert = alert
                 }
+            } else {
+                conflictAlert = nil
+                errorText = message
             }
         case .offer:
             pendingTakeOver = offered

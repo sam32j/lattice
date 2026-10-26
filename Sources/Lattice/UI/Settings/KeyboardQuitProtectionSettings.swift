@@ -9,19 +9,33 @@ enum QuitProtectionHoldPreset: Double, CaseIterable, Identifiable {
 
     var id: Double { rawValue }
 
-    var title: String {
+    func title(_ language: AppLanguage) -> String {
+        let titles: [String]
+        switch language {
+        case .enUS: titles = ["Very short", "Short", "Default", "Long", "Very long"]
+        case .ptBR: titles = ["Muito curto", "Curto", "Padrão", "Longo", "Muito longo"]
+        case .es: titles = ["Muy breve", "Breve", "Predeterminado", "Largo", "Muy largo"]
+        case .de: titles = ["Sehr kurz", "Kurz", "Standard", "Lang", "Sehr lang"]
+        case .fr: titles = ["Très court", "Court", "Par défaut", "Long", "Très long"]
+        case .it: titles = ["Molto breve", "Breve", "Predefinito", "Lungo", "Molto lungo"]
+        case .ja: titles = ["とても短い", "短い", "標準", "長い", "とても長い"]
+        case .ko: titles = ["매우 짧게", "짧게", "기본값", "길게", "매우 길게"]
+        case .zhHans: titles = ["非常短", "短", "默认", "长", "非常长"]
+        case .zhTW, .zhHK: titles = ["非常短", "短", "預設", "長", "非常長"]
+        case .ru: titles = ["Очень коротко", "Коротко", "По умолчанию", "Долго", "Очень долго"]
+        case .uk: titles = ["Дуже коротко", "Коротко", "За замовчуванням", "Довго", "Дуже довго"]
+        case .tr: titles = ["Çok kısa", "Kısa", "Varsayılan", "Uzun", "Çok uzun"]
+        case .sk: titles = ["Veľmi krátko", "Krátko", "Predvolené", "Dlho", "Veľmi dlho"]
+        }
         switch self {
-        case .veryShort: return "Very short"
-        case .short: return "Short"
-        case .default: return "Default"
-        case .long: return "Long"
-        case .veryLong: return "Very long"
+        case .veryShort: return titles[0]
+        case .short: return titles[1]
+        case .default: return titles[2]
+        case .long: return titles[3]
+        case .veryLong: return titles[4]
         }
     }
 
-    static func matching(_ value: Double) -> QuitProtectionHoldPreset {
-        allCases.min(by: { abs($0.rawValue - value) < abs($1.rawValue - value) }) ?? .default
-    }
 }
 
 extension KeyboardSettings {
@@ -84,7 +98,7 @@ extension KeyboardSettings {
                 }
                 if currentMode == .hold {
                     let presetBinding = Binding<Double>(
-                        get: { QuitProtectionHoldPreset.matching(holdDuration.wrappedValue).rawValue },
+                        get: { holdDuration.wrappedValue },
                         set: { newValue in
                             holdDuration.wrappedValue = newValue
                             quitService.syncWithPreferences()
@@ -92,8 +106,11 @@ extension KeyboardSettings {
                     )
                     SettingsControlRow(title: quitStrings.holdDuration) {
                         Picker(quitStrings.holdDuration, selection: presetBinding) {
+                            if !QuitProtectionHoldPreset.allCases.contains(where: { $0.rawValue == holdDuration.wrappedValue }) {
+                                Text("\(Int(holdDuration.wrappedValue.rounded())) ms").tag(holdDuration.wrappedValue)
+                            }
                             ForEach(QuitProtectionHoldPreset.allCases) { preset in
-                                Text(preset.title).tag(preset.rawValue)
+                                Text(preset.title(l10n.language)).tag(preset.rawValue)
                             }
                         }
                         .labelsHidden()

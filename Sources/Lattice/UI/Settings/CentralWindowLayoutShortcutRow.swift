@@ -12,6 +12,7 @@ struct CentralWindowLayoutShortcutRow: View {
     let superKeyModifiers: GlobalShortcutModifiers
     let text: ShortcutSettingsStrings
     @AppStorage private var rawValue: String
+    @State private var conflictAlert: ShortcutConflictAlert?
     @State private var errorText: String?
     @State private var isRecording = false
     @State private var pendingTakeOver: GlobalShortcut?
@@ -84,11 +85,13 @@ struct CentralWindowLayoutShortcutRow: View {
                     },
                     onDismiss: {
                         self.pendingTakeOver = nil
-                        errorText = String(format: l10n.s.shortcutConflictFormat, "macOS")
+                        conflictAlert = ShortcutConflictAlert(shortcut: pendingTakeOver, assignedBehavior: "macOS")
+                        errorText = nil
                     }
                 )
             }
         }
+        .shortcutConflictAlert($conflictAlert)
         .onChange(of: l10n.language) { _, _ in errorText = nil }
     }
 
@@ -130,9 +133,15 @@ struct CentralWindowLayoutShortcutRow: View {
 
     private func apply(_ result: WindowLayoutShortcutEditor.Result, offered: GlobalShortcut? = nil) {
         switch result {
-        case .conflict(let message, _):
-            errorText = message
+        case .conflict(let message, let assignedBehavior):
             pendingTakeOver = nil
+            if let offered, let assignedBehavior {
+                errorText = nil
+                conflictAlert = ShortcutConflictAlert(shortcut: offered, assignedBehavior: assignedBehavior)
+            } else {
+                conflictAlert = nil
+                errorText = message
+            }
         case .offer:
             pendingTakeOver = offered
             errorText = nil
