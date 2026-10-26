@@ -282,6 +282,11 @@ if (( TEST )); then
         Sources/Lattice/Services/VideoDownloader/DownloadHistoryStore.swift
         Sources/Lattice/Services/VideoDownloader/ToolchainManager.swift
         Sources/Lattice/Services/VideoDownloader/VideoDownloader.swift
+        Sources/Lattice/Services/VideoDownloader/VideoDownloadInfo.swift
+        Sources/Lattice/Services/VideoDownloader/VideoDownloadProgressTracker.swift
+        Sources/Lattice/Services/VideoDownloader/VideoDownloaderInspection.swift
+        Sources/Lattice/Services/VideoDownloader/VideoDownloaderDownload.swift
+        Sources/Lattice/Services/VideoDownloader/VideoDownloaderJob.swift
         Sources/Lattice/Core/QuitProtectionSupport.swift
         Sources/Lattice/Core/QuitProtectionStrings.swift
         Sources/Lattice/Core/LiquidGlassSupport.swift

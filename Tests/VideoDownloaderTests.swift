@@ -57,7 +57,9 @@ enum VideoDownloaderTests {
             history.clear()
             suite.expect(history.items.isEmpty, "history store clear removes records")
         } catch { suite.expect(false, "contained publication validation: \(error)") }
+        VideoDownloadProgressTests.run(suite)
         VideoDownloadProcessTests.run(suite)
         VideoDownloaderServiceTests.run(suite)
+        VideoDownloaderInputTests.run(suite)
     }
 }

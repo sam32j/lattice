@@ -9,40 +9,49 @@ import ImageIO
 final class VideoDownloader: ObservableObject {
     static let shared = VideoDownloader()
 
-    @Published var link = ""
+    @Published var link = "" {
+        didSet { if link != oldValue { linkChanged() } }
+    }
     @Published var selectedQuality: VideoDownloadQuality = .best
     @Published var selectedHeight: Int = 0
 
-    @Published private(set) var dependencies: VideoDownloadDependencies
-    @Published private(set) var info: VideoDownloadInfo?
-    @Published private(set) var destination: URL?
-    @Published private(set) var busy = false
-    @Published private(set) var isFetching = false
-    @Published private(set) var isDownloading = false
-    @Published private(set) var isPaused = false
-    @Published private(set) var phase = ""
-    @Published private(set) var progress: Double?
-    @Published private(set) var downloadProgress: DownloadProgress?
-    @Published private(set) var error: String?
-    @Published private(set) var output: URL?
-    @Published private(set) var thumbnailImage: NSImage?
-    @Published private(set) var isCompletedSustaining = false
+    @Published var dependencies: VideoDownloadDependencies
+    @Published var info: VideoDownloadInfo?
+    @Published var destination: URL?
+    @Published var busy = false
+    @Published var isFetching = false
+    @Published var isDownloading = false
+    @Published var isPaused = false
+    @Published var phase = ""
+    @Published var progress: Double?
+    @Published var downloadProgress: DownloadProgress?
+    @Published var error: String?
+    @Published var output: URL?
+    @Published var thumbnailImage: NSImage?
+    @Published var isCompletedSustaining = false
 
-    private var completionSustainTimer: DispatchWorkItem?
-    private var inspectedURL: URL?
-    private var job: VideoDownloadProcess?
-    private var terminatingJobs: [VideoDownloadProcess] = []
-    private var generation = UUID()
-    private let queue = DispatchQueue(label: "com.lattice.video-downloader", qos: .userInitiated)
-    private let discover: () -> VideoDownloadDependencies
-    private let historyStore: DownloadHistoryStore
-    private var terminationObserver: NSObjectProtocol?
+    var completionSustainTimer: DispatchWorkItem?
+    var inspectedURL: URL?
+    private var lastHandledLink = ""
+    var job: VideoDownloadProcess?
+    var terminatingJobs: [VideoDownloadProcess] = []
+    var generation = UUID()
+    let queue = DispatchQueue(label: "com.lattice.video-downloader", qos: .userInitiated)
+    let discover: () -> VideoDownloadDependencies
+    let historyStore: DownloadHistoryStore
+    let completionFeedback: () -> Void
+    let readClipboard: () -> String?
+    var terminationObserver: NSObjectProtocol?
 
     init(discover: @escaping () -> VideoDownloadDependencies = { .discover() },
-         historyStore: DownloadHistoryStore = .shared) {
+         historyStore: DownloadHistoryStore = .shared,
+         completionFeedback: @escaping () -> Void = VideoDownloader.playCompletionSound,
+         readClipboard: @escaping () -> String? = { NSPasteboard.general.string(forType: .string) }) {
         self.discover = discover
         self.dependencies = discover()
         self.historyStore = historyStore
+        self.completionFeedback = completionFeedback
+        self.readClipboard = readClipboard
 
         // Load saved destination or default to ~/Downloads
         if let savedPath = UserDefaults.standard.string(forKey: DefaultsKey.videoDownloaderDestination) {
@@ -79,23 +88,32 @@ final class VideoDownloader: ObservableObject {
     }
 
     func linkChanged() {
-        if !busy {
-            info = nil
-            inspectedURL = nil
-            output = nil
-            error = nil
-            thumbnailImage = nil
-            isFetching = false
-            isDownloading = false
-        }
+        guard link != lastHandledLink else { return }
+        lastHandledLink = link
+        if isFetching { cancel() }
+        inspectedURL = nil
+        guard !busy else { return } // An edited draft must not cancel an active download.
+        generation = UUID() // Invalidate any thumbnail request from the old inspected link.
+        cancelCompletionSustain()
+        info = nil
+        output = nil
+        error = nil
+        thumbnailImage = nil
+        progress = nil
+        downloadProgress = nil
+        phase = ""
+        isFetching = false
+        isDownloading = false
     }
+
+    var hasCurrentSearchResult: Bool { inspectedURL != nil && (info != nil || output != nil) }
 
     var isValidURL: Bool {
         (try? VideoDownloadRequest.validatedURL(link)) != nil
     }
 
     func pasteFromClipboard() {
-        guard let text = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
+        guard let text = readClipboard()?.trimmingCharacters(in: .whitespacesAndNewlines),
               !text.isEmpty else { return }
         link = text
         linkChanged()
@@ -168,177 +186,6 @@ final class VideoDownloader: ObservableObject {
         ToolchainManager.shared.repair()
     }
 
-    func fetchInfo() {
-        guard !busy else { return }
-        do {
-            let url = try VideoDownloadRequest.validatedURL(link)
-            refreshDependencies()
-            guard dependencies.ready, let ytdlp = dependencies.tools["yt-dlp"] else {
-                throw VideoDownloadError.missingTools
-            }
-            let tools = dependencies
-            info = nil
-            inspectedURL = nil
-            thumbnailImage = nil
-            output = nil
-            error = nil
-            isFetching = true
-            isDownloading = false
-            perform(VideoDownloaderStrings.fetchingDetails) { [weak self] process, id in
-                let result = try process.run(
-                    executable: ytdlp,
-                    arguments: tools.runtimeArguments + VideoDownloadRequest.metadataArguments(url: url),
-                    environment: tools.environment,
-                    timeout: 90
-                )
-                let details = try VideoDownloadInfo.decode(result.stdout)
-                return { [weak self] in
-                    guard let self else { return }
-                    self.isFetching = false
-                    self.info = details
-                    self.inspectedURL = url
-                    self.selectedQuality = .best
-                    self.selectedHeight = details.qualities.first?.height ?? 0
-                    self.phase = ""
-                    self.loadThumbnail(details.thumbnailURL, id: id)
-                }
-            }
-        } catch {
-            self.isFetching = false
-            self.error = VideoDownloaderStrings.fetchFailedNotice
-        }
-    }
-
-    private func loadThumbnail(_ url: URL?, id: UUID) {
-        guard let url else { return }
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            guard let data = try? Data(contentsOf: url),
-                  let source = CGImageSourceCreateWithData(data as CFData, nil) else { return }
-            let options: [CFString: Any] = [
-                kCGImageSourceCreateThumbnailFromImageAlways: true,
-                kCGImageSourceShouldCacheImmediately: true,
-                kCGImageSourceCreateThumbnailWithTransform: true,
-                kCGImageSourceThumbnailMaxPixelSize: 600
-            ]
-            guard let cgThumb = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return }
-            let image = NSImage(cgImage: cgThumb, size: NSSize(width: 300, height: 169))
-            DispatchQueue.main.async {
-                guard self?.generation == id else { return }
-                self?.thumbnailImage = image
-            }
-        }
-    }
-
-    func download() {
-        let quality = selectedQuality.height != 0
-            ? selectedQuality
-            : (info?.qualities.first(where: { $0.height == selectedHeight }) ?? selectedQuality)
-
-        guard let url = inspectedURL,
-              let destination, dependencies.ready,
-              let ytdlp = dependencies.tools["yt-dlp"],
-              let ffmpeg = dependencies.tools["ffmpeg"],
-              let ffprobe = dependencies.tools["ffprobe"] else { return }
-
-        let tools = dependencies
-        let videoTitle = info?.title ?? "video"
-        let qualityTag = quality.title
-
-        isDownloading = true
-        isFetching = false
-        output = nil
-        error = nil
-
-        perform(VideoDownloaderStrings.downloading) { [weak self] process, id in
-            let manager = FileManager.default
-            let staging = destination.appendingPathComponent(".lattice-download-\(UUID().uuidString)", isDirectory: true)
-            try manager.createDirectory(at: staging, withIntermediateDirectories: false)
-            defer { try? manager.removeItem(at: staging) }
-
-            let result = try process.run(
-                executable: ytdlp,
-                arguments: tools.runtimeArguments + VideoDownloadRequest.downloadArguments(
-                    url: url,
-                    quality: quality,
-                    staging: staging,
-                    ffmpeg: ffmpeg
-                ),
-                environment: tools.environment,
-                timeout: 6 * 3600,
-                stdoutLimit: 4_000_000
-            ) { line in
-                if let parsed = VideoDownloadRequest.parseProgress(line) {
-                    DispatchQueue.main.async {
-                        guard self?.generation == id else { return }
-                        self?.progress = parsed.fraction
-                        self?.downloadProgress = parsed
-                        self?.phase = parsed.fraction >= 1 ? VideoDownloaderStrings.finishingVideo : VideoDownloaderStrings.downloading
-                    }
-                } else if let fraction = VideoDownloadRequest.progress(line) {
-                    DispatchQueue.main.async {
-                        guard self?.generation == id else { return }
-                        self?.progress = fraction
-                        self?.phase = fraction >= 1 ? VideoDownloaderStrings.finishingVideo : VideoDownloaderStrings.downloading
-                    }
-                }
-            }
-
-            guard let path = String(decoding: result.stdout, as: UTF8.self).split(separator: "\n")
-                .last(where: { $0.hasPrefix("LATTICE_FILE:") })
-                .map({ String($0.dropFirst("LATTICE_FILE:".count)) }) else {
-                throw VideoDownloadError.invalidOutput
-            }
-
-            let file = try VideoDownloadRequest.validatedOutput(URL(fileURLWithPath: path), from: staging)
-            let probe = try process.run(
-                executable: ffprobe,
-                arguments: ["-v", "error", "-select_streams", quality.isAudio ? "a:0" : "v:0",
-                            "-show_entries", "stream=codec_type,width,height:format=duration",
-                            "-of", "json", "-i", file.path],
-                environment: tools.environment,
-                timeout: 30,
-                stdoutLimit: 256_000
-            )
-
-            guard VideoDownloadRequest.hasPlayableMedia(probe.stdout, isAudio: quality.isAudio) else {
-                throw VideoDownloadError.invalidOutput
-            }
-
-            var saved: URL?
-            var publishError: Error?
-            DispatchQueue.main.sync {
-                guard self?.generation == id else { return }
-                do {
-                    saved = try VideoDownloadRequest.publish(file, from: staging, to: destination)
-                    self?.output = saved
-                } catch {
-                    publishError = error
-                }
-            }
-            if let publishError { throw publishError }
-            guard let saved else { throw CancellationError() }
-
-            return { [weak self] in
-                self?.isDownloading = false
-                self?.output = saved
-                self?.phase = VideoDownloaderStrings.downloadComplete
-                self?.progress = nil
-                self?.downloadProgress = nil
-                self?.historyStore.record(fileURL: saved, title: videoTitle, qualityTag: qualityTag)
-                self?.playCompletionSound()
-                self?.startCompletionSustain()
-            }
-        }
-    }
-
-    private func playCompletionSound() {
-        if let sound = NSSound(named: "Glass") {
-            sound.play()
-        } else if let sound = NSSound(contentsOfFile: "/System/Library/Sounds/Glass.aiff", byReference: false) {
-            sound.play()
-        }
-    }
-
     var isExpandedFocused: () -> Bool = { false }
 
     func startCompletionSustain() {
@@ -365,10 +212,12 @@ final class VideoDownloader: ObservableObject {
     }
 
     func resetDownloadState() {
+        let shouldClearLink = hasCurrentSearchResult
         cancelCompletionSustain()
         output = nil
         info = nil
-        link = ""
+        inspectedURL = nil
+        if shouldClearLink { link = "" }
         progress = nil
         downloadProgress = nil
         thumbnailImage = nil
@@ -378,58 +227,4 @@ final class VideoDownloader: ObservableObject {
         isPaused = false
     }
 
-    private func perform(_ title: String,
-                         work: @escaping (VideoDownloadProcess, UUID) throws -> () -> Void) {
-        guard !busy else { return }
-        cancelCompletionSustain()
-        let process = VideoDownloadProcess()
-        let id = UUID()
-        generation = id
-        job = process
-        busy = true
-        isPaused = false
-        error = nil
-        output = nil
-        progress = nil
-        downloadProgress = nil
-        phase = title
-
-        queue.async { [weak self] in
-            do {
-                let finish = try work(process, id)
-                DispatchQueue.main.async {
-                    self?.terminatingJobs.removeAll { $0 === process }
-                    guard self?.generation == id else { return }
-                    self?.busy = false
-                    self?.isFetching = false
-                    self?.isDownloading = false
-                    self?.isPaused = false
-                    self?.job = nil
-                    finish()
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self?.terminatingJobs.removeAll { $0 === process }
-                    guard self?.generation == id else { return }
-                    let wasFetching = self?.isFetching == true
-                    self?.busy = false
-                    self?.isFetching = false
-                    self?.isDownloading = false
-                    self?.isPaused = false
-                    self?.job = nil
-                    self?.progress = nil
-                    self?.downloadProgress = nil
-                    self?.phase = ""
-                    if error is CancellationError {
-                        self?.error = nil
-                    } else if wasFetching {
-                        self?.error = VideoDownloaderStrings.fetchFailedNotice
-                    } else {
-                        self?.error = error.localizedDescription
-                    }
-                    if let self { self.dependencies = self.discover() }
-                }
-            }
-        }
-    }
 }

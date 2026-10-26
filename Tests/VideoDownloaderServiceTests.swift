@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Foundation
 
 enum VideoDownloaderServiceTests {
@@ -18,19 +19,30 @@ enum VideoDownloaderServiceTests {
             let tools = Dictionary(uniqueKeysWithValues: VideoDownloadDependencies.required.map { ($0, tool.path) })
             let dependencies = VideoDownloadDependencies(tools: tools, environment: ["PATH": "/usr/bin:/bin"])
             let testHistory = DownloadHistoryStore(storeURL: folder.appendingPathComponent("test-history.json"))
-            let model = VideoDownloader(discover: { dependencies }, historyStore: testHistory)
+            let model = VideoDownloader(discover: { dependencies }, historyStore: testHistory, completionFeedback: {},
+                                        readClipboard: { "https://example.invalid/pasted-link" })
             model.link = "https://example.invalid/fixture"
             model.fetchInfo()
             suite.expect(model.isFetching && !model.isDownloading, "isFetching is true and isDownloading is false during fetchInfo")
             settle(model)
             suite.expect(!model.isFetching && model.info?.title == "Test video" && model.selectedHeight == 720 && model.error == nil,
                          "local tool metadata populates the quality selector without network access")
+            model.link = "https://example.invalid/edited"
+            suite.expect(model.info == nil, "direct URL edits invalidate inspected results without a view callback")
+            model.link = "https://example.invalid/fixture"
+            model.fetchInfo()
+            settle(model)
             model.selectDestination(folder)
             let existing = folder.appendingPathComponent("Test video.mp4")
             try Data("existing".utf8).write(to: existing)
+            var fractions: [Double] = []
+            let observation = model.$downloadProgress.sink { if let value = $0 { fractions.append(value.fraction) } }
+            defer { observation.cancel() }
             model.download()
             suite.expect(model.isDownloading && !model.isFetching, "isDownloading is true and isFetching is false during download")
             settle(model)
+            suite.expect(fractions == [0.1, 0.1, 0.5, 0.5, 0.75, 0.99],
+                         "the running download publishes aggregate progress rather than raw per-stream percentages")
             suite.expect(!model.isDownloading && model.output?.lastPathComponent == "Test video (2).mp4" && model.error == nil,
                          "the complete inspect/select/download/probe workflow publishes without overwriting")
             suite.expect(try Data(contentsOf: existing) == Data("existing".utf8), "pre-existing downloads remain untouched")
@@ -44,8 +56,6 @@ enum VideoDownloaderServiceTests {
             model.link = "https://example.invalid/different"; model.linkChanged()
             suite.expect(model.info == nil && model.output == nil, "editing a link invalidates old quality/results")
 
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString("https://example.invalid/pasted-link", forType: .string)
             model.pasteFromClipboard()
             suite.expect(model.link == "https://example.invalid/pasted-link" && !model.isFetching && model.info == nil,
                          "pasting from clipboard only populates the link without triggering fetch")
