@@ -109,7 +109,7 @@ struct NotchVideoDownloaderView: View {
             .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             // Action Button: Clear when results are shown, Search otherwise
-            if downloader.info != nil || downloader.output != nil {
+            if downloader.hasCurrentSearchResult {
                 Button {
                     downloader.resetDownloadState()
                 } label: {
@@ -121,6 +121,7 @@ struct NotchVideoDownloaderView: View {
                         .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
                 .buttonStyle(.plain)
+                .disabled(downloader.busy)
             } else {
                 Button {
                     if !downloader.isFetching {
@@ -143,7 +144,7 @@ struct NotchVideoDownloaderView: View {
                     .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .disabled(downloader.isFetching)
+                .disabled(downloader.busy)
             }
         }
     }

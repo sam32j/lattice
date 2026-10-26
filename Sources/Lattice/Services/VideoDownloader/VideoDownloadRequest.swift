@@ -85,115 +85,6 @@ struct DownloadProgress: Equatable, Sendable {
     }
 }
 
-struct VideoDownloadInfo: Equatable, Sendable {
-    let title: String
-    let creator: String
-    let duration: Double?
-    let thumbnailURL: URL?
-    let sourceLabel: String
-    let qualities: [VideoDownloadQuality]
-    let hasAudio: Bool
-    let estimatedSizeBytes: [Int: Int64]
-
-    var formattedDuration: String? {
-        guard let duration, duration.isFinite, duration > 0 else { return nil }
-        return VideoDownloadRequest.formatDuration(duration)
-    }
-
-    var segmentedOptions: [VideoDownloadQuality] {
-        var options: [VideoDownloadQuality] = [.best]
-        for q in qualities.dropFirst().prefix(2) {
-            options.append(q)
-        }
-        if hasAudio {
-            options.append(.audio)
-        }
-        return options
-    }
-
-    func estimatedSizeFormatted(for quality: VideoDownloadQuality) -> String? {
-        let key = quality.isBest ? (qualities.first?.height ?? 0) : quality.height
-        guard let bytes = estimatedSizeBytes[key], bytes > 0 else { return nil }
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return "~\(formatter.string(fromByteCount: bytes))"
-    }
-
-    static func decode(_ data: Data) throws -> Self {
-        struct Format: Decodable {
-            var height: Int?
-            var vcodec: String?
-            var acodec: String?
-            var has_drm: Bool?
-            var filesize: Int64?
-            var filesize_approx: Int64?
-            var tbr: Double?
-        }
-        struct Info: Decodable {
-            var title: String?
-            var uploader: String?
-            var duration: Double?
-            var thumbnail: String?
-            var extractor: String?
-            var extractor_key: String?
-            var formats: [Format]?
-            var _type: String?
-            var is_live: Bool?
-        }
-        let info = try JSONDecoder().decode(Info.self, from: data)
-        guard info._type != "playlist", info._type != "multi_video", info.is_live != true,
-              let title = info.title, !title.isEmpty else {
-            throw VideoDownloadError.unsupportedMetadata
-        }
-
-        let formats = info.formats ?? []
-        let availableHeights = Set(formats.compactMap { format -> Int? in
-            guard format.has_drm != true, let codec = format.vcodec, codec != "none",
-                  let height = format.height, height > 0, height <= 16384 else { return nil }
-            return height
-        }).sorted(by: >)
-
-        guard !availableHeights.isEmpty else { throw VideoDownloadError.unsupportedMetadata }
-
-        // Compute size estimates
-        var sizeMap: [Int: Int64] = [:]
-        let duration = info.duration ?? 0
-        for format in formats {
-            guard format.has_drm != true else { continue }
-            let size = format.filesize ?? format.filesize_approx ?? (format.tbr.flatMap { tbr in
-                duration > 0 ? Int64(tbr * 1000 / 8 * duration) : nil
-            })
-            if let size, size > 0 {
-                if let h = format.height, h > 0 {
-                    sizeMap[h] = max(sizeMap[h] ?? 0, size)
-                }
-                if format.vcodec == "none" && format.acodec != "none" {
-                    sizeMap[-1] = max(sizeMap[-1] ?? 0, size)
-                }
-            }
-        }
-        if let topHeight = availableHeights.first, let topSize = sizeMap[topHeight] {
-            sizeMap[0] = topSize
-        }
-
-        let hasAudio = formats.contains(where: { $0.acodec != nil && $0.acodec != "none" })
-        let source = (info.extractor_key ?? info.extractor ?? "WEB")
-            .replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression)
-            .uppercased()
-
-        return Self(
-            title: title,
-            creator: info.uploader ?? "",
-            duration: info.duration,
-            thumbnailURL: info.thumbnail.flatMap(URL.init(string:)),
-            sourceLabel: source,
-            qualities: availableHeights.map { VideoDownloadQuality(height: $0) },
-            hasAudio: hasAudio,
-            estimatedSizeBytes: sizeMap
-        )
-    }
-}
-
 enum VideoDownloadRequest {
     static func formatDuration(_ seconds: Double) -> String {
         let total = Int(seconds)
@@ -257,7 +148,8 @@ enum VideoDownloadRequest {
         args += [
             "--restrict-filenames", "--windows-filenames",
             "--paths", staging.path, "--output", "%(title).120B [%(id).60B].%(ext)s",
-            "--progress-template", "download:LATTICE_PROGRESS:%(progress._percent_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.speed)s|%(progress.eta)s",
+            "--progress-template", "download:LATTICE_PROGRESS:%(progress._percent_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.speed)s|%(progress.eta)s|%(progress.fragment_index)s|%(progress.fragment_count)s|%(progress.status)s|%(info.format_id)j",
+            "--print", "before_dl:LATTICE_PARTS:%(requested_formats.:.{format_id,filesize,filesize_approx},format_id)j",
             "--print", "after_move:LATTICE_FILE:%(filepath)s", "--", url.absoluteString
         ]
         return args
