@@ -140,7 +140,7 @@ final class ScreenTextService: ObservableObject {
         if lines.isEmpty {
             let fast = recognizedLines(in: image, level: .fast,
                 automaticallyDetectLanguage: false, preferredLanguages: fallbackLanguages)
-            if accurate == nil && fast == nil && reading == nil { return .unavailable }
+            if accurate == nil && (fast?.isEmpty ?? true) && reading == nil { return .unavailable }
             lines = fast ?? []
         }
         let text = QuickToolsSupport.joinedRecognizedText(lines,

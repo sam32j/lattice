@@ -11,6 +11,7 @@ enum SettingsReviewRegressionTests {
         NotchMusicMouseSwipeTests.run(suite)
         NotchMusicMouseControllerTests.run(suite)
         VisionTextRecognitionTests.run(suite)
+        ScreenTextOutcomeTests.run(suite)
         PermissionActivationTests.run(suite)
         LockSoundServiceTests.run(suite)
         PermissionRevocationTests.run(suite)

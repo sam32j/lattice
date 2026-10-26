@@ -1844,6 +1844,11 @@ def main():
 
     preview = "Sources/Lattice/Services/QuickTools/ScreenshotQuickPreviewController.swift"
     screen_text = "Sources/Lattice/Services/QuickTools/ScreenTextService.swift"
+    write("ScreenTextOutcome.swift", "import Foundation\nimport Vision\n"
+          + "extension ScreenTextOutcomeTests {\nenum Service {\n"
+          + "".join(declaration(screen_text, prefix) for prefix in
+                    ["    enum Outcome:", "    static func outcome(", "    private static func recognizedLines("])
+          + "}\n}\n")
     write("ScreenshotOCRControl.swift", "import AppKit\nimport SwiftUI\n"
           + declaration(preview, "@objc final class ScreenshotQuickPreviewMenuHelper:")
           + "extension ScreenshotOCRControlTests {\n"
