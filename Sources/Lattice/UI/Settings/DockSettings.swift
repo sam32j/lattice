@@ -15,10 +15,11 @@ struct DockSettings: View {
     @AppStorage(DefaultsKey.dockPreviewBackgroundOpacity) private var dockPreviewBackgroundOpacity = 1.0
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @AppStorage(DefaultsKey.dockPreviewOpenDelay) private var dockPreviewOpenDelay = DockPreviewSupport.defaultOpenDelayMilliseconds
-    @AppStorage(DefaultsKey.dockPreviewQuitAppOnClose) private var dockPreviewQuitAppOnClose = false
     @AppStorage(DefaultsKey.dockPreviewOrderByCreation) private var dockPreviewOrderByCreation = false
     @AppStorage(DefaultsKey.dockPreviewKeepDockVisible) private var dockPreviewKeepDockVisible = false
-    @State private var showingDockInfo = false
+    @AppStorage(DefaultsKey.minimalWindowPreviews) private var minimalPreviews = false
+    @State private var showingCurrentSpaceInfo = false
+    @State private var isDockAutohideEnabled = DockAutohideHold.isAutoHideEnabled
 
     private var pages: SettingsPageStrings { FeatureStrings.settingsPages(l10n.language) }
     private var dockPreviewInstalled: Bool { AppFeature.dockPreview.isAvailable }
@@ -29,6 +30,12 @@ struct DockSettings: View {
             VStack(alignment: .leading, spacing: 20) {
                 dockPreviewCard
                     .settingsSectionAnchor(.dock, cornerRadius: 16)
+                if AppFeature.dockClick.isPresentInControls() {
+                    SettingsCard(title: l10n.language == .enUS ? "Dock Tile" : FeatureStrings.hub(l10n.language).titleDockClick) {
+                        DockClickSettings()
+                    }
+                    .settingsSectionAnchor(.dockClick, cornerRadius: 16)
+                }
                 if needsAccessibility, !permissions.accessibility {
                     SettingsCard(title: l10n.s.permissionRequired) {
                         PermissionRow(kind: .accessibility)
@@ -45,17 +52,16 @@ struct DockSettings: View {
             .padding(22)
         }
         .toggleStyle(.switch)
+        .onAppear {
+            isDockAutohideEnabled = DockAutohideHold.isAutoHideEnabled
+        }
+        .onReceive(DistributedNotificationCenter.default().publisher(for: Notification.Name("com.apple.dock.prefchanged"))) { _ in
+            isDockAutohideEnabled = DockAutohideHold.isAutoHideEnabled
+        }
     }
 
     private var dockPreviewCard: some View {
-        SettingsCard(title: l10n.s.dockPreviewName, headerAccessory: {
-            Button { showingDockInfo.toggle() } label: { Image(systemName: "info.circle") }
-                .buttonStyle(.plain)
-                .accessibilityLabel(pages.dockDescription)
-                .popover(isPresented: $showingDockInfo) {
-                    Text(pages.dockDescription).font(.callout).padding(16).frame(width: 320)
-                }
-        }) {
+        SettingsCard(title: l10n.s.dockPreviewName) {
             SettingsRow(symbol: "dock.rectangle", title: l10n.s.dockPreviewEnable, caption: dockPreviewCaption) {
                 PermissionGatedToggle(l10n.s.dockPreviewEnable, isOn: Binding(
                     get: { dockPreviewEngaged },
@@ -72,28 +78,40 @@ struct DockSettings: View {
                 .disabled(!dockPreviewEngaged)
                 .opacity(dockPreviewEngaged ? 1 : 0.55)
             Group {
-                SettingsRow(symbol: "rectangle.3.group", title: l10n.s.switcherCurrentSpaceOnly,
+                SettingsRow(symbol: "rectangle.3.group", title: l10n.s.dockPreviewCurrentSpaceOnly,
                             caption: l10n.s.dockPreviewCurrentSpaceOnlyCaption) {
-                    Toggle(l10n.s.switcherCurrentSpaceOnly, isOn: $dockPreviewCurrentSpaceOnly)
-                        .labelsHidden()
-                        .onChange(of: dockPreviewCurrentSpaceOnly) { _, _ in
-                            DockPreviewService.shared.syncWithPreferences()
+                    HStack(spacing: 8) {
+                        if !dockPreviewCurrentSpaceOnly {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                                .contentShape(Rectangle())
+                                .onHover { hovering in
+                                    showingCurrentSpaceInfo = hovering
+                                }
+                                .popover(isPresented: $showingCurrentSpaceInfo, arrowEdge: .top) {
+                                    Text(l10n.s.dockPreviewCurrentSpaceOnlyInfo)
+                                        .font(.callout)
+                                        .padding(12)
+                                        .frame(width: 280)
+                                }
                         }
+                        Toggle(l10n.s.dockPreviewCurrentSpaceOnly, isOn: $dockPreviewCurrentSpaceOnly)
+                            .labelsHidden()
+                            .onChange(of: dockPreviewCurrentSpaceOnly) { _, _ in
+                                DockPreviewService.shared.syncWithPreferences()
+                            }
+                    }
                 }
                 SettingsRow(symbol: "timer", title: l10n.s.dockPreviewOpenDelay,
                             caption: l10n.s.dockPreviewOpenDelayCaption) {
-                    HStack(spacing: 6) {
-                        TextField("", value: dockPreviewOpenDelayBinding,
-                                  formatter: Self.dockPreviewOpenDelayFormatter)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 64)
-                        Stepper("", value: dockPreviewOpenDelayBinding,
-                                in: DockPreviewSupport.openDelayMillisecondsRange,
-                                step: 50)
-                            .labelsHidden()
-                        Text(verbatim: "ms")
-                            .foregroundStyle(.secondary)
+                    Picker(l10n.s.dockPreviewOpenDelay, selection: dockPreviewHoverDelayBinding) {
+                        Text(l10n.s.dockPreviewDelayDefault).tag(200)
+                        Text(l10n.s.dockPreviewDelayLonger).tag(350)
                     }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .fixedSize()
                 }
                 if !dockPreviewBackgroundIsGlass {
                     SettingsRow(symbol: "circle.lefthalf.filled", title: l10n.s.dockPreviewBackgroundOpacity,
@@ -105,38 +123,37 @@ struct DockSettings: View {
                             .frame(width: 140)
                     }
                 }
-                SettingsRow(symbol: "xmark.circle", title: l10n.s.dockPreviewQuitAppOnClose,
-                            caption: l10n.s.dockPreviewQuitAppOnCloseCaption) {
-                    Toggle(l10n.s.dockPreviewQuitAppOnClose, isOn: $dockPreviewQuitAppOnClose).labelsHidden()
-                }
                 Group {
                     SettingsRow(symbol: "dock.rectangle", title: l10n.s.dockPreviewKeepDockVisible,
-                                experimentalBadge: FeatureStrings.hub(l10n.language).experimentalBadge,
                                 caption: l10n.s.dockPreviewKeepDockVisibleCaption) {
-                        Toggle(l10n.s.dockPreviewKeepDockVisible, isOn: $dockPreviewKeepDockVisible)
+                        Toggle(l10n.s.dockPreviewKeepDockVisible, isOn: Binding(
+                            get: { isDockAutohideEnabled ? dockPreviewKeepDockVisible : true },
+                            set: { dockPreviewKeepDockVisible = $0 }
+                        ))
                             .labelsHidden()
-                            .disabled(!DockAutohideHold.isSupported && !dockPreviewKeepDockVisible)
                             .onChange(of: dockPreviewKeepDockVisible) { _, _ in
                                 dockPreview.syncWithPreferences()
                             }
                     }
+                    .disabled(!isDockAutohideEnabled || (!DockAutohideHold.isSupported && !dockPreviewKeepDockVisible))
+                    .opacity(isDockAutohideEnabled ? 1 : 0.55)
                     SettingsRow(symbol: "clock.arrow.circlepath", title: l10n.s.dockPreviewOrderByCreation,
                                 caption: l10n.s.dockPreviewOrderByCreationCaption) {
                         Toggle(l10n.s.dockPreviewOrderByCreation, isOn: $dockPreviewOrderByCreation).labelsHidden()
+                    }
+                    SettingsRow(symbol: "rectangle.dashed", title: l10n.s.minimalWindowPreviews,
+                                caption: l10n.s.minimalWindowPreviewsCaption) {
+                        Toggle(l10n.s.minimalWindowPreviews, isOn: $minimalPreviews).labelsHidden()
                     }
                 }
                 Divider()
                 WindowPreviewsCard(sizeKey: DefaultsKey.previewSize,
                                    excludedAppsKey: DefaultsKey.windowPreviewExcludedApps,
-                                   embedded: true, showsExclusions: false)
+                                   embedded: true, showsExclusions: false,
+                                   showsMinimalPreview: false)
             }
             .disabled(!dockPreviewInstalled)
             .opacity(dockPreviewInstalled ? 1 : 0.55)
-            if AppFeature.dockClick.isPresentInControls() {
-                Divider()
-                DockClickSettings()
-                    .settingsSectionAnchor(.dockClick, cornerRadius: 16)
-            }
         }
     }
 
@@ -177,22 +194,15 @@ struct DockSettings: View {
         Int((DockPreviewSupport.sanitizedBackgroundOpacity(dockPreviewBackgroundOpacity) * 100).rounded())
     }
 
-    private var dockPreviewOpenDelayBinding: Binding<Int> {
+    private var dockPreviewHoverDelayBinding: Binding<Int> {
         Binding(
-            get: { DockPreviewSupport.sanitizedOpenDelay(milliseconds: dockPreviewOpenDelay) },
-            set: { dockPreviewOpenDelay = DockPreviewSupport.sanitizedOpenDelay(milliseconds: $0) }
+            get: {
+                dockPreviewOpenDelay >= 300 ? 350 : 200
+            },
+            set: { newValue in
+                dockPreviewOpenDelay = newValue
+            }
         )
     }
-
-    /// Bounded here as well as in the binding: the field rejects an out-of-range
-    /// number as it is typed rather than silently snapping it afterwards.
-    private static let dockPreviewOpenDelayFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .none
-        formatter.minimum = NSNumber(value: DockPreviewSupport.openDelayMillisecondsRange.lowerBound)
-        formatter.maximum = NSNumber(value: DockPreviewSupport.openDelayMillisecondsRange.upperBound)
-        formatter.usesGroupingSeparator = false
-        return formatter
-    }()
 }
 

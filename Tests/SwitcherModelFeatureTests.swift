@@ -1699,8 +1699,8 @@ enum SwitcherModelFeatureTests {
         }
         suite.expect(registeredDefaults[DefaultsKey.dockPreviewBackgroundOpacity] as? Double == 1.0,
                "the Dock Preview panel starts fully solid")
-        suite.expect(registeredDefaults[DefaultsKey.dockPreviewQuitAppOnClose] as? Bool == false,
-               "the Dock Preview close button closes one window by default")
+        suite.expect(registeredDefaults[DefaultsKey.dockPreviewOpenDelay] as? Int == 200,
+               "the Dock Preview default open delay is 200ms")
         suite.expect(registeredDefaults[DefaultsKey.dockPreviewOrderByCreation] as? Bool == false,
                "Dock Preview keeps last-use window order by default")
         func dockPreviewWindow(id: CGWindowID) -> SwitcherItem {
@@ -1718,37 +1718,6 @@ enum SwitcherModelFeatureTests {
                "creation order sorts windows by ascending window ID")
         suite.expect(DockPreviewSupport.orderedWindows([], order: .creation).isEmpty,
                "creation order keeps an empty list empty")
-        suite.expect(DockPreviewSupport.closeAction(quitAppOnClose: false) == .closeWindow
-                && DockPreviewSupport.closeAction(quitAppOnClose: true) == .quitApp,
-               "the Dock Preview close preference selects exactly one close action")
-        var dockPreviewQuitRequests = 0
-        var dockPreviewWindowCloseRequests = 0
-        DockPreviewSupport.performCloseAction(
-            quitAppOnClose: false,
-            requestQuit: {
-                dockPreviewQuitRequests += 1
-                return true
-            },
-            closeWindow: { dockPreviewWindowCloseRequests += 1 }
-        )
-        DockPreviewSupport.performCloseAction(
-            quitAppOnClose: true,
-            requestQuit: {
-                dockPreviewQuitRequests += 1
-                return true
-            },
-            closeWindow: { dockPreviewWindowCloseRequests += 1 }
-        )
-        DockPreviewSupport.performCloseAction(
-            quitAppOnClose: true,
-            requestQuit: {
-                dockPreviewQuitRequests += 1
-                return false
-            },
-            closeWindow: { dockPreviewWindowCloseRequests += 1 }
-        )
-        suite.expect(dockPreviewQuitRequests == 2 && dockPreviewWindowCloseRequests == 2,
-               "Dock Preview closes a window normally, waits after an accepted quit, and falls back after refusal")
         suite.expect(registeredDefaults[DefaultsKey.dockClickHide] as? Bool == false,
                "hiding the active app from its Dock icon is opt-in")
         suite.expect(DockPreviewSupport.sanitizedBackgroundOpacity(0.7) == 0.7,
@@ -2068,8 +2037,6 @@ enum SwitcherModelFeatureTests {
                "keyboard debounce per-key windows start empty")
         suite.expect(registeredDefaults[DefaultsKey.panelUtilityCleaning] as? Bool == true,
                "panel cleaning utility is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.cleaningModeKeepScreenVisible] as? Bool == false,
-               "cleaning mode keep screen visible is disabled by default")
         suite.expect(registeredDefaults[DefaultsKey.panelUtilityURLCleaner] as? Bool == true,
                "panel URL cleaner utility is visible by default")
         suite.expect(registeredDefaults[DefaultsKey.panelUtilityUninstaller] as? Bool == true,
@@ -3201,8 +3168,8 @@ enum SwitcherModelFeatureTests {
             .split(separator: "\n", omittingEmptySubsequences: false)
             .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
             .joined(separator: "\n")
-        suite.expect(dockPreviewServiceCode.contains("if accepted { self?.endSession() }")
-                && dockPreviewServiceCode.contains("if accepted { self?.closePreviewPanel() }"),
+        suite.expect(dockPreviewServiceCode.contains("if accepted { endSession() }")
+                && dockPreviewServiceCode.contains("if accepted { closePreviewPanel() }"),
                "an accepted app quit closes both hover and pinned previews immediately")
         let corridor = DockPreviewSupport.hoverCorridor(iconFrame: iconBottom,
                                                         panelFrame: bottomFrame,

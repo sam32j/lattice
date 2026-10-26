@@ -118,7 +118,6 @@ enum DefaultsKey {
     static let dockPreviewCurrentSpaceOnly = "dockPreviewCurrentSpaceOnly"
     static let dockPreviewBackgroundOpacity = "dockPreviewBackgroundOpacity" // how solid the preview panel's material is drawn (DockPreviewSupport.backgroundOpacityRange)
     static let dockPreviewOpenDelay = "dockPreviewOpenDelay" // milliseconds the cursor must rest on a Dock icon before its panel opens (DockPreviewSupport.openDelayMillisecondsRange)
-    static let dockPreviewQuitAppOnClose = "dockPreviewQuitAppOnClose" // the preview card's close button quits the owning app instead of closing one window
     static let dockPreviewOrderByCreation = "dockPreviewOrderByCreation" // order Dock Preview windows by ascending window ID (creation proxy) instead of last use
     static let dockClickMinimize = "dockClickMinimize"    // click the active app's Dock icon to minimize its windows
     static let dockClickHide = "dockClickHide"            // click the active app's Dock icon to hide the app
@@ -261,7 +260,6 @@ enum DefaultsKey {
     static let cleaningModeEnabled = "cleaningModeEnabled"
     static let cleaningModeShortcut = "cleaningModeShortcut"
     static let cleaningModeShortcutEnabled = "cleaningModeShortcutEnabled"
-    static let cleaningModeKeepScreenVisible = "cleaningModeKeepScreenVisible"
     static let panelUtilityURLCleaner = "panelUtilityURLCleaner"
     static let panelUtilityUninstaller = "panelUtilityUninstaller"
     static let uninstallerCommandBarEnabled = "uninstallerCommandBarEnabled"
@@ -1160,7 +1158,6 @@ enum Defaults {
         DefaultsKey.dockPreviewKeepDockVisible: false,
         DefaultsKey.dockPreviewBackgroundOpacity: 1.0,
         DefaultsKey.dockPreviewOpenDelay: DockPreviewSupport.defaultOpenDelayMilliseconds,
-        DefaultsKey.dockPreviewQuitAppOnClose: false,
         DefaultsKey.dockPreviewOrderByCreation: false,
         DefaultsKey.dockClickMinimize: false,
         DefaultsKey.dockClickHide: false,
@@ -1405,7 +1402,6 @@ enum Defaults {
         DefaultsKey.panelUtilityCleaning: true,
         DefaultsKey.cleaningModeShortcutEnabled: false,
         DefaultsKey.cleaningModeShortcut: GlobalShortcut.cleaningModeDefault.storageValue,
-        DefaultsKey.cleaningModeKeepScreenVisible: false,
         DefaultsKey.panelUtilityURLCleaner: true,
         DefaultsKey.panelUtilityUninstaller: true,
         DefaultsKey.uninstallerCommandBarEnabled: false,

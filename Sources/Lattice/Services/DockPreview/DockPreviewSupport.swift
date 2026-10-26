@@ -91,11 +91,6 @@ struct DockPreviewCloseState: Equatable {
     let shouldEndSession: Bool
 }
 
-enum DockPreviewCloseAction: Equatable {
-    case closeWindow
-    case quitApp
-}
-
 struct DockPreviewMouseDownDecision: Equatable {
     let shouldEndSession: Bool
 }
@@ -133,10 +128,6 @@ enum DockPreviewSupport {
             && buttonNumber == 2 && !isHidden && visibleRect.contains(point)
     }
 
-    static func closeAction(quitAppOnClose: Bool) -> DockPreviewCloseAction {
-        quitAppOnClose ? .quitApp : .closeWindow
-    }
-
     /// Reorders Dock Preview cards. Last-use keeps the enumerator’s MRU order;
     /// creation sorts by ascending window ID (a stable creation-time proxy).
     static func orderedWindows(_ windows: [SwitcherItem],
@@ -149,17 +140,6 @@ enum DockPreviewSupport {
                 (lhs.windowID ?? 0) < (rhs.windowID ?? 0)
             }
         }
-    }
-
-
-    static func performCloseAction(quitAppOnClose: Bool,
-                                   requestQuit: () -> Bool,
-                                   closeWindow: () -> Void) {
-        if closeAction(quitAppOnClose: quitAppOnClose) == .quitApp,
-           requestQuit() {
-            return
-        }
-        closeWindow()
     }
 
     /// How long the cursor must rest on an icon before its panel opens. Long
@@ -417,9 +397,9 @@ enum DockPreviewSupport {
         isPinned
     }
 
-    /// The room the window's name has in the title band: the band less the two
+    /// The room the window's name has in the title band: the band less the
     /// controls beside it, whose place is held whether or not they are drawn.
-    static var cardTitleTextWidth: CGFloat { cardThumbnailWidth - 40 }
+    static var cardTitleTextWidth: CGFloat { cardThumbnailWidth - 60 }
 
     /// Whether a name is longer than the room it has. Measured against the font
     /// it is drawn in rather than a layout pass, so the answer is the same

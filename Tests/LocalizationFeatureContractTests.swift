@@ -186,9 +186,14 @@ enum LocalizationFeatureContractTests {
                    && !strings.dockPreviewBackgroundOpacityGlassCaption.contains("—")
                    && strings.dockPreviewBackgroundOpacityGlassCaption != strings.dockPreviewBackgroundOpacityCaption,
                    "\(prefix) Dock Preview background explains why Liquid Glass turns it off")
-            suite.expect(!strings.dockPreviewCurrentSpaceOnlyCaption.isEmpty
+            suite.expect(!strings.dockPreviewCurrentSpaceOnly.isEmpty
+                   && !strings.dockPreviewCurrentSpaceOnly.contains("—")
+                   && !strings.dockPreviewCurrentSpaceOnlyCaption.isEmpty
                    && !strings.dockPreviewCurrentSpaceOnlyCaption.contains("—")
-                   && strings.dockPreviewCurrentSpaceOnlyCaption != strings.switcherCurrentSpaceOnlyCaption,
+                   && !strings.dockPreviewCurrentSpaceOnlyInfo.isEmpty
+                   && !strings.dockPreviewCurrentSpaceOnlyInfo.contains("—"),
+                   "\(prefix) Dock Preview desktop scope labels are present without em dash")
+            suite.expect(strings.dockPreviewCurrentSpaceOnlyCaption != strings.switcherCurrentSpaceOnlyCaption,
                    "\(prefix) Dock Preview explains its own desktop scope")
             suite.expect(!strings.dockPreviewOpenDelay.isEmpty
                    && !strings.dockPreviewOpenDelay.contains("—"),
@@ -196,14 +201,17 @@ enum LocalizationFeatureContractTests {
             suite.expect(!strings.dockPreviewOpenDelayCaption.isEmpty
                    && !strings.dockPreviewOpenDelayCaption.contains("—"),
                    "\(prefix) Dock Preview open delay caption is present without em dash")
+            suite.expect(!strings.dockPreviewDelayDefault.isEmpty
+                   && !strings.dockPreviewDelayDefault.contains("—")
+                   && !strings.dockPreviewDelayLonger.isEmpty
+                   && !strings.dockPreviewDelayLonger.contains("—"),
+                   "\(prefix) Dock Preview delay selector labels are present without em dash")
+            suite.expect(!strings.dockPreviewQuitApplication.isEmpty
+                   && !strings.dockPreviewQuitApplication.contains("—"),
+                   "\(prefix) Dock Preview quit application label is present without em dash")
             suite.expect(!strings.minimalWindowPreviews.isEmpty && !strings.minimalWindowPreviewsCaption.isEmpty
                    && !strings.minimalWindowPreviews.contains("—") && !strings.minimalWindowPreviewsCaption.contains("—"),
                    "\(prefix) minimal previews have a localized title and explanation")
-            suite.expect(!strings.dockPreviewQuitAppOnClose.isEmpty
-                   && !strings.dockPreviewQuitAppOnClose.contains("—")
-                   && !strings.dockPreviewQuitAppOnCloseCaption.isEmpty
-                   && !strings.dockPreviewQuitAppOnCloseCaption.contains("—"),
-                   "\(prefix) Dock Preview quit-on-close labels are present without em dash")
             suite.expect(!strings.switcherShortcutHintApps.isEmpty, "\(prefix) App Switcher app shortcut hint is present")
             suite.expect(!strings.switcherShortcutHintWindows.isEmpty, "\(prefix) App Switcher window shortcut hint is present")
             suite.expect(GlobalShortcutRole.switcher.title(strings) != strings.switcherSection,
@@ -242,8 +250,7 @@ enum LocalizationFeatureContractTests {
                               strings.qrResultTitle, strings.qrResultCopy, strings.qrResultOpen]
             suite.expect(ocrStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
                    "\(prefix) screen OCR strings are present without em dash")
-            let cleaningStrings = [strings.cleaningKeepScreenVisibleToggle, strings.cleaningKeepScreenVisibleCaption,
-                                   strings.cleaningOverlayTitle,
+            let cleaningStrings = [strings.cleaningOverlayTitle,
                                    strings.cleaningOverlaySubtitle, strings.cleaningOverlayUnlock,
                                    strings.cleaningOverlayMouseHint, strings.cleaningPanelCaption]
             suite.expect(cleaningStrings.allSatisfy { !$0.isEmpty && !$0.contains("—") },
