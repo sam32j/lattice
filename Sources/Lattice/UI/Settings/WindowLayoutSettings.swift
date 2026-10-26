@@ -28,6 +28,7 @@ struct WindowLayoutSettings: View {
     @AppStorage(DefaultsKey.windowLayoutShortcutMarginMaximize) var marginShortcutRaw = WindowLayoutAction.marginMaximize.defaultShortcut?.storageValue ?? WindowLayoutAction.clearedShortcutStorageValue
     @State var directionalError: String?
     @State var systemTilingEnabled = WindowEdgeSnapSupport.isSystemTilingEnabled
+    @State var conflictAlert: ShortcutConflictAlert?
     var text: WindowLayoutFeatureStrings {
         FeatureStrings.windowLayout(l10n.language)
     }
@@ -50,6 +51,7 @@ struct WindowLayoutSettings: View {
             .padding(22)
         }
         .toggleStyle(.switch)
+        .shortcutConflictAlert($conflictAlert)
         .onAppear { refreshSystemTilingState() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             refreshSystemTilingState()

@@ -130,7 +130,7 @@ struct CentralWindowLayoutShortcutRow: View {
 
     private func apply(_ result: WindowLayoutShortcutEditor.Result, offered: GlobalShortcut? = nil) {
         switch result {
-        case .conflict(let message):
+        case .conflict(let message, _):
             errorText = message
             pendingTakeOver = nil
         case .offer:

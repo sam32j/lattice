@@ -9,20 +9,24 @@ struct WindowLayoutActionRow: View {
     let applyEnabled: Bool
     let shortcutEnabled: Bool
     @AppStorage private var rawValue: String
+    var onConflict: ((ShortcutConflictAlert) -> Void)? = nil
     @State private var errorText: String?
     @State private var isRecording = false
     @State private var pendingTakeOver: GlobalShortcut?
+    @State private var conflictAlert: ShortcutConflictAlert?
 
     init(action: WindowLayoutAction,
          title: String,
          symbol: String,
          applyEnabled: Bool,
-         shortcutEnabled: Bool) {
+         shortcutEnabled: Bool,
+         onConflict: ((ShortcutConflictAlert) -> Void)? = nil) {
         self.action = action
         self.title = title
         self.symbol = symbol
         self.applyEnabled = applyEnabled
         self.shortcutEnabled = shortcutEnabled
+        self.onConflict = onConflict
         _rawValue = AppStorage(
             wrappedValue: action.defaultShortcut?.storageValue
                 ?? WindowLayoutAction.clearedShortcutStorageValue,
@@ -53,15 +57,6 @@ struct WindowLayoutActionRow: View {
                     onCapture: save,
                     onRecordingChange: { isRecording = $0 })
             }
-            if let errorText {
-                Text(errorText)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            } else if isRecording {
-                Text(ShortcutRecordingCaption.text(l10n.s, canClear: true))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
             if let pendingTakeOver {
                 SystemShortcutTakeOverOffer(
                     shortcut: pendingTakeOver,
@@ -69,12 +64,21 @@ struct WindowLayoutActionRow: View {
                         save(pendingTakeOver, approvingSystemConflict: true)
                     },
                     onDismiss: {
+                        let attempted = self.pendingTakeOver
                         self.pendingTakeOver = nil
-                        errorText = String(format: l10n.s.shortcutConflictFormat, "macOS")
+                        if let attempted {
+                            let alert = ShortcutConflictAlert(shortcut: attempted, assignedBehavior: "macOS")
+                            if let onConflict {
+                                onConflict(alert)
+                            } else {
+                                conflictAlert = alert
+                            }
+                        }
                     }
                 )
             }
         }
+        .shortcutConflictAlert($conflictAlert)
         .onChange(of: l10n.language) { _, _ in errorText = nil }
     }
 
@@ -105,9 +109,17 @@ struct WindowLayoutActionRow: View {
 
     private func apply(_ result: WindowLayoutShortcutEditor.Result, offered: GlobalShortcut? = nil) {
         switch result {
-        case .conflict(let message):
-            errorText = message
+        case .conflict(_, let assignedBehavior):
+            errorText = nil
             pendingTakeOver = nil
+            if let offered {
+                let alert = ShortcutConflictAlert(shortcut: offered, assignedBehavior: assignedBehavior ?? "another action")
+                if let onConflict {
+                    onConflict(alert)
+                } else {
+                    conflictAlert = alert
+                }
+            }
         case .offer:
             pendingTakeOver = offered
             errorText = nil

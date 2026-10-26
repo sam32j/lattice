@@ -36,6 +36,7 @@ struct CompactShortcutRecorder: View {
     @State private var errorText: String?
     @State private var shakeAttempts: CGFloat = 0
     @State private var pendingTakeOver: GlobalShortcut?
+    @State private var conflictAlert: ShortcutConflictAlert?
 
     init(role: GlobalShortcutRole,
          enabledKey: String,
@@ -69,7 +70,7 @@ struct CompactShortcutRecorder: View {
                 isRecording: isRecording,
                 pressedModifiers: pressedModifiers,
                 errorText: errorText,
-                emptyTitle: nil,
+                emptyTitle: l10n.s.shortcutNone,
                 width: 140,
                 shakeAttempts: shakeAttempts,
                 onToggleRecording: toggleRecording,
@@ -80,12 +81,15 @@ struct CompactShortcutRecorder: View {
                     shortcut: pendingTakeOver,
                     onAccept: { acceptTakeOver(pendingTakeOver) },
                     onDismiss: {
+                        let attempted = self.pendingTakeOver
                         self.pendingTakeOver = nil
-                        showError(String(format: l10n.s.shortcutConflictFormat,
-                                         "macOS"))
+                        if let attempted {
+                            showConflict(shortcut: attempted, behavior: "macOS")
+                        }
                     })
             }
         }
+        .shortcutConflictAlert($conflictAlert)
         .onChange(of: coordinator.activeRole) { _, newRole in
             if newRole != role { pressedModifiers = [] }
         }
@@ -135,6 +139,11 @@ struct CompactShortcutRecorder: View {
         onChange()
     }
 
+    private func showConflict(shortcut: GlobalShortcut, behavior: String) {
+        coordinator.stopRecording(role: role)
+        conflictAlert = ShortcutConflictAlert(shortcut: shortcut, assignedBehavior: behavior)
+    }
+
     private func validationDecision(
         _ shortcut: GlobalShortcut
     ) -> RecorderTakeOverDecision? {
@@ -145,19 +154,18 @@ struct CompactShortcutRecorder: View {
         if let conflict = GlobalShortcutRole.conflict(
             for: shortcut, excluding: role,
             includeInactive: includeInactiveConflicts) {
-            showError(String(format: l10n.s.shortcutConflictFormat,
-                             conflict.title(l10n.s)))
+            showConflict(shortcut: shortcut, behavior: conflict.title(l10n.s))
             return nil
         }
         if let conflict = additionalConflict(shortcut) {
-            showError(String(format: l10n.s.shortcutConflictFormat, conflict))
+            showConflict(shortcut: shortcut, behavior: conflict)
             return nil
         }
         let conflictsWithMacOS = role.supportsTakeOver
             ? SystemShortcutTakeover.conflictsWithMacOS(shortcut, for: role)
             : shortcut.conflictsWithSystemShortcut(for: role)
         if conflictsWithMacOS, !role.supportsTakeOver {
-            showError(String(format: l10n.s.shortcutConflictFormat, "macOS"))
+            showConflict(shortcut: shortcut, behavior: "macOS")
             return nil
         }
         let decision = SystemShortcutTakeoverSupport.recorderDecision(
