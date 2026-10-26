@@ -20,7 +20,7 @@ enum DataPermissionsRenderingProbe {
             let view = DataPermissionsSettings(permissionsContent: AnyView(permissionRows(language)))
                 .environment(\.colorScheme, scheme)
             SettingsRefactorProbe.render(name, view: AnyView(view),
-                size: CGSize(width: width, height: 1280), output: output, failures: &failures)
+                size: CGSize(width: width, height: 1280), output: output, failures: &failures, colorScheme: scheme)
         }
         L10n.shared.language = .enUS
         for phase in [PermissionResetState.Phase.ready, .restartRequired, .failed] {

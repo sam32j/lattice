@@ -50,8 +50,7 @@ struct PermissionPortalRow: View {
     private var actionTone: DataSettingsActionTone {
         switch rowAction {
         case .request: return .primary
-        case .settingsRequired: return .outline
-        case .settings: return .quiet
+        case .settingsRequired, .settings: return .quiet
         }
     }
     private var statusText: String {
