@@ -16,7 +16,8 @@ struct GeneralToolSettings: View {
             VStack(alignment: .leading, spacing: 20) {
                 SettingsCard(title: l10n.s.menuBarSection) {
                     SettingsRow(symbol: "menubar.rectangle", title: SettingsFollowupStrings.text(.showMenuIcon, l10n.language)) {
-                        Toggle("", isOn: Binding(get: { !hideMenuIcon }, set: { hideMenuIcon = !$0 }))
+                        Toggle(SettingsFollowupStrings.text(.showMenuIcon, l10n.language),
+                               isOn: Binding(get: { !hideMenuIcon }, set: { hideMenuIcon = !$0 }))
                             .labelsHidden().toggleStyle(.switch)
                     }
                     if !hideMenuIcon { MenuBarIconPickerRow().padding(.leading, settingsRowTextInset) }
