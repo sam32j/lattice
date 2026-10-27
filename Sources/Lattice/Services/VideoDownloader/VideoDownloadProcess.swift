@@ -115,8 +115,19 @@ final class VideoDownloadProcess: @unchecked Sendable {
         if timedOut { throw VideoDownloadError.timedOut }
         guard finishedDrain, !output.overflowed else { throw VideoDownloadError.command("The tool returned too much data or did not close its output. Try another link.") }
         let errorText = String(decoding: errors.data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        let stdoutText = String(decoding: output.data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
         guard process.terminationStatus == 0 else {
-            throw VideoDownloadError.command(errorText.isEmpty ? "The download tool failed. Please check the link." : String(errorText.suffix(4000)))
+            let combined: String
+            if !errorText.isEmpty && !stdoutText.isEmpty {
+                combined = stdoutText + "\n" + errorText
+            } else if !errorText.isEmpty {
+                combined = errorText
+            } else if !stdoutText.isEmpty {
+                combined = stdoutText
+            } else {
+                combined = "The download tool failed. Please check the link."
+            }
+            throw VideoDownloadError.command(String(combined.suffix(8000)))
         }
         return Output(stdout: output.data, stderr: errorText)
     }
