@@ -29,6 +29,10 @@ final class VideoDownloader: ObservableObject {
     @Published var output: URL?
     @Published var thumbnailImage: NSImage?
     @Published var isCompletedSustaining = false
+    @Published var showWebsiteSessions = false
+    @Published var websiteFailure: VideoWebsiteFailure?
+    let websiteSessions: VideoWebsiteSessions
+    var inspectedSession: VideoWebsiteSession?
 
     var completionSustainTimer: DispatchWorkItem?
     var inspectedURL: URL?
@@ -46,12 +50,14 @@ final class VideoDownloader: ObservableObject {
     init(discover: @escaping () -> VideoDownloadDependencies = { .discover() },
          historyStore: DownloadHistoryStore = .shared,
          completionFeedback: @escaping () -> Void = VideoDownloader.playCompletionSound,
-         readClipboard: @escaping () -> String? = { NSPasteboard.general.string(forType: .string) }) {
+         readClipboard: @escaping () -> String? = { NSPasteboard.general.string(forType: .string) },
+         websiteSessions: VideoWebsiteSessions = .shared) {
         self.discover = discover
         self.dependencies = discover()
         self.historyStore = historyStore
         self.completionFeedback = completionFeedback
         self.readClipboard = readClipboard
+        self.websiteSessions = websiteSessions
 
         // Load saved destination or default to ~/Downloads
         if let savedPath = UserDefaults.standard.string(forKey: DefaultsKey.videoDownloaderDestination) {
@@ -92,6 +98,8 @@ final class VideoDownloader: ObservableObject {
         lastHandledLink = link
         if isFetching { cancel() }
         inspectedURL = nil
+        inspectedSession = nil
+        websiteFailure = nil
         guard !busy else { return } // An edited draft must not cancel an active download.
         generation = UUID() // Invalidate any thumbnail request from the old inspected link.
         cancelCompletionSustain()
@@ -213,11 +221,13 @@ final class VideoDownloader: ObservableObject {
     }
 
     func resetDownloadState() {
-        let shouldClearLink = hasCurrentSearchResult
+        let shouldClearLink = hasCurrentSearchResult || error != nil
         cancelCompletionSustain()
         output = nil
         info = nil
         inspectedURL = nil
+        inspectedSession = nil
+        websiteFailure = nil
         if shouldClearLink { link = "" }
         progress = nil
         downloadProgress = nil
@@ -227,5 +237,4 @@ final class VideoDownloader: ObservableObject {
         isDownloading = false
         isPaused = false
     }
-
 }
