@@ -24,9 +24,18 @@ enum VideoDownloaderInputTests {
             model.link = "https://example.invalid/fixture"
             model.fetchInfo(); settle()
             suite.expect(model.hasCurrentSearchResult, "an unchanged successful search offers Clear")
-            model.link = ""
-            suite.expect(!model.hasCurrentSearchResult && model.info == nil,
-                         "manually clearing the URL immediately restores Search")
+            model.resetDownloadState()
+            suite.expect(model.link.isEmpty && !model.hasCurrentSearchResult && model.info == nil,
+                         "resetting download state clears link and current search result")
+            model.link = "https://example.invalid/fixture"
+            model.websiteFailure = .authentication
+            model.error = VideoDownloaderStrings.loginRequiredNotice
+            model.info = nil
+            suite.expect(model.websiteFailure != nil && model.error == VideoDownloaderStrings.loginRequiredNotice && model.info == nil,
+                         "failed fetch authentication error state has websiteFailure and unified loginRequiredNotice")
+            model.resetDownloadState()
+            suite.expect(model.link.isEmpty && model.error == nil && model.websiteFailure == nil,
+                         "resetDownloadState on failed fetch clears link and error")
             model.link = "https://example.invalid/slow-inspect"
             model.fetchInfo()
             model.link = "https://example.invalid/new-draft"
