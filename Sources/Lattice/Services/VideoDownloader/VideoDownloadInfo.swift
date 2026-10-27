@@ -105,7 +105,13 @@ struct VideoDownloadInfo: Equatable, Sendable {
             title: title,
             creator: info.uploader ?? "",
             duration: info.duration,
-            thumbnailURL: info.thumbnail.flatMap(URL.init(string:)),
+            thumbnailURL: info.thumbnail.flatMap { raw -> URL? in
+                var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                if text.hasPrefix("http://") {
+                    text = "https://" + text.dropFirst("http://".count)
+                }
+                return URL(string: text)
+            },
             sourceLabel: source,
             qualities: availableHeights.map { VideoDownloadQuality(height: $0) },
             hasAudio: hasAudio,
