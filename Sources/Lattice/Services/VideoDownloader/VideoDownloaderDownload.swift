@@ -18,6 +18,7 @@ extension VideoDownloader {
               let ffprobe = dependencies.tools["ffprobe"] else { return }
 
         let tools = dependencies
+        let sessionArguments = inspectedSession?.arguments ?? []
         let videoTitle = info?.title ?? "video"
         let qualityTag = quality.title
 
@@ -32,27 +33,57 @@ extension VideoDownloader {
             try manager.createDirectory(at: staging, withIntermediateDirectories: false)
             defer { try? manager.removeItem(at: staging) }
 
-            var tracker = VideoDownloadProgressTracker()
-            let result = try process.run(
-                executable: ytdlp,
-                arguments: tools.runtimeArguments + VideoDownloadRequest.downloadArguments(
+            func executeYtdlp(compatibility: VideoDownloadCompatibilityOptions) throws -> VideoDownloadProcess.Output {
+                var tracker = VideoDownloadProgressTracker()
+                return try process.run(
+                    executable: ytdlp,
+                    arguments: tools.runtimeArguments + sessionArguments + VideoDownloadRequest.downloadArguments(
+                        url: url,
+                        quality: quality,
+                        staging: staging,
+                        ffmpeg: ffmpeg,
+                        compatibility: compatibility
+                    ),
+                    environment: tools.environment,
+                    timeout: 6 * 3600,
+                    stdoutLimit: 4_000_000
+                ) { line in
+                    if let parsed = tracker.consume(line) {
+                        let finishing = tracker.isFinishing
+                        DispatchQueue.main.async {
+                            guard self?.generation == id else { return }
+                            self?.progress = parsed.fraction
+                            self?.downloadProgress = parsed
+                            self?.phase = finishing ? VideoDownloaderStrings.finishingVideo : VideoDownloaderStrings.downloading
+                        }
+                    }
+                }
+            }
+
+            var didUseRangeFallback = false
+            let result: VideoDownloadProcess.Output
+            do {
+                result = try executeYtdlp(compatibility: .init(bilibiliRangeFallback: false))
+            } catch {
+                if VideoDownloadRequest.shouldRetryBilibili567(
                     url: url,
-                    quality: quality,
-                    staging: staging,
-                    ffmpeg: ffmpeg
-                ),
-                environment: tools.environment,
-                timeout: 6 * 3600,
-                stdoutLimit: 4_000_000
-            ) { line in
-                if let parsed = tracker.consume(line) {
-                    let finishing = tracker.isFinishing
+                    output: error.localizedDescription,
+                    didUseRangeFallback: didUseRangeFallback
+                ) {
+                    didUseRangeFallback = true
+                    #if DEBUG
+                    print("[BiliBili] HTTP 567 detected")
+                    print("[BiliBili] Retrying with Range: bytes=0-")
+                    #endif
                     DispatchQueue.main.async {
                         guard self?.generation == id else { return }
-                        self?.progress = parsed.fraction
-                        self?.downloadProgress = parsed
-                        self?.phase = finishing ? VideoDownloaderStrings.finishingVideo : VideoDownloaderStrings.downloading
+                        self?.progress = nil
+                        self?.downloadProgress = nil
+                        self?.phase = VideoDownloaderStrings.downloading
                     }
+                    result = try executeYtdlp(compatibility: .init(bilibiliRangeFallback: true))
+                } else {
+                    throw error
                 }
             }
 
