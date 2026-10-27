@@ -2,6 +2,70 @@
 
 ## [3.4.1-d.2] - 2026-10-17
 
+## [3.4.2-d.3] - 2026-10-27
+
+### Added
+- **Settings**: Animate conditional follow-up settings with native expansion
+- **About**: Align updates section layout and toggle style
+- **Dock**: Redesign dock settings, autohide visibility handling, and preview controls
+- **Feedback**: Redesign feedback modal with contextual subjects and modern styling
+- Support native Magic Mouse music swipes
+- **Downloader**: Glass sound, hover crossfade to Open, prominent complete banner, and focus-persistent expanded view
+- **Downloader**: Sync UI with settings page, swap search/clear, finder open on complete, and recent history shortcut
+- **Notch**: Camera-side compact activity, 10s completion sustain, and adaptive expanded island layout
+- **Notch**: Implement video downloader dynamic island widget and compact activity
+- **Downloader**: Clean, stacked, and centered error state for invalid video URLs
+- **Downloader**: Containerized missing tools repair section, download confirmation dialog, and bundle ID based app support directory
+- **Downloader**: Standalone toolchain installer, centered toggle, clean toggle states, and clear history button
+- **Downloader**: Deduplicate qualities, position toggle at right titlebar edge without glass container
+- **Downloader**: Add skeleton screen, tint download button, enlarge pause/cancel, and simplify completion
+- **Downloader**: Separate fetch state and reuse card real estate for progress and completion
+- **Downloader**: Responsive layout and feature uninstall lifecycle
+- **Downloader**: Self-managed toolchain, audio extraction, and v2 media cards
+- **Downloader**: Add guided setup and video download settings
+- **Downloader**: Add cancellable downloads and safe output publication
+- **Downloader**: Validate video metadata and discover local dependencies
+
+### Changed
+- **Settings**: Unify Data and Permissions with compact native rows
+- **Cleaning**: Remove keep screen visible toggle and clean up overlay
+- **Quit Protection**: Refine protection HUD and routing contracts
+- **Shortcuts**: Add conflict detection and recorder refinements
+- Clarify native swipe completion and phase checks
+- Complete Lattice source and build naming
+
+### Fixed
+- **Video Downloader**: Default requested_formats to empty array in parts template
+- **Video Downloader**: Check bitrate estimate bounds before Int64 conversion
+- **Video Downloader**: Restore audio progress and refresh island input
+- **Video Downloader**: Stabilize progress and invalidate edited searches
+- **Feedback**: Present a native sheet from Settings
+- **Keyboard**: Retain the intentional hold preset limit
+- **Settings**: Honor preview appearance and remove redundant action tone
+- **Keyboard**: Keep the two-second hold preset selectable
+- **Services**: Defer quit HUD lookup and restore truthful update state
+- **Settings**: Preserve timing choices and clarify shortcut conflicts
+- **Feedback**: Validate encoded drafts and label form controls
+- **About**: Refresh update status on appear, center feedback window, and respect system timezone
+- **I18n**: Localize dock click section and audit settings copy across all languages
+- **Settings**: Update input, debounce, energy, and video settings controls
+- Name the menu icon switch for accessibility
+- Release capture pointer input before focus handoff
+- Preserve watch readings after partial OCR failure
+- Allow music swipes with system page gestures disabled
+- Retain watch readings during temporary OCR unavailability
+- Preserve capture focus handoff and recover transient OCR failures
+- Align settings controls and add explicit Dock click Off mode
+- Audit Lattice attribution and current feature documentation
+- Remove retired feature claims from localized permission prompts
+- **Downloader**: Pin asset versions and verify SHA-256 digests before installation
+- **Notch**: Address review findings on video downloader activity gating, preview isolation, and options refresh
+- **Downloader**: Address review findings on toolchain, dependencies discovery, and error state
+- **Downloader**: Deduplicate quality options, show actual resolution with Best, remove duplicate title, and expand save path
+- **Downloader**: Protect title from truncation and show resolved tool paths in advanced settings
+- **Downloader**: Hard limit save path width with middle truncation and preserve quality picker layout
+- **Downloader**: Isolate test history store and make save location visible
+
 ## [3.4.2-d.2] - 2026-10-25
 
 ### Added
