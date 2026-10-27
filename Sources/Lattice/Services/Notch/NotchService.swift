@@ -3876,18 +3876,21 @@ final class NotchService: ObservableObject {
             VideoDownloader.shared.isExpandedFocused = { [weak self] in
                 self?.expanded == true && self?.selected == .videoDownloader
             }
-            VideoDownloader.shared.$isDownloading
-                .combineLatest(
-                    VideoDownloader.shared.$isPaused,
-                    VideoDownloader.shared.$isCompletedSustaining,
-                    VideoDownloader.shared.$info
-                )
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self] _ in
-                    self?.syncMenuSpaceMonitoring()
-                    self?.objectWillChange.send()
-                    self?.refreshPresentation()
-                }.store(in: &subscriptions)
+            Publishers.MergeMany(
+                VideoDownloader.shared.$isDownloading.map { _ in () }.eraseToAnyPublisher(),
+                VideoDownloader.shared.$isPaused.map { _ in () }.eraseToAnyPublisher(),
+                VideoDownloader.shared.$isCompletedSustaining.map { _ in () }.eraseToAnyPublisher(),
+                VideoDownloader.shared.$info.map { _ in () }.eraseToAnyPublisher(),
+                VideoDownloader.shared.$error.map { _ in () }.eraseToAnyPublisher(),
+                VideoDownloader.shared.$output.map { _ in () }.eraseToAnyPublisher(),
+                VideoDownloader.shared.$websiteFailure.map { _ in () }.eraseToAnyPublisher()
+            )
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.syncMenuSpaceMonitoring()
+                self?.objectWillChange.send()
+                self?.refreshPresentation()
+            }.store(in: &subscriptions)
         }
         if modules.contains(.agents) {
             // Only what changes the island's size or strip: a turn starting or
