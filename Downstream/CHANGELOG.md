@@ -2,6 +2,40 @@
 
 ## [3.4.1-d.2] - 2026-10-17
 
+## [3.4.2-d.4] - 2026-10-27
+
+### Added
+- **Settings**: Add Show on Dynamic Island toggle to Video Downloader settings
+- **I18n**: Implement full VideoDownloaderStrings internationalization across 15 languages
+- **Settings**: Implement VideoWebsiteSessionsSheet adhering to dark appearance spec
+- **Settings**: Redesign Video Downloader settings hierarchy and 40px inputs
+- **Notch**: Update NotchView and NotchSectionsView for video downloader strip and transitions
+- **Notch**: Register video downloader support utilities and page title mappings
+- **Notch**: Adapt NotchService window geometry and auto-fit heights for video downloader
+- **Notch**: Implement VideoDownloaderSearchBar with clipboard URL detection
+- **Notch**: Implement ScrollableVideoQualitySegments component with centering
+- **Video Downloader**: Add Bilibili detection and HTTP 567 byte range retry fallback
+- **Video Downloader**: Support session cookies and retry handling during video download
+- **Video Downloader**: Pass session cookies during video inspection and classify errors
+- **Video Downloader**: Inject session cookies into VideoDownloadProcess execution
+- **Video Downloader**: Integrate website sessions into main VideoDownloader model
+- **Video Downloader**: Add website sessions state to VideoDownloaderJob
+- **Video Downloader**: Implement VideoDownloaderWebsiteSessions extension
+- **Video Downloader**: Implement VideoWebsiteSessions models and profile detection
+- **Video Downloader**: Configure ATS arbitrary loads for thumbnail image loading
+
+### Changed
+- **Settings**: Use system native dialog scheme supporting light and dark modes in Browser Session sheet
+- **Settings**: Localize video downloader page title in SettingsUtilitiesDirectory
+- **Settings**: Extract VideoDownloaderSettingsComponents subviews and layout helpers
+- **Notch**: Streamline NotchVideoDownloaderView layout and recent downloads navigation
+- **Notch**: Extract modular NotchVideoDownloaderComponents subviews
+
+### Fixed
+- **Settings**: Keep Cancel button enabled in website sessions sheet while busy
+- **Notch**: Use localized Finder reveal label in download complete status
+- **Video Downloader**: Upgrade HTTP thumbnail URLs to HTTPS for ATS compatibility
+
 ## [3.4.2-d.3] - 2026-10-27
 
 ### Added
