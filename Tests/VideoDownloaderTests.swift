@@ -54,13 +54,37 @@ enum VideoDownloaderTests {
             suite.expect(VideoDownloadRequest.hasPlayableMedia(Data(#"{"streams":[{"codec_type":"audio"}],"format":{"duration":"10"}}"#.utf8), isAudio: true),
                          "audio extraction verifies playable audio duration and stream")
             let history = DownloadHistoryStore(storeURL: folder.appendingPathComponent("history.json"))
-            let sampleFile = folder.appendingPathComponent("sample.mp4")
-            try Data("sample".utf8).write(to: sampleFile)
-            history.record(fileURL: sampleFile, title: "Sample Video", qualityTag: "1080p")
-            suite.expect(history.items.first?.title == "Sample Video" && history.items.first?.qualityTag == "1080p",
-                         "recent downloads store records file, title and quality")
+            for i in 1...7 {
+                let sample = folder.appendingPathComponent("sample\(i).mp4")
+                try Data("sample\(i)".utf8).write(to: sample)
+                history.record(fileURL: sample, title: "Sample Video \(i)", qualityTag: "\(i * 100)p")
+            }
+            suite.expect(history.items.count == 5, "recent downloads store caps capacity at 5 items")
+            suite.expect(history.items.first?.title == "Sample Video 7", "newest download is first in history list")
+
+            // Re-recording an existing URL moves it to top without duplicating
+            let oldSample = folder.appendingPathComponent("sample3.mp4")
+            history.record(fileURL: oldSample, title: "Sample Video 3 Updated", qualityTag: "1080p")
+            suite.expect(history.items.count == 5 && history.items.first?.title == "Sample Video 3 Updated",
+                         "re-recording an item moves it to top and updates metadata without increasing count")
+
+            // Removing single item
+            if let first = history.items.first {
+                history.remove(first)
+                suite.expect(history.items.count == 4 && history.items.first?.title != "Sample Video 3 Updated",
+                             "history.remove drops specified item")
+            }
+
             history.clear()
             suite.expect(history.items.isEmpty, "history store clear removes records")
+
+            // Quality model and container tags
+            suite.expect(VideoDownloadQuality.best.isBest, "best quality identifies as isBest")
+            suite.expect(VideoDownloadQuality.audio.containerTag == "M4A", "audio quality container is M4A")
+            suite.expect(VideoDownloadQuality(height: 1080).title == "1080p",
+                         "video quality title formats resolution")
+            suite.expect(VideoDownloadQuality(height: 1080).containerTag == "MKV",
+                         "video quality container is MKV")
         } catch { suite.expect(false, "contained publication validation: \(error)") }
         // Website Sessions & Profile Detection Tests
         let memoryDefaults = UserDefaults(suiteName: "io.github.sam32j.lattice.tests.session-\(UUID())")!
@@ -188,6 +212,8 @@ enum VideoDownloaderTests {
         suite.expect(VideoDownloaderStrings.pageTitle == "Video Downloader",
                      "VideoDownloaderStrings dynamically reflects enUS")
 
+        VideoWebsiteSessionsTests.run(suite)
+        VideoDownloaderLocalizationTests.run(suite)
         VideoDownloadProgressTests.run(suite)
         VideoDownloadProcessTests.run(suite)
         VideoDownloaderServiceTests.run(suite)
