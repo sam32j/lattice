@@ -97,5 +97,10 @@
 	<string>Lattice contributors; based on Vorssaint, GPL-3.0-or-later</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 </dict>
 </plist>
