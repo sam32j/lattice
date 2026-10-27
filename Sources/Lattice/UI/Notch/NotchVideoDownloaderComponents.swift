@@ -188,7 +188,7 @@ extension NotchVideoDownloaderView {
                         .foregroundStyle(.white)
 
                     let sizeStr = downloader.output.map { outputFileSizeText(url: $0) } ?? ""
-                    let detail = sizeStr.isEmpty ? "Saved · Click to reveal in Finder" : "\(sizeStr) · Click to reveal in Finder"
+                    let detail = sizeStr.isEmpty ? VideoDownloaderStrings.showInFinder : "\(sizeStr) · \(VideoDownloaderStrings.showInFinder)"
                     Text(detail)
                         .font(.system(size: 9.5))
                         .foregroundStyle(.white.opacity(0.70))
