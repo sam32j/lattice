@@ -1584,6 +1584,9 @@ enum VideoDownloaderStrings {
     static var pageTitle: String { current.pageTitle }
     static var enableTitle: String { current.enableTitle }
     static var enableSubtitle: String { current.enableSubtitle }
+    static var showOnDynamicIsland: String {
+        SettingsOwnershipStrings.text(.showIsland, L10n.shared.language)
+    }
 
     static var downloadVideoSectionTitle: String { current.downloadVideoSectionTitle }
     static var downloadVideoSectionSubtitle: String { current.downloadVideoSectionSubtitle }

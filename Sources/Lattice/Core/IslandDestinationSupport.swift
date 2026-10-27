@@ -6,6 +6,7 @@ enum IslandDestination: String {
     case clipboard, files, scratchpad
     case cameraPreview = "camera"
     case launcherGrid = "tools"
+    case videoDownloader
 
     var routeKey: String {
         switch self {
@@ -14,11 +15,12 @@ enum IslandDestination: String {
         case .scratchpad: return DefaultsKey.notchScratchpad
         case .cameraPreview: return DefaultsKey.notchCameraEnabled
         case .launcherGrid: return DefaultsKey.notchQuickPanel
+        case .videoDownloader: return DefaultsKey.notchVideoDownloader
         }
     }
 
     func isShown(in defaults: UserDefaults) -> Bool {
-        defaults.bool(forKey: routeKey)
+        (defaults.object(forKey: routeKey) as? Bool ?? true)
             && !(defaults.string(forKey: DefaultsKey.notchHiddenModules) ?? "")
                 .split(separator: ",").contains(Substring(rawValue))
     }

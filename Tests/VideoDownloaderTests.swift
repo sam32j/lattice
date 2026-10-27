@@ -211,6 +211,28 @@ enum VideoDownloaderTests {
         L10n.shared.language = .enUS
         suite.expect(VideoDownloaderStrings.pageTitle == "Video Downloader",
                      "VideoDownloaderStrings dynamically reflects enUS")
+        suite.expect(VideoDownloaderStrings.showOnDynamicIsland == "Show on Dynamic Island",
+                     "showOnDynamicIsland label is localized")
+
+        // Dynamic Island widget toggle routing
+        let islandDefaults = UserDefaults(suiteName: "io.github.sam32j.lattice.tests.island-\(UUID())")!
+        islandDefaults.set(true, forKey: DefaultsKey.videoDownloaderEnabled)
+        suite.expect(IslandDestination.videoDownloader.isShown(in: islandDefaults),
+                     "videoDownloader island destination is shown by default")
+        suite.expect(NotchSupport.modules(in: islandDefaults).contains(.videoDownloader),
+                     "NotchSupport.modules includes videoDownloader when destination is enabled")
+
+        IslandDestination.videoDownloader.setShown(false, in: islandDefaults)
+        suite.expect(!IslandDestination.videoDownloader.isShown(in: islandDefaults),
+                     "toggling off hides videoDownloader from island destination")
+        suite.expect(!NotchSupport.modules(in: islandDefaults).contains(.videoDownloader),
+                     "NotchSupport.modules excludes videoDownloader when destination is hidden")
+
+        IslandDestination.videoDownloader.setShown(true, in: islandDefaults)
+        suite.expect(IslandDestination.videoDownloader.isShown(in: islandDefaults),
+                     "toggling on restores videoDownloader island destination")
+        suite.expect(NotchSupport.modules(in: islandDefaults).contains(.videoDownloader),
+                     "NotchSupport.modules includes videoDownloader again when restored")
 
         VideoWebsiteSessionsTests.run(suite)
         VideoDownloaderLocalizationTests.run(suite)
