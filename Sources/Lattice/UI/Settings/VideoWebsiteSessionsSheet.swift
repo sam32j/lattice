@@ -91,6 +91,7 @@ struct VideoWebsiteSessionsSheet: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.red)
+                    .disabled(downloader.busy)
                 }
 
                 Spacer()
@@ -104,13 +105,12 @@ struct VideoWebsiteSessionsSheet: View {
                     saveAndDismiss(retry: canRetryCurrentLink)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(isSaveDisabled)
+                .disabled(isSaveDisabled || downloader.busy)
                 .keyboardShortcut(.defaultAction)
             }
         }
         .padding(20)
         .frame(width: 440)
-        .disabled(downloader.busy)
         .onAppear {
             loadCurrentSession()
         }
