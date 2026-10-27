@@ -17,6 +17,7 @@ extension VideoDownloader {
         busy = true
         isPaused = false
         error = nil
+        websiteFailure = nil
         output = nil
         progress = nil
         downloadProgress = nil
@@ -54,6 +55,10 @@ extension VideoDownloader {
                     }
                     if error is CancellationError {
                         self?.error = nil
+                    } else if let failure = VideoWebsiteFailure.classify(error) {
+                        self?.websiteFailure = failure
+                        let hasSession = self?.websiteSessions.hasSession == true
+                        self?.error = failure.message(hasActiveSession: hasSession)
                     } else if wasFetching {
                         self?.error = VideoDownloaderStrings.fetchFailedNotice
                     } else {
