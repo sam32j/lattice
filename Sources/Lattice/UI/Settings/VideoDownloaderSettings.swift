@@ -6,22 +6,25 @@ import Combine
 import SwiftUI
 
 struct VideoDownloaderSettings: View {
-    @ObservedObject private var model: VideoDownloader
-    @ObservedObject private var toolchain: ToolchainManager
-    @ObservedObject private var history: DownloadHistoryStore = .shared
-    @ObservedObject private var router: SettingsRouter = .shared
+    @ObservedObject var model: VideoDownloader
+    @ObservedObject var toolchain: ToolchainManager
+    @ObservedObject var history: DownloadHistoryStore = .shared
+    @ObservedObject var router: SettingsRouter = .shared
+    @ObservedObject var sessions: VideoWebsiteSessions
+    @ObservedObject var l10n = L10n.shared
 
-    @AppStorage(DefaultsKey.videoDownloaderEnabled) private var enabled = true
-    @State private var showDownloadConfirmation = false
-    @State private var detectedClipboardURL: String? = nil
-    @State private var pasteboardChangeCount = -1
-    @State private var skeletonPulsing = false
-    @State private var isSearchHovered = false
-    private let clipboardTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
+    @AppStorage(DefaultsKey.videoDownloaderEnabled) var enabled = true
+    @State var showDownloadConfirmation = false
+    @State var detectedClipboardURL: String? = nil
+    @State var pasteboardChangeCount = -1
+    @State var skeletonPulsing = false
+    @State var isSearchHovered = false
+    let clipboardTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
     init(model: VideoDownloader = .shared, toolchain: ToolchainManager = .shared) {
         self.model = model
         self.toolchain = toolchain
+        self.sessions = model.websiteSessions
     }
 
     var body: some View {
@@ -32,39 +35,31 @@ struct VideoDownloaderSettings: View {
                 ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     // Enablement Card
-                    HStack(alignment: .center, spacing: 14) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Label(VideoDownloaderStrings.enableTitle, systemImage: "arrow.down.square")
-                                .font(.headline)
-                            Text(VideoDownloaderStrings.enableSubtitle)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer()
-                        Toggle("", isOn: $enabled)
-                            .labelsHidden()
-                            .toggleStyle(.switch)
-                            .onChange(of: enabled) { oldValue, isNowEnabled in
-                                if !isNowEnabled {
-                                    model.teardown()
-                                    toolchain.removeTools()
-                                } else if !oldValue && isNowEnabled {
-                                    model.refreshDependencies()
-                                    toolchain.checkHealth()
-                                    if !toolchain.dependencies.ready {
-                                        showDownloadConfirmation = true
+                    SettingsCard {
+                        SettingsRow(symbol: "arrow.down.square",
+                                    title: VideoDownloaderStrings.enableTitle,
+                                    caption: VideoDownloaderStrings.enableSubtitle) {
+                            Toggle("", isOn: $enabled)
+                                .labelsHidden()
+                                .toggleStyle(.switch)
+                                .onChange(of: enabled) { oldValue, isNowEnabled in
+                                    if !isNowEnabled {
+                                        model.teardown()
+                                        toolchain.removeTools()
+                                    } else if !oldValue && isNowEnabled {
+                                        model.refreshDependencies()
+                                        toolchain.checkHealth()
+                                        if !toolchain.dependencies.ready {
+                                            showDownloadConfirmation = true
+                                        }
                                     }
                                 }
-                            }
+                        }
+
+                        if enabled {
+                            browserSignInRow
+                        }
                     }
-                    .padding(14)
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
-                    )
 
                     if enabled {
                         // Toolchain Installing State
@@ -156,119 +151,51 @@ struct VideoDownloaderSettings: View {
                             )
                         } else {
                             // Active Video Downloader Surfaces
-
-                            // Link Bar
-                            HStack(spacing: 10) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "link")
+                            VStack(alignment: .leading, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(VideoDownloaderStrings.downloadVideoSectionTitle)
+                                        .font(.headline)
+                                    Text(VideoDownloaderStrings.downloadVideoSectionSubtitle)
+                                        .font(.caption)
                                         .foregroundStyle(.secondary)
-                                    TextField(VideoDownloaderStrings.urlPlaceholder, text: $model.link)
-                                        .textFieldStyle(.plain)
-                                        .onSubmit { model.fetchInfo() }
-                                        .onChange(of: model.link) { _, newLink in
-                                            model.linkChanged()
-                                            if newLink.isEmpty { updateClipboardURL() }
-                                        }
-
-                                    if let clip = detectedClipboardURL, model.link.isEmpty {
-                                        Button {
-                                            model.link = clip
-                                            model.linkChanged()
-                                        } label: {
-                                            HStack(spacing: 4) {
-                                                Image(systemName: "doc.on.clipboard")
-                                                    .font(.system(size: 11, weight: .semibold))
-                                                Text(isCompact ? "Paste URL" : VideoDownloaderStrings.pasteClipboardURL)
-                                                    .font(.system(size: 11.5, weight: .medium))
-                                            }
-                                            .foregroundStyle(Color.accentColor)
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 4)
-                                            .background(Color.accentColor.opacity(0.12))
-                                            .clipShape(Capsule())
-                                        }
-                                        .buttonStyle(.plain)
-                                    } else if !model.link.isEmpty {
-                                        Button {
-                                            model.link = ""
-                                            model.linkChanged()
-                                            updateClipboardURL()
-                                        } label: {
-                                            Image(systemName: "xmark.circle.fill")
-                                                .foregroundStyle(.secondary)
-                                                .font(.system(size: 13))
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                }
-                                .padding(.horizontal, 12)
-                                .frame(height: 44)
-                                .background(Color(nsColor: .controlBackgroundColor))
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
-                                )
-                                .onHover { isHovering in
-                                    if isHovering && model.link.isEmpty {
-                                        updateClipboardURL()
-                                    }
                                 }
 
-                                let canSearch = !model.busy && !model.link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                Button {
-                                    model.fetchInfo()
-                                } label: {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "magnifyingglass")
-                                            .font(.system(size: 12.5, weight: .semibold))
-                                        Text(VideoDownloaderStrings.search)
-                                            .font(.system(size: 13, weight: .semibold))
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .frame(height: 44)
-                                    .foregroundStyle(
-                                        canSearch
-                                            ? Color(nsColor: .controlAccentColor)
-                                            : Color.secondary.opacity(0.4)
-                                    )
-                                    .background(
-                                        canSearch
-                                            ? Color(nsColor: .controlAccentColor).opacity(isSearchHovered ? 0.20 : 0.12)
-                                            : Color(nsColor: .controlBackgroundColor)
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                            .stroke(
-                                                canSearch
-                                                    ? Color(nsColor: .controlAccentColor).opacity(isSearchHovered ? 0.50 : 0.30)
-                                                    : Color.secondary.opacity(0.18),
-                                                lineWidth: 1
-                                            )
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(!canSearch)
-                                .onHover { hovering in
-                                    isSearchHovered = hovering
-                                }
+                                searchInput(isCompact: isCompact)
                             }
-                            .disabled(model.busy)
 
                             // Fetching Video Details Skeleton Screen
                             if model.isFetching {
                                 skeletonMediaCard(isCompact: isCompact)
-                            } else if let error = model.error {
+                            } else if let error = model.error, model.info == nil {
                                 VStack(spacing: 8) {
                                     Image(systemName: "exclamationmark.circle")
                                         .font(.system(size: 26, weight: .regular))
                                         .foregroundStyle(.secondary)
 
-                                    Text(error.contains("Command failed") || error.contains("ERROR:") ? VideoDownloaderStrings.fetchFailedNotice : error)
+                                    let displayError: String = {
+                                        if model.websiteFailure == .authentication {
+                                            return model.websiteSessions.hasSession
+                                                ? VideoDownloaderStrings.noAccessNotice
+                                                : VideoDownloaderStrings.loginRequiredNotice
+                                        }
+                                        if error.contains("Command failed") || error.contains("ERROR:") {
+                                            return VideoDownloaderStrings.fetchFailedNotice
+                                        }
+                                        return error
+                                    }()
+
+                                    Text(displayError)
                                         .font(.system(size: 13, weight: .medium))
                                         .foregroundStyle(.secondary)
                                         .multilineTextAlignment(.center)
+                                    if model.websiteFailure != nil {
+                                        let sessionButtonTitle = model.websiteSessions.hasSession
+                                            ? VideoDownloaderStrings.tryDifferentSessions
+                                            : VideoDownloaderStrings.manageSessions
+                                        Button(sessionButtonTitle) { model.showWebsiteSessions = true }
+                                            .buttonStyle(.bordered)
+                                            .controlSize(.small)
+                                    }
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 28)
@@ -356,490 +283,64 @@ struct VideoDownloaderSettings: View {
             }
         }
         .settingsExpansionAnimation(value: enabled)
+        .sheet(isPresented: $model.showWebsiteSessions) {
+            VideoWebsiteSessionsSheet(downloader: model)
+        }
     }
 
     // MARK: - Subviews
 
-    @ViewBuilder
-    private func mediaCard(info: VideoDownloadInfo, isCompact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if isCompact {
-                // Stack thumbnail on top when width is constrained
-                thumbnailView(duration: info.duration)
-                    .frame(maxWidth: .infinity)
-                    .aspectRatio(16/9, contentMode: .fit)
-
-                metadataView(info: info, isCompact: isCompact)
-            } else {
-                // Side-by-side thumbnail and metadata when width allows
-                HStack(alignment: .top, spacing: 16) {
-                    thumbnailView(duration: info.duration)
-                        .frame(width: 230, height: 130)
-
-                    metadataView(info: info, isCompact: isCompact)
-                }
-            }
-
-            Divider()
-
-            if model.isDownloading {
-                downloadProgressContent(isCompact: isCompact)
-            } else if let output = model.output {
-                downloadCompleteContent(output: output)
-            } else {
-                // Quality & Destination
-                if isCompact {
-                    VStack(alignment: .leading, spacing: 12) {
-                        qualityPicker(info: info)
-                        saveToButton
-                    }
-                } else {
-                    HStack(alignment: .top, spacing: 16) {
-                        qualityPicker(info: info)
-                            .layoutPriority(1)
-                        Spacer(minLength: 8)
-                        saveToButton
-                    }
-                }
-
-                HStack {
-                    Spacer()
-                    Button(VideoDownloaderStrings.download, action: model.download)
-                        .buttonStyle(.bordered)
-                        .tint(.blue)
-                        .controlSize(.regular)
-                }
-            }
-        }
-        .padding(16)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
-        )
-    }
-
-    @ViewBuilder
-    private func thumbnailView(duration: Double?) -> some View {
-        ZStack(alignment: .bottomTrailing) {
-            if let thumb = model.thumbnailImage {
-                Image(nsImage: thumb)
-                    .resizable()
-                    .aspectRatio(16/9, contentMode: .fill)
-                    .clipped()
-            } else {
-                Rectangle()
-                    .fill(Color(nsColor: .windowBackgroundColor).opacity(0.9))
-                    .overlay(
-                        Circle()
-                            .fill(.ultraThinMaterial)
-                            .frame(width: 40, height: 40)
-                            .overlay(
-                                Image(systemName: "play.fill")
-                                    .foregroundStyle(.white)
-                                    .offset(x: 1.5)
-                            )
-                    )
-            }
-
-            if let duration = duration, duration.isFinite, duration > 0 {
-                Text(formatDuration(duration))
-                    .font(.caption2.monospacedDigit().weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2.5)
-                    .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 4))
-                    .padding(6)
-            }
-
-            Rectangle()
-                .fill(Color.blue)
-                .frame(height: 3)
-                .frame(maxWidth: .infinity, alignment: .bottom)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    @ViewBuilder
-    private func metadataView(info: VideoDownloadInfo, isCompact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if !info.sourceLabel.isEmpty {
-                Text(info.sourceLabel)
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.secondary)
-            }
-
-            Text(info.title)
-                .font(.system(size: 14, weight: .bold))
-                .lineLimit(isCompact ? 2 : 3)
-                .fixedSize(horizontal: false, vertical: true)
-
-            HStack(spacing: 6) {
-                if model.selectedQuality.isBest {
-                    chipView(VideoDownloaderStrings.bestQuality)
-                    if let actualRes = info.qualities.first?.title {
-                        chipView(actualRes)
-                    }
-                } else {
-                    chipView(model.selectedQuality.title)
-                }
-
-                if let size = info.estimatedSizeFormatted(for: model.selectedQuality) {
-                    chipView(size)
-                }
-
-                chipView(model.selectedQuality.containerTag)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func qualityPicker(info: VideoDownloadInfo) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(VideoDownloaderStrings.quality)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 2) {
-                ForEach(info.segmentedOptions) { q in
-                    Button {
-                        model.selectedQuality = q
-                        model.selectedHeight = q.height != 0 ? q.height : (info.qualities.first?.height ?? 0)
-                    } label: {
-                        Text(q.title)
-                            .font(.system(size: 12, weight: model.selectedQuality == q ? .semibold : .regular))
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(
-                                model.selectedQuality == q
-                                ? Color(nsColor: .controlBackgroundColor)
-                                : Color.clear
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                            .shadow(color: model.selectedQuality == q ? .black.opacity(0.08) : .clear, radius: 2, y: 1)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(2)
-            .background(Color.secondary.opacity(0.12))
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        }
-    }
-
-    @ViewBuilder
-    private var saveToButton: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(VideoDownloaderStrings.saveTo)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Button(action: model.chooseDestination) {
-                HStack(spacing: 5) {
-                    Image(systemName: "folder")
-                        .font(.system(size: 12))
-                    Text(displayDestinationPath(model.destination))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: 200)
-                }
-                .font(.system(size: 12))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .frame(maxWidth: 235)
-                .background(Color.secondary.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .help(model.destination?.path ?? VideoDownloaderStrings.defaultFolder)
-        }
-        .frame(maxWidth: 235, alignment: .leading)
-    }
-
-    @ViewBuilder
-    private func downloadProgressContent(isCompact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(model.isPaused ? VideoDownloaderStrings.paused : VideoDownloaderStrings.downloading)
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Text(model.downloadProgress?.percentText ?? "\(Int((model.progress ?? 0) * 100))%")
-                    .font(.subheadline.monospacedDigit().weight(.bold))
-            }
-
-            ProgressView(value: model.progress ?? 0)
-                .tint(.blue)
-
-            if isCompact {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(model.downloadProgress?.formattedDetails ?? model.phase)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-
-                    HStack {
-                        Spacer()
-                        Button(model.isPaused ? VideoDownloaderStrings.resume : VideoDownloaderStrings.pause) {
-                            if model.isPaused {
-                                model.resume()
-                            } else {
-                                model.pause()
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-
-                        Button(VideoDownloaderStrings.cancel, action: model.cancel)
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                            .tint(.red)
-                    }
-                }
-            } else {
-                HStack {
-                    Text(model.downloadProgress?.formattedDetails ?? model.phase)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    Button(model.isPaused ? VideoDownloaderStrings.resume : VideoDownloaderStrings.pause) {
-                        if model.isPaused {
-                            model.resume()
-                        } else {
-                            model.pause()
-                        }
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.regular)
-
-                    Button(VideoDownloaderStrings.cancel, action: model.cancel)
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .tint(.red)
-                }
-            }
-        }
-        .padding(.vertical, 2)
-    }
-
-    @ViewBuilder
-    private func downloadCompleteContent(output: URL) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-                .font(.title3)
-
+    private var browserSignInRow: some View {
+        HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(VideoDownloaderStrings.downloadComplete)
-                    .font(.subheadline.weight(.semibold))
-                Text(output.lastPathComponent)
+                HStack(alignment: .center, spacing: 5) {
+                    Text(VideoDownloaderStrings.browserSessionTitle)
+                        .font(.body)
+
+                    browserSessionStatusSpan
+                }
+
+                Text(VideoDownloaderStrings.browserSignInDescription)
                     .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 12)
+
+            Button(VideoDownloaderStrings.manage) {
+                model.showWebsiteSessions = true
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .fixedSize()
+        }
+        .padding(.leading, settingsRowTextInset)
+    }
+
+    @ViewBuilder
+    private var browserSessionStatusSpan: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(sessions.hasSession ? Color.green : Color.secondary)
+                .frame(width: 6, height: 6)
+
+            if sessions.hasSession {
+                Text(sessions.summaryText)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(maxWidth: 135, alignment: .leading)
+            } else {
+                Text(VideoDownloaderStrings.inactive)
+                    .font(.caption2.weight(.medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-
-            Spacer()
         }
-        .padding(.vertical, 4)
-    }
-
-    @ViewBuilder
-    private func skeletonMediaCard(isCompact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if isCompact {
-                skeletonThumbnail
-                    .frame(maxWidth: .infinity)
-                    .aspectRatio(16/9, contentMode: .fit)
-
-                skeletonMetadata(isCompact: true)
-            } else {
-                HStack(alignment: .top, spacing: 16) {
-                    skeletonThumbnail
-                        .frame(width: 230, height: 130)
-
-                    skeletonMetadata(isCompact: false)
-                }
-            }
-
-            Divider()
-
-            HStack {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text(VideoDownloaderStrings.fetchingDetails)
-                        .font(isCompact ? .caption : .subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                Button(VideoDownloaderStrings.cancel, action: model.cancel)
-                    .buttonStyle(.bordered)
-                    .controlSize(.regular)
-            }
-        }
-        .padding(16)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
-        )
-    }
-
-    @ViewBuilder
-    private var skeletonThumbnail: some View {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(Color.secondary.opacity(skeletonPulsing ? 0.08 : 0.16))
-            .overlay(
-                Image(systemName: "play.fill")
-                    .font(.system(size: 26))
-                    .foregroundStyle(Color.secondary.opacity(0.2))
-            )
-            .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: skeletonPulsing)
-    }
-
-    @ViewBuilder
-    private func skeletonMetadata(isCompact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(Color.secondary.opacity(skeletonPulsing ? 0.08 : 0.16))
-                .frame(width: 70, height: 12)
-
-            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .fill(Color.secondary.opacity(skeletonPulsing ? 0.08 : 0.16))
-                .frame(height: 16)
-                .frame(maxWidth: isCompact ? .infinity : 240)
-
-            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .fill(Color.secondary.opacity(skeletonPulsing ? 0.08 : 0.16))
-                .frame(width: isCompact ? 180 : 160, height: 16)
-
-            HStack(spacing: 6) {
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(Color.secondary.opacity(skeletonPulsing ? 0.08 : 0.16))
-                    .frame(width: 50, height: 20)
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(Color.secondary.opacity(skeletonPulsing ? 0.08 : 0.16))
-                    .frame(width: 58, height: 20)
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(Color.secondary.opacity(skeletonPulsing ? 0.08 : 0.16))
-                    .frame(width: 44, height: 20)
-            }
-            .padding(.top, 2)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: skeletonPulsing)
-    }
-
-    @ViewBuilder
-    private var recentSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(VideoDownloaderStrings.recent)
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                if !history.items.isEmpty {
-                    Button(VideoDownloaderStrings.clearHistory) {
-                        history.clear()
-                    }
-                    .buttonStyle(.plain)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                }
-            }
-
-            ForEach(history.items) { item in
-                let fileExists = FileManager.default.fileExists(atPath: item.fileURL.path)
-                HStack(spacing: 10) {
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(Color(nsColor: .windowBackgroundColor))
-                        .frame(width: 44, height: 28)
-                        .overlay(
-                            Image(systemName: item.qualityTag == VideoDownloaderStrings.audioQuality ? "waveform" : "film")
-                                .font(.caption2)
-                                .foregroundStyle(fileExists ? Color.secondary : Color.secondary.opacity(0.45))
-                        )
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(item.title)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(fileExists ? Color.primary : Color.secondary)
-                            .lineLimit(1)
-                        Text(item.formattedSubtitle)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-
-                    Spacer()
-
-                    Button(VideoDownloaderStrings.showInFinder) {
-                        history.showInFinder(item)
-                    }
-                    .buttonStyle(.borderless)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.accentColor)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.secondary.opacity(0.08), lineWidth: 1)
-                )
-                .contextMenu {
-                    Button(VideoDownloaderStrings.showInFinder) {
-                        history.showInFinder(item)
-                    }
-                    Button("Copy File Path") {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(item.fileURL.path, forType: .string)
-                    }
-                    Divider()
-                    Button("Remove from History", role: .destructive) {
-                        history.remove(item)
-                    }
-                }
-                .help(item.fileURL.path)
-            }
-        }
-    }
-
-    private func chipView(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2.weight(.medium))
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(Color.secondary.opacity(0.12))
-            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-    }
-
-
-    private func displayDestinationPath(_ url: URL?) -> String {
-        guard let path = url?.path else { return VideoDownloaderStrings.defaultFolder }
-        let home = NSHomeDirectory()
-        if path.hasPrefix(home) {
-            return "~" + path.dropFirst(home.count)
-        }
-        return path
-    }
-
-    private func formatDuration(_ seconds: Double) -> String {
-        VideoDownloadRequest.formatDuration(seconds)
-    }
-
-    private func updateClipboardURL() {
-        pasteboardChangeCount = NSPasteboard.general.changeCount
-        detectedClipboardURL = VideoDownloadRequest.validClipboardURL()
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2.5)
+        .background(Capsule().fill(Color.primary.opacity(0.06)))
     }
 }
