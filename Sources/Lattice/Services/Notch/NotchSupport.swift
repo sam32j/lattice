@@ -2715,12 +2715,14 @@ struct NotchGeometry: Equatable {
                 contentHeight = min(budget, agentsHeight.map { $0 > 0 ? $0 : NotchLayout.emptyHeight } ?? budget)
             case .videoDownloader:
                 let dl = VideoDownloader.shared
-                if dl.info != nil || dl.output != nil || dl.isDownloading || dl.isPaused {
-                    contentHeight = min(budget, 170)
+                if dl.output != nil || dl.isCompletedSustaining || (dl.info != nil && dl.error != nil) {
+                    contentHeight = min(budget, 172)
+                } else if dl.info != nil || dl.isDownloading || dl.isPaused {
+                    contentHeight = min(budget, 146)
                 } else if dl.error != nil {
-                    contentHeight = min(budget, 98)
+                    contentHeight = min(budget, dl.websiteFailure != nil ? 144 : 124)
                 } else {
-                    contentHeight = 52
+                    contentHeight = 48
                 }
             // Lists and previews fill the chosen content budget.
             case .mixer, .calendar, .clipboard, .captures, .files, .notifications, .downloads, .camera, .scratchpad, .watch:
