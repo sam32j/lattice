@@ -59,53 +59,38 @@ struct VideoWebsiteSessionsSheet: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Body: Compact and respectful to macOS Lattice UI
-            VStack(alignment: .leading, spacing: 16) {
-                // Section 1: Title
-                Text(VideoDownloaderStrings.browserSessionTitle)
-                    .font(.system(size: 16, weight: .semibold))
-                    .tracking(-0.1)
-                    .foregroundStyle(Color(hex: 0xF4F4F5))
-                    .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(alignment: .leading, spacing: 14) {
+            // Title
+            Text(VideoDownloaderStrings.browserSessionTitle)
+                .font(.headline)
 
-                // Section 2: Browser Section
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(VideoDownloaderStrings.browserSectionLabel)
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(0.5)
-                        .foregroundStyle(Color(hex: 0xA8A8B0))
-                        .frame(maxWidth: .infinity, alignment: .leading)
+            // Browser Section
+            VStack(alignment: .leading, spacing: 6) {
+                Text(VideoDownloaderStrings.browserSectionLabel)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
 
-                    browserDropdown
-                }
-
-                // Section 3: Item Row Section (optional)
-                itemRowSection
-
-                // Section 4: Footnote
-                footnoteView
+                browserDropdown
             }
-            .padding(.top, 20)
-            .padding(.horizontal, 22)
-            .padding(.bottom, 18)
-            .background(Color(hex: 0x1E1E21))
 
-            // Footer Divider: 1 px divider #333338
-            Rectangle()
-                .fill(Color(hex: 0x333338))
-                .frame(height: 1)
+            // Item Row Section (optional)
+            itemRowSection
 
-            // Footer: bar filled #1A1A1D with padding 12 top and bottom, 22 sides. Controls 8 pt apart.
-            HStack(spacing: 8) {
+            // Footnote
+            footnoteView
+
+            Spacer(minLength: 4)
+
+            Divider()
+
+            // Footer
+            HStack(spacing: 10) {
                 if isDisconnectShown {
                     Button(VideoDownloaderStrings.disconnect) {
                         showingDisconnectConfirmation = true
                     }
                     .buttonStyle(.plain)
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(Color(hex: 0xFF7A72))
-                    .frame(height: 28)
+                    .foregroundStyle(.red)
                 }
 
                 Spacer()
@@ -113,28 +98,18 @@ struct VideoWebsiteSessionsSheet: View {
                 Button(VideoDownloaderStrings.cancel) {
                     dismiss()
                 }
-                .buttonStyle(SecondaryDialogButtonStyle())
                 .keyboardShortcut(.cancelAction)
 
                 Button(VideoDownloaderStrings.save) {
                     saveAndDismiss(retry: canRetryCurrentLink)
                 }
-                .buttonStyle(PrimaryDialogButtonStyle(isDisabled: isSaveDisabled))
+                .buttonStyle(.borderedProminent)
                 .disabled(isSaveDisabled)
                 .keyboardShortcut(.defaultAction)
             }
-            .padding(.horizontal, 22)
-            .padding(.vertical, 12)
-            .background(Color(hex: 0x1A1A1D))
         }
-        .frame(width: 450)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color(hex: 0x333338), lineWidth: 1)
-        )
-        .background(SheetWindowConfigurator())
-        .preferredColorScheme(.dark)
+        .padding(20)
+        .frame(width: 440)
         .disabled(downloader.busy)
         .onAppear {
             loadCurrentSession()
@@ -202,27 +177,25 @@ struct VideoWebsiteSessionsSheet: View {
                 }
             }
         } label: {
-            HStack(spacing: 0) {
+            HStack(spacing: 6) {
                 Text(selectedBrowserTitle)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color(hex: 0xF4F4F5))
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
 
                 Spacer()
 
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color(hex: 0xC4C4CC))
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
             }
-            .padding(.leading, 12)
-            .padding(.trailing, 10)
+            .padding(.horizontal, 10)
             .frame(maxWidth: .infinity)
-            .frame(height: 32)
-            .background(Color(hex: 0x2C2C31))
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .frame(height: 30)
+            .background(Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(isBrowserNotFound ? Color(hex: 0x8A6A22) : Color(hex: 0x45454C), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(isBrowserNotFound ? Color.orange : Color.secondary.opacity(0.2), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -237,10 +210,8 @@ struct VideoWebsiteSessionsSheet: View {
             if browser == .chromium {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(VideoDownloaderStrings.profileFolderSectionLabel)
-                        .font(.system(size: 11, weight: .semibold))
-                        .tracking(0.5)
-                        .foregroundStyle(Color(hex: 0xA8A8B0))
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
 
                     chromiumItemRow
                 }
@@ -258,8 +229,7 @@ struct VideoWebsiteSessionsSheet: View {
             ItemRowView(
                 icon: AnyView(
                     Image(systemName: "checkmark.circle.fill")
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(Color.white, Color(hex: 0x34C759))
+                        .foregroundStyle(.green)
                         .font(.system(size: 17))
                 ),
                 title: VideoDownloaderStrings.readyTitle(browser: "Safari"),
@@ -271,8 +241,7 @@ struct VideoWebsiteSessionsSheet: View {
             ItemRowView(
                 icon: AnyView(
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(Color(hex: 0x1E1E21), Color(hex: 0xFF9F0A))
+                        .foregroundStyle(.orange)
                         .font(.system(size: 16))
                 ),
                 title: VideoDownloaderStrings.allowFullDiskAccess,
@@ -294,7 +263,7 @@ struct VideoWebsiteSessionsSheet: View {
                 icon: AnyView(
                     Image(systemName: "folder")
                         .font(.system(size: 16))
-                        .foregroundStyle(Color(hex: 0xC4C4CC))
+                        .foregroundStyle(.secondary)
                 ),
                 title: VideoDownloaderStrings.chooseProfileFolder,
                 description: VideoDownloaderStrings.chooseProfileFolderDescription,
@@ -308,9 +277,9 @@ struct VideoWebsiteSessionsSheet: View {
         } else {
             ItemRowView(
                 icon: AnyView(
-                    Image(systemName: "folder")
+                    Image(systemName: "folder.fill")
                         .font(.system(size: 16))
-                        .foregroundStyle(Color(hex: 0x5FA8FF))
+                        .foregroundStyle(.blue)
                 ),
                 title: displayFolderName(selectedProfile),
                 description: displayPath(selectedProfile),
@@ -333,8 +302,7 @@ struct VideoWebsiteSessionsSheet: View {
                 ItemRowView(
                     icon: AnyView(
                         Image(systemName: "checkmark.circle.fill")
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(Color.white, Color(hex: 0x34C759))
+                            .foregroundStyle(.green)
                             .font(.system(size: 17))
                     ),
                     title: VideoDownloaderStrings.readyTitle(browser: browser.title),
@@ -348,22 +316,22 @@ struct VideoWebsiteSessionsSheet: View {
                                 }
                             }
                         } label: {
-                            HStack(spacing: 5) {
+                            HStack(spacing: 4) {
                                 Text(currentProfileDisplayName(detection: detection))
                                     .lineLimit(1)
                                 Image(systemName: "chevron.up.chevron.down")
                                     .font(.system(size: 9, weight: .medium))
                             }
                         }
-                        .buttonStyle(ItemRowButtonStyle())
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     )
                 )
             } else {
                 ItemRowView(
                     icon: AnyView(
                         Image(systemName: "checkmark.circle.fill")
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(Color.white, Color(hex: 0x34C759))
+                            .foregroundStyle(.green)
                             .font(.system(size: 17))
                     ),
                     title: VideoDownloaderStrings.readyTitle(browser: browser.title),
@@ -375,9 +343,9 @@ struct VideoWebsiteSessionsSheet: View {
         } else {
             ItemRowView(
                 icon: AnyView(
-                    Image(systemName: "exclamationmark.circle")
+                    Image(systemName: "exclamationmark.circle.fill")
                         .font(.system(size: 17))
-                        .foregroundStyle(Color(hex: 0xF5B454))
+                        .foregroundStyle(.orange)
                 ),
                 title: VideoDownloaderStrings.browserNotFoundTitle(browser: browser.title),
                 description: VideoDownloaderStrings.browserNotFoundDescription(browser: browser.title),
@@ -392,8 +360,8 @@ struct VideoWebsiteSessionsSheet: View {
     private var footnoteView: some View {
         HStack(spacing: 6) {
             Image(systemName: selectedBrowser == nil ? "shield.slash" : "lock")
-                .font(.system(size: 11.5))
-                .foregroundStyle(Color(hex: 0x9A9AA3))
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
 
             Text(
@@ -401,8 +369,8 @@ struct VideoWebsiteSessionsSheet: View {
                     ? VideoDownloaderStrings.footnoteAnonymous
                     : VideoDownloaderStrings.footnoteSignedIn
             )
-            .font(.system(size: 11))
-            .foregroundStyle(Color(hex: 0x9A9AA3))
+            .font(.caption)
+            .foregroundStyle(.secondary)
             .lineLimit(1)
 
             Spacer(minLength: 0)
@@ -524,7 +492,7 @@ struct VideoWebsiteSessionsSheet: View {
     }
 }
 
-// MARK: - Supporting Subviews & Styles
+// MARK: - Supporting Subviews
 
 private struct ItemRowView: View {
     let icon: AnyView
@@ -544,20 +512,20 @@ private struct ItemRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(isWarning ? Color(hex: 0xFFD99A) : Color(hex: 0xF4F4F5))
+                    .foregroundStyle(isWarning ? Color.orange : Color.primary)
                     .lineLimit(1)
                     .truncationMode(.tail)
 
                 if isMonospacedDescription {
                     Text(description)
                         .font(.system(size: 11, design: .monospaced))
-                        .foregroundStyle(Color(hex: 0x9A9AA3))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                 } else {
                     Text(description)
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(Color(hex: 0xA8A8B0))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
@@ -569,13 +537,13 @@ private struct ItemRowView: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
-        .background(Color(hex: 0x161618))
+        .background(Color(nsColor: .controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(isWarning ? Color(hex: 0x4F3E14) : Color(hex: 0x2E2E33), lineWidth: 1)
+                .stroke(isWarning ? Color.orange.opacity(0.35) : Color.secondary.opacity(0.15), lineWidth: 1)
         )
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(title). \(description)")
@@ -588,87 +556,7 @@ private struct ItemRowButton: View {
 
     var body: some View {
         Button(title, action: action)
-            .buttonStyle(ItemRowButtonStyle())
-    }
-}
-
-private struct ItemRowButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 11.5, weight: .medium))
-            .foregroundStyle(Color(hex: 0xF4F4F5))
-            .padding(.horizontal, 10)
-            .frame(height: 24)
-            .background(configuration.isPressed ? Color(hex: 0x38383E) : Color(hex: 0x2C2C31))
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(Color(hex: 0x4A4A52), lineWidth: 1)
-            )
-    }
-}
-
-private struct SecondaryDialogButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12.5, weight: .medium))
-            .foregroundStyle(Color(hex: 0xF4F4F5))
-            .padding(.horizontal, 14)
-            .frame(height: 28)
-            .background(configuration.isPressed ? Color(hex: 0x38383E) : Color(hex: 0x2C2C31))
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(Color(hex: 0x4A4A52), lineWidth: 1)
-            )
-    }
-}
-
-private struct PrimaryDialogButtonStyle: ButtonStyle {
-    let isDisabled: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12.5, weight: .medium))
-            .foregroundStyle(isDisabled ? Color(hex: 0x8A8A92) : Color.white)
-            .padding(.horizontal, 16)
-            .frame(height: 28)
-            .background(
-                isDisabled
-                    ? Color(hex: 0x26262A)
-                    : (configuration.isPressed ? Color(hex: 0x1A5BB8) : Color(hex: 0x1F6FEB))
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(isDisabled ? Color(hex: 0x333338) : Color.clear, lineWidth: 1)
-            )
-    }
-}
-
-private struct SheetWindowConfigurator: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async {
-            if let window = view.window {
-                window.isOpaque = false
-                window.backgroundColor = .clear
-            }
-        }
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {}
-}
-
-private extension Color {
-    init(hex: UInt, alpha: Double = 1.0) {
-        self.init(
-            .sRGB,
-            red: Double((hex >> 16) & 0xff) / 255.0,
-            green: Double((hex >> 8) & 0xff) / 255.0,
-            blue: Double(hex & 0xff) / 255.0,
-            opacity: alpha
-        )
+            .buttonStyle(.bordered)
+            .controlSize(.small)
     }
 }
