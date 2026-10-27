@@ -282,6 +282,8 @@ if (( TEST )); then
         Sources/Lattice/Services/VideoDownloader/DownloadHistoryStore.swift
         Sources/Lattice/Services/VideoDownloader/ToolchainManager.swift
         Sources/Lattice/Services/VideoDownloader/VideoDownloader.swift
+        Sources/Lattice/Services/VideoDownloader/VideoWebsiteSessions.swift
+        Sources/Lattice/Services/VideoDownloader/VideoDownloaderWebsiteSessions.swift
         Sources/Lattice/UI/Notch/VideoDownloaderSearchBar.swift
         Sources/Lattice/Services/VideoDownloader/VideoDownloadInfo.swift
         Sources/Lattice/Services/VideoDownloader/VideoDownloadProgressTracker.swift
