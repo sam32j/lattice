@@ -920,6 +920,7 @@ enum DefaultsKey {
     static let videoDownloaderEnabled = "videoDownloaderEnabled"
     static let videoDownloaderDestination = "videoDownloaderDestination"
     static let videoDownloaderUseSystemTools = "videoDownloaderUseSystemTools"
+    static let notchVideoDownloader = "notchVideoDownloader"
 
     /// Features hub availability layer, one key per AppFeature raw value.
     /// Registered true: unavailable features vanish from every surface and
@@ -1072,6 +1073,7 @@ enum Defaults {
 
     static let registeredDefaults: [String: Any] = [
         DefaultsKey.videoDownloaderEnabled: true,
+        DefaultsKey.notchVideoDownloader: true,
         DefaultsKey.appearance: AppAppearance.fallback.rawValue,
         DefaultsKey.clamshellPreferred: false,
         DefaultsKey.dimScreenOnLidClose: false,

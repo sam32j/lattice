@@ -134,7 +134,7 @@ extension NotchSettings {
             (module != .timer || timerEnabled) && (module != .camera || cameraEnabled)
                 && (module != .calendar || calendarEnabled) && (module != .notifications || notificationsEnabled)
                 && (module != .agents || agentsEnabled) && (module != .watch || watchEnabled)
-                && (module != .videoDownloader || UserDefaults.standard.bool(forKey: DefaultsKey.videoDownloaderEnabled))
+                && (module != .videoDownloader || (UserDefaults.standard.bool(forKey: DefaultsKey.videoDownloaderEnabled) && (UserDefaults.standard.object(forKey: DefaultsKey.notchVideoDownloader) as? Bool ?? true)))
                 && !hidden.split(separator: ",").contains(Substring(module.rawValue))
         } set: { shown in
             if module == .timer { timerEnabled = shown }
@@ -144,10 +144,7 @@ extension NotchSettings {
             if module == .agents { agentsEnabled = shown }
             if module == .watch { watchEnabled = shown }
             if module == .videoDownloader {
-                UserDefaults.standard.set(shown, forKey: DefaultsKey.videoDownloaderEnabled)
-                if !shown {
-                    VideoDownloader.shared.teardown()
-                }
+                UserDefaults.standard.set(shown, forKey: DefaultsKey.notchVideoDownloader)
             }
             var values = Set(hidden.split(separator: ",").map(String.init))
             if shown { values.remove(module.rawValue) } else { values.insert(module.rawValue) }

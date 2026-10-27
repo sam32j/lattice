@@ -14,6 +14,8 @@ struct VideoDownloaderSettings: View {
     @ObservedObject var l10n = L10n.shared
 
     @AppStorage(DefaultsKey.videoDownloaderEnabled) var enabled = true
+    @AppStorage(DefaultsKey.notchVideoDownloader) private var notchVideoDownloader = true
+    @AppStorage(DefaultsKey.notchHiddenModules) private var notchHiddenModules = ""
     @State var showDownloadConfirmation = false
     @State var detectedClipboardURL: String? = nil
     @State var pasteboardChangeCount = -1
@@ -57,6 +59,7 @@ struct VideoDownloaderSettings: View {
                         }
 
                         if enabled {
+                            showOnDynamicIslandRow
                             browserSignInRow
                         }
                     }
@@ -289,6 +292,26 @@ struct VideoDownloaderSettings: View {
     }
 
     // MARK: - Subviews
+ 
+    private var showOnDynamicIslandBinding: Binding<Bool> {
+        _ = notchHiddenModules
+        _ = notchVideoDownloader
+        return Binding(
+            get: {
+                IslandDestination.videoDownloader.isShown(in: .standard)
+            },
+            set: { shown in
+                IslandDestination.videoDownloader.setShown(shown, in: .standard)
+                notchVideoDownloader = shown
+                NotchService.shared.syncWithPreferences()
+            }
+        )
+    }
+
+    private var showOnDynamicIslandRow: some View {
+        SettingsToggleRow(title: VideoDownloaderStrings.showOnDynamicIsland, isOn: showOnDynamicIslandBinding)
+            .padding(.leading, settingsRowTextInset)
+    }
 
     private var browserSignInRow: some View {
         HStack(alignment: .center, spacing: 12) {
