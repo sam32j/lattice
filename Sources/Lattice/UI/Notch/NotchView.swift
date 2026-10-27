@@ -495,12 +495,14 @@ struct NotchView: View {
             size.height = max(size.height, 88 + 8)
         case .videoDownloader:
             let dl = VideoDownloader.shared
-            if dl.info != nil || dl.output != nil || dl.isDownloading || dl.isPaused {
-                size.height = max(size.height, 170)
+            if dl.output != nil || dl.isCompletedSustaining || (dl.info != nil && dl.error != nil) {
+                size.height = max(size.height, 172)
+            } else if dl.info != nil || dl.isDownloading || dl.isPaused {
+                size.height = max(size.height, 146)
             } else if dl.error != nil {
-                size.height = max(size.height, 98)
+                size.height = max(size.height, dl.websiteFailure != nil ? 144 : 124)
             } else {
-                size.height = max(size.height, 52)
+                size.height = max(size.height, 48)
             }
         default: break
         }
