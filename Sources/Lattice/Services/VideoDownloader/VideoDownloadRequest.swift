@@ -46,6 +46,10 @@ struct VideoDownloadQuality: Identifiable, Equatable, Hashable, Sendable {
     static let audio = VideoDownloadQuality(height: -1)
 }
 
+struct VideoDownloadCompatibilityOptions: Equatable, Sendable {
+    var bilibiliRangeFallback: Bool = false
+}
+
 struct DownloadProgress: Equatable, Sendable {
     let fraction: Double
     let percentText: String
@@ -134,9 +138,75 @@ enum VideoDownloadRequest {
         common + ["--skip-download", "--dump-single-json", "--playlist-items", "1", "--", url.absoluteString]
     }
 
-    static func downloadArguments(url: URL, quality: VideoDownloadQuality, staging: URL, ffmpeg: String) -> [String] {
+    static func isBilibiliURL(_ url: URL) -> Bool {
+        guard let host = url.host?.lowercased() else { return false }
+        return host == "bilibili.com" || host.hasSuffix(".bilibili.com") || host == "b23.tv"
+    }
+
+    static func shouldRetryBilibili567(
+        url: URL,
+        output: String,
+        didUseRangeFallback: Bool
+    ) -> Bool {
+        guard !didUseRangeFallback else { return false }
+        let isBilibili = output.contains("[BiliBili]") || isBilibiliURL(url)
+        let is567 = output.localizedCaseInsensitiveContains("HTTP Error 567")
+        return isBilibili && is567
+    }
+
+    static func cleanErrorMessage(_ message: String) -> String {
+        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return VideoDownloaderStrings.fetchFailedNotice
+        }
+
+        if let match = trimmed.range(of: "HTTP Error \\d+(: [^\\n\r]+)?", options: .regularExpression) {
+            return String(trimmed[match]).trimmingCharacters(in: .whitespaces)
+        }
+
+        let lines = trimmed.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }
+        if let errorLine = lines.reversed().first(where: { line in
+            let lower = line.lowercased()
+            return lower.contains("error:") || lower.contains("error ")
+        }) {
+            var clean = errorLine
+            if let idx = clean.range(of: "error:", options: .caseInsensitive)?.upperBound {
+                clean = String(clean[idx...]).trimmingCharacters(in: .whitespaces)
+            }
+            if clean.lowercased().hasPrefix("unable to download video data:") {
+                clean = String(clean.dropFirst("unable to download video data:".count)).trimmingCharacters(in: .whitespaces)
+            }
+            if !clean.isEmpty {
+                return clean
+            }
+        }
+
+        if let last = lines.reversed().first(where: { !$0.isEmpty }) {
+            var clean = last
+            if clean.lowercased().hasPrefix("error:") {
+                clean = String(clean.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+            }
+            if !clean.isEmpty {
+                return clean
+            }
+        }
+
+        return trimmed
+    }
+
+    static func downloadArguments(
+        url: URL,
+        quality: VideoDownloadQuality,
+        staging: URL,
+        ffmpeg: String,
+        compatibility: VideoDownloadCompatibilityOptions = .init()
+    ) -> [String] {
         var args = common + ["--newline", "--progress", "--no-simulate", "--no-overwrites",
                              "--ffmpeg-location", ffmpeg]
+
+        if compatibility.bilibiliRangeFallback {
+            args += ["--add-headers", "Range:bytes=0-"]
+        }
 
         if quality.isAudio {
             args += ["--extract-audio", "--audio-format", "m4a", "--audio-quality", "0",
