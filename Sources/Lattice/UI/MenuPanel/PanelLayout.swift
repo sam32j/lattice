@@ -79,7 +79,7 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .disk: return [.monitorDisk]
         case .power: return [.monitorPower]
         case .fanControl: return [.fanControl]
-        case .toggles: return [.brightness, .commandBar, .micMute]
+        case .toggles: return [.brightness, .commandBar, .micMute, .quickLauncher]
         case .wallpaper: return [.wallpaper]
         }
     }
