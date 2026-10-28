@@ -275,24 +275,24 @@ enum FeatureAvailabilityTransitionTests {
         FeatureHardwareBoundary.unsupported = [.extraBrightness]
         suite.expect(!panel.offersXDR, "the panel hides unsupported XDR without constructing the overlay")
         FeatureHardwareBoundary.unsupported = []
-        for (feature, key, enable) in [
-            (AppFeature.autoQuit, DefaultsKey.autoQuitEnabled, panel.autoQuitEnabled),
-            (.windowMaximizer, DefaultsKey.windowMaximizeEnabled, panel.windowMaximizeEnabled),
-            (.dockClick, DefaultsKey.dockClickMinimize, panel.dockClickEnabled),
-            (.dockClick, DefaultsKey.dockClickHide, panel.dockClickHideEnabled),
-            (.dockClick, DefaultsKey.dockClickCycleWindows, panel.dockClickCycleEnabled),
-            (.spacesOrder, DefaultsKey.spacesOrderEnabled, panel.spacesOrderEnabled),
+        for (feature, key) in [
+            (AppFeature.autoQuit, DefaultsKey.autoQuitEnabled),
+            (.windowMaximizer, DefaultsKey.windowMaximizeEnabled),
+            (.dockClick, DefaultsKey.dockClickMinimize),
+            (.dockClick, DefaultsKey.dockClickHide),
+            (.dockClick, DefaultsKey.dockClickCycleWindows),
+            (.spacesOrder, DefaultsKey.spacesOrderEnabled),
         ] {
             feature.enabledKeys.forEach { defaults.set(false, forKey: $0) }
             service.loadedThisSession = []
             var active = false
             State.bindings = [feature: { active = feature.isAvailable(in: defaults) }]
             defaults.set(true, forKey: key)
-            enable(true)
-            suite.expect(active, "Quick Controls starts \(feature.rawValue) from its off-at-launch state")
+            service.sync([feature])
+            suite.expect(active, "sync starts \(feature.rawValue) from its off-at-launch state")
             defaults.set(false, forKey: key)
             service.sync([feature])
-            suite.expect(!active, "Settings stops \(feature.rawValue) after Quick Controls enabled it")
+            suite.expect(!active, "Settings stops \(feature.rawValue) after sync")
         }
     }
 }

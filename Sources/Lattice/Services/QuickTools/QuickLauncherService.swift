@@ -11,7 +11,7 @@ enum QuickLauncherItem: String, PanelOrderItem, Identifiable {
     // Case order is the default grid order; the cleaner comes second, right
     // after Keep awake, by the owner's decision. Saved orders are untouched
     // (a case added later joins a saved order at the end).
-    case keepAwake, cleaner, toggles, micMute, screenOCR, colorPicker, clipboard, windowLayout,
+    case keepAwake, cleaner, micMute, screenOCR, colorPicker, clipboard, windowLayout,
          cleaning, homebrew, media, urlCleaner, uninstaller, screenshot, screenRecorder,
          cameraPreview, scratchpad
 
@@ -20,9 +20,7 @@ enum QuickLauncherItem: String, PanelOrderItem, Identifiable {
     func isAvailable(in defaults: UserDefaults = .standard) -> Bool {
         if self == .cleaning { return true } // Manual activation does not install a shortcut.
         guard self != .screenOCR, self != .colorPicker, feature.isAvailable(in: defaults) else { return false }
-        return self != .toggles || [AppFeature.brightness, .commandBar, .micMute].contains {
-            $0.isAvailable(in: defaults)
-        }
+        return true
     }
 
     /// The hub feature behind the tile; off in the hub removes it from the
@@ -31,7 +29,6 @@ enum QuickLauncherItem: String, PanelOrderItem, Identifiable {
         switch self {
         case .keepAwake: return .keepAwake
         case .cleaner: return .cleaner
-        case .toggles: return .quickLauncher
         case .micMute: return .micMute
         case .screenOCR: return .screenOCR
         case .colorPicker: return .colorPicker
@@ -322,7 +319,7 @@ final class QuickLauncherService: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 CleaningModeManager.shared.activate()
             }
-        case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner, .toggles:
+        case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner:
             activeUtility = item
         }
     }

@@ -117,24 +117,7 @@ def main():
                              r"\1.isAvailable(in: defaults)", runtime_methods)
     write("FeatureAvailabilityTransition.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests {\nfinal class Runtime: State {\n"
           + runtime_methods + "}\n}\n")
-    controls = (ROOT / "Sources/Lattice/UI/MenuPanel/MenuPanelView.swift").read_text()
-    handlers = ""
-    for preference, feature, direct in [
-        ("autoQuitEnabled", "autoQuit", "AutoQuitService"),
-        ("windowMaximizeEnabled", "windowMaximizer", "WindowMaximizer"),
-        ("dockClickEnabled", "dockClick", "DockClickService"),
-        ("dockClickHideEnabled", "dockClick", "DockClickService"),
-        ("dockClickCycleEnabled", "dockClick", "DockClickService"),
-        ("spacesOrderEnabled", "spacesOrder", "SpacesOrderHold"),
-    ]:
-        callback = re.search(r"\.onChange\(of: " + preference + r"\) \{ _, (?:enabled|_) in\n(.*?)\n                \}", controls, re.S)
-        if callback is None:
-            raise ValueError("Missing Quick Controls callback: " + preference)
-        body = callback[1].replace("FeatureRuntime.shared", "runtime")
-        body = body.replace(direct + ".shared.syncWithPreferences()", "startDirect(." + feature + ")")
-        handlers += "func " + preference + "(_ enabled: Bool) {\n" + body + "\n}\n"
-    write("SettingsToggleConsumers.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests.Consumer {\n"
-          + handlers + "}\n")
+    write("SettingsToggleConsumers.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests.Consumer {\n}\n")
     brightness = (ROOT / "Sources/Lattice/UI/MenuPanel/BrightnessSection.swift").read_text()
     xdr_visibility = re.search(r"if (AppFeature.extraBrightness[^\n]+) \{", brightness)[1]
     xdr_visibility = xdr_visibility.replace(".isAvailable", ".isAvailable(in: runtime.defaults)") \
@@ -594,17 +577,26 @@ def main():
     write("SettingsPanelFilters.swift", "import Foundation\nextension SettingsPanelFilterTests {\n"
           + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "enum PanelSectionID:")
               .replace("featureGate.contains(where: \\.isAvailable)", "featureGate.contains { $0.isAvailable(in: Layout.defaults) }")
-              .replace(".isPresentInControls()", ".isPresentInControls(in: Layout.defaults)")
           + "final class Layout: LayoutState {\n"
           + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "    static func isVisibleInPanel(")
           + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "    static func isShown(") + "}\n"
-          + "final class Controls: ControlState {\n" + panel_filter("struct QuickControlsSection: View {") + "}\n"
           + "final class Utilities: UtilityState {\n" + panel_filter("struct UtilitiesSection: View {") + "}\n}\n")
-    write("MiddleClickPanelCaption.swift", "import Foundation\n"
-          + "extension MiddleClickTrackpadContract {\nfinal class Panel: PanelFixture {\n"
-          + "".join(declaration(menu_panel, prefix).replace("private ", "", 1) for prefix in [
-                "    private var middleClickCaption:", "    private func missingPermission("])
-          + "}\n}\n")
+    write("MiddleClickPanelCaption.swift", """import Foundation
+extension MiddleClickTrackpadContract {
+final class Panel: PanelFixture {
+    var middleClickCaption: String {
+        guard middleClickEnabled else { return l10n.s.middleClickEnableCaption }
+        if !permissions.accessibility { return missingPermission(l10n.s.permissionAccessibility) }
+        if middleClick.touchDeviceMissing { return l10n.s.middleClickNoTrackpad }
+        if middleClick.systemDragGestureConflict { return l10n.s.middleClickDragConflict }
+        return l10n.s.middleClickEnableCaption
+    }
+    func missingPermission(_ permission: String) -> String {
+        "\\(l10n.s.permissionRequired): \\(permission)"
+    }
+}
+}
+""")
     write("RadialMenuProfileDeletion.swift", "import Foundation\n"
           + "extension RadialMenuProfileDeletionContract {\nfinal class Settings: Fixture {\n"
           + declaration("Sources/Lattice/UI/Settings/RadialMenuSettings.swift",
@@ -1847,8 +1839,7 @@ def main():
     menu_panel = "Sources/Lattice/UI/MenuPanel/MenuPanelView.swift"
     write("MenuPanelSectionGates.swift", "import Foundation\n\nextension MenuPanelSectionGateContract {\n"
           + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "enum PanelSectionID:")
-          + "".join(declaration(menu_panel, prefix).replace("private enum", "enum", 1)
-                    for prefix in ["private enum UtilityPanelItem:", "private enum ControlPanelItem:"])
+          + declaration(menu_panel, "private enum UtilityPanelItem:").replace("private enum", "enum", 1)
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "enum QuickToggleAction:")
           + "}\n")
 

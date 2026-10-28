@@ -2087,9 +2087,6 @@ enum PointerInputFeatureTests {
         let mouseSettingsViewLines = ((try? String(
             contentsOfFile: "Sources/Lattice/UI/Settings/MouseSettings.swift",
             encoding: .utf8)) ?? "").components(separatedBy: "\n")
-        let menuPanelLines = ((try? String(
-            contentsOfFile: "Sources/Lattice/UI/MenuPanel/MenuPanelView.swift",
-            encoding: .utf8)) ?? "").components(separatedBy: "\n")
         let shortcutKey = "DefaultsKey.mouseButtonShortcutsEnabled"
         let spacesKey = "DefaultsKey.mouseSpacesGestureEnabled"
         let settingsShortcutProperty = appStorageProperty(shortcutKey, in: mouseSettingsViewLines) ?? ""
@@ -2100,78 +2097,6 @@ enum PointerInputFeatureTests {
                 && settingsCode.contains("(\(settingsShortcutProperty)||\(settingsSpacesProperty))"
                     + "&&AppFeature.mouseButtonShortcuts.isAvailable"),
                "the Mouse permission section treats either mouse-button switch as engaged")
-
-        let panelShortcutProperty = appStorageProperty(shortcutKey, in: menuPanelLines) ?? ""
-        let panelSpacesProperty = appStorageProperty(spacesKey, in: menuPanelLines) ?? ""
-        let menuPanelCode = menuPanelLines.filter(isCodeLine).joined()
-            .filter { !$0.isWhitespace }
-        suite.expect(!panelShortcutProperty.isEmpty && !panelSpacesProperty.isEmpty
-                && menuPanelCode.contains("case.mouseButtonShortcuts:return\(panelShortcutProperty)"
-                    + "||\(panelSpacesProperty)"),
-               "the panel category count treats either mouse-button switch as engaged")
-        // The defect this pins is not the operator, it is three arguments on
-        // one row disagreeing: widening `needsAttention` alone leaves the row
-        // asking for a grant while `permissionAction` returns nil and the
-        // caption stays silent. So assert the three read ONE name, and that
-        // the name is defined from both switches -- naming the expression is
-        // what makes disagreeing impossible, and pinning the spelling of
-        // `a || b` here would go red on a rename that broke nothing.
-        let panelButtonRow = menuPanelLines.firstIndex {
-            isCodeLine($0) && $0.contains("PanelToggleRow(title: buttonStrings.pageTitle,")
-        }.map {
-            menuPanelLines[$0...].prefix(24).filter(isCodeLine).joined().filter { !$0.isWhitespace }
-        } ?? ""
-        let engagedName = panelButtonRow.range(of: "needsAttention:").map {
-            String(panelButtonRow[$0.upperBound...].prefix { $0.isLetter || $0.isNumber || $0 == "_" })
-        } ?? ""
-        let engagedDefinition = menuPanelLines.first {
-            isCodeLine($0) && !engagedName.isEmpty && $0.contains("let \(engagedName)")
-        } ?? ""
-        suite.expect(!engagedName.isEmpty
-                && panelButtonRow.contains("needsAccessibility:\(engagedName)")
-                && panelButtonRow.contains("permissionAction:accessibilityPermissionAction(\(engagedName))")
-                && panelButtonRow.contains("accessoryTitle:\(engagedName)?")
-                && !panelShortcutProperty.isEmpty && !panelSpacesProperty.isEmpty
-                && engagedDefinition.contains(panelShortcutProperty)
-                && engagedDefinition.contains(panelSpacesProperty),
-               "the panel mouse-button row's caption, attention state, grant button and "
-                   + "Manage link all read one engaged flag built from both switches")
-
-        // Issue #2896: the panel Super key link names the mapping only while
-        // the key is on with Accessibility. Without the grant nothing is
-        // mapped, so it keeps Set up… beside the warning, and a switched-off
-        // row shows no link, like the rows above. The link is the key and its
-        // key caps alone, because the sentence gets cut in a mini button at
-        // the panel width; the sentence stays the caption and tooltip.
-        let panelSuperKeyCase = menuPanelLines.firstIndex {
-            $0.trimmingCharacters(in: .whitespaces) == "case .superKey:"
-        }.map { start in
-            menuPanelLines[(start + 1)...]
-                .prefix { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("case .") }
-                .filter(isCodeLine)
-        } ?? []
-        let panelSuperKeyCode = panelSuperKeyCase.joined().filter { !$0.isWhitespace }
-        let superKeyLinkName = panelSuperKeyCode.range(
-            of: "accessoryTitle:superKeyEnabled?(permissions.accessibility?").map {
-            String(panelSuperKeyCode[$0.upperBound...].prefix { $0.isLetter || $0.isNumber || $0 == "_" })
-        } ?? ""
-        suite.expect(!superKeyLinkName.isEmpty
-                && panelSuperKeyCode.contains("accessoryTitle:superKeyEnabled?(permissions.accessibility"
-                    + "?\(superKeyLinkName):superKeyStrings.manageButton):nil,"),
-               "the panel Super key row shows its mapping link only while the key is on with "
-                   + "Accessibility, keeps Set up… without it, and shows no link while it is off")
-        let superKeyLinkDefinition = panelSuperKeyCase.first {
-            !superKeyLinkName.isEmpty && $0.contains("let \(superKeyLinkName) =")
-        }?.trimmingCharacters(in: .whitespaces) ?? ""
-        suite.expect(superKeyLinkDefinition
-                == "let \(superKeyLinkName) = \"\\(superKeyStrings.sourceLabel(superKeySource)) \\(keyCaps)\""
-                && panelSuperKeyCode.contains(
-                    "letkeyCaps=SuperKeySupport.modifiers(from:superKeyModifierStorage).keyCaps.joined()")
-                && panelSuperKeyCode.contains("letmodifierCaption=String(format:superKeyStrings.panelCaptionFormat,"
-                    + "superKeyStrings.sourceLabel(superKeySource),keyCaps)")
-                && panelSuperKeyCode.contains("caption:caption(modifierCaption,needsAccessibility:superKeyEnabled)"),
-               "the panel Super key link reads the key and its key caps without the verb, and the "
-                   + "row caption keeps the full mapping sentence: \(superKeyLinkDefinition)")
 
         // Per call site, not the last one seen: a second one added later must
         // read the switch too, and a file that lost the call entirely has to
