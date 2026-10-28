@@ -806,15 +806,17 @@ final class NotchService: ObservableObject {
             return geometry.sectionPickerSize(count: filteredSections.count)
         }
         let musicExtras = NotchLyricsSupport.isEnabled() || NotchQueueSupport.isEnabled()
+        let isToolsPage = !showingAppPanel && selected == .tools
         let launcher = QuickLauncherService.shared
-        let controlsHeight: CGFloat? = launcher.isEditing || launcher.activeUtility != nil ? nil : launcher.notchControlsHeight
+        let isEditingOrActiveUtility = launcher.isEditing || launcher.activeUtility != nil
+        let controlsHeight: CGFloat? = isToolsPage && !isEditingOrActiveUtility ? launcher.notchControlsHeight : nil
         return pageSize(in: expandedGeometry, module: showingAppPanel ? .tools : selected,
                         detail: selectedMetric != nil, panel: showingAppPanel,
                         detailHeight: selectedMetric == .fan ? fanDetailHeight : nil,
                         musicExtraHeight: musicExtras && musicDetailVisible ? geometry.musicExtrasHeight : 0,
                         fileMediaHeight: !choosingFileDropDestination && AppFeature.mediaTools.isAvailable
                             && NotchFileToolsService.shared.mediaPresented ? NotchFileToolsService.shared.mediaContentHeight : nil,
-                        toolCount: launcher.isEditing || launcher.activeUtility != nil ? nil : launcher.visibleItems.count,
+                        toolCount: isToolsPage && !isEditingOrActiveUtility ? launcher.visibleItems.count : nil,
                         capturePreviewHeight: captureContent == nil ? nil : captureContentHeight,
                         toolsControlsHeight: controlsHeight)
     }
