@@ -17,17 +17,6 @@ struct VideoDownloadInfo: Equatable, Sendable {
         return VideoDownloadRequest.formatDuration(duration)
     }
 
-    var segmentedOptions: [VideoDownloadQuality] {
-        var options: [VideoDownloadQuality] = [.best]
-        for q in qualities.dropFirst().prefix(2) {
-            options.append(q)
-        }
-        if hasAudio {
-            options.append(.audio)
-        }
-        return options
-    }
-
     func estimatedSizeFormatted(for quality: VideoDownloadQuality) -> String? {
         let key = quality.isBest ? (qualities.first?.height ?? 0) : quality.height
         guard let bytes = estimatedSizeBytes[key], bytes > 0 else { return nil }
