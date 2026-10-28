@@ -256,11 +256,15 @@ struct MenuPanelView: View {
     }
 
     private var visibleSections: [PanelSectionID] {
-        orderedSections.filter(isSectionVisible)
+        orderedSections.filter { id in
+            if id == .toggles, notchSize != nil { return false }
+            return isSectionVisible(id)
+        }
     }
 
     private var activeSection: PanelSectionID {
-        visibleSections.contains(selectedSection) ? selectedSection : (visibleSections.first ?? .keepAwake)
+        let nonAction = visibleSections.filter { $0 != .toggles }
+        return nonAction.contains(selectedSection) ? selectedSection : (nonAction.first ?? .keepAwake)
     }
 
     private var navigableScrollHeight: CGFloat {
@@ -339,7 +343,7 @@ struct MenuPanelView: View {
             if showFanControl, notchSize != nil || panelFocus.popoverIsVisible {
                 FanControlSection(collapsible: collapsible)
             }
-        case .toggles: QuickTogglesSection(collapsible: collapsible, notchSize: notchSize)
+        case .toggles: EmptyView()
         case .wallpaper: if showWallpaper { WallpaperSection(collapsible: collapsible) }
         }
     }
@@ -367,8 +371,16 @@ struct MenuPanelView: View {
             ForEach(visibleSections) { id in
                 let isActive = activeSection == id
                 Button {
-                    selectedSection = id
-                    focusedSection = id
+                    if id == .toggles {
+                        let anchor = appDelegate()?.statusItemFrame
+                        appDelegate()?.closePopover()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            LatticeHubService.shared.show(anchoredBelow: anchor)
+                        }
+                    } else {
+                        selectedSection = id
+                        focusedSection = id
+                    }
                 } label: {
                     Image(systemName: id.symbolName)
                         .font(.system(size: 13.5, weight: .semibold))

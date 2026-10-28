@@ -26,7 +26,7 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .disk: return s.diskSection
         case .power: return s.powerSection
         case .fanControl: return FeatureStrings.fanControl(L10n.shared.language).title
-        case .toggles: return FeatureStrings.quickToggles(L10n.shared.language).pageTitle
+        case .toggles: return s.launcherName
         case .wallpaper: return FeatureStrings.wallpaper(L10n.shared.language).pageTitle
         }
     }
@@ -41,7 +41,7 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .disk: return "internaldrive"
         case .power: return "bolt.fill"
         case .fanControl: return "fanblades.fill"
-        case .toggles: return "togglepower"
+        case .toggles: return "square.grid.2x2"
         case .wallpaper: return "photo.on.rectangle"
         }
     }

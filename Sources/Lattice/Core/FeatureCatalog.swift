@@ -167,7 +167,7 @@ extension AppFeature {
         case .brightness: return "display.2"
         case .extraBrightness: return "sun.max.fill"
         case .bluetoothSleep: return "wave.3.right.circle"
-        case .quickLauncher: return "wand.and.rays"
+        case .quickLauncher: return "square.grid.2x2"
         case .colorPicker: return "eyedropper"
         case .screenOCR: return "text.viewfinder"
         case .cleaningMode: return "bubbles.and.sparkles"

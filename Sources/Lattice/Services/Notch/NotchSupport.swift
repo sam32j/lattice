@@ -2666,7 +2666,8 @@ struct NotchGeometry: Equatable {
                       fileMediaHeight: CGFloat? = nil, systemCards: Int = 6, toolCount: Int? = 8,
                       capturePreviewHeight: CGFloat? = nil,
                       timerHasSession: Bool = false, timerMode: NotchTimerMode = .timer,
-                      agentsHeight: CGFloat? = nil) -> CGSize {
+                      agentsHeight: CGFloat? = nil,
+                      toolsControlsHeight: CGFloat? = nil) -> CGSize {
         let budget = contentBudget
         let showsCapturePreview = module == .captures && !detail && capturePreviewHeight != nil
         let showsFileMedia = module == .files && !detail && fileMediaHeight != nil
@@ -2707,8 +2708,9 @@ struct NotchGeometry: Equatable {
                         + NotchLayout.systemHoverInset(width: contentWidth) * 2)
             case .tools:
                 guard let toolCount else { contentHeight = pageBudget; break }
-                contentHeight = min(budget, toolCount == 0 ? NotchLayout.emptyHeight
-                    : NotchLayout.railHeight(rows: toolRows(count: toolCount), rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing))
+                let baseHeight = toolCount == 0 ? NotchLayout.emptyHeight
+                    : NotchLayout.railHeight(rows: toolRows(count: toolCount), rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing)
+                contentHeight = min(pageBudget, baseHeight + (toolsControlsHeight ?? 0))
             case .timer:
                 contentHeight = min(budget, NotchLayout.timer(mode: timerMode, hasSession: timerHasSession, height: budget))
             case .agents:
