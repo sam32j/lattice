@@ -23,15 +23,6 @@ extension LatticeHubService {
         PanelLayout.itemOrder(HubControlAction.self, key: DefaultsKey.hubControlsOrder)
     }
 
-    var controlOrderBinding: Binding<[HubControlAction]> {
-        Binding {
-            self.orderedControls
-        } set: { newValue in
-            PanelLayout.setItemOrder(newValue, key: DefaultsKey.hubControlsOrder)
-            self.objectWillChange.send()
-        }
-    }
-
     func setControlHidden(_ action: HubControlAction, _ hidden: Bool) {
         var ids = hiddenControlsSet
         if hidden {
