@@ -242,11 +242,6 @@ final class LatticeHubService: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 ClipboardHistoryService.shared.showHistoryWindow()
             }
-        case .cleaning:
-            hide()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                CleaningModeManager.shared.activate()
-            }
         case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner, .appUpdates, .portManager:
             activeUtility = item
         }

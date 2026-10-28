@@ -33,13 +33,13 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
 
     var symbolName: String {
         switch self {
-        case .keepAwake: return "moon.zzz.fill"
+        case .keepAwake: return "bolt.fill"
         case .brightness: return "display.2"
         case .mixer: return "speaker.wave.2"
         case .system: return "cpu"
         case .network: return "network"
         case .disk: return "internaldrive"
-        case .power: return "bolt.fill"
+        case .power: return "powerplug.portrait"
         case .fanControl: return "fanblades.fill"
         case .toggles: return "square.grid.2x2"
         case .wallpaper: return "photo.on.rectangle"

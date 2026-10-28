@@ -22,7 +22,7 @@ struct EnergyDisplaySettings: View {
         let strings = FeatureStrings.brightness(l10n.language)
         return VStack(alignment: .leading, spacing: 20) {
             SettingsCard(title: SettingsOrganizationStrings.text(.appearance, l10n.language)) {
-                SettingsRow(symbol: "moon.fill", title: SettingsOrganizationStrings.text(.darkMode, l10n.language)) {
+                SettingsRow(symbol: "circle.lefthalf.filled", title: SettingsOrganizationStrings.text(.darkMode, l10n.language)) {
                     Toggle(SettingsOrganizationStrings.text(.darkMode, l10n.language),
                            isOn: Binding(get: {
                         toggles.systemAppearanceIsDark ?? (colorScheme == .dark)

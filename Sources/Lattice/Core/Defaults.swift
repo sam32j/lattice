@@ -1848,6 +1848,7 @@ enum Defaults {
         migrateAudioControls(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
+        defaults.register(defaults: ["NSInitialToolTipDelay": 300])
         activateBetaChannelIfRunningBeta(in: defaults)
         installCompanionForBetaCommandBar(in: defaults)
         migrateLegacyMenuBarTemperatureMetric(in: defaults)

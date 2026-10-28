@@ -6,15 +6,14 @@ import SwiftUI
 
 /// Pure workflow utilities hosted in Lattice Hub.
 enum LatticeHubItem: String, PanelOrderItem, Identifiable {
-    case screenshot, cleaner, uninstaller, cleaning, clipboard, windowLayout,
+    case screenshot, cleaner, uninstaller, clipboard, windowLayout,
          media, urlCleaner, cameraPreview, scratchpad, screenRecorder,
          homebrew, appUpdates, portManager
 
     var id: String { rawValue }
 
     func isAvailable(in defaults: UserDefaults = .standard) -> Bool {
-        if self == .cleaning { return true }
-        return feature.isAvailable(in: defaults)
+        feature.isAvailable(in: defaults)
     }
 
     /// The hub feature behind the tile; off in the hub removes it from the
@@ -24,7 +23,6 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
         case .screenshot: return .screenshot
         case .cleaner: return .cleaner
         case .uninstaller: return .uninstaller
-        case .cleaning: return .cleaningMode
         case .clipboard: return .clipboardHistory
         case .windowLayout: return .windowLayout
         case .media: return .mediaTools

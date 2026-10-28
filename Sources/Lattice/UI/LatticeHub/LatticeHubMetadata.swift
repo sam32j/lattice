@@ -13,7 +13,6 @@ extension LatticeHubView {
         case .cameraPreview: return FeatureStrings.cameraPreview(l10n.language).pageTitle
         case .clipboard: return FeatureStrings.clipboard(l10n.language).title
         case .windowLayout: return FeatureStrings.windowLayout(l10n.language).title
-        case .cleaning: return l10n.s.cleaningMenuItem
         case .homebrew: return l10n.s.homebrewName
         case .media: return l10n.s.mediaName
         case .urlCleaner: return l10n.s.urlCleanerName
@@ -32,7 +31,6 @@ extension LatticeHubView {
         case .cameraPreview: return "web.camera"
         case .clipboard: return "doc.on.clipboard"
         case .windowLayout: return "rectangle.3.group"
-        case .cleaning: return "keyboard"
         case .homebrew: return "shippingbox"
         case .media: return "photo.on.rectangle.angled"
         case .urlCleaner: return "link"
