@@ -10,7 +10,6 @@ struct BrightnessSection: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var service = BrightnessService.shared
     @ObservedObject private var permissions = Permissions.shared
-    @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.brightnessKeysEnabled) private var brightnessKeysEnabled = false
     @State private var optionsExpanded = false
     var collapsible = true
