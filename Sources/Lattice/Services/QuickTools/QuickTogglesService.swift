@@ -62,10 +62,6 @@ final class QuickTogglesService: ObservableObject {
         finderFlag(QuickTogglesSupport.createDesktopKey, default: true)
     }
 
-    func ejectableVolumeCount() -> Int {
-        Self.ejectableVolumeURLs().count
-    }
-
     // MARK: - Appearance (issue #205)
 
     /// Flips the system between light and dark mode through the WindowServer,
@@ -183,28 +179,6 @@ final class QuickTogglesService: ObservableObject {
         let url = URL(fileURLWithPath: "/System/Library/CoreServices/ScreenSaverEngine.app")
         NSWorkspace.shared.openApplication(at: url,
                                            configuration: NSWorkspace.OpenConfiguration())
-    }
-
-    // MARK: - Permission refresh
-
-    /// Clears a stale "needs permission" mark once the grant shows up in
-    /// System Settings, so the row goes back to being clickable. Called when
-    /// the list appears; checked off the main thread (the AE check blocks).
-    func refreshPermissionStates() {
-        let marked = states.filter { $0.value == .needsPermission }.map(\.key)
-        guard !marked.isEmpty else { return }
-        workQueue.async {
-            for action in marked {
-                guard let target = Self.automationTarget(for: action) else { continue }
-                if Permissions.automationStatus(for: target) == .granted {
-                    DispatchQueue.main.async {
-                        if self.states[action] == .needsPermission {
-                            self.states[action] = nil
-                        }
-                    }
-                }
-            }
-        }
     }
 
     // MARK: - Internals
