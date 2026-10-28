@@ -7,7 +7,6 @@ import SwiftUI
 struct MonitorPanelConfig: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var features = FeatureRuntime.shared
     @State private var selectedBlock: PanelConfigBlock?
 
     @AppStorage(DefaultsKey.monitorShowSystem) private var showSystem = true
