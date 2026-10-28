@@ -59,6 +59,7 @@ struct VideoDownloaderFeatureStrings {
     let singleVideoOnlyNotice: String
     let loginRequiredNotice: String
     let noAccessNotice: String
+    let browserAccessNotice: String
     let manageSessions: String
     let tryDifferentSessions: String
 
@@ -208,6 +209,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "Using this video only (playlists are not supported).",
         loginRequiredNotice: "This video requires an authenticated session",
         noAccessNotice: "You don't have access to this video.",
+        browserAccessNotice: "Could not read browser cookies. Check your profile folder or permissions.",
         manageSessions: "Manage Sessions",
         tryDifferentSessions: "Try different browser sessions",
         missingToolsTitle: "Some tools are missing",
@@ -302,6 +304,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "仅使用此单集视频（暂不支持播放列表）。",
         loginRequiredNotice: "此视频需要登录认证的会话",
         noAccessNotice: "你没有访问此视频的权限。",
+        browserAccessNotice: "无法读取浏览器 Cookie。请检查个人资料文件夹或权限。",
         manageSessions: "管理会话",
         tryDifferentSessions: "尝试不同的浏览器会话",
         missingToolsTitle: "部分工具缺失",
@@ -396,6 +399,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "僅使用此單集影片（不支援播放清單）。",
         loginRequiredNotice: "此影片需要已驗證的登入階段",
         noAccessNotice: "你沒有存取此影片的權限。",
+        browserAccessNotice: "無法讀取瀏覽器 Cookie。請檢查個人檔案資料夾或權限。",
         manageSessions: "管理登入階段",
         tryDifferentSessions: "嘗試不同的瀏覽器登入階段",
         missingToolsTitle: "部分工具遺失",
@@ -490,6 +494,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "僅使用此單集影片（不支援播放清單）。",
         loginRequiredNotice: "此影片需要已驗證的登入階段",
         noAccessNotice: "你沒有存取此影片的權限。",
+        browserAccessNotice: "無法讀取瀏覽器 Cookie。請檢查個人檔案資料夾或權限。",
         manageSessions: "管理登入階段",
         tryDifferentSessions: "嘗試不同的瀏覽器登入階段",
         missingToolsTitle: "部分工具遺失",
@@ -584,6 +589,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "この動画のみを使用します（プレイリストには対応していません）。",
         loginRequiredNotice: "この動画には認証済みセッションが必要です",
         noAccessNotice: "この動画へのアクセス権がありません。",
+        browserAccessNotice: "ブラウザのCookieを読み取れませんでした。プロファイルフォルダまたは権限を確認してください。",
         manageSessions: "セッションを管理",
         tryDifferentSessions: "別のブラウザセッションを試す",
         missingToolsTitle: "一部のツールが見つかりません",
@@ -678,6 +684,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "이 비디오만 사용합니다(재생목록은 지원되지 않음).",
         loginRequiredNotice: "이 비디오는 인증된 세션이 필요합니다",
         noAccessNotice: "이 비디오에 접근할 권한이 없습니다.",
+        browserAccessNotice: "브라우저 쿠키를 읽을 수 없습니다. 프로필 폴더 또는 권한을 확인하세요.",
         manageSessions: "세션 관리",
         tryDifferentSessions: "다른 브라우저 세션 시도",
         missingToolsTitle: "일부 도구가 누락됨",
@@ -772,6 +779,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "Nur dieses Video wird verwendet (Wiedergabelisten nicht unterstützt).",
         loginRequiredNotice: "Dieses Video erfordert eine authentifizierte Sitzung",
         noAccessNotice: "Kein Zugriff auf dieses Video.",
+        browserAccessNotice: "Browser-Cookies konnten nicht gelesen werden. Profilordner oder Berechtigungen prüfen.",
         manageSessions: "Sitzungen verwalten",
         tryDifferentSessions: "Andere Browsersitzung versuchen",
         missingToolsTitle: "Einige Werkzeuge fehlen",
@@ -866,6 +874,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "Utilisation de cette vidéo uniquement (les playlists ne sont pas prises en charge).",
         loginRequiredNotice: "Cette vidéo nécessite une session authentifiée",
         noAccessNotice: "Vous n'avez pas accès à cette vidéo.",
+        browserAccessNotice: "Impossible de lire les cookies du navigateur. Vérifiez votre dossier de profil ou vos autorisations.",
         manageSessions: "Gérer les sessions",
         tryDifferentSessions: "Essayer d'autres sessions de navigateur",
         missingToolsTitle: "Certains outils sont manquants",
@@ -960,6 +969,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "Usando solo este video (las listas de reproducción no son compatibles).",
         loginRequiredNotice: "Este video requiere una sesión autenticada",
         noAccessNotice: "No tienes acceso a este video.",
+        browserAccessNotice: "No se pudieron leer las cookies del navegador. Revisa la carpeta del perfil o los permisos.",
         manageSessions: "Administrar sesiones",
         tryDifferentSessions: "Probar con otra sesión de navegador",
         missingToolsTitle: "Faltan algunas herramientas",
@@ -1054,6 +1064,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "Utilizzo di questo singolo video (le playlist non sono supportate).",
         loginRequiredNotice: "Questo video richiede una sessione autenticata",
         noAccessNotice: "Non hai accesso a questo video.",
+        browserAccessNotice: "Impossibile leggere i cookie del browser. Verifica la cartella del profilo o i permessi.",
         manageSessions: "Gestisci sessioni",
         tryDifferentSessions: "Prova un'altra sessione del browser",
         missingToolsTitle: "Alcuni strumenti sono mancanti",
@@ -1148,6 +1159,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "Usando apenas este vídeo (playlists não são suportadas).",
         loginRequiredNotice: "Este vídeo requer uma sessão autenticada",
         noAccessNotice: "Você não tem acesso a este vídeo.",
+        browserAccessNotice: "Não foi possível ler os cookies do navegador. Verifique a pasta do perfil ou as permissões.",
         manageSessions: "Gerenciar sessões",
         tryDifferentSessions: "Tentar outra sessão de navegador",
         missingToolsTitle: "Algumas ferramentas estão ausentes",
@@ -1242,6 +1254,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "Используется только это видео (плейлисты не поддерживаются).",
         loginRequiredNotice: "Для этого видео требуется авторизованный сеанс",
         noAccessNotice: "У вас нет доступа к этому видео.",
+        browserAccessNotice: "Не удалось прочитать файлы cookie браузера. Проверьте папку профиля или разрешения.",
         manageSessions: "Управление сеансами",
         tryDifferentSessions: "Попробовать другой сеанс браузера",
         missingToolsTitle: "Некоторые инструменты отсутствуют",
@@ -1336,6 +1349,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "Використовується лише це відео (списки відтворення не підтримуються).",
         loginRequiredNotice: "Для цього відео потрібен автентифікований сеанс",
         noAccessNotice: "У вас немає доступу до цього відео.",
+        browserAccessNotice: "Не вдалося прочитати файли cookie браузера. Перевірте папку профілю або дозволи.",
         manageSessions: "Керувати сеансами",
         tryDifferentSessions: "Спробувати інший сеанс браузера",
         missingToolsTitle: "Деякі інструменти відсутні",
@@ -1430,6 +1444,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "Yalnızca bu video kullanılıyor (oynatma listeleri desteklenmez).",
         loginRequiredNotice: "Bu video kimliği doğrulanmış bir oturum gerektiriyor",
         noAccessNotice: "Bu videoya erişiminiz yok.",
+        browserAccessNotice: "Tarayıcı çerezleri okunamadı. Profil klasörünüzü veya izinlerinizi kontrol edin.",
         manageSessions: "Oturumları Yönet",
         tryDifferentSessions: "Farklı tarayıcı oturumlarını dene",
         missingToolsTitle: "Bazı araçlar eksik",
@@ -1524,6 +1539,7 @@ extension VideoDownloaderFeatureStrings {
         singleVideoOnlyNotice: "Používa sa iba toto video (zoznamy videí nie sú podporované).",
         loginRequiredNotice: "Toto video vyžaduje overenú reláciu",
         noAccessNotice: "K tomuto videu nemáte prístup.",
+        browserAccessNotice: "Nepodarilo sa načítať cookies prehliadača. Skontrolujte priečinok profilu alebo oprávnenia.",
         manageSessions: "Spravovať relácie",
         tryDifferentSessions: "Skúsiť iné relácie prehliadača",
         missingToolsTitle: "Niektoré nástroje chýbajú",
@@ -1631,6 +1647,7 @@ enum VideoDownloaderStrings {
     static var singleVideoOnlyNotice: String { current.singleVideoOnlyNotice }
     static var loginRequiredNotice: String { current.loginRequiredNotice }
     static var noAccessNotice: String { current.noAccessNotice }
+    static var browserAccessNotice: String { current.browserAccessNotice }
     static var manageSessions: String { current.manageSessions }
     static var tryDifferentSessions: String { current.tryDifferentSessions }
 

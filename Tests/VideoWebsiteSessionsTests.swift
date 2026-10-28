@@ -179,7 +179,7 @@ enum VideoWebsiteSessionsTests {
             "Members-only content: join this channel to view",
             "Confirm your age: sign in to confirm your age",
             "Please use --cookies to pass authentication cookies",
-            "Permission denied for this stream",
+            "HTTP Error 401: Unauthorized",
             "Access denied by remote server",
             "Not authorized to access video stream"
         ]
@@ -207,7 +207,8 @@ enum VideoWebsiteSessionsTests {
             "HTTP Error 404: Not Found",
             "Connection reset by peer",
             "Video unavailable in your country",
-            "Operation timed out"
+            "Operation timed out",
+            "[Errno 13] Permission denied: '/Users/test/Downloads/video.mp4'"
         ]
         for phrase in unrelated {
             suite.expect(VideoWebsiteFailure.classify(makeError(phrase)) == nil,
@@ -222,6 +223,8 @@ enum VideoWebsiteSessionsTests {
                      "signed-in auth failure message informs user of lack of access")
 
         let browserAccess = VideoWebsiteFailure.browserAccess
+        suite.expect(browserAccess.message(hasActiveSession: false) == VideoDownloaderStrings.browserAccessNotice,
+                     "browserAccess uses localized browserAccessNotice")
         suite.expect(browserAccess.message(hasActiveSession: false).contains("cookies"),
                      "browserAccess error informs user of cookie reading issue")
     }
