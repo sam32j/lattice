@@ -18,6 +18,7 @@ struct IslandDestinationSettings: View {
     @AppStorage(DefaultsKey.notchVideoDownloader) private var videoDownloaderRoute = true
     @AppStorage(DefaultsKey.notchDragReveal) private var dragReveal = true
     @AppStorage(DefaultsKey.notchClipboardCardSize) private var cardSize = NotchClipboardCardSize.comfortable.rawValue
+    @AppStorage(DefaultsKey.launcherShortcutTarget) private var launcherShortcutTarget = LauncherShortcutTarget.island.rawValue
 
     private var shown: Binding<Bool> {
         _ = hidden
@@ -53,6 +54,16 @@ struct IslandDestinationSettings: View {
                         }.labelsHidden().pickerStyle(.menu)
                     }
                     .onChange(of: cardSize) { _, _ in sync() }
+                }
+                if destination == .launcherGrid {
+                    SettingsControlRow(title: SettingsOwnershipStrings.text(.shortcutTarget, l10n.language),
+                                       caption: SettingsOwnershipStrings.text(.shortcutTargetCaption, l10n.language)) {
+                        Picker(SettingsOwnershipStrings.text(.shortcutTarget, l10n.language), selection: $launcherShortcutTarget) {
+                            Text(SettingsOwnershipStrings.text(.dynamicIsland, l10n.language)).tag(LauncherShortcutTarget.island.rawValue)
+                            Text(SettingsOwnershipStrings.text(.floatingWindow, l10n.language)).tag(LauncherShortcutTarget.floatingWindow.rawValue)
+                        }.labelsHidden().pickerStyle(.segmented)
+                    }
+                    .onChange(of: launcherShortcutTarget) { _, _ in sync() }
                 }
             }
             }

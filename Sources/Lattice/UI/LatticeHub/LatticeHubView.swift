@@ -22,13 +22,13 @@ struct LatticeHubView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: notchSize == nil ? 12 : 6) {
             if notchSize == nil { header }
             if notchSize != nil, launcher.activeUtility == nil, launcher.isEditing {
                 editHint
             }
-            if notchSize == nil, launcher.activeUtility == nil, !launcher.isEditing {
-                HubQuickControls { launcher.hide() }
+            if launcher.activeUtility == nil {
+                HubQuickControls(notchSize: notchSize, isEditing: launcher.isEditing) { launcher.hide() }
             }
             if let utility = launcher.activeUtility, utility.isAvailable() {
                 LatticeHubHostedUtility(item: utility, notchSize: notchSize) { launcher.closeUtility() }
@@ -44,7 +44,8 @@ struct LatticeHubView: View {
                     withAnimation(.easeOut(duration: 0.15)) { launcher.editingOptionsItem = nil }
                 }
             }
-            if launcher.activeUtility == nil, launcher.isEditing, !launcher.hiddenItems.isEmpty {
+            if launcher.activeUtility == nil, launcher.isEditing,
+               (!launcher.hiddenItems.isEmpty || !launcher.hiddenControls.isEmpty) {
                 hiddenTray
             }
             if notchSize == nil { footer }
@@ -156,6 +157,22 @@ struct LatticeHubView: View {
                 .foregroundStyle(.secondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
+                    ForEach(launcher.hiddenControls) { control in
+                        Button {
+                            withAnimation(.easeOut(duration: 0.15)) { launcher.setControlHidden(control, false) }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "plus.circle.fill")
+                                    .foregroundStyle(Color.accentColor)
+                                Text(control.title(l10n: l10n, colorScheme: colorScheme))
+                            }
+                            .font(.system(size: 10.5, weight: .medium))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.primary.opacity(0.06), in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
                     ForEach(launcher.hiddenItems) { item in
                         Button {
                             withAnimation(.easeOut(duration: 0.15)) { launcher.setHidden(item, false) }

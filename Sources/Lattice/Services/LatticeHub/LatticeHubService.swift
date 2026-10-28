@@ -97,16 +97,28 @@ final class LatticeHubService: ObservableObject {
     // MARK: - Presentation
 
     func toggle(anchoredBelow anchor: NSRect? = nil) {
-        if NotchService.shared.openQuickPanel(toggle: true) { return }
+        if let anchor {
+            if isVisible {
+                hide()
+            } else {
+                show(anchoredBelow: anchor)
+            }
+            return
+        }
+        if shouldRouteToIsland() {
+            if NotchService.shared.openQuickPanel(toggle: true) { return }
+        }
         if isVisible {
             hide()
         } else {
-            show(anchoredBelow: anchor)
+            show()
         }
     }
 
     func show(anchoredBelow anchor: NSRect? = nil) {
-        if NotchService.shared.openQuickPanel() { return }
+        if anchor == nil && shouldRouteToIsland() {
+            if NotchService.shared.openQuickPanel() { return }
+        }
         let panel = ensurePanel()
         prepareForPresentation()
         position(panel, anchoredBelow: anchor)
@@ -118,6 +130,17 @@ final class LatticeHubService: ObservableObject {
             context.duration = 0.13
             panel.animator().alphaValue = 1
         }
+    }
+
+    private func shouldRouteToIsland() -> Bool {
+        guard LauncherShortcutTarget.selected(in: .standard) == .island,
+              NotchSupport.routesQuickPanel() else {
+            return false
+        }
+        let screen = NSScreen.screens.first(where: { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) })
+            ?? NSScreen.main
+            ?? NSScreen.screens.first
+        return (screen?.safeAreaInsets.top ?? 0) > 0
     }
 
     func prepareForPresentation() {

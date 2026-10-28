@@ -339,7 +339,7 @@ struct MenuPanelView: View {
             if showFanControl, notchSize != nil || panelFocus.popoverIsVisible {
                 FanControlSection(collapsible: collapsible)
             }
-        case .toggles: QuickTogglesSection(collapsible: collapsible)
+        case .toggles: QuickTogglesSection(collapsible: collapsible, notchSize: notchSize)
         case .wallpaper: if showWallpaper { WallpaperSection(collapsible: collapsible) }
         }
     }
