@@ -14,11 +14,6 @@ struct AudioInputDeviceControls: View {
     @State private var normalSliderTint = Color(nsColor: .controlAccentColor)
     @State private var accentRevision = 0
     @State private var lastResolvedAccent: NSColor?
-    @State private var editingVolumeID: String?
-
-    private var glassEnabled: Bool {
-        LiquidGlassSupport.isSupported
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
