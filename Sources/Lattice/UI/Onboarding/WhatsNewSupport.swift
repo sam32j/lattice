@@ -23,11 +23,6 @@ struct WhatsNewRow: Identifiable, Equatable {
     let feature: AppFeature?
     let destination: FeatureSettingsDestination?
     let changes: [ReleaseChange]
-
-    var isNewFeature: Bool {
-        if case .newFeature = id { return true }
-        return false
-    }
 }
 
 /// The window's sidebar, laid out like the Settings sidebar it mirrors.
