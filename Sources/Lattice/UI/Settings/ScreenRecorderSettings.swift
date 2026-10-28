@@ -8,7 +8,6 @@ struct ScreenRecorderSettings: View {
     @ObservedObject var l10n = L10n.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var sharing = RecordingShareService.shared
-    @ObservedObject private var runtime = FeatureRuntime.shared
     @AppStorage(DefaultsKey.screenRecorderEnabled) var screenRecorderEnabled = true
     @AppStorage(DefaultsKey.recorderCountdown) private var countdown = 3
     @AppStorage(DefaultsKey.recorderQuality) private var qualityRaw =
