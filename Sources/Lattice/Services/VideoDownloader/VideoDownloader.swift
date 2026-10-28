@@ -118,10 +118,6 @@ final class VideoDownloader: ObservableObject {
 
     var isSearchInputEnabled: Bool { !isDownloading && !isPaused }
 
-    var isValidURL: Bool {
-        (try? VideoDownloadRequest.validatedURL(link)) != nil
-    }
-
     func pasteFromClipboard() {
         guard isSearchInputEnabled,
               let text = VideoDownloadRequest.validClipboardURL(read: readClipboard) else { return }
@@ -189,10 +185,6 @@ final class VideoDownloader: ObservableObject {
         output = nil
         error = nil
         phase = ""
-    }
-
-    func installTools() {
-        ToolchainManager.shared.repair()
     }
 
     var isExpandedFocused: () -> Bool = { false }
