@@ -119,6 +119,7 @@ final class LatticeHubService: ObservableObject {
         if anchor == nil && shouldRouteToIsland() {
             if NotchService.shared.openQuickPanel() { return }
         }
+        (NSApp.delegate as? AppDelegate)?.closePopover()
         let panel = ensurePanel()
         prepareForPresentation()
         position(panel, anchoredBelow: anchor)
