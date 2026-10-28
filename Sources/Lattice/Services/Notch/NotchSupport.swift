@@ -2635,17 +2635,20 @@ struct NotchGeometry: Equatable {
         NotchLayout.systemRowRanges(count: cards, width: contentWidth - NotchLayout.systemHoverInset(width: contentWidth) * 2).count
     }
 
-    func toolRows(count: Int) -> Int {
-        NotchLayout.railRows(count: count,
+    func toolRows(count: Int, controlsHeight: CGFloat? = nil) -> Int {
+        let controlsH = controlsHeight ?? 0
+        let vstackSpacing: CGFloat = controlsH > 0 ? 6 : 0
+        let availableHeight = max(0, contentBudget - controlsH - vstackSpacing)
+        return NotchLayout.railRows(count: count,
                              perRow: NotchLayout.railCapacity(width: contentWidth, itemWidth: NotchLayout.toolWidth, spacing: NotchLayout.toolSpacing),
-                             rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing, height: contentBudget)
+                             rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing, height: availableHeight)
     }
 
     /// The arrows walk the tiles the way the rail draws them: reading order
     /// while every column fits, closing its gaps if it must, the columns it
     /// fills once it scrolls.
-    func toolFlow(count: Int) -> QuickToolsSupport.GridFlow {
-        let rows = toolRows(count: count)
+    func toolFlow(count: Int, controlsHeight: CGFloat? = nil) -> QuickToolsSupport.GridFlow {
+        let rows = toolRows(count: count, controlsHeight: controlsHeight)
         let columns = NotchLayout.railColumns(count: count, rows: rows)
         return NotchLayout.railGap(columns: columns, itemWidth: NotchLayout.toolWidth, spacing: NotchLayout.toolSpacing,
                                    least: NotchLayout.toolLeastSpacing, width: contentWidth) != nil
@@ -2704,9 +2707,12 @@ struct NotchGeometry: Equatable {
                         + NotchLayout.systemHoverInset(width: contentWidth) * 2)
             case .tools:
                 guard let toolCount else { contentHeight = pageBudget; break }
+                let controlsH = toolsControlsHeight ?? 0
+                let vstackSpacing: CGFloat = controlsH > 0 ? 6 : 0
+                let rows = toolRows(count: toolCount, controlsHeight: controlsH)
                 let baseHeight = toolCount == 0 ? NotchLayout.emptyHeight
-                    : NotchLayout.railHeight(rows: toolRows(count: toolCount), rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing)
-                contentHeight = min(pageBudget, baseHeight + (toolsControlsHeight ?? 0))
+                    : NotchLayout.railHeight(rows: rows, rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing)
+                contentHeight = min(pageBudget, baseHeight + controlsH + vstackSpacing)
             case .timer:
                 contentHeight = min(budget, NotchLayout.timer(mode: timerMode, hasSession: timerHasSession, height: budget))
             case .agents:
