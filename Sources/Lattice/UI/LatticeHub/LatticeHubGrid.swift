@@ -6,10 +6,13 @@ import SwiftUI
 extension LatticeHubView {
     @ViewBuilder var grid: some View {
         if let notchSize, !launcher.isEditing {
+            let controlsH = launcher.activeUtility == nil ? launcher.notchControlsHeight : 0
+            let vstackSpacing: CGFloat = controlsH > 0 ? 6 : 0
+            let availableHeight = max(0, notchSize.height - controlsH - vstackSpacing)
             let rows = NotchLayout.railRows(count: launcher.visibleItems.count,
                                             perRow: NotchLayout.railCapacity(width: notchSize.width, itemWidth: NotchLayout.toolWidth,
                                                                              spacing: NotchLayout.toolSpacing),
-                                            rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing, height: notchSize.height)
+                                            rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing, height: availableHeight)
             let titleInset = NotchLayout.toolTitleInset(count: launcher.visibleItems.count, rows: rows, width: notchSize.width)
             NotchRail(items: launcher.visibleItems, rows: rows, itemWidth: NotchLayout.toolWidth, width: notchSize.width,
                       spacing: NotchLayout.toolSpacing, leastSpacing: NotchLayout.toolLeastSpacing,
