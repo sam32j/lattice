@@ -202,7 +202,7 @@ extension Strings {
         micMuteMenuBarCaption: "Ein rot durchgestrichenes Mikrofon erscheint neben dem Symbol der App in der Menüleiste, solange diese Funktion es stummschaltet.",
         pastePlainName: "Als reinen Text einsetzen",
         pastePlainCaption: "Setzt Kopiertes ohne Farben, Schriften oder Formatierung ein. Das Original bleibt in der Zwischenablage.",
-        launcherName: "App-Raster",
+        launcherName: "Lattice Hub",
         launcherCaption: "Ein schwebendes Panel mit deinen Lieblingswerkzeugen, per Kurzbefehl von überall aufrufbar.",
         launcherEditHint: "Über die Einstellen-Taste lassen sich Werkzeuge wählen, ausblenden und ziehen.",
         launcherEmptyState: "Alle Werkzeuge sind ausgeblendet. Über die Einstellen-Taste kommen sie zurück.",

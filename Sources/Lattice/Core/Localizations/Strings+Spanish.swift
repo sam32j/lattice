@@ -202,7 +202,7 @@ extension Strings {
         micMuteMenuBarCaption: "Un micrófono tachado en rojo aparece junto al icono de la app en la barra de menús mientras esta función lo silencia.",
         pastePlainName: "Pegar como texto sin formato",
         pastePlainCaption: "Pega lo copiado sin colores, fuentes ni formato. El original se mantiene en el portapapeles.",
-        launcherName: "Cuadrícula de apps",
+        launcherName: "Lattice Hub",
         launcherCaption: "Un panel flotante con tus herramientas favoritas, invocado con un atajo desde cualquier lugar.",
         launcherEditHint: "Usa el botón de ajustes para elegir, ocultar y arrastrar las herramientas.",
         launcherEmptyState: "Todas las herramientas están ocultas. Usa el botón de ajuste para recuperarlas.",

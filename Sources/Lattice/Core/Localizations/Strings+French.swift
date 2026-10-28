@@ -202,7 +202,7 @@ extension Strings {
         micMuteMenuBarCaption: "Un micro barré en rouge apparaît à côté de l’icône de l’app dans la barre des menus tant que cette fonction le coupe.",
         pastePlainName: "Coller en texte brut",
         pastePlainCaption: "Colle ce qui a été copié sans couleurs, polices ni mise en forme. L’original reste dans le presse-papiers.",
-        launcherName: "Grille d’apps",
+        launcherName: "Lattice Hub",
         launcherCaption: "Un panneau flottant avec vos outils préférés, appelé par un raccourci depuis n’importe où.",
         launcherEditHint: "Utilisez le bouton de réglage pour choisir, masquer et faire glisser les outils.",
         launcherEmptyState: "Tous les outils sont masqués. Utilisez le bouton de réglage pour les remettre.",

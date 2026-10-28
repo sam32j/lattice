@@ -202,7 +202,7 @@ extension Strings {
         micMuteMenuBarCaption: "Un microfono barrato in rosso appare accanto all’icona dell’app nella barra dei menu mentre questa funzione lo silenzia.",
         pastePlainName: "Incolla come testo semplice",
         pastePlainCaption: "Incolla ciò che hai copiato senza colori, font o formattazione. L’originale resta negli appunti.",
-        launcherName: "Griglia app",
+        launcherName: "Lattice Hub",
         launcherCaption: "Un pannello fluttuante con i tuoi strumenti preferiti, richiamato con un’abbreviazione da ovunque.",
         launcherEditHint: "Usa il pulsante di regolazione per scegliere, nascondere e trascinare gli strumenti.",
         launcherEmptyState: "Tutti gli strumenti sono nascosti. Usa il pulsante di regolazione per riaverli.",

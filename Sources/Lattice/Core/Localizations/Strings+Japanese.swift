@@ -202,7 +202,7 @@ extension Strings {
         micMuteMenuBarCaption: "この機能でマイクを消音している間、メニューバーのアプリアイコンの横に赤い斜線入りのマイクが表示されます。",
         pastePlainName: "プレーンテキストとしてペースト",
         pastePlainCaption: "コピーした内容を色・フォント・書式なしでペーストします。元の内容はクリップボードに残ります。",
-        launcherName: "アプリグリッド",
+        launcherName: "Lattice Hub",
         launcherCaption: "お気に入りのツールを集めたフローティングパネル。どこからでもショートカットで呼び出せます。",
         launcherEditHint: "調整ボタンでツールの選択・非表示・ドラッグ移動ができます。",
         launcherEmptyState: "すべてのツールが非表示です。調整ボタンで戻せます。",

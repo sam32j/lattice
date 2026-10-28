@@ -10,7 +10,7 @@ protocol PanelOrderItem: RawRepresentable, CaseIterable, Hashable where RawValue
 /// stable identifiers persisted in the saved order and the collapsed set, so
 /// renaming a case would orphan a user's stored layout — keep them stable.
 enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
-    case keepAwake, brightness, mixer, system, network, disk, power, fanControl, utilities,
+    case keepAwake, brightness, mixer, system, network, disk, power, fanControl,
          toggles, wallpaper
 
     var id: String { rawValue }
@@ -26,7 +26,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .disk: return s.diskSection
         case .power: return s.powerSection
         case .fanControl: return FeatureStrings.fanControl(L10n.shared.language).title
-        case .utilities: return s.utilitiesSection
         case .toggles: return FeatureStrings.quickToggles(L10n.shared.language).pageTitle
         case .wallpaper: return FeatureStrings.wallpaper(L10n.shared.language).pageTitle
         }
@@ -42,7 +41,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .disk: return "internaldrive"
         case .power: return "bolt.fill"
         case .fanControl: return "fanblades.fill"
-        case .utilities: return "wrench.and.screwdriver.fill"
         case .toggles: return "togglepower"
         case .wallpaper: return "photo.on.rectangle"
         }
@@ -61,7 +59,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .disk: return DefaultsKey.monitorShowDisk
         case .power: return DefaultsKey.monitorShowPower
         case .fanControl: return DefaultsKey.panelShowFanControl
-        case .utilities: return DefaultsKey.panelShowUtilities
         case .toggles: return DefaultsKey.panelShowToggles
         case .wallpaper: return DefaultsKey.panelShowWallpaper
         }
@@ -82,11 +79,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .disk: return [.monitorDisk]
         case .power: return [.monitorPower]
         case .fanControl: return [.fanControl]
-        case .utilities: return [.quickLauncher, .cleaner, .homebrew, .appUpdates, .mediaTools,
-                                 .clipboardHistory,
-                                 .windowLayout, .uninstaller, .urlCleaner, .cleaningMode, .screenOCR,
-                                 .colorPicker, .screenshot, .screenRecorder,
-                                 .cameraPreview, .scratchpad, .commandBar, .portManager]
         case .toggles: return [.brightness, .commandBar, .micMute]
         case .wallpaper: return [.wallpaper]
         }

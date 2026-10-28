@@ -202,7 +202,7 @@ extension Strings {
         micMuteMenuBarCaption: "此功能将麦克风静音时，菜单栏中的 App 图标旁会出现一个红色的划线麦克风。",
         pastePlainName: "粘贴为纯文本",
         pastePlainCaption: "粘贴拷贝的内容时去除颜色、字体和格式。原始内容仍保留在剪贴板中。",
-        launcherName: "启动器网格",
+        launcherName: "Lattice Hub",
         launcherCaption: "一个汇集你最爱工具的悬浮面板，随时随地用快捷键唤出。",
         launcherEditHint: "使用调整按钮来选择、隐藏和拖动工具。",
         launcherEmptyState: "所有工具都已隐藏。使用调整按钮把它们加回来。",

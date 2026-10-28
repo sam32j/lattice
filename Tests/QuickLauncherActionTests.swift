@@ -11,6 +11,7 @@ enum QuickLauncherContract {
     static var cameraInNotch = false
     enum ReviewDefaults { static var current: UserDefaults! }
     enum QuickLauncherService { static let columns = 3 }
+    typealias LatticeHubService = QuickLauncherService
     struct NSEvent {
         struct ModifierFlags: OptionSet {
             let rawValue: Int
@@ -94,8 +95,6 @@ enum QuickLauncherContract {
         defaults.set(false, forKey: DefaultsKey.cleaningModeShortcutEnabled)
         cameraInNotch = false
         let cases: [(QuickLauncherItem, AppFeature, String?, Double?)] = [
-            (.keepAwake, .keepAwake, "keepAwake.toggle", nil),
-            (.micMute, .micMute, "micMute.toggle", nil),
             (.screenshot, .screenshot, "screenshot.capture", 0.15),
             (.screenRecorder, .screenRecorder, "recorder.toggle", 0.15),
             (.cameraPreview, .cameraPreview, "camera.show", 0.15),
@@ -108,8 +107,10 @@ enum QuickLauncherContract {
             (.urlCleaner, .urlCleaner, nil, nil),
             (.uninstaller, .uninstaller, nil, nil),
             (.cleaner, .cleaner, nil, nil),
+            (.appUpdates, .appUpdates, nil, nil),
+            (.portManager, .portManager, nil, nil),
         ]
-        suite.expect(Set(cases.map { $0.0 }) == Set(QuickLauncherItem.allCases).subtracting([.screenOCR, .colorPicker]),
+        suite.expect(Set(cases.map { $0.0 }) == Set(QuickLauncherItem.allCases),
                      "every launcher tile has an activation contract")
         for (item, feature, action, delay) in cases {
             events.removeAll()
@@ -142,15 +143,6 @@ enum QuickLauncherContract {
             suite.expect(events.isEmpty && launcher.activeUtility == nil,
                          "editing \(item) never activates it")
         }
-        for retired in [QuickLauncherItem.screenOCR, .colorPicker] {
-            events.removeAll()
-            DispatchQueue.main.jobs.removeAll()
-            let launcher = Launcher()
-            launcher.run(retired)
-            suite.expect(!retired.isAvailable(in: defaults) && events.isEmpty
-                         && DispatchQueue.main.jobs.isEmpty && launcher.activeUtility == nil,
-                         "retired standalone capture entries cannot execute a stale launcher action")
-        }
         events.removeAll()
         DispatchQueue.main.jobs.removeAll()
         cameraInNotch = true
@@ -182,12 +174,17 @@ enum QuickLauncherContract {
                      "a new presentation resets edit controls and selects its first available tile")
         events.removeAll()
         let enter = NSEvent(keyCode: UInt16(kVK_Return))
-        suite.expect(launcher.handlePanelKey(enter) == nil && events == ["keepAwake.toggle"],
+        suite.expect(launcher.handlePanelKey(enter) == nil && events == ["hide"],
                      "Return activates the first item immediately after presentation")
+        DispatchQueue.main.drain()
+        suite.expect(events == ["hide", "screenshot.capture"], "the first item executes its action")
         events.removeAll()
+        DispatchQueue.main.jobs.removeAll()
         suite.expect(launcher.handlePanelKey(NSEvent(keyCode: UInt16(kVK_ANSI_Keypad1))) == nil
-                     && events == ["keepAwake.toggle"],
+                     && events == ["hide"],
                      "the numeric keypad's 1 activates the first item like the top row's")
+        DispatchQueue.main.drain()
+        suite.expect(events == ["hide", "screenshot.capture"], "keypad activates the first item")
         for item in [QuickLauncherItem.urlCleaner, .homebrew, .uninstaller, .media] {
             launcher.activeUtility = item
             launcher.prepareForPresentation()

@@ -128,7 +128,6 @@ private extension PanelSectionID {
         case .disk: return text.sectionDisks
         case .power: return text.sectionPower
         case .fanControl: return text.sectionFanControl
-        case .utilities: return text.sectionUtilities
         case .toggles: return text.sectionToggles
         case .wallpaper: return FeatureStrings.wallpaper(L10n.shared.language).panelDescription
         }
