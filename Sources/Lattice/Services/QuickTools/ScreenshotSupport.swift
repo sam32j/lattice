@@ -75,15 +75,6 @@ enum ScreenCaptureTool: String, CaseIterable {
         self != .recording && !showsCaptureMenu(fromShortcut: fromShortcut, defaults: defaults)
     }
 
-    var systemImageName: String {
-        switch self {
-        case .screenshot: return "camera.viewfinder"
-        case .recording: return "record.circle"
-        case .text: return "text.viewfinder"
-        case .color: return "eyedropper"
-        }
-    }
-
     /// Only the recorder writes sound, so its microphone and system-audio
     /// choices are the only tool controls that belong under the chooser.
     /// Every other mode leaves them out entirely, reserving no space for them.
