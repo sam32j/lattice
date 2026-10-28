@@ -90,7 +90,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchShelf) var shelfWindow = true
     @AppStorage(DefaultsKey.notchDragReveal) var dragReveal = true
     @AppStorage(DefaultsKey.notchAppPanel) var appPanel = false
-    @AppStorage(DefaultsKey.notchHidesMenuBarIcon) var hidesMenuBarIcon = false
     @AppStorage(DefaultsKey.notchKeepAwakeActivity) var keepAwakeActivity = false
     @AppStorage(DefaultsKey.notchScratchpad) var scratchpad = true
     @AppStorage(DefaultsKey.brightnessControlEnabled) var brightnessControlEnabled = false
