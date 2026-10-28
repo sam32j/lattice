@@ -70,6 +70,7 @@ enum VideoDownloaderLocalizationTests {
             suite.expect(!s.singleVideoOnlyNotice.isEmpty, "\(lang.rawValue): singleVideoOnlyNotice is non-empty")
             suite.expect(!s.loginRequiredNotice.isEmpty, "\(lang.rawValue): loginRequiredNotice is non-empty")
             suite.expect(!s.noAccessNotice.isEmpty, "\(lang.rawValue): noAccessNotice is non-empty")
+            suite.expect(!s.browserAccessNotice.isEmpty, "\(lang.rawValue): browserAccessNotice is non-empty")
             suite.expect(!s.manageSessions.isEmpty, "\(lang.rawValue): manageSessions is non-empty")
             suite.expect(!s.tryDifferentSessions.isEmpty, "\(lang.rawValue): tryDifferentSessions is non-empty")
 

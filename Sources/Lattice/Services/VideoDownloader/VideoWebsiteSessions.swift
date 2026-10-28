@@ -122,7 +122,7 @@ final class VideoWebsiteSessions: ObservableObject {
     var hasSession: Bool { activeSession != nil }
 
     var summaryText: String {
-        guard let session = activeSession else { return "None (Anonymous)" }
+        guard let session = activeSession else { return VideoDownloaderStrings.noneAnonymous }
         let browserName = session.browser == .chromium ? "Chromium" : session.browser.title
         if session.browser == .safari || session.browser == .opera {
             return browserName
@@ -402,8 +402,8 @@ enum VideoWebsiteFailure {
         }
         if ["sign in", "sign-in", "log in", "login required", "authentication required",
             "use --cookies", "members-only", "members only", "confirm your age", "age-restricted",
-            "private video", "video is private", "permission denied", "forbidden", "http error 403",
-            "no access", "access denied", "not authorized"].contains(where: message.contains) {
+            "private video", "video is private", "forbidden", "http error 403", "403 forbidden",
+            "http error 401", "401 unauthorized", "no access", "access denied", "not authorized"].contains(where: message.contains) {
             return .authentication
         }
         return nil
@@ -418,7 +418,7 @@ enum VideoWebsiteFailure {
         case .authentication:
             return hasActiveSession ? VideoDownloaderStrings.noAccessNotice : VideoDownloaderStrings.loginRequiredNotice
         case .browserAccess:
-            return "Could not read browser cookies. Check your profile folder or permissions."
+            return VideoDownloaderStrings.browserAccessNotice
         }
     }
 }
