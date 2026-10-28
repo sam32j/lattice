@@ -398,11 +398,6 @@ final class WallpaperService: ObservableObject {
     // keeps the island open while a picker is up, like its other choosers
     var isChoosingSource: Bool { openPanel != nil }
 
-    func openSystemWallpaperSettings() {
-        guard let url = WallpaperSupport.systemWallpaperSettingsURL else { return }
-        NSWorkspace.shared.open(url)
-    }
-
     // MARK: - Bookmarks
 
     private func present(_ panel: NSOpenPanel, inNotch: Bool = false, completion: @escaping ([URL]) -> Void) {
