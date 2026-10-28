@@ -15,7 +15,6 @@ struct VideoDownloadDependencies: Equatable {
     var missing: [String] { Self.coreRequired.filter { tools[$0] == nil } }
     var ready: Bool { missing.isEmpty }
     var brew: String? { tools["brew"] }
-    var hasDeno: Bool { tools["deno"] != nil }
 
     static var appSupportDirectory: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
