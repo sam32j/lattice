@@ -7,7 +7,6 @@ import SwiftUI
 /// Preview shares with the switcher.
 struct DockSettings: View {
     @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var dockPreview = DockPreviewService.shared
     @AppStorage(DefaultsKey.dockPreviewEnabled) private var dockPreviewEnabled = false
@@ -21,7 +20,6 @@ struct DockSettings: View {
     @State private var showingCurrentSpaceInfo = false
     @State private var isDockAutohideEnabled = DockAutohideHold.isAutoHideEnabled
 
-    private var pages: SettingsPageStrings { FeatureStrings.settingsPages(l10n.language) }
     private var dockPreviewInstalled: Bool { AppFeature.dockPreview.isAvailable }
     private var dockPreviewEngaged: Bool { dockPreviewInstalled && dockPreviewEnabled }
 
