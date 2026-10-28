@@ -17,8 +17,13 @@ struct QuickTogglesSection: View {
                      collapsible: collapsible,
                      supportsEditing: true,
                      resetAction: QuickTogglesList.resetPanelDefaults) { editing in
-            QuickTogglesList(editing: editing, draggingItem: $draggingItem) {
-                appDelegate()?.closePopover()
+            VStack(spacing: 8) {
+                if !editing {
+                    hubBridgeHeader
+                }
+                QuickTogglesList(editing: editing, draggingItem: $draggingItem) {
+                    appDelegate()?.closePopover()
+                }
             }
             // Actions here activate other apps (the Finder restarting, System
             // Events, the Trash confirmation), which would dismiss the panel
@@ -27,6 +32,39 @@ struct QuickTogglesSection: View {
             .onAppear { PanelInteractionState.shared.viewKeepsPopoverOpen = true }
             .onDisappear { PanelInteractionState.shared.viewKeepsPopoverOpen = false }
         }
+    }
+
+    private var hubBridgeHeader: some View {
+        HStack {
+            Label(l10n.s.launcherName, systemImage: "sparkles.rectangle.stack")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button {
+                let anchor = appDelegate()?.statusItemFrame
+                appDelegate()?.closePopover()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    LatticeHubService.shared.show(anchoredBelow: anchor)
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    if GlobalShortcutRole.quickLauncher.savedShortcut.isValid {
+                        Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString)
+                            .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 3, style: .continuous))
+                    }
+                    Image(systemName: "arrow.up.right.square")
+                        .font(.system(size: 11))
+                }
+                .foregroundStyle(Color.accentColor)
+            }
+            .buttonStyle(.plain)
+            .help(UtilitySettingsCopy.open(l10n.s.launcherName, l10n.language))
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, 2)
     }
 }
 

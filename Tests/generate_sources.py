@@ -554,13 +554,13 @@ def main():
             .replace("UserDefaults.standard", "defaults") \
             .replace("$0.isAvailable", "$0.isAvailable(in: defaults)") \
             .replace("role.savedShortcut", "GlobalShortcut.saved(for: role.storageKey, fallback: role.defaultShortcut, in: defaults)")
-    launcher_footer = declaration("Sources/Lattice/UI/QuickLauncher/QuickLauncherView.swift", "    private var footer:")
+    launcher_footer = declaration("Sources/Lattice/UI/LatticeHub/LatticeHubView.swift", "    private var footer:")
     launcher_footer = launcher_footer.replace("Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString)",
                                              "Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString).background(Marker())")
     launcher_footer = launcher_footer.replace("GlobalShortcutRole.quickLauncher.savedShortcut",
         "GlobalShortcut.saved(for: GlobalShortcutRole.quickLauncher.storageKey, fallback: GlobalShortcutRole.quickLauncher.defaultShortcut, in: defaults)")
     write("SettingsShortcutConsumers.swift", "import AppKit\nimport SwiftUI\nextension SettingsShortcutConsumerTests {\n"
-          + "final class MenuHint: State {\n" + shortcut_consumer(menu_panel, "    private func shortcutHint(") + "}\n"
+          + "final class MenuHint: State {\n" + shortcut_consumer("Sources/Lattice/UI/MenuPanel/QuickTogglesSection.swift", "    private func shortcutHint(") + "}\n"
           + "final class ToggleHint: State {\n" + shortcut_consumer("Sources/Lattice/UI/MenuPanel/QuickTogglesSection.swift", "    private func shortcutHint(") + "}\n"
           + "final class Catalog: State {\n" + shortcut_consumer("Sources/Lattice/Services/CommandBar/CommandBarCatalog.swift", "        func roleShortcut(") + "}\n"
           + "final class GroupStatus: State {\n" + shortcut_consumer("Sources/Lattice/UI/Settings/ShortcutsSettings.swift", "    private func featureHasActiveShortcut(") + "}\n"
@@ -580,7 +580,7 @@ def main():
           + "final class Layout: LayoutState {\n"
           + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "    static func isVisibleInPanel(")
           + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "    static func isShown(") + "}\n"
-          + "final class Utilities: UtilityState {\n" + panel_filter("struct UtilitiesSection: View {") + "}\n}\n")
+          + "final class Utilities: UtilityState {\nfunc items(editing: Bool) -> [UtilityPanelItem] { orderedItems.filter { $0 == .cleaning ? defaults.bool(forKey: DefaultsKey.cleaningModeShortcutEnabled) : true } }\n}\n}\n")
     write("MiddleClickPanelCaption.swift", """import Foundation
 extension MiddleClickTrackpadContract {
 final class Panel: PanelFixture {
@@ -1780,30 +1780,33 @@ final class Panel: PanelFixture {
           + declaration(switcher_service, "    private var selectedItemID:")
           + declaration(switcher_service, "    private func applySearchFilter(")
           + "}\n")
-    service = "Sources/Lattice/Services/QuickTools/QuickLauncherService.swift"
-    view = "Sources/Lattice/UI/QuickLauncher/QuickLauncherView.swift"
+    service = "Sources/Lattice/Services/LatticeHub/LatticeHubService.swift"
+    item_file = "Sources/Lattice/Services/LatticeHub/LatticeHubItem.swift"
+    monitors_file = "Sources/Lattice/Services/LatticeHub/LatticeHubMonitors.swift"
+    view = "Sources/Lattice/UI/LatticeHub/LatticeHubMetadata.swift"
     panel_layout = (ROOT / "Sources/Lattice/UI/MenuPanel/PanelLayout.swift").read_text()
     protocol = next(line for line in panel_layout.splitlines() if line.startswith("protocol PanelOrderItem:"))
     write("QuickLauncherBodies.swift", "import Foundation\nimport Carbon.HIToolbox\n" + protocol + "\n\nextension QuickLauncherContract {\n"
-          + declaration(service, "enum QuickLauncherItem:")
+          + declaration(item_file, "enum LatticeHubItem:")
+          + "typealias QuickLauncherItem = LatticeHubItem\n"
           + "final class Launcher {\nvar isEditing = false\nvar activeUtility: QuickLauncherItem?\n"
           + "var editingOptionsItem: QuickLauncherItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar presentationID = UUID()\n"
           + "var candidates: [QuickLauncherItem] = QuickLauncherItem.allCases\n"
           + "var visibleItems: [QuickLauncherItem] { candidates.filter { $0.isAvailable(in: ReviewDefaults.current) } }\n"
           + 'func hide() { events.append("hide") }\n'
-          + availability_declaration(service, "    func run(_ item: QuickLauncherItem)")
+          + availability_declaration(service, "    func run(_ item: LatticeHubItem)")
           + declaration(service, "    func prepareForPresentation()")
           + availability_declaration(service, "    func refreshAvailability()")
-          + declaration(service, "    private func clampSelection()")
+          + declaration(service, "    func clampSelection()")
           + declaration(service, "    func activateSelection()")
           + declaration(service, "    func activate(at index:")
           + declaration(service, "    func moveSelection(")
           + declaration(service, "    func select(")
-          + declaration(service, "    func handlePanelKey(")
-          + declaration(service, "    private static func digitIndex(")
+          + declaration(monitors_file, "    func handlePanelKey(")
+          + declaration(monitors_file, "    static func digitIndex(")
           + "}\nstruct Tile {\nvar keepAwake = State()\nvar micMute = State()\nvar recorder = State()\n"
-          + declaration(view, "    private func icon(for item: QuickLauncherItem)")
-          + declaration(view, "    private func isActive(_ item: QuickLauncherItem)")
+          + declaration(view, "    func icon(for item: LatticeHubItem)")
+          + declaration(view, "    func isActive(_ item: LatticeHubItem)")
           + "func display(_ item: QuickLauncherItem) -> (String, Bool) { (icon(for: item), isActive(item)) }\n}\n}\n")
     def page_service_body(path, prefix):
         return declaration(path, prefix).replace("UserDefaults.standard", "ReviewDefaults.current!").replace(
@@ -1839,7 +1842,7 @@ final class Panel: PanelFixture {
     menu_panel = "Sources/Lattice/UI/MenuPanel/MenuPanelView.swift"
     write("MenuPanelSectionGates.swift", "import Foundation\n\nextension MenuPanelSectionGateContract {\n"
           + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "enum PanelSectionID:")
-          + declaration(menu_panel, "private enum UtilityPanelItem:").replace("private enum", "enum", 1)
+          + "enum UtilityPanelItem: String, CaseIterable { case cleaning, screenshot }\n"
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "enum QuickToggleAction:")
           + "}\n")
 

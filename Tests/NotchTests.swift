@@ -861,7 +861,7 @@ enum NotchTests {
                          "at the narrowest width the Tools arrows walk two rows of four: \(camera)")
         }
         // The island's page and the Content tab's preview share the view.
-        let source = (try? String(contentsOfFile: "Sources/Lattice/UI/QuickLauncher/QuickLauncherView.swift",
+        let source = (try? String(contentsOfFile: "Sources/Lattice/UI/LatticeHub/LatticeHubGrid.swift",
                                   encoding: .utf8)) ?? ""
         let rail = source.contains("leastSpacing: NotchLayout.toolLeastSpacing")
         let titles = source.contains("cell(item, titleInset: titleInset)") && source.contains(".padding(.horizontal, titleInset)")

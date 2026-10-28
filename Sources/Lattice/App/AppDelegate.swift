@@ -342,6 +342,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     /// Whether the menu bar icon is actually visible on a screen, rather than
     /// present in the status bar but clipped or dropped by a crowded/notched menu
     /// bar (in which case the button still has a window, just not an on-screen one).
+    var statusItemFrame: NSRect? {
+        guard statusController?.statusItem.isVisible == true else { return nil }
+        return statusController?.statusItem.button?.window?.frame
+    }
+
     private static let menuBarLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "lattice",
                                            category: "menubar")
 

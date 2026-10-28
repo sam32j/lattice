@@ -202,7 +202,7 @@ extension Strings {
         micMuteMenuBarCaption: "此功能將麥克風靜音時，選單列中的 App 圖示旁會出現一個紅色的劃線麥克風。",
         pastePlainName: "貼上為純文字",
         pastePlainCaption: "貼上拷貝的內容時去除顏色、字體和格式。原始內容仍保留在剪貼簿中。",
-        launcherName: "啟動器網格",
+        launcherName: "Lattice Hub",
         launcherCaption: "一個匯集你最愛工具的懸浮面板，隨時隨地用快速鍵喚出。",
         launcherEditHint: "使用調整按鈕來選擇、隱藏和拖動工具。",
         launcherEmptyState: "所有工具都已隱藏。使用調整按鈕將它們加回來。",

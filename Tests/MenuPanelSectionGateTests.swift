@@ -14,7 +14,6 @@ enum MenuPanelSectionGateContract {
             suite.expect(missing.isEmpty,
                          "every \(rows) row keeps the \(section.rawValue) tab available, missing \(missing)")
         }
-        expectGate(.utilities, keeps: UtilityPanelItem.allCases.map(\.feature), "utility")
         expectGate(.toggles, keeps: QuickToggleAction.allCases.map(\.feature), "quick toggle")
         expectGate(.system, keeps: [.connectedDevices], "connected devices")
     }

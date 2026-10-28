@@ -235,8 +235,11 @@ enum NotchDestinationContract {
         QuickLauncherContract.events.removeAll()
         let enter = QuickLauncherContract.NSEvent(keyCode: UInt16(kVK_Return))
         suite.expect(launcher.handlePanelKey(enter, flow: .columns(rows: 2)) == nil
-               && QuickLauncherContract.events == ["keepAwake.toggle"],
+               && QuickLauncherContract.events == ["hide"],
                "Return works immediately after the island opens Tools")
+        QuickLauncherContract.DispatchQueue.main.drain()
+        suite.expect(QuickLauncherContract.events == ["hide", "screenshot.capture"],
+               "the selected tool action executes after hide")
         let unchangedPresentation = launcher.presentationID
         service.open(.tools)
         suite.expect(launcher.presentationID == unchangedPresentation,

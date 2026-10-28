@@ -202,7 +202,7 @@ extension Strings {
         micMuteMenuBarCaption: "Vedľa ikony aplikácie v lište s ponukami sa objaví červený prečiarknutý mikrofón, kým ho táto funkcia stlmuje.",
         pastePlainName: "Vložiť ako čistý text",
         pastePlainCaption: "Vloží skopírovaný obsah bez farieb, písiem a formátovania. Originál ostáva v schránke.",
-        launcherName: "Mriežka aplikácií",
+        launcherName: "Lattice Hub",
         launcherCaption: "Plávajúci panel s vašimi obľúbenými nástrojmi, vyvolaný skratkou odkiaľkoľvek.",
         launcherEditHint: "Tlačidlom na úpravy vyberiete, skryjete a presuniete nástroje.",
         launcherEmptyState: "Všetky nástroje sú skryté. Tlačidlom na úpravy ich pridáte späť.",

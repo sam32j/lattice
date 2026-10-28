@@ -22,8 +22,8 @@ enum SettingsPanelFilterTests {
         defaults.set(false, forKey: DefaultsKey.screenRecorderEnabled)
         Layout.defaults = defaults
         defer { Layout.defaults = nil }
-        suite.expect(!Layout.isVisibleInPanel(.utilities),
-                     "the outer Utilities section stays runtime-gated")
+        suite.expect(!Layout.isVisibleInPanel(.toggles),
+                     "the outer Toggles section stays runtime-gated")
         defaults.set(true, forKey: AppFeature.screenshot.availabilityKey)
         defaults.set(true, forKey: DefaultsKey.screenshotEnabled)
         let utilities = Utilities(defaults)

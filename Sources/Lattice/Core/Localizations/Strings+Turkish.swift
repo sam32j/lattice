@@ -202,7 +202,7 @@ extension Strings {
         micMuteMenuBarCaption: "Bu özellik mikrofonu sessize aldığı sürece menü çubuğundaki uygulama simgesinin yanında üstü çizili kırmızı bir mikrofon görünür.",
         pastePlainName: "Düz metin olarak yapıştır",
         pastePlainCaption: "Kopyalananı renk, yazı tipi ve biçimlendirme olmadan yapıştırır. Orijinal panoda kalır.",
-        launcherName: "Uygulama ızgarası",
+        launcherName: "Lattice Hub",
         launcherCaption: "En sevdiğiniz araçları toplayan, her yerden kısayolla açılan yüzen bir panel.",
         launcherEditHint: "Araçları seçmek, gizlemek ve sürüklemek için ayar düğmesini kullanın.",
         launcherEmptyState: "Tüm araçlar gizli. Geri eklemek için ayar düğmesini kullanın.",
