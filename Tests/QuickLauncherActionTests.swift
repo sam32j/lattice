@@ -100,7 +100,6 @@ enum QuickLauncherContract {
             (.cameraPreview, .cameraPreview, "camera.show", 0.15),
             (.scratchpad, .scratchpad, "scratchpad.show", 0.15),
             (.clipboard, .clipboardHistory, "clipboard.showHistoryWindow", 0.1),
-            (.cleaning, .cleaningMode, "cleaning.activate", 0.1),
             (.windowLayout, .windowLayout, nil, nil),
             (.homebrew, .homebrew, nil, nil),
             (.media, .mediaTools, nil, nil),

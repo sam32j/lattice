@@ -92,7 +92,7 @@ struct EnergyKeepAwakeSettings: View {
 
     /// The feature's name, what it is doing right now and its switch.
     private func sessionRow(status: String) -> some View {
-        SettingsRow(symbol: "moon.zzz.fill", title: l10n.s.keepAwakeTitle, caption: status) {
+        SettingsRow(symbol: "bolt.fill", title: l10n.s.keepAwakeTitle, caption: status) {
             Toggle(l10n.s.keepAwakeTitle, isOn: sessionBinding)
                 .labelsHidden()
         }

@@ -5,7 +5,7 @@ import SwiftUI
 
 enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
     case micMute, keepAwake, darkMode, keyboardLight, hiddenFiles, desktopIcons
-    case emptyTrash, ejectDisks, lockScreen, displayOff, screenSaver
+    case emptyTrash, ejectDisks, lockScreen, displayOff, screenSaver, cleaningMode
 
     var id: String { rawValue }
 
@@ -18,6 +18,8 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
             return AppFeature.brightness.isAvailable && BrightnessService.shared.keyboardLightEnabled != nil
         case .hiddenFiles, .desktopIcons, .emptyTrash, .ejectDisks, .lockScreen, .screenSaver:
             return AppFeature.commandBar.isAvailable
+        case .cleaningMode:
+            return true
         }
     }
 
@@ -35,6 +37,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         case .lockScreen: return strings.lockScreenTitle
         case .displayOff: return strings.displayOffTitle
         case .screenSaver: return strings.screenSaverTitle
+        case .cleaningMode: return l10n.s.cleaningMenuItem
         }
     }
 
@@ -42,15 +45,16 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         switch self {
         case .micMute: return MicMuteService.shared.isMuted ? "mic.slash.fill" : "mic.fill"
         case .keepAwake: return KeepAwakeManager.shared.isActive ? "bolt.fill" : "bolt"
-        case .darkMode: return colorScheme == .dark ? "moon.fill" : "sun.max.fill"
+        case .darkMode: return "circle.lefthalf.filled"
         case .keyboardLight: return (BrightnessService.shared.keyboardLightEnabled ?? false) ? "keyboard.fill" : "keyboard"
         case .hiddenFiles: return QuickTogglesService.shared.hiddenFilesShown ? "eye.fill" : "eye.slash.fill"
-        case .desktopIcons: return QuickTogglesService.shared.desktopIconsShown ? "macwindow" : "macwindow.slash"
+        case .desktopIcons: return QuickTogglesService.shared.desktopIconsShown ? "macwindow" : "rectangle.slash"
         case .emptyTrash: return "trash"
         case .ejectDisks: return "eject.fill"
         case .lockScreen: return "lock.fill"
         case .displayOff: return "display"
         case .screenSaver: return "sparkles.tv"
+        case .cleaningMode: return "bubbles.and.sparkles"
         }
     }
 
@@ -63,6 +67,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         case .hiddenFiles: return QuickTogglesService.shared.hiddenFilesShown
         case .desktopIcons: return QuickTogglesService.shared.desktopIconsShown
         case .emptyTrash, .ejectDisks, .lockScreen, .displayOff, .screenSaver: return false
+        case .cleaningMode: return CleaningModeManager.shared.isActive
         }
     }
 
@@ -77,6 +82,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         case .emptyTrash: return .gray
         case .ejectDisks: return .brown
         case .lockScreen, .displayOff, .screenSaver: return .secondary
+        case .cleaningMode: return .teal
         }
     }
 
@@ -96,6 +102,11 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         case .lockScreen: onDismiss(); toggles.lockScreen()
         case .displayOff: onDismiss(); toggles.turnDisplayOff()
         case .screenSaver: onDismiss(); toggles.startScreenSaver()
+        case .cleaningMode:
+            onDismiss()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                CleaningModeManager.shared.activate()
+            }
         }
     }
 }
@@ -154,6 +165,7 @@ struct HubQuickControls: View {
     @ObservedObject private var keepAwake = KeepAwakeManager.shared
     @ObservedObject private var toggles = QuickTogglesService.shared
     @ObservedObject private var brightness = BrightnessService.shared
+    @ObservedObject private var cleaning = CleaningModeManager.shared
     @Environment(\.colorScheme) private var colorScheme
     let onDismiss: () -> Void
 
