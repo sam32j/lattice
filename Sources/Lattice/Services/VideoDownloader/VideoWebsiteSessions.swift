@@ -56,16 +56,6 @@ struct VideoWebsiteSession: Codable, Equatable, Identifiable {
     }
 }
 
-enum VideoWebsiteSessionError: LocalizedError {
-    case invalidHost, invalidProfile
-    var errorDescription: String? {
-        switch self {
-        case .invalidHost: return "Enter a valid website address."
-        case .invalidProfile: return "Use a valid browser profile name or folder path."
-        }
-    }
-}
-
 struct DiscoveredProfile: Identifiable, Hashable {
     let id: String
     let name: String
