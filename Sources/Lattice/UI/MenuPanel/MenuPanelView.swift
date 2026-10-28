@@ -138,7 +138,7 @@ struct MenuPanelView: View {
             applyFocus(request)
         }
         .onChange(of: focusedSection) { _, section in
-            if let section { selectedSection = section }
+            if let section, section != .toggles { selectedSection = section }
         }
     }
 
@@ -165,7 +165,7 @@ struct MenuPanelView: View {
         case .normal:
             selectedMetric = nil
         case .section(let section):
-            guard isSectionVisible(section) else { return }
+            guard isSectionVisible(section), section != .toggles else { return }
             selectedMetric = nil
             selectedSection = section
             focusedSection = section
