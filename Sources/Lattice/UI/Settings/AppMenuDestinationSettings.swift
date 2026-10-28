@@ -4,7 +4,6 @@ import SwiftUI
 
 struct AppMenuDestinationSettings: View {
     @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.notchEnabled) private var islandEnabled = false
     @AppStorage(DefaultsKey.notchHidesMenuBarIcon) private var hideMenuIcon = false
     @AppStorage(DefaultsKey.notchAppPanel) private var islandPanel = false
