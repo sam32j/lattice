@@ -23,9 +23,6 @@ enum MenuBarAllowanceSupport {
         case unknown
     }
 
-    static let groupContainerPlistPath = "Library/Group Containers/group.com.apple.controlcenter"
-        + "/Library/Preferences/group.com.apple.controlcenter.plist"
-
     /// The verdict for one bundle id inside a decoded `trackedApplications`
     /// list. Entries come in two shapes: a bare `{bundle: {_0: id}}` marker
     /// and the record `{location: {bundle: {_0: id}}, isAllowed: Bool, ...}`;
@@ -50,16 +47,5 @@ enum MenuBarAllowanceSupport {
               let inner = try? PropertyListSerialization.propertyList(from: innerData, format: nil) as? [Any]
         else { return .unknown }
         return allowance(forBundleID: bundleID, trackedApplications: inner)
-    }
-
-    /// The live verdict for this app. Read straight from the file: the domain
-    /// belongs to Control Center's app group, which a plain `UserDefaults`
-    /// suite lookup from here would not resolve to.
-    static func currentAllowance(bundleID: String? = Bundle.main.bundleIdentifier,
-                                 home: URL = FileManager.default.homeDirectoryForCurrentUser) -> Allowance {
-        guard let bundleID,
-              let data = try? Data(contentsOf: home.appendingPathComponent(groupContainerPlistPath))
-        else { return .unknown }
-        return allowance(forBundleID: bundleID, groupContainerPlist: data)
     }
 }
