@@ -295,6 +295,7 @@ if (( TEST )); then
         Sources/Lattice/Core/LiquidGlassSupport.swift
         Sources/Lattice/Core/ShortcutConflictAlert.swift
         Sources/Lattice/Core/Defaults.swift
+        Sources/Lattice/Core/LauncherShortcutTarget.swift
         Sources/Lattice/Core/PermanentInputMigration.swift
         Sources/Lattice/Core/PageOwnedControlsMigration.swift
         Sources/Lattice/Core/AudioControlsMigration.swift

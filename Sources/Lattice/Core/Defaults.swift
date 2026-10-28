@@ -592,6 +592,9 @@ enum DefaultsKey {
     static let quickLauncherShortcut = "quickLauncherShortcut"
     static let quickLauncherItemOrder = "quickLauncherItemOrder"
     static let quickLauncherHiddenItems = "quickLauncherHiddenItems"
+    static let launcherShortcutTarget = "launcherShortcutTarget"
+    static let hubControlsOrder = "hubControlsOrder"
+    static let hubControlsHidden = "hubControlsHidden"
     static let panelUtilityQuickLauncher = "panelUtilityQuickLauncher"
     static let panelUtilityColorPicker = "panelUtilityColorPicker"
     static let panelUtilityScreenOCR = "panelUtilityScreenOCR"
@@ -1676,6 +1679,9 @@ enum Defaults {
         DefaultsKey.quickLauncherShortcutEnabled: true,
         DefaultsKey.quickLauncherShortcut: GlobalShortcut.quickLauncherDefault.storageValue,
         DefaultsKey.quickLauncherHiddenItems: "",
+        DefaultsKey.launcherShortcutTarget: LauncherShortcutTarget.island.rawValue,
+        DefaultsKey.hubControlsOrder: "",
+        DefaultsKey.hubControlsHidden: "",
         DefaultsKey.panelUtilityQuickLauncher: true,
         DefaultsKey.panelUtilityColorPicker: true,
         DefaultsKey.panelUtilityScreenOCR: true,
