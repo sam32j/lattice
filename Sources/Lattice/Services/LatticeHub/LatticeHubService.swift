@@ -97,22 +97,18 @@ final class LatticeHubService: ObservableObject {
     // MARK: - Presentation
 
     func toggle(anchoredBelow anchor: NSRect? = nil) {
+        if isVisible {
+            hide()
+            return
+        }
         if let anchor {
-            if isVisible {
-                hide()
-            } else {
-                show(anchoredBelow: anchor)
-            }
+            show(anchoredBelow: anchor)
             return
         }
         if shouldRouteToIsland() {
             if NotchService.shared.openQuickPanel(toggle: true) { return }
         }
-        if isVisible {
-            hide()
-        } else {
-            show()
-        }
+        show()
     }
 
     func show(anchoredBelow anchor: NSRect? = nil) {
