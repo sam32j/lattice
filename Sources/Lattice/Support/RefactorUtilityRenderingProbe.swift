@@ -74,7 +74,7 @@ enum RefactorUtilityRenderingProbe {
                                        cameraGranted: Bool = true, failures: inout [String]) {
         let titles = ["clipboard": "Clipboard History", "scratchpad": "Scratchpad",
                       "file-cache": "File Cache", "camera": "Camera Preview", "launcher": "Lattice Hub"]
-        let open = "Open \(titles[name]!)"
+        let open = name == "launcher" ? "Open \(titles[name]!) with Shortcut" : "Open \(titles[name]!)"
         var requests = 0
         let access = SettingsPermissionAccessors(verify: { $0 != .camera || cameraGranted },
             request: { _, reply in requests += 1; reply(.denied) })

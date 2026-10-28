@@ -81,7 +81,7 @@ struct DedicatedUtilitySettings: View {
                                               isOn: launcherIslandShown)
                                 .padding(.leading, settingsRowTextInset)
                         }
-                        ShortcutPreferenceRow(role: .quickLauncher, label: UtilitySettingsCopy.open(title, l10n.language)) {
+                        ShortcutPreferenceRow(role: .quickLauncher, label: UtilitySettingsCopy.openWithShortcut(title, l10n.language)) {
                             FeatureRuntime.shared.sync([feature])
                         }
                         .padding(.leading, settingsRowTextInset)
