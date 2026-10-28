@@ -14,7 +14,6 @@ struct DedicatedUtilitySettings: View {
     @AppStorage(DefaultsKey.notchEnabled) private var islandEnabled = false
     @AppStorage(DefaultsKey.notchQuickPanel) private var launcherIslandRoute = true
     @AppStorage(DefaultsKey.quickLauncherShortcutEnabled) private var launcherShortcutEnabled = false
-    @AppStorage(DefaultsKey.quickLauncherShortcut) private var launcherShortcut = ""
     @AppStorage(DefaultsKey.launcherShortcutTarget) private var launcherShortcutTarget = LauncherShortcutTarget.island.rawValue
 
     init(feature: AppFeature) {
