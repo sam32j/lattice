@@ -273,7 +273,6 @@ enum NotchLayout {
     static let navigationHeight: CGFloat = 36
     static let spacing: CGFloat = 12
     static let bottomInset: CGFloat = 16
-    static var chromeHeight: CGFloat { headerHeight + spacing + bottomInset }
     /// The island stays a wide strip: pages scroll within the preset's budget.
     static let compactContentHeight: CGFloat = 180
     static let spaciousContentHeight: CGFloat = 264
@@ -455,9 +454,6 @@ enum NotchLayout {
         path.closeSubpath()
         return path
     }
-
-    /// Content clearance under a camera of the usual height.
-    static let nominalContentTop: CGFloat = 42
 
     static func preferredWidth(_ layout: NotchSize, custom: CGFloat) -> CGFloat {
         switch layout {
