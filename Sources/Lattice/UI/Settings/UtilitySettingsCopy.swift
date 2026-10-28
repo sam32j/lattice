@@ -20,6 +20,25 @@ enum UtilitySettingsCopy {
         }
     }
 
+    static func openWithShortcut(_ name: String, _ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "Open \(name) with Shortcut"
+        case .ptBR: return "Abrir \(name) com atalho"
+        case .es: return "Abrir \(name) con atajo"
+        case .de: return "\(name) mit Kurzbefehl öffnen"
+        case .fr: return "Ouvrir \(name) avec le raccourci"
+        case .it: return "Apri \(name) con scorciatoia"
+        case .ja: return "ショートカットで\(name)を開く"
+        case .ko: return "단축키로 \(name) 열기"
+        case .zhHans: return "通过快捷键打开\(name)"
+        case .zhTW, .zhHK: return "透過快速鍵開啟\(name)"
+        case .ru: return "Открыть \(name) сочетанием клавиш"
+        case .uk: return "Відкрити \(name) комбінацією клавіш"
+        case .tr: return "\(name) kısayol ile aç"
+        case .sk: return "Otvoriť \(name) skratkou"
+        }
+    }
+
     static func fileCacheHint(_ language: AppLanguage) -> String {
         switch language {
         case .enUS: return "Open File Cache by shaking your pointer while dragging."
