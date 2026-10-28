@@ -5,10 +5,8 @@ import SwiftUI
 /// Screenshot Settings page.
 struct ScreenshotSettings: View {
     @ObservedObject var l10n = L10n.shared
-    @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var service = ScreenshotService.shared
     @ObservedObject private var sharing = ScreenshotShareService.shared
-    @ObservedObject private var runtime = FeatureRuntime.shared
     @AppStorage(DefaultsKey.screenshotEnabled) var screenshotEnabled = true
     @AppStorage(DefaultsKey.screenshotFreeze) private var freeze = true
     @AppStorage(DefaultsKey.screenshotSaveFolder) private var saveFolder = ""
