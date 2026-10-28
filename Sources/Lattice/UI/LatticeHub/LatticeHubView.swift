@@ -83,10 +83,13 @@ struct LatticeHubView: View {
     private var header: some View {
         VStack(spacing: 6) {
             ZStack {
+                HubDragHandle()
+                    .frame(height: 30)
                 BrandMark(width: 52, tint: colorScheme == .light ? Color(white: 0.03) : .white)
                     .frame(height: 30)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .accessibilityHidden(true)
+                    .allowsHitTesting(false)
                 HStack {
                     if launcher.activeUtility != nil {
                         backButton
@@ -195,10 +198,15 @@ struct LatticeHubView: View {
     }
 
     private var emptyState: some View {
-        Text(l10n.s.launcherEmptyState)
-            .font(.system(size: 12))
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, minHeight: 120, alignment: .center)
+        ZStack {
+            HubDragHandle()
+                .frame(maxWidth: .infinity, minHeight: 120)
+            Text(l10n.s.launcherEmptyState)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .allowsHitTesting(false)
+        }
+        .frame(maxWidth: .infinity, minHeight: 120, alignment: .center)
     }
 
     private var footer: some View {
@@ -219,6 +227,25 @@ struct LatticeHubView: View {
     }
 
     // Metadata is implemented in LatticeHubMetadata.swift
+}
+
+private struct HubDragHandle: NSViewRepresentable {
+    func makeNSView(context: Context) -> DragHandleView { DragHandleView() }
+    func updateNSView(_ nsView: DragHandleView, context: Context) {}
+
+    final class DragHandleView: NSView {
+        override var mouseDownCanMoveWindow: Bool { true }
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            bounds.contains(point) ? self : nil
+        }
+
+        override func mouseDown(with event: NSEvent) {
+            guard let window else { return }
+            window.performDrag(with: event)
+        }
+    }
 }
 
 typealias QuickLauncherView = LatticeHubView
