@@ -10,7 +10,7 @@ protocol PanelOrderItem: RawRepresentable, CaseIterable, Hashable where RawValue
 /// stable identifiers persisted in the saved order and the collapsed set, so
 /// renaming a case would orphan a user's stored layout — keep them stable.
 enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
-    case keepAwake, brightness, mixer, system, network, disk, power, fanControl, utilities, controls,
+    case keepAwake, brightness, mixer, system, network, disk, power, fanControl, utilities,
          toggles, wallpaper
 
     var id: String { rawValue }
@@ -27,7 +27,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .power: return s.powerSection
         case .fanControl: return FeatureStrings.fanControl(L10n.shared.language).title
         case .utilities: return s.utilitiesSection
-        case .controls: return s.quickControlsSection
         case .toggles: return FeatureStrings.quickToggles(L10n.shared.language).pageTitle
         case .wallpaper: return FeatureStrings.wallpaper(L10n.shared.language).pageTitle
         }
@@ -44,7 +43,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .power: return "bolt.fill"
         case .fanControl: return "fanblades.fill"
         case .utilities: return "wrench.and.screwdriver.fill"
-        case .controls: return "switch.2"
         case .toggles: return "togglepower"
         case .wallpaper: return "photo.on.rectangle"
         }
@@ -64,7 +62,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .power: return DefaultsKey.monitorShowPower
         case .fanControl: return DefaultsKey.panelShowFanControl
         case .utilities: return DefaultsKey.panelShowUtilities
-        case .controls: return DefaultsKey.panelShowControls
         case .toggles: return DefaultsKey.panelShowToggles
         case .wallpaper: return DefaultsKey.panelShowWallpaper
         }
@@ -90,18 +87,13 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
                                  .windowLayout, .uninstaller, .urlCleaner, .cleaningMode, .screenOCR,
                                  .colorPicker, .screenshot, .screenRecorder,
                                  .cameraPreview, .scratchpad, .commandBar, .portManager]
-        case .controls: return [.scrollInverter, .linearScroll, .focusFollowsMouse, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts, .switcher,
-                                .autoQuit,
-                                .shelf, .windowMaximizer, .dockPreview, .keyboardDebounce, .dockClick, .spacesOrder,
-                                .middleClick, .textSnippets, .superKey, .radialMenu, .mouseClickDebounce, .notch]
         case .toggles: return [.brightness, .commandBar, .micMute]
         case .wallpaper: return [.wallpaper]
         }
     }
 
     var isAvailable: Bool {
-        if self == .controls { return featureGate.contains { $0.isPresentInControls() } }
-        return featureGate.contains(where: \.isAvailable)
+        featureGate.contains(where: \.isAvailable)
     }
 }
 
@@ -125,8 +117,6 @@ enum PanelLayout {
         for id in PanelSectionID.allCases where seen.insert(id).inserted {
             if id == .disk, let networkIndex = result.firstIndex(of: .network) {
                 result.insert(id, at: networkIndex + 1)
-            } else if id == .controls, let utilitiesIndex = result.firstIndex(of: .utilities) {
-                result.insert(id, at: utilitiesIndex + 1)
             } else if id == .brightness, let keepAwakeIndex = result.firstIndex(of: .keepAwake) {
                 // New in 3.1.13: saved orders predate it, so it slots in at
                 // its canonical place instead of the end.

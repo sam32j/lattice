@@ -30,40 +30,6 @@ struct QuickTogglesSection: View {
     }
 }
 
-/// The toggles hosted inside the quick panel (⌃⌘V), replacing the grid like
-/// the other utilities do.
-struct PanelQuickTogglesView: View {
-    @ObservedObject private var l10n = L10n.shared
-    @State private var draggingItem: QuickToggleAction?
-
-    var onClose: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            header
-            QuickTogglesList(editing: false, draggingItem: $draggingItem) {
-                QuickLauncherService.shared.hide()
-            }
-        }
-    }
-
-    private var header: some View {
-        HStack(spacing: 8) {
-            Label(FeatureStrings.quickToggles(l10n.language).pageTitle, systemImage: "togglepower")
-                .font(.system(size: 12, weight: .semibold))
-            Spacer()
-            Button(action: onClose) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 22, height: 22)
-            }
-            .buttonStyle(.plain)
-            .help(l10n.s.uninstallerCancel)
-        }
-    }
-}
-
 /// The shared row list: the menu panel tab and the quick panel host render
 /// the same actions, honoring the same order and per-item visibility.
 struct QuickTogglesList: View {
