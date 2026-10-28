@@ -35,7 +35,6 @@ final class RecorderOverlayController: ObservableObject {
     private var pauseClock: RecorderPauseClock?
     private var phase = Phase.selecting
     var isRecording: Bool { pauseClock != nil }
-    var cameraPreviewVisible: Bool { cameraPanel?.isVisible == true && (cameraPanel?.alphaValue ?? 0) > 0 }
     var onFailure: ((String) -> Void)?
     var excludedWindowNumbers: [Int] {
         [cameraPanel?.windowNumber, keyPanel?.windowNumber].compactMap { number in
