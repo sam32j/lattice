@@ -248,5 +248,3 @@ private struct HubDragHandle: NSViewRepresentable {
     }
 }
 
-typealias QuickLauncherView = LatticeHubView
-
