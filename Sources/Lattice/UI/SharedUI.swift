@@ -3,39 +3,6 @@
 
 import SwiftUI
 
-/// A single keyboard key drawn like a physical keycap for Settings shortcuts.
-struct KeyCap: View {
-    let label: String
-
-    var body: some View {
-        Text(label)
-            .font(.system(size: 12, weight: .semibold, design: .rounded))
-            .frame(minWidth: 20, minHeight: 22)
-            .padding(.horizontal, 5)
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color.primary.opacity(0.07))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.14), lineWidth: 1)
-            )
-    }
-}
-
-/// A row of keycaps for a shortcut, e.g. ["⌘", "X"].
-struct ShortcutCaps: View {
-    let keys: [String]
-
-    var body: some View {
-        HStack(spacing: 3) {
-            ForEach(Array(keys.enumerated()), id: \.offset) { _, key in
-                KeyCap(label: key)
-            }
-        }
-    }
-}
-
 struct FullDiskAccessNote: View {
     var compact = false
     /// Why this surface needs the permission. The scan is the usual reason;
