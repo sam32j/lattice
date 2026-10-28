@@ -34,7 +34,7 @@ extension SettingsDirectory {
                                           + (NotchSupport.hasDisplayWithoutNotch
                                              ? [FeatureStrings.notch(language).withoutNotch,
                                                 FeatureStrings.notch(language).capsuleFit] : [])),
-                SettingsDirectoryItem(page: .launcherGrid, title: s.launcherName, icon: "sparkles.rectangle.stack"),
+                SettingsDirectoryItem(page: .launcherGrid, title: s.launcherName, icon: "square.grid.2x2"),
                 SettingsDirectoryItem(page: .commandBar,
                                       title: FeatureStrings.commandBar(language).pageTitle,
                                       icon: "chevron.right.square",

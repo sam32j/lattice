@@ -807,6 +807,7 @@ final class NotchService: ObservableObject {
         }
         let musicExtras = NotchLyricsSupport.isEnabled() || NotchQueueSupport.isEnabled()
         let launcher = QuickLauncherService.shared
+        let controlsHeight: CGFloat? = launcher.isEditing || launcher.activeUtility != nil ? nil : launcher.notchControlsHeight
         return pageSize(in: expandedGeometry, module: showingAppPanel ? .tools : selected,
                         detail: selectedMetric != nil, panel: showingAppPanel,
                         detailHeight: selectedMetric == .fan ? fanDetailHeight : nil,
@@ -814,14 +815,16 @@ final class NotchService: ObservableObject {
                         fileMediaHeight: !choosingFileDropDestination && AppFeature.mediaTools.isAvailable
                             && NotchFileToolsService.shared.mediaPresented ? NotchFileToolsService.shared.mediaContentHeight : nil,
                         toolCount: launcher.isEditing || launcher.activeUtility != nil ? nil : launcher.visibleItems.count,
-                        capturePreviewHeight: captureContent == nil ? nil : captureContentHeight)
+                        capturePreviewHeight: captureContent == nil ? nil : captureContentHeight,
+                        toolsControlsHeight: controlsHeight)
     }
 
     /// The open island as Settings previews a section: at rest, with no
     /// detail, app panel, capture or media editor in front of the page.
     func previewSize(for module: NotchModule) -> CGSize {
         pageSize(in: previewGeometry(for: module), module: module, detail: false, panel: false, detailHeight: nil, musicExtraHeight: 0,
-                 fileMediaHeight: nil, toolCount: QuickLauncherService.shared.visibleItems.count, capturePreviewHeight: nil)
+                 fileMediaHeight: nil, toolCount: QuickLauncherService.shared.visibleItems.count, capturePreviewHeight: nil,
+                 toolsControlsHeight: module == .tools ? QuickLauncherService.shared.notchControlsHeight : nil)
     }
 
     /// The island around a previewed section, with the top row its page has.
@@ -851,7 +854,7 @@ final class NotchService: ObservableObject {
 
     private func pageSize(in geometry: NotchGeometry, module: NotchModule, detail: Bool, panel: Bool,
                           detailHeight: CGFloat?, musicExtraHeight: CGFloat, fileMediaHeight: CGFloat?, toolCount: Int?,
-                          capturePreviewHeight: CGFloat?) -> CGSize {
+                          capturePreviewHeight: CGFloat?, toolsControlsHeight: CGFloat? = nil) -> CGSize {
         let controls = NotchSupport.controls()
         let sliders = controls.filter(\.isLevel).count
         let shortcuts = controls.filter { !$0.isLevel && $0 != .music }.count
@@ -866,7 +869,8 @@ final class NotchService: ObservableObject {
                                      timerMode: NotchTimerService.shared.session.hasSession
                                         ? NotchTimerService.shared.session.mode : NotchTimerSupport.savedMode(),
                                      agentsHeight: module == .agents && !detail && !panel
-                                        ? agentsContentHeight(width: geometry.contentWidth) : nil)
+                                        ? agentsContentHeight(width: geometry.contentWidth) : nil,
+                                     toolsControlsHeight: toolsControlsHeight)
     }
 
     /// The AI page is as tall as the cards it shows; nil while the logs are

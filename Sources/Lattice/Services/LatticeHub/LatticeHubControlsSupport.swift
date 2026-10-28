@@ -43,4 +43,11 @@ extension LatticeHubService {
         UserDefaults.standard.set(serialized, forKey: DefaultsKey.hubControlsHidden)
         self.objectWillChange.send()
     }
+
+    /// Dynamic height for controls strip in the Dynamic Island
+    var notchControlsHeight: CGFloat {
+        let count = visibleControls.count
+        guard count > 0 else { return 0 }
+        return count <= 6 ? 34 : 66
+    }
 }

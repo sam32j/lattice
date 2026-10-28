@@ -56,13 +56,20 @@ struct IslandDestinationSettings: View {
                     .onChange(of: cardSize) { _, _ in sync() }
                 }
                 if destination == .launcherGrid {
-                    SettingsControlRow(title: SettingsOwnershipStrings.text(.shortcutTarget, l10n.language),
-                                       caption: SettingsOwnershipStrings.text(.shortcutTargetCaption, l10n.language)) {
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text(SettingsOwnershipStrings.text(.shortcutTarget, l10n.language))
+                            .font(.body)
                         Picker(SettingsOwnershipStrings.text(.shortcutTarget, l10n.language), selection: $launcherShortcutTarget) {
                             Text(SettingsOwnershipStrings.text(.dynamicIsland, l10n.language)).tag(LauncherShortcutTarget.island.rawValue)
                             Text(SettingsOwnershipStrings.text(.floatingWindow, l10n.language)).tag(LauncherShortcutTarget.floatingWindow.rawValue)
-                        }.labelsHidden().pickerStyle(.segmented)
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        Text(SettingsOwnershipStrings.text(.shortcutTargetCaption, l10n.language))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
+                    .padding(.top, 2)
                     .onChange(of: launcherShortcutTarget) { _, _ in sync() }
                 }
             }

@@ -105,7 +105,7 @@ struct HubControlButton: View {
     let title: String
     let isActive: Bool
     var tint: Color = .accentColor
-    var height: CGFloat = 28
+    var height: CGFloat = 32
     var iconSize: CGFloat = 13
     var isEditing: Bool = false
     var onHide: (() -> Void)? = nil
@@ -122,7 +122,7 @@ struct HubControlButton: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: height)
                     .background {
-                        RoundedRectangle(cornerRadius: max(6, height * 0.28), style: .continuous)
+                        RoundedRectangle(cornerRadius: max(7, height * 0.28), style: .continuous)
                             .fill(isActive ? tint : (isHovered ? Color.primary.opacity(0.12) : Color.primary.opacity(0.06)))
                     }
             }
@@ -159,28 +159,58 @@ struct HubQuickControls: View {
 
     private var isNotch: Bool { notchSize != nil }
 
-    var body: some View {
+    private var row1: [HubControlAction] {
         let controls = launcher.visibleControls
-        if !controls.isEmpty {
-            HStack(spacing: isNotch ? 4 : 5) {
-                ForEach(controls) { action in
-                    HubControlButton(icon: action.icon(colorScheme: colorScheme),
-                                     title: action.title(l10n: l10n, colorScheme: colorScheme),
-                                     isActive: action.isActive(colorScheme: colorScheme),
-                                     tint: action.tint,
-                                     height: isNotch ? 24 : 28,
-                                     iconSize: isNotch ? 11 : 13,
-                                     isEditing: isEditing,
-                                     onHide: {
-                                         withAnimation(.easeOut(duration: 0.15)) {
-                                             launcher.setControlHidden(action, true)
-                                         }
-                                     }) {
-                        action.run(onDismiss: onDismiss)
-                    }
+        if controls.count <= 6 { return controls }
+        let split = (controls.count + 1) / 2
+        return Array(controls.prefix(split))
+    }
+
+    private var row2: [HubControlAction] {
+        let controls = launcher.visibleControls
+        if controls.count <= 6 { return [] }
+        let split = (controls.count + 1) / 2
+        return Array(controls.dropFirst(split))
+    }
+
+    var body: some View {
+        if !launcher.visibleControls.isEmpty {
+            VStack(spacing: isNotch ? 5 : 6) {
+                renderRow(row1)
+                if !row2.isEmpty {
+                    renderRow(row2)
+                }
+            }
+            .padding(isNotch ? 0 : 4)
+            .background {
+                if !isNotch {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.primary.opacity(0.03))
                 }
             }
             .padding(.horizontal, isNotch ? 0 : 2)
+        }
+    }
+
+    @ViewBuilder
+    private func renderRow(_ controls: [HubControlAction]) -> some View {
+        HStack(spacing: isNotch ? 5 : 7) {
+            ForEach(controls) { action in
+                HubControlButton(icon: action.icon(colorScheme: colorScheme),
+                                 title: action.title(l10n: l10n, colorScheme: colorScheme),
+                                 isActive: action.isActive(colorScheme: colorScheme),
+                                 tint: action.tint,
+                                 height: isNotch ? 26 : 32,
+                                 iconSize: isNotch ? 11 : 13,
+                                 isEditing: isEditing,
+                                 onHide: {
+                                     withAnimation(.easeOut(duration: 0.15)) {
+                                         launcher.setControlHidden(action, true)
+                                     }
+                                 }) {
+                    action.run(onDismiss: onDismiss)
+                }
+            }
         }
     }
 }
