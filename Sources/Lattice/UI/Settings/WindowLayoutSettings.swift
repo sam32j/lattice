@@ -11,7 +11,6 @@ struct WindowLayoutSettings: View {
     @AppStorage(DefaultsKey.windowMaximizeEnabled) var maximizeEnabled = false
     @ObservedObject var pointerDisplay = PointerDisplayService.shared
     @AppStorage(DefaultsKey.pointerDisplayEnabled) var pointerDisplayEnabled = false
-    @AppStorage(DefaultsKey.panelUtilityWindowLayout) var showInPanel = true
     @AppStorage(DefaultsKey.windowDirectionalEnabled) var directionalEnabled = false
     @AppStorage(DefaultsKey.windowDirectionalShortcut) var directionalShortcutRaw = GlobalShortcut.windowDirectionalDefault.storageValue
     @AppStorage(DefaultsKey.windowEdgeSnapEnabled) var edgeSnapEnabled = false
@@ -102,8 +101,6 @@ struct WindowLayoutSettings: View {
                 .labelsHidden()
             }
             VStack(alignment: .leading, spacing: 16) {
-                Toggle(text.showInPanel, isOn: $showInPanel)
-                    .padding(.leading, settingsRowTextInset)
                 WindowLayoutIgnoredAppsList()
                     .padding(.leading, settingsRowTextInset)
                 snappingControls

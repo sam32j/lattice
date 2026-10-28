@@ -20,7 +20,6 @@ struct ClipboardSettings: View {
     @AppStorage(DefaultsKey.clipboardHistoryMenuBarPreview) private var menuBarPreview = false
     @AppStorage(DefaultsKey.clipboardHistoryMenuBarPreviewLength)
     private var menuBarPreviewLength = Defaults.defaultClipboardMenuBarPreviewLength
-    @AppStorage(DefaultsKey.panelUtilityClipboard) private var showInPanel = true
     @AppStorage(DefaultsKey.clipboardAutoClearOnDelay) private var autoClearOnDelay = false
     @AppStorage(DefaultsKey.clipboardAutoClearDelay)
     private var autoClearDelay = Defaults.defaultClipboardAutoClearDelay
@@ -94,10 +93,6 @@ struct ClipboardSettings: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-
-                Section {
-                    Toggle(text.showInPanel, isOn: $showInPanel)
-                }.disabled(!enabled)
 
                 clipboardAutoClearSection.disabled(!enabled)
             }

@@ -13,7 +13,6 @@ struct AppUpdatesSettings: View {
     @AppStorage(DefaultsKey.appUpdatesIncludeAppStore) private var includeAppStore = true
     @AppStorage(DefaultsKey.appUpdatesIncludeOnlineCatalog)
     private var includeOnlineCatalog = true
-    @AppStorage(DefaultsKey.panelUtilityAppUpdates) private var showInPanel = true
 
     private var text: AppUpdateStrings { FeatureStrings.appUpdates(l10n.language) }
 
@@ -70,10 +69,6 @@ struct AppUpdatesSettings: View {
                 Text(text.includeOnlineCaption)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-            }
-
-            Section {
-                Toggle(text.showInPanel, isOn: $showInPanel)
             }
         }
         .formStyle(.grouped)
