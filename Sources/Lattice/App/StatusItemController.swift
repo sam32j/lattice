@@ -155,17 +155,6 @@ final class StatusItemController {
         installStatusItem()
     }
 
-    /// Starts the item over under a brand new identity, giving up the saved
-    /// position along with everything else macOS remembered about it. Last
-    /// resort: the item lands wherever macOS puts a first-time item, which on
-    /// a crowded bar can be a worse place than the one it came from, so this
-    /// is only for an icon that stayed away after keeping its spot.
-    func resetStatusItemPlacementIdentity() {
-        if let statusItem { NSStatusBar.system.removeStatusItem(statusItem) }
-        StatusItemPlacementSupport.bumpPlacementGeneration(in: .standard)
-        installStatusItem()
-    }
-
     private func bind() {
         KeepAwakeManager.shared.$isActive
             .receive(on: DispatchQueue.main)
