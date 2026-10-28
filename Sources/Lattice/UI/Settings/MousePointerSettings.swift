@@ -148,14 +148,4 @@ extension MouseSettings {
             }
         }
     }
-
-    func activeBadge(_ text: String) -> some View {
-        Label(text, systemImage: "checkmark.circle.fill")
-            .font(.caption.weight(.medium))
-            .foregroundStyle(PanelMetricColor.green(for: colorScheme))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(PanelMetricColor.green(for: colorScheme).opacity(0.12), in: Capsule())
-    }
-
 }
