@@ -179,18 +179,4 @@ final class ToolchainManager: ObservableObject {
     func repair() {
         install()
     }
-
-    /// Lazy installation of Deno when an extractor specifically requires it
-    func ensureDeno(completion: @escaping (Bool) -> Void) {
-        if dependencies.hasDeno {
-            completion(true)
-            return
-        }
-        let system = VideoDownloadDependencies.discover()
-        if system.hasDeno {
-            completion(true)
-            return
-        }
-        completion(false)
-    }
 }
