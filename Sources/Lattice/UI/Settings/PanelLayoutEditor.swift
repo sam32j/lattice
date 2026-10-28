@@ -12,7 +12,6 @@ import UniformTypeIdentifiers
 /// tab in the miniature, which is how an icon gets its name.
 struct PanelLayoutEditor: View {
     @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.panelShowFanControl) private var showFanControl = true
     @AppStorage(DefaultsKey.brightnessControlEnabled) private var brightnessEnabled = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
