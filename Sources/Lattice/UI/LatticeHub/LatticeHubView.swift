@@ -199,8 +199,10 @@ struct LatticeHubView: View {
 
     private var emptyState: some View {
         ZStack {
-            HubDragHandle()
-                .frame(maxWidth: .infinity, minHeight: 120)
+            if notchSize == nil {
+                HubDragHandle()
+                    .frame(maxWidth: .infinity, minHeight: 120)
+            }
             Text(l10n.s.launcherEmptyState)
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)

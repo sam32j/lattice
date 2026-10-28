@@ -73,7 +73,7 @@ enum RefactorUtilityRenderingProbe {
     private static func verifyChildren(name: String, view: AnyView, enabled: Bool, island: Bool,
                                        cameraGranted: Bool = true, failures: inout [String]) {
         let titles = ["clipboard": "Clipboard History", "scratchpad": "Scratchpad",
-                      "file-cache": "File Cache", "camera": "Camera Preview", "launcher": "Launcher Grid"]
+                      "file-cache": "File Cache", "camera": "Camera Preview", "launcher": "Lattice Hub"]
         let open = "Open \(titles[name]!)"
         var requests = 0
         let access = SettingsPermissionAccessors(verify: { $0 != .camera || cameraGranted },

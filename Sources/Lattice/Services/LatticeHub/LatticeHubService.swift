@@ -137,10 +137,7 @@ final class LatticeHubService: ObservableObject {
               NotchSupport.routesQuickPanel() else {
             return false
         }
-        let screen = NSScreen.screens.first(where: { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) })
-            ?? NSScreen.main
-            ?? NSScreen.screens.first
-        return (screen?.safeAreaInsets.top ?? 0) > 0
+        return NSMouseInRect(NSEvent.mouseLocation, NotchService.shared.geometry.screen, false)
     }
 
     func prepareForPresentation() {
