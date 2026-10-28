@@ -17,7 +17,7 @@ extension LatticeHubService {
                                     defer: false)
         panel.title = "Lattice Hub"
         panel.isReleasedWhenClosed = false
-        panel.isMovableByWindowBackground = false
+        panel.isMovableByWindowBackground = true
         panel.hidesOnDeactivate = false
         panel.level = .floating
         panel.backgroundColor = .clear

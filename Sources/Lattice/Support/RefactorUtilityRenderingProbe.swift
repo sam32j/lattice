@@ -101,8 +101,14 @@ enum RefactorUtilityRenderingProbe {
         if (shortcutIndex != nil) != enabled || (islandIndex != nil) != (enabled && island) {
             failures.append("\(name) child visibility disagrees with effective enablement (enabled=\(enabled), camera=\(cameraGranted)): \(labels)")
         }
-        if let shortcutIndex, let islandIndex, shortcutIndex >= islandIndex {
-            failures.append("\(name) Open shortcut must appear before Show on Dynamic Island.")
+        if name == "launcher" {
+            if let shortcutIndex, let islandIndex, islandIndex >= shortcutIndex {
+                failures.append("\(name) Show on Dynamic Island must appear before Open shortcut.")
+            }
+        } else {
+            if let shortcutIndex, let islandIndex, shortcutIndex >= islandIndex {
+                failures.append("\(name) Open shortcut must appear before Show on Dynamic Island.")
+            }
         }
     }
 
