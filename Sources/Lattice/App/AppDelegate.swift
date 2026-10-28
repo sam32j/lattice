@@ -360,11 +360,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         return StatusItemPlacementSupport.isPlacedStatusFrame(frame, screenFrames: NSScreen.screens.map(\.frame))
     }
 
-    private func iconIsSettling() -> Bool {
-        StatusItemAnchorSupport.isSettlingStatusFrame(
-            statusController?.statusItem.button?.window?.frame)
-    }
-
     /// What the recovery saw, in the app's own log. Whether macOS gave the
     /// rebuilt item a place is invisible from the outside, so a report of an
     /// icon that never comes back has nothing to go on without this
