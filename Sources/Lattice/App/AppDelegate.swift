@@ -339,17 +339,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         return true
     }
 
-    /// Whether the menu bar icon is actually visible on a screen, rather than
-    /// present in the status bar but clipped or dropped by a crowded/notched menu
-    /// bar (in which case the button still has a window, just not an on-screen one).
+    /// The screen frame of the status item button, validated as trustworthy
+    /// for anchoring overlays (not an unplaced window parked at screen origin).
     var statusItemFrame: NSRect? {
         guard statusController?.statusItem.isVisible == true else { return nil }
-        return statusController?.statusItem.button?.window?.frame
+        guard let frame = statusController?.statusItem.button?.window?.frame,
+              StatusItemAnchorSupport.isTrustworthyStatusFrame(frame) else { return nil }
+        return frame
     }
 
     private static let menuBarLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "lattice",
                                            category: "menubar")
 
+    /// Whether the menu bar icon is actually visible on a screen, rather than
+    /// present in the status bar but clipped or dropped by a crowded/notched menu
+    /// bar (in which case the button still has a window, just not an on-screen one).
     private func iconIsOnScreen() -> Bool {
         // A hidden item is not on screen, whatever frame its window last had.
         guard statusController?.statusItem.isVisible == true,
