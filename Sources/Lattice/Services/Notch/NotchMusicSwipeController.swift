@@ -166,6 +166,7 @@ final class NotchMusicSwipeController {
 
     private func emitFeedback(wasArmed: Bool) {
         if !started, gesture.feedbackReady { started = true; onStart() }
+        if started, !gesture.feedbackReady { started = false }
         if !wasArmed, gesture.armed != nil { onArm() }
     }
 

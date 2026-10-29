@@ -71,6 +71,51 @@ enum NotchMusicTrackSwipeTests {
         suite.expect(swipe.update(contacts(54), enabled: true) == nil && swipe.progress == 0,
                      "disabled contact sequences cannot resume midway")
 
+        // Undoing after reaching reach threshold:
+        swipe = NotchMusicTrackSwipe()
+        _ = swipe.update(contacts(0), enabled: true)
+        _ = swipe.scroll(-1, precise: true, momentum: false)
+        _ = swipe.update(contacts(54), enabled: true)
+        suite.expect(swipe.progress == 1 && swipe.armed == .next,
+                     "reaching the reach threshold arms next track")
+        _ = swipe.update(contacts(40), enabled: true)
+        suite.expect(abs(swipe.progress - 40.0 / 54) < 0.001 && swipe.armed == nil,
+                     "reversing direction after reaching threshold unarms action and reduces progress")
+        _ = swipe.update(contacts(18), enabled: true)
+        suite.expect(abs(swipe.progress - 18.0 / 54) < 0.001 && swipe.armed == nil,
+                     "fading out towards the 1/4 inch trigger threshold continues undoing")
+        suite.expect(swipe.update([], enabled: true) == nil,
+                     "lifting after reversing cancels the gesture without changing track")
+
+        // Swiping in opposite direction after triggering only undoes, never triggers opposite track:
+        swipe = NotchMusicTrackSwipe()
+        _ = swipe.update(contacts(0), enabled: true)
+        _ = swipe.scroll(-1, precise: true, momentum: false)
+        _ = swipe.update(contacts(54), enabled: true)
+        suite.expect(swipe.armed == .next, "reach threshold arms next track")
+        _ = swipe.update(contacts(-20), enabled: true)
+        suite.expect(swipe.progress == 0 && swipe.armed == nil,
+                     "swiping past origin to the opposite side clamps progress to 0")
+        _ = swipe.update(contacts(-54), enabled: true)
+        suite.expect(swipe.progress == 0 && swipe.armed == nil && swipe.direction != .previous,
+                     "swiping in opposite direction only undoes and never triggers previous track")
+        suite.expect(swipe.update([], enabled: true) == nil,
+                     "lifting after full opposite swipe does not fire any track change")
+
+        // Reversing and then re-reaching forward:
+        swipe = NotchMusicTrackSwipe()
+        _ = swipe.update(contacts(0), enabled: true)
+        _ = swipe.scroll(-1, precise: true, momentum: false)
+        _ = swipe.update(contacts(54), enabled: true)
+        _ = swipe.update(contacts(25), enabled: true)
+        suite.expect(swipe.armed == nil && abs(swipe.progress - 25.0 / 54) < 0.001,
+                     "reversing drops arm and progress")
+        _ = swipe.update(contacts(54), enabled: true)
+        suite.expect(swipe.armed == .next && swipe.progress == 1,
+                     "swiping forward again re-arms action")
+        suite.expect(swipe.update([], enabled: true) == .next,
+                     "lifting after re-arming commits next track")
+
         let state = NotchMusicSwipeState()
         var commands: [Bool] = []
         var accepts = true
@@ -156,6 +201,18 @@ enum NotchMusicTrackSwipeTests {
         _ = controller.update(contacts(54), began: false, enabled: true, expanded: false)
         _ = controller.update([], began: false, enabled: true, expanded: false)
         suite.expect(commands.count == 4, "an entirely fresh native contact sequence recovers after interruption")
+
+        _ = controller.update(contacts(0), began: true, enabled: true, expanded: false, freshSequence: true)
+        _ = controller.scroll(-1, precise: true, momentum: false, cancelled: false, enabled: true, expanded: false)
+        _ = controller.update(contacts(54), began: false, enabled: true, expanded: false)
+        suite.expect(state.frame.progress == 1, "reaches reach threshold in controller")
+        _ = controller.update(contacts(30), began: false, enabled: true, expanded: false)
+        suite.expect(abs(state.frame.progress - 30.0 / 54) < 0.001,
+                     "controller frame progress fades out and scales down as user sweeps back")
+        _ = controller.update([], began: false, enabled: true, expanded: false)
+        suite.expect(commands.count == 4 && state.frame.progress == 0,
+                     "lifting after undoing in controller does not execute track command")
+
         state.clear()
     }
 }
