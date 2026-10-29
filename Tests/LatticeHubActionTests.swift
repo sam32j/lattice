@@ -63,6 +63,7 @@ enum LatticeHubContract {
             return true
         }
         func showHistoryWindow() { events.append(name + ".showHistoryWindow") }
+        func summon() { events.append(name + ".summon") }
         func activate() { events.append(name + ".activate") }
     }
     enum KeepAwakeManager { static let shared = Spy(name: "keepAwake") }
@@ -72,6 +73,8 @@ enum LatticeHubContract {
     enum CameraPreviewService { static let shared = Spy(name: "camera") }
     enum ScratchpadService { static let shared = Spy(name: "scratchpad") }
     enum ClipboardHistoryService { static let shared = Spy(name: "clipboard") }
+    enum ShelfService { static let shared = Spy(name: "shelf") }
+    enum SnippetLibraryService { static let shared = Spy(name: "snippets") }
     enum CleaningModeManager { static let shared = Spy(name: "cleaning") }
 
     static func run(_ suite: TestSuite) {
@@ -84,7 +87,7 @@ enum LatticeHubContract {
             defaults.removePersistentDomain(forName: domain)
         }
         for feature in AppFeature.allCases { defaults.set(true, forKey: feature.availabilityKey) }
-        for key in [DefaultsKey.shelfEnabled, DefaultsKey.clipboardHistoryEnabled, DefaultsKey.urlCleanerEnabled] { defaults.set(true, forKey: key) }
+        for key in [DefaultsKey.shelfEnabled, DefaultsKey.clipboardHistoryEnabled, DefaultsKey.urlCleanerEnabled, DefaultsKey.textSnippetsEnabled, DefaultsKey.videoDownloaderEnabled] { defaults.set(true, forKey: key) }
         defaults.set(true, forKey: DefaultsKey.microphoneLevelControlEnabled)
         defaults.set(false, forKey: DefaultsKey.cleaningModeShortcutEnabled)
         cameraInNotch = false
@@ -102,6 +105,11 @@ enum LatticeHubContract {
             (.cleaner, .cleaner, nil, nil),
             (.appUpdates, .appUpdates, nil, nil),
             (.portManager, .portManager, nil, nil),
+            (.shelf, .shelf, "shelf.summon", 0.15),
+            (.textSnippets, .textSnippets, "snippets.show", 0.15),
+            (.killProcess, .killProcess, nil, nil),
+            (.wallpaper, .wallpaper, nil, nil),
+            (.videoDownloader, .videoDownloader, nil, nil),
         ]
         suite.expect(Set(cases.map { $0.0 }) == Set(LatticeHubItem.allCases),
                      "every launcher tile has an activation contract")

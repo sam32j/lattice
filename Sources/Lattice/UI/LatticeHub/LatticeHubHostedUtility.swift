@@ -28,6 +28,12 @@ struct LatticeHubHostedUtility: View {
                     PanelAppUpdatesView(onClose: onClose)
                 case .portManager:
                     PanelPortManagerView(onClose: onClose)
+                case .killProcess:
+                    KillProcessView()
+                case .wallpaper:
+                    WallpaperSection(collapsible: false, onClose: onClose)
+                case .videoDownloader:
+                    NotchVideoDownloaderView(size: CGSize(width: notchSize?.width ?? 420, height: notchSize?.height ?? 470))
                 default:
                     EmptyView()
                 }
