@@ -20,6 +20,7 @@ enum NotchActivityTests {
         keepAwakeContracts(suite)
         accessoryContracts(suite)
         PeripheralBatteryLifecycleTests.run(suite)
+        NotchTimerCacheTests.run(suite)
         gateContracts(suite)
     }
 
