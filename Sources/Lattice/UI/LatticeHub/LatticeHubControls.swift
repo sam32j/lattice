@@ -76,7 +76,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         case .micMute: return .red
         case .keepAwake: return .orange
         case .darkMode: return .indigo
-        case .keyboardLight: return .purple
+        case .keyboardLight: return .yellow
         case .hiddenFiles: return .blue
         case .desktopIcons: return .teal
         case .emptyTrash: return .gray
@@ -134,7 +134,7 @@ struct HubControlButton: View {
             Button(action: { if !isEditing { action() } }) {
                 Image(systemName: icon)
                     .font(.system(size: iconSize, weight: .semibold))
-                    .foregroundStyle(isActive ? .white : Color.primary.opacity(0.85))
+                    .foregroundStyle(isActive ? (tint == .yellow ? Color.black.opacity(0.85) : .white) : Color.primary.opacity(0.85))
                     .frame(maxWidth: .infinity)
                     .frame(height: height)
                     .background {

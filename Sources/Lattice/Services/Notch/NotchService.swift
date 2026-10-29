@@ -1726,7 +1726,8 @@ final class NotchService: ObservableObject {
     }
 
     var filteredSections: [NotchModule] {
-        NotchSupport.filteredModules(modules, query: sectionQuery) { module in
+        let exploreModules = modules.filter { NotchSupport.isExploreModule($0) }
+        return NotchSupport.filteredModules(exploreModules, query: sectionQuery) { module in
             let language = L10n.shared.language
             let music = module == .music ? FeatureStrings.notch(language).music : ""
             return [module.title(language), module.rawValue, music].joined(separator: " ")

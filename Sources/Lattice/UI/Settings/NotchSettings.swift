@@ -134,7 +134,7 @@ struct NotchSettings: View {
     var orderedModules: [NotchModule] {
         let stored = order.split(separator: ",").compactMap { NotchModule(rawValue: String($0)) }
         var seen = Set<NotchModule>()
-        return (stored + NotchModule.allCases).filter { seen.insert($0).inserted }
+        return (stored + NotchSupport.rootModules).filter { seen.insert($0).inserted && NotchSupport.isExploreModule($0) }
     }
 
     init(initialTab: NotchSettingsTab = .layout, initialContent: NotchContentDestination? = nil) {
