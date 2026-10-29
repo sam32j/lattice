@@ -177,6 +177,10 @@ enum NotchActivityTests {
         defaults.set(false, forKey: DefaultsKey.notchCoversMenus)
         suite.expect(!NotchSupport.coversMenus(in: defaults), "an explicit choice to leave menus uncovered is preserved")
         suite.expect(NotchTimerAlert.maximumDuration == .seconds(300), "an alarm is limited to five minutes")
+        suite.expect(NotchTimerAlert.alertInterval == .milliseconds(300), "timer ring repeats every 300ms")
+        if let tone = NotchTimerAlert.loadPing300msSound() {
+            suite.expect(abs(tone.duration - 0.3) < 0.001, "timer tone is sliced to the first 300ms of Ping.aiff")
+        }
         var sounds = 0, stops = 0
         var elapsed: Duration = .zero
         let alert = NotchTimerAlert(interval: .milliseconds(5), now: { .now.advanced(by: elapsed) },
