@@ -194,6 +194,8 @@ enum NotchPresentationRefreshContract {
         var pinned = false
         var showingSections = false
         var showingAppPanel = false
+        var lastVisitedSections = false
+        var lastVisitedAppPanel = false
         var showingCommandBar = false
         var commandBarClosings = 0
         func commandBarDidClose() { commandBarClosings += 1 }

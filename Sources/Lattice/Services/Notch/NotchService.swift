@@ -200,6 +200,8 @@ final class NotchService: ObservableObject {
     private var captureClose: (() -> Void)?
     private var captureHover: ((Bool) -> Void)?
     private var captureClosesOnCollapse = false
+    private var lastVisitedSections = false
+    private var lastVisitedAppPanel = false
     private var inside = false
     private var hoverEmphasized = false
     private var activitySelection = NotchActivitySelection()
@@ -1284,11 +1286,12 @@ final class NotchService: ObservableObject {
         musicDetailVisible = false
         pageLayers.removeAll()
         clipboardPinnedOnly = false
+        lastVisitedSections = false
+        lastVisitedAppPanel = false
         panel?.handleScroll = nil
         gesture = NotchGestureSupport()
         sectionScroll = NotchSectionScroll()
         stopMenuSpaceMonitoring()
-        geometry.compactSideRoom = nil
         hoverWork?.cancel(); hoverWork = nil
         noticeWork?.cancel(); noticeWork = nil
         endDeparture()
@@ -1367,8 +1370,9 @@ final class NotchService: ObservableObject {
                     return (modules.contains(home) ? home : modules.first ?? .controls, false, false)
                 }
             }
+            return (selected, lastVisitedAppPanel, lastVisitedSections)
         }
-        return (selected, false, false)
+        return (selected, showingAppPanel, showingSections)
     }
 
     var reopeningModule: NotchModule {
@@ -1472,6 +1476,10 @@ final class NotchService: ObservableObject {
         clipboardPinnedOnly = false
         hoverWork?.cancel(); hoverWork = nil
         if noticeExpanded { noticeWork?.cancel(); noticeWork = nil }
+        if expanded {
+            lastVisitedSections = showingSections
+            lastVisitedAppPanel = showingAppPanel
+        }
         mutatePresentation(transitionContent: expanded || peeking || noticeExpanded ? .dismiss : .none) {
             if noticeExpanded { notice = nil; noticeExpanded = false }
             expanded = false

@@ -93,7 +93,15 @@ enum NotchDestinationContract {
 
     class State {
         var acceptsUserInteraction = true
-        func collapse() { expanded = false }
+        func collapse() {
+            if expanded {
+                lastVisitedSections = showingSections
+                lastVisitedAppPanel = showingAppPanel
+            }
+            showingSections = false
+            showingAppPanel = false
+            expanded = false
+        }
         var hiddenInFullscreen = false
         var running = true
         var session = NotchSessionState()
@@ -107,6 +115,8 @@ enum NotchDestinationContract {
         var showsKeyboardFocus = false
         var showingAppPanel = false
         var showingSections = false
+        var lastVisitedSections = false
+        var lastVisitedAppPanel = false
         var showingCommandBar = false
         var commandBarClosings = 0
         func commandBarDidClose() { commandBarClosings += 1 }
@@ -571,6 +581,25 @@ enum NotchDestinationContract {
         suite.expect(invalid.selected == .controls, "a malformed saved page falls back to Controls")
         defaults.set(NotchModule.controls.rawValue, forKey: DefaultsKey.notchHomeModule)
         defaults.set(false, forKey: DefaultsKey.notchReturnHome)
+        let lastVisitedService = Service()
+        lastVisitedService.open(.music)
+        lastVisitedService.toggleSections()
+        suite.expect(lastVisitedService.showingSections && lastVisitedService.selected == .music,
+                     "visiting explore from music sets showingSections")
+        lastVisitedService.collapse()
+        suite.expect(!lastVisitedService.expanded, "collapsing quits the island")
+        suite.expect(lastVisitedService.reopeningDestination.sections,
+                     "the explore page is counted as last visited after quitting from it")
+        lastVisitedService.open()
+        suite.expect(lastVisitedService.expanded && lastVisitedService.showingSections && lastVisitedService.selected == .music,
+                     "reopening without a default page restores the explore page as last visited")
+        lastVisitedService.open(.files)
+        suite.expect(lastVisitedService.expanded && !lastVisitedService.showingSections && lastVisitedService.selected == .files,
+                     "navigating to files leaves the explore page")
+        lastVisitedService.collapse()
+        suite.expect(!lastVisitedService.reopeningDestination.sections
+                     && lastVisitedService.reopeningDestination.module == .files,
+                     "quitting from files sets files as last visited")
         activityContracts(defaults: defaults) { suite.expect($0, $1) }
     }
 
