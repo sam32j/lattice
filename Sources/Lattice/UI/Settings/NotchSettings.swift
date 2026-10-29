@@ -196,7 +196,7 @@ struct NotchSettings: View {
                                 Text(text.spacious).tag(NotchSize.spacious.rawValue)
                             }
                             .labelsHidden()
-                            .pickerStyle(.segmented)
+                            .pickerStyle(.menu)
                             .fixedSize()
                         }
                         .disabled(!enabled)
