@@ -196,7 +196,7 @@ struct NotchSettings: View {
                             }
                             .labelsHidden()
                             .pickerStyle(.segmented)
-                            .frame(width: 180)
+                            .fixedSize()
                         }
                         .disabled(!enabled)
                         switchRow("hand.draw", labels.useScrollGestures,

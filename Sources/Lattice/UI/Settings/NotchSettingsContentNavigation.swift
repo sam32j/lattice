@@ -23,20 +23,7 @@ extension NotchSettings {
 
     @ViewBuilder
     func contentDetailView(selection: NotchContentDestination) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Button {
-                if router.canGoBack(isPageVisible: isPageVisible) {
-                    router.goBack(isPageVisible: isPageVisible)
-                } else {
-                    router.request(FeatureSettingsDestination(.notch))
-                }
-            } label: {
-                Label(FeatureStrings.notch(l10n.language).title, systemImage: "chevron.left")
-            }
-            .buttonStyle(.plain)
-            .fixedSize(horizontal: false, vertical: true)
-            .layoutPriority(1)
-
+        Group {
             if selection == .companion {
                 NotchMascotSettings(embedded: true)
                     .frame(minHeight: 0, maxHeight: .infinity)
@@ -47,10 +34,6 @@ extension NotchSettings {
         .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
         .padding(22)
         .clipped()
-    }
-
-    private func isPageVisible(_ page: SettingsPage) -> Bool {
-        FeatureVisibilitySupport.isPageVisible(page, isAvailable: { $0.isAvailable })
     }
 
 
