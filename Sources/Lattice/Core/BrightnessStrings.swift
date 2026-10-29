@@ -86,7 +86,7 @@ extension BrightnessFeatureStrings {
         keyStepQuarter: "Quarter steps",
         displayBrightnessDecrease: "Decrease display brightness",
         displayBrightnessIncrease: "Increase display brightness",
-        keyboardLight: "Keyboard light",
+        keyboardLight: "Keyboard Light",
         keyboardBrightnessShortcuts: "Use keyboard brightness shortcuts",
         keyboardBrightnessDecrease: "Decrease keyboard brightness",
         keyboardBrightnessIncrease: "Increase keyboard brightness",

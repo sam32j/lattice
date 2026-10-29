@@ -28,7 +28,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         switch self {
         case .micMute: return MicMuteService.shared.isMuted ? l10n.s.micUnmuteName : l10n.s.micMuteName
         case .keepAwake: return l10n.s.keepAwakeTitle
-        case .darkMode: return colorScheme == .dark ? strings.darkModeToLight : strings.darkModeToDark
+        case .darkMode: return strings.toggleAppearance
         case .keyboardLight: return FeatureStrings.brightness(l10n.language).keyboardLight
         case .hiddenFiles: return QuickTogglesService.shared.hiddenFilesShown ? strings.hiddenFilesHide : strings.hiddenFilesShow
         case .desktopIcons: return QuickTogglesService.shared.desktopIconsShown ? strings.desktopIconsHide : strings.desktopIconsShow
