@@ -220,34 +220,29 @@ struct NotchSettings: View {
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: 28) {
+                    openingCard
+                        .id("behavior")
+                        .disabled(!enabled)
+                        .opacity(enabled ? 1.0 : 0.5)
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 20) {
                         layoutPage
                             .id("layout")
-
-                        Divider()
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(editor.content).font(.title3.weight(.semibold))
-                            sectionList
-                        }
-                        .id("content")
-
-                        Divider()
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(editor.activity).font(.title3.weight(.semibold))
-                            activityPage
-                        }
-                        .id("activity")
-
-                        Divider()
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(editor.behavior).font(.title3.weight(.semibold))
-                            behaviorPage
-                        }
-                        .id("behavior")
+                        sectionList
+                            .id("content")
                     }
+                    .disabled(!enabled)
+                    .opacity(enabled ? 1.0 : 0.5)
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(editor.activity).font(.title3.weight(.semibold))
+                        activityPage
+                    }
+                    .id("activity")
                     .disabled(!enabled)
                     .opacity(enabled ? 1.0 : 0.5)
                 }
