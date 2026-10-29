@@ -665,8 +665,11 @@ private struct NotchFanControlView: View {
 /// The charge the closed island rests with, beside a camera or in the capsule.
 enum NotchRestingBattery {
     /// Both halves of the charge turn amber, then red, together as it runs low.
-    static func tint(for power: PowerReading, tint: Bool, threshold: Int,
-                     early: Bool, earlyThreshold: Int) -> Color {
+    static func tint(for power: PowerReading,
+                     tint: Bool = true,
+                     threshold: Int = NotchSupport.defaultLowBatteryThreshold,
+                     early: Bool = true,
+                     earlyThreshold: Int = NotchSupport.defaultEarlyBatteryThreshold) -> Color {
         switch NotchSupport.batteryWarning(percent: power.chargePercent,
                                            externalConnected: power.externalConnected,
                                            tint: tint, threshold: threshold,
@@ -694,17 +697,12 @@ struct NotchRestingStrip: View {
     /// Another display's strip, when the island shows on every display.
     var displayGeometry: NotchGeometry? = nil
     @ObservedObject private var music = NotchMusicService.shared
-    @AppStorage(DefaultsKey.notchLowBatteryTint) private var lowBatteryTint = false
-    @AppStorage(DefaultsKey.notchLowBatteryThreshold) private var lowBatteryThreshold = NotchSupport.defaultLowBatteryThreshold
-    @AppStorage(DefaultsKey.notchLowBatteryEarly) private var earlyBatteryWarning = false
-    @AppStorage(DefaultsKey.notchLowBatteryEarlyThreshold) private var earlyBatteryThreshold = NotchSupport.defaultEarlyBatteryThreshold
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var geometry: NotchGeometry { displayGeometry ?? service.geometry }
 
     private var batteryTint: Color {
-        NotchRestingBattery.tint(for: service.power, tint: lowBatteryTint, threshold: lowBatteryThreshold,
-                                 early: earlyBatteryWarning, earlyThreshold: earlyBatteryThreshold)
+        NotchRestingBattery.tint(for: service.power)
     }
 
     private var batterySymbol: String { NotchRestingBattery.symbol(for: service.power) }
