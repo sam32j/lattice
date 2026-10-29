@@ -184,15 +184,15 @@ struct NotchSettings: View {
                 VStack(alignment: .leading, spacing: 20) {
                     SettingsCard {
                         SettingsRow(symbol: AppFeature.notch.symbolName, title: text.enable,
-                                    experimentalBadge: FeatureStrings.hub(l10n.language).experimentalBadge,
-                                    caption: text.description) {
+                                    experimentalBadge: FeatureStrings.hub(l10n.language).experimentalBadge) {
                             PermissionGatedToggle(text.enable, isOn: islandFeatureBinding(.notch, value: $enabled))
                                 .labelsHidden().toggleStyle(.switch)
                         }
-                        Divider()
-                        ShortcutPreferenceRow(role: .notch, label: l10n.s.globalHotkeySection, symbolName: "keyboard") {
+                        let labels = FeatureStrings.notchLiveActivitySettings(l10n.language)
+                        ShortcutPreferenceRow(role: .notch, label: labels.openWithShortcut, symbolName: nil) {
                             NotchService.shared.syncWithPreferences()
                         }
+                        .padding(.leading, settingsRowTextInset)
                         .disabled(!enabled)
                         if notch.shortcutRegistrationFailed {
                             Text(l10n.s.shortcutUnavailable)
@@ -200,21 +200,28 @@ struct NotchSettings: View {
                                 .foregroundStyle(.orange)
                                 .padding(.leading, settingsRowTextInset)
                         }
-                        Divider()
-                        switchRow("hand.draw", FeatureStrings.notchGestures(l10n.language).title,
-                                  caption: gesturesEnabled ? FeatureStrings.notchGestures(l10n.language).hint : nil,
+                        SettingsRow(symbol: "display", title: labels.openIn) {
+                            Picker(labels.openIn, selection: $display) {
+                                Text(text.automatic).tag(NotchDisplay.automatic.rawValue)
+                                if PowerSampler.hasInternalBattery {
+                                    Text(text.builtIn).tag(NotchDisplay.builtIn.rawValue)
+                                }
+                                Text(text.mainDisplay).tag(NotchDisplay.main.rawValue)
+                                Text(text.followPointer).tag(NotchDisplay.pointer.rawValue)
+                                Text(text.allDisplays).tag(NotchDisplay.all.rawValue)
+                            }
+                            .pickerStyle(.menu)
+                            .labelsHidden()
+                        }
+                        .disabled(!enabled)
+                        switchRow("hand.draw", labels.useScrollGestures,
                                   isOn: islandFeatureBinding(.notchGestures, value: $gesturesEnabled))
                             .disabled(!enabled)
-                        Divider()
-                        switchRow("waveform.path", text.hapticFeedback, isOn: $hapticFeedback)
-                            .disabled(!enabled)
-                        Divider()
-                        let locked = FeatureStrings.notchLockScreen(l10n.language)
-                        switchRow("lock.display", locked.show, caption: locked.showHint, isOn: $lockScreen)
-                            .disabled(!enabled)
-                        Divider()
-                        switchRow("camera.viewfinder", text.showInCaptures,
-                                  isOn: Binding(get: { !showInCaptures }, set: { showInCaptures = !$0 }))
+                        if gesturesEnabled {
+                            switchRow("waveform.path", labels.turnOnHapticFeedback, isOn: $hapticFeedback)
+                                .disabled(!enabled)
+                        }
+                        switchRow("camera.viewfinder", labels.showInScreenshots, isOn: $showInCaptures)
                             .disabled(!enabled)
                     }
                     if enabled, AppFeature.notch.isAvailable, !(hover && hideUntilHover && !hiddenShowsActivity), !notch.geometry.isNotched, !permissions.accessibility {
@@ -284,8 +291,6 @@ struct NotchSettings: View {
         NotchMusicService.shared.syncQueuePreference()
         if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
     }
-
 }
-
 
 extension NotchControlItem: PanelOrderItem {}

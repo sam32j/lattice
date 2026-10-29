@@ -161,7 +161,21 @@ extension NotchSettings {
                     }
                 }
                 if restingChoice == .battery { lowBatteryControls }
-                switchRow("menubar.rectangle", text.coverMenus, caption: text.coverMenusHint, isOn: $coversMenus)
+                let liveActivityStrings = FeatureStrings.notchLiveActivitySettings(l10n.language)
+                Divider()
+                switchRow("menubar.rectangle",
+                          liveActivityStrings.onlyShowActivityWhenRoom,
+                          caption: liveActivityStrings.onlyShowActivityWhenRoomHint,
+                          isOn: Binding(get: { !coversMenus }, set: { coversMenus = !$0 }))
+                Divider()
+                switchRow("arrow.up.left.and.arrow.down.right",
+                          liveActivityStrings.hideActivityInFullscreen,
+                          caption: liveActivityStrings.hideActivityInFullscreenHint,
+                          isOn: $hideInFullscreen)
+                Divider()
+                switchRow("lock.display",
+                          liveActivityStrings.showActivityOnLockScreen,
+                          isOn: $lockScreen)
             }
             SettingsCard(title: editor.feedback) {
                 let volumeAvailable = AppFeature.mixer.isAvailable

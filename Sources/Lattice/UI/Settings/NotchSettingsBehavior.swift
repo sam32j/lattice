@@ -45,20 +45,6 @@ extension NotchSettings {
                 }
                 switchRow("livephoto", editor.openActivity, caption: editor.openActivityHint, isOn: $opensActivity)
             }
-            SettingsCard(title: text.display) {
-                switchRow("arrow.up.left.and.arrow.down.right", text.hideInFullscreen, isOn: $hideInFullscreen)
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                    // A mode this version no longer offers is treated as automatic, as the island does.
-                    choice(text.automatic, symbol: "display.2",
-                           selected: (NotchDisplay(rawValue: display) ?? .automatic) == .automatic) { display = NotchDisplay.automatic.rawValue }
-                    choice(text.builtIn, symbol: "laptopcomputer", selected: display == NotchDisplay.builtIn.rawValue) { display = NotchDisplay.builtIn.rawValue }
-                    choice(text.mainDisplay, symbol: "display", selected: display == NotchDisplay.main.rawValue) { display = NotchDisplay.main.rawValue }
-                    choice(text.followPointer, symbol: "cursorarrow.motionlines",
-                           selected: display == NotchDisplay.pointer.rawValue) { display = NotchDisplay.pointer.rawValue }
-                    choice(text.allDisplays, symbol: "rectangle.on.rectangle",
-                           selected: display == NotchDisplay.all.rawValue) { display = NotchDisplay.all.rawValue }
-                }
-            }
             SettingsCard(title: editor.destinations) {
                 destination(text.captures, symbol: "photo.stack", value: $capture,
                             available: AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable)
