@@ -246,6 +246,7 @@ extension NotchSettings {
                 }
                 if enabled, (volume || brightness || keyboardLight), !permissions.accessibility { PermissionRow(kind: .accessibility) }
             }
+            destinationsCard
         }
     }
 
