@@ -5,8 +5,8 @@ import AppKit
 import CoreGraphics
 import Foundation
 
-enum NotchTimerMode: String, CaseIterable { case timer, pomodoro, stopwatch }
-enum NotchTimerPhase: String { case timer, focus, shortBreak, longBreak, stopwatch }
+enum NotchTimerMode: String, CaseIterable, Codable { case timer, pomodoro, stopwatch }
+enum NotchTimerPhase: String, Codable { case timer, focus, shortBreak, longBreak, stopwatch }
 
 enum NotchTimerRulerScale {
     static let spacing = 14.0
@@ -30,7 +30,7 @@ enum NotchTimerRulerScale {
 }
 
 /// Preferences describe the next cycle; a running cycle owns an immutable copy.
-struct NotchPomodoroConfiguration: Equatable {
+struct NotchPomodoroConfiguration: Equatable, Codable {
     static let focusRange = 1...180
     static let breakRange = 1...60
     static let sessionRange = 1...24
@@ -83,14 +83,14 @@ enum NotchPomodoroOption: CaseIterable, Identifiable {
 /// deadline, or the instant a stopwatch read zero. UI refreshes and delayed
 /// callbacks never subtract ticks, so sleep and busy frames cannot drift.
 struct NotchTimerSession: Equatable {
-    private(set) var mode: NotchTimerMode = .timer
-    private(set) var phase: NotchTimerPhase = .timer
-    private(set) var duration: TimeInterval = 300
-    private(set) var anchor: TimeInterval?
-    private(set) var pausedReading: TimeInterval?
-    private(set) var completed = false
-    private(set) var completedFocuses = 0
-    private(set) var configuration = NotchPomodoroConfiguration()
+    var mode: NotchTimerMode = .timer
+    var phase: NotchTimerPhase = .timer
+    var duration: TimeInterval = 300
+    var anchor: TimeInterval?
+    var pausedReading: TimeInterval?
+    var completed = false
+    var completedFocuses = 0
+    var configuration = NotchPomodoroConfiguration()
 
     var countsUp: Bool { mode == .stopwatch }
     var isRunning: Bool { anchor != nil }

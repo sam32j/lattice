@@ -4,8 +4,8 @@
 import AppKit
 import Combine
 
-/// Session state is intentionally memory-only: a settings restore or relaunch
-/// must never resurrect a timer from a different day or another Mac.
+/// Session state is saved to the local machine cache so active timers survive
+/// app relaunch, while staying excluded from backups and remote devices.
 final class NotchTimerService: ObservableObject {
     static let shared = NotchTimerService()
     @Published private(set) var session = NotchTimerSession()
@@ -25,6 +25,9 @@ final class NotchTimerService: ObservableObject {
     func syncWithPreferences() {
         guard NotchTimerSupport.isEnabled() else { stop(); return }
         suspended = false
+        if !session.hasSession {
+            restoreSessionFromCache()
+        }
         finishIfDue()
         if session.completed { alert.start(enabled: NotchTimerSupport.isSoundEnabled()) }
         scheduleCompletion()
@@ -35,6 +38,7 @@ final class NotchTimerService: ObservableObject {
         guard !session.hasSession else { return }
         alert.stop()
         session.start(mode: mode, minutes: minutes, now: now, configuration: .load())
+        persistSessionToCache()
         scheduleCompletion()
         NotchService.shared.reactMascot(.ready)
     }
@@ -44,6 +48,7 @@ final class NotchTimerService: ObservableObject {
         finishIfDue()
         if session.isRunning { session.pause(at: now) }
         else if session.isPaused { session.resume(at: now) }
+        persistSessionToCache()
         scheduleCompletion()
     }
 
@@ -52,6 +57,7 @@ final class NotchTimerService: ObservableObject {
         guard session.canStartNext else { return }
         alert.stop()
         session.startNext(at: now)
+        persistSessionToCache()
         scheduleCompletion()
         NotchService.shared.reactMascot(.ready)
     }
@@ -62,6 +68,7 @@ final class NotchTimerService: ObservableObject {
         countdownTask?.cancel(); countdownTask = nil
         NotchService.shared.endMascotCountdown(retreating: false)
         session.cancel()
+        NotchTimerCache.delete()
     }
 
     func suspend() {
@@ -76,6 +83,7 @@ final class NotchTimerService: ObservableObject {
 
     private func finishIfDue() {
         guard session.finishIfDue(at: now) else { return }
+        persistSessionToCache()
         alert.stop()
         // The notice takes the strip it watched from.
         NotchService.shared.endMascotCountdown(retreating: false)
@@ -87,6 +95,31 @@ final class NotchTimerService: ObservableObject {
         // It takes the news in the notice, or where it is when the notice cannot show.
         NotchService.shared.reactMascot(reaction)
         alert.start(enabled: NotchTimerSupport.isSoundEnabled())
+    }
+
+    private func persistSessionToCache() {
+        if let snapshot = NotchTimerCache.createSnapshot(from: session, now: now) {
+            NotchTimerCache.save(snapshot)
+        } else {
+            NotchTimerCache.delete()
+        }
+    }
+
+    private func restoreSessionFromCache() {
+        guard let snapshot = NotchTimerCache.load() else { return }
+        if let restored = NotchTimerCache.restoreSession(from: snapshot, now: now) {
+            session = restored
+            if session.completed {
+                let text = FeatureStrings.notchActivities(L10n.shared.language)
+                let reaction = NotchMascotSupport.timerReaction(finishing: session.phase)
+                NotchService.shared.show(NotchNotice(event: .timer,
+                    title: session.cycleFinished ? text.pomodoroFinished : text.finished,
+                    detail: text.phase(session.phase), symbol: "timer", mascot: reaction))
+                NotchService.shared.reactMascot(reaction)
+            }
+        } else {
+            NotchTimerCache.delete()
+        }
     }
 
     private func scheduleCompletion() {
