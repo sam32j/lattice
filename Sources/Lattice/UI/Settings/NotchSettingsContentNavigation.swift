@@ -69,7 +69,7 @@ extension NotchSettings {
     }
 
     var sectionList: some View {
-        SettingsCard {
+        SettingsCard(title: editor.content) {
             ForEach(orderedModules) { module in
                 PanelReorderableItem(item: module,
                     order: Binding(get: { orderedModules }, set: { order = $0.map(\.rawValue).joined(separator: ",") }),

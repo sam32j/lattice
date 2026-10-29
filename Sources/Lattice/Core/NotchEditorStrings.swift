@@ -105,7 +105,7 @@ extension FeatureStrings {
         switch language {
         case .enUS: return NotchEditorStrings(
             layout: "Layout",
-            content: "Widget",
+            content: "Widgets",
             activity: "Activity",
             behavior: "Behavior",
             layoutHint: "Click + to add a button. Drag buttons around the island. Click a button to edit it.",
@@ -131,9 +131,9 @@ extension FeatureStrings {
             separate: "Separate window",
             feedback: "Indicators",
             privacy: "Privacy",
-            reopening: "When reopening",
+            reopening: "Reopening",
             lastPage: "Last page",
-            openActivity: "Open the visible activity",
+            openActivity: "Open live activity",
             openActivityHint: "When the closed island shows music, a timer or another activity, it opens on that page instead.",
             activationTime: "Activation time",
             activationTimeHint: "Keep the pointer over the island for this long to open it.",
