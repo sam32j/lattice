@@ -156,7 +156,8 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         guard isPresented else { return }
         let animate = animated && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         guard !hidesWhenSettled || !animate else { return }
-        present(size: CGSize(width: currentGeometry.collapsed.width, height: 0), geometry: currentGeometry,
+        let restingWidth = currentGeometry.restingSize(showsContent: false).width
+        present(size: CGSize(width: restingWidth, height: 0), geometry: currentGeometry,
                 animated: animate, transitionContent: .depart,
                 hideWhenSettled: true)
     }
@@ -236,7 +237,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         guard changesFrame else { configureQuickAccess(); return }
         // An ordered-out panel still has its last expanded shape. Start the
         // reveal at the screen edge, even when reopening at that same size.
-        let previousWidth = revealing ? geometry.collapsed.width : canvas.bounds.width
+        let previousWidth = revealing ? geometry.restingSize(showsContent: false).width : canvas.bounds.width
         let previousPath = revealing
             ? NotchShape(attached: true, radius: 0, floatingGap: geometry.floatingGap)
                 .path(in: CGRect(x: 0, y: 0, width: previousWidth, height: 0)).cgPath
@@ -306,10 +307,18 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         setFrame(mainSize: envelope, gutter: reservedGutter, bottom: reservedBottom)
         // Updating the hosting view can synchronously report a newer content
         // size. Only the latest request may install an animation or settle it.
-        guard generation == animationGeneration else { CATransaction.commit(); return }
+        guard generation == animationGeneration else {
+            CATransaction.commit()
+            if hidesWhenSettled { settle() }
+            return
+        }
         configureQuickAccess()
         canvas.layoutSubtreeIfNeeded()
-        guard generation == animationGeneration else { CATransaction.commit(); return }
+        guard generation == animationGeneration else {
+            CATransaction.commit()
+            if hidesWhenSettled { settle() }
+            return
+        }
         // Each frame is the island's own silhouette at that size, so its
         // corners and shoulders stay true while the sides swing apart.
         let paths = zip(motion.sizes, offsets).map { canvas.silhouettePath(for: $0, offset: $1) }
@@ -349,7 +358,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         // AppKit may cancel a layer animation when the panel resigns key.
         // Internal reversals have already changed the generation; a cancelled
         // current animation must still release its reserved window bounds.
-        guard isAnimating, anim.value(forKey: "notchGeneration") as? Int == animationGeneration else { return }
+        guard anim.value(forKey: "notchGeneration") as? Int == animationGeneration else { return }
         settle()
     }
 
@@ -362,6 +371,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             restoresKeyAfterFrameChange = false
             isAnimating = false
             canvas.stopMotion()
+            targetSize = .zero
             runSettledActions()
             return
         }
@@ -380,10 +390,18 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         CATransaction.setDisableActions(true)
         canvas.setContentSize(targetSize)
         setFrame(mainSize: targetSize, gutter: gutter, bottom: bottom)
-        guard generation == animationGeneration else { CATransaction.commit(); return }
+        guard generation == animationGeneration else {
+            CATransaction.commit()
+            if hidesWhenSettled { settle() }
+            return
+        }
         configureQuickAccess()
         canvas.layoutSubtreeIfNeeded()
-        guard generation == animationGeneration else { CATransaction.commit(); return }
+        guard generation == animationGeneration else {
+            CATransaction.commit()
+            if hidesWhenSettled { settle() }
+            return
+        }
         CATransaction.commit()
         CATransaction.flush()
         quickAccessContainer?.motion.setVisible(quickAccessConfiguration != nil, animated: quickAccessAnimate)
