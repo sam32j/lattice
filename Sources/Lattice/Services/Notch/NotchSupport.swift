@@ -754,7 +754,8 @@ enum NotchHoverEmphasis {
         // Keep the pulse inside the measured free menu-bar space on each side.
         let occupiedWing = max(0, (resting.width - geometry.cameraWidth) / 2) + reach
         let freeSide = max(0, (geometry.compactSideRoom ?? 0) - occupiedWing)
-        let growth = min(10, freeSide)
+        let baseGrowth: CGFloat = 10
+        let growth = min(baseGrowth, freeSide)
         // A capsule stretches along the bar and stays inside it.
         return CGSize(width: resting.width + growth * 2, height: resting.height + (geometry.floats ? 0 : 5))
     }

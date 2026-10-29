@@ -86,6 +86,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             guard let self else { return nil }
             return self.currentGeometry.screen.midX - self.panel.frame.minX - self.canvas.convert(CGPoint.zero, to: nil).x
         }
+        canvas.cutoutWidth = { [weak self] in self?.currentGeometry.floats == true ? 0 : (self?.currentGeometry.cameraWidth ?? 0) }
         canvas.setFloatingGap(geometry.floatingGap)
         canvas.layoutSubtreeIfNeeded()
         appliedFrame = panel.frame
@@ -1344,6 +1345,7 @@ private final class NotchCanvas: NSView {
     /// The display's centre in this canvas: the stages hang from this fixed
     /// point, so no size of the island or of its window moves them.
     var stageCentreX: (() -> CGFloat?)?
+    var cutoutWidth: (() -> CGFloat)?
 
     private func islandX(_ size: CGSize) -> CGFloat {
         islandMinX?(size) ?? (bounds.width - size.width) / 2
@@ -1354,8 +1356,10 @@ private final class NotchCanvas: NSView {
     /// still on its way to the camera's, or away from it, is `offset` from there.
     func silhouettePath(for size: CGSize, offset: CGFloat = 0) -> CGPath {
         var translation = CGAffineTransform(translationX: islandX(size) + offset - silhouette.frame.minX, y: 0)
+        let cutout = floatingGap != nil ? 0 : (cutoutWidth?() ?? 0)
         let path = NotchShape(attached: true, radius: NotchLayout.surfaceRadius(height: size.height),
-                              floatingGap: floatingGap)
+                              floatingGap: floatingGap,
+                              cutoutWidth: cutout)
             .path(in: CGRect(origin: .zero, size: size)).cgPath
         return path.copy(using: &translation) ?? path
     }
