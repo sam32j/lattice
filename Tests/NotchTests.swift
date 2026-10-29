@@ -789,9 +789,9 @@ enum NotchTests {
                                          customWidth: width, customHeight: height, silhouette: silhouette)
                 for button in [false, true] {
                     // The page as the island draws it, for as many tools as the launcher lists.
-                    let page = base.page(.tools, controls: [], sectionsButton: button)
+                    let page = base.page(.hub, controls: [], sectionsButton: button)
                     for count in 1...tools {
-                        let content = page.contentSize(for: page.expandedSize(module: .tools, toolCount: count))
+                        let content = page.contentSize(for: page.expandedSize(module: .hub, toolCount: count))
                         let perRow = NotchLayout.railCapacity(width: content.width, itemWidth: tile, spacing: spacing)
                         let rows = NotchLayout.railRows(count: count, perRow: perRow, rowHeight: NotchLayout.toolHeight,
                                                         spacing: spacing, height: content.height)
@@ -847,8 +847,8 @@ enum NotchTests {
                                      customWidth: NotchSize.widthRange.lowerBound,
                                      customHeight: NotchSize.heightRange.lowerBound,
                                      silhouette: camera > 0 ? .notch : .capsule)
-                .page(.tools, controls: [], sectionsButton: false)
-            let content = page.contentSize(for: page.expandedSize(module: .tools, toolCount: 8))
+                .page(.hub, controls: [], sectionsButton: false)
+            let content = page.contentSize(for: page.expandedSize(module: .hub, toolCount: 8))
             let rows = page.toolRows(count: 8)
             let gap = NotchLayout.railGap(columns: 4, itemWidth: tile, spacing: spacing,
                                           least: NotchLayout.toolLeastSpacing, width: content.width)
@@ -2368,7 +2368,7 @@ enum NotchTests {
         suite.expect(!NotchSupport.routes(.clipboard, in: defaults), "hidden module cannot leak an activity")
         defaults.set("system,music,music,unknown", forKey: DefaultsKey.notchModuleOrder)
         defaults.set(true, forKey: DefaultsKey.notchAgentsEnabled)
-        suite.expect(NotchSupport.modules(in: defaults) == [.system, .music, .controls, .mixer, .captures, .files, .tools, .calendar, .notifications, .timer, .camera, .downloads, .scratchpad, .agents, .watch],
+        suite.expect(NotchSupport.modules(in: defaults) == [.system, .music, .controls, .mixer, .captures, .files, .hub, .calendar, .notifications, .timer, .camera, .downloads, .scratchpad, .agents, .watch],
                "module order ignores unknown ids and duplicates, preserving newly added modules")
         suite.expect(NotchSupport.routesShelf(in: defaults) && NotchSupport.revealsShelfDrag(in: defaults),
                "the enabled notch replaces the file destination and reveals active drags")
@@ -2380,7 +2380,7 @@ enum NotchTests {
                "choosing a separate window keeps the choice on offer while the shelf stays out of the island")
         defaults.set(true, forKey: DefaultsKey.notchShelf)
         defaults.set(false, forKey: AppFeature.quickLauncher.availabilityKey)
-        suite.expect(!NotchSupport.modules(in: defaults).contains(.tools) && !NotchSupport.routesQuickPanel(in: defaults),
+        suite.expect(!NotchSupport.modules(in: defaults).contains(.hub) && !NotchSupport.routesQuickPanel(in: defaults),
                "removing the quick panel also removes its embedded tools and shortcut routing")
         defaults.set(false, forKey: DefaultsKey.notchQuickPanel)
         suite.expect(!NotchSupport.routesQuickPanel(in: defaults), "quick panel shortcut can keep its original destination")
@@ -2620,7 +2620,7 @@ enum NotchTests {
                 suite.expect(content <= geometry.contentBudget && content > 0,
                        "every page stays inside its preset's strip: \(layout) \(module)")
             }
-            suite.expect(geometry.contentSize(for: geometry.expandedSize(module: .tools, panel: true)).height == geometry.pageBudget
+            suite.expect(geometry.contentSize(for: geometry.expandedSize(module: .hub, panel: true)).height == geometry.pageBudget
                    && geometry.contentSize(for: geometry.expandedSize(module: .system, detail: true)).height == geometry.pageBudget
                    && geometry.pageBudget >= geometry.contentBudget,
                    "the app panel and a metric detail get a readable page even inside a short preset: \(layout)")
@@ -2734,7 +2734,7 @@ enum NotchTests {
             let custom = NotchGeometry(screen: frames[0], safeAreaTop: 32, cameraWidth: 210, layout: .custom,
                                        customWidth: invalid, customHeight: invalid)
             suite.expect(NotchSize.widthRange.contains(custom.customWidth) && NotchSize.heightRange.contains(custom.customHeight)
-                   && frames[0].contains(custom.frame(for: custom.expandedSize(module: .tools))),
+                   && frames[0].contains(custom.frame(for: custom.expandedSize(module: .hub))),
                    "invalid imported dimensions cannot create an unbounded or off-screen panel")
         }
         let wideCamera = NotchGeometry(screen: frames[0], safeAreaTop: 32, cameraWidth: 390, layout: .custom,
@@ -2771,7 +2771,7 @@ enum NotchTests {
                 suite.expect(geometry.safeContentTop > geometry.cameraHeight, "controls always clear the physical camera")
                 suite.expect(geometry.appPanelSize.width > 0 && geometry.appPanelSize.height >= 176
                        && geometry.appPanelSize.height == geometry.pageBudget
-                       && geometry.appPanelSize.height < geometry.expandedSize(module: .tools, panel: true).height,
+                       && geometry.appPanelSize.height < geometry.expandedSize(module: .hub, panel: true).height,
                        "embedded panel reserves room for its navigation, content and footer")
             }
         }

@@ -185,7 +185,7 @@ extension NotchSettings {
 
     /// The mixer, the system page and the tools arrange themselves in the island.
     func hasOptions(_ module: NotchModule) -> Bool {
-        ![.mixer, .system, .tools].contains(module)
+        ![.mixer, .system, .hub].contains(module)
     }
 
 

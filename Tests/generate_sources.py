@@ -62,6 +62,20 @@ def main():
           + "}\nfinal class Toggles: ToggleState {\n"
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    func openAutomationSettings(for action:")
           + "}\n}\n")
+    reopening = declaration("Sources/Lattice/UI/Settings/NotchSettingsBehavior.swift", "    var behaviorPage:")
+    reopening = reopening.split("selection: Binding(get: {", 1)[1].split("}, set:", 1)[0]
+    binding_state = ["returnHome", "homeModule", "timerEnabled", "cameraEnabled", "calendarEnabled",
+                     "notificationsEnabled", "agentsEnabled", "watchEnabled"]
+    write("NotchModuleSettings.swift", "import Foundation\nimport SwiftUI\nextension NotchModuleSettingsTests {\n"
+          + "struct Settings {\nlet state: State\nvar defaults: UserDefaults { state.defaults }\n"
+          + "var hidden: String { get { defaults.string(forKey: DefaultsKey.notchHiddenModules) ?? \"\" } "
+          + "nonmutating set { defaults.set(newValue, forKey: DefaultsKey.notchHiddenModules) } }\n"
+          + "\n".join(f"var {name}: {'String' if name == 'homeModule' else 'Bool'} {{ "
+                      f"get {{ state.{name} }} nonmutating set {{ state.{name} = newValue }} }}"
+                      for name in binding_state) + "\n"
+          + declaration("Sources/Lattice/UI/Settings/NotchSettingsBindings.swift", "    func moduleBinding(")
+              .replace("UserDefaults.standard", "defaults")
+          + "var reopeningSelection: String {\n" + reopening + "\n}\n}\n}\n")
     bluetooth = "Sources/Lattice/Services/Bluetooth/BluetoothSleepService.swift"
     write("BluetoothSleepPreferences.swift", "import Foundation\nextension BluetoothSleepPreferencesTests {\nfinal class Service: State {\n"
           + "".join(declaration(bluetooth, prefix) for prefix in [

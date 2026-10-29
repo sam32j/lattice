@@ -229,8 +229,8 @@ enum NotchDestinationContract {
         LatticeHubService.shared = LatticeHubContract.Launcher()
         let launcher = LatticeHubService.shared
         let firstPresentation = launcher.presentationID
-        service.open(.tools)
-        suite.expect(service.selected == .tools && launcher.selectedIndex == 0 && launcher.presentationID != firstPresentation,
+        service.open(.hub)
+        suite.expect(service.selected == .hub && launcher.selectedIndex == 0 && launcher.presentationID != firstPresentation,
                "opening Tools inside the island prepares keyboard selection on its first presentation")
         LatticeHubContract.events.removeAll()
         let enter = LatticeHubContract.NSEvent(keyCode: UInt16(kVK_Return))
@@ -241,22 +241,22 @@ enum NotchDestinationContract {
         suite.expect(LatticeHubContract.events == ["hide", "screenshot.capture"],
                "the selected tool action executes after hide")
         let unchangedPresentation = launcher.presentationID
-        service.open(.tools)
+        service.open(.hub)
         suite.expect(launcher.presentationID == unchangedPresentation,
                "reopening the same visible Tools destination does not reset its working presentation")
         launcher.activeUtility = .urlCleaner
         service.open(.controls)
-        service.open(.tools)
+        service.open(.hub)
         suite.expect(launcher.activeUtility == .urlCleaner,
                "navigation preserves a still-available hosted utility")
         service.open(.controls)
         defaults.set(false, forKey: DefaultsKey.urlCleanerEnabled)
-        service.open(.tools)
+        service.open(.hub)
         suite.expect(launcher.activeUtility == nil,
                "returning to Tools after removal cannot revive its previous utility")
         service.open(.controls)
         launcher.candidates = []
-        service.open(.tools)
+        service.open(.hub)
         suite.expect(launcher.selectedIndex == nil, "an empty Tools module leaves keyboard activation without a target")
         sessionContracts(suite)
         lockScreenContracts(defaults: defaults, suite: suite)

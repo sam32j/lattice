@@ -61,7 +61,7 @@ struct NotchEditorStrings {
     let capturesSummary: String
     let filesSummary: String
     let systemSummary: String
-    let toolsSummary: String
+    let hubSummary: String
     let calendarSummary: String
     let notificationsSummary: String
     let timerSummary: String
@@ -85,7 +85,7 @@ struct NotchEditorStrings {
         case .captures: return capturesSummary
         case .files: return filesSummary
         case .system: return systemSummary
-        case .tools: return toolsSummary
+        case .hub: return hubSummary
         case .calendar: return calendarSummary
         case .notifications: return notificationsSummary
         case .timer: return timerSummary
@@ -160,7 +160,7 @@ extension FeatureStrings {
             capturesSummary: "Your latest screenshots and recordings.",
             filesSummary: "A File Cache for the files you drop on the island.",
             systemSummary: "CPU, memory, disk, network and battery at a glance.",
-            toolsSummary: "Tools and utilities, one click away.",
+            hubSummary: "Lattice Hub utilities, one click away.",
             calendarSummary: "Today’s events and the month ahead.",
             notificationsSummary: "Your Mac’s notifications, kept in the island.",
             timerSummary: "Timer, Pomodoro and stopwatch.",
@@ -228,7 +228,7 @@ extension FeatureStrings {
             capturesSummary: "Suas capturas de tela e gravações mais recentes.",
             filesSummary: "Uma prateleira para os arquivos que você solta na ilha.",
             systemSummary: "CPU, memória, disco, rede e bateria num relance.",
-            toolsSummary: "Ferramentas e utilitários a um clique.",
+            hubSummary: "Utilitários do Lattice Hub a um clique.",
             calendarSummary: "Os eventos de hoje e o mês inteiro.",
             notificationsSummary: "As notificações do Mac, guardadas na ilha.",
             timerSummary: "Temporizador, Pomodoro e cronômetro.",
@@ -296,7 +296,7 @@ extension FeatureStrings {
             capturesSummary: "Tus capturas y grabaciones más recientes.",
             filesSummary: "Un estante para los archivos que sueltas en la isla.",
             systemSummary: "CPU, memoria, disco, red y batería de un vistazo.",
-            toolsSummary: "Herramientas y utilidades a un clic.",
+            hubSummary: "Utilidades de Lattice Hub a un clic.",
             calendarSummary: "Los eventos de hoy y el mes completo.",
             notificationsSummary: "Las notificaciones de tu Mac, reunidas en la isla.",
             timerSummary: "Temporizador, Pomodoro y cronómetro.",
@@ -364,7 +364,7 @@ extension FeatureStrings {
             capturesSummary: "Vaše najnovšie snímky obrazovky a nahrávky.",
             filesSummary: "Polica na súbory, ktoré pustíte na Dynamic Island.",
             systemSummary: "CPU, pamäť, disk, sieť a batéria na jeden pohľad.",
-            toolsSummary: "Nástroje a pomôcky na jedno kliknutie.",
+            hubSummary: "Pomôcky Lattice Hub na jedno kliknutie.",
             calendarSummary: "Dnešné udalosti a nadchádzajúci mesiac.",
             notificationsSummary: "Hlásenia vášho Macu, zhromaždené v Dynamic Island.",
             timerSummary: "Časovač, Pomodoro a stopky.",
@@ -432,7 +432,7 @@ extension FeatureStrings {
             capturesSummary: "Deine neuesten Bildschirmfotos und Aufnahmen.",
             filesSummary: "Eine Ablage für Dateien, die du auf der Insel ablegst.",
             systemSummary: "CPU, Speicher, Festplatte, Netzwerk und Batterie auf einen Blick.",
-            toolsSummary: "Werkzeuge und Dienstprogramme, einen Klick entfernt.",
+            hubSummary: "Lattice Hub-Dienstprogramme, einen Klick entfernt.",
             calendarSummary: "Die Termine von heute und der ganze Monat.",
             notificationsSummary: "Die Mitteilungen deines Mac, gesammelt auf der Insel.",
             timerSummary: "Timer, Pomodoro und Stoppuhr.",
@@ -500,7 +500,7 @@ extension FeatureStrings {
             capturesSummary: "Vos dernières captures d’écran et vidéos.",
             filesSummary: "Une étagère pour les fichiers déposés sur l’îlot.",
             systemSummary: "Processeur, mémoire, disque, réseau et batterie en un coup d’œil.",
-            toolsSummary: "Outils et utilitaires à portée de clic.",
+            hubSummary: "Utilitaires de Lattice Hub à portée de clic.",
             calendarSummary: "Les événements du jour et le mois entier.",
             notificationsSummary: "Les notifications de votre Mac, réunies dans l’îlot.",
             timerSummary: "Minuteur, Pomodoro et chronomètre.",
@@ -568,7 +568,7 @@ extension FeatureStrings {
             capturesSummary: "Le tue ultime istantanee e registrazioni.",
             filesSummary: "Uno scaffale per i file che trascini sull’isola.",
             systemSummary: "CPU, memoria, disco, rete e batteria a colpo d’occhio.",
-            toolsSummary: "Strumenti e utility a portata di clic.",
+            hubSummary: "Utility di Lattice Hub a portata di clic.",
             calendarSummary: "Gli eventi di oggi e il mese intero.",
             notificationsSummary: "Le notifiche del Mac, raccolte nell’isola.",
             timerSummary: "Timer, Pomodoro e cronometro.",
@@ -636,7 +636,7 @@ extension FeatureStrings {
             capturesSummary: "Ваши последние снимки экрана и записи.",
             filesSummary: "Полка для файлов, которые вы бросаете на остров.",
             systemSummary: "Процессор, память, диск, сеть и батарея одним взглядом.",
-            toolsSummary: "Инструменты и утилиты в один клик.",
+            hubSummary: "Утилиты Lattice Hub в один клик.",
             calendarSummary: "События на сегодня и весь месяц.",
             notificationsSummary: "Уведомления Mac, собранные на острове.",
             timerSummary: "Таймер, помидоро и секундомер.",
@@ -704,7 +704,7 @@ extension FeatureStrings {
             capturesSummary: "En son ekran görüntüleriniz ve kayıtlarınız.",
             filesSummary: "Adaya bıraktığınız dosyalar için bir raf.",
             systemSummary: "İşlemci, bellek, disk, ağ ve pil tek bakışta.",
-            toolsSummary: "Araçlar ve yardımcılar bir tık uzakta.",
+            hubSummary: "Lattice Hub yardımcıları bir tık uzakta.",
             calendarSummary: "Bugünün etkinlikleri ve ayın tamamı.",
             notificationsSummary: "Mac’inizin bildirimleri, adada bir arada.",
             timerSummary: "Zamanlayıcı, Pomodoro ve kronometre.",
@@ -772,7 +772,7 @@ extension FeatureStrings {
             capturesSummary: "最新のスクリーンショットと収録。",
             filesSummary: "島にドロップしたファイルを置いておく棚。",
             systemSummary: "CPU、メモリ、ディスク、ネットワーク、バッテリーをひと目で。",
-            toolsSummary: "ツールとユーティリティをワンクリックで。",
+            hubSummary: "Lattice Hubのユーティリティをワンクリックで。",
             calendarSummary: "今日の予定と1か月の予定。",
             notificationsSummary: "Macの通知を島にまとめて表示。",
             timerSummary: "タイマー、ポモドーロ、ストップウォッチ。",
@@ -840,7 +840,7 @@ extension FeatureStrings {
             capturesSummary: "최근 스크린샷과 녹화.",
             filesSummary: "섬에 놓은 파일을 두는 선반.",
             systemSummary: "CPU, 메모리, 디스크, 네트워크, 배터리를 한눈에.",
-            toolsSummary: "도구와 유틸리티를 클릭 한 번으로.",
+            hubSummary: "Lattice Hub 유틸리티를 클릭 한 번으로.",
             calendarSummary: "오늘의 일정과 한 달 전체.",
             notificationsSummary: "Mac의 알림을 섬에 모아 보기.",
             timerSummary: "타이머, 뽀모도로, 스톱워치.",
@@ -908,7 +908,7 @@ extension FeatureStrings {
             capturesSummary: "最近的截图和录屏。",
             filesSummary: "存放拖到岛上的文件的架子。",
             systemSummary: "CPU、内存、磁盘、网络和电池一目了然。",
-            toolsSummary: "工具和实用程序，一键即达。",
+            hubSummary: "Lattice Hub 实用工具，一键即达。",
             calendarSummary: "今天的日程和整个月。",
             notificationsSummary: "Mac 的通知，汇集在岛上。",
             timerSummary: "计时器、番茄钟和秒表。",
@@ -976,7 +976,7 @@ extension FeatureStrings {
             capturesSummary: "最近的截圖和錄影。",
             filesSummary: "存放拖到島上檔案的架子。",
             systemSummary: "CPU、記憶體、磁碟、網路和電池一目了然。",
-            toolsSummary: "工具和工具程式，一按即達。",
+            hubSummary: "Lattice Hub 工具程式，一按即達。",
             calendarSummary: "今天的行程和整個月份。",
             notificationsSummary: "Mac 的通知，集中在島上。",
             timerSummary: "計時器、番茄鐘和碼錶。",
@@ -1044,7 +1044,7 @@ extension FeatureStrings {
             capturesSummary: "最近的截圖和錄影。",
             filesSummary: "存放拖到島上檔案的架子。",
             systemSummary: "CPU、記憶體、磁碟、網路和電池一目了然。",
-            toolsSummary: "工具和工具程式，一按即達。",
+            hubSummary: "Lattice Hub 工具程式，一按即達。",
             calendarSummary: "今天的行程和整個月份。",
             notificationsSummary: "Mac 的通知，集中在島上。",
             timerSummary: "計時器、番茄鐘和碼錶。",
@@ -1112,7 +1112,7 @@ extension FeatureStrings {
             capturesSummary: "Останні знімки та записи екрана.",
             filesSummary: "Полиця для файлів, які ви перетягуєте на острівець.",
             systemSummary: "CPU, пам’ять, диски, мережа й акумулятор з першого погляду.",
-            toolsSummary: "Інструменти й утиліти в один клік.",
+            hubSummary: "Утиліти Lattice Hub в один клік.",
             calendarSummary: "Сьогоднішні події та майбутній місяць.",
             notificationsSummary: "Сповіщення Mac, зібрані в острівці.",
             timerSummary: "Таймер, Pomodoro й секундомір.",
