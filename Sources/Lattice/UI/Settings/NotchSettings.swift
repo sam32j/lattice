@@ -174,8 +174,7 @@ struct NotchSettings: View {
     func consumeCompanionHint() {
         guard router.notchCompanion else { return }
         router.notchCompanion = false
-        tab = .content
-        contentSelection = .companion
+        router.request(FeatureSettingsDestination(.notchCompanion))
     }
 
     @ViewBuilder
@@ -276,9 +275,7 @@ struct NotchSettings: View {
     func consumeModuleHint() {
         guard let module = router.notchModule else { return }
         router.notchModule = nil
-        selectedModule = module
-        contentSelection = .module(module)
-        tab = .content
+        router.request(FeatureSettingsDestination(.notchWidget(module)))
     }
 
     func sync() {

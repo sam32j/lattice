@@ -325,7 +325,14 @@ struct SettingsView: View {
     }
 
     private var detailTitle: String {
-        sidebarItems.first { $0.id == selectedSidebarItem }?.title ?? l10n.s.settingsTitle
+        switch router.page {
+        case .notchWidget(let module):
+            return NotchSettingsStrings.widgetTitle(module, language: l10n.language)
+        case .notchCompanion, .notchMascot:
+            return FeatureStrings.notchMascot(l10n.language).title
+        default:
+            return sidebarItems.first { $0.id == selectedSidebarItem }?.title ?? l10n.s.settingsTitle
+        }
     }
 
     @ViewBuilder
@@ -545,7 +552,9 @@ struct SettingsView: View {
         case .cameraPreview: DedicatedUtilitySettings(feature: .cameraPreview)
         case .diskImageInstaller: DedicatedUtilitySettings(feature: .diskImageInstaller)
         case .launcherGrid: DedicatedUtilitySettings(feature: .quickLauncher)
-        case .notch: NotchSettings()
+        case .notch: NotchSettings().id("notch")
+        case .notchWidget(let module): NotchSettings(initialContent: .module(module)).id(module)
+        case .notchCompanion: NotchSettings(initialContent: .companion).id("companion")
         case .notchMascot: NotchMascotSettings()
         case .radialMenu: RadialMenuSettings()
         case .commandBar: CommandBarSettings()

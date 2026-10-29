@@ -37,7 +37,11 @@ extension NotchSettings {
     func contentDetailView(selection: NotchContentDestination) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Button {
-                contentSelection = nil
+                if router.canGoBack(isPageVisible: isPageVisible) {
+                    router.goBack(isPageVisible: isPageVisible)
+                } else {
+                    router.request(FeatureSettingsDestination(.notch))
+                }
             } label: {
                 Label(FeatureStrings.notch(l10n.language).title, systemImage: "chevron.left")
             }
@@ -55,6 +59,10 @@ extension NotchSettings {
         .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
         .padding(22)
         .clipped()
+    }
+
+    private func isPageVisible(_ page: SettingsPage) -> Bool {
+        FeatureVisibilitySupport.isPageVisible(page, isAvailable: { $0.isAvailable })
     }
 
 
@@ -113,7 +121,7 @@ extension NotchSettings {
                                       title: FeatureStrings.notchMascot(l10n.language).title,
                                       enabled: mascotEnabled && features.isAvailable(.notchMascot),
                                       language: l10n.language) {
-                contentSelection = .companion
+                router.request(FeatureSettingsDestination(.notchCompanion))
             }
         }
     }
