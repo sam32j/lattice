@@ -146,7 +146,7 @@ enum ReleaseChangeAliases {
         case .notchGestures: return ["dynamic island gestures", .island("gestures"), .island("gesture")]
         case .notchTimer: return [.exact("Timer"), .exact("Timers"), .island("timer"), .island("timers"),
             "pomodoro", "stopwatch", "focus cycles"]
-        case .notchAccessories: return ["accessory alerts", "accessory notices", .island("accessory")]
+        case .notchAccessories: return ["accessory status", "accessory alerts", "accessory notices", .island("accessory")]
         case .notchLyrics: return ["lyrics", "lyric"]
         case .notchQueue: return ["up next", .island("queue")]
         case .notchLiveEqualizer: return ["bars follow the music", "live music bars",
