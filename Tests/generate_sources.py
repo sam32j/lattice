@@ -14,6 +14,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "build/generated-tests"
+EMITTED = set()
 
 
 def declaration(path, prefix, scope=None):
@@ -40,6 +41,7 @@ def declaration(path, prefix, scope=None):
 
 
 def write(name, text):
+    EMITTED.add(name)
     path = OUTPUT / name
     if not path.exists() or path.read_text() != text:
         path.write_text(text)
@@ -50,7 +52,16 @@ def availability_declaration(path, prefix):
 
 
 def main():
+    EMITTED.clear()
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    write("HubControlAction.swift", "import Foundation\nextension HubControlActionTests {\n"
+          + "enum Action: String {\n"
+          + "case micMute, keepAwake, darkMode, keyboardLight, hiddenFiles, desktopIcons\n"
+          + "case emptyTrash, ejectDisks, lockScreen, displayOff, screenSaver, cleaningMode\n"
+          + declaration("Sources/Lattice/UI/LatticeHub/LatticeHubControls.swift", "    func run(onDismiss:")
+          + "}\nfinal class Toggles: ToggleState {\n"
+          + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    func openAutomationSettings(for action:")
+          + "}\n}\n")
     bluetooth = "Sources/Lattice/Services/Bluetooth/BluetoothSleepService.swift"
     write("BluetoothSleepPreferences.swift", "import Foundation\nextension BluetoothSleepPreferencesTests {\nfinal class Service: State {\n"
           + "".join(declaration(bluetooth, prefix) for prefix in [
@@ -539,7 +550,6 @@ def main():
           + "extension MiddleClickTrackpadContract {\nfinal class Service: Fixture {\n"
           + middle_click_lifecycle
           + "}\n}\n")
-    menu_panel = "Sources/Lattice/UI/MenuPanel/MenuPanelView.swift"
     def reset_availability(path, scope):
         source = declaration(path, scope)
         matches = re.findall(r"canReset: ([^\n]+),", source)
@@ -560,8 +570,6 @@ def main():
     launcher_footer = launcher_footer.replace("GlobalShortcutRole.quickLauncher.savedShortcut",
         "GlobalShortcut.saved(for: GlobalShortcutRole.quickLauncher.storageKey, fallback: GlobalShortcutRole.quickLauncher.defaultShortcut, in: defaults)")
     write("SettingsShortcutConsumers.swift", "import AppKit\nimport SwiftUI\nextension SettingsShortcutConsumerTests {\n"
-          + "final class MenuHint: State {\n" + shortcut_consumer("Sources/Lattice/UI/MenuPanel/QuickTogglesSection.swift", "    private func shortcutHint(") + "}\n"
-          + "final class ToggleHint: State {\n" + shortcut_consumer("Sources/Lattice/UI/MenuPanel/QuickTogglesSection.swift", "    private func shortcutHint(") + "}\n"
           + "final class Catalog: State {\n" + shortcut_consumer("Sources/Lattice/Services/CommandBar/CommandBarCatalog.swift", "        func roleShortcut(") + "}\n"
           + "final class GroupStatus: State {\n" + shortcut_consumer("Sources/Lattice/UI/Settings/ShortcutsSettings.swift", "    private func featureHasActiveShortcut(") + "}\n"
           + "final class Inventory: State {\n" + declaration("Sources/Lattice/UI/Settings/ShortcutSettingsInventory.swift", "    var availableRoles:")
@@ -569,34 +577,13 @@ def main():
               .replace("$0.isAvailable", "$0.isAvailable(in: defaults)")
               .replace("BrightnessService.keyboardLightIsSupported", "true") + "}\n"
           + "struct Launcher: View {\nlet defaults: UserDefaults\nvar body: some View { footer }\n" + launcher_footer + "}\n}\n")
-    def panel_filter(scope):
-        return declaration(menu_panel, "    private func items(editing:", scope=scope) \
-            .replace("private func", "func", 1) \
-            .replace(".isPresentInControls()", ".isPresentInControls(in: defaults)") \
-            .replace(".isAvailable", ".isAvailable(in: defaults)")
     write("SettingsPanelFilters.swift", "import Foundation\nextension SettingsPanelFilterTests {\n"
           + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "enum PanelSectionID:")
               .replace("featureGate.contains(where: \\.isAvailable)", "featureGate.contains { $0.isAvailable(in: Layout.defaults) }")
           + "final class Layout: LayoutState {\n"
           + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "    static func isVisibleInPanel(")
           + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "    static func isShown(") + "}\n"
-          + "final class Utilities: UtilityState {\nfunc items(editing: Bool) -> [UtilityPanelItem] { orderedItems.filter { $0 == .cleaning ? defaults.bool(forKey: DefaultsKey.cleaningModeShortcutEnabled) : true } }\n}\n}\n")
-    write("MiddleClickPanelCaption.swift", """import Foundation
-extension MiddleClickTrackpadContract {
-final class Panel: PanelFixture {
-    var middleClickCaption: String {
-        guard middleClickEnabled else { return l10n.s.middleClickEnableCaption }
-        if !permissions.accessibility { return missingPermission(l10n.s.permissionAccessibility) }
-        if middleClick.touchDeviceMissing { return l10n.s.middleClickNoTrackpad }
-        if middleClick.systemDragGestureConflict { return l10n.s.middleClickDragConflict }
-        return l10n.s.middleClickEnableCaption
-    }
-    func missingPermission(_ permission: String) -> String {
-        "\\(l10n.s.permissionRequired): \\(permission)"
-    }
-}
-}
-""")
+          + "}\n")
     write("RadialMenuProfileDeletion.swift", "import Foundation\n"
           + "extension RadialMenuProfileDeletionContract {\nfinal class Settings: Fixture {\n"
           + declaration("Sources/Lattice/UI/Settings/RadialMenuSettings.swift",
@@ -1786,13 +1773,12 @@ final class Panel: PanelFixture {
     view = "Sources/Lattice/UI/LatticeHub/LatticeHubMetadata.swift"
     panel_layout = (ROOT / "Sources/Lattice/UI/MenuPanel/PanelLayout.swift").read_text()
     protocol = next(line for line in panel_layout.splitlines() if line.startswith("protocol PanelOrderItem:"))
-    write("QuickLauncherBodies.swift", "import Foundation\nimport Carbon.HIToolbox\n" + protocol + "\n\nextension QuickLauncherContract {\n"
+    write("LatticeHubBodies.swift", "import Foundation\nimport Carbon.HIToolbox\n" + protocol + "\n\nextension LatticeHubContract {\n"
           + declaration(item_file, "enum LatticeHubItem:")
-          + "typealias QuickLauncherItem = LatticeHubItem\n"
-          + "final class Launcher {\nvar isEditing = false\nvar activeUtility: QuickLauncherItem?\n"
-          + "var editingOptionsItem: QuickLauncherItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar presentationID = UUID()\n"
-          + "var candidates: [QuickLauncherItem] = QuickLauncherItem.allCases\n"
-          + "var visibleItems: [QuickLauncherItem] { candidates.filter { $0.isAvailable(in: ReviewDefaults.current) } }\n"
+          + "final class Launcher {\nvar isEditing = false\nvar activeUtility: LatticeHubItem?\n"
+          + "var editingOptionsItem: LatticeHubItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar presentationID = UUID()\n"
+          + "var candidates: [LatticeHubItem] = LatticeHubItem.allCases\n"
+          + "var visibleItems: [LatticeHubItem] { candidates.filter { $0.isAvailable(in: ReviewDefaults.current) } }\n"
           + 'func hide() { events.append("hide") }\n'
           + availability_declaration(service, "    func run(_ item: LatticeHubItem)")
           + declaration(service, "    func prepareForPresentation()")
@@ -1804,10 +1790,9 @@ final class Panel: PanelFixture {
           + declaration(service, "    func select(")
           + declaration(monitors_file, "    func handlePanelKey(")
           + declaration(monitors_file, "    static func digitIndex(")
-          + "}\nstruct Tile {\nvar keepAwake = State()\nvar micMute = State()\nvar recorder = State()\n"
+          + "}\nstruct Tile {\nvar recorder = State()\n"
           + declaration(view, "    func icon(for item: LatticeHubItem)")
-          + declaration(view, "    func isActive(_ item: LatticeHubItem)")
-          + "func display(_ item: QuickLauncherItem) -> (String, Bool) { (icon(for: item), isActive(item)) }\n}\n}\n")
+          + "}\n}\n")
     def page_service_body(path, prefix):
         return declaration(path, prefix).replace("UserDefaults.standard", "ReviewDefaults.current!").replace(
             "AppFeature.textSnippets.isAvailable", "AppFeature.textSnippets.isAvailable(in: ReviewDefaults.current!)").replace(
@@ -1838,12 +1823,13 @@ final class Panel: PanelFixture {
           + declaration(clipboard_clear, "    private func syncObserver(")
           + "}\n}\n")
     # The panel's tabs and the rows they hold, as shipped. PanelOrderItem is
-    # declared once, in QuickLauncherBodies.swift above.
-    menu_panel = "Sources/Lattice/UI/MenuPanel/MenuPanelView.swift"
+    # declared once, in LatticeHubBodies.swift above.
     write("MenuPanelSectionGates.swift", "import Foundation\n\nextension MenuPanelSectionGateContract {\n"
           + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "enum PanelSectionID:")
-          + "enum UtilityPanelItem: String, CaseIterable { case cleaning, screenshot }\n"
+          + "}\n")
+    write("UtilityActionOwners.swift", "import Foundation\nextension UtilitySettingsTests {\n"
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "enum QuickToggleAction:")
+              .replace("enum QuickToggleAction:", "enum Action:", 1)
           + "}\n")
 
     write("PanelMetricColor.swift", "import SwiftUI\n"
@@ -2567,6 +2553,10 @@ final class Panel: PanelFixture {
           + (ROOT / hud).read_text() + "\n"
           + f'#sourceLocation(file: {json.dumps(checks)}, line: 1)\n'
           + (ROOT / checks).read_text() + "\n#sourceLocation()\n")
+
+    for path in OUTPUT.glob("*.swift"):
+        if path.name not in EMITTED:
+            path.unlink()
 
 
 if __name__ == "__main__":

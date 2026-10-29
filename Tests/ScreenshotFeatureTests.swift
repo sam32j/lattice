@@ -3422,8 +3422,6 @@ enum ScreenshotFeatureTests {
                                                 endpoint: testShareEndpoint,
                                                 now: shareNow) == nil,
                "guessable ids and short deletion tokens are rejected")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.panelUtilityScreenshot] as? Bool == true,
-               "the panel row ships visible like its siblings")
         let recentCaptureIDs = (0..<14).map { _ in UUID() }
         suite.expect(ScreenshotSupport.cappedRecentCaptureIDs(recentCaptureIDs)
                 == Array(recentCaptureIDs.prefix(12))
@@ -3483,8 +3481,6 @@ enum ScreenshotFeatureTests {
         suite.expect(Defaults.registeredDefaults[DefaultsKey.cameraPreviewShortcut] as? String
                 == "control+option+command:13",
                "the default camera preview shortcut is control option command W")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.panelUtilityCameraPreview] as? Bool == true,
-               "the camera preview panel row ships visible like its siblings")
         suite.expect(GlobalShortcutRole.cameraPreview.requiredEnableKeys == [DefaultsKey.cameraPreviewShortcutEnabled]
                 && GlobalShortcutRole.cameraPreview.feature == .cameraPreview,
                "the camera preview shortcut role gates on its toggle and feature")
@@ -3494,8 +3490,6 @@ enum ScreenshotFeatureTests {
         suite.expect(Defaults.registeredDefaults[DefaultsKey.scratchpadShortcut] as? String
                 == "control+option+command:45",
                "the default scratchpad shortcut is control option command N")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.panelUtilityScratchpad] as? Bool == true,
-               "the scratchpad panel row ships visible like its siblings")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.scratchpadRetention] as? String == "never",
                "the scratchpad keeps text until cleared by default")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.scratchpadCloseOnClickOutside] as? Bool == true,
@@ -3812,8 +3806,6 @@ enum ScreenshotFeatureTests {
                "the wheel and mouse navigation agree on which button is which")
         suite.expect(!RadialMenuSupport.claimsMouseButton(3) && !RadialMenuSupport.claimsMouseButton(4),
                "with the feature off no side button is claimed away from navigation")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.panelControlRadialMenu] as? Bool == true,
-               "the radial menu panel row ships visible like its siblings")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.radialMenuItems] == nil,
                "the items blob has no registered default so a fresh install detects the starter wheel")
         suite.expect(GlobalShortcutRole.radialMenu.requiredEnableKeys == [DefaultsKey.radialMenuEnabled]

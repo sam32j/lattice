@@ -3,20 +3,14 @@
 
 import AppKit
 
-/// Everything the quick toggles tab can do. Raw values are storage ids for
-/// the user's order and the per-item visibility keys.
-enum QuickToggleAction: String, PanelOrderItem, Identifiable {
-    // Case order is the default panel order: the appearance switch leads
-    // because it is the tab's headline action (issue request).
-    case darkMode, keyboardLight, micMute, emptyTrash, ejectDisks, hiddenFiles, desktopIcons,
+/// Actions dispatched by the quick-toggle service; Hub controls share these IDs.
+enum QuickToggleAction: String {
+    case darkMode, emptyTrash, ejectDisks, hiddenFiles, desktopIcons,
          lockScreen, displayOff, screenSaver
-
-    var id: String { rawValue }
 
     var feature: AppFeature {
         switch self {
-        case .darkMode, .keyboardLight, .displayOff: return .brightness
-        case .micMute: return .micMute
+        case .darkMode, .displayOff: return .brightness
         case .emptyTrash, .ejectDisks, .hiddenFiles, .desktopIcons, .lockScreen, .screenSaver:
             return .commandBar
         }
@@ -44,6 +38,12 @@ final class QuickTogglesService: ObservableObject {
 
     func state(for action: QuickToggleAction) -> RunState? {
         states[action]
+    }
+
+    func openAutomationSettings(for action: QuickToggleAction) {
+        guard states[action] == .needsPermission else { return }
+        states[action] = nil
+        Permissions.shared.openAutomationSettings()
     }
 
     // MARK: - Current system state (read on demand, never observed)
@@ -182,13 +182,6 @@ final class QuickTogglesService: ObservableObject {
     }
 
     // MARK: - Internals
-
-    private static func automationTarget(for action: QuickToggleAction) -> Permissions.AutomationTarget? {
-        switch action {
-        case .emptyTrash: return .finder
-        default: return nil
-        }
-    }
 
     private func runAppleScript(_ action: QuickToggleAction,
                                 target: Permissions.AutomationTarget,

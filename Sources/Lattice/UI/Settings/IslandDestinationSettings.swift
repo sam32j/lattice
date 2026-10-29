@@ -68,6 +68,6 @@ struct IslandDestinationSettings: View {
         ShelfService.shared.syncWithPreferences()
         ScratchpadService.shared.syncWithPreferences()
         CameraPreviewService.shared.syncWithPreferences()
-        QuickLauncherService.shared.syncWithPreferences()
+        LatticeHubService.shared.syncWithPreferences()
     }
 }

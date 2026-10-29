@@ -1440,8 +1440,6 @@ enum CommandBarFeatureTests {
                "the default command bar shortcut is option space, the launcher convention")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.commandBarPositionOffset] as? String == "",
                "the command bar position starts at its default spot")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.panelUtilityCommandBar] as? Bool == true,
-               "the command bar panel row ships visible like its siblings")
         suite.expect(GlobalShortcutRole.commandBar.requiredEnableKeys == [DefaultsKey.commandBarShortcutEnabled]
                 && GlobalShortcutRole.commandBar.feature == .commandBar,
                "the command bar shortcut role gates on its toggle and feature")

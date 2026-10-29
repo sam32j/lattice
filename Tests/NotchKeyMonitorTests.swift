@@ -58,6 +58,7 @@ enum NotchKeyMonitorTests {
     static var actions: [String] = []
     final class Launcher {
         var isEditing = false
+        var notchControlsHeight: CGFloat = 0
         var visibleItems = [0, 1, 2]
         var flows: [QuickToolsSupport.GridFlow] = []
         func handlePanelKey(_ event: NSEvent, flow: QuickToolsSupport.GridFlow) -> NSEvent? {
@@ -66,7 +67,7 @@ enum NotchKeyMonitorTests {
             return nil
         }
     }
-    enum QuickLauncherService { static let shared = Launcher() }
+    enum LatticeHubService { static let shared = Launcher() }
 
     class State {
         var eventMonitors: [Any] = []
@@ -214,7 +215,7 @@ enum NotchKeyMonitorTests {
         // A top row that cannot wrap the camera takes a row below it, so a
         // custom island leaves the Tools rail fewer rows than the island
         // without its page would. The arrows walk the rail the page draws.
-        let launcher = QuickLauncherService.shared
+        let launcher = LatticeHubService.shared
         let items = launcher.visibleItems
         defer { launcher.visibleItems = items; launcher.flows = [] }
         launcher.visibleItems = Array(0..<12)
@@ -230,5 +231,13 @@ enum NotchKeyMonitorTests {
         let drawn = service.expandedGeometry.toolFlow(count: 12)
         suite.expect(launcher.flows == [drawn] && drawn != service.geometry.toolFlow(count: 12),
                      "the Tools arrows follow the rail below a top row under the camera")
+        launcher.notchControlsHeight = 66
+        defer { launcher.notchControlsHeight = 0 }
+        service.geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1710, height: 1112), safeAreaTop: 37.5,
+                                         cameraWidth: 208, layout: .compact)
+        launcher.flows = []
+        _ = NSEvent.handler?(NSEvent(window: service.panel, keyCode: 125))
+        suite.expect(launcher.flows == [.columns(rows: 1)],
+                     "Hub arrows follow the single tile row left below two rows of controls")
     }
 }

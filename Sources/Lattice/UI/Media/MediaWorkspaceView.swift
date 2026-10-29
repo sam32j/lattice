@@ -1367,7 +1367,7 @@ struct MediaWorkspaceView: View {
         DispatchQueue.main.async {
             let response = panel.runModal()
             panelModalActive = false
-            QuickLauncherService.shared.refocusAfterModal()
+            LatticeHubService.shared.refocusAfterModal()
             completion(response)
         }
     }

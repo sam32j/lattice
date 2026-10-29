@@ -112,8 +112,6 @@ enum UtilitiesFeatureTests {
                        "the all-interfaces marker is translated for \(lang)")
             }
         }
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.panelUtilityPortManager] as? Bool == true,
-               "the port manager panel row ships visible like its siblings and travels in backups")
 
         // MARK: Port manager row numbers
 

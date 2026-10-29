@@ -723,7 +723,7 @@ enum CommandBarCatalog {
                 subtitle: area(.quickLauncher, under: s.launcherName),
                 icon: .symbol("square.grid.3x3"),
                 shortcut: roleShortcut(.quickLauncher),
-                run: { _ in afterBeat { QuickLauncherService.shared.show() } }))
+                run: { _ in afterBeat { LatticeHubService.shared.show() } }))
         }
         entries.append(CommandBarEntry(
             id: CommandBarPreferences.emojiBrowserRowID,

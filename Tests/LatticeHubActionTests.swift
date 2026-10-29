@@ -6,12 +6,11 @@ import Carbon.HIToolbox
 
 /// The generated members are the real tile model, activation method and icon
 /// methods. Only their environment is replaced: no windows, taps or capture.
-enum QuickLauncherContract {
+enum LatticeHubContract {
     static var events: [String] = []
     static var cameraInNotch = false
     enum ReviewDefaults { static var current: UserDefaults! }
-    enum QuickLauncherService { static let columns = 3 }
-    typealias LatticeHubService = QuickLauncherService
+    enum LatticeHubService { static let columns = 3 }
     struct NSEvent {
         struct ModifierFlags: OptionSet {
             let rawValue: Int
@@ -31,8 +30,6 @@ enum QuickLauncherContract {
     }
 
     struct State {
-        var isActive = false
-        var isMuted = false
         var isRecording = false
     }
 
@@ -59,7 +56,6 @@ enum QuickLauncherContract {
         let name: String
         func toggle() { events.append(name + ".toggle") }
         func capture() { events.append(name + ".capture") }
-        func pick() { events.append(name + ".pick") }
         func show() { events.append(name + ".show") }
         func showInNotchIfEnabled() -> Bool {
             guard name == "camera", cameraInNotch else { return false }
@@ -71,10 +67,8 @@ enum QuickLauncherContract {
     }
     enum KeepAwakeManager { static let shared = Spy(name: "keepAwake") }
     enum MicMuteService { static let shared = Spy(name: "micMute") }
-    enum ScreenTextService { static let shared = Spy(name: "screenOCR") }
     enum ScreenshotService { static let shared = Spy(name: "screenshot") }
     enum ScreenRecorderService { static let shared = Spy(name: "recorder") }
-    enum ColorSamplerService { static let shared = Spy(name: "colorPicker") }
     enum CameraPreviewService { static let shared = Spy(name: "camera") }
     enum ScratchpadService { static let shared = Spy(name: "scratchpad") }
     enum ClipboardHistoryService { static let shared = Spy(name: "clipboard") }
@@ -94,7 +88,7 @@ enum QuickLauncherContract {
         defaults.set(true, forKey: DefaultsKey.microphoneLevelControlEnabled)
         defaults.set(false, forKey: DefaultsKey.cleaningModeShortcutEnabled)
         cameraInNotch = false
-        let cases: [(QuickLauncherItem, AppFeature, String?, Double?)] = [
+        let cases: [(LatticeHubItem, AppFeature, String?, Double?)] = [
             (.screenshot, .screenshot, "screenshot.capture", 0.15),
             (.screenRecorder, .screenRecorder, "recorder.toggle", 0.15),
             (.cameraPreview, .cameraPreview, "camera.show", 0.15),
@@ -109,7 +103,7 @@ enum QuickLauncherContract {
             (.appUpdates, .appUpdates, nil, nil),
             (.portManager, .portManager, nil, nil),
         ]
-        suite.expect(Set(cases.map { $0.0 }) == Set(QuickLauncherItem.allCases),
+        suite.expect(Set(cases.map { $0.0 }) == Set(LatticeHubItem.allCases),
                      "every launcher tile has an activation contract")
         for (item, feature, action, delay) in cases {
             events.removeAll()
@@ -150,12 +144,12 @@ enum QuickLauncherContract {
                      "an embedded camera switches the notch before hiding the launcher, without a close-and-reopen delay")
         cameraInNotch = false
         var tile = Tile()
-        suite.expect(tile.display(.screenRecorder) == ("record.circle", false),
+        suite.expect(tile.icon(for: .screenRecorder) == "record.circle",
                      "an idle recording tile offers recording")
         tile.recorder.isRecording = true
-        suite.expect(tile.display(.screenRecorder) == ("stop.circle", true),
-                     "an active recording tile offers stopping and shows its active state")
-        suite.expect(QuickLauncherItem.allCases.allSatisfy { !tile.display($0).0.isEmpty },
+        suite.expect(tile.icon(for: .screenRecorder) == "stop.circle",
+                     "an active recording tile offers stopping")
+        suite.expect(LatticeHubItem.allCases.allSatisfy { !tile.icon(for: $0).isEmpty },
                      "every tile has an icon")
         presentationContracts(suite)
         compositionContracts(suite)
@@ -184,7 +178,7 @@ enum QuickLauncherContract {
                      "the numeric keypad's 1 activates the first item like the top row's")
         DispatchQueue.main.drain()
         suite.expect(events == ["hide", "screenshot.capture"], "keypad activates the first item")
-        for item in [QuickLauncherItem.urlCleaner, .homebrew, .uninstaller, .media] {
+        for item in [LatticeHubItem.urlCleaner, .homebrew, .uninstaller, .media] {
             launcher.activeUtility = item
             launcher.prepareForPresentation()
             suite.expect(launcher.activeUtility == item,

@@ -14,7 +14,7 @@ enum MenuPanelSectionGateContract {
             suite.expect(missing.isEmpty,
                          "every \(rows) row keeps the \(section.rawValue) tab available, missing \(missing)")
         }
-        expectGate(.toggles, keeps: QuickToggleAction.allCases.map(\.feature), "quick toggle")
+        expectGate(.toggles, keeps: [.brightness, .commandBar, .micMute, .quickLauncher], "Hub")
         expectGate(.system, keeps: [.connectedDevices], "connected devices")
     }
 }

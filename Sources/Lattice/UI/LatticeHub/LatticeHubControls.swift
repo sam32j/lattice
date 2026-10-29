@@ -88,6 +88,11 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
 
     func run(onDismiss: @escaping () -> Void) {
         let toggles = QuickTogglesService.shared
+        if let action = QuickToggleAction(rawValue: rawValue),
+           toggles.state(for: action) == .needsPermission {
+            toggles.openAutomationSettings(for: action)
+            return
+        }
         switch self {
         case .micMute: MicMuteService.shared.toggle()
         case .keepAwake: KeepAwakeManager.shared.toggle()
@@ -97,7 +102,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
             brightness.setKeyboardLightEnabled(!(brightness.keyboardLightEnabled ?? false))
         case .hiddenFiles: toggles.toggleHiddenFiles()
         case .desktopIcons: toggles.toggleDesktopIcons()
-        case .emptyTrash: onDismiss(); toggles.emptyTrash()
+        case .emptyTrash: toggles.emptyTrash()
         case .ejectDisks: toggles.ejectAllDisks()
         case .lockScreen: onDismiss(); toggles.lockScreen()
         case .displayOff: onDismiss(); toggles.turnDisplayOff()
@@ -208,10 +213,16 @@ struct HubQuickControls: View {
     private func renderRow(_ controls: [HubControlAction]) -> some View {
         HStack(spacing: isNotch ? 5 : 7) {
             ForEach(controls) { action in
-                HubControlButton(icon: action.icon(colorScheme: colorScheme),
-                                 title: action.title(l10n: l10n, colorScheme: colorScheme),
-                                 isActive: action.isActive(colorScheme: colorScheme),
-                                 tint: action.tint,
+                let state = QuickToggleAction(rawValue: action.rawValue).flatMap { toggles.state(for: $0) }
+                let needsAttention = state == .failed || state == .needsPermission
+                let title = action.title(l10n: l10n, colorScheme: colorScheme)
+                let feedback = state == .needsPermission ? l10n.s.permissionOpenSettings
+                    : FeatureStrings.quickToggles(l10n.language).actionFailed
+                HubControlButton(icon: needsAttention ? "exclamationmark.triangle.fill"
+                                    : (state == .running ? "hourglass" : action.icon(colorScheme: colorScheme)),
+                                 title: needsAttention ? "\(title)\n\(feedback)" : title,
+                                 isActive: needsAttention || action.isActive(colorScheme: colorScheme),
+                                 tint: needsAttention ? .orange : action.tint,
                                  height: isNotch ? 26 : 32,
                                  iconSize: isNotch ? 11 : 13,
                                  isEditing: isEditing,
@@ -222,6 +233,7 @@ struct HubQuickControls: View {
                                  }) {
                     action.run(onDismiss: onDismiss)
                 }
+                .disabled(!isEditing && state == .running)
             }
         }
     }

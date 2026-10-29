@@ -780,7 +780,7 @@ enum NotchTests {
         }
         let surfaces: [(CGFloat, NotchSilhouette)] = [(0, .capsule), (0, .notch), (156, .notch), (185, .notch), (210, .notch),
                                                       (224, .notch)]
-        let tools = QuickLauncherContract.QuickLauncherItem.allCases.count
+        let tools = LatticeHubContract.LatticeHubItem.allCases.count
         var whole: String?, kept: String?, apart: String?, walk: String?
         var closed = 0
         for (camera, silhouette) in surfaces {
@@ -2401,7 +2401,7 @@ enum NotchTests {
                                 DefaultsKey.notchModuleOrder, DefaultsKey.notchQuickAccessLayout, DefaultsKey.notchQuickAccessSide, DefaultsKey.notchQuickAccessSecond, DefaultsKey.notchQuickAccessThird, DefaultsKey.notchVolume,
                                 DefaultsKey.notchMicrophone, DefaultsKey.notchBrightness, DefaultsKey.notchBattery,
                                 DefaultsKey.notchClipboard, DefaultsKey.notchClipboardWindow, DefaultsKey.notchCapture,
-                                DefaultsKey.notchTrackChange, DefaultsKey.notchMusicActivity, DefaultsKey.notchHideInCaptures, DefaultsKey.panelControlNotch,
+                                DefaultsKey.notchTrackChange, DefaultsKey.notchMusicActivity, DefaultsKey.notchHideInCaptures,
                                 AppFeature.notch.availabilityKey]
         suite.expect(SettingsBackupSupport.exportKeys().isSuperset(of: keys), "every portable notch preference travels in backup")
         let restored = SettingsBackupSupport.sanitizedSettings(from: [

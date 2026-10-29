@@ -38,8 +38,7 @@ enum SettingsBackupSupport {
     private static func dynamicIslandKeys(in keys: Set<String>) -> Set<String> {
         let availability = Set(AppFeature.features(in: .dynamicIsland).map(\.availabilityKey))
         return keys.filter {
-            $0.hasPrefix("notch") || $0 == DefaultsKey.panelControlNotch
-                || availability.contains($0)
+            $0.hasPrefix("notch") || availability.contains($0)
         }
     }
 
@@ -72,9 +71,6 @@ enum SettingsBackupSupport {
         DefaultsKey.menuBarBattery,
         DefaultsKey.menuBarPower,
         DefaultsKey.panelSectionOrder,
-        DefaultsKey.panelUtilityOrder,
-        DefaultsKey.panelControlOrder,
-        DefaultsKey.panelToggleOrder,
         DefaultsKey.panelSystemOrder,
         DefaultsKey.panelNetworkOrder,
         DefaultsKey.panelDiskOrder,

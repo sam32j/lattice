@@ -8,7 +8,7 @@ struct NotchView: View {
     @ObservedObject var service: NotchService
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var music = NotchMusicService.shared
-    @ObservedObject private var launcher = QuickLauncherService.shared
+    @ObservedObject private var launcher = LatticeHubService.shared
     @ObservedObject private var updates = UpdateService.shared
     private let glass = LiquidGlassSupport.isSupported
     @Environment(\.colorSchemeContrast) private var contrast

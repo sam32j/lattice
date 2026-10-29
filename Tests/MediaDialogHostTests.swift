@@ -65,8 +65,8 @@ enum MediaDialogHostContract {
         var presentationWindow: Island? = Island()
         var expanded = true
     }
-    final class QuickLauncherService {
-        static var shared = QuickLauncherService()
+    final class LatticeHubService {
+        static var shared = LatticeHubService()
         var refocuses = 0
         func refocusAfterModal() { refocuses += 1 }
     }
@@ -76,7 +76,7 @@ enum MediaDialogHostContract {
         DispatchQueue.main = DispatchQueue.Queue()
         NSSavePanel.current = nil
         NotchService.shared = NotchService()
-        QuickLauncherService.shared = QuickLauncherService()
+        LatticeHubService.shared = LatticeHubService()
         Dialogs.panelModalActive = false
     }
 }
@@ -106,7 +106,7 @@ enum MediaDialogHostTests {
             expect(responses == [.OK] && !Context.Dialogs.panelModalActive && island.keyRequests == 0,
                    "the completion runs before focus returns, while native dismissal is still restoring key windows")
             Context.DispatchQueue.main.drain()
-            expect(island.keyRequests == 1 && Context.QuickLauncherService.shared.refocuses == 0,
+            expect(island.keyRequests == 1 && Context.LatticeHubService.shared.refocuses == 0,
                    "focus returns to the still-open island on the next turn")
         }
 
@@ -135,7 +135,7 @@ enum MediaDialogHostTests {
                    + "runs modal on the next turn")
             Context.DispatchQueue.main.drain()
             expect(panel.modalRuns == 1 && responses == [.OK] && !Context.Dialogs.panelModalActive
-                   && Context.QuickLauncherService.shared.refocuses == 1 && island.keyRequests == 0,
+                   && Context.LatticeHubService.shared.refocuses == 1 && island.keyRequests == 0,
                    "the modal path still hands focus back through the launcher")
         }
     }

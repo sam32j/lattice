@@ -42,13 +42,6 @@ extension LatticeHubView {
         }
     }
 
-    func isActive(_ item: LatticeHubItem) -> Bool {
-        switch item {
-        case .screenRecorder: return recorder.isRecording
-        default: return false
-        }
-    }
-
     func iconColor(_ item: LatticeHubItem) -> Color {
         if item == .screenRecorder, recorder.isRecording { return .red }
         return .accentColor

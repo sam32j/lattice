@@ -20,7 +20,6 @@ enum SettingsShortcutConsumerTests {
         defaults.set(true, forKey: role.feature.availabilityKey)
         for key in role.requiredEnableKeys { defaults.set(true, forKey: key) }
         defaults.set("", forKey: role.storageKey)
-        let menu = MenuHint(defaults), toggle = ToggleHint(defaults)
         let catalog = Catalog(defaults), group = GroupStatus(defaults)
         let inventory = Inventory(defaults)
         let utilityRoles: [(GlobalShortcutRole, String)] = [
@@ -49,21 +48,17 @@ enum SettingsShortcutConsumerTests {
         suite.expect(!inventory.availableRoles.contains(.pastePlain),
                      "Plain Paste leaves the central editor when its Clipboard History owner is uninstalled")
         defaults.set(true, forKey: DefaultsKey.clipboardHistoryEnabled)
-        suite.expect(menu.shortcutHint(role) == nil && toggle.shortcutHint(role) == nil
-                     && catalog.roleShortcut(role) == nil,
-                     "actual panel and Command Bar hint consumers hide cleared shortcuts even when enable keys stay on")
+        suite.expect(catalog.roleShortcut(role) == nil,
+                     "the Command Bar hint consumer hide cleared shortcuts even when enable keys stay on")
         suite.expect(!group.featureHasActiveShortcut(role.feature, roles: [role]),
                      "the actual disclosure header agrees with inactive cleared rows")
         defaults.set(role.defaultShortcut.storageValue, forKey: role.storageKey)
-        suite.expect(menu.shortcutHint(role) == role.defaultShortcut.displayString
-                     && toggle.shortcutHint(role) == role.defaultShortcut.displayString
-                     && catalog.roleShortcut(role) == role.defaultShortcut,
-                     "valid enabled hints remain visible on all three surfaces")
+        suite.expect(catalog.roleShortcut(role) == role.defaultShortcut,
+                     "the Command Bar shows a valid enabled shortcut")
         suite.expect(group.featureHasActiveShortcut(role.feature, roles: [role]),
                      "a valid enabled shortcut makes its disclosure group active")
         for key in role.requiredEnableKeys { defaults.set(false, forKey: key) }
-        suite.expect(menu.shortcutHint(role) == nil && toggle.shortcutHint(role) == nil
-                     && catalog.roleShortcut(role) == nil,
+        suite.expect(catalog.roleShortcut(role) == nil,
                      "validity checks preserve the existing enable-key gates")
         MainActor.assumeIsolated {
             defaults.set("", forKey: GlobalShortcutRole.quickLauncher.storageKey)

@@ -337,37 +337,19 @@ struct PanelDragHandle: View {
 struct PanelReorderableItem<Item: PanelOrderItem, Content: View>: View {
     let item: Item
     var isEnabled = true
-    /// Rows inside a `PanelRowGroup` have no card of their own, so the one
-    /// being dragged gets a card for its preview and stays readable over
-    /// whatever sits under the pointer.
-    var previewsAsCard = false
     @Binding var order: [Item]
     @Binding var dragging: Item?
     let content: () -> Content
 
     var body: some View {
         if isEnabled {
-            draggableContent
+            content()
+                .onDrag(itemProvider)
                 .onDrop(of: [UTType.text], delegate: PanelItemDropDelegate(item: item,
                                                                            order: $order,
                                                                            dragging: $dragging))
         } else {
             content()
-        }
-    }
-
-    @ViewBuilder
-    private var draggableContent: some View {
-        if previewsAsCard {
-            content()
-                .onDrag(itemProvider) {
-                    content()
-                        .frame(minWidth: 220, alignment: .leading)
-                        .panelCard(interactive: false, padded: false)
-                }
-        } else {
-            content()
-                .onDrag(itemProvider)
         }
     }
 

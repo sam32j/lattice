@@ -218,7 +218,7 @@ struct MetricsTests {
                 PermissionResetStateTests.run(suite)
             }),
             ("force-quit", { ProcessForceQuitTests.run(suite) }),
-            ("launcher", { QuickLauncherContract.run(suite) }),
+            ("launcher", { LatticeHubContract.run(suite); HubControlActionTests.run(suite) }),
             ("dock-autohide", {
                 DockPreviewPositionTests.run(suite)
                 DockPreviewScrollTests.run(suite)

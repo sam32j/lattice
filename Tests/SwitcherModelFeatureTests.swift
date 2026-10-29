@@ -215,22 +215,6 @@ enum SwitcherModelFeatureTests {
             Defaults.migrateLegacyKeyboardDebounceWindow(in: migrationDefaults)
             suite.expect(migrationDefaults.integer(forKey: DefaultsKey.keyboardDebounceWindowMs) == 10,
                    "keyboard debounce migration preserves active 10 ms user choices")
-            migrationDefaults.removeObject(forKey: DefaultsKey.panelUtilityOrder)
-            Defaults.migrateUtilityOrderForScreenshot(in: migrationDefaults)
-            suite.expect(migrationDefaults.object(forKey: DefaultsKey.panelUtilityOrder) == nil,
-                   "utility migration leaves a clean default order unpersisted")
-            migrationDefaults.set("quickLauncher,cleaner,homebrew",
-                                  forKey: DefaultsKey.panelUtilityOrder)
-            Defaults.migrateUtilityOrderForScreenshot(in: migrationDefaults)
-            suite.expect(migrationDefaults.string(forKey: DefaultsKey.panelUtilityOrder)
-                   == "screenshot,quickLauncher,cleaner,homebrew",
-                   "utility migration puts the newly added screenshot first")
-            migrationDefaults.set("homebrew,screenshot,cleaner",
-                                  forKey: DefaultsKey.panelUtilityOrder)
-            Defaults.migrateUtilityOrderForScreenshot(in: migrationDefaults)
-            suite.expect(migrationDefaults.string(forKey: DefaultsKey.panelUtilityOrder)
-                   == "homebrew,screenshot,cleaner",
-                   "utility migration preserves a screenshot position already chosen")
             migrationDefaults.set(true, forKey: DefaultsKey.screenshotOpenEditorDirectly)
             Defaults.migrateScreenshotOpenEditorDirectly(in: migrationDefaults)
             suite.expect(migrationDefaults.string(forKey: DefaultsKey.screenshotDefaultAction)
@@ -1971,26 +1955,21 @@ enum SwitcherModelFeatureTests {
                "shelf automatic exclusions start empty")
         suite.expect(registeredDefaults[DefaultsKey.mouseNavigationEnabled] as? Bool == false,
                "mouse side-button navigation is opt-in")
-        suite.expect(registeredDefaults[DefaultsKey.mouseAccelerationDisabled] as? Bool == false
-                && registeredDefaults[DefaultsKey.panelControlMouseAcceleration] as? Bool == true,
+        suite.expect(registeredDefaults[DefaultsKey.mouseAccelerationDisabled] as? Bool == false,
                "mouse acceleration control is opt-in and visible in the panel when installed")
         suite.expect(registeredDefaults[DefaultsKey.spacesOrderEnabled] as? Bool == false
-                && registeredDefaults[DefaultsKey.panelControlSpacesOrder] as? Bool == true
                 && registeredDefaults[DefaultsKey.spacesOrderRestore] == nil
                 && registeredDefaults[DefaultsKey.spacesOrderRestartPending] == nil,
                "fixed Space order is opt-in, visible in the panel when installed, and its restore state is never registered")
         suite.expect(registeredDefaults[DefaultsKey.linearScrollEnabled] as? Bool == false
                 && registeredDefaults[DefaultsKey.linearScrollLines] as? Int
-                    == ScrollWheelSupport.defaultLinesPerNotch
-                && registeredDefaults[DefaultsKey.panelControlLinearScroll] as? Bool == true,
+                    == ScrollWheelSupport.defaultLinesPerNotch,
                "linear scrolling is opt-in, starts at the default notch and shows in the panel when installed")
         suite.expect(registeredDefaults[DefaultsKey.mouseClickDebounceEnabled] as? Bool == false,
                "mouse click debounce is opt-in")
         suite.expect(registeredDefaults[DefaultsKey.mouseClickDebounceWindowMs] as? Int
                == Defaults.defaultMouseClickDebounceWindowMs,
                "mouse click debounce registers its conservative filter window")
-        suite.expect(registeredDefaults[DefaultsKey.panelControlMouseClickDebounce] as? Bool == true,
-               "mouse click debounce is visible in the panel when installed")
         suite.expect(registeredDefaults[DefaultsKey.clipboardHistoryShortcutEnabled] as? Bool == true,
                "clipboard history shortcut is ready when clipboard history is enabled")
         suite.expect(registeredDefaults[DefaultsKey.clipboardHistoryShortcut] as? String
@@ -2035,26 +2014,6 @@ enum SwitcherModelFeatureTests {
                "keyboard debounce default window starts low")
         suite.expect(registeredDefaults[DefaultsKey.keyboardDebounceKeyWindows] as? String == "",
                "keyboard debounce per-key windows start empty")
-        suite.expect(registeredDefaults[DefaultsKey.panelUtilityCleaning] as? Bool == true,
-               "panel cleaning utility is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelUtilityURLCleaner] as? Bool == true,
-               "panel URL cleaner utility is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelUtilityUninstaller] as? Bool == true,
-               "panel uninstaller utility is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelUtilityHomebrew] as? Bool == true,
-               "panel Homebrew utility is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelUtilityMedia] as? Bool == true,
-               "panel Media utility is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelControlMouseScroll] as? Bool == true,
-               "panel mouse scroll control is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelControlMouseNavigation] as? Bool == true,
-               "panel mouse navigation control is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelControlSwitcher] as? Bool == true,
-               "panel switcher control is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelControlDockPreview] as? Bool == true,
-               "panel Dock Preview control is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelControlDockClickHide] as? Bool == true,
-               "panel Dock hide control is visible by default")
         suite.expect(registeredDefaults[DefaultsKey.colorPickerBareHex] as? Bool == false,
                "color picker keeps the # prefix by default")
         suite.expect(registeredDefaults[DefaultsKey.screenOCRRemoveLineBreaks] as? Bool == false,
@@ -2822,16 +2781,6 @@ enum SwitcherModelFeatureTests {
                     && !Strings.ptBR.menuBarIconDisallowedBody.isEmpty
                     && Strings.enUS.menuBarIconDisallowedBody.contains("Allow in the Menu Bar"),
                "the hint names the System Settings switch by its own label")
-        suite.expect(registeredDefaults[DefaultsKey.panelControlAutoQuit] as? Bool == true,
-               "panel auto quit control is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelControlShelf] as? Bool == true,
-               "panel shelf control is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelControlWindowMaximize] as? Bool == true,
-               "panel window maximize control is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelControlKeyDebounce] as? Bool == true,
-               "panel keyboard debounce control is visible by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelControlTextSnippets] as? Bool == true,
-               "panel text snippets control is visible by default")
         suite.expect(registeredDefaults[DefaultsKey.panelShowKeepAwake] as? Bool == true,
                "Keep Awake panel section is shown by default")
         suite.expect(registeredDefaults[DefaultsKey.panelShowBrightness] as? Bool == true,
@@ -2893,20 +2842,8 @@ enum SwitcherModelFeatureTests {
         suite.expect(registeredDefaults[DefaultsKey.screenshotFileNumberStart] as? Int == 1
                 && registeredDefaults[DefaultsKey.screenshotFileNumberNext] as? Int == 1,
                "the file number sequence starts counting at 1")
-        suite.expect(registeredDefaults[DefaultsKey.panelShowUtilities] as? Bool == true,
-               "Utilities panel section is shown by default")
-        suite.expect(registeredDefaults[DefaultsKey.panelShowControls] as? Bool == true,
-               "Quick Controls panel section is shown by default")
         suite.expect(registeredDefaults[DefaultsKey.panelShowToggles] as? Bool == true,
                "Quick toggles panel section is shown by default")
-        suite.expect([DefaultsKey.panelToggleDarkMode, DefaultsKey.panelToggleKeyboardLight,
-                DefaultsKey.panelToggleMicMute,
-                DefaultsKey.panelToggleEmptyTrash,
-                DefaultsKey.panelToggleEjectDisks, DefaultsKey.panelToggleHiddenFiles,
-                DefaultsKey.panelToggleDesktopIcons, DefaultsKey.panelToggleLockScreen,
-                DefaultsKey.panelToggleDisplayOff, DefaultsKey.panelToggleScreenSaver]
-                .allSatisfy { registeredDefaults[$0] as? Bool == true },
-               "every quick toggle row is visible by default")
         suite.expect(registeredDefaults[DefaultsKey.monitorInterval] as? Int == 2,
                "monitor default interval stays at 2 seconds")
         suite.expect(registeredDefaults[DefaultsKey.monitorShowDisk] as? Bool == true,

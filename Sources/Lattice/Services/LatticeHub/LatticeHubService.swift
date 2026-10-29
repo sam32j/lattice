@@ -96,13 +96,9 @@ final class LatticeHubService: ObservableObject {
 
     // MARK: - Presentation
 
-    func toggle(anchoredBelow anchor: NSRect? = nil) {
+    func toggle() {
         if isVisible {
             hide()
-            return
-        }
-        if let anchor {
-            show(anchoredBelow: anchor)
             return
         }
         if shouldRouteToIsland() {
@@ -113,9 +109,15 @@ final class LatticeHubService: ObservableObject {
 
     func show(anchoredBelow anchor: NSRect? = nil) {
         if anchor == nil && shouldRouteToIsland() {
-            if NotchService.shared.openQuickPanel() { return }
+            if NotchService.shared.openQuickPanel() {
+                if isVisible { hide() }
+                return
+            }
         }
         (NSApp.delegate as? AppDelegate)?.closePopover()
+        if NotchService.shared.expanded, NotchService.shared.selected == .tools {
+            NotchService.shared.collapse()
+        }
         let panel = ensurePanel()
         prepareForPresentation()
         position(panel, anchoredBelow: anchor)
@@ -174,7 +176,7 @@ final class LatticeHubService: ObservableObject {
     }
 
     var dismissesOnOutsideInteraction: Bool {
-        activeUtility == nil
+        activeUtility == nil && NSApp.modalWindow == nil
     }
 
     // MARK: - Actions
@@ -250,5 +252,3 @@ final class LatticeHubService: ObservableObject {
         selectedIndex = min(selectedIndex ?? 0, count - 1)
     }
 }
-
-typealias QuickLauncherService = LatticeHubService

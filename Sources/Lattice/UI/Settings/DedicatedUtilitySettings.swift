@@ -47,7 +47,7 @@ struct DedicatedUtilitySettings: View {
             withAnimation(reduceMotion ? nil : .settingsExpansion) {
                 IslandDestination.launcherGrid.setShown(newValue, in: .standard)
                 NotchService.shared.syncWithPreferences()
-                QuickLauncherService.shared.syncWithPreferences()
+                LatticeHubService.shared.syncWithPreferences()
             }
         })
     }
@@ -95,11 +95,10 @@ struct DedicatedUtilitySettings: View {
                                 }
                                 .labelsHidden()
                                 .pickerStyle(.menu)
-                                .disabled(!shortcutHasValue)
                             }
                             .padding(.leading, settingsRowTextInset)
                             .onChange(of: launcherShortcutTarget) { _, _ in
-                                QuickLauncherService.shared.syncWithPreferences()
+                                LatticeHubService.shared.syncWithPreferences()
                             }
                         }
                     } else {
