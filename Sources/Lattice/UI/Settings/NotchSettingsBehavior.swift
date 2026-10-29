@@ -20,23 +20,6 @@ extension NotchSettings {
                     hoverDelayControl
                     if hoverExpand { closeDelayControl }
                 }
-                switchRow("keyboard", l10n.s.globalHotkeySection, isOn: $shortcutEnabled)
-                if shortcutEnabled {
-                    ShortcutPreferenceRow(role: .notch) {
-                        NotchService.shared.syncWithPreferences()
-                    }
-                    .padding(.leading, settingsRowTextInset)
-                    if notch.shortcutRegistrationFailed {
-                        Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .padding(.leading, settingsRowTextInset)
-                    }
-                }
-                switchRow("hand.draw", FeatureStrings.notchGestures(l10n.language).title,
-                                         caption: gesturesEnabled ? FeatureStrings.notchGestures(l10n.language).hint : nil,
-                          isOn: islandFeatureBinding(.notchGestures, value: $gesturesEnabled))
-                switchRow("waveform.path", text.hapticFeedback, isOn: $hapticFeedback)
                 SettingsRow(symbol: "arrow.uturn.backward", title: editor.reopening) {
                     Picker(editor.reopening, selection: Binding(get: {
                         guard returnHome else { return "" }
@@ -79,9 +62,6 @@ extension NotchSettings {
             SettingsCard(title: editor.destinations) {
                 destination(text.captures, symbol: "photo.stack", value: $capture,
                             available: AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable)
-            }
-            SettingsCard(title: editor.privacy) {
-                switchRow("camera.viewfinder", text.showInCaptures, isOn: $showInCaptures)
             }
         }
     }

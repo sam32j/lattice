@@ -78,15 +78,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchShowInCaptures) var showInCaptures = true
     @AppStorage(DefaultsKey.notchLockScreen) var lockScreen = false
     @AppStorage(DefaultsKey.notchSize) var size = NotchSize.spacious.rawValue
-    @AppStorage(DefaultsKey.notchOutlineEnabled) var outlineEnabled = false
-    @AppStorage(DefaultsKey.notchHideMenuBarGap) var hideMenuBarGap = true
-    @AppStorage(DefaultsKey.notchCustomWidth) var customWidth = NotchSize.defaultWidth
-    @AppStorage(DefaultsKey.notchCustomHeight) var customHeight = NotchSize.defaultHeight
-    @AppStorage(DefaultsKey.notchCameraFitWidth) var cameraFitWidth = 0.0
-    @AppStorage(DefaultsKey.notchCameraFitHeight) var cameraFitHeight = 0.0
-    @AppStorage(DefaultsKey.notchCapsuleFitWidth) var capsuleFitWidth = 0.0
-    @AppStorage(DefaultsKey.notchCapsuleFitHeight) var capsuleFitHeight = 0.0
-    @AppStorage(DefaultsKey.notchCapsuleFitDrop) var capsuleFitDrop = 0.0
     @AppStorage(DefaultsKey.notchHapticFeedback) var hapticFeedback = true
     @AppStorage(DefaultsKey.notchShelf) var shelfWindow = true
     @AppStorage(DefaultsKey.notchDragReveal) var dragReveal = true
@@ -115,9 +106,7 @@ struct NotchSettings: View {
          String(lyricsEnabled), String(lyricsOnline), String(browserCovers), String(queueEnabled), String(liveEqualizer),
          String(showPlayingMusic), String(includeOtherPlayers), idle, hiddenControls, controlOrder, size,
          String(timerEnabled), String(timerSoundEnabled), String(hideTimerCountdown),
-         String(cameraEnabled), String(accessoriesEnabled), String(outlineEnabled), String(hideMenuBarGap),
-         String(customWidth), String(customHeight), String(cameraFitWidth), String(cameraFitHeight),
-         String(capsuleFitWidth), String(capsuleFitHeight), String(capsuleFitDrop), String(hapticFeedback),
+         String(cameraEnabled), String(accessoriesEnabled), String(hapticFeedback),
          String(shelfWindow), String(dragReveal), String(appPanel),
          String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(hideInFullscreen), String(coversMenus),
          display, silhouette, String(hover), hidden, order, String(volume), String(inputSource),
@@ -153,7 +142,6 @@ struct NotchSettings: View {
                 combinedPageView
             }
         }
-        .padding(.horizontal, 22).padding(.top, 22)
         .onChange(of: configuration) { _, _ in sync() }
         .onChange(of: browserCovers) { _, _ in NotchMusicService.shared.syncBrowserCovers() }
         .onChange(of: accessData) { _, _ in NotchService.shared.syncWithPreferences() }
@@ -202,6 +190,33 @@ struct NotchSettings: View {
                             PermissionGatedToggle(text.enable, isOn: islandFeatureBinding(.notch, value: $enabled))
                                 .labelsHidden().toggleStyle(.switch)
                         }
+                        Divider()
+                        ShortcutPreferenceRow(role: .notch, label: l10n.s.globalHotkeySection, symbolName: "keyboard") {
+                            NotchService.shared.syncWithPreferences()
+                        }
+                        .disabled(!enabled)
+                        if notch.shortcutRegistrationFailed {
+                            Text(l10n.s.shortcutUnavailable)
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                                .padding(.leading, settingsRowTextInset)
+                        }
+                        Divider()
+                        switchRow("hand.draw", FeatureStrings.notchGestures(l10n.language).title,
+                                  caption: gesturesEnabled ? FeatureStrings.notchGestures(l10n.language).hint : nil,
+                                  isOn: islandFeatureBinding(.notchGestures, value: $gesturesEnabled))
+                            .disabled(!enabled)
+                        Divider()
+                        switchRow("waveform.path", text.hapticFeedback, isOn: $hapticFeedback)
+                            .disabled(!enabled)
+                        Divider()
+                        let locked = FeatureStrings.notchLockScreen(l10n.language)
+                        switchRow("lock.display", locked.show, caption: locked.showHint, isOn: $lockScreen)
+                            .disabled(!enabled)
+                        Divider()
+                        switchRow("camera.viewfinder", text.showInCaptures,
+                                  isOn: Binding(get: { !showInCaptures }, set: { showInCaptures = !$0 }))
+                            .disabled(!enabled)
                     }
                     if enabled, AppFeature.notch.isAvailable, !(hover && hideUntilHover && !hiddenShowsActivity), !notch.geometry.isNotched, !permissions.accessibility {
                         VStack(alignment: .leading, spacing: 8) {
@@ -213,11 +228,8 @@ struct NotchSettings: View {
                     }
 
                     VStack(alignment: .leading, spacing: 28) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(editor.layout).font(.title3.weight(.semibold))
-                            layoutPage
-                        }
-                        .id("layout")
+                        layoutPage
+                            .id("layout")
 
                         Divider()
 
@@ -248,7 +260,7 @@ struct NotchSettings: View {
                 }
                 .frame(maxWidth: 760)
                 .frame(maxWidth: .infinity)
-                .padding(.bottom, 22)
+                .padding(22)
             }
             .onChange(of: scrollTarget) { _, target in
                 guard let target else { return }
@@ -258,29 +270,6 @@ struct NotchSettings: View {
                 }
             }
         }
-    }
-
-    @ViewBuilder
-    func contentDetailView(selection: NotchContentDestination) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Button {
-                contentSelection = nil
-            } label: {
-                Label(FeatureStrings.notch(l10n.language).title, systemImage: "chevron.left")
-            }
-            .buttonStyle(.plain)
-            .fixedSize(horizontal: false, vertical: true)
-            .layoutPriority(1)
-
-            if selection == .companion {
-                NotchMascotSettings(embedded: true)
-                    .frame(minHeight: 0, maxHeight: .infinity)
-            } else {
-                moduleDetail
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
-        .clipped()
     }
 
     /// A section of the island can ask for its own options; the hint is one-shot.
@@ -303,38 +292,3 @@ struct NotchSettings: View {
 
 
 extension NotchControlItem: PanelOrderItem {}
-
-/// A standard menu bar on a display without a camera, at half size, with
-/// the resting island in it.
-struct NotchSilhouetteSample: View {
-    let silhouette: NotchSilhouette
-
-    var body: some View {
-        let geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1440, height: 900), safeAreaTop: 0,
-                                     cameraWidth: 0, menuBarHeight: 24, silhouette: silhouette)
-        let island = geometry.restingSize(showsContent: false)
-        ZStack(alignment: .top) {
-            Rectangle().fill(.primary.opacity(0.08)).frame(height: geometry.menuBarHeight)
-            // Menus on the left and status items on the right, clear of the island.
-            HStack(spacing: 9) {
-                ForEach([26, 36, 30], id: \.self) { width in
-                    Capsule().fill(.primary.opacity(0.22)).frame(width: CGFloat(width), height: 8)
-                }
-                Spacer(minLength: 0)
-                ForEach(0..<3, id: \.self) { _ in
-                    Circle().fill(.primary.opacity(0.22)).frame(width: 12, height: 12)
-                }
-            }
-            .padding(.horizontal, 14)
-            .frame(height: geometry.menuBarHeight)
-            NotchShape.island(height: island.height, geometry: geometry).fill(.black)
-                .frame(width: island.width, height: island.height)
-        }
-        .frame(width: 400, height: 48, alignment: .top)
-        .background(.primary.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .scaleEffect(0.5)
-        .frame(width: 200, height: 24)
-        .accessibilityHidden(true)
-    }
-}

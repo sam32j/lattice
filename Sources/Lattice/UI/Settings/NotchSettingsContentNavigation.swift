@@ -3,75 +3,58 @@ import EventKit
 
 extension NotchSettings {
     var layoutPage: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            NotchLayoutEditor(configuration: access, size: $size, width: $customWidth, height: $customHeight) {
-                showModule(.controls)
+        SettingsCard {
+            SettingsRow(symbol: "sparkles", title: "Quick Actions", caption: "Quick action buttons around your Dynamic Island.") {
+                Button(FeatureStrings.screenshot(l10n.language).editButton) {
+                    NotchLiveQuickActionsEditorController.shared.show()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
             }
-            SettingsCard(title: text.size) {
-                HStack(spacing: 10) {
-                    choice(text.compact, symbol: "rectangle.compress.vertical", selected: size == NotchSize.compact.rawValue) { size = NotchSize.compact.rawValue }
-                    choice(text.spacious, symbol: "rectangle.expand.vertical", selected: size == NotchSize.spacious.rawValue) { size = NotchSize.spacious.rawValue }
-                    choice(text.custom, symbol: "arrow.up.left.and.arrow.down.right", selected: size == NotchSize.custom.rawValue) { size = NotchSize.custom.rawValue }
+            Divider()
+            SettingsRow(symbol: "rectangle.compress.vertical", title: "Dynamic Island Size") {
+                Picker("Dynamic Island Size", selection: Binding(get: {
+                    size == NotchSize.compact.rawValue ? NotchSize.compact.rawValue : NotchSize.spacious.rawValue
+                }, set: { size = $0 })) {
+                    Text(text.compact).tag(NotchSize.compact.rawValue)
+                    Text(text.spacious).tag(NotchSize.spacious.rawValue)
                 }
-                if size == NotchSize.custom.rawValue {
-                    // One grid starts both sliders at the same edge in every language.
-                    Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
-                        dimensionSlider(text.width, value: $customWidth, range: NotchSize.widthRange, fallback: NotchSize.defaultWidth)
-                        dimensionSlider(text.maximumHeight, value: $customHeight, range: NotchSize.heightRange, fallback: NotchSize.defaultHeight)
-                    }
-                    Text(text.sizeHint).font(.caption).foregroundStyle(.secondary)
-                }
-
-            }
-            // Only a display without a camera can float the island.
-            if NotchSupport.hasDisplayWithoutNotch {
-                SettingsCard(title: text.withoutNotch) {
-                    HStack(spacing: 10) {
-                        silhouetteChoice(.capsule, title: text.capsuleShape)
-                        silhouetteChoice(.notch, title: text.notchShape)
-                    }
-                    // An island kept on a camera, or away with the lid closed,
-                    // shows neither shape, so the card says where to change that.
-                    if enabled, !NotchService.reachesDisplayWithoutNotch(NotchDisplay(rawValue: display) ?? .automatic) {
-                        Text(text.withoutNotchUnreached).font(.caption).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Button(text.showOnAllDisplays) { display = NotchDisplay.all.rawValue }
-                    }
-                }
-                if NotchSilhouette(rawValue: silhouette) ?? .capsule == .capsule {
-                    SettingsCard(title: text.capsuleFit) {
-                        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
-                            // Even widths keep the capsule centred on whole points.
-                            fitSlider(text.width, card: text.capsuleFit, value: $capsuleFitWidth,
-                                      range: NotchCapsuleFit.widthRange, step: 2)
-                            fitSlider(text.height, card: text.capsuleFit, value: $capsuleFitHeight,
-                                      range: NotchCapsuleFit.heightRange, step: 1)
-                            fitSlider(text.fromTop, card: text.capsuleFit, value: $capsuleFitDrop,
-                                      range: NotchCapsuleFit.dropRange, step: 1)
-                        }
-                        Text(text.capsuleFitHint).font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-            }
-            SettingsCard {
-                switchRow("capsule", text.showOutline, isOn: $outlineEnabled)
-            }
-            // Only a physical camera has an outline to match.
-            if NotchSupport.hasNotchedDisplay {
-                SettingsCard(title: text.cameraFit) {
-                    switchRow("rectangle.topthird.inset.filled", text.hideMenuBarGap,
-                              caption: text.hideMenuBarGapHint, isOn: $hideMenuBarGap)
-                    Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
-                        // Whole points keep the island centred on the camera's pixels.
-                        fitSlider(text.width, card: text.cameraFit, value: $cameraFitWidth,
-                                  range: NotchCameraFit.widthRange, step: 1)
-                        fitSlider(text.height, card: text.cameraFit, value: $cameraFitHeight,
-                                  range: NotchCameraFit.heightRange, step: 0.5)
-                    }
-                    Text(text.cameraFitHint).font(.caption).foregroundStyle(.secondary)
-                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 180)
             }
         }
+    }
+
+    @ViewBuilder
+    private var displayCompatibilityCheck: some View {
+        if enabled, !NotchService.reachesDisplayWithoutNotch(NotchDisplay(rawValue: display) ?? .automatic) {
+            Button(text.showOnAllDisplays) { display = NotchDisplay.all.rawValue }
+        }
+    }
+
+    @ViewBuilder
+    func contentDetailView(selection: NotchContentDestination) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Button {
+                contentSelection = nil
+            } label: {
+                Label(FeatureStrings.notch(l10n.language).title, systemImage: "chevron.left")
+            }
+            .buttonStyle(.plain)
+            .fixedSize(horizontal: false, vertical: true)
+            .layoutPriority(1)
+
+            if selection == .companion {
+                NotchMascotSettings(embedded: true)
+                    .frame(minHeight: 0, maxHeight: .infinity)
+            } else {
+                moduleDetail
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
+        .padding(22)
+        .clipped()
     }
 
 
