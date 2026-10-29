@@ -2,101 +2,72 @@ import SwiftUI
 import EventKit
 
 extension NotchSettings {
-    var behaviorPage: some View {
+    var openingCard: some View {
         let opening = FeatureStrings.notchOpening(l10n.language)
-        return VStack(alignment: .leading, spacing: 20) {
-            SettingsCard(title: opening.opening) {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                    choice(opening.clickToOpen, symbol: "cursorarrow", selected: !hover) { hideUntilHover = false; hover = false }
-                    choice(opening.previewOnHover, symbol: "ellipsis.rectangle", selected: hover && !hoverExpand && !hideUntilHover) { hideUntilHover = false; hover = true; hoverExpand = false }
-                    choice(opening.expandOnHover, symbol: "arrow.up.left.and.arrow.down.right", selected: hover && hoverExpand && !hideUntilHover) { hideUntilHover = false; hover = true; hoverExpand = true }
-                    choice(opening.hiddenUntilHover, symbol: "eye.slash", selected: hover && hideUntilHover) { hover = true; hoverExpand = true; hideUntilHover = true }
+        return SettingsCard(title: opening.opening) {
+            HStack(spacing: 8) {
+                choice(opening.clickToOpen, symbol: "cursorarrow", selected: !hover) {
+                    hideUntilHover = false
+                    hover = false
                 }
-                if hover {
-                    hoverDelayPicker(opening)
-                    if hoverExpand { closeDelayPicker(opening) }
+                choice(opening.hoverToOpen, symbol: "cursorarrow.motionlines", selected: hover) {
+                    hover = true
                 }
-                if hover && hideUntilHover {
-                    SettingsToggleRow(title: opening.showLiveActivity,
-                                      caption: opening.showLiveActivityHint,
-                                      isOn: $hiddenShowsActivity)
-                }
-                Text(opening.whenReopening)
-                    .font(.headline)
-                    .padding(.top, 4)
-                SettingsControlRow(title: opening.defaultPage) {
-                    Picker(opening.defaultPage, selection: Binding(get: {
-                        guard returnHome else { return "" }
-                        return NotchModule(rawValue: homeModule)?.rawValue
-                            ?? NotchReopeningDestination(rawValue: homeModule)?.rawValue
-                            ?? NotchModule.controls.rawValue
-                    }, set: { value in
-                        returnHome = !value.isEmpty
-                        if returnHome { homeModule = value }
-                    })) {
-                        Text(editor.lastPage).tag("")
-                        Text(text.panel).tag(NotchReopeningDestination.appPanel.rawValue)
-                        Text(text.sectionsTitle).tag(NotchReopeningDestination.explore.rawValue)
-                        ForEach(NotchSupport.modules()) { module in
-                            Text(module.title(l10n.language)).tag(module.rawValue)
-                        }
-                        if let saved = NotchModule(rawValue: homeModule), !NotchSupport.modules().contains(saved) {
-                            Text(saved.title(l10n.language)).tag(saved.rawValue).disabled(true)
-                        }
+            }
+            if hover {
+                SettingsControlRow(title: opening.actionOnHover) {
+                    Picker(opening.actionOnHover, selection: $hoverExpand) {
+                        Text(opening.preview).tag(false)
+                        Text(opening.expand).tag(true)
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()
                 }
-                SettingsToggleRow(title: opening.openVisibleActivity,
-                                  caption: opening.openVisibleActivityHint,
-                                  isOn: $opensActivity)
+                hoverDelayPicker(opening)
+                if hoverExpand { closeDelayPicker(opening) }
+                SettingsToggleRow(title: opening.hiddenUntilHover,
+                                  caption: opening.hiddenUntilHoverHint,
+                                  isOn: $hideUntilHover)
+                if hideUntilHover {
+                    SettingsToggleRow(title: opening.showLiveActivity,
+                                      caption: opening.showLiveActivityHint,
+                                      isOn: $hiddenShowsActivity)
+                }
             }
-            SettingsCard(title: editor.destinations) {
-                destination(text.captures, symbol: "photo.stack", value: $capture,
-                            available: AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable)
+            SettingsControlRow(title: opening.defaultPage) {
+                Picker(opening.defaultPage, selection: Binding(get: {
+                    guard returnHome else { return "" }
+                    return NotchModule(rawValue: homeModule)?.rawValue
+                        ?? NotchReopeningDestination(rawValue: homeModule)?.rawValue
+                        ?? NotchModule.controls.rawValue
+                }, set: { value in
+                    returnHome = !value.isEmpty
+                    if returnHome { homeModule = value }
+                })) {
+                    Text(editor.lastPage).tag("")
+                    Text(text.panel).tag(NotchReopeningDestination.appPanel.rawValue)
+                    Text(text.sectionsTitle).tag(NotchReopeningDestination.explore.rawValue)
+                    ForEach(NotchSupport.modules()) { module in
+                        Text(module.title(l10n.language)).tag(module.rawValue)
+                    }
+                    if let saved = NotchModule(rawValue: homeModule), !NotchSupport.modules().contains(saved) {
+                        Text(saved.title(l10n.language)).tag(saved.rawValue).disabled(true)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
             }
+            SettingsToggleRow(title: opening.openVisibleActivity,
+                              caption: opening.openVisibleActivityHint,
+                              isOn: $opensActivity)
         }
     }
 
-    /// The resting charge can turn red once it runs low, and amber a little
-    /// earlier, at levels the person picks.
-    @ViewBuilder var lowBatteryControls: some View {
-        let strings = NotchLowBatteryStrings.localized(l10n.language)
-        switchRow("battery.25percent", strings.title, caption: strings.caption, isOn: $lowBatteryTint)
-        if lowBatteryTint {
-            let red = NotchSupport.sanitizedLowBatteryThreshold(lowBatteryThreshold)
-            levelSlider(strings.threshold, range: NotchSupport.batteryLevelScale,
-                        value: Binding(get: { red },
-                                       set: {
-                                           lowBatteryThreshold = NotchSupport.sanitizedLowBatteryThreshold($0)
-                                           // Raising red past amber carries amber along above it.
-                                           earlyBatteryThreshold = NotchSupport.earlyBatteryThreshold(earlyBatteryThreshold,
-                                                                                                     above: lowBatteryThreshold)
-                                       }))
-            switchRow("battery.50percent", strings.early, caption: strings.earlyCaption, isOn: $earlyBatteryWarning)
-            if earlyBatteryWarning {
-                // Both sliders share one fixed scale; amber stops just above red.
-                levelSlider(strings.earlyThreshold, range: NotchSupport.batteryLevelScale,
-                            value: Binding(get: { NotchSupport.earlyBatteryThreshold(earlyBatteryThreshold, above: red) },
-                                           set: { earlyBatteryThreshold = NotchSupport.earlyBatteryThreshold($0, above: red) }))
-            }
-            switchRow("menubar.rectangle", strings.menuBar, isOn: $lowBatteryMenuBar)
+    var destinationsCard: some View {
+        SettingsCard(title: editor.destinations) {
+            destination(text.captures, symbol: "photo.stack", value: $capture,
+                        available: AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable)
         }
-    }
-
-    func levelSlider(_ title: String, range: ClosedRange<Int>, value: Binding<Int>) -> some View {
-        let formatted = "\(value.wrappedValue)%"
-        let slider = Binding(get: { Double(value.wrappedValue) }, set: { value.wrappedValue = Int($0.rounded()) })
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(title)
-                Spacer()
-                Text(formatted).monospacedDigit().foregroundStyle(.secondary)
-            }
-            Slider(value: slider, in: Double(range.lowerBound)...Double(range.upperBound), step: 1) {
-                Text(title)
-            }.labelsHidden().accessibilityValue(formatted)
-        }.padding(.leading, settingsRowTextInset)
     }
 
     func hoverDelayPicker(_ strings: NotchOpeningStrings) -> some View {
