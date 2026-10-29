@@ -11,18 +11,6 @@ extension NotchSettings {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
             }
-            Divider()
-            SettingsRow(symbol: "rectangle.compress.vertical", title: "Dynamic Island Size") {
-                Picker("Dynamic Island Size", selection: Binding(get: {
-                    size == NotchSize.compact.rawValue ? NotchSize.compact.rawValue : NotchSize.spacious.rawValue
-                }, set: { size = $0 })) {
-                    Text(text.compact).tag(NotchSize.compact.rawValue)
-                    Text(text.spacious).tag(NotchSize.spacious.rawValue)
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(width: 180)
-            }
         }
     }
 

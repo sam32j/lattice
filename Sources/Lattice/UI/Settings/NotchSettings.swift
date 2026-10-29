@@ -100,33 +100,6 @@ struct NotchSettings: View {
     var text: NotchStrings { FeatureStrings.notch(l10n.language) }
     var editor: NotchEditorStrings { FeatureStrings.notchEditor(l10n.language) }
 
-    var configuration: [String] {
-        [String(enabled), String(calendarEnabled), String(calendarCountdown), String(calendarTimeLeft),
-         String(notificationsEnabled), String(dismissNativeNotifications), String(gesturesEnabled),
-         String(lyricsEnabled), String(lyricsOnline), String(browserCovers), String(queueEnabled), String(liveEqualizer),
-         String(showPlayingMusic), String(includeOtherPlayers), idle, hiddenControls, controlOrder, size,
-         String(timerEnabled), String(timerSoundEnabled), String(hideTimerCountdown),
-         String(cameraEnabled), String(accessoriesEnabled), String(hapticFeedback),
-         String(shelfWindow), String(dragReveal), String(appPanel),
-         String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(hideInFullscreen), String(coversMenus),
-         display, silhouette, String(hover), hidden, order, String(volume), String(inputSource),
-         String(brightness), String(keyboardLight),
-         String(microphone), String(battery), String(clipboard), String(clipboardWindow), String(snippetsWindow), clipboardCardSize,
-         String(capture), String(trackChange), captureAction, String(showInCaptures),
-         String(returnHome), homeModule, String(opensActivity), String(scratchpad),
-         String(agentsEnabled), String(watchEnabled), String(keepAwakeActivity), String(shortcutEnabled)]
-    }
-
-    var access: Binding<NotchQuickAccessConfiguration> {
-        Binding(get: { NotchQuickAccessConfiguration.stored() }, set: { accessData = $0.encoded })
-    }
-
-    var orderedModules: [NotchModule] {
-        let stored = order.split(separator: ",").compactMap { NotchModule(rawValue: String($0)) }
-        var seen = Set<NotchModule>()
-        return (stored + NotchSupport.rootModules).filter { seen.insert($0).inserted && NotchSupport.isExploreModule($0) }
-    }
-
     init(initialTab: NotchSettingsTab = .layout, initialContent: NotchContentDestination? = nil) {
         _tab = State(initialValue: initialTab)
         _contentSelection = State(initialValue: initialContent)
@@ -214,11 +187,24 @@ struct NotchSettings: View {
                             .labelsHidden()
                         }
                         .disabled(!enabled)
+                        SettingsRow(symbol: "arrow.down.backward.and.arrow.up.forward.rectangle", title: labels.dynamicIslandSize) {
+                            Picker(labels.dynamicIslandSize, selection: Binding(get: {
+                                size == NotchSize.compact.rawValue ? NotchSize.compact.rawValue : NotchSize.spacious.rawValue
+                            }, set: { size = $0 })) {
+                                Text(text.compact).tag(NotchSize.compact.rawValue)
+                                Text(text.spacious).tag(NotchSize.spacious.rawValue)
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                            .frame(width: 180)
+                        }
+                        .disabled(!enabled)
                         switchRow("hand.draw", labels.useScrollGestures,
                                   isOn: islandFeatureBinding(.notchGestures, value: $gesturesEnabled))
                             .disabled(!enabled)
                         if gesturesEnabled {
-                            switchRow("waveform.path", labels.turnOnHapticFeedback, isOn: $hapticFeedback)
+                            SettingsToggleRow(title: labels.turnOnHapticFeedback, isOn: $hapticFeedback)
+                                .padding(.leading, settingsRowTextInset)
                                 .disabled(!enabled)
                         }
                         switchRow("camera.viewfinder", labels.showInScreenshots, isOn: $showInCaptures)
