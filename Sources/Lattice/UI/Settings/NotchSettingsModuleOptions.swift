@@ -157,8 +157,6 @@ extension NotchSettings {
                         idleChoice(.battery, title: text.battery, symbol: "battery.75percent",
                                    reason: AppFeature.monitorPower.enableReason(l10n)) { AppFeature.monitorPower.showInFeatures() }
                     }
-                    idleChoice(.music, title: text.music, symbol: "music.note",
-                               reason: pageReason(.music, feature: nil), fix: pageAction(.music, feature: nil))
                     // Offered once the section is on, and kept while it is the
                     // saved choice, waiting like the others.
                     if NotchSupport.canRest(with: .agents) || idle == NotchIdleContent.agents.rawValue {
@@ -231,12 +229,7 @@ extension NotchSettings {
                     toggleCard(text.inputSource, symbol: "keyboard", value: $inputSource,
                                available: true, reservesReason: reserves)
                 }
-                if accessoriesEnabled { Text(FeatureStrings.notchActivities(l10n.language).accessoryDescription).font(.caption).foregroundStyle(.secondary) }
                 if enabled, (volume || brightness || keyboardLight), !permissions.accessibility { PermissionRow(kind: .accessibility) }
-            }
-            let locked = FeatureStrings.notchLockScreen(l10n.language)
-            SettingsCard(title: locked.title) {
-                switchRow("lock.display", locked.show, caption: locked.showHint, isOn: $lockScreen)
             }
         }
     }
