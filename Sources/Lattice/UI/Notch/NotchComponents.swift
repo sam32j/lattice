@@ -480,7 +480,7 @@ struct NotchBandRow<Leading: View, Trailing: View>: View {
 /// The native host publishes the same path used by its animated mask. Keeping
 /// this in canvas coordinates avoids scaling the glass's corners independently.
 final class NotchBackdropPresentation: ObservableObject {
-    @Published var contour = Path()
+    @Published var contour = Path(CGRect.zero)
     @Published var usesGlass = false
     /// The camera strip's height in points, which the translucent background
     /// keeps black at every island height.
@@ -520,7 +520,17 @@ final class NotchBackdropPresentation: ObservableObject {
 
 struct NotchBackdropShape: Shape {
     var contour: Path
-    func path(in rect: CGRect) -> Path { contour }
+    func path(in rect: CGRect) -> Path {
+        let safeRect = CGRect(x: rect.minX.isFinite ? rect.minX : 0,
+                              y: rect.minY.isFinite ? rect.minY : 0,
+                              width: max(0, rect.width.isFinite ? rect.width : 0),
+                              height: max(0, rect.height.isFinite ? rect.height : 0))
+        let bbox = contour.boundingRect
+        if contour.isEmpty || bbox.isNull || !bbox.origin.x.isFinite || !bbox.origin.y.isFinite {
+            return Path(CGRect(x: safeRect.minX, y: safeRect.minY, width: 0, height: 0))
+        }
+        return contour
+    }
 }
 
 struct NotchWindowBackground: View {

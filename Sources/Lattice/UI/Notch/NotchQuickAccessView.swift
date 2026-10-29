@@ -214,9 +214,14 @@ private struct NotchQuickAccessOutside: Shape {
     let island: Path
 
     func path(in rect: CGRect) -> Path {
-        var path = Path(rect)
-        guard !island.isEmpty else { return path }
-        path.addPath(island, transform: CGAffineTransform(translationX: rect.midX - island.boundingRect.midX, y: 0))
+        let safeRect = CGRect(x: rect.minX.isFinite ? rect.minX : 0,
+                              y: rect.minY.isFinite ? rect.minY : 0,
+                              width: max(0, rect.width.isFinite ? rect.width : 0),
+                              height: max(0, rect.height.isFinite ? rect.height : 0))
+        var path = Path(safeRect)
+        let bbox = island.boundingRect
+        guard !island.isEmpty, !bbox.isNull, bbox.origin.x.isFinite else { return path }
+        path.addPath(island, transform: CGAffineTransform(translationX: safeRect.midX - bbox.midX, y: 0))
         return path
     }
 }
@@ -233,9 +238,14 @@ struct NotchQuickAccessDrop: Shape {
     }
 
     func path(in rect: CGRect) -> Path {
+        let safeRect = CGRect(x: rect.minX.isFinite ? rect.minX : 0,
+                              y: rect.minY.isFinite ? rect.minY : 0,
+                              width: max(0, rect.width.isFinite ? rect.width : 0),
+                              height: max(0, rect.height.isFinite ? rect.height : 0))
+        let zeroPath = Path(CGRect(x: safeRect.minX, y: safeRect.minY, width: 0, height: 0))
         let phase = min(1.1, max(0, progress))
-        guard phase > 0.001 else { return Path() }
-        let anchor = side == .bottom ? rect.height - edge : side == .left ? edge : rect.width - edge
+        guard phase > 0.001, safeRect.width > 0, safeRect.height > 0 else { return zeroPath }
+        let anchor = side == .bottom ? safeRect.height - edge : side == .left ? edge : safeRect.width - edge
         let center = NotchQuickAccessLayout.center(index: index, progress: phase, edge: anchor, top: top, side: .left)
         let radius = NotchQuickAccessLayout.diameter / 2 * (0.4 + 0.6 * phase)
         var path = Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
@@ -253,8 +263,8 @@ struct NotchQuickAccessDrop: Shape {
                           control2: CGPoint(x: anchor - 7, y: center.y - neck))
             path.closeSubpath()
         }
-        if side == .bottom { return path.applying(CGAffineTransform(a: 0, b: -1, c: 1, d: 0, tx: 0, ty: rect.height)) }
-        if side == .right { return path.applying(CGAffineTransform(a: -1, b: 0, c: 0, d: 1, tx: rect.width, ty: 0)) }
+        if side == .bottom { return path.applying(CGAffineTransform(a: 0, b: -1, c: 1, d: 0, tx: 0, ty: safeRect.height)) }
+        if side == .right { return path.applying(CGAffineTransform(a: -1, b: 0, c: 0, d: 1, tx: safeRect.width, ty: 0)) }
         return path
     }
 }

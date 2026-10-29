@@ -812,28 +812,32 @@ struct NotchShape: Shape {
     }
 
     func path(in rect: CGRect) -> Path {
-        guard attached else { return Path(roundedRect: rect, cornerRadius: radius) }
-        guard rect.width > 0, rect.height > 0 else { return Path() }
-        if let floatingGap { return Path(NotchLayout.capsulePath(in: rect, gap: floatingGap)) }
-        let maxShoulder = NotchLayout.shoulder(height: rect.height)
-        let wing = cutoutWidth > 0 ? max(0, (rect.width - cutoutWidth) / 2) : rect.width / 2
+        let safeRect = CGRect(x: rect.minX.isFinite ? rect.minX : 0,
+                              y: rect.minY.isFinite ? rect.minY : 0,
+                              width: max(0, rect.width.isFinite ? rect.width : 0),
+                              height: max(0, rect.height.isFinite ? rect.height : 0))
+        guard safeRect.width > 0, safeRect.height > 0 else { return Path(safeRect) }
+        guard attached else { return Path(roundedRect: safeRect, cornerRadius: radius) }
+        if let floatingGap { return Path(NotchLayout.capsulePath(in: safeRect, gap: floatingGap)) }
+        let maxShoulder = NotchLayout.shoulder(height: safeRect.height)
+        let wing = cutoutWidth > 0 ? max(0, (safeRect.width - cutoutWidth) / 2) : safeRect.width / 2
         let shoulder = cutoutWidth > 0 ? min(maxShoulder, wing * 0.3) : maxShoulder
-        let bottom = min(radius, rect.height / 2, (rect.width - shoulder * 2) / 2)
+        let bottom = min(radius, safeRect.height / 2, (safeRect.width - shoulder * 2) / 2)
         let tangent: CGFloat = 0.55228475
         var path = Path()
         path.move(to: CGPoint(x: 0, y: 0))
-        path.addLine(to: CGPoint(x: rect.width, y: 0))
-        path.addCurve(to: CGPoint(x: rect.width - shoulder, y: shoulder),
-                      control1: CGPoint(x: rect.width - shoulder * tangent, y: 0),
-                      control2: CGPoint(x: rect.width - shoulder, y: shoulder * (1 - tangent)))
-        path.addLine(to: CGPoint(x: rect.width - shoulder, y: rect.height - bottom))
-        path.addCurve(to: CGPoint(x: rect.width - shoulder - bottom, y: rect.height),
-                      control1: CGPoint(x: rect.width - shoulder, y: rect.height - bottom * (1 - tangent)),
-                      control2: CGPoint(x: rect.width - shoulder - bottom * (1 - tangent), y: rect.height))
-        path.addLine(to: CGPoint(x: shoulder + bottom, y: rect.height))
-        path.addCurve(to: CGPoint(x: shoulder, y: rect.height - bottom),
-                      control1: CGPoint(x: shoulder + bottom * (1 - tangent), y: rect.height),
-                      control2: CGPoint(x: shoulder, y: rect.height - bottom * (1 - tangent)))
+        path.addLine(to: CGPoint(x: safeRect.width, y: 0))
+        path.addCurve(to: CGPoint(x: safeRect.width - shoulder, y: shoulder),
+                      control1: CGPoint(x: safeRect.width - shoulder * tangent, y: 0),
+                      control2: CGPoint(x: safeRect.width - shoulder, y: shoulder * (1 - tangent)))
+        path.addLine(to: CGPoint(x: safeRect.width - shoulder, y: safeRect.height - bottom))
+        path.addCurve(to: CGPoint(x: safeRect.width - shoulder - bottom, y: safeRect.height),
+                      control1: CGPoint(x: safeRect.width - shoulder, y: safeRect.height - bottom * (1 - tangent)),
+                      control2: CGPoint(x: safeRect.width - shoulder - bottom * (1 - tangent), y: safeRect.height))
+        path.addLine(to: CGPoint(x: shoulder + bottom, y: safeRect.height))
+        path.addCurve(to: CGPoint(x: shoulder, y: safeRect.height - bottom),
+                      control1: CGPoint(x: shoulder + bottom * (1 - tangent), y: safeRect.height),
+                      control2: CGPoint(x: shoulder, y: safeRect.height - bottom * (1 - tangent)))
         path.addLine(to: CGPoint(x: shoulder, y: shoulder))
         path.addCurve(to: .zero,
                       control1: CGPoint(x: shoulder, y: shoulder * (1 - tangent)),
