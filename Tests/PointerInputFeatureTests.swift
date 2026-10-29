@@ -1762,8 +1762,6 @@ enum PointerInputFeatureTests {
                "mouse button shortcuts ship off by default")
         suite.expect((Defaults.registeredDefaults[DefaultsKey.mouseButtonShortcuts] as? [String: String])?.isEmpty == true,
                "the mapping dictionary registers empty so it travels with backups")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.panelControlMouseButtonShortcuts] as? Bool == true,
-               "the mouse button shortcuts panel row ships visible like its siblings")
         suite.expect(AppFeature.mouseButtonShortcuts.enabledKeys == [DefaultsKey.mouseButtonShortcutsEnabled,
                                                               DefaultsKey.mouseSpacesGestureEnabled]
                 && AppFeature.mouseButtonShortcuts.permissions == [.accessibility]
@@ -2248,8 +2246,6 @@ enum PointerInputFeatureTests {
         suite.expect(Defaults.registeredDefaults[DefaultsKey.superKeySoloAction] as? String
                 == SuperKeySoloAction.none.rawValue,
                "a tap on its own does nothing until the user picks something")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.panelControlSuperKey] as? Bool == true,
-               "the super key panel row ships visible like its siblings")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.superKeyMappingApplied] == nil
                 && Defaults.registeredDefaults[DefaultsKey.superKeyMappedSource] == nil,
                "mapping recovery state is never registered or backed up")
@@ -4123,34 +4119,5 @@ enum MiddleClickTrackpadContract {
             unavailable.stop()
         }
         IO.reset()
-
-        let panel = Panel()
-        panel.middleClick.touchDeviceMissing = true
-        panel.middleClick.systemDragGestureConflict = true
-        suite.expect(panel.middleClickCaption == Strings.enUS.middleClickNoTrackpad,
-                     "the quick controls row says the trackpad cannot be read, ahead of the drag conflict")
-        panel.middleClick.touchDeviceMissing = false
-        suite.expect(panel.middleClickCaption == Strings.enUS.middleClickDragConflict,
-                     "the quick controls row falls back to the drag conflict once a trackpad is read")
-        panel.permissions.accessibility = false
-        panel.middleClick.touchDeviceMissing = true
-        suite.expect(panel.middleClickCaption.hasPrefix(Strings.enUS.permissionRequired),
-                     "a missing Accessibility grant still comes first")
-        panel.middleClickEnabled = false
-        suite.expect(panel.middleClickCaption == Strings.enUS.middleClickEnableCaption,
-                     "a disabled middle click does not show a missing-trackpad warning")
-    }
-
-    class PanelFixture {
-        struct Localizer { let s = Strings.enUS }
-        struct PermissionState { var accessibility = true }
-        final class MiddleClickState {
-            var touchDeviceMissing = false
-            var systemDragGestureConflict = false
-        }
-        let l10n = Localizer()
-        var permissions = PermissionState()
-        let middleClick = MiddleClickState()
-        var middleClickEnabled = true
     }
 }

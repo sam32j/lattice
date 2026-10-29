@@ -30,8 +30,6 @@ enum AppManagementFeatureTests {
                "blocking the music app from launching is opt-in")
         suite.expect(registeredDefaults[DefaultsKey.musicBlockReplacementPath] as? String == "",
                "the music replacement app starts unset")
-        suite.expect(registeredDefaults[DefaultsKey.panelUtilityCleaner] as? Bool == true,
-               "the cleaner row is visible in the panel utilities like its siblings")
         suite.expect(registeredDefaults[DefaultsKey.cleanerScheduleFrequency] as? String == "off",
                "automatic cleanup is opt-in")
         suite.expect(registeredDefaults[DefaultsKey.cleanerScheduleHour] as? Int == 9
@@ -1161,10 +1159,6 @@ enum AppManagementFeatureTests {
                "the AutoQuit settings list filters exceptions through installation-aware visibility")
         suite.expect(registeredDefaults[DefaultsKey.panelCollapsedSections] == nil,
                "panel collapsed sections intentionally has no registered default")
-        suite.expect(registeredDefaults[DefaultsKey.panelUtilityOrder] == nil,
-               "panel utility order intentionally has no registered default")
-        suite.expect(registeredDefaults[DefaultsKey.panelToggleOrder] == nil,
-               "panel toggle order intentionally has no registered default")
         suite.expect(Defaults.sanitizedDefaultDuration(60) == 60, "valid default duration is preserved")
         suite.expect(Defaults.sanitizedDefaultDuration(999) == 0, "invalid default duration falls back to indefinite")
         suite.expect(Defaults.sanitizedBatteryLimit(15) == 15, "valid battery limit is preserved")

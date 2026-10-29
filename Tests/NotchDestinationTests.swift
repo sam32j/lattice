@@ -38,7 +38,7 @@ enum NotchDestinationContract {
         static let shared = Reader()
         struct Reader { func rememberPasteTarget() {} }
     }
-    enum QuickLauncherService { static var shared = QuickLauncherContract.Launcher() }
+    enum LatticeHubService { static var shared = LatticeHubContract.Launcher() }
     enum MenuPanelFocus {
         static let shared = Focus()
         final class Focus {
@@ -142,13 +142,13 @@ enum NotchDestinationContract {
         let defaults = UserDefaults(suiteName: domain)!
         defaults.removePersistentDomain(forName: domain)
         ReviewDefaults.current = defaults
-        let previousLauncherDefaults = QuickLauncherContract.ReviewDefaults.current
-        QuickLauncherContract.ReviewDefaults.current = defaults
+        let previousLauncherDefaults = LatticeHubContract.ReviewDefaults.current
+        LatticeHubContract.ReviewDefaults.current = defaults
         defer {
-            QuickLauncherContract.ReviewDefaults.current = previousLauncherDefaults
+            LatticeHubContract.ReviewDefaults.current = previousLauncherDefaults
             ReviewDefaults.current = nil
             defaults.removePersistentDomain(forName: domain)
-            QuickLauncherService.shared = QuickLauncherContract.Launcher()
+            LatticeHubService.shared = LatticeHubContract.Launcher()
             NotchTimerService.shared = Timer()
         }
         for (key, value) in Defaults.registeredDefaults where key.hasPrefix("notch") { defaults.set(value, forKey: key) }
@@ -226,19 +226,19 @@ enum NotchDestinationContract {
         suite.expect(service.modules.contains(.system) && service.selectedMetric == .fan,
                "a separately installed fan feature exposes System and retains its direct detail")
 
-        QuickLauncherService.shared = QuickLauncherContract.Launcher()
-        let launcher = QuickLauncherService.shared
+        LatticeHubService.shared = LatticeHubContract.Launcher()
+        let launcher = LatticeHubService.shared
         let firstPresentation = launcher.presentationID
         service.open(.tools)
         suite.expect(service.selected == .tools && launcher.selectedIndex == 0 && launcher.presentationID != firstPresentation,
                "opening Tools inside the island prepares keyboard selection on its first presentation")
-        QuickLauncherContract.events.removeAll()
-        let enter = QuickLauncherContract.NSEvent(keyCode: UInt16(kVK_Return))
+        LatticeHubContract.events.removeAll()
+        let enter = LatticeHubContract.NSEvent(keyCode: UInt16(kVK_Return))
         suite.expect(launcher.handlePanelKey(enter, flow: .columns(rows: 2)) == nil
-               && QuickLauncherContract.events == ["hide"],
+               && LatticeHubContract.events == ["hide"],
                "Return works immediately after the island opens Tools")
-        QuickLauncherContract.DispatchQueue.main.drain()
-        suite.expect(QuickLauncherContract.events == ["hide", "screenshot.capture"],
+        LatticeHubContract.DispatchQueue.main.drain()
+        suite.expect(LatticeHubContract.events == ["hide", "screenshot.capture"],
                "the selected tool action executes after hide")
         let unchangedPresentation = launcher.presentationID
         service.open(.tools)

@@ -6,6 +6,7 @@ import SwiftUI
 // MARK: - Shared permission portal
 
 struct PermissionsPortalSections: View {
+    @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var bluetooth = BluetoothPermissionAccess.shared
     let hub: FeatureHubStrings

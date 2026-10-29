@@ -89,6 +89,7 @@ struct MenuBarStyleChoice: View {
 /// metrics are visible, so toggles do not reshuffle it.
 struct MenuBarMetricTiles: View {
     @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.menuBarMetricOrder) private var metricOrder = ""
     @State private var order: [MenuBarMetric] = MenuBarMetric.order(in: .standard)
     @State private var dragging: MenuBarMetric?

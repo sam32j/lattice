@@ -257,21 +257,15 @@ enum DefaultsKey {
     static let keyboardDebounceEnabled = "keyboardDebounceEnabled"
     static let keyboardDebounceWindowMs = "keyboardDebounceWindowMs"
     static let keyboardDebounceKeyWindows = "keyboardDebounceKeyWindows" // comma-separated keyCode:ms
-    static let panelUtilityCleaning = "panelUtilityCleaning"
     static let cleaningModeEnabled = "cleaningModeEnabled"
     static let cleaningModeShortcut = "cleaningModeShortcut"
     static let cleaningModeShortcutEnabled = "cleaningModeShortcutEnabled"
-    static let panelUtilityURLCleaner = "panelUtilityURLCleaner"
-    static let panelUtilityUninstaller = "panelUtilityUninstaller"
     static let uninstallerCommandBarEnabled = "uninstallerCommandBarEnabled"
     static let killProcessCommandBarEnabled = "killProcessCommandBarEnabled"
     static let killProcessGroupRelated = "killProcessGroupRelated"
     static let killProcessSortBy = "killProcessSortBy" // cpu | memory | name | pid
     static let killProcessSortAscending = "killProcessSortAscending"
-    static let panelUtilityCleaner = "panelUtilityCleaner"
-    static let panelUtilityHomebrew = "panelUtilityHomebrew"
     static let homebrewGroupDependencies = "homebrewGroupDependencies"
-    static let panelUtilityAppUpdates = "panelUtilityAppUpdates"
     static let appUpdatesCheckFrequency = "appUpdatesCheckFrequency"  // off | daily | weekly
     static let appUpdatesIncludeHomebrewApps = "appUpdatesIncludeHomebrewApps"
     static let appUpdatesIncludeAppStore = "appUpdatesIncludeAppStore"
@@ -283,53 +277,11 @@ enum DefaultsKey {
     // Findings already announced once, so a pending update nobody installs
     // does not speak up again after every relaunch.
     static let appUpdatesNotifiedIDs = "appUpdatesNotifiedIDs"
-    static let panelUtilityMedia = "panelUtilityMedia"
-    static let panelUtilityClipboard = "panelUtilityClipboard"
-    static let panelUtilityWindowLayout = "panelUtilityWindowLayout"
-    static let panelControlMouseScroll = "panelControlMouseScroll"
-    static let panelControlFocusFollowsMouse = "panelControlFocusFollowsMouse"
-    static let panelControlMouseNavigation = "panelControlMouseNavigation"
-    static let panelControlSwitcher = "panelControlSwitcher"
-    static let panelControlDockPreview = "panelControlDockPreview"
-    static let panelControlAutoQuit = "panelControlAutoQuit"
-    static let panelControlShelf = "panelControlShelf"
-    static let panelControlWindowMaximize = "panelControlWindowMaximize"
-    static let panelControlKeyDebounce = "panelControlKeyDebounce"
-    static let panelControlDockClick = "panelControlDockClick"
-    static let panelControlDockClickHide = "panelControlDockClickHide"
-    static let panelControlDockClickCycle = "panelControlDockClickCycle"
-    static let panelControlMiddleClick = "panelControlMiddleClick"
-    static let panelControlTextSnippets = "panelControlTextSnippets"
-    static let panelControlSuperKey = "panelControlSuperKey"
-    static let panelControlRadialMenu = "panelControlRadialMenu"
-    static let panelControlMouseButtonShortcuts = "panelControlMouseButtonShortcuts"
-    static let panelControlMouseAcceleration = "panelControlMouseAcceleration"
-    static let panelControlLinearScroll = "panelControlLinearScroll"
-    static let panelControlMouseClickDebounce = "panelControlMouseClickDebounce"
-    static let panelControlSpacesOrder = "panelControlSpacesOrder"
-    // Quick-control categories start collapsed and remember being opened.
-    static let panelControlWindowsExpanded = "panelControlWindowsExpanded"
-    static let panelControlInputExpanded = "panelControlInputExpanded"
-    static let panelControlFilesExpanded = "panelControlFilesExpanded"
     // Show/hide whole panel sections that have no monitorShow* key of their own.
     static let panelShowKeepAwake = "panelShowKeepAwake"
     static let panelShowBrightness = "panelShowBrightness"
-    static let panelShowUtilities = "panelShowUtilities"
-    static let panelShowControls = "panelShowControls"
     static let panelShowToggles = "panelShowToggles"
     static let panelShowWallpaper = "panelShowWallpaper"
-    // Quick toggles tab: per-action visibility (the order lives in panelToggleOrder).
-    static let panelToggleDarkMode = "panelToggleDarkMode"
-    static let panelToggleKeyboardLight = "panelToggleKeyboardLight"
-    // Keep the existing storage key so moving the row preserves its visibility choice.
-    static let panelToggleMicMute = "panelUtilityMicMute"
-    static let panelToggleEmptyTrash = "panelToggleEmptyTrash"
-    static let panelToggleEjectDisks = "panelToggleEjectDisks"
-    static let panelToggleHiddenFiles = "panelToggleHiddenFiles"
-    static let panelToggleDesktopIcons = "panelToggleDesktopIcons"
-    static let panelToggleLockScreen = "panelToggleLockScreen"
-    static let panelToggleDisplayOff = "panelToggleDisplayOff"
-    static let panelToggleScreenSaver = "panelToggleScreenSaver"
 
     // System monitor — live metrics shown next to the menu bar icon (opt-in).
     static let menuBarCPU = "menuBarCPU"
@@ -443,9 +395,6 @@ enum DefaultsKey {
     // collapsed, both comma-joined section ids (see PanelSectionID). Absent keys
     // mean the canonical order and nothing collapsed, so no defaults registration.
     static let panelSectionOrder = "panelSectionOrder"
-    static let panelUtilityOrder = "panelUtilityOrder"
-    static let panelControlOrder = "panelControlOrder"
-    static let panelToggleOrder = "panelToggleOrder"
     static let panelSystemOrder = "panelSystemOrder"
     static let panelNetworkOrder = "panelNetworkOrder"
     static let panelDiskOrder = "panelDiskOrder"
@@ -576,7 +525,6 @@ enum DefaultsKey {
     // the bar looks for no files at all, which is the setting out of the box.
     static let commandBarFileScopes = "commandBarFileScopes"
     static let commandBarFileIgnores = "commandBarFileIgnores" // names a file search never shows
-    static let panelUtilityCommandBar = "panelUtilityCommandBar"
     static let scratchpadRetention = "scratchpadRetention"   // never | day | week | month
     static let scratchpadCloseOnClickOutside = "scratchpadCloseOnClickOutside"
     static let scratchpadBackgroundOpacity = "scratchpadBackgroundOpacity" // opaque fill over the pad material (ScratchpadSupport.backgroundOpacityRange)
@@ -595,11 +543,6 @@ enum DefaultsKey {
     static let launcherShortcutTarget = "launcherShortcutTarget"
     static let hubControlsOrder = "hubControlsOrder"
     static let hubControlsHidden = "hubControlsHidden"
-    static let panelUtilityQuickLauncher = "panelUtilityQuickLauncher"
-    static let panelUtilityColorPicker = "panelUtilityColorPicker"
-    static let panelUtilityScreenOCR = "panelUtilityScreenOCR"
-    static let panelUtilityCameraPreview = "panelUtilityCameraPreview"
-    static let panelUtilityScratchpad = "panelUtilityScratchpad"
     static let clipboardHistoryShortcutEnabled = "clipboardHistoryShortcutEnabled"
     static let clipboardHistoryShortcut = "clipboardHistoryShortcut"
     // Mode chooser visibility for dedicated capture shortcuts.
@@ -673,7 +616,6 @@ enum DefaultsKey {
     // Developer-only endpoint for an isolated test tunnel. The official app
     // ignores it, and settings backups must never carry it to another Mac.
     static let screenshotSharingDeveloperEndpoint = "screenshotSharingDeveloperEndpoint"
-    static let panelUtilityScreenshot = "panelUtilityScreenshot"
 
     // Screen recorder - records the picked area, keeps the untouched master
     // in Application Support until retention sweeps it.
@@ -697,8 +639,6 @@ enum DefaultsKey {
     static let recorderGIFFrameRate = "recorderGIFFrameRate"
     static let recorderEditorPresets = "recorderEditorPresets"
     static let recorderSharingEnabled = "recorderSharingEnabled"
-    static let panelUtilityScreenRecorder = "panelUtilityScreenRecorder"
-    static let panelUtilityPortManager = "panelUtilityPortManager"
 
     // Window Layout — snapping, global shortcuts and optional pointer gestures.
     static let windowLayoutShortcutsEnabled = "windowLayoutShortcutsEnabled"
@@ -906,7 +846,6 @@ enum DefaultsKey {
     static let notchCommandBarStyle = "notchCommandBarStyle" // NotchCommandBarStyle.rawValue
     // Legacy inverse preference; the explicit visibility switch supersedes it.
     static let notchHideInCaptures = "notchHideInCaptures"
-    static let panelControlNotch = "panelControlNotch"
 
     // Radial menu: a wheel of actions on a shortcut.
     static let radialMenuEnabled = "radialMenuEnabled"
@@ -1395,7 +1334,6 @@ enum Defaults {
         DefaultsKey.notchCommandBar: true,
         DefaultsKey.notchCommandBarStyle: NotchCommandBarStyle.droplet.rawValue,
         DefaultsKey.notchHideInCaptures: false,
-        DefaultsKey.panelControlNotch: true,
         DefaultsKey.radialMenuEnabled: false,
         DefaultsKey.radialMenuShortcut: GlobalShortcut.radialMenuDefault.storageValue,
         DefaultsKey.radialMenuAtPointer: true,
@@ -1406,20 +1344,14 @@ enum Defaults {
         DefaultsKey.keyboardDebounceEnabled: false,
         DefaultsKey.keyboardDebounceWindowMs: defaultKeyboardDebounceWindowMs,
         DefaultsKey.keyboardDebounceKeyWindows: "",
-        DefaultsKey.panelUtilityCleaning: true,
         DefaultsKey.cleaningModeShortcutEnabled: false,
         DefaultsKey.cleaningModeShortcut: GlobalShortcut.cleaningModeDefault.storageValue,
-        DefaultsKey.panelUtilityURLCleaner: true,
-        DefaultsKey.panelUtilityUninstaller: true,
         DefaultsKey.uninstallerCommandBarEnabled: false,
         DefaultsKey.killProcessCommandBarEnabled: true,
         DefaultsKey.killProcessGroupRelated: true,
         DefaultsKey.killProcessSortBy: "cpu",
         DefaultsKey.killProcessSortAscending: false,
-        DefaultsKey.panelUtilityCleaner: true,
-        DefaultsKey.panelUtilityHomebrew: true,
         DefaultsKey.homebrewGroupDependencies: true,
-        DefaultsKey.panelUtilityAppUpdates: true,
         // The list itself costs nothing until it is opened; only the
         // background check keeps a timer, so it starts off.
         DefaultsKey.appUpdatesCheckFrequency: AppUpdatesSupport.CheckFrequency.off.rawValue,
@@ -1431,49 +1363,10 @@ enum Defaults {
         DefaultsKey.appUpdatesLastCheck: 0.0,
         DefaultsKey.appUpdatesLastCount: 0,
         DefaultsKey.appUpdatesNotifiedIDs: [String](),
-        DefaultsKey.panelUtilityMedia: true,
-        DefaultsKey.panelUtilityClipboard: true,
-        DefaultsKey.panelUtilityWindowLayout: true,
-        DefaultsKey.panelControlMouseScroll: true,
-        DefaultsKey.panelControlFocusFollowsMouse: true,
-        DefaultsKey.panelControlMouseNavigation: true,
-        DefaultsKey.panelControlSwitcher: true,
-        DefaultsKey.panelControlDockPreview: true,
-        DefaultsKey.panelControlAutoQuit: true,
-        DefaultsKey.panelControlShelf: true,
-        DefaultsKey.panelControlWindowMaximize: true,
-        DefaultsKey.panelControlKeyDebounce: true,
-        DefaultsKey.panelControlDockClick: true,
-        DefaultsKey.panelControlDockClickHide: true,
-        DefaultsKey.panelControlDockClickCycle: true,
-        DefaultsKey.panelControlMiddleClick: true,
-        DefaultsKey.panelControlTextSnippets: true,
-        DefaultsKey.panelControlSuperKey: true,
-        DefaultsKey.panelControlRadialMenu: true,
-        DefaultsKey.panelControlMouseButtonShortcuts: true,
-        DefaultsKey.panelControlMouseAcceleration: true,
-        DefaultsKey.panelControlLinearScroll: true,
-        DefaultsKey.panelControlMouseClickDebounce: true,
-        DefaultsKey.panelControlSpacesOrder: true,
-        DefaultsKey.panelControlWindowsExpanded: false,
-        DefaultsKey.panelControlInputExpanded: false,
-        DefaultsKey.panelControlFilesExpanded: false,
         DefaultsKey.panelShowKeepAwake: true,
         DefaultsKey.panelShowBrightness: true,
-        DefaultsKey.panelShowUtilities: true,
-        DefaultsKey.panelShowControls: true,
         DefaultsKey.panelShowToggles: true,
         DefaultsKey.panelShowWallpaper: true,
-        DefaultsKey.panelToggleDarkMode: true,
-        DefaultsKey.panelToggleKeyboardLight: true,
-        DefaultsKey.panelToggleMicMute: true,
-        DefaultsKey.panelToggleEmptyTrash: true,
-        DefaultsKey.panelToggleEjectDisks: true,
-        DefaultsKey.panelToggleHiddenFiles: true,
-        DefaultsKey.panelToggleDesktopIcons: true,
-        DefaultsKey.panelToggleLockScreen: true,
-        DefaultsKey.panelToggleDisplayOff: true,
-        DefaultsKey.panelToggleScreenSaver: true,
         // Menu bar metrics start off (the icon stays clean) and are opt-in.
         // The panel shows every monitoring block by default; users hide what
         // they don't want.
@@ -1668,7 +1561,6 @@ enum Defaults {
         DefaultsKey.commandBarShortcut: GlobalShortcut.commandBarDefault.storageValue,
         DefaultsKey.commandBarPositionOffset: "",
         DefaultsKey.commandBarEmojiSkinTone: "",
-        DefaultsKey.panelUtilityCommandBar: true,
         DefaultsKey.scratchpadRetention: ScratchpadRetention.never.rawValue,
         DefaultsKey.scratchpadCloseOnClickOutside: true,
         DefaultsKey.scratchpadBackgroundOpacity: 0.0,
@@ -1682,11 +1574,6 @@ enum Defaults {
         DefaultsKey.launcherShortcutTarget: LauncherShortcutTarget.island.rawValue,
         DefaultsKey.hubControlsOrder: "",
         DefaultsKey.hubControlsHidden: "",
-        DefaultsKey.panelUtilityQuickLauncher: true,
-        DefaultsKey.panelUtilityColorPicker: true,
-        DefaultsKey.panelUtilityScreenOCR: true,
-        DefaultsKey.panelUtilityCameraPreview: true,
-        DefaultsKey.panelUtilityScratchpad: true,
         DefaultsKey.clipboardHistoryShortcutEnabled: true,
         DefaultsKey.clipboardHistoryShortcut: GlobalShortcut.clipboardDefault.storageValue,
         DefaultsKey.recorderShortcutEnabled: false,
@@ -1706,8 +1593,6 @@ enum Defaults {
         DefaultsKey.recorderGIFFrameRate: 12,
         DefaultsKey.recorderEditorPresets: Data(),
         DefaultsKey.recorderSharingEnabled: true,
-        DefaultsKey.panelUtilityScreenRecorder: true,
-        DefaultsKey.panelUtilityPortManager: true,
         DefaultsKey.screenshotEnabled: true,
         DefaultsKey.screenRecorderEnabled: true,
         DefaultsKey.screenshotShowCaptureMenuOnShortcut: true,
@@ -1774,7 +1659,6 @@ enum Defaults {
         DefaultsKey.screenshotPreviewDuration: ScreenshotSupport.defaultConfirmationPreviewDuration,
         DefaultsKey.screenshotSharingEnabled: true,
         DefaultsKey.screenshotPlayShutterSound: true,
-        DefaultsKey.panelUtilityScreenshot: true,
         DefaultsKey.windowLayoutShortcutsEnabled: false,
         DefaultsKey.windowDirectionalEnabled: false,
         DefaultsKey.windowDirectionalShortcut: GlobalShortcut.windowDirectionalDefault.storageValue,
@@ -1854,8 +1738,6 @@ enum Defaults {
         migrateLegacyMenuBarTemperatureMetric(in: defaults)
         migrateLegacySwitcherWindowShortcut(in: defaults)
         migrateLegacyKeyboardDebounceWindow(in: defaults)
-        migrateUtilityOrderForScreenshot(in: defaults)
-        migrateUtilityOrderForAppUpdates(in: defaults)
         migrateScreenshotOpenEditorDirectly(in: defaults)
         migrateUnifiedScreenCaptureShortcut(in: defaults)
         migrateRestoredScreenCaptureShortcuts(in: defaults)
@@ -2240,35 +2122,6 @@ enum Defaults {
               (defaults.string(forKey: DefaultsKey.keyboardDebounceKeyWindows) ?? "").isEmpty
         else { return }
         defaults.set(defaultKeyboardDebounceWindowMs, forKey: DefaultsKey.keyboardDebounceWindowMs)
-    }
-
-    static func migrateUtilityOrderForScreenshot(in defaults: UserDefaults) {
-        guard let storedOrder = defaults.object(forKey: DefaultsKey.panelUtilityOrder) as? String else {
-            return
-        }
-        let ids = storedOrder.split(separator: ",").map(String.init)
-        guard !ids.contains("screenshot") else { return }
-        defaults.set((["screenshot"] + ids).joined(separator: ","),
-                     forKey: DefaultsKey.panelUtilityOrder)
-    }
-
-    /// App updates joins the panel next to the other app-management tools
-    /// instead of at the end of a long list, without disturbing the rest of
-    /// a layout the user arranged.
-    static func migrateUtilityOrderForAppUpdates(in defaults: UserDefaults) {
-        guard let storedOrder = defaults.object(forKey: DefaultsKey.panelUtilityOrder) as? String else {
-            return
-        }
-        defaults.set(utilityOrderWithAppUpdates(storedOrder).joined(separator: ","),
-                     forKey: DefaultsKey.panelUtilityOrder)
-    }
-
-    static func utilityOrderWithAppUpdates(_ storedOrder: String) -> [String] {
-        var ids = storedOrder.split(separator: ",").map(String.init)
-        guard !ids.contains("appUpdates") else { return ids }
-        let anchor = ids.firstIndex(of: "cleaner") ?? min(1, ids.count)
-        ids.insert("appUpdates", at: anchor)
-        return ids
     }
 
     static func sanitizedDefaultDuration(_ minutes: Int) -> Int {

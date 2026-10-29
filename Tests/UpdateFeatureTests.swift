@@ -2122,24 +2122,12 @@ enum UpdateFeatureTests {
         ) == nil,
         "ambiguous package ownership is never used for uninstall")
 
-        suite.expect(Defaults.utilityOrderWithAppUpdates("screenshot,quickLauncher,cleaner,homebrew")
-                == ["screenshot", "quickLauncher", "appUpdates", "cleaner", "homebrew"],
-               "app updates joins a saved panel order next to its siblings")
-        suite.expect(Defaults.utilityOrderWithAppUpdates("media,clipboard")
-                == ["media", "appUpdates", "clipboard"],
-               "without the cleaner to anchor to, it still lands near the top")
-        suite.expect(Defaults.utilityOrderWithAppUpdates("cleaner,appUpdates,media")
-                == ["cleaner", "appUpdates", "media"],
-               "an order that already has it is left alone")
-        suite.expect(Defaults.utilityOrderWithAppUpdates("") == ["appUpdates"],
-               "an empty saved order does not lose the entry")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.appUpdatesCheckFrequency] as? String == "off",
                "the background check starts off")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.appUpdatesIncludeHomebrewApps] as? Bool == true
                 && Defaults.registeredDefaults[DefaultsKey.appUpdatesIncludeAppStore] as? Bool == true
                 && Defaults.registeredDefaults[DefaultsKey.appUpdatesIncludeOnlineCatalog] as? Bool == true
-                && Defaults.registeredDefaults[DefaultsKey.appUpdatesNotify] as? Bool == true
-                && Defaults.registeredDefaults[DefaultsKey.panelUtilityAppUpdates] as? Bool == true,
+                && Defaults.registeredDefaults[DefaultsKey.appUpdatesNotify] as? Bool == true,
                "the app update defaults are registered")
         suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.appUpdatesCheckFrequency)
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.appUpdatesIncludeHomebrewApps)

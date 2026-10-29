@@ -241,7 +241,7 @@ final class NotchService: ObservableObject {
             || (expanded && !showingSections && selected == .calendar && Permissions.shared.keepsCalendarPrompt)
             || (expanded && !showingSections && selected == .files && fileInteractionActive)
             || CameraPreviewService.shared.keepsNotchPermissionPrompt
-            || (expanded && !showingSections && selected == .tools && (QuickLauncherService.shared.activeUtility != nil || QuickLauncherService.shared.isEditing))
+            || (expanded && !showingSections && selected == .tools && (LatticeHubService.shared.activeUtility != nil || LatticeHubService.shared.isEditing))
     }
     /// Up and measuring its display. Settings previews read the island's
     /// size only then.
@@ -807,7 +807,7 @@ final class NotchService: ObservableObject {
         }
         let musicExtras = NotchLyricsSupport.isEnabled() || NotchQueueSupport.isEnabled()
         let isToolsPage = !showingAppPanel && selected == .tools
-        let launcher = QuickLauncherService.shared
+        let launcher = LatticeHubService.shared
         let isEditingOrActiveUtility = launcher.isEditing || launcher.activeUtility != nil
         let controlsHeight: CGFloat? = isToolsPage && !isEditingOrActiveUtility ? launcher.notchControlsHeight : nil
         return pageSize(in: expandedGeometry, module: showingAppPanel ? .tools : selected,
@@ -825,8 +825,8 @@ final class NotchService: ObservableObject {
     /// detail, app panel, capture or media editor in front of the page.
     func previewSize(for module: NotchModule) -> CGSize {
         pageSize(in: previewGeometry(for: module), module: module, detail: false, panel: false, detailHeight: nil, musicExtraHeight: 0,
-                 fileMediaHeight: nil, toolCount: QuickLauncherService.shared.visibleItems.count, capturePreviewHeight: nil,
-                 toolsControlsHeight: module == .tools ? QuickLauncherService.shared.notchControlsHeight : nil)
+                 fileMediaHeight: nil, toolCount: LatticeHubService.shared.visibleItems.count, capturePreviewHeight: nil,
+                 toolsControlsHeight: module == .tools ? LatticeHubService.shared.notchControlsHeight : nil)
     }
 
     /// The island around a previewed section, with the top row its page has.
@@ -1419,7 +1419,7 @@ final class NotchService: ObservableObject {
         let changesPresentation = !expanded || selected != destination || closesCommandBar
             || showingAppPanel != appPanel || selectedMetric != metric || showingSections != sections || crossfadeContent
         if changesPresentation, destination == .tools, !appPanel, !sections, metric == nil {
-            QuickLauncherService.shared.prepareForPresentation()
+            LatticeHubService.shared.prepareForPresentation()
         }
         (NSApp.delegate as? AppDelegate)?.closePopover(preservingNotch: true)
         if !expanded, modules.contains(.clipboard) { ClipboardHistoryService.shared.rememberPasteTarget() }
@@ -3578,13 +3578,14 @@ final class NotchService: ObservableObject {
                 if self.handleClipboardPasteKey(event) { return nil }
             }
             if event.type == .keyDown, event.window === self.panel, self.selected == .tools, !self.showingAppPanel, !self.showingSections {
-                let launcher = QuickLauncherService.shared
+                let launcher = LatticeHubService.shared
                 // The rail reads across its rows until it scrolls, in the
                 // rows the open page leaves it below its header; the editing
                 // grid keeps its own rows.
                 let flow: QuickToolsSupport.GridFlow = launcher.isEditing
                     ? .rows(columns: NotchSupport.toolColumns)
-                    : self.expandedGeometry.toolFlow(count: launcher.visibleItems.count)
+                    : self.expandedGeometry.toolFlow(count: launcher.visibleItems.count,
+                                                     controlsHeight: launcher.notchControlsHeight)
                 return launcher.handlePanelKey(event, flow: flow)
             }
             if event.type == .keyDown, event.window === self.panel, event.keyCode == 53 {
@@ -3844,7 +3845,7 @@ final class NotchService: ObservableObject {
         if modules.contains(.tools) {
             // The tools page is a rail sized by its tiles; editing or a
             // hosted utility turns it into a page.
-            let launcher = QuickLauncherService.shared
+            let launcher = LatticeHubService.shared
             launcher.$isEditing.map { _ in () }
                 .merge(with: launcher.$activeUtility.map { _ in () }, launcher.$hiddenItemsRaw.map { _ in () })
                 .dropFirst(3).receive(on: DispatchQueue.main)

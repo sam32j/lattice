@@ -36,5 +36,3 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
         }
     }
 }
-
-typealias QuickLauncherItem = LatticeHubItem

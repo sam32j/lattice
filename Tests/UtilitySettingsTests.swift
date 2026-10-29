@@ -21,10 +21,9 @@ enum UtilitySettingsTests {
                == FeatureSettingsDestination(.launcherGrid)
                && AppFeature.cameraPreview.settingsDestination
                == FeatureSettingsDestination(.cameraPreview),
-               "Launcher Grid and Camera Preview open their dedicated settings pages")
+               "Lattice Hub and Camera Preview open their dedicated settings pages")
         expect(!AppFeature.allCases.contains { $0.rawValue == "quickToggles" },
                "Quick Toggles is not independently installable")
-        typealias Action = MenuPanelSectionGateContract.QuickToggleAction
         expect(Action.darkMode.feature == .brightness && Action.ejectDisks.feature == .commandBar,
                "appearance follows Displays while eject follows Command Bar installation")
         let domain = "vorss.tests.action-owners.\(UUID())"
@@ -33,8 +32,8 @@ enum UtilitySettingsTests {
         for feature in AppFeature.allCases { defaults.set(false, forKey: feature.availabilityKey) }
         defaults.set(false, forKey: DefaultsKey.featureAvailable("quickToggles"))
         defaults.set(true, forKey: DefaultsKey.brightnessControlEnabled)
-        expect(Action.allCases.filter { $0.feature.isAvailable(in: defaults) }
-               == [.darkMode, .keyboardLight, .displayOff],
+        expect([Action.darkMode, .displayOff].allSatisfy { $0.feature.isAvailable(in: defaults) }
+               && !Action.ejectDisks.feature.isAvailable(in: defaults),
                "Displays actions stay reachable even when the retired Quick Toggles flag is off")
         defaults.set(false, forKey: DefaultsKey.brightnessControlEnabled)
         defaults.set(true, forKey: AppFeature.commandBar.availabilityKey)

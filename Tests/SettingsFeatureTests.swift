@@ -54,7 +54,6 @@ enum SettingsFeatureTests {
             DefaultsKey.notchEnabled,
             DefaultsKey.notchShowPlayingMusic,
             DefaultsKey.notchQuickAccessSide,
-            DefaultsKey.panelControlNotch,
             AppFeature.notch.availabilityKey,
             AppFeature.notchCalendar.availabilityKey,
         ]
@@ -65,7 +64,6 @@ enum SettingsFeatureTests {
             case DefaultsKey.notchEnabled: return true
             case DefaultsKey.notchShowPlayingMusic: return false
             case DefaultsKey.notchQuickAccessSide: return "controls"
-            case DefaultsKey.panelControlNotch: return false
             case AppFeature.notch.availabilityKey: return true
             case AppFeature.notchCalendar.availabilityKey: return false
             default: return nil
@@ -81,7 +79,6 @@ enum SettingsFeatureTests {
         suite.expect(islandSettings?[DefaultsKey.notchEnabled] as? Bool == true
                 && islandSettings?[DefaultsKey.notchShowPlayingMusic] as? Bool == false
                 && islandSettings?[DefaultsKey.notchQuickAccessSide] as? String == "controls"
-                && islandSettings?[DefaultsKey.panelControlNotch] as? Bool == false
                 && islandSettings?[AppFeature.notch.availabilityKey] as? Bool == true
                 && islandSettings?[AppFeature.notchCalendar.availabilityKey] as? Bool == false,
                "a current backup round-trips island settings")
@@ -160,9 +157,8 @@ enum SettingsFeatureTests {
                "image converter choices and profiles travel with the settings backup")
         suite.expect(!backupKeys.contains(DefaultsKey.mediaImageWatermarkLogoPath),
                "a local watermark file path never travels in a settings backup")
-        suite.expect(backupKeys.contains(DefaultsKey.dockClickHide)
-                && backupKeys.contains(DefaultsKey.panelControlDockClickHide),
-               "Dock hiding and its panel visibility travel with the settings backup")
+        suite.expect(backupKeys.contains(DefaultsKey.dockClickHide),
+               "Dock hiding travels with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.textSnippets)
                 && backupKeys.contains(DefaultsKey.textSnippetsEnabled),
                "snippets travel with the settings backup")
@@ -192,23 +188,20 @@ enum SettingsFeatureTests {
                 && backupKeys.contains(DefaultsKey.screenshotPreviewTakesFocus)
                 && backupKeys.contains(DefaultsKey.screenshotLoupeRememberZoom)
                 && backupKeys.contains(DefaultsKey.screenshotLoupeDefaultZoom)
-                && backupKeys.contains(DefaultsKey.screenshotLoupeSteppedZoomByDefault)
-                && backupKeys.contains(DefaultsKey.panelUtilityScreenshot),
+                && backupKeys.contains(DefaultsKey.screenshotLoupeSteppedZoomByDefault),
                "screenshot preferences travel with the settings backup")
         suite.expect(!backupKeys.contains(DefaultsKey.screenshotSaveFolder),
                "the chosen screenshot save folder does not travel with the settings backup, being authority on one Mac")
         suite.expect(!backupKeys.contains(DefaultsKey.screenshotLoupeLastZoom),
                "the magnifier's last session zoom stays on its own Mac")
         suite.expect(backupKeys.contains(DefaultsKey.cameraPreviewShortcut)
-                && backupKeys.contains(DefaultsKey.cameraPreviewShortcutEnabled)
-                && backupKeys.contains(DefaultsKey.panelUtilityCameraPreview),
+                && backupKeys.contains(DefaultsKey.cameraPreviewShortcutEnabled),
                "camera preview preferences travel with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.scratchpadShortcut)
                 && backupKeys.contains(DefaultsKey.scratchpadShortcutEnabled)
                 && backupKeys.contains(DefaultsKey.scratchpadRetention)
                 && backupKeys.contains(DefaultsKey.scratchpadCloseOnClickOutside)
                 && backupKeys.contains(DefaultsKey.scratchpadBackgroundOpacity)
-                && backupKeys.contains(DefaultsKey.panelUtilityScratchpad)
                 // The pad's own text is the user's material, kept in the app's
                 // private container instead (issue #1197).
                 && !backupKeys.contains(DefaultsKey.scratchpadDocument),
@@ -218,28 +211,22 @@ enum SettingsFeatureTests {
                 && backupKeys.contains(DefaultsKey.radialMenuAtPointer)
                 && backupKeys.contains(DefaultsKey.radialMenuMouseButton)
                 && backupKeys.contains(DefaultsKey.radialMenuActivationMode)
-                && backupKeys.contains(DefaultsKey.radialMenuItems)
-                && backupKeys.contains(DefaultsKey.panelControlRadialMenu),
+                && backupKeys.contains(DefaultsKey.radialMenuItems),
                "the radial menu wheel and choices travel with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.mouseButtonShortcutsEnabled)
-                && backupKeys.contains(DefaultsKey.mouseButtonShortcuts)
-                && backupKeys.contains(DefaultsKey.panelControlMouseButtonShortcuts),
+                && backupKeys.contains(DefaultsKey.mouseButtonShortcuts),
                "mouse button shortcuts travel with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.mouseClickDebounceEnabled)
-                && backupKeys.contains(DefaultsKey.mouseClickDebounceWindowMs)
-                && backupKeys.contains(DefaultsKey.panelControlMouseClickDebounce),
+                && backupKeys.contains(DefaultsKey.mouseClickDebounceWindowMs),
                "mouse click debounce preferences travel with the settings backup")
-        suite.expect(backupKeys.contains(DefaultsKey.mouseAccelerationDisabled)
-                && backupKeys.contains(DefaultsKey.panelControlMouseAcceleration),
+        suite.expect(backupKeys.contains(DefaultsKey.mouseAccelerationDisabled),
                "mouse acceleration preferences travel with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.spacesOrderEnabled)
-                && backupKeys.contains(DefaultsKey.panelControlSpacesOrder)
                 && !backupKeys.contains(DefaultsKey.spacesOrderRestore)
                 && !backupKeys.contains(DefaultsKey.spacesOrderRestartPending),
                "fixed Space order preferences travel with the settings backup, but never the restore state")
         suite.expect(backupKeys.contains(DefaultsKey.linearScrollEnabled)
-                && backupKeys.contains(DefaultsKey.linearScrollLines)
-                && backupKeys.contains(DefaultsKey.panelControlLinearScroll),
+                && backupKeys.contains(DefaultsKey.linearScrollLines),
                "linear scrolling preferences travel with the settings backup")
         suite.expect(MouseExceptionScope.allCases.allSatisfy { backupKeys.contains($0.defaultsKey) },
                "the apps each mouse feature leaves alone travel with the settings backup")
@@ -272,12 +259,8 @@ enum SettingsFeatureTests {
         suite.expect(backupKeys.contains(DefaultsKey.switcherPreviewExcludedApps)
                 && (Defaults.registeredDefaults[DefaultsKey.switcherPreviewExcludedApps] as? [String]) == [],
                "the switcher's own paused apps start empty and travel with the settings backup")
-        suite.expect(backupKeys.contains(DefaultsKey.panelShowToggles)
-                && backupKeys.contains(DefaultsKey.panelToggleOrder)
-                && backupKeys.contains(DefaultsKey.panelToggleDarkMode)
-                && backupKeys.contains(DefaultsKey.panelToggleKeyboardLight)
-                && backupKeys.contains(DefaultsKey.panelToggleMicMute),
-               "the quick toggles layout travels with the settings backup")
+        suite.expect(backupKeys.contains(DefaultsKey.panelShowToggles),
+               "the Hub menu visibility travels with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.panelShowFanControl)
                 && backupKeys.contains(DefaultsKey.fanControlMode)
                 && backupKeys.contains(DefaultsKey.fanControlCoolingLevel)

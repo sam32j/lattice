@@ -778,7 +778,7 @@ final class RadialMenuService: ObservableObject {
             case .colorPicker, .screenOCR: return
             case .micMute: MicMuteService.shared.toggle()
             case .clipboardHistory: ClipboardHistoryService.shared.showHistoryWindow()
-            case .quickLauncher: QuickLauncherService.shared.show()
+            case .quickLauncher: LatticeHubService.shared.show()
             case .cameraPreview: CameraPreviewService.shared.show()
             case .scratchpad: ScratchpadService.shared.show()
             case .shelf: ShelfService.shared.summon()

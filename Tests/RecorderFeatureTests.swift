@@ -26,8 +26,6 @@ enum RecorderFeatureTests {
         suite.expect(Defaults.registeredDefaults[DefaultsKey.recorderShortcut] as? String
                 == "control+option+command:23",
                "the default recording shortcut sits next to the screenshot's own")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.panelUtilityScreenRecorder] as? Bool == true,
-               "the screen recorder panel tile ships visible like its siblings")
         var windowRetention = WindowActivationRetention()
         let firstWindowNeedsPromotion = windowRetention.retain()
         let secondWindowNeedsPromotion = windowRetention.retain()
