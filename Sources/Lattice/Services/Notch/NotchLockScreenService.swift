@@ -70,9 +70,11 @@ final class NotchLockScreenService {
         // The island's own reading of its camera, with the fit the person set.
         let geometry = NotchService.shared.geometry
         if geometry.isNotched, NSScreen.screens.contains(where: { $0.frame == geometry.screen && $0.safeAreaInsets.top > 0 }) {
+            let playing = NotchLockScreenSupport.showsMusic() && NotchMusicService.shared.playback?.isPlaying == true
+            let wing = playing ? geometry.lockScreenMusicGeometry.compactActivityWingWidth : geometry.restingWingWidth
             let surface = NotchLockScreenLayout.islandSurface(
                 in: geometry.screen, cameraWidth: geometry.bareCutout.width, cameraHeight: geometry.bareCutout.height,
-                wing: geometry.lockScreenMusicGeometry.compactActivityWingWidth)
+                wing: wing)
             frames.islandSurface = surface
             frames.island = surface.map(NotchLockScreenLayout.islandFrame(around:))
         }
@@ -190,10 +192,9 @@ final class NotchLockScreenService {
         scene.forEach { Self.fadeOut($0, after: 0, completion: finished) }
         if let island {
             model.padlockOpen = true
-            // The island comes back on this turn and holds the main thread, so
-            // the padlock is first seen opening once that is done. Its time
-            // starts there, or the island would fade while the padlock opens.
-            DispatchQueue.main.async { Self.fadeOut(island, after: 0.55, completion: finished) }
+            // The padlock opens and the lock screen fades out without lingering
+            // over the desktop island underneath.
+            DispatchQueue.main.async { Self.fadeOut(island, after: 0, completion: finished) }
         }
     }
 
