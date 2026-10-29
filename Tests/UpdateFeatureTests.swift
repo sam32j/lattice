@@ -486,7 +486,7 @@ enum UpdateFeatureTests {
                                 keywordFeatures: [.homebrew]),
             SettingsSearchItem(id: .page(.appUpdates),
                                 destination: FeatureSettingsDestination(.appUpdates),
-                                title: "App Updates", icon: "arrow.down.app",
+                                title: "App Updates", icon: "square.and.arrow.down.badge.clock",
                                 keywords: ["Homebrew"]),
             SettingsSearchItem(id: .page(.shortcuts),
                                 destination: FeatureSettingsDestination(.shortcuts),
@@ -496,7 +496,7 @@ enum UpdateFeatureTests {
                                 destination: FeatureSettingsDestination(.homebrew),
                                 title: "Homebrew", icon: "shippingbox"),
         ]
-        let cameraSettingsPage = SettingsSearchItem(id: .page(.cameraPreview), destination: FeatureSettingsDestination(.cameraPreview), title: "Camera Preview", icon: "web.camera")
+        let cameraSettingsPage = SettingsSearchItem(id: .page(.cameraPreview), destination: FeatureSettingsDestination(.cameraPreview), title: "Camera Preview", icon: "person.crop.square.badge.camera")
         let combinedSettingsItems = SettingsSearchSupport.combinedItems(
             pageItems: dedicatedSettingsItems + [cameraSettingsPage],
             featureItems: featureSearchItems)
@@ -618,7 +618,7 @@ enum UpdateFeatureTests {
             title: "Features", icon: "square.grid.2x2", keywords: ["Homebrew Packages"])
         let partialTitleAfterKeyword = SettingsSearchItem(
             id: .page(.appUpdates), destination: FeatureSettingsDestination(.appUpdates),
-            title: "Homebrew Packages", icon: "arrow.down.app")
+            title: "Homebrew Packages", icon: "square.and.arrow.down.badge.clock")
         let partialMatches = SettingsSearchSupport.matchingItems(
             query: "brew", items: [keywordBeforePartialTitle, partialTitleAfterKeyword])
         suite.expect(partialMatches.map(\.id) == [.page(.appUpdates), .page(.features)],
@@ -631,7 +631,7 @@ enum UpdateFeatureTests {
             SettingsSearchItem(id: .feature(.cameraPreview),
                                destination: FeatureSettingsDestination(
                                  .shortcuts, sectionAnchor: .cameraPreview),
-                               title: "Camera Controls", icon: "web.camera"),
+                               title: "Camera Controls", icon: "person.crop.square.badge.camera"),
         ]
         suite.expect(SettingsSearchSupport.matchingItems(query: "camera", items: tiedTitleMatches)
                 .map(\.id) == tiedTitleMatches.map(\.id),

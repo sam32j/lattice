@@ -31,7 +31,7 @@ struct NotchFilesView: View {
                                    onToolChange: { service.refreshPresentation(transitionContent: .replace) })
                     .id(session.id)
             } else if shelf.items.isEmpty {
-                NotchEmptyView(symbol: "tray.and.arrow.down", message: FeatureStrings.notch(l10n.language).dropHint)
+                NotchEmptyView(symbol: "tray.full", message: FeatureStrings.notch(l10n.language).dropHint)
                     .frame(maxHeight: .infinity)
                     .overlay { RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .strokeBorder(.white.opacity(0.18), style: StrokeStyle(lineWidth: 0.75, dash: [4, 5])) }

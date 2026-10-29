@@ -45,12 +45,12 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case .mixer: return "speaker.wave.2"
         case .music: return "music.note"
         case .timer: return "timer"
-        case .camera: return "web.camera"
+        case .camera: return "person.crop.square.badge.camera"
         case .downloads: return "arrow.down.circle"
         case .notifications: return "bell"
         case .calendar: return "calendar"
         case .clipboard: return "doc.on.clipboard"
-        case .captures: return "camera.viewfinder"
+        case .captures: return "photo.stack"
         case .files: return "tray.full"
         case .system: return "gauge.with.dots.needle.50percent"
         // The quick panel's own mark; the grid belongs to the sections button.
@@ -58,7 +58,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case .scratchpad: return "note.text"
         case .agents: return "sparkles"
         case .watch: return "eye"
-        case .videoDownloader: return "arrow.down.square"
+        case .videoDownloader: return "arrow.down.circle.dotted"
         }
     }
 

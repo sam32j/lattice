@@ -63,7 +63,7 @@ struct CameraPreviewView: View {
                     .controlSize(.small)
             }
         case .noCamera:
-            statusMessage(icon: "web.camera", text: strings.noCameraMessage) { EmptyView() }
+            statusMessage(icon: "person.crop.square.badge.camera", text: strings.noCameraMessage) { EmptyView() }
         }
     }
 
@@ -101,7 +101,7 @@ struct CameraPreviewView: View {
             }
         } label: {
             HStack(spacing: 5) {
-                Image(systemName: "web.camera")
+                Image(systemName: "person.crop.square.badge.camera")
                     .font(.system(size: 10, weight: .semibold))
                 if showsName {
                     Text(currentCameraName)

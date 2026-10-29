@@ -121,7 +121,7 @@ struct ShelfSettings: View {
                     Button {
                         ShelfService.shared.summon()
                     } label: {
-                        Label(l10n.s.shelfOpenNow, systemImage: "tray.and.arrow.down")
+                        Label(l10n.s.shelfOpenNow, systemImage: "tray.full")
                     }
                 }.disabled(!enabled)
 

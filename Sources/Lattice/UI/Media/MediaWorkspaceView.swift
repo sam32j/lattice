@@ -269,7 +269,7 @@ struct MediaWorkspaceView: View {
 
     private var header: some View {
         HStack(spacing: 9) {
-            Label(l10n.s.mediaName, systemImage: "photo.on.rectangle.angled")
+            Label(l10n.s.mediaName, systemImage: "rectangle.compress.vertical")
                 .font(.system(size: compact ? 12 : 16, weight: .semibold))
             Spacer(minLength: 0)
             Text(l10n.s.mediaLocalNote)

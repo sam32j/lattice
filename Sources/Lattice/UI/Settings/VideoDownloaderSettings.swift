@@ -38,7 +38,7 @@ struct VideoDownloaderSettings: View {
                 VStack(alignment: .leading, spacing: 18) {
                     // Enablement Card
                     SettingsCard {
-                        SettingsRow(symbol: "arrow.down.square",
+                        SettingsRow(symbol: "arrow.down.circle.dotted",
                                     title: VideoDownloaderStrings.enableTitle,
                                     caption: VideoDownloaderStrings.enableSubtitle) {
                             Toggle("", isOn: $enabled)

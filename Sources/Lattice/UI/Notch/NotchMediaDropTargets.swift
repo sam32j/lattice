@@ -15,7 +15,7 @@ struct NotchMediaDropTargets: View {
 
     var body: some View {
         HStack(spacing: NotchFileToolsSupport.dropSpacing) {
-            target(FeatureStrings.notch(l10n.language).files, symbol: "tray.and.arrow.down",
+            target(FeatureStrings.notch(l10n.language).files, symbol: "tray.full",
                    selected: !targetsMediaDrop && !targetsEditorDrop,
                    available: canDropOnShelf)
             VStack(spacing: NotchFileToolsSupport.dropSpacing) {

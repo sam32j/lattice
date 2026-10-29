@@ -51,8 +51,8 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         case .desktopIcons: return QuickTogglesService.shared.desktopIconsShown ? "macwindow" : "rectangle.slash"
         case .emptyTrash: return "trash"
         case .ejectDisks: return "eject.fill"
-        case .lockScreen: return "lock.fill"
-        case .displayOff: return "display"
+        case .lockScreen: return "lock.display"
+        case .displayOff: return "power.circle"
         case .screenSaver: return "sparkles.tv"
         case .cleaningMode: return "bubbles.and.sparkles"
         }
