@@ -25,10 +25,6 @@ extension NotchSettings {
                     }
                 }
             }
-            Divider()
-            let activities = FeatureStrings.notchActivities(l10n.language)
-            SettingsFeatureSwitchRow(symbol: NotchControlItem.keepAwake.symbol, title: activities.keepAwakeActivity,
-                                     caption: activities.keepAwakeActivityHint, isOn: $keepAwakeActivity, feature: .keepAwake)
         case .music:
             let music = FeatureStrings.notchMusicExtras(l10n.language)
             switchRow("music.note", text.playingMusic, isOn: $showPlayingMusic)
@@ -180,9 +176,10 @@ extension NotchSettings {
                 let clipboardAvailable = AppFeature.clipboardHistory.isAvailable && clipboardHistoryEnabled
                     && NotchSupport.modules().contains(.clipboard)
                 let musicAvailable = NotchSupport.modules().contains(.music)
+                let keepAwakeAvailable = AppFeature.keepAwake.isAvailable
                 let reserves = ![volumeAvailable, brightnessAvailable, keyboardLightAvailable, microphoneAvailable,
                                  batteryAvailable || !hasBattery, accessoriesAvailable, clipboardAvailable,
-                                 musicAvailable].allSatisfy { $0 }
+                                 musicAvailable, keepAwakeAvailable].allSatisfy { $0 }
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), spacing: 10)], spacing: 10) {
                     toggleCard(text.volume, symbol: "speaker.wave.2", value: $volume, available: volumeAvailable,
                                reason: AppFeature.mixer.enableReason(l10n), reservesReason: reserves,
@@ -218,6 +215,10 @@ extension NotchSettings {
                               unavailableAction: {
                                   AppFeature.monitorPower.showInFeatures()
                               })
+                    toggleCard(l10n.s.keepAwakeTitle, symbol: NotchControlItem.keepAwake.symbol,
+                               value: $keepAwakeActivity, available: keepAwakeAvailable,
+                               reason: AppFeature.keepAwake.enableReason(l10n), reservesReason: reserves,
+                               unavailableAction: { AppFeature.keepAwake.showInFeatures() })
                     toggleCard(SettingsFollowupLabels.text(.clipboardActivity, l10n.language), symbol: "doc.on.clipboard", value: $clipboard,
                                available: clipboardAvailable, reason: clipboardFeedbackReason, reservesReason: reserves,
                                unavailableAction: { openClipboardFeedbackSetup() })
