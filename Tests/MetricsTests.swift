@@ -145,6 +145,7 @@ struct MetricsTests {
                 PortManagerRefreshTests.run(suite)
             }),
             ("settings", {
+                NotchModuleSettingsTests.run(suite)
                 SettingsReviewRegressionTests.run(suite)
                 RadialProfileSyncTests.run(suite)
                 SettingsFeatureTests.run(suite)

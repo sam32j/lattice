@@ -5,8 +5,12 @@ import Foundation
 enum IslandDestination: String {
     case clipboard, files, scratchpad
     case cameraPreview = "camera"
-    case launcherGrid = "tools"
+    case launcherGrid = "hub"
     case videoDownloader
+
+    private var hiddenKeys: [String] {
+        self == .launcherGrid ? [rawValue, "tools"] : [rawValue]
+    }
 
     var routeKey: String {
         switch self {
@@ -20,15 +24,20 @@ enum IslandDestination: String {
     }
 
     func isShown(in defaults: UserDefaults) -> Bool {
-        (defaults.object(forKey: routeKey) as? Bool ?? true)
-            && !(defaults.string(forKey: DefaultsKey.notchHiddenModules) ?? "")
-                .split(separator: ",").contains(Substring(rawValue))
+        let hidden = Set((defaults.string(forKey: DefaultsKey.notchHiddenModules) ?? "")
+            .split(separator: ",").map(String.init))
+        let isHidden = hiddenKeys.contains { hidden.contains($0) }
+        return (defaults.object(forKey: routeKey) as? Bool ?? true) && !isHidden
     }
 
     func setShown(_ shown: Bool, in defaults: UserDefaults) {
         var hidden = Set((defaults.string(forKey: DefaultsKey.notchHiddenModules) ?? "")
             .split(separator: ",").map(String.init))
-        if shown { hidden.remove(rawValue) } else { hidden.insert(rawValue) }
+        if shown {
+            for key in hiddenKeys { hidden.remove(key) }
+        } else {
+            hidden.insert(rawValue)
+        }
         defaults.set(shown, forKey: routeKey)
         defaults.set(hidden.sorted().joined(separator: ","), forKey: DefaultsKey.notchHiddenModules)
     }

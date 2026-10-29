@@ -61,7 +61,7 @@ struct LatticeHubView: View {
         }, trailing: {
             if notchSize != nil, launcher.activeUtility == nil {
                 NotchIconButton(symbol: launcher.isEditing ? "checkmark" : "slider.horizontal.3",
-                                title: FeatureStrings.notch(l10n.language).customizeTools, selected: launcher.isEditing) {
+                                title: FeatureStrings.notch(l10n.language).customizeHub, selected: launcher.isEditing) {
                     withAnimation(.easeOut(duration: 0.15)) { launcher.isEditing.toggle() }
                 }
             }

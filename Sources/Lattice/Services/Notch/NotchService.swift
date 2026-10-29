@@ -241,7 +241,7 @@ final class NotchService: ObservableObject {
             || (expanded && !showingSections && selected == .calendar && Permissions.shared.keepsCalendarPrompt)
             || (expanded && !showingSections && selected == .files && fileInteractionActive)
             || CameraPreviewService.shared.keepsNotchPermissionPrompt
-            || (expanded && !showingSections && selected == .tools && (LatticeHubService.shared.activeUtility != nil || LatticeHubService.shared.isEditing))
+            || (expanded && !showingSections && selected == .hub && (LatticeHubService.shared.activeUtility != nil || LatticeHubService.shared.isEditing))
     }
     /// Up and measuring its display. Settings previews read the island's
     /// size only then.
@@ -806,17 +806,17 @@ final class NotchService: ObservableObject {
             return geometry.sectionPickerSize(count: filteredSections.count)
         }
         let musicExtras = NotchLyricsSupport.isEnabled() || NotchQueueSupport.isEnabled()
-        let isToolsPage = !showingAppPanel && selected == .tools
+        let isHubPage = !showingAppPanel && selected == .hub
         let launcher = LatticeHubService.shared
         let isEditingOrActiveUtility = launcher.isEditing || launcher.activeUtility != nil
-        let controlsHeight: CGFloat? = isToolsPage && !isEditingOrActiveUtility ? launcher.notchControlsHeight : nil
-        return pageSize(in: expandedGeometry, module: showingAppPanel ? .tools : selected,
+        let controlsHeight: CGFloat? = isHubPage && !isEditingOrActiveUtility ? launcher.notchControlsHeight : nil
+        return pageSize(in: expandedGeometry, module: showingAppPanel ? .hub : selected,
                         detail: selectedMetric != nil, panel: showingAppPanel,
                         detailHeight: selectedMetric == .fan ? fanDetailHeight : nil,
                         musicExtraHeight: musicExtras && musicDetailVisible ? geometry.musicExtrasHeight : 0,
                         fileMediaHeight: !choosingFileDropDestination && AppFeature.mediaTools.isAvailable
                             && NotchFileToolsService.shared.mediaPresented ? NotchFileToolsService.shared.mediaContentHeight : nil,
-                        toolCount: isToolsPage && !isEditingOrActiveUtility ? launcher.visibleItems.count : nil,
+                        toolCount: isHubPage && !isEditingOrActiveUtility ? launcher.visibleItems.count : nil,
                         capturePreviewHeight: captureContent == nil ? nil : captureContentHeight,
                         toolsControlsHeight: controlsHeight)
     }
@@ -826,7 +826,7 @@ final class NotchService: ObservableObject {
     func previewSize(for module: NotchModule) -> CGSize {
         pageSize(in: previewGeometry(for: module), module: module, detail: false, panel: false, detailHeight: nil, musicExtraHeight: 0,
                  fileMediaHeight: nil, toolCount: LatticeHubService.shared.visibleItems.count, capturePreviewHeight: nil,
-                 toolsControlsHeight: module == .tools ? LatticeHubService.shared.notchControlsHeight : nil)
+                 toolsControlsHeight: module == .hub ? LatticeHubService.shared.notchControlsHeight : nil)
     }
 
     /// The island around a previewed section, with the top row its page has.
@@ -1418,7 +1418,7 @@ final class NotchService: ObservableObject {
         let closesCommandBar = showingCommandBar
         let changesPresentation = !expanded || selected != destination || closesCommandBar
             || showingAppPanel != appPanel || selectedMetric != metric || showingSections != sections || crossfadeContent
-        if changesPresentation, destination == .tools, !appPanel, !sections, metric == nil {
+        if changesPresentation, destination == .hub, !appPanel, !sections, metric == nil {
             LatticeHubService.shared.prepareForPresentation()
         }
         (NSApp.delegate as? AppDelegate)?.closePopover(preservingNotch: true)
@@ -1921,8 +1921,8 @@ final class NotchService: ObservableObject {
 
     func openQuickPanel(toggle: Bool = false) -> Bool {
         guard NotchSupport.routesQuickPanel(), acceptsUserInteraction else { return false }
-        if toggle, expanded, selected == .tools, !showingSections, !showingCommandBar { collapse() }
-        else { open(.tools) }
+        if toggle, expanded, selected == .hub, !showingSections, !showingCommandBar { collapse() }
+        else { open(.hub) }
         return true
     }
 
@@ -3577,7 +3577,7 @@ final class NotchService: ObservableObject {
                 if self.handleScratchpadKey(event) { return nil }
                 if self.handleClipboardPasteKey(event) { return nil }
             }
-            if event.type == .keyDown, event.window === self.panel, self.selected == .tools, !self.showingAppPanel, !self.showingSections {
+            if event.type == .keyDown, event.window === self.panel, self.selected == .hub, !self.showingAppPanel, !self.showingSections {
                 let launcher = LatticeHubService.shared
                 // The rail reads across its rows until it scrolls, in the
                 // rows the open page leaves it below its header; the editing
@@ -3842,15 +3842,15 @@ final class NotchService: ObservableObject {
                 .sink { [weak self] in self?.scheduleTrackNotice() }
                 .store(in: &subscriptions)
         }
-        if modules.contains(.tools) {
-            // The tools page is a rail sized by its tiles; editing or a
+        if modules.contains(.hub) {
+            // The hub page is a rail sized by its tiles; editing or a
             // hosted utility turns it into a page.
             let launcher = LatticeHubService.shared
             launcher.$isEditing.map { _ in () }
                 .merge(with: launcher.$activeUtility.map { _ in () }, launcher.$hiddenItemsRaw.map { _ in () })
                 .dropFirst(3).receive(on: DispatchQueue.main)
                 .sink { [weak self] in
-                    guard let self, self.expanded, self.selected == .tools, !self.showingAppPanel, !self.showingSections else { return }
+                    guard let self, self.expanded, self.selected == .hub, !self.showingAppPanel, !self.showingSections else { return }
                     self.refreshPresentation()
                 }.store(in: &subscriptions)
         }

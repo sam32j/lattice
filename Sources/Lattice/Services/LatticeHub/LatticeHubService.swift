@@ -155,7 +155,7 @@ final class LatticeHubService: ObservableObject {
     }
 
     func hide() {
-        if NotchService.shared.expanded, NotchService.shared.selected == .tools { NotchService.shared.collapse() }
+        if NotchService.shared.expanded, NotchService.shared.selected == .hub { NotchService.shared.collapse() }
         removeMonitors()
         isEditing = false
         editingOptionsItem = nil
@@ -168,7 +168,7 @@ final class LatticeHubService: ObservableObject {
     }
 
     func refocusAfterModal() {
-        if NotchService.shared.expanded, NotchService.shared.selected == .tools {
+        if NotchService.shared.expanded, NotchService.shared.selected == .hub {
             NotchService.shared.presentationWindow?.makeKey(); return
         }
         guard let panel, panel.isVisible else { return }

@@ -40,9 +40,9 @@ extension NotchSettings {
                 SettingsRow(symbol: "arrow.uturn.backward", title: editor.reopening) {
                     Picker(editor.reopening, selection: Binding(get: {
                         guard returnHome else { return "" }
-                        return NotchModule(rawValue: homeModule) != nil
-                            || NotchReopeningDestination(rawValue: homeModule) != nil
-                            ? homeModule : NotchModule.controls.rawValue
+                        return NotchModule(rawValue: homeModule)?.rawValue
+                            ?? NotchReopeningDestination(rawValue: homeModule)?.rawValue
+                            ?? NotchModule.controls.rawValue
                     }, set: { value in
                         returnHome = !value.isEmpty
                         if returnHome { homeModule = value }
@@ -54,7 +54,7 @@ extension NotchSettings {
                             Text(module.title(l10n.language)).tag(module.rawValue)
                         }
                         if let saved = NotchModule(rawValue: homeModule), !NotchSupport.modules().contains(saved) {
-                            Text(saved.title(l10n.language)).tag(homeModule).disabled(true)
+                            Text(saved.title(l10n.language)).tag(saved.rawValue).disabled(true)
                         }
                     }
                     .pickerStyle(.menu)
@@ -217,7 +217,7 @@ extension NotchSettings {
         case .mixer: return .mixer
         case .clipboard: return .clipboardHistory
         case .files: return .shelf
-        case .tools: return .quickLauncher
+        case .hub: return .quickLauncher
         case .calendar: return .notchCalendar
         case .notifications: return .notchNotifications
         case .timer: return .notchTimer

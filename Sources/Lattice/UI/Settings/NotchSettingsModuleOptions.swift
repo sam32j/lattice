@@ -137,7 +137,7 @@ extension NotchSettings {
                 .toggleStyle(TrailingSwitchToggleStyle())
         case .videoDownloader:
             VideoDownloaderDestinationRow()
-        case .mixer, .system, .tools:
+        case .mixer, .system, .hub:
             EmptyView()
         }
     }

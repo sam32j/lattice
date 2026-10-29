@@ -515,7 +515,7 @@ struct NotchView: View {
         guard !service.showingAppPanel else { return false }
         return contentOverflows || service.selectedMetric != nil
             || (service.selected == .captures && service.captureContent != nil)
-            || (service.selected == .tools && launcher.isEditing && launcher.activeUtility == nil)
+            || (service.selected == .hub && launcher.isEditing && launcher.activeUtility == nil)
     }
 
     private var headerFeedback: NotchNotice? {
@@ -616,7 +616,7 @@ struct NotchView: View {
                 NotchSystemView(size: pageSize) { service.showMetric($0) }
             // The launcher hands the row its own controls, which a row set
             // here would replace.
-            case .tools: LatticeHubView(notchSize: pageSize)
+            case .hub: LatticeHubView(notchSize: pageSize)
             case .scratchpad: NotchScratchpadView(service: service)
             case .agents: NotchAgentsView(size: pageSize)
             case .watch: NotchWatchView(size: pageSize)
@@ -852,7 +852,7 @@ extension NotchModule: PanelOrderItem {
         case .captures: return FeatureStrings.recentCaptures(language).title
         case .files: return FeatureStrings.notch(language).files
         case .system: return FeatureStrings.notch(language).system
-        case .tools: return Strings.localized(language).launcherName
+        case .hub: return Strings.localized(language).launcherName
         case .scratchpad: return FeatureStrings.scratchpad(language).pageTitle
         case .agents: return FeatureStrings.notchAgents(language).title
         case .watch: return FeatureStrings.notchWatch(language).title

@@ -163,8 +163,8 @@ enum NotchKeyMonitorTests {
         let destinations: [(name: String, module: NotchModule, sections: Bool, appPanel: Bool,
                             field: NSTextView, action: String)] = [
             ("the gallery search", .controls, true, false, NSTextView(isFieldEditor: true), "sections"),
-            ("a Tools utility", .tools, false, false, NSTextView(isFieldEditor: true), "tools"),
-            ("the app panel", .tools, false, true, NSTextView(isFieldEditor: true), "stepBack"),
+            ("a Tools utility", .hub, false, false, NSTextView(isFieldEditor: true), "tools"),
+            ("the app panel", .hub, false, true, NSTextView(isFieldEditor: true), "stepBack"),
             ("the Scratchpad editor", .scratchpad, false, false, NSTextView(isFieldEditor: false), "stepBack"),
         ]
         for destination in destinations {
@@ -219,7 +219,7 @@ enum NotchKeyMonitorTests {
         let items = launcher.visibleItems
         defer { launcher.visibleItems = items; launcher.flows = [] }
         launcher.visibleItems = Array(0..<12)
-        service.selected = .tools
+        service.selected = .hub
         service.showingSections = false
         service.showingAppPanel = false
         service.panel?.firstResponder = nil

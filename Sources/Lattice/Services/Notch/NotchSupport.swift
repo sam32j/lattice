@@ -7,8 +7,31 @@ import Foundation
 import CoreGraphics
 
 enum NotchModule: String, CaseIterable, Identifiable {
-    case controls, mixer, music, clipboard, captures, files, system, tools, calendar, notifications, timer, camera, downloads, scratchpad, agents, watch, videoDownloader
+    case controls, mixer, music, clipboard, captures, files, system, hub, calendar, notifications, timer, camera, downloads, scratchpad, agents, watch, videoDownloader
     var id: String { rawValue }
+
+    init?(rawValue: String) {
+        switch rawValue {
+        case "controls": self = .controls
+        case "mixer": self = .mixer
+        case "music": self = .music
+        case "clipboard": self = .clipboard
+        case "captures": self = .captures
+        case "files": self = .files
+        case "system": self = .system
+        case "hub", "tools": self = .hub
+        case "calendar": self = .calendar
+        case "notifications": self = .notifications
+        case "timer": self = .timer
+        case "camera": self = .camera
+        case "downloads": self = .downloads
+        case "scratchpad": self = .scratchpad
+        case "agents": self = .agents
+        case "watch": self = .watch
+        case "videoDownloader": self = .videoDownloader
+        default: return nil
+        }
+    }
 
     func presentationTitle(_ language: AppLanguage, hasCapturePreview: Bool) -> String {
         self == .captures && hasCapturePreview ? MediaImageConverterStrings.localized(language).preview : title(language)
@@ -31,7 +54,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case .files: return "tray.full"
         case .system: return "gauge.with.dots.needle.50percent"
         // The quick panel's own mark; the grid belongs to the sections button.
-        case .tools: return AppFeature.quickLauncher.symbolName
+        case .hub: return AppFeature.quickLauncher.symbolName
         case .scratchpad: return "note.text"
         case .agents: return "sparkles"
         case .watch: return "eye"
@@ -49,7 +72,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case .captures: return "s"
         case .files: return "f"
         case .system: return "i"
-        case .tools: return "t"
+        case .hub: return "h"
         case .calendar: return "a"
         case .notifications: return "n"
         case .timer: return "r"
@@ -72,7 +95,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case .notifications: return AppFeature.notchNotifications.isAvailable(in: defaults)
         case .calendar: return AppFeature.notchCalendar.isAvailable(in: defaults)
         case .mixer: return AppFeature.mixer.isAvailable(in: defaults)
-        case .tools: return AppFeature.quickLauncher.isAvailable(in: defaults)
+        case .hub: return AppFeature.quickLauncher.isAvailable(in: defaults)
         case .clipboard: return AppFeature.clipboardHistory.isAvailable(in: defaults)
         case .captures:
             return AppFeature.screenshot.isAvailable(in: defaults)
@@ -1786,7 +1809,8 @@ enum NotchSupport {
             .split(separator: ",").compactMap { NotchModule(rawValue: String($0)) }
         var seen = Set<NotchModule>()
         return (stored + NotchModule.allCases).filter {
-            seen.insert($0).inserted && !hidden.contains($0.rawValue) && $0.isAvailable(in: defaults)
+            let isHidden = hidden.contains($0.rawValue) || ($0 == .hub && hidden.contains("tools"))
+            return seen.insert($0).inserted && !isHidden && $0.isAvailable(in: defaults)
                 && ($0 != .timer || defaults.bool(forKey: DefaultsKey.notchTimerEnabled))
                 && ($0 != .camera || defaults.bool(forKey: DefaultsKey.notchCameraEnabled))
                 && ($0 != .calendar || defaults.bool(forKey: DefaultsKey.notchCalendarEnabled))
@@ -2004,7 +2028,7 @@ enum NotchSupport {
     static func routesQuickPanel(in defaults: UserDefaults = .standard) -> Bool {
         isEnabled(in: defaults) && defaults.bool(forKey: DefaultsKey.notchQuickPanel)
             && AppFeature.quickLauncher.isAvailable(in: defaults)
-            && modules(in: defaults).contains(.tools)
+            && modules(in: defaults).contains(.hub)
     }
 
     static func routesAppPanel(in defaults: UserDefaults = .standard) -> Bool {
@@ -2705,7 +2729,7 @@ struct NotchGeometry: Equatable {
                 contentHeight = min(budget, cards == 0 ? NotchLayout.emptyHeight
                     : NotchLayout.railHeight(rows: systemRows(cards: cards), rowHeight: NotchLayout.systemCardHeight, spacing: NotchLayout.rowSpacing)
                         + NotchLayout.systemHoverInset(width: contentWidth) * 2)
-            case .tools:
+            case .hub:
                 guard let toolCount else { contentHeight = pageBudget; break }
                 let controlsH = toolsControlsHeight ?? 0
                 let vstackSpacing: CGFloat = controlsH > 0 ? 6 : 0
@@ -2766,7 +2790,7 @@ struct NotchGeometry: Equatable {
         CGSize(width: max(0, size.width - NotchLayout.horizontalInset * 2),
                height: max(0, size.height - headerTopInset - headerChromeHeight))
     }
-    var appPanelSize: CGSize { contentSize(for: expandedSize(module: .tools, panel: true)) }
+    var appPanelSize: CGSize { contentSize(for: expandedSize(module: .hub, panel: true)) }
     func frame(for size: CGSize) -> CGRect {
         CGRect(x: screen.midX + surfaceShift - size.width / 2,
                y: screen.maxY - floatingDrop - size.height,
