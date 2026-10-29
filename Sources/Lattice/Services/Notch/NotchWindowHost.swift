@@ -43,6 +43,8 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
     private var lastMissionControlProbe: TimeInterval = -.infinity
     private var overviewWasVisible = false
     private var restoringFromMissionControl = false
+    private var missionControlRestorationSize: CGSize?
+    private var missionControlRestorationUsesGlass = false
     var missionControlDidRestore: (() -> Void)?
     private let overlaySpace = NotchOverlaySpace()
     private var concealedForFrameChange = false
@@ -618,8 +620,19 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             if !restoringFromMissionControl { missionControlAlpha = panel.alphaValue }
             missionControlMouseEvents = mouseEventsBeforeHide ?? panel.ignoresMouseEvents
             panel.ignoresMouseEvents = true
-            if panel.isVisible { fadeMissionControl(to: 0) }
-            else {
+            let cutout = currentGeometry.isNotched
+                ? currentGeometry.restingSize(showsContent: false)
+                : CGSize(width: currentGeometry.restingSize(showsContent: false).width, height: 0)
+            if panel.isVisible {
+                let current = canvas.visibleSize ?? targetSize
+                if !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion, current != cutout {
+                    missionControlRestorationSize = targetSize
+                    missionControlRestorationUsesGlass = canvas.usesGlass
+                    present(size: cutout, geometry: currentGeometry, animated: true,
+                            transitionContent: .depart, hideWhenSettled: true)
+                }
+                fadeMissionControl(to: 0)
+            } else {
                 panel.alphaValue = 0
                 syncMissionControlMonitoring()
             }
@@ -634,7 +647,19 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         concealedForMissionControl = false
         desktopReadings = 0
         panel.ignoresMouseEvents = hidesWhenSettled ? true : missionControlMouseEvents
-        if panel.isVisible {
+        let restoreSize = missionControlRestorationSize ?? (targetSize != .zero ? targetSize : nil)
+        let usesGlass = missionControlRestorationUsesGlass
+        missionControlRestorationSize = nil
+        missionControlRestorationUsesGlass = false
+        if let restoreSize, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            restoringFromMissionControl = true
+            panel.alphaValue = missionControlAlpha
+            let revealing = !panel.isVisible
+            present(size: restoreSize, geometry: currentGeometry, animated: true,
+                    transitionContent: .reveal, revealFromHidden: revealing, usesGlass: usesGlass)
+            if !panel.isVisible { panel.orderFrontRegardless() }
+            restoringFromMissionControl = false
+        } else if panel.isVisible {
             restoringFromMissionControl = true
             fadeMissionControl(to: missionControlAlpha) { [weak self] in self?.restoringFromMissionControl = false }
         } else {

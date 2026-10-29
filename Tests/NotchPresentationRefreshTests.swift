@@ -103,6 +103,9 @@ enum NotchPresentationRefreshContract {
         var missionControlDidRestore: (() -> Void)?
         var missionControlAlpha: CGFloat = 1
         var missionControlMouseEvents = false
+        var missionControlRestorationSize: CGSize?
+        var missionControlRestorationUsesGlass = false
+        var currentGeometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1440, height: 900), safeAreaTop: 38, cameraWidth: 210)
         var desktopReadings = 0
         var mouseEventsBeforeHide: Bool?
         var hidesWhenSettled = false
@@ -138,8 +141,8 @@ enum NotchPresentationRefreshContract {
             outlineColor = color
         }
         func present(size: CGSize, geometry: NotchGeometry, animated: Bool,
-                     transitionContent: NotchContentTransition, quickAccess: NotchQuickAccessConfiguration?,
-                     revealFromHidden: Bool, usesGlass: Bool, steady: Bool) {
+                     transitionContent: NotchContentTransition = .none, quickAccess: NotchQuickAccessConfiguration? = nil,
+                     revealFromHidden: Bool = false, usesGlass: Bool = false, steady: Bool = false) {
             transitions.append(transitionContent)
             self.steady = steady
             departsContent = transitionContent == .depart
