@@ -1439,43 +1439,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     }
 
     private func presentContextMenu(from button: NSStatusBarButton?) {
-        let manager = KeepAwakeManager.shared
         let strings = L10n.shared.s
         let menu = NSMenu()
-
-        if AppFeature.keepAwake.isAvailable {
-            let toggleItem = NSMenuItem(title: manager.isActive ? strings.menuDisableAwake : strings.menuEnableAwake,
-                                        action: #selector(menuToggleAwake),
-                                        keyEquivalent: "")
-            toggleItem.target = self
-            menu.addItem(toggleItem)
-        }
-
-        if AppFeature.keepAwake.isAvailable, !manager.isActive {
-            let durationsItem = NSMenuItem(title: strings.menuActivateFor, action: nil, keyEquivalent: "")
-            let submenu = NSMenu()
-            let options: [(String, Int)] = [(strings.minutes15, 15), (strings.minutes30, 30),
-                                            (strings.hour1, 60), (strings.hours2, 120),
-                                            (strings.hours4, 240), (strings.hours8, 480),
-                                            (strings.indefinitely, 0)]
-            for (label, minutes) in options {
-                let item = NSMenuItem(title: label, action: #selector(menuActivateDuration(_:)), keyEquivalent: "")
-                item.target = self
-                item.tag = minutes
-                submenu.addItem(item)
-            }
-            durationsItem.submenu = submenu
-            menu.addItem(durationsItem)
-        }
-
-        let cleaningItem = NSMenuItem(title: strings.cleaningMenuItem,
-                                      action: #selector(menuCleaningMode), keyEquivalent: "")
-        cleaningItem.target = self
-        menu.addItem(cleaningItem)
-
-        if menu.items.isEmpty == false {
-            menu.addItem(.separator())
-        }
 
         let settingsItem = NSMenuItem(title: strings.menuSettings, action: #selector(menuOpenSettings), keyEquivalent: ",")
         settingsItem.target = self
@@ -1484,26 +1449,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         let aboutItem = NSMenuItem(title: strings.menuAbout, action: #selector(showAbout), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
-
-        if AppFeature.uninstaller.isAvailable {
-            let uninstallItem = NSMenuItem(title: strings.uninstallerMenuItem,
-                                           action: #selector(menuOpenUninstaller), keyEquivalent: "")
-            uninstallItem.target = self
-            menu.addItem(uninstallItem)
-        }
-
-        if AppFeature.shelf.isAvailable, UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled) {
-            let shelfItem = NSMenuItem(title: strings.shelfMenuItem,
-                                       action: #selector(menuOpenShelf), keyEquivalent: "")
-            shelfItem.target = self
-            menu.addItem(shelfItem)
-        }
-
-        let updatesItem = NSMenuItem(title: strings.menuCheckUpdates, action: #selector(menuCheckUpdates), keyEquivalent: "")
-        updatesItem.target = self
-        menu.addItem(updatesItem)
-
-        menu.addItem(.separator())
 
         let quitItem = NSMenuItem(title: strings.menuQuit, action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
@@ -1517,34 +1462,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         }
     }
 
-    @objc private func menuToggleAwake() {
-        KeepAwakeManager.shared.toggle()
-    }
-
-    @objc private func menuCleaningMode() {
-        CleaningModeManager.shared.activate()
-    }
-
-    @objc private func menuActivateDuration(_ sender: NSMenuItem) {
-        KeepAwakeManager.shared.activate(minutes: sender.tag)
-    }
-
     @objc private func menuOpenSettings() {
         closePopover(animated: false, preservingNotch: true)
-        openSettingsWindow()
-    }
-
-    @objc private func menuOpenUninstaller() {
-        SettingsRouter.shared.page = .uninstaller
-        openSettingsWindow()
-    }
-
-    @objc private func menuOpenShelf() {
-        ShelfService.shared.expandDocked()
-    }
-
-    @objc private func menuCheckUpdates() {
-        UpdateService.shared.check(manual: true)
         openSettingsWindow()
     }
 
