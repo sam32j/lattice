@@ -2068,18 +2068,22 @@ enum NotchTests {
         let savedMascotHideWhenIdle = defaults.object(forKey: DefaultsKey.notchMascotHidesWhenIdle)
         defaults.set(false, forKey: AppFeature.notchMascot.availabilityKey)
         defaults.set(false, forKey: DefaultsKey.notchMascotEnabled)
-        suite.expect(!NotchSupport.watchesMusicActivity(in: defaults)
-               && !NotchSupport.showsMusicActivity(isPlaying: true, in: defaults)
+        suite.expect(NotchSupport.watchesMusicActivity(in: defaults)
+               && NotchSupport.showsMusicActivity(isPlaying: true, in: defaults)
                && NotchSupport.visibleIdleContent(isPlaying: true, in: defaults) == .none,
-               "Nothing at rest suppresses playing music and its background observer without disabling the island")
+               "Nothing at rest still shows live playing music without needing companion enabled")
+        defaults.set(false, forKey: DefaultsKey.notchShowPlayingMusic)
+        suite.expect(!NotchSupport.watchesMusicActivity(in: defaults)
+               && !NotchSupport.showsMusicActivity(isPlaying: true, in: defaults),
+               "turning off automatic music presentation disables music playback activity")
+        defaults.set(true, forKey: DefaultsKey.notchShowPlayingMusic)
         suite.expect(NotchSupport.isEnabled(in: defaults) && NotchSupport.modules(in: defaults).contains(.music),
                "Nothing at rest keeps the island and its on-demand music section available")
         defaults.set(true, forKey: AppFeature.notchMascot.availabilityKey)
         defaults.set(true, forKey: DefaultsKey.notchMascotEnabled)
         defaults.set(false, forKey: DefaultsKey.notchMascotHidesWhenIdle)
         suite.expect(NotchSupport.watchesMusicActivity(in: defaults)
-               && NotchSupport.visibleIdleContent(isPlaying: false, in: defaults) == .none
-               && NotchSupport.visibleIdleContent(isPlaying: true, in: defaults) == .music,
+               && NotchSupport.visibleIdleContent(isPlaying: false, in: defaults) == .none,
                "playing music takes the idle companion's place and the companion returns when the island is empty")
         let companionAndMusic = NotchSupport.compactActivities(
             timer: false, downloads: false, agents: true, calendar: false,
@@ -2098,7 +2102,7 @@ enum NotchTests {
         defaults.set(NotchIdleContent.none.rawValue, forKey: DefaultsKey.notchIdleContent)
         defaults.set(true, forKey: DefaultsKey.notchMusicActivity)
         suite.expect(NotchSupport.idleContent(in: defaults) == .none
-               && !NotchSupport.showsMusicActivity(isPlaying: true, in: defaults),
+               && NotchSupport.showsMusicActivity(isPlaying: true, in: defaults),
                "legacy music preference cannot populate a newly empty idle surface")
         defaults.set(NotchIdleContent.battery.rawValue, forKey: DefaultsKey.notchIdleContent)
         suite.expect(NotchSupport.visibleIdleContent(isPlaying: false, in: defaults) == .battery
