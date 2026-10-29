@@ -155,7 +155,15 @@ struct NotchView: View {
             HStack {
                 navigation
                 Spacer(minLength: 8)
-                NotchIconButton(symbol: "chevron.down", title: text.open) { service.open() }
+                if service.reopeningDestination.sections {
+                    NotchIconButton(symbol: service.selected.symbol, title: service.selected.title(l10n.language)) {
+                        service.open(service.selected)
+                    }
+                } else {
+                    NotchIconButton(symbol: "square.grid.3x1.below.line.grid.1x2", title: text.sectionsTitle) {
+                        service.toggleSections()
+                    }
+                }
             }
             .padding(.horizontal, NotchLayout.horizontalInset).padding(.top, service.geometry.safeContentTop)
         } else if let activity = service.compactActivity {
@@ -540,10 +548,17 @@ struct NotchView: View {
             ? text.sectionsTitle : destination.module.title(l10n.language)
     }
 
+    private var navigationSymbol: String {
+        let destination = service.reopeningDestination
+        if destination.appPanel { return "square.grid.3x1.below.line.grid.1x2" }
+        if destination.sections { return "square.grid.3x1.below.line.grid.1x2" }
+        return destination.module.symbol
+    }
+
     private var navigation: some View {
-        Button(action: service.toggleSections) {
+        Button(action: { service.open() }) {
             HStack(spacing: 9) {
-                Image(systemName: "square.grid.2x2")
+                Image(systemName: navigationSymbol)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.white.opacity(0.7))
                 Text(navigationTitle)
@@ -555,10 +570,10 @@ struct NotchView: View {
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(NotchButtonStyle(cornerRadius: 12, lifts: false))
-        .accessibilityLabel(text.switchSection)
+        .accessibilityLabel(text.open)
         .accessibilityValue(navigationTitle)
         .accessibilityIdentifier("notch.navigation")
-        .help(text.switchSection + "  ⌘K")
+        .help(text.open)
     }
 
     @ViewBuilder private var content: some View {
