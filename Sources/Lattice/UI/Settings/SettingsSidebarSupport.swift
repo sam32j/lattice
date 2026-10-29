@@ -88,6 +88,8 @@ enum SettingsSidebarSupport {
            let tool = items.first(where: { $0.destination == destination }) {
             return tool.id
         }
+        if case .notchWidget = destination.page { return .page(.notch) }
+        if destination.page == .notchCompanion || destination.page == .notchMascot { return .page(.notch) }
         if items.contains(where: { $0.id == .page(destination.page) }) {
             return .page(destination.page)
         }

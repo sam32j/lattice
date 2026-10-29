@@ -8,7 +8,7 @@ import Foundation
 /// below and the unit tests can reason about pages without pulling UI in.
 enum SettingsPage: Hashable {
     case general, features, energy, monitor, cameraPreview, diskImageInstaller, launcherGrid
-    case mouse, keyboard, switcher, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, portManager, notch, notchMascot
+    case mouse, keyboard, switcher, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, portManager, notch, notchMascot, notchWidget(NotchModule), notchCompanion
     case shortcuts, dataPermissions, about, videoDownloader
 }
 
@@ -423,8 +423,9 @@ enum FeatureVisibilitySupport {
         case .killProcess: return [.killProcess]
         case .portManager: return [.portManager]
         case .textSnippets: return [.textSnippets]
-        case .notch: return [.notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch, .notchMascot]
+        case .notch, .notchCompanion: return [.notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch, .notchMascot]
         case .notchMascot: return [.notchMascot]
+        case .notchWidget: return [.notch]
         case .radialMenu: return [.radialMenu]
         case .commandBar: return [.commandBar]
         case .screenshot: return [.screenshot, .screenOCR, .colorPicker]
@@ -441,7 +442,8 @@ enum FeatureVisibilitySupport {
     static func isPageVisible(_ page: SettingsPage,
                               isAvailable: (AppFeature) -> Bool) -> Bool {
         if [.clipboard, .shelf, .textSnippets, .urlCleaner, .cameraPreview, .diskImageInstaller, .launcherGrid, .scratchpad, .videoDownloader].contains(page) { return true }
-        if page == .energy || page == .monitor || page == .notch || page == .dock || page == .windowLayout || page == .switcher || page == .screenshot || page == .screenRecorder { return true }
+        if page == .energy || page == .monitor || page == .notch || page == .notchCompanion || page == .dock || page == .windowLayout || page == .switcher || page == .screenshot || page == .screenRecorder { return true }
+        if case .notchWidget = page { return isPageVisible(.notch, isAvailable: isAvailable) }
         let gate = features(for: page)
         return gate.isEmpty || gate.contains { $0.isVisibleInSettings(isAvailable: isAvailable) }
     }

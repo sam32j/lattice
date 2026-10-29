@@ -162,9 +162,11 @@ extension NotchSettings {
     }
 
     func showModule(_ module: NotchModule) {
-        selectedModule = module
-        contentSelection = .module(module)
-        tab = .content
+        if module == .hub {
+            router.request(FeatureSettingsDestination(.launcherGrid))
+        } else {
+            router.request(FeatureSettingsDestination(.notchWidget(module)))
+        }
     }
 
     /// A control that opens a page is off while that page is hidden, or while

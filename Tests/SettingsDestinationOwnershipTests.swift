@@ -71,5 +71,34 @@ enum SettingsDestinationOwnershipTests {
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
         suite.expect(AppMenuDestination.selected(in: defaults) == .menuBar,
                      "an explicit replacement while a target is unavailable wins over the remembered target")
+
+        let router = SettingsRouter()
+        router.page = .notch
+        router.request(FeatureSettingsDestination(.notchWidget(.music)))
+        suite.expect(router.page == .notchWidget(.music) && router.canGoBack(),
+                     "navigating to a widget subpage sets router page and enables back navigation")
+        router.goBack()
+        suite.expect(router.page == .notch,
+                     "going back from a widget subpage returns to the Dynamic Island page")
+        router.request(FeatureSettingsDestination(.notchCompanion))
+        suite.expect(router.page == .notchCompanion && router.canGoBack(),
+                     "navigating to the companion subpage sets router page and enables back navigation")
+        router.goBack()
+        suite.expect(router.page == .notch,
+                     "going back from companion returns to the Dynamic Island page")
+
+        suite.expect(NotchSettingsStrings.widgetTitle(.music, language: .enUS) == "Music Widget"
+                     && NotchSettingsStrings.widgetTitle(.controls, language: .enUS) == "Controls Widget"
+                     && NotchSettingsStrings.widgetTitle(.calendar, language: .enUS) == "Calendar Widget",
+                     "widget titles append Widget in English")
+        suite.expect(NotchSettingsStrings.widgetTitle(.music, language: .zhHans) == "音乐小组件"
+                     && NotchSettingsStrings.widgetTitle(.controls, language: .zhHans) == "控制小组件",
+                     "widget titles append localized widget word in Simplified Chinese without space")
+        suite.expect(NotchSettingsStrings.widgetTitle(.music, language: .zhTW) == "音樂小工具",
+                     "widget titles append localized widget word in Traditional Chinese")
+
+        suite.expect(SettingsSidebarSupport.selection(for: FeatureSettingsDestination(.notchWidget(.music)), in: []) == .page(.notch)
+                     && SettingsSidebarSupport.selection(for: FeatureSettingsDestination(.notchCompanion), in: []) == .page(.notch),
+                     "widget subpages and companion map selection to the Dynamic Island sidebar item")
     }
 }
