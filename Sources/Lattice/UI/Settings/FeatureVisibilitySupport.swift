@@ -372,6 +372,8 @@ extension AppFeature {
             return FeatureSettingsDestination(.screenshot, sectionAnchor: .screenshot)
         case .cameraPreview:
             return FeatureSettingsDestination(.cameraPreview)
+        case .videoDownloader:
+            return FeatureSettingsDestination(.videoDownloader)
         case .wallpaper:
             return FeatureSettingsDestination(.energy, sectionAnchor: .wallpaper)
         case .notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch: return FeatureSettingsDestination(.notch)
@@ -430,14 +432,15 @@ enum FeatureVisibilitySupport {
         case .cameraPreview: return [.cameraPreview]
         case .diskImageInstaller: return [.diskImageInstaller]
         case .launcherGrid: return [.quickLauncher]
-        case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard, .audioInput, .audioOutput, .videoDownloader:
+        case .videoDownloader: return [.videoDownloader]
+        case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard, .audioInput, .audioOutput:
             return []
         }
     }
 
     static func isPageVisible(_ page: SettingsPage,
                               isAvailable: (AppFeature) -> Bool) -> Bool {
-        if [.clipboard, .shelf, .textSnippets, .urlCleaner, .cameraPreview, .diskImageInstaller, .launcherGrid, .scratchpad].contains(page) { return true }
+        if [.clipboard, .shelf, .textSnippets, .urlCleaner, .cameraPreview, .diskImageInstaller, .launcherGrid, .scratchpad, .videoDownloader].contains(page) { return true }
         if page == .energy || page == .monitor || page == .notch || page == .dock || page == .windowLayout || page == .switcher || page == .screenshot || page == .screenRecorder { return true }
         let gate = features(for: page)
         return gate.isEmpty || gate.contains { $0.isVisibleInSettings(isAvailable: isAvailable) }
