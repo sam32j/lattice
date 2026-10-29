@@ -434,9 +434,15 @@ private struct RadialCanvasDividers: Shape {
     let outerRadius: CGFloat
 
     func path(in rect: CGRect) -> Path {
-        guard sliceCount > 1 else { return Path() }
+        let safeRect = CGRect(x: rect.minX.isFinite ? rect.minX : 0,
+                              y: rect.minY.isFinite ? rect.minY : 0,
+                              width: max(0, rect.width.isFinite ? rect.width : 0),
+                              height: max(0, rect.height.isFinite ? rect.height : 0))
+        guard sliceCount > 1, safeRect.width > 0, safeRect.height > 0 else {
+            return Path(CGRect(x: safeRect.minX, y: safeRect.minY, width: 0, height: 0))
+        }
         var path = Path()
-        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let center = CGPoint(x: safeRect.midX, y: safeRect.midY)
         let step = 2 * .pi / Double(sliceCount)
         for i in 0..<sliceCount {
             let angle = step * (Double(i) + 0.5) - .pi / 2
