@@ -13,6 +13,7 @@ struct WallpaperSection: View {
     @State private var isRemovingSources = false
     @State private var viewerID = UUID()
     var collapsible = true
+    var onClose: (() -> Void)? = nil
 
     private var text: WallpaperFeatureStrings {
         FeatureStrings.wallpaper(l10n.language)
@@ -37,47 +38,64 @@ struct WallpaperSection: View {
     }
 
     var body: some View {
-        PanelSection(.wallpaper,
-                     title: text.pageTitle,
-                     collapsible: collapsible) {
-            VStack(alignment: .leading, spacing: 10) {
-                controls
-                if isRemovingSources, !service.removableChipSources.isEmpty {
-                    sourceRemoveStrip
-                }
-                gallery
-                pager
-                if service.isDownloading {
-                    Text(text.downloading)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else if let error = service.lastError {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            header
+            controls
+            if isRemovingSources, !service.removableChipSources.isEmpty {
+                sourceRemoveStrip
             }
-            .onAppear {
-                // own folders can change on disk; keep Apple catalog cache
-                service.beginViewing(viewerID)
+            gallery
+            pager
+            if service.isDownloading {
+                Text(text.downloading)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if let error = service.lastError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
             }
-            .onDisappear {
+        }
+        .padding(2)
+        .onAppear {
+            // own folders can change on disk; keep Apple catalog cache
+            service.beginViewing(viewerID)
+        }
+        .onDisappear {
+            isRemovingSources = false
+            service.endViewing(viewerID)
+        }
+        .onChange(of: currentPage) { _, newPage in
+            service.preparePageThumbs(for: service.filter, around: newPage)
+        }
+        .onChange(of: service.filter) { _, _ in
+            page = 1
+        }
+        .onChange(of: service.entries.count) { _, _ in
+            page = WallpaperSupport.clampedPage(page, itemCount: allItems.count)
+        }
+        .onChange(of: service.ownSources.count) { _, count in
+            if count == 0 {
                 isRemovingSources = false
-                service.endViewing(viewerID)
             }
-            .onChange(of: currentPage) { _, newPage in
-                service.preparePageThumbs(for: service.filter, around: newPage)
-            }
-            .onChange(of: service.filter) { _, _ in
-                page = 1
-            }
-            .onChange(of: service.entries.count) { _, _ in
-                page = WallpaperSupport.clampedPage(page, itemCount: allItems.count)
-            }
-            .onChange(of: service.ownSources.count) { _, count in
-                if count == 0 {
-                    isRemovingSources = false
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "photo.on.rectangle")
+                .font(.system(size: 13, weight: .semibold))
+            Text(text.pageTitle)
+                .font(.system(size: 13, weight: .semibold))
+            Spacer()
+            if let onClose {
+                Button(action: onClose) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(l10n.s.menuClose)
             }
         }
     }
