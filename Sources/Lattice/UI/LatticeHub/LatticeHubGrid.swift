@@ -9,10 +9,11 @@ extension LatticeHubView {
             let controlsH = launcher.activeUtility == nil ? launcher.notchControlsHeight : 0
             let vstackSpacing: CGFloat = controlsH > 0 ? 6 : 0
             let availableHeight = max(0, notchSize.height - controlsH - vstackSpacing)
-            let rows = NotchLayout.railRows(count: launcher.visibleItems.count,
-                                            perRow: NotchLayout.railCapacity(width: notchSize.width, itemWidth: NotchLayout.toolWidth,
-                                                                             spacing: NotchLayout.toolSpacing),
-                                            rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing, height: availableHeight)
+            let rows = launcher.visibleItems.count >= 10 ? 2 : NotchLayout.railRows(
+                count: launcher.visibleItems.count,
+                perRow: NotchLayout.railCapacity(width: notchSize.width, itemWidth: NotchLayout.toolWidth,
+                                                 spacing: NotchLayout.toolSpacing),
+                rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing, height: availableHeight)
             let titleInset = NotchLayout.toolTitleInset(count: launcher.visibleItems.count, rows: rows, width: notchSize.width)
             NotchRail(items: launcher.visibleItems, rows: rows, itemWidth: NotchLayout.toolWidth, width: notchSize.width,
                       spacing: NotchLayout.toolSpacing, leastSpacing: NotchLayout.toolLeastSpacing,
@@ -54,17 +55,26 @@ extension LatticeHubView {
             }
         } label: {
             ZStack(alignment: .topTrailing) {
-                VStack(spacing: 5) {
-                    Image(systemName: icon(for: item))
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(iconColor(item))
-                        .frame(height: 24)
-                    Text(title(for: item))
-                        .font(.system(size: 11, weight: .medium))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .foregroundStyle(Color.primary.opacity(0.85))
-                        .padding(.horizontal, titleInset)
+                Group {
+                    if notchSize != nil {
+                        Image(systemName: icon(for: item))
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(iconColor(item))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        VStack(spacing: 5) {
+                            Image(systemName: icon(for: item))
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundStyle(iconColor(item))
+                                .frame(height: 24)
+                            Text(title(for: item))
+                                .font(.system(size: 11, weight: .medium))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .foregroundStyle(Color.primary.opacity(0.85))
+                                .padding(.horizontal, titleInset)
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: notchSize == nil ? 64 : NotchLayout.toolHeight)
@@ -93,6 +103,8 @@ extension LatticeHubView {
             }
         }
         .buttonStyle(.plain)
+        .help(title(for: item))
+        .accessibilityLabel(title(for: item))
         .onHover { isHovered in
             if isHovered {
                 hoveredItem = item

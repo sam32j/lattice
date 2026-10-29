@@ -1802,6 +1802,17 @@ enum NotchSupport {
         isEnabled(in: defaults) && defaults.bool(forKey: DefaultsKey.notchShortcutEnabled)
     }
 
+    /// The primary Dynamic Island modules displayed in Explore and navigation.
+    /// Pure workflow utilities live in the Lattice Hub.
+    static let rootModules: [NotchModule] = [
+        .controls, .mixer, .music, .system, .calendar, .notifications,
+        .timer, .downloads, .agents, .watch, .hub
+    ]
+
+    static func isExploreModule(_ module: NotchModule) -> Bool {
+        rootModules.contains(module)
+    }
+
     static func modules(in defaults: UserDefaults = .standard) -> [NotchModule] {
         let hidden = Set((defaults.string(forKey: DefaultsKey.notchHiddenModules) ?? "")
             .split(separator: ",").map(String.init))
@@ -2662,10 +2673,12 @@ struct NotchGeometry: Equatable {
     func toolRows(count: Int, controlsHeight: CGFloat? = nil) -> Int {
         let controlsH = controlsHeight ?? 0
         let vstackSpacing: CGFloat = controlsH > 0 ? 6 : 0
-        let availableHeight = max(0, contentBudget - controlsH - vstackSpacing)
-        return NotchLayout.railRows(count: count,
+        let budget = count >= 10 && layout != .custom ? pageBudget : contentBudget
+        let availableHeight = max(0, budget - controlsH - vstackSpacing)
+        let rows = NotchLayout.railRows(count: count,
                              perRow: NotchLayout.railCapacity(width: contentWidth, itemWidth: NotchLayout.toolWidth, spacing: NotchLayout.toolSpacing),
                              rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing, height: availableHeight)
+        return count >= 10 && layout != .custom ? min(2, max(2, rows)) : rows
     }
 
     /// The arrows walk the tiles the way the rail draws them: reading order
