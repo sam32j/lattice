@@ -7,7 +7,7 @@ extension AppFeature {
     var retainsControlWhenOff: Bool {
         switch self {
         case .clipboardHistory, .shelf, .textSnippets, .urlCleaner, .cameraPreview,
-             .diskImageInstaller, .quickLauncher, .scratchpad: return false
+             .diskImageInstaller, .quickLauncher, .scratchpad, .videoDownloader: return false
         default: return isToggleOwned
         }
     }
@@ -19,7 +19,7 @@ extension AppFeature {
         case .dockClick, .spacesOrder, .windowMaximizer, .autoQuit, .pastePlain,
              .brightness, .bluetoothSleep, .extraBrightness, .fanControl,
              .clipboardHistory, .shelf, .textSnippets, .urlCleaner, .cameraPreview,
-             .diskImageInstaller, .quickLauncher, .scratchpad:
+             .diskImageInstaller, .quickLauncher, .scratchpad, .videoDownloader:
             return true
         default: return false
         }
@@ -30,7 +30,7 @@ extension AppFeature {
         if group == .monitor { return true }
         switch self {
         case .clipboardHistory, .shelf, .textSnippets, .urlCleaner, .cameraPreview,
-             .diskImageInstaller, .quickLauncher, .scratchpad,
+             .diskImageInstaller, .quickLauncher, .scratchpad, .videoDownloader,
              .screenshot, .screenRecorder,
              .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock,
              .wallpaper, .windowLayout, .switcher, .dockPreview,
@@ -85,6 +85,8 @@ extension AppFeature {
             return GlobalShortcut.cleaningModeDefault.isValid
         case .textSnippets:
             return defaults.bool(forKey: DefaultsKey.textSnippetsEnabled)
+        case .videoDownloader:
+            return defaults.bool(forKey: DefaultsKey.videoDownloaderEnabled)
         case .cameraPreview, .diskImageInstaller, .quickLauncher, .scratchpad:
             return defaults.bool(forKey: availabilityKey)
         default:
