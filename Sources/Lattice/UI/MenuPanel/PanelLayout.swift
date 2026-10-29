@@ -11,7 +11,7 @@ protocol PanelOrderItem: RawRepresentable, CaseIterable, Hashable where RawValue
 /// renaming a case would orphan a user's stored layout — keep them stable.
 enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
     case keepAwake, brightness, mixer, system, network, disk, power, fanControl,
-         toggles, wallpaper
+         toggles
 
     var id: String { rawValue }
 
@@ -27,7 +27,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .power: return s.powerSection
         case .fanControl: return FeatureStrings.fanControl(L10n.shared.language).title
         case .toggles: return s.launcherName
-        case .wallpaper: return FeatureStrings.wallpaper(L10n.shared.language).pageTitle
         }
     }
 
@@ -42,7 +41,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .power: return "powerplug.portrait"
         case .fanControl: return "fanblades.fill"
         case .toggles: return "square.grid.2x2"
-        case .wallpaper: return "photo.on.rectangle"
         }
     }
 
@@ -60,7 +58,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .power: return DefaultsKey.monitorShowPower
         case .fanControl: return DefaultsKey.panelShowFanControl
         case .toggles: return DefaultsKey.panelShowToggles
-        case .wallpaper: return DefaultsKey.panelShowWallpaper
         }
     }
 
@@ -80,7 +77,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
         case .power: return [.monitorPower]
         case .fanControl: return [.fanControl]
         case .toggles: return [.brightness, .commandBar, .micMute, .quickLauncher]
-        case .wallpaper: return [.wallpaper]
         }
     }
 
