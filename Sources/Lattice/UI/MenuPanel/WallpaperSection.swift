@@ -83,7 +83,7 @@ struct WallpaperSection: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Image(systemName: "photo.on.rectangle")
+            Image(systemName: "rectangle.inset.filled.and.cursorarrow")
                 .font(.system(size: 13, weight: .semibold))
             Text(text.pageTitle)
                 .font(.system(size: 13, weight: .semibold))

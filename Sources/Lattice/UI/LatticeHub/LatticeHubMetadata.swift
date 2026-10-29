@@ -64,7 +64,7 @@ extension LatticeHubView {
         case .shelf: return "tray.full"
         case .textSnippets: return "text.append"
         case .killProcess: return "xmark.octagon"
-        case .wallpaper: return "photo.on.rectangle"
+        case .wallpaper: return "rectangle.inset.filled.and.cursorarrow"
         }
     }
 
