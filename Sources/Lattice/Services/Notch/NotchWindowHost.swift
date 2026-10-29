@@ -156,8 +156,10 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         guard isPresented else { return }
         let animate = animated && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         guard !hidesWhenSettled || !animate else { return }
-        let restingWidth = currentGeometry.restingSize(showsContent: false).width
-        present(size: CGSize(width: restingWidth, height: 0), geometry: currentGeometry,
+        let resting = currentGeometry.isNotched
+            ? currentGeometry.restingSize(showsContent: false)
+            : CGSize(width: currentGeometry.restingSize(showsContent: false).width, height: 0)
+        present(size: resting, geometry: currentGeometry,
                 animated: animate, transitionContent: .depart,
                 hideWhenSettled: true)
     }
@@ -212,7 +214,9 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             // Glass closing into a black strip shuts as its page leaves, so the
             // empty shell never shows the windows beneath it; opening out of one
             // lets the glass in over the last stretch, as the page fades in.
-            let start = revealing ? 0 : canvas.visibleSize?.height ?? targetSize.height
+            let start = revealing
+                ? (geometry.isNotched ? geometry.cameraHeight : 0)
+                : canvas.visibleSize?.height ?? targetSize.height
             canvas.backdropPresentation.planFade(from: start, to: size.height, endsInGlass: usesGlass)
             canvas.updateCanvasBlack()
         }
@@ -237,10 +241,15 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         guard changesFrame else { configureQuickAccess(); return }
         // An ordered-out panel still has its last expanded shape. Start the
         // reveal at the screen edge, even when reopening at that same size.
-        let previousWidth = revealing ? geometry.restingSize(showsContent: false).width : canvas.bounds.width
+        let previousSize = revealing
+            ? (geometry.isNotched ? geometry.restingSize(showsContent: false) : CGSize(width: geometry.restingSize(showsContent: false).width, height: 0))
+            : canvas.bounds.size
         let previousPath = revealing
-            ? NotchShape(attached: true, radius: 0, floatingGap: geometry.floatingGap)
-                .path(in: CGRect(x: 0, y: 0, width: previousWidth, height: 0)).cgPath
+            ? NotchShape(attached: true,
+                         radius: geometry.isNotched ? NotchLayout.surfaceRadius(height: previousSize.height) : 0,
+                         floatingGap: geometry.floatingGap,
+                         cutoutWidth: geometry.floats ? 0 : geometry.cameraWidth)
+                .path(in: CGRect(origin: .zero, size: previousSize)).cgPath
             : canvas.visiblePath
         let sameScreen = geometry.screen == currentGeometry.screen
         // Where the island's centre is now, relative to the camera's; pixel
@@ -258,7 +267,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             return
         }
 
-        let drawn = revealing ? canvas.surfaceSize(of: previousPath) : canvas.visibleSize ?? canvas.surfaceSize(of: previousPath)
+        let drawn = revealing ? previousSize : (canvas.visibleSize ?? canvas.surfaceSize(of: previousPath))
         // Only a width change eases steadily; anything that also grows taller
         // keeps the island's usual springs.
         let steady = steady && drawn.height == size.height
