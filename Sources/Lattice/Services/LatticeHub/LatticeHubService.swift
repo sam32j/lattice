@@ -115,7 +115,7 @@ final class LatticeHubService: ObservableObject {
             }
         }
         (NSApp.delegate as? AppDelegate)?.closePopover()
-        if NotchService.shared.expanded, NotchService.shared.selected == .tools {
+        if NotchService.shared.expanded, NotchService.shared.selected == .hub {
             NotchService.shared.collapse()
         }
         let panel = ensurePanel()
