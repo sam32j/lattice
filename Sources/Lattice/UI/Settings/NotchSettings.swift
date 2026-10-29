@@ -173,8 +173,8 @@ struct NotchSettings: View {
                                 .foregroundStyle(.orange)
                                 .padding(.leading, settingsRowTextInset)
                         }
-                        SettingsRow(symbol: "display", title: labels.openIn) {
-                            Picker(labels.openIn, selection: $display) {
+                        SettingsRow(symbol: "display", title: labels.showOn) {
+                            Picker(labels.showOn, selection: $display) {
                                 Text(text.automatic).tag(NotchDisplay.automatic.rawValue)
                                 if PowerSampler.hasInternalBattery {
                                     Text(text.builtIn).tag(NotchDisplay.builtIn.rawValue)

@@ -5,7 +5,7 @@ import Foundation
 
 struct NotchLiveActivitySettingsStrings {
     let openWithShortcut: String
-    let openIn: String
+    let showOn: String
     let dynamicIslandSize: String
     let useScrollGestures: String
     let turnOnHapticFeedback: String
@@ -23,46 +23,46 @@ extension FeatureStrings {
         case .enUS:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "Open Dynamic Island with shortcut",
-                openIn: "Open Dynamic Island in",
+                showOn: "Show Dynamic Island on",
                 dynamicIslandSize: "Dynamic Island Size",
                 useScrollGestures: "Use Scroll Gestures",
                 turnOnHapticFeedback: "Turn on Haptic feedback",
                 showInScreenshots: "Show Dynamic Island in screenshots",
                 onlyShowActivityWhenRoom: "Only show live activity when space allows",
-                onlyShowActivityWhenRoomHint: "When there isn’t enough space in the menu bar, live activity will be hidden.",
+                onlyShowActivityWhenRoomHint: "If there isn’t enough space in the menu bar, live activity is hidden.",
                 hideActivityInFullscreen: "Hide live activity in full screen",
                 hideActivityInFullscreenHint: "Live activity stays hidden while an app is full screen.",
                 showActivityOnLockScreen: "Show live activity on lock screen")
         case .ptBR:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "Abrir o Dynamic Island com atalho",
-                openIn: "Abrir o Dynamic Island em",
+                showOn: "Mostrar o Dynamic Island em",
                 dynamicIslandSize: "Tamanho do Dynamic Island",
                 useScrollGestures: "Usar gestos de rolagem",
                 turnOnHapticFeedback: "Ativar retorno tátil",
                 showInScreenshots: "Mostrar o Dynamic Island em capturas de tela",
                 onlyShowActivityWhenRoom: "Mostrar atividade ao vivo apenas quando o espaço permitir",
-                onlyShowActivityWhenRoomHint: "Quando não houver espaço suficiente na barra de menus, a atividade ao vivo será ocultada.",
+                onlyShowActivityWhenRoomHint: "Se não houver espaço suficiente na barra de menus, a atividade ao vivo será ocultada.",
                 hideActivityInFullscreen: "Ocultar atividade ao vivo em tela cheia",
                 hideActivityInFullscreenHint: "A atividade ao vivo permanece oculta enquanto um app estiver em tela cheia.",
                 showActivityOnLockScreen: "Mostrar atividade ao vivo na tela bloqueada")
         case .es:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "Abrir Dynamic Island con atajo",
-                openIn: "Abrir Dynamic Island en",
+                showOn: "Mostrar Dynamic Island en",
                 dynamicIslandSize: "Tamaño de Dynamic Island",
                 useScrollGestures: "Usar gestos de desplazamiento",
                 turnOnHapticFeedback: "Activar vibración táctil",
                 showInScreenshots: "Mostrar Dynamic Island en capturas de pantalla",
                 onlyShowActivityWhenRoom: "Mostrar actividad en vivo solo cuando el espacio lo permita",
-                onlyShowActivityWhenRoomHint: "Cuando no haya suficiente espacio en la barra de menús, la actividad en vivo se ocultará.",
+                onlyShowActivityWhenRoomHint: "Si no hay suficiente espacio en la barra de menús, la actividad en vivo se ocultará.",
                 hideActivityInFullscreen: "Ocultar actividad en vivo en pantalla completa",
                 hideActivityInFullscreenHint: "La actividad en vivo permanece oculta mientras una app está en pantalla completa.",
                 showActivityOnLockScreen: "Mostrar actividad en vivo en la pantalla de bloqueo")
         case .sk:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "Otvoriť Dynamic Island skratkou",
-                openIn: "Otvoriť Dynamic Island na",
+                showOn: "Zobraziť Dynamic Island na",
                 dynamicIslandSize: "Veľkosť Dynamic Island",
                 useScrollGestures: "Používať gestá posúvania",
                 turnOnHapticFeedback: "Zapnúť haptickú odozvu",
@@ -75,7 +75,7 @@ extension FeatureStrings {
         case .de:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "Dynamic Island mit Kurzbefehl öffnen",
-                openIn: "Dynamic Island öffnen auf",
+                showOn: "Dynamic Island anzeigen auf",
                 dynamicIslandSize: "Dynamic Island-Größe",
                 useScrollGestures: "Scrollgesten verwenden",
                 turnOnHapticFeedback: "Haptisches Feedback aktivieren",
@@ -88,33 +88,33 @@ extension FeatureStrings {
         case .fr:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "Ouvrir le Dynamic Island avec un raccourci",
-                openIn: "Ouvrir le Dynamic Island sur",
+                showOn: "Afficher le Dynamic Island sur",
                 dynamicIslandSize: "Taille de Dynamic Island",
                 useScrollGestures: "Utiliser les gestes de défilement",
                 turnOnHapticFeedback: "Activer le retour haptique",
                 showInScreenshots: "Afficher le Dynamic Island dans les captures d’écran",
                 onlyShowActivityWhenRoom: "Afficher l’activité en direct uniquement si l’espace le permet",
-                onlyShowActivityWhenRoomHint: "Lorsqu’il n’y a pas assez d’espace dans la barre des menus, l’activité en direct sera masquée.",
+                onlyShowActivityWhenRoomHint: "S’il n’y a pas assez d’espace dans la barre des menus, l’activité en direct est masquée.",
                 hideActivityInFullscreen: "Masquer l’activité en direct en plein écran",
                 hideActivityInFullscreenHint: "L’activité en direct reste masquée lorsqu’une app est en plein écran.",
                 showActivityOnLockScreen: "Afficher l’activité en direct sur l’écran verrouillé")
         case .it:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "Apri Dynamic Island con abbreviazione",
-                openIn: "Apri Dynamic Island su",
+                showOn: "Mostra Dynamic Island su",
                 dynamicIslandSize: "Dimensioni Dynamic Island",
                 useScrollGestures: "Usa gesti di scorrimento",
                 turnOnHapticFeedback: "Attiva feedback aptico",
                 showInScreenshots: "Mostra Dynamic Island nelle istantanee dello schermo",
                 onlyShowActivityWhenRoom: "Mostra attività dal vivo solo se lo spazio lo consente",
-                onlyShowActivityWhenRoomHint: "Quando non c’è abbastanza spazio nella barra dei menu, l’attività dal vivo verrà nascosta.",
+                onlyShowActivityWhenRoomHint: "Se non c’è abbastanza spazio nella barra dei menu, l’attività dal vivo viene nascosta.",
                 hideActivityInFullscreen: "Nascondi attività dal vivo a schermo intero",
                 hideActivityInFullscreenHint: "L’attività dal vivo rimane nascosta quando un’app è a schermo intero.",
                 showActivityOnLockScreen: "Mostra attività dal vivo sulla schermata di blocco")
         case .ru:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "Открыть Dynamic Island сочетанием клавиш",
-                openIn: "Открывать Dynamic Island на",
+                showOn: "Показывать Dynamic Island на",
                 dynamicIslandSize: "Размер Dynamic Island",
                 useScrollGestures: "Использовать жесты прокрутки",
                 turnOnHapticFeedback: "Включить тактильный отклик",
@@ -127,20 +127,20 @@ extension FeatureStrings {
         case .tr:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "Dynamic Island’ı kestirmeyle aç",
-                openIn: "Dynamic Island’ı şurada aç:",
+                showOn: "Dynamic Island’ı şurada göster:",
                 dynamicIslandSize: "Dynamic Island Boyutu",
                 useScrollGestures: "Kaydırma hareketlerini kullan",
                 turnOnHapticFeedback: "Dokunsal geri bildirimi aç",
                 showInScreenshots: "Dynamic Island’ı ekran görüntülerinde göster",
                 onlyShowActivityWhenRoom: "Canlı etkinliği yalnızca alan izin verdiğinde göster",
-                onlyShowActivityWhenRoomHint: "Menü çubuğunda yeterli alan olmadığında canlı etkinlik gizlenir.",
+                onlyShowActivityWhenRoomHint: "Menü çubuğunda yeterli alan yoksa canlı etkinlik gizlenir.",
                 hideActivityInFullscreen: "Tam ekranda canlı etkinliği gizle",
                 hideActivityInFullscreenHint: "Bir uygulama tam ekrandayken canlı etkinlik gizli kalır.",
                 showActivityOnLockScreen: "Canlı etkinliği kilit ekranında göster")
         case .ja:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "ショートカットでDynamic Islandを開く",
-                openIn: "Dynamic Islandを開く画面",
+                showOn: "Dynamic Islandを表示する画面",
                 dynamicIslandSize: "Dynamic Islandのサイズ",
                 useScrollGestures: "スクロールジェスチャを使用",
                 turnOnHapticFeedback: "触覚フィードバックを有効にする",
@@ -153,7 +153,7 @@ extension FeatureStrings {
         case .ko:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "단축키로 Dynamic Island 열기",
-                openIn: "Dynamic Island 표시 위치",
+                showOn: "Dynamic Island 표시 화면",
                 dynamicIslandSize: "Dynamic Island 크기",
                 useScrollGestures: "스크롤 제스처 사용",
                 turnOnHapticFeedback: "햅틱 피드백 켜기",
@@ -166,46 +166,46 @@ extension FeatureStrings {
         case .zhHans:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "通过快捷键打开 Dynamic Island",
-                openIn: "打开 Dynamic Island 于",
+                showOn: "显示 Dynamic Island 于",
                 dynamicIslandSize: "全景光斑大小",
                 useScrollGestures: "使用滚动手势",
                 turnOnHapticFeedback: "开启触感反馈",
                 showInScreenshots: "在屏幕截图中显示 Dynamic Island",
                 onlyShowActivityWhenRoom: "仅在空间允许时显示实时活动",
-                onlyShowActivityWhenRoomHint: "菜单栏空间不足时，实时活动将被隐藏。",
+                onlyShowActivityWhenRoomHint: "如果菜单栏空间不足，实时活动将被隐藏。",
                 hideActivityInFullscreen: "全屏时隐藏实时活动",
                 hideActivityInFullscreenHint: "App处于全屏状态时，实时活动保持隐藏。",
                 showActivityOnLockScreen: "在锁定屏幕上显示实时活动")
         case .zhTW:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "使用快捷鍵開啟 Dynamic Island",
-                openIn: "開啟 Dynamic Island 於",
+                showOn: "顯示 Dynamic Island 於",
                 dynamicIslandSize: "動態島大小",
                 useScrollGestures: "使用捲動手勢",
                 turnOnHapticFeedback: "開啟觸覺回饋",
                 showInScreenshots: "在螢幕截圖中顯示 Dynamic Island",
                 onlyShowActivityWhenRoom: "僅在空間允許時顯示即時動態",
-                onlyShowActivityWhenRoomHint: "選單列空間不足時，即時動態將會隱藏。",
+                onlyShowActivityWhenRoomHint: "若選單列空間不足，即時動態將會隱藏。",
                 hideActivityInFullscreen: "全螢幕時隱藏即時動態",
                 hideActivityInFullscreenHint: "App處於全螢幕狀態時，即時動態保持隱藏。",
                 showActivityOnLockScreen: "在鎖定畫面上顯示即時動態")
         case .zhHK:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "使用快捷鍵開啟 Dynamic Island",
-                openIn: "開啟 Dynamic Island 於",
+                showOn: "顯示 Dynamic Island 於",
                 dynamicIslandSize: "動態島大小",
                 useScrollGestures: "使用捲動手勢",
                 turnOnHapticFeedback: "開啟觸覺回饋",
                 showInScreenshots: "在螢幕截圖中顯示 Dynamic Island",
                 onlyShowActivityWhenRoom: "僅在空間允許時顯示即時動態",
-                onlyShowActivityWhenRoomHint: "選單列空間不足時，即時動態將會隱藏。",
+                onlyShowActivityWhenRoomHint: "若選單列空間不足，即時動態將會隱藏。",
                 hideActivityInFullscreen: "全螢幕時隱藏即時動態",
                 hideActivityInFullscreenHint: "App處於全螢幕狀態時，即時動態保持隱藏。",
                 showActivityOnLockScreen: "在鎖定畫面上顯示即時動態")
         case .uk:
             return NotchLiveActivitySettingsStrings(
                 openWithShortcut: "Відкрити Dynamic Island комбінацією клавіш",
-                openIn: "Відкривати Dynamic Island на",
+                showOn: "Показувати Dynamic Island на",
                 dynamicIslandSize: "Розмір Dynamic Island",
                 useScrollGestures: "Використовувати жести прокручування",
                 turnOnHapticFeedback: "Увімкнути тактильний відгук",
