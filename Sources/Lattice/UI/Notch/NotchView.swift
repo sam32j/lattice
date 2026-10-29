@@ -813,6 +813,7 @@ struct NotchShape: Shape {
 
     func path(in rect: CGRect) -> Path {
         guard attached else { return Path(roundedRect: rect, cornerRadius: radius) }
+        guard rect.width > 0, rect.height > 0 else { return Path() }
         if let floatingGap { return Path(NotchLayout.capsulePath(in: rect, gap: floatingGap)) }
         let maxShoulder = NotchLayout.shoulder(height: rect.height)
         let wing = cutoutWidth > 0 ? max(0, (rect.width - cutoutWidth) / 2) : rect.width / 2
