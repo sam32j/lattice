@@ -3,25 +3,29 @@ import EventKit
 
 extension NotchSettings {
     var behaviorPage: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            SettingsCard(title: editor.opening) {
+        let opening = FeatureStrings.notchOpening(l10n.language)
+        return VStack(alignment: .leading, spacing: 20) {
+            SettingsCard(title: opening.opening) {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                    choice(editor.clickOpen, symbol: "cursorarrow", selected: !hover) { hideUntilHover = false; hover = false }
-                    choice(editor.hoverPreview, symbol: "rectangle.topthird.inset.filled", selected: hover && !hoverExpand && !hideUntilHover) { hideUntilHover = false; hover = true; hoverExpand = false }
-                    choice(editor.hoverExpand, symbol: "arrow.up.left.and.arrow.down.right", selected: hover && hoverExpand && !hideUntilHover) { hideUntilHover = false; hover = true; hoverExpand = true }
-                    choice(editor.hiddenUntilHover, symbol: "eye.slash", selected: hover && hideUntilHover) { hover = true; hoverExpand = true; hideUntilHover = true }
-                }
-                if hover && hideUntilHover {
-                    switchRow("sparkles", editor.hiddenShowsActivity,
-                              caption: hiddenShowsActivity ? editor.hiddenShowsActivityHint : nil,
-                              isOn: $hiddenShowsActivity)
+                    choice(opening.clickToOpen, symbol: "cursorarrow", selected: !hover) { hideUntilHover = false; hover = false }
+                    choice(opening.previewOnHover, symbol: "ellipsis.rectangle", selected: hover && !hoverExpand && !hideUntilHover) { hideUntilHover = false; hover = true; hoverExpand = false }
+                    choice(opening.expandOnHover, symbol: "arrow.up.left.and.arrow.down.right", selected: hover && hoverExpand && !hideUntilHover) { hideUntilHover = false; hover = true; hoverExpand = true }
+                    choice(opening.hiddenUntilHover, symbol: "eye.slash", selected: hover && hideUntilHover) { hover = true; hoverExpand = true; hideUntilHover = true }
                 }
                 if hover {
-                    hoverDelayControl
-                    if hoverExpand { closeDelayControl }
+                    hoverDelayPicker(opening)
+                    if hoverExpand { closeDelayPicker(opening) }
                 }
-                SettingsRow(symbol: "arrow.uturn.backward", title: editor.reopening) {
-                    Picker(editor.reopening, selection: Binding(get: {
+                if hover && hideUntilHover {
+                    SettingsToggleRow(title: opening.showLiveActivity,
+                                      caption: opening.showLiveActivityHint,
+                                      isOn: $hiddenShowsActivity)
+                }
+                Text(opening.whenReopening)
+                    .font(.headline)
+                    .padding(.top, 4)
+                SettingsControlRow(title: opening.defaultPage) {
+                    Picker(opening.defaultPage, selection: Binding(get: {
                         guard returnHome else { return "" }
                         return NotchModule(rawValue: homeModule)?.rawValue
                             ?? NotchReopeningDestination(rawValue: homeModule)?.rawValue
@@ -43,7 +47,9 @@ extension NotchSettings {
                     .pickerStyle(.menu)
                     .labelsHidden()
                 }
-                switchRow("livephoto", editor.openActivity, caption: editor.openActivityHint, isOn: $opensActivity)
+                SettingsToggleRow(title: opening.openVisibleActivity,
+                                  caption: opening.openVisibleActivityHint,
+                                  isOn: $opensActivity)
             }
             SettingsCard(title: editor.destinations) {
                 destination(text.captures, symbol: "photo.stack", value: $capture,
@@ -93,31 +99,35 @@ extension NotchSettings {
         }.padding(.leading, settingsRowTextInset)
     }
 
-    var hoverDelayControl: some View {
-        delayControl(editor.activationTime, hint: editor.activationTimeHint, value: $hoverDelay,
-                     range: NotchSupport.hoverDelayRange, sanitize: NotchSupport.sanitizedHoverDelay)
-    }
-
-    var closeDelayControl: some View {
-        delayControl(editor.closeTime, hint: editor.closeTimeHint, value: $closeDelay,
-                     range: NotchSupport.closeDelayRange, sanitize: NotchSupport.sanitizedCloseDelay)
-    }
-
-    func delayControl(_ title: String, hint: String, value stored: Binding<Double>,
-                              range: ClosedRange<Double>, sanitize: @escaping (Double) -> Double) -> some View {
-        let value = Binding(get: { sanitize(stored.wrappedValue) }, set: { stored.wrappedValue = sanitize($0) })
-        let formatted = String(format: editor.activationTimeFormat, locale: Locale(identifier: l10n.language.rawValue), value.wrappedValue)
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(title)
-                Spacer()
-                Text(formatted).monospacedDigit().foregroundStyle(.secondary)
+    func hoverDelayPicker(_ strings: NotchOpeningStrings) -> some View {
+        let binding = Binding<NotchDelayPreset>(
+            get: { NotchDelayPreset.closestHoverPreset(for: hoverDelay) },
+            set: { hoverDelay = $0.hoverDelay }
+        )
+        return SettingsControlRow(title: strings.hoverDelay, caption: strings.hoverDelayHint) {
+            Picker(strings.hoverDelay, selection: binding) {
+                ForEach(NotchDelayPreset.allCases) { preset in
+                    Text(preset.title(l10n.language)).tag(preset)
+                }
             }
-            Slider(value: value, in: range, step: 0.05) {
-                Text(title)
-            }.labelsHidden().accessibilityValue(formatted)
-            Text(hint).font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            .pickerStyle(.menu)
+            .labelsHidden()
+        }
+    }
+
+    func closeDelayPicker(_ strings: NotchOpeningStrings) -> some View {
+        let binding = Binding<NotchDelayPreset>(
+            get: { NotchDelayPreset.closestClosePreset(for: closeDelay) },
+            set: { closeDelay = $0.closeDelay }
+        )
+        return SettingsControlRow(title: strings.closeDelay, caption: strings.closeDelayHint) {
+            Picker(strings.closeDelay, selection: binding) {
+                ForEach(NotchDelayPreset.allCases) { preset in
+                    Text(preset.title(l10n.language)).tag(preset)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
         }
     }
 
