@@ -35,11 +35,21 @@ struct IslandDestinationSettings: View {
         })
     }
 
+    private var alwaysFloating: Binding<Bool> {
+        Binding(get: { !shown.wrappedValue }, set: { isFloating in
+            shown.wrappedValue = !isFloating
+        })
+    }
+
     var body: some View {
         if islandEnabled && features.isAvailable(.notch) {
             VStack(alignment: .leading, spacing: 13) {
             if includeDivider { Divider() }
-            SettingsToggleRow(title: SettingsOwnershipStrings.text(.showIsland, l10n.language), isOn: shown)
+            SettingsToggleRow(
+                title: SettingsOwnershipStrings.text(.alwaysFloating, l10n.language),
+                caption: SettingsOwnershipStrings.text(.alwaysFloatingCaption, l10n.language),
+                isOn: alwaysFloating
+            )
             if shown.wrappedValue {
                 if destination == .files {
                     SettingsToggleRow(title: FeatureStrings.notch(l10n.language).dragReveal, isOn: $dragReveal)

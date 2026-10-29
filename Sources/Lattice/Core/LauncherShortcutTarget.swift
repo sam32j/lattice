@@ -4,13 +4,26 @@
 import Foundation
 
 enum LauncherShortcutTarget: String, CaseIterable {
-    case island = "island"
+    case automatic = "automatic"
     case floatingWindow = "floatingWindow"
+
+    static let island = LauncherShortcutTarget.automatic
+
+    init?(rawValue: String) {
+        switch rawValue {
+        case "automatic", "island":
+            self = .automatic
+        case "floatingWindow":
+            self = .floatingWindow
+        default:
+            return nil
+        }
+    }
 
     static func selected(in defaults: UserDefaults = .standard) -> LauncherShortcutTarget {
         guard let raw = defaults.string(forKey: DefaultsKey.launcherShortcutTarget),
               let target = LauncherShortcutTarget(rawValue: raw) else {
-            return .island
+            return .automatic
         }
         return target
     }

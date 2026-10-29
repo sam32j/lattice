@@ -76,30 +76,28 @@ struct DedicatedUtilitySettings: View {
                 }
                 if childrenEnabled {
                     if feature == .quickLauncher {
-                        if islandAvailable {
-                            SettingsToggleRow(title: SettingsOwnershipStrings.text(.showIsland, l10n.language),
-                                              isOn: launcherIslandShown)
-                                .padding(.leading, settingsRowTextInset)
-                        }
                         ShortcutPreferenceRow(role: .quickLauncher, label: UtilitySettingsCopy.openWithShortcut(title, l10n.language)) {
                             FeatureRuntime.shared.sync([feature])
                         }
                         .padding(.leading, settingsRowTextInset)
 
-                        if islandAvailable && launcherIslandShown.wrappedValue {
-                            SettingsControlRow(title: SettingsOwnershipStrings.text(.shortcutTarget, l10n.language),
-                                               caption: SettingsOwnershipStrings.text(.shortcutTargetCaption, l10n.language)) {
-                                Picker(SettingsOwnershipStrings.text(.shortcutTarget, l10n.language), selection: $launcherShortcutTarget) {
-                                    Text(SettingsOwnershipStrings.text(.dynamicIsland, l10n.language)).tag(LauncherShortcutTarget.island.rawValue)
-                                    Text(SettingsOwnershipStrings.text(.floatingWindow, l10n.language)).tag(LauncherShortcutTarget.floatingWindow.rawValue)
+                        if islandAvailable {
+                            let showOnIsland = Binding<Bool>(
+                                get: { launcherShortcutTarget != LauncherShortcutTarget.floatingWindow.rawValue },
+                                set: { isOn in
+                                    launcherShortcutTarget = isOn
+                                        ? LauncherShortcutTarget.automatic.rawValue
+                                        : LauncherShortcutTarget.floatingWindow.rawValue
+                                    LatticeHubService.shared.syncWithPreferences()
                                 }
-                                .labelsHidden()
-                                .pickerStyle(.menu)
-                            }
+                            )
+                            SettingsToggleRow(
+                                title: SettingsOwnershipStrings.text(.showIsland, l10n.language),
+                                caption: SettingsOwnershipStrings.text(.hubIslandCaption, l10n.language),
+                                isOn: showOnIsland
+                            )
                             .padding(.leading, settingsRowTextInset)
-                            .onChange(of: launcherShortcutTarget) { _, _ in
-                                LatticeHubService.shared.syncWithPreferences()
-                            }
+                            .disabled(!shortcutHasValue)
                         }
                     } else {
                         if let shortcut {

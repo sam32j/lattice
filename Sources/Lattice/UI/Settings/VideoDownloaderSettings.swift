@@ -309,8 +309,16 @@ struct VideoDownloaderSettings: View {
     }
 
     private var showOnDynamicIslandRow: some View {
-        SettingsToggleRow(title: VideoDownloaderStrings.showOnDynamicIsland, isOn: showOnDynamicIslandBinding)
-            .padding(.leading, settingsRowTextInset)
+        let alwaysFloating = Binding<Bool>(
+            get: { !showOnDynamicIslandBinding.wrappedValue },
+            set: { showOnDynamicIslandBinding.wrappedValue = !$0 }
+        )
+        return SettingsToggleRow(
+            title: SettingsOwnershipStrings.text(.alwaysFloating, l10n.language),
+            caption: SettingsOwnershipStrings.text(.alwaysFloatingCaption, l10n.language),
+            isOn: alwaysFloating
+        )
+        .padding(.leading, settingsRowTextInset)
     }
 
     private var browserSignInRow: some View {
