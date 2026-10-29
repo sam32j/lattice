@@ -160,7 +160,6 @@ extension NotchSettings {
                                    reason: pageReason(.agents, feature: .notchAgents), fix: pageAction(.agents, feature: .notchAgents))
                     }
                 }
-                if restingChoice == .battery { lowBatteryControls }
                 let liveActivityStrings = FeatureStrings.notchLiveActivitySettings(l10n.language)
                 Divider()
                 switchRow("menubar.rectangle",

@@ -68,11 +68,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchIncludeOtherPlayers) var includeOtherPlayers = true
     @AppStorage(DefaultsKey.notchPreferredPlayer) var preferredPlayer = NotchPreferredPlayer.automatic
     @AppStorage(DefaultsKey.notchIdleContent) var idle = NotchIdleContent.music.rawValue
-    @AppStorage(DefaultsKey.notchLowBatteryTint) var lowBatteryTint = false
-    @AppStorage(DefaultsKey.notchLowBatteryThreshold) var lowBatteryThreshold = NotchSupport.defaultLowBatteryThreshold
-    @AppStorage(DefaultsKey.notchLowBatteryEarly) var earlyBatteryWarning = false
-    @AppStorage(DefaultsKey.notchLowBatteryEarlyThreshold) var earlyBatteryThreshold = NotchSupport.defaultEarlyBatteryThreshold
-    @AppStorage(DefaultsKey.notchLowBatteryMenuBar) var lowBatteryMenuBar = true
     @AppStorage(DefaultsKey.notchHiddenControls) var hiddenControls = NotchControlItem.defaultHidden
     @AppStorage(DefaultsKey.notchControlOrder) var controlOrder = ""
     @AppStorage(DefaultsKey.notchShowInCaptures) var showInCaptures = true
@@ -125,8 +120,8 @@ struct NotchSettings: View {
         .onChange(of: router.notchModule) { _, _ in consumeModuleHint() }
         .onAppear(perform: consumeCompanionHint)
         .onChange(of: router.notchCompanion) { _, _ in consumeCompanionHint() }
-        .settingsExpansionAnimation(value: [hover, hideUntilHover, hoverExpand, shortcutEnabled, lowBatteryTint,
-            earlyBatteryWarning, lyricsEnabled, shelfWindow, clipboardWindow, snippetsWindow, accessoriesEnabled,
+        .settingsExpansionAnimation(value: [hover, hideUntilHover, hoverExpand, shortcutEnabled,
+            lyricsEnabled, shelfWindow, clipboardWindow, snippetsWindow, accessoriesEnabled,
             permissions.accessibility])
         .settingsExpansionAnimation(value: [idle, size, silhouette, display])
         .settingsExpansionAnimation(value: [enabled, hiddenShowsActivity, gesturesEnabled, notificationsEnabled,
