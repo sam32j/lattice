@@ -7,6 +7,7 @@ enum IslandDestination: String {
     case cameraPreview = "camera"
     case launcherGrid = "hub"
     case videoDownloader
+    case textSnippets = "snippets"
 
     private var hiddenKeys: [String] {
         self == .launcherGrid ? [rawValue, "tools"] : [rawValue]
@@ -20,6 +21,7 @@ enum IslandDestination: String {
         case .cameraPreview: return DefaultsKey.notchCameraEnabled
         case .launcherGrid: return DefaultsKey.notchQuickPanel
         case .videoDownloader: return DefaultsKey.notchVideoDownloader
+        case .textSnippets: return DefaultsKey.notchSnippetsWindow
         }
     }
 

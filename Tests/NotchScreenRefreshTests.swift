@@ -55,6 +55,13 @@ enum NotchScreenRefreshContract {
             func rememberPasteTarget() { remembered += 1 }
         }
     }
+    enum SnippetLibraryService {
+        static let shared = History()
+        final class History {
+            var remembered = 0
+            func rememberPasteTarget() { remembered += 1 }
+        }
+    }
     final class Panel {
         var resignations = 0
         func resignKey() { resignations += 1 }

@@ -2366,6 +2366,13 @@ enum NotchTests {
         defaults.set("clipboard,unknown", forKey: DefaultsKey.notchHiddenModules)
         suite.expect(!NotchSupport.routesClipboardWindow(in: defaults), "hidden clipboard keeps the ordinary history available")
         suite.expect(!NotchSupport.routes(.clipboard, in: defaults), "hidden module cannot leak an activity")
+        defaults.set(true, forKey: DefaultsKey.textSnippetsEnabled)
+        suite.expect(NotchSupport.routesSnippetsWindow(in: defaults), "text snippets opening defaults to the enabled island")
+        defaults.set(false, forKey: DefaultsKey.notchSnippetsWindow)
+        suite.expect(!NotchSupport.routesSnippetsWindow(in: defaults), "text snippets can still use its separate window")
+        defaults.set(true, forKey: DefaultsKey.notchSnippetsWindow)
+        defaults.set("clipboard,snippets,unknown", forKey: DefaultsKey.notchHiddenModules)
+        suite.expect(!NotchSupport.routesSnippetsWindow(in: defaults), "hidden snippets keeps the floating panel available")
         defaults.set("system,music,music,unknown", forKey: DefaultsKey.notchModuleOrder)
         defaults.set(true, forKey: DefaultsKey.notchAgentsEnabled)
         suite.expect(NotchSupport.modules(in: defaults) == [.system, .music, .controls, .mixer, .captures, .files, .hub, .calendar, .notifications, .timer, .camera, .downloads, .scratchpad, .agents, .watch],

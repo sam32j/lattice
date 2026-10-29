@@ -7,7 +7,7 @@ import Foundation
 import CoreGraphics
 
 enum NotchModule: String, CaseIterable, Identifiable {
-    case controls, mixer, music, clipboard, captures, files, system, hub, calendar, notifications, timer, camera, downloads, scratchpad, agents, watch, videoDownloader
+    case controls, mixer, music, clipboard, captures, files, system, hub, calendar, notifications, timer, camera, downloads, scratchpad, agents, watch, videoDownloader, snippets
     var id: String { rawValue }
 
     init?(rawValue: String) {
@@ -29,6 +29,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case "agents": self = .agents
         case "watch": self = .watch
         case "videoDownloader": self = .videoDownloader
+        case "snippets", "textSnippets": self = .snippets
         default: return nil
         }
     }
@@ -59,6 +60,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case .agents: return "sparkles"
         case .watch: return "eye"
         case .videoDownloader: return "arrow.down.circle.dotted"
+        case .snippets: return "text.append"
         }
     }
 
@@ -82,6 +84,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case .agents: return "g"
         case .watch: return "o"
         case .videoDownloader: return "y"
+        case .snippets: return "t"
         }
     }
 
@@ -89,6 +92,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
         switch self {
         case .controls, .music: return true
         case .videoDownloader: return defaults.bool(forKey: DefaultsKey.videoDownloaderEnabled)
+        case .snippets: return AppFeature.textSnippets.isAvailable(in: defaults)
         case .timer: return AppFeature.notchTimer.isAvailable(in: defaults)
         case .camera: return AppFeature.cameraPreview.isAvailable(in: defaults)
         case .downloads: return AppFeature.notchDownloads.isAvailable(in: defaults)
@@ -1829,6 +1833,7 @@ enum NotchSupport {
                 && ($0 != .agents || defaults.bool(forKey: DefaultsKey.notchAgentsEnabled))
                 && ($0 != .watch || defaults.bool(forKey: DefaultsKey.notchWatchEnabled))
                 && ($0 != .videoDownloader || (defaults.object(forKey: DefaultsKey.notchVideoDownloader) as? Bool ?? true))
+                && ($0 != .snippets || (defaults.object(forKey: DefaultsKey.notchSnippetsWindow) as? Bool ?? true))
         }
     }
 
@@ -2020,6 +2025,11 @@ enum NotchSupport {
     static func routesClipboardWindow(in defaults: UserDefaults = .standard) -> Bool {
         isEnabled(in: defaults) && defaults.bool(forKey: DefaultsKey.notchClipboardWindow)
             && modules(in: defaults).contains(.clipboard)
+    }
+
+    static func routesSnippetsWindow(in defaults: UserDefaults = .standard) -> Bool {
+        isEnabled(in: defaults) && (defaults.object(forKey: DefaultsKey.notchSnippetsWindow) as? Bool ?? true)
+            && modules(in: defaults).contains(.snippets)
     }
 
     /// Whether the island is on and shows its Files module, whichever window
@@ -2767,7 +2777,7 @@ struct NotchGeometry: Equatable {
                     contentHeight = 48
                 }
             // Lists and previews fill the chosen content budget.
-            case .mixer, .calendar, .clipboard, .captures, .files, .notifications, .downloads, .camera, .scratchpad, .watch:
+            case .mixer, .calendar, .clipboard, .captures, .files, .notifications, .downloads, .camera, .scratchpad, .watch, .snippets:
                 contentHeight = budget
             }
         }

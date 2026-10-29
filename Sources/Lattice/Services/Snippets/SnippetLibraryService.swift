@@ -21,6 +21,7 @@ final class SnippetLibraryService: ObservableObject {
     @Published private(set) var selectedID: UUID?
     @Published private(set) var presentationID = UUID()
     @Published private(set) var snippets: [TextSnippet] = []
+    private(set) var pasteTargetApp: NSRunningApplication?
 
     private let hotkey = QuickToolHotkey(id: 19)
     private var panel: NSPanel?
@@ -77,14 +78,28 @@ final class SnippetLibraryService: ObservableObject {
         snippets.contains { $0.enabled && $0.showsInLibrary }
     }
 
-    private func reloadSnippets() {
+    func reloadSnippets() {
         snippets = TextSnippetSupport.decode(
             UserDefaults.standard.data(forKey: DefaultsKey.textSnippets))
+    }
+
+    func rememberPasteTarget() {
+        let ownBundleID = Bundle.main.bundleIdentifier
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              app.bundleIdentifier != ownBundleID,
+              app.activationPolicy == .regular,
+              !app.isTerminated
+        else {
+            pasteTargetApp = nil
+            return
+        }
+        pasteTargetApp = app
     }
 
     // MARK: - Presentation
 
     func toggle() {
+        if NotchSupport.routesSnippetsWindow(), NotchService.shared.showSnippets(toggle: true) { return }
         if isVisible {
             hide()
         } else {
@@ -93,7 +108,9 @@ final class SnippetLibraryService: ObservableObject {
     }
 
     func show() {
+        if NotchSupport.routesSnippetsWindow(), NotchService.shared.showSnippets() { return }
         guard AppFeature.textSnippets.isAvailable else { hide(); return }
+        rememberPasteTarget()
         reloadSnippets()
         let panel = ensurePanel()
         TextSnippetService.shared.setLibraryVisible(true)
@@ -151,10 +168,10 @@ final class SnippetLibraryService: ObservableObject {
     func insert(_ snippet: TextSnippet) {
         guard AppFeature.textSnippets.isAvailable else { hide(); return }
         hide()
-        // The panel never activates, so focus normally sits in the target
-        // app. When Lattice itself is frontmost (its Settings window, for
-        // example), the synthetic typing would land in our own fields.
-        if NSWorkspace.shared.frontmostApplication?.processIdentifier
+        NotchService.shared.collapse()
+        if let target = pasteTargetApp, !target.isTerminated {
+            target.activate(options: [])
+        } else if NSWorkspace.shared.frontmostApplication?.processIdentifier
             == ProcessInfo.processInfo.processIdentifier {
             NSSound.beep()
             return
@@ -372,7 +389,7 @@ final class SnippetLibraryService: ObservableObject {
         panel.frame.insetBy(dx: -2, dy: -2).contains(NSEvent.mouseLocation)
     }
 
-    private static func digitIndex(for keyCode: UInt16) -> Int? {
+    static func digitIndex(for keyCode: UInt16) -> Int? {
         switch Int(keyCode) {
         case kVK_ANSI_1, kVK_ANSI_Keypad1: return 0
         case kVK_ANSI_2, kVK_ANSI_Keypad2: return 1

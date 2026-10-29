@@ -32,6 +32,7 @@ enum PageOwnedServiceLifecycleTests {
             var expanded = false
             var selected = NotchModule.controls
             func collapse() { expanded = false }
+            func showSnippets(toggle: Bool = false) -> Bool { false }
         }
     }
     class PresentationState {
@@ -45,6 +46,7 @@ enum PageOwnedServiceLifecycleTests {
         var editingOptionsItem: Int? = 1
         var activeUtility: Int? = 1
         func removeMonitors() { monitors = 0 }
+        func rememberPasteTarget() {}
         func reloadSnippets() {}
         func refreshPanelLayout() {}
     }

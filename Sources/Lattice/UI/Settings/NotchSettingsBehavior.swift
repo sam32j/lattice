@@ -226,6 +226,7 @@ extension NotchSettings {
         case .scratchpad: return .scratchpad
         case .agents: return .notchAgents
         case .watch: return .notchWatch
+        case .snippets: return .textSnippets
         }
     }
 

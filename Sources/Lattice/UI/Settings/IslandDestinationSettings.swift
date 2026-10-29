@@ -16,6 +16,7 @@ struct IslandDestinationSettings: View {
     @AppStorage(DefaultsKey.notchCameraEnabled) private var cameraRoute = true
     @AppStorage(DefaultsKey.notchQuickPanel) private var launcherRoute = true
     @AppStorage(DefaultsKey.notchVideoDownloader) private var videoDownloaderRoute = true
+    @AppStorage(DefaultsKey.notchSnippetsWindow) private var snippetsRoute = true
     @AppStorage(DefaultsKey.notchDragReveal) private var dragReveal = true
     @AppStorage(DefaultsKey.notchClipboardCardSize) private var cardSize = NotchClipboardCardSize.comfortable.rawValue
 
@@ -27,6 +28,7 @@ struct IslandDestinationSettings: View {
         _ = cameraRoute
         _ = launcherRoute
         _ = videoDownloaderRoute
+        _ = snippetsRoute
         return Binding(get: { destination.isShown(in: .standard) }, set: { shown in
             withAnimation(reduceMotion ? nil : .settingsExpansion) {
                 destination.setShown(shown, in: .standard)
@@ -79,5 +81,6 @@ struct IslandDestinationSettings: View {
         ScratchpadService.shared.syncWithPreferences()
         CameraPreviewService.shared.syncWithPreferences()
         LatticeHubService.shared.syncWithPreferences()
+        SnippetLibraryService.shared.syncWithPreferences()
     }
 }
