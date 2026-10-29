@@ -798,6 +798,7 @@ struct NotchShape: Shape {
     /// A capsule floating this far inside the top and bottom of the rect,
     /// with its own corners, instead of the outline hanging from the edge.
     var floatingGap: CGFloat? = nil
+    var cutoutWidth: CGFloat = 0
     var animatableData: CGFloat {
         get { radius }
         set { radius = newValue }
@@ -805,13 +806,17 @@ struct NotchShape: Shape {
 
     /// The island's outline at a surface of `height`, as its display draws it.
     static func island(height: CGFloat, geometry: NotchGeometry) -> NotchShape {
-        NotchShape(attached: true, radius: NotchLayout.surfaceRadius(height: height), floatingGap: geometry.floatingGap)
+        NotchShape(attached: true, radius: NotchLayout.surfaceRadius(height: height),
+                   floatingGap: geometry.floatingGap,
+                   cutoutWidth: geometry.floats ? 0 : geometry.cameraWidth)
     }
 
     func path(in rect: CGRect) -> Path {
         guard attached else { return Path(roundedRect: rect, cornerRadius: radius) }
         if let floatingGap { return Path(NotchLayout.capsulePath(in: rect, gap: floatingGap)) }
-        let shoulder = NotchLayout.shoulder(height: rect.height)
+        let maxShoulder = NotchLayout.shoulder(height: rect.height)
+        let wing = cutoutWidth > 0 ? max(0, (rect.width - cutoutWidth) / 2) : rect.width / 2
+        let shoulder = cutoutWidth > 0 ? min(maxShoulder, wing * 0.3) : maxShoulder
         let bottom = min(radius, rect.height / 2, (rect.width - shoulder * 2) / 2)
         let tangent: CGFloat = 0.55228475
         var path = Path()

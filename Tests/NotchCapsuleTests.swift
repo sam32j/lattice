@@ -173,9 +173,15 @@ enum NotchCapsuleTests {
                      && NotchShape(attached: true, radius: 8).path(in: rect).boundingRect == rect,
                      "the island's shape floats as a capsule only when asked, and hangs otherwise")
         let geometry = capsule(bar: 24)
+        let physicalGeometry = NotchGeometry(screen: screen, safeAreaTop: 32, cameraWidth: 185)
+        let physicalShape = NotchShape.island(height: 32, geometry: physicalGeometry)
+        suite.expect(physicalShape.cutoutWidth == 185,
+                     "physical notch shape tracks the camera cutout width")
+        let restingNotchPath = physicalShape.path(in: CGRect(x: 0, y: 0, width: 185, height: 32))
+        suite.expect(restingNotchPath.boundingRect.width == 185,
+                     "resting notch path matches full cutout width without inset shoulders")
         suite.expect(NotchShape.island(height: 24, geometry: geometry).floatingGap == 2
-                     && NotchShape.island(height: 24, geometry: NotchGeometry(screen: screen, safeAreaTop: 32,
-                                                                              cameraWidth: 185)).floatingGap == nil,
+                     && physicalShape.floatingGap == nil,
                      "the island draws its display's outline")
     }
 

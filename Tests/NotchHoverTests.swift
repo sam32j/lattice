@@ -257,6 +257,7 @@ enum NotchHoverTests {
         reducedMotion.hover(true)
         suite.expect(reducedMotion.surfaceSize == reducedResting,
                      "Reduce Motion leaves the resting island still on hover")
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion = false
         for physical in [false, true] {
             for opensOnHover in [false, true] {
                 let compactPulse = fixture(physical: physical)
