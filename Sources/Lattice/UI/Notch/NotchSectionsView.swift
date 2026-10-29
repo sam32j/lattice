@@ -102,20 +102,17 @@ struct NotchSectionsView: View {
         let current = service.selected == module
         let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return Button { service.select(module) } label: {
-            VStack(spacing: 6) {
+            VStack(spacing: 8) {
                 Image(systemName: module.symbol)
-                    .font(.system(size: 22, weight: .medium))
+                    .font(.system(size: 24, weight: .medium))
                     .foregroundStyle(tint(for: module))
-                    .frame(width: 25, height: 25)
+                    .frame(width: 28, height: 28)
                 Text(module.title(l10n.language))
                     .font(.system(size: 11, weight: .medium))
                     .lineLimit(2)
                     .minimumScaleFactor(0.85)
                     .multilineTextAlignment(.center)
                     .frame(height: 27)
-                Text("⌥⌘" + module.shortcutKey.uppercased())
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
             }
             .padding(.horizontal, 6)
             .frame(maxWidth: .infinity)
@@ -140,7 +137,7 @@ struct NotchSectionsView: View {
         .accessibilityIdentifier("notch.module.\(module.rawValue)")
         // A stepped-away row sits under the header, clipped; it keeps no
         // tooltip there.
-        .help(visible ? module.title(l10n.language) + "  ⌥⌘" + module.shortcutKey.uppercased() : "")
+        .help(visible ? module.title(l10n.language) : "")
     }
 
     private func tint(for module: NotchModule) -> Color {
@@ -150,72 +147,5 @@ struct NotchSectionsView: View {
         case .timer: return .orange
         default: return .white.opacity(0.85)
         }
-    }
-}
-
-/// The gallery's search lives in the header as a magnifier: the field
-/// unfolds under the pointer or as soon as something is typed, since the
-/// keyboard already goes to it while the gallery is open.
-struct NotchSectionSearch: View {
-    @ObservedObject var service: NotchService
-    /// Infinite fills the room its parent gives it, up to the camera.
-    var maximumFieldWidth: CGFloat = 150
-    @ObservedObject private var l10n = L10n.shared
-    @FocusState private var searching: Bool
-    @State private var hovered = false
-    @State private var fieldWidth: CGFloat = 0
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private var text: NotchStrings { FeatureStrings.notch(l10n.language) }
-    private var expanded: Bool { hovered || !service.sectionQuery.isEmpty }
-
-    /// The whole prompt where it fits, otherwise the plain word, and no
-    /// prompt where even that would be cut, so the placeholder never ends
-    /// in a letter cut in half. The magnifier and the accessibility label
-    /// still say what the field is for.
-    private var prompt: String {
-        let font = NSFont.systemFont(ofSize: 12)
-        // The field's text sits a few points inside its frame.
-        func fits(_ prompt: String) -> Bool {
-            (prompt as NSString).size(withAttributes: [.font: font]).width + 6 <= fieldWidth
-        }
-        if fits(text.searchSections) { return text.searchSections }
-        return fits(l10n.s.actionSearch) ? l10n.s.actionSearch : ""
-    }
-
-    var body: some View {
-        HStack(spacing: expanded ? 4 : 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(expanded ? .white : .white.opacity(0.55))
-                .frame(width: expanded ? 22 : 28, height: 28)
-            // The field keeps its focus at a hair's width, so typing filters
-            // the gallery before the field has even shown itself.
-            TextField(prompt, text: Binding(get: { service.sectionQuery }, set: service.searchSections))
-                .textFieldStyle(.plain)
-                .font(.system(size: 12))
-                .focused($searching)
-                .frame(maxWidth: expanded ? maximumFieldWidth : 1)
-                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { fieldWidth = $0 }
-                .opacity(expanded ? 1 : 0)
-                .accessibilityLabel(text.searchSections)
-            if !service.sectionQuery.isEmpty {
-                Button { service.searchSections(""); searching = true } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(l10n.s.actionClear)
-            }
-        }
-        .padding(.trailing, expanded ? 8 : 0)
-        .frame(height: 28)
-        .background(.white.opacity(expanded ? 0.07 : 0), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-        .clipped()
-        .onHover { hovering in
-            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.15)) { hovered = hovering }
-        }
-        .onTapGesture { searching = true }
-        .onAppear { searching = true }
-        .help(text.searchSections)
     }
 }

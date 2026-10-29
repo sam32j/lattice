@@ -1735,12 +1735,7 @@ final class NotchService: ObservableObject {
     }
 
     var filteredSections: [NotchModule] {
-        let exploreModules = modules.filter { NotchSupport.isExploreModule($0) }
-        return NotchSupport.filteredModules(exploreModules, query: sectionQuery) { module in
-            let language = L10n.shared.language
-            let music = module == .music ? FeatureStrings.notch(language).music : ""
-            return [module.title(language), module.rawValue, music].joined(separator: " ")
-        }
+        modules.filter { NotchSupport.isExploreModule($0) }
     }
 
     func searchSections(_ query: String) {
@@ -1791,6 +1786,10 @@ final class NotchService: ObservableObject {
 
     func scrollSections(by rows: Int) { showSectionRow(sectionRow + rows) }
 
+    private var sectionTypeaheadBuffer = ""
+    private var sectionTypeaheadTimestamp: TimeInterval = 0
+    private static let sectionTypeaheadCooldown: TimeInterval = 0.85
+
     private func handleSectionKey(_ event: NSEvent) -> Bool {
         guard showingSections,
               (panel?.firstResponder as? NSTextView)?.hasMarkedText() != true else { return false }
@@ -1805,28 +1804,64 @@ final class NotchService: ObservableObject {
             if let target = highlightedSection, filteredSections.contains(target) { select(target) }
             return true
         }
-        let direction: QuickToolsSupport.GridDirection
+        let direction: QuickToolsSupport.GridDirection?
         switch event.keyCode {
-        case 123 where sectionQuery.isEmpty: direction = .left
-        case 124 where sectionQuery.isEmpty: direction = .right
+        case 123: direction = .left
+        case 124: direction = .right
         case 125: direction = .down
         case 126: direction = .up
-        default: return false
+        default: direction = nil
         }
-        let sections = filteredSections
-        guard !sections.isEmpty else { return true }
-        // While typing, the side arrows keep editing the query and the
-        // vertical pair steps through the matches in order.
-        guard sectionQuery.isEmpty else {
-            highlightedSection = NotchSupport.adjacentModule(to: highlightedSection, modules: sections,
-                                                             backwards: direction == .up)
+        if let direction {
+            let sections = filteredSections
+            guard !sections.isEmpty else { return true }
+            let index = highlightedSection.flatMap { sections.firstIndex(of: $0) } ?? 0
+            highlightedSection = sections[QuickToolsSupport.gridIndex(after: index, count: sections.count,
+                                                                      flow: .rows(columns: geometry.sectionColumns),
+                                                                      direction: direction)]
             return true
         }
-        let index = highlightedSection.flatMap { sections.firstIndex(of: $0) } ?? 0
-        highlightedSection = sections[QuickToolsSupport.gridIndex(after: index, count: sections.count,
-                                                                   flow: .rows(columns: geometry.sectionColumns),
-                                                                   direction: direction)]
-        return true
+        if event.keyCode == 51 {
+            sectionTypeaheadBuffer = ""
+            return true
+        }
+        if let chars = event.characters, !chars.isEmpty,
+           chars.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }) {
+            handleSectionTypeahead(chars)
+            return true
+        }
+        return false
+    }
+
+    private func handleSectionTypeahead(_ string: String) {
+        let now = ProcessInfo.processInfo.systemUptime
+        if now - sectionTypeaheadTimestamp > Self.sectionTypeaheadCooldown {
+            sectionTypeaheadBuffer = ""
+        }
+        sectionTypeaheadTimestamp = now
+        let newBuffer = sectionTypeaheadBuffer + string
+        let query = newBuffer.lowercased()
+        let sections = filteredSections
+        let language = L10n.shared.language
+
+        if newBuffer.count > 1, let firstChar = newBuffer.first, newBuffer.allSatisfy({ $0 == firstChar }) {
+            let prefix = String(firstChar).lowercased()
+            let matches = sections.filter { $0.title(language).lowercased().hasPrefix(prefix) }
+            if !matches.isEmpty {
+                let currentIndex = highlightedSection.flatMap { matches.firstIndex(of: $0) } ?? -1
+                let nextIndex = (currentIndex + 1) % matches.count
+                sectionTypeaheadBuffer = newBuffer
+                highlightedSection = matches[nextIndex]
+                return
+            }
+        }
+
+        if let match = sections.first(where: {
+            $0.title(language).lowercased().hasPrefix(query)
+        }) {
+            sectionTypeaheadBuffer = newBuffer
+            highlightedSection = match
+        }
     }
 
     /// The floating pad's tab shortcuts work on its page too. With one pad
@@ -3569,7 +3604,7 @@ final class NotchService: ObservableObject {
                     self.toggleSections()
                     return nil
                 }
-                if modifiers == [.command, .option],
+                if !self.showingSections, modifiers == [.command, .option],
                    let module = NotchSupport.moduleShortcut(event.charactersIgnoringModifiers ?? "", modules: self.modules) {
                     self.select(module)
                     return nil

@@ -410,9 +410,6 @@ struct NotchView: View {
     @ViewBuilder private func bandLeading(_ band: NotchBand) -> some View {
         if service.showingSections {
             NotchIconButton(symbol: "chevron.left", title: l10n.s.navigationBack, action: service.toggleSections)
-            // Beside the camera the field takes the rest of its side.
-            NotchSectionSearch(service: service, maximumFieldWidth: band.besideCamera ? .infinity : 150)
-                .frame(maxWidth: .infinity, alignment: .leading)
         } else if showsDetail {
             NotchBandBackButton(title: service.detailTitle, action: service.goBack)
         } else if service.selected == .captures {

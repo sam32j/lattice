@@ -338,9 +338,7 @@ struct NotchRail<Item: Identifiable, Content: View>: View {
                 }
                 .onChange(of: targetColumn) { _, target in
                     guard let target else { return }
-                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.16)) {
-                        proxy.scrollTo(target, anchor: .center)
-                    }
+                    proxy.scrollTo(target, anchor: .center)
                 }
             }
         }
