@@ -62,7 +62,7 @@ struct DisplaySettings: View {
     private var wallpaperCard: some View {
         let strings = FeatureStrings.wallpaper(l10n.language)
         return SettingsCard(title: strings.pageTitle) {
-            SettingsRow(symbol: "photo.on.rectangle", title: strings.enableManagement,
+            SettingsRow(symbol: "rectangle.inset.filled.and.cursorarrow", title: strings.enableManagement,
                         caption: strings.hubDescription) {
                 Toggle(strings.enableManagement, isOn: Binding(
                     get: { wallpaperInstalled },

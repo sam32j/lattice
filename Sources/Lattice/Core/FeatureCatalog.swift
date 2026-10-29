@@ -179,7 +179,7 @@ extension AppFeature {
         case .screenshot: return "camera.viewfinder"
         case .screenRecorder: return "record.circle"
         case .cameraPreview: return "person.crop.square.badge.camera"
-        case .wallpaper: return "photo.on.rectangle"
+        case .wallpaper: return "rectangle.inset.filled.and.cursorarrow"
         case .notchGestures: return "hand.draw"
         case .notchTimer: return "timer"
         case .notchAccessories: return "battery.25percent"
