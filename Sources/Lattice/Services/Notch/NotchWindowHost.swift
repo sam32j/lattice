@@ -152,12 +152,12 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         canvas.reactMascotBridge(event, lift: lift)
     }
 
-    func hide(animated: Bool, transitionContent: NotchContentTransition = .dismiss) {
+    func hide(animated: Bool, transitionContent: NotchContentTransition = .depart) {
         guard isPresented else { return }
         let animate = animated && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         guard !hidesWhenSettled || !animate else { return }
         present(size: CGSize(width: currentGeometry.collapsed.width, height: 0), geometry: currentGeometry,
-                animated: animate, transitionContent: transitionContent == .depart ? .depart : .dismiss,
+                animated: animate, transitionContent: .depart,
                 hideWhenSettled: true)
     }
 
@@ -355,11 +355,19 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
 
     private func settle() {
         let generation = animationGeneration
+        if hidesWhenSettled {
+            hidesWhenSettled = false
+            panel.orderOut(nil)
+            concealedForFrameChange = false
+            restoresKeyAfterFrameChange = false
+            isAnimating = false
+            canvas.stopMotion()
+            runSettledActions()
+            return
+        }
         let gutter: CGFloat = quickAccessConfiguration == nil ? 0 : NotchQuickAccessLayout.gutter
         let bottom = quickAccessBottomInset(for: targetSize, geometry: currentGeometry)
-        // A departing island is ordered out below; its released bounds are never shown.
-        let concealed = !hidesWhenSettled
-            && concealForFrameChange(to: reservedFrame(mainSize: targetSize, gutter: gutter, bottom: bottom), generation: generation)
+        let concealed = concealForFrameChange(to: reservedFrame(mainSize: targetSize, gutter: gutter, bottom: bottom), generation: generation)
         defer { if concealed { reinstateAfterFrameChange() } }
         guard generation == animationGeneration else { return }
         isAnimating = false
@@ -379,11 +387,6 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         CATransaction.commit()
         CATransaction.flush()
         quickAccessContainer?.motion.setVisible(quickAccessConfiguration != nil, animated: quickAccessAnimate)
-        if hidesWhenSettled {
-            panel.orderOut(nil)
-            concealedForFrameChange = false
-            restoresKeyAfterFrameChange = false
-        }
         runSettledActions()
     }
 
