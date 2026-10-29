@@ -2,32 +2,58 @@
 // Copyright (C) 2026 Vorssaint
 
 import AppKit
+import Foundation
 
 /// The deadline survives preference changes and suspension, so a completed
 /// alarm cannot be restarted by a redraw, device change or return from sleep.
 final class NotchTimerAlert {
     static let maximumDuration: Duration = .seconds(5 * 60)
     static let alertInterval: Duration = .milliseconds(300)
+    static let chimeGap: Duration = .milliseconds(180)
+    static let chimeRest: Duration = .milliseconds(800)
     private var task: Task<Void, Never>?
     private var deadline: ContinuousClock.Instant?
-    private let interval: Duration
+    private let firstInterval: Duration
+    private let restInterval: Duration
     private let now: () -> ContinuousClock.Instant
     private let sound: () -> Void
+    private let secondSound: (() -> Void)?
     private let stopSound: () -> Void
 
     convenience init() {
-        let tone = Self.loadPing300msSound()
-        self.init(interval: Self.alertInterval, sound: {
-            if let tone { tone.stop(); tone.play() }
+        let low = Self.loadPing300msSound(sampleRate: 48000)
+        let high = Self.loadPing300msSound(sampleRate: 48000.0 * pow(2.0, 7.0 / 12.0))
+        self.init(firstInterval: Self.chimeGap, restInterval: Self.chimeRest, sound: {
+            if let low { low.stop(); low.play() }
             else { NSSound.beep() }
-        }, stopSound: { tone?.stop() })
+        }, secondSound: {
+            if let high { high.stop(); high.play() }
+            else { NSSound.beep() }
+        }, stopSound: {
+            low?.stop()
+            high?.stop()
+        })
     }
 
     init(interval: Duration = alertInterval, now: @escaping () -> ContinuousClock.Instant = { .now },
          sound: @escaping () -> Void, stopSound: @escaping () -> Void) {
-        self.interval = interval
+        self.firstInterval = interval
+        self.restInterval = interval
         self.now = now
         self.sound = sound
+        self.secondSound = nil
+        self.stopSound = stopSound
+    }
+
+    init(firstInterval: Duration = chimeGap, restInterval: Duration = chimeRest,
+         now: @escaping () -> ContinuousClock.Instant = { .now },
+         sound: @escaping () -> Void, secondSound: (() -> Void)? = nil,
+         stopSound: @escaping () -> Void) {
+        self.firstInterval = firstInterval
+        self.restInterval = restInterval
+        self.now = now
+        self.sound = sound
+        self.secondSound = secondSound
         self.stopSound = stopSound
     }
 
@@ -40,12 +66,26 @@ final class NotchTimerAlert {
         sound()
         task = Task { @MainActor [weak self] in
             while !Task.isCancelled {
-                guard let delay = self?.delay(until: deadline) else { return }
-                do { try await Task.sleep(for: delay, clock: .continuous) }
-                catch { return }
-                guard !Task.isCancelled, let self else { return }
-                guard self.now() < deadline else { self.suspend(); return }
-                self.sound()
+                guard let self else { return }
+                if let second = self.secondSound {
+                    let firstDelay = self.delay(until: deadline, interval: self.firstInterval)
+                    do { try await Task.sleep(for: firstDelay, clock: .continuous) }
+                    catch { return }
+                    guard !Task.isCancelled, self.now() < deadline else { self.suspend(); return }
+                    second()
+
+                    let restDelay = self.delay(until: deadline, interval: self.restInterval)
+                    do { try await Task.sleep(for: restDelay, clock: .continuous) }
+                    catch { return }
+                    guard !Task.isCancelled, self.now() < deadline else { self.suspend(); return }
+                    self.sound()
+                } else {
+                    let delay = self.delay(until: deadline, interval: self.firstInterval)
+                    do { try await Task.sleep(for: delay, clock: .continuous) }
+                    catch { return }
+                    guard !Task.isCancelled, self.now() < deadline else { self.suspend(); return }
+                    self.sound()
+                }
             }
         }
     }
@@ -60,11 +100,11 @@ final class NotchTimerAlert {
         deadline = nil
     }
 
-    private func delay(until deadline: ContinuousClock.Instant) -> Duration {
+    private func delay(until deadline: ContinuousClock.Instant, interval: Duration) -> Duration {
         max(.zero, min(interval, now().duration(to: deadline)))
     }
 
-    static func loadPing300msSound() -> NSSound? {
+    static func loadPing300msSound(sampleRate: Double = 48000) -> NSSound? {
         guard let raw = try? Data(contentsOf: URL(fileURLWithPath: "/System/Library/Sounds/Ping.aiff")),
               raw.count >= 54,
               raw.starts(with: [0x46, 0x4F, 0x52, 0x4D])
@@ -72,7 +112,7 @@ final class NotchTimerAlert {
             return NSSound(contentsOfFile: "/System/Library/Sounds/Ping.aiff", byReference: false)
         }
         var data = raw
-        let frames: UInt32 = 14400 // 300ms at 48000 Hz
+        let frames: UInt32 = UInt32(sampleRate * 0.3) // 300ms at given sample rate
         let audioBytes: UInt32 = frames * 6 // 2 ch * 3 bytes (24-bit)
         let ssndChunkSize: UInt32 = 8 + audioBytes
         let formChunkSize: UInt32 = 4 + 26 + 8 + ssndChunkSize
@@ -91,7 +131,16 @@ final class NotchTimerAlert {
         writeBigEndian(frames, at: 22)
         writeBigEndian(ssndChunkSize, at: 42)
 
-        let fadeFrames = 240
+        var exp = 16382
+        var d = sampleRate
+        while d >= 1.0 { d /= 2.0; exp += 1 }
+        let mantissa = UInt64(d * Double(UInt64.max))
+        var expBe = UInt16(exp).bigEndian
+        var mantBe = mantissa.bigEndian
+        withUnsafeBytes(of: &expBe) { data.replaceSubrange(28..<30, with: $0) }
+        withUnsafeBytes(of: &mantBe) { data.replaceSubrange(30..<38, with: $0) }
+
+        let fadeFrames = Int(sampleRate * 0.005)
         let audioStart = 54
         let fadeStartFrame = Int(frames) - fadeFrames
         for i in 0..<fadeFrames {
