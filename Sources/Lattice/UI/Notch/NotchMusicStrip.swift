@@ -124,7 +124,6 @@ struct NotchMusicStrip: View {
         .accessibilityAction(named: Text(FeatureStrings.radialMenu(l10n.language).mediaPlayPause)) {
             if !service.toggleMusicStripSong() { service.openActivity(.music) }
         }
-        .help(title)
         // Named, the strip reaches further left. Laid out as wide on both
         // sides, it keeps the camera's gap over the camera, while the button
         // keeps to the strip, which takes clicks only in its own frame.

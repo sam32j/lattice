@@ -188,6 +188,5 @@ private struct NotchCountdownAccessibility: ViewModifier {
             .accessibilityLabel(label)
             .accessibilityValue(value)
             .accessibilityHint(hint)
-            .help(help)
     }
 }
