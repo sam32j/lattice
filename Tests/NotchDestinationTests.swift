@@ -38,6 +38,10 @@ enum NotchDestinationContract {
         static let shared = Reader()
         struct Reader { func rememberPasteTarget() {} }
     }
+    enum SnippetLibraryService {
+        static let shared = Reader()
+        struct Reader { func rememberPasteTarget() {} }
+    }
     enum LatticeHubService { static var shared = LatticeHubContract.Launcher() }
     enum MenuPanelFocus {
         static let shared = Focus()

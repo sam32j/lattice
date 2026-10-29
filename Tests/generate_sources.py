@@ -1547,6 +1547,8 @@ def main():
               .replace("NotchSupport.routesScratchpad()", "NotchSupport.routesScratchpad(in: ReviewDefaults.current)")
           + declaration(notch, "    func showClipboard(")
               .replace("NotchSupport.routesClipboardWindow()", "NotchSupport.routesClipboardWindow(in: ReviewDefaults.current)")
+          + declaration(notch, "    func showSnippets(")
+              .replace("NotchSupport.routesSnippetsWindow()", "NotchSupport.routesSnippetsWindow(in: ReviewDefaults.current)")
           + declaration(notch, "    func openQuickPanel(")
               .replace("NotchSupport.routesQuickPanel()", "NotchSupport.routesQuickPanel(in: ReviewDefaults.current)")
           + declaration(notch, "    func openShelf(")

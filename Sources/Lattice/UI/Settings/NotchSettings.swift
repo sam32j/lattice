@@ -59,6 +59,7 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchBattery) var battery = true
     @AppStorage(DefaultsKey.notchClipboard) var clipboard = true
     @AppStorage(DefaultsKey.notchClipboardWindow) var clipboardWindow = true
+    @AppStorage(DefaultsKey.notchSnippetsWindow) var snippetsWindow = true
     @AppStorage(DefaultsKey.notchClipboardCardSize) var clipboardCardSize = NotchClipboardCardSize.comfortable.rawValue
     @AppStorage(DefaultsKey.screenshotDefaultAction) var captureAction = ""
     @AppStorage(DefaultsKey.notchCapture) var capture = true
@@ -121,7 +122,7 @@ struct NotchSettings: View {
          String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(hideInFullscreen), String(coversMenus),
          display, silhouette, String(hover), hidden, order, String(volume), String(inputSource),
          String(brightness), String(keyboardLight),
-         String(microphone), String(battery), String(clipboard), String(clipboardWindow), clipboardCardSize,
+         String(microphone), String(battery), String(clipboard), String(clipboardWindow), String(snippetsWindow), clipboardCardSize,
          String(capture), String(trackChange), captureAction, String(showInCaptures),
          String(returnHome), homeModule, String(opensActivity), String(scratchpad),
          String(agentsEnabled), String(watchEnabled), String(keepAwakeActivity), String(shortcutEnabled)]
@@ -164,7 +165,7 @@ struct NotchSettings: View {
         .onAppear(perform: consumeCompanionHint)
         .onChange(of: router.notchCompanion) { _, _ in consumeCompanionHint() }
         .settingsExpansionAnimation(value: [hover, hideUntilHover, hoverExpand, shortcutEnabled, lowBatteryTint,
-            earlyBatteryWarning, lyricsEnabled, shelfWindow, clipboardWindow, accessoriesEnabled,
+            earlyBatteryWarning, lyricsEnabled, shelfWindow, clipboardWindow, snippetsWindow, accessoriesEnabled,
             permissions.accessibility])
         .settingsExpansionAnimation(value: [idle, size, silhouette, display])
         .settingsExpansionAnimation(value: [enabled, hiddenShowsActivity, gesturesEnabled, notificationsEnabled,

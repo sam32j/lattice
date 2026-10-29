@@ -1423,6 +1423,7 @@ final class NotchService: ObservableObject {
         }
         (NSApp.delegate as? AppDelegate)?.closePopover(preservingNotch: true)
         if !expanded, modules.contains(.clipboard) { ClipboardHistoryService.shared.rememberPasteTarget() }
+        if !expanded, modules.contains(.snippets) { SnippetLibraryService.shared.rememberPasteTarget() }
         panel.acceptsKeyFocus = true
         hoverState.open()
         hoverWork?.cancel()
@@ -1533,6 +1534,14 @@ final class NotchService: ObservableObject {
         guard acceptsUserInteraction, NotchSupport.routesClipboardWindow() else { return false }
         if toggle, expanded, selected == .clipboard, !showingAppPanel, !showingSections, !showingCommandBar { collapse() }
         else { open(.clipboard) }
+        return true
+    }
+
+    @discardableResult
+    func showSnippets(toggle: Bool = false) -> Bool {
+        guard acceptsUserInteraction, NotchSupport.routesSnippetsWindow() else { return false }
+        if toggle, expanded, selected == .snippets, !showingAppPanel, !showingSections, !showingCommandBar { collapse() }
+        else { open(.snippets) }
         return true
     }
 
@@ -3470,6 +3479,7 @@ final class NotchService: ObservableObject {
         guard identifier != Bundle.main.bundleIdentifier, identifier != AssistiveKeyboard.bundleID else { return }
         panel?.resignKey()
         if expanded, modules.contains(.clipboard) { ClipboardHistoryService.shared.rememberPasteTarget() }
+        if expanded, modules.contains(.snippets) { SnippetLibraryService.shared.rememberPasteTarget() }
         if expanded, !pinned, !keepsWorkingSurface,
            NotchSupport.closesOnActivation(openedByHover: openedByHover, clicked: clickedSinceOpening,
                                            pointerInside: windowHost?.containsHover(NSEvent.mouseLocation) == true) {

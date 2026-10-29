@@ -481,6 +481,8 @@ struct NotchView: View {
         case .clipboard:
             // A complete card with its action row; the search is in the top row.
             size.height = max(size.height, NotchLayout.clipboardCardHeight)
+        case .snippets:
+            size.height = max(size.height, 160)
         case .camera:
             // Keep permission and error messages reachable.
             size.height = max(size.height, 144)
@@ -591,6 +593,7 @@ struct NotchView: View {
             case .mixer: NotchMixerView(size: pageSize)
             case .music: NotchMusicView(size: pageSize, extrasHeight: service.geometry.musicExtrasHeight)
             case .clipboard: NotchClipboardView(service: service, size: pageSize)
+            case .snippets: NotchSnippetsView(service: service, size: pageSize)
             case .captures:
                 if let capture = service.captureContent {
                     // The capture's own toolbar takes a full row, below a camera.
@@ -857,6 +860,7 @@ extension NotchModule: PanelOrderItem {
         case .agents: return FeatureStrings.notchAgents(language).title
         case .watch: return FeatureStrings.notchWatch(language).title
         case .videoDownloader: return VideoDownloaderStrings.pageTitle
+        case .snippets: return FeatureStrings.snippets(language).pageTitle
         }
     }
 }

@@ -573,6 +573,7 @@ extension AppFeature {
                     || (boolFor(DefaultsKey.notchBrightness) && isAvailable(.brightness)
                         && boolFor(DefaultsKey.brightnessControlEnabled))
                     || (boolFor(DefaultsKey.notchClipboardWindow) && isAvailable(.clipboardHistory))
+                    || (boolFor(DefaultsKey.notchSnippetsWindow) && isAvailable(.textSnippets))
             case (.radialMenu, .accessibility):
                 if let profiles = dataFor(DefaultsKey.radialMenuProfiles) {
                     return RadialMenuSupport.needsAccessibility(RadialMenuSupport.decodeProfiles(profiles))

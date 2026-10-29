@@ -85,6 +85,8 @@ struct TextSnippetsSettings: View {
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
+                    IslandDestinationSettings(destination: .textSnippets)
+                        .padding(.leading, settingsRowTextInset)
                 }
             } header: {
                 Text(text.libraryTitle)

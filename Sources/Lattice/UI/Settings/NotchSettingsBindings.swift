@@ -135,6 +135,7 @@ extension NotchSettings {
                 && (module != .calendar || calendarEnabled) && (module != .notifications || notificationsEnabled)
                 && (module != .agents || agentsEnabled) && (module != .watch || watchEnabled)
                 && (module != .videoDownloader || (UserDefaults.standard.bool(forKey: DefaultsKey.videoDownloaderEnabled) && (UserDefaults.standard.object(forKey: DefaultsKey.notchVideoDownloader) as? Bool ?? true)))
+                && (module != .snippets || (UserDefaults.standard.object(forKey: DefaultsKey.notchSnippetsWindow) as? Bool ?? true))
                 && !hidden.split(separator: ",").contains { NotchModule(rawValue: String($0)) == module }
         } set: { shown in
             if module == .timer { timerEnabled = shown }
@@ -145,6 +146,9 @@ extension NotchSettings {
             if module == .watch { watchEnabled = shown }
             if module == .videoDownloader {
                 UserDefaults.standard.set(shown, forKey: DefaultsKey.notchVideoDownloader)
+            }
+            if module == .snippets {
+                UserDefaults.standard.set(shown, forKey: DefaultsKey.notchSnippetsWindow)
             }
             var values = Set(hidden.split(separator: ",").map(String.init))
             if shown {

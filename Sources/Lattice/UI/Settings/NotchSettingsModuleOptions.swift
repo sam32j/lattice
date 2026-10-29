@@ -137,6 +137,8 @@ extension NotchSettings {
                 .toggleStyle(TrailingSwitchToggleStyle())
         case .videoDownloader:
             VideoDownloaderDestinationRow()
+        case .snippets:
+            destination(FeatureStrings.snippets(l10n.language).pageTitle, symbol: "text.append", value: $snippetsWindow, available: AppFeature.textSnippets.isAvailable)
         case .mixer, .system, .hub:
             EmptyView()
         }
