@@ -8,7 +8,8 @@ import SwiftUI
 enum LatticeHubItem: String, PanelOrderItem, Identifiable {
     case screenshot, cleaner, uninstaller, clipboard, windowLayout,
          media, urlCleaner, cameraPreview, scratchpad, screenRecorder,
-         homebrew, appUpdates, portManager
+         homebrew, appUpdates, portManager, videoDownloader, shelf,
+         textSnippets, killProcess, wallpaper
 
     var id: String { rawValue }
 
@@ -33,6 +34,11 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
         case .homebrew: return .homebrew
         case .appUpdates: return .appUpdates
         case .portManager: return .portManager
+        case .videoDownloader: return .videoDownloader
+        case .shelf: return .shelf
+        case .textSnippets: return .textSnippets
+        case .killProcess: return .killProcess
+        case .wallpaper: return .wallpaper
         }
     }
 }

@@ -12,7 +12,23 @@ extension LatticeHubView {
             return recorder.isRecording ? strings.stopButton : strings.pageTitle
         case .cameraPreview: return FeatureStrings.cameraPreview(l10n.language).pageTitle
         case .clipboard: return FeatureStrings.clipboard(l10n.language).title
-        case .windowLayout: return FeatureStrings.windowLayout(l10n.language).title
+        case .windowLayout:
+            switch l10n.language {
+            case .enUS: return "Window Snapping"
+            case .ptBR: return "Ajuste de janelas"
+            case .tr: return "Pencere hizalama"
+            case .ru: return "Привязка окон"
+            case .es: return "Ajuste de ventanas"
+            case .sk: return "Prichytávanie okien"
+            case .de: return "Fenster-Snapping"
+            case .fr: return "Alignement des fenêtres"
+            case .it: return "Allineamento finestre"
+            case .ja: return "ウインドウスナップ"
+            case .ko: return "윈도우 스냅"
+            case .zhHans: return "窗口贴边"
+            case .zhTW, .zhHK: return "視窗靠齊"
+            case .uk: return "Прив’язування вікон"
+            }
         case .homebrew: return l10n.s.homebrewName
         case .media: return l10n.s.mediaName
         case .urlCleaner: return l10n.s.urlCleanerName
@@ -21,6 +37,11 @@ extension LatticeHubView {
         case .scratchpad: return FeatureStrings.scratchpad(l10n.language).pageTitle
         case .appUpdates: return FeatureStrings.appUpdates(l10n.language).pageTitle
         case .portManager: return FeatureStrings.portManager(l10n.language).title
+        case .videoDownloader: return FeatureStrings.videoDownloader(l10n.language).pageTitle
+        case .shelf: return l10n.s.shelfName
+        case .textSnippets: return FeatureStrings.snippets(l10n.language).pageTitle
+        case .killProcess: return FeatureStrings.killProcess(l10n.language).pageTitle
+        case .wallpaper: return FeatureStrings.wallpaper(l10n.language).pageTitle
         }
     }
 
@@ -39,12 +60,17 @@ extension LatticeHubView {
         case .scratchpad: return "note.text"
         case .appUpdates: return "arrow.down.app"
         case .portManager: return "network"
+        case .videoDownloader: return "arrow.down.square"
+        case .shelf: return "tray.and.arrow.down"
+        case .textSnippets: return "text.append"
+        case .killProcess: return "xmark.octagon"
+        case .wallpaper: return "photo.on.rectangle"
         }
     }
 
     func iconColor(_ item: LatticeHubItem) -> Color {
         if item == .screenRecorder, recorder.isRecording { return .red }
-        return .accentColor
+        return Color.primary.opacity(0.85)
     }
 
     func hasQuickOptions(_ item: LatticeHubItem) -> Bool {

@@ -132,7 +132,7 @@ final class LatticeHubService: ObservableObject {
     }
 
     private func shouldRouteToIsland() -> Bool {
-        guard LauncherShortcutTarget.selected(in: .standard) == .island,
+        guard LauncherShortcutTarget.selected(in: .standard) == .automatic,
               NotchSupport.routesQuickPanel() else {
             return false
         }
@@ -238,7 +238,18 @@ final class LatticeHubService: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 ClipboardHistoryService.shared.showHistoryWindow()
             }
-        case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner, .appUpdates, .portManager:
+        case .shelf:
+            hide()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                ShelfService.shared.summon()
+            }
+        case .textSnippets:
+            hide()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                SnippetLibraryService.shared.show()
+            }
+        case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner, .appUpdates, .portManager,
+             .killProcess, .wallpaper, .videoDownloader:
             activeUtility = item
         }
     }
