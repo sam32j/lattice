@@ -1882,7 +1882,7 @@ enum NotchSupport {
     /// for it, and amber a little earlier when they want a first warning.
     /// Neither shows while the Mac is plugged in.
     static func batteryWarning(percent: Int?, externalConnected: Bool, tint: Bool, threshold: Int,
-                               early: Bool = false, earlyThreshold: Int = defaultEarlyBatteryThreshold) -> BatteryWarning {
+                               early: Bool = true, earlyThreshold: Int = defaultEarlyBatteryThreshold) -> BatteryWarning {
         guard tint, !externalConnected, let percent else { return .none }
         if percent <= sanitizedLowBatteryThreshold(threshold) { return .low }
         if early, percent <= sanitizedEarlyBatteryThreshold(earlyThreshold) { return .early }
@@ -1895,7 +1895,7 @@ enum NotchSupport {
                        tint: defaults.bool(forKey: DefaultsKey.notchLowBatteryTint),
                        threshold: defaults.object(forKey: DefaultsKey.notchLowBatteryThreshold) as? Int
                            ?? defaultLowBatteryThreshold,
-                       early: defaults.bool(forKey: DefaultsKey.notchLowBatteryEarly),
+                       early: defaults.object(forKey: DefaultsKey.notchLowBatteryEarly) as? Bool ?? true,
                        earlyThreshold: defaults.object(forKey: DefaultsKey.notchLowBatteryEarlyThreshold) as? Int
                            ?? defaultEarlyBatteryThreshold)
     }
