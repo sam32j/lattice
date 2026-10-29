@@ -97,7 +97,6 @@ struct NotchCapsuleMusicStrip: View {
         .accessibilityAction(named: Text(FeatureStrings.radialMenu(l10n.language).mediaPlayPause)) {
             if !service.toggleMusicStripSong() { service.openActivity(.music) }
         }
-        .help(title)
     }
 }
 

@@ -527,7 +527,6 @@ struct NotchCapsuleCalendarStrip: View {
                 .accessibilityValue(NotchCalendarSupport.countdownAccessibilityText(
                     until: countdown.target, now: context.date, locale: l10n.language.formattingLocale()))
                 .accessibilityHint(FeatureStrings.notch(l10n.language).open)
-                .help(title)
             }
             .accessibilityIdentifier("notch.calendarCountdown")
         }
