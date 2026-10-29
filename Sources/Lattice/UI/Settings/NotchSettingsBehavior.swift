@@ -77,7 +77,7 @@ extension NotchSettings {
                 }
             }
             SettingsCard(title: editor.destinations) {
-                destination(text.captures, symbol: "camera.viewfinder", value: $capture,
+                destination(text.captures, symbol: "photo.stack", value: $capture,
                             available: AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable)
             }
             SettingsCard(title: editor.privacy) {

@@ -98,7 +98,7 @@ struct NotchView: View {
                         Text(text.dropHint)
                     }
                 } else {
-                    Label(text.dropHint, systemImage: "tray.and.arrow.down")
+                    Label(text.dropHint, systemImage: "tray.full")
                 }
             }
                 .font(.system(size: 13, weight: .medium)).foregroundStyle(.white)
@@ -417,7 +417,7 @@ struct NotchView: View {
             NotchBandBackButton(title: service.detailTitle, action: service.goBack)
         } else if service.selected == .captures {
             if service.captureContent != nil {
-                NotchIconButton(symbol: "clock.arrow.circlepath", title: FeatureStrings.recentCaptures(l10n.language).title,
+                NotchIconButton(symbol: "photo.stack", title: FeatureStrings.recentCaptures(l10n.language).title,
                                 action: service.showCaptureHistory)
             } else if band.sectionsButton {
                 NotchSectionsButton(action: service.toggleSections)
@@ -597,7 +597,7 @@ struct NotchView: View {
                     capture.frame(maxWidth: .infinity)
                         .notchBand(trailing: { service.captureActions?.fixedSize() })
                         .overlay {
-                            Image(systemName: "clock.arrow.circlepath")
+                            Image(systemName: "photo.stack")
                                 .font(.system(size: 26, weight: .medium))
                                 .padding(16)
                                 .background(.ultraThinMaterial, in: Circle())

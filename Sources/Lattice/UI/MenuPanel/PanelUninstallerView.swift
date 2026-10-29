@@ -73,7 +73,7 @@ struct PanelUninstallerView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Label(l10n.s.uninstallerName, systemImage: "trash")
+            Label(l10n.s.uninstallerName, systemImage: "externaldrive.badge.minus")
                 .font(.system(size: 12, weight: .semibold))
             Spacer()
             Button {

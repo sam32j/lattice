@@ -805,7 +805,7 @@ struct ScreenshotEditorView: View {
             Button {
                 RecentCaptureService.shared.showHistoryWindow()
             } label: {
-                Image(systemName: "clock.arrow.circlepath")
+                Image(systemName: "photo.stack")
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)

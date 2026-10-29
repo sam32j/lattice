@@ -288,8 +288,8 @@ enum RadialMenuQuickToggle: String, Codable, CaseIterable, Identifiable {
         case .ejectDisks: return "eject.fill"
         case .hiddenFiles: return "eye"
         case .desktopIcons: return "desktopcomputer"
-        case .lockScreen: return "lock.fill"
-        case .displayOff: return "display"
+        case .lockScreen: return "lock.display"
+        case .displayOff: return "power.circle"
         case .screenSaver: return "sparkles.tv"
         }
     }

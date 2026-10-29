@@ -59,7 +59,7 @@ struct RecentCapturesView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Label(text.title, systemImage: "clock.arrow.circlepath")
+            Label(text.title, systemImage: "photo.stack")
                 .font(.system(size: 12, weight: .semibold))
             Spacer()
             Button {

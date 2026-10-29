@@ -354,7 +354,7 @@ enum CommandBarCatalog {
                 subtitle: groupTitle(.tools, hub: hub),
                 keywords: [recent.screenshot, recent.recording,
                            RecentCaptureStrings.enUS.title].joined(separator: " "),
-                icon: .symbol("clock.arrow.circlepath"),
+                icon: .symbol("photo.stack"),
                 run: { _ in afterBeat(0.1) {
                     RecentCaptureService.shared.showHistoryWindow()
                 } }))
@@ -414,7 +414,7 @@ enum CommandBarCatalog {
                 id: "action.cameraPreview",
                 title: FeatureStrings.cameraPreview(language).pageTitle,
                 subtitle: area(.cameraPreview, under: FeatureStrings.cameraPreview(language).pageTitle),
-                icon: .symbol("web.camera"),
+                icon: .symbol("person.crop.square.badge.camera"),
                 shortcut: roleShortcut(.cameraPreview),
                 trouble: Permissions.shared.camera == .granted ? nil : .needsPermission,
                 run: { _ in afterBeat { CameraPreviewService.shared.show() } }))
@@ -580,14 +580,14 @@ enum CommandBarCatalog {
                 id: "action.lockScreen",
                 title: togglesText.lockScreenTitle,
                 subtitle: togglesArea,
-                icon: .symbol("lock.fill"),
+                icon: .symbol("lock.display"),
                 run: { _ in afterBeat { QuickTogglesService.shared.lockScreen() } }))
             if AppFeature.brightness.isAvailable {
                 entries.append(CommandBarEntry(
                     id: "action.displayOff",
                     title: togglesText.displayOffTitle,
                     subtitle: area(.brightness),
-                    icon: .symbol("display"),
+                    icon: .symbol("power.circle"),
                     run: { _ in afterBeat { QuickTogglesService.shared.turnDisplayOff() } }))
             }
             entries.append(CommandBarEntry(
@@ -668,7 +668,7 @@ enum CommandBarCatalog {
                 title: bar.actionCheckAppUpdates,
                 subtitle: area(.appUpdates),
                 keywords: FeatureStrings.appUpdates(language).pageTitle,
-                icon: .symbol("arrow.down.app"),
+                icon: .symbol("square.and.arrow.down.badge.clock"),
                 run: { _ in
                     AppUpdatesService.shared.check()
                     openSettings(at: .appUpdates)
@@ -687,14 +687,14 @@ enum CommandBarCatalog {
                 id: "action.uninstaller",
                 title: s.uninstallerName,
                 subtitle: area(.uninstaller, under: s.uninstallerName),
-                icon: .symbol("trash"),
+                icon: .symbol("externaldrive.badge.minus"),
                 run: { _ in openSettings(at: .uninstaller) }))
             if UserDefaults.standard.bool(forKey: DefaultsKey.uninstallerCommandBarEnabled) {
                 entries.append(CommandBarEntry(
                     id: "uninstall.browse",
                     title: s.uninstallerCommandBarBrowseTitle,
                     subtitle: s.uninstallerName,
-                    icon: .symbol("trash"),
+                    icon: .symbol("externaldrive.badge.minus"),
                     // A habit boost on this row could otherwise outweigh the
                     // Finder selection's fixed rank bias after enough clicks,
                     // putting the wrong "Uninstall" row first; a plain
