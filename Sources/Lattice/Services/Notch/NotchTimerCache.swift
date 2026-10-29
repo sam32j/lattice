@@ -23,7 +23,7 @@ enum NotchTimerCache {
 
     static var defaultFolderURL: URL? {
         guard let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else { return nil }
-        let bundleID = Bundle.main.bundleIdentifier ?? "com.corsair.Lattice"
+        let bundleID = Bundle.main.bundleIdentifier ?? "io.github.sam32j.lattice"
         return caches.appendingPathComponent(bundleID, isDirectory: true)
             .appendingPathComponent("Timer", isDirectory: true)
     }
