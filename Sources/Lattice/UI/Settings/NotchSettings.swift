@@ -173,7 +173,7 @@ struct NotchSettings: View {
                                 .foregroundStyle(.orange)
                                 .padding(.leading, settingsRowTextInset)
                         }
-                        SettingsRow(symbol: "display", title: labels.showOn) {
+                        SettingsControlRow(title: labels.showOn) {
                             Picker(labels.showOn, selection: $display) {
                                 Text(text.automatic).tag(NotchDisplay.automatic.rawValue)
                                 if PowerSampler.hasInternalBattery {
@@ -186,6 +186,7 @@ struct NotchSettings: View {
                             .pickerStyle(.menu)
                             .labelsHidden()
                         }
+                        .padding(.leading, settingsRowTextInset)
                         .disabled(!enabled)
                         SettingsRow(symbol: "arrow.down.backward.and.arrow.up.forward.rectangle", title: labels.dynamicIslandSize) {
                             Picker(labels.dynamicIslandSize, selection: Binding(get: {
