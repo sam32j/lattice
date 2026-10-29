@@ -10,6 +10,7 @@ enum NotchTimerCacheTests {
         snapshotCreationContracts(suite)
         restorationContracts(suite)
         persistenceFileContracts(suite)
+        serviceLifecycleContracts(suite)
     }
 
     private static func alertTwoToneContracts(_ suite: TestSuite) {
@@ -182,5 +183,52 @@ enum NotchTimerCacheTests {
 
         NotchTimerCache.delete(at: tempFile)
         suite.expect(NotchTimerCache.load(from: tempFile) == nil, "deleted snapshot no longer loads")
+    }
+
+    private static func serviceLifecycleContracts(_ suite: TestSuite) {
+        guard let defaultFolder = NotchTimerCache.defaultFolderURL,
+              let defaultFile = NotchTimerCache.defaultFileURL else {
+            suite.expect(false, "default cache paths must resolve")
+            return
+        }
+        suite.expect(defaultFolder.path.contains("Timer"), "cache folder path contains Timer subfolder")
+        suite.expect(defaultFile.lastPathComponent == "session.json", "cache file is session.json")
+
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("LatticeLifecycleTest-\(UUID().uuidString)", isDirectory: true)
+        let tempFile = tempDir.appendingPathComponent("session.json", isDirectory: false)
+        defer {
+            NotchTimerCache.delete(at: tempFile)
+            try? FileManager.default.removeItem(at: tempDir)
+        }
+
+        let clockNow = Date(timeIntervalSince1970: 1700000000)
+        var session = NotchTimerSession()
+        session.start(mode: .timer, minutes: 15, now: 100)
+
+        // 1. Persisting active session to cache
+        guard let snapshot = NotchTimerCache.createSnapshot(from: session, now: 100, clockNow: clockNow) else {
+            suite.expect(false, "snapshot created for 15-minute timer")
+            return
+        }
+        NotchTimerCache.save(snapshot, to: tempFile)
+        suite.expect(NotchTimerCache.load(from: tempFile) != nil, "cache file exists while timer is active")
+
+        // 2. Simulating termination / stop: cache remains untouched
+        suite.expect(NotchTimerCache.load(from: tempFile) != nil, "cache file survives app termination / service stop")
+
+        // 3. Simulating relaunch 5 minutes later (300s elapsed of 900s)
+        let relaunchDate = clockNow.addingTimeInterval(300)
+        guard let reloadedSnap = NotchTimerCache.load(from: tempFile),
+              let restored = NotchTimerCache.restoreSession(from: reloadedSnap, now: 400, clockNow: relaunchDate) else {
+            suite.expect(false, "restoration succeeds on relaunch")
+            return
+        }
+        suite.expect(restored.isRunning, "restored session resumes running")
+        suite.expect(abs(restored.reading(at: 400) - 600) < 0.001, "restored session has 600s remaining")
+
+        // 4. Simulating user explicit cancellation via 'xmark' button: cache deleted
+        NotchTimerCache.delete(at: tempFile)
+        suite.expect(NotchTimerCache.load(from: tempFile) == nil, "explicit cancellation removes cache file")
     }
 }

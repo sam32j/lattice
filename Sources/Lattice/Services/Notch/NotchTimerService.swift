@@ -73,13 +73,16 @@ final class NotchTimerService: ObservableObject {
 
     func suspend() {
         suspended = true
+        persistSessionToCache()
         alert.suspend()
         completionTask?.cancel(); completionTask = nil
         countdownTask?.cancel(); countdownTask = nil
         NotchService.shared.endMascotCountdown(retreating: false)
     }
 
-    func stop() { suspend(); cancel() }
+    func stop() {
+        suspend()
+    }
 
     private func finishIfDue() {
         guard session.finishIfDue(at: now) else { return }
