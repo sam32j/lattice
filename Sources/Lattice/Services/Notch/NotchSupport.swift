@@ -157,12 +157,7 @@ enum NotchSilhouette: String, CaseIterable {
 }
 
 enum NotchSize: String, CaseIterable {
-    case compact, spacious, custom
-
-    static let widthRange = 360.0...600.0
-    static let heightRange = 260.0...640.0
-    static let defaultWidth = 440.0
-    static let defaultHeight = 480.0
+    case compact, spacious
 
     static func clamped(_ value: Double, to range: ClosedRange<Double>, fallback: Double) -> Double {
         value.isFinite ? min(range.upperBound, max(range.lowerBound, value)) : fallback
@@ -292,7 +287,7 @@ struct NotchBand: Equatable {
 }
 
 /// Shared measurements keep the window's content budget and its SwiftUI
-/// layout in agreement, including small screens and custom sizes.
+/// layout in agreement, including small screens and both presets.
 enum NotchLayout {
     static let shoulder: CGFloat = 14
     static let horizontalInset: CGFloat = 28
@@ -482,11 +477,10 @@ enum NotchLayout {
         return path
     }
 
-    static func preferredWidth(_ layout: NotchSize, custom: CGFloat) -> CGFloat {
+    static func preferredWidth(_ layout: NotchSize) -> CGFloat {
         switch layout {
         case .compact: return 480
         case .spacious: return 560
-        case .custom: return custom
         }
     }
 
@@ -689,7 +683,7 @@ enum NotchLayout {
     /// extra, lyrics or the queue. The island grows to hold both, so the
     /// player keeps the height it had at rest, however far the island has
     /// grown; measuring it again from the growing page made it shrink by the
-    /// gap and flicker. Where the island cannot grow enough, as at a custom
+    /// gap and flicker. Where the island cannot grow enough, as at a small
     /// size, the player yields to the extra below a legible height.
     static func musicSplit(height: CGFloat, extras: CGFloat, resting: CGFloat,
                            keepsPlayer: Bool, extraOpen: Bool = true) -> (player: CGFloat, extra: CGFloat, showsPlayer: Bool) {
@@ -2128,18 +2122,6 @@ enum NotchSupport {
         }
     }
 
-    /// Whether the island can rest on a display without a notch, where the
-    /// shape chosen for those displays shows. The pointer can take it to any
-    /// display; otherwise the chosen display decides, and one with a camera,
-    /// or a built-in screen closed under its lid, keeps it off all of them.
-    static func reachesDisplayWithoutNotch(preference: NotchDisplay, builtIn: [Bool], notched: [Bool], main: Int,
-                                           hasLid: Bool = true) -> Bool {
-        guard notched.contains(false) else { return false }
-        if preference == .pointer || preference == .all { return true }
-        guard let index = screenIndex(preference: preference, builtIn: builtIn, notched: notched, main: main,
-                                      hasLid: hasLid) else { return false }
-        return !notched[index]
-    }
 }
 
 /// A hidden menu bar retains only a measurement from the same display and mode.
@@ -2204,8 +2186,6 @@ struct NotchGeometry: Equatable {
     let cameraHeight: CGFloat
     let isNotched: Bool
     let layout: NotchSize
-    let customWidth: CGFloat
-    let customHeight: CGFloat
     let menuBarHeight: CGFloat
     /// Nil hangs the island from the top edge. A capsule floats this far
     /// inside the menu bar, above and below its strips.
@@ -2239,13 +2219,10 @@ struct NotchGeometry: Equatable {
 
     init(screen: CGRect, safeAreaTop: CGFloat, cameraWidth: CGFloat, layout: NotchSize = .compact,
          menuBarHeight: CGFloat = 24, compactSideRoom: CGFloat? = nil,
-         customWidth: Double = NotchSize.defaultWidth, customHeight: Double = NotchSize.defaultHeight,
          cameraFit: NotchCameraFit = .zero, silhouette: NotchSilhouette = .notch, capsuleFit: NotchCapsuleFit = .zero,
          hideMenuBarGap: Bool = false, outline: Bool = false, barEdge: CGFloat = 0) {
         self.screen = screen
         self.layout = layout
-        self.customWidth = NotchSize.clamped(customWidth, to: NotchSize.widthRange, fallback: NotchSize.defaultWidth)
-        self.customHeight = NotchSize.clamped(customHeight, to: NotchSize.heightRange, fallback: NotchSize.defaultHeight)
         let barHeight = menuBarHeight.isFinite ? min(64, max(16, menuBarHeight)) : 24
         isNotched = safeAreaTop.isFinite && safeAreaTop > 0 && cameraWidth.isFinite && cameraWidth > 0
         // Only a physical camera has an outline to match; a simulated one follows the bar.
@@ -2631,19 +2608,18 @@ struct NotchGeometry: Equatable {
     }
     var expanded: CGSize { expandedSize(module: .controls) }
     var expandedWidth: CGFloat {
-        let chosen = NotchLayout.preferredWidth(layout, custom: customWidth)
+        let chosen = NotchLayout.preferredWidth(layout)
         // Under a preset, a page with a width of its own takes no more, still
         // wrapping the camera with its row where the chosen width would have.
         // Each side keeps its room for the page's controls past the sections
         // button, as the camera's sides are as wide as each other. A row that
         // ends with the button grows only when the page's controls leave it
         // no room and the chosen width holds both; otherwise the page shows
-        // it. A width set by hand is the island's on every page, so making it
-        // wider makes the player and the home page wider too.
+        // it.
         var wing = pageBandSide + (rowShowsSectionsButton ? NotchBand.sectionsButtonRoom : 0)
         let ending = max(wing, trailingSectionsRoom + NotchBand.cameraClearance)
         if sectionsButtonEndsRow, cameraWidth + ending * 2 + NotchLayout.horizontalInset * 2 <= chosen { wing = ending }
-        let preferred = layout == .custom ? chosen : pageContentWidth.map { natural in
+        let preferred = pageContentWidth.map { natural in
             min(chosen, max(natural, isNotched ? cameraWidth + wing * 2 : 0) + NotchLayout.horizontalInset * 2)
         } ?? chosen
         return min(max(preferred, cameraWidth + 36), screen.width - 24 - NotchQuickAccessLayout.gutter * 2)
@@ -2654,15 +2630,13 @@ struct NotchGeometry: Equatable {
         switch layout {
         case .compact: return NotchLayout.compactContentHeight
         case .spacious: return NotchLayout.spaciousContentHeight
-        case .custom: return max(0, customHeight - headerTopInset - headerChromeHeight)
         }
     }
     /// Room a vertical surface gets: the budget, or a readable page where a
     /// preset's strip would leave it a few lines.
-    var pageBudget: CGFloat { layout == .custom ? contentBudget : max(contentBudget, NotchLayout.pageContentHeight) }
-    /// Lyrics and the queue open below the player; custom heights keep them
-    /// within the chosen limit and the page swaps the player out instead.
-    var musicExtrasHeight: CGFloat { layout == .custom ? min(216, contentBudget) : 216 }
+    var pageBudget: CGFloat { max(contentBudget, NotchLayout.pageContentHeight) }
+    /// Lyrics and the queue open below the player.
+    var musicExtrasHeight: CGFloat { 216 }
     /// The camera's row the player starts with, which its cover tucks into;
     /// none where the island has no room beside a camera.
     var musicBandHeight: CGFloat { headerCameraGap > 0 ? headerRowHeight : 0 }
@@ -2677,10 +2651,10 @@ struct NotchGeometry: Equatable {
     func toolRows(count: Int, controlsHeight: CGFloat? = nil) -> Int {
         let controlsH = controlsHeight ?? 0
         let vstackSpacing: CGFloat = controlsH > 0 ? 6 : 0
-        let budget = count >= 10 && layout != .custom ? pageBudget : contentBudget
+        let budget = count >= 10 ? pageBudget : contentBudget
         let availableHeight = max(0, budget - controlsH - vstackSpacing)
         return NotchLayout.toolRailRows(count: count, width: contentWidth,
-                                        height: availableHeight, custom: layout == .custom)
+                                        height: availableHeight)
     }
 
     /// The arrows walk the tiles the way the rail draws them: reading order
@@ -2715,8 +2689,7 @@ struct NotchGeometry: Equatable {
         } else if detail || panel {
             contentHeight = pageBudget
         } else if showsFileMedia {
-            // Measured surfaces keep their own height; the custom limit and
-            // the display bound them below.
+            // Measured surfaces keep their own height, bounded by the display below.
             contentHeight = max(0, fileMediaHeight ?? 0)
         } else if showsCapturePreview {
             contentHeight = max(0, capturePreviewHeight ?? 0) + 4
@@ -2727,11 +2700,11 @@ struct NotchGeometry: Equatable {
                 // and the levels a camera's row cannot split evenly make the page.
                 // Those keep a row below the camera's that a preset adds to
                 // the island, as it adds the top row, rather than taking it
-                // from the cards and the rail; a custom height holds them all.
+                // from the cards and the rail within the preset budget.
                 let levels = max(0, sliderCount)
                 let band = NotchBand(geometry: self, contentWidth: contentWidth)
                 let levelRow = NotchLayout.bandLevelCount(levels, band: band) < levels
-                let room = budget + (levelRow && layout != .custom ? NotchLayout.levelRowHeight + NotchLayout.rowSpacing : 0)
+                let room = budget + (levelRow ? NotchLayout.levelRowHeight + NotchLayout.rowSpacing : 0)
                 let home = NotchLayout.controls(hasCards: controlsHaveMusic, levelRow: levelRow,
                                                 shortcutCount: max(0, shortcutCount), width: contentWidth, height: room)
                 let empty = !controlsHaveMusic && sliderCount <= 0 && shortcutCount <= 0
@@ -2773,8 +2746,7 @@ struct NotchGeometry: Equatable {
                 contentHeight = budget
             }
         }
-        var preferredHeight = headerTopInset + headerChromeHeight + contentHeight
-        if layout == .custom { preferredHeight = min(preferredHeight, customHeight) }
+        let preferredHeight = headerTopInset + headerChromeHeight + contentHeight
         return CGSize(width: expandedWidth,
                       height: min(preferredHeight, screen.height - 48 - quickAccessBottomInset))
     }

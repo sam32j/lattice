@@ -104,17 +104,17 @@ enum NotchSectionPagingTests {
     }
 
     private static func routing(_ suite: TestSuite) {
-        for (width, cameraHeight) in [(600.0, 32.0), (400.0, 32.0), (600.0, 0.0), (600.0, 52.0)] {
+        for (layout, cameraHeight): (NotchSize, Double) in [(.spacious, 32), (.compact, 32), (.spacious, 0), (.compact, 52)] {
             let service = Service()
             service.geometry = NotchGeometry(screen: service.geometry.screen, safeAreaTop: cameraHeight,
-                                             cameraWidth: 180, layout: .custom, customWidth: width, customHeight: 260)
+                                             cameraWidth: 180, layout: layout)
             let headerBottom = service.expandedGeometry.headerTopInset + service.expandedGeometry.headerRowHeight
             func event(fromTop top: CGFloat) -> NSEvent {
                 NSEvent(locationInWindow: CGPoint(x: 100, y: service.panel!.frame.height - top))
             }
             suite.expect(!service.handleScroll(event(fromTop: headerBottom))
                          && service.gestureCalls == 1 && service.movedRows == 0,
-                         "the actual header keeps its gesture for width \(width) and camera height \(cameraHeight)")
+                         "the actual header keeps its gesture for preset \(layout) and camera height \(cameraHeight)")
             for offset in [1.0, NotchLayout.spacing + 1, NotchLayout.spacing + NotchLayout.sectionTileHeight / 2] {
                 let before = service.movedRows
                 let gestures = service.gestureCalls

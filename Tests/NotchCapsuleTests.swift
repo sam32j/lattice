@@ -27,11 +27,9 @@ enum NotchCapsuleTests {
     private static let screen = CGRect(x: -1920, y: -100, width: 1920, height: 1080)
     private typealias Layout = NotchCapsuleLayout
 
-    private static func capsule(bar: CGFloat, room: CGFloat? = 300, layout: NotchSize = .spacious,
-                                customWidth: Double = NotchSize.defaultWidth,
-                                customHeight: Double = NotchSize.defaultHeight) -> NotchGeometry {
+    private static func capsule(bar: CGFloat, room: CGFloat? = 300, layout: NotchSize = .spacious) -> NotchGeometry {
         NotchGeometry(screen: screen, safeAreaTop: 0, cameraWidth: 0, layout: layout, menuBarHeight: bar,
-                      compactSideRoom: room, customWidth: customWidth, customHeight: customHeight, silhouette: .capsule)
+                      compactSideRoom: room, silhouette: .capsule)
     }
 
     private static func body(_ size: CGSize, _ geometry: NotchGeometry) -> CGRect {
@@ -284,12 +282,7 @@ enum NotchCapsuleTests {
     /// The open capsule hangs from the same margin as the closed one, its
     /// header clear of the rounded top corners and its page inside it.
     private static func openContracts(_ suite: TestSuite) {
-        var geometries = [capsule(bar: 24, layout: .compact), capsule(bar: 24, layout: .spacious), capsule(bar: 22)]
-        for width in stride(from: NotchSize.widthRange.lowerBound, through: NotchSize.widthRange.upperBound, by: 40) {
-            for height in [NotchSize.heightRange.lowerBound, 400, NotchSize.heightRange.upperBound] {
-                geometries.append(capsule(bar: 24, layout: .custom, customWidth: width, customHeight: height))
-            }
-        }
+        let geometries = [capsule(bar: 24, layout: .compact), capsule(bar: 24, layout: .spacious), capsule(bar: 22)]
         for geometry in geometries {
             let gap = geometry.floatingGap ?? 0
             let simulated = NotchGeometry(screen: screen, safeAreaTop: 0, cameraWidth: 0, layout: .spacious,

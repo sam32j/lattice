@@ -718,8 +718,6 @@ enum DefaultsKey {
     static let notchSize = "notchSize"
     static let notchOutlineEnabled = "notchOutlineEnabled"
     static let notchHideMenuBarGap = "notchHideMenuBarGap"
-    static let notchCustomWidth = "notchCustomWidth"
-    static let notchCustomHeight = "notchCustomHeight"
     // Fits the island to one Mac's camera housing; never backed up.
     static let notchCameraFitWidth = "notchCameraFitWidth"
     static let notchCameraFitHeight = "notchCameraFitHeight"
@@ -1220,8 +1218,6 @@ enum Defaults {
         DefaultsKey.notchSize: NotchSize.spacious.rawValue,
         DefaultsKey.notchOutlineEnabled: false,
         DefaultsKey.notchHideMenuBarGap: false,
-        DefaultsKey.notchCustomWidth: NotchSize.defaultWidth,
-        DefaultsKey.notchCustomHeight: NotchSize.defaultHeight,
         DefaultsKey.notchCameraFitWidth: 0.0,
         DefaultsKey.notchCameraFitHeight: 0.0,
         DefaultsKey.notchHapticFeedback: true,
@@ -1781,6 +1777,7 @@ enum Defaults {
     /// the island. A fresh setup gets the new profile instead.
     static func migrateExistingNotchDefaults(in defaults: UserDefaults,
                                              domainName: String? = Bundle.main.bundleIdentifier) {
+        NotchSize.migratePreferences(in: defaults)
         guard let domainName else { return }
         let saved = defaults.persistentDomain(forName: domainName) ?? [:]
         guard saved[DefaultsKey.notchDefaultProfileInitialized] == nil else {

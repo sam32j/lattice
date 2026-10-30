@@ -97,16 +97,13 @@ enum NotchUpdateTests {
     /// camera, read from the geometry instead of assumed.
     private static func narrowestCameraWing() -> CGFloat {
         let screen = CGRect(x: 0, y: 0, width: 1512, height: 982)
-        let widths = stride(from: NotchSize.widthRange.lowerBound, through: NotchSize.widthRange.upperBound, by: 1)
         var narrowest = CGFloat.infinity
         for camera: CGFloat in [180, 185, 210, 240] {
             for layout in NotchSize.allCases {
-                for width in widths {
-                    let geometry = NotchGeometry(screen: screen, safeAreaTop: 32, cameraWidth: camera,
-                                                 layout: layout, customWidth: width)
-                    guard geometry.headerCameraGap > 0 else { continue }
-                    narrowest = min(narrowest, (geometry.contentWidth - geometry.headerCameraGap) / 2)
-                }
+                let geometry = NotchGeometry(screen: screen, safeAreaTop: 32, cameraWidth: camera,
+                                             layout: layout)
+                guard geometry.headerCameraGap > 0 else { continue }
+                narrowest = min(narrowest, (geometry.contentWidth - geometry.headerCameraGap) / 2)
             }
         }
         return narrowest

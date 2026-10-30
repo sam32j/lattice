@@ -84,33 +84,7 @@ extension NotchSettings {
         }
     }
 
-    func dimensionSlider(_ title: String, value: Binding<Double>, range: ClosedRange<Double>, fallback: Double) -> some View {
-        let bounded = Binding(get: { NotchSize.clamped(value.wrappedValue, to: range, fallback: fallback) },
-                              set: { value.wrappedValue = NotchSize.clamped($0, to: range, fallback: fallback) })
-        return GridRow {
-            // The slider carries the name for VoiceOver.
-            Text(title).fixedSize().accessibilityHidden(true)
-            Slider(value: bounded, in: range, step: 10) { Text(title) }.labelsHidden()
-            Text(Int(bounded.wrappedValue), format: .number)
-                .monospacedDigit().foregroundStyle(.secondary).frame(width: 38)
-        }
-    }
 
-    /// A correction around zero, signed so the untouched value reads as none.
-    func fitSlider(_ title: String, card: String, value: Binding<Double>, range: ClosedRange<Double>,
-                           step: Double) -> some View {
-        let bounded = Binding(get: { NotchSize.clamped(value.wrappedValue, to: range, fallback: 0) },
-                              set: { value.wrappedValue = NotchSize.clamped($0, to: range, fallback: 0) })
-        let formatted = bounded.wrappedValue.formatted(.number.sign(strategy: .always(includingZero: false))
-            .precision(.fractionLength(0...1)).locale(Locale(identifier: l10n.language.rawValue)))
-        return GridRow {
-            Text(title).fixedSize().accessibilityHidden(true)
-            // Other cards have sliders with the same names.
-            Slider(value: bounded, in: range, step: step) { Text("\(card), \(title)") }.labelsHidden()
-                .accessibilityValue(formatted)
-            Text(formatted).monospacedDigit().foregroundStyle(.secondary).frame(width: 38)
-        }
-    }
     var orderedShortcuts: [NotchControlItem] {
         let stored = controlOrder.split(separator: ",").compactMap { NotchControlItem(rawValue: String($0)) }
         var seen = Set<NotchControlItem>()

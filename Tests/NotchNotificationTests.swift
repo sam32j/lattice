@@ -206,7 +206,7 @@ enum NotchNotificationTests {
         for physical in [false, true] {
             for layout in NotchSize.allCases {
                 let geometry = NotchGeometry(screen: screen, safeAreaTop: physical ? 32 : 0,
-                                             cameraWidth: physical ? 180 : 0, layout: layout, customWidth: 360)
+                                             cameraWidth: physical ? 180 : 0, layout: layout)
                 let size = geometry.notificationPreviewSize(contentHeight: 180)
                 expect(size.width == min(400, geometry.expandedWidth) && size.width <= geometry.expandedWidth
                        && size.height == geometry.safeContentTop + 180 + NotchLayout.bottomInset

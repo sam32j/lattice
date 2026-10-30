@@ -470,8 +470,8 @@ struct NotchView: View {
         }
     }
 
-    /// Keep each page's minimum usable layout reachable when a custom height
-    /// or the display leaves less room. The outer silhouette stays unchanged.
+    /// Keep each page's minimum usable layout reachable on smaller displays.
+    /// The outer silhouette stays unchanged.
     private var pageSize: CGSize {
         var size = service.contentSize
         guard !showsDetail else { return size }
@@ -638,7 +638,7 @@ struct NotchView: View {
                 NotchSystemView(size: pageSize) { service.showMetric($0) }
             // The launcher hands the row its own controls, which a row set
             // here would replace.
-            case .hub: LatticeHubView(notchSize: pageSize, customLayout: service.geometry.layout == .custom)
+            case .hub: LatticeHubView(notchSize: pageSize)
             case .scratchpad: NotchScratchpadView(service: service)
             case .agents: NotchAgentsView(size: pageSize)
             case .watch: NotchWatchView(size: pageSize)
