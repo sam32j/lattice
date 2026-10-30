@@ -86,11 +86,11 @@ final class NotchTimerService: ObservableObject {
 
     private func finishIfDue() {
         guard session.finishIfDue(at: now) else { return }
-        persistSessionToCache()
         alert.stop()
         // The notice takes the strip it watched from.
         NotchService.shared.endMascotCountdown(retreating: false)
         announceCompletion()
+        persistSessionToCache()
         alert.start(enabled: NotchTimerSupport.isSoundEnabled())
     }
 
@@ -105,6 +105,8 @@ final class NotchTimerService: ObservableObject {
     }
 
     private func persistSessionToCache() {
+        // Completed sessions have already announced; never cache them again.
+        guard !session.completed else { NotchTimerCache.delete(); return }
         if let snapshot = NotchTimerCache.createSnapshot(from: session, now: now) {
             NotchTimerCache.save(snapshot)
         } else {
@@ -118,6 +120,7 @@ final class NotchTimerService: ObservableObject {
             session = restored
             if session.completed {
                 announceCompletion()
+                NotchTimerCache.delete()
             }
         } else {
             NotchTimerCache.delete()

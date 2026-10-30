@@ -2596,6 +2596,20 @@ def main():
           + f'#sourceLocation(file: {json.dumps(checks)}, line: 1)\n'
           + (ROOT / checks).read_text() + "\n#sourceLocation()\n")
 
+    timer_service = "Sources/Lattice/Services/Notch/NotchTimerService.swift"
+    write("NotchTimerAnnouncements.swift", "import Foundation\nextension NotchTimerAnnouncementContract {\nfinal class Service {\n"
+          + "var session = NotchTimerSession()\nvar now: TimeInterval = 100\nvar suspended = true\n"
+          + "var announcements = 0\nlet alert = Alert()\n"
+          + "var completionTask: Task<Void, Never>?\nvar countdownTask: Task<Void, Never>?\n"
+          + "func announceCompletion() { announcements += 1 }\nfunc scheduleCompletion() {}\n"
+          + "".join(declaration(timer_service, prefix)
+              .replace("NotchTimerCache.", "Cache.").replace("NotchTimerSupport.", "Support.")
+              .replace("NotchService.shared.", "UI.shared.") for prefix in [
+                  "    func syncWithPreferences()", "    func suspend()", "    func stop()",
+                  "    func startNext()", "    private func finishIfDue()",
+                  "    private func persistSessionToCache()", "    private func restoreSessionFromCache()"])
+          + "}\n}\n")
+
     for path in OUTPUT.glob("*.swift"):
         if path.name not in EMITTED:
             path.unlink()
