@@ -27,7 +27,7 @@ enum HubControlActionTests {
     enum Permissions { static let shared = PermissionSettings() }
     enum QuickTogglesService { static let shared = Toggles() }
     typealias MicMuteService = LatticeHubContract.MicMuteService
-    typealias KeepAwakeManager = LatticeHubContract.KeepAwakeManager
+    enum KeepAwakeManager { static let shared = HubStayAwakeContract.Service() }
     typealias CleaningModeManager = LatticeHubContract.CleaningModeManager
     typealias DispatchQueue = LatticeHubContract.DispatchQueue
     final class BrightnessService {

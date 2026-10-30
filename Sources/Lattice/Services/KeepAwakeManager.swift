@@ -18,6 +18,7 @@ final class KeepAwakeManager: ObservableObject {
     enum EndReason { case manual, timer, battery, quit }
     enum SessionTrigger { case manual, automation }
 
+    @Published private(set) var assertionFailed = false
     @Published private(set) var isActive = false
     @Published private(set) var endDate: Date? // nil = indefinite
     @Published private(set) var sessionTrigger: SessionTrigger?
@@ -70,10 +71,9 @@ final class KeepAwakeManager: ObservableObject {
 
     var onSessionEnded: ((EndReason) -> Void)?
 
-    private var systemAssertion = IOPMAssertionID(0)
-    private var displayAssertion = IOPMAssertionID(0)
-    private var hasSystemAssertion = false
-    private var hasDisplayAssertion = false
+    private let assertions = KeepAwakeAssertions()
+    private var stoppingSession = false
+    private var wakeObserver: NSObjectProtocol?
     private var endTimer: Timer?
     private var batteryTimer: Timer?
     var mouseJiggleTimer: Timer?
@@ -114,6 +114,9 @@ final class KeepAwakeManager: ObservableObject {
         clamshellPreferred = UserDefaults.standard.bool(forKey: DefaultsKey.clamshellPreferred)
         dimScreenOnLidClose = UserDefaults.standard.bool(forKey: DefaultsKey.dimScreenOnLidClose)
         refreshPasswordlessStatus()
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.syncWithPreferences() }
         // Every settings write announces itself, including the ones made from
         // inside this class, so a burst folds into a single reply on the next
         // turn of the run loop rather than one full pass per write.
@@ -190,6 +193,7 @@ final class KeepAwakeManager: ObservableObject {
     // MARK: - Session
 
     func toggle() {
+        assertionFailed = false
         if isActive {
             if sessionTrigger == .automation || automationConditionsHold() {
                 automationSuppressedUntilConditionsClear = true
@@ -213,8 +217,15 @@ final class KeepAwakeManager: ObservableObject {
 
     func syncWithPreferences() {
         guard !isTerminating else { return }
+        if stoppingSession { deactivate(reason: .manual); return }
         syncAutomationMonitoring()
-        if isActive, !sessionPausedForScreenLock { applyAssertions() }
+        if screenLocked, UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakePauseWhenLocked) {
+            syncSessionWithScreenLock()
+            return
+        }
+        if isActive, !sessionPausedForScreenLock, !applyAssertions() {
+            deactivate(reason: .manual)
+        }
         syncMouseJiggleTimer()
     }
 
@@ -271,7 +282,19 @@ final class KeepAwakeManager: ObservableObject {
         syncScreenLockMonitoring()
         sessionPausedForScreenLock = screenLocked
             && UserDefaults.standard.bool(forKey: DefaultsKey.keepAwakePauseWhenLocked)
-        if !sessionPausedForScreenLock { applyAssertions() }
+        if sessionPausedForScreenLock {
+            guard releaseAssertions() else {
+                assertionFailed = true
+                deactivate(reason: .manual)
+                return
+            }
+            assertionFailed = false
+        }
+        if !sessionPausedForScreenLock, !applyAssertions() {
+            deactivate(reason: .manual)
+            return
+        }
+        stoppingSession = false
         sessionTrigger = trigger
         if trigger == .manual {
             activeAutomationConditions.removeAll()
@@ -300,7 +323,7 @@ final class KeepAwakeManager: ObservableObject {
 
     func extend(minutes: Int) {
         guard isActive, let current = endDate else { return }
-        let newEnd = max(current, Date()).addingTimeInterval(TimeInterval(minutes) * 60)
+        let newEnd = HubStayAwakeSupport.durationEnd(minutes: minutes, isTimed: true, end: current, now: Date())
         endDate = newEnd
         scheduleEnd(at: newEnd)
     }
@@ -315,12 +338,15 @@ final class KeepAwakeManager: ObservableObject {
         }
         endTimer?.invalidate()
         endTimer = nil
+        let released = releaseAssertions()
+        if released && stoppingSession { assertionFailed = false }
+        stoppingSession = !released && reason != .quit
+        if !released { assertionFailed = true }
         endDate = nil
-        releaseAssertions()
         sessionTrigger = nil
         sessionMinutes = nil
         activeAutomationConditions.removeAll()
-        isActive = false
+        isActive = stoppingSession
         sessionPausedForScreenLock = false
         stopBatteryWatch()
         stopMouseJiggleTimer()
@@ -331,7 +357,7 @@ final class KeepAwakeManager: ObservableObject {
         } else if reason == .quit, lidSleepAttemptsRemaining > 0 {
             sleepIfLidAlreadyClosed(attemptsLeft: lidSleepAttemptsRemaining, synchronous: true)
         }
-        if hadSession, reason != .quit, reason != .manual {
+        if released, hadSession, reason != .quit, reason != .manual {
             onSessionEnded?(reason)
         }
     }
@@ -405,8 +431,9 @@ final class KeepAwakeManager: ObservableObject {
         guard shouldPause != sessionPausedForScreenLock else { return }
 
         if shouldPause {
-            sessionPausedForScreenLock = true
-            releaseAssertions()
+            let released = releaseAssertions()
+            sessionPausedForScreenLock = released
+            assertionFailed = !released
             if clamshellNeedsRestore { disableClamshell(synchronous: false) }
             stopBatteryWatch()
             stopMouseJiggleTimer()
@@ -424,7 +451,7 @@ final class KeepAwakeManager: ObservableObject {
         }
         startBatteryWatch()
         guard isActive else { return }
-        applyAssertions()
+        guard applyAssertions() else { deactivate(reason: .manual); return }
         syncMouseJiggleTimer()
         if clamshellPreferred { applyClamshellPreference() }
     }
@@ -670,46 +697,17 @@ final class KeepAwakeManager: ObservableObject {
 
     // MARK: - IOKit assertions
 
-    private func applyAssertions() {
-        if !hasSystemAssertion {
-            var id = IOPMAssertionID(0)
-            let ok = IOPMAssertionCreateWithName("PreventUserIdleSystemSleep" as CFString,
-                                                 IOPMAssertionLevel(kIOPMAssertionLevelOn),
-                                                 "Lattice: keep the Mac awake" as CFString,
-                                                 &id)
-            if ok == kIOReturnSuccess {
-                systemAssertion = id
-                hasSystemAssertion = true
-            }
-        }
-        let allowDisplaySleep = UserDefaults.standard.bool(
-            forKey: DefaultsKey.keepAwakeAllowDisplaySleep
-        )
-        if allowDisplaySleep, hasDisplayAssertion {
-            IOPMAssertionRelease(displayAssertion)
-            hasDisplayAssertion = false
-        } else if !allowDisplaySleep, !hasDisplayAssertion {
-            var id = IOPMAssertionID(0)
-            let ok = IOPMAssertionCreateWithName("PreventUserIdleDisplaySleep" as CFString,
-                                                 IOPMAssertionLevel(kIOPMAssertionLevelOn),
-                                                 "Lattice: keep the display on" as CFString,
-                                                 &id)
-            if ok == kIOReturnSuccess {
-                displayAssertion = id
-                hasDisplayAssertion = true
-            }
-        }
+    @discardableResult
+    private func applyAssertions() -> Bool {
+        let acquired = assertions.acquire(allowDisplaySleep: UserDefaults.standard.bool(
+            forKey: DefaultsKey.keepAwakeAllowDisplaySleep))
+        assertionFailed = !acquired
+        return acquired
     }
 
-    private func releaseAssertions() {
-        if hasSystemAssertion {
-            IOPMAssertionRelease(systemAssertion)
-            hasSystemAssertion = false
-        }
-        if hasDisplayAssertion {
-            IOPMAssertionRelease(displayAssertion)
-            hasDisplayAssertion = false
-        }
+    @discardableResult
+    private func releaseAssertions() -> Bool {
+        assertions.release()
     }
 
     // MARK: - Closed lid (pmset disablesleep)
