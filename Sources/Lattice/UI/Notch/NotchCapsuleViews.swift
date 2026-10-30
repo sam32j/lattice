@@ -205,12 +205,14 @@ struct NotchCapsuleRestingView: View {
                         .capsuleCentred(symbol, weight: .regular)
                         .foregroundStyle(tint)
                     if let percent = service.power.chargePercent {
-                        Text("\(percent)%").font(Font(CapsuleLayout.smallFont as CTFont)).lineLimit(1)
+                        Text("\(percent)%")
+                            .font(.system(size: min(12, max(9, geometry.stripBodyHeight * 0.4)), weight: .medium))
+                            .monospacedDigit().lineLimit(1)
                             .foregroundStyle(tint)
                     }
                 case .agents:
-                    NotchAgentRestingWing(leading: true)
-                    NotchAgentRestingWing(leading: false)
+                    NotchAgentRestingWing(leading: true, height: geometry.stripBodyHeight)
+                    NotchAgentRestingWing(leading: false, height: geometry.stripBodyHeight)
                 case .music:
                     if let artwork = music.artwork {
                         NotchMusicCover(artwork: artwork, side: CapsuleLayout.artworkSide(geometry),

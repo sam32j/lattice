@@ -705,6 +705,7 @@ struct NotchRestingStrip: View {
     var displayGeometry: NotchGeometry? = nil
     @ObservedObject private var music = NotchMusicService.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.displayScale) private var displayScale
 
     private var geometry: NotchGeometry { displayGeometry ?? service.geometry }
 
@@ -748,8 +749,9 @@ struct NotchRestingStrip: View {
                                 .foregroundStyle(batteryTint)
                                 .padding(.leading, restingBatteryInset)
                         case .agents:
-                            NotchAgentRestingWing(leading: true)
+                            NotchAgentRestingWing(leading: true, height: geometry.stripBodyHeight)
                                 .padding(.leading, restingBatteryInset)
+                                .offset(x: -3 / max(1, displayScale))
                         case .none: EmptyView()
                         }
                     }
@@ -767,14 +769,14 @@ struct NotchRestingStrip: View {
                             }
                         case .battery:
                             if let percent = service.power.chargePercent {
-                                Text("\(percent)%").font(.system(size: 9, weight: .medium)).monospacedDigit()
+                                Text("\(percent)%").font(.system(size: min(12, max(9, geometry.stripBodyHeight * 0.4)), weight: .medium)).monospacedDigit()
                                     .foregroundStyle(batteryTint)
                                     .lineLimit(1)
-                                    .padding(.trailing, restingBatteryInset)
+                                    .padding(.trailing, min(8, restingBatteryInset))
                             }
                         case .agents:
-                            NotchAgentRestingWing(leading: false)
-                                .padding(.trailing, restingBatteryInset)
+                            NotchAgentRestingWing(leading: false, height: geometry.stripBodyHeight)
+                                .padding(.trailing, min(8, restingBatteryInset))
                         case .none: EmptyView()
                         }
                     }
