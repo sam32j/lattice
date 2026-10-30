@@ -5,6 +5,7 @@ import AppKit
 /// Gesture stages decide when to tap. There is no delayed pulse to outlive them.
 final class NotchMusicSwipeHaptics {
     static let shared = NotchMusicSwipeHaptics {
+        guard NotchSupport.usesHapticFeedback() else { return }
         NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
     }
     private let perform: () -> Void

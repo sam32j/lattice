@@ -966,8 +966,11 @@ final class NotchPanel: NSPanel {
     }
 
     override func sendEvent(_ event: NSEvent) {
-        if event.type == .scrollWheel,
-           handleScroll?(event) == true || HorizontalWheelScrolling.handle(event) { return }
+        if event.type == .scrollWheel {
+            acceptsKeyFocus = true
+            if !isKeyWindow { makeKey() }
+            if handleScroll?(event) == true || HorizontalWheelScrolling.handle(event) { return }
+        }
         super.sendEvent(event)
     }
 }
@@ -1011,9 +1014,11 @@ private final class NotchQuickAccessContainer: NSView {
     required init?(coder: NSCoder) { nil }
 
     override func touchesBegan(with event: NSEvent) {
+        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesBegan(with: event) }
     }
     override func touchesMoved(with event: NSEvent) {
+        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesMoved(with: event) }
     }
     override func touchesEnded(with event: NSEvent) {
@@ -1878,9 +1883,11 @@ final class NotchActivationButton: NSButton {
 private final class NotchHostingView: NSHostingView<AnyView> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func touchesBegan(with event: NSEvent) {
+        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesBegan(with: event) }
     }
     override func touchesMoved(with event: NSEvent) {
+        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesMoved(with: event) }
     }
     override func touchesEnded(with event: NSEvent) {

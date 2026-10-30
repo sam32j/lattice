@@ -46,7 +46,7 @@ struct NotchCapsuleMusicStrip: View {
         // A song is named as it starts and while the pointer rests on its
         // cover, and a strip on its way out leaves as it was. Otherwise the
         // cover and bars say enough.
-        let named = trackNotice != nil || service.capsuleMusicTitleShown || (live ? service.musicStripNamesSong : snapshot?.namesSong == true)
+        let named = !service.peeking && (trackNotice != nil || service.capsuleMusicTitleShown || (live ? service.musicStripNamesSong : snapshot?.namesSong == true))
         NotchCapsuleRow(size: size ?? NotchMusicNoticeLayout.capsuleSize(title: named ? title : nil, artist: artist, geometry: geometry),
                         geometry: geometry, leading: 0, trailing: 0) {
             HStack(spacing: 0) {

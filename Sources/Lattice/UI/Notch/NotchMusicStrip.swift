@@ -70,6 +70,7 @@ struct NotchMusicStrip: View {
     /// The left side while the pointer has the song named, nil otherwise. A
     /// strip on its way out keeps the name it had, which leaves with it.
     private var namedWing: CGFloat? {
+        guard !service.peeking else { return nil }
         if let trackNotice {
             guard !fillsCameraGap else { return nil }
             return NotchMusicNoticeLayout.wings(title: trackNotice.title, artist: trackNotice.detail, geometry: geometry).leading
@@ -83,7 +84,15 @@ struct NotchMusicStrip: View {
     var body: some View {
         let wing = geometry.compactActivityWingWidth
         let named = namedWing
-        Button { live ? service.activateMusicStrip() : service.openActivity(.music) } label: {
+        Button {
+            if music.commandFailed {
+                _ = music.send(.next)
+            } else if live {
+                service.activateMusicStrip()
+            } else {
+                service.openActivity(.music)
+            }
+        } label: {
             HStack(spacing: 0) {
                 HStack(spacing: Layout.spacing) {
                     // The words grow out from behind the cover, which keeps its place.

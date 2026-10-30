@@ -44,12 +44,15 @@ struct NotchTimerRuler: NSViewRepresentable {
         @objc func changed(_ sender: NSSlider) {
             guard parent.minutes != sender.integerValue else { return }
             parent.minutes = sender.integerValue
-            NotchService.shared.provideHapticFeedback()
+            if (sender as? NotchTimerRulerControl)?.feedbackOnChange == true {
+                NotchService.shared.provideHapticFeedback()
+            }
         }
     }
 }
 
 final class NotchTimerRulerControl: NSSlider {
+    private(set) var feedbackOnChange = true
     var increasedContrast = false
     var durationLocale = Locale.current
     private var drag: (x: CGFloat, value: Double)?
@@ -89,6 +92,8 @@ final class NotchTimerRulerControl: NSSlider {
     override func mouseUp(with event: NSEvent) {
         guard isEnabled, drag != nil else { drag = nil; return }
         if !didDrag {
+            feedbackOnChange = false
+            defer { feedbackOnChange = true }
             let offset = convert(event.locationInWindow, from: nil).x - bounds.midX
             select(NotchTimerRulerScale.moving(doubleValue, by: -Double(offset)))
         }
