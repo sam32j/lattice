@@ -134,8 +134,8 @@ enum PreferencesFeatureTests {
                "valid keep-awake active icon is preserved")
         suite.expect(Defaults.sanitizedKeepAwakeActiveIcon("bad") == .lattice,
                "invalid keep-awake active icon falls back to the Lattice glyph")
-        suite.expect(KeepAwakeActiveIcon.eye.systemSymbolName == "eye.fill",
-               "keep-awake eye option maps to its menu bar symbol")
+        suite.expect(KeepAwakeActiveIcon.allCases.allSatisfy { $0.systemSymbolName == "bolt.fill" },
+               "all legacy Stay Awake icon preferences render the unified bolt symbol")
         suite.expect(registeredDefaults[DefaultsKey.menuBarIconSymbol] as? String == "",
                "the menu bar shows the Lattice glyph until a symbol is chosen")
         suite.expect(Defaults.sanitizedMenuBarIconSymbol("  bolt.fill\n") == "bolt.fill"
@@ -155,8 +155,8 @@ enum PreferencesFeatureTests {
                "the menu bar icon gallery offers many distinct symbol names")
         suite.expect(gallery.allSatisfy(symbolExists),
                "every symbol in the menu bar icon gallery exists on this Mac")
-        suite.expect(KeepAwakeActiveIcon.allCases.compactMap(\.systemSymbolName).allSatisfy { !gallery.contains($0) },
-               "the menu bar icon gallery leaves out Keep Awake's symbols, so an active session still stands out")
+        suite.expect(gallery.contains("bolt.fill"),
+               "the general menu bar gallery continues to offer bolt independently of the active-session indicator")
         suite.expect(!KeepAwakeAutomationSupport.hasExternalDisplay(builtInFlags: []),
                "no online display does not count as an external display")
         suite.expect(!KeepAwakeAutomationSupport.hasExternalDisplay(builtInFlags: [true]),
