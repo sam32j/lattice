@@ -58,9 +58,17 @@ def main():
           + "enum Action: String {\n"
           + "case micMute, keepAwake, darkMode, keyboardLight, hiddenFiles, desktopIcons\n"
           + "case emptyTrash, ejectDisks, lockScreen, displayOff, screenSaver, cleaningMode\n"
+          + "case cameraPreview\n"
           + declaration("Sources/Lattice/UI/LatticeHub/LatticeHubControls.swift", "    func run(onDismiss:")
+          + declaration("Sources/Lattice/UI/LatticeHub/LatticeHubControls.swift", "    static func rows(")
           + "}\nfinal class Toggles: ToggleState {\n"
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    func openAutomationSettings(for action:")
+          + "}\n}\n")
+    controls_support = "Sources/Lattice/Services/LatticeHub/LatticeHubControlsSupport.swift"
+    write("HubControlPreferences.swift", "import Foundation\nextension HubControlActionTests {\n"
+          + "typealias HubControlAction = Action\nfinal class ControlPreferences: PreferenceState {\n"
+          + declaration(controls_support, "    var hiddenControlsSet:").replace("UserDefaults.standard", "defaults")
+          + declaration(controls_support, "    func setControlHidden(").replace("UserDefaults.standard", "defaults")
           + "}\n}\n")
     reopening = declaration("Sources/Lattice/UI/Settings/NotchSettingsBehavior.swift", "    var openingCard:")
     reopening = reopening.split("selection: Binding(get: {", 1)[1].split("}, set:", 1)[0]

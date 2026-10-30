@@ -10,7 +10,6 @@ extension LatticeHubView {
         case .screenRecorder:
             let strings = FeatureStrings.recorder(l10n.language)
             return recorder.isRecording ? strings.stopButton : strings.pageTitle
-        case .cameraPreview: return FeatureStrings.cameraPreview(l10n.language).pageTitle
         case .clipboard: return FeatureStrings.clipboard(l10n.language).title
         case .windowLayout:
             switch l10n.language {
@@ -49,7 +48,6 @@ extension LatticeHubView {
         switch item {
         case .screenshot: return "camera.viewfinder"
         case .screenRecorder: return recorder.isRecording ? "stop.circle" : "record.circle"
-        case .cameraPreview: return "person.crop.square.badge.camera"
         case .clipboard: return "doc.on.clipboard"
         case .windowLayout: return "rectangle.3.group"
         case .homebrew: return "shippingbox"

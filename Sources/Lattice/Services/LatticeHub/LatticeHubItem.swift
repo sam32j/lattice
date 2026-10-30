@@ -7,7 +7,7 @@ import SwiftUI
 /// Pure workflow utilities hosted in Lattice Hub.
 enum LatticeHubItem: String, PanelOrderItem, Identifiable {
     case screenshot, cleaner, uninstaller, clipboard, windowLayout,
-         media, urlCleaner, cameraPreview, scratchpad, screenRecorder,
+         media, urlCleaner, scratchpad, screenRecorder,
          homebrew, appUpdates, portManager, videoDownloader, shelf,
          textSnippets, killProcess, wallpaper
 
@@ -28,7 +28,6 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
         case .windowLayout: return .windowLayout
         case .media: return .mediaTools
         case .urlCleaner: return .urlCleaner
-        case .cameraPreview: return .cameraPreview
         case .scratchpad: return .scratchpad
         case .screenRecorder: return .screenRecorder
         case .homebrew: return .homebrew
