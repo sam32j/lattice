@@ -1887,18 +1887,27 @@ enum NotchTests {
         defaults.set(false, forKey: DefaultsKey.notchShowInCaptures)
         suite.expect(!NotchSupport.showsInCaptures(in: defaults), "capture visibility remains an explicit opt-out")
         defaults.set(true, forKey: DefaultsKey.notchShowInCaptures)
+        let savedHiddenIdle = defaults.object(forKey: DefaultsKey.notchIdleContent)
+        defaults.set(NotchIdleContent.music.rawValue, forKey: DefaultsKey.notchIdleContent)
         suite.expect(!NotchSupport.hidesUntilHover(in: defaults), "the closed island stays in sight by default")
         defaults.set(true, forKey: DefaultsKey.notchHideUntilHover)
         suite.expect(!NotchSupport.hidesUntilHover(in: defaults), "click to open does not hide the island until hover")
         defaults.set(true, forKey: DefaultsKey.notchOpenOnHover)
         suite.expect(NotchSupport.hidesUntilHover(in: defaults), "hidden until hover waits out of sight for the pointer")
+        suite.expect(NotchSupport.idleContent(in: defaults) == .none,
+                     "hide when idle suppresses saved resting content")
         suite.expect(NotchSupport.hidesNoticesUntilHover(in: defaults) && !NotchSupport.hiddenShowsActivity(in: defaults),
                "hidden until hover keeps activity and notices out of sight by default")
         defaults.set(true, forKey: DefaultsKey.notchHiddenShowsActivity)
         suite.expect(NotchSupport.hiddenShowsActivity(in: defaults) && !NotchSupport.hidesNoticesUntilHover(in: defaults),
                "a hidden island set to show activity takes notices while it waits for the pointer")
+        suite.expect(NotchSupport.idleContent(in: defaults) == .none,
+                     "allowing live activity never restores idle content while hide when idle is on")
         defaults.set(false, forKey: DefaultsKey.notchOpenOnHover)
         suite.expect(!NotchSupport.hiddenShowsActivity(in: defaults), "showing activity only applies while hidden until hover")
+        suite.expect(NotchSupport.idleContent(in: defaults) == .music,
+                     "click opening does not suppress the saved idle choice")
+        defaults.set(savedHiddenIdle, forKey: DefaultsKey.notchIdleContent)
         defaults.set(true, forKey: DefaultsKey.notchOpenOnHover)
         defaults.set(false, forKey: DefaultsKey.notchHiddenShowsActivity)
         defaults.set(false, forKey: DefaultsKey.notchOpenOnHover)

@@ -10,7 +10,7 @@ extension NotchSettings {
     }
 
     var restsWithMascot: Bool {
-        enabled && mascotEnabled && !mascotHidesWhenIdle && features.isAvailable(.notchMascot)
+        enabled && !(hover && hideUntilHover) && mascotEnabled && !mascotHidesWhenIdle && features.isAvailable(.notchMascot)
     }
 
     /// The companion where it rests, beside a camera drawn black on black.
@@ -44,7 +44,7 @@ extension NotchSettings {
                             restingMascot
                         } else if item != .none {
                             Image(systemName: symbol).font(.system(size: 11))
-                            RoundedRectangle(cornerRadius: 4).fill(.black).frame(width: 20, height: 12)
+                            Color.clear.frame(width: 20, height: 12)
                             if item == .battery || item == .agents { Text(item == .agents ? "62%" : "76%").font(.system(size: 9, weight: .medium)) }
                             else { Image(systemName: item == .music ? "waveform" : "minus").font(.system(size: 9)) }
                         } else { Color.clear.frame(width: 50, height: 12) }

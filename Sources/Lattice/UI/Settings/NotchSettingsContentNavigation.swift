@@ -5,11 +5,12 @@ extension NotchSettings {
     var layoutPage: some View {
         SettingsCard {
             SettingsRow(symbol: "sparkles", title: "Quick Actions", caption: "Quick action buttons around your Dynamic Island.") {
-                Button(FeatureStrings.screenshot(l10n.language).editButton) {
+                Button(l10n.language == .enUS ? "Edit..." : FeatureStrings.screenshot(l10n.language).editButton + "…") {
                     NotchLiveQuickActionsEditorController.shared.show()
                 }
                 .buttonStyle(.borderedProminent)
-                .controlSize(.small)
+                .font(.body)
+                .controlSize(.regular)
             }
         }
     }

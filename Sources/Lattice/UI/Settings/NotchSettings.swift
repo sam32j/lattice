@@ -104,7 +104,7 @@ struct NotchSettings: View {
     @ViewBuilder
     var body: some View {
         Group {
-            if let selection = contentSelection {
+            if enabled, let selection = contentSelection {
                 contentDetailView(selection: selection)
             } else {
                 combinedPageView
@@ -113,6 +113,10 @@ struct NotchSettings: View {
         .onChange(of: configuration) { _, _ in sync() }
         .onChange(of: browserCovers) { _, _ in NotchMusicService.shared.syncBrowserCovers() }
         .onChange(of: accessData) { _, _ in NotchService.shared.syncWithPreferences() }
+        .onAppear(perform: enforceIdleSelection)
+        .onChange(of: hideUntilHover) { _, _ in enforceIdleSelection() }
+        .onChange(of: hover) { _, _ in enforceIdleSelection() }
+        .onChange(of: idle) { _, _ in enforceIdleSelection() }
         .onChange(of: tab) { _, _ in draggingModule = nil; draggingControl = nil }
         .onAppear(perform: consumeTabHint)
         .onChange(of: router.notchSettingsTab) { _, _ in consumeTabHint() }
@@ -151,95 +155,93 @@ struct NotchSettings: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     SettingsCard {
-                        SettingsRow(symbol: AppFeature.notch.symbolName, title: text.enable,
-                                    experimentalBadge: FeatureStrings.hub(l10n.language).experimentalBadge) {
+                        SettingsRow(symbol: AppFeature.notch.symbolName, title: text.enable) {
                             PermissionGatedToggle(text.enable, isOn: islandFeatureBinding(.notch, value: $enabled))
                                 .labelsHidden().toggleStyle(.switch)
                         }
-                        let labels = FeatureStrings.notchLiveActivitySettings(l10n.language)
-                        ShortcutPreferenceRow(role: .notch, label: labels.openWithShortcut, symbolName: nil) {
-                            NotchService.shared.syncWithPreferences()
-                        }
-                        .padding(.leading, settingsRowTextInset)
-                        .disabled(!enabled)
-                        if notch.shortcutRegistrationFailed {
-                            Text(l10n.s.shortcutUnavailable)
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                                .padding(.leading, settingsRowTextInset)
-                        }
-                        SettingsControlRow(title: labels.showOn) {
-                            Picker(labels.showOn, selection: $display) {
-                                Text(text.automatic).tag(NotchDisplay.automatic.rawValue)
-                                if PowerSampler.hasInternalBattery {
-                                    Text(text.builtIn).tag(NotchDisplay.builtIn.rawValue)
-                                }
-                                Text(text.mainDisplay).tag(NotchDisplay.main.rawValue)
-                                Text(text.followPointer).tag(NotchDisplay.pointer.rawValue)
-                                Text(text.allDisplays).tag(NotchDisplay.all.rawValue)
+                        if enabled {
+                            let labels = FeatureStrings.notchLiveActivitySettings(l10n.language)
+                            ShortcutPreferenceRow(role: .notch, label: labels.openWithShortcut, symbolName: nil) {
+                                NotchService.shared.syncWithPreferences()
                             }
-                            .pickerStyle(.menu)
-                            .labelsHidden()
-                        }
-                        .padding(.leading, settingsRowTextInset)
-                        .disabled(!enabled)
-                        SettingsRow(symbol: "arrow.down.backward.and.arrow.up.forward.rectangle", title: labels.dynamicIslandSize) {
-                            Picker(labels.dynamicIslandSize, selection: Binding(get: {
-                                size == NotchSize.compact.rawValue ? NotchSize.compact.rawValue : NotchSize.spacious.rawValue
-                            }, set: { size = $0 })) {
-                                Text(text.compact).tag(NotchSize.compact.rawValue)
-                                Text(text.spacious).tag(NotchSize.spacious.rawValue)
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                            .fixedSize()
-                        }
-                        .disabled(!enabled)
-                        switchRow("hand.draw", labels.useScrollGestures,
-                                  isOn: islandFeatureBinding(.notchGestures, value: $gesturesEnabled))
+                            .padding(.leading, settingsRowTextInset)
                             .disabled(!enabled)
-                        if gesturesEnabled {
-                            SettingsToggleRow(title: labels.turnOnHapticFeedback, isOn: $hapticFeedback)
-                                .padding(.leading, settingsRowTextInset)
+                            if notch.shortcutRegistrationFailed {
+                                Text(l10n.s.shortcutUnavailable)
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                                    .padding(.leading, settingsRowTextInset)
+                            }
+                            SettingsControlRow(title: labels.showOn) {
+                                Picker(labels.showOn, selection: $display) {
+                                    Text(text.automatic).tag(NotchDisplay.automatic.rawValue)
+                                    if PowerSampler.hasInternalBattery {
+                                        Text(text.builtIn).tag(NotchDisplay.builtIn.rawValue)
+                                    }
+                                    Text(text.mainDisplay).tag(NotchDisplay.main.rawValue)
+                                    Text(text.followPointer).tag(NotchDisplay.pointer.rawValue)
+                                    Text(text.allDisplays).tag(NotchDisplay.all.rawValue)
+                                }
+                                .pickerStyle(.menu)
+                                .labelsHidden()
+                            }
+                            .padding(.leading, settingsRowTextInset)
+                            .disabled(!enabled)
+                            SettingsRow(symbol: "arrow.down.backward.and.arrow.up.forward.rectangle", title: labels.dynamicIslandSize) {
+                                Picker(labels.dynamicIslandSize, selection: Binding(get: {
+                                    size == NotchSize.compact.rawValue ? NotchSize.compact.rawValue : NotchSize.spacious.rawValue
+                                }, set: { size = $0 })) {
+                                    Text(text.compact).tag(NotchSize.compact.rawValue)
+                                    Text(text.spacious).tag(NotchSize.spacious.rawValue)
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.menu)
+                                .fixedSize()
+                            }
+                            .disabled(!enabled)
+                            switchRow("hand.draw", labels.useScrollGestures,
+                                      isOn: islandFeatureBinding(.notchGestures, value: $gesturesEnabled))
+                                .disabled(!enabled)
+                            if gesturesEnabled {
+                                SettingsToggleRow(title: labels.turnOnHapticFeedback, isOn: $hapticFeedback)
+                                    .padding(.leading, settingsRowTextInset)
+                                    .disabled(!enabled)
+                            }
+                            switchRow("camera.viewfinder", labels.showInScreenshots, isOn: $showInCaptures)
                                 .disabled(!enabled)
                         }
-                        switchRow("camera.viewfinder", labels.showInScreenshots, isOn: $showInCaptures)
-                            .disabled(!enabled)
                     }
-                    if enabled, AppFeature.notch.isAvailable, !(hover && hideUntilHover && !hiddenShowsActivity), !notch.geometry.isNotched, !permissions.accessibility {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(text.menuBarAccessHint)
-                                .font(.callout).foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            PermissionRow(kind: .accessibility)
+                    if enabled {
+                        if AppFeature.notch.isAvailable, !(hover && hideUntilHover && !hiddenShowsActivity), !notch.geometry.isNotched, !permissions.accessibility {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(text.menuBarAccessHint)
+                                    .font(.callout).foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                PermissionRow(kind: .accessibility)
+                            }
                         }
-                    }
 
-                    openingCard
-                        .id("behavior")
+                        openingCard
+                            .id("behavior")
+                            .disabled(!enabled)
+                            .opacity(enabled ? 1.0 : 0.5)
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 20) {
+                            layoutPage
+                                .id("layout")
+                            sectionList
+                                .id("content")
+                        }
                         .disabled(!enabled)
                         .opacity(enabled ? 1.0 : 0.5)
 
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 20) {
-                        layoutPage
-                            .id("layout")
-                        sectionList
-                            .id("content")
-                    }
-                    .disabled(!enabled)
-                    .opacity(enabled ? 1.0 : 0.5)
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(editor.activity).font(.title3.weight(.semibold))
                         activityPage
+                        .id("activity")
+                        .disabled(!enabled)
+                        .opacity(enabled ? 1.0 : 0.5)
                     }
-                    .id("activity")
-                    .disabled(!enabled)
-                    .opacity(enabled ? 1.0 : 0.5)
                 }
                 .frame(maxWidth: 760)
                 .frame(maxWidth: .infinity)
@@ -267,6 +269,12 @@ struct NotchSettings: View {
         if !NotchLyricsSupport.isEnabled() { NotchLyricsService.shared.stop() }
         NotchMusicService.shared.syncQueuePreference()
         if AppFeature.brightness.isAvailable { BrightnessService.shared.syncWithPreferences() }
+    }
+
+    func enforceIdleSelection() {
+        if hover && hideUntilHover, idle != NotchIdleContent.none.rawValue {
+            idle = NotchIdleContent.none.rawValue
+        }
     }
 }
 
