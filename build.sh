@@ -315,7 +315,9 @@ if (( TEST )); then
         Sources/Lattice/UI/Settings/NotchSettingsTabRow.swift
         Sources/Lattice/Core/NotchActivityStrings.swift
         Sources/Lattice/Services/Notch/NotchTimerSupport.swift
+        Sources/Lattice/Services/Notch/NotchPomodoroDecoding.swift
         Sources/Lattice/Services/Notch/NotchTimerAlert.swift
+        Sources/Lattice/Services/Notch/NotchTimerToneData.swift
         Sources/Lattice/Services/Notch/NotchTimerCache.swift
         Sources/Lattice/UI/Notch/NotchIslandAlert.swift
         Sources/Lattice/Services/Notch/NotchAccessorySupport.swift

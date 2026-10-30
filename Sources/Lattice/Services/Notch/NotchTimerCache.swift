@@ -100,6 +100,7 @@ enum NotchTimerCache {
                                now: TimeInterval,
                                clockNow: Date = Date(),
                                gracePeriod: TimeInterval = maxGracePeriod) -> NotchTimerSession? {
+        guard validSnapshot(snapshot), now.isFinite else { return nil }
         if snapshot.completed {
             let age = clockNow.timeIntervalSince(snapshot.savedAt)
             guard age >= 0, age <= gracePeriod else { return nil }
@@ -116,7 +117,8 @@ enum NotchTimerCache {
         }
 
         if snapshot.isPaused {
-            guard let reading = snapshot.pausedReading, reading >= 0 else { return nil }
+            let limit = snapshot.mode == .stopwatch ? NotchTimerSupport.stopwatchLimit : snapshot.duration
+            guard let reading = snapshot.pausedReading, reading >= 0, reading <= limit else { return nil }
             return NotchTimerSession(
                 mode: snapshot.mode,
                 phase: snapshot.phase,
@@ -147,6 +149,8 @@ enum NotchTimerCache {
 
         if let targetEndDate = snapshot.targetEndDate {
             let remaining = targetEndDate.timeIntervalSince(clockNow)
+            // ISO-8601 persistence can lose subsecond precision; allow at most one second.
+            guard remaining.isFinite, remaining <= snapshot.duration + 1 else { return nil }
             if remaining > 0 {
                 return NotchTimerSession(
                     mode: snapshot.mode,
@@ -176,4 +180,22 @@ enum NotchTimerCache {
 
         return nil
     }
+    private static func validSnapshot(_ snapshot: NotchTimerCacheSnapshot) -> Bool {
+        guard snapshot.duration.isFinite, snapshot.duration >= 0,
+              snapshot.duration <= NotchTimerSupport.timerLimit,
+              !(snapshot.completed && snapshot.isPaused) else { return false }
+        switch snapshot.mode {
+        case .timer:
+            return snapshot.phase == .timer && snapshot.duration > 0 && snapshot.completedFocuses == 0
+        case .stopwatch:
+            return snapshot.phase == .stopwatch && snapshot.duration == 0
+                && !snapshot.completed && snapshot.completedFocuses == 0
+        case .pomodoro:
+            guard [.focus, .shortBreak, .longBreak].contains(snapshot.phase), snapshot.duration > 0,
+                  (0...snapshot.configuration.totalSessions).contains(snapshot.completedFocuses) else { return false }
+            return snapshot.completed || snapshot.phase != .focus
+                || snapshot.completedFocuses < snapshot.configuration.totalSessions
+        }
+    }
+
 }
