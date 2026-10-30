@@ -687,7 +687,10 @@ if (( TEST )); then
         Sources/Lattice/Services/Switcher/WindowUseOrder.swift
         Sources/Lattice/Services/Metrics/MetricFormat.swift
         Sources/Lattice/Services/Metrics/VMStatisticsDecoder.swift
+        Sources/Lattice/Services/KeepAwakeTimeFormat.swift
+        Sources/Lattice/Services/KeepAwakeAssertions.swift
         Sources/Lattice/Services/KeepAwakeAutomationSupport.swift
+        Sources/Lattice/Services/LatticeHub/HubStayAwakeSupport.swift
         Sources/Lattice/Services/SudoersSupport.swift
         Sources/Lattice/Services/Metrics/BatteryTimeSupport.swift
         Sources/Lattice/Services/Metrics/BatteryPowerSupport.swift

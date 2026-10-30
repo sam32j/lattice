@@ -64,6 +64,12 @@ def main():
           + "}\nfinal class Toggles: ToggleState {\n"
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    func openAutomationSettings(for action:")
           + "}\n}\n")
+    write("HubStayAwakeActions.swift", "import Foundation\nextension HubStayAwakeContract {\nfinal class Service: State {\n"
+          + declaration("Sources/Lattice/Services/LatticeHub/KeepAwakeHubActions.swift", "    var hubIsTimed:")
+          + declaration("Sources/Lattice/Services/LatticeHub/KeepAwakeHubActions.swift", "    func toggleFromHub(")
+          + declaration("Sources/Lattice/Services/LatticeHub/KeepAwakeHubActions.swift", "    func addHubDuration(")
+          + declaration("Sources/Lattice/Services/LatticeHub/KeepAwakeHubActions.swift", "    func reconcileHubSession(")
+          + "}\n}\n")
     controls_support = "Sources/Lattice/Services/LatticeHub/LatticeHubControlsSupport.swift"
     write("HubControlPreferences.swift", "import Foundation\nextension HubControlActionTests {\n"
           + "typealias HubControlAction = Action\nfinal class ControlPreferences: PreferenceState {\n"
@@ -1808,7 +1814,7 @@ def main():
     write("LatticeHubBodies.swift", "import Foundation\nimport Carbon.HIToolbox\n" + protocol + "\n\nextension LatticeHubContract {\n"
           + declaration(item_file, "enum LatticeHubItem:")
           + "final class Launcher {\nvar isEditing = false\nvar activeUtility: LatticeHubItem?\n"
-          + "var editingOptionsItem: LatticeHubItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar presentationID = UUID()\n"
+          + "var stayAwakeOptionsPresented = false\nvar editingOptionsItem: LatticeHubItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar presentationID = UUID()\n"
           + "var candidates: [LatticeHubItem] = LatticeHubItem.allCases\n"
           + "var visibleItems: [LatticeHubItem] { candidates.filter { $0.isAvailable(in: ReviewDefaults.current) } }\n"
           + 'func hide() { events.append("hide") }\n'
@@ -1847,7 +1853,7 @@ def main():
           + "        panel?.isVisible = true\n}\n"
           + page_service_body(snippet_service, "    func insert(_ snippet:").split("        hide()")[0]
           + "        inserted = true\n}\n"
-          + "}\nfinal class Launcher: PresentationState {\n"
+          + "}\nfinal class Launcher: PresentationState {\nvar stayAwakeOptionsPresented = false\n"
           + page_service_body(service, "    func syncWithPreferences()")
           + declaration(service, "    func suspend()") + declaration(service, "    func hide()")
           + "}\nfinal class Clipboard: ClipboardState {\n"
@@ -2276,6 +2282,8 @@ def main():
         "    func resumeAfterSystemTeardown(",
         "    private func activate(end:",
         "    func deactivate(reason:",
+        "    func syncWithPreferences(",
+        "    private func syncSessionWithScreenLock(",
         "    private func applyClamshellPreference(",
         "    private func prepareClamshellPreference(",
         "    private func finishClamshellSetup(",
@@ -2300,7 +2308,7 @@ def main():
           + "typealias KeepAwakeManager = Service\n"
           + "final class Service {\n"
           + "static let log = Logger(subsystem: \"lattice.tests\", category: \"keep-awake\")\n"
-          + "var isActive = false\nvar sessionPausedForScreenLock = false\n"
+          + "var assertionFailed = false\nvar assertionsSucceed = true\nvar releasesSucceed = true\nvar stoppingSession = false\nvar isActive = false\nvar sessionPausedForScreenLock = false\n"
           + "var isTerminating = false\nvar clamshellEnablePending = false\nvar clamshellRestorePending = false\n"
           + "var clamshellOperationGeneration = 0\nvar clamshellSetupID: UUID?\n"
           + "var lidSleepGeneration = 0\nvar lidSleepAttemptsRemaining = 0\n"
@@ -2318,10 +2326,11 @@ def main():
           + declaration(keep_awake, "    @Published var clamshellPreferred:").replace("@Published ", "", 1)
           + declaration(keep_awake, "    @Published var dimScreenOnLidClose: Bool {").replace("@Published ", "", 1)
           + "init() { clamshellPreferred = true; dimScreenOnLidClose = false }\n"
-          + "func syncScreenLockMonitoring() {}\nfunc applyAssertions() { assertionsHeld = true }\n"
-          + "func releaseAssertions() { assertionsHeld = false }\nfunc scheduleEnd(at date: Date) {}\n"
+          + "func syncScreenLockMonitoring() {}\nfunc applyAssertions() -> Bool { assertionsHeld = assertionsSucceed; assertionFailed = !assertionsSucceed; return assertionsSucceed }\n"
+          + "func releaseAssertions() -> Bool { if releasesSucceed { assertionsHeld = false }; return releasesSucceed }\nfunc scheduleEnd(at date: Date) {}\n"
           + "func startBatteryWatch() {}\nfunc stopBatteryWatch() {}\nfunc syncMouseJiggleTimer() {}\n"
-          + "func stopMouseJiggleTimer() {}\nfunc stopAutomationMonitoring() {}\nfunc syncWithPreferences() {}\n"
+          + "func continueAutomaticallyAfterTimerIfNeeded() -> Bool { false }\nfunc automationConditionsHold() -> Bool { true }\n"
+          + "func stopMouseJiggleTimer() {}\nfunc stopAutomationMonitoring() {}\nfunc syncAutomationMonitoring() {}\n"
           + "static func lidSleepIsAllowed() -> Bool { KeepAwakeAutomationSupport.lidSleepIsAllowed("
           + "systemAllowsSleep: policy, assertions: assertions) }\n"
           + "".join(declaration(keep_awake, prefix).replace("private ", "", 1) for prefix in keep_awake_methods)

@@ -7,6 +7,7 @@ import Carbon.HIToolbox
 extension LatticeHubService {
     func handlePanelKey(_ event: NSEvent,
                         flow: QuickToolsSupport.GridFlow = .rows(columns: LatticeHubService.columns)) -> NSEvent? {
+        if stayAwakeOptionsPresented { return event }
         if event.keyCode == UInt16(kVK_Escape) {
             if (event.window?.firstResponder as? NSTextView)?.hasMarkedText() == true { return event }
             if activeUtility != nil {

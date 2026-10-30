@@ -101,7 +101,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         }
         switch self {
         case .micMute: MicMuteService.shared.toggle()
-        case .keepAwake: KeepAwakeManager.shared.toggle()
+        case .keepAwake: KeepAwakeManager.shared.toggleFromHub()
         case .cameraPreview:
             let camera = CameraPreviewService.shared
             if camera.isVisible || camera.isEmbeddedPresented {
@@ -240,22 +240,29 @@ struct HubQuickControls: View {
                 let title = action.title(l10n: l10n, colorScheme: colorScheme)
                 let feedback = state == .needsPermission ? l10n.s.permissionOpenSettings
                     : FeatureStrings.quickToggles(l10n.language).actionFailed
-                HubControlButton(icon: needsAttention ? "exclamationmark.triangle.fill"
-                                    : (state == .running ? "hourglass" : action.icon(colorScheme: colorScheme)),
-                                 title: needsAttention ? "\(title)\n\(feedback)" : title,
-                                 isActive: needsAttention || action.isActive(colorScheme: colorScheme),
-                                 tint: needsAttention ? .orange : action.tint,
-                                 height: isNotch ? 26 : 32,
-                                 iconSize: isNotch ? 11 : 13,
-                                 isEditing: isEditing,
-                                 onHide: {
-                                     withAnimation(.easeOut(duration: 0.15)) {
-                                         launcher.setControlHidden(action, true)
-                                     }
-                                 }) {
-                    action.run(onDismiss: onDismiss)
+                if action == .keepAwake {
+                    HubStayAwakeControl(height: isNotch ? 26 : 32, iconSize: isNotch ? 11 : 13,
+                                        isEditing: isEditing) {
+                        withAnimation(.easeOut(duration: 0.15)) { launcher.setControlHidden(.keepAwake, true) }
+                    }
+                } else {
+                    HubControlButton(icon: needsAttention ? "exclamationmark.triangle.fill"
+                                        : (state == .running ? "hourglass" : action.icon(colorScheme: colorScheme)),
+                                     title: needsAttention ? "\(title)\n\(feedback)" : title,
+                                     isActive: needsAttention || action.isActive(colorScheme: colorScheme),
+                                     tint: needsAttention ? .orange : action.tint,
+                                     height: isNotch ? 26 : 32,
+                                     iconSize: isNotch ? 11 : 13,
+                                     isEditing: isEditing,
+                                     onHide: {
+                                         withAnimation(.easeOut(duration: 0.15)) {
+                                             launcher.setControlHidden(action, true)
+                                         }
+                                     }) {
+                        action.run(onDismiss: onDismiss)
+                    }
+                    .disabled(!isEditing && state == .running)
                 }
-                .disabled(!isEditing && state == .running)
             }
         }
     }

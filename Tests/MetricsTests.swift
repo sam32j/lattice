@@ -221,7 +221,7 @@ struct MetricsTests {
                 PermissionResetStateTests.run(suite)
             }),
             ("force-quit", { ProcessForceQuitTests.run(suite) }),
-            ("launcher", { LatticeHubContract.run(suite); HubControlActionTests.run(suite) }),
+            ("launcher", { LatticeHubContract.run(suite); HubControlActionTests.run(suite); HubStayAwakeTests.run(suite) }),
             ("dock-autohide", {
                 DockPreviewPositionTests.run(suite)
                 DockPreviewScrollTests.run(suite)
@@ -235,6 +235,7 @@ struct MetricsTests {
                 WindowServerCaptureContract.run(suite)
             }),
             ("keep-awake", {
+                KeepAwakeAssertionTests.run(suite)
                 KeepAwakeCatalogContract.run(suite)
                 MenuPanelToggleLabelContract.run(suite)
                 KeepAwakeLidSleepTests.run { suite.expect($0, $1) }

@@ -13,6 +13,7 @@ final class LatticeHubService: ObservableObject {
     static let columns = 3
 
     @Published private(set) var shortcutRegistrationFailed = false
+    @Published var stayAwakeOptionsPresented = false
     @Published var isEditing = false
     @Published var editingOptionsItem: LatticeHubItem?
     @Published var activeUtility: LatticeHubItem?
@@ -155,6 +156,7 @@ final class LatticeHubService: ObservableObject {
     }
 
     func hide() {
+        stayAwakeOptionsPresented = false
         if NotchService.shared.expanded, NotchService.shared.selected == .hub { NotchService.shared.collapse() }
         removeMonitors()
         isEditing = false
@@ -176,7 +178,7 @@ final class LatticeHubService: ObservableObject {
     }
 
     var dismissesOnOutsideInteraction: Bool {
-        activeUtility == nil && NSApp.modalWindow == nil
+        !stayAwakeOptionsPresented && activeUtility == nil && NSApp.modalWindow == nil
     }
 
     // MARK: - Actions
