@@ -71,6 +71,25 @@ enum NotchLockScreenTests {
 
     static func layoutContracts(_ suite: TestSuite) {
         typealias Layout = NotchLockScreenLayout
+        for idle in [NotchIdleContent.battery, .agents] {
+            suite.expect(!NotchLockScreenSupport.retractsOnUnlock(hasActivity: false, idle: idle,
+                companion: false, hiddenUntilHover: false, showsHiddenActivity: false),
+                "unlock morphs directly to selected idle content instead of retracting first")
+        }
+        suite.expect(NotchLockScreenSupport.retractsOnUnlock(hasActivity: false, idle: .none,
+            companion: false, hiddenUntilHover: false, showsHiddenActivity: false),
+            "an empty unlock destination retracts behind the camera")
+        suite.expect(!NotchLockScreenSupport.retractsOnUnlock(hasActivity: false, idle: .none,
+            companion: true, hiddenUntilHover: false, showsHiddenActivity: false),
+            "an idle companion remains a visible unlock destination")
+        suite.expect(NotchLockScreenSupport.retractsOnUnlock(hasActivity: false, idle: .agents,
+            companion: true, hiddenUntilHover: true, showsHiddenActivity: true),
+            "hide-until-hover suppresses idle content and the companion on unlock")
+        suite.expect(!NotchLockScreenSupport.retractsOnUnlock(hasActivity: true, idle: .none,
+            companion: false, hiddenUntilHover: true, showsHiddenActivity: true)
+            && NotchLockScreenSupport.retractsOnUnlock(hasActivity: true, idle: .none,
+                companion: false, hiddenUntilHover: true, showsHiddenActivity: false),
+            "a hidden island hands off to activity only when explicitly allowed")
         // Measured on the lock screen of a 1470 by 956 point display: the
         // clock ends 236 points from the top, the login controls take 218.
         let measured = CGRect(x: 0, y: 0, width: 1470, height: 956)

@@ -19,6 +19,14 @@ enum NotchLockScreenSupport {
     /// it, even at the shielding window level, stays behind it.
     static let spaceLevel: Int32 = 400
 
+    /// Returning to idle content is a handoff too. Only an empty destination
+    /// retracts behind the camera; hide-until-hover retains its own policy.
+    static func retractsOnUnlock(hasActivity: Bool, idle: NotchIdleContent, companion: Bool,
+                                 hiddenUntilHover: Bool, showsHiddenActivity: Bool) -> Bool {
+        if hiddenUntilHover { return !hasActivity || !showsHiddenActivity }
+        return !hasActivity && idle == .none && !companion
+    }
+
     static func isEnabled(in defaults: UserDefaults = .standard) -> Bool {
         NotchSupport.isEnabled(in: defaults) && defaults.bool(forKey: DefaultsKey.notchLockScreen)
     }

@@ -149,6 +149,10 @@ enum NotchDestinationContract {
         var shortcutRegistrationFailed = false { didSet { shortcutFailureWrites += 1 } }
         func clearCapture() { captureClose = nil }
         func tearDownPresentation() { expanded = false; presentationTearDowns += 1 }
+        var handoffPreparations: [Int] = []
+        var handoffCompletions: [Int] = []
+        func prepareLockHandoff() { handoffPreparations.append(presentationTearDowns) }
+        func finishLockHandoff() { handoffCompletions.append(presentationSyncs) }
     }
 
     static func run(_ suite: TestSuite) {
@@ -749,9 +753,13 @@ enum NotchDestinationContract {
         lockScreen.onSync = { order.append("sync after \(service.presentationTearDowns) teardowns, \(service.presentationSyncs) returns") }
         defaults.set(true, forKey: DefaultsKey.notchLockSounds)
         service.updateSession { $0.locked = true }
+        suite.expect(service.handoffPreparations == [0],
+                     "the shared lock silhouette is staged before the desktop presentation is torn down")
         suite.expect(order == ["sync after 1 teardowns, 0 returns"] && lockScreen.syncs.last?.showsLockScreen == true,
                      "the lock screen takes over after the island has stopped its own sources")
         service.updateSession { $0.locked = false }
+        suite.expect(service.handoffCompletions == [1],
+                     "the shared unlock silhouette retires only after the desktop has been rebuilt")
         // The first sync is the scene leaving: canPresent tells it to stop
         // none of the sources the island is about to take back.
         suite.expect(order == ["sync after 1 teardowns, 0 returns", "sync after 1 teardowns, 0 returns",

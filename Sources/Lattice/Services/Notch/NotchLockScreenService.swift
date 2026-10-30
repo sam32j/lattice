@@ -23,7 +23,7 @@ final class NotchLockScreenService {
         var islandSurface: CGRect?
     }
 
-    private let model = NotchLockScreenModel()
+    private var model = NotchLockScreenModel()
     /// The player and the line of activities.
     private var scene: [NotchLockScreenPanel] = []
     private var island: NotchLockScreenPanel?
@@ -33,6 +33,35 @@ final class NotchLockScreenService {
     private var padlockWork: DispatchWorkItem?
     private var shownFrames = Frames()
     private var wasLocked = false
+    private var handoff: NotchLockHandoff?
+    var isHandingOff: Bool { handoff?.unlocking == true }
+
+    func retireDesktop(_ panel: NSPanel) {
+        // During the system's lock animation an AppKit orderOut can return
+        // while WindowServer still composites and transforms the old window.
+        // Clear its server-side alpha before releasing the desktop surface.
+        let cleared = NotchWindowServerFade.fadeOut(panel, duration: 0)
+        panel.alphaValue = 0
+        panel.orderOut(nil)
+#if LATTICE_DEVELOPMENT
+        NotchLockTransitionDiagnostics.event("desktop-server-alpha-zero success=\(cleared)", window: panel.windowNumber)
+#endif
+    }
+
+    func prepareHandoff(from frame: CGRect, geometry: NotchGeometry) -> Bool {
+        let initial = handoff?.visibleFrame ?? frame
+        handoff?.close()
+        handoff = NotchLockHandoff(from: initial, geometry: geometry)
+        return handoff != nil
+    }
+
+    func desktopReady(frame: CGRect, panel: NSPanel?) {
+        guard let handoff, handoff.unlocking else { return }
+        handoff.finishUnlock(to: frame, panel: panel) { [weak self] in
+            guard self?.handoff === handoff else { return }
+            self?.handoff = nil
+        }
+    }
 
     private init() {}
 
@@ -53,6 +82,8 @@ final class NotchLockScreenService {
 
     /// The island is off: nothing it started keeps running.
     func close() {
+        handoff?.close()
+        handoff = nil
         wasLocked = false
         model.playedWhileLocked = false
         hide(unlocking: false, stopsSources: true)
@@ -85,6 +116,12 @@ final class NotchLockScreenService {
         guard space == nil,
               let space = NotchOverlaySpace(absoluteLevel: NotchLockScreenSupport.spaceLevel) else { return }
         let frames = Self.frames()
+        // Each scene owns its animation state, including a scene still leaving
+        // when a rapid lock/unlock starts the next one.
+        let playedWhileLocked = model.playedWhileLocked
+        model = NotchLockScreenModel()
+        model.playedWhileLocked = playedWhileLocked
+        model.islandRevealed = handoff != nil || !closingPadlock
         // Settled before any view reads it, so a padlock about to close is
         // drawn open from its first frame.
         padlockWork?.cancel()
@@ -105,16 +142,23 @@ final class NotchLockScreenService {
         if let frame = frames.row {
             scene.append(Self.makePanel(frame: frame, content: NotchLockScreenActivities(model: model, size: frame.size)))
         }
-        let island = frames.island.flatMap { frame in
+        if let handoff, let surface = frames.islandSurface {
+            handoff.setLockContent(AnyView(NotchLockScreenIsland(
+                model: model, size: surface.size, cameraWidth: NotchService.shared.geometry.bareCutout.width,
+                drawsBackground: false, geometry: NotchService.shared.geometry.lockScreenMusicGeometry)), in: surface)
+            handoff.morph(to: surface)
+        }
+        let island = handoff == nil ? frames.island.flatMap { frame in
             frames.islandSurface.map { surface in
                 Self.makePanel(frame: frame, content: NotchLockScreenIsland(
                     model: model, size: surface.size, cameraWidth: NotchService.shared.geometry.bareCutout.width,
+                    drawsBackground: handoff == nil,
                     geometry: NotchService.shared.geometry.lockScreenMusicGeometry,
                     window: frame.size, origin: CGPoint(x: surface.minX - frame.minX, y: frame.maxY - surface.maxY)))
             }
-        }
+        } : nil
         let panels = scene + [island].compactMap { $0 }
-        guard !panels.isEmpty else { space.close(); return }
+        guard !panels.isEmpty || handoff != nil else { space.close(); return }
         if !scene.isEmpty { startSources(gates) }
         // Joined before they are first shown, the windows belong to this
         // Space alone and are drawn over the lock screen with it.
@@ -129,6 +173,18 @@ final class NotchLockScreenService {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
         }
         for panel in panels {
+            if panel === island {
+                panel.alphaValue = 1
+                panel.orderFrontRegardless()
+                panel.contentView?.layoutSubtreeIfNeeded()
+                panel.displayIfNeeded()
+                let model = model
+                DispatchQueue.main.async { [weak self] in
+                    guard self?.island === panel, self?.model === model else { return }
+                    model.islandRevealed = true
+                }
+                continue
+            }
             panel.alphaValue = 0
             panel.orderFrontRegardless()
             NSAnimationContext.runAnimationGroup { context in
@@ -162,7 +218,24 @@ final class NotchLockScreenService {
         if gates.agents { AgentUsageService.shared.syncWithPreferences() }
     }
 
+    private var retractsOnUnlock: Bool {
+        let service = NotchService.shared
+        return NotchLockScreenSupport.retractsOnUnlock(
+            hasActivity: !service.compactActivities.isEmpty, idle: service.idleContent,
+            companion: service.mascotShows(on: service.geometry),
+            hiddenUntilHover: NotchSupport.hidesUntilHover(), showsHiddenActivity: NotchSupport.hiddenShowsActivity())
+    }
+
     private func hide(unlocking: Bool, stopsSources: Bool) {
+        if !unlocking {
+            handoff?.close()
+            handoff = nil
+        } else if let handoff, !handoff.unlocking {
+            let service = NotchService.shared
+            let retracting = retractsOnUnlock
+            let target = retracting ? service.geometry.bareCutout : service.surfaceSize
+            handoff.beginUnlock(to: service.geometry.frame(for: target), retracting: retracting)
+        }
         if stopsSources, !scene.isEmpty {
             NotchMusicService.shared.stop()
             NotchDownloadService.shared.stop()
@@ -190,8 +263,19 @@ final class NotchLockScreenService {
         var remaining = scene.count + (island == nil ? 0 : 1)
         let finished = { remaining -= 1; if remaining == 0 { space.close() } }
         scene.forEach { Self.fadeOut($0, after: 0, completion: finished) }
+        if handoff != nil { model.padlockOpen = true }
+        if remaining == 0 { space.close() }
         if let island {
             model.padlockOpen = true
+            if handoff == nil, retractsOnUnlock {
+                model.islandRevealed = false
+                let duration = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : 0.3
+                DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+                    island.orderOut(nil)
+                    finished()
+                }
+                return
+            }
             // The padlock opens and the lock screen fades out without lingering
             // over the desktop island underneath.
             DispatchQueue.main.async { Self.fadeOut(island, after: 0, completion: finished) }
