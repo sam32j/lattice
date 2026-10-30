@@ -624,7 +624,8 @@ final class NotchService: ObservableObject {
     }
 
     private var compactActivityIsVisible: Bool {
-        !fullscreenCompact && !expanded && !peeking && !dragPlaceholder && notice == nil
+        !fullscreenCompact && !expanded && (!peeking || !geometry.floats) && !dragPlaceholder
+            && (notice == nil || (notice?.event == .track && compactActivity == .music))
             && compactActivity != nil
     }
 
@@ -963,7 +964,7 @@ final class NotchService: ObservableObject {
     /// notice beside a camera, or the music strip naming its song, reaches
     /// further toward its wider side. A capsule runs its strips end to end.
     var surfaceShift: CGFloat {
-        guard !geometry.floats, !fullscreenCompact, !expanded, !dragPlaceholder else { return 0 }
+        guard !geometry.floats, !fullscreenCompact, !expanded, !peeking, !dragPlaceholder else { return 0 }
         if let notice { return noticeExpanded ? 0 : geometry.noticeShift(notice.wings(in: geometry)) }
         return namedMusicWings.map { ($0.trailing - $0.leading) / 2 } ?? 0
     }
@@ -1358,7 +1359,7 @@ final class NotchService: ObservableObject {
         if !expanded {
             let opensActivity = UserDefaults.standard.object(forKey: DefaultsKey.notchOpensActivity) as? Bool ?? true
             let activity = notice?.notificationID != nil ? NotchModule.notifications
-                : opensActivity ? compactActivity?.module : nil
+                : (!peeking && opensActivity) ? compactActivity?.module : nil
             if let activity, modules.contains(activity) { return (activity, false, false) }
             if UserDefaults.standard.bool(forKey: DefaultsKey.notchReturnHome) {
                 let saved = UserDefaults.standard.string(forKey: DefaultsKey.notchHomeModule) ?? ""
@@ -1383,6 +1384,10 @@ final class NotchService: ObservableObject {
     /// unless the user turned off opening the visible activity, in which case
     /// the reopening choice decides here too.
     func openActivity(_ module: NotchModule) {
+        if peeking {
+            open(module)
+            return
+        }
         let opensActivity = UserDefaults.standard.object(forKey: DefaultsKey.notchOpensActivity) as? Bool ?? true
         if opensActivity { open(module) } else { open() }
     }
@@ -1398,7 +1403,7 @@ final class NotchService: ObservableObject {
     }
 
     func open(_ module: NotchModule? = nil, pinned: Bool = false, takeFocus: Bool = true,
-              appPanel: Bool = false, metric: MetricDetailKind? = nil, feedback: Bool = true, sections: Bool = false,
+              appPanel: Bool = false, metric: MetricDetailKind? = nil, feedback: Bool = false, sections: Bool = false,
               crossfadeContent: Bool = false) {
         guard NotchSupport.isEnabled(), !suspended else { return }
         // The capture controls cover the open page and hold collapsing off, so
@@ -1480,7 +1485,7 @@ final class NotchService: ObservableObject {
             lastVisitedSections = showingSections
             lastVisitedAppPanel = showingAppPanel
         }
-        mutatePresentation(transitionContent: expanded || peeking || noticeExpanded ? .dismiss : .none) {
+        mutatePresentation(transitionContent: (expanded || noticeExpanded) ? .dismiss : .none) {
             if noticeExpanded { notice = nil; noticeExpanded = false }
             expanded = false
             openedByHover = false
@@ -1568,7 +1573,8 @@ final class NotchService: ObservableObject {
         // A full hover opening goes straight from its resting size to the page.
         // The activity picker replaces that opening and keeps its hover response.
         let opensOnHover = UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover)
-            && UserDefaults.standard.bool(forKey: DefaultsKey.notchHoverExpands) && !showsCompactActivityPicker
+            && UserDefaults.standard.bool(forKey: DefaultsKey.notchHoverExpands)
+            && !showsCompactActivityPicker
         let emphasize = inside && !hiddenInFullscreen && !hiddenUntilHover && !expanded && !peeking && !dragPlaceholder
             && notice == nil && !opensOnHover
             && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
@@ -1603,8 +1609,6 @@ final class NotchService: ObservableObject {
             if holdsNotification, let id = notice?.notificationID { holdNotification(id); return }
             guard !hoverState.suppressed, (notice == nil || hiddenUntilHover), !expanded, !peeking, !dragPlaceholder,
                   UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover) else { return }
-            if !hiddenInFullscreen, compactActivity != nil, compactActivityGeometry.compactActivityWingWidth > 0,
-               !UserDefaults.standard.bool(forKey: DefaultsKey.notchHoverExpands) { return }
             let work = DispatchWorkItem { [weak self] in
                 guard let self else { return }
                 self.hoverWork = nil
@@ -1621,9 +1625,9 @@ final class NotchService: ObservableObject {
                 // Following the closed island ends as it opens or peeks.
                 self.removeHoverExitMonitors()
                 if UserDefaults.standard.bool(forKey: DefaultsKey.notchHoverExpands) {
-                    self.open(takeFocus: false)
+                    self.open(takeFocus: false, feedback: true)
                 } else {
-                    self.mutatePresentation(transitionContent: .reveal) { self.peeking = true }
+                    self.mutatePresentation(transitionContent: .none) { self.peeking = true }
                     self.provideHapticFeedback()
                 }
             }
@@ -1784,15 +1788,15 @@ final class NotchService: ObservableObject {
     }
 
     /// Rest the gallery on `row`, within the rows it has.
-    func showSectionRow(_ row: Int) {
+    func showSectionRow(_ row: Int, feedback: Bool = false) {
         let limits = sectionRowLimits
         let next = NotchSectionPaging.clamped(row, rows: limits.rows, visible: limits.visible)
         guard next != sectionRow else { return }
         sectionRow = next
-        provideHapticFeedback()
+        if feedback { provideHapticFeedback() }
     }
 
-    func scrollSections(by rows: Int) { showSectionRow(sectionRow + rows) }
+    func scrollSections(by rows: Int) { showSectionRow(sectionRow + rows, feedback: true) }
 
     private var sectionTypeaheadBuffer = ""
     private var sectionTypeaheadTimestamp: TimeInterval = 0
@@ -2009,7 +2013,6 @@ final class NotchService: ObservableObject {
         let changesPresentation = selectedMetric != nil || showingAppPanel
         mutatePresentation(transitionContent: changesPresentation ? .replace : .none) { selectedMetric = nil; showingAppPanel = false }
         syncVisibleConsumers()
-        if changesPresentation { provideHapticFeedback() }
     }
 
     /// Escape steps back one level: a detail returns to its page as the Back
@@ -2034,7 +2037,7 @@ final class NotchService: ObservableObject {
 
     func provideHapticFeedback() {
         guard acceptsUserInteraction, panel?.isVisible == true, NotchSupport.usesHapticFeedback() else { return }
-        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
     }
 
     func fileDragChanged(_ active: Bool, internalDrag: Bool = false) {
@@ -2224,7 +2227,9 @@ final class NotchService: ObservableObject {
             && windowHost?.containsHover(NSEvent.mouseLocation) == true
         // Slider and key bursts only replace the displayed value. They never
         // restart a window resize or enqueue another layout animation.
+        let isMusicTrackNotice = incoming.event == .track && compactActivity == .music
         let transition: NotchContentTransition = !noticeCanPresent ? .none
+            : isMusicTrackNotice ? .none
             : notice == nil ? .reveal : notice?.event != incoming.event || noticeExpanded ? .replace : .none
         let mascotFrom = mascotNoticeBridgeStart(for: incoming)
         // The same notice with a new reading only fits its width, steadily.
@@ -2370,9 +2375,10 @@ final class NotchService: ObservableObject {
     private func dismissNotice() {
         noticeWork?.cancel(); noticeWork = nil
         endDeparture()
-        let transition: NotchContentTransition = notice == nil || !noticeCanPresent ? .none
+        let isMusicTrackNotice = notice?.event == .track && compactActivity == .music
+        let transition: NotchContentTransition = notice == nil || !noticeCanPresent || isMusicTrackNotice ? .none
             : noticeExpanded ? .dismiss : .depart
-        let departing = transition == .depart ? notice : nil
+        let departing = (transition == .depart && !isMusicTrackNotice) ? notice : nil
         let mascotBack = mascotNoticeBridgeBackStart(from: departing)
         mutatePresentation(transitionContent: transition) {
             departingNotice = departing
@@ -2812,7 +2818,7 @@ final class NotchService: ObservableObject {
     /// the cover on the camera's left, the bars alone on its right. Nil while
     /// it shows only the cover and the bars, or already shows the song.
     var namedMusicWings: NotchNoticeWings? {
-        guard musicStripNamesSong, !geometry.floats else { return nil }
+        guard !peeking, musicStripNamesSong, !geometry.floats else { return nil }
         // The song the strip shows, which may still be the one a skip left.
         let live = NotchMusicService.shared.playback
         let track = (heldMusic ?? musicStripStandIn(for: live))?.playback.track ?? live?.track
@@ -3688,6 +3694,8 @@ final class NotchService: ObservableObject {
         panel?.handleScroll = { [weak self] event in self?.handleScroll(event) ?? false }
         panel?.handleIndirectTouches = { [weak self] event, view in
             guard let self else { return false }
+            self.panel?.acceptsKeyFocus = true
+            if self.panel?.isKeyWindow != true { self.panel?.makeKey() }
             let music = self.musicSwipe.handle(event, in: view, enabled: self.musicSwipeEnabled(event), expanded: self.expanded)
             return self.handleCaptureTouches(event, in: view) || music
         }
@@ -3701,7 +3709,7 @@ final class NotchService: ObservableObject {
               event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else { return false }
         let point = panel.convertPoint(toScreen: event.locationInWindow)
         let interaction = NotchGestureSupport.nativeInteraction(at: panel.contentView?.hitTest(event.locationInWindow))
-        let header = NotchSupport.gestureIsOverHeader(expanded: expanded, peeking: peeking,
+        let header = NotchSupport.gestureIsOverHeader(expanded: expanded, peeking: false,
             fromTop: panel.frame.maxY - point.y, safeTop: expanded ? expandedGeometry.headerTopInset : geometry.safeContentTop,
             height: expanded ? expandedGeometry.headerRowHeight : NotchLayout.headerHeight)
         return windowHost?.contains(point) == true && !header && !interaction.control && !interaction.scroll
@@ -3715,7 +3723,10 @@ final class NotchService: ObservableObject {
             && !interaction.control && event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty
         let completed = captureTrackpadGesture.handle(event, in: view, enabled: enabled)
         captureHistoryGestureProgress = captureTrackpadGesture.progress
-        if completed { showCaptureHistory() }
+        if completed {
+            showCaptureHistory()
+            provideHapticFeedback()
+        }
         return enabled
     }
 
@@ -3763,6 +3774,7 @@ final class NotchService: ObservableObject {
             captureHistoryGestureProgress = 0
             return false
         }
+        if !panel.isKeyWindow { panel.makeKey() }
         let fromTop = panel.frame.maxY - screenPoint.y
         let inHeader = NotchSupport.gestureIsOverHeader(expanded: expanded, peeking: peeking,
                                                        fromTop: fromTop, safeTop: expanded ? expandedGeometry.headerTopInset : geometry.safeContentTop,
@@ -3797,8 +3809,10 @@ final class NotchService: ObservableObject {
                                     allowVertical: vertical && !musicConsumed, allowHorizontal: horizontal, expanded: expanded)
         guard let action else { return musicConsumed }
         switch action {
-        case .open: open()
-        case .close: collapse()
+        case .open: open(feedback: true)
+        case .close:
+            collapse()
+            provideHapticFeedback()
         }
         return true
     }

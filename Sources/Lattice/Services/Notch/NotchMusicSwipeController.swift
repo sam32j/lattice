@@ -7,7 +7,7 @@ import Combine
 final class NotchMusicSwipeController {
     static func permitsCompact(stripVisible: Bool, expanded: Bool, peeking: Bool,
                                trackNotice: Bool, noticeExpanded: Bool, noticeCanPresent: Bool) -> Bool {
-        !expanded && !peeking && (stripVisible || (trackNotice && !noticeExpanded && noticeCanPresent))
+        !expanded && (stripVisible || (!peeking && trackNotice && !noticeExpanded && noticeCanPresent))
     }
 
     private var gesture = NotchMusicTrackSwipe()
@@ -182,7 +182,7 @@ final class NotchMusicSwipeController {
 
     func handleMouseScroll(_ event: NSEvent, enabled: Bool, expanded: Bool) -> Bool {
         mouseSwipe.handle(event, enabled: enabled, expanded: expanded,
-            hasTouches: !awaitingBegin || blockedUntilLift || device != nil)
+            hasTouches: !awaitingBegin || blockedUntilLift)
     }
 
     func handle(_ event: NSEvent, in view: NSView, enabled: Bool, expanded: Bool) -> Bool {
@@ -197,7 +197,7 @@ final class NotchMusicSwipeController {
             .filter { $0.type == .indirect }
         let cancelled = !event.touches(matching: .cancelled, in: view).isEmpty
         let touches = touching.union(ended)
-        if !touches.isEmpty { mouseSwipe.cancel() }
+        if touches.count >= 2 { mouseSwipe.cancel() }
         if cancelled {
             cancel()
             if touching.isEmpty { _ = update([], began: false, enabled: false, expanded: expanded) }

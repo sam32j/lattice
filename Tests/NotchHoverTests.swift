@@ -30,6 +30,10 @@ enum NotchHoverTests {
             func bool(forKey key: String) -> Bool {
                 key == DefaultsKey.notchHideUntilHover ? hides : key == DefaultsKey.notchOpenOnHover ? enabled : expands
             }
+            func object(forKey key: String) -> Any? {
+                if key == DefaultsKey.notchOpensActivity { return true }
+                return nil
+            }
             func double(forKey key: String) -> Double { delay }
         }
     }
@@ -150,7 +154,8 @@ enum NotchHoverTests {
         }
         var openings = 0, closures = 0, feedbacks = 0
         var requestedModule: NotchModule?
-        func open(_ module: NotchModule? = nil, takeFocus: Bool) {
+        func open(_ module: NotchModule? = nil, takeFocus: Bool, feedback: Bool = false) {
+            if feedback { provideHapticFeedback() }
             requestedModule = module
             openings += 1; expanded = true; openedByHover = !takeFocus
             hoverState.open(); hoverWork?.cancel(); hoverWork = nil
@@ -371,7 +376,7 @@ enum NotchHoverTests {
             service.hover(false) // A tracking exit while the pointer is still inside.
             suite.expect(service.hoverWork === initial, "duplicate tracking events preserve the original opening deadline")
             DispatchQueue.main.advance(0.06)
-            suite.expect(service.openings == 1 && service.openedByHover && service.hoverWork == nil,
+            suite.expect(service.openings == 1 && service.openedByHover && service.hoverWork == nil && service.feedbacks == 1,
                    "a deliberate hover opens after the default 250 ms on both physical and simulated cutouts")
             leave(service)
             let closing = service.hoverWork

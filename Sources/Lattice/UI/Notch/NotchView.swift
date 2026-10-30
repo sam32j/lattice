@@ -111,11 +111,9 @@ struct NotchView: View {
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, service.geometry.safeContentTop)
-        } else if let notice = service.notice ?? (service.peeking ? nil : service.departingNotice) {
-            if notice.event == .track {
-                NotchMusicNoticeView(service: service, notice: notice)
-                    .transition(.opacity)
-            } else if service.noticeExpanded, let content = notice.notification {
+        } else if let notice = service.notice ?? (service.peeking ? nil : service.departingNotice),
+                   notice.event != .track || service.compactActivity != .music {
+            if service.noticeExpanded, let content = notice.notification {
                 NotchNotificationPreviewView(notice: notice, content: content, service: service)
                     .padding(.horizontal, NotchLayout.horizontalInset)
                     .padding(.top, service.geometry.safeContentTop)
@@ -151,68 +149,78 @@ struct NotchView: View {
                 .accessibilityHint(text.open)
                 .transition(.opacity)
             }
-        } else if service.peeking {
-            HStack {
-                navigation
-                Spacer(minLength: 8)
-                if service.reopeningDestination.sections {
-                    NotchIconButton(symbol: service.selected.symbol, title: service.selected.title(l10n.language)) {
-                        service.open(service.selected)
+        } else if service.showsCompactActivityPicker, let activity = service.compactActivity {
+            let layout = service.compactActivityPickerLayout
+            VStack(spacing: 0) {
+                let strip = service.compactStripSize(for: activity, companion: service.compactCompanion)
+                ZStack(alignment: .top) {
+                    activityStrip(activity, size: strip)
+                        .frame(width: strip.width, height: layout.headerHeight, alignment: .top)
+                        .id(NotchPickedStrip(activity: activity, companion: service.compactCompanion))
+                        .transition(.blurReplace)
+                }
+                .frame(height: layout.headerHeight, alignment: .top)
+                NotchActivityPicker(activities: service.compactActivities, selected: activity,
+                                    combinations: service.compactActivityCombinations,
+                                    combination: service.compactCompanion.map {
+                                        NotchActivityCombination(primary: activity, companion: $0)
+                                    },
+                                    columns: layout.columns, language: l10n.language,
+                                    select: service.selectCompactActivity, combine: service.selectCompactCombination)
+                    .padding(.horizontal, NotchActivityPickerLayout.horizontalInset)
+                    .padding(.vertical, NotchActivityPickerLayout.verticalInset)
+            }
+        } else {
+            ZStack(alignment: .top) {
+                if service.peeking {
+                    peekNavigationRow
+                        .zIndex(1)
+                        .transition(.opacity)
+                }
+
+                if let activity = service.compactActivity {
+                    let strip = service.compactStripSize(for: activity, companion: service.compactCompanion)
+                    let trackNotice = service.notice?.event == .track ? service.notice : nil
+                    activityStrip(activity, size: strip, trackNotice: trackNotice)
+                        .modifier(NotchMascotActivityVisit(service: service,
+                                                           track: service.mascotTrack(overActivityStrip: strip),
+                                                           ownStrip: true))
+                        .transition(companionSwap)
+                } else if let departingMusic = service.departingMusic ?? service.lingeringMusic {
+                    Group {
+                        if floats { NotchCapsuleMusicStrip(service: service, snapshot: departingMusic) }
+                        else { NotchMusicStrip(service: service, snapshot: departingMusic) }
                     }
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                } else if floats {
+                    NotchCapsuleRestingView(service: service, size: service.surfaceSize)
+                        .transition(companionSwap)
                 } else {
-                    NotchIconButton(symbol: "square.grid.3x1.below.line.grid.1x2", title: text.sectionsTitle) {
-                        service.toggleSections()
-                    }
+                    compact
+                        .allowsHitTesting(!service.peeking)
+                        .transition(companionSwap)
                 }
             }
-            .padding(.horizontal, NotchLayout.horizontalInset).padding(.top, service.geometry.safeContentTop)
-        } else if let activity = service.compactActivity {
-            if service.showsCompactActivityPicker {
-                let layout = service.compactActivityPickerLayout
-                VStack(spacing: 0) {
-                    let strip = service.compactStripSize(for: activity, companion: service.compactCompanion)
-                    ZStack(alignment: .top) {
-                        activityStrip(activity, size: strip)
-                            .frame(width: strip.width, height: layout.headerHeight, alignment: .top)
-                            .id(NotchPickedStrip(activity: activity, companion: service.compactCompanion))
-                            .transition(.blurReplace)
-                    }
-                    .frame(height: layout.headerHeight, alignment: .top)
-                    NotchActivityPicker(activities: service.compactActivities, selected: activity,
-                                        combinations: service.compactActivityCombinations,
-                                        combination: service.compactCompanion.map {
-                                            NotchActivityCombination(primary: activity, companion: $0)
-                                        },
-                                        columns: layout.columns, language: l10n.language,
-                                        select: service.selectCompactActivity, combine: service.selectCompactCombination)
-                        .padding(.horizontal, NotchActivityPickerLayout.horizontalInset)
-                        .padding(.vertical, NotchActivityPickerLayout.verticalInset)
+        }
+    }
+
+    private var peekNavigationRow: some View {
+        HStack {
+            navigation
+            Spacer(minLength: 8)
+            if service.reopeningDestination.sections {
+                NotchIconButton(symbol: service.selected.symbol, title: service.selected.title(l10n.language)) {
+                    service.open(service.selected)
                 }
             } else {
-                // Hover grows the capsule around its strip, as it grows the
-                // notch around its wings. Drawn at the grown size, a song's
-                // cover and bars jumped out at once while the shape still grew.
-                let strip = service.compactStripSize(for: activity, companion: service.compactCompanion)
-                activityStrip(activity, size: strip)
-                    .modifier(NotchMascotActivityVisit(service: service,
-                                                       track: service.mascotTrack(overActivityStrip: strip),
-                                                       ownStrip: true))
-                    .transition(companionSwap)
+                NotchIconButton(symbol: "square.grid.3x1.below.line.grid.1x2", title: text.sectionsTitle) {
+                    service.toggleSections()
+                }
             }
-        } else if let departingMusic = service.departingMusic ?? service.lingeringMusic {
-            Group {
-                if floats { NotchCapsuleMusicStrip(service: service, snapshot: departingMusic) }
-                else { NotchMusicStrip(service: service, snapshot: departingMusic) }
-            }
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-        } else if floats {
-            NotchCapsuleRestingView(service: service, size: service.surfaceSize)
-                .transition(companionSwap)
-        } else {
-            compact
-                .transition(companionSwap)
         }
+        .padding(.horizontal, NotchLayout.horizontalInset)
+        .padding(.top, service.geometry.safeContentTop)
     }
 
     /// The island floats as a capsule, whose strips run end to end.
@@ -223,7 +231,7 @@ struct NotchView: View {
     private var companionSwap: AnyTransition { service.mascotAtRest ? .notchFadeThrough : .opacity }
 
     /// `size` is the capsule's; a hanging strip keeps the camera's geometry.
-    @ViewBuilder private func activityStrip(_ activity: NotchCompactActivity, size: CGSize) -> some View {
+    @ViewBuilder private func activityStrip(_ activity: NotchCompactActivity, size: CGSize, trackNotice: NotchNotice? = nil) -> some View {
         if floats {
             switch activity {
             case .timer: NotchCapsuleTimerStrip(service: service, size: size)
@@ -231,7 +239,7 @@ struct NotchView: View {
             case .downloads: NotchCapsuleDownloadStrip(service: service, size: size)
             case .agents: NotchCapsuleAgentStrip(service: service, size: size)
             case .calendar: NotchCapsuleCalendarStrip(service: service, size: size)
-            case .music: NotchCapsuleMusicStrip(service: service, size: size, interactive: true)
+            case .music: NotchCapsuleMusicStrip(service: service, size: size, interactive: true, trackNotice: trackNotice)
             case .keepAwake: NotchCapsuleKeepAwakeStrip(service: service, size: size)
             case .videoDownloader: NotchCapsuleVideoDownloaderStrip(service: service, size: size)
             }
@@ -246,7 +254,7 @@ struct NotchView: View {
             case .downloads: NotchDownloadStrip(service: service, displayGeometry: geometry)
             case .agents: NotchAgentStrip(service: service, displayGeometry: geometry)
             case .calendar: NotchCalendarStrip(service: service, displayGeometry: geometry)
-            case .music: NotchMusicStrip(service: service, displayGeometry: geometry, interactive: true)
+            case .music: NotchMusicStrip(service: service, displayGeometry: geometry, interactive: true, trackNotice: trackNotice)
             case .keepAwake: NotchKeepAwakeStrip(service: service, displayGeometry: geometry)
             case .videoDownloader: NotchVideoDownloaderStrip(service: service, displayGeometry: geometry)
             }
@@ -573,7 +581,6 @@ struct NotchView: View {
         .accessibilityLabel(text.open)
         .accessibilityValue(navigationTitle)
         .accessibilityIdentifier("notch.navigation")
-        .help(text.open)
     }
 
     @ViewBuilder private var content: some View {
