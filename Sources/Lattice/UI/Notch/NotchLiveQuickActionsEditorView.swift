@@ -24,6 +24,7 @@ struct NotchLiveQuickActionsEditorView: View {
     let screenSize: CGSize
     let onDone: () -> Void
     var onPopoverChange: (Bool) -> Void = { _ in }
+    @ObservedObject private var l10n = L10n.shared
 
     @State private var configuration = NotchQuickAccessConfiguration.stored()
     @State private var addingSide: NotchQuickAccessSide?
@@ -74,13 +75,13 @@ struct NotchLiveQuickActionsEditorView: View {
                 .position(x: islandRect.midX, y: islandRect.midY)
                 .overlay {
                     VStack(spacing: 14) {
-                        Text("Drag to rearrange. Use − and + to edit.")
+                        Text(NotchQuickActionsCopy.instructions(l10n.language))
                             .font(.system(size: 15, weight: .regular))
                             .foregroundStyle(.white)
                             .multilineTextAlignment(.center)
 
                         Button(action: onDone) {
-                            Text("Done")
+                            Text(l10n.s.doneButton)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 24)

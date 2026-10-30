@@ -4,8 +4,8 @@ import EventKit
 extension NotchSettings {
     var layoutPage: some View {
         SettingsCard {
-            SettingsRow(symbol: "sparkles", title: "Quick Actions", caption: "Quick action buttons around your Dynamic Island.") {
-                Button(l10n.language == .enUS ? "Edit..." : FeatureStrings.screenshot(l10n.language).editButton + "…") {
+            SettingsRow(symbol: "sparkles", title: editor.quickActions, caption: NotchQuickActionsCopy.caption(l10n.language)) {
+                Button(FeatureStrings.screenshot(l10n.language).editButton + "...") {
                     NotchLiveQuickActionsEditorController.shared.show()
                 }
                 .buttonStyle(.borderedProminent)
