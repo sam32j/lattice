@@ -142,7 +142,12 @@ extension NotchSettings {
 
     var activityPage: some View {
         VStack(alignment: .leading, spacing: 20) {
-            SettingsCard(title: editor.resting) {
+            SettingsCard {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(editor.resting).font(.headline)
+                    Text(NotchSettingsCopy.idleHint(l10n.language))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
                 HStack(alignment: .top, spacing: 10) {
                     // With the companion on, the island rests with it when it
                     // has nothing else to show, so that choice is the companion,
@@ -160,23 +165,23 @@ extension NotchSettings {
                                    reason: pageReason(.agents, feature: .notchAgents), fix: pageAction(.agents, feature: .notchAgents))
                     }
                 }
+                .disabled(hover && hideUntilHover)
                 let liveActivityStrings = FeatureStrings.notchLiveActivitySettings(l10n.language)
                 Divider()
+                Text(NotchSettingsCopy.liveActivity(l10n.language)).font(.headline)
                 switchRow("menubar.rectangle",
                           liveActivityStrings.onlyShowActivityWhenRoom,
                           caption: liveActivityStrings.onlyShowActivityWhenRoomHint,
                           isOn: Binding(get: { !coversMenus }, set: { coversMenus = !$0 }))
-                Divider()
                 switchRow("arrow.up.left.and.arrow.down.right",
                           liveActivityStrings.hideActivityInFullscreen,
                           caption: liveActivityStrings.hideActivityInFullscreenHint,
                           isOn: $hideInFullscreen)
-                Divider()
                 switchRow("lock.display",
                           liveActivityStrings.showActivityOnLockScreen,
                           isOn: $lockScreen)
-            }
-            SettingsCard(title: editor.feedback) {
+                Divider()
+                Text(editor.feedback).font(.headline)
                 let volumeAvailable = AppFeature.mixer.isAvailable
                 let brightnessAvailable = AppFeature.brightness.isAvailable && brightnessControlEnabled
                 let keyboardLightAvailable = AppFeature.brightness.isAvailable && BrightnessService.keyboardLightIsSupported

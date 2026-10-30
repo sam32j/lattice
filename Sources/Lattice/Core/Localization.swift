@@ -2735,7 +2735,7 @@ extension Strings {
 
         breakdownMeasuring: "Measuring…",
 
-        mixerSection: "Volume mixer",
+        mixerSection: "Volume Mixer",
         mixerEmpty: "Apps that use audio show up here",
         mixerUnavailable: "Available on macOS 14.4 and later",
         mixerPermissionBody: "To adjust per-app volume, allow “Screen & System Audio Recording” in System Settings. Audio is never recorded.",

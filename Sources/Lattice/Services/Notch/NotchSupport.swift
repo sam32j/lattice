@@ -1230,7 +1230,7 @@ struct NotchActivityPickerLayout {
         columns = min(3, max(1, count))
         headerHeight = stripSize.height
         let rows = (max(1, count) + columns - 1) / columns
-        let width = CGFloat(columns) * (labelWidth + 48)
+        let width = CGFloat(columns) * (labelWidth + 48).rounded(.up)
             + CGFloat(columns - 1) * Self.spacing + Self.horizontalInset * 2
         // The taller picker has deeper shoulders than a compact strip. Keep
         // the entire original strip inside those shoulders, not at its edge.
@@ -1926,6 +1926,7 @@ enum NotchSupport {
     }
 
     static func idleContent(in defaults: UserDefaults = .standard) -> NotchIdleContent {
+        guard !hidesUntilHover(in: defaults) else { return .none }
         let choice = NotchIdleContent(rawValue: defaults.string(forKey: DefaultsKey.notchIdleContent) ?? "") ?? .none
         return canRest(with: choice, in: defaults) ? choice : .none
     }

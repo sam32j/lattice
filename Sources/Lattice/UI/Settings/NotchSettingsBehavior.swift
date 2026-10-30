@@ -30,7 +30,6 @@ extension NotchSettings {
                                   isOn: $hideUntilHover)
                 if hideUntilHover {
                     SettingsToggleRow(title: opening.showLiveActivity,
-                                      caption: opening.showLiveActivityHint,
                                       isOn: $hiddenShowsActivity)
                 }
             }
@@ -45,13 +44,13 @@ extension NotchSettings {
                     if returnHome { homeModule = value }
                 })) {
                     Text(editor.lastPage).tag("")
-                    Text(text.panel).tag(NotchReopeningDestination.appPanel.rawValue)
                     Text(text.sectionsTitle).tag(NotchReopeningDestination.explore.rawValue)
-                    ForEach(NotchSupport.modules()) { module in
+                    Text(NotchModule.hub.title(l10n.language)).tag(NotchModule.hub.rawValue)
+                        .disabled(!NotchSupport.modules().contains(.hub))
+                    Text(text.panel).tag(NotchReopeningDestination.appPanel.rawValue)
+                    ForEach(defaultPageModules) { module in
                         Text(module.title(l10n.language)).tag(module.rawValue)
-                    }
-                    if let saved = NotchModule(rawValue: homeModule), !NotchSupport.modules().contains(saved) {
-                        Text(saved.title(l10n.language)).tag(saved.rawValue).disabled(true)
+                            .disabled(!NotchSupport.modules().contains(module))
                     }
                 }
                 .pickerStyle(.menu)
@@ -60,6 +59,15 @@ extension NotchSettings {
             SettingsToggleRow(title: opening.openVisibleActivity,
                               caption: opening.openVisibleActivityHint,
                               isOn: $opensActivity)
+        }
+    }
+
+    var defaultPageModules: [NotchModule] {
+        var modules = NotchSupport.modules()
+        if let saved = NotchModule(rawValue: homeModule), !modules.contains(saved) { modules.append(saved) }
+        return modules.filter { $0 != .hub }.sorted {
+            $0.title(l10n.language).compare($1.title(l10n.language), options: [.caseInsensitive, .numeric],
+                                          locale: Locale(identifier: l10n.language.rawValue)) == .orderedAscending
         }
     }
 
