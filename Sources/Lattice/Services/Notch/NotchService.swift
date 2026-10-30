@@ -3312,13 +3312,6 @@ final class NotchService: ObservableObject {
                                         main: layout.main, pointer: pointer, hasLid: Self.hasLid)
     }
 
-    /// Whether `preference` lets the island reach a connected display without
-    /// a notch, so the shape chosen for those displays shows somewhere.
-    static func reachesDisplayWithoutNotch(_ preference: NotchDisplay) -> Bool {
-        let layout = displayLayout(NSScreen.screens)
-        return NotchSupport.reachesDisplayWithoutNotch(preference: preference, builtIn: layout.builtIn,
-                                                       notched: layout.notched, main: layout.main, hasLid: hasLid)
-    }
 
     /// With the chosen display away, as the built-in one with the lid closed,
     /// nothing keeps working for an island that cannot show. The Mac is still
@@ -3391,8 +3384,6 @@ final class NotchService: ObservableObject {
                                 displayID: screen.notchDisplayID, frame: screen.frame,
                                 visibleTop: screen.visibleFrame.maxY, scale: screen.backingScaleFactor,
                                 statusBarThickness: NSStatusBar.system.thickness),
-                             customWidth: UserDefaults.standard.double(forKey: DefaultsKey.notchCustomWidth),
-                             customHeight: UserDefaults.standard.double(forKey: DefaultsKey.notchCustomHeight),
                              cameraFit: NotchCameraFit.current(), silhouette: NotchSilhouette.current(),
                              capsuleFit: NotchCapsuleFit.current(),
                              hideMenuBarGap: UserDefaults.standard.bool(forKey: DefaultsKey.notchHideMenuBarGap),

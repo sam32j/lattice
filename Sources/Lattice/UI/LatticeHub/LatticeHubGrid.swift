@@ -10,7 +10,7 @@ extension LatticeHubView {
             let vstackSpacing: CGFloat = controlsH > 0 ? 6 : 0
             let availableHeight = max(0, notchSize.height - controlsH - vstackSpacing)
             let rows = NotchLayout.toolRailRows(count: launcher.visibleItems.count, width: notchSize.width,
-                                               height: availableHeight, custom: customLayout)
+                                               height: availableHeight)
             let titleInset = NotchLayout.toolTitleInset(count: launcher.visibleItems.count, rows: rows, width: notchSize.width)
             NotchRail(items: launcher.visibleItems, rows: rows, itemWidth: NotchLayout.toolWidth, width: notchSize.width,
                       spacing: NotchLayout.toolSpacing, leastSpacing: NotchLayout.toolLeastSpacing,

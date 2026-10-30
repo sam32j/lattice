@@ -40,8 +40,8 @@ enum NotchCompactTests {
         var showingSections = false
         var modules: [NotchModule] = [.controls, .music]
         var geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1440, height: 900),
-                                     safeAreaTop: 0, cameraWidth: 0, layout: .custom,
-                                     menuBarHeight: 64, customWidth: 360, customHeight: 260)
+                                     safeAreaTop: 0, cameraWidth: 0, layout: .compact,
+                                     menuBarHeight: 64)
         var expandedGeometry: NotchGeometry {
             var result = geometry
             result.pageTop = selected.pageTop
@@ -732,8 +732,8 @@ enum NotchCompactTests {
         var page = Page()
         let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
         for bar: CGFloat in [24, 32, 40, 48, 64] {
-            let geometry = NotchGeometry(screen: screen, safeAreaTop: 0, cameraWidth: 0, layout: .custom,
-                                         menuBarHeight: bar, customWidth: 360, customHeight: 260)
+            let geometry = NotchGeometry(screen: screen, safeAreaTop: 0, cameraWidth: 0, layout: .compact,
+                                         menuBarHeight: bar)
             for module in [NotchModule.controls, .timer, .calendar, .files, .music, .clipboard, .camera, .mixer] {
                 page.service.selected = module
                 page.service.contentSize = geometry.contentSize(for: geometry.expandedSize(module: module))

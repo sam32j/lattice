@@ -67,11 +67,7 @@ enum NotchReviewInteractionContract {
 
 enum NotchReviewInteractionTests {
     static func run(_ suite: TestSuite) {
-        suite.expect(NotchLayout.toolRailRows(count: 15, width: 400, height: 75, custom: true) == 1,
-                     "a short custom Hub draws only the row that fits")
-        suite.expect(NotchLayout.toolRailRows(count: 15, width: 400, height: 240, custom: true) == 3,
-                     "a tall custom Hub uses all three rows that fit")
-        suite.expect(NotchLayout.toolRailRows(count: 15, width: 400, height: 240, custom: false) == 2,
+        suite.expect(NotchLayout.toolRailRows(count: 15, width: 400, height: 240) == 2,
                      "large preset Hub catalogs preserve the intentional two-row rail")
         typealias C = NotchReviewInteractionContract
         suite.expect(C.NotchRestingBattery.tint(for: C.PowerReading(chargePercent: 10)) == Color.red

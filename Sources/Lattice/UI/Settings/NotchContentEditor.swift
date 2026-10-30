@@ -161,7 +161,7 @@ struct NotchPagePreview: View {
             RecentCapturesView(onClose: nil, notchSize: size).notchBand(trailing: { NotchClearCapturesButton() })
         case .files: NotchFilesView(service: notch)
         case .system: NotchSystemView(size: size) { _ in }
-        case .hub: LatticeHubView(notchSize: size, customLayout: notch.geometry.layout == .custom)
+        case .hub: LatticeHubView(notchSize: size)
         case .scratchpad: NotchScratchpadStill()
         case .agents:
             // Off, nothing reads the logs, so the page would wait forever.

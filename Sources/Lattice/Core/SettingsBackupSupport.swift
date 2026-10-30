@@ -175,7 +175,7 @@ enum SettingsBackupSupport {
                 settings[key] = value
             }
         }
-        settings = portableNotchDisplay(settings)
+        settings = portableNotchPresentation(settings)
         settings = portableMediaSettings(settings)
         settings = portableMouseExceptions(settings)
         settings = portableWindowLayoutIgnoredApps(settings)
@@ -198,7 +198,7 @@ enum SettingsBackupSupport {
         else { return nil }
         let allowed = exportKeys()
         let filtered = settings.filter { allowed.contains($0.key) && valueLooksRight($0.key, $0.value) }
-        return portableNotchDisplay(portableThumbnailPauseLists(portableWindowLayoutIgnoredApps(
+        return portableNotchPresentation(portableThumbnailPauseLists(portableWindowLayoutIgnoredApps(
             portableMouseExceptions(portableMediaSettings(filtered)))))
     }
 
@@ -218,10 +218,12 @@ enum SettingsBackupSupport {
         return result
     }
 
-    /// A display mode this version does not offer, such as one kept by an
-    /// earlier development build, restores as the automatic choice.
-    private static func portableNotchDisplay(_ settings: [String: Any]) -> [String: Any] {
+    /// Retired presentation choices restore to supported display and size presets.
+    private static func portableNotchPresentation(_ settings: [String: Any]) -> [String: Any] {
         var result = settings
+        if let size = result[DefaultsKey.notchSize] as? String, NotchSize(rawValue: size) == nil {
+            result[DefaultsKey.notchSize] = NotchSize.spacious.rawValue
+        }
         if let mode = result[DefaultsKey.notchDisplay] as? String, NotchDisplay(rawValue: mode) == nil {
             result[DefaultsKey.notchDisplay] = NotchDisplay.automatic.rawValue
         }

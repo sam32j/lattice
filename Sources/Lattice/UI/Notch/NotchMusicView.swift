@@ -37,15 +37,11 @@ struct NotchMusicView: View {
     private var bandHeight: CGFloat { band.besideCamera ? band.height : 0 }
 
     var body: some View {
-        // A custom size can be too short to hold both, and the player yields
-        // there; elsewhere the island grows by the extra and the player keeps
-        // its height. That height comes from the geometry, not from this page,
-        // which is still the idle page when music starts with lyrics chosen.
-        let geometry = NotchService.shared.geometry
+        // Both presets grow for extra content while retaining the player.
         let split = NotchLayout.musicSplit(
             height: size.height, extras: extrasHeight,
             resting: NotchLayout.musicPlayerHeight(band: bandHeight, playing: service.playback != nil),
-            keepsPlayer: !preview && geometry.layout != .custom, extraOpen: openExtra != nil)
+            keepsPlayer: !preview, extraOpen: openExtra != nil)
         // With the player gone the list starts below the camera's row, which
         // keeps its toggles; without that row they come back in one of their
         // own above the list, to close it.

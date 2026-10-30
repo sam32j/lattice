@@ -212,9 +212,7 @@ enum NotchKeyMonitorTests {
                       ".accessibilityAction(named:text.collapse){service.collapse()}"]
                         .allSatisfy(islandSource.contains),
                      "the open island names Keep open, Settings and Collapse as accessibility actions")
-        // A top row that cannot wrap the camera takes a row below it, so a
-        // custom island leaves the Tools rail fewer rows than the island
-        // without its page would. The arrows walk the rail the page draws.
+        // Hub arrows follow the rail drawn by the expanded page.
         let launcher = LatticeHubService.shared
         let items = launcher.visibleItems
         defer { launcher.visibleItems = items; launcher.flows = [] }
@@ -224,13 +222,13 @@ enum NotchKeyMonitorTests {
         service.showingAppPanel = false
         service.panel?.firstResponder = nil
         service.geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1710, height: 1112), safeAreaTop: 37.5,
-                                         cameraWidth: 208, layout: .custom, customWidth: 480, customHeight: 330)
+                                         cameraWidth: 208, layout: .compact)
         service.fullWidthRow = true
         launcher.flows = []
         _ = NSEvent.handler?(NSEvent(window: service.panel, keyCode: 125))
         let drawn = service.expandedGeometry.toolFlow(count: 12)
-        suite.expect(launcher.flows == [drawn] && drawn != service.geometry.toolFlow(count: 12),
-                     "the Tools arrows follow the rail below a top row under the camera")
+        suite.expect(launcher.flows == [drawn],
+                     "the Tools arrows follow the expanded page rail")
         launcher.notchControlsHeight = 66
         defer { launcher.notchControlsHeight = 0 }
         service.geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1710, height: 1112), safeAreaTop: 37.5,

@@ -318,12 +318,12 @@ enum NotchActivityTests {
             suite.expect(!NotchTimerSupport.compactText(8580, locale: Locale(identifier: language.rawValue)).isEmpty,
                    "hour and minute units are available in every supported language")
         }
-        for width: CGFloat in [320, 480, 560] {
+        for layout in NotchSize.allCases {
             for notched in [false, true] {
                 let screen = CGRect(x: 0, y: 0, width: 1470, height: 956)
                 let geometry = NotchGeometry(screen: screen, safeAreaTop: notched ? 32 : 0,
                                              cameraWidth: notched ? 180 : 0,
-                                             layout: .custom, customWidth: width, customHeight: 400)
+                                             layout: layout)
                 let setup = geometry.expandedSize(module: .timer)
                 let active = geometry.expandedSize(module: .timer, timerHasSession: true)
                 suite.expect(geometry.contentSize(for: setup).height
@@ -559,9 +559,9 @@ enum NotchActivityTests {
         suite.expect(NotchTimerMode.allCases.last == .stopwatch && NotchTimerMode.allCases.first == .timer,
                "the stopwatch joins the mode row after the existing modes, keeping their positions")
 
-        for width: CGFloat in [360, 480, 560] {
+        for layout in NotchSize.allCases {
             let geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1470, height: 956), safeAreaTop: 32,
-                                         cameraWidth: 180, layout: .custom, customWidth: width, customHeight: 400)
+                                         cameraWidth: 180, layout: layout)
             let setup = geometry.expandedSize(module: .timer, timerMode: .stopwatch)
             let active = geometry.expandedSize(module: .timer, timerHasSession: true, timerMode: .stopwatch)
             suite.expect(geometry.contentSize(for: setup).height
@@ -593,10 +593,10 @@ enum NotchActivityTests {
         let glyphMenu = glyph + layout.menuSpacing + chevron + layout.labelPadding * 2
         // The timer's page as the island opens it, in a display's own size
         // or a capsule without a camera.
-        func page(camera: CGFloat, _ size: NotchSize, custom: Double = NotchSize.defaultWidth,
+        func page(camera: CGFloat, _ size: NotchSize,
                   sectionsButton: Bool) -> NotchGeometry {
             NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1710, height: 1112), safeAreaTop: camera > 0 ? 32 : 0,
-                          cameraWidth: camera, layout: size, customWidth: custom, silhouette: camera > 0 ? .notch : .capsule)
+                          cameraWidth: camera, layout: size, silhouette: camera > 0 ? .notch : .capsule)
                 .page(.timer, controls: [], sectionsButton: sectionsButton)
         }
         func band(_ geometry: NotchGeometry) -> NotchBand { NotchBand(geometry: geometry, contentWidth: geometry.contentWidth) }
@@ -610,8 +610,6 @@ enum NotchActivityTests {
         suite.expect(layout.height > layout.labelSize + 2 && layout.labelPadding > 0
                && NotchLayout.timerStartHeight == 28,
                "every mode label keeps room for its underline and around its text, and Start is as tall as the row's buttons")
-        var sizes: [(NotchSize, Double)] = [(.compact, NotchSize.defaultWidth), (.spacious, NotchSize.defaultWidth)]
-        sizes += stride(from: NotchSize.widthRange.lowerBound, through: NotchSize.widthRange.upperBound, by: 20).map { (.custom, $0) }
         let cameras: [CGFloat] = [0, 156, 170, 180, 185, 190, 200, 208, 210, 224]
         for language in AppLanguage.allCases {
             let text = FeatureStrings.notchActivities(language)
@@ -626,9 +624,9 @@ enum NotchActivityTests {
             var floating = true, spacious = true, shown = true, starts = true, rows = true
             var narrowest = CGFloat.infinity
             for camera in cameras {
-                for (size, custom) in sizes {
+                for size in NotchSize.allCases {
                     for sectionsButton in [false, true] {
-                        let geometry = page(camera: camera, size, custom: custom, sectionsButton: sectionsButton)
+                        let geometry = page(camera: camera, size, sectionsButton: sectionsButton)
                         let row = band(geometry)
                         guard row.besideCamera else {
                             // Across the top the marks give way before the name narrows.

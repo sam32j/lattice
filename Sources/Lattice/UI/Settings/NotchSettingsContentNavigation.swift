@@ -12,14 +12,6 @@ extension NotchSettings {
                 .font(.body)
                 .controlSize(.regular)
             }
-            displayCompatibilityCheck
-        }
-    }
-
-    @ViewBuilder
-    private var displayCompatibilityCheck: some View {
-        if enabled, !NotchService.reachesDisplayWithoutNotch(NotchDisplay(rawValue: display) ?? .automatic) {
-            Button(text.showOnAllDisplays) { display = NotchDisplay.all.rawValue }
         }
     }
 
