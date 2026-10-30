@@ -69,7 +69,7 @@ struct RecorderEditorView: View {
             Button {
                 RecentCaptureService.shared.showHistoryWindow()
             } label: {
-                Image(systemName: "photo.stack")
+                Image(systemName: "clock.arrow.circlepath")
             }
             .buttonStyle(RecorderToolbarButtonStyle(compact: true))
             .screenshotSafeHelp(recentCapturesTitle)

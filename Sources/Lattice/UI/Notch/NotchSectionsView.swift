@@ -121,14 +121,6 @@ struct NotchSectionsView: View {
             .overlay {
                 shape.strokeBorder(.white.opacity(highlighted ? 0.55 : contrast == .increased ? 0.4 : 0.04), lineWidth: 1)
             }
-            .overlay(alignment: .topTrailing) {
-                if current {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .padding(7)
-                }
-            }
             .contentShape(shape)
         }
         .buttonStyle(NotchButtonStyle(cornerRadius: 16, lifts: false))
