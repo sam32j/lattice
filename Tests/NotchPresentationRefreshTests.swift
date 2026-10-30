@@ -117,10 +117,7 @@ enum NotchPresentationRefreshContract {
         }
         func syncMissionControlMonitoring() {}
         var hideAnimations: [Bool] = []
-        func hide(animated: Bool, transitionContent: NotchContentTransition = .none) {
-            hideAnimations.append(animated)
-            panel.orderOut(nil)
-        }
+        var isPresented: Bool { panel.isVisible }
         var targetSize: CGSize = .zero
         var frame: CGRect = .zero
         var animatingFrame: CGRect?
@@ -140,9 +137,10 @@ enum NotchPresentationRefreshContract {
             outlineEnabled = enabled
             outlineColor = color
         }
-        func present(size: CGSize, geometry: NotchGeometry, animated: Bool,
+        func performNativePresent(size: CGSize, geometry: NotchGeometry, animated: Bool,
                      transitionContent: NotchContentTransition = .none, quickAccess: NotchQuickAccessConfiguration? = nil,
-                     revealFromHidden: Bool = false, usesGlass: Bool = false, steady: Bool = false) {
+                     revealFromHidden: Bool = false, hideWhenSettled: Bool = false,
+                     usesGlass: Bool = false, steady: Bool = false) {
             transitions.append(transitionContent)
             self.steady = steady
             departsContent = transitionContent == .depart
@@ -151,6 +149,8 @@ enum NotchPresentationRefreshContract {
             onPresent?(size)
             targetSize = size
             frame = geometry.frame(for: size)
+            self.hidesWhenSettled = hideWhenSettled
+            if hideWhenSettled { panel.orderOut(nil); targetSize = .zero }
         }
         func setActivationArea(_ rect: CGRect, title: String, willPress: @escaping () -> Void, activate: @escaping () -> Void) {
             activationRect = rect

@@ -5,6 +5,7 @@ import SwiftUI
 
 struct LatticeHubView: View {
     var notchSize: CGSize? = nil
+    var customLayout = false
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var l10n = L10n.shared
     @ObservedObject var launcher = LatticeHubService.shared

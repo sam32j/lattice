@@ -1476,6 +1476,14 @@ def main():
           + declaration(notch, "    private func clearCapture(")
           + declaration(notch, "    private func detachCaptureIfClosingOnCollapse(")
           + "}\n}\nextension NotchPresentationRefreshContract.Host {\n"
+          + "typealias NotchContentTransition = NotchPresentationRefreshContract.NotchContentTransition\n"
+          + "typealias NotchQuickAccessConfiguration = NotchPresentationRefreshContract.NotchQuickAccessConfiguration\n"
+          + "typealias NSWorkspace = NotchPresentationRefreshContract.NSWorkspace\n"
+          + declaration(canvas, "    private func recordMissionControlRequest(").replace("private func", "func", 1)
+          + declaration(canvas, "    func hide(animated:").replace("        guard isPresented", "        hideAnimations.append(animated)\n        guard isPresented", 1)
+          + declaration(canvas, "    func present(size:").split("        // Choosing the capsule")[0]
+          + "        performNativePresent(size: size, geometry: geometry, animated: animated, transitionContent: transitionContent, "
+          + "quickAccess: quickAccess, revealFromHidden: revealFromHidden, hideWhenSettled: hideWhenSettled, usesGlass: usesGlass, steady: steady)\n    }\n#sourceLocation()\n"
           + declaration(canvas, "    func setMouseEventsIgnored(")
           + declaration(canvas, "    private func restoreFromMissionControl(").replace("private func", "func", 1)
           + "}\n")
@@ -2330,6 +2338,24 @@ def main():
           + declaration(keep_awake, "    private func continueAutomaticallyAfterTimerIfNeeded()")
             .replace("private func", "func", 1)
           + "}\n}\n")
+
+    write("NotchReviewInteraction.swift", "import Foundation\nimport SwiftUI\nextension NotchReviewInteractionContract {\n"
+          + "final class Editor: EditorState {\n"
+          + declaration("Sources/Lattice/UI/Notch/NotchLiveQuickActionsEditorController.swift", "    private func handleKey(").replace("private func", "func", 1)
+          + "}\nfinal class LauncherSettings: RoutingState {\n"
+          + declaration("Sources/Lattice/UI/Settings/DedicatedUtilitySettings.swift", "    private var launcherIslandShown:")
+              .replace("private var", "var", 1).replace("in: .standard", "in: defaults")
+              .replace("Binding(get: {", "Binding(get: { [self] in")
+              .replace("}, set: { newValue in", "}, set: { [self] newValue in")
+          + "}\nfinal class SnippetPage: SnippetState {\n"
+          + declaration("Sources/Lattice/UI/Notch/NotchSnippetsView.swift", "    private func appeared()").replace("private func", "func", 1)
+          + "}\nfinal class Insertion: InsertionState {\n"
+          + declaration("Sources/Lattice/Services/Snippets/SnippetLibraryService.swift", "    func insert(_ snippet:").split("        if let target")[0]
+          + "}\n}\nfinal class MusicStrip: MusicState {\n"
+          + declaration("Sources/Lattice/UI/Notch/NotchMusicStrip.swift", "    private func activateStrip()").replace("private func", "func", 1)
+          + "}\n"
+          + declaration("Sources/Lattice/UI/Notch/NotchView.swift", "enum NotchRestingBattery {")
+          + "}\n")
 
     spaces_order = "Sources/Lattice/Services/SpacesOrder/SpacesOrderHold.swift"
     write("SpacesOrderRequests.swift", "import Foundation\nimport os\n"

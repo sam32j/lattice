@@ -135,7 +135,7 @@ struct NotchMusicTrackSwipe {
         guard precise, !momentum, !blocked else { return nil }
         // AppKit already applies the user's natural-scrolling preference.
         scrollDistance += deltaX
-        if triggeredDirection == nil, scrollDistance != 0 {
+        if triggeredSign != nil, triggeredDirection == nil, scrollDistance != 0 {
             triggeredDirection = scrollDistance < 0 ? .next : .previous
         }
         if progress == 1 {
