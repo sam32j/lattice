@@ -116,7 +116,7 @@ extension FeatureStrings {
             position: "Position",
             bottom: "Bottom",
             sectionActions: "Open a section",
-            quickActions: "Quick actions",
+            quickActions: "Quick Actions",
             findAction: "Find an action",
             reorderHint: "Drag to reorder. Click the checkmark to show or hide.",
             opening: "Opening",

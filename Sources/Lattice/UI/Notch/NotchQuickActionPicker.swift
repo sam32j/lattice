@@ -102,7 +102,6 @@ struct NotchQuickActionPicker: View {
                             )
                         }
                         .buttonStyle(.plain)
-                        .disabled(!action.isAvailable())
                     }
                 }
             }
