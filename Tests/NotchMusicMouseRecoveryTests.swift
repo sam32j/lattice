@@ -100,10 +100,11 @@ enum NotchMusicMouseRecoveryTests {
             cancelled.input(0, .cancelled, native: native)
             cancelled.input(-100, .changed, native: native)
             cancelled.input(0, .ended, native: native)
-            suite.expect(cancelled.commands.isEmpty, "raw cancellation vetoes the rest of the mouse sequence")
+            suite.expect(cancelled.commands == [true],
+                         "raw Cancelled terminates suppression so a new Changed-first mouse sequence can skip")
             cancelled.input(100, .changed, native: native)
             cancelled.input(0, .ended, native: native)
-            suite.expect(cancelled.commands == [false], "a later physical mouse sequence recovers after cancellation")
+            suite.expect(cancelled.commands == [true, false], "later mouse sequences remain independent after raw cancellation")
             let expired = Session()
             expired.input(0, .began, native: native)
             expired.input(-100, .changed, native: native)
@@ -117,6 +118,17 @@ enum NotchMusicMouseRecoveryTests {
             rejected.input(0, .ended, native: native)
             suite.expect(rejected.commands == [true] && !rejected.state.completionPending && rejected.state.frame.progress == 0,
                          "rejected playback commands never display recovery success")
+        }
+        for accepted in [false, true] {
+            let terminal = Session()
+            terminal.input(0, .began)
+            terminal.input(-100, .changed)
+            _ = terminal.updates.last?(1, accepted ? .ended : .cancelled, false)
+            terminal.input(0, .cancelled)
+            terminal.input(100, .changed)
+            terminal.input(0, .ended)
+            suite.expect(terminal.commands == (accepted ? [true, false] : [false]),
+                         "raw Cancelled releases suppression after either native cancellation or acceptance")
         }
         let ambiguous = Session()
         ambiguous.input(-100, .changed)

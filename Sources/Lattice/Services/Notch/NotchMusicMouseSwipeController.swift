@@ -61,6 +61,12 @@ final class NotchMusicMouseSwipeController {
                  nativeTracking: Bool = true,
                  track: (@escaping NativeUpdate) -> Void) -> Bool {
         if !enabled || hasTouches { cancel(); return false }
+        // Raw cancellation is terminal; AppKit need not send another Ended.
+        if phase.contains(.cancelled) {
+            let handled = gesture.tracking || recoveryGesture.tracking
+            cancel()
+            return handled
+        }
         if !phase.isDisjoint(with: [.began, .mayBegin]) {
             ignoresRemainingScroll = false
             receivedScrollEnd = false
@@ -72,12 +78,6 @@ final class NotchMusicMouseSwipeController {
                 receivedScrollBegin = false
             }
             return false
-        }
-        if phase.contains(.cancelled) {
-            let handled = gesture.tracking || recoveryGesture.tracking
-            cancel()
-            ignoresRemainingScroll = true
-            return handled
         }
         let fallback = !nativeTracking
         if usingFallback != fallback { cancel() }
