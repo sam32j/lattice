@@ -62,13 +62,14 @@ enum NotchActivityTests {
         func text(_ seconds: TimeInterval) -> String {
             NotchKeepAwakeSupport.compactText(until: now.addingTimeInterval(seconds), now: now, locale: locale)
         }
-        suite.expect(text(30 * 60) == "30m" && text(30 * 60 - 0.5) == "30m" && text(29 * 60 + 1) == "30m"
-                     && text(29 * 60) == "29m",
-                     "a new half-hour session reads 30m until a whole minute has passed")
-        suite.expect(text(60 * 60) == "1h00" && text(61 * 60) == "1h01" && text(8 * 3600) == "8h00"
-                     && text(26 * 3600 + 5 * 60) == "26h05",
-                     "hours read as the timer's do, past the timer's three hours")
-        suite.expect(text(59 * 60) == "59m" && text(1) == "1m" && text(0) == "1m" && text(-30) == "1m",
+        suite.expect(text(30 * 60) == "30′" && text(30 * 60 - 0.5) == "30′" && text(29 * 60 + 1) == "30′"
+                     && text(29 * 60) == "29′",
+                     "a new half-hour session reads 30′ until a whole minute has passed")
+        suite.expect(text(60 * 60) == "60′" && text(61 * 60) == "61′" && text(8 * 3600) == "8hr"
+                     && text(26 * 3600 + 5 * 60) == "26hr"
+                     && text(26 * 3600 + 15 * 60) == "26¼hr",
+                     "Stay Awake uses minutes for short sessions and quarter hours for long ones")
+        suite.expect(text(59 * 60) == "59′" && text(1) == "1′" && text(0) == "1′" && text(-30) == "1′",
                      "the last minute, and an end the session has not reached yet, still read one minute")
         for seconds: TimeInterval in [1, 59.5, 60, 61, 1799.5, 3600, 3601, 28_800] {
             let end = now.addingTimeInterval(seconds)

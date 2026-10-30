@@ -2367,8 +2367,8 @@ enum SwitcherModelFeatureTests {
                      && MenuBarSpacingSupport.keepAwakeSignals(active: true, tint: .none, style: .coffee),
                "an active Keep Awake brings back the glyph that shows it")
         suite.expect(!MenuBarSpacingSupport.keepAwakeSignals(active: false, tint: .orange, style: .coffee)
-                     && !MenuBarSpacingSupport.keepAwakeSignals(active: true, tint: .none, style: .lattice),
-               "nothing returns while Keep Awake is off, or when its active glyph looks the same as the idle one")
+                     && MenuBarSpacingSupport.keepAwakeSignals(active: true, tint: .none, style: .lattice),
+               "the inactive glyph can hide, but the active bolt stays visible even without tint")
         // Both hide decisions and the title's leading space ask it, and an open
         // panel holds it: the returning glyph widens the item, and a separate
         // main item coming back shifts the metric item the panel hangs from.

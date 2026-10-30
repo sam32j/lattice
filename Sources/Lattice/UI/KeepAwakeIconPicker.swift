@@ -5,14 +5,8 @@ import SwiftUI
 
 struct KeepAwakeIconPicker: View {
     @ObservedObject private var l10n = L10n.shared
-    @AppStorage(DefaultsKey.menuBarIconSymbol) private var menuBarSymbol = ""
-    @Binding var iconValue: String
     @Binding var tintValue: String
     var compact = false
-
-    private var selectedIcon: KeepAwakeActiveIcon {
-        Defaults.sanitizedKeepAwakeActiveIcon(iconValue)
-    }
 
     private var selectedTint: KeepAwakeIconTint {
         Defaults.sanitizedKeepAwakeIconTint(tintValue)
@@ -20,15 +14,6 @@ struct KeepAwakeIconPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 7 : 10) {
-            choiceHeader(l10n.s.keepAwakeActiveIconLabel,
-                         value: title(selectedIcon))
-
-            HStack(spacing: compact ? 5 : 7) {
-                ForEach(KeepAwakeActiveIcon.allCases) { icon in
-                    iconButton(icon)
-                }
-            }
-
             choiceHeader(l10n.s.keepAwakeIconTintLabel,
                          value: selectedTint.title(l10n.s))
 
@@ -58,53 +43,6 @@ struct KeepAwakeIconPicker: View {
                 .foregroundStyle(.tertiary)
                 .lineLimit(1)
         }
-    }
-
-    private func iconButton(_ icon: KeepAwakeActiveIcon) -> some View {
-        let selected = icon == selectedIcon
-        return Button {
-            iconValue = icon.rawValue
-        } label: {
-            Group {
-                if let image = BlackHoleGlyph.activeImage(style: icon, tint: selectedTint) {
-                    Image(nsImage: image)
-                        .renderingMode(selectedTint == .none ? .template : .original)
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundStyle(.primary)
-                } else {
-                    Image(systemName: "circle.fill")
-                        .foregroundStyle(.primary)
-                }
-            }
-            .frame(maxWidth: 21, maxHeight: compact ? 14 : 16)
-            .frame(maxWidth: .infinity)
-            .frame(height: compact ? 29 : 35)
-            .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(selected ? Color.accentColor.opacity(0.14)
-                                   : Color.secondary.opacity(0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(selected ? Color.accentColor.opacity(0.75)
-                                           : Color.secondary.opacity(0.13),
-                                  lineWidth: selected ? 1.2 : 1)
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .help(title(icon))
-        .accessibilityLabel(title(icon))
-    }
-
-    /// The Lattice choice draws whatever the menu bar shows, which can be a
-    /// symbol chosen in the menu bar settings.
-    private func title(_ icon: KeepAwakeActiveIcon) -> String {
-        guard icon == .lattice,
-              BlackHoleGlyph.customMark(named: Defaults.sanitizedMenuBarIconSymbol(menuBarSymbol)) != nil
-        else { return icon.title(l10n.s) }
-        return FeatureStrings.generalSettings(l10n.language).menuBarIconTitle
     }
 
     private func tintButton(_ tint: KeepAwakeIconTint) -> some View {

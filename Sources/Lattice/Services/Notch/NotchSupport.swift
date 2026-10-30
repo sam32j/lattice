@@ -1165,14 +1165,16 @@ enum NotchCapsuleLayout {
                        maximum: Maximum.activity, geometry: geometry)
     }
 
-    /// A Keep Awake session: the cup, wider than other marks, then the time
+    /// A Keep Awake session: the bolt, then the time
     /// it has left measured by its shape, or infinity for a session without
     /// an end.
     static func keepAwakeSurface(reading: String?, geometry: NotchGeometry) -> CGSize {
-        let cup = NotchKeepAwakeSupport.symbolWidth(NotchKeepAwakeSupport.symbol, size: symbolSize)
-        let right = reading.map { width(NotchAgentSupport.readingShape($0), font: readingFont) }
-            ?? NotchKeepAwakeSupport.symbolWidth(NotchKeepAwakeSupport.openSymbol, size: readingFont.pointSize) + air
-        return surface(content: cup + spacing + right, maximum: Maximum.activity, geometry: geometry)
+        let bolt = NotchKeepAwakeSupport.symbolWidth(NotchKeepAwakeSupport.symbol, size: NotchKeepAwakeSupport.capsuleIconSize)
+        let font = NSFont.monospacedDigitSystemFont(
+            ofSize: NotchKeepAwakeSupport.textSize(bodyHeight: geometry.stripBodyHeight), weight: .medium)
+        let right = reading.map { width(NotchAgentSupport.readingShape($0), font: font) }
+            ?? NotchKeepAwakeSupport.symbolWidth(NotchKeepAwakeSupport.openSymbol, size: font.pointSize) + air
+        return surface(content: bolt + spacing + right, maximum: Maximum.activity, geometry: geometry)
     }
 
     /// Working agents' marks and the reading the person chose.
@@ -1260,7 +1262,7 @@ enum NotchControlItem: String, CaseIterable, Identifiable {
         case .volume: return "speaker.wave.2.fill"
         case .brightness: return "sun.max.fill"
         case .keyboardLight: return "light.max"
-        case .keepAwake: return "cup.and.saucer"
+        case .keepAwake: return "bolt"
         case .microphone: return "mic.fill"
         case .screenshot: return "camera.viewfinder"
         case .recording: return "record.circle"
