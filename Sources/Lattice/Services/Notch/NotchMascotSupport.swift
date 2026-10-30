@@ -206,7 +206,7 @@ enum NotchMascotMoment: String, CaseIterable, Identifiable {
         case .downloadFailed: return "exclamationmark.triangle"
         case .screenshot: return "camera.viewfinder"
         case .micMuted: return "mic.slash"
-        case .keepAwake: return "cup.and.saucer"
+        case .keepAwake: return "bolt"
         case .charging: return "bolt"
         case .lowBattery: return "battery.25percent"
         case .unlocked: return "lock.open"

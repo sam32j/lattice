@@ -16,7 +16,6 @@ struct EnergyKeepAwakeSettings: View {
     @AppStorage(DefaultsKey.keepAwakeAutomationRequireAll) private var keepAwakeAutomationRequireAll = false
     @AppStorage(DefaultsKey.showCountdown) private var showCountdown = false
     @AppStorage(DefaultsKey.keepAwakeIconTint) private var keepAwakeIconTint = KeepAwakeIconTint.orange.rawValue
-    @AppStorage(DefaultsKey.keepAwakeActiveIcon) private var keepAwakeActiveIcon = KeepAwakeActiveIcon.lattice.rawValue
     @AppStorage(DefaultsKey.keepAwakeMouseJiggleEnabled) private var keepAwakeMouseJiggle = false
     @AppStorage(DefaultsKey.keepAwakeMouseJiggleInterval) private var keepAwakeMouseJiggleInterval = 5
     @ObservedObject private var hotkeys = HotkeyManager.shared
@@ -31,7 +30,6 @@ struct EnergyKeepAwakeSettings: View {
             defaultDuration = Defaults.sanitizedDefaultDuration(defaultDuration)
             batteryLimit = Defaults.sanitizedBatteryLimit(batteryLimit)
             keepAwakeIconTint = Defaults.sanitizedKeepAwakeIconTint(keepAwakeIconTint).rawValue
-            keepAwakeActiveIcon = Defaults.sanitizedKeepAwakeActiveIcon(keepAwakeActiveIcon).rawValue
             keepAwakeMouseJiggleInterval = Defaults.sanitizedKeepAwakeMouseJiggleInterval(keepAwakeMouseJiggleInterval)
         }
         .settingsExpansionAnimation(value: [keepAwakeMouseJiggle, awake.clamshellPreferred,
@@ -181,7 +179,7 @@ struct EnergyKeepAwakeSettings: View {
                 .padding(.leading, settingsRowTextInset)
             }
             Divider()
-            KeepAwakeIconPicker(iconValue: $keepAwakeActiveIcon, tintValue: $keepAwakeIconTint)
+            KeepAwakeIconPicker(tintValue: $keepAwakeIconTint)
             if PowerSampler.hasInternalBattery {
                 Divider()
                 SettingsRow(symbol: "battery.25percent", title: l10n.s.batteryDisableBelow,

@@ -131,7 +131,7 @@ struct NotchQuickAccessView: View {
         case .control(.microphone):
             actionTitle = microphone.isMuted ? l10n.s.micUnmuteName : l10n.s.micMuteName
             if microphone.isMuted { symbol = "mic.slash.fill" }
-        case .control(.keepAwake) where awake.isActive: symbol = "cup.and.saucer.fill"
+        case .control(.keepAwake) where awake.isActive: symbol = "bolt.fill"
         case .control(.recording) where recorder.isRecording: symbol = "stop.circle.fill"
         default: break
         }

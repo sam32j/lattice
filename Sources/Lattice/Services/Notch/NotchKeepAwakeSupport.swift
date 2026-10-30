@@ -8,9 +8,16 @@ import AppKit
 /// it is the one sign left that the Mac is being kept awake.
 enum NotchKeepAwakeSupport {
     /// The mark of the island's Keep Awake tile, filled as the active tile is.
-    static let symbol = "cup.and.saucer.fill"
+    static let symbol = "bolt.fill"
+    static let iconSize: CGFloat = 15
+    static let capsuleIconSize: CGFloat = 11
     /// Where a timed session shows its time left, one without an end shows this.
     static let openSymbol = "infinity"
+
+    /// Match the resting Battery percentage, rather than the larger timer.
+    static func textSize(bodyHeight: CGFloat) -> CGFloat {
+        min(12, max(9, bodyHeight * 0.4))
+    }
 
     static func showsActivity(in defaults: UserDefaults = .standard) -> Bool {
         NotchSupport.isEnabled(in: defaults) && AppFeature.keepAwake.isAvailable(in: defaults)
@@ -25,11 +32,9 @@ enum NotchKeepAwakeSupport {
         return Int(min(Double(Int32.max), max(1, minutes)))
     }
 
-    /// The timer strip's shapes, "45m" and "1h35", past its three hours too.
+    /// Minute counts for shorter sessions, fractional hours for long ones.
     static func compactText(until end: Date, now: Date, locale: Locale) -> String {
-        let minutes = minutesLeft(until: end, now: now)
-        guard minutes >= 60 else { return NotchTimerSupport.compactText(TimeInterval(minutes * 60), locale: locale) }
-        return NotchTimerSupport.hoursText(hours: minutes / 60, minutes: minutes % 60)
+        KeepAwakeTimeFormat.compact(end: end, now: now)
     }
 
     /// The minute boundary the reading last crossed. A schedule that ticks
@@ -38,20 +43,19 @@ enum NotchKeepAwakeSupport {
         end.addingTimeInterval(-TimeInterval(minutesLeft(until: end, now: now)) * 60)
     }
 
-    /// The wider of the two sides, the cup or the time left, drawn as the
+    /// The wider of the two sides, the bolt or the time left, drawn as the
     /// strip draws them, with the timer's clearance from the silhouette's
     /// curve and air beside the camera.
     static func stripWing(until end: Date?, now: Date, locale: Locale, in geometry: NotchGeometry) -> CGFloat {
         let provisional = geometry.compactTimerGeometry(showsDownloads: false,
                                                         wing: NotchTimerSupport.stripWingRange.lowerBound)
-        let height = provisional.compactActivityContentHeight
-        let textSize = NotchTimerSupport.stripTextSize(height: height)
+        let textSize = Self.textSize(bodyHeight: provisional.stripBodyHeight)
         let reading = end.map {
             (NotchAgentSupport.readingShape(compactText(until: $0, now: now, locale: locale)) as NSString)
                 .size(withAttributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: textSize, weight: .medium)])
                 .width.rounded(.up)
         } ?? symbolWidth(openSymbol, size: textSize)
-        let iconSize = NotchTimerSupport.stripIconSize(height: height)
+        let iconSize = Self.iconSize
         let mark = symbolWidth(symbol, size: iconSize)
             + provisional.compactActivityEdgeInset(boxHeight: iconSize, radius: iconSize / 2)
         return max(reading + provisional.compactActivityEdgeInset(boxHeight: textSize * 0.72, radius: 0), mark)

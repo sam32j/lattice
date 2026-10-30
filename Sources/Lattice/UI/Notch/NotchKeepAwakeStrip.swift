@@ -3,8 +3,8 @@
 
 import SwiftUI
 
-/// The closed island while Keep Awake runs: the cup of its tile left of the
-/// camera, in the tile's yellow, and on the right the time a timed session
+/// The closed island while Keep Awake runs: its bolt left of the camera,
+/// in the menu-bar indicator's color, and on the right the time a timed session
 /// has left, or infinity for one without an end. Both open Controls, where
 /// the tile is. The wings are as wide as the wider side needs.
 struct NotchKeepAwakeStrip: View {
@@ -14,6 +14,7 @@ struct NotchKeepAwakeStrip: View {
     var displayGeometry: NotchGeometry? = nil
     @ObservedObject private var awake = KeepAwakeManager.shared
     @ObservedObject private var l10n = L10n.shared
+    @AppStorage(DefaultsKey.keepAwakeIconTint) private var tintValue = KeepAwakeIconTint.orange.rawValue
 
     var body: some View {
         // Ending a session clears its end before the strip has left.
@@ -22,8 +23,8 @@ struct NotchKeepAwakeStrip: View {
 
     @ViewBuilder private func content(end: Date?) -> some View {
         if let end {
-            // The reading changes once a minute, so the clock wakes only then.
-            TimelineView(.periodic(from: NotchKeepAwakeSupport.tickStart(until: end, now: Date()), by: 60)) { context in
+            // Half-minute ticks also catch the nearest-quarter rounding boundary.
+            TimelineView(.periodic(from: NotchKeepAwakeSupport.tickStart(until: end, now: Date()), by: 30)) { context in
                 strip(end: end, now: context.date)
             }
         } else {
@@ -35,8 +36,8 @@ struct NotchKeepAwakeStrip: View {
         let geometry = displayGeometry ?? service.compactActivityGeometry
         let height = geometry.compactActivityContentHeight
         let wing = geometry.compactActivityWingWidth
-        let iconSize = NotchTimerSupport.stripIconSize(height: height)
-        let textSize = NotchTimerSupport.stripTextSize(height: height)
+        let iconSize = NotchKeepAwakeSupport.iconSize
+        let textSize = NotchKeepAwakeSupport.textSize(bodyHeight: geometry.stripBodyHeight)
         return Button { service.openActivity(NotchCompactActivity.keepAwake.module) } label: {
             HStack(spacing: 0) {
                 Group {
@@ -63,7 +64,7 @@ struct NotchKeepAwakeStrip: View {
                 .padding(.trailing, geometry.compactActivityEdgeInset(boxHeight: textSize * 0.72, radius: 0))
                 .frame(width: wing, height: height, alignment: .trailing)
             }
-            .foregroundStyle(.yellow)
+            .foregroundStyle(Defaults.sanitizedKeepAwakeIconTint(tintValue).indicatorColor)
             .frame(height: height)
             .contentShape(Rectangle())
         }

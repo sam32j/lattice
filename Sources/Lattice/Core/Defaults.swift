@@ -908,26 +908,10 @@ enum KeepAwakeActiveIcon: String, CaseIterable, Identifiable {
         )
     }
 
-    var systemSymbolName: String? {
-        switch self {
-        case .lattice: return nil
-        case .coffee: return "cup.and.saucer.fill"
-        case .eye: return "eye.fill"
-        case .moon: return "moon.fill"
-        case .light: return "lightbulb.fill"
-        }
-    }
-
-    /// Nudge down the menu bar canvas, in points. Symbols carrying their mass
-    /// above the shape's middle — steam over a cup, a bulb over its base — read
-    /// as sitting high when their ink is centered geometrically.
-    var menuBarDrop: CGFloat {
-        switch self {
-        case .coffee: return 1
-        case .light: return 0.5
-        case .lattice, .eye, .moon: return 0
-        }
-    }
+    // Legacy raw values remain readable in backups. Stay Awake now uses one
+    // symbol on every surface, including the active menu-bar indicator.
+    var systemSymbolName: String? { "bolt.fill" }
+    var menuBarDrop: CGFloat { 0 }
 
     func title(_ strings: Strings) -> String {
         switch self {

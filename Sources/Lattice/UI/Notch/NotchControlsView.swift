@@ -550,7 +550,7 @@ private struct NotchAwakeButton: View {
     @ObservedObject private var service = KeepAwakeManager.shared
     @ObservedObject private var l10n = L10n.shared
     var body: some View {
-        NotchActionTile(symbol: service.isActive ? "cup.and.saucer.fill" : "cup.and.saucer",
+        NotchActionTile(symbol: service.isActive ? "bolt.fill" : "bolt",
                         title: l10n.s.keepAwakeTitle, active: service.isActive,
                         accent: .awake, action: service.toggle)
     }
