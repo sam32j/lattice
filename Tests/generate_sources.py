@@ -62,7 +62,7 @@ def main():
           + "}\nfinal class Toggles: ToggleState {\n"
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    func openAutomationSettings(for action:")
           + "}\n}\n")
-    reopening = declaration("Sources/Lattice/UI/Settings/NotchSettingsBehavior.swift", "    var behaviorPage:")
+    reopening = declaration("Sources/Lattice/UI/Settings/NotchSettingsBehavior.swift", "    var openingCard:")
     reopening = reopening.split("selection: Binding(get: {", 1)[1].split("}, set:", 1)[0]
     binding_state = ["returnHome", "homeModule", "timerEnabled", "cameraEnabled", "calendarEnabled",
                      "notificationsEnabled", "agentsEnabled", "watchEnabled"]
