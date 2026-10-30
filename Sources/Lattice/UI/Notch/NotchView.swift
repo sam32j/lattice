@@ -638,7 +638,7 @@ struct NotchView: View {
                 NotchSystemView(size: pageSize) { service.showMetric($0) }
             // The launcher hands the row its own controls, which a row set
             // here would replace.
-            case .hub: LatticeHubView(notchSize: pageSize)
+            case .hub: LatticeHubView(notchSize: pageSize, customLayout: service.geometry.layout == .custom)
             case .scratchpad: NotchScratchpadView(service: service)
             case .agents: NotchAgentsView(size: pageSize)
             case .watch: NotchWatchView(size: pageSize)

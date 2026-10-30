@@ -23,6 +23,7 @@ struct IslandDashedOutlineShape: Shape {
 struct NotchLiveQuickActionsEditorView: View {
     let screenSize: CGSize
     let onDone: () -> Void
+    var onPopoverChange: (Bool) -> Void = { _ in }
 
     @State private var configuration = NotchQuickAccessConfiguration.stored()
     @State private var addingSide: NotchQuickAccessSide?
@@ -112,6 +113,13 @@ struct NotchLiveQuickActionsEditorView: View {
                 }
             }
         }
+        .onChange(of: editingButtonID) { _, _ in
+            onPopoverChange(editingButtonID != nil || addingSide != nil)
+        }
+        .onChange(of: addingSide) { _, _ in
+            onPopoverChange(editingButtonID != nil || addingSide != nil)
+        }
+        .onDisappear { onPopoverChange(false) }
         .coordinateSpace(name: "liveEditorSpace")
         .frame(width: screenSize.width, height: screenSize.height)
     }

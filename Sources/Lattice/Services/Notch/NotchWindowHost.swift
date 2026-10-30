@@ -155,7 +155,14 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         canvas.reactMascotBridge(event, lift: lift)
     }
 
+    private func recordMissionControlRequest(size: CGSize?, usesGlass: Bool) {
+        guard concealedForMissionControl else { return }
+        missionControlRestorationSize = size.flatMap { $0.width > 0 && $0.height > 0 ? $0 : nil }
+        missionControlRestorationUsesGlass = missionControlRestorationSize != nil && usesGlass
+    }
+
     func hide(animated: Bool, transitionContent: NotchContentTransition = .depart) {
+        recordMissionControlRequest(size: nil, usesGlass: false)
         guard isPresented else { return }
         let animate = animated && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         guard !hidesWhenSettled || !animate else { return }
@@ -169,7 +176,11 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
 
     func present(size: CGSize, geometry: NotchGeometry, animated: Bool, transitionContent: NotchContentTransition = .none,
                  quickAccess: NotchQuickAccessConfiguration? = nil, revealFromHidden: Bool = false,
-                 hideWhenSettled: Bool = false, usesGlass: Bool = false, steady: Bool = false) {
+                 hideWhenSettled: Bool = false, usesGlass: Bool = false, steady: Bool = false,
+                 preserveMissionControlRestoration: Bool = false) {
+        if !preserveMissionControlRestoration {
+            recordMissionControlRequest(size: hideWhenSettled ? nil : size, usesGlass: usesGlass)
+        }
         // Choosing the capsule or the notch redraws the island at once, even
         // at a size it already has.
         canvas.setFloatingGap(geometry.floatingGap)
@@ -616,6 +627,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             desktopReadings = 0
             guard !concealedForMissionControl else { panel.ignoresMouseEvents = true; return }
             concealedForMissionControl = true
+            recordMissionControlRequest(size: hidesWhenSettled ? nil : targetSize, usesGlass: targetUsesGlass)
             // Reopened during the fade back in, the panel is still on its way
             // to the alpha kept from the first entry.
             if !restoringFromMissionControl { missionControlAlpha = panel.alphaValue }
@@ -627,10 +639,9 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             if panel.isVisible {
                 let current = canvas.visibleSize ?? targetSize
                 if !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion, current != cutout {
-                    missionControlRestorationSize = targetSize
-                    missionControlRestorationUsesGlass = canvas.usesGlass
                     present(size: cutout, geometry: currentGeometry, animated: true,
-                            transitionContent: .depart, hideWhenSettled: true)
+                            transitionContent: .depart, hideWhenSettled: true,
+                            preserveMissionControlRestoration: true)
                 }
                 fadeMissionControl(to: 0)
             } else {
@@ -648,22 +659,23 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         concealedForMissionControl = false
         desktopReadings = 0
         panel.ignoresMouseEvents = hidesWhenSettled ? true : missionControlMouseEvents
-        let restoreSize = missionControlRestorationSize ?? (targetSize != .zero ? targetSize : nil)
+        let restoreSize = missionControlRestorationSize
         let usesGlass = missionControlRestorationUsesGlass
         missionControlRestorationSize = nil
         missionControlRestorationUsesGlass = false
-        if let restoreSize, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+        if let restoreSize {
             restoringFromMissionControl = true
             panel.alphaValue = missionControlAlpha
             let revealing = !panel.isVisible
-            present(size: restoreSize, geometry: currentGeometry, animated: true,
+            present(size: restoreSize, geometry: currentGeometry,
+                    animated: !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
                     transitionContent: .reveal, revealFromHidden: revealing, usesGlass: usesGlass)
             if !panel.isVisible { panel.orderFrontRegardless() }
             restoringFromMissionControl = false
-        } else if panel.isVisible {
-            restoringFromMissionControl = true
-            fadeMissionControl(to: missionControlAlpha) { [weak self] in self?.restoringFromMissionControl = false }
         } else {
+            // An external hide cancels restoration even if the entry animation
+            // is still drawing a nonzero camera cutout.
+            hide(animated: false)
             panel.alphaValue = missionControlAlpha
             syncMissionControlMonitoring()
         }

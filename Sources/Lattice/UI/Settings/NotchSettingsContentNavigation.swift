@@ -12,6 +12,7 @@ extension NotchSettings {
                 .font(.body)
                 .controlSize(.regular)
             }
+            displayCompatibilityCheck
         }
     }
 

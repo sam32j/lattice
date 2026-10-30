@@ -42,9 +42,12 @@ struct DedicatedUtilitySettings: View {
     private var launcherIslandShown: Binding<Bool> {
         _ = launcherIslandRoute
         return Binding(get: {
-            IslandDestination.launcherGrid.isShown(in: .standard)
+            launcherShortcutTarget != LauncherShortcutTarget.floatingWindow.rawValue
+                && IslandDestination.launcherGrid.isShown(in: .standard)
         }, set: { newValue in
             withAnimation(reduceMotion ? nil : .settingsExpansion) {
+                launcherShortcutTarget = newValue
+                    ? LauncherShortcutTarget.automatic.rawValue : LauncherShortcutTarget.floatingWindow.rawValue
                 IslandDestination.launcherGrid.setShown(newValue, in: .standard)
                 NotchService.shared.syncWithPreferences()
                 LatticeHubService.shared.syncWithPreferences()
@@ -82,19 +85,10 @@ struct DedicatedUtilitySettings: View {
                         .padding(.leading, settingsRowTextInset)
 
                         if islandAvailable {
-                            let showOnIsland = Binding<Bool>(
-                                get: { launcherShortcutTarget != LauncherShortcutTarget.floatingWindow.rawValue },
-                                set: { isOn in
-                                    launcherShortcutTarget = isOn
-                                        ? LauncherShortcutTarget.automatic.rawValue
-                                        : LauncherShortcutTarget.floatingWindow.rawValue
-                                    LatticeHubService.shared.syncWithPreferences()
-                                }
-                            )
                             SettingsToggleRow(
                                 title: SettingsOwnershipStrings.text(.showIsland, l10n.language),
                                 caption: SettingsOwnershipStrings.text(.hubIslandCaption, l10n.language),
-                                isOn: showOnIsland
+                                isOn: launcherIslandShown
                             )
                             .padding(.leading, settingsRowTextInset)
                             .disabled(!shortcutHasValue)

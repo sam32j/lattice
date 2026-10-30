@@ -216,6 +216,8 @@ struct NotchSnippetsView: View {
     private func appeared() {
         guard !preview else { return }
         library.reloadSnippets()
+        library.query = ""
+        searchOpen = false
         highlightedID = library.rows.first?.id
         searching = true
     }

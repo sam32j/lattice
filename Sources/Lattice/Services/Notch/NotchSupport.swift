@@ -2679,10 +2679,8 @@ struct NotchGeometry: Equatable {
         let vstackSpacing: CGFloat = controlsH > 0 ? 6 : 0
         let budget = count >= 10 && layout != .custom ? pageBudget : contentBudget
         let availableHeight = max(0, budget - controlsH - vstackSpacing)
-        let rows = NotchLayout.railRows(count: count,
-                             perRow: NotchLayout.railCapacity(width: contentWidth, itemWidth: NotchLayout.toolWidth, spacing: NotchLayout.toolSpacing),
-                             rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing, height: availableHeight)
-        return count >= 10 && layout != .custom ? min(2, max(2, rows)) : rows
+        return NotchLayout.toolRailRows(count: count, width: contentWidth,
+                                        height: availableHeight, custom: layout == .custom)
     }
 
     /// The arrows walk the tiles the way the rail draws them: reading order

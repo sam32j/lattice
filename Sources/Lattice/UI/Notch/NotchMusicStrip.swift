@@ -81,18 +81,18 @@ struct NotchMusicStrip: View {
     /// A click's request shows at once, before the player says so.
     private var playing: Bool { (live ? service.musicStripRequest : nil) ?? playback?.isPlaying == true }
 
+    private func activateStrip() {
+        if live {
+            service.activateMusicStrip()
+        } else {
+            service.openActivity(.music)
+        }
+    }
+
     var body: some View {
         let wing = geometry.compactActivityWingWidth
         let named = namedWing
-        Button {
-            if music.commandFailed {
-                _ = music.send(.next)
-            } else if live {
-                service.activateMusicStrip()
-            } else {
-                service.openActivity(.music)
-            }
-        } label: {
+        Button(action: activateStrip) {
             HStack(spacing: 0) {
                 HStack(spacing: Layout.spacing) {
                     // The words grow out from behind the cover, which keeps its place.

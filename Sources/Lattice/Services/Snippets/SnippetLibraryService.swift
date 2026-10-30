@@ -168,7 +168,7 @@ final class SnippetLibraryService: ObservableObject {
     func insert(_ snippet: TextSnippet) {
         guard AppFeature.textSnippets.isAvailable else { hide(); return }
         hide()
-        NotchService.shared.collapse()
+        if NotchService.shared.expanded { NotchService.shared.collapse() }
         if let target = pasteTargetApp, !target.isTerminated {
             target.activate(options: [])
         } else if NSWorkspace.shared.frontmostApplication?.processIdentifier

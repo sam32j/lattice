@@ -16,6 +16,7 @@ final class NotchLiveQuickActionsEditorController: ObservableObject {
     private var panel: NotchLiveEditorPanel?
     private var backdropPanels: [OverlayPanel] = []
     private var keyMonitor: Any?
+    private var pickerPresented = false
 
     private init() {}
 
@@ -69,6 +70,9 @@ final class NotchLiveQuickActionsEditorController: ObservableObject {
             screenSize: screen.frame.size,
             onDone: { [weak self] in
                 self?.dismiss()
+            },
+            onPopoverChange: { [weak self] presented in
+                self?.pickerPresented = presented
             }
         )
 
@@ -80,18 +84,22 @@ final class NotchLiveQuickActionsEditorController: ObservableObject {
         self.panel = mainPanel
 
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 {
-                self?.dismiss()
-                return nil
-            }
-            return event
+            guard let self else { return event }
+            return self.handleKey(event)
         }
 
         mainPanel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    private func handleKey(_ event: NSEvent) -> NSEvent? {
+        guard event.keyCode == 53, let panel, event.window === panel, !pickerPresented else { return event }
+        dismiss()
+        return nil
+    }
+
     func dismiss() {
+        pickerPresented = false
         if let monitor = keyMonitor {
             NSEvent.removeMonitor(monitor)
             keyMonitor = nil
