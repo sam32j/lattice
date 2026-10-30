@@ -122,6 +122,7 @@ struct NotchAgentReadoutTimeline<Content: View>: View {
 /// no allowance is known.
 struct NotchAgentRestingWing: View {
     let leading: Bool
+    var height: CGFloat = 32
     @ObservedObject private var usage = AgentUsageService.shared
     @AppStorage(DefaultsKey.notchAgentsLimitDisplay) private var display = NotchAgentLimitDisplay.remaining.rawValue
     @AppStorage(DefaultsKey.notchAgentsLimitFocus) private var focus = NotchAgentLimitFocus.mostUsed.rawValue
@@ -137,27 +138,42 @@ struct NotchAgentRestingWing: View {
         let limit = NotchAgentSupport.restingLimit(snapshot, focus: NotchAgentLimitFocus(rawValue: focus) ?? .mostUsed, now: now)
         let used = display == NotchAgentLimitDisplay.used.rawValue
         if let limit {
-            let tint = agentLimitTint(limit.provider, usedFraction: limit.window.usedFraction)
-            if leading {
-                NotchAgentRing(value: used ? limit.window.usedFraction : limit.window.remainingFraction,
-                               tint: tint, lineWidth: 2)
-                    .frame(width: 11, height: 11)
-            } else {
-                Text(AgentFormat.percent(used ? limit.window.usedFraction : limit.window.remainingFraction))
-                    .font(.system(size: 9, weight: .medium))
-                    .monospacedDigit()
-                    .lineLimit(1)
-            }
+            let fraction = used ? limit.window.usedFraction : limit.window.remainingFraction
+            NotchAgentIdleReading(leading: leading, height: height, provider: limit.provider,
+                                  fraction: fraction, value: AgentFormat.percent(fraction),
+                                  tint: agentLimitTint(limit.provider, usedFraction: limit.window.usedFraction))
         } else if let provider = AgentProvider.allCases.first(where: snapshot.seen.contains) {
-            if leading {
-                NotchAgentMark(provider: provider, size: 10)
+            NotchAgentIdleReading(leading: leading, height: height, provider: provider,
+                                  fraction: nil, value: AgentFormat.cost(snapshot.usage(.today).total.cost))
+        }
+    }
+}
+
+/// Shared production rendering for limits and cost, independent of the source
+/// lifecycle. Both hanging and floating idle islands use the same scale.
+struct NotchAgentIdleReading: View {
+    let leading: Bool
+    let height: CGFloat
+    let provider: AgentProvider
+    let fraction: Double?
+    let value: String
+    var tint: Color = .white
+
+    var body: some View {
+        let symbolSize = min(18, max(12, height - 10))
+        if leading {
+            if let fraction {
+                NotchAgentRing(value: fraction, tint: tint, lineWidth: 2)
+                    .frame(width: symbolSize, height: symbolSize)
             } else {
-                Text(AgentFormat.cost(snapshot.usage(.today).total.cost))
-                    .font(.system(size: 9, weight: .medium))
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                NotchAgentMark(provider: provider, size: symbolSize)
             }
+        } else {
+            Text(value)
+                .font(.system(size: min(12, max(9, height * 0.4)), weight: .medium))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
     }
 }
