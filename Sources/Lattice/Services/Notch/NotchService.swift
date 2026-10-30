@@ -1303,14 +1303,18 @@ final class NotchService: ObservableObject {
         awaitsTrackNotice = false
         subscriptions.removeAll()
         stopPower()
-        NotchMusicService.shared.stop()
+        if !session.showsLockScreen || !NotchLockScreenSupport.isEnabled() {
+            NotchMusicService.shared.stop()
+        }
         NotchAudioLevelService.shared.stop()
         CameraPreviewService.shared.hideEmbedded()
         NotchAccessoryService.shared.suspend()
-        NotchDownloadService.shared.stop()
-        NotchCalendarService.shared.stop()
+        if !session.showsLockScreen || !NotchLockScreenSupport.isEnabled() {
+            NotchDownloadService.shared.stop()
+            NotchCalendarService.shared.stop()
+            AgentUsageService.shared.pause()
+        }
         NotchNotificationService.shared.stop()
-        AgentUsageService.shared.pause()
         settingsSignature = ""
         expanded = false
         peeking = false
@@ -3560,8 +3564,9 @@ final class NotchService: ObservableObject {
         if couldPresent != session.canPresent {
             if session.canPresent {
                 syncWithPreferences()
+                finishLockHandoff()
             } else {
-
+                if !wasLocked, session.locked { prepareLockHandoff() }
                 captureClose?()
                 clearCapture()
                 tearDownPresentation()
@@ -3580,6 +3585,27 @@ final class NotchService: ObservableObject {
         guard timerCouldRun != session.canRunTimer, !session.canPresent else { return }
         if session.canRunTimer { NotchTimerService.shared.syncWithPreferences() }
         else { NotchTimerService.shared.suspend() }
+    }
+
+    private func prepareLockHandoff() {
+        guard NotchLockScreenSupport.isEnabled(), session.showsLockScreen,
+              let windowHost, panel?.isVisible == true else { return }
+#if LATTICE_DEVELOPMENT
+        NotchLockTransitionDiagnostics.begin(outgoingWindow: panel?.windowNumber ?? -1)
+#endif
+        if NotchLockScreenService.shared.prepareHandoff(from: windowHost.visibleFrame, geometry: geometry) {
+            // Retire the outgoing reading before slow service teardown can expose
+            // it beside a narrowing backdrop or leave a second strip visible.
+            if let panel { NotchLockScreenService.shared.retireDesktop(panel) }
+#if LATTICE_DEVELOPMENT
+            NotchLockTransitionDiagnostics.event("desktop-ordered-out", window: panel?.windowNumber ?? -1)
+#endif
+        }
+    }
+
+    private func finishLockHandoff() {
+        let frame = windowHost?.visibleFrame ?? geometry.frame(for: surfaceSize)
+        NotchLockScreenService.shared.desktopReady(frame: frame, panel: panel)
     }
 
     private func installEventMonitors() {

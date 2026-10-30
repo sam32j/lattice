@@ -21,6 +21,7 @@ final class NotchLockScreenModel: ObservableObject {
     /// sleeping and waking, and cleared once it unlocks.
     @Published var playedWhileLocked = false
     @Published var padlockOpen = false
+    @Published var islandRevealed = false
 
     func showsMusic(_ playback: NotchPlayback?) -> Bool {
         gates.music && playback.map {
@@ -36,6 +37,7 @@ struct NotchLockScreenIsland: View {
     @ObservedObject var model: NotchLockScreenModel
     let size: CGSize
     let cameraWidth: CGFloat
+    var drawsBackground = true
     /// The music strip's own geometry: the padlock takes the cover's place and
     /// the bars keep theirs, so locking changes what shows, not where.
     let geometry: NotchGeometry
@@ -51,7 +53,7 @@ struct NotchLockScreenIsland: View {
         let padlockSide = min(geometry.compactMusicArtworkSide, wing)
         let playing = model.showsMusic(music.playback) && music.playback?.isPlaying == true
         NotchShape(attached: true, radius: NotchLayout.surfaceRadius(height: size.height))
-            .fill(.black)
+            .fill(drawsBackground ? Color.black : Color.clear)
             .overlay {
                 HStack(spacing: 0) {
                     Image(systemName: model.padlockOpen ? "lock.open.fill" : "lock.fill")
@@ -74,7 +76,12 @@ struct NotchLockScreenIsland: View {
                 }
             }
             .frame(width: size.width, height: size.height)
-            .padding(.leading, origin.x)
+            // Keep the camera fixed while the wings retract behind it.
+            .frame(width: model.islandRevealed ? size.width : cameraWidth, height: size.height)
+            .clipShape(NotchShape(attached: true, radius: NotchLayout.surfaceRadius(height: size.height)))
+            .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: model.islandRevealed)
+            .padding(.leading, origin.x + (model.islandRevealed ? 0 : (size.width - cameraWidth) / 2))
+            .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: model.islandRevealed)
             .padding(.top, origin.y)
             .frame(width: window?.width ?? size.width, height: window?.height ?? size.height, alignment: .topLeading)
             .accessibilityHidden(true)

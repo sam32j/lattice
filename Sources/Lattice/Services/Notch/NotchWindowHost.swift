@@ -71,6 +71,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         panel.backgroundColor = .clear
         panel.appearance = NSAppearance(named: .darkAqua)
         panel.hasShadow = false
+        if NotchLockScreenService.shared.isHandingOff { panel.alphaValue = 0 }
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.animationBehavior = .none
@@ -193,7 +194,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             frameProbe = probe
             probe.attach(level: panel.level, screen: geometry.screen)
         }
-        let canAnimate = animated && (isPresented || revealing) && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let canAnimate = animated && panel.alphaValue > 0 && (isPresented || revealing) && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         let previousGutter = quickAccessConfiguration == nil ? 0 : NotchQuickAccessLayout.gutter
         let previousBottom = quickAccessBottomInset(for: targetSize, geometry: currentGeometry)
         let previousFrame = currentGeometry.frame(for: CGSize(width: targetSize.width + previousGutter * 2, height: targetSize.height + previousBottom))
