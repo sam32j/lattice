@@ -166,7 +166,9 @@ struct NotchSnippetsView: View {
     }
 
     private func copyButton(_ snippet: TextSnippet) -> some View {
-        Button {
+        let labels = SnippetFeatureStrings.copyLabels(for: l10n.language)
+        let label = copiedID == snippet.id ? labels.copied : labels.copyExpansion
+        return Button {
             copyExpansion(of: snippet)
         } label: {
             Image(systemName: copiedID == snippet.id ? "checkmark" : "doc.on.doc")
@@ -176,7 +178,8 @@ struct NotchSnippetsView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help(copiedID == snippet.id ? "Copied" : "Copy expansion")
+        .help(label)
+        .accessibilityLabel(label)
     }
 
     private var searchField: some View {
