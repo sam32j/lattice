@@ -120,7 +120,7 @@ struct MetricsTests {
             }),
             ("transient-paste", { TransientPasteTests.run(suite) }),
             ("notch-music", { NotchMusicExtrasTests.run(suite) }),
-            ("notch-input", { NotchReviewInteractionTests.run(suite); NotchMissionControlRestorationTests.run(suite); NotchMusicDirectionRegressionTests.run(suite) }),
+            ("notch-input", { NotchMusicMouseRecoveryTests.run(suite); NotchMusicColdStartHapticTests.run(suite); NotchReviewInteractionTests.run(suite); NotchMissionControlRestorationTests.run(suite); NotchMusicDirectionRegressionTests.run(suite) }),
             ("notch-timer", { NotchTimerValidationTests.run(suite) }),
             ("notch", {
                 NotchTests.run(suite)

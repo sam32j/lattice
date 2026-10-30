@@ -24,6 +24,8 @@ struct NotchMusicMouseSwipe {
             let trackpad = trackpadSequence
             self = Self(); began = true; trackpadSequence = trackpad
         }
+        // A Magic Mouse can move into this view while its finger is still down.
+        if !began, phase.contains(.changed) { began = true }
         guard began, !trackpadSequence, !vertical, !tracking,
               !phase.isDisjoint(with: [.began, .changed]) else { return nil }
         x += dx; y += dy
@@ -62,6 +64,8 @@ struct NotchMusicMouseSwipe {
             let trackpad = trackpadSequence
             self = Self(); began = true; trackpadSequence = trackpad
         }
+        // A Magic Mouse can move into this view while its finger is still down.
+        if !began, phase.contains(.changed) { began = true }
         guard began, !trackpadSequence, !vertical else {
             if phase.contains(.ended) { cancel() }
             return (wasTracking, nil)
