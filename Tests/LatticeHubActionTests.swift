@@ -94,7 +94,6 @@ enum LatticeHubContract {
         let cases: [(LatticeHubItem, AppFeature, String?, Double?)] = [
             (.screenshot, .screenshot, "screenshot.capture", 0.15),
             (.screenRecorder, .screenRecorder, "recorder.toggle", 0.15),
-            (.cameraPreview, .cameraPreview, "camera.show", 0.15),
             (.scratchpad, .scratchpad, "scratchpad.show", 0.15),
             (.clipboard, .clipboardHistory, "clipboard.showHistoryWindow", 0.1),
             (.windowLayout, .windowLayout, nil, nil),
@@ -146,11 +145,8 @@ enum LatticeHubContract {
         }
         events.removeAll()
         DispatchQueue.main.jobs.removeAll()
-        cameraInNotch = true
-        Launcher().run(.cameraPreview)
-        suite.expect(events == ["camera.notch", "hide"] && DispatchQueue.main.jobs.isEmpty,
-                     "an embedded camera switches the notch before hiding the launcher, without a close-and-reopen delay")
-        cameraInNotch = false
+        suite.expect(!LatticeHubItem.allCases.contains { $0.rawValue == "cameraPreview" },
+                     "Camera Preview belongs to quick controls rather than workflow tiles")
         var tile = Tile()
         suite.expect(tile.icon(for: .screenRecorder) == "record.circle",
                      "an idle recording tile offers recording")

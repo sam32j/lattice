@@ -220,14 +220,6 @@ final class LatticeHubService: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 ScreenRecorderService.shared.toggle()
             }
-        case .cameraPreview:
-            let embedded = CameraPreviewService.shared.showInNotchIfEnabled()
-            hide()
-            if !embedded {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    CameraPreviewService.shared.show()
-                }
-            }
         case .scratchpad:
             hide()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {

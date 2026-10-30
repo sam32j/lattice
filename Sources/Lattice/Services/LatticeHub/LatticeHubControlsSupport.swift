@@ -16,7 +16,11 @@ extension LatticeHubService {
 
     var hiddenControlsSet: Set<HubControlAction> {
         let raw = UserDefaults.standard.string(forKey: DefaultsKey.hubControlsHidden) ?? ""
-        return Set(raw.split(separator: ",").compactMap { HubControlAction(rawValue: String($0)) })
+        var hidden = Set(raw.split(separator: ",").compactMap { HubControlAction(rawValue: String($0)) })
+        if QuickToolsSupport.hiddenIDs(from: hiddenItemsRaw).contains(HubControlAction.cameraPreview.rawValue) {
+            hidden.insert(.cameraPreview)
+        }
+        return hidden
     }
 
     var orderedControls: [HubControlAction] {
@@ -25,6 +29,12 @@ extension LatticeHubService {
 
     func setControlHidden(_ action: HubControlAction, _ hidden: Bool) {
         var ids = hiddenControlsSet
+        if action == .cameraPreview {
+            var legacy = QuickToolsSupport.hiddenIDs(from: hiddenItemsRaw)
+            legacy.remove(action.rawValue)
+            hiddenItemsRaw = QuickToolsSupport.serializeHiddenIDs(legacy)
+            UserDefaults.standard.set(hiddenItemsRaw, forKey: DefaultsKey.quickLauncherHiddenItems)
+        }
         if hidden {
             ids.insert(action)
         } else {
@@ -37,8 +47,9 @@ extension LatticeHubService {
 
     /// Dynamic height for controls strip in the Dynamic Island
     var notchControlsHeight: CGFloat {
-        let count = visibleControls.count
-        guard count > 0 else { return 0 }
-        return count <= 6 ? 34 : 66
+        let controls = visibleControls
+        guard !controls.isEmpty else { return 0 }
+        let rows = HubControlAction.rows(controls)
+        return rows.first.isEmpty || rows.second.isEmpty ? 34 : 66
     }
 }

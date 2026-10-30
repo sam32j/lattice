@@ -6,6 +6,7 @@ import SwiftUI
 enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
     case micMute, keepAwake, darkMode, keyboardLight, hiddenFiles, desktopIcons
     case emptyTrash, ejectDisks, lockScreen, displayOff, screenSaver, cleaningMode
+    case cameraPreview
 
     var id: String { rawValue }
 
@@ -13,6 +14,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         switch self {
         case .micMute: return AppFeature.micMute.isAvailable
         case .keepAwake: return AppFeature.keepAwake.isAvailable
+        case .cameraPreview: return AppFeature.cameraPreview.isAvailable
         case .darkMode, .displayOff: return AppFeature.brightness.isAvailable
         case .keyboardLight:
             return AppFeature.brightness.isAvailable && BrightnessService.shared.keyboardLightEnabled != nil
@@ -28,6 +30,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         switch self {
         case .micMute: return MicMuteService.shared.isMuted ? l10n.s.micUnmuteName : l10n.s.micMuteName
         case .keepAwake: return l10n.s.keepAwakeTitle
+        case .cameraPreview: return FeatureStrings.cameraPreview(l10n.language).pageTitle
         case .darkMode: return strings.toggleAppearance
         case .keyboardLight: return FeatureStrings.brightness(l10n.language).keyboardLight
         case .hiddenFiles: return QuickTogglesService.shared.hiddenFilesShown ? strings.hiddenFilesHide : strings.hiddenFilesShow
@@ -45,6 +48,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         switch self {
         case .micMute: return MicMuteService.shared.isMuted ? "mic.slash.fill" : "mic.fill"
         case .keepAwake: return KeepAwakeManager.shared.isActive ? "bolt.fill" : "bolt"
+        case .cameraPreview: return "person.crop.square.badge.camera"
         case .darkMode: return "circle.lefthalf.filled"
         case .keyboardLight: return (BrightnessService.shared.keyboardLightEnabled ?? false) ? "keyboard.fill" : "keyboard"
         case .hiddenFiles: return QuickTogglesService.shared.hiddenFilesShown ? "eye.fill" : "eye.slash.fill"
@@ -62,6 +66,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         switch self {
         case .micMute: return MicMuteService.shared.isMuted
         case .keepAwake: return KeepAwakeManager.shared.isActive
+        case .cameraPreview: return CameraPreviewService.shared.isVisible || CameraPreviewService.shared.isEmbeddedPresented
         case .darkMode: return colorScheme == .dark
         case .keyboardLight: return BrightnessService.shared.keyboardLightEnabled ?? false
         case .hiddenFiles: return QuickTogglesService.shared.hiddenFilesShown
@@ -75,6 +80,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         switch self {
         case .micMute: return .red
         case .keepAwake: return .orange
+        case .cameraPreview: return .blue
         case .darkMode: return .indigo
         case .keyboardLight: return .yellow
         case .hiddenFiles: return .blue
@@ -96,6 +102,17 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         switch self {
         case .micMute: MicMuteService.shared.toggle()
         case .keepAwake: KeepAwakeManager.shared.toggle()
+        case .cameraPreview:
+            let camera = CameraPreviewService.shared
+            if camera.isVisible || camera.isEmbeddedPresented {
+                camera.hide()
+            } else {
+                let embedded = camera.showInNotchIfEnabled()
+                onDismiss()
+                if !embedded {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { camera.show() }
+                }
+            }
         case .darkMode: toggles.toggleDarkMode()
         case .keyboardLight:
             let brightness = BrightnessService.shared
@@ -114,6 +131,16 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
             }
         }
     }
+
+    /// Keep operational controls in a stable secondary row, even when some
+    /// features are unavailable or hidden. Primary toggles retain saved order.
+    static func rows(_ controls: [Self]) -> (first: [Self], second: [Self]) {
+        let secondary: [Self] = [.cameraPreview, .cleaningMode, .ejectDisks, .emptyTrash,
+                                 .lockScreen, .displayOff, .screenSaver]
+        return (controls.filter { !secondary.contains($0) },
+                secondary.filter { controls.contains($0) })
+    }
+
 }
 
 struct HubControlButton: View {
@@ -171,29 +198,24 @@ struct HubQuickControls: View {
     @ObservedObject private var toggles = QuickTogglesService.shared
     @ObservedObject private var brightness = BrightnessService.shared
     @ObservedObject private var cleaning = CleaningModeManager.shared
+    @ObservedObject private var camera = CameraPreviewService.shared
     @Environment(\.colorScheme) private var colorScheme
     let onDismiss: () -> Void
 
     private var isNotch: Bool { notchSize != nil }
 
     private var row1: [HubControlAction] {
-        let controls = launcher.visibleControls
-        if controls.count <= 6 { return controls }
-        let split = (controls.count + 1) / 2
-        return Array(controls.prefix(split))
+        HubControlAction.rows(launcher.visibleControls).first
     }
 
     private var row2: [HubControlAction] {
-        let controls = launcher.visibleControls
-        if controls.count <= 6 { return [] }
-        let split = (controls.count + 1) / 2
-        return Array(controls.dropFirst(split))
+        HubControlAction.rows(launcher.visibleControls).second
     }
 
     var body: some View {
         if !launcher.visibleControls.isEmpty {
             VStack(spacing: isNotch ? 5 : 6) {
-                renderRow(row1)
+                if !row1.isEmpty { renderRow(row1) }
                 if !row2.isEmpty {
                     renderRow(row2)
                 }
