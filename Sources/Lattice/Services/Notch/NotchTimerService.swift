@@ -90,6 +90,11 @@ final class NotchTimerService: ObservableObject {
         alert.stop()
         // The notice takes the strip it watched from.
         NotchService.shared.endMascotCountdown(retreating: false)
+        announceCompletion()
+        alert.start(enabled: NotchTimerSupport.isSoundEnabled())
+    }
+
+    private func announceCompletion() {
         let text = FeatureStrings.notchActivities(L10n.shared.language)
         let reaction = NotchMascotSupport.timerReaction(finishing: session.phase)
         NotchService.shared.show(NotchNotice(event: .timer,
@@ -97,7 +102,6 @@ final class NotchTimerService: ObservableObject {
             detail: text.phase(session.phase), symbol: "timer", mascot: reaction))
         // It takes the news in the notice, or where it is when the notice cannot show.
         NotchService.shared.reactMascot(reaction)
-        alert.start(enabled: NotchTimerSupport.isSoundEnabled())
     }
 
     private func persistSessionToCache() {
@@ -113,12 +117,7 @@ final class NotchTimerService: ObservableObject {
         if let restored = NotchTimerCache.restoreSession(from: snapshot, now: now) {
             session = restored
             if session.completed {
-                let text = FeatureStrings.notchActivities(L10n.shared.language)
-                let reaction = NotchMascotSupport.timerReaction(finishing: session.phase)
-                NotchService.shared.show(NotchNotice(event: .timer,
-                    title: session.cycleFinished ? text.pomodoroFinished : text.finished,
-                    detail: text.phase(session.phase), symbol: "timer", mascot: reaction))
-                NotchService.shared.reactMascot(reaction)
+                announceCompletion()
             }
         } else {
             NotchTimerCache.delete()
