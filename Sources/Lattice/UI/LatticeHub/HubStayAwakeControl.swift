@@ -13,13 +13,15 @@ struct HubStayAwakeControl: View {
     @ObservedObject private var awake = KeepAwakeManager.shared
     @ObservedObject private var hub = LatticeHubService.shared
     @ObservedObject private var l10n = L10n.shared
+    private var text: KeepAwakeHubStrings { FeatureStrings.keepAwakeHub(l10n.language) }
+    private var locale: Locale { l10n.language.formattingLocale() }
     @State private var showingOptions = false
     private func toggleLabel(now: Date, textSize: CGFloat) -> some View {
         HStack(spacing: 3) {
             Image(systemName: awake.isActive ? "bolt.fill" : "bolt")
                 .font(.system(size: iconSize, weight: .semibold))
             if awake.isActive {
-                Text(HubStayAwakeSupport.compact(end: awake.endDate, now: now))
+                Text(HubStayAwakeSupport.compact(end: awake.endDate, now: now, locale: locale))
                     .font(.system(size: textSize, weight: .medium)).monospacedDigit()
                     .lineLimit(1)
             }
@@ -42,12 +44,12 @@ struct HubStayAwakeControl: View {
                         toggleLabel(now: context.date, textSize: 7)
                     }
                     .padding(.horizontal, 4)
-                    .foregroundStyle(awake.isActive ? Color.orange : Color.primary.opacity(0.85))
+                    .foregroundStyle(awake.isActive ? KeepAwakeAppearance.indicatorColor : Color.primary.opacity(0.85))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(awake.isActive ? "Stop Stay Awake" : "Start Stay Awake for 1 hour")
+                .accessibilityLabel(awake.isActive ? text.stop : text.startHour)
                 .accessibilityValue(status)
 
                 Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 1, height: height * 0.45)
@@ -61,15 +63,15 @@ struct HubStayAwakeControl: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Stay Awake options")
-                .accessibilityValue(showingOptions ? "Open" : "Closed")
+                .accessibilityLabel(text.options)
+                .accessibilityValue(showingOptions ? text.open : text.closed)
                 .popover(isPresented: $showingOptions, arrowEdge: .bottom) {
                     HubStayAwakePopover()
                 }
             }
             .frame(minWidth: height < 30 ? 58 : 66, maxWidth: .infinity)
             .frame(height: height)
-            .background(awake.isActive ? Color.orange.opacity(0.15) : Color.primary.opacity(0.06),
+            .background(awake.isActive ? KeepAwakeAppearance.indicatorColor.opacity(0.15) : Color.primary.opacity(0.06),
                         in: RoundedRectangle(cornerRadius: max(7, height * 0.28)))
             .overlay(alignment: .topTrailing) {
                 if isEditing {
@@ -80,7 +82,7 @@ struct HubStayAwakeControl: View {
                             .foregroundStyle(.white, Color.red)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Hide Stay Awake")
+                    .accessibilityLabel(text.hide)
                     .offset(x: 3, y: -3)
                 }
             }

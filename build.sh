@@ -687,6 +687,8 @@ if (( TEST )); then
         Sources/Lattice/Services/Switcher/WindowUseOrder.swift
         Sources/Lattice/Services/Metrics/MetricFormat.swift
         Sources/Lattice/Services/Metrics/VMStatisticsDecoder.swift
+        Sources/Lattice/Core/KeepAwakeHubStrings.swift
+        Sources/Lattice/Services/LatticeHub/KeepAwakeHubStatus.swift
         Sources/Lattice/Core/KeepAwakeAppearance.swift
         Sources/Lattice/Services/KeepAwakeTimeFormat.swift
         Sources/Lattice/Services/KeepAwakeAssertions.swift

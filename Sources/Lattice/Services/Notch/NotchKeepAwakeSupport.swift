@@ -34,7 +34,7 @@ enum NotchKeepAwakeSupport {
 
     /// Minute counts for shorter sessions, fractional hours for long ones.
     static func compactText(until end: Date, now: Date, locale: Locale) -> String {
-        KeepAwakeTimeFormat.compact(end: end, now: now)
+        KeepAwakeTimeFormat.compact(end: end, now: now, locale: locale)
     }
 
     /// The minute boundary the reading last crossed. A schedule that ticks

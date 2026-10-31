@@ -7,6 +7,8 @@ import SwiftUI
 struct HubStayAwakePopover: View {
     @ObservedObject private var awake = KeepAwakeManager.shared
     @ObservedObject private var l10n = L10n.shared
+    private var text: KeepAwakeHubStrings { FeatureStrings.keepAwakeHub(l10n.language) }
+    private var locale: Locale { l10n.language.formattingLocale() }
     @Environment(\.dismiss) private var dismiss
     @State private var pickingTime = false
     @State private var selectedTime = Date().addingTimeInterval(3600)
@@ -21,25 +23,25 @@ struct HubStayAwakePopover: View {
                     statusChip(now: context.date)
                 }
                 if awake.assertionFailed {
-                    Text(awake.isActive ? "Couldn’t restore normal sleep. Try Stop again."
-                         : "Couldn’t update sleep prevention. Please try again.")
+                    Text(awake.isActive ? text.restoreFailed
+                         : text.activationFailed)
                         .font(.caption).foregroundStyle(.red)
                 }
                 HStack(spacing: 6) {
                     ForEach([15, 30, 60, 240], id: \.self) { minutes in
-                        sessionButton(minutes < 60 ? "+\(minutes)min" : "+\(minutes / 60)hr") {
+                        sessionButton(KeepAwakeTimeFormat.increment(minutes: minutes, locale: locale)) {
                             pickingTime = false
                             awake.addHubDuration(minutes: minutes)
                         }
                     }
                 }
                 HStack(spacing: 8) {
-                    sessionButton("Stay On", symbol: "infinity",
+                    sessionButton(text.stayOn, symbol: "infinity",
                                   selected: !pickingTime && awake.isActive && awake.endDate == nil) {
                         pickingTime = false
                         awake.activate(minutes: 0)
                     }
-                    sessionButton("Set End Time...", symbol: "clock",
+                    sessionButton(text.setEndTime, symbol: "clock",
                                   selected: pickingTime || (awake.isActive && awake.endDate != nil && !awake.hubIsTimed)) {
                         if !pickingTime { selectedTime = awake.endDate ?? Date().addingTimeInterval(3600) }
                         pickingTime.toggle()
@@ -48,13 +50,13 @@ struct HubStayAwakePopover: View {
                 if pickingTime { timePicker(now: context.date) }
                 Divider()
                 HStack(spacing: 12) {
-                    Text("Prevent sleep with lid closed").font(.callout)
+                    Text(text.preventLidSleep).font(.callout)
                     Spacer(minLength: 0)
-                    Toggle("Prevent sleep with lid closed", isOn: $awake.clamshellPreferred)
+                    Toggle(text.preventLidSleep, isOn: $awake.clamshellPreferred)
                         .labelsHidden().toggleStyle(.switch).controlSize(.small)
                         .disabled(!PowerSampler.hasInternalBattery || awake.clamshellSetupInProgress)
                         .accessibilityHint(PowerSampler.hasInternalBattery ? ""
-                            : "This Mac does not have a supported built-in lid.")
+                            : text.unsupportedLid)
                 }
                 if awake.clamshellSetupInProgress {
                     ProgressView(l10n.s.configuring).controlSize(.small)
@@ -79,19 +81,19 @@ struct HubStayAwakePopover: View {
                     Self.announce(awake, l10n: l10n)
                 } label: {
                     HStack(spacing: 6) {
-                        Text(awake.endDate == nil ? "On" : HubStayAwakeSupport.compact(end: awake.endDate, now: now)).monospacedDigit()
+                        Text(awake.endDate == nil ? text.on : HubStayAwakeSupport.compact(end: awake.endDate, now: now, locale: locale)).monospacedDigit()
                         Image(systemName: "stop.fill").font(.system(size: 8))
                     }
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(KeepAwakeAppearance.indicatorColor)
                     .padding(.horizontal, 9).padding(.vertical, 5)
-                    .background(Color.orange.opacity(0.13), in: Capsule())
+                    .background(KeepAwakeAppearance.indicatorColor.opacity(0.13), in: Capsule())
                 }
                 .buttonStyle(.plain)
-                .help("Stop Stay Awake: \(Self.status(awake, now: now, l10n: l10n))")
-                .accessibilityLabel("Stop Stay Awake")
+                .help(String(format: text.stopStatus, Self.status(awake, now: now, l10n: l10n)))
+                .accessibilityLabel(text.stop)
                 .accessibilityValue(Self.status(awake, now: now, l10n: l10n))
             } else {
-                Text("Off").foregroundStyle(.secondary)
+                Text(text.off).foregroundStyle(.secondary)
                     .padding(.horizontal, 9).padding(.vertical, 5)
                     .background(Color.primary.opacity(0.06), in: Capsule())
             }
@@ -108,7 +110,7 @@ struct HubStayAwakePopover: View {
         } label: {
             HStack(spacing: 8) {
                 if let symbol { Image(systemName: symbol).frame(width: 16) }
-                Text(title).lineLimit(1)
+                Text(title).lineLimit(1).minimumScaleFactor(0.75)
                 if symbol != nil { Spacer(minLength: 0) }
             }
             .font(.system(size: symbol == nil ? 11 : 12, weight: .medium))
@@ -130,15 +132,16 @@ struct HubStayAwakePopover: View {
     private func timePicker(now: Date) -> some View {
         let end = HubStayAwakeSupport.nextOccurrence(of: selectedTime, now: now)
         return HStack {
-            Text("End time").font(.callout)
+            Text(text.endTime).font(.callout)
             if !Calendar.current.isDate(end, inSameDayAs: now) {
-                Text("Tomorrow").font(.caption).foregroundStyle(.secondary)
+                Text(text.tomorrow).font(.caption).foregroundStyle(.secondary)
             }
             Spacer(minLength: 4)
-            DatePicker("End time", selection: liveEndTime, displayedComponents: .hourAndMinute)
+            DatePicker(text.endTime, selection: liveEndTime, displayedComponents: .hourAndMinute)
                 .datePickerStyle(.field).labelsHidden().fixedSize()
+                .environment(\.locale, locale)
         }
-        .help(end.formatted(date: .abbreviated, time: .shortened))
+        .help(end.formatted(.dateTime.locale(locale)))
         .padding(10)
         .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
     }
@@ -160,18 +163,8 @@ struct HubStayAwakePopover: View {
     }
 
     static func status(_ awake: KeepAwakeManager, now: Date, l10n: L10n) -> String {
-        if awake.assertionFailed { return "Couldn’t update Stay Awake" }
-        if awake.sessionPausedForScreenLock { return "Paused while the screen is locked" }
-        guard awake.isActive else { return "Off" }
-        guard let end = awake.endDate else { return l10n.s.keepAwakeUntilDisabled }
-        if awake.sessionMinutes == nil {
-            return "On until \(end.formatted(date: Calendar.current.isDateInToday(end) ? .omitted : .abbreviated, time: .shortened))"
-        }
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.hour, .minute]
-        formatter.unitsStyle = .full
-        formatter.calendar = Calendar.current
-        let text = formatter.string(from: TimeInterval(max(1, Int(ceil(end.timeIntervalSince(now) / 60))) * 60)) ?? ""
-        return "\(l10n.s.keepAwakeEndsIn) \(text)"
+        KeepAwakeHubStatus.text(active: awake.isActive, failed: awake.assertionFailed,
+                                paused: awake.sessionPausedForScreenLock, end: awake.endDate,
+                                sessionMinutes: awake.sessionMinutes, now: now, language: l10n.language)
     }
 }
