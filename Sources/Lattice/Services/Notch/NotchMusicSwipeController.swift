@@ -20,6 +20,8 @@ final class NotchMusicSwipeController {
     private var presentation: Bool?
     private var awaitingBegin = true
     private var blockedUntilLift = false
+    // A canceled stroke's lift guard is not evidence of a currently touching device.
+    private var mouseTouchTimestamp: TimeInterval?
     private struct PendingDirection {
         var delta: Double
         let timestamp: TimeInterval
@@ -67,7 +69,7 @@ final class NotchMusicSwipeController {
         started = false
         presentation = nil
         awaitingBegin = true
-        if !contactsRemain { identities.removeAll(); device = nil }
+        if !contactsRemain { identities.removeAll(); device = nil; mouseTouchTimestamp = nil }
     }
 
     deinit { inactivityWork?.cancel() }
@@ -91,6 +93,8 @@ final class NotchMusicSwipeController {
                 cancelled: Bool = false, enabled: Bool, expanded: Bool,
                 timestamp: TimeInterval = ProcessInfo.processInfo.systemUptime, freshSequence: Bool = false,
                 allowRelease: Bool = true) -> Bool {
+        // Cancellation blocks recognition, not observation of still-present fingers.
+        if timestamp.isFinite, contacts.contains(where: { !$0.isResting }) { mouseTouchTimestamp = timestamp }
         if cancelled { cancel(); return false }
         if let presentation, presentation != expanded { cancel() }
         if contacts.isEmpty {
@@ -181,8 +185,31 @@ final class NotchMusicSwipeController {
     }
 
     func handleMouseScroll(_ event: NSEvent, enabled: Bool, expanded: Bool) -> Bool {
-        mouseSwipe.handle(event, enabled: enabled, expanded: expanded,
-            hasTouches: !awaitingBegin || blockedUntilLift)
+        receiveMouseInput(x: Double(event.scrollingDeltaX), y: Double(event.scrollingDeltaY), phase: event.phase,
+            precise: event.hasPreciseScrollingDeltas, momentum: !event.momentumPhase.isEmpty,
+            enabled: enabled, expanded: expanded, timestamp: event.timestamp,
+            nativeTracking: NSEvent.isSwipeTrackingFromScrollEventsEnabled) { update in
+                event.trackSwipeEvent(options: [.lockDirection], dampenAmountThresholdMin: -1, max: 1) {
+                    amount, phase, complete, stop in
+                    stop.pointee = ObjCBool(update(Double(amount), phase, complete))
+                }
+            }
+    }
+
+    /// The real event adapter and mixed-device fixtures share this routing boundary.
+    @discardableResult
+    func receiveMouseInput(x: Double, y: Double, phase: NSEvent.Phase, precise: Bool, momentum: Bool,
+                           enabled: Bool, expanded: Bool, timestamp: TimeInterval,
+                           nativeTracking: Bool, track: (@escaping NotchMusicMouseSwipeController.NativeUpdate) -> Void) -> Bool {
+        // Match the existing three-second inactivity policy. Delayed native touch
+        // snapshots may straddle a scroll timestamp, so allow either delivery order.
+        let recentTouches = mouseTouchTimestamp.map { abs(timestamp - $0) <= 3 } ?? false
+        let handled = mouseSwipe.receive(x: x, y: y, phase: phase, precise: precise, momentum: momentum,
+                           enabled: enabled, expanded: expanded,
+                           hasTouches: recentTouches && (!awaitingBegin || blockedUntilLift),
+                           nativeTracking: nativeTracking, track: track)
+        if !phase.isDisjoint(with: [.ended, .cancelled]) { mouseTouchTimestamp = nil }
+        return handled
     }
 
     func handle(_ event: NSEvent, in view: NSView, enabled: Bool, expanded: Bool) -> Bool {
