@@ -14,7 +14,6 @@ struct NotchKeepAwakeStrip: View {
     var displayGeometry: NotchGeometry? = nil
     @ObservedObject private var awake = KeepAwakeManager.shared
     @ObservedObject private var l10n = L10n.shared
-    @AppStorage(DefaultsKey.keepAwakeIconTint) private var tintValue = KeepAwakeIconTint.orange.rawValue
 
     var body: some View {
         // Ending a session clears its end before the strip has left.
@@ -64,7 +63,7 @@ struct NotchKeepAwakeStrip: View {
                 .padding(.trailing, geometry.compactActivityEdgeInset(boxHeight: textSize * 0.72, radius: 0))
                 .frame(width: wing, height: height, alignment: .trailing)
             }
-            .foregroundStyle(Defaults.sanitizedKeepAwakeIconTint(tintValue).indicatorColor)
+            .foregroundStyle(KeepAwakeAppearance.indicatorColor)
             .frame(height: height)
             .contentShape(Rectangle())
         }

@@ -215,19 +215,6 @@ struct Strings {
     let keepAwakeMouseJiggle: String
     let keepAwakeMouseJiggleCaption: String
     let keepAwakeMouseJiggleInterval: String
-    let keepAwakeActiveIconLabel: String
-    let keepAwakeActiveIconLattice: String
-    let keepAwakeActiveIconCoffee: String
-    let keepAwakeActiveIconEye: String
-    let keepAwakeActiveIconMoon: String
-    let keepAwakeActiveIconLight: String
-    let keepAwakeIconTintLabel: String
-    let keepAwakeIconTintOrange: String
-    let keepAwakeIconTintGreen: String
-    let keepAwakeIconTintBlue: String
-    let keepAwakeIconTintPurple: String
-    let keepAwakeIconTintPink: String
-    let keepAwakeIconTintNone: String
     let durationLabel: String
     let clamshellTitle: String
     let clamshellOnCaption: String
@@ -1250,19 +1237,6 @@ extension Strings {
         keepAwakeMouseJiggle: "Mover cursor levemente",
         keepAwakeMouseJiggleCaption: "Durante uma sessão, move o cursor um pouco no intervalo escolhido.",
         keepAwakeMouseJiggleInterval: "Intervalo",
-        keepAwakeActiveIconLabel: "Ícone ativo",
-        keepAwakeActiveIconLattice: "Lattice",
-        keepAwakeActiveIconCoffee: "Café",
-        keepAwakeActiveIconEye: "Olho",
-        keepAwakeActiveIconMoon: "Lua",
-        keepAwakeActiveIconLight: "Lâmpada",
-        keepAwakeIconTintLabel: "Cor do ícone ativo",
-        keepAwakeIconTintOrange: "Laranja",
-        keepAwakeIconTintGreen: "Verde",
-        keepAwakeIconTintBlue: "Azul",
-        keepAwakeIconTintPurple: "Roxo",
-        keepAwakeIconTintPink: "Rosa",
-        keepAwakeIconTintNone: "Sem cor",
         durationLabel: "Duração",
         clamshellTitle: "Continuar com a tampa fechada",
         clamshellOnCaption: "Suspensão totalmente desativada. Atenção à energia",
@@ -2235,19 +2209,6 @@ extension Strings {
         keepAwakeMouseJiggle: "Move pointer slightly",
         keepAwakeMouseJiggleCaption: "During a session, moves the pointer a little at the chosen interval.",
         keepAwakeMouseJiggleInterval: "Interval",
-        keepAwakeActiveIconLabel: "Active icon",
-        keepAwakeActiveIconLattice: "Lattice",
-        keepAwakeActiveIconCoffee: "Coffee",
-        keepAwakeActiveIconEye: "Eye",
-        keepAwakeActiveIconMoon: "Moon",
-        keepAwakeActiveIconLight: "Lightbulb",
-        keepAwakeIconTintLabel: "Active icon color",
-        keepAwakeIconTintOrange: "Orange",
-        keepAwakeIconTintGreen: "Green",
-        keepAwakeIconTintBlue: "Blue",
-        keepAwakeIconTintPurple: "Purple",
-        keepAwakeIconTintPink: "Pink",
-        keepAwakeIconTintNone: "No color",
         durationLabel: "Duration",
         clamshellTitle: "Keep going with the lid closed",
         clamshellOnCaption: "Sleep fully disabled. Mind the power",

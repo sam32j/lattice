@@ -776,7 +776,6 @@ struct KeepAwakeCard: View {
     @AppStorage(DefaultsKey.keepAwakeConnectedToPower) private var keepAwakeConnectedToPower = false
     @AppStorage(DefaultsKey.keepAwakeRunningApps) private var keepAwakeRunningApps = false
     @AppStorage(DefaultsKey.keepAwakePauseWhenLocked) private var keepAwakePauseWhenLocked = false
-    @AppStorage(DefaultsKey.keepAwakeIconTint) private var keepAwakeIconTint = KeepAwakeIconTint.orange.rawValue
     @AppStorage(DefaultsKey.keepAwakeMouseJiggleEnabled) private var keepAwakeMouseJiggle = false
     @AppStorage(DefaultsKey.keepAwakeMouseJiggleInterval) private var keepAwakeMouseJiggleInterval = 5
     @State private var optionsExpanded = false
@@ -884,7 +883,6 @@ struct KeepAwakeCard: View {
         }
         .onAppear {
             defaultDuration = Defaults.sanitizedDefaultDuration(defaultDuration)
-            keepAwakeIconTint = Defaults.sanitizedKeepAwakeIconTint(keepAwakeIconTint).rawValue
             keepAwakeMouseJiggleInterval = Defaults.sanitizedKeepAwakeMouseJiggleInterval(keepAwakeMouseJiggleInterval)
         }
     }
@@ -910,8 +908,6 @@ struct KeepAwakeCard: View {
 
             if optionsExpanded {
                 VStack(alignment: .leading, spacing: 8) {
-                    KeepAwakeIconPicker(tintValue: $keepAwakeIconTint,
-                                        compact: true)
                     compactOptionToggle(
                         icon: "display",
                         title: displaySleepStrings.allowDisplaySleep,

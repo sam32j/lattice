@@ -231,7 +231,7 @@ enum MenuBarSpacingSupport {
 
     /// A running session always needs its bolt visible, including when the
     /// user chooses an untinted menu-bar indicator.
-    static func keepAwakeSignals(active: Bool, tint: KeepAwakeIconTint, style: KeepAwakeActiveIcon) -> Bool {
+    static func keepAwakeSignals(active: Bool) -> Bool {
         active
     }
 

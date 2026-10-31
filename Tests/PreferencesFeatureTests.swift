@@ -114,10 +114,6 @@ enum PreferencesFeatureTests {
                "global hotkey is on for clean installs")
         suite.expect(registeredDefaults[DefaultsKey.keepAwakeShortcut] as? String == "control+option+command:40",
                "keep awake shortcut defaults to Ctrl+Opt+Cmd+K")
-        suite.expect(registeredDefaults[DefaultsKey.keepAwakeIconTint] as? String == KeepAwakeIconTint.orange.rawValue,
-               "keep-awake active icon tint defaults to orange")
-        suite.expect(registeredDefaults[DefaultsKey.keepAwakeActiveIcon] as? String == KeepAwakeActiveIcon.lattice.rawValue,
-               "keep-awake active icon defaults to the Lattice glyph")
         suite.expect(registeredDefaults[DefaultsKey.keepAwakeMouseJiggleEnabled] as? Bool == false,
                "Keep Awake mouse movement is opt-in")
         suite.expect(registeredDefaults[DefaultsKey.keepAwakeMouseJiggleInterval] as? Int == 5,
@@ -126,16 +122,6 @@ enum PreferencesFeatureTests {
                "valid Keep Awake mouse movement interval is preserved")
         suite.expect(Defaults.sanitizedKeepAwakeMouseJiggleInterval(3) == 5,
                "invalid Keep Awake mouse movement interval falls back to five minutes")
-        suite.expect(Defaults.sanitizedKeepAwakeIconTint("pink") == .pink,
-               "valid keep-awake active icon tint is preserved")
-        suite.expect(Defaults.sanitizedKeepAwakeIconTint("bad") == .orange,
-               "invalid keep-awake active icon tint falls back to orange")
-        suite.expect(Defaults.sanitizedKeepAwakeActiveIcon("coffee") == .coffee,
-               "valid keep-awake active icon is preserved")
-        suite.expect(Defaults.sanitizedKeepAwakeActiveIcon("bad") == .lattice,
-               "invalid keep-awake active icon falls back to the Lattice glyph")
-        suite.expect(KeepAwakeActiveIcon.allCases.allSatisfy { $0.systemSymbolName == "bolt.fill" },
-               "all legacy Stay Awake icon preferences render the unified bolt symbol")
         suite.expect(registeredDefaults[DefaultsKey.menuBarIconSymbol] as? String == "",
                "the menu bar shows the Lattice glyph until a symbol is chosen")
         suite.expect(Defaults.sanitizedMenuBarIconSymbol("  bolt.fill\n") == "bolt.fill"

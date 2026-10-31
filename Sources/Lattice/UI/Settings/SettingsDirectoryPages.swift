@@ -210,9 +210,6 @@ extension SettingsDirectory {
                                                            FeatureStrings.bluetoothSleep(language).enable]),
                                         (.keepAwake, [s.keepAwakeTitle, s.clamshellTitle,
                                                       s.defaultDurationLabel, s.showCountdown,
-                                                      s.keepAwakeActiveIconLabel,
-                                                      s.keepAwakeActiveIconCoffee,
-                                                      s.keepAwakeActiveIconEye,
                                                       FeatureStrings.keepAwakeAutomation(language)
                                                         .externalDisplayToggle,
                                                       FeatureStrings.keepAwakeAutomation(language)

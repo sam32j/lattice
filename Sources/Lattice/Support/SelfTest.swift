@@ -100,19 +100,12 @@ enum SelfTest {
         }
         UserDefaults.standard.removeObject(forKey: "selftest")
 
-        for style in KeepAwakeActiveIcon.allCases {
-            guard let image = BlackHoleGlyph.activeImage(style: style, tint: .orange) else {
-                failures.append("Keep Awake icon \(style.rawValue)")
-                continue
-            }
-            if image.size != BlackHoleGlyph.pointSize {
-                failures.append("Keep Awake icon size \(style.rawValue)")
-            }
-            // image.size stays correct even when the symbol inside it is scaled
-            // too large, so an overflow only shows as ink clipped by the canvas.
-            if inkTouchesEdge(of: image) {
-                failures.append("Keep Awake icon \(style.rawValue) is clipped by its canvas")
-            }
+        if let image = BlackHoleGlyph.activeImage() {
+            if image.size != BlackHoleGlyph.pointSize { failures.append("Keep Awake icon size") }
+            if inkTouchesEdge(of: image) { failures.append("Keep Awake icon is clipped by its canvas") }
+            if image.isTemplate { failures.append("Keep Awake icon must retain its amber color") }
+        } else {
+            failures.append("Keep Awake icon")
         }
 
         // A symbol chosen for the menu bar shares the active symbols' canvas,

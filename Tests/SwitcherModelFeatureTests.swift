@@ -2363,11 +2363,11 @@ enum SwitcherModelFeatureTests {
                "a screen too short for the panel still shows its top")
         suite.expect(registeredDefaults[DefaultsKey.menuBarHideIconWithMetrics] as? Bool == false,
                "the menu bar icon stays visible by default")
-        suite.expect(MenuBarSpacingSupport.keepAwakeSignals(active: true, tint: .orange, style: .lattice)
-                     && MenuBarSpacingSupport.keepAwakeSignals(active: true, tint: .none, style: .coffee),
+        suite.expect(MenuBarSpacingSupport.keepAwakeSignals(active: true)
+                     && MenuBarSpacingSupport.keepAwakeSignals(active: true),
                "an active Keep Awake brings back the glyph that shows it")
-        suite.expect(!MenuBarSpacingSupport.keepAwakeSignals(active: false, tint: .orange, style: .coffee)
-                     && MenuBarSpacingSupport.keepAwakeSignals(active: true, tint: .none, style: .lattice),
+        suite.expect(!MenuBarSpacingSupport.keepAwakeSignals(active: false)
+                     && MenuBarSpacingSupport.keepAwakeSignals(active: true),
                "the inactive glyph can hide, but the active bolt stays visible even without tint")
         // Both hide decisions and the title's leading space ask it, and an open
         // panel holds it: the returning glyph widens the item, and a separate

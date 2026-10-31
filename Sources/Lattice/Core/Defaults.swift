@@ -34,8 +34,6 @@ enum DefaultsKey {
     static let hotkeyEnabled = "hotkeyEnabled"
     static let launchAtLoginWanted = "launchAtLoginWanted"  // the user's choice; the system record can be lost
     static let keepAwakeShortcut = "keepAwakeShortcut"    // GlobalShortcut storage value
-    static let keepAwakeIconTint = "keepAwakeIconTint"    // KeepAwakeIconTint.rawValue
-    static let keepAwakeActiveIcon = "keepAwakeActiveIcon" // KeepAwakeActiveIcon.rawValue
     static let showCountdown = "showCountdownInMenuBar"
     static let statusItemPlacementGeneration = "statusItemPlacementGeneration"
     static let sleepDisabledFlag = "vorssDisabledSleep"   // internal guard for pmset disablesleep
@@ -869,61 +867,6 @@ enum DefaultsKey {
     static func featureAvailable(_ id: String) -> String { "featureAvailable.\(id)" }
 }
 
-
-
-
-
-enum KeepAwakeIconTint: String, CaseIterable, Identifiable {
-    case orange, green, blue, purple, pink, none
-
-    var id: String { rawValue }
-
-    static var current: KeepAwakeIconTint {
-        Defaults.sanitizedKeepAwakeIconTint(
-            UserDefaults.standard.string(forKey: DefaultsKey.keepAwakeIconTint)
-        )
-    }
-
-    func title(_ strings: Strings) -> String {
-        switch self {
-        case .orange: return strings.keepAwakeIconTintOrange
-        case .green: return strings.keepAwakeIconTintGreen
-        case .blue: return strings.keepAwakeIconTintBlue
-        case .purple: return strings.keepAwakeIconTintPurple
-        case .pink: return strings.keepAwakeIconTintPink
-        case .none: return strings.keepAwakeIconTintNone
-        }
-    }
-}
-
-enum KeepAwakeActiveIcon: String, CaseIterable, Identifiable {
-    // Serialized value retained so existing icon preferences and backups still load.
-    case lattice = "vorssaint", coffee, eye, moon, light
-
-    var id: String { rawValue }
-
-    static var current: KeepAwakeActiveIcon {
-        Defaults.sanitizedKeepAwakeActiveIcon(
-            UserDefaults.standard.string(forKey: DefaultsKey.keepAwakeActiveIcon)
-        )
-    }
-
-    // Legacy raw values remain readable in backups. Stay Awake now uses one
-    // symbol on every surface, including the active menu-bar indicator.
-    var systemSymbolName: String? { "bolt.fill" }
-    var menuBarDrop: CGFloat { 0 }
-
-    func title(_ strings: Strings) -> String {
-        switch self {
-        case .lattice: return strings.keepAwakeActiveIconLattice
-        case .coffee: return strings.keepAwakeActiveIconCoffee
-        case .eye: return strings.keepAwakeActiveIconEye
-        case .moon: return strings.keepAwakeActiveIconMoon
-        case .light: return strings.keepAwakeActiveIconLight
-        }
-    }
-}
-
 /// Thumbnail size for Dock Preview and, separately, the app switcher. Captures
 /// scale by the same factor, so larger previews stay sharp.
 enum PreviewSizing {
@@ -1020,8 +963,6 @@ enum Defaults {
         DefaultsKey.hotkeyEnabled: true,
         DefaultsKey.launchAtLoginWanted: false,
         DefaultsKey.keepAwakeShortcut: "control+option+command:40",
-        DefaultsKey.keepAwakeIconTint: KeepAwakeIconTint.orange.rawValue,
-        DefaultsKey.keepAwakeActiveIcon: KeepAwakeActiveIcon.lattice.rawValue,
         DefaultsKey.showCountdown: false,
         DefaultsKey.scrollInverterEnabled: false,
         DefaultsKey.scrollInverterHorizontalEnabled: false,
@@ -2117,22 +2058,6 @@ enum Defaults {
 
     static func sanitizedKeepAwakeMouseJiggleInterval(_ minutes: Int) -> Int {
         allowedKeepAwakeMouseJiggleIntervals.contains(minutes) ? minutes : 5
-    }
-
-    static func sanitizedKeepAwakeIconTint(_ rawValue: String?) -> KeepAwakeIconTint {
-        guard let rawValue,
-              let tint = KeepAwakeIconTint(rawValue: rawValue) else {
-            return .orange
-        }
-        return tint
-    }
-
-    static func sanitizedKeepAwakeActiveIcon(_ rawValue: String?) -> KeepAwakeActiveIcon {
-        guard let rawValue,
-              let icon = KeepAwakeActiveIcon(rawValue: rawValue) else {
-            return .lattice
-        }
-        return icon
     }
 
     /// A typed symbol name without the spaces around it; empty keeps the
