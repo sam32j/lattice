@@ -9,8 +9,8 @@ import UniformTypeIdentifiers
 import Vision
 
 final class MediaCancellationToken {
-    let lock = NSLock()
-    var _isCancelled = false
+    private let lock = NSLock()
+    private var _isCancelled = false
 
     var isCancelled: Bool {
         lock.lock()

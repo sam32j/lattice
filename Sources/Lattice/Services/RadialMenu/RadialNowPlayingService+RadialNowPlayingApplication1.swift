@@ -5,10 +5,7 @@ import AppKit
 import Foundation
 import SwiftUI
 
-/// A session-scoped view of macOS Now Playing. The read itself lives in the
-/// bridge below, out of process; a failed run, a timeout and malformed
-/// metadata all arrive here as an empty playback session.
-/// Nothing here is required for the radial menu itself to work.
+/// Resolves, caches icons for, and activates a Now Playing session's app.
 enum RadialNowPlayingApplication {
     static var icons: [String: NSImage] = [:]
     static var missingIcons = Set<String>()
@@ -93,9 +90,3 @@ enum RadialNowPlayingApplication {
         }
     }
 }
-
-/// Reads Now Playing through `/usr/bin/perl` loading the adapter library
-/// (`Sources/NowPlayingAdapter`). Since macOS 15.4 MediaRemote answers only
-/// processes carrying Apple's signature; perl is one, the app is not. A
-/// missing script or library, a failed run, a timeout and malformed output
-/// all read as an empty playback session.
