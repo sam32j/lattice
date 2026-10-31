@@ -245,12 +245,16 @@ extension HomebrewManager {
         guard let cancellation = readWork.begin(owner: owner, isAvailable: { $0.isAvailable }) else { return }
         outdatedGeneration += 1
         let generation = outdatedGeneration
+        let request = UUID()
+        outdatedRead = (request, owner)
         isLoadingOutdated = true
         let command = HomebrewCommandBuilder.outdated(brewPath: brewPath)
         run(command, cancellation: cancellation) { [weak self] status, output in
             DispatchQueue.main.async {
-                guard let self, !cancellation.isCancelled, generation == self.outdatedGeneration else { return }
+                guard let self, self.outdatedRead?.id == request, generation == self.outdatedGeneration else { return }
+                self.outdatedRead = nil
                 self.isLoadingOutdated = false
+                guard !cancellation.isCancelled else { return }
                 guard status == 0,
                       let updates = try? HomebrewParser.parseOutdatedCommandOutput(output) else {
                     self.outdatedPackagesByID = [:]

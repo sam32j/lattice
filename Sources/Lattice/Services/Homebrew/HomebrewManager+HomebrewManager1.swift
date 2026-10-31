@@ -21,15 +21,15 @@ extension HomebrewManager {
     func refreshInstalled(clearingError: Bool = true, owner: AppFeature = .homebrew) {
         guard let cancellation = readWork.begin(owner: owner, isAvailable: { $0.isAvailable }) else { return }
         guard let brewPath = detectBrewPath() else {
+            installedRead = nil
+            isLoadingInstalled = false
             self.brewPath = nil
             installed = []
             installedCaskRecords = []
             installedCaskRecordsFetchedAt = nil
             searchResults = []
             selectedPackage = nil
-            outdatedGeneration += 1
-            outdatedPackagesByID = [:]
-            isLoadingOutdated = false
+            clearOutdatedRead(owner: owner)
             if clearingError { errorMessage = nil }
             isShellConfigured = true
             shellConfigProfilePath = nil
@@ -38,23 +38,25 @@ extension HomebrewManager {
         }
         self.brewPath = brewPath
         updateShellConfigStatus(brewPath: brewPath)
+        let request = UUID()
+        installedRead = (request, owner)
         isLoadingInstalled = true
         if clearingError { errorMessage = nil }
         clearUntrustedTap()
         let command = HomebrewCommandBuilder.installed(brewPath: brewPath)
         run(command, cancellation: cancellation) { [weak self] status, output in
             DispatchQueue.main.async {
-                guard let self, !cancellation.isCancelled else { return }
+                guard let self, self.installedRead?.id == request else { return }
+                self.installedRead = nil
                 self.isLoadingInstalled = false
+                guard !cancellation.isCancelled else { return }
                 guard status == 0 else {
                     if let tap = HomebrewCommandBuilder.untrustedTapName(fromOutput: output) {
                         self.presentUntrustedTap(tap) { [weak self] in self?.refreshInstalled(owner: owner) }
                     } else {
                         self.errorMessage = output.trimmingCharacters(in: .whitespacesAndNewlines)
                     }
-                    self.outdatedGeneration += 1
-                    self.outdatedPackagesByID = [:]
-                    self.isLoadingOutdated = false
+                    self.clearOutdatedRead(owner: owner)
                     return
                 }
                 do {
@@ -70,9 +72,7 @@ extension HomebrewManager {
                     self.refreshOutdated(brewPath: brewPath, owner: owner)
                 } catch {
                     self.errorMessage = error.localizedDescription
-                    self.outdatedGeneration += 1
-                    self.outdatedPackagesByID = [:]
-                    self.isLoadingOutdated = false
+                    self.clearOutdatedRead(owner: owner)
                 }
             }
         }

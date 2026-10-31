@@ -34,6 +34,9 @@ final class HomebrewManager: ObservableObject {
     @Published var outdatedPackagesByID: [String: HomebrewPackageUpdate] = [:]
 
     let readWork = FeatureWorkRegistry()
+    var installedRead: (id: UUID, owner: AppFeature)?
+    var outdatedRead: (id: UUID, owner: AppFeature)?
+    var trustRead: UUID?
     var operationOwner: AppFeature?
     let workQueue = DispatchQueue(label: "io.github.sam32j.lattice.homebrew", qos: .userInitiated)
     var searchGeneration = 0
