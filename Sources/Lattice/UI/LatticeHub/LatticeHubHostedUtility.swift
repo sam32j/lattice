@@ -29,7 +29,7 @@ struct LatticeHubHostedUtility: View {
                 case .portManager:
                     PanelPortManagerView(onClose: onClose)
                 case .killProcess:
-                    KillProcessView()
+                    KillProcessView(inlineOptions: true)
                 case .wallpaper:
                     WallpaperSection(collapsible: false, onClose: onClose)
                 case .videoDownloader:

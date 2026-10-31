@@ -1,71 +1,9 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Vorssaint
-
 import Foundation
-
-/// One destination-aware Settings search result. Its identity is structural,
-/// never derived from localized text or result ordering.
-struct SettingsSearchItem: Identifiable {
-    enum ID: Hashable {
-        case page(SettingsPage)
-        case feature(AppFeature)
-        case setting(SettingsSectionAnchor)
-    }
-
-    let id: ID
-    let destination: FeatureSettingsDestination
-    let title: String
-    let icon: String
-    var keywords: [String] = []
-    /// Optional feature owner for each keyword. This is parallel to
-    /// `keywords`; absent entries are page-level settings.
-    var keywordFeatures: [AppFeature?] = []
-    /// The hub feature this result represents, when it corresponds to exactly
-    /// one `AppFeature` — including a dedicated page result such as Homebrew,
-    /// whose `id` stays `.page(...)` for identity stability. `nil` for a
-    /// purely generic page (Features itself, General, ...).
-    var feature: AppFeature?
-}
-
-/// One selectable row inside a grouped Settings search result. A page-level
-/// keyword routes to its containing page, while a feature-owned keyword keeps
-/// the same exact section destination and unavailable-feature fallback as the
-/// feature row itself.
-struct SettingsSearchSuggestion: Identifiable {
-    enum ID: Hashable {
-        case page(SettingsPage)
-        case item(SettingsPage, SettingsSearchItem.ID)
-        case keyword(SettingsPage, Int)
-    }
-
-    let id: ID
-    let title: String
-    let icon: String
-    let item: SettingsSearchItem
-    /// Features-page keyword rows use this to reveal the exact utility rather
-    /// than opening the hub at an unrelated scroll position.
-    var featureHubTarget: AppFeature? = nil
-}
-
-/// macOS Settings-style search group: the main page is shown once, followed
-/// by every matching utility or setting that lives inside it.
-struct SettingsSearchGroup: Identifiable {
-    let pageItem: SettingsSearchItem
-    let parentMatches: Bool
-    let suggestions: [SettingsSearchSuggestion]
-
-    var id: SettingsPage { pageItem.destination.page }
-
-    var parentSuggestion: SettingsSearchSuggestion {
-        SettingsSearchSuggestion(id: .page(id), title: pageItem.title,
-                                 icon: pageItem.icon, item: pageItem)
-    }
-}
 
 /// Pure filtering for the Settings sidebar search field, so the matching
 /// rules (case, accents, word prefixes) are covered by the unit harness.
 enum SettingsSearchSupport {
-    private enum MatchRank {
+    enum MatchRank {
         case exactTitle
         case title
         case keyword
@@ -122,7 +60,7 @@ enum SettingsSearchSupport {
         return mergedPageItems + dedupedFeatureItems
     }
 
-    private static func shouldMerge(pageItem: SettingsSearchItem,
+    static func shouldMerge(pageItem: SettingsSearchItem,
                                     featureItem: SettingsSearchItem) -> Bool {
         guard case .page(let page) = pageItem.id,
               page == pageItem.destination.page,
@@ -135,33 +73,19 @@ enum SettingsSearchSupport {
             .filter { $0.settingsDestination == FeatureSettingsDestination(page) } == [feature]
     }
 
-    /// Where a search or command-bar result should route right now. A
-    /// feature-backed result that is unavailable, or whose intentional
-    /// destination is the Features hub itself, opens Features with an
-    /// explicit target feature so the hub can reveal that exact row; every
-    /// other result opens its own destination unchanged. Shared by the
-    /// Settings sidebar search and the Command Bar so neither duplicates the
-    /// other's fallback logic.
+    /// Opens each feature's activation owner. Old Features identities resolve
+    /// to the named owner, or General when no feature was supplied.
     static func route(for item: SettingsSearchItem,
                        isAvailable: (AppFeature) -> Bool = { $0.isAvailable })
         -> (destination: FeatureSettingsDestination, targetFeature: AppFeature?) {
-        if let feature = item.feature {
-            guard hasSettingsControl(feature, isAvailable: isAvailable) || leadsToVisiblePage(item, isAvailable: isAvailable) else {
-                return (FeatureSettingsDestination(.features), feature)
-            }
-            if item.destination.page == .features {
-                return (item.destination, feature)
-            }
-            return (item.destination, nil)
-        }
-        guard FeatureVisibilitySupport.isPageVisible(item.destination.page, isAvailable: isAvailable) else {
-            return (FeatureSettingsDestination(.features), nil)
+        if item.destination.page == .features {
+            return (item.feature?.settingsDestination ?? FeatureSettingsDestination(.general), nil)
         }
         return (item.destination, nil)
     }
 
     /// Dedicated pages own their install controls even while the feature is off.
-    private static func hasSettingsControl(_ feature: AppFeature,
+    static func hasSettingsControl(_ feature: AppFeature,
                                            isAvailable: (AppFeature) -> Bool) -> Bool {
         feature.isHardwareSupported && (feature.isManagedOnDedicatedPage
             || feature.isVisibleInSettings(isAvailable: isAvailable))
@@ -170,7 +94,7 @@ enum SettingsSearchSupport {
     /// A page row carrying its page's own feature, like Window Layout, still
     /// leads to that page while another feature there keeps it in the
     /// sidebar, like the green button override with Window Layout removed.
-    private static func leadsToVisiblePage(_ item: SettingsSearchItem,
+    static func leadsToVisiblePage(_ item: SettingsSearchItem,
                                            isAvailable: (AppFeature) -> Bool) -> Bool {
         guard case .page(let page) = item.id, item.destination.page == page else { return false }
         return FeatureVisibilitySupport.isPageVisible(page, isAvailable: isAvailable)
@@ -180,7 +104,7 @@ enum SettingsSearchSupport {
                       isAvailable: (AppFeature) -> Bool = { $0.isAvailable })
         -> (destination: FeatureSettingsDestination, targetFeature: AppFeature?) {
         if let feature = suggestion.featureHubTarget {
-            return (FeatureSettingsDestination(.features), feature)
+            return (feature.settingsDestination, nil)
         }
         return route(for: suggestion.item, isAvailable: isAvailable)
     }
@@ -313,13 +237,13 @@ enum SettingsSearchSupport {
         }
     }
 
-    private struct SearchGroupBuilder {
+    struct SearchGroupBuilder {
         let pageItem: SettingsSearchItem
         var parentMatches = false
         var suggestions: [SettingsSearchSuggestion] = []
     }
 
-    private static func appendSuggestion(_ suggestion: SettingsSearchSuggestion,
+    static func appendSuggestion(_ suggestion: SettingsSearchSuggestion,
                                          to builder: inout SearchGroupBuilder) {
         guard !builder.suggestions.contains(where: {
             fold($0.title) == fold(suggestion.title)
@@ -329,155 +253,4 @@ enum SettingsSearchSupport {
 
     /// Every former screen-tool page remains discoverable after those settings
     /// move behind the single Screen capture destination.
-    static func screenCaptureKeywords(_ strings: Strings,
-                                       language: AppLanguage) -> [String] {
-        screenCaptureFeatureKeywords(strings, language: language).flatMap(\.titles)
-    }
-
-    static func screenCaptureFeatureKeywords(_ strings: Strings,
-                                              language: AppLanguage)
-        -> [(feature: AppFeature, titles: [String])] {
-        let screenshot = FeatureStrings.screenshot(language)
-        let recorder = FeatureStrings.recorder(language)
-        return [
-            (.screenshot, [screenshot.pageTitle, screenshot.freezeToggle,
-                           screenshot.highlightWindowsToggle, screenshot.highlightWindowsCaption,
-                           screenshot.loupeStartsOnToggle,
-                           screenshot.fullScreenShortcutTitle, screenshot.previewPositionLabel,
-                           screenshot.previewFocusToggle, screenshot.confirmationPreviewToggle,
-                           screenshot.confirmationPreviewDurationLabel,
-                           screenshot.pinButton, screenshot.toolPixelate, screenshot.toolBlur,
-                           screenshot.toolArrow, screenshot.addToShelfToggle]),
-            (.screenRecorder, [recorder.pageTitle, recorder.startButton,
-                               screenshot.previewPositionLabel,
-                               recorder.systemAudioToggle, recorder.microphoneToggle,
-                               recorder.qualityLabel, recorder.frameRateLabel]),
-        ]
-    }
-
-    /// Keeps only the sections that still have items for the query, so an
-    /// empty section never renders just its header.
-    static func filteredIndices(query: String,
-                                sections: [[String]]) -> [[Int]] {
-        sections.map { titles in
-            titles.indices.filter { matches(query: query, title: titles[$0]) }
-        }
-    }
-
-    private static func fold(_ value: String) -> String {
-        // No locale: Turkish folds a dotted I to a dotless one, which would
-        // make this page search answer differently there.
-        value
-            .folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive],
-                     locale: nil)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private static func matchRank(foldedQuery: String,
-                                   title: String,
-                                   keywords: [String]) -> MatchRank? {
-        let foldedTitle = fold(title)
-        if foldedTitle == foldedQuery { return .exactTitle }
-        if foldedTitle.contains(foldedQuery) { return .title }
-        if keywords.contains(where: { fold($0).contains(foldedQuery) }) { return .keyword }
-        return nil
-    }
-
-    /// Returns the next selection index with deterministic wrapping.
-    static func moveSelection(index: Int?, delta: Int, count: Int) -> Int? {
-        guard count > 0 else { return nil }
-        let current = clampedSelection(index: index, count: count)
-            ?? (delta >= 0 ? count - 1 : 0)
-        let remainder = (current + delta % count) % count
-        return remainder >= 0 ? remainder : remainder + count
-    }
-
-    static func clampedSelection(index: Int?, count: Int) -> Int? {
-        guard count > 0, let index else { return nil }
-        return min(max(index, 0), count - 1)
-    }
-
-    /// Keeps the same result selected if it moved, otherwise clamps its old
-    /// position to the new result count.
-    static func reconciledSelection<ID: Equatable>(index: Int?,
-                                                    previousIDs: [ID],
-                                                    resultIDs: [ID]) -> Int? {
-        guard !resultIDs.isEmpty else { return nil }
-        guard let index else { return 0 }
-        if previousIDs.indices.contains(index),
-           let movedIndex = resultIDs.firstIndex(of: previousIDs[index]) {
-            return movedIndex
-        }
-        return clampedSelection(index: index, count: resultIDs.count)
-    }
-}
-
-/// Fixed-width Settings geometry with independently restorable height.
-enum SettingsWindowSupport {
-    /// Width is locked; only height can grow from its minimum.
-    static let minContentWidth: Double = 772
-    static let minContentHeight: Double = 528
-    /// Tall default so every sidebar entry is visible on regular screens.
-    static let preferredContentHeight: Double = 838
-
-    static func isValidContentSize(width: Double, height: Double) -> Bool {
-        width == minContentWidth && height >= minContentHeight
-    }
-
-    /// A saved size wins when it is at least the minimum (0 means unset);
-    /// otherwise the tall default, capped to the screen's available height.
-    static func initialContentSize(savedHeight: Double,
-                                   availableHeight: Double) -> (width: Double, height: Double) {
-        if savedHeight.isFinite && savedHeight >= minContentHeight {
-            return (minContentWidth, savedHeight)
-        }
-        let height = min(preferredContentHeight, max(availableHeight, minContentHeight))
-        return (minContentWidth, height)
-    }
-
-
-    static func panelPlacement(preferredFrame: CGRect,
-                               panelFrame: CGRect,
-                               visibleFrame: CGRect) -> (frame: CGRect, closesPanel: Bool) {
-        let avoidedFrame = frame(preferredFrame, avoiding: panelFrame, in: visibleFrame)
-        let closesPanel = avoidedFrame.intersects(panelFrame)
-        return (closesPanel ? clamped(preferredFrame, to: visibleFrame) : avoidedFrame,
-                closesPanel)
-    }
-
-    private static func frame(_ frame: CGRect, avoiding panelFrame: CGRect,
-                              in visibleFrame: CGRect) -> CGRect {
-        let gap: CGFloat = 28
-        let margin: CGFloat = 20
-        var adjusted = frame
-
-        let leftX = panelFrame.minX - gap - frame.width
-        let rightX = panelFrame.maxX + gap
-        if panelFrame.midX >= visibleFrame.midX, leftX >= visibleFrame.minX + margin {
-            adjusted.origin.x = min(frame.origin.x, leftX)
-        } else if panelFrame.midX < visibleFrame.midX,
-                  rightX + frame.width <= visibleFrame.maxX - margin {
-            adjusted.origin.x = max(frame.origin.x, rightX)
-        } else {
-            let belowY = panelFrame.minY - gap - frame.height
-            let aboveY = panelFrame.maxY + gap
-            if belowY >= visibleFrame.minY + margin {
-                adjusted.origin.y = min(frame.origin.y, belowY)
-            } else if aboveY + frame.height <= visibleFrame.maxY - margin {
-                adjusted.origin.y = max(frame.origin.y, aboveY)
-            }
-        }
-
-        return clamped(adjusted, to: visibleFrame)
-    }
-
-    private static func clamped(_ frame: CGRect, to visibleFrame: CGRect) -> CGRect {
-        let margin: CGFloat = 20
-        var clamped = frame
-        clamped.origin.x = min(max(clamped.origin.x, visibleFrame.minX + margin),
-                               visibleFrame.maxX - frame.width - margin)
-        clamped.origin.y = min(max(clamped.origin.y, visibleFrame.minY + margin),
-                               visibleFrame.maxY - frame.height - margin)
-        return clamped
-    }
 }

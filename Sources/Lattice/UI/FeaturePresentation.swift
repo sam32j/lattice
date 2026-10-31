@@ -8,16 +8,12 @@ extension AppFeature {
     func enableReason(_ l10n: L10n) -> String {
         let editor = FeatureStrings.notchEditor(l10n.language)
         let title = hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language))
-        return isManagedOnDedicatedPage ? editor.enableSetting(title) : editor.enableFeature(title)
+        return editor.enableSetting(title)
     }
 
     /// Opens the installation owner for an option that needs this feature.
     func showInFeatures() {
         let router = SettingsRouter.shared
-        guard isManagedOnDedicatedPage else {
-            router.request(FeatureSettingsDestination(.features), targetFeature: self)
-            return
-        }
         router.request(settingsDestination)
         switch self {
         case .notchTimer: router.notchModule = .timer

@@ -35,6 +35,7 @@ enum FeatureAvailabilityTransitionTests {
         func startDirect(_ feature: AppFeature) { State.bindings[feature]?() }
     }
     static func run(_ suite: TestSuite) {
+        pageActivationTransitions(suite)
         CleaningModePreferencesTests.run(suite)
         BluetoothSleepPreferencesTests.run(suite)
         let domain = "vorss.tests.pr3-availability.\(UUID())"

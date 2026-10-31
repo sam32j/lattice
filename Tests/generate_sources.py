@@ -163,7 +163,12 @@ def main():
     write("HomebrewReadLifecycle.swift", "import Foundation\nextension HomebrewReadLifecycleTests {\nfinal class Service: State {\n"
           + homebrew_methods + "}\n}\n")
     write("RemainingPageLifecycle.swift", "import Foundation\nextension RemainingPageLifecycleTests {\n"
-          + "final class Updates: UpdatesState {\n"
+          + "final class Awake: AwakeState {\n"
+          + declaration("Sources/Lattice/Services/KeepAwakeManager.swift", "    func syncWithPreferences()")
+              .replace("func syncWithPreferences()", "func syncWithPreferences(_ defaults: UserDefaults)")
+              .replace("AppFeature.keepAwake.isAvailable", "AppFeature.keepAwake.isAvailable(in: defaults)")
+              .replace("UserDefaults.standard", "defaults")
+          + "}\nfinal class Updates: UpdatesState {\n"
           + declaration("Sources/Lattice/Services/AppUpdates/AppUpdatesService.swift", "    func cancelChecks()")
           + "}\n}\n")
     write("PageSchedules.swift", "import Foundation\nextension PageScheduleLifecycleTests {\n"
@@ -175,8 +180,14 @@ def main():
           + declaration("Sources/Lattice/Services/AppUpdates/AppUpdatesService.swift", "    func scheduleNext()")
               .replace("AppFeature.appUpdates.isAvailable", "AppFeature.appUpdates.isAvailable(in: defaults)")
           + "}\n}\n")
+    discovery = "Sources/Lattice/Services/CommandBar/CommandBarCatalog+Settings.swift"
+    discovery_source = declaration(discovery, "    static func settingsEntries(").replace("$0.isAvailable", "$0.isAvailable(in: defaults)")
+    discovery_source = discovery_source.replace("where: \\.isAvailable", "where: { $0.isAvailable(in: defaults) }")
+    write("PageCommandDiscovery.swift", "import Foundation\nextension PageCommandDiscoveryTests {\nfinal class Catalog: State {\n"
+          + "static let pagesCoveredByActions: Set<SettingsPage> = [.general, .cleaner, .uninstaller, .appUpdates]\n"
+          + discovery_source + "}\n}\n")
     runtime = "Sources/Lattice/App/FeatureRuntime.swift"
-    settings_view = (ROOT / "Sources/Lattice/UI/Settings/SettingsView.swift").read_text()
+    settings_view = (ROOT / "Sources/Lattice/UI/Settings/SettingsSearchKeyMonitor.swift").read_text()
     find_command = re.search(r"                    if (event\.[^\n]+),\n                       (event\.[^\n]+) \{", settings_view)
     if find_command is None:
         raise ValueError("Missing Settings Find command condition")
@@ -194,6 +205,7 @@ def main():
                        "    func setAllAvailable(",
                        "    func sync(", "    func syncAtLaunch()", "    func hardwareDidChange()",
                        "    var needsRestartToUnload:"])
+    runtime_methods += declaration("Sources/Lattice/App/FeatureRuntime+PageActivation.swift", "    func setPageEnabled(")
     runtime_methods += declaration("Sources/Lattice/App/FeatureRuntime+Island.swift", "    func setIslandFeature(")
     runtime_methods = runtime_methods.replace("feature.isHardwareSupported", "true").replace("UserDefaults.standard", "defaults").replace("in: .standard", "in: defaults")
     runtime_methods = runtime_methods.replace("$0.isAvailable", "$0.isAvailable(in: defaults)")
@@ -440,13 +452,7 @@ def main():
                                    "    private func setLaunchAtLogin("])
           + "}\n")
     cleaner_view = "Sources/Lattice/UI/Cleaner/CleanerView.swift"
-    feature_hub = "Sources/Lattice/UI/Settings/FeatureHubSettings.swift"
-    write("FeatureHubLayout.swift", "import SwiftUI\nextension FeatureHubLayoutTests.Page {\n"
-          + "".join(declaration(feature_hub, prefix).replace("    private var", "    var", 1)
-                    for prefix in ["    private var content:", "    private var restartCard:"])
-          + "}\nextension FeatureHubLayoutTests {\n"
-          + declaration("Sources/Lattice/UI/Settings/SettingsCard.swift", "struct SettingsCard<")
-          + "}\n")
+    (OUTPUT / "FeatureHubLayout.swift").unlink(missing_ok=True)
     write("CleanerLayout.swift", "import SwiftUI\nextension CleanerLayoutTests.Results {\n"
           + "".join(declaration(cleaner_view, prefix).replace("    private ", "    @ViewBuilder\n    ", 1)
                     for prefix in ["    private var resultsState:", "    private var resultsGroups:",
@@ -2320,6 +2326,7 @@ def main():
                         "    func syncMouseJiggleTimer(", "    func stopMouseJiggleTimer(", "    private func jiggleMousePointer("])
           + "}\n}\n")
     keep_awake_methods = [
+        "    func prepareForFeatureDisable()",
         "    func refreshPasswordlessStatus(",
         "    func activate(minutes:",
         "    func activate(until date:",
@@ -2360,6 +2367,7 @@ def main():
           + "var clamshellSetupInProgress = false\nvar clamshellSetupFailed = false\n"
           + "var clamshellSetupRetried = false\nvar passwordlessClamshell = true\n"
           + "var recoveryCompleted = false\nvar screenLocked = false\nvar assertionsHeld = false\n"
+          + "var defaultsObserver: Int?\nvar preferenceSyncScheduled = false\nfunc startPreferenceObservation() { defaultsObserver = 1 }\nfunc stopPreferenceObservation() { defaultsObserver = nil; preferenceSyncScheduled = false }\n"
           + "var automationSuppressedUntilConditionsClear = false\n"
           + "var endTimer: Timer?\nvar endDate: Date?\nvar sessionTrigger: SessionTrigger?\nvar sessionMinutes: Int?\n"
           + "var activeAutomationConditions = Set<KeepAwakeAutomationCondition>()\n"
@@ -2367,7 +2375,7 @@ def main():
           + "var lidDimmingNotificationPort: IONotificationPortRef?\nvar lidDimmingNotification: io_object_t = 0\n"
           + "var lidClosedForDimming: Bool?\nvar savedDisplayBrightness: Double?\n"
           + declaration(keep_awake, "    @Published private(set) var clamshellActive = false {")
-                .replace("@Published private(set) ", "", 1)
+                .replace("@Published private(set) ", "", 1).replace("@Published ", "", 1)
           + declaration(keep_awake, "    @Published var clamshellPreferred:").replace("@Published ", "", 1)
           + declaration(keep_awake, "    @Published var dimScreenOnLidClose: Bool {").replace("@Published ", "", 1)
           + "init() { clamshellPreferred = true; dimScreenOnLidClose = false }\n"
@@ -2671,6 +2679,13 @@ def main():
                   "    func startNext()", "    private func finishIfDue()",
                   "    private func persistSessionToCache()", "    private func restoreSessionFromCache()"])
           + "}\n}\n")
+
+    write("KeepAwakePreferenceObserverContract.swift", "import AppKit\nimport Combine\nextension KeepAwakePreferenceObserverTests.Service {\n"
+          + "".join(declaration("Sources/Lattice/Services/KeepAwakePreferences.swift", marker)
+                    .replace("NotificationCenter.default", "Self.preferenceCenter")
+                    .replace("NSWorkspace.", "KeepAwakePreferenceObserverTests.NSWorkspace.") for marker in [
+                        "    func startPreferenceObservation()", "    func stopPreferenceObservation()"])
+          + "}\n")
 
     write("KeepAwakeAppearanceContract.swift", "import AppKit\nextension KeepAwakeAppearanceContract {\n"
           + declaration("Sources/Lattice/App/StatusItemController.swift", "enum BlackHoleGlyph {")

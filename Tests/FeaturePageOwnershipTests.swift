@@ -14,6 +14,38 @@ enum FeaturePageOwnershipTests {
         let name = "io.github.sam32j.lattice.tests.page-ownership.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!
         defer { defaults.removePersistentDomain(forName: name) }
+        let remaining: [AppFeature] = [
+            .keepAwake, .mediaTools, .cleaner, .uninstaller, .homebrew,
+            .appUpdates, .radialMenu, .commandBar, .killProcess, .portManager
+        ]
+        for feature in remaining {
+            defaults.set(false, forKey: feature.availabilityKey)
+            suite.expect(feature.isManagedOnDedicatedPage
+                         && feature.isVisibleInSettings(isAvailable: { _ in false })
+                         && FeatureVisibilitySupport.isPageVisible(feature.settingsDestination.page,
+                                                                  isAvailable: { _ in false }),
+                         "\(feature) remains reachable at its activation owner while disabled")
+            suite.expect(!feature.isAvailable(in: defaults, hardwareSupported: true),
+                         "\(feature) retains its previous disabled choice")
+        }
+        suite.expect(AppFeature.hubInstallableFeatures.isEmpty,
+                     "every feature now has an owner outside the retired Features page")
+        for installed in [false, true] {
+            for active in [false, true] {
+                defaults.set(installed, forKey: AppFeature.radialMenu.availabilityKey)
+                defaults.set(active, forKey: DefaultsKey.radialMenuEnabled)
+                suite.expect(AppFeature.radialMenu.isAvailable(in: defaults) == (installed && active),
+                             "Radial Menu preserves both legacy off choices without reviving behavior")
+            }
+        }
+        suite.expect(AppFeature.videoDownloader.rawValue == "videoDownloader"
+                     && AppFeature.videoDownloader.isToggleOwned && AppFeature.videoDownloader.isManagedOnDedicatedPage
+                     && !AppFeature.videoDownloader.installedByDefault,
+                     "Video Downloader retains its registered opt-in dedicated-page identity")
+        defaults.set(true, forKey: DefaultsKey.videoDownloaderEnabled)
+        suite.expect(AppFeature.videoDownloader.isAvailable(in: defaults, hardwareSupported: true)
+                     && FeatureVisibilitySupport.isPageVisible(.videoDownloader, isAvailable: { _ in false }),
+                     "Video Downloader remains reachable and uses its own enable preference")
         let controls: [(AppFeature, String)] = [
             (.clipboardHistory, DefaultsKey.clipboardHistoryEnabled), (.shelf, DefaultsKey.shelfEnabled),
             (.textSnippets, DefaultsKey.textSnippetsEnabled), (.urlCleaner, DefaultsKey.urlCleanerEnabled),
