@@ -6,11 +6,11 @@ import Foundation
 
 final class PortManagerService: ObservableObject {
     static let shared = PortManagerService()
-    @Published private(set) var entries: [PortManagerEntry] = []
+    @Published var entries: [PortManagerEntry] = []
     @Published var query = ""
-    @Published private(set) var isRefreshing = false
-    @Published private(set) var hasLoadedOnce = false
-    @Published private(set) var refreshFailed = false
+    @Published var isRefreshing = false
+    @Published var hasLoadedOnce = false
+    @Published var refreshFailed = false
 
     var filteredEntries: [PortManagerEntry] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -18,13 +18,16 @@ final class PortManagerService: ObservableObject {
         return entries.filter { "\($0.port) \($0.processName) \($0.pid) \($0.address)".lowercased().contains(q) }
     }
 
+    let readWork = FeatureWorkRegistry()
+
     func refresh() {
-        guard !isRefreshing else { return }
+        guard let cancellation = readWork.begin(owner: .portManager, isAvailable: { $0.isAvailable }), !isRefreshing else { return }
         isRefreshing = true
         refreshFailed = false
         DispatchQueue.global(qos: .userInitiated).async {
-            let result = Self.snapshot()
+            let result = Self.snapshot(cancellation: cancellation)
             DispatchQueue.main.async {
+                guard !cancellation.isCancelled else { return }
                 if let result {
                     self.entries = result
                     self.hasLoadedOnce = true
@@ -36,11 +39,11 @@ final class PortManagerService: ObservableObject {
     }
 
     func terminate(_ entry: PortManagerEntry, force: Bool) {
-        guard AppFeature.killProcess.isAvailable, let startedAt = entry.startedAt else { return }
+        guard AppFeature.portManager.isAvailable, AppFeature.killProcess.isAvailable, let startedAt = entry.startedAt else { return }
         KillProcessService.shared.kill(pid: entry.pid,
                                        name: entry.processName,
                                        startedAt: startedAt,
-                                       force: force) { [weak self] in
+                                       force: force, owner: .portManager) { [weak self] in
             self?.refresh()
         }
     }
@@ -59,11 +62,12 @@ final class PortManagerService: ObservableObject {
         return identities
     }
 
-    private static func snapshot() -> [PortManagerEntry]? {
+    private static func snapshot(cancellation: FeatureWorkCancellation = FeatureWorkCancellation()) -> [PortManagerEntry]? {
+        guard !cancellation.isCancelled else { return nil }
         let identities = startTimes()
-        let result = Shell.run("/usr/sbin/lsof", ["-nP", "+c0", "-iTCP", "-sTCP:LISTEN", "-F", "pcnPT"])
+        let result = FeatureReadProcess.run("/usr/sbin/lsof", ["-nP", "+c0", "-iTCP", "-sTCP:LISTEN", "-F", "pcnPT"], cancellation: cancellation)
         // Negative status means Shell.run hit its own timeout — always bail.
-        guard result.status >= 0 else { return nil }
+        guard !cancellation.isCancelled, result.status >= 0 else { return nil }
         let parsed = PortManagerSupport.parseLsof(result.output).map { entry in
             // Only the same process observed across the entire listing may
             // be terminated. New or reused PIDs remain visible without actions

@@ -54,13 +54,14 @@ enum UninstallerFlowTests {
             callback = completion
         }
         func clearLog() {}
-        func uninstall(_ package: Package) { uninstalled.append(package.id) }
+        func uninstall(_ package: Package, owner: AppFeature = .uninstaller) { uninstalled.append(package.id) }
     }
     enum HUD {
         static var messages: [String] = []
         static func show(icon: String, message: String) { messages.append(message) }
     }
     class UninstallerState {
+        var featureAvailable = true
         typealias DispatchQueue = Queue
         typealias HomebrewManager = Brew
         typealias HomebrewPackage = Package

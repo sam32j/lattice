@@ -42,7 +42,7 @@ enum ScreenshotFeatureTests {
         }
 
         let featureRuntimeSource = (try? String(
-            contentsOfFile: "Sources/Lattice/App/FeatureRuntime.swift",
+            contentsOfFile: "Sources/Lattice/App/FeatureRuntime+Bindings.swift",
             encoding: .utf8)) ?? ""
         let layoutDictionary = [kTISPropertyInputSourceType: kTISTypeKeyboardLayout] as CFDictionary
         let layoutSources = (TISCreateInputSourceList(layoutDictionary, true)?.takeRetainedValue()

@@ -833,17 +833,15 @@ enum AppManagementFeatureTests {
         // rows unchecked by default, the common clean must not pay for that
         // walk. JunkCleaner is not part of this test binary, so pin the gate
         // and the premise that makes an empty oracle safe at their source.
-        let junkCleanerSource = (try? String(
-            contentsOfFile: "Sources/Lattice/Services/Cleaner/JunkCleaner.swift",
-            encoding: .utf8)) ?? ""
+        let junkCleanerSource = TestSourceModules.read("Sources/Lattice/Services/Cleaner/JunkCleaner.swift")
         let cleanSelectedBody = sourceBody(of: junkCleanerSource, from: "func cleanSelected(",
-                                           to: "private static func mayRemove")
+                                           to: "static func mayRemove")
         suite.expect(cleanSelectedBody.contains("chosen.contains { $0.category == .leftovers }")
                && cleanSelectedBody.contains("? Self.installedBundleIDs() : []")
                && !cleanSelectedBody.contains("let installed = Self.installedBundleIDs()"),
                "a clean builds the installed-apps oracle only when a leftover row is selected")
-        let mayRemoveBody = sourceBody(of: junkCleanerSource, from: "private static func mayRemove",
-                                       to: "private static func trashViaFinder")
+        let mayRemoveBody = sourceBody(of: junkCleanerSource, from: "static func mayRemove",
+                                       to: "static func trashViaFinder")
         let leftoverBranch = mayRemoveBody.range(of: "if item.category == .leftovers")
         suite.expect(mayRemoveBody.components(separatedBy: "installed: installed").count == 2,
                "the removal guard consults the installed-apps oracle exactly once")
@@ -856,16 +854,14 @@ enum AppManagementFeatureTests {
         // shared-data claims read it. AppUninstaller is not part of this test
         // binary either, so pin the gate that keeps a removal that cannot claim
         // shared data from paying for the roster.
-        let appUninstallerSource = (try? String(
-            contentsOfFile: "Sources/Lattice/Services/Uninstall/AppUninstaller.swift",
-            encoding: .utf8)) ?? ""
+        let appUninstallerSource = TestSourceModules.read("Sources/Lattice/Services/Uninstall/AppUninstaller.swift")
         let removeSelectedBody = sourceBody(of: appUninstallerSource, from: "func removeSelected()",
                                             to: "func removeSelectedWithHomebrew(")
         suite.expect(removeSelectedBody.contains("let knownApplications = mayClaimSharedData"),
                "a removal builds the known-application roster only when it may claim shared data")
         let finishHomebrewBody = sourceBody(of: appUninstallerSource,
-                                            from: "private func finishRemovalAfterHomebrew",
-                                            to: "private static func removeCommandBarState")
+                                            from: "func finishRemovalAfterHomebrew",
+                                            to: "static func removeCommandBarState")
         suite.expect(!finishHomebrewBody.isEmpty,
                "the Homebrew follow-up removal source reads back for its shape check")
         // Package completion must preserve ownership of the remaining choices
@@ -886,8 +882,8 @@ enum AppManagementFeatureTests {
         // Copy detection belongs to the background cleanup shared by both
         // removal paths, and is needed only for bundle-wide preferences.
         let cleanupBody = sourceBody(of: appUninstallerSource,
-                                     from: "private static func removeCommandBarState",
-                                     to: "private static func trashViaFinder")
+                                     from: "static func removeCommandBarState",
+                                     to: "static func trashViaFinder")
         let storedStateCheck = cleanupBody.range(of: "hasStoredApplicationState(")
         let leavesMainThread = cleanupBody.range(of: "DispatchQueue.global(")
         let absenceCheck = cleanupBody.range(of: "isConfirmedAbsent")

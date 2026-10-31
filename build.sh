@@ -11,6 +11,13 @@ set -euo pipefail
 cd "$(dirname "$0")"
 unset TZ
 
+# Allow bounded local verification on memory-constrained machines.
+COMPILER_JOBS="${LATTICE_BUILD_JOBS:-$(sysctl -n hw.logicalcpu)}"
+if [[ "$COMPILER_JOBS" != <1-> ]]; then
+    print -u2 "LATTICE_BUILD_JOBS must be a positive integer."
+    exit 2
+fi
+
 # The icon catalog and the bundle are staged in temp dirs; sweep both however
 # the script ends.
 ICON_TMP=""
@@ -405,7 +412,11 @@ if (( TEST )); then
         Sources/Lattice/Services/Notch/NotchPlaybackSource.swift
         Sources/Lattice/Services/Notch/NotchPlaybackCommand.swift
         Sources/Lattice/Services/Notch/NotchMusicCommandWriter.swift
+        Sources/Lattice/Services/AppUpdates/AppUpdateCheckCancellation.swift
         Sources/Lattice/Core/FeatureCatalog.swift
+        Sources/Lattice/Services/FeatureReadProcess.swift
+        Sources/Lattice/Services/FeatureWorkCancellation.swift
+        Sources/Lattice/Core/FeatureWorkRegistry.swift
         Sources/Lattice/Core/FeatureInstallationPolicy.swift
         Sources/Lattice/Core/IslandDestinationSupport.swift
         Sources/Lattice/Core/SettingsOwnershipStrings.swift
@@ -739,7 +750,7 @@ if (( TEST )); then
     TEST_OUTPUT_FILE_MAP="$TEST_OBJECT_DIR/output-file-map.json"
     write_swift_output_file_map "$TEST_OUTPUT_FILE_MAP" "$TEST_OBJECT_DIR" "${TEST_SOURCES[@]}"
     echo "▸ Building & running tests against $(basename "$SDK")…"
-    swiftc -Onone -incremental -enable-batch-mode -j "$(sysctl -n hw.logicalcpu)" \
+    swiftc -Onone -incremental -enable-batch-mode -j "$COMPILER_JOBS" \
         -module-name LatticeTests -output-file-map "$TEST_OUTPUT_FILE_MAP" \
         -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" \
         "${VM_STATISTICS_COMPAT_FLAGS[@]}" "${TEST_SOURCES[@]}" -o build/metrics-tests
@@ -771,7 +782,7 @@ write_swift_output_file_map "$APP_OUTPUT_FILE_MAP" "$APP_OBJECT_DIR" "${APP_SOUR
 # each file's compiler parses the whole module again: a clean release took a
 # quarter of an hour. Batches share that work and run on every core, and the
 # optimization stays per file, as before.
-swiftc "${APP_OPTIMIZATION_FLAGS[@]}" -incremental -enable-batch-mode -j "$(sysctl -n hw.logicalcpu)" \
+swiftc "${APP_OPTIMIZATION_FLAGS[@]}" -incremental -enable-batch-mode -j "$COMPILER_JOBS" \
     -output-file-map "$APP_OUTPUT_FILE_MAP" \
     -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${VM_STATISTICS_COMPAT_FLAGS[@]}" "${HID_EVENT_SYSTEM_FLAGS[@]}" \
     "${BUILD_VARIANT_FLAGS[@]}" \

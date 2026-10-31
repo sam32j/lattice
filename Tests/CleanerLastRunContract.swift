@@ -20,6 +20,7 @@ enum CleanerLastRunContract {
         typealias JunkCleaner = Cleaner
         typealias UserDefaults = Preferences
         var runObserver: AnyCancellable?
+        var featureAvailable = true
         func notifyIfWanted(freed: Int64, failed: Int) {}
         func scheduleNext() {}
     }
@@ -52,5 +53,10 @@ enum CleanerLastRunContract {
             suite.expect(card.lastRunLine == line,
                          "a scheduled run freeing \(freed) bytes and leaving \(failed) items reads \"\(card.lastRunLine)\"")
         }
+        let previous = Preferences.standard.values
+        scheduler.featureAvailable = false
+        scheduler.finishRun(freed: 100, failed: 99)
+        suite.expect(NSDictionary(dictionary: Preferences.standard.values).isEqual(to: previous),
+                     "a queued Cleaner completion cannot publish bookkeeping after disablement")
     }
 }

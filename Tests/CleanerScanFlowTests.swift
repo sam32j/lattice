@@ -20,6 +20,7 @@ enum CleanerScanFlowTests {
         }
     }
     class ScannerState {
+        var featureAvailable = true
         typealias DispatchQueue = Queue
         var phase: Phase = .idle
         var items: [Item] = []
@@ -55,6 +56,12 @@ enum CleanerScanFlowTests {
             cleaner.reset()
         }
 
+        cleaner.featureAvailable = false
+        cleaner.scan(attended: true)
+        Queue.drain()
+        suite.expect(cleaner.phase == .idle && Scanner.scanned.isEmpty,
+                     "a stale Cleaner action cannot start a scan after disablement")
+        cleaner.featureAvailable = true
         cleaner.scan(attended: true)
         Queue.drain()
         suite.expect(Scanner.scanned == all && cleaner.phase == .results && cleaner.items.count == all.count,
