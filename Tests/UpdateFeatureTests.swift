@@ -524,9 +524,9 @@ enum UpdateFeatureTests {
 
         let homebrewPageItem = combinedSettingsItems.first { $0.id == .page(.homebrew) }!
         let unavailableHomebrewRoute = SettingsSearchSupport.route(for: homebrewPageItem) { _ in false }
-        suite.expect(unavailableHomebrewRoute.destination == FeatureSettingsDestination(.homebrew)
-                && unavailableHomebrewRoute.targetFeature == nil,
-               "disabled Homebrew opens its page activation control")
+        suite.expect(unavailableHomebrewRoute.destination == FeatureSettingsDestination(.features)
+                && unavailableHomebrewRoute.targetFeature == .homebrew,
+               "an unavailable Homebrew result preserves its identity and targets its Feature Hub row")
         let availableHomebrewRoute = SettingsSearchSupport.route(for: homebrewPageItem) { _ in true }
         suite.expect(availableHomebrewRoute.destination == FeatureSettingsDestination(.homebrew)
                 && availableHomebrewRoute.targetFeature == nil,
@@ -553,9 +553,9 @@ enum UpdateFeatureTests {
                                                      destination: FeatureSettingsDestination(.features),
                                                      title: "Features", icon: "square.grid.2x2")
         let genericFeaturesRoute = SettingsSearchSupport.route(for: genericFeaturesItem) { _ in true }
-        suite.expect(genericFeaturesRoute.destination == FeatureSettingsDestination(.general)
+        suite.expect(genericFeaturesRoute.destination == FeatureSettingsDestination(.features)
                 && genericFeaturesRoute.targetFeature == nil,
-               "a legacy Features selection opens General without a feature target")
+               "a generic Features selection carries no feature target")
 
         let hiddenPageItem = SettingsSearchItem(id: .page(.shelf),
                                                 destination: FeatureSettingsDestination(.shelf),
@@ -658,7 +658,7 @@ enum UpdateFeatureTests {
         let homebrewGroups = SettingsSearchSupport.groupedMatchingItems(
             query: "Homebrew", items: combinedSettingsItems,
             isAvailable: { _ in true })
-        suite.expect(homebrewGroups.map(\.id) == [.homebrew, .appUpdates]
+        suite.expect(homebrewGroups.map(\.id) == [.homebrew, .features, .appUpdates]
                 && homebrewGroups.first?.parentMatches == true
                 && homebrewGroups.first?.suggestions.isEmpty == true,
                "a matching main page is shown once before grouped keyword matches")
@@ -703,15 +703,15 @@ enum UpdateFeatureTests {
             SettingsSearchSupport.route(for: $0.item, isAvailable: onlyMixerAvailable)
         }
         suite.expect(unavailableCameraGroups.count == 1
-                && unavailableCameraGroups[0].id == .audioOutput
-                && unavailableCameraGroups[0].suggestions.map(\.title) == ["Port Manager", "Open port automatically"]
-                && groupedUnavailableCameraRoute?.destination == FeatureSettingsDestination(.portManager)
-                && groupedUnavailableCameraRoute?.targetFeature == nil,
-               "an off utility keyword opens its owning activation page")
+                && unavailableCameraGroups[0].id == .features
+                && unavailableCameraGroups[0].suggestions.map(\.title) == ["Port Manager"]
+                && groupedUnavailableCameraRoute?.destination == FeatureSettingsDestination(.features)
+                && groupedUnavailableCameraRoute?.targetFeature == .portManager,
+               "an unavailable utility remains navigable through its exact Features row")
         suite.expect(SettingsSearchSupport.groupedMatchingItems(
                     query: "automatically", items: availabilityItems,
-                    isAvailable: onlyMixerAvailable).first?.suggestions.first?.title == "Open port automatically",
-               "page-owned settings remain searchable while their feature is off")
+                    isAvailable: onlyMixerAvailable).isEmpty,
+               "setting fields owned by an unavailable utility stay out of suggestions")
         let availableCameraSetting = SettingsSearchSupport.groupedMatchingItems(
             query: "automatically", items: availabilityItems,
             isAvailable: { _ in true }).first?.suggestions.first
@@ -2139,8 +2139,8 @@ enum UpdateFeatureTests {
                 && AppFeature.appUpdates.group == .tools,
                "app updates is an on demand tool that declares its update access")
         suite.expect(FeatureVisibilitySupport.features(for: .appUpdates) == [.appUpdates]
-                && FeatureVisibilitySupport.isPageVisible(.appUpdates, isAvailable: { _ in false }),
-               "App Updates keeps its activation page while disabled")
+                && !FeatureVisibilitySupport.isPageVisible(.appUpdates, isAvailable: { _ in false }),
+               "the page follows the feature in the hub")
         suite.expect(activeSet(.notifications, on: [DefaultsKey.appUpdatesNotify],
                          strings: [DefaultsKey.appUpdatesCheckFrequency: "daily"])
                 .contains(.appUpdates),
