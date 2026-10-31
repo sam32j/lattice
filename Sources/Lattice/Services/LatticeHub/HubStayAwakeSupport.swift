@@ -15,7 +15,7 @@ enum HubStayAwakeSupport {
                                  repeatedTimePolicy: .first)!
     }
 
-    static func compact(end: Date?, now: Date) -> String {
-        KeepAwakeTimeFormat.compact(end: end, now: now)
+    static func compact(end: Date?, now: Date, locale: Locale = .current) -> String {
+        KeepAwakeTimeFormat.compact(end: end, now: now, locale: locale)
     }
 }
