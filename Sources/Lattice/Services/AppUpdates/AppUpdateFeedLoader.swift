@@ -14,7 +14,7 @@ final class AppUpdateFeedLoader: NSObject, URLSessionDataDelegate {
 
     private init(completion: @escaping (AppUpdateFeedSupport.LoadResult) -> Void) { self.completion = completion }
 
-    static func load(_ url: URL, completion: @escaping (AppUpdateFeedSupport.LoadResult) -> Void) {
+    static func load(_ url: URL, cancellation: AppUpdateCheckCancellation? = nil, completion: @escaping (AppUpdateFeedSupport.LoadResult) -> Void) {
         guard AppUpdateFeedSupport.publicURL(url.absoluteString) != nil else {
             completion(.failed)
             return
@@ -28,7 +28,9 @@ final class AppUpdateFeedLoader: NSObject, URLSessionDataDelegate {
         configuration.httpShouldSetCookies = false
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
-        session.dataTask(with: url).resume()
+        let task = session.dataTask(with: url)
+        cancellation?.register { [weak task] in task?.cancel() }
+        task.resume()
         session.finishTasksAndInvalidate()
     }
 

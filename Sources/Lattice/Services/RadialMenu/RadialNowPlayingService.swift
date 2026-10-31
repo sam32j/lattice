@@ -12,17 +12,26 @@ import SwiftUI
 final class RadialNowPlayingService {
     static let shared = RadialNowPlayingService()
 
-    private let bridge = MediaRemoteNowPlayingBridge()
-    private var generation = 0
-    private(set) var state = RadialNowPlayingState.nothingPlaying
-    private var pendingPresentationAnchor: CGPoint?
-    private var panel: NSPanel?
-    private var eventMonitors: [Any] = []
-    private var activationObserver: NSObjectProtocol?
+    let bridge = MediaRemoteNowPlayingBridge()
+    var generation = 0
+    var state = RadialNowPlayingState.nothingPlaying
+    var pendingPresentationAnchor: CGPoint?
+    var panel: NSPanel?
+    var eventMonitors: [Any] = []
+    var activationObserver: NSObjectProtocol?
 
-    private init() {}
+    init() {}
+
+    func stop() {
+        generation += 1
+        bridge.cancel()
+        dismissDetails()
+        panel = nil
+        state = .nothingPlaying
+    }
 
     func refresh(update: @escaping (RadialNowPlayingState) -> Void) {
+        guard AppFeature.radialMenu.isAvailable else { return }
         generation += 1
         let requestedGeneration = generation
         state = .loading
@@ -43,6 +52,7 @@ final class RadialNowPlayingService {
     }
 
     func presentDetails(at anchor: CGPoint) {
+        guard AppFeature.radialMenu.isAvailable else { return }
         switch state {
         case let .playing(snapshot):
             showCard(snapshot: snapshot, at: anchor)
@@ -59,7 +69,7 @@ final class RadialNowPlayingService {
         panel?.orderOut(nil)
     }
 
-    private func showCard(snapshot: RadialNowPlayingSnapshot, at anchor: CGPoint) {
+    func showCard(snapshot: RadialNowPlayingSnapshot, at anchor: CGPoint) {
         guard Thread.isMainThread else {
             DispatchQueue.main.async { [weak self] in self?.showCard(snapshot: snapshot, at: anchor) }
             return
@@ -91,7 +101,7 @@ final class RadialNowPlayingService {
         installMonitors(for: panel)
     }
 
-    private func ensurePanel() -> NSPanel {
+    func ensurePanel() -> NSPanel {
         if let panel { return panel }
         let panel = OverlayPanel(contentRect: .zero,
                                  styleMask: [.borderless, .nonactivatingPanel],
@@ -109,7 +119,7 @@ final class RadialNowPlayingService {
         return panel
     }
 
-    private func installMonitors(for panel: NSPanel) {
+    func installMonitors(for panel: NSPanel) {
         removeMonitors()
         let clicks: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
         if let monitor = NSEvent.addLocalMonitorForEvents(matching: clicks, handler: { [weak self, weak panel] event in
@@ -129,233 +139,12 @@ final class RadialNowPlayingService {
         }
     }
 
-    private func removeMonitors() {
+    func removeMonitors() {
         eventMonitors.forEach { NSEvent.removeMonitor($0) }
         eventMonitors = []
         if let activationObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(activationObserver)
             self.activationObserver = nil
-        }
-    }
-}
-
-private struct RadialNowPlayingCard: View {
-    let snapshot: RadialNowPlayingSnapshot
-    let openApplication: () -> Void
-
-    @ObservedObject private var l10n = L10n.shared
-
-    private var text: RadialMenuFeatureStrings { FeatureStrings.radialMenu(l10n.language) }
-    private var appName: String {
-        RadialNowPlayingApplication.name(for: snapshot) ?? text.mediaNowPlaying
-    }
-    private var title: String { snapshot.title ?? appName }
-
-    var body: some View {
-        Button(action: openApplication) {
-            HStack(alignment: .center, spacing: 12) {
-                artwork
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(.system(size: 13, weight: .semibold))
-                        .lineLimit(2)
-                    if let album = snapshot.album {
-                        Text(album)
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                    if let artist = snapshot.artist {
-                        Text(artist)
-                            .font(.system(size: 10.5))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                    HStack(spacing: 5) {
-                        if let icon = RadialNowPlayingApplication.icon(for: snapshot) {
-                            Image(nsImage: icon)
-                                .resizable()
-                                .interpolation(.high)
-                                .frame(width: 14, height: 14)
-                        }
-                        Text(String(format: text.mediaOpenAppFormat, appName))
-                            .font(.system(size: 9.5, weight: .medium))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                        Image(systemName: "arrow.up.forward.app")
-                            .font(.system(size: 8.5, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.top, 2)
-                }
-                Spacer(minLength: 0)
-            }
-            .padding(12)
-            .frame(width: 320, alignment: .leading)
-            .background(HUDBackdrop(cornerRadius: 16))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.14), lineWidth: 0.6)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
-        .accessibilityHint(String(format: text.mediaOpenAppFormat, appName))
-    }
-
-    @ViewBuilder
-    private var artwork: some View {
-        if let data = snapshot.artworkData, let image = NSImage(data: data) {
-            Image(nsImage: image)
-                .resizable()
-                .interpolation(.high)
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 76, height: 76)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        } else {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Theme.spaceGradient)
-                .frame(width: 76, height: 76)
-                .overlay {
-                    if let icon = RadialNowPlayingApplication.icon(for: snapshot) {
-                        Image(nsImage: icon)
-                            .resizable()
-                            .interpolation(.high)
-                            .frame(width: 42, height: 42)
-                    } else {
-                        Image(systemName: "music.note")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundStyle(.white)
-                    }
-                }
-        }
-    }
-}
-
-enum RadialNowPlayingApplication {
-    private static var icons: [String: NSImage] = [:]
-    private static var missingIcons = Set<String>()
-
-    static func runningApplication(for snapshot: RadialNowPlayingSnapshot) -> NSRunningApplication? {
-        if let bundleIdentifier = snapshot.appBundleIdentifier,
-           let application = NSRunningApplication.runningApplications(
-            withBundleIdentifier: bundleIdentifier).first(where: { !$0.isTerminated }) {
-            return application
-        }
-        if let pid = snapshot.appPID {
-            return NSRunningApplication(processIdentifier: pid_t(pid))
-        }
-        return nil
-    }
-
-    static func name(for snapshot: RadialNowPlayingSnapshot) -> String? {
-        if let name = runningApplication(for: snapshot)?.localizedName, !name.isEmpty { return name }
-        guard let identifier = snapshot.appBundleIdentifier else { return nil }
-        return identifier.split(separator: ".").last.map(String.init)
-    }
-
-    static func icon(for snapshot: RadialNowPlayingSnapshot) -> NSImage? {
-        let key = snapshot.appBundleIdentifier ?? snapshot.appPID.map { "pid:\($0)" } ?? ""
-        if let icon = icons[key] { return icon }
-        if missingIcons.contains(key) { return nil }
-        let icon: NSImage?
-        if let runningIcon = runningApplication(for: snapshot)?.icon {
-            icon = runningIcon
-        } else if let identifier = snapshot.appBundleIdentifier,
-                  let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: identifier) {
-            icon = NSWorkspace.shared.icon(forFile: url.path)
-        } else {
-            icon = nil
-        }
-        if let icon {
-            icons[key] = icon
-        } else {
-            missingIcons.insert(key)
-        }
-        return icon
-    }
-
-    /// The island and the radial card are non-activating panels, so Lattice
-    /// rarely holds activation when one is clicked. Since macOS 14 a bare
-    /// request from an inactive app is refused, and the player stayed behind.
-    static func open(_ snapshot: RadialNowPlayingSnapshot) {
-        if let application = runningApplication(for: snapshot) {
-            // A helper takes no activation; the handoff would leave Lattice in front.
-            guard application.activationPolicy == .regular else { return }
-            // Read before the unhide below: a hidden player's windows come back with it.
-            let showsNoWindow = !application.isHidden && !hasWindowOnScreen(pid: application.processIdentifier)
-            if application.isHidden { application.unhide() }
-            ActivationHandoff.yield(to: application)
-            if !application.activate(from: NSRunningApplication.current, options: [.activateAllWindows]) {
-                application.activate(options: [.activateAllWindows])
-            }
-            // Like a Dock click, a player that keeps playing with its window
-            // closed shows one again, the way the App Switcher reopens a
-            // windowless app. Activation alone would leave nothing to see.
-            if showsNoWindow, let url = application.bundleURL {
-                let configuration = NSWorkspace.OpenConfiguration()
-                configuration.activates = false
-                configuration.addsToRecentItems = false
-                configuration.promptsUserIfNeeded = false
-                NSWorkspace.shared.openApplication(at: url, configuration: configuration)
-            }
-            return
-        }
-        guard let identifier = snapshot.appBundleIdentifier,
-              let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: identifier) else { return }
-        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
-    }
-
-    /// Whether the player has a window on the current Space. One on another
-    /// Space reads as none, and the reopen that follows is harmless there.
-    private static func hasWindowOnScreen(pid: pid_t) -> Bool {
-        let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
-                                                 kCGNullWindowID) as? [[String: Any]] ?? []
-        return windows.contains {
-            ($0[kCGWindowOwnerPID as String] as? pid_t) == pid && ($0[kCGWindowLayer as String] as? Int) == 0
-        }
-    }
-}
-
-/// Reads Now Playing through `/usr/bin/perl` loading the adapter library
-/// (`Sources/NowPlayingAdapter`). Since macOS 15.4 MediaRemote answers only
-/// processes carrying Apple's signature; perl is one, the app is not. A
-/// missing script or library, a failed run, a timeout and malformed output
-/// all read as an empty playback session.
-private final class MediaRemoteNowPlayingBridge {
-    private let queue = DispatchQueue(label: "io.github.sam32j.lattice.radial-now-playing", qos: .userInitiated)
-    /// 2 s: a cold perl load measured 500 ms with no session playing, and a
-    /// real reply adds the MediaRemote round trip plus up to 16 MB of base64
-    /// artwork through the pipe. A kill reads as nothing playing, so a deadline
-    /// that is too tight empties the first wheel after login (#1280). The wheel
-    /// shows `.loading` and holds the card anchor while it waits, so the extra
-    /// second costs nothing on screen.
-    private static let replyTimeout: TimeInterval = 2.0
-
-    func fetch(completion: @escaping (RadialNowPlayingSnapshot?) -> Void) {
-        guard let script = Bundle.main.url(forResource: "now-playing", withExtension: "pl"),
-              let library = Bundle.main.privateFrameworksURL?
-                .appendingPathComponent("libLatticeNowPlaying.dylib"),
-              FileManager.default.fileExists(atPath: library.path) else {
-            completion(nil)
-            return
-        }
-        queue.async {
-            let result = BoundedProcessRunner.run("/usr/bin/perl", [script.path, library.path],
-                                                  timeout: Self.replyTimeout,
-                                                  maxOutputBytes: RadialNowPlayingSupport.maximumAdapterReplyBytes)
-            guard result.status == 0, !result.timedOut,
-                  let reply = RadialNowPlayingSupport.adapterReply(from: result.output) else {
-                completion(nil)
-                return
-            }
-            let isPlaying = RadialNowPlayingSupport.playbackIsActive(
-                remoteIsPlaying: reply.isPlaying, info: reply.info)
-            completion(RadialNowPlayingSupport.snapshot(info: reply.info,
-                                                        isPlaying: isPlaying,
-                                                        appBundleIdentifier: reply.displayID,
-                                                        appPID: reply.pid))
         }
     }
 }

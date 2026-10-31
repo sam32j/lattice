@@ -2305,21 +2305,19 @@ enum SwitcherModelFeatureTests {
         suite.expect(insetSurfaceCode.contains("RoundedRectangle(cornerRadius: 18, style: .continuous)")
                    && insetSurfaceCode.contains(".strokeBorder(PanelSurface.border(for: colorScheme)"),
                "an inset panel is a rounded, rimmed card inside the balloon")
-        let panelViewSource = (try? String(
-            contentsOfFile: "Sources/Lattice/UI/MenuPanel/MenuPanelView.swift",
-            encoding: .utf8)) ?? ""
+        let panelViewSource = TestSourceModules.read("Sources/Lattice/UI/MenuPanel/MenuPanelView.swift")
         let panelBodyCode: (String) -> String = { header in
             stripCommentLines((panelViewSource.components(separatedBy: header).last ?? "")
                 .components(separatedBy: "\n    }").first ?? "")
         }
-        suite.expect(panelBodyCode("private var navigablePanel: some View {").contains(".panelGlassSurface()")
-                   && panelBodyCode("private var metricPanel: some View {").contains(".panelGlassSurface()"),
+        suite.expect(panelBodyCode("var navigablePanel: some View {").contains(".panelGlassSurface()")
+                   && panelBodyCode("var metricPanel: some View {").contains(".panelGlassSurface()"),
                "both the navigable panel and the metric panel wear that surface")
 
         // The popover window is the panel plus 13 pt for the arrow and 13 pt
         // below it. A window taller than the usable height opens beside the
         // icon (issue #2225), so the height cap has to leave at least 26 pt.
-        let panelCapMargin = panelBodyCode("private var maxHeight: CGFloat {")
+        let panelCapMargin = panelBodyCode("var maxHeight: CGFloat {")
             .components(separatedBy: "?? 760) - ").dropFirst().first
             .flatMap { Int($0.prefix(while: \.isNumber)) } ?? 0
         suite.expect(panelCapMargin >= 26,

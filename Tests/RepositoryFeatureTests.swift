@@ -185,6 +185,12 @@ enum RepositoryFeatureTests {
             swiftSources[path] ?? ""
         }
 
+        func moduleSource(at path: String) -> String {
+            let prefix = String(path.dropLast(6)) + "+"
+            return ([path] + swiftPaths.filter { $0.hasPrefix(prefix) }.sorted())
+                .compactMap { swiftSources[$0] }.joined(separator: "\n")
+        }
+
         func lines(at path: String) -> [String] {
             swiftLines[path] ?? []
         }
@@ -737,7 +743,7 @@ enum RepositoryFeatureTests {
 
         // MARK: Homebrew command building and parsing
 
-        let homebrewManagerSource = repository.source(
+        let homebrewManagerSource = repository.moduleSource(
             at: "Sources/Lattice/Services/Homebrew/HomebrewManager.swift")
         let homebrewRunStreaming = homebrewManagerSource.components(separatedBy: "func runStreaming(")
             .dropFirst().first?.components(separatedBy: "private func appendLog").first ?? ""
@@ -811,7 +817,7 @@ enum RepositoryFeatureTests {
             .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
             .joined(separator: "\n")
         let refreshCalls = managerCode
-            .components(separatedBy: "self.refreshInstalled(clearingError: false)").count - 1
+            .components(separatedBy: "self.refreshInstalled(clearingError: false, owner: owner)").count - 1
         suite.expect(refreshCalls == 3,
                "the cancelled, needs-terminal and failed operation paths all re-read, "
                + "found \(refreshCalls)")

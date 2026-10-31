@@ -36,7 +36,7 @@ enum IslandSettingsFocusTests {
         suite.expect(!ordinary.expanded && !ordinary.heldDrag && !ordinary.dragPlaceholder
                      && ordinary.hoverState.suppressed,
                      "explicit Settings navigation collapses Island even during an internal drag")
-        let runtime = (try? String(contentsOfFile: "Sources/Lattice/App/FeatureRuntime.swift", encoding: .utf8)) ?? ""
+        let runtime = (try? String(contentsOfFile: "Sources/Lattice/App/FeatureRuntime+Bindings.swift", encoding: .utf8)) ?? ""
         for (feature, owner) in [
             ("notchCalendar", "NotchCalendarService"), ("notchNotifications", "NotchNotificationService"),
             ("notchDownloads", "NotchDownloadService"), ("notchAgents", "AgentUsageService"),

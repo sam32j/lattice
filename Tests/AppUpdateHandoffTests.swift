@@ -16,6 +16,7 @@ enum AppUpdateHandoffTests {
         }
     }
     class State {
+        var featureAvailable = true
         var pendingUpdateHandoffs = Set<UUID>()
         var checks = 0
         func checkIfNeeded() { checks += 1 }
@@ -35,6 +36,11 @@ enum AppUpdateHandoffTests {
         let failure = NSError(domain: "handoff.fixture", code: 1)
         let workspace = NSWorkspace.shared
         defer { workspace.completions = [] }
+        let disabled = Service()
+        disabled.featureAvailable = false
+        disabled.handOff(url)
+        suite.expect(workspace.completions.isEmpty && !disabled.updateHandoffPending,
+                     "a stale update action cannot open an app or store after disablement")
         for succeeded in [true, false] {
             let service = Service()
             workspace.completions = []

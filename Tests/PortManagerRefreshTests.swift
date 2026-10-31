@@ -37,6 +37,8 @@ enum PortManagerRefreshTests {
         typealias DispatchQueue = Queue
         typealias KillProcessService = Processes
         typealias Shell = Listing
+        let readWork = FeatureWorkRegistry()
+        var available = true
         var entries: [PortManagerEntry] = []
         var isRefreshing = false
         var hasLoadedOnce = false

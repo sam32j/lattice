@@ -17,8 +17,31 @@ OUTPUT = ROOT / "build/generated-tests"
 EMITTED = set()
 
 
+def module_source(path):
+    source = ROOT / path
+    return "\n".join(p.read_text() for p in [source, *sorted(source.parent.glob(source.stem + "+*.swift"))])
+
+
 def declaration(path, prefix, scope=None):
-    lines = (ROOT / path).read_text().splitlines(keepends=True)
+    source = ROOT / path
+    if source.stem in {"KeepAwakeManager", "AppUpdatesService", "RadialMenuSettings", "MenuPanelView", "HomebrewManager", "KillProcessService", "MediaService", "RadialNowPlayingService", "JunkCleaner", "AppUninstaller"}:
+        candidates = [source, *sorted(source.parent.glob(source.stem + "+*.swift"))]
+        matches = []
+        for candidate in candidates:
+            if scope is not None:
+                type_name = re.search(r"(?:struct|class|enum) (\w+)", scope)
+                if type_name and not re.search(r"^(?:struct|class|final class|enum|extension) " + type_name[1] + r"\b", candidate.read_text(), re.M):
+                    continue
+            for spelling in [prefix, prefix.replace("private ", "").replace("private(set) ", "")]:
+                if any(line.startswith(spelling) for line in candidate.read_text().splitlines()):
+                    matches.append((candidate, spelling))
+                    break
+        if len(matches) != 1:
+            raise ValueError(f"Expected one declaration {prefix!r} in {path} module")
+        source, prefix = matches[0]
+        path = str(source.relative_to(ROOT))
+        scope = None
+    lines = source.read_text().splitlines(keepends=True)
     lower, upper = 0, len(lines)
     if scope is not None:
         scopes = [i for i, line in enumerate(lines) if line.startswith(scope)]
@@ -129,6 +152,19 @@ def main():
           + declaration("Sources/Lattice/Services/QuickTools/RecentCaptureService.swift",
                         "    private func pruneMissingEntries()").replace("private func", "func", 1)
               .replace("UserDefaults.standard", "defaults")
+          + "}\n}\n")
+    write("RemainingPageLifecycle.swift", "import Foundation\nextension RemainingPageLifecycleTests {\n"
+          + "final class Updates: UpdatesState {\n"
+          + declaration("Sources/Lattice/Services/AppUpdates/AppUpdatesService.swift", "    func cancelChecks()")
+          + "}\n}\n")
+    write("PageSchedules.swift", "import Foundation\nextension PageScheduleLifecycleTests {\n"
+          + "final class Cleaner: CleanerState {\n"
+          + declaration("Sources/Lattice/Services/Cleaner/CleanerScheduler.swift", "    private func scheduleNext()")
+              .replace("private func", "func", 1).replace("UserDefaults.standard", "self.defaults")
+              .replace("AppFeature.cleaner.isAvailable", "AppFeature.cleaner.isAvailable(in: defaults)")
+          + "}\nfinal class Updates: UpdatesState {\n"
+          + declaration("Sources/Lattice/Services/AppUpdates/AppUpdatesService.swift", "    func scheduleNext()")
+              .replace("AppFeature.appUpdates.isAvailable", "AppFeature.appUpdates.isAvailable(in: defaults)")
           + "}\n}\n")
     runtime = "Sources/Lattice/App/FeatureRuntime.swift"
     settings_view = (ROOT / "Sources/Lattice/UI/Settings/SettingsView.swift").read_text()
@@ -686,8 +722,8 @@ def main():
     ports = "Sources/Lattice/Services/PortManager/PortManagerService.swift"
     write("PortManagerRefresh.swift", "import Darwin\nimport Foundation\n"
           + "extension PortManagerRefreshTests {\nfinal class Service: Fixture {\n"
-          + declaration(ports, "    func refresh(")
-          + declaration(ports, "    private static func snapshot(").replace("private static", "static", 1)
+          + declaration(ports, "    func refresh(").replace("$0.isAvailable", "_ in available")
+          + declaration(ports, "    private static func snapshot(").replace("private static", "static", 1).replace("FeatureReadProcess.run(", "Shell.run(").replace(", cancellation: cancellation)", ")")
           + declaration(ports, "    private static func startTimes(").replace("private static", "static", 1)
           + "}\n}\n")
     write("URLCleanerPoll.swift", "import Foundation\n"
@@ -832,7 +868,7 @@ def main():
           + declaration(uninstall, "    enum Phase:")
           + declaration(bar, "    enum Mode:")
           + "final class Uninstaller: UninstallerState {\nstatic let shared = Uninstaller()\n"
-          + "".join(declaration(uninstall, prefix) for prefix in [
+          + "".join(declaration(uninstall, prefix).replace("AppFeature.uninstaller.isAvailable", "featureAvailable") for prefix in [
               "    var isRemoving: Bool", "    func select(appURL:",
               "    func reset()", "    func setInclude(", "    struct HomebrewRemovalConfirmation",
               "    var homebrewRemovalConfirmation:", "    func removeSelectedWithHomebrew("])
@@ -1085,7 +1121,7 @@ def main():
     write("CleanerScanFlow.swift", "import Foundation\nextension CleanerScanFlowTests {\n"
           + declaration(cleaner, "    enum Phase:")
           + "final class Scanner: ScannerState {\nstatic let shared = Scanner()\n"
-          + "".join(declaration(cleaner, prefix) for prefix in ["    func reset()", "    func scan("])
+          + "".join(declaration(cleaner, prefix).replace("AppFeature.cleaner.isAvailable", "featureAvailable") for prefix in ["    func reset()", "    func scan("])
           + "}\n}\n")
 
     super_key = "Sources/Lattice/Services/SuperKey/SuperKeyService.swift"
@@ -1099,7 +1135,7 @@ def main():
     write("CleanerLastRun.swift", "import Foundation\nextension CleanerLastRunContract {\n"
           + "final class Scheduler: SchedulerState {\n"
           + declaration("Sources/Lattice/Services/Cleaner/CleanerScheduler.swift", "    private func finishRun(")
-            .replace("private func", "func", 1)
+            .replace("private func", "func", 1).replace("AppFeature.cleaner.isAvailable", "featureAvailable")
           + "}\nfinal class Card: CardState {\n"
           + declaration("Sources/Lattice/UI/Cleaner/CleanerView.swift", "    private var lastRunLine:")
             .replace("private var", "var", 1)
@@ -1108,7 +1144,7 @@ def main():
     updates = "Sources/Lattice/Services/AppUpdates/AppUpdatesService.swift"
     write("AppUpdateHandoff.swift", "import Foundation\nextension AppUpdateHandoffTests {\n"
           + "final class Service: State {\n"
-          + "".join(declaration(updates, prefix).replace("private func", "func", 1)
+          + "".join(declaration(updates, prefix).replace("private func", "func", 1).replace("AppFeature.appUpdates.isAvailable", "featureAvailable")
                     for prefix in ["    var updateHandoffPending:", "    private func handOff(",
                                    "    func applicationBecameActive()", "    func consumeUpdateHandoffReturn()"])
           + "}\n}\n")
@@ -2174,7 +2210,7 @@ def main():
           + "final class Service {\nvar queueEnabled = true\nvar queueRequest: UUID?\nvar queueReply: [String: Any]?\n"
           + "var playback: NotchPlayback?\nvar queueCovers = NotchQueueCovers<Data>()\nvar upcomingArtwork: [String: Data] = [:]\n"
           + declaration(music, "    @Published private(set) var upcoming:")
-            .replace("@Published private(set) ", "", 1).replace("NSImage.init(data:)", "{ $0 }", 1)
+            .replace("@Published private(set) ", "", 1).replace("@Published ", "", 1).replace("NSImage.init(data:)", "{ $0 }", 1)
           + declaration(music, "    var upcomingIsHeld:")
           + declaration(music, "    var upcomingRows:")
           + declaration(music, "    private func updateQueue()").replace("private func", "func", 1)

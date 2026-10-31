@@ -78,6 +78,7 @@ final class CleanerScheduler: ObservableObject {
     }
 
     private func scheduleNext() {
+        guard AppFeature.cleaner.isAvailable else { return }
         let current = settings
         guard current.frequency != .off else { return }
 
@@ -120,6 +121,7 @@ final class CleanerScheduler: ObservableObject {
     /// One automatic pass: scan, clean exactly what the scan pre checked
     /// (the safe groups), record the outcome, leave the tool idle again.
     private func runAutomaticCleanup() {
+        guard AppFeature.cleaner.isAvailable else { return }
         let cleaner = JunkCleaner.shared
         guard cleaner.phase == .idle, runObserver == nil else {
             // The user is in the middle of a manual session: their review
@@ -135,7 +137,7 @@ final class CleanerScheduler: ObservableObject {
             .dropFirst()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] phase in
-                guard let self else { return }
+                guard let self, AppFeature.cleaner.isAvailable else { return }
                 switch phase {
                 case .results:
                     // The scan pre checks exactly the safe groups; an
@@ -159,6 +161,7 @@ final class CleanerScheduler: ObservableObject {
     }
 
     private func finishRun(freed: Int64, failed: Int) {
+        guard AppFeature.cleaner.isAvailable else { return }
         runObserver = nil
         JunkCleaner.shared.reset()
         let defaults = UserDefaults.standard

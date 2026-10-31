@@ -280,7 +280,7 @@ enum PointerInputFeatureTests {
                 && !clickDebounceServiceCode.contains("asyncAfter"),
                "legacy click filtering adds no timer or delayed release to healthy clicks")
         let featureRuntimeSource = (try? String(
-            contentsOfFile: "Sources/Lattice/App/FeatureRuntime.swift",
+            contentsOfFile: "Sources/Lattice/App/FeatureRuntime+Bindings.swift",
             encoding: .utf8)) ?? ""
         suite.expect(featureRuntimeSource.contains(
             ".mouseClickDebounce: { MouseClickDebounceService.shared.syncWithPreferences() }"
