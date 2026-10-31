@@ -48,16 +48,20 @@ extension HomebrewManager {
     /// One click on the trust card: marks the tap as trusted for Homebrew
     /// and picks the interrupted work back up.
     func trustTapAndContinue() {
-        guard let cancellation = readWork.begin(owner: .homebrew, isAvailable: { $0.isAvailable }) else { return }
         guard let tap = untrustedTap, !isTrustingTap,
               HomebrewCommandBuilder.isValidToken(tap),
-              let brewPath = brewPath ?? detectBrewPath() else { return }
+              let brewPath = brewPath ?? detectBrewPath(),
+              let cancellation = readWork.begin(owner: .homebrew, isAvailable: { $0.isAvailable }) else { return }
+        let request = UUID()
+        trustRead = request
         isTrustingTap = true
         let retry = untrustedTapRetry
         run(HomebrewCommandBuilder.trustTap(brewPath: brewPath, tap: tap), cancellation: cancellation) { [weak self] status, output in
             DispatchQueue.main.async {
-                guard let self, !cancellation.isCancelled else { return }
+                guard let self, self.trustRead == request else { return }
+                self.trustRead = nil
                 self.isTrustingTap = false
+                guard !cancellation.isCancelled else { return }
                 guard status == 0 else {
                     self.errorMessage = output.trimmingCharacters(in: .whitespacesAndNewlines)
                     return

@@ -153,6 +153,15 @@ def main():
                         "    private func pruneMissingEntries()").replace("private func", "func", 1)
               .replace("UserDefaults.standard", "defaults")
           + "}\n}\n")
+    homebrew = "Sources/Lattice/Services/Homebrew/HomebrewManager.swift"
+    homebrew_methods = "".join(declaration(homebrew, marker) for marker in [
+        "    func refreshInstalled(", "    func refreshOutdated(", "    func syncWithFeatures()",
+        "    func trustTapAndContinue()", "    func clearUntrustedTap()", "    func presentUntrustedTap(",
+        "    func clearOutdatedRead("])
+    for expression in ["request.owner", "AppFeature.homebrew", "AppFeature.uninstaller", "$0", "owner"]:
+        homebrew_methods = homebrew_methods.replace(expression + ".isAvailable", "HomebrewReadLifecycleTests.isAvailable(" + expression + ")")
+    write("HomebrewReadLifecycle.swift", "import Foundation\nextension HomebrewReadLifecycleTests {\nfinal class Service: State {\n"
+          + homebrew_methods + "}\n}\n")
     write("RemainingPageLifecycle.swift", "import Foundation\nextension RemainingPageLifecycleTests {\n"
           + "final class Updates: UpdatesState {\n"
           + declaration("Sources/Lattice/Services/AppUpdates/AppUpdatesService.swift", "    func cancelChecks()")

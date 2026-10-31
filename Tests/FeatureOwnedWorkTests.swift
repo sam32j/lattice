@@ -1,7 +1,7 @@
 import Foundation
 
 enum FeatureOwnedWorkTests {
-    static func run(_ suite: TestSuite) { ownedWork(suite) }
+    static func run(_ suite: TestSuite) { ownedWork(suite); HomebrewReadLifecycleTests.run(suite) }
 }
 
 extension FeatureOwnedWorkTests {
