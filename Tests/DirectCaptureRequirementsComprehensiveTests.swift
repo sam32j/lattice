@@ -124,9 +124,11 @@ enum DirectCaptureRequirementsComprehensiveTests {
         }
         suite.expect(AppFeature.hubInstallableFeatures.count == AppFeature.allCases.count - nonHubFeatures.count,
                      "the Hub omits the screenshot companions as well as mouse and keyboard features and dedicated page features")
-        suite.expect([AppFeature.mediaTools, AppFeature.quickLauncher, .diskImageInstaller, .brightness, .bluetoothSleep, .monitorCPU, .fanControl, .cleaningMode].allSatisfy {
+        suite.expect([AppFeature.mediaTools].allSatisfy {
+            AppFeature.hubInstallableFeatures.contains($0)
+        } && [AppFeature.quickLauncher, .diskImageInstaller, .brightness, .bluetoothSleep, .monitorCPU, .fanControl, .cleaningMode].allSatisfy {
             !AppFeature.hubInstallableFeatures.contains($0)
-        }, "all standalone utilities and controls now have page owners")
+        }, "the Hub retains standalone tools while page-owned controls and monitor modules stay in their settings pages")
 
         // 2. Color picker and screen OCR are excluded from standalone Hub installables
         suite.expect(!AppFeature.hubInstallableFeatures.contains(.colorPicker)
