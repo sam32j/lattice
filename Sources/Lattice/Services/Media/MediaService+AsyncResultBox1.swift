@@ -9,8 +9,8 @@ import UniformTypeIdentifiers
 import Vision
 
 final class AsyncResultBox<T>: @unchecked Sendable {
-    let lock = NSLock()
-    var result: Result<T, Error>?
+    private let lock = NSLock()
+    private var result: Result<T, Error>?
 
     func set(_ result: Result<T, Error>) {
         lock.lock()

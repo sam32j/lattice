@@ -5,10 +5,11 @@ import AppKit
 import Foundation
 import SwiftUI
 
-/// A session-scoped view of macOS Now Playing. The read itself lives in the
-/// bridge below, out of process; a failed run, a timeout and malformed
-/// metadata all arrive here as an empty playback session.
-/// Nothing here is required for the radial menu itself to work.
+/// Reads Now Playing through `/usr/bin/perl` loading the adapter library
+/// (`Sources/NowPlayingAdapter`). Since macOS 15.4 MediaRemote answers only
+/// processes carrying Apple's signature; perl is one, the app is not. A
+/// missing script or library, a failed run, a timeout and malformed output
+/// all read as an empty playback session.
 final class MediaRemoteNowPlayingBridge {
     let queue = DispatchQueue(label: "io.github.sam32j.lattice.radial-now-playing", qos: .userInitiated)
     /// 2 s: a cold perl load measured 500 ms with no session playing, and a

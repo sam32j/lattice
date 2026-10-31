@@ -5,10 +5,7 @@ import AppKit
 import Foundation
 import SwiftUI
 
-/// A session-scoped view of macOS Now Playing. The read itself lives in the
-/// bridge below, out of process; a failed run, a timeout and malformed
-/// metadata all arrive here as an empty playback session.
-/// Nothing here is required for the radial menu itself to work.
+/// Displays the current playback session and opens its owning app.
 struct RadialNowPlayingCard: View {
     let snapshot: RadialNowPlayingSnapshot
     let openApplication: () -> Void
