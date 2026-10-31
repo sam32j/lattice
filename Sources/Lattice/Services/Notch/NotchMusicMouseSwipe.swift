@@ -11,6 +11,7 @@ struct NotchMusicMouseSwipe {
     private(set) var progress = 0.0
     private var began = false
     private var trackpadSequence = false
+    var excludesTrackpadSequence: Bool { trackpadSequence }
     private var vertical = false
     private var x = 0.0
     private var y = 0.0

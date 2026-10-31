@@ -41,18 +41,6 @@ final class NotchMusicMouseSwipeController {
         ownsPresentation = false
     }
 
-    func handle(_ event: NSEvent, enabled: Bool, expanded: Bool, hasTouches: Bool) -> Bool {
-        return receive(x: Double(event.scrollingDeltaX), y: Double(event.scrollingDeltaY), phase: event.phase,
-            precise: event.hasPreciseScrollingDeltas, momentum: !event.momentumPhase.isEmpty,
-            enabled: enabled, expanded: expanded, hasTouches: hasTouches,
-            nativeTracking: NSEvent.isSwipeTrackingFromScrollEventsEnabled) { update in
-                event.trackSwipeEvent(options: [.lockDirection], dampenAmountThresholdMin: -1, max: 1) {
-                    amount, phase, complete, stop in
-                    stop.pointee = ObjCBool(update(Double(amount), phase, complete))
-                }
-            }
-    }
-
     /// Input and native-tracker callback are explicit boundaries for isolated
     /// tests; production supplies NSEvent's own swipe tracker above.
     @discardableResult
@@ -61,6 +49,13 @@ final class NotchMusicMouseSwipeController {
                  nativeTracking: Bool = true,
                  track: (@escaping NativeUpdate) -> Void) -> Bool {
         if !enabled || hasTouches { cancel(); return false }
+        // A mayBegin is trackpad evidence, but its terminal packet can be lost.
+        // Retain the exclusion while input arrives; never latch it for the app's lifetime.
+        defer {
+            if gesture.excludesTrackpadSequence || recoveryGesture.excludesTrackpadSequence {
+                renewExpiry(epoch)
+            }
+        }
         // Raw cancellation is terminal; AppKit need not send another Ended.
         if phase.contains(.cancelled) {
             let handled = gesture.tracking || recoveryGesture.tracking
