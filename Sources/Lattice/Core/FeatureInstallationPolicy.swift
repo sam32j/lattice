@@ -3,6 +3,12 @@
 import Foundation
 
 extension AppFeature {
+    /// Owners migrated from the retired Features destination. Keep existing keys.
+    static let migratedPageFeatures: Set<AppFeature> = [
+        .keepAwake, .mediaTools, .cleaner, .uninstaller, .homebrew,
+        .appUpdates, .radialMenu, .commandBar, .killProcess, .portManager
+    ]
+
     /// Always-reachable Settings pages do not require off rows in the app menu.
     var retainsControlWhenOff: Bool {
         switch self {
@@ -27,7 +33,7 @@ extension AppFeature {
 
     /// Features with dedicated page-level install/enable controls, excluded from the Features hub.
     var isManagedOnDedicatedPage: Bool {
-        if group == .monitor { return true }
+        if group == .monitor || Self.migratedPageFeatures.contains(self) { return true }
         switch self {
         case .clipboardHistory, .shelf, .textSnippets, .urlCleaner, .cameraPreview,
              .diskImageInstaller, .quickLauncher, .scratchpad, .videoDownloader,

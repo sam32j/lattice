@@ -157,7 +157,6 @@ struct MetricsTests {
                 NotchSettingsChoiceTests.run(suite)
                 MonitorTokenTests.run(suite)
             }),
-            ("feature-hub-layout", { FeatureHubLayoutTests.run(suite) }),
             ("display-restoration", {
                 DisplayRestorationTests.run(suite)
                 BrightnessStepTests.run(suite)
@@ -236,6 +235,7 @@ struct MetricsTests {
             }),
             ("keep-awake", {
                 KeepAwakeAppearanceTests.run(suite)
+                KeepAwakePreferenceObserverTests.run(suite)
                 KeepAwakeAssertionTests.run(suite)
                 KeepAwakeCatalogContract.run(suite)
                 MenuPanelToggleLabelContract.run(suite)

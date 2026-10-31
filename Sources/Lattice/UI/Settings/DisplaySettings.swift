@@ -15,8 +15,8 @@ struct DisplaySettings: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                if (focus == nil || focus == .keepAwake), AppFeature.keepAwake.isAvailable {
-                    EnergyKeepAwakeSettings()
+                if focus == nil || focus == .keepAwake {
+                    FeatureActivationSection(feature: .keepAwake) { EnergyKeepAwakeSettings() }
                 }
                 if focus == nil || focus == .brightness || focus == .extraBrightness || focus == .wallpaper {
                     EnergyDisplaySettings()

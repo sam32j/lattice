@@ -1449,8 +1449,8 @@ enum CommandBarFeatureTests {
         suite.expect(AppFeature.commandBar.energyProfile == .idle,
                "the command bar costs nothing while closed")
         suite.expect(pageVisible(.commandBar, available: [.commandBar])
-                && !pageVisible(.commandBar, available: []),
-               "the command bar page follows its hub switch")
+                && pageVisible(.commandBar, available: []),
+               "the Command Bar activation page remains reachable while disabled")
         suite.expect(!SettingsBackupSupport.exportKeys().contains(DefaultsKey.commandBarUsage)
                 && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.commandBarQueryHabits)
                 && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.commandBarQueryHabitKey),

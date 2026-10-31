@@ -8,10 +8,11 @@ import SwiftUI
 /// every running process with kill, force-kill, kill-all, kill-tree, and
 /// restart actions.
 struct KillProcessView: View {
+    var inlineOptions = false
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var service = KillProcessService.shared
-    @AppStorage(DefaultsKey.killProcessCommandBarEnabled) private var commandBarEnabled = true
     @Environment(\.controlActiveState) private var controlActiveState
+    @State private var showsOptions = false
     @State private var refreshTimer: Timer?
     @State private var pendingAction: PendingAction?
 
@@ -57,21 +58,6 @@ struct KillProcessView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Form {
-                Section {
-                    Toggle(strings.groupToggle, isOn: groupBinding)
-                    Text(strings.groupCaption)
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                Section {
-                    Toggle(strings.commandBarToggle, isOn: $commandBarEnabled)
-                    Text(strings.commandBarCaption)
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            .formStyle(.grouped)
-            .fixedSize(horizontal: false, vertical: true)
-
             HStack(spacing: 16) {
                 Spacer()
                 Text(String(format: strings.processCountFormat, service.filteredEntries.count))
@@ -84,6 +70,7 @@ struct KillProcessView: View {
                 }
                 .buttonStyle(.plain)
                 .help(strings.refreshTooltip)
+                if inlineOptions { KillProcessOptionsButton(presented: $showsOptions) }
             }
 
             HStack(spacing: 10) {
@@ -96,10 +83,6 @@ struct KillProcessView: View {
             }
         }
         .padding(16)
-    }
-
-    private var groupBinding: Binding<Bool> {
-        Binding(get: { service.groupRelated }, set: { service.setGroupRelated($0) })
     }
 
     // MARK: Column header

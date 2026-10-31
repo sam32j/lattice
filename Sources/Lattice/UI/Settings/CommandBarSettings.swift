@@ -43,6 +43,7 @@ struct CommandBarSettings: View {
     var body: some View {
         Form {
             Section {
+                FeatureActivationControl(feature: .commandBar).toggleStyle(.switch)
                 // One choice, open it or recenter it, so one row. Neither
                 // carries an icon: a ⌘ glyph in front of "Open the bar now"
                 // reads as the shortcut that opens it, which it is not.

@@ -671,8 +671,8 @@ enum FeatureCatalogTests {
                "features someone chose to keep travel in backups, so a restored Mac never offers them again")
         let hubUndoSource = (try? String(contentsOfFile: "Sources/Lattice/UI/Settings/FeatureHubSettings.swift",
                                          encoding: .utf8)) ?? ""
-        suite.expect(hubUndoSource.contains("setAvailable(batch, true, enablingFirstInstalls: false)"),
-               "undoing the offer reinstalls without switching on what was never on")
+        suite.expect(hubUndoSource.isEmpty,
+               "the retired unused-feature offer has no remaining UI")
         suite.expect(FeatureGroup.allCases.map { AppFeature.features(in: $0).count }.reduce(0, +)
                 == AppFeature.allCases.count,
                "every feature belongs to exactly one group")
@@ -715,10 +715,10 @@ enum FeatureCatalogTests {
         let featureHubSource = (try? String(
             contentsOfFile: "Sources/Lattice/UI/Settings/FeatureHubSettings.swift",
             encoding: .utf8)) ?? ""
-        suite.expect(featureHubSource.contains("installBlockedReason"),
-               "the feature picker refuses an unsupported install")
-        suite.expect(featureHubSource.contains("installableCount"),
-               "the hub counts against what this Mac can install, so install-all can finish")
+        suite.expect(runtimeSource.contains("return !available || feature.isHardwareSupported"),
+               "page activation still passes the runtime hardware gate")
+        suite.expect(AppFeature.hubInstallableFeatures.isEmpty,
+               "retiring Features leaves no hub installation choices")
         // The first top-level member opened by `declaration`, with comment lines
         // and whitespace dropped, so a layout check reads structure only.
         func compactMember(_ declaration: String, in source: String) -> String {
@@ -736,9 +736,8 @@ enum FeatureCatalogTests {
         // comment lines dropped: it keeps that structure from coming back, not
         // the scrolling itself, which only a scroll run shows.
         let compactHubContent = compactMember("private var content: some View {", in: featureHubSource)
-        suite.expect(compactHubContent.components(separatedBy: "LazyVStack(").count == 2
-                && compactHubContent.contains("ScrollView{LazyVStack("),
-               "the hub's one lazy stack is its scroll view's own content, never nested in another stack")
+        suite.expect(compactHubContent.isEmpty && !FeatureVisibilitySupport.isPageVisible(.features, isAvailable: { _ in true }),
+               "the retired hub has no rendered content or visible destination")
         // A lazy stack on the Monitor page re-measures and re-anchors its rows
         // without settling once the Bars options make the menu bar card taller,
         // which hangs Settings on the first scroll. The same kind of source
@@ -1902,9 +1901,9 @@ enum FeatureCatalogTests {
                "app pages never hide")
         suite.expect(pageVisible(.shelf, available: allFeatures.subtracting([.shelf])),
                "disabled File Cache remains reachable through its owning settings page")
-        suite.expect(!pageVisible(.cleaner,
+        suite.expect(pageVisible(.cleaner,
                             available: allFeatures.subtracting([.cleaner])),
-               "cleaner settings follow the cleaner module")
+               "Cleaner keeps its activation page while the module is disabled")
         suite.expect(AppFeature.allCases.allSatisfy { feature in
             let destination = feature.settingsDestination
             let gate = FeatureVisibilitySupport.features(for: destination.page)
@@ -2004,22 +2003,23 @@ enum FeatureCatalogTests {
         let featuresDestination = FeatureSettingsDestination(.features)
         settingsRouter.request(featuresDestination, targetFeature: .homebrew)
         let firstFeatureTargetRequestID = settingsRouter.requestID
-        suite.expect(settingsRouter.pendingFeatureTarget?.id == firstFeatureTargetRequestID
-                && settingsRouter.pendingFeatureTarget?.feature == .homebrew,
-               "requesting Features with a target feature publishes a matching feature-target request")
+        suite.expect(settingsRouter.page == .homebrew
+                && settingsRouter.pendingDestinationRequest?.id == firstFeatureTargetRequestID
+                && settingsRouter.pendingFeatureTarget == nil,
+               "legacy Features requests open the target owning page")
         settingsRouter.request(featuresDestination, targetFeature: .homebrew)
         let secondFeatureTargetRequestID = settingsRouter.requestID
         suite.expect(secondFeatureTargetRequestID != firstFeatureTargetRequestID
-                && settingsRouter.pendingFeatureTarget?.id == secondFeatureTargetRequestID,
+                && settingsRouter.pendingDestinationRequest?.id == secondFeatureTargetRequestID,
                "repeated requests for the same target feature remain observable")
         settingsRouter.consumeFeatureTarget(id: firstFeatureTargetRequestID)
-        suite.expect(settingsRouter.pendingFeatureTarget?.id == secondFeatureTargetRequestID,
+        suite.expect(settingsRouter.pendingDestinationRequest?.id == secondFeatureTargetRequestID,
                "consuming an older feature-target request cannot clear a newer target")
         settingsRouter.consumeFeatureTarget(id: secondFeatureTargetRequestID)
         suite.expect(settingsRouter.pendingFeatureTarget == nil,
                "a handled feature-target request is cleared")
         settingsRouter.request(featuresDestination, targetFeature: .diskImageInstaller)
-        suite.expect(settingsRouter.pendingFeatureTarget?.feature == .diskImageInstaller,
+        suite.expect(settingsRouter.page == .diskImageInstaller && settingsRouter.pendingFeatureTarget == nil,
                "requesting a different target feature is observable")
         settingsRouter.request(repeatedDestination)
         suite.expect(settingsRouter.pendingFeatureTarget == nil,
@@ -2084,7 +2084,7 @@ enum FeatureCatalogTests {
         historyRouter.goBack()
         historyRouter.request(FeatureSettingsDestination(.features), targetFeature: .homebrew)
         historyRouter.goForward()
-        suite.expect(historyRouter.page == .features,
+        suite.expect(historyRouter.page == .homebrew,
                "a destination request after Back also discards forward history")
         historyRouter.page = .dataPermissions
         suite.expect(historyRouter.destination == FeatureSettingsDestination(.dataPermissions)

@@ -417,6 +417,9 @@ if (( TEST )); then
         Sources/Lattice/Services/FeatureReadProcess.swift
         Sources/Lattice/Services/FeatureWorkCancellation.swift
         Sources/Lattice/Core/FeatureWorkRegistry.swift
+        Sources/Lattice/Core/FeatureAvailabilityPolicy.swift
+        Sources/Lattice/Core/FeaturePermissionPolicy.swift
+        Sources/Lattice/Core/FeatureCatalogCollections.swift
         Sources/Lattice/Core/FeatureInstallationPolicy.swift
         Sources/Lattice/Core/IslandDestinationSupport.swift
         Sources/Lattice/Core/SettingsOwnershipStrings.swift
@@ -576,8 +579,11 @@ if (( TEST )); then
         Sources/Lattice/Services/InstalledApps.swift
         Sources/Lattice/Services/LaunchAtLoginSupport.swift
         Sources/Lattice/UI/Settings/SettingsSearchSupport.swift
+        Sources/Lattice/UI/Settings/SettingsSearchModels.swift
+        Sources/Lattice/UI/Settings/SettingsSearchSelection.swift
         Sources/Lattice/UI/Settings/SettingsSidebarSupport.swift
         Sources/Lattice/UI/Settings/FeatureVisibilitySupport.swift
+        Sources/Lattice/UI/Settings/SettingsRouter.swift
         Sources/Lattice/UI/Onboarding/WhatsNewSupport.swift
         Sources/Lattice/UI/Settings/SettingsWindow.swift
         Sources/Lattice/UI/Settings/SettingsDetailViewport.swift

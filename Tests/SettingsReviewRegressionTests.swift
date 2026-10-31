@@ -29,6 +29,7 @@ enum SettingsReviewRegressionTests {
         RemainingPageLifecycleTests.run(suite)
         FeatureOwnedWorkTests.run(suite)
         PageScheduleLifecycleTests.run(suite)
+        PageCommandDiscoveryTests.run(suite)
         SettingsDestinationOwnershipTests.run(suite)
         ShortcutSettingsRefreshTests.run(suite)
         PR12DestinationTests.run(suite)

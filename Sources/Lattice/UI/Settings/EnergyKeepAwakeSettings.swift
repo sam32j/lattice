@@ -88,9 +88,12 @@ struct EnergyKeepAwakeSettings: View {
 
     /// The feature's name, what it is doing right now and its switch.
     private func sessionRow(status: String) -> some View {
-        SettingsRow(symbol: "bolt.fill", title: l10n.s.keepAwakeTitle, caption: status) {
+        let text = FeatureStrings.keepAwakeHub(l10n.language)
+        let caption = awake.assertionFailed ? (awake.isActive ? text.restoreFailed : text.activationFailed) : status
+        return SettingsRow(symbol: "bolt.fill", title: l10n.s.keepAwakeTitle, caption: caption) {
             Toggle(l10n.s.keepAwakeTitle, isOn: sessionBinding)
                 .labelsHidden()
+                .accessibilityValue(awake.assertionFailed ? text.updateFailed : status)
         }
     }
 

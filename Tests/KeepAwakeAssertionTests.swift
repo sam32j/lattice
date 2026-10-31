@@ -78,6 +78,8 @@ enum KeepAwakeAssertionTests {
         stopping.deactivate(reason: .manual)
         suite.expect(stopping.isActive && stopping.assertionFailed,
                      "a failed stop remains visibly active and reports the failure")
+        suite.expect(!stopping.prepareForFeatureDisable() && stopping.isActive && stopping.assertionFailed,
+                     "feature shutdown failure retains the running error state without reacquiring assertions")
         stopping.releasesSucceed = true
         stopping.deactivate(reason: .manual)
         suite.expect(!stopping.isActive, "retrying stop finishes the session")
