@@ -305,8 +305,7 @@ final class StatusItemController {
     }
 
     private var currentKeepAwakeSignal: Bool {
-        MenuBarSpacingSupport.keepAwakeSignals(active: KeepAwakeManager.shared.isActive,
-                                               tint: .current, style: .current)
+        MenuBarSpacingSupport.keepAwakeSignals(active: KeepAwakeManager.shared.isActive)
     }
 
     /// Whether a running Keep Awake session brings back the glyph the
@@ -380,8 +379,7 @@ final class StatusItemController {
         // the same image every 2 seconds would be wasted composition, so the
         // image is only touched when some ingredient actually changed.
         let stateKey = [String(hidden), String(mainItemHidden), String(updateAvailable),
-                        String(keepAwakeActive), KeepAwakeIconTint.current.rawValue,
-                        KeepAwakeActiveIcon.current.rawValue, BlackHoleGlyph.chosenSymbolName,
+                        String(keepAwakeActive), BlackHoleGlyph.chosenSymbolName,
                         String(micBadgeActive)].joined(separator: "|")
         guard stateKey != lastIconStateKey else { return }
         lastIconStateKey = stateKey
@@ -922,25 +920,12 @@ enum BlackHoleGlyph {
     }
 
     static func image(active: Bool) -> NSImage? {
-        let tint = KeepAwakeIconTint.current
-        guard active else { return mark() ?? fallback(active: false) }
-        return activeImage(style: .current, tint: tint)
+        active ? activeImage() : (mark() ?? fallback(active: false))
     }
 
-    static func activeImage(style: KeepAwakeActiveIcon,
-                            tint: KeepAwakeIconTint = .orange) -> NSImage? {
-        let source: NSImage?
-        if let symbolName = style.systemSymbolName {
-            source = fixedSizeSymbol(named: symbolName, drop: style.menuBarDrop)
-        } else {
-            source = mark()
-        }
-        guard let source else { return fallback(active: tint != .none) }
-        guard let color = color(for: tint) else {
-            source.isTemplate = true
-            return source
-        }
-        return tintedImage(source, color: color) ?? fallback(active: true)
+    static func activeImage() -> NSImage? {
+        guard let source = fixedSizeSymbol(named: KeepAwakeAppearance.symbol) ?? fallback(active: true) else { return nil }
+        return tintedImage(source, color: KeepAwakeAppearance.color)
     }
 
     /// System symbols have different natural widths. Center them inside the
@@ -1061,17 +1046,6 @@ enum BlackHoleGlyph {
         }
         tinted.isTemplate = false
         return tinted
-    }
-
-    private static func color(for tint: KeepAwakeIconTint) -> NSColor? {
-        switch tint {
-        case .orange: return .systemOrange
-        case .green: return .systemGreen
-        case .blue: return .systemBlue
-        case .purple: return .systemPurple
-        case .pink: return .systemPink
-        case .none: return nil
-        }
     }
 
     /// Keeps a recognizable presence if the bundled asset is ever missing

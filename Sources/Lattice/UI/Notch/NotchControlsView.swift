@@ -393,7 +393,7 @@ enum NotchTileAccent {
         switch self {
         case .selection: return .white
         case .alert: return .red
-        case .awake: return .yellow
+        case .awake: return KeepAwakeAppearance.indicatorColor
         case .timer: return .orange
         }
     }

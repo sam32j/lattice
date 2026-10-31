@@ -2627,6 +2627,11 @@ def main():
                   "    private func persistSessionToCache()", "    private func restoreSessionFromCache()"])
           + "}\n}\n")
 
+    write("KeepAwakeAppearanceContract.swift", "import AppKit\nextension KeepAwakeAppearanceContract {\n"
+          + declaration("Sources/Lattice/App/StatusItemController.swift", "enum BlackHoleGlyph {")
+              .replace("UserDefaults.standard", "KeepAwakeAppearanceContract.defaults")
+          + "}\n")
+
     for path in OUTPUT.glob("*.swift"):
         if path.name not in EMITTED:
             path.unlink()

@@ -235,6 +235,7 @@ struct MetricsTests {
                 WindowServerCaptureContract.run(suite)
             }),
             ("keep-awake", {
+                KeepAwakeAppearanceTests.run(suite)
                 KeepAwakeAssertionTests.run(suite)
                 KeepAwakeCatalogContract.run(suite)
                 MenuPanelToggleLabelContract.run(suite)

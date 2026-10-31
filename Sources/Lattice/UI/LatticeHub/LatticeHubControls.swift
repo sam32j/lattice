@@ -79,7 +79,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
     var tint: Color {
         switch self {
         case .micMute: return .red
-        case .keepAwake: return .orange
+        case .keepAwake: return KeepAwakeAppearance.indicatorColor
         case .cameraPreview: return .blue
         case .darkMode: return .indigo
         case .keyboardLight: return .yellow

@@ -569,7 +569,6 @@ struct NotchCapsuleKeepAwakeStrip: View {
     var displayGeometry: NotchGeometry? = nil
     @ObservedObject private var awake = KeepAwakeManager.shared
     @ObservedObject private var l10n = L10n.shared
-    @AppStorage(DefaultsKey.keepAwakeIconTint) private var tintValue = KeepAwakeIconTint.orange.rawValue
 
     var body: some View {
         // Ending a session clears its end before the strip has left.
@@ -593,14 +592,14 @@ struct NotchCapsuleKeepAwakeStrip: View {
                 // Measure the same symbol and reading scale as the capsule.
                 Image(systemName: NotchKeepAwakeSupport.symbol)
                     .font(.system(size: NotchKeepAwakeSupport.capsuleIconSize, weight: .medium))
-                    .foregroundStyle(Defaults.sanitizedKeepAwakeIconTint(tintValue).indicatorColor)
+                    .foregroundStyle(KeepAwakeAppearance.indicatorColor)
                     .capsuleCentred(NotchKeepAwakeSupport.symbol, size: NotchKeepAwakeSupport.capsuleIconSize)
                 if let end {
                     let text = NotchKeepAwakeSupport.compactText(until: end, now: now,
                                                                 locale: Locale(identifier: l10n.language.rawValue))
                     Text(text)
                         .font(.system(size: textSize, weight: .medium)).monospacedDigit()
-                        .foregroundStyle(Defaults.sanitizedKeepAwakeIconTint(tintValue).indicatorColor)
+                        .foregroundStyle(KeepAwakeAppearance.indicatorColor)
                         .lineLimit(1).fixedSize()
                         // A reading that gains or loses a character, like 10m
                         // becoming 9m, resizes the capsule; the service measures the same.
@@ -610,7 +609,7 @@ struct NotchCapsuleKeepAwakeStrip: View {
                 } else {
                     Image(systemName: NotchKeepAwakeSupport.openSymbol)
                         .font(.system(size: textSize, weight: .medium))
-                        .foregroundStyle(Defaults.sanitizedKeepAwakeIconTint(tintValue).indicatorColor)
+                        .foregroundStyle(KeepAwakeAppearance.indicatorColor)
                         .capsuleCentred(NotchKeepAwakeSupport.openSymbol, size: textSize)
                 }
             }
