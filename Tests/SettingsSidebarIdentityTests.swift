@@ -8,9 +8,9 @@ enum SettingsSidebarIdentityTests {
         let sections = Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in true })
         suite.expect(sections.count == Set(sections.map(\.id)).count,
                      "synthetic sidebar categories never collide with enumerated app or capture groups")
-        suite.expect(sections.contains { $0.id == 5 } && sections.contains { $0.id == 2 },
+        suite.expect(sections.contains { $0.id == 4 } && sections.contains { $0.id == 2 },
                      "app settings and device controls keep independent collapse identities")
-        let lattice = sections.first { $0.id == 5 }
+        let lattice = sections.first { $0.id == 4 }
         suite.expect(lattice?.title == "Lattice"
                      && lattice?.items.map(\.id) == [.page(.about), .page(.dataPermissions)],
                      "Lattice contains only About followed by Data and Permissions")
@@ -29,9 +29,12 @@ enum SettingsSidebarIdentityTests {
         suite.expect(!withKeyboard.flatMap(\.items).contains {
             $0.id == .setting(.keyboardBrightnessShortcuts)
         }, "Keyboard Light is moved into Keyboard settings and not in the sidebar")
-        let systemItems = withKeyboard.first { $0.id == 4 }?.items ?? []
-        suite.expect(systemItems.first?.id == .feature(.keepAwake),
-                     "Stay awake is in the System section")
+        let utilityItems = withKeyboard.first { $0.id == 3 }?.items ?? []
+        suite.expect(utilityItems.contains { $0.id == .feature(.keepAwake) },
+                     "Stay awake is in the Utilities section")
+        suite.expect(utilityItems.map(\.title) == utilityItems.map(\.title).sorted {
+            $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+        }, "Utilities section items are sorted alphabetically")
         let desktop = sections.first { $0.id == 1 }?.items ?? []
         suite.expect(desktop.map(\.id) == [.page(.dock), .feature(.switcher), .page(.windowLayout),
                                            .page(.screenshot), .page(.screenRecorder)],

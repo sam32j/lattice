@@ -89,7 +89,11 @@ enum SettingsDirectory {
                 return rows
             }
             guard !items.isEmpty else { return nil }
-            return SettingsSidebarSection(id: index, title: section.title, items: items)
+            var finalItems = items
+            if section.title == SettingsOwnershipStrings.text(.utilities, language) {
+                finalItems.sort { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+            }
+            return SettingsSidebarSection(id: index, title: section.title, items: finalItems)
         }
     }
 

@@ -215,8 +215,7 @@ extension SettingsDirectory {
                                                         .allowDisplaySleep]),
                                       ]),
             ]),
-            (SettingsOwnershipStrings.text(.utilities, language), utilityPages(s, language: language)),
-            (categories.system, [
+            (SettingsOwnershipStrings.text(.utilities, language), utilityPages(s, language: language) + [
                 SettingsDirectoryItem(page: .monitor, title: s.tabMonitor, icon: "chart.line.uptrend.xyaxis",
                                       keywords: [s.menuBarSpacingLabel, s.menuBarHideIconToggle,
                                                  s.monitorShowCPU, s.monitorShowGPU, s.monitorShowMemory,
