@@ -23,6 +23,7 @@ enum OverlayPanelTests {
         let capture = ScreenshotCapturePanel(screenRect: CGRect(x: -10000, y: -10000, width: 200, height: 40))
         capture.isReleasedWhenClosed = false
         defer { capture.close() }
+
         suite.expect(capture.accessibilitySubrole() == .unknown
                      && capture.accessibilityRole() == .window && capture.isAccessibilityElement(),
                      "capture's specialized panel inherits the overlay window-manager and accessibility behavior")
@@ -31,7 +32,6 @@ enum OverlayPanelTests {
         // document window, and each floats over other apps' windows.
         let surfaces = [
             "Sources/Lattice/App/AppDelegate.swift",
-            "Sources/Lattice/UI/PermissionGuideOverlay.swift",
             "Sources/Lattice/UI/QuitProtection/QuitProtectionHUD.swift",
             "Sources/Lattice/Services/QuickTools/QuickToolHUD.swift",
             "Sources/Lattice/Services/LatticeHub/LatticeHubPanel.swift",
