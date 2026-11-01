@@ -13,17 +13,27 @@ struct NotchNoticeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var wings: NotchNoticeWings { notice.wings(in: geometry) }
+    private var isMutedMic: Bool {
+        notice.event == .microphone && (notice.symbol.contains("slash") || notice.detail == "Muted")
+    }
     private var tint: Color {
         switch notice.event {
         // A warning reads as one in any agent's color; other AI notices wear it.
         case .agents: return notice.symbol.hasPrefix("exclamationmark") ? .orange : notice.agent?.tint ?? .white
         // The timer's notice keeps the orange its strip and page wear.
         case .timer: return .orange
+        case .microphone: return isMutedMic ? .red : .white
         default: return .white
         }
     }
-    /// The words of a timer's notice share its orange too.
-    private var textTint: Color { notice.event == .timer ? .orange : .white }
+    /// The words of a timer's notice share its orange too; muted microphone wears red.
+    private var textTint: Color {
+        switch notice.event {
+        case .timer: return .orange
+        case .microphone: return isMutedMic ? .red : .white
+        default: return .white
+        }
+    }
     /// With the companion on, it stands in for the symbol, and reacts unless
     /// its reactions are off.
     private var companionReaction: NotchMascotReaction? {
@@ -100,13 +110,15 @@ struct NotchNoticeView: View {
                     }
                 }
                 .frame(width: 18)
-                Text(notice.level == nil ? notice.title : notice.detail)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(textTint)
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .truncationMode(notice.event == .track ? .tail : .middle)
-                    .contentTransition(.numericText())
+                if !notice.title.isEmpty || notice.level != nil {
+                    Text(notice.level == nil ? notice.title : notice.detail)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(textTint)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .truncationMode(notice.event == .track ? .tail : .middle)
+                        .contentTransition(.numericText())
+                }
             }
             .frame(maxWidth: .infinity, alignment: notice.readsFromEnds ? .leading : .trailing)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: notice.detail)
@@ -130,7 +142,7 @@ struct NotchNoticeView: View {
         } else {
             Text(notice.detail)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(textTint.opacity(0.8))
+                .foregroundStyle(isMutedMic ? Color.red : textTint.opacity(0.8))
                 .lineLimit(1)
                 .truncationMode(notice.event == .accessory ? .middle : .tail)
                 .frame(maxWidth: .infinity, alignment: .trailing)

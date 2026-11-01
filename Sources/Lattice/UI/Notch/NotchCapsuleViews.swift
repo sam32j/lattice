@@ -71,11 +71,16 @@ struct NotchCapsuleNoticeView: View {
     let size: CGSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var isMutedMic: Bool {
+        notice.event == .microphone && (notice.symbol.contains("slash") || notice.detail == "Muted")
+    }
+
     private var tint: Color {
         switch notice.event {
         // A warning reads as one in any agent's color; other AI notices wear it.
         case .agents: return notice.symbol.hasPrefix("exclamationmark") ? .orange : notice.agent?.tint ?? .white
         case .timer: return .orange
+        case .microphone: return isMutedMic ? .red : .white
         default: return .white
         }
     }
@@ -127,12 +132,15 @@ struct NotchCapsuleNoticeView: View {
         HStack(spacing: CapsuleLayout.spacing) {
             mark
             // A timer's notice keeps the orange its strip wears.
-            Text(notice.title).capsuleTitle().layoutPriority(1)
-                .foregroundStyle(notice.event == .timer ? Color.orange : .white)
+            if !notice.title.isEmpty {
+                Text(notice.title).capsuleTitle().layoutPriority(1)
+                    .foregroundStyle(notice.event == .timer ? Color.orange : .white)
+            }
             if !notice.detail.isEmpty {
                 Text(notice.detail).capsuleDetail()
+                    .foregroundStyle(isMutedMic ? Color.red : .white.opacity(0.85))
                     .truncationMode(notice.event == .accessory ? .middle : .tail)
-                    .padding(.leading, CapsuleLayout.groupSpacing - CapsuleLayout.spacing)
+                    .padding(.leading, notice.title.isEmpty ? 0 : (CapsuleLayout.groupSpacing - CapsuleLayout.spacing))
             }
         }
     }
