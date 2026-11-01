@@ -3866,10 +3866,10 @@ final class NotchService: ObservableObject {
         // The native touch receiver owns this gesture, including over the header.
         if captureSurface { return !interaction.control && event.hasPreciseScrollingDeltas }
         let hubSurface = expanded && selected == .hub && !showingAppPanel && !showingSections && !showingCommandBar
-        let vertical = (hubSurface && !interaction.control)
-            || NotchGestureSupport.allowsVertical(expanded: expanded, inHeader: inHeader,
-                                                  musicSurface: musicSurface,
-                                                  control: interaction.control, scroll: interaction.scroll)
+        let vertical = NotchGestureSupport.allowsVertical(expanded: expanded, inHeader: inHeader,
+                                                          musicSurface: musicSurface,
+                                                          hubSurface: hubSurface,
+                                                          control: interaction.control, scroll: interaction.scroll)
         let horizontal = !interaction.control && !interaction.scroll && !inHeader && musicSurface
         let x = Double(event.scrollingDeltaX) * (event.hasPreciseScrollingDeltas ? 1 : 24)
         if musicSwipe.handleMouseScroll(event, enabled: musicSwipeEnabled(event), expanded: expanded) { return true }
@@ -3879,13 +3879,15 @@ final class NotchService: ObservableObject {
             began: event.phase.contains(.began), ended: event.phase.contains(.ended), timestamp: event.timestamp)
         let y = NotchGestureSupport.movement(Double(event.scrollingDeltaY), precise: event.hasPreciseScrollingDeltas,
                                              inverted: event.isDirectionInvertedFromDevice)
+        let deepDismiss = expanded && !inHeader
         let action = gesture.handle(x: x, y: y, timestamp: event.timestamp,
                                     began: event.phase.contains(.began),
                                     ended: !event.phase.intersection([.ended, .cancelled]).isEmpty,
                                     momentum: !event.momentumPhase.isEmpty,
                                     precise: event.hasPreciseScrollingDeltas,
                                     hasPhase: !event.phase.isEmpty,
-                                    allowVertical: vertical && !musicConsumed, allowHorizontal: horizontal, expanded: expanded)
+                                    allowVertical: vertical && !musicConsumed, allowHorizontal: horizontal,
+                                    expanded: expanded, deepDismiss: deepDismiss)
         guard let action else { return musicConsumed }
         switch action {
         case .open:

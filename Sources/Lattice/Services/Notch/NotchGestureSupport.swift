@@ -12,6 +12,7 @@ struct NotchGestureSupport {
         let vertical: Bool
         let horizontal: Bool
         let expanded: Bool
+        let deepDismiss: Bool
     }
     private var origin: Origin?
     private var axis: Axis?
@@ -21,7 +22,10 @@ struct NotchGestureSupport {
     private var fired = false
     private var coasting = false
     private var lastTimestamp: TimeInterval?
-    private static let verticalThreshold = 16.0
+    static let verticalThreshold = 16.0
+    /// 3/4 inch at 72 physical points per inch, required when swiping up over
+    /// the main window's controls, toggles, or utility section to prevent accidental dismissals.
+    static let deepVerticalThreshold = 54.0
 
     static func nativeInteraction(at view: NSView?) -> (control: Bool, scroll: Bool) {
         var control = false
@@ -49,13 +53,15 @@ struct NotchGestureSupport {
     }
 
     static func allowsVertical(expanded: Bool, inHeader: Bool, musicSurface: Bool,
+                               hubSurface: Bool = false,
                                control: Bool, scroll: Bool) -> Bool {
-        !control && (!expanded || inHeader || (musicSurface && !scroll))
+        !control && (!expanded || inHeader || (musicSurface && !scroll) || hubSurface)
     }
 
     mutating func handle(x: Double, y: Double, timestamp: TimeInterval,
                          began: Bool, ended: Bool, momentum: Bool, precise: Bool, hasPhase: Bool,
-                         allowVertical: Bool, allowHorizontal: Bool, expanded: Bool) -> Action? {
+                         allowVertical: Bool, allowHorizontal: Bool, expanded: Bool,
+                         deepDismiss: Bool = false) -> Action? {
         guard timestamp.isFinite, x.isFinite, y.isFinite else { self = Self(); return nil }
         // A quick flick lifts the fingers before the swipe has travelled far
         // enough. Its momentum can finish the opening or closing it began,
@@ -71,7 +77,7 @@ struct NotchGestureSupport {
             }
             lastTimestamp = timestamp
             distance += y
-            return verticalAction(expanded: origin.expanded)
+            return verticalAction(expanded: origin.expanded, deepDismiss: origin.deepDismiss)
         }
         if ended {
             coasting = origin != nil && axis == .vertical && !fired
@@ -82,7 +88,8 @@ struct NotchGestureSupport {
         if hasPhase {
             if began {
                 self = Self()
-                origin = Origin(vertical: allowVertical, horizontal: allowHorizontal, expanded: expanded)
+                origin = Origin(vertical: allowVertical, horizontal: allowHorizontal,
+                                expanded: expanded, deepDismiss: deepDismiss)
             }
             // AppKit keeps a phased scroll attached to its original view.
             // A blocked beginning stays blocked, and an interrupted sequence
@@ -98,6 +105,7 @@ struct NotchGestureSupport {
         let allowVertical = origin?.vertical ?? allowVertical
         let allowHorizontal = origin?.horizontal ?? allowHorizontal
         let expanded = origin?.expanded ?? expanded
+        let deepDismiss = origin?.deepDismiss ?? deepDismiss
         if axis == nil {
             // Establish intent from a little accumulated travel, not the first
             // fraction of a point as the fingers touch the trackpad.
@@ -117,14 +125,17 @@ struct NotchGestureSupport {
         }
         switch axis {
         case .vertical where allowVertical:
-            return verticalAction(expanded: expanded)
+            return verticalAction(expanded: expanded, deepDismiss: deepDismiss)
         default:
             return nil
         }
     }
 
-    private mutating func verticalAction(expanded: Bool) -> Action? {
-        guard abs(distance) >= Self.verticalThreshold else { return nil }
+    private mutating func verticalAction(expanded: Bool, deepDismiss: Bool) -> Action? {
+        let threshold = (expanded && distance < 0 && deepDismiss)
+            ? Self.deepVerticalThreshold
+            : Self.verticalThreshold
+        guard abs(distance) >= threshold else { return nil }
         fired = true
         if distance > 0, !expanded { return .open }
         if distance < 0, expanded { return .close }
