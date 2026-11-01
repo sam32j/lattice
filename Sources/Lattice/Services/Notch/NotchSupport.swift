@@ -2782,7 +2782,7 @@ struct NotchGeometry: Equatable {
                 guard let toolCount else { contentHeight = pageBudget; break }
                 contentHeight = hubContentHeight(toolCount: toolCount,
                     controlsHeight: toolsControlsHeight ?? 0, editing: hubIsEditing,
-                    optionsHeight: hubOptionsHeight > 0 ? NotchLayout.hubOptionsHeight : 0)
+                    optionsHeight: max(0, hubOptionsHeight))
             case .timer:
                 contentHeight = min(budget, NotchLayout.timer(mode: timerMode, hasSession: timerHasSession, height: budget))
             case .agents:

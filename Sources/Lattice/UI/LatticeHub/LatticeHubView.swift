@@ -21,11 +21,6 @@ struct LatticeHubView: View {
 
     var customizationText: HubCustomizationStrings { FeatureStrings.hubCustomization(l10n.language) }
 
-    var columns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: notchSize == nil ? 10 : 6),
-              count: notchSize == nil ? LatticeHubService.columns : NotchSupport.toolColumns)
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if notchSize == nil {
@@ -33,21 +28,26 @@ struct LatticeHubView: View {
                     .transaction { $0.animation = nil }
                     .padding(.bottom, 12)
             }
-            if let notchSize, launcher.activeUtility == nil {
-                ScrollView(.vertical) { mainContent }
-                    .scrollIndicators(.hidden)
-                    .scrollBounceBehavior(.basedOnSize)
-                    .frame(maxHeight: islandMainHeight)
-                    .frame(maxWidth: .infinity)
-                    .accessibilityIdentifier("hub-main-viewport")
-                    .frame(maxHeight: max(0, notchSize.height), alignment: .top)
+            if notchSize != nil, launcher.activeUtility == nil {
+                mainContent
+                    .frame(height: islandMainHeight, alignment: .top)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("hub-main-content")
             } else { mainContent }
             if launcher.activeUtility == nil {
-                HubAccordion(isExpanded: editing.isExpanded) {
-                    editingContent.padding(.top, notchSize == nil ? 12 : 6)
+                if notchSize != nil {
+                    editingContent.padding(.top, 6)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .opacity(editing.isExpanded ? 1 : 0)
+                        .allowsHitTesting(launcher.isEditing && editing.isExpanded)
+                        .accessibilityHidden(!editing.isExpanded)
+                } else {
+                    HubAccordion(isExpanded: editing.isExpanded) {
+                        editingContent.padding(.top, 12)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .layoutPriority(1)
                 }
-                .fixedSize(horizontal: false, vertical: true)
-                .layoutPriority(1)
             }
             if notchSize == nil {
                 footer.padding(.top, 12)
@@ -97,6 +97,7 @@ struct LatticeHubView: View {
         .onChange(of: launcher.activeUtility) { _, _ in refreshIslandLayout() }
         .onChange(of: launcher.isEditing) { _, _ in dragSession.cancel() }
         .onChange(of: editing.isPresented) { _, _ in refreshIslandLayout() }
+        .onChange(of: editing.optionsHeight) { _, _ in refreshIslandLayout() }
         .onChange(of: launcher.editingOptionsItem) { _, _ in refreshIslandLayout() }
         .onChange(of: launcher.hiddenItemsRaw) { _, _ in refreshIslandLayout() }
         .onChange(of: launcher.visibleControls.count) { _, _ in refreshIslandLayout() }
@@ -129,14 +130,12 @@ struct LatticeHubView: View {
                     withAnimation(.easeInOut(duration: 0.22)) { launcher.editingOptionsItem = nil }
                 }
             } else if let optionsItem, hasQuickOptions(optionsItem) {
-                ScrollView(.vertical) {
-                    LatticeHubOptionsCard(item: optionsItem, notchSize: notchSize,
-                        title: title(for: optionsItem), icon: icon(for: optionsItem)) {
-                        launcher.editingOptionsItem = nil
-                    }
+                LatticeHubOptionsCard(item: optionsItem, notchSize: notchSize,
+                    title: title(for: optionsItem), icon: icon(for: optionsItem)) {
+                    launcher.editingOptionsItem = nil
                 }
-                .frame(height: min(NotchLayout.hubOptionsHeight - 6,
-                    max(0, (notchSize?.height ?? 0) - NotchLayout.hubEditingStripHeight - 38)))
+                .fixedSize(horizontal: false, vertical: true)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { editing.measureOptions($0) }
             }
             hiddenTray
         }

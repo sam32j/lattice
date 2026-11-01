@@ -28,6 +28,7 @@ extension LatticeHubView {
                 .scrollIndicators(.hidden)
                 .frame(height: 36)
                 .background(trayOutline)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .accessibilityIdentifier("hub-available-tools-scroll")
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 105), spacing: 6)], spacing: 6) { hiddenButtons }
