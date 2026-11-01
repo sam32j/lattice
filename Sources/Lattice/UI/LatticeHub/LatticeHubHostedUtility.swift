@@ -9,36 +9,41 @@ struct LatticeHubHostedUtility: View {
     let onClose: () -> Void
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                switch item {
-                case .homebrew:
-                    PanelHomebrewView(onClose: onClose)
-                case .media:
-                    PanelMediaView(onClose: onClose)
-                case .urlCleaner:
-                    PanelURLCleanerView(onClose: onClose)
-                case .uninstaller:
-                    PanelUninstallerView(onClose: onClose)
-                case .cleaner:
-                    PanelCleanerView(onClose: onClose)
-                case .windowLayout:
-                    PanelWindowLayoutView(onClose: onClose)
-                case .appUpdates:
-                    PanelAppUpdatesView(onClose: onClose)
-                case .portManager:
-                    PanelPortManagerView(onClose: onClose)
-                case .killProcess:
-                    KillProcessView(inlineOptions: true)
-                case .wallpaper:
-                    WallpaperSection(collapsible: false, onClose: onClose)
-                case .videoDownloader:
-                    NotchVideoDownloaderView(size: CGSize(width: notchSize?.width ?? 420, height: notchSize?.height ?? 470))
-                default:
-                    EmptyView()
+        if item == .recentCaptures {
+            RecentCapturesView(onClose: onClose, notchSize: notchSize)
+                .frame(height: notchSize?.height)
+        } else {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    switch item {
+                    case .homebrew:
+                        PanelHomebrewView(onClose: onClose)
+                    case .media:
+                        PanelMediaView(onClose: onClose)
+                    case .urlCleaner:
+                        PanelURLCleanerView(onClose: onClose)
+                    case .uninstaller:
+                        PanelUninstallerView(onClose: onClose)
+                    case .cleaner:
+                        PanelCleanerView(onClose: onClose)
+                    case .windowLayout:
+                        PanelWindowLayoutView(onClose: onClose)
+                    case .appUpdates:
+                        PanelAppUpdatesView(onClose: onClose)
+                    case .portManager:
+                        PanelPortManagerView(onClose: onClose)
+                    case .killProcess:
+                        KillProcessView(inlineOptions: true)
+                    case .wallpaper:
+                        WallpaperSection(collapsible: false, onClose: onClose)
+                    case .videoDownloader:
+                        NotchVideoDownloaderView(size: CGSize(width: notchSize?.width ?? 420, height: notchSize?.height ?? 470))
+                    default:
+                        EmptyView()
+                    }
                 }
             }
+            .frame(height: notchSize?.height ?? 470)
         }
-        .frame(height: notchSize?.height ?? 470)
     }
 }

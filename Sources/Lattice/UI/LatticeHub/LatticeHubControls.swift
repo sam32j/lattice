@@ -144,6 +144,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
 }
 
 struct HubControlButton: View {
+    @ObservedObject private var l10n = L10n.shared
     let icon: String
     let title: String
     let isActive: Bool
@@ -151,46 +152,48 @@ struct HubControlButton: View {
     var height: CGFloat = 32
     var iconSize: CGFloat = 13
     var isEditing: Bool = false
+    var actionRawValue: String? = nil
     var onHide: (() -> Void)? = nil
     let action: () -> Void
 
     @State private var isHovered = false
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Button(action: { if !isEditing { action() } }) {
-                Image(systemName: icon)
-                    .font(.system(size: iconSize, weight: .semibold))
-                    .foregroundStyle(isActive ? (tint == .yellow ? Color.black.opacity(0.85) : .white) : Color.primary.opacity(0.85))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: height)
-                    .background {
-                        RoundedRectangle(cornerRadius: max(7, height * 0.28), style: .continuous)
-                            .fill(isActive ? tint : (isHovered ? Color.primary.opacity(0.12) : Color.primary.opacity(0.06)))
-                    }
+        Button(action: {
+            if isEditing {
+                onHide?()
+            } else {
+                action()
             }
-            .buttonStyle(.plain)
-            .help(title)
-            .accessibilityLabel(title)
-            .onHover { isHovered = $0 }
-
-            if isEditing, let onHide {
-                Button(action: onHide) {
-                    Image(systemName: "minus.circle.fill")
-                        .font(.system(size: max(10, iconSize), weight: .semibold))
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, Color.red)
+        }) {
+            Image(systemName: icon)
+                .font(.system(size: iconSize, weight: .semibold))
+                .foregroundStyle(isActive ? (tint == .yellow ? Color.black.opacity(0.85) : .white) : Color.primary.opacity(0.85))
+                .frame(maxWidth: .infinity)
+                .frame(height: height)
+                .background {
+                    RoundedRectangle(cornerRadius: max(7, height * 0.28), style: .continuous)
+                        .fill(isActive ? tint : (isHovered ? Color.primary.opacity(0.12) : Color.primary.opacity(0.06)))
                 }
-                .buttonStyle(.plain)
-                .offset(x: 3, y: -3)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            if let onHide {
+                Button(FeatureStrings.hubCustomization(l10n.language).hideFromHub) {
+                    onHide()
+                }
             }
         }
+        .help(isEditing ? FeatureStrings.hubCustomization(l10n.language).hideFromHub : title)
+        .accessibilityLabel(isEditing ? "\(FeatureStrings.hubCustomization(l10n.language).hideFromHub): \(title)" : title)
+        .onHover { isHovered = $0 }
     }
 }
 
 struct HubQuickControls: View {
     var notchSize: CGSize? = nil
     var isEditing: Bool = false
+    @ObservedObject var dragSession: HubDragSession
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var launcher = LatticeHubService.shared
     @ObservedObject private var micMute = MicMuteService.shared
@@ -220,7 +223,9 @@ struct HubQuickControls: View {
                     renderRow(row2)
                 }
             }
-            .padding(isNotch ? 0 : 4)
+            .padding(.top, isNotch ? 0 : 4)
+            .padding(.bottom, isNotch ? 0 : 4)
+            .padding(.horizontal, isNotch ? 2 : 4)
             .background {
                 if !isNotch {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -240,10 +245,11 @@ struct HubQuickControls: View {
                 let title = action.title(l10n: l10n, colorScheme: colorScheme)
                 let feedback = state == .needsPermission ? l10n.s.permissionOpenSettings
                     : FeatureStrings.quickToggles(l10n.language).actionFailed
+                Group {
                 if action == .keepAwake {
                     HubStayAwakeControl(height: isNotch ? 26 : 32, iconSize: isNotch ? 11 : 13,
                                         isEditing: isEditing) {
-                        withAnimation(.easeOut(duration: 0.15)) { launcher.setControlHidden(.keepAwake, true) }
+                        withAnimation(.easeInOut(duration: 0.22)) { launcher.setControlHidden(.keepAwake, true) }
                     }
                 } else {
                     HubControlButton(icon: needsAttention ? "exclamationmark.triangle.fill"
@@ -254,8 +260,9 @@ struct HubQuickControls: View {
                                      height: isNotch ? 26 : 32,
                                      iconSize: isNotch ? 11 : 13,
                                      isEditing: isEditing,
+                                     actionRawValue: action.rawValue,
                                      onHide: {
-                                         withAnimation(.easeOut(duration: 0.15)) {
+                                         withAnimation(.easeInOut(duration: 0.22)) {
                                              launcher.setControlHidden(action, true)
                                          }
                                      }) {
@@ -263,6 +270,10 @@ struct HubQuickControls: View {
                     }
                     .disabled(!isEditing && state == .running)
                 }
+                }
+                .modifier(HubDragModifier(item: .control(action), session: dragSession,
+                    isEnabled: isEditing, symbol: action.icon(colorScheme: colorScheme),
+                    onClick: { launcher.setControlHidden(action, true) }))
             }
         }
     }

@@ -34,7 +34,9 @@ struct HubStayAwakeControl: View {
             let status = HubStayAwakePopover.status(awake, now: context.date, l10n: l10n)
             HStack(spacing: 0) {
                 Button {
-                    if !isEditing {
+                    if isEditing {
+                        onHide()
+                    } else {
                         awake.toggleFromHub()
                         HubStayAwakePopover.announce(awake, l10n: l10n)
                     }
@@ -73,18 +75,8 @@ struct HubStayAwakeControl: View {
             .frame(height: height)
             .background(awake.isActive ? KeepAwakeAppearance.indicatorColor.opacity(0.15) : Color.primary.opacity(0.06),
                         in: RoundedRectangle(cornerRadius: max(7, height * 0.28)))
-            .overlay(alignment: .topTrailing) {
-                if isEditing {
-                    Button(action: onHide) {
-                        Image(systemName: "minus.circle.fill")
-                            .font(.system(size: max(10, iconSize), weight: .semibold))
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(.white, Color.red)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(text.hide)
-                    .offset(x: 3, y: -3)
-                }
+            .contextMenu {
+                Button(FeatureStrings.hubCustomization(l10n.language).hideFromHub) { onHide() }
             }
         }
         .background(WindowVisibilityReader { visible in
