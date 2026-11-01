@@ -30,32 +30,37 @@ struct AudioInputDeviceControls: View {
 
                 Spacer(minLength: 6)
 
-                Picker(l10n.s.mixerInputTooltip, selection: inputSelectionBinding) {
-                    Text(l10n.s.mixerOutputDefault)
-                        .tag(MixerRoutingSupport.systemDefaultSelectionID)
-                    ForEach(inputManager.inputDevices) { device in
-                        Text(inputDeviceTitle(device))
-                            .tag(device.uid)
+                if inputManager.inputDevices.isEmpty {
+                    Text(l10n.s.mixerInputNoDevices)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else {
+                    Picker(l10n.s.mixerInputTooltip, selection: inputSelectionBinding) {
+                        ForEach(inputManager.inputDevices) { device in
+                            Text(inputDeviceTitle(device))
+                                .tag(device.uid)
+                        }
+                        if !audioPriority.inputPriorityEnabled,
+                           let selected = inputManager.preferredInputDeviceUID,
+                           inputManager.preferredUnavailable {
+                            Text(l10n.s.mixerInputUnavailable)
+                                .tag(selected)
+                        }
                     }
-                    if !audioPriority.inputPriorityEnabled,
-                       let selected = inputManager.preferredInputDeviceUID,
-                       inputManager.preferredUnavailable {
-                        Text(l10n.s.mixerInputUnavailable)
-                            .tag(selected)
-                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .controlSize(.small)
+                    .frame(width: 164)
+                    .disabled(inputManager.inputDevices.isEmpty)
+                    .help(l10n.s.mixerInputTooltip)
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .controlSize(.small)
-                .frame(width: 164)
-                .disabled(inputManager.inputDevices.isEmpty)
-                .help(l10n.s.mixerInputTooltip)
             }
 
             let hasVolume = inputManager.inputVolume != nil
-            let volume = inputManager.inputVolume ?? 0
+            let volume = inputManager.inputVolume ?? 1.0
             HStack(spacing: 8) {
-                Image(systemName: !hasVolume || volume <= 0.001 ? "mic.slash.fill" : "mic.fill")
+                Image(systemName: micMute.isMuted || (hasVolume && volume <= 0.001) ? "mic.slash.fill" : "mic.fill")
                     .font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(.secondary)
                     .frame(width: 16)
@@ -70,26 +75,18 @@ struct AudioInputDeviceControls: View {
                                     usesSystemAppearance: true)
                     .frame(width: sliderWidth)
                     .disabled(!hasVolume)
-                    .help(hasVolume ? "" : l10n.s.sliderUnavailable)
-                if !hasVolume && showsUnavailableLabel {
-                    Text(l10n.s.sliderUnavailable)
-                        .font(.system(size: 10.5, weight: .medium))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
             }
             .padding(.vertical, 4)
             .disabled(micMute.isMuted)
 
-            if inputManager.inputDevices.isEmpty {
-                inputMessage(l10n.s.mixerInputNoDevices, systemImage: "mic.slash")
-            } else if !audioPriority.inputPriorityEnabled, inputManager.preferredUnavailable {
+            if !inputManager.inputDevices.isEmpty, !audioPriority.inputPriorityEnabled, inputManager.preferredUnavailable {
                 inputMessage(l10n.s.mixerInputFallback, systemImage: "mic.badge.xmark")
             } else if let lastError = inputManager.lastError {
                 inputMessage(String(format: l10n.s.mixerInputErrorFormat, lastError),
                              systemImage: "exclamationmark.triangle")
             }
         }
+        .onAppear { AudioInputDeviceManager.shared.syncWithPreferences() }
         .onReceive(NSApplication.shared.publisher(for: \.effectiveAppearance, options: [.new])) { _ in refreshSliderTint() }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NSSystemColorsDidChangeNotification"))) { _ in refreshSliderTint() }
     }
@@ -97,19 +94,21 @@ struct AudioInputDeviceControls: View {
     private var inputSelectionBinding: Binding<String> {
         Binding(
             get: {
-                return MixerRoutingSupport.selectedInputDeviceUID(
-                    preferredUID: inputManager.preferredInputDeviceUID,
-                    currentUID: inputManager.currentInputDeviceUID,
-                    priorityIsActive: audioPriority.inputPriorityEnabled)
-                    ?? MixerRoutingSupport.systemDefaultSelectionID
+                if audioPriority.inputPriorityEnabled {
+                    return inputManager.currentInputDeviceUID
+                        ?? inputManager.inputDevices.first?.uid
+                        ?? ""
+                }
+                return inputManager.preferredInputDeviceUID
+                    ?? inputManager.currentInputDeviceUID
+                    ?? inputManager.inputDevices.first?.uid
+                    ?? ""
             },
             set: { selection in
                 if audioPriority.inputPriorityEnabled {
-                    guard selection != MixerRoutingSupport.systemDefaultSelectionID else { return }
                     inputManager.setCurrentInputDeviceUID(selection)
                 } else {
-                    inputManager.setPreferredInputDeviceUID(
-                        selection == MixerRoutingSupport.systemDefaultSelectionID ? nil : selection)
+                    inputManager.setPreferredInputDeviceUID(selection)
                 }
             }
         )
@@ -117,7 +116,7 @@ struct AudioInputDeviceControls: View {
 
     private var inputVolumeBinding: Binding<Double> {
         Binding(
-            get: { inputManager.inputVolume ?? 0 },
+            get: { inputManager.inputVolume ?? 1.0 },
             set: { inputManager.setInputVolume($0) }
         )
     }
