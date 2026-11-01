@@ -254,50 +254,17 @@ final class Permissions: ObservableObject {
         return gatedDirs.contains { (try? fm.contentsOfDirectory(atPath: $0)) != nil }
     }
 
-    /// Shows the system Accessibility prompt (once per TCC reset) and floats
-    /// the little guide card for the System Settings round trip.
+    /// Requests native Accessibility consent without an app-owned guide window.
     func requestAccessibility() {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         AXIsProcessTrustedWithOptions(options)
         refreshActivePermissions()
-        if !accessibility {
-            PermissionGuideOverlay.shared.show(for: .accessibility)
-        }
     }
 
-    /// Shows the system Screen Recording prompt (once per TCC reset) and
-    /// floats the guide card, like the Accessibility path.
+    /// Requests native Screen Recording consent without an app-owned guide window.
     func requestScreenRecording() {
         CGRequestScreenCaptureAccess()
         refreshActivePermissions()
-        if !screenRecording {
-            PermissionGuideOverlay.shared.show(for: .screenRecording)
-        }
-    }
-
-    /// Drops this app's entry from the list and asks again. The entry macOS
-    /// keeps is bound to the app's code signature, so a copy signed
-    /// differently (a local build, an update signed another way) finds the
-    /// switch on and the permission gone; nothing short of removing the entry
-    /// makes the system ask afresh. `tccutil` does that for the calling
-    /// user's own entries with no privilege, and is the command Apple
-    /// documents for the purpose.
-    func startOver(_ kind: PermissionKind) {
-        guard kind == .accessibility || kind == .screenRecording,
-              let bundleID = Bundle.main.bundleIdentifier else { return }
-        let service = kind == .accessibility ? "Accessibility" : "ScreenCapture"
-        // Off the main thread through the bounded runner, like
-        // `SelfUninstall.resetTCC`: a stuck tccutil must not hang the UI. The
-        // hop back also lets the button's click finish before the card that
-        // holds the button is rebuilt by the new request.
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            _ = Shell.run("/usr/bin/tccutil", ["reset", service, bundleID])
-            DispatchQueue.main.async {
-                guard let self else { return }
-                self.refreshActivePermissions()
-                if kind == .accessibility { self.requestAccessibility() } else { self.requestScreenRecording() }
-            }
-        }
     }
 
     func openAccessibilitySettings() {
@@ -426,31 +393,4 @@ final class Permissions: ObservableObject {
 
     // MARK: - Automation (Apple Events)
 
-    enum AutomationTarget: String, CaseIterable {
-        case finder = "com.apple.finder"
-        case terminal = "com.apple.Terminal"
-    }
-
-    enum AutomationStatus {
-        case granted, denied, undetermined, notDeterminable
-    }
-
-    /// Never prompts (askUserIfNeeded false). A target that is not running
-    /// cannot be checked and reads as notDeterminable. Call off the main
-    /// thread; the check can block briefly.
-    static func automationStatus(for target: AutomationTarget) -> AutomationStatus {
-        var descriptor = AEAddressDesc()
-        let bundleID = target.rawValue
-        let created = bundleID.withCString { pointer in
-            AECreateDesc(typeApplicationBundleID, pointer, bundleID.utf8.count, &descriptor)
-        }
-        guard created == noErr else { return .notDeterminable }
-        defer { AEDisposeDesc(&descriptor) }
-        switch AEDeterminePermissionToAutomateTarget(&descriptor, typeWildCard, typeWildCard, false) {
-        case noErr: return .granted
-        case OSStatus(errAEEventNotPermitted): return .denied
-        case OSStatus(errAEEventWouldRequireUserConsent): return .undetermined
-        default: return .notDeterminable
-        }
-    }
 }
