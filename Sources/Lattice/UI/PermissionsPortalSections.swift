@@ -13,6 +13,11 @@ struct PermissionsPortalSections: View {
     let visiblePermissions: [AppPermission]
     @State private var automation: [Permissions.AutomationTarget: Permissions.AutomationStatus] = [:]
     @State private var pollingDemandID = UUID()
+    @State private var automationRefreshID: UUID?
+    @State private var audioStatus: SystemAudioAuthorizationStatus = .unavailable
+    @State private var audioCheck: FeatureWorkCancellation?
+    @State private var audioRefreshID: UUID?
+    @State private var isVisible = false
 
     init(hub: FeatureHubStrings,
          visiblePermissions: [AppPermission] = AppPermission.allCases) {
@@ -27,13 +32,15 @@ struct PermissionsPortalSections: View {
                                     hub: hub,
                                     status: status(for: permission),
                                     requestAvailable: requestAvailable(for: permission),
-                                    requestInFlight: permission == .calendar && permissions.requestingCalendar)
+                                    requestInFlight: permission == .calendar && permissions.requestingCalendar,
+                                    onRequestFinished: refreshRequestStatuses)
                 if permission != visiblePermissions.last {
                     DataSettingsDivider()
                 }
             }
         }
         .onAppear {
+            isVisible = true
             // Statuses that only refresh at launch/activation get a fresh
             // read the moment the portal shows; automation is checked off the
             // main thread because the AE round trip can block briefly.
@@ -43,26 +50,71 @@ struct PermissionsPortalSections: View {
                 || visiblePermissions.contains(.screenRecording) {
                 permissions.setActivePermissionSurface(pollingDemandID, visible: true)
             }
-            DispatchQueue.global(qos: .userInitiated).async {
-                let finder = Permissions.automationStatus(for: .finder)
-                let terminal = Permissions.automationStatus(for: .terminal)
-                DispatchQueue.main.async {
-                    automation = [.finder: finder, .terminal: terminal]
-                }
-            }
+            refreshRequestStatuses()
         }
         .onDisappear {
+            isVisible = false
+            automationRefreshID = nil
+            audioRefreshID = nil
+            audioCheck?.cancel()
+            audioCheck = nil
             permissions.setActivePermissionSurface(pollingDemandID, visible: false)
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in bluetooth.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            bluetooth.refresh()
+            refreshRequestStatuses()
+        }
     }
 
     private func requestAvailable(for permission: AppPermission) -> Bool {
         switch permission {
-        case .fullDiskAccess: return true
+        case .accessibility, .screenRecording: return true
+        case .audioCapture:
+            return audioStatus == .notDetermined
+        case .camera: return permissions.camera == .undetermined
+        case .bluetooth: return BluetoothAuthorizationPolicy.canRequest(bluetooth.authorization)
+        case .notifications: return permissions.notifications == .undetermined
+        case .automationFinder: return automation[.finder] == .undetermined
+        case .automationTerminal: return automation[.terminal] == .undetermined
+        case .automationSystemEvents: return automation[.systemEvents] == .undetermined
         case .microphone: return permissions.microphone == .undetermined
         case .calendar: return permissions.calendarAccess == .notDetermined || permissions.calendarAccess == .writeOnly
         default: return false
+        }
+    }
+
+    private func refreshRequestStatuses() {
+        refreshAutomation()
+        guard isVisible, visiblePermissions.contains(.audioCapture) else { return }
+        audioCheck?.cancel()
+        let id = UUID()
+        audioRefreshID = id
+        audioCheck = SystemAudioRecordingAccess.check { status in
+            guard isVisible, audioRefreshID == id else { return }
+            audioRefreshID = nil
+            audioCheck = nil
+            audioStatus = status
+        }
+    }
+
+    private func refreshAutomation() {
+        guard isVisible else { return }
+        let request = UUID()
+        automationRefreshID = request
+        let targets = Permissions.AutomationTarget.allCases.filter { target in
+            switch target {
+            case .finder: return visiblePermissions.contains(.automationFinder)
+            case .terminal: return visiblePermissions.contains(.automationTerminal)
+            case .systemEvents: return visiblePermissions.contains(.automationSystemEvents)
+            }
+        }
+        guard !targets.isEmpty else { return }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let readings = Dictionary(uniqueKeysWithValues: targets.map { ($0, Permissions.automationStatus(for: $0)) })
+            DispatchQueue.main.async {
+                guard self.automationRefreshID == request else { return }
+                self.automation = readings
+            }
         }
     }
 
@@ -80,14 +132,14 @@ struct PermissionsPortalSections: View {
             }
         case .automationFinder: return automationStatus(.finder)
         case .automationTerminal: return automationStatus(.terminal)
+        case .automationSystemEvents: return automationStatus(.systemEvents)
         case .automationPlayback: return .unknown
         case .audioCapture:
-            // No public check exists for system audio capture; the mixer
-            // reports a failed tap, which is the one readable signal.
-            if AppFeature.mixer.isAvailable, AppVolumeMixer.shared.needsPermission {
-                return .missing
+            switch audioStatus {
+            case .granted: return .granted
+            case .denied, .notDetermined: return .missing
+            case .unavailable: return .unknown
             }
-            return .unknown
         case .microphone:
             switch permissions.microphone {
             case .granted: return .granted
