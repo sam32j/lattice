@@ -125,6 +125,7 @@ struct NotchIslandPreview: View {
             .background {
                 NotchShape.island(height: size.height, geometry: geometry).fill(.black)
             }
+            .clipShape(NotchShape.island(height: size.height, geometry: geometry))
             .foregroundStyle(.white)
             .tint(.white)
             .environment(\.colorScheme, .dark)

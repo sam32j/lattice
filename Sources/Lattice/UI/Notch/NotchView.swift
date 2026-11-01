@@ -838,33 +838,40 @@ struct NotchShape: Shape {
                               width: max(0, rect.width.isFinite ? rect.width : 0),
                               height: max(0, rect.height.isFinite ? rect.height : 0))
         guard safeRect.width > 0, safeRect.height > 0 else { return Path(safeRect) }
-        guard attached else { return Path(roundedRect: safeRect, cornerRadius: radius) }
+        guard attached else { return Path(roundedRect: safeRect, cornerRadius: radius, style: .continuous) }
         if let floatingGap { return Path(NotchLayout.capsulePath(in: safeRect, gap: floatingGap)) }
         let maxShoulder = NotchLayout.shoulder(height: safeRect.height)
         let wing = cutoutWidth > 0 ? max(0, (safeRect.width - cutoutWidth) / 2) : safeRect.width / 2
         let shoulder = cutoutWidth > 0 ? min(maxShoulder, wing * 0.3) : maxShoulder
         let bottom = min(radius, safeRect.height / 2, (safeRect.width - shoulder * 2) / 2)
-        let tangent: CGFloat = 0.55228475
-        var path = Path()
+        let path = CGMutablePath()
         path.move(to: CGPoint(x: 0, y: 0))
         path.addLine(to: CGPoint(x: safeRect.width, y: 0))
-        path.addCurve(to: CGPoint(x: safeRect.width - shoulder, y: shoulder),
-                      control1: CGPoint(x: safeRect.width - shoulder * tangent, y: 0),
-                      control2: CGPoint(x: safeRect.width - shoulder, y: shoulder * (1 - tangent)))
+        NotchLayout.addSquircleCorner(to: path,
+                                      corner: CGPoint(x: safeRect.width - shoulder, y: 0),
+                                      start: CGPoint(x: safeRect.width, y: 0),
+                                      end: CGPoint(x: safeRect.width - shoulder, y: shoulder),
+                                      span: shoulder)
         path.addLine(to: CGPoint(x: safeRect.width - shoulder, y: safeRect.height - bottom))
-        path.addCurve(to: CGPoint(x: safeRect.width - shoulder - bottom, y: safeRect.height),
-                      control1: CGPoint(x: safeRect.width - shoulder, y: safeRect.height - bottom * (1 - tangent)),
-                      control2: CGPoint(x: safeRect.width - shoulder - bottom * (1 - tangent), y: safeRect.height))
+        NotchLayout.addSquircleCorner(to: path,
+                                      corner: CGPoint(x: safeRect.width - shoulder, y: safeRect.height),
+                                      start: CGPoint(x: safeRect.width - shoulder, y: safeRect.height - bottom),
+                                      end: CGPoint(x: safeRect.width - shoulder - bottom, y: safeRect.height),
+                                      span: bottom)
         path.addLine(to: CGPoint(x: shoulder + bottom, y: safeRect.height))
-        path.addCurve(to: CGPoint(x: shoulder, y: safeRect.height - bottom),
-                      control1: CGPoint(x: shoulder + bottom * (1 - tangent), y: safeRect.height),
-                      control2: CGPoint(x: shoulder, y: safeRect.height - bottom * (1 - tangent)))
+        NotchLayout.addSquircleCorner(to: path,
+                                      corner: CGPoint(x: shoulder, y: safeRect.height),
+                                      start: CGPoint(x: shoulder + bottom, y: safeRect.height),
+                                      end: CGPoint(x: shoulder, y: safeRect.height - bottom),
+                                      span: bottom)
         path.addLine(to: CGPoint(x: shoulder, y: shoulder))
-        path.addCurve(to: .zero,
-                      control1: CGPoint(x: shoulder, y: shoulder * (1 - tangent)),
-                      control2: CGPoint(x: shoulder * tangent, y: 0))
+        NotchLayout.addSquircleCorner(to: path,
+                                      corner: CGPoint(x: shoulder, y: 0),
+                                      start: CGPoint(x: shoulder, y: shoulder),
+                                      end: .zero,
+                                      span: shoulder)
         path.closeSubpath()
-        return path
+        return Path(path)
     }
 }
 
