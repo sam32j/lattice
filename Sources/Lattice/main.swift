@@ -4,6 +4,8 @@
 import AppKit
 
 #if LATTICE_DEVELOPMENT
+if CommandLine.arguments.contains("--hub-editor-test") { HubEditingProbe.runAndExit() }
+if CommandLine.arguments.contains("--hub-presentation-test") { HubPresentationProbe.runAndExit() }
 if CommandLine.arguments.contains("--feature-migration-rendering") { FeaturePageMigrationPreview.runAndExit() }
 if CommandLine.arguments.contains("--music-swipe-rendering") { MainActor.assumeIsolated { NotchMusicSwipeRenderingProbe.runAndExit() } }
 if CommandLine.arguments.contains("--settings-refactor-rendering") { SettingsRefactorProbe.runAndExit() }
