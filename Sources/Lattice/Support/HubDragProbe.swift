@@ -12,30 +12,74 @@ enum HubDragProbe {
         let session = HubDragSession(launcher: launcher)
         let original = defaults.string(forKey: DefaultsKey.quickLauncherItemOrder)
         session.begin(.tool(.screenshot))
-        for after in [true, false, true, false] {
-            session.point(to: HubDropTarget(item: .tool(.clipboard), after: after))
-        }
+        for index in [2, 1, 2, 1] { session.point(toIndex: index) }
         try HubEditingProbe.require(defaults.string(forKey: DefaultsKey.quickLauncherItemOrder) == original,
                                     "Hovering must not persist order or move destination tiles")
         session.cancel()
-        try HubEditingProbe.require(session.active == nil && session.target == nil
+        try HubEditingProbe.require(session.active == nil && session.targetIndex == nil
             && defaults.string(forKey: DefaultsKey.quickLauncherItemOrder) == original,
             "Cancelling a drag must clear transient state without changing order")
         session.begin(.tool(.screenshot))
-        try HubEditingProbe.require(session.commit(to: HubDropTarget(item: .tool(.clipboard), after: true)),
+        try HubEditingProbe.require(session.commit(toIndex: 2),
                                     "A valid insertion must complete")
         let stored = PanelLayout.itemOrder(LatticeHubItem.self, key: DefaultsKey.quickLauncherItemOrder)
         try HubEditingProbe.require(Array(stored.prefix(6)) == [.media, .scratchpad, .homebrew, .clipboard, .screenshot, .urlCleaner],
                                     "Drop must preserve hidden/unavailable entries while moving the visible tool")
         try HubEditingProbe.require(session.active == nil, "A completed drop must end the session")
         session.begin(.control(.cleaningMode))
-        try HubEditingProbe.require(!session.canMove(to: .tool(.screenshot)), "Quick controls cannot enter workflow order")
+        session.point(toIndex: 0)
+        try HubEditingProbe.require(session.targetIndex == nil && !session.commit(toIndex: 0),
+                                    "Quick controls cannot enter workflow order")
         try HubEditingProbe.require(session.hideActive() && launcher.hiddenControls.contains(.cleaningMode),
                                     "Dragging a quick control to Available Tools must hide it")
         launcher.setControlHidden(.cleaningMode, false)
         try verifyScrolling()
+        try verifyFeedback(launcher: launcher)
         launcher.isEditing = false
         print("HUB_DRAG_OK")
+    }
+
+    private static func verifyFeedback(launcher: LatticeHubService) throws {
+        var time: TimeInterval = 10
+        var pulses = 0
+        let session = HubDragSession(launcher: launcher, now: { time }, performHaptic: { pulses += 1 })
+        session.begin(.tool(.screenshot))
+        session.point(toIndex: 0)
+        for index in [1, 2, 1, 2] { session.point(toIndex: index) }
+        print("HUB_HAPTIC_BURST pulses=\(pulses)"); fflush(stdout)
+        try HubEditingProbe.require(pulses == 1, "A rapid tile-crossing burst must give one haptic, not several")
+        time += 0.2
+        session.point(toIndex: 3)
+        try HubEditingProbe.require(pulses == 2, "A later deliberate target change must retain feedback")
+        session.cancel()
+        session.begin(.tool(.screenshot))
+        session.point(toIndex: 0)
+        session.point(toIndex: 1)
+        time += 0.2
+        session.point(toIndex: 1)
+        try HubEditingProbe.require(pulses == 3, "Staying in one destination slot must not repeat feedback")
+        session.cancel()
+        session.begin(.tool(.screenshot))
+        session.point(toIndex: 0)
+        session.point(toIndex: 1)
+        try HubEditingProbe.require(pulses == 4, "A new drag must start with fresh haptic feedback")
+        session.cancel()
+        session.begin(.tool(.screenshot))
+        session.point(toIndex: 0)
+        session.point(toIndex: 1)
+        session.pointToHiddenTray(true)
+        try HubEditingProbe.require(pulses == 6,
+            "Entering the hide zone must give one haptic even immediately after a reorder alignment")
+        for _ in 0..<1000 { session.pointToHiddenTray(true) }
+        try HubEditingProbe.require(pulses == 6, "Staying in the hide zone must not repeat its entry haptic")
+        session.pointToHiddenTray(false)
+        time += 0.2
+        session.pointToHiddenTray(true)
+        try HubEditingProbe.require(pulses == 7, "A later hide-zone reentry must provide feedback again")
+        session.pointToHiddenTray(false)
+        session.pointToHiddenTray(true)
+        try HubEditingProbe.require(pulses == 7, "Rapid hide-zone boundary jitter must not repeat feedback")
+        session.cancel()
     }
 
     private static func verifyScrolling() throws {

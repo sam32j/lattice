@@ -272,7 +272,7 @@ struct HubQuickControls: View {
                 }
                 }
                 .modifier(HubDragModifier(item: .control(action), session: dragSession,
-                    isEnabled: isEditing, symbol: action.icon(colorScheme: colorScheme),
+                    isEnabled: isEditing,
                     onClick: { launcher.setControlHidden(action, true) }))
             }
         }

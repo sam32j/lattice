@@ -6,9 +6,9 @@ import SwiftUI
 extension LatticeHubView {
     var hiddenTray: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(dragSession.targetsHiddenTray ? customizationText.dropToHide : customizationText.availableTools)
+            Text(dragSession.active != nil ? customizationText.dropToHide : customizationText.availableTools)
                 .font(.system(size: 9.5, weight: .bold))
-                .foregroundStyle(dragSession.targetsHiddenTray ? Color.accentColor : Color.secondary)
+                .foregroundStyle(dragSession.active != nil ? Color.accentColor : Color.secondary)
                 .lineLimit(1)
                 .frame(height: 12, alignment: .leading)
             if launcher.hiddenControls.isEmpty && launcher.hiddenItems.isEmpty {
@@ -43,9 +43,9 @@ extension LatticeHubView {
 
     private var trayOutline: some View {
         RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .strokeBorder(dragSession.targetsHiddenTray ? Color.accentColor : Color.primary.opacity(0.12),
+            .strokeBorder(dragSession.active != nil ? Color.accentColor.opacity(dragSession.targetsHiddenTray ? 1 : 0.55) : Color.primary.opacity(0.12),
                 style: StrokeStyle(lineWidth: dragSession.targetsHiddenTray ? 1.5 : 1,
-                                   dash: dragSession.targetsHiddenTray ? [4, 4] : []))
+                                   dash: dragSession.active != nil ? [4, 4] : []))
             .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(dragSession.targetsHiddenTray ? Color.accentColor.opacity(0.08) : Color.clear))
     }
