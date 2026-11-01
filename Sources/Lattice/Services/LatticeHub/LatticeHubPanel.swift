@@ -6,6 +6,7 @@ import SwiftUI
 
 final class KeyableHubPanel: OverlayPanel {
     override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
 }
 
 extension LatticeHubService {
@@ -24,7 +25,9 @@ extension LatticeHubService {
         panel.isOpaque = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         let host = NSHostingController(rootView: LatticeHubView())
-        host.sizingOptions = .preferredContentSize
+        // Keep natural content measurement without letting the controller
+        // independently resize the window through preferredContentSize.
+        host.sizingOptions = [.intrinsicContentSize]
         panel.contentViewController = host
         self.panel = panel
         return panel
@@ -32,7 +35,8 @@ extension LatticeHubService {
 
     func position(_ panel: NSPanel, anchoredBelow anchor: NSRect? = nil) {
         panel.contentViewController?.view.layoutSubtreeIfNeeded()
-        let size = panel.contentViewController?.view.fittingSize ?? NSSize(width: 420, height: 380)
+        let raw = panel.contentViewController?.view.fittingSize ?? .zero
+        let size = (raw.width >= 200 && raw.height >= 100) ? raw : NSSize(width: 420, height: 380)
         let screen = NSScreen.pointerVisibleFrame
         let x: CGFloat
         let y: CGFloat
@@ -51,20 +55,19 @@ extension LatticeHubService {
                        animate: false)
     }
 
-    func refreshPanelLayout() {
+    func updatePanelSize(_ size: CGSize) {
         guard let panel, panel.isVisible else { return }
-        DispatchQueue.main.async { [weak self] in
-            guard let self, let panel = self.panel, panel.isVisible else { return }
-            panel.contentViewController?.view.layoutSubtreeIfNeeded()
-            let size = panel.contentViewController?.view.fittingSize ?? panel.frame.size
-            let screen = NSScreen.pointerVisibleFrame
-            var frame = panel.frame
-            frame.origin.x = frame.midX - size.width / 2
-            frame.origin.y = frame.maxY - size.height
-            frame.size = size
-            frame.origin.x = max(screen.minX + 16, min(frame.origin.x, screen.maxX - size.width - 16))
-            frame.origin.y = max(screen.minY + 16, frame.origin.y)
-            panel.setFrame(frame, display: true, animate: true)
-        }
+        guard size.width >= 200 && size.height >= 100 else { return }
+        let screen = panel.screen?.visibleFrame ?? NSScreen.pointerVisibleFrame
+        var frame = panel.frame
+        guard abs(frame.width - size.width) > 0.5 || abs(frame.height - size.height) > 0.5 else { return }
+        frame.origin.x = frame.midX - size.width / 2
+        frame.origin.y = frame.maxY - size.height
+        frame.size = size
+        frame.origin.x = max(screen.minX + 16, min(frame.origin.x, screen.maxX - size.width - 16))
+        frame.origin.y = max(screen.minY + 16, frame.origin.y)
+        // SwiftUI's accordion supplies each animation frame. A second AppKit
+        // animation would move the window on a different timeline.
+        panel.setFrame(frame, display: true)
     }
 }
