@@ -143,6 +143,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         // One binding per feature: only available features are touched, so a
         // feature switched off in the hub never even instantiates here.
         FeatureRuntime.shared.syncAtLaunch()
+        AudioInputDeviceManager.shared.syncWithPreferences()
+        DeferredPermissionActivationService.recoverIfNeeded()
         NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)
             .receive(on: DispatchQueue.main)
             .sink { _ in FeatureRuntime.shared.hardwareDidChange() }
@@ -1571,6 +1573,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
 
     func openSettingsWindow() {
         NotchService.shared.prepareForSettings()
+        LatticeHubService.shared.hide()
         let targetScreen = (popover.isShown
             ? popoverAnchor?.screen ?? popover.contentViewController?.view.window?.screen
             : nil) ?? NSScreen.withMouse
