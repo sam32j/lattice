@@ -25,7 +25,7 @@ enum DataPermissionsRenderingProbe {
         L10n.shared.language = .enUS
         for phase in [PermissionResetState.Phase.ready, .restartRequired, .failed] {
             let row = DataSettingsCard {
-                PermissionResetSettingsRow(state: PermissionResetState(phase: phase), reset: { _ in }, restart: {})
+                PermissionResetSettingsRow(state: PermissionResetState(phase: phase), reset: { _ in }, restart: {}, restartDialogEnabled: false)
             }.padding(28)
             SettingsRefactorProbe.render("data-reset-\(phase)", view: AnyView(row),
                 size: CGSize(width: 600, height: 180), output: output, failures: &failures)
