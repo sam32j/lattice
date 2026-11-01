@@ -1390,12 +1390,14 @@ private final class NotchCanvas: NSView {
     private func contains(_ point: CGPoint, in path: CGPath?) -> Bool {
         guard let path else { return false }
         if path.contains(point) { return true }
-        // The menu bar above a capsule is still the island's, as the top edge
-        // of a hanging one is: a click at the screen's edge opens it.
-        guard floatingGap != nil else { return false }
+        // The menu bar / screen edge above the island (both for attached notch
+        // and floating capsule) belongs to the island so clicks and gestures at the very
+        // top edge register reliably.
         let box = path.boundingBoxOfPath
-        guard !box.isNull, box.width > 0, point.x >= box.minX, point.x <= box.maxX else { return false }
-        return point.y >= 0 && point.y <= box.minY
+        guard !box.isNull, box.width > 0,
+              point.x >= box.minX - 4, point.x <= box.maxX + 4 else { return false }
+        let topLimit = max(0, box.minY) + 6
+        return point.y >= -15 && point.y <= topLimit
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
