@@ -17,15 +17,10 @@ struct NotchLyricsView: View {
         VStack(alignment: .leading, spacing: 8) {
             if let lyrics = service.lyrics {
                 if lyrics.instrumental {
-                    NotchEmptyView(symbol: "music.note", message: text.instrumental) {
-                        NotchPillButton(title: text.importLyrics, action: service.importLyrics)
-                    }
+                    NotchEmptyView(symbol: "music.note", message: text.instrumental)
                 } else if !lyrics.lines.isEmpty, playback.hasPosition {
                     synced(lyrics)
-                    // Importing is a one-off; it shares the timing row as an
-                    // icon instead of a row of its own under the verses.
                     HStack(spacing: 10) {
-                        importButton
                         Text(text.offset).foregroundStyle(.secondary)
                         Spacer(minLength: 0)
                         // Hit the whole timing row height, not just the thin symbol.
@@ -55,32 +50,17 @@ struct NotchLyricsView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .notchScrollEdgeFade()
-                    Button { service.importLyrics() } label: { Label(text.importLyrics, systemImage: "doc.badge.plus") }
-                        .buttonStyle(.borderless).font(.caption).foregroundStyle(.secondary)
                 }
             } else if service.state == .loading {
-                // A slow lookup leaves importing within reach while it waits.
                 VStack(spacing: 12) {
                     HStack(spacing: 8) { ProgressView().controlSize(.small); Text(text.loading) }
                         .font(.callout).foregroundStyle(.secondary)
-                    NotchPillButton(title: text.importLyrics, action: service.importLyrics)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 NotchEmptyView(symbol: service.state == .failed ? "exclamationmark.triangle" : "quote.bubble",
                                message: emptyMessage) {
-                    // A short island keeps importing as a glyph beside the
-                    // next step rather than cutting either name short.
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 8) {
-                            nextStep
-                            NotchPillButton(title: text.importLyrics, action: service.importLyrics)
-                        }
-                        HStack(spacing: 8) {
-                            nextStep
-                            NotchIconButton(symbol: "doc.badge.plus", title: text.importLyrics, action: service.importLyrics)
-                        }
-                    }
+                    nextStep
                 }
             }
         }
@@ -90,27 +70,12 @@ struct NotchLyricsView: View {
 
     private func update() { service.update(playback: playback, visible: true) }
 
-    /// An import that read no timed lines fails even with online lookup off,
-    /// so the failure stays above the disclosure the next step needs.
     private var emptyMessage: String {
-        let reason: String? = service.state == .failed ? text.failed : online ? text.unavailable : nil
-        return [reason, online ? nil : text.onlineHint].compactMap { $0 }.joined(separator: "\n")
+        service.state == .failed ? text.failed : text.unavailable
     }
 
     @ViewBuilder private var nextStep: some View {
-        if online {
-            NotchPillButton(title: text.retry, prominent: true, action: service.retry)
-        } else {
-            NotchPillButton(title: text.online, prominent: true) { online = true }
-        }
-    }
-
-    private var importButton: some View {
-        // A file being added, not the usual download arrow, which reads as saving.
-        Button { service.importLyrics() } label: { Image(systemName: "doc.badge.plus") }
-            .buttonStyle(.borderless)
-            .help(text.importLyrics)
-            .accessibilityLabel(text.importLyrics)
+        NotchPillButton(title: text.retry, prominent: true, action: service.retry)
     }
 
     private func synced(_ lyrics: NotchLyrics) -> some View {

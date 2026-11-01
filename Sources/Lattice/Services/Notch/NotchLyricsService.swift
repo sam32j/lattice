@@ -21,8 +21,6 @@ final class NotchLyricsService: ObservableObject {
     private var artistCache: [String: (identity: NotchLyricsSupport.ArtistIdentity?, failed: Bool, expires: Date)] = [:]
     private var aliasWork: DispatchWorkItem?
     private var lastAliasRequest: TimeInterval = 0
-    private var importPanel: NSOpenPanel?
-    var isImporting: Bool { importPanel != nil }
 
     private init() {}
 
@@ -99,8 +97,6 @@ final class NotchLyricsService: ObservableObject {
         aliasWork = nil
         session?.invalidateAndCancel()
         session = nil
-        importPanel?.cancel(nil)
-        importPanel = nil
     }
 
     private func load(_ track: NotchMusicIdentity) {
@@ -277,77 +273,6 @@ final class NotchLyricsService: ObservableObject {
                candidates: [], failed: false, generation: requested,
                verifiedArtistAliases: identity.names, mayResolveAliases: false,
                mayDiscover: !NotchLyricsSupport.prefersDiscovery(for: track))
-    }
-
-    func importLyrics() {
-        guard visible, NotchLyricsSupport.isEnabled(), let track, importPanel == nil,
-              let parent = NotchService.shared.presentationWindow,
-              canReturnToLyrics(parent, track: track) else { return }
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [UTType(filenameExtension: "lrc") ?? .plainText, .plainText]
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.message = FeatureStrings.notchMusicExtras(L10n.shared.language).importHint
-        // An attached sheet moves/reskins a borderless island. Keep the chooser
-        // independent and above its parent instead, without changing the pin.
-        panel.level = NSWindow.Level(rawValue: parent.level.rawValue + 1)
-        // Like the sheet it replaces, it stays up while another app is active.
-        panel.hidesOnDeactivate = false
-        importPanel = panel
-        let requested = generation
-        panel.begin { [weak self, weak panel, weak parent] response in
-            guard let self, let panel, self.importPanel === panel else { return }
-            let selectedURL = panel.url
-            self.importPanel = nil
-            guard let parent, self.generation == requested,
-                  self.canReturnToLyrics(parent, track: track) else { return }
-            defer {
-                let returnGeneration = self.generation
-                // Dismissal restores the old key window after this callback.
-                DispatchQueue.main.async { [weak self, weak parent] in
-                    guard let self, let parent, self.generation == returnGeneration,
-                          self.importPanel == nil, self.canReturnToLyrics(parent, track: track) else { return }
-                    NotchService.shared.open(.music, feedback: false)
-                }
-            }
-            guard response == .OK, let url = selectedURL else { return }
-            self.cancel()
-            let importedGeneration = self.generation
-            DispatchQueue.global(qos: .userInitiated).async {
-                let scoped = url.startAccessingSecurityScopedResource()
-                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                var lines: [NotchLyricLine] = []
-                if let handle = try? FileHandle(forReadingFrom: url) {
-                    defer { try? handle.close() }
-                    if let data = try? handle.read(upToCount: NotchLyricsSupport.maximumBytes + 1),
-                       data.count <= NotchLyricsSupport.maximumBytes,
-                       let text = String(data: data, encoding: .utf8) {
-                        lines = NotchLyricsSupport.parse(text, duration: track.duration)
-                    }
-                }
-                let imported = lines
-                DispatchQueue.main.async {
-                    guard self.generation == importedGeneration, self.track == track, self.visible,
-                          NotchLyricsSupport.isEnabled() else { return }
-                    guard self.memory.replace(imported.isEmpty ? nil : NotchLyrics(lines: imported, plain: "", instrumental: false),
-                                              for: track) else { return }
-                    self.state = imported.isEmpty ? .failed : .ready
-                }
-            }
-        }
-        // isImporting keeps the music surface alive through activation and
-        // pointer exit. Completion restores focus after native dismissal.
-        NSApp.activate(ignoringOtherApps: true)
-        // Activation alone can leave the nonactivating island holding focus.
-        panel.makeKeyAndOrderFront(nil)
-    }
-
-    private func canReturnToLyrics(_ window: NSWindow, track expected: NotchMusicIdentity) -> Bool {
-        let notch = NotchService.shared
-        return visible && track == expected && NotchLyricsSupport.isEnabled()
-            && notch.acceptsUserInteraction && notch.presentationWindow === window && window.isVisible
-            && notch.expanded && notch.selected == .music && !notch.showingAppPanel
-            && notch.selectedMetric == nil
     }
 }
 

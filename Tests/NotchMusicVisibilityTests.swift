@@ -321,6 +321,7 @@ enum NotchMusicVisibilityTests {
             suite.expect(!reader.running && service.hiddenUntilHover,
                    "closing hidden music controls releases their reader again")
             defaults.set(false, forKey: DefaultsKey.notchHideUntilHover)
+            defaults.set(false, forKey: DefaultsKey.notchOpenOnHover)
             service.syncVisibleConsumers()
             suite.expect(reader.running, "returning to a visible mode resumes the resting music reader")
             defaults.set(NotchIdleContent.battery.rawValue, forKey: DefaultsKey.notchIdleContent)
