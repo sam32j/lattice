@@ -8,13 +8,15 @@ struct PermissionPortalRow: View {
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.colorScheme) private var scheme
     @State private var showsDetails = false
-    @State private var requestingMicrophone = false
+    @State private var requesting = false
+    @State private var audioRequest: FeatureWorkCancellation?
     @State private var attemptedManualRequest = false
     let permission: AppPermission
     let hub: FeatureHubStrings
     let status: Status
     var requestAvailable = false
     var requestInFlight = false
+    var onRequestFinished: () -> Void = {}
 
     private var title: String {
         switch permission {
@@ -67,10 +69,11 @@ struct PermissionPortalRow: View {
             actionTitle: rowAction == .request ? hub.requestButton : copy(.settings),
             actionTone: actionTone,
             actionAccessibleName: String(format: copy(rowAction == .request ? .requestAccess : .openSettings), title),
-            actionEnabled: !requestInFlight && !requestingMicrophone) {
+            actionEnabled: !requestInFlight && !requesting) {
                 if rowAction == .request { request() } else { openSystemSettings() }
             }
             .accessibilityIdentifier("permission.row.\(permission.rawValue)")
+            .onDisappear { audioRequest?.cancel() }
     }
 
     private var detailsButton: some View {
@@ -97,26 +100,50 @@ struct PermissionPortalRow: View {
     }
 
     private func request() {
-        switch permission {
-        case .fullDiskAccess:
+        guard !requesting && !requestInFlight else { return }
+        guard let route = PermissionRowActionPolicy.request(for: permission) else { openSystemSettings(); return }
+        switch route {
+        case .permission(.calendar):
+            Permissions.shared.requestCalendar()
+        case .permission(let permission):
+            attemptedManualRequest = permission == .accessibility || permission == .screenRecording
+            requesting = true
+            SettingsPermissionAccess.request(permission) { _ in self.finishRequest() }
+        case .systemAudio:
             attemptedManualRequest = true
-            Permissions.shared.requestFullDiskAccess()
-        case .calendar: Permissions.shared.requestCalendar()
-        case .microphone:
-            requestingMicrophone = true
-            Permissions.shared.requestMicrophone { _ in requestingMicrophone = false }
-        default: openSystemSettings()
+            requesting = true
+            audioRequest = SystemAudioRecordingAccess.request { _ in self.finishRequest() }
+        case .notifications:
+            requesting = true
+            Notifier.requestPermission { _ in self.finishRequest() }
+        case .finderAutomation, .terminalAutomation, .systemEventsAutomation:
+            attemptedManualRequest = true
+            requesting = true
+            let target: Permissions.AutomationTarget
+            switch route {
+            case .finderAutomation: target = .finder
+            case .terminalAutomation: target = .terminal
+            default: target = .systemEvents
+            }
+            Permissions.requestAutomation(target) { _ in self.finishRequest() }
         }
+    }
+
+    private func finishRequest() {
+        requesting = false
+        audioRequest = nil
+        Permissions.shared.refresh()
+        onRequestFinished()
     }
 
     private func openSystemSettings() {
         switch permission {
         case .accessibility: Permissions.shared.openAccessibilitySettings()
         case .screenRecording: Permissions.shared.openScreenRecordingSettings()
-        case .fullDiskAccess: Permissions.shared.openFullDiskAccessSettings()
+        case .fullDiskAccess: Permissions.shared.requestFullDiskAccess()
         case .filesAndFolders: Permissions.shared.openFilesAndFoldersSettings()
         case .notifications: Permissions.shared.openNotificationSettings()
-        case .automationFinder, .automationTerminal, .automationPlayback: Permissions.shared.openAutomationSettings()
+        case .automationFinder, .automationTerminal, .automationSystemEvents, .automationPlayback: Permissions.shared.openAutomationSettings()
         case .audioCapture: Permissions.shared.openAudioCaptureSettings()
         case .microphone: Permissions.shared.openMicrophoneSettings()
         case .calendar: Permissions.shared.openCalendarSettings()
