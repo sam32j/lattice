@@ -19,4 +19,15 @@ extension LatticeHubService {
         PanelLayout.setItemOrder(next, key: DefaultsKey.quickLauncherItemOrder)
         objectWillChange.send()
     }
+
+    /// Moves a visible tool directly to a new target index in the visual strip.
+    /// Preserves all items outside the range [min(a,b)...max(a,b)].
+    func moveTool(_ source: LatticeHubItem, toIndex destinationIndex: Int) {
+        let visible = visibleItems
+        guard isEditing, let sourceIndex = visible.firstIndex(of: source) else { return }
+        let clampedIndex = max(0, min(destinationIndex, visible.count - 1))
+        guard sourceIndex != clampedIndex else { return }
+        let target = visible[clampedIndex]
+        moveTool(source, relativeTo: target, after: clampedIndex > sourceIndex)
+    }
 }

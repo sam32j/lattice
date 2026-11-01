@@ -47,7 +47,12 @@ final class HubDragSession: ObservableObject {
     }
 
     func point(to next: HubDropTarget?) {
-        if target != next { target = next }
+        if target != next {
+            if next != nil, NotchSupport.usesHapticFeedback() {
+                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+            }
+            target = next
+        }
         if targetsHiddenTray { targetsHiddenTray = false }
     }
 
