@@ -19,30 +19,32 @@ enum HubStripLayout {
     static var columnStride: CGFloat { itemWidth + spacing }     // 82
     static var rowStride: CGFloat { itemHeight + rowSpacing }    // 78
 
-    static func rows(for count: Int) -> Int {
+    static func rows(for count: Int, columns: Int = itemsPerRowPerPage) -> Int {
         guard count > 0 else { return 0 }
-        return count < twoRowThreshold ? 1 : 2
+        return count <= max(1, columns) ? 1 : 2
     }
 
-    static func gridPosition(for index: Int, totalRows: Int) -> (row: Int, col: Int, page: Int) {
+    static func gridPosition(for index: Int, totalRows: Int, columns: Int = itemsPerRowPerPage) -> (row: Int, col: Int, page: Int) {
         if totalRows <= 1 {
             return (0, index, 0)
         }
-        let page = index / itemsPerPage
-        let rem = index % itemsPerPage
-        let row = rem < itemsPerRowPerPage ? 0 : 1
-        let colInPage = rem % itemsPerRowPerPage
-        let col = page * itemsPerRowPerPage + colInPage
+        let columns = max(1, columns)
+        let page = index / (columns * 2)
+        let rem = index % (columns * 2)
+        let row = rem < columns ? 0 : 1
+        let colInPage = rem % columns
+        let col = page * columns + colInPage
         return (row, col, page)
     }
 
-    static func totalColumns(count: Int) -> Int {
+    static func totalColumns(count: Int, columns: Int = itemsPerRowPerPage) -> Int {
         guard count > 0 else { return 0 }
-        if count < twoRowThreshold { return count }
-        let fullPages = count / itemsPerPage
-        let rem = count % itemsPerPage
-        let lastCols = rem == 0 ? 0 : min(itemsPerRowPerPage, rem)
-        return fullPages * itemsPerRowPerPage + lastCols
+        let columns = max(1, columns)
+        if count <= columns { return count }
+        let fullPages = count / (columns * 2)
+        let rem = count % (columns * 2)
+        let lastCols = rem == 0 ? 0 : min(columns, rem)
+        return fullPages * columns + lastCols
     }
 
     static func slotOrigin(for index: Int, totalRows: Int) -> CGPoint {
@@ -57,50 +59,13 @@ enum HubStripLayout {
         return CGPoint(x: origin.x + itemWidth / 2, y: origin.y + itemHeight / 2)
     }
 
-    static func contentSize(count: Int) -> CGSize {
+    static func contentSize(count: Int, columns: Int = itemsPerRowPerPage) -> CGSize {
         guard count > 0 else { return .zero }
-        let r = rows(for: count)
-        let cols = totalColumns(count: count)
+        let r = rows(for: count, columns: columns)
+        let cols = totalColumns(count: count, columns: columns)
         let width = cols > 0 ? CGFloat(cols) * itemWidth + CGFloat(cols - 1) * spacing : 0
         let height = r > 0 ? CGFloat(r) * itemHeight + CGFloat(r - 1) * rowSpacing : 0
         return CGSize(width: width, height: height)
-    }
-
-    static func closestIndex(to point: CGPoint, count: Int) -> Int {
-        guard count > 1 else { return 0 }
-        let r = rows(for: count)
-        let totalCols = totalColumns(count: count)
-        guard totalCols > 0 else { return 0 }
-
-        let approxCol = Int(round((point.x - itemWidth / 2) / columnStride))
-        let minCol = max(0, approxCol - 2)
-        let maxCol = min(totalCols - 1, approxCol + 2)
-
-        var bestIndex = 0
-        var bestDistance = CGFloat.greatestFiniteMagnitude
-
-        for c in minCol...maxCol {
-            let page = c / itemsPerRowPerPage
-            let colInPage = c % itemsPerRowPerPage
-            for row in 0..<r {
-                let idx: Int
-                if r == 1 {
-                    idx = c
-                } else {
-                    idx = page * itemsPerPage + (row == 0 ? 0 : itemsPerRowPerPage) + colInPage
-                }
-                guard idx >= 0 && idx < count else { continue }
-                let center = slotCenter(for: idx, totalRows: r)
-                let dx = point.x - center.x
-                let dy = point.y - center.y
-                let dist = dx * dx + dy * dy
-                if dist < bestDistance {
-                    bestDistance = dist
-                    bestIndex = idx
-                }
-            }
-        }
-        return bestIndex
     }
 
     static func previewIndex(for originalIndex: Int, draggingFrom sourceIndex: Int?, targetIndex: Int?) -> Int {
@@ -123,14 +88,78 @@ enum HubStripLayout {
     }
 }
 
+/// Immutable slots keep native targeting independent of the animated tiles.
+/// Both presentations use the same insertion geometry and pointer deadband.
+struct HubToolLayout: Equatable {
+    let frames: [CGRect]
+    let size: CGSize
+    let pageStride: CGFloat
+    let isPaged: Bool
+
+    init(frames: [CGRect], size: CGSize, pageStride: CGFloat = 0, isPaged: Bool = false) {
+        self.frames = frames; self.size = size; self.pageStride = pageStride; self.isPaged = isPaged
+    }
+
+    static func island(count: Int, width: CGFloat = 424, columns: Int = 5) -> Self {
+        let count = max(0, count), columns = max(1, columns)
+        let width = max(0, width)
+        let rows = HubStripLayout.rows(for: count, columns: columns)
+        let capacity = columns * 2
+        let paged = count > capacity
+        let gap = HubStripLayout.spacing
+        let peek: CGFloat = paged ? min(14, width / 10) : 0
+        // Five or six tools fill a complete row. Smaller sparse rows keep
+        // ordinary tile widths and leading alignment rather than stretching.
+        let sizingColumns = min(columns, max(HubStripLayout.itemsPerRowPerPage, count))
+        let tileWidth = max(0, (width - peek - CGFloat(paged ? sizingColumns : sizingColumns - 1) * gap) / CGFloat(sizingColumns))
+        let stride = tileWidth + gap
+        let pageStride = CGFloat(columns) * stride
+        let pages = max(1, (count + capacity - 1) / capacity)
+        let height = rows == 0 ? 0 : CGFloat(rows) * HubStripLayout.itemHeight + CGFloat(rows - 1) * gap
+        return Self(frames: (0..<count).map {
+            let position = HubStripLayout.gridPosition(for: $0, totalRows: rows, columns: columns)
+            return CGRect(x: CGFloat(position.col) * stride, y: CGFloat(position.row) * HubStripLayout.rowStride,
+                          width: tileWidth, height: HubStripLayout.itemHeight)
+        }, size: CGSize(width: CGFloat(pages - 1) * pageStride + width, height: height),
+                    pageStride: pageStride, isPaged: paged)
+    }
+
+    static func hudHeight(count: Int) -> CGFloat {
+        let rows = (max(0, count) + 2) / 3
+        return CGFloat(rows) * 64 + CGFloat(max(0, rows - 1)) * 10
+    }
+
+    static func hud(count: Int, width: CGFloat) -> Self {
+        let tileWidth = max(0, (width - 20) / 3)
+        return Self(frames: (0..<max(0, count)).map {
+            CGRect(x: CGFloat($0 % 3) * (tileWidth + 10), y: CGFloat($0 / 3) * 74,
+                   width: tileWidth, height: 64)
+        }, size: CGSize(width: max(0, width), height: hudHeight(count: count)))
+    }
+
+    func closestIndex(to point: CGPoint, keeping current: Int? = nil) -> Int? {
+        guard point.x.isFinite, point.y.isFinite,
+              let nearest = frames.indices.min(by: { distance(to: $0, from: point) < distance(to: $1, from: point) }) else {
+            return nil
+        }
+        if let current, frames.indices.contains(current), current != nearest,
+           distance(to: current, from: point) - distance(to: nearest, from: point) < 8 { return current }
+        return nearest
+    }
+
+    private func distance(to index: Int, from point: CGPoint) -> CGFloat {
+        hypot(point.x - frames[index].midX, point.y - frames[index].midY)
+    }
+}
+
 // MARK: - Column Snapping Behavior
 
 struct HubStripScrollTargetBehavior: ScrollTargetBehavior {
     var isDragging: Bool
+    var stride: CGFloat = HubStripLayout.columnStride
 
     func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
         guard !isDragging else { return }
-        let stride = HubStripLayout.columnStride
         let maxScroll = max(0, context.contentSize.width - context.containerSize.width)
         let rawX = target.rect.origin.x
         let snapped = round(rawX / stride) * stride

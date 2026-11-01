@@ -16,21 +16,30 @@ enum HubDragItem: Equatable {
     }
 }
 
-struct HubDropTarget: Equatable {
-    let item: HubDragItem
-    let after: Bool
-}
-
 /// One local drag owns transient feedback. Preferences are written only by
-/// commit; hovering never mutates the order or moves the destination tiles.
+/// commit; hovering changes the visual insertion preview without saving it.
 final class HubDragSession: ObservableObject {
     @Published private(set) var active: HubDragItem?
-    @Published private(set) var target: HubDropTarget?
     @Published private(set) var targetsHiddenTray = false
+    @Published private(set) var targetIndex: Int?
     let scrolling = HubDragScrolling()
     private let launcher: LatticeHubService
+    private let now: () -> TimeInterval
+    private let performHaptic: () -> Void
+    private var feedbackIndex: Int?
+    private var feedbackTime: TimeInterval?
+    private var hideFeedbackTime: TimeInterval?
 
-    init(launcher: LatticeHubService = .shared) { self.launcher = launcher }
+    init(launcher: LatticeHubService = .shared,
+         now: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+         performHaptic: @escaping () -> Void = {
+             guard NotchSupport.usesHapticFeedback() else { return }
+             NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+         }) {
+        self.launcher = launcher
+        self.now = now
+        self.performHaptic = performHaptic
+    }
 
     func begin(_ item: HubDragItem) {
         cancel()
@@ -38,33 +47,32 @@ final class HubDragSession: ObservableObject {
         active = item
     }
 
-    func canMove(to item: HubDragItem) -> Bool {
-        guard launcher.isEditing, let active, active != item, isVisible(active), isVisible(item) else { return false }
-        // Quick controls keep their established two-row grouping. They can be
-        // dragged into the hidden tray; workflow tools can also be reordered.
-        if case .tool = active, case .tool = item { return true }
-        return false
-    }
-
-    func point(to next: HubDropTarget?) {
-        if target != next {
-            if next != nil, NotchSupport.usesHapticFeedback() {
-                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
-            }
-            target = next
-        }
-        if targetsHiddenTray { targetsHiddenTray = false }
-    }
-
     func pointToHiddenTray(_ targeted: Bool) {
+        if targeted, !targetsHiddenTray, active != nil {
+            let time = now()
+            if hideFeedbackTime.map({ time - $0 >= 0.12 }) ?? true {
+                hideFeedbackTime = time
+                feedbackTime = time
+                performHaptic()
+            }
+        }
         if targetsHiddenTray != targeted { targetsHiddenTray = targeted }
-        if targeted, target != nil { target = nil }
+        if targeted, targetIndex != nil { targetIndex = nil }
     }
 
-    @discardableResult func commit(to destination: HubDropTarget) -> Bool {
-        guard canMove(to: destination.item), case .tool(let source) = active,
-              case .tool(let target) = destination.item else { return false }
-        launcher.moveTool(source, relativeTo: target, after: destination.after)
+    func point(toIndex index: Int?) {
+        guard case .tool = active else { return }
+        if targetIndex != index {
+            if targetIndex != nil, let index { provideFeedback(for: index) }
+            targetIndex = index
+        }
+        if index != nil, targetsHiddenTray { targetsHiddenTray = false }
+    }
+
+    @discardableResult func commit(toIndex index: Int) -> Bool {
+        guard launcher.isEditing, case .tool(let item) = active,
+              launcher.visibleItems.contains(item), launcher.visibleItems.indices.contains(index) else { return false }
+        launcher.moveTool(item, toIndex: index)
         cancel()
         return true
     }
@@ -81,9 +89,23 @@ final class HubDragSession: ObservableObject {
 
     func cancel() {
         scrolling.stop()
+        feedbackIndex = nil
+        feedbackTime = nil
+        hideFeedbackTime = nil
         if active != nil { active = nil }
-        if target != nil { target = nil }
         if targetsHiddenTray { targetsHiddenTray = false }
+        if targetIndex != nil { targetIndex = nil }
+    }
+
+    private func provideFeedback(for next: Int) {
+        guard feedbackIndex != next else { return }
+        feedbackIndex = next
+        let time = now()
+        // Target jitter and crossing several tiles in one motion should feel
+        // like one alignment. Visual feedback still updates on every slot.
+        guard feedbackTime.map({ time - $0 >= 0.12 }) ?? true else { return }
+        feedbackTime = time
+        performHaptic()
     }
 
     private func isVisible(_ item: HubDragItem) -> Bool {

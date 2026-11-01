@@ -35,14 +35,18 @@ enum HubEditingProbe {
             for feature in [AppFeature.quickLauncher, .micMute, .keepAwake, .commandBar, .brightness] {
                 defaults.set(true, forKey: feature.availabilityKey)
             }
+            try HubColdDragProbe.run()
             try HubDragProbe.run(launcher: launcher)
             defaults.set(true, forKey: AppFeature.homebrew.availabilityKey)
             launcher.hiddenItemsRaw = "wallpaper,media,homebrew,clipboard,urlCleaner,scratchpad"
             defaults.set(launcher.hiddenItemsRaw, forKey: DefaultsKey.quickLauncherHiddenItems)
-            for size in [CGSize(width: 300, height: 112), CGSize(width: 424, height: 282), CGSize(width: 504, height: 282)] {
+            try HubHUDDragProbe.run(launcher: launcher, output: output)
+            for size in [CGSize(width: 300, height: 282), CGSize(width: 424, height: 282), CGSize(width: 504, height: 282)] {
                 try verifyView(size: size, output: output, preview: CommandLine.arguments.contains("--preview"))
             }
-            try verifyIsland()
+            launcher.hiddenItemsRaw = ""
+            try verifyView(size: CGSize(width: 424, height: 282), output: output, preview: false)
+            try verifyIsland(output: output)
             try verifySparseAlignment()
             try verifyEmptyState(output: output)
             defaults.removePersistentDomain(forName: identity)
@@ -109,9 +113,17 @@ enum HubEditingProbe {
             throw failure("Available Tools must have a reachable drop zone")
         }
         let frame = host.convert(tray.bounds, from: tray)
+        print("HUB_EDITOR_STATE hidden=\(launcher.hiddenItems.count) editing=\(launcher.isEditing) presented=\(launcher.editingPresentation.isPresented) expanded=\(launcher.editingPresentation.isExpanded)")
         try require(host.bounds.insetBy(dx: -1, dy: -1).contains(frame) && tray.visibleRect.height >= 35,
                     "Available Tools is cut off at \(size): \(frame), visible=\(tray.visibleRect)")
         try capture(host, output: output.appendingPathComponent("editor-\(Int(size.width))-\(Int(size.height)).png"))
+        for scroll in descendants(host).compactMap({ $0 as? NSScrollView }) {
+            if let document = scroll.documentView {
+                try require(document.bounds.height <= scroll.contentView.bounds.height + 1,
+                            "Hub grid must not provide vertical scrolling instead of enough height")
+            }
+        }
+        if size.width == 424, !preview { try HubNativeDragProbe.run(host: host, launcher: launcher, output: output) }
         if preview, size.width == 424 {
             try runPreview(window: window, host: host)
             return
@@ -190,7 +202,7 @@ enum HubEditingProbe {
         print("HUB_EMPTY_STATE_OK")
     }
 
-    private static func verifyIsland() throws {
+    private static func verifyIsland(output: URL) throws {
         let defaults = UserDefaults.standard
         defaults.set(true, forKey: AppFeature.notch.availabilityKey)
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
@@ -206,6 +218,12 @@ enum HubEditingProbe {
         launcher.isEditing = true
         settle(view)
         try require(launcher.editingPresentation.isExpanded, "Island must make room and reveal its editor")
+        guard let tray = descendants(view).first(where: { $0.identifier?.rawValue == "hub-hidden-tray" }) else {
+            throw failure("Native island editor has no hide destination")
+        }
+        print("HUB_NATIVE_TRAY frame=\(view.convert(tray.bounds, from: tray)) visible=\(tray.visibleRect) host=\(view.bounds)"); fflush(stdout)
+        try require(tray.visibleRect.height >= 35, "Native island must expose the whole Available Tools destination")
+        try capture(view, output: output.appendingPathComponent("actual-island-editor.png"))
         let editing = island.contentSize.height
         try require(abs(editing - normal - 60) < 1, "Island editor must use the shared rail plus its bounded strip")
         launcher.isEditing = false
@@ -225,6 +243,15 @@ enum HubEditingProbe {
     private static func itemFrames(in host: NSView) -> [String: CGRect] {
         var result = [String: CGRect]()
         for view in descendants(host) {
+            if let strip = view as? HubDragView.DragView,
+               let config = strip.configuration, config.destination == .tools, let layout = config.toolLayout {
+                for (index, item) in config.toolItems.enumerated() {
+                    let center = CGPoint(x: layout.frames[index].midX, y: layout.frames[index].midY)
+                    if let entry = strip.source(at: center) {
+                        result["hub-drag-tool:\(item.rawValue)"] = host.convert(entry.rect, from: strip)
+                    }
+                }
+            }
             guard let id = view.identifier?.rawValue, id.hasPrefix("hub-drag-tool:") else { continue }
             result[id] = host.convert(view.bounds, from: view)
         }
@@ -240,7 +267,7 @@ enum HubEditingProbe {
     static func require(_ condition: @autoclosure () -> Bool, _ message: String) throws {
         if !condition() { throw failure(message) }
     }
-    private static func capture(_ view: NSView, output: URL) throws {
+    static func capture(_ view: NSView, output: URL) throws {
         guard let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { throw failure("No editor bitmap") }
         view.cacheDisplay(in: view.bounds, to: bitmap)
         guard let png = bitmap.representation(using: .png, properties: [:]) else { throw failure("No editor PNG") }

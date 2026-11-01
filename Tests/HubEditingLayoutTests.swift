@@ -92,16 +92,39 @@ enum HubEditingLayoutTests {
 
         // 6. Closest index search: Euclidean nearest slot center across rows and pages
         let center0 = HubStripLayout.slotCenter(for: 0, totalRows: 2)
-        suite.expect(HubStripLayout.closestIndex(to: center0, count: 20) == 0, "center of slot 0 maps to index 0")
+        suite.expect(HubToolLayout.island(count: 20).closestIndex(to: center0) == 0, "center of slot 0 maps to index 0")
         let center5 = HubStripLayout.slotCenter(for: 5, totalRows: 2)
-        suite.expect(HubStripLayout.closestIndex(to: center5, count: 20) == 5, "center of slot 5 maps to index 5 (row 2 col 0)")
+        suite.expect(HubToolLayout.island(count: 20).closestIndex(to: center5) == 5, "center of slot 5 maps to index 5 (row 2 col 0)")
         let center10 = HubStripLayout.slotCenter(for: 10, totalRows: 2)
-        suite.expect(HubStripLayout.closestIndex(to: center10, count: 20) == 10, "center of slot 10 maps to index 10 (page 1 row 0)")
+        suite.expect(HubToolLayout.island(count: 20).closestIndex(to: center10) == 10, "center of slot 10 maps to index 10 (page 1 row 0)")
         let center19 = HubStripLayout.slotCenter(for: 19, totalRows: 2)
-        suite.expect(HubStripLayout.closestIndex(to: center19, count: 20) == 19, "center of slot 19 maps to index 19 (page 1 row 1 col 4)")
+        suite.expect(HubToolLayout.island(count: 20).closestIndex(to: center19) == 19, "center of slot 19 maps to index 19 (page 1 row 1 col 4)")
+        suite.expect(HubToolLayout.island(count: 20).closestIndex(to: CGPoint(x: -10000, y: 0)) == 0,
+                     "dragging past the first edge safely targets the first slot")
+        suite.expect(HubToolLayout.island(count: 20).closestIndex(to: CGPoint(x: 10000, y: 0)) == 14,
+                     "dragging past the last edge safely targets the last top-row slot")
 
         // 7. Column stride & Snapping
         suite.expect(HubStripLayout.columnStride == 82, "column stride is 76 + 6 = 82")
         suite.expect(HubStripLayout.rowStride == 78, "row stride is 72 + 6 = 78")
+
+        let hud = HubToolLayout.hud(count: 8, width: 380)
+        suite.expect(hud.frames[7] == CGRect(x: 130, y: 148, width: 120, height: 64),
+                     "HUD keeps three columns, 64-point tiles and ten-point gaps")
+        suite.expect(hud.size == CGSize(width: 380, height: 212), "HUD reserves its complete three-row grid")
+        for x in [CGFloat(254), 256, 254, 256] {
+            suite.expect(hud.closestIndex(to: CGPoint(x: x, y: 32), keeping: 1) == 1,
+                         "pointer noise across a slot midpoint does not reverse the preview")
+        }
+        suite.expect(hud.closestIndex(to: CGPoint(x: 262, y: 32), keeping: 1) == 2,
+                     "a deliberate move past the deadband changes the destination")
+        suite.expect(hud.closestIndex(to: CGPoint(x: 254, y: 32), keeping: 2) == 2,
+                     "the same deadband applies when moving back")
+        suite.expect(hud.closestIndex(to: CGPoint(x: 248, y: 32), keeping: 2) == 1,
+                     "deliberately crossing back restores the previous destination")
+        suite.expect(hud.closestIndex(to: CGPoint(x: 220, y: 32), keeping: 7) == 1,
+                     "the right half of HUD slot two targets slot two")
+        suite.expect((0..<8).map { HubStripLayout.previewIndex(for: $0, draggingFrom: 7, targetIndex: 1) }
+                     == [0, 2, 3, 4, 5, 6, 7, 1], "moving tool eight to slot two shifts every intervening tool")
     }
 }

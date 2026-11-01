@@ -10,10 +10,12 @@ final class HubDragScrolling {
     private var timer: Timer?
     private var lastTick: TimeInterval = 0
     private var lastScreenPoint = CGPoint.zero
+    private var onScroll: ((CGPoint) -> Void)?
 
-    func update(anchor: NSView, screenPoint: CGPoint) {
+    func update(anchor: NSView, screenPoint: CGPoint, onScroll: ((CGPoint) -> Void)? = nil) {
         self.anchor = anchor
         lastScreenPoint = screenPoint
+        self.onScroll = onScroll
         guard timer == nil else { return }
         lastTick = ProcessInfo.processInfo.systemUptime
         let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in self?.tick() }
@@ -26,7 +28,10 @@ final class HubDragScrolling {
         timer?.invalidate()
         timer = nil
         anchor = nil
+        onScroll = nil
     }
+
+    func stop(ifAnchoredTo view: NSView) { if anchor === view { stop() } }
 
     private func tick() {
         guard let anchor, let window = anchor.window else { stop(); return }
@@ -36,6 +41,7 @@ final class HubDragScrolling {
         let windowPoint = window.convertPoint(fromScreen: lastScreenPoint)
         var ancestor: NSView? = anchor
         var visited = Set<ObjectIdentifier>()
+        var moved = false
         while let scroll = ancestor?.enclosingScrollView,
               visited.insert(ObjectIdentifier(scroll)).inserted {
             let clip = scroll.contentView
@@ -51,10 +57,12 @@ final class HubDragScrolling {
                 if next != viewport.origin {
                     clip.scroll(to: next)
                     scroll.reflectScrolledClipView(clip)
+                    moved = true
                 }
             }
             ancestor = scroll.superview
         }
+        if moved { onScroll?(windowPoint) }
     }
 
     private func speed(_ value: CGFloat, minimum: CGFloat, maximum: CGFloat) -> CGFloat {

@@ -21,6 +21,7 @@ extension LatticeHubView {
                                notchWidth: notchSize.width,
                                isEditing: launcher.isEditing,
                                launcher: launcher,
+                               session: dragSession,
                                onTap: { handleToolTap($0) }) { item in
                 cell(item)
             }
@@ -28,17 +29,11 @@ extension LatticeHubView {
                                                  rowHeight: NotchLayout.toolHeight,
                                                  spacing: NotchLayout.toolSpacing))
         } else {
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(launcher.visibleItems) { item in draggableCell(item, horizontal: true) }
+            HubFloatingToolGrid(items: launcher.visibleItems, isEditing: launcher.isEditing,
+                session: dragSession, onTap: handleToolTap, onManage: { launcher.isEditing = true }) { item in
+                cell(item)
             }
         }
-    }
-
-    private func draggableCell(_ item: LatticeHubItem, horizontal: Bool) -> some View {
-        cell(item)
-            .modifier(HubDragModifier(item: .tool(item), session: dragSession, isEnabled: launcher.isEditing,
-                horizontal: horizontal, symbol: icon(for: item), onClick: { handleToolTap(item) }))
-            .transaction(value: launcher.isEditing) { $0.animation = nil }
     }
 
     private func handleToolTap(_ item: LatticeHubItem) {
