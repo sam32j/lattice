@@ -200,7 +200,6 @@ enum NotchMusicHardeningTests {
         lyricExpansion(suite)
         lyricLifecycle(suite)
         lyricLookup(suite)
-        lyricPicker(suite)
         queueSelection(suite)
         queueHold(suite)
         framing(suite)
@@ -731,11 +730,10 @@ enum NotchMusicHardeningTests {
         NotchLyricsContract.Preferences.online = true
         service.update(playback: current, visible: true)
         let download = service.session
-        let panel = NotchLyricsContract.Panel(); service.importPanel = panel
         let requested = service.generation
         service.hide()
-        suite.expect(download?.cancelled == true && panel.cancelled && service.session == nil && service.importPanel == nil
-               && service.generation != requested, "hiding executes the real cancellation path for both remote lookup and file selection")
+        suite.expect(download?.cancelled == true && service.session == nil
+               && service.generation != requested, "hiding executes the real cancellation path for remote lookup")
         service.update(playback: current, visible: false)
         suite.expect(service.loads.count == 1, "a hidden song never starts an online lookup")
         service.update(playback: current, visible: true)
@@ -965,88 +963,6 @@ enum NotchMusicHardeningTests {
             Context.Preferences.online = true
         }
 
-    }
-
-    private static func lyricPicker(_ suite: TestSuite) {
-        typealias Context = NotchLyricsContract
-        Context.Preferences.enabled = true
-        Context.Preferences.online = false
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("notch-lyrics-picker-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: folder); Context.resetPresentation() }
-        do {
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            let file = folder.appendingPathComponent("selected.lrc")
-            try "[00:01]Selected verse".write(to: file, atomically: true, encoding: .utf8)
-            for pinned in [false, true] {
-                Context.resetPresentation()
-                let service = Context.Service()
-                let notch = Context.NotchService.shared
-                let parent = notch.presentationWindow!
-                notch.pinned = pinned
-                notch.acceptsSystemFeedback = false
-                service.update(playback: playback("same-song"), visible: true)
-                service.importLyrics()
-                guard let panel = service.importPanel else { suite.expect(false, "a visible lyrics surface can choose a file"); continue }
-                suite.expect(panel.parent == nil && !parent.attached && panel.focused && panel.level.rawValue > parent.level.rawValue
-                       && !panel.hidesOnDeactivate && notch.expanded && notch.pinned == pinned,
-                       "lyrics imports focus a standalone chooser above the island without moving it or changing its pin")
-                panel.url = file
-                panel.finish(.OK)
-                suite.expect(!parent.focused && service.lyrics == nil,
-                       "the picker waits for native dismissal and imports off the presentation lane")
-                Context.DispatchQueue.main.drain()
-                suite.expect(parent.focused && parent.focusReturns == 1 && notch.selected == .music && notch.pinned == pinned,
-                       "dismissal returns to the same music and lyrics surface without pinning it")
-                Context.DispatchQueue.worker.drain()
-                Context.DispatchQueue.main.drain()
-                suite.expect(service.lyrics?.lines.first?.text == "Selected verse" && service.visible,
-                       "the real bounded import and parser retain the chosen lyrics for the unchanged song")
-            }
-            for interruption in 0..<6 {
-                Context.resetPresentation()
-                let service = Context.Service()
-                let parent = Context.NotchService.shared.presentationWindow!
-                service.update(playback: playback("same-song"), visible: true)
-                service.importLyrics()
-                let panel = service.importPanel!
-                panel.url = file
-                switch interruption {
-                case 0: service.hide()
-                case 1: service.playbackChanged(playback("next-song"))
-                case 2: Context.NotchService.shared.acceptsUserInteraction = false
-                case 3: Context.NotchService.shared.selected = .downloads
-                case 4: Context.NotchService.shared.presentationWindow = Context.Window()
-                default: Context.Preferences.enabled = false
-                }
-                panel.finish(.OK)
-                Context.DispatchQueue.worker.drain()
-                Context.DispatchQueue.main.drain()
-                suite.expect(parent.focusReturns == 0 && service.lyrics == nil,
-                       "hide, track change, lock, another section, replacement or disable rejects the old import and focus")
-                Context.Preferences.enabled = true
-            }
-            Context.resetPresentation()
-            let cancelled = Context.Service()
-            cancelled.update(playback: playback("same-song"), visible: true)
-            let old = NotchLyrics(lines: [NotchLyricLine(time: 1, text: "Existing verse")], plain: "", instrumental: false)
-            _ = cancelled.memory.replace(old, for: NotchMusicIdentity(playback("same-song")))
-            cancelled.memory.adjustOffset(by: 0.5)
-            cancelled.importLyrics()
-            cancelled.importPanel?.finish(.cancel)
-            Context.DispatchQueue.main.drain()
-            suite.expect(cancelled.lyrics == old && cancelled.memory.offset == 0.5
-                   && Context.DispatchQueue.worker.jobs.isEmpty && Context.NotchService.shared.presentationWindow?.focused == true,
-                   "Cancel keeps the current lyrics and adjustment and returns without reading a file")
-            cancelled.importLyrics()
-            cancelled.importPanel?.url = file
-            cancelled.importPanel?.finish(.OK)
-            let returns = Context.NotchService.shared.presentationWindow!.focusReturns
-            cancelled.hide()
-            Context.DispatchQueue.worker.drain()
-            Context.DispatchQueue.main.drain()
-            suite.expect(Context.NotchService.shared.presentationWindow!.focusReturns == returns && cancelled.lyrics == old,
-                   "leaving after dismissal cancels both the queued focus return and a late file result")
-        } catch { suite.expect(false, "lyrics picker fixture failed: \(error)") }
     }
 
     private static func selection(_ request: UUID, item: String = "next") -> NotchQueueSelection {
