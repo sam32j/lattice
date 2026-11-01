@@ -118,10 +118,10 @@ extension Strings {
         advancedClearConfirmTitle: "Сбросить все разрешения?",
         advancedClearConfirmBody: "Сбросить разрешения и отключить запуск при входе? Другие настройки сохранятся. Перехват ввода будет приостановлен до перезапуска Lattice.",
         advancedUninstallSection: "Удалить Lattice",
-        advancedUninstallDescription: "Полностью удалить Lattice и файл конфигурации с вашего компьютера.",
+        advancedUninstallDescription: "Полностью удалить Lattice и его настройки с вашего Mac.",
         advancedUninstallButton: "Удалить Lattice",
         advancedUninstallConfirmTitle: "Удалить Lattice?",
-        advancedUninstallConfirmBody: "Lattice очистит разрешения, удалит настройки и переместится в Корзину, после чего закроется. Это нельзя отменить из приложения, но файл останется в Корзине, пока вы её не очистите.",
+        advancedUninstallConfirmBody: "Lattice и его настройки будут перемещены в Корзину.",
         advancedUninstallFailedTitle: "Удаление остановлено",
         advancedUninstallFailedBody: "Lattice не смог вернуть изменённую системную настройку: режим сна, скорость вентиляторов, ускорение мыши или порядок Spaces. Ничего не удалено. Повторите попытку и разрешите запрос пароля, если он появится.",
 

@@ -118,10 +118,10 @@ extension Strings {
         advancedClearConfirmTitle: "Cancellare tutte le autorizzazioni?",
         advancedClearConfirmBody: "Reimpostare i permessi e disattivare l’avvio al login? Le altre impostazioni vengono conservate. I controlli di input restano in pausa fino al riavvio di Lattice.",
         advancedUninstallSection: "Disinstalla Lattice",
-        advancedUninstallDescription: "Rimuovi completamente Lattice e il file di configurazione dal computer.",
+        advancedUninstallDescription: "Rimuovi completamente Lattice e le sue impostazioni dal Mac.",
         advancedUninstallButton: "Disinstalla Lattice",
         advancedUninstallConfirmTitle: "Disinstallare Lattice?",
-        advancedUninstallConfirmBody: "Lattice cancellerà le autorizzazioni, rimuoverà le preferenze e si sposterà nel Cestino, poi si chiuderà. Questa azione non può essere annullata dall’app, ma resta nel Cestino finché non lo svuoti.",
+        advancedUninstallConfirmBody: "Lattice e le sue impostazioni saranno spostati nel Cestino.",
         advancedUninstallFailedTitle: "Disinstallazione interrotta",
         advancedUninstallFailedBody: "Lattice non è riuscito a ripristinare un’impostazione di sistema che aveva cambiato: lo stop, la velocità delle ventole, l’accelerazione del mouse o l’ordine degli Spazi. Non è stato rimosso nulla. Riprova e consenti la richiesta della password, se compare.",
 
@@ -642,7 +642,7 @@ extension Strings {
         navigationBack: "Indietro",
         releaseNotesFallback: "Questo aggiornamento include le correzioni e i miglioramenti più recenti.",
 
-        tabMonitor: "Monitoraggio Attività",
+        tabMonitor: "Monitoraggio del sistema",
         monitorMenuBarSection: "Nella barra dei menu",
         monitorMenuBarCaption: "Scegli cosa appare accanto all’icona nella barra dei menu.",
         monitorCombineTemperatures: "Combina uso e temperatura",

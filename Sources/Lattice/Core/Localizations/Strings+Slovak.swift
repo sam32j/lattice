@@ -118,10 +118,10 @@ extension Strings {
         advancedClearConfirmTitle: "Vymazať všetky povolenia?",
         advancedClearConfirmBody: "Obnoviť povolenia a vypnúť spúšťanie pri prihlásení? Ostatné nastavenia zostanú zachované. Ovládanie vstupu bude pozastavené do reštartovania Lattice.",
         advancedUninstallSection: "Odinštalovať Lattice",
-        advancedUninstallDescription: "Úplne odstrániť Lattice a konfiguračný súbor z vášho počítača.",
+        advancedUninstallDescription: "Úplne odstrániť Lattice a jeho nastavenia z vášho Macu.",
         advancedUninstallButton: "Odinštalovať Lattice",
         advancedUninstallConfirmTitle: "Odinštalovať Lattice?",
-        advancedUninstallConfirmBody: "Lattice vymaže svoje povolenia, odstráni predvoľby, presunie sa do Koša a ukončí sa. Z aplikácie sa to už nedá vrátiť späť, ale ostane v Koši, kým ho nevyprázdnite.",
+        advancedUninstallConfirmBody: "Lattice a jeho nastavenia sa presunú do Koša.",
         advancedUninstallFailedTitle: "Odinštalovanie sa zastavilo",
         advancedUninstallFailedBody: "Lattice nedokázal vrátiť systémové nastavenie, ktoré zmenil: spánok, otáčky ventilátora, akceleráciu myši alebo poradie plôch. Nič sa neodstránilo. Skúste to znova a potvrďte požiadavku na heslo, ak sa objaví.",
 
@@ -642,7 +642,7 @@ extension Strings {
         navigationBack: "Späť",
         releaseNotesFallback: "Táto aktualizácia obsahuje najnovšie opravy a vylepšenia.",
 
-        tabMonitor: "Monitor aktivity",
+        tabMonitor: "Monitor systému",
         monitorMenuBarSection: "V lište s ponukami",
         monitorMenuBarCaption: "Vyberte, čo sa zobrazí vedľa ikony v lište s ponukami.",
         monitorCombineTemperatures: "Spojiť využitie a teplotu",

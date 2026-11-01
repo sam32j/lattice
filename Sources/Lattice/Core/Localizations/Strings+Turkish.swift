@@ -118,10 +118,10 @@ extension Strings {
         advancedClearConfirmTitle: "Tüm izinler temizlensin mi?",
         advancedClearConfirmBody: "İzinler sıfırlansın ve oturum açılışında başlatma kapatılsın mı? Diğer ayarlar korunur. Lattice yeniden başlatılana kadar giriş denetimleri duraklatılır.",
         advancedUninstallSection: "Lattice’i kaldır",
-        advancedUninstallDescription: "Lattice’i ve yapılandırma dosyasını bilgisayarınızdan tamamen kaldırın.",
+        advancedUninstallDescription: "Lattice’i ve ayarlarını Mac’inizden tamamen kaldırın.",
         advancedUninstallButton: "Lattice’i kaldır",
         advancedUninstallConfirmTitle: "Lattice kaldırılsın mı?",
-        advancedUninstallConfirmBody: "Lattice izinlerini temizleyecek, tercihlerini kaldıracak ve Çöp Sepeti’ne taşınıp kapanacak. Bu işlem uygulama içinden geri alınamaz, ama Çöp Sepeti’ni boşaltana kadar orada kalır.",
+        advancedUninstallConfirmBody: "Lattice ve ayarları Çöp Sepeti’ne taşınacak.",
         advancedUninstallFailedTitle: "Kaldırma durduruldu",
         advancedUninstallFailedBody: "Lattice değiştirdiği bir sistem ayarını geri alamadı: uyku, fan hızı, fare hızlandırması veya Space sırası. Hiçbir şey silinmedi. Yeniden deneyin ve parola istenirse izin verin.",
 
@@ -642,7 +642,7 @@ extension Strings {
         navigationBack: "Geri",
         releaseNotesFallback: "Bu güncelleme en son düzeltmeleri ve iyileştirmeleri içerir.",
 
-        tabMonitor: "Etkinlik Monitörü",
+        tabMonitor: "Sistem Monitörü",
         monitorMenuBarSection: "Menü çubuğunda",
         monitorMenuBarCaption: "Menü çubuğunda simgenin yanında ne görüneceğini seç.",
         monitorCombineTemperatures: "Kullanımı ve sıcaklığı birleştir",

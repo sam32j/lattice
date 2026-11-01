@@ -118,10 +118,10 @@ extension Strings {
         advancedClearConfirmTitle: "Alle Berechtigungen zurücksetzen?",
         advancedClearConfirmBody: "Berechtigungen zurücksetzen und den Start bei Anmeldung ausschalten? Andere Einstellungen bleiben erhalten. Eingabesteuerungen bleiben bis zum Neustart von Lattice pausiert.",
         advancedUninstallSection: "Lattice deinstallieren",
-        advancedUninstallDescription: "Lattice und die Konfigurationsdatei vollständig vom Computer entfernen.",
+        advancedUninstallDescription: "Lattice und seine Einstellungen vollständig vom Mac entfernen.",
         advancedUninstallButton: "Lattice deinstallieren",
         advancedUninstallConfirmTitle: "Lattice deinstallieren?",
-        advancedUninstallConfirmBody: "Lattice setzt seine Berechtigungen zurück, entfernt seine Einstellungen und wandert in den Papierkorb, dann beendet es sich. Das lässt sich aus der App nicht rückgängig machen, doch sie bleibt im Papierkorb, bis du ihn leerst.",
+        advancedUninstallConfirmBody: "Lattice und seine Einstellungen werden in den Papierkorb gelegt.",
         advancedUninstallFailedTitle: "Deinstallation gestoppt",
         advancedUninstallFailedBody: "Lattice konnte eine geänderte Systemeinstellung nicht wiederherstellen: Ruhezustand, Lüfterdrehzahl, Mausbeschleunigung oder Reihenfolge der Spaces. Es wurde nichts entfernt. Versuche es erneut und erlaube die Kennwortabfrage, falls sie erscheint.",
 
@@ -642,7 +642,7 @@ extension Strings {
         navigationBack: "Zurück",
         releaseNotesFallback: "Dieses Update enthält die neuesten Korrekturen und Verbesserungen.",
 
-        tabMonitor: "Aktivitätsanzeige",
+        tabMonitor: "Systemmonitor",
         monitorMenuBarSection: "In der Menüleiste",
         monitorMenuBarCaption: "Wähle, was neben dem Symbol in der Menüleiste erscheint.",
         monitorCombineTemperatures: "Auslastung und Temperatur kombinieren",
