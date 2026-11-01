@@ -105,7 +105,7 @@ struct SwitcherSettings: View {
                         FeatureRuntime.shared.setAvailable([.switcher], enabled)
                         AppSwitcher.shared.syncWithPreferences()
                     }
-                ), requiring: [.accessibility, .screenRecording])
+                ), requiring: [.accessibility, .screenRecording], feature: .switcher)
                 .labelsHidden()
             }
         }

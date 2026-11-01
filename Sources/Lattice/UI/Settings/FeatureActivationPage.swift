@@ -140,7 +140,7 @@ struct FeatureActivationControl: View {
         if requirements.isEmpty {
             Toggle(title, isOn: binding)
         } else {
-            PermissionGatedToggle(title, isOn: binding, requiring: requirements)
+            PermissionGatedToggle(title, isOn: binding, requiring: requirements, feature: feature)
         }
     }
 }

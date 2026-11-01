@@ -70,7 +70,7 @@ struct DockSettings: View {
                         FeatureRuntime.shared.setAvailable([.dockPreview], enabled)
                         DockPreviewService.shared.syncWithPreferences()
                     }
-                ), requiring: [.accessibility, .screenRecording])
+                ), requiring: [.accessibility, .screenRecording], feature: .dockPreview)
                     .labelsHidden()
             }
             WindowPreviewExclusionsList(key: DefaultsKey.windowPreviewExcludedApps)

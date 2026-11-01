@@ -19,7 +19,7 @@ extension ScreenshotSettings {
                         ScreenTextService.shared.syncWithPreferences()
                         ScreenCaptureService.shared.syncWithPreferences()
                     }
-                ), requiring: [.screenRecording])
+                ), requiring: [.screenRecording], feature: .screenshot)
                     .labelsHidden()
                     .toggleStyle(.switch)
                     .controlSize(.regular)
