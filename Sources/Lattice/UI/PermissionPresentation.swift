@@ -13,6 +13,7 @@ extension AppPermission {
         case .notifications: return hub.permNotifications
         case .automationFinder: return hub.permAutomationFinder
         case .automationTerminal: return hub.permAutomationTerminal
+        case .automationSystemEvents: return hub.permAutomationSystemEvents
         case .automationPlayback: return FeatureStrings.notchMusicExtras(L10n.shared.language).automationPermission
         case .audioCapture: return hub.permAudioCapture
         case .microphone: return FeatureStrings.recorder(L10n.shared.language).microphonePermissionName
@@ -32,6 +33,7 @@ extension AppPermission {
         case .notifications: return hub.explainNotifications
         case .automationFinder: return hub.explainAutomationFinder
         case .automationTerminal: return hub.explainAutomationTerminal
+        case .automationSystemEvents: return hub.explainAutomationSystemEvents
         case .automationPlayback: return FeatureStrings.notchMusicExtras(L10n.shared.language).automationExplanation
         case .audioCapture: return hub.explainAudioCapture
         case .microphone:
