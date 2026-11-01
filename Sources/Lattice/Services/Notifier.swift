@@ -9,7 +9,7 @@ enum Notifier {
     private static let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "lattice",
                                     category: "notifications")
 
-    static func requestPermission() {
+    static func requestPermission(completion: ((Bool) -> Void)? = nil) {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
             // A denied prompt is the user's call; a request that ERRORS means
             // notifications silently cannot work at all — leave a trace so
@@ -19,6 +19,7 @@ enum Notifier {
             } else if !granted {
                 log.notice("notification authorization not granted")
             }
+            DispatchQueue.main.async { completion?(granted && error == nil) }
         }
     }
 
