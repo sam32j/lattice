@@ -550,21 +550,8 @@ final class StatusItemController {
             }
         }
 
-        let toolTip: String
-        if manager.isActive {
-            if manager.sessionTrigger == .automation {
-                toolTip = FeatureStrings.keepAwakeAutomation(L10n.shared.language)
-                    .activeStatus(for: manager.activeAutomationConditions)
-            } else if let end = manager.endDate {
-                toolTip = "\(strings.statusActiveUntil) \(Self.timeFormatter.string(from: end))"
-            } else {
-                toolTip = strings.statusActiveIndefinite
-            }
-        } else {
-            toolTip = strings.statusIdleTooltip
-        }
-        if button.toolTip != toolTip {
-            button.toolTip = toolTip
+        if button.toolTip != nil {
+            button.toolTip = nil
         }
 
         // The icon decision depends on the title just written (the glyph may

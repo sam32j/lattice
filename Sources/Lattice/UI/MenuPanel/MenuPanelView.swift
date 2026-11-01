@@ -86,7 +86,7 @@ struct MenuPanelView: View {
     @State private var navigableContentHeight: CGFloat = 0
     @State private var metricContentHeight: CGFloat = 0
     @State private var updateBannerHeight: CGFloat = 0
-    @State private var selectedSection: PanelSectionID = PanelLayout.order.first ?? .keepAwake
+    @State private var selectedSection: PanelSectionID = PanelLayout.order.first ?? .brightness
     @State private var selectedMetric: MetricDetailKind?
     @FocusState private var focusedSection: PanelSectionID?
 
@@ -263,7 +263,7 @@ struct MenuPanelView: View {
 
     private var activeSection: PanelSectionID {
         let nonAction = visibleSections.filter { $0 != .toggles }
-        return nonAction.contains(selectedSection) ? selectedSection : (nonAction.first ?? .keepAwake)
+        return nonAction.contains(selectedSection) ? selectedSection : (nonAction.first ?? .brightness)
     }
 
     private var navigableScrollHeight: CGFloat {
@@ -293,7 +293,6 @@ struct MenuPanelView: View {
 
     private var estimatedNavigableContentHeight: CGFloat {
         switch activeSection {
-        case .keepAwake: return 250
         case .brightness: return 140
         case .mixer: return 250
         case .system: return 460
@@ -322,7 +321,6 @@ struct MenuPanelView: View {
     @ViewBuilder
     private func section(for id: PanelSectionID, collapsible: Bool = true) -> some View {
         switch id {
-        case .keepAwake: KeepAwakeCard(collapsible: collapsible)
         case .brightness: if showBrightness { BrightnessSection(collapsible: collapsible) }
         case .mixer: if showMixer { mixerOrPrioritySection(collapsible: collapsible) }
         case .system:
@@ -799,11 +797,8 @@ struct KeepAwakeCard: View {
     var collapsible = true
 
     var body: some View {
-        // The collapsible header supplies the "Keep awake" title, so the card's
-        // first row is just the live status and the on/off switch.
-        PanelSection(.keepAwake, title: l10n.s.keepAwakeTitle, collapsible: collapsible) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
                     if awake.isActive, awake.endDate != nil {
                         // Beside the extend chips a narrow panel has no room for the
                         // status; the highlighted chip already shows the countdown
@@ -880,12 +875,11 @@ struct KeepAwakeCard: View {
                           captionIsError: awake.clamshellSetupFailed)
             }
             .panelCard()
+            .onAppear {
+                defaultDuration = Defaults.sanitizedDefaultDuration(defaultDuration)
+                keepAwakeMouseJiggleInterval = Defaults.sanitizedKeepAwakeMouseJiggleInterval(keepAwakeMouseJiggleInterval)
+            }
         }
-        .onAppear {
-            defaultDuration = Defaults.sanitizedDefaultDuration(defaultDuration)
-            keepAwakeMouseJiggleInterval = Defaults.sanitizedKeepAwakeMouseJiggleInterval(keepAwakeMouseJiggleInterval)
-        }
-    }
 
     private var optionsDisclosure: some View {
         VStack(alignment: .leading, spacing: 8) {
