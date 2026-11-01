@@ -24,6 +24,14 @@ enum HubEditingLayoutTests {
         let empty = geometry.contentSize(for: geometry.expandedSize(
             module: .hub, toolCount: 0, toolsControlsHeight: 0))
         suite.expect(empty.height >= 160, "an all-hidden hub reserves room for its complete empty state and action")
+        let compact = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1440, height: 900),
+                                    safeAreaTop: 32, cameraWidth: 210, layout: .compact)
+        for count in [6, 7] {
+            let content = compact.contentSize(for: compact.expandedSize(
+                module: .hub, toolCount: count, toolsControlsHeight: 66))
+            suite.expect(content.height == 222,
+                         "\(count) tools reserve both strip rows plus controls without vertical scrolling")
+        }
 
         // Hub Strip Layout & Drag Reordering Tests
 
@@ -126,5 +134,32 @@ enum HubEditingLayoutTests {
                      "the right half of HUD slot two targets slot two")
         suite.expect((0..<8).map { HubStripLayout.previewIndex(for: $0, draggingFrom: 7, targetIndex: 1) }
                      == [0, 2, 3, 4, 5, 6, 7, 1], "moving tool eight to slot two shifts every intervening tool")
+        suite.expect(HubToolLayout.island(count: 5).size.width == 424,
+                     "a single island page fills its viewport without a reserved next-page strip")
+        let spacious = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1440, height: 900),
+                                     safeAreaTop: 32, cameraWidth: 210, layout: .spacious)
+        suite.expect(spacious.hubContentHeight(toolCount: 6, controlsHeight: 66, editing: false) == 144,
+                     "spacious mode fits six tools in one row without reserving an empty second row")
+        let six = HubToolLayout.island(count: 6, width: 504, columns: 6)
+        let fiveSpacious = HubToolLayout.island(count: 5, width: 504, columns: 6)
+        suite.expect(fiveSpacious.frames[4].maxX == 504 && !fiveSpacious.isPaged,
+                     "five spacious tools also fill their row instead of reserving an empty next-page strip")
+        suite.expect(six.size == CGSize(width: 504, height: 72) && !six.isPaged && six.frames[5].maxX == 504,
+                     "all six spacious tiles fill one full-width, non-scrolling row")
+        let twelve = HubToolLayout.island(count: 12, width: 504, columns: 6)
+        suite.expect(twelve.frames[6].minX == 0 && twelve.frames[6].minY == 78
+                     && twelve.frames[11].maxX == 504 && !twelve.isPaged,
+                     "spacious mode fills two six-tool rows before adding another page")
+        let thirteen = HubToolLayout.island(count: 13, width: 504, columns: 6)
+        suite.expect(thirteen.isPaged && thirteen.frames[12].minY == 0
+                     && abs(thirteen.frames[12].minX - thirteen.pageStride) < 0.01
+                     && abs(thirteen.frames[12].minX - 490) < 0.01,
+                     "tool thirteen starts the next spacious page with a fourteen-point preview")
+        let ten = HubToolLayout.island(count: 10, width: 424)
+        let eleven = HubToolLayout.island(count: 11, width: 424)
+        suite.expect(!ten.isPaged && ten.size.width == 424 && ten.frames[4].maxX == 424,
+                     "compact single pages fill the same full viewport")
+        suite.expect(eleven.isPaged && eleven.frames[10].minX == 410 && eleven.size.width == 834,
+                     "compact paging retains its peek and enough trailing room for the final page")
     }
 }

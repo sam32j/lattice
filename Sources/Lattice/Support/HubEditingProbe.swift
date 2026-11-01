@@ -36,6 +36,7 @@ enum HubEditingProbe {
                 defaults.set(true, forKey: feature.availabilityKey)
             }
             try HubColdDragProbe.run()
+            try HubPageLayoutProbe.run(output: output)
             try HubDragProbe.run(launcher: launcher)
             defaults.set(true, forKey: AppFeature.homebrew.availabilityKey)
             launcher.hiddenItemsRaw = "wallpaper,media,homebrew,clipboard,urlCleaner,scratchpad"
