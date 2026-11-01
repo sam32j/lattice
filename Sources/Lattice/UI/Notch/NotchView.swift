@@ -530,7 +530,6 @@ struct NotchView: View {
         guard !service.showingAppPanel else { return false }
         return contentOverflows || service.selectedMetric != nil
             || (service.selected == .captures && service.captureContent != nil)
-            || (service.selected == .hub && launcher.isEditing && launcher.activeUtility == nil)
     }
 
     private var headerFeedback: NotchNotice? {

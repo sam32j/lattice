@@ -72,7 +72,10 @@ extension FeatureRuntime {
             AudioInputDeviceManager.shared.syncWithPreferences()
             AudioPriorityService.shared.syncWithPreferences()
         },
-        .micMute: { MicMuteService.shared.syncWithPreferences() },
+        .micMute: {
+            AudioInputDeviceManager.shared.syncWithPreferences()
+            MicMuteService.shared.syncWithPreferences()
+        },
         .musicBlock: { MusicLaunchBlocker.shared.syncWithPreferences() },
         .keepAwake: {
             KeepAwakeManager.shared.syncWithFeatures()
@@ -119,10 +122,12 @@ extension FeatureRuntime {
             else { NotchAccessoryService.shared.stop() }
         },
         .notchLyrics: {
-            if !NotchLyricsSupport.isEnabled() { NotchLyricsService.shared.stop() }
+            let enabled = NotchLyricsSupport.isEnabled()
+            UserDefaults.standard.set(enabled, forKey: DefaultsKey.notchLyricsOnline)
+            if !enabled { NotchLyricsService.shared.stop() }
         },
         .notchQueue: { NotchMusicService.shared.syncQueuePreference() },
-        .notchLiveEqualizer: { NotchAudioLevelService.shared.syncWithPreferences() },
+        .notchLiveEqualizer: { NotchVisualizerRuntime.syncWithPreferences() },
         .notchNotifications: {
             if !AppFeature.notchNotifications.isAvailable { NotchNotificationService.shared.stop() }
             if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }
