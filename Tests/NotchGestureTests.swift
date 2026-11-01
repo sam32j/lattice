@@ -25,6 +25,13 @@ enum NotchGestureTests {
                && NotchGestureSupport.allowsVertical(expanded: true, inHeader: true,
                                                     musicSurface: false, control: false, scroll: false),
                "the resting island and expanded header keep their vertical gestures")
+        suite.expect(NotchGestureSupport.allowsVertical(expanded: true, inHeader: false,
+                                                       musicSurface: false, hubSurface: true,
+                                                       control: false, scroll: true)
+               && !NotchGestureSupport.allowsVertical(expanded: true, inHeader: false,
+                                                     musicSurface: false, hubSurface: true,
+                                                     control: true, scroll: false),
+               "the hub surface allows vertical dismissal across the window while protecting controls")
         suite.expect(NotchSupport.compactActivity(timer: true, downloads: true, music: true) == .timer
                && NotchSupport.compactActivity(timer: false, downloads: true, music: true) == .downloads
                && NotchSupport.compactActivity(timer: false, downloads: false, agents: true,
@@ -44,11 +51,12 @@ enum NotchGestureTests {
         var time = 1.0
         func feed(_ x: Double = 0, _ y: Double = 0, began: Bool = false,
                   ended: Bool = false, momentum: Bool = false, precise: Bool = true, phased: Bool = true,
-                  vertical: Bool = true, horizontal: Bool = true, expanded: Bool = false) -> NotchGestureSupport.Action? {
+                  vertical: Bool = true, horizontal: Bool = true, expanded: Bool = false,
+                  deepDismiss: Bool = false) -> NotchGestureSupport.Action? {
             time += 0.01
             return gesture.handle(x: x, y: y, timestamp: time, began: began, ended: ended,
                                   momentum: momentum, precise: precise, hasPhase: phased, allowVertical: vertical,
-                                  allowHorizontal: horizontal, expanded: expanded)
+                                  allowHorizontal: horizontal, expanded: expanded, deepDismiss: deepDismiss)
         }
         suite.expect(feed(0, 5, began: true) == nil && feed(0, 10) == nil && feed(0, 10) == .open,
                "small vertical movement accumulates into one intentional opening")
@@ -58,6 +66,12 @@ enum NotchGestureTests {
                "momentum after a swipe that already acted never changes presentation")
         suite.expect(feed(0, -30, began: true, expanded: true) == .close,
                "a separate upward gesture closes an expanded panel")
+        suite.expect(feed(0, -16, began: true, expanded: true, deepDismiss: false) == .close,
+               "swiping up slightly closes from the toolbar or upper part")
+        suite.expect(feed(0, -30, began: true, expanded: true, deepDismiss: true) == nil
+               && feed(0, -23, expanded: true) == nil
+               && feed(0, -1, expanded: true) == .close,
+               "swiping up over the main window requires 3/4 inch (54 points) to dismiss")
         suite.expect(feed(-1000, 0, began: true) == nil,
                      "scroll deltas alone cannot skip music without measured touches")
         suite.expect(feed(40, 40, began: true) == nil, "diagonal motion is not guessed as a track or panel gesture")
@@ -99,6 +113,11 @@ enum NotchGestureTests {
                && feed(0, -2, phased: false, expanded: true) == nil
                && feed(0, -12, momentum: true, phased: false, expanded: true) == .close,
                "a phaseless transition carrying travel keeps an upward flick")
+        suite.expect(feed(0, -20, began: true, expanded: true, deepDismiss: true) == nil
+               && feed(0, 0, ended: true, expanded: true) == nil
+               && feed(0, -20, momentum: true, phased: false, expanded: true) == nil
+               && feed(0, -14, momentum: true, phased: false, expanded: true) == .close,
+               "momentum requires 3/4 inch to close when beginning in the main window")
         suite.expect(feed(0, 5, began: true) == nil && feed(-30, 1) == nil && feed(0, 0, ended: true) == nil
                && feed(-120, 12, momentum: true, phased: false) == nil,
                "the vertical part of a sideways momentum never opens the island")
