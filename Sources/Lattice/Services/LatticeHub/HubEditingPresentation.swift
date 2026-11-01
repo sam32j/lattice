@@ -4,12 +4,13 @@
 import AppKit
 import SwiftUI
 
-/// The island first makes room, then opens the editor. Closing reverses that
-/// sequence, so its silhouette never cuts across outgoing editing controls.
+/// Start the editor fade with the island resize. Retain outgoing controls
+/// until their fade finishes so the closing silhouette cannot cut across them.
 final class HubEditingPresentation: ObservableObject {
     @Published private(set) var isPresented = false
     @Published private(set) var isExpanded = false
     @Published private(set) var outgoingOptions: LatticeHubItem?
+    @Published private(set) var optionsHeight: CGFloat = NotchLayout.hubOptionsHeight - 6
     private var generation = UUID()
 
     private var islandIsActive: Bool {
@@ -25,14 +26,10 @@ final class HubEditingPresentation: ObservableObject {
         if editing {
             outgoingOptions = nil
             isPresented = true
-            let reveal = { [weak self] in
-                guard let self, self.generation == token, self.isPresented else { return }
-                withAnimation(motion) { self.isExpanded = true }
-            }
-            if islandIsActive {
-                NotchService.shared.refreshPresentation()
-                NotchService.shared.perform(collapsing: false, reveal)
-            } else { reveal() }
+            // The host can render synchronously while setting its bounds.
+            // Start opacity after that layout, in the same turn as the resize.
+            if islandIsActive { NotchService.shared.refreshPresentation() }
+            withAnimation(motion) { isExpanded = true }
         } else {
             guard isPresented else { return }
             outgoingOptions = options
@@ -52,5 +49,10 @@ final class HubEditingPresentation: ObservableObject {
         isExpanded = false
         isPresented = false
         outgoingOptions = nil
+    }
+
+    func measureOptions(_ height: CGFloat) {
+        guard height.isFinite, height > 0, abs(optionsHeight - height) > 0.5 else { return }
+        optionsHeight = height
     }
 }

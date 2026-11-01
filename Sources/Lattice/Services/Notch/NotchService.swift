@@ -815,7 +815,7 @@ final class NotchService: ObservableObject {
         let isEditing = isHubPage && launcher.editingPresentation.isPresented && launcher.activeUtility == nil
         let isRecentCapturesUtility = isHubPage && launcher.activeUtility == .recentCaptures
         let controlsHeight: CGFloat? = isHubPage && launcher.activeUtility == nil ? launcher.notchControlsHeight : nil
-        let optionsHeight: CGFloat = isEditing && (launcher.editingOptionsItem ?? launcher.editingPresentation.outgoingOptions) != nil ? NotchLayout.hubOptionsHeight : 0
+        let optionsHeight: CGFloat = isEditing && (launcher.editingOptionsItem ?? launcher.editingPresentation.outgoingOptions) != nil ? launcher.editingPresentation.optionsHeight + 6 : 0
         return pageSize(in: expandedGeometry, module: showingAppPanel ? .hub : selected,
                         detail: selectedMetric != nil, panel: showingAppPanel,
                         detailHeight: selectedMetric == .fan ? fanDetailHeight : nil,

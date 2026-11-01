@@ -117,6 +117,7 @@ enum HubEditingProbe {
         try require(host.bounds.insetBy(dx: -1, dy: -1).contains(frame) && tray.visibleRect.height >= 35,
                     "Available Tools is cut off at \(size): \(frame), visible=\(tray.visibleRect)")
         try capture(host, output: output.appendingPathComponent("editor-\(Int(size.width))-\(Int(size.height)).png"))
+        if size.width == 300, !preview { try HubTrayClippingProbe.run(host: host, output: output) }
         for scroll in descendants(host).compactMap({ $0 as? NSScrollView }) {
             if let document = scroll.documentView {
                 try require(document.bounds.height <= scroll.contentView.bounds.height + 1,
@@ -216,6 +217,8 @@ enum HubEditingProbe {
         settle(view)
         let normal = island.contentSize.height
         launcher.isEditing = true
+        try require(launcher.editingPresentation.isExpanded,
+                    "Editor crossfade must start with the island resize, without waiting for it to settle")
         settle(view)
         try require(launcher.editingPresentation.isExpanded, "Island must make room and reveal its editor")
         guard let tray = descendants(view).first(where: { $0.identifier?.rawValue == "hub-hidden-tray" }) else {
@@ -224,6 +227,7 @@ enum HubEditingProbe {
         print("HUB_NATIVE_TRAY frame=\(view.convert(tray.bounds, from: tray)) visible=\(tray.visibleRect) host=\(view.bounds)"); fflush(stdout)
         try require(tray.visibleRect.height >= 35, "Native island must expose the whole Available Tools destination")
         try capture(view, output: output.appendingPathComponent("actual-island-editor.png"))
+        try HubTrayClippingProbe.verifyVisibleTitle(host: view, tray: tray)
         let editing = island.contentSize.height
         try require(abs(editing - normal - 60) < 1, "Island editor must use the shared rail plus its bounded strip")
         launcher.isEditing = false
