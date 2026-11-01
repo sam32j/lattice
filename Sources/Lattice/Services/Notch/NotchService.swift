@@ -194,6 +194,8 @@ final class NotchService: ObservableObject {
     private var awaitsTrackNotice = false
     private var powerSource: CFRunLoopSource?
     private var powerSampler: PowerSampler?
+    private var clipboardTimer: Timer?
+    private var lastClipboardChangeCount: Int = NSPasteboard.general.changeCount
     private var captureID: UUID?
     private let deferredCapturePresentation = CapturePresentationDeferral()
     private var captureFallback: (() -> Void)?
@@ -234,7 +236,6 @@ final class NotchService: ObservableObject {
 
     private var keepsWorkingSurfaceOnOutsideClick: Bool {
         pinned || trackingMenu || NSApp.modalWindow != nil || panel?.attachedSheet != nil
-            || NotchLyricsService.shared.isImporting
             // Like the lyrics chooser, these panels stand beside the island
             // instead of hanging from it; a click in them is not a click away.
             || (expanded && MediaWorkspaceView.panelModalActive)
@@ -811,17 +812,23 @@ final class NotchService: ObservableObject {
         let musicExtras = NotchLyricsSupport.isEnabled() || NotchQueueSupport.isEnabled()
         let isHubPage = !showingAppPanel && selected == .hub
         let launcher = LatticeHubService.shared
-        let isEditingOrActiveUtility = launcher.isEditing || launcher.activeUtility != nil
-        let controlsHeight: CGFloat? = isHubPage && !isEditingOrActiveUtility ? launcher.notchControlsHeight : nil
+        let isEditing = isHubPage && launcher.editingPresentation.isPresented && launcher.activeUtility == nil
+        let isRecentCapturesUtility = isHubPage && launcher.activeUtility == .recentCaptures
+        let controlsHeight: CGFloat? = isHubPage && launcher.activeUtility == nil ? launcher.notchControlsHeight : nil
+        let optionsHeight: CGFloat = isEditing && (launcher.editingOptionsItem ?? launcher.editingPresentation.outgoingOptions) != nil ? NotchLayout.hubOptionsHeight : 0
         return pageSize(in: expandedGeometry, module: showingAppPanel ? .hub : selected,
                         detail: selectedMetric != nil, panel: showingAppPanel,
                         detailHeight: selectedMetric == .fan ? fanDetailHeight : nil,
                         musicExtraHeight: musicExtras && musicDetailVisible ? geometry.musicExtrasHeight : 0,
                         fileMediaHeight: !choosingFileDropDestination && AppFeature.mediaTools.isAvailable
                             && NotchFileToolsService.shared.mediaPresented ? NotchFileToolsService.shared.mediaContentHeight : nil,
-                        toolCount: isHubPage && !isEditingOrActiveUtility ? launcher.visibleItems.count : nil,
+                        toolCount: isHubPage && launcher.activeUtility == nil ? launcher.visibleItems.count : nil,
                         capturePreviewHeight: captureContent == nil ? nil : captureContentHeight,
-                        toolsControlsHeight: controlsHeight)
+                        toolsControlsHeight: controlsHeight,
+                        hubRecentCaptures: isRecentCapturesUtility,
+                        hubIsEditing: isEditing,
+                        hubAvailableCount: launcher.hiddenItems.count + launcher.hiddenControls.count,
+                        hubOptionsHeight: optionsHeight)
     }
 
     /// The open island as Settings previews a section: at rest, with no
@@ -859,7 +866,11 @@ final class NotchService: ObservableObject {
 
     private func pageSize(in geometry: NotchGeometry, module: NotchModule, detail: Bool, panel: Bool,
                           detailHeight: CGFloat?, musicExtraHeight: CGFloat, fileMediaHeight: CGFloat?, toolCount: Int?,
-                          capturePreviewHeight: CGFloat?, toolsControlsHeight: CGFloat? = nil) -> CGSize {
+                          capturePreviewHeight: CGFloat?, toolsControlsHeight: CGFloat? = nil,
+                          hubRecentCaptures: Bool = false,
+                          hubIsEditing: Bool = false,
+                          hubAvailableCount: Int = 0,
+                          hubOptionsHeight: CGFloat = 0) -> CGSize {
         let controls = NotchSupport.controls()
         let sliders = controls.filter(\.isLevel).count
         let shortcuts = controls.filter { !$0.isLevel && $0 != .music }.count
@@ -875,7 +886,11 @@ final class NotchService: ObservableObject {
                                         ? NotchTimerService.shared.session.mode : NotchTimerSupport.savedMode(),
                                      agentsHeight: module == .agents && !detail && !panel
                                         ? agentsContentHeight(width: geometry.contentWidth) : nil,
-                                     toolsControlsHeight: toolsControlsHeight)
+                                     toolsControlsHeight: toolsControlsHeight,
+                                     hubRecentCaptures: hubRecentCaptures,
+                                     hubIsEditing: hubIsEditing,
+                                     hubAvailableCount: hubAvailableCount,
+                                     hubOptionsHeight: hubOptionsHeight)
     }
 
     /// The AI page is as tall as the cards it shows; nil while the logs are
@@ -1124,6 +1139,7 @@ final class NotchService: ObservableObject {
     }
 
     func syncWithPreferences() {
+        NotchVisualizerRuntime.reconcileParents()
         preferenceSyncWork?.cancel(); preferenceSyncWork = nil
         guard NotchSupport.isEnabled() else { stop(); return }
         if !running {
@@ -1156,7 +1172,7 @@ final class NotchService: ObservableObject {
         NotchDownloadService.shared.syncWithPreferences()
         NotchCalendarService.shared.syncWithPreferences()
         NotchNotificationService.shared.syncWithPreferences()
-        NotchAudioLevelService.shared.syncWithPreferences()
+        NotchVisualizerRuntime.syncWithPreferences()
         AgentUsageService.shared.syncWithPreferences()
         followsPointer = displayPreference == .pointer || displayPreference == .all
         showsOnAllDisplays = displayPreference == .all
@@ -1303,6 +1319,7 @@ final class NotchService: ObservableObject {
         awaitsTrackNotice = false
         subscriptions.removeAll()
         stopPower()
+        stopClipboardMonitoring()
         if !session.showsLockScreen || !NotchLockScreenSupport.isEnabled() {
             NotchMusicService.shared.stop()
         }
@@ -1340,6 +1357,7 @@ final class NotchService: ObservableObject {
         hoverState = NotchHoverState()
         openedByHover = false
         removeEventMonitors()
+        removeGestureScrollMonitors()
         removeScreenEdgeClickMonitors()
         removeHiddenHoverMonitors()
         removeHoverExitMonitors()
@@ -1407,7 +1425,8 @@ final class NotchService: ObservableObject {
     }
 
     func open(_ module: NotchModule? = nil, pinned: Bool = false, takeFocus: Bool = true,
-              appPanel: Bool = false, metric: MetricDetailKind? = nil, feedback: Bool = false, sections: Bool = false,
+              appPanel: Bool = false, metric: MetricDetailKind? = nil, feedback: Bool = false,
+              sections: Bool = false,
               crossfadeContent: Bool = false) {
         guard NotchSupport.isEnabled(), !suspended else { return }
         // The capture controls cover the open page and hold collapsing off, so
@@ -1432,7 +1451,9 @@ final class NotchService: ObservableObject {
         let changesPresentation = !expanded || selected != destination || closesCommandBar
             || showingAppPanel != appPanel || selectedMetric != metric || showingSections != sections || crossfadeContent
         if changesPresentation, destination == .hub, !appPanel, !sections, metric == nil {
-            LatticeHubService.shared.prepareForPresentation()
+            let launcher = LatticeHubService.shared
+            launcher.prepareForPresentation()
+            launcher.selectedIndex = launcher.visibleItems.isEmpty ? nil : 0
         }
         (NSApp.delegate as? AppDelegate)?.closePopover(preservingNotch: true)
         if !expanded, modules.contains(.clipboard) { ClipboardHistoryService.shared.rememberPasteTarget() }
@@ -1576,9 +1597,9 @@ final class NotchService: ObservableObject {
         let unnamesMusic = inside != wasInside && endMusicStripHover(leaving: !inside)
         // A full hover opening goes straight from its resting size to the page.
         // The activity picker replaces that opening and keeps its hover response.
-        let opensOnHover = UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover)
+        let hoverExpands = UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover)
             && UserDefaults.standard.bool(forKey: DefaultsKey.notchHoverExpands)
-            && !showsCompactActivityPicker
+        let opensOnHover = hoverExpands && !showsCompactActivityPicker
         let emphasize = inside && !hiddenInFullscreen && !hiddenUntilHover && !expanded && !peeking && !dragPlaceholder
             && notice == nil && !opensOnHover
             && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
@@ -2039,9 +2060,9 @@ final class NotchService: ObservableObject {
         pageLayers[module] = close
     }
 
-    func provideHapticFeedback() {
+    func provideHapticFeedback(pattern: NSHapticFeedbackManager.FeedbackPattern = .alignment) {
         guard acceptsUserInteraction, panel?.isVisible == true, NotchSupport.usesHapticFeedback() else { return }
-        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+        NSHapticFeedbackManager.defaultPerformer.perform(pattern, performanceTime: .now)
     }
 
     func fileDragChanged(_ active: Bool, internalDrag: Bool = false) {
@@ -2140,8 +2161,8 @@ final class NotchService: ObservableObject {
         openSettings()
     }
 
-    func perform(_ action: @escaping () -> Void) {
-        collapse()
+    func perform(collapsing: Bool = true, _ action: @escaping () -> Void) {
+        if collapsing { collapse() }
         if let windowHost { windowHost.whenSettled(action) }
         else { DispatchQueue.main.async(execute: action) }
     }
@@ -2651,19 +2672,25 @@ final class NotchService: ObservableObject {
                 // Over the camera, wherever a strip reaching to one side puts it.
                 .offsetBy(dx: -surfaceShift, dy: 0)
         }
+        let clickToCloseDisabled = UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover)
+            && UserDefaults.standard.bool(forKey: DefaultsKey.notchHoverExpands)
         let text = FeatureStrings.notch(L10n.shared.language)
-        windowHost?.setActivationArea(activationRect, title: expanded ? text.collapse : text.open,
+        windowHost?.setActivationArea(activationRect, title: expanded ? (clickToCloseDisabled ? text.open : text.collapse) : text.open,
             willPress: { [weak self] in
                 guard let self else { return }
                 self.hoverWork?.cancel()
                 // Playing or pausing from a capsule's bars opens nothing, so hover carries on.
-                if !(self.geometry.floats && self.musicStripShowsControl) { self.hoverState.close(pointerInside: true) }
+                if !clickToCloseDisabled, !(self.geometry.floats && self.musicStripShowsControl) {
+                    self.hoverState.close(pointerInside: true)
+                }
             }, activate: { [weak self] in
                 guard let self else { return }
                 // The capsule's button covers its music bars too, which play or pause there.
                 if self.geometry.floats, self.musicStripShowsControl { self.toggleMusicStripSong() }
                 else if !self.expanded, self.compactActivity == .calendar {
                     self.openCountdownEvent()
+                } else if clickToCloseDisabled {
+                    if !self.expanded { self.open(takeFocus: false) }
                 } else { self.toggle() }
             })
         if panel?.isVisible != true { panel?.orderFrontRegardless() }
@@ -3352,6 +3379,7 @@ final class NotchService: ObservableObject {
             windowHost?.missionControlDidRestore = { [weak self] in self?.missionControlDidRestore() }
             windowHost?.setHoverHandler { [weak self] in self?.hover($0) }
             panel?.title = FeatureStrings.notch(L10n.shared.language).title
+            syncGestures()
         }
         if (modules.contains(.files) && AppFeature.shelf.isAvailable) || AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable {
             windowHost?.setFileDropActions(NotchFileDropActions(
@@ -3612,6 +3640,14 @@ final class NotchService: ObservableObject {
         }) { eventMonitors.append(token) }
         if let token = NSEvent.addLocalMonitorForEvents(matching: clicks.union(.keyDown), handler: { [weak self] event in
             guard let self else { return event }
+            if event.type == .rightMouseDown, self.ownsWindow(event.window) {
+                let hoverExpands = UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover)
+                    && UserDefaults.standard.bool(forKey: DefaultsKey.notchHoverExpands)
+                if hoverExpands, (self.expanded || self.peeking) {
+                    self.collapse()
+                    return nil
+                }
+            }
             if event.type == .keyDown, self.ownsWindow(event.window),
                event.modifierFlags.intersection([.command, .control, .option, .shift]) == .command,
                event.charactersIgnoringModifiers == "," {
@@ -3706,8 +3742,22 @@ final class NotchService: ObservableObject {
         panel?.childWindows?.contains { $0.isVisible && $0.frame.contains(point) } == true
     }
 
+    private var gestureScrollMonitors: [Any] = []
+
+    private func removeGestureScrollMonitors() {
+        gestureScrollMonitors.forEach(NSEvent.removeMonitor)
+        gestureScrollMonitors.removeAll()
+    }
+
     private func syncGestures() {
-        if !NotchGestureSupport.isEnabled() { gesture = NotchGestureSupport(); musicSwipe.cancel() }
+        if !NotchGestureSupport.isEnabled() {
+            gesture = NotchGestureSupport()
+            musicSwipe.cancel()
+            removeGestureScrollMonitors()
+            panel?.handleScroll = nil
+            panel?.handleIndirectTouches = nil
+            return
+        }
         panel?.handleScroll = { [weak self] event in self?.handleScroll(event) ?? false }
         panel?.handleIndirectTouches = { [weak self] event, view in
             guard let self else { return false }
@@ -3715,6 +3765,13 @@ final class NotchService: ObservableObject {
             if self.panel?.isKeyWindow != true { self.panel?.makeKey() }
             let music = self.musicSwipe.handle(event, in: view, enabled: self.musicSwipeEnabled(event), expanded: self.expanded)
             return self.handleCaptureTouches(event, in: view) || music
+        }
+        if gestureScrollMonitors.isEmpty {
+            if let token = NSEvent.addGlobalMonitorForEvents(matching: .scrollWheel, handler: { [weak self] event in
+                _ = self?.handleScroll(event)
+            }) {
+                gestureScrollMonitors.append(token)
+            }
         }
     }
 
@@ -3724,12 +3781,14 @@ final class NotchService: ObservableObject {
               !showingAppPanel, !showingSections, !showingCommandBar, selectedMetric == nil,
               modules.contains(.music), compactMusicSwipeIsVisible || (expanded && selected == .music),
               event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else { return false }
-        let point = panel.convertPoint(toScreen: event.locationInWindow)
-        let interaction = NotchGestureSupport.nativeInteraction(at: panel.contentView?.hitTest(event.locationInWindow))
+        let point = event.window != nil ? panel.convertPoint(toScreen: event.locationInWindow) : NSEvent.mouseLocation
+        let windowPoint = event.window != nil ? event.locationInWindow : panel.convertPoint(fromScreen: point)
+        let interaction = NotchGestureSupport.nativeInteraction(at: panel.contentView?.hitTest(windowPoint))
         let header = NotchSupport.gestureIsOverHeader(expanded: expanded, peeking: false,
             fromTop: panel.frame.maxY - point.y, safeTop: expanded ? expandedGeometry.headerTopInset : geometry.safeContentTop,
             height: expanded ? expandedGeometry.headerRowHeight : NotchLayout.headerHeight)
-        return windowHost?.contains(point) == true && !header && !interaction.control && !interaction.scroll
+        return (windowHost?.contains(point) == true || windowHost?.containsHover(point) == true)
+            && !header && !interaction.control && !interaction.scroll
     }
 
     private func handleCaptureTouches(_ event: NSEvent, in view: NSView) -> Bool {
@@ -3784,8 +3843,8 @@ final class NotchService: ObservableObject {
             captureHistoryGestureProgress = 0
             return false
         }
-        let screenPoint = panel.convertPoint(toScreen: event.locationInWindow)
-        guard windowHost?.contains(screenPoint) == true else {
+        let screenPoint = event.window != nil ? panel.convertPoint(toScreen: event.locationInWindow) : NSEvent.mouseLocation
+        guard windowHost?.contains(screenPoint) == true || windowHost?.containsHover(screenPoint) == true else {
             gesture = NotchGestureSupport()
             musicSwipe.cancel()
             captureHistoryGestureProgress = 0
@@ -3796,7 +3855,8 @@ final class NotchService: ObservableObject {
         let inHeader = NotchSupport.gestureIsOverHeader(expanded: expanded, peeking: peeking,
                                                        fromTop: fromTop, safeTop: expanded ? expandedGeometry.headerTopInset : geometry.safeContentTop,
                                                        height: expanded ? expandedGeometry.headerRowHeight : NotchLayout.headerHeight)
-        let interaction = NotchGestureSupport.nativeInteraction(at: panel.contentView?.hitTest(event.locationInWindow))
+        let windowPoint = event.window != nil ? event.locationInWindow : panel.convertPoint(fromScreen: screenPoint)
+        let interaction = NotchGestureSupport.nativeInteraction(at: panel.contentView?.hitTest(windowPoint))
         let musicSurface = modules.contains(.music)
             && (compactMusicSwipeIsVisible || (expanded && selected == .music && !showingAppPanel && !showingSections
                                           && !showingCommandBar))
@@ -3805,9 +3865,11 @@ final class NotchService: ObservableObject {
         // Scroll deltas are accelerated and cannot enforce physical distance.
         // The native touch receiver owns this gesture, including over the header.
         if captureSurface { return !interaction.control && event.hasPreciseScrollingDeltas }
-        let vertical = NotchGestureSupport.allowsVertical(expanded: expanded, inHeader: inHeader,
-                                                          musicSurface: musicSurface,
-                                                          control: interaction.control, scroll: interaction.scroll)
+        let hubSurface = expanded && selected == .hub && !showingAppPanel && !showingSections && !showingCommandBar
+        let vertical = (hubSurface && !interaction.control)
+            || NotchGestureSupport.allowsVertical(expanded: expanded, inHeader: inHeader,
+                                                  musicSurface: musicSurface,
+                                                  control: interaction.control, scroll: interaction.scroll)
         let horizontal = !interaction.control && !interaction.scroll && !inHeader && musicSurface
         let x = Double(event.scrollingDeltaX) * (event.hasPreciseScrollingDeltas ? 1 : 24)
         if musicSwipe.handleMouseScroll(event, enabled: musicSwipeEnabled(event), expanded: expanded) { return true }
@@ -3826,10 +3888,12 @@ final class NotchService: ObservableObject {
                                     allowVertical: vertical && !musicConsumed, allowHorizontal: horizontal, expanded: expanded)
         guard let action else { return musicConsumed }
         switch action {
-        case .open: open(feedback: true)
+        case .open:
+            open(feedback: false)
+            provideHapticFeedback(pattern: .levelChange)
         case .close:
             collapse()
-            provideHapticFeedback()
+            provideHapticFeedback(pattern: .levelChange)
         }
         return true
     }
@@ -4031,6 +4095,7 @@ final class NotchService: ObservableObject {
                 .store(in: &subscriptions)
         }
         stopPower()
+        stopClipboardMonitoring()
         if NotchSupport.routes(.volume) {
             bindVolumeEvents()
         }
@@ -4056,13 +4121,7 @@ final class NotchService: ObservableObject {
             }.store(in: &subscriptions)
         }
         if NotchSupport.routes(.clipboard) {
-            let history = ClipboardHistoryService.shared
-            history.capturedEntry.receive(on: DispatchQueue.main).sink { [weak self] _ in
-                guard let self else { return }
-                let text = FeatureStrings.clipboard(L10n.shared.language)
-                self.show(NotchNotice(event: .clipboard, title: text.copied,
-                                      detail: text.title, symbol: "doc.on.clipboard"))
-            }.store(in: &subscriptions)
+            startClipboardMonitoring()
         }
         // The companion loves being plugged in, so it listens for the charger too.
         if NotchSupport.routes(.battery) || idleContent == .battery || NotchMascotSupport.isEnabled() { startPower() }
@@ -4239,6 +4298,30 @@ final class NotchService: ObservableObject {
         }
         powerSource = nil
         powerSampler = nil
+    }
+
+    private func startClipboardMonitoring() {
+        stopClipboardMonitoring()
+        guard NotchSupport.routes(.clipboard) else { return }
+        lastClipboardChangeCount = NSPasteboard.general.changeCount
+
+        let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
+            guard let self, self.running, !self.suspended else { return }
+            let count = NSPasteboard.general.changeCount
+            guard count != self.lastClipboardChangeCount else { return }
+            self.lastClipboardChangeCount = count
+            let text = FeatureStrings.clipboard(L10n.shared.language)
+            _ = self.show(NotchNotice(event: .clipboard, title: "",
+                                      detail: text.copied, symbol: "doc.on.clipboard"))
+        }
+        timer.tolerance = 0.15
+        RunLoop.main.add(timer, forMode: .common)
+        clipboardTimer = timer
+    }
+
+    private func stopClipboardMonitoring() {
+        clipboardTimer?.invalidate()
+        clipboardTimer = nil
     }
 
     private func powerChanged() {

@@ -703,12 +703,9 @@ enum NotchTests {
         suite.expect(apart == nil,
                      "titles in a Tools rail that closed its gaps stay as far apart as its spacing keeps them: \(apart ?? "") (\(closed) closed)")
         suite.expect(walk == nil, "the Tools arrows walk rows exactly when the rail draws rows: \(walk ?? "")")
-        // The island's page and the Content tab's preview share the view.
-        let source = (try? String(contentsOfFile: "Sources/Lattice/UI/LatticeHub/LatticeHubGrid.swift",
-                                  encoding: .utf8)) ?? ""
-        let rail = source.contains("leastSpacing: NotchLayout.toolLeastSpacing")
-        let titles = source.contains("cell(item, titleInset: titleInset)") && source.contains(".padding(.horizontal, titleInset)")
-        suite.expect(rail && titles, "the Tools page's rail closes its gaps before it scrolls and insets its titles by them")
+        // Production presentation checks exercise the shared rail in both
+        // modes. A source-text check for the old cell helper did not observe
+        // rendered layout, and the island's icon-only cells have no titles.
     }
 
     private static func noticeLayoutContracts(_ suite: TestSuite) {
@@ -1881,8 +1878,8 @@ enum NotchTests {
                "an AI resting choice waits while its section is off, and the island rests empty meanwhile")
         defaults.set(false, forKey: AppFeature.monitorPower.availabilityKey)
         defaults.set(NotchIdleContent.battery.rawValue, forKey: DefaultsKey.notchIdleContent)
-        suite.expect(!NotchSupport.canRest(with: .battery, in: defaults) && NotchSupport.idleContent(in: defaults) == .none,
-               "a battery resting choice waits while power monitoring is uninstalled")
+        suite.expect(NotchSupport.canRest(with: .battery, in: defaults) && NotchSupport.idleContent(in: defaults) == .battery,
+               "battery resting choice is independent of power monitoring")
         for (key, value) in saved { defaults.set(value, forKey: key) }
         defaults.set(savedIdle, forKey: DefaultsKey.notchIdleContent)
         defaults.set("right", forKey: DefaultsKey.notchQuickAccessSide)
@@ -1966,7 +1963,7 @@ enum NotchTests {
                && !NotchSupport.showsMusicActivity(isPlaying: true, in: defaults),
                "disabling automatic music leaves the selected battery visible during playback")
         defaults.set(false, forKey: AppFeature.monitorPower.availabilityKey)
-        suite.expect(NotchSupport.idleContent(in: defaults) == .none, "unavailable battery cannot appear while idle")
+        suite.expect(NotchSupport.idleContent(in: defaults) == .battery, "battery remains available while idle without power monitoring")
         defaults.set(true, forKey: AppFeature.monitorPower.availabilityKey)
         defaults.set("clock", forKey: DefaultsKey.notchIdleContent)
         suite.expect(NotchSupport.visibleIdleContent(isPlaying: false, in: defaults) == .none,
@@ -2201,10 +2198,10 @@ enum NotchTests {
             suite.expect(tool.capturesAudio == (tool == .recording),
                    "only screen recording shows microphone and system-audio controls: \(tool.rawValue)")
         }
-        suite.expect(!NotchSupport.routes(.clipboard, in: defaults) && NotchSupport.routesCapturePreviews(in: defaults),
-               "clipboard activity still needs history capture while installed captures start enabled")
+        suite.expect(NotchSupport.routes(.clipboard, in: defaults) && NotchSupport.routesCapturePreviews(in: defaults),
+               "clipboard activity is decoupled from history capture while installed captures start enabled")
         defaults.set(true, forKey: DefaultsKey.clipboardHistoryEnabled)
-        suite.expect(NotchSupport.routes(.clipboard, in: defaults), "installed clipboard activity starts once history capture is enabled")
+        suite.expect(NotchSupport.routes(.clipboard, in: defaults), "clipboard activity remains available when history capture is enabled")
         suite.expect(NotchSupport.routesScratchpad(in: defaults), "Scratchpad defaults to its visible island page")
         defaults.set(false, forKey: DefaultsKey.notchScratchpad)
         suite.expect(!NotchSupport.routesScratchpad(in: defaults), "Scratchpad can use its separate window without hiding its page")
@@ -2221,7 +2218,9 @@ enum NotchTests {
         defaults.set(true, forKey: DefaultsKey.notchClipboardWindow)
         defaults.set("clipboard,unknown", forKey: DefaultsKey.notchHiddenModules)
         suite.expect(!NotchSupport.routesClipboardWindow(in: defaults), "hidden clipboard keeps the ordinary history available")
-        suite.expect(!NotchSupport.routes(.clipboard, in: defaults), "hidden module cannot leak an activity")
+        defaults.set(false, forKey: DefaultsKey.notchClipboard)
+        suite.expect(!NotchSupport.routes(.clipboard, in: defaults), "disabled clipboard indicator stops activity routing")
+        defaults.set(true, forKey: DefaultsKey.notchClipboard)
         defaults.set(true, forKey: DefaultsKey.textSnippetsEnabled)
         suite.expect(NotchSupport.routesSnippetsWindow(in: defaults), "text snippets opening defaults to the enabled island")
         defaults.set(false, forKey: DefaultsKey.notchSnippetsWindow)

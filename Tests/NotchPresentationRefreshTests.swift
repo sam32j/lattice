@@ -44,6 +44,7 @@ enum NotchPresentationRefreshContract {
                 switch key {
                 case DefaultsKey.notchHideUntilHover: return hides
                 case DefaultsKey.notchOutlineEnabled: return outline
+                case DefaultsKey.notchOpenOnHover: return hides
                 default: return true
                 }
             }
@@ -187,8 +188,9 @@ enum NotchPresentationRefreshContract {
         var routesCaptures = true
         var openedPages: [(module: NotchModule, takeFocus: Bool)] = []
         var capturePageCrossfades = 0
-        func open(_ module: NotchModule, pinned: Bool, takeFocus: Bool, feedback: Bool, crossfadeContent: Bool = false) {
-            openedPages.append((module, takeFocus))
+        func open(_ module: NotchModule? = nil, pinned: Bool = false, takeFocus: Bool = true, feedback: Bool = false, crossfadeContent: Bool = false) {
+            expanded = true
+            if let module { openedPages.append((module, takeFocus)) }
             if crossfadeContent { capturePageCrossfades += 1 }
         }
         var pinned = false
