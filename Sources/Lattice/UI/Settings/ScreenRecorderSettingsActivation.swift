@@ -18,7 +18,7 @@ extension ScreenRecorderSettings {
                         ScreenCaptureService.shared.syncWithPreferences()
                         ScreenRecorderService.shared.syncWithPreferences()
                     }
-                ), requiring: [.screenRecording])
+                ), requiring: [.screenRecording], feature: .screenRecorder)
                     .labelsHidden()
                     .toggleStyle(.switch)
                     .controlSize(.regular)
