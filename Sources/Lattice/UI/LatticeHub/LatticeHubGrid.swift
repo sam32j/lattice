@@ -5,10 +5,7 @@ import SwiftUI
 
 extension LatticeHubView {
     var islandRailRows: Int {
-        let geometry = NotchService.shared.expandedGeometry
-        let budget = launcher.visibleItems.count >= NotchLayout.toolTwoRowThreshold ? geometry.pageBudget : geometry.contentBudget
-        return NotchLayout.toolRailRows(count: launcher.visibleItems.count, width: notchSize?.width ?? 420,
-            height: max(0, budget - launcher.notchControlsHeight - 6))
+        HubStripLayout.rows(for: launcher.visibleItems.count)
     }
 
     var islandMainHeight: CGFloat {
@@ -20,20 +17,16 @@ extension LatticeHubView {
 
     @ViewBuilder var grid: some View {
         if let notchSize {
-            let items = launcher.visibleItems
-            let rows = islandRailRows
-            let columns = NotchLayout.railColumns(count: items.count, rows: rows)
-            let horizontal = NotchLayout.railGap(columns: columns, itemWidth: NotchLayout.toolWidth,
-                spacing: NotchLayout.toolSpacing, least: NotchLayout.toolLeastSpacing, width: notchSize.width) != nil
-            NotchRail(items: items, rows: rows, itemWidth: NotchLayout.toolWidth, width: notchSize.width,
-                      spacing: NotchLayout.toolSpacing, leastSpacing: NotchLayout.toolLeastSpacing,
-                      rowSpacing: NotchLayout.toolSpacing, rowAlignment: .leading,
-                      scrollTarget: launcher.keyboardIndex.flatMap { items.indices.contains($0) ? items[$0].id : nil }) { item in
-                draggableCell(item, horizontal: horizontal).frame(height: NotchLayout.toolHeight)
+            HubIslandStripView(items: launcher.visibleItems,
+                               notchWidth: notchSize.width,
+                               isEditing: launcher.isEditing,
+                               launcher: launcher,
+                               onTap: { handleToolTap($0) }) { item in
+                cell(item)
             }
-            .frame(height: NotchLayout.railHeight(rows: rows, rowHeight: NotchLayout.toolHeight,
+            .frame(height: NotchLayout.railHeight(rows: islandRailRows,
+                                                 rowHeight: NotchLayout.toolHeight,
                                                  spacing: NotchLayout.toolSpacing))
-            .background { HubDragView(destination: .scrollRegion, session: dragSession, isEnabled: launcher.isEditing) }
         } else {
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(launcher.visibleItems) { item in draggableCell(item, horizontal: true) }

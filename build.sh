@@ -716,6 +716,7 @@ if (( TEST )); then
         Sources/Lattice/Services/KeepAwakeAssertions.swift
         Sources/Lattice/Services/KeepAwakeAutomationSupport.swift
         Sources/Lattice/Services/LatticeHub/HubStayAwakeSupport.swift
+        Sources/Lattice/Services/LatticeHub/HubStripLayout.swift
         Sources/Lattice/Services/SudoersSupport.swift
         Sources/Lattice/Services/Metrics/BatteryTimeSupport.swift
         Sources/Lattice/Services/Metrics/BatteryPowerSupport.swift

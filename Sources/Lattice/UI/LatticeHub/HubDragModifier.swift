@@ -22,10 +22,10 @@ struct HubDragModifier: ViewModifier {
                 HubDragView(destination: .item(item), session: session, isEnabled: isEnabled,
                             horizontal: horizontal, symbol: symbol, onClick: onClick)
             }
-            .overlay(alignment: marker) {
+            .overlay {
                 if isEnabled, session.target?.item == item {
-                    Capsule().fill(Color.accentColor)
-                        .frame(width: horizontal ? 3 : nil, height: horizontal ? nil : 3)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
                         .allowsHitTesting(false)
                 }
             }
