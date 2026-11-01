@@ -46,17 +46,25 @@ struct AudioInputSettings: View {
         }) {
             VStack(alignment: .leading, spacing: 14) {
                 AudioInputDeviceControls(title: l10n.s.mixerInputSourceLabel, sliderWidth: 140,
-                                         showsUnavailableLabel: true)
+                                         showsUnavailableLabel: false)
 
                 Divider()
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(l10n.s.muteAudioInputSubtitle)
-                        .font(.headline)
+                    HStack {
+                        Text(l10n.s.muteAudioInputSubtitle)
+                            .font(.headline)
+                        Spacer()
+                        Toggle(l10n.s.muteAudioInputSubtitle, isOn: Binding(
+                            get: { micMute.isMuted },
+                            set: { micMute.setMuted($0) }
+                        ))
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                    }
 
-                    SettingsToggleRow(title: l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
-
-                    ShortcutPreferenceRow(role: .micMute, alignment: .center) {
+                    ShortcutPreferenceRow(role: .micMute, alignment: .center,
+                                          label: "Mute Microphone with Shortcut") {
                         MicMuteService.shared.syncWithPreferences()
                     }
                     if micShortcutEnabled, micMute.shortcutRegistrationFailed {
@@ -64,6 +72,8 @@ struct AudioInputSettings: View {
                             .font(.caption)
                             .foregroundStyle(.orange)
                     }
+
+                    SettingsToggleRow(title: l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
                 }
             }
             .disabled(!microphoneControlEnabled)
@@ -83,9 +93,15 @@ struct AudioInputSettings: View {
             .help(l10n.s.audioPriorityInputEnable)
             .accessibilityLabel(l10n.s.audioPriorityInputEnable)
         }) {
-            AudioInputPriorityControls(showsHeader: false)
-                .disabled(!priority.inputPriorityEnabled)
-                .opacity(priority.inputPriorityEnabled ? 1 : 0.55)
+            if priority.inputPriorityEnabled {
+                AudioInputPriorityControls(showsHeader: false)
+            }
+        }
+        .settingsExpansionAnimation(value: priority.inputPriorityEnabled)
+        .onAppear {
+            AudioInputDeviceManager.shared.syncWithPreferences()
+            MicMuteService.shared.syncWithPreferences()
+            AudioPriorityService.shared.syncWithPreferences()
         }
     }
 }
