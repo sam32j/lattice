@@ -1052,7 +1052,7 @@ enum NotchTests {
         let closed = NotchLayout.surfaceRadius(height: 32)
         suite.expect(closed >= 8 && closed <= 12 && NotchLayout.shoulder(height: 32) >= 5 && NotchLayout.shoulder(height: 32) <= 8,
                "a closed island keeps corners like the cutout's, so a collapse settles inside the notch")
-        suite.expect(NotchLayout.surfaceRadius(height: 286) == 28 && NotchLayout.shoulder(height: 286) == NotchLayout.shoulder,
+        suite.expect(NotchLayout.surfaceRadius(height: 286) == 38 && NotchLayout.shoulder(height: 286) == NotchLayout.shoulder,
                "an open island keeps its full corner radius and shoulder")
     }
 

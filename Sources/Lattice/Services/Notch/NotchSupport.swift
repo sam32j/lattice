@@ -289,7 +289,7 @@ struct NotchBand: Equatable {
 /// Shared measurements keep the window's content budget and its SwiftUI
 /// layout in agreement, including small screens and both presets.
 enum NotchLayout {
-    static let shoulder: CGFloat = 14
+    static let shoulder: CGFloat = 18
     static let horizontalInset: CGFloat = 28
     static let headerHeight: CGFloat = 36
     static let navigationHeight: CGFloat = 36
@@ -405,10 +405,47 @@ enum NotchLayout {
     /// keeps the cutout's own corners, so the closed island and the last
     /// frames of a collapse sit inside the notch instead of outlining a
     /// rounder one; the open island reaches the full radius and shoulder.
-    static func surfaceRadius(height: CGFloat) -> CGFloat { min(28, height * 0.34) }
+    static func surfaceRadius(height: CGFloat) -> CGFloat { min(38, height * 0.34) }
     static func shoulder(height: CGFloat) -> CGFloat { min(shoulder, height * 0.19) }
     /// The optional outline's stroke. Only its inner half, inside the island, shows.
     static let outlineWidth: CGFloat = 2
+
+    /// Adds a G2 continuous squircle curve rounding from `start` to `end` through `corner`.
+    static func addSquircleCorner(to path: CGMutablePath,
+                                  corner: CGPoint,
+                                  start: CGPoint,
+                                  end: CGPoint,
+                                  span: CGFloat) {
+        if span <= 0.0001 {
+            path.addLine(to: end)
+            return
+        }
+        let uIn = CGPoint(x: (corner.x - start.x) / span, y: (corner.y - start.y) / span)
+        let uOut = CGPoint(x: (end.x - corner.x) / span, y: (end.y - corner.y) / span)
+
+        let p1 = CGPoint(x: corner.x - uIn.x * (span * 0.413102) + uOut.x * (span * 0.049004),
+                         y: corner.y - uIn.y * (span * 0.413102) + uOut.y * (span * 0.049004))
+        let c1_1 = CGPoint(x: corner.x - uIn.x * (span * 0.712053),
+                           y: corner.y - uIn.y * (span * 0.712053))
+        let c1_2 = CGPoint(x: corner.x - uIn.x * (span * 0.568082),
+                           y: corner.y - uIn.y * (span * 0.568082))
+
+        let p2 = CGPoint(x: corner.x - uIn.x * (span * 0.049004) + uOut.x * (span * 0.413102),
+                         y: corner.y - uIn.y * (span * 0.049004) + uOut.y * (span * 0.413102))
+        let c2_1 = CGPoint(x: corner.x - uIn.x * (span * 0.243889) + uOut.x * (span * 0.110593),
+                           y: corner.y - uIn.y * (span * 0.243889) + uOut.y * (span * 0.110593))
+        let c2_2 = CGPoint(x: corner.x - uIn.x * (span * 0.110593) + uOut.x * (span * 0.243889),
+                           y: corner.y - uIn.y * (span * 0.110593) + uOut.y * (span * 0.243889))
+
+        let c3_1 = CGPoint(x: corner.x + uOut.x * (span * 0.568082),
+                           y: corner.y + uOut.y * (span * 0.568082))
+        let c3_2 = CGPoint(x: corner.x + uOut.x * (span * 0.712053),
+                           y: corner.y + uOut.y * (span * 0.712053))
+
+        path.addCurve(to: p1, control1: c1_1, control2: c1_2)
+        path.addCurve(to: p2, control1: c2_1, control2: c2_2)
+        path.addCurve(to: end, control1: c3_1, control2: c3_2)
+    }
 
     // MARK: Capsule
     // Without a camera the island can float in the menu bar as a capsule.
@@ -427,7 +464,7 @@ enum NotchLayout {
     }
 
     /// A closed capsule is round at its ends; an open one keeps the island's corners.
-    static func capsuleRadius(height: CGFloat) -> CGFloat { min(max(0, height) / 2, 28) }
+    static func capsuleRadius(height: CGFloat) -> CGFloat { min(max(0, height) / 2, 38) }
 
     /// The bare capsule at rest is shorter than the gap between an
     /// activity's wings, closer to the phone's proportions.
@@ -452,27 +489,38 @@ enum NotchLayout {
     }
 
     /// The capsule outline. Every size, down to a line, has the same elements,
-    /// so any two frames of a resize blend, and circular corners make a
-    /// strip's ends true half circles that its content can be measured from.
+    /// so any two frames of a resize blend, and continuous squircle corners make a
+    /// strip's ends smooth and curvature-continuous.
     static func capsulePath(in rect: CGRect, gap: CGFloat) -> CGPath {
         let body = capsuleBody(in: rect, gap: gap)
         let corner = min(capsuleRadius(height: body.height), body.width / 2)
-        let handle = corner * (1 - 0.55228475)
         let (left, right, top, bottom) = (body.minX, body.maxX, body.minY, body.maxY)
         let path = CGMutablePath()
         path.move(to: CGPoint(x: left + corner, y: top))
         path.addLine(to: CGPoint(x: right - corner, y: top))
-        path.addCurve(to: CGPoint(x: right, y: top + corner), control1: CGPoint(x: right - handle, y: top),
-                      control2: CGPoint(x: right, y: top + handle))
+        addSquircleCorner(to: path,
+                          corner: CGPoint(x: right, y: top),
+                          start: CGPoint(x: right - corner, y: top),
+                          end: CGPoint(x: right, y: top + corner),
+                          span: corner)
         path.addLine(to: CGPoint(x: right, y: bottom - corner))
-        path.addCurve(to: CGPoint(x: right - corner, y: bottom), control1: CGPoint(x: right, y: bottom - handle),
-                      control2: CGPoint(x: right - handle, y: bottom))
+        addSquircleCorner(to: path,
+                          corner: CGPoint(x: right, y: bottom),
+                          start: CGPoint(x: right, y: bottom - corner),
+                          end: CGPoint(x: right - corner, y: bottom),
+                          span: corner)
         path.addLine(to: CGPoint(x: left + corner, y: bottom))
-        path.addCurve(to: CGPoint(x: left, y: bottom - corner), control1: CGPoint(x: left + handle, y: bottom),
-                      control2: CGPoint(x: left, y: bottom - handle))
+        addSquircleCorner(to: path,
+                          corner: CGPoint(x: left, y: bottom),
+                          start: CGPoint(x: left + corner, y: bottom),
+                          end: CGPoint(x: left, y: bottom - corner),
+                          span: corner)
         path.addLine(to: CGPoint(x: left, y: top + corner))
-        path.addCurve(to: CGPoint(x: left + corner, y: top), control1: CGPoint(x: left, y: top + handle),
-                      control2: CGPoint(x: left + handle, y: top))
+        addSquircleCorner(to: path,
+                          corner: CGPoint(x: left, y: top),
+                          start: CGPoint(x: left, y: top + corner),
+                          end: CGPoint(x: left + corner, y: top),
+                          span: corner)
         path.closeSubpath()
         return path
     }
