@@ -22,6 +22,7 @@ enum LatticeHubContract {
         let keyCode: UInt16
         var modifierFlags: ModifierFlags = []
         var window: Window?
+        var characters: String? = nil
     }
     final class Window { var firstResponder: AnyObject? }
     final class NSTextView {
@@ -109,6 +110,7 @@ enum LatticeHubContract {
             (.killProcess, .killProcess, nil, nil),
             (.wallpaper, .wallpaper, nil, nil),
             (.videoDownloader, .videoDownloader, nil, nil),
+            (.recentCaptures, .screenshot, nil, nil),
         ]
         suite.expect(Set(cases.map { $0.0 }) == Set(LatticeHubItem.allCases),
                      "every launcher tile has an activation contract")
@@ -167,14 +169,31 @@ enum LatticeHubContract {
         launcher.editingOptionsItem = .clipboard
         launcher.prepareForPresentation()
         suite.expect(launcher.presentationID != oldPresentation && !launcher.isEditing
-                     && launcher.editingOptionsItem == nil && launcher.selectedIndex == 0,
-                     "a new presentation resets edit controls and selects its first available tile")
+                     && launcher.editingOptionsItem == nil && launcher.selectedIndex == nil,
+                     "a new presentation resets edit controls and clears initial tile selection")
         events.removeAll()
         let enter = NSEvent(keyCode: UInt16(kVK_Return))
+        suite.expect(launcher.handlePanelKey(enter) == nil && events.isEmpty,
+                     "Return does not activate anything when no tile is selected")
+        let down = NSEvent(keyCode: UInt16(kVK_DownArrow))
+        suite.expect(launcher.handlePanelKey(down) == nil && launcher.selectedIndex == 0,
+                     "navigating with arrow keys selects the first tile")
         suite.expect(launcher.handlePanelKey(enter) == nil && events == ["hide"],
-                     "Return activates the first item immediately after presentation")
+                     "Return activates the selected item")
         DispatchQueue.main.drain()
         suite.expect(events == ["hide", "screenshot.capture"], "the first item executes its action")
+        events.removeAll()
+        DispatchQueue.main.jobs.removeAll()
+        launcher.prepareForPresentation()
+        let tab = NSEvent(keyCode: UInt16(kVK_Tab))
+        suite.expect(launcher.handlePanelKey(tab) == nil && launcher.selectedIndex == 0,
+                     "Tab selects the first item when unselected")
+        suite.expect(launcher.handlePanelKey(tab) == nil && launcher.selectedIndex == 1,
+                     "Tab advances to the second item")
+        let space = NSEvent(keyCode: UInt16(kVK_Space))
+        suite.expect(launcher.handlePanelKey(space) == nil && events == ["hide"],
+                     "Space activates the selected item")
+        DispatchQueue.main.drain()
         events.removeAll()
         DispatchQueue.main.jobs.removeAll()
         suite.expect(launcher.handlePanelKey(NSEvent(keyCode: UInt16(kVK_ANSI_Keypad1))) == nil
@@ -243,7 +262,7 @@ enum LatticeHubContract {
     private static func railContracts(_ suite: TestSuite) {
         let launcher = Launcher()
         launcher.prepareForPresentation()
-        suite.expect(launcher.keyboardIndex == 0, "a new presentation starts the rail at its first tile")
+        suite.expect(launcher.keyboardIndex == nil, "a new presentation starts with no initial rail highlight until navigated")
         launcher.select(launcher.visibleItems[3])
         suite.expect(launcher.selectedIndex == 3 && launcher.keyboardIndex == nil,
                      "hovering a tile selects it without scrolling the rail")

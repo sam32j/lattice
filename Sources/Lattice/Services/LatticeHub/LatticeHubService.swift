@@ -14,12 +14,21 @@ final class LatticeHubService: ObservableObject {
 
     @Published private(set) var shortcutRegistrationFailed = false
     @Published var stayAwakeOptionsPresented = false
-    @Published var isEditing = false
+    let editingPresentation = HubEditingPresentation()
+    @Published var isEditing = false {
+        didSet {
+            guard isEditing != oldValue else { return }
+            editingPresentation.setEditing(isEditing, options: editingOptionsItem)
+            if !isEditing { editingOptionsItem = nil }
+        }
+    }
     @Published var editingOptionsItem: LatticeHubItem?
     @Published var activeUtility: LatticeHubItem?
     @Published var selectedIndex: Int?
     @Published var keyboardIndex: Int?
-    @Published var presentationID = UUID()
+    @Published var presentationID = UUID() {
+        didSet { editingPresentation.reset() }
+    }
     @Published var hiddenItemsRaw: String = UserDefaults.standard.string(
         forKey: DefaultsKey.quickLauncherHiddenItems) ?? ""
 
@@ -52,6 +61,10 @@ final class LatticeHubService: ObservableObject {
         hide()
     }
 
+    func openSettings() {
+        (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
+    }
+
     var isVisible: Bool {
         panel?.isVisible == true
     }
@@ -67,6 +80,14 @@ final class LatticeHubService: ObservableObject {
         let hidden = QuickToolsSupport.hiddenIDs(from: hiddenItemsRaw)
         return orderedItems.filter { hidden.contains($0.rawValue) }
     }
+
+    var enabledItems: [LatticeHubItem] {
+        orderedItems
+    }
+
+    var enabledCount: Int { enabledItems.count }
+    var visibleCount: Int { visibleItems.count }
+    var hiddenCount: Int { hiddenItems.count }
 
     private var orderedItems: [LatticeHubItem] {
         PanelLayout.itemOrder(LatticeHubItem.self, key: DefaultsKey.quickLauncherItemOrder)
@@ -95,91 +116,9 @@ final class LatticeHubService: ObservableObject {
         clampSelection()
     }
 
-    // MARK: - Presentation
-
-    func toggle() {
-        if isVisible {
-            hide()
-            return
-        }
-        if shouldRouteToIsland() {
-            if NotchService.shared.openQuickPanel(toggle: true) { return }
-        }
-        show()
-    }
-
-    func show(anchoredBelow anchor: NSRect? = nil) {
-        if anchor == nil && shouldRouteToIsland() {
-            if NotchService.shared.openQuickPanel() {
-                if isVisible { hide() }
-                return
-            }
-        }
-        (NSApp.delegate as? AppDelegate)?.closePopover()
-        if NotchService.shared.expanded, NotchService.shared.selected == .hub {
-            NotchService.shared.collapse()
-        }
-        let panel = ensurePanel()
-        prepareForPresentation()
-        position(panel, anchoredBelow: anchor)
-        installMonitors(for: panel)
-        panel.alphaValue = 0
-        panel.orderFrontRegardless()
-        panel.makeKey()
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.13
-            panel.animator().alphaValue = 1
-        }
-    }
-
-    private func shouldRouteToIsland() -> Bool {
-        guard LauncherShortcutTarget.selected(in: .standard) == .automatic,
-              NotchSupport.routesQuickPanel() else {
-            return false
-        }
-        return NSMouseInRect(NSEvent.mouseLocation, NotchService.shared.geometry.screen, false)
-    }
-
-    func prepareForPresentation() {
-        refreshAvailability()
-        presentationID = UUID()
-        isEditing = false
-        editingOptionsItem = nil
-        selectedIndex = visibleItems.isEmpty ? nil : 0
-        keyboardIndex = selectedIndex
-    }
-
-    func refreshAvailability() {
-        if let activeUtility, !activeUtility.isAvailable() { self.activeUtility = nil }
-        if let editingOptionsItem, !editingOptionsItem.isAvailable() { self.editingOptionsItem = nil }
-        clampSelection()
-    }
-
-    func hide() {
-        stayAwakeOptionsPresented = false
-        if NotchService.shared.expanded, NotchService.shared.selected == .hub { NotchService.shared.collapse() }
-        removeMonitors()
-        isEditing = false
-        editingOptionsItem = nil
-        activeUtility = nil
-        panel?.orderOut(nil)
-    }
-
-    func closeUtility() {
-        activeUtility = nil
-    }
-
-    func refocusAfterModal() {
-        if NotchService.shared.expanded, NotchService.shared.selected == .hub {
-            NotchService.shared.presentationWindow?.makeKey(); return
-        }
-        guard let panel, panel.isVisible else { return }
-        panel.makeKey()
-    }
-
-    var dismissesOnOutsideInteraction: Bool {
-        !stayAwakeOptionsPresented && activeUtility == nil && NSApp.modalWindow == nil
-    }
+    var typeaheadBuffer = ""
+    var typeaheadTimestamp: TimeInterval = 0
+    static let typeaheadCooldown: TimeInterval = 0.8
 
     // MARK: - Actions
 
@@ -197,11 +136,79 @@ final class LatticeHubService: ObservableObject {
                        flow: QuickToolsSupport.GridFlow = .rows(columns: LatticeHubService.columns)) {
         let count = visibleItems.count
         guard count > 0 else { return }
-        selectedIndex = QuickToolsSupport.gridIndex(after: selectedIndex ?? 0,
+        clearTypeahead()
+        guard let current = selectedIndex else {
+            selectedIndex = count > 0 ? 0 : nil
+            keyboardIndex = 0
+            return
+        }
+        selectedIndex = QuickToolsSupport.gridIndex(after: current,
                                                     count: count,
                                                     flow: flow,
                                                     direction: direction)
         keyboardIndex = selectedIndex
+    }
+
+    func advanceSelection(backwards: Bool = false) {
+        let count = visibleItems.count
+        guard count > 0 else { return }
+        clearTypeahead()
+        guard let current = selectedIndex else {
+            selectedIndex = backwards ? count - 1 : 0
+            keyboardIndex = selectedIndex
+            return
+        }
+        if backwards {
+            selectedIndex = (current - 1 + count) % count
+        } else {
+            selectedIndex = (current + 1) % count
+        }
+        keyboardIndex = selectedIndex
+    }
+
+    func clearTypeahead() {
+        typeaheadBuffer = ""
+    }
+
+    func handleTypeahead(_ string: String) -> Bool {
+        let now = ProcessInfo.processInfo.systemUptime
+        if now - typeaheadTimestamp > Self.typeaheadCooldown {
+            typeaheadBuffer = ""
+        }
+        typeaheadTimestamp = now
+        let newBuffer = typeaheadBuffer + string
+        let query = newBuffer.lowercased()
+        let items = visibleItems
+        guard !items.isEmpty else { return false }
+        let language = L10n.shared.language
+
+        if newBuffer.count > 1, let firstChar = newBuffer.first, newBuffer.allSatisfy({ $0 == firstChar }) {
+            let prefix = String(firstChar).lowercased()
+            let matches = items.filter { $0.title(language: language).lowercased().hasPrefix(prefix) }
+            if !matches.isEmpty {
+                let currentItem = selectedIndex.flatMap { items.indices.contains($0) ? items[$0] : nil }
+                let currentIndex = currentItem.flatMap { matches.firstIndex(of: $0) } ?? -1
+                let nextIndex = (currentIndex + 1) % matches.count
+                let targetItem = matches[nextIndex]
+                if let targetIndex = items.firstIndex(of: targetItem) {
+                    typeaheadBuffer = newBuffer
+                    selectedIndex = targetIndex
+                    keyboardIndex = targetIndex
+                    return true
+                }
+            }
+        }
+
+        if let matchIndex = items.firstIndex(where: {
+            $0.title(language: language).lowercased().hasPrefix(query)
+        }) {
+            typeaheadBuffer = newBuffer
+            selectedIndex = matchIndex
+            keyboardIndex = matchIndex
+            return true
+        }
+
+        return false
     }
 
     func select(_ item: LatticeHubItem) {
@@ -243,17 +250,17 @@ final class LatticeHubService: ObservableObject {
                 SnippetLibraryService.shared.show()
             }
         case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner, .appUpdates, .portManager,
-             .killProcess, .wallpaper, .videoDownloader:
+             .killProcess, .wallpaper, .videoDownloader, .recentCaptures:
             activeUtility = item
         }
     }
 
     func clampSelection() {
         let count = visibleItems.count
-        guard count > 0 else {
-            selectedIndex = nil
+        guard count > 0, let current = selectedIndex else {
+            selectedIndex = count > 0 ? 0 : nil
             return
         }
-        selectedIndex = min(selectedIndex ?? 0, count - 1)
+        selectedIndex = min(current, count - 1)
     }
 }

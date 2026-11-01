@@ -21,10 +21,24 @@ extension LatticeHubService {
             }
             return nil
         }
-        guard !isEditing, activeUtility == nil,
-              event.modifierFlags.intersection([.command, .control, .option]).isEmpty else { return event }
+        if event.modifierFlags.contains(.command), Int(event.keyCode) == kVK_ANSI_Comma {
+            hide()
+            openSettings()
+            return nil
+        }
+        guard !isEditing, activeUtility == nil else { return event }
+
+        let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+
+        // Tab and Shift-Tab navigate sequentially through available tools
+        if Int(event.keyCode) == kVK_Tab, modifiers.isEmpty || modifiers == .shift {
+            advanceSelection(backwards: modifiers == .shift)
+            return nil
+        }
+
+        guard modifiers.isEmpty else { return event }
         switch Int(event.keyCode) {
-        case kVK_Return, kVK_ANSI_KeypadEnter:
+        case kVK_Return, kVK_ANSI_KeypadEnter, kVK_Space:
             activateSelection()
             return nil
         case kVK_LeftArrow:
@@ -39,10 +53,19 @@ extension LatticeHubService {
         case kVK_DownArrow:
             moveSelection(.down, flow: flow)
             return nil
+        case kVK_Delete:
+            clearTypeahead()
+            return nil
         default:
             if let index = Self.digitIndex(for: event.keyCode) {
                 activate(at: index)
                 return nil
+            }
+            if let chars = event.characters, !chars.isEmpty,
+               chars.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }) {
+                if handleTypeahead(chars) {
+                    return nil
+                }
             }
             return event
         }
