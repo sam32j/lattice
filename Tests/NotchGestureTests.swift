@@ -36,6 +36,8 @@ enum NotchGestureTests {
                "rendering and gestures use the same compact activity priority")
         suite.expect(!NotchSupport.gestureIsOverHeader(expanded: false, peeking: false, fromTop: 20, safeTop: 14)
                && NotchSupport.gestureIsOverHeader(expanded: true, peeking: false, fromTop: 20, safeTop: 14)
+               && NotchSupport.gestureIsOverHeader(expanded: true, peeking: false, fromTop: 0, safeTop: 14)
+               && NotchSupport.gestureIsOverHeader(expanded: true, peeking: false, fromTop: -5, safeTop: 14)
                && NotchSupport.gestureIsOverHeader(expanded: false, peeking: true, fromTop: 20, safeTop: 14),
                "a notchless compact strip has no invisible header blocking its lower half")
         var gesture = NotchGestureSupport()

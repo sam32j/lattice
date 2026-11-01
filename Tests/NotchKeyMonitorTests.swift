@@ -81,6 +81,8 @@ enum NotchKeyMonitorTests {
         var windowHost: Host? = Host()
         var modules = NotchModule.allCases
         var selected = NotchModule.controls
+        var expanded = true
+        var peeking = false
         var showingAppPanel = false
         var showingSections = false
         var showingCommandBar = false
@@ -237,9 +239,12 @@ enum NotchKeyMonitorTests {
         _ = NSEvent.handler?(NSEvent(window: service.panel, keyCode: 125))
         suite.expect(launcher.flows == [.columns(rows: 2)],
                      "Hub arrows follow the two displayed rows for a large catalogue")
-        // Large catalogues intentionally retain two rows. A smaller rail
-        // still reserves the controls' height and must navigate its single row.
         launcher.visibleItems = Array(0..<8)
+        launcher.flows = []
+        _ = NSEvent.handler?(NSEvent(window: service.panel, keyCode: 125))
+        suite.expect(launcher.flows == [.rows(columns: 4)], "eight apps navigate the two displayed rows")
+        // Below eight, the rail still reserves the controls' height.
+        launcher.visibleItems = Array(0..<7)
         launcher.flows = []
         _ = NSEvent.handler?(NSEvent(window: service.panel, keyCode: 125))
         suite.expect(launcher.flows == [.columns(rows: 1)],
