@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
 
+import AppKit
 import SwiftUI
 
 /// Permission status, permission reset, portable settings, and self-uninstall.
@@ -8,9 +9,14 @@ struct DataPermissionsSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.colorScheme) private var scheme
     private let permissionsContent: AnyView?
+    private let runAlert: ((NSAlert, NSWindow?) -> NSApplication.ModalResponse)?
 
-    init(permissionsContent: AnyView? = nil) { self.permissionsContent = permissionsContent }
-    @State private var showUninstallConfirm = false
+    init(permissionsContent: AnyView? = nil,
+         runAlert: ((NSAlert, NSWindow?) -> NSApplication.ModalResponse)? = nil) {
+        self.permissionsContent = permissionsContent
+        self.runAlert = runAlert
+    }
+    @State private var dialogWindow = PermissionDialogWindowReference()
     @State private var uninstallFailed = false
     @State private var uninstallFailedBody = ""
     @State private var working = false
@@ -52,6 +58,27 @@ struct DataPermissionsSettings: View {
         return copy(.exportDescription)
     }
 
+    private func confirmAndUninstall() {
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = l10n.s.advancedUninstallConfirmTitle
+        alert.informativeText = l10n.s.advancedUninstallConfirmBody
+        alert.addButton(withTitle: l10n.s.advancedUninstallButton)
+        alert.addButton(withTitle: l10n.s.uninstallerCancel)
+        let runner = runAlert ?? { PermissionDialogPresentation.run($0, over: $1) }
+        let response = runner(alert, dialogWindow.window ?? NSApp.mainWindow)
+        guard response == .alertFirstButtonReturn else { return }
+        working = true
+        SelfUninstall.uninstallCompletely { body in
+            working = false
+            uninstallFailedBody = body
+            // Stopping leaves the Mac exactly as it was, so the only
+            // thing left to do is say so: the button going quiet on
+            // its own reads as the app ignoring the request.
+            uninstallFailed = true
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -85,28 +112,13 @@ struct DataPermissionsSettings: View {
                     DataPermissionsRow(symbol: "trash", title: l10n.s.advancedUninstallButton,
                         description: l10n.s.advancedUninstallDescription, tone: .destructive,
                         actionTitle: uninstallActionTitle, actionTone: .destructive,
-                        actionRole: .destructive, actionEnabled: !working) { showUninstallConfirm = true }
+                        actionRole: .destructive, actionEnabled: !working) { confirmAndUninstall() }
                 }
             }
             .padding(22)
         }
         .background(DataPermissionsPalette(scheme).page)
-        .alert(l10n.s.advancedUninstallConfirmTitle, isPresented: $showUninstallConfirm) {
-            Button(l10n.s.uninstallerCancel, role: .cancel) {}
-            Button(l10n.s.advancedUninstallButton, role: .destructive) {
-                working = true
-                SelfUninstall.uninstallCompletely { body in
-                    working = false
-                    uninstallFailedBody = body
-                    // Stopping leaves the Mac exactly as it was, so the only
-                    // thing left to do is say so: the button going quiet on
-                    // its own reads as the app ignoring the request.
-                    uninstallFailed = true
-                }
-            }
-        } message: {
-            Text(l10n.s.advancedUninstallConfirmBody)
-        }
+        .background(PermissionDialogWindowReader(reference: dialogWindow))
         .alert(l10n.s.advancedUninstallFailedTitle, isPresented: $uninstallFailed) {
             Button("OK", role: .cancel) {}
         } message: {
