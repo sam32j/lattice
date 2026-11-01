@@ -21,14 +21,12 @@ enum SettingsPermissionAccess {
             if isGranted(permission) { completion(.granted) }
             else {
                 completion(.needsSettings)
-                permissions.openAccessibilitySettings()
             }
         case .screenRecording:
             permissions.requestScreenRecording()
             if isGranted(permission) { completion(.granted) }
             else {
                 completion(.needsSettings)
-                permissions.openScreenRecordingSettings()
             }
         case .camera, .microphone:
             let media: AVMediaType = permission == .camera ? .video : .audio
