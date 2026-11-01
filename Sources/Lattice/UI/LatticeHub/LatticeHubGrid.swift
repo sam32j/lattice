@@ -5,20 +5,19 @@ import SwiftUI
 
 extension LatticeHubView {
     var islandRailRows: Int {
-        HubStripLayout.rows(for: launcher.visibleItems.count)
+        HubStripLayout.rows(for: launcher.visibleItems.count, columns: NotchService.shared.expandedGeometry.hubColumns)
     }
 
     var islandMainHeight: CGFloat {
-        let controls = launcher.notchControlsHeight
-        let rail = launcher.visibleItems.isEmpty ? NotchLayout.hubEmptyHeight : NotchLayout.railHeight(
-            rows: islandRailRows, rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing)
-        return controls + rail + (controls > 0 ? 6 : 0)
+        NotchService.shared.expandedGeometry.hubContentHeight(toolCount: launcher.visibleItems.count,
+            controlsHeight: launcher.notchControlsHeight, editing: false)
     }
 
     @ViewBuilder var grid: some View {
         if let notchSize {
             HubIslandStripView(items: launcher.visibleItems,
                                notchWidth: notchSize.width,
+                               columns: NotchService.shared.expandedGeometry.hubColumns,
                                isEditing: launcher.isEditing,
                                launcher: launcher,
                                session: dragSession,

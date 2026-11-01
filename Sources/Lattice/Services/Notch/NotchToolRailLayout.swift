@@ -19,13 +19,12 @@ extension NotchLayout {
 }
 
 extension NotchGeometry {
+    var hubColumns: Int { layout == .spacious ? 6 : 5 }
     /// Both modes keep the same rail. Hidden tools scroll horizontally in a
     /// fixed strip, so the number hidden never changes the island's height.
     func hubContentHeight(toolCount: Int, controlsHeight: CGFloat,
                           editing: Bool, optionsHeight: CGFloat = 0) -> CGFloat {
-        let rows = toolRows(count: toolCount, controlsHeight: controlsHeight)
-        let rail = toolCount == 0 ? NotchLayout.hubEmptyHeight : NotchLayout.railHeight(
-            rows: rows, rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing)
+        let rail = toolCount == 0 ? NotchLayout.hubEmptyHeight : HubStripLayout.contentSize(count: toolCount, columns: hubColumns).height
         let spacing: CGFloat = controlsHeight > 0 ? 6 : 0
         let normal = controlsHeight + spacing + rail
         return normal + (editing ? NotchLayout.hubEditingStripHeight + optionsHeight : 0)

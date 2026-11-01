@@ -8,7 +8,7 @@ import SwiftUI
 struct HubIslandStripView<Content: View>: View {
     let items: [LatticeHubItem]
     let notchWidth: CGFloat
-    var columns: Int = 5
+    let columns: Int
     let isEditing: Bool
     @ObservedObject var launcher: LatticeHubService
     @ObservedObject var session: HubDragSession
@@ -17,10 +17,15 @@ struct HubIslandStripView<Content: View>: View {
     private var layout: HubToolLayout { .island(count: items.count, width: notchWidth, columns: columns) }
 
     var body: some View {
-        ScrollView(.horizontal) { surface }
-            .scrollIndicators(.never)
-            .scrollTargetBehavior(HubStripScrollTargetBehavior(isDragging: session.active != nil, stride: layout.pageStride))
-            .frame(width: notchWidth, height: layout.size.height, alignment: .leading)
+        Group {
+            if layout.isPaged {
+                ScrollView(.horizontal) { surface }
+                    .scrollIndicators(.never)
+                    .scrollDisabled(session.active != nil)
+                    .scrollTargetBehavior(HubStripScrollTargetBehavior(isDragging: session.active != nil, stride: layout.pageStride))
+            } else { surface }
+        }
+        .frame(width: notchWidth, height: layout.size.height, alignment: .leading)
         .onDisappear { session.cancel() }
         .onChange(of: isEditing) { _, editing in if !editing { session.cancel() } }
     }
