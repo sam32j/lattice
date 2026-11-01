@@ -26,58 +26,14 @@ extension NotchSettings {
                 }
             }
         case .music:
-            let music = FeatureStrings.notchMusicExtras(l10n.language)
-            switchRow("music.note", text.playingMusic, isOn: $showPlayingMusic)
-            switchRow("play.rectangle", music.includeOtherPlayers, isOn: $includeOtherPlayers)
-            SettingsRow(symbol: "arrow.up.forward.app", title: music.preferredPlayer, caption: music.preferredPlayerHint) {
-                Picker(music.preferredPlayer, selection: $preferredPlayer) {
-                    Text(music.automaticSource).tag(NotchPreferredPlayer.automatic)
-                    ForEach(NotchPreferredPlayer.choices(in: preferredPlayers ?? [], including: preferredPlayer), id: \.bundleID) { app in
-                        Text(app.name).tag(app.bundleID)
-                    }
-                }
-                .labelsHidden()
-            }
-            .task {
-                guard let choices = await NotchPreferredPlayer.loadInstalled(), !Task.isCancelled else { return }
-                preferredPlayers = choices
-            }
-            switchRow("text.quote", music.enableLyrics, isOn: islandFeatureBinding(.notchLyrics, value: $lyricsEnabled))
-            if lyricsEnabled, AppFeature.notchLyrics.isAvailable {
-                switchRow("globe", music.online, caption: music.onlineHint, isOn: $lyricsOnline)
-                    .padding(.leading, settingsRowTextInset)
-            }
-            switchRow("photo", music.browserCovers, caption: music.browserCoversHint, isOn: $browserCovers)
-            switchRow("list.bullet", music.enableQueue, caption: music.queueDescription,
-                      isOn: islandFeatureBinding(.notchQueue, value: $queueEnabled))
-            switchRow("waveform", music.liveEqualizer,
-                                     caption: NotchAudioLevelSupport.isSupported ? music.liveEqualizerHint : music.liveEqualizerUnavailable,
-                                     isOn: islandFeatureBinding(.notchLiveEqualizer, value: $liveEqualizer))
-                .disabled(!NotchAudioLevelSupport.isSupported)
+            musicModuleOptions
         case .notifications:
-            let notifications = FeatureStrings.notchNotifications(l10n.language)
-            SettingsRow(symbol: "bell.slash", title: notifications.hideSystemBanner, caption: notifications.hideSystemBannerHint) {
-                PermissionGatedToggle(notifications.hideSystemBanner, isOn: $dismissNativeNotifications).labelsHidden()
-            }
-            if notificationsEnabled, !permissions.accessibility { PermissionRow(kind: .accessibility) }
+            notificationsModuleOptions
         case .downloads:
             NotchDownloadsSettingsControls()
                 .toggleStyle(TrailingSwitchToggleStyle())
         case .calendar:
-            let calendar = FeatureStrings.notchCalendar(l10n.language)
-            Text(calendar.permission).font(.callout).foregroundStyle(.secondary)
-            if permissions.calendarAccess == .fullAccess {
-                Label(l10n.s.permissionGranted, systemImage: "checkmark.circle.fill").foregroundStyle(.green)
-            } else {
-                Button(calendar.allow, action: permissions.requestCalendar).disabled(permissions.requestingCalendar)
-                Button(calendar.settings, action: permissions.openCalendarSettings)
-            }
-            Divider()
-            switchRow("calendar.badge.clock", calendar.countdown, caption: calendar.countdownHint,
-                      isOn: $calendarCountdown)
-            switchRow("hourglass", calendar.timeLeft, caption: calendar.timeLeftHint, isOn: $calendarTimeLeft)
-            switchRow("number", calendar.weekNumbers, isOn: $calendarWeekNumbers)
-            if permissions.calendarAccess == .fullAccess { NotchCalendarSelection() }
+            calendarModuleOptions
         case .timer:
             let activities = FeatureStrings.notchActivities(l10n.language)
             switchRow("eye.slash", activities.hideTimerCountdown,
@@ -155,15 +111,12 @@ extension NotchSettings {
                     idleChoice(.none, title: restsWithMascot ? FeatureStrings.notchMascot(l10n.language).title : text.idleNone,
                                symbol: "minus")
                     if PowerSampler.hasInternalBattery {
-                        idleChoice(.battery, title: text.battery, symbol: "battery.75percent",
-                                   reason: AppFeature.monitorPower.enableReason(l10n)) { AppFeature.monitorPower.showInFeatures() }
+                        idleChoice(.battery, title: text.battery, symbol: "battery.75percent")
                     }
-                    // Offered once the section is on, and kept while it is the
-                    // saved choice, waiting like the others.
-                    if NotchSupport.canRest(with: .agents) || idle == NotchIdleContent.agents.rawValue {
-                        idleChoice(.agents, title: FeatureStrings.notchAgents(l10n.language).restingTitle, symbol: "sparkles",
-                                   reason: pageReason(.agents, feature: .notchAgents), fix: pageAction(.agents, feature: .notchAgents))
-                    }
+                    idleChoice(.agents, title: FeatureStrings.notchAgents(l10n.language).restingTitle, symbol: "sparkles",
+                               reason: "Require “AI Usage”", fix: {
+                        pageAction(.agents, feature: .notchAgents)()
+                    })
                 }
                 .disabled(hover && hideUntilHover)
                 let liveActivityStrings = FeatureStrings.notchLiveActivitySettings(l10n.language)
@@ -181,73 +134,93 @@ extension NotchSettings {
                           liveActivityStrings.showActivityOnLockScreen,
                           isOn: $lockScreen)
                 Divider()
-                Text(editor.feedback).font(.headline)
                 let volumeAvailable = AppFeature.mixer.isAvailable
                 let brightnessAvailable = AppFeature.brightness.isAvailable && brightnessControlEnabled
-                let keyboardLightAvailable = AppFeature.brightness.isAvailable && BrightnessService.keyboardLightIsSupported
                 let microphoneAvailable = AppFeature.micMute.isAvailable
-                // A Mac without a battery has no battery notices, so that card
-                // is left out rather than shown waiting for Power.
                 let hasBattery = PowerSampler.hasInternalBattery
-                let batteryAvailable = AppFeature.monitorPower.isAvailable
-                let accessoriesAvailable = AppFeature.monitorPower.isAvailable
-                let clipboardAvailable = AppFeature.clipboardHistory.isAvailable && clipboardHistoryEnabled
-                    && NotchSupport.modules().contains(.clipboard)
+                let batteryAvailable = true
+                let accessoriesAvailable = true
                 let musicAvailable = NotchSupport.modules().contains(.music)
                 let keepAwakeAvailable = AppFeature.keepAwake.isAvailable
-                let reserves = ![volumeAvailable, brightnessAvailable, keyboardLightAvailable, microphoneAvailable,
-                                 batteryAvailable || !hasBattery, accessoriesAvailable, clipboardAvailable,
-                                 musicAvailable, keepAwakeAvailable].allSatisfy { $0 }
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), spacing: 10)], spacing: 10) {
-                    toggleCard(text.volume, symbol: "speaker.wave.2", value: $volume, available: volumeAvailable,
-                               reason: AppFeature.mixer.enableReason(l10n), reservesReason: reserves,
-                               unavailableAction: { AppFeature.mixer.showInFeatures() })
-                    toggleCard(text.brightness, symbol: "sun.max", value: $brightness, available: brightnessAvailable,
-                               reason: AppFeature.brightness.isAvailable ? editor.enableSetting(FeatureStrings.brightness(l10n.language).enable) : AppFeature.brightness.enableReason(l10n),
-                               reservesReason: reserves,
-                               unavailableAction: {
-                                   if AppFeature.brightness.isAvailable {
-                                       router.request(AppFeature.brightness.settingsDestination)
-                                   } else {
-                                       AppFeature.brightness.showInFeatures()
-                                   }
-                               })
-                    toggleCard(FeatureStrings.brightness(l10n.language).keyboardLight, symbol: "light.max", value: $keyboardLight,
-                              available: keyboardLightAvailable,
-                              reason: !AppFeature.brightness.isAvailable ? AppFeature.brightness.enableReason(l10n) : editor.keyboardLightUnavailable,
-                              reservesReason: reserves,
-                              unavailableAction: !AppFeature.brightness.isAvailable ? { AppFeature.brightness.showInFeatures() } : nil)
-                    toggleCard(l10n.s.mixerInputTitle, symbol: "mic", value: $microphone, available: microphoneAvailable,
-                               reason: AppFeature.micMute.enableReason(l10n), reservesReason: reserves,
-                               unavailableAction: { AppFeature.micMute.showInFeatures() })
-                    if hasBattery {
-                        toggleCard(text.battery, symbol: "battery.75percent", value: $battery, available: batteryAvailable,
-                                   reason: AppFeature.monitorPower.enableReason(l10n), reservesReason: reserves,
-                                   unavailableAction: { AppFeature.monitorPower.showInFeatures() })
-                    }
-                    NotchAccessorySettingsItem(title: FeatureStrings.notchActivities(l10n.language).accessories,
-                              enabled: islandFeatureBinding(.notchAccessories, value: $accessoriesEnabled),
-                              available: accessoriesAvailable,
-                              reason: AppFeature.monitorPower.enableReason(l10n),
-                              reservesReason: reserves,
-                              unavailableAction: {
-                                  AppFeature.monitorPower.showInFeatures()
-                              })
-                    toggleCard(l10n.s.keepAwakeTitle, symbol: NotchControlItem.keepAwake.symbol,
-                               value: $keepAwakeActivity, available: keepAwakeAvailable,
-                               reason: AppFeature.keepAwake.enableReason(l10n), reservesReason: reserves,
-                               unavailableAction: { AppFeature.keepAwake.showInFeatures() })
-                    toggleCard(SettingsFollowupLabels.text(.clipboardActivity, l10n.language), symbol: "doc.on.clipboard", value: $clipboard,
-                               available: clipboardAvailable, reason: clipboardFeedbackReason, reservesReason: reserves,
-                               unavailableAction: { openClipboardFeedbackSetup() })
-                    toggleCard(text.newTrack, symbol: "music.note", value: $trackChange, available: musicAvailable,
-                               reason: pageReason(.music, feature: nil), reservesReason: reserves,
-                               unavailableAction: pageAction(.music, feature: nil))
-                    // A layout change is read straight from the system, so
-                    // this card never waits on another feature.
-                    toggleCard(text.inputSource, symbol: "keyboard", value: $inputSource,
-                               available: true, reservesReason: reserves)
+
+                let accessoryBinding = islandFeatureBinding(.notchAccessories, value: $accessoriesEnabled)
+
+                let indicatorStates: [(available: Bool, on: Bool)] = [
+                    (volumeAvailable, volume),
+                    (brightnessAvailable, brightness),
+                    (true, keyboardLight),
+                    (microphoneAvailable, microphone),
+                    hasBattery ? (batteryAvailable, battery) : nil,
+                    (accessoriesAvailable, accessoryBinding.wrappedValue),
+                    (keepAwakeAvailable, keepAwakeActivity),
+                    (true, clipboard),
+                    (musicAvailable, trackChange),
+                    (true, inputSource)
+                ].compactMap { $0 }
+
+                let onCount = indicatorStates.filter { $0.available && $0.on }.count
+                let needSetupCount = indicatorStates.filter { !$0.available }.count
+                let indicatorsSummary = needSetupCount > 0 ? "\(onCount) on · \(needSetupCount) need setup" : "\(onCount) on"
+
+                HStack(alignment: .firstTextBaseline) {
+                    Text(editor.feedback).font(.headline)
+                    Spacer()
+                    Text(indicatorsSummary)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
+
+                VStack(spacing: 0) {
+                    IndicatorListRow(symbol: "speaker.wave.2", title: text.volume,
+                                     subtitle: "Require “Audio Output Control”",
+                                     available: volumeAvailable, isOn: $volume,
+                                     unavailableAction: { AppFeature.mixer.showInFeatures() })
+                    Divider()
+                    IndicatorListRow(symbol: "sun.max", title: text.brightness,
+                                     subtitle: "Require “Display Control”",
+                                     available: brightnessAvailable, isOn: $brightness,
+                                     unavailableAction: {
+                                         router.request(FeatureSettingsDestination(.energy, sectionAnchor: .brightness))
+                                     })
+                    Divider()
+                    IndicatorListRow(symbol: "light.max", title: FeatureStrings.brightness(l10n.language).keyboardLight,
+                                     available: true, isOn: $keyboardLight)
+                    Divider()
+                    IndicatorListRow(symbol: "mic", title: l10n.language == .enUS ? "Mute Status" : l10n.s.mixerInputTitle,
+                                     subtitle: "Require “Audio Input Control”",
+                                     available: microphoneAvailable, isOn: $microphone,
+                                     unavailableAction: { AppFeature.micMute.showInFeatures() })
+                    if hasBattery {
+                        Divider()
+                        IndicatorListRow(symbol: "battery.75percent", title: text.battery,
+                                         available: true, isOn: $battery)
+                    }
+                    Divider()
+                    IndicatorListRow(symbol: "headphones", title: FeatureStrings.notchActivities(l10n.language).accessories,
+                                     available: true, isOn: accessoryBinding)
+                    Divider()
+                    IndicatorListRow(symbol: NotchControlItem.keepAwake.symbol, title: l10n.s.keepAwakeTitle,
+                                     subtitle: "Require “Stay Awake”",
+                                     available: keepAwakeAvailable, isOn: $keepAwakeActivity,
+                                     unavailableAction: {
+                                         router.request(FeatureSettingsDestination(.energy, sectionAnchor: .keepAwake))
+                                     })
+                    Divider()
+                    IndicatorListRow(symbol: "doc.on.clipboard",
+                                     title: SettingsFollowupLabels.text(.clipboardActivity, l10n.language),
+                                     available: true, isOn: $clipboard)
+                    Divider()
+                    IndicatorListRow(symbol: "music.note", title: text.newTrack,
+                                     subtitle: "Require “Music”",
+                                     available: musicAvailable, isOn: $trackChange,
+                                     unavailableAction: pageAction(.music, feature: nil))
+                    Divider()
+                    IndicatorListRow(symbol: "keyboard", title: text.inputSource,
+                                     available: true, isOn: $inputSource)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+                .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 if enabled, (volume || brightness || keyboardLight), !permissions.accessibility { PermissionRow(kind: .accessibility) }
             }
             destinationsCard
@@ -268,5 +241,59 @@ private struct VideoDownloaderDestinationRow: View {
                 downloader.chooseDestination()
             }
         }
+    }
+}
+
+private struct IndicatorListRow: View {
+    let symbol: String
+    let title: String
+    var subtitle: String? = nil
+    let available: Bool
+    @Binding var isOn: Bool
+    var unavailableAction: (() -> Void)? = nil
+
+    private var amberColor: Color {
+        Color.orange
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(available && isOn ? Color.accentColor : Color.secondary)
+                .frame(width: 24, height: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                if !available, let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 11))
+                        .foregroundStyle(amberColor)
+                }
+            }
+
+            Spacer()
+
+            if available {
+                Toggle(title, isOn: $isOn)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            } else if let unavailableAction {
+                Button(action: unavailableAction) {
+                    Text("Enable")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 5)
+                        .background(Color.accentColor, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
     }
 }

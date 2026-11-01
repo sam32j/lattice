@@ -37,7 +37,13 @@ extension NotchSettings {
         let waits = reason != nil && !NotchSupport.canRest(with: item)
         let marked = restingChoice == item || (waits && idle == item.rawValue)
         return VStack(spacing: 6) {
-            Button { idle = item.rawValue } label: {
+            Button {
+                if waits {
+                    fix()
+                } else {
+                    idle = item.rawValue
+                }
+            } label: {
                 VStack(spacing: 14) {
                     HStack(spacing: 14) {
                         if item == .none, restsWithMascot {
@@ -62,7 +68,7 @@ extension NotchSettings {
                 Button(reason, action: fix)
                     .buttonStyle(.plain)
                     .font(.caption2)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.orange)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -135,7 +141,7 @@ extension NotchSettings {
     var configuration: [String] {
         [String(enabled), String(calendarEnabled), String(calendarCountdown), String(calendarTimeLeft),
          String(notificationsEnabled), String(dismissNativeNotifications), String(gesturesEnabled),
-         String(lyricsEnabled), String(lyricsOnline), String(browserCovers), String(queueEnabled), String(liveEqualizer),
+         String(lyricsEnabled), String(lyricsOnline), String(queueEnabled), String(liveEqualizer),
          String(showPlayingMusic), String(includeOtherPlayers), idle, hiddenControls, controlOrder, size,
          String(timerEnabled), String(timerSoundEnabled), String(hideTimerCountdown),
          String(cameraEnabled), String(accessoriesEnabled), String(hapticFeedback),

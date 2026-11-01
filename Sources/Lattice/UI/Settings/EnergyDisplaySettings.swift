@@ -91,6 +91,7 @@ struct EnergyDisplaySettings: View {
                 .disabled(!brightnessEnabled || !AppFeature.brightness.isAvailable)
                 .opacity(brightnessEnabled && AppFeature.brightness.isAvailable ? 1 : 0.5)
             }
+            .settingsSectionAnchor(.brightness, cornerRadius: 16)
         }
         .settingsExpansionAnimation(value: [brightnessKeysEnabled,
             brightnessKeyStepBinding.wrappedValue != .standard, permissions.accessibility])
