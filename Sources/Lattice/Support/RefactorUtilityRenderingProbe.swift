@@ -46,7 +46,7 @@ enum RefactorUtilityRenderingProbe {
         for phase in [PermissionResetState.Phase.ready, .restartRequired, .failed] {
             SettingsRefactorProbe.render("permission-reset-\(phase)",
                 view: AnyView(SettingsCard {
-                    PermissionResetSettingsRow(state: PermissionResetState(phase: phase), reset: { _ in }, restart: {})
+                    PermissionResetSettingsRow(state: PermissionResetState(phase: phase), reset: { _ in }, restart: {}, restartDialogEnabled: false)
                 }.padding(22)), size: CGSize(width: 760, height: 240), output: output, failures: &failures)
         }
         for overlaps in [false, true] {

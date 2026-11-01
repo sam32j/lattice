@@ -1,4 +1,5 @@
 import Combine
+import Foundation
 
 final class PermissionResetState: ObservableObject {
     static let shared = PermissionResetState()

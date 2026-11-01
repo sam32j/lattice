@@ -1,7 +1,81 @@
 import Foundation
 
 enum PermissionResetStateTests {
+    enum CopyKey { case restartButton, restartTitle, restartDescription, clearTitle, confirmation, clearButton }
+    enum ModalResponse { case alertFirstButtonReturn, alertSecondButtonReturn }
+    final class Alert {
+        enum Style { case warning, informational }
+        static var shown: [Alert] = []
+        static var response = ModalResponse.alertFirstButtonReturn
+        var alertStyle = Style.informational
+        var messageText = "", informativeText = ""
+        var buttons: [String] = []
+        final class ActionButton { var hasDestructiveAction = false }
+        @discardableResult
+        func addButton(withTitle title: String) -> ActionButton { buttons.append(title); return ActionButton() }
+        func runModal() -> ModalResponse { Self.shown.append(self); return Self.response }
+    }
+    class DialogState {
+        let state: PermissionResetState
+        var showingRestartDialog = false
+        var restarts = 0
+        var restartDialogEnabled = true
+        var reminders: [() -> Void] = []
+        func scheduleRestartReminder(_ action: @escaping () -> Void) { reminders.append(action) }
+        var needsRestart: Bool { state.phase == .restartRequired || state.phase == .failed }
+        init(_ phase: PermissionResetState.Phase) { state = PermissionResetState(phase: phase) }
+        func copy(_ key: CopyKey) -> String {
+            switch key {
+            case .clearTitle: return "Clear All Permissions"
+            case .confirmation: return "Reset permissions?"
+            case .clearButton: return "Clear"
+            case .restartButton: return "Restart"
+            case .restartTitle: return "Restart Lattice"
+            case .restartDescription: return "Restart Lattice to finish permission reset."
+            }
+        }
+        func restart() { restarts += 1 }
+        func runPermissionAlert(_ alert: Alert) -> ModalResponse { alert.runModal() }
+        var cancelTitle: String { "Cancel" }
+    }
     static func run(_ suite: TestSuite) {
+        PermissionDialogPresentationTests.run(suite)
+        Alert.shown = []
+        DialogPresenter(.ready).presentRestartIfNeeded()
+        DialogPresenter(.working).presentRestartIfNeeded()
+        suite.expect(Alert.shown.isEmpty, "reset completion dialog never appears before reset finishes")
+        let completed = DialogPresenter(.restartRequired)
+        completed.presentRestartIfNeeded()
+        suite.expect(Alert.shown.last?.messageText == "Restart Lattice"
+                     && Alert.shown.last?.informativeText == "Restart Lattice to finish permission reset."
+                     && Alert.shown.last?.buttons == ["Restart"] && completed.restarts == 1,
+                     "successful reset requires a modal restart with existing title and help, without a Later action")
+        completed.presentRestartIfNeeded()
+        suite.expect(Alert.shown.count == 1, "duplicate lifecycle updates cannot stack restart dialogs")
+        suite.expect(completed.reminders.count == 1, "a relaunch that returns leaves a scheduled required restart retry")
+        completed.reminders.first?()
+        suite.expect(completed.restarts == 2 && Alert.shown.count == 2,
+                     "an app still alive after relaunch receives another required restart action")
+        let probe = DialogPresenter(.restartRequired)
+        probe.restartDialogEnabled = false
+        probe.presentRestartIfNeeded()
+        suite.expect(Alert.shown.count == 2 && probe.restarts == 0 && probe.reminders.isEmpty,
+                     "rendering fixtures can explicitly suppress native restart dialogs and retries")
+        let failed = DialogPresenter(.failed)
+        failed.presentRestartIfNeeded()
+        suite.expect(Alert.shown.last?.messageText == "Restart Lattice"
+                     && Alert.shown.last?.informativeText == "Restart Lattice to finish permission reset."
+                     && Alert.shown.last?.buttons == ["Restart"] && failed.restarts == 1,
+                     "both reset outcomes use the requested restart title and help")
+        Alert.shown = []
+        let confirmation = DialogPresenter(.ready)
+        Alert.response = .alertSecondButtonReturn
+        suite.expect(!confirmation.confirmReset() && Alert.shown.last?.buttons == ["Clear", "Cancel"],
+                     "native reset confirmation supports Cancel without approving a reset")
+        Alert.response = .alertFirstButtonReturn
+        suite.expect(confirmation.confirmReset() && Alert.shown.last?.messageText == "Clear All Permissions"
+                     && Alert.shown.last?.informativeText == "Reset permissions?",
+                     "native confirmation and restart dialogs use the same presentation boundary")
         let state = PermissionResetState()
         var finish: ((Bool) -> Void)?
         var requests = 0
