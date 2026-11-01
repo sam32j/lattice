@@ -1441,6 +1441,9 @@ enum FeatureCatalogTests {
         suite.expect(AppFeature.commandBar.permissions.contains(.automationFinder),
                "Command Bar declares the Finder permission used by its Trash action")
         suite.expect(activeSet(.automationTerminal) == [.homebrew], "homebrew drives the Terminal")
+        suite.expect(activeSet(.automationSystemEvents) == [.quickLauncher], "quick launcher uses System Events automation")
+        suite.expect(AppFeature.quickLauncher.permissions == [.automationSystemEvents],
+               "quick launcher declares System Events automation access")
         suite.expect(activeSet(.appManagement) == [.homebrew, .appUpdates, .diskImageInstaller],
                "package, update and disk-image installs declare App Management access")
         suite.expect(AppFeature.homebrew.permissions == [.automationTerminal, .appManagement],

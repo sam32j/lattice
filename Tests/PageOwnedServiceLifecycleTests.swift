@@ -43,8 +43,13 @@ enum PageOwnedServiceLifecycleTests {
         var inserted = false
         var monitors = 2
         var isEditing = true
+        var presentationID = UUID()
         var editingOptionsItem: Int? = 1
         var activeUtility: Int? = 1
+        var visibleItems: [Int] = [1]
+        var selectedIndex: Int? = 0
+        var keyboardIndex: Int? = 0
+        func clearTypeahead() {}
         func removeMonitors() { monitors = 0 }
         func rememberPasteTarget() {}
         func reloadSnippets() {}

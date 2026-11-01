@@ -643,7 +643,7 @@ def main():
             .replace("UserDefaults.standard", "defaults") \
             .replace("$0.isAvailable", "$0.isAvailable(in: defaults)") \
             .replace("role.savedShortcut", "GlobalShortcut.saved(for: role.storageKey, fallback: role.defaultShortcut, in: defaults)")
-    launcher_footer = declaration("Sources/Lattice/UI/LatticeHub/LatticeHubView.swift", "    private var footer:")
+    launcher_footer = declaration("Sources/Lattice/UI/LatticeHub/LatticeHubChrome.swift", "    var footer:")
     launcher_footer = launcher_footer.replace("Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString)",
                                              "Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString).background(Marker())")
     launcher_footer = launcher_footer.replace("GlobalShortcutRole.quickLauncher.savedShortcut",
@@ -1304,7 +1304,7 @@ def main():
               .replace("private struct", "struct", 1)
           + declaration("Sources/Lattice/UI/Notch/NotchCalendarView.swift", "private struct NotchCountdownChoice:")
               .replace("private struct", "struct", 1)
-          + declaration("Sources/Lattice/UI/Notch/NotchComponents.swift", "struct NotchRail<")
+          + declaration("Sources/Lattice/UI/Notch/NotchRail.swift", "struct NotchRail<")
           + declaration("Sources/Lattice/UI/PlainTextEditor.swift", "struct PlainTextEditor:")
               .replace("        private func moveLine(", "        func moveLine(", 1)
           + declaration(scratchpad_view, "struct NotchScratchpadView:")
@@ -1870,17 +1870,20 @@ def main():
     write("LatticeHubBodies.swift", "import Foundation\nimport Carbon.HIToolbox\n" + protocol + "\n\nextension LatticeHubContract {\n"
           + declaration(item_file, "enum LatticeHubItem:")
           + "final class Launcher {\nvar isEditing = false\nvar activeUtility: LatticeHubItem?\n"
-          + "var stayAwakeOptionsPresented = false\nvar editingOptionsItem: LatticeHubItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar presentationID = UUID()\n"
+          + "var stayAwakeOptionsPresented = false\nvar editingOptionsItem: LatticeHubItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar presentationID = UUID()\nvar typeaheadBuffer = \"\"\nvar typeaheadTimestamp: TimeInterval = 0\nstatic let typeaheadCooldown: TimeInterval = 0.8\n"
           + "var candidates: [LatticeHubItem] = LatticeHubItem.allCases\n"
           + "var visibleItems: [LatticeHubItem] { candidates.filter { $0.isAvailable(in: ReviewDefaults.current) } }\n"
-          + 'func hide() { events.append("hide") }\n'
+          + 'func hide() { events.append("hide") }\nfunc openSettings() { events.append("openSettings") }\n'
           + availability_declaration(service, "    func run(_ item: LatticeHubItem)")
-          + declaration(service, "    func prepareForPresentation()")
-          + availability_declaration(service, "    func refreshAvailability()")
+          + declaration("Sources/Lattice/Services/LatticeHub/LatticeHubPresentation.swift", "    func prepareForPresentation()")
+          + availability_declaration("Sources/Lattice/Services/LatticeHub/LatticeHubPresentation.swift", "    func refreshAvailability()")
           + declaration(service, "    func clampSelection()")
           + declaration(service, "    func activateSelection()")
           + declaration(service, "    func activate(at index:")
           + declaration(service, "    func moveSelection(")
+          + declaration(service, "    func advanceSelection(")
+          + declaration(service, "    func clearTypeahead()")
+          + declaration(service, "    func handleTypeahead(")
           + declaration(service, "    func select(")
           + declaration(monitors_file, "    func handlePanelKey(")
           + declaration(monitors_file, "    static func digitIndex(")
@@ -1937,7 +1940,8 @@ def main():
           + "        inserted = true\n}\n"
           + "}\nfinal class Launcher: PresentationState {\nvar stayAwakeOptionsPresented = false\n"
           + page_service_body(service, "    func syncWithPreferences()")
-          + declaration(service, "    func suspend()") + declaration(service, "    func hide()")
+          + declaration(service, "    func suspend()")
+          + declaration("Sources/Lattice/Services/LatticeHub/LatticeHubPresentation.swift", "    func hide()")
           + "}\nfinal class Clipboard: ClipboardState {\n"
           + page_service_body(clipboard_clear, "    func syncWithPreferences()")
           + declaration(clipboard_clear, "    private func syncObserver(")
@@ -2163,15 +2167,13 @@ def main():
           + "var settledAttempt: (track: NotchMusicIdentity, failed: Bool, expires: Date)?\n"
           + "var artistCache: [String: (identity: NotchLyricsSupport.ArtistIdentity?, failed: Bool, expires: Date)] = [:]\n"
           + "var aliasWork: DispatchWorkItem?\nvar lastAliasRequest: TimeInterval = 0\n"
-          + "var session: Session?\nvar importPanel: Panel?\nvar loads: [NotchMusicIdentity] = []\n"
+          + "var session: Session?\nvar loads: [NotchMusicIdentity] = []\n"
           + "func load(_ track: NotchMusicIdentity) { loads.append(track); state = .loading; session = Session() }\n"
           + declaration(lyrics, "    func update(playback:")
           + declaration(lyrics, "    func playbackChanged(")
           + declaration(lyrics, "    func hide()")
           + declaration(lyrics, "    func stop()")
           + declaration(lyrics, "    private func cancel()")
-          + declaration(lyrics, "    func importLyrics()")
-          + declaration(lyrics, "    private func canReturnToLyrics(")
           + "}\n}\n")
 
     write("NotchLyricsLookup.swift", "import Foundation\n\nextension NotchLyricsContract {\n"
@@ -2181,7 +2183,7 @@ def main():
           + "var settledAttempt: (track: NotchMusicIdentity, failed: Bool, expires: Date)?\n"
           + "var artistCache: [String: (identity: NotchLyricsSupport.ArtistIdentity?, failed: Bool, expires: Date)] = [:]\n"
           + "var aliasWork: DispatchWorkItem?\nvar lastAliasRequest: TimeInterval = 0\n"
-          + "var session: Session?\nvar importPanel: Panel?\n"
+          + "var session: Session?\n"
           + declaration(lyrics, "    func update(playback:")
           + declaration(lyrics, "    func playbackChanged(")
           + declaration(lyrics, "    func retry()")
