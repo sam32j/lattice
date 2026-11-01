@@ -8,7 +8,7 @@ enum SettingsFollowupLabels {
     static func text(_ key: Key, _ language: AppLanguage) -> String {
         let values: [String]
         switch language {
-        case .enUS: values = ["Lock Sound", "Pause in these apps", "Keep full screen in these apps", "Don’t quit these apps", "Clipboard activity", "App Management"]
+        case .enUS: values = ["Lock Sound", "Pause in these apps", "Keep full screen in these apps", "Don’t quit these apps", "Clipboard Activity", "App Management"]
         case .ptBR: values = ["Som de bloqueio", "Pausar nestes apps", "Manter tela cheia nestes apps", "Não encerrar estes apps", "Atividade da área de transferência", "Gerenciamento de Apps"]
         case .es: values = ["Sonido de bloqueo", "Pausar en estas apps", "Mantener pantalla completa en estas apps", "No cerrar estas apps", "Actividad del portapapeles", "Gestión de apps"]
         case .de: values = ["Sperrton", "In diesen Apps pausieren", "In diesen Apps Vollbild beibehalten", "Diese Apps nicht beenden", "Zwischenablageaktivität", "App-Verwaltung"]

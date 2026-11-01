@@ -72,7 +72,7 @@ extension FeatureStrings {
             cameraHint: "Open a live mirror here. The camera stops when you leave this view.",
             startCamera: "Open camera",
             stopCamera: "Stop camera",
-            accessories: "Accessory Status",
+            accessories: "Bluetooth Devices",
             accessoryDescription: "Show connected accessories and warn once when their battery falls to 20%.",
             connected: "Connected",
             lowBattery: "Low battery",

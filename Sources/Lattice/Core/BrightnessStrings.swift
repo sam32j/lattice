@@ -66,7 +66,7 @@ extension BrightnessFeatureStrings {
     static let enUS = BrightnessFeatureStrings(
         pageTitle: "Displays",
         hubDescription: "Brightness and power controls for every display",
-        enable: "Control displays",
+        enable: "Enable Display Control",
         enableCaption: "Adjust display brightness and power here or from the menu bar.",
         externalCaption: "External displays are adjusted through the same protocol as their own buttons. When the connection cannot carry it, as with HDMI adapters, the slider dims the picture instead, so brightness control works either way.",
         noDisplays: "No display found.",

@@ -26,7 +26,7 @@ enum NotchSettingsStrings {
     }
 
     static func widgetTitle(_ module: NotchModule, language: AppLanguage) -> String {
-        let title = module == .music ? FeatureStrings.notch(language).music : module.title(language)
+        let title = module.title(language)
         let word = widgetWord(language)
         switch language {
         case .zhHans, .zhTW, .zhHK, .ja:

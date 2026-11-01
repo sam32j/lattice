@@ -10,7 +10,7 @@ enum SettingsOrganizationStrings {
         let labels: [String]
         switch language {
         case .enUS:
-            labels = ["Appearance", "Display Controls", "Modules", "Readings", "Activate Cleaning Mode", "Dark Mode", "Activate cleaning mode with shortcut"]
+            labels = ["Appearance", "Display Control", "Modules", "Readings", "Activate Cleaning Mode", "Dark Mode", "Activate cleaning mode with shortcut"]
         case .ptBR:
             labels = ["Aparência", "Controles de tela", "Módulos", "Leituras", "Ativar modo de limpeza", "Modo escuro", "Ativar modo de limpeza com atalho"]
         case .es:

@@ -60,10 +60,12 @@ extension AppFeature {
         case .monitorPower: return [.notifications, .bluetooth]
         case .clipboardHistory, .shelf, .urlCleaner,
              .soundOutputSwitcher, .audioPriority,
-             .extraBrightness, .bluetoothSleep, .quickLauncher, .colorPicker, .micMute, .mediaTools,
+             .extraBrightness, .bluetoothSleep, .colorPicker, .micMute, .mediaTools,
              .scratchpad, .wallpaper, .monitorGPU, .monitorNetwork, .connectedDevices, .fanControl, .killProcess,
              .portManager, .videoDownloader:
             return []
+        case .quickLauncher:
+            return [.automationSystemEvents]
         }
     }
 
