@@ -4,6 +4,10 @@
 import SwiftUI
 
 extension LatticeHubService {
+    var canManageTools: Bool {
+        enabledCount > 0 || !visibleControls.isEmpty || !hiddenControls.isEmpty
+    }
+
     var visibleControls: [HubControlAction] {
         let hidden = hiddenControlsSet
         return orderedControls.filter { $0.isAvailable && !hidden.contains($0) }
