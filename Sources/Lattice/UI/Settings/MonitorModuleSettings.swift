@@ -7,14 +7,19 @@ struct MonitorModuleSettings: View {
     var body: some View {
         SettingsCard(title: SettingsOrganizationStrings.text(.modules, l10n.language)) {
             ForEach(FeatureVisibilitySupport.monitorFeatures, id: \.self) { feature in
-                SettingsRow(symbol: feature.symbolName,
-                            title: feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language))) {
+                let row = SettingsRow(symbol: feature.symbolName,
+                                      title: feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language))) {
                     Toggle(feature.hubTitle(l10n.s, hub: FeatureStrings.hub(l10n.language)),
                            isOn: Binding(get: { feature.isAvailable }, set: { enabled in
                         FeatureRuntime.shared.setAvailable([feature], enabled)
                     }))
                     .labelsHidden()
                     .disabled(!feature.isHardwareSupported && !feature.isAvailable)
+                }
+                if feature == .monitorPower {
+                    row.settingsSectionAnchor(.power, cornerRadius: 12)
+                } else {
+                    row
                 }
             }
         }

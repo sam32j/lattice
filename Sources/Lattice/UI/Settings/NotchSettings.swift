@@ -27,7 +27,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchWatchEnabled) var watchEnabled = true
     @AppStorage(DefaultsKey.notchLyricsEnabled) var lyricsEnabled = true
     @AppStorage(DefaultsKey.notchLyricsOnline) var lyricsOnline = false
-    @AppStorage(DefaultsKey.notchBrowserCovers) var browserCovers = false
     @AppStorage(DefaultsKey.notchQueueEnabled) var queueEnabled = true
     @AppStorage(DefaultsKey.notchLiveEqualizer) var liveEqualizer = false
     @AppStorage(DefaultsKey.notchEnabled) var enabled = false
@@ -111,7 +110,10 @@ struct NotchSettings: View {
             }
         }
         .onChange(of: configuration) { _, _ in sync() }
-        .onChange(of: browserCovers) { _, _ in NotchMusicService.shared.syncBrowserCovers() }
+        .onChange(of: lyricsEnabled) { _, enabled in
+            lyricsOnline = enabled
+            UserDefaults.standard.set(enabled, forKey: DefaultsKey.notchLyricsOnline)
+        }
         .onChange(of: accessData) { _, _ in NotchService.shared.syncWithPreferences() }
         .onAppear(perform: enforceIdleSelection)
         .onChange(of: hideUntilHover) { _, _ in enforceIdleSelection() }

@@ -56,6 +56,7 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
     case quitProtection
     case keyboardDebounce
     case superKey
+    case power
 
     var page: SettingsPage {
         switch self {
@@ -84,7 +85,7 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
             return .screenshot
         case .screenRecorder:
             return .screenRecorder
-        case .fanControl: return .monitor
+        case .fanControl, .power: return .monitor
         case .windowMaximizer, .spacesOrder: return .windowLayout
         }
     }
@@ -225,8 +226,10 @@ extension AppFeature {
         case .screenRecorder:
             return FeatureSettingsDestination(.screenRecorder, sectionAnchor: .screenRecorder)
 
-        case .monitorCPU, .monitorGPU, .monitorMemory, .monitorNetwork, .monitorDisk, .monitorPower, .connectedDevices:
+        case .monitorCPU, .monitorGPU, .monitorMemory, .monitorNetwork, .monitorDisk, .connectedDevices:
             return FeatureSettingsDestination(.monitor)
+        case .monitorPower:
+            return FeatureSettingsDestination(.monitor, sectionAnchor: .power)
         case .fanControl:
             return FeatureSettingsDestination(.monitor, sectionAnchor: .fanControl)
         }

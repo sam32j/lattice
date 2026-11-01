@@ -120,7 +120,6 @@ struct PanelLayoutEditor: View {
 private extension PanelSectionID {
     func description(_ text: GeneralSettingsStrings) -> String {
         switch self {
-        case .keepAwake: return text.sectionKeepAwake
         case .brightness: return text.sectionDisplays
         case .mixer: return text.sectionMixer
         case .system: return text.sectionSystem

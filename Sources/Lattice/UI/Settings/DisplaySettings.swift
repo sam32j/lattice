@@ -20,7 +20,6 @@ struct DisplaySettings: View {
                 }
                 if focus == nil || focus == .brightness || focus == .extraBrightness || focus == .wallpaper {
                     EnergyDisplaySettings()
-                        .settingsSectionAnchor(.brightness, cornerRadius: 16)
                     wallpaperCard
                         .settingsSectionAnchor(.wallpaper, cornerRadius: 16)
                 }
