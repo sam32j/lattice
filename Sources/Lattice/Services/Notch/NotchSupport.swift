@@ -1780,7 +1780,7 @@ enum NotchSupport {
 
     static func gestureIsOverHeader(expanded: Bool, peeking: Bool, fromTop: CGFloat, safeTop: CGFloat,
                                     height: CGFloat = NotchLayout.headerHeight) -> Bool {
-        (expanded || peeking) && (safeTop...safeTop + height).contains(fromTop)
+        (expanded || peeking) && (-20...safeTop + height).contains(fromTop)
     }
 
     static func keepsPermissionSurface(requesting: Bool, resolvedAt: TimeInterval?, now: TimeInterval) -> Bool {
@@ -1933,7 +1933,7 @@ enum NotchSupport {
     static func canRest(with content: NotchIdleContent, in defaults: UserDefaults = .standard) -> Bool {
         switch content {
         case .none: return true
-        case .battery: return AppFeature.monitorPower.isAvailable(in: defaults)
+        case .battery: return true
         case .music: return modules(in: defaults).contains(.music)
         case .agents: return NotchAgentSupport.sectionShows(in: defaults)
         }
@@ -1970,6 +1970,11 @@ enum NotchSupport {
             + (AppFeature.connectedDevices.isAvailable(in: defaults) ? 1 : 0)
     }
 
+    static func hoverExpands(in defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: DefaultsKey.notchOpenOnHover)
+            && defaults.bool(forKey: DefaultsKey.notchHoverExpands)
+    }
+
     /// Direct openings are dismissed explicitly, never by the pointer's
     /// initial position at the menu bar or in the application being used.
     static func closesOnPointerExit(expanded: Bool, peeking: Bool, openedByHover: Bool) -> Bool {
@@ -2002,10 +2007,8 @@ enum NotchSupport {
         case .brightness:
             return AppFeature.brightness.isAvailable(in: defaults)
                 && defaults.bool(forKey: DefaultsKey.brightnessControlEnabled)
-        case .battery: return AppFeature.monitorPower.isAvailable(in: defaults)
-        case .clipboard:
-            return modules(in: defaults).contains(.clipboard)
-                && defaults.bool(forKey: DefaultsKey.clipboardHistoryEnabled)
+        case .battery: return true
+        case .clipboard: return true
         case .track: return modules(in: defaults).contains(.music)
         // A layout notice needs no feature of its own, only its own toggle.
         case .inputSource: return true
@@ -2653,7 +2656,7 @@ struct NotchGeometry: Equatable {
     func toolRows(count: Int, controlsHeight: CGFloat? = nil) -> Int {
         let controlsH = controlsHeight ?? 0
         let vstackSpacing: CGFloat = controlsH > 0 ? 6 : 0
-        let budget = count >= 10 ? pageBudget : contentBudget
+        let budget = count >= NotchLayout.toolTwoRowThreshold ? pageBudget : contentBudget
         let availableHeight = max(0, budget - controlsH - vstackSpacing)
         return NotchLayout.toolRailRows(count: count, width: contentWidth,
                                         height: availableHeight)
@@ -2681,7 +2684,11 @@ struct NotchGeometry: Equatable {
                       capturePreviewHeight: CGFloat? = nil,
                       timerHasSession: Bool = false, timerMode: NotchTimerMode = .timer,
                       agentsHeight: CGFloat? = nil,
-                      toolsControlsHeight: CGFloat? = nil) -> CGSize {
+                      toolsControlsHeight: CGFloat? = nil,
+                      hubRecentCaptures: Bool = false,
+                      hubIsEditing: Bool = false,
+                      hubAvailableCount: Int = 0,
+                      hubOptionsHeight: CGFloat = 0) -> CGSize {
         let budget = contentBudget
         let showsCapturePreview = module == .captures && !detail && capturePreviewHeight != nil
         let showsFileMedia = module == .files && !detail && fileMediaHeight != nil
@@ -2720,13 +2727,14 @@ struct NotchGeometry: Equatable {
                     : NotchLayout.railHeight(rows: systemRows(cards: cards), rowHeight: NotchLayout.systemCardHeight, spacing: NotchLayout.rowSpacing)
                         + NotchLayout.systemHoverInset(width: contentWidth) * 2)
             case .hub:
+                if hubRecentCaptures {
+                    contentHeight = budget
+                    break
+                }
                 guard let toolCount else { contentHeight = pageBudget; break }
-                let controlsH = toolsControlsHeight ?? 0
-                let vstackSpacing: CGFloat = controlsH > 0 ? 6 : 0
-                let rows = toolRows(count: toolCount, controlsHeight: controlsH)
-                let baseHeight = toolCount == 0 ? NotchLayout.emptyHeight
-                    : NotchLayout.railHeight(rows: rows, rowHeight: NotchLayout.toolHeight, spacing: NotchLayout.toolSpacing)
-                contentHeight = min(pageBudget, baseHeight + controlsH + vstackSpacing)
+                contentHeight = hubContentHeight(toolCount: toolCount,
+                    controlsHeight: toolsControlsHeight ?? 0, editing: hubIsEditing,
+                    optionsHeight: hubOptionsHeight > 0 ? NotchLayout.hubOptionsHeight : 0)
             case .timer:
                 contentHeight = min(budget, NotchLayout.timer(mode: timerMode, hasSession: timerHasSession, height: budget))
             case .agents:
