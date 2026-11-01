@@ -10,7 +10,7 @@ protocol PanelOrderItem: RawRepresentable, CaseIterable, Hashable where RawValue
 /// stable identifiers persisted in the saved order and the collapsed set, so
 /// renaming a case would orphan a user's stored layout — keep them stable.
 enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
-    case keepAwake, brightness, mixer, system, network, disk, power, fanControl,
+    case brightness, mixer, system, network, disk, power, fanControl,
          toggles
 
     var id: String { rawValue }
@@ -18,7 +18,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
     /// Localized display name, reused from the existing section titles.
     func title(_ s: Strings) -> String {
         switch self {
-        case .keepAwake: return s.keepAwakeTitle
         case .brightness: return FeatureStrings.brightness(L10n.shared.language).pageTitle
         case .mixer: return s.mixerSection
         case .system: return s.systemSection
@@ -32,7 +31,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
 
     var symbolName: String {
         switch self {
-        case .keepAwake: return "bolt.fill"
         case .brightness: return "display.2"
         case .mixer: return "speaker.wave.2"
         case .system: return "cpu"
@@ -49,7 +47,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
     /// get a dedicated `panelShow*` key so every section is hideable.
     var visibilityKey: String {
         switch self {
-        case .keepAwake: return DefaultsKey.panelShowKeepAwake
         case .brightness: return DefaultsKey.panelShowBrightness
         case .mixer: return DefaultsKey.monitorShowMixer
         case .system: return DefaultsKey.monitorShowSystem
@@ -68,7 +65,6 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
     /// discoverable while off; other sections follow runtime availability.
     var featureGate: [AppFeature] {
         switch self {
-        case .keepAwake: return [.keepAwake]
         case .brightness: return [.brightness]
         case .mixer: return [.mixer, .audioPriority]
         case .system: return [.monitorCPU, .monitorGPU, .monitorMemory, .connectedDevices]
@@ -105,10 +101,6 @@ enum PanelLayout {
         for id in PanelSectionID.allCases where seen.insert(id).inserted {
             if id == .disk, let networkIndex = result.firstIndex(of: .network) {
                 result.insert(id, at: networkIndex + 1)
-            } else if id == .brightness, let keepAwakeIndex = result.firstIndex(of: .keepAwake) {
-                // New in 3.1.13: saved orders predate it, so it slots in at
-                // its canonical place instead of the end.
-                result.insert(id, at: keepAwakeIndex + 1)
             } else {
                 result.append(id)
             }
@@ -333,6 +325,7 @@ struct PanelDragHandle: View {
 struct PanelReorderableItem<Item: PanelOrderItem, Content: View>: View {
     let item: Item
     var isEnabled = true
+    var cornerRadius: CGFloat = 10
     @Binding var order: [Item]
     @Binding var dragging: Item?
     let content: () -> Content
@@ -340,6 +333,13 @@ struct PanelReorderableItem<Item: PanelOrderItem, Content: View>: View {
     var body: some View {
         if isEnabled {
             content()
+                .opacity(dragging == item ? 0.2 : 1.0)
+                .overlay {
+                    if dragging == item {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .strokeBorder(Color.accentColor.opacity(0.45), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    }
+                }
                 .onDrag(itemProvider)
                 .onDrop(of: [UTType.text], delegate: PanelItemDropDelegate(item: item,
                                                                            order: $order,
@@ -364,13 +364,17 @@ private struct PanelItemDropDelegate<Item: PanelOrderItem>: DropDelegate {
         guard let dragging, dragging != item,
               let from = order.firstIndex(of: dragging),
               let to = order.firstIndex(of: item) else { return }
-        order.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+        if from != to {
+            order.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+        }
     }
 
     func performDrop(info: DropInfo) -> Bool {
         dragging = nil
         return true
     }
+
+    func dropExited(info: DropInfo) {}
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
         DropProposal(operation: .move)
