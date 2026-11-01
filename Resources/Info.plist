@@ -72,7 +72,7 @@
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Lattice uses Automation to move files, send items to the Trash, open requested commands and control playback in your media apps.</string>
 	<key>NSAudioCaptureUsageDescription</key>
-	<string>Lattice uses system audio to control app volume, show music waveform, and record Mac sound.</string>
+	<string>Lattice uses system audio to control app volume, show audio visualizer, and record Mac sound.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Lattice uses Bluetooth to access your accessory’s battery level.</string>
 	<key>NSMicrophoneUsageDescription</key>
