@@ -35,6 +35,7 @@ enum QuickToolHUD {
             DispatchQueue.main.async { show(icon: icon, message: message, swatch: swatch) }
             return
         }
+        let isMutedMic = icon == "mic.slash.fill"
         let content = HStack(spacing: 8) {
             if let swatch {
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
@@ -47,10 +48,11 @@ enum QuickToolHUD {
             } else {
                 Image(systemName: icon)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(isMutedMic ? Color.red : Color.accentColor)
             }
             Text(message)
                 .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(isMutedMic ? Color.red : Color.primary)
                 // What was copied can be a whole paragraph, and the panel is
                 // laid out at whatever the text asks for. Unbounded, one long
                 // line measures wider than the screen and the panel, centred on
