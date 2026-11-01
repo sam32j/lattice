@@ -87,14 +87,14 @@ enum SettingsDestinationOwnershipTests {
         suite.expect(router.page == .notch,
                      "going back from companion returns to the Dynamic Island page")
 
-        suite.expect(NotchSettingsStrings.widgetTitle(.music, language: .enUS) == "Music Widget"
+        suite.expect(NotchSettingsStrings.widgetTitle(.music, language: .enUS) == "Now Playing Widget"
                      && NotchSettingsStrings.widgetTitle(.controls, language: .enUS) == "Controls Widget"
                      && NotchSettingsStrings.widgetTitle(.calendar, language: .enUS) == "Calendar Widget",
                      "widget titles append Widget in English")
-        suite.expect(NotchSettingsStrings.widgetTitle(.music, language: .zhHans) == "音乐小组件"
+        suite.expect(NotchSettingsStrings.widgetTitle(.music, language: .zhHans) == "正在播放小组件"
                      && NotchSettingsStrings.widgetTitle(.controls, language: .zhHans) == "控制小组件",
                      "widget titles append localized widget word in Simplified Chinese without space")
-        suite.expect(NotchSettingsStrings.widgetTitle(.music, language: .zhTW) == "音樂小工具",
+        suite.expect(NotchSettingsStrings.widgetTitle(.music, language: .zhTW) == "播放中小工具",
                      "widget titles append localized widget word in Traditional Chinese")
 
         suite.expect(SettingsSidebarSupport.selection(for: FeatureSettingsDestination(.notchWidget(.music)), in: []) == .page(.notch)
