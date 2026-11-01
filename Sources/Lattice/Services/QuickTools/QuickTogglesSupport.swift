@@ -11,8 +11,54 @@ enum QuickTogglesSupport {
     static let showAllFilesKey = "AppleShowAllFiles"
     static let createDesktopKey = "CreateDesktop"
 
+    static let windowManagerDomain = "com.apple.WindowManager"
+    static let standardHideDesktopIconsKey = "StandardHideDesktopIcons"
+    static let hideDesktopKey = "HideDesktop"
+
     static let emptyTrashSource = "tell application \"Finder\" to empty trash"
     static let quitFinderSource = "tell application \"Finder\" to quit"
+
+    static let toggleHiddenFilesShortcutSource = """
+        tell application "System Events"
+            set frontProc to first application process whose frontmost is true
+            tell process "Finder"
+                set frontmost to true
+                keystroke "." using {command down, shift down}
+            end tell
+            try
+                set frontmost of frontProc to true
+            end try
+        end tell
+        """
+
+    static let restartFinderPreservingWindowsSource = """
+        tell application "Finder"
+            set winList to every Finder window as list
+            set savedWindows to {}
+            repeat with i from 1 to count of winList
+                try
+                    set w to item i of winList
+                    set t to (target of w as alias)
+                    set b to bounds of w
+                    set end of savedWindows to {POSIX path of t, b}
+                end try
+            end repeat
+        end tell
+
+        do shell script "/usr/bin/killall Finder"
+        delay 0.8
+
+        tell application "Finder"
+            repeat with winInfo in savedWindows
+                try
+                    set p to item 1 of winInfo
+                    set b to item 2 of winInfo
+                    set newWin to make new Finder window to (POSIX file p)
+                    set bounds of newWin to b
+                end try
+            end repeat
+        end tell
+        """
 
     /// Apple Event consent errors: not permitted, or the prompt was dismissed.
     static let permissionErrorNumbers: Set<Int> = [-1743, -1744]
