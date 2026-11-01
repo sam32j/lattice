@@ -118,10 +118,10 @@ extension Strings {
         advancedClearConfirmTitle: "Effacer toutes les autorisations\u{00A0}?",
         advancedClearConfirmBody: "Réinitialiser les autorisations et désactiver le lancement à l’ouverture de session ? Les autres réglages sont conservés. Les commandes d’entrée restent en pause jusqu’au redémarrage de Lattice.",
         advancedUninstallSection: "Désinstaller Lattice",
-        advancedUninstallDescription: "Supprimer complètement Lattice et le fichier de configuration de votre ordinateur.",
+        advancedUninstallDescription: "Supprimer complètement Lattice et ses réglages de votre Mac.",
         advancedUninstallButton: "Désinstaller Lattice",
         advancedUninstallConfirmTitle: "Désinstaller Lattice\u{00A0}?",
-        advancedUninstallConfirmBody: "Lattice va effacer ses autorisations, supprimer ses préférences et se placer dans la corbeille, puis quitter. L’app ne peut pas annuler cette action, mais elle reste dans la corbeille jusqu’à ce que vous la vidiez.",
+        advancedUninstallConfirmBody: "Lattice et ses réglages seront placés dans la corbeille.",
         advancedUninstallFailedTitle: "Désinstallation interrompue",
         advancedUninstallFailedBody: "Lattice n’a pas pu rétablir un réglage système qu’il avait modifié\u{00A0}: la veille, la vitesse des ventilateurs, l’accélération de la souris ou l’ordre des Espaces. Rien n’a été supprimé. Réessayez et autorisez la demande de mot de passe si elle apparaît.",
 
@@ -642,7 +642,7 @@ extension Strings {
         navigationBack: "Retour",
         releaseNotesFallback: "Cette mise à jour inclut les derniers correctifs et améliorations.",
 
-        tabMonitor: "Moniteur d’activité",
+        tabMonitor: "Moniteur du système",
         monitorMenuBarSection: "Dans la barre des menus",
         monitorMenuBarCaption: "Choisissez ce qui apparaît à côté de l’icône dans la barre des menus.",
         monitorCombineTemperatures: "Combiner utilisation et température",

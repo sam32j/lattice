@@ -118,10 +118,10 @@ extension Strings {
         advancedClearConfirmTitle: "모든 권한을 지울까요?",
         advancedClearConfirmBody: "권한을 재설정하고 로그인 시 실행을 끌까요? 다른 설정은 유지됩니다. Lattice를 재시작할 때까지 입력 제어가 일시 정지됩니다.",
         advancedUninstallSection: "Lattice 제거",
-        advancedUninstallDescription: "컴퓨터에서 Lattice 및 설정 파일을 완전히 제거합니다.",
+        advancedUninstallDescription: "Mac에서 Lattice 및 설정을 완전히 제거합니다.",
         advancedUninstallButton: "Lattice 제거",
         advancedUninstallConfirmTitle: "Lattice를 제거할까요?",
-        advancedUninstallConfirmBody: "Lattice가 권한과 설정을 지우고 휴지통으로 이동한 뒤 종료됩니다. 이 작업은 앱에서 되돌릴 수 없지만 휴지통을 비우기 전까지는 복원할 수 있습니다.",
+        advancedUninstallConfirmBody: "Lattice 및 설정이 휴지통으로 이동합니다.",
         advancedUninstallFailedTitle: "제거를 중단했습니다",
         advancedUninstallFailedBody: "Lattice가 변경한 시스템 설정을 되돌리지 못했습니다. 잠자기, 팬 속도, 마우스 가속 또는 공간 순서입니다. 아무것도 삭제되지 않았습니다. 다시 시도하고 암호를 요청하면 허용하세요.",
 
@@ -643,7 +643,7 @@ extension Strings {
         navigationBack: "뒤로",
         releaseNotesFallback: "이 업데이트에는 최신 수정 사항과 개선 사항이 포함되어 있습니다.",
 
-        tabMonitor: "활성 상태 보기",
+        tabMonitor: "시스템 모니터",
         monitorMenuBarSection: "메뉴 막대",
         monitorMenuBarCaption: "메뉴 막대의 아이콘 옆에 표시할 항목을 선택합니다.",
         monitorCombineTemperatures: "사용량과 온도 결합",

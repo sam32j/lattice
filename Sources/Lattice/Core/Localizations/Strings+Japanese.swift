@@ -118,10 +118,10 @@ extension Strings {
         advancedClearConfirmTitle: "すべてのアクセス権を消去しますか？",
         advancedClearConfirmBody: "権限をリセットしてログイン時の起動を無効にしますか？他の設定は保持されます。Lattice を再起動するまで入力制御は一時停止します。",
         advancedUninstallSection: "Latticeをアンインストール",
-        advancedUninstallDescription: "Lattice と設定ファイルをコンピューターから完全に削除します.",
+        advancedUninstallDescription: "Lattice とその設定を Mac から完全に削除します。",
         advancedUninstallButton: "Lattice をアンインストール",
         advancedUninstallConfirmTitle: "Lattice をアンインストールしますか？",
-        advancedUninstallConfirmBody: "Lattice はアクセス権を消去し、環境設定を削除し、ゴミ箱に移動してから終了します。この操作はアプリからは取り消せませんが、ゴミ箱を空にするまではゴミ箱に残ります。",
+        advancedUninstallConfirmBody: "Lattice とその設定はゴミ箱に移動されます。",
         advancedUninstallFailedTitle: "アンインストールを中止しました",
         advancedUninstallFailedBody: "Lattice が変更したシステム設定（スリープ、ファンの回転数、マウス加速、スペースの順序）を元に戻せませんでした。何も削除していません。もう一度試して、パスワードの入力を求められたら許可してください。",
 
@@ -642,7 +642,7 @@ extension Strings {
         navigationBack: "戻る",
         releaseNotesFallback: "このアップデートには最新の修正と改善が含まれています。",
 
-        tabMonitor: "アクティビティモニタ",
+        tabMonitor: "システムモニタ",
         monitorMenuBarSection: "メニューバー",
         monitorMenuBarCaption: "メニューバーのアイコンの横に表示する項目を選びます。",
         monitorCombineTemperatures: "使用率と温度をまとめる",

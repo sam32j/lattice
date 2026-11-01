@@ -118,10 +118,10 @@ extension Strings {
         advancedClearConfirmTitle: "清除所有权限？",
         advancedClearConfirmBody: "重置权限并关闭登录时启动？其他设置将保留。输入控制会保持暂停，直到重新启动 Lattice。",
         advancedUninstallSection: "卸载 Lattice",
-        advancedUninstallDescription: "从计算机中完全移除 Lattice 和配置文件.",
+        advancedUninstallDescription: "从 Mac 中完全移除 Lattice 及其设置。",
         advancedUninstallButton: "卸载 Lattice",
         advancedUninstallConfirmTitle: "卸载 Lattice？",
-        advancedUninstallConfirmBody: "Lattice 将清除其权限、移除偏好设置并移到废纸篓，然后退出。此操作无法从 App 内撤销，但在你清倒废纸篓之前它仍会留在其中。",
+        advancedUninstallConfirmBody: "Lattice 及其设置将被移到废纸篓。",
         advancedUninstallFailedTitle: "已停止卸载",
         advancedUninstallFailedBody: "Lattice 无法还原它更改过的系统设置：睡眠、风扇转速、鼠标加速或空间顺序。没有移除任何内容。请重试，并在出现密码请求时允许。",
 
@@ -642,7 +642,7 @@ extension Strings {
         navigationBack: "返回",
         releaseNotesFallback: "此更新包含最新的修复和改进。",
 
-        tabMonitor: "活动监视器",
+        tabMonitor: "系统监视器",
         monitorMenuBarSection: "在菜单栏中",
         monitorMenuBarCaption: "选择菜单栏中图标旁显示的内容。",
         monitorCombineTemperatures: "合并使用率和温度",
