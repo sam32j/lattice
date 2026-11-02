@@ -11,6 +11,7 @@ struct LatticeHubView: View {
     @ObservedObject var launcher = LatticeHubService.shared
     @ObservedObject var features = FeatureRuntime.shared
     @ObservedObject var recorder = ScreenRecorderService.shared
+    @ObservedObject var appUpdates = AppUpdatesService.shared
     @ObservedObject var editing = LatticeHubService.shared.editingPresentation
     @StateObject var dragSession = HubDragSession()
     @State var hoveredItem: LatticeHubItem?
@@ -102,6 +103,7 @@ struct LatticeHubView: View {
         .onChange(of: launcher.hiddenItemsRaw) { _, _ in refreshIslandLayout() }
         .onChange(of: launcher.visibleControls.count) { _, _ in refreshIslandLayout() }
         .onChange(of: launcher.hiddenControls.count) { _, _ in refreshIslandLayout() }
+        .onChange(of: appUpdates.items.count) { _, _ in refreshIslandLayout() }
         .onDisappear { dragSession.cancel() }
     }
 

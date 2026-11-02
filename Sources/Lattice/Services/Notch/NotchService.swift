@@ -828,6 +828,7 @@ final class NotchService: ObservableObject {
         let launcher = LatticeHubService.shared
         let isEditing = isHubPage && launcher.editingPresentation.isPresented && launcher.activeUtility == nil
         let isRecentCapturesUtility = isHubPage && launcher.activeUtility == .recentCaptures
+        let utilityHeight = isHubPage ? hubUtilityContentHeight(for: launcher.activeUtility) : nil
         let controlsHeight: CGFloat? = isHubPage && launcher.activeUtility == nil ? launcher.notchControlsHeight : nil
         let optionsHeight: CGFloat = isEditing && (launcher.editingOptionsItem ?? launcher.editingPresentation.outgoingOptions) != nil ? launcher.editingPresentation.optionsHeight + 6 : 0
         return pageSize(in: expandedGeometry, module: showingAppPanel ? .hub : selected,
@@ -842,7 +843,8 @@ final class NotchService: ObservableObject {
                         hubRecentCaptures: isRecentCapturesUtility,
                         hubIsEditing: isEditing,
                         hubAvailableCount: launcher.hiddenItems.count + launcher.hiddenControls.count,
-                        hubOptionsHeight: optionsHeight)
+                        hubOptionsHeight: optionsHeight,
+                        hubActiveUtilityHeight: utilityHeight)
     }
 
     /// The open island as Settings previews a section: at rest, with no
@@ -884,7 +886,8 @@ final class NotchService: ObservableObject {
                           hubRecentCaptures: Bool = false,
                           hubIsEditing: Bool = false,
                           hubAvailableCount: Int = 0,
-                          hubOptionsHeight: CGFloat = 0) -> CGSize {
+                          hubOptionsHeight: CGFloat = 0,
+                          hubActiveUtilityHeight: CGFloat? = nil) -> CGSize {
         let controls = NotchSupport.controls()
         let sliders = controls.filter(\.isLevel).count
         let shortcuts = controls.filter { !$0.isLevel && $0 != .music }.count
@@ -904,7 +907,8 @@ final class NotchService: ObservableObject {
                                      hubRecentCaptures: hubRecentCaptures,
                                      hubIsEditing: hubIsEditing,
                                      hubAvailableCount: hubAvailableCount,
-                                     hubOptionsHeight: hubOptionsHeight)
+                                     hubOptionsHeight: hubOptionsHeight,
+                                     hubActiveUtilityHeight: hubActiveUtilityHeight)
     }
 
     /// The AI page is as tall as the cards it shows; nil while the logs are
@@ -920,6 +924,27 @@ final class NotchService: ObservableObject {
         return NotchAgentSupport.contentHeight(NotchAgentSupport.rows(
             NotchAgentSupport.tiles(cards: NotchAgentSupport.cards(), providers: providers, codexAccounts: accounts),
             width: width))
+    }
+
+    private func hubUtilityContentHeight(for utility: LatticeHubItem?) -> CGFloat? {
+        guard let utility else { return nil }
+        switch utility {
+        case .appUpdates:
+            let count = AppUpdatesService.shared.items.count
+            if count == 0 {
+                return 148
+            } else {
+                let rows = min(count, 4)
+                let rowHeight: CGFloat = 40
+                let rowSpacing: CGFloat = 5
+                let listHeight = CGFloat(rows) * rowHeight + CGFloat(rows - 1) * rowSpacing
+                return min(290, 85 + listHeight)
+            }
+        case .videoDownloader:
+            return 172
+        default:
+            return nil
+        }
     }
     var expandedGeometry: NotchGeometry {
         var result = geometry
@@ -4023,7 +4048,7 @@ final class NotchService: ObservableObject {
             // hosted utility turns it into a page.
             let launcher = LatticeHubService.shared
             launcher.$isEditing.map { _ in () }
-                .merge(with: launcher.$activeUtility.map { _ in () }, launcher.$hiddenItemsRaw.map { _ in () })
+                .merge(with: launcher.$activeUtility.map { _ in () }, launcher.$hiddenItemsRaw.map { _ in () }, AppUpdatesService.shared.$items.map { _ in () })
                 .dropFirst(3).receive(on: DispatchQueue.main)
                 .sink { [weak self] in
                     guard let self, self.expanded, self.selected == .hub, !self.showingAppPanel, !self.showingSections else { return }

@@ -860,10 +860,10 @@ struct AppUpdatesListView: View {
     @ViewBuilder
     private var compactEmptyState: some View {
         if updates.isChecking {
-            VStack(spacing: inNotch ? 5 : 8) {
+            VStack(spacing: inNotch ? 3 : 6) {
                 if reduceMotion {
                     Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: inNotch ? 16 : 22))
+                        .font(.system(size: inNotch ? 15 : 20))
                         .foregroundStyle(.secondary)
                 } else {
                     ProgressView()
@@ -874,11 +874,11 @@ struct AppUpdatesListView: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, inNotch ? 10 : 28)
+            .padding(.vertical, inNotch ? 6 : 20)
         } else {
-            VStack(spacing: inNotch ? 5 : 8) {
+            VStack(spacing: inNotch ? 3 : 6) {
                 Image(systemName: coveragePartial ? "info.circle" : "checkmark.circle.fill")
-                    .font(.system(size: inNotch ? 20 : 26))
+                    .font(.system(size: inNotch ? 18 : 24))
                     .foregroundStyle(coveragePartial ? Color.secondary : Color.green)
                 Label(coveragePartial ? text.partialUpToDate : "No updates available",
                       systemImage: coveragePartial ? "info.circle" : "checkmark.circle.fill")
@@ -892,14 +892,14 @@ struct AppUpdatesListView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, inNotch ? 10 : 28)
+            .padding(.vertical, inNotch ? 6 : 20)
         }
     }
 
     private var compactNoSourcesState: some View {
-        VStack(spacing: inNotch ? 5 : 8) {
+        VStack(spacing: inNotch ? 3 : 6) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: inNotch ? 18 : 24))
+                .font(.system(size: inNotch ? 16 : 22))
                 .foregroundStyle(.orange)
             Text("Select update source to check for updates")
                 .font(.system(size: inNotch ? 11 : 12.5, weight: .medium))
@@ -907,7 +907,7 @@ struct AppUpdatesListView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, inNotch ? 10 : 28)
+        .padding(.vertical, inNotch ? 6 : 20)
     }
 
     private var incompleteCheck: some View {
