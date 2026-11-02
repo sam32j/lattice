@@ -77,13 +77,18 @@ final class MicMuteService: ObservableObject {
         if available {
             if wantsMute {
                 apply(muted: true, announce: false)
+                isMuted = true
             } else if hasOutstandingClaims {
                 // A device this app silenced and never got to release: it
                 // was away at the unmute, or the app went down. Its level
                 // comes back now if it is here, else when it returns.
                 apply(muted: false, announce: false)
+                isMuted = false
+            } else if Self.isDefaultDeviceMuted() {
+                isMuted = true
+            } else {
+                isMuted = false
             }
-            isMuted = wantsMute
         } else {
             // Switching the feature off must not strand a muted microphone
             // with no control left to unmute it.
@@ -171,7 +176,24 @@ final class MicMuteService: ObservableObject {
             apply(muted: true, announce: false)
         } else if hasOutstandingClaims {
             apply(muted: false, announce: false)
+        } else {
+            let hwMuted = Self.isDefaultDeviceMuted()
+            if isMuted != hwMuted { isMuted = hwMuted }
         }
+    }
+
+    static func isDefaultDeviceMuted() -> Bool {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var defaultID = AudioObjectID(0)
+        var size = UInt32(MemoryLayout<AudioObjectID>.size)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &defaultID) == noErr, defaultID != 0 else {
+            return false
+        }
+        return isSilenced(defaultID)
     }
 
     // MARK: - Applying
@@ -359,7 +381,7 @@ final class MicMuteService: ObservableObject {
                                                                             present: present))
         let targets = Set(MicMuteSupport.restoreTargets(recorded: mutedDevices, present: present))
         var attempted = false
-        for device in devices where targets.contains(device.uid) {
+        for device in devices where targets.contains(device.uid) || muteSwitchValue(of: device.id) == 1 {
             // A saved level only leaves once the device really opened: a
             // restore that failed keeps the claim and the level, so the next
             // attempt still knows the device is this app's to release.

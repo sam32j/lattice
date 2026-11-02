@@ -196,6 +196,10 @@ final class FeatureRuntime: ObservableObject {
             || NotchSupport.routes(.keyboardLight, in: .standard) {
             Self.bindings[.brightness]?()
         }
+        if !AppFeature.windowLayout.isAvailable,
+           UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureEnabled) {
+            Self.bindings[.windowLayout]?()
+        }
     }
 
     /// Capability changes can enable a saved preference without constructing
@@ -208,8 +212,11 @@ final class FeatureRuntime: ObservableObject {
     /// directly from Settings, so an off change must always reach teardown.
     func sync(_ features: [AppFeature]) {
         guard !InputEventTap.isBlocked else { return }
-        for feature in features where feature.isToggleOwned || feature.isAvailable || loadedThisSession.contains(feature) {
-            if feature.isAvailable { loadedThisSession.insert(feature) }
+        for feature in features where feature.isToggleOwned || feature.isAvailable || loadedThisSession.contains(feature)
+            || (feature == .windowLayout && UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureEnabled)) {
+            if feature.isAvailable || (feature == .windowLayout && UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureEnabled)) {
+                loadedThisSession.insert(feature)
+            }
             Self.bindings[feature]?()
             if feature == .clipboardHistory, loadedThisSession.contains(.pastePlain) || AppFeature.pastePlain.isAvailable {
                 if AppFeature.pastePlain.isAvailable { loadedThisSession.insert(.pastePlain) }

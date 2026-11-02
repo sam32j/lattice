@@ -20,6 +20,7 @@ final class StatusItemController {
     /// MenuBarMetric, since its content comes from ClipboardHistoryService
     /// rather than a SystemSnapshot reading.
     private var clipboardPreviewStatusItem: NSStatusItem?
+    private var micMuteStatusItem: NSStatusItem?
     private var metricStatusItems: [String: NSStatusItem] = [:]
     private var metricStatusItemFocus: [String: MenuBarMetric] = [:]
     private var cancellables = Set<AnyCancellable>()
@@ -60,6 +61,7 @@ final class StatusItemController {
     private static let mainAutosaveName = "LatticeMenuBarItem"
     private static let metricAutosavePrefix = "LatticeMetric"
     private static let clipboardPreviewAutosaveName = "LatticeClipboardPreview"
+    private static let micMuteAutosaveName = "LatticeMicMuteStatus"
     private static let emptyStatusImage = NSImage()
 
     /// One separate menu bar item: a metric, or a metric with its temperature
@@ -82,7 +84,7 @@ final class StatusItemController {
     var button: NSStatusBarButton? { statusItem.button }
 
     func containsStatusItem(at screenPoint: NSPoint) -> Bool {
-        let items = [statusItem, clipboardPreviewStatusItem].compactMap { $0 } + Array(metricStatusItems.values)
+        let items = [statusItem, clipboardPreviewStatusItem, micMuteStatusItem].compactMap { $0 } + Array(metricStatusItems.values)
         // A hidden item keeps its last frame, which another app's item may
         // occupy by now.
         let buttons = items.filter(\.isVisible).compactMap(\.button)
@@ -140,6 +142,7 @@ final class StatusItemController {
         refresh()
         syncMonitorMode()
         updateIconAppearance()
+        updateMicMuteStatusItem()
     }
 
     /// Tears the status item down and builds a fresh one, dropping the hidden state
@@ -171,7 +174,10 @@ final class StatusItemController {
 
         MicMuteService.shared.$isMuted
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in self?.updateIconAppearance() }
+            .sink { [weak self] _ in
+                self?.updateIconAppearance()
+                self?.updateMicMuteStatusItem()
+            }
             .store(in: &cancellables)
 
         KeepAwakeManager.shared.$endDate
@@ -224,6 +230,7 @@ final class StatusItemController {
             self.settingsSyncScheduled = false
             self.syncMonitorMode()
             self.updateIconAppearance()
+            self.updateMicMuteStatusItem()
             self.refresh()
             self.bindClipboardPreviewIfAvailable()
             self.syncClipboardPreviewItem()
@@ -262,6 +269,9 @@ final class StatusItemController {
         }
         if let clipboardPreviewStatusItem {
             NSStatusBar.system.removeStatusItem(clipboardPreviewStatusItem)
+        }
+        if let micMuteStatusItem {
+            NSStatusBar.system.removeStatusItem(micMuteStatusItem)
         }
     }
 
@@ -331,6 +341,7 @@ final class StatusItemController {
         // The title's leading space follows the glyph, so the whole refresh
         // runs, not just the icon; refresh() ends with updateIconAppearance().
         refresh()
+        updateMicMuteStatusItem()
     }
 
     /// Reflects keep-awake state and an available update in the icon. Updates
@@ -349,10 +360,9 @@ final class StatusItemController {
         } else {
             updateAvailable = false
         }
-        let micBadgeActive = renderedMicBadgeActive
         let optionEnabled = defaults.bool(forKey: DefaultsKey.menuBarHideIconWithMetrics)
         let separateMetrics = defaults.bool(forKey: DefaultsKey.menuBarSeparateMetrics)
-        let signal = updateAvailable || micBadgeActive
+        let signal = updateAvailable
         let islandHides = MenuBarSpacingSupport.islandHidesStatusIcon(
             in: defaults, hiddenInFullscreen: islandHiddenInFullscreen) && !signal
         let hidden = islandHides || MenuBarSpacingSupport.shouldHideStatusIcon(
@@ -379,8 +389,7 @@ final class StatusItemController {
         // the same image every 2 seconds would be wasted composition, so the
         // image is only touched when some ingredient actually changed.
         let stateKey = [String(hidden), String(mainItemHidden), String(updateAvailable),
-                        String(keepAwakeActive), BlackHoleGlyph.chosenSymbolName,
-                        String(micBadgeActive)].joined(separator: "|")
+                        String(keepAwakeActive), BlackHoleGlyph.chosenSymbolName].joined(separator: "|")
         guard stateKey != lastIconStateKey else { return }
         lastIconStateKey = stateKey
 
@@ -398,11 +407,7 @@ final class StatusItemController {
         } else {
             stateImage = BlackHoleGlyph.image(active: keepAwakeActive)
         }
-        if micBadgeActive {
-            button.image = BlackHoleGlyph.micMutedImage(over: stateImage) ?? stateImage
-        } else {
-            button.image = stateImage
-        }
+        button.image = stateImage
     }
 
     @objc private func clicked() {
@@ -418,7 +423,7 @@ final class StatusItemController {
     /// that is out of the bar has nowhere on screen to open from.
     func menuHost(for button: NSStatusBarButton?) -> NSStatusItem {
         guard !statusItem.isVisible, let button else { return statusItem }
-        let others = [clipboardPreviewStatusItem].compactMap { $0 } + Array(metricStatusItems.values)
+        let others = [clipboardPreviewStatusItem, micMuteStatusItem].compactMap { $0 } + Array(metricStatusItems.values)
         return others.first { $0.button === button } ?? statusItem
     }
 
@@ -514,7 +519,7 @@ final class StatusItemController {
             } else {
                 updateAvailable = false
             }
-            let signal = updateAvailable || renderedMicBadgeActive
+            let signal = updateAvailable
             let glyphHidden = (MenuBarSpacingSupport.islandHidesStatusIcon(
                 in: defaults, hiddenInFullscreen: islandHiddenInFullscreen) && !signal)
                 || MenuBarSpacingSupport.shouldHideStatusIcon(
@@ -852,6 +857,57 @@ final class StatusItemController {
         clipboardPreviewStatusItem = nil
         NSStatusBar.system.removeStatusItem(item)
     }
+
+    private func updateMicMuteStatusItem() {
+        let shouldShow = renderedMicBadgeActive
+        if shouldShow {
+            let item = micMuteStatusItem ?? installMicMuteStatusItem()
+            item.isVisible = true
+            if let button = item.button {
+                let image = BlackHoleGlyph.micMutedStandaloneImage()
+                if button.image !== image {
+                    button.image = image
+                }
+                button.imagePosition = .imageOnly
+                button.toolTip = L10n.shared.s.micUnmuteName
+            }
+        } else {
+            removeMicMuteStatusItem()
+        }
+    }
+
+    private func installMicMuteStatusItem() -> NSStatusItem {
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        item.autosaveName = Self.micMuteAutosaveName
+        item.behavior = []
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let menuItem = NSMenuItem(
+            title: L10n.shared.s.micUnmuteName,
+            action: #selector(unmuteMicrophoneFromMenu),
+            keyEquivalent: ""
+        )
+        menuItem.target = self
+        if let micImage = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: nil)?
+            .withSymbolConfiguration(.init(pointSize: 12, weight: .regular)) {
+            micImage.isTemplate = true
+            menuItem.image = micImage
+        }
+        menu.addItem(menuItem)
+        item.menu = menu
+        micMuteStatusItem = item
+        return item
+    }
+
+    private func removeMicMuteStatusItem() {
+        guard let item = micMuteStatusItem else { return }
+        micMuteStatusItem = nil
+        NSStatusBar.system.removeStatusItem(item)
+    }
+
+    @objc private func unmuteMicrophoneFromMenu() {
+        MicMuteService.shared.setMuted(false)
+    }
 }
 
 /// The official mark, bundled as a template image so the idle state adapts to
@@ -1022,6 +1078,13 @@ enum BlackHoleGlyph {
         }
         composed.isTemplate = false
         return composed
+    }
+
+    static func micMutedStandaloneImage() -> NSImage? {
+        guard let symbol = NSImage(systemSymbolName: "mic.slash.fill",
+                                  accessibilityDescription: "Microphone Muted")?
+            .withSymbolConfiguration(.init(pointSize: 13, weight: .semibold)) else { return nil }
+        return tintedImage(symbol, color: .systemRed)
     }
 
     private static func tintedImage(_ source: NSImage, color: NSColor) -> NSImage? {
