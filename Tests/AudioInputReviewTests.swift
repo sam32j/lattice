@@ -19,6 +19,7 @@ extension MixerInputVolumeContract {
 
     static func reviewChecks(_ suite: TestSuite) {
         restorationOwnershipChecks(suite)
+        selectionOwnershipChecks(suite)
         func manager() -> AudioInputDeviceManager {
             let manager = AudioInputDeviceManager()
             manager.start()
@@ -119,6 +120,38 @@ extension MixerInputVolumeContract {
             mute.setMuted(false)
             DispatchQueue.drain()
             suite.expect(HAL.mute[20] == 0, "explicit Unmute still opens an independently muted microphone")
+        }
+        HAL.reset()
+    }
+
+    private static func selectionOwnershipChecks(_ suite: TestSuite) {
+        for priority in [false, true] {
+            HAL.reset()
+            HAL.devices = [10, 20]
+            HAL.levels[HAL.key(10)] = 0.5; HAL.levels[HAL.key(20)] = 0.5
+            HAL.mute[20] = 1
+            let manager = AudioInputDeviceManager()
+            manager.start(); DispatchQueue.drain()
+            if priority {
+                manager.setInputPriorityActive(true); DispatchQueue.drain()
+                manager.setCurrentInputDeviceUID("device-20")
+            } else {
+                manager.setPreferredInputDeviceUID("device-20")
+            }
+            DispatchQueue.drain()
+            suite.expect(HAL.current == 20 && HAL.mute[20] == 1,
+                         "microphone selection preserves an external mute with priority=\(priority)")
+            suite.expect(MicMuteService.shared.isMuted && !MicMuteService.shared.installedListeners.isEmpty,
+                         "selecting an externally muted microphone publishes Muted and begins observing it")
+            manager.setInputVolume(0.8); DispatchQueue.drain()
+            suite.expect(HAL.mute[20] == 1 && abs((manager.inputVolume ?? 0) - 0.8) < 0.001,
+                         "positive input gain changes preserve external hardware mute")
+            if priority { manager.setCurrentInputDeviceUID("device-10") }
+            else { manager.setPreferredInputDeviceUID("device-10") }
+            DispatchQueue.drain()
+            suite.expect(!MicMuteService.shared.isMuted,
+                         "selecting an unmuted microphone refreshes the displayed mute state")
+            manager.stop(); DispatchQueue.drain()
         }
         HAL.reset()
     }

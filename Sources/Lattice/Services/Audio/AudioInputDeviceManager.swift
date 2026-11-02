@@ -165,9 +165,6 @@ final class AudioInputDeviceManager: ObservableObject {
         refresh.discardInFlight()
         halQueue.async { [weak self] in
             let status = Self.setDefaultInputDevice(device.audioObjectID)
-            if !MicMuteService.shared.isMuted {
-                Self.unmuteDeviceIfNeeded(device.audioObjectID)
-            }
             DispatchQueue.main.async {
                 guard let self, self.listenerInstalled else { return }
                 if status == noErr {
@@ -208,9 +205,6 @@ final class AudioInputDeviceManager: ObservableObject {
                       deviceUID as String == uid,
                       self.volumeWriteLock.withLock({ self.volumeWriteLifetime == lifetime }) else { return }
                 _ = Self.setInputVolume(Float32(clamped), for: device.audioObjectID)
-                if clamped > 0 && !MicMuteService.shared.isMuted {
-                    Self.unmuteDeviceIfNeeded(device.audioObjectID)
-                }
             }
             DispatchQueue.main.async {
                 guard self.volumeWriteLock.withLock({ self.volumeWriteLifetime == lifetime }) else { return }
@@ -417,6 +411,7 @@ final class AudioInputDeviceManager: ObservableObject {
         }
         if currentInputDeviceUID != snapshot.currentUID {
             currentInputDeviceUID = snapshot.currentUID
+            MicMuteService.shared.currentInputDidChange()
         }
         let effectiveDeviceChanged = effectiveInputDeviceUID != snapshot.resolution.effectiveUID
         if effectiveDeviceChanged {
@@ -468,11 +463,9 @@ final class AudioInputDeviceManager: ObservableObject {
             lastError = nil
         }
         appliedInputDeviceUID = device.uid
-        if !MicMuteService.shared.isMuted {
-            Self.unmuteDeviceIfNeeded(device.audioObjectID)
-        }
         if currentInputDeviceUID != device.uid {
             currentInputDeviceUID = device.uid
+            MicMuteService.shared.currentInputDidChange()
         }
         if effectiveInputDeviceUID != device.uid {
             effectiveInputDeviceUID = device.uid
@@ -523,24 +516,6 @@ final class AudioInputDeviceManager: ObservableObject {
                                           nil,
                                           UInt32(MemoryLayout<AudioObjectID>.size),
                                           &nextDeviceID)
-    }
-
-    static func unmuteDeviceIfNeeded(_ deviceID: AudioObjectID) {
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyMute,
-            mScope: kAudioDevicePropertyScopeInput,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        guard AudioObjectHasProperty(deviceID, &address) else { return }
-        var isMuted: UInt32 = 0
-        var size = UInt32(MemoryLayout<UInt32>.size)
-        if AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &isMuted) == noErr, isMuted != 0 {
-            var settable = DarwinBoolean(false)
-            if AudioObjectIsPropertySettable(deviceID, &address, &settable) == noErr, settable.boolValue {
-                var zero: UInt32 = 0
-                _ = AudioObjectSetPropertyData(deviceID, &address, 0, nil, size, &zero)
-            }
-        }
     }
 
     private static let inputVolumeSelectors: [AudioObjectPropertySelector] = [
