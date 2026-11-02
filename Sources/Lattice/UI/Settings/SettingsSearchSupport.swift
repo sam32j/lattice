@@ -34,7 +34,7 @@ enum SettingsSearchSupport {
             title: brightness.keyboardLight,
             icon: "keyboard",
             keywords: [brightness.keyboardBrightnessShortcuts, brightness.keyboardBrightnessDecrease,
-                       brightness.keyboardBrightnessIncrease],
+                       brightness.keyboardBrightnessIncrease, "keyboard light", "keyboard backlight"],
             feature: .brightness)
     }
 

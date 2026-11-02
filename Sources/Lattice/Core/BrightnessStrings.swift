@@ -40,6 +40,28 @@ struct BrightnessFeatureStrings {
     let islandPromptKeepOff: String
 }
 
+extension BrightnessFeatureStrings {
+    var keyboardLightLevel: String {
+        switch keyboardLight {
+        case "Keyboard Backlight": return "Keyboard backlight level"
+        case "Luz do teclado": return "Nível da luz do teclado"
+        case "Klavye ışığı": return "Klavye ışığı seviyesi"
+        case "Подсветка клавиатуры": return "Уровень подсветки клавиатуры"
+        case "Luz del teclado": return "Nivel de luz del teclado"
+        case "Podsvietenie klávesnice": return "Úroveň podsvietenia klávesnice"
+        case "Tastaturbeleuchtung": return "Tastaturbeleuchtungsstufe"
+        case "Éclairage du clavier": return "Niveau d’éclairage du clavier"
+        case "Illuminazione tastiera": return "Livello illuminazione tastiera"
+        case "キーボードのバックライト": return "キーボードのバックライトのレベル"
+        case "키보드 백라이트": return "키보드 백라이트 밝기"
+        case "键盘背光": return "键盘背光亮度"
+        case "鍵盤背光": return "鍵盤背光亮度"
+        case "Підсвічування клавіатури": return "Рівень підсвічування клавіатури"
+        default: return "Keyboard backlight level"
+        }
+    }
+}
+
 extension FeatureStrings {
     static func brightness(_ language: AppLanguage) -> BrightnessFeatureStrings {
         switch language {
@@ -86,10 +108,10 @@ extension BrightnessFeatureStrings {
         keyStepQuarter: "Quarter steps",
         displayBrightnessDecrease: "Decrease display brightness",
         displayBrightnessIncrease: "Increase display brightness",
-        keyboardLight: "Keyboard Light",
+        keyboardLight: "Keyboard Backlight",
         keyboardBrightnessShortcuts: "Use keyboard brightness shortcuts",
-        keyboardBrightnessDecrease: "Decrease keyboard brightness",
-        keyboardBrightnessIncrease: "Increase keyboard brightness",
+        keyboardBrightnessDecrease: "Decrease keyboard backlight",
+        keyboardBrightnessIncrease: "Increase keyboard backlight",
         softwareDimming: "Dim the picture",
         extendedDimming: "Extra dimming",
         islandPromptTitle: "Show brightness in the Dynamic Island?",

@@ -1453,9 +1453,7 @@ enum RepositoryFeatureTests {
         // real app identities before writing its isolated preview preferences.
         var availabilityWriters: Set<String> = []
         for path in repository.swiftPaths {
-            if path.hasSuffix("/Support/SettingsPresentationProbe.swift")
-                || path.hasSuffix("/Support/SettingsRefactorProbe.swift")
-                || path.hasSuffix("/Support/SettingsOwnershipRenderingProbe.swift") { continue }
+            if path.contains("/Support/") && path.hasSuffix("Probe.swift") { continue }
             let writes = repository.lines(at: path).contains {
                 $0.contains(".set(") && $0.contains("availabilityKey")
             }

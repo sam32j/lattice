@@ -12,6 +12,9 @@ enum AudioSettingsOwnershipTests {
         typealias AudioPriorityDisclosure = AudioSettingsOwnershipTests.AudioPriorityDisclosure
         typealias SettingsCard<C: View> = AudioSettingsOwnershipTests.SettingsCard<C>
         let l10n = TextCatalog()
+        let microphoneControlEnabled = true
+        struct PriorityStub { let inputPriorityEnabled = false }
+        let priority = PriorityStub()
         var pageStrings: SettingsPageStrings { FeatureStrings.settingsPages(.enUS) }
         var microphoneCard: some View {
             VStack {
@@ -30,6 +33,9 @@ enum AudioSettingsOwnershipTests {
         typealias AudioOutputPriorityControls = AudioSettingsOwnershipTests.AudioOutputPriorityControls
         typealias SettingsCard<C: View> = AudioSettingsOwnershipTests.SettingsCard<C>
         let l10n = TextCatalog()
+        let microphoneControlEnabled = true
+        struct PriorityStub { let inputPriorityEnabled = false }
+        let priority = PriorityStub()
         var pageStrings: SettingsPageStrings { FeatureStrings.settingsPages(.enUS) }
         var soundOutputSwitcherCard: some View { Marker(name: "output-picker") }
         var outputPriorityAndSwitcherCard: some View {

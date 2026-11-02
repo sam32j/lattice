@@ -48,7 +48,7 @@ struct KeyboardLightSettings: View {
 
     var keyboardLightSlider: some View {
         let strings = FeatureStrings.brightness(l10n.language)
-        return SettingsSliderRow(title: strings.keyboardLight, value: Binding(
+        return SettingsSliderRow(title: strings.keyboardLightLevel, value: Binding(
             get: { Double(brightness.keyboardLightLevel ?? 0) },
             set: { brightness.setKeyboardLightLevel(Float($0)) }
         ), range: 0...1,

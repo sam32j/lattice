@@ -6,9 +6,16 @@ struct CleaningModeSettings: View {
 
     var body: some View {
         SettingsCard(title: l10n.s.cleaningMenuItem, headerAccessory: {
-            Button(SettingsOrganizationStrings.text(.activateCleaning, l10n.language)) {
+            Button {
                 cleaning.activate()
+            } label: {
+                Text(SettingsOrganizationStrings.text(.activateCleaning, l10n.language))
+                    .font(.system(size: 11, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .frame(maxWidth: .infinity)
             }
+            .frame(width: 140)
             .disabled(cleaning.isActive)
         }) {
             ShortcutPreferenceRow(role: .cleaningMode, alignment: .center,
