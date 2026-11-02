@@ -102,9 +102,11 @@ enum NotchPresentationRefreshContract {
         var concealedForMissionControl = false
         var isConcealedForMissionControl: Bool { concealedForMissionControl }
         var missionControlDidRestore: (() -> Void)?
+        var missionControlDidConceal: (() -> Void)?
         var missionControlAlpha: CGFloat = 1
         var missionControlMouseEvents = false
         var missionControlRestorationSize: CGSize?
+        var missionControlRestorationGeometry: NotchGeometry?
         var missionControlRestorationUsesGlass = false
         var currentGeometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1440, height: 900), safeAreaTop: 38, cameraWidth: 210)
         var desktopReadings = 0

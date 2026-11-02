@@ -48,5 +48,21 @@ enum NotchMissionControlRestorationTests {
                                     animated: false, hideWhenSettled: true)
         hideViaPresentation.restoreFromMissionControl()
         suite.expect(!hideViaPresentation.panel.isVisible, "a hide-when-settled presentation also cancels restoration")
+        let shifted = concealed()
+        var shiftedGeom = shifted.currentGeometry
+        shiftedGeom.surfaceShift = -82
+        shifted.present(size: CGSize(width: 406, height: 32), geometry: shiftedGeom, animated: false, usesGlass: false)
+        var cleanGeom = shifted.currentGeometry
+        cleanGeom.surfaceShift = 0
+        let compactSize = CGSize(width: 242, height: 32)
+        shifted.present(size: compactSize, geometry: cleanGeom, animated: false, usesGlass: false)
+        shifted.restoreFromMissionControl()
+        suite.expect(shifted.targetSize == compactSize && shifted.currentGeometry.surfaceShift == 0,
+                     "notice dismissal during Mission Control updates restoration geometry and clears stale surfaceShift")
+        let zeroAlpha = concealed()
+        zeroAlpha.missionControlAlpha = 0
+        zeroAlpha.restoreFromMissionControl()
+        suite.expect(zeroAlpha.panel.alphaValue == 1.0 && zeroAlpha.panel.isVisible,
+                     "restoration recovers visible alpha even if concealment completed a full fade to zero")
     }
 }

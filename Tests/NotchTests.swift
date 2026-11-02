@@ -849,6 +849,16 @@ enum NotchTests {
                          && compact.width < widest.width && screen.contains(shifted.frame(for: widest)),
                          "a short banner narrows around the camera, and the widest stays on the display")
         }
+        let mutedNotice = NotchNotice(event: .microphone, title: "", detail: L10n.shared.s.micMutedHUD,
+                                      symbol: "mic.slash.fill")
+        let unmutedNotice = NotchNotice(event: .microphone, title: "", detail: L10n.shared.s.micUnmutedHUD,
+                                        symbol: "mic.fill")
+        suite.expect(mutedNotice.preferredWings == unmutedNotice.preferredWings,
+                     "microphone muted and unmuted notices use identical fixed wings")
+        let geom = NotchGeometry(screen: screen, safeAreaTop: 32, cameraWidth: 210, menuBarHeight: 32)
+        suite.expect(geom.noticeSize(wings: mutedNotice.preferredWings) == geom.noticeSize(wings: unmutedNotice.preferredWings)
+                     && geom.noticeShift(mutedNotice.preferredWings) == geom.noticeShift(unmutedNotice.preferredWings),
+                     "microphone notice size and surface shift remain fixed when toggling mute state")
     }
 
     private static func simulatedMenuBoundsContracts(_ suite: TestSuite) {

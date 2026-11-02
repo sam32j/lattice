@@ -103,6 +103,17 @@ struct NotchNoticeView: View {
                     } else if notice.event == .agents, let agent = notice.agent, notice.symbol == agent.symbol {
                         NotchAgentMark(provider: agent, size: 13)
 
+                    } else if notice.event == .microphone {
+                        ZStack {
+                            Image(systemName: notice.symbol)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(tint)
+                                .id(notice.symbol)
+                                .transition(reduceMotion ? .identity : .opacity)
+                        }
+                        .frame(width: 18)
+                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: notice.symbol)
+                        .transaction { $0.disablesAnimations = false }
                     } else {
                         Image(systemName: notice.symbol)
                             .font(.system(size: 14, weight: .medium))
@@ -139,6 +150,18 @@ struct NotchNoticeView: View {
             NotchMeter(value: level, height: 5, tint: tint)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: level)
                 .transaction { $0.disablesAnimations = false }
+        } else if notice.event == .microphone {
+            ZStack(alignment: .trailing) {
+                Text(notice.detail)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(isMutedMic ? Color.red : textTint.opacity(0.8))
+                    .lineLimit(1)
+                    .id(notice.detail)
+                    .transition(reduceMotion ? .identity : .opacity)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: notice.detail)
+            .transaction { $0.disablesAnimations = false }
         } else {
             Text(notice.detail)
                 .font(.system(size: 11, weight: .medium))
