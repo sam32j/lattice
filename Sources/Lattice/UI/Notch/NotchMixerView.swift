@@ -452,8 +452,6 @@ private struct NotchMixerOptions: View {
         }
         if input.inputDevices.isEmpty {
             message(l10n.s.mixerInputNoDevices, systemImage: "mic.slash")
-        } else if !audioPriority.inputPriorityEnabled, input.preferredUnavailable {
-            message(l10n.s.mixerInputFallback, systemImage: "mic.badge.xmark")
         } else if let lastError = input.lastError {
             message(String(format: l10n.s.mixerInputErrorFormat, lastError), systemImage: "exclamationmark.triangle")
         }

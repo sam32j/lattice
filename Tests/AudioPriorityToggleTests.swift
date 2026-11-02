@@ -22,6 +22,8 @@ enum AudioPriorityToggleTests {
         var inputPriorityEnabled = false
         var pendingOutputPreferenceChange = false
         var pendingInputPreferenceChange = false
+        var adHocInputDeviceUID: String?
+        var adHocSessionActive = false
         func mergeAvailableDevicesIntoPriorityLists() {}
         func updateDeviceNames() {}
         func scheduleEnforcement() {}
