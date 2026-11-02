@@ -171,6 +171,10 @@ final class MicMuteService: ObservableObject {
     /// devices, or the default one, changes underneath us. Unmuted, the same
     /// change is the moment a device this app still has to release may have
     /// come back.
+    func currentInputDidChange() {
+        reapplyIfNeeded()
+    }
+
     private func reapplyIfNeeded() {
         if wantsMute {
             apply(muted: true, announce: false)
