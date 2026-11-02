@@ -27,6 +27,12 @@ extension AppUpdatesService {
         let checkedRules = rules
         isChecking = true
         lastError = nil
+        checkedAppsCount = 0
+        items = []
+        if totalAppsCount == 0 {
+            let count = InstalledApps.installedApplications().count
+            totalAppsCount = count > 0 ? count : 48
+        }
         scanGeneration += 1
         let generation = scanGeneration
         let cancellation = AppUpdateCheckCancellation()
@@ -43,11 +49,27 @@ extension AppUpdatesService {
             let apps = AppUpdatesSupport.checkedApps(
                 Self.scanInstalledApps(includePublisherFeeds: includeOnlineCatalog, cancellation: cancellation), rules: checkedRules)
             guard !cancellation.isCancelled else { return }
+            let total = max(1, apps.count)
+            DispatchQueue.main.async {
+                self.totalAppsCount = total
+                self.checkedAppsCount = max(1, total / 4)
+                UserDefaults.standard.set(total, forKey: "appUpdatesTotalAppsCount")
+            }
             let packageResult = includeHomebrewApps || includeOnlineCatalog
                 ? self.packageManagerFindings(apps: apps, includeUpdates: includeHomebrewApps, cancellation: cancellation)
                 : PackageResult(items: [], coveredPaths: [], available: true,
                                 onlineCoverageAvailable: true)
             guard !cancellation.isCancelled else { return }
+            DispatchQueue.main.async {
+                self.checkedAppsCount = max(self.checkedAppsCount, (total * 2) / 4)
+            }
+            let visiblePackageItems = AppUpdatesSupport.visibleItems(packageResult.items, rules: checkedRules)
+            for (idx, item) in visiblePackageItems.enumerated() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(idx) * 0.1) { [weak self] in
+                    guard let self, self.isChecking, generation == self.scanGeneration else { return }
+                    self.appendUpdate(item, rules: checkedRules)
+                }
+            }
             let coveredPaths = packageResult.coveredPaths
             let storeCandidates = includeAppStore
                 ? AppUpdatesSupport.appStoreCandidates(
@@ -72,22 +94,49 @@ extension AppUpdatesService {
             group.enter()
             self.storeFindings(for: storeCandidates,
                                country: country,
-                               operatingSystemVersion: operatingSystemVersion, cancellation: cancellation) {
-                storeResult = $0
+                               operatingSystemVersion: operatingSystemVersion, cancellation: cancellation) { [weak self] result in
+                guard let self else { return }
+                storeResult = result
+                DispatchQueue.main.async {
+                    self.checkedAppsCount = max(self.checkedAppsCount, (total * 3) / 4)
+                }
+                let visibleStoreItems = AppUpdatesSupport.visibleItems(result.items, rules: checkedRules)
+                for (idx, item) in visibleStoreItems.enumerated() {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Double(idx) * 0.1) { [weak self] in
+                        guard let self, self.isChecking, generation == self.scanGeneration else { return }
+                        self.appendUpdate(item, rules: checkedRules)
+                    }
+                }
                 group.leave()
             }
             if includeOnlineCatalog, onlineResult.available {
                 group.enter()
                 self.publisherFindings(for: onlineCandidates,
-                                       operatingSystemVersion: operatingSystemVersion, cancellation: cancellation) {
-                    feedResult = $0
+                                       operatingSystemVersion: operatingSystemVersion, cancellation: cancellation) { [weak self] result in
+                    guard let self else { return }
+                    feedResult = result
+                    let visibleFeedItems = AppUpdatesSupport.visibleItems(result.items, rules: checkedRules)
+                    for (idx, item) in visibleFeedItems.enumerated() {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + Double(idx) * 0.1) { [weak self] in
+                            guard let self, self.isChecking, generation == self.scanGeneration else { return }
+                            self.appendUpdate(item, rules: checkedRules)
+                        }
+                    }
                     group.leave()
                 }
                 group.enter()
                 self.onlineCatalogFindings(for: onlineCandidates,
                                            operatingSystemVersion: operatingSystemVersion,
-                                           forceRefresh: !automatic, cancellation: cancellation) {
-                    onlineResult = $0
+                                           forceRefresh: !automatic, cancellation: cancellation) { [weak self] result in
+                    guard let self else { return }
+                    onlineResult = result
+                    let visibleCatalogItems = AppUpdatesSupport.visibleItems(result.items, rules: checkedRules)
+                    for (idx, item) in visibleCatalogItems.enumerated() {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + Double(idx) * 0.1) { [weak self] in
+                            guard let self, self.isChecking, generation == self.scanGeneration else { return }
+                            self.appendUpdate(item, rules: checkedRules)
+                        }
+                    }
                     group.leave()
                 }
             }
@@ -159,6 +208,9 @@ extension AppUpdatesService {
         self.uncomparableAppNames = uncomparableAppNames
         hasCheckedThisSession = true
         isChecking = false
+        totalAppsCount = max(totalAppsCount, scannedItems.count)
+        checkedAppsCount = totalAppsCount
+        installingItemIDs.formIntersection(newItems.map(\.id))
         let now = Date()
         lastCheck = now
         UserDefaults.standard.set(now.timeIntervalSince1970, forKey: DefaultsKey.appUpdatesLastCheck)
@@ -170,6 +222,17 @@ extension AppUpdatesService {
             scheduleNext()
         }
         Self.saveAnnouncedIDs(announced)
+    }
+
+    func appendUpdate(_ item: AppUpdatesSupport.Item, rules: [AppUpdatesSupport.UpdateRule]) {
+        guard isChecking else { return }
+        guard !rules.contains(where: { $0.hides(item) }) else { return }
+        if !items.contains(where: { $0.id == item.id || ($0.bundleID != nil && $0.bundleID == item.bundleID) }) {
+            items.append(item)
+            if item.isSelectable {
+                selection.insert(item.id)
+            }
+        }
     }
 
     /// Only the background pass speaks up, and only about apps the person has

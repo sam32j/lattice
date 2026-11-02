@@ -48,6 +48,7 @@ extension AppUpdatesService {
         switch item.source {
         case .packageManager:
             guard let token = item.token else { return }
+            installingItemIDs.insert(item.id)
             startUpgrade([token])
         case .appStore:
             if let page = item.storePage, let url = URL(string: page) {
@@ -85,12 +86,17 @@ extension AppUpdatesService {
     /// observer lives only for that one operation.
     func startUpgrade(_ tokens: [String]) {
         guard AppFeature.appUpdates.isAvailable else { return }
+        let matchingIDs = items.filter { item in
+            item.token.map { tokens.contains($0) } ?? false
+        }.map(\.id)
+        installingItemIDs.formUnion(matchingIDs)
         upgradeObserver = HomebrewManager.shared.$operationStatus
             .dropFirst()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] status in
                 guard let status, status.result != .running else { return }
                 self?.upgradeObserver = nil
+                self?.installingItemIDs.subtract(matchingIDs)
                 guard status.result == .succeeded else { return }
                 self?.check()
             }
