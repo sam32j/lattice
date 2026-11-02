@@ -73,90 +73,88 @@ struct DockSettings: View {
                 ), requiring: [.accessibility, .screenRecording], feature: .dockPreview)
                     .labelsHidden()
             }
-            WindowPreviewExclusionsList(key: DefaultsKey.windowPreviewExcludedApps)
-                .padding(.leading, settingsRowTextInset)
-                .disabled(!dockPreviewEngaged)
-                .opacity(dockPreviewEngaged ? 1 : 0.55)
-            Group {
-                SettingsRow(symbol: "rectangle.3.group", title: l10n.s.dockPreviewCurrentSpaceOnly,
-                            caption: l10n.s.dockPreviewCurrentSpaceOnlyCaption) {
-                    HStack(spacing: 8) {
-                        if !dockPreviewCurrentSpaceOnly {
-                            Image(systemName: "info.circle")
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
-                                .contentShape(Rectangle())
-                                .onHover { hovering in
-                                    showingCurrentSpaceInfo = hovering
-                                }
-                                .popover(isPresented: $showingCurrentSpaceInfo, arrowEdge: .top) {
-                                    Text(l10n.s.dockPreviewCurrentSpaceOnlyInfo)
-                                        .font(.callout)
-                                        .padding(12)
-                                        .frame(width: 280)
-                                }
-                        }
-                        Toggle(l10n.s.dockPreviewCurrentSpaceOnly, isOn: $dockPreviewCurrentSpaceOnly)
-                            .labelsHidden()
-                            .onChange(of: dockPreviewCurrentSpaceOnly) { _, _ in
-                                DockPreviewService.shared.syncWithPreferences()
-                            }
-                    }
-                }
-                SettingsRow(symbol: "timer", title: l10n.s.dockPreviewOpenDelay,
-                            caption: l10n.s.dockPreviewOpenDelayCaption) {
-                    Picker(l10n.s.dockPreviewOpenDelay, selection: dockPreviewHoverDelayBinding) {
-                        if ![200, 350].contains(dockPreviewHoverDelayBinding.wrappedValue) {
-                            Text("\(dockPreviewHoverDelayBinding.wrappedValue) ms").tag(dockPreviewHoverDelayBinding.wrappedValue)
-                        }
-                        Text(l10n.s.dockPreviewDelayDefault).tag(200)
-                        Text(l10n.s.dockPreviewDelayLonger).tag(350)
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                    .fixedSize()
-                }
-                if !dockPreviewBackgroundIsGlass {
-                    SettingsRow(symbol: "circle.lefthalf.filled", title: l10n.s.dockPreviewBackgroundOpacity,
-                                caption: l10n.s.dockPreviewBackgroundOpacityCaption) {
-                        SettingsValueSlider(title: l10n.s.dockPreviewBackgroundOpacity,
-                            value: dockPreviewBackgroundOpacityBinding,
-                            range: DockPreviewSupport.backgroundOpacityRange, step: 0.05,
-                            readout: "\(dockPreviewBackgroundOpacityPercent)%", usesSystemAppearance: true)
-                            .frame(width: 140)
-                    }
-                }
+            if dockPreviewEngaged {
+                WindowPreviewExclusionsList(key: DefaultsKey.windowPreviewExcludedApps)
+                    .padding(.leading, settingsRowTextInset)
                 Group {
-                    SettingsRow(symbol: "dock.rectangle", title: l10n.s.dockPreviewKeepDockVisible,
-                                caption: l10n.s.dockPreviewKeepDockVisibleCaption) {
-                        Toggle(l10n.s.dockPreviewKeepDockVisible, isOn: Binding(
-                            get: { isDockAutohideEnabled ? dockPreviewKeepDockVisible : true },
-                            set: { dockPreviewKeepDockVisible = $0 }
-                        ))
-                            .labelsHidden()
-                            .onChange(of: dockPreviewKeepDockVisible) { _, _ in
-                                dockPreview.syncWithPreferences()
+                    SettingsRow(symbol: "rectangle.3.group", title: l10n.s.dockPreviewCurrentSpaceOnly,
+                                caption: l10n.s.dockPreviewCurrentSpaceOnlyCaption) {
+                        HStack(spacing: 8) {
+                            if !dockPreviewCurrentSpaceOnly {
+                                Image(systemName: "info.circle")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.secondary)
+                                    .contentShape(Rectangle())
+                                    .onHover { hovering in
+                                        showingCurrentSpaceInfo = hovering
+                                    }
+                                    .popover(isPresented: $showingCurrentSpaceInfo, arrowEdge: .top) {
+                                        Text(l10n.s.dockPreviewCurrentSpaceOnlyInfo)
+                                            .font(.callout)
+                                            .padding(12)
+                                            .frame(width: 280)
+                                    }
                             }
+                            Toggle(l10n.s.dockPreviewCurrentSpaceOnly, isOn: $dockPreviewCurrentSpaceOnly)
+                                .labelsHidden()
+                                .onChange(of: dockPreviewCurrentSpaceOnly) { _, _ in
+                                    DockPreviewService.shared.syncWithPreferences()
+                                }
+                        }
                     }
-                    .disabled(!isDockAutohideEnabled || (!DockAutohideHold.isSupported && !dockPreviewKeepDockVisible))
-                    .opacity(isDockAutohideEnabled ? 1 : 0.55)
-                    SettingsRow(symbol: "clock.arrow.circlepath", title: l10n.s.dockPreviewOrderByCreation,
-                                caption: l10n.s.dockPreviewOrderByCreationCaption) {
-                        Toggle(l10n.s.dockPreviewOrderByCreation, isOn: $dockPreviewOrderByCreation).labelsHidden()
+                    SettingsRow(symbol: "timer", title: l10n.s.dockPreviewOpenDelay,
+                                caption: l10n.s.dockPreviewOpenDelayCaption) {
+                        Picker(l10n.s.dockPreviewOpenDelay, selection: dockPreviewHoverDelayBinding) {
+                            if ![200, 350].contains(dockPreviewHoverDelayBinding.wrappedValue) {
+                                Text("\(dockPreviewHoverDelayBinding.wrappedValue) ms").tag(dockPreviewHoverDelayBinding.wrappedValue)
+                            }
+                            Text(l10n.s.dockPreviewDelayDefault).tag(200)
+                            Text(l10n.s.dockPreviewDelayLonger).tag(350)
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .fixedSize()
                     }
-                    SettingsRow(symbol: "rectangle.dashed", title: l10n.s.minimalWindowPreviews,
-                                caption: l10n.s.minimalWindowPreviewsCaption) {
-                        Toggle(l10n.s.minimalWindowPreviews, isOn: $minimalPreviews).labelsHidden()
+                    if !dockPreviewBackgroundIsGlass {
+                        SettingsRow(symbol: "circle.lefthalf.filled", title: l10n.s.dockPreviewBackgroundOpacity,
+                                    caption: l10n.s.dockPreviewBackgroundOpacityCaption) {
+                            SettingsValueSlider(title: l10n.s.dockPreviewBackgroundOpacity,
+                                value: dockPreviewBackgroundOpacityBinding,
+                                range: DockPreviewSupport.backgroundOpacityRange, step: 0.05,
+                                readout: "\(dockPreviewBackgroundOpacityPercent)%", usesSystemAppearance: true)
+                                .frame(width: 140)
+                        }
                     }
+                    Group {
+                        SettingsRow(symbol: "dock.rectangle", title: l10n.s.dockPreviewKeepDockVisible,
+                                    caption: l10n.s.dockPreviewKeepDockVisibleCaption) {
+                            Toggle(l10n.s.dockPreviewKeepDockVisible, isOn: Binding(
+                                get: { isDockAutohideEnabled ? dockPreviewKeepDockVisible : true },
+                                set: { dockPreviewKeepDockVisible = $0 }
+                            ))
+                                .labelsHidden()
+                                .onChange(of: dockPreviewKeepDockVisible) { _, _ in
+                                    dockPreview.syncWithPreferences()
+                                }
+                        }
+                        .disabled(!isDockAutohideEnabled || (!DockAutohideHold.isSupported && !dockPreviewKeepDockVisible))
+                        .opacity(isDockAutohideEnabled ? 1 : 0.55)
+                        SettingsRow(symbol: "clock.arrow.circlepath", title: l10n.s.dockPreviewOrderByCreation,
+                                    caption: l10n.s.dockPreviewOrderByCreationCaption) {
+                            Toggle(l10n.s.dockPreviewOrderByCreation, isOn: $dockPreviewOrderByCreation).labelsHidden()
+                        }
+                        SettingsRow(symbol: "rectangle.dashed", title: l10n.s.minimalWindowPreviews,
+                                    caption: l10n.s.minimalWindowPreviewsCaption) {
+                            Toggle(l10n.s.minimalWindowPreviews, isOn: $minimalPreviews).labelsHidden()
+                        }
+                    }
+                    Divider()
+                    WindowPreviewsCard(sizeKey: DefaultsKey.previewSize,
+                                       excludedAppsKey: DefaultsKey.windowPreviewExcludedApps,
+                                       embedded: true, showsExclusions: false,
+                                       showsMinimalPreview: false)
                 }
-                Divider()
-                WindowPreviewsCard(sizeKey: DefaultsKey.previewSize,
-                                   excludedAppsKey: DefaultsKey.windowPreviewExcludedApps,
-                                   embedded: true, showsExclusions: false,
-                                   showsMinimalPreview: false)
             }
-            .disabled(!dockPreviewInstalled)
-            .opacity(dockPreviewInstalled ? 1 : 0.55)
         }
     }
 

@@ -6,12 +6,14 @@ struct WindowPreviewsCard: View {
     @ObservedObject private var l10n = L10n.shared
     @AppStorage(DefaultsKey.minimalWindowPreviews) private var minimalPreviews = false
     @AppStorage private var previewSize: String
+    private let sizeKey: String
     private let excludedAppsKey: String
     let embedded: Bool
     let showsExclusions: Bool
     let showsMinimalPreview: Bool
 
     init(sizeKey: String, excludedAppsKey: String, embedded: Bool = false, showsExclusions: Bool = true, showsMinimalPreview: Bool = true) {
+        self.sizeKey = sizeKey
         _previewSize = AppStorage(wrappedValue: "normal", sizeKey)
         self.excludedAppsKey = excludedAppsKey
         self.embedded = embedded
@@ -49,24 +51,38 @@ struct WindowPreviewsCard: View {
         }
     }
 
+    private var isDockPreview: Bool {
+        sizeKey == DefaultsKey.previewSize
+    }
+
     /// A preview thumbnail drawn at the size it stands for.
     private func sizeChoice(_ value: String, title: String, scale: CGFloat) -> some View {
         let selected = previewSize == value
         return Button {
             previewSize = value
             AppSwitcher.shared.syncWithPreferences()
+            DockPreviewService.shared.syncWithPreferences()
         } label: {
             VStack(spacing: 8) {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(selected ? Color.accentColor.opacity(0.35) : Color.secondary.opacity(0.3))
-                    .overlay(alignment: .top) {
-                        RoundedRectangle(cornerRadius: 2, style: .continuous)
-                            .fill(selected ? Color.accentColor : Color.secondary.opacity(0.6))
-                            .frame(height: 4)
-                            .padding(3)
-                    }
-                    .frame(width: 60 * scale, height: 42 * scale)
-                    .frame(height: 42)
+                if isDockPreview {
+                    Image(systemName: "rectangle.dock")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .foregroundStyle(selected ? Color.accentColor : Color.secondary.opacity(0.7))
+                        .frame(width: 54 * scale, height: 38 * scale)
+                        .frame(width: 60, height: 42)
+                } else {
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(selected ? Color.accentColor.opacity(0.35) : Color.secondary.opacity(0.3))
+                        .overlay(alignment: .top) {
+                            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                .fill(selected ? Color.accentColor : Color.secondary.opacity(0.6))
+                                .frame(height: 4)
+                                .padding(3)
+                        }
+                        .frame(width: 60 * scale, height: 42 * scale)
+                        .frame(height: 42)
+                }
                 Text(title)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(selected ? Color.accentColor : .primary)
