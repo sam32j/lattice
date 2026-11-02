@@ -13,12 +13,62 @@ struct AppUpdatesListView: View {
     @ObservedObject private var homebrew = HomebrewManager.shared
     @Environment(\.notchPresentation) private var inNotch
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @AppStorage(DefaultsKey.appUpdatesIncludeOnlineCatalog)
-    private var includeOnlineCatalog = true
+    @AppStorage(DefaultsKey.appUpdatesCheckFrequency)
+    private var frequencyRaw = AppUpdatesSupport.CheckFrequency.off.rawValue
+    @AppStorage(DefaultsKey.appUpdatesNotify) private var notify = true
+    @AppStorage(DefaultsKey.appUpdatesIncludeHomebrewApps) private var includeHomebrewApps = true
     @AppStorage(DefaultsKey.appUpdatesIncludeAppStore)
     private var includeAppStore = true
+    @AppStorage(DefaultsKey.appUpdatesIncludeOnlineCatalog)
+    private var includeOnlineCatalog = true
+    @State private var showingALS = false
+    @State private var showingAppPicker = false
     @State private var showOperationDetails = false
     var compact = false
+
+    private var currentFrequency: AppUpdatesSupport.CheckFrequency {
+        AppUpdatesSupport.CheckFrequency.sanitized(frequencyRaw)
+    }
+
+    private var isScheduleOff: Bool {
+        currentFrequency == .off
+    }
+
+    private var allSourcesOff: Bool {
+        !includeHomebrewApps && !includeAppStore && !includeOnlineCatalog
+    }
+
+    private var isScheduleControlDisabled: Bool {
+        allSourcesOff
+    }
+
+    private var isNotifyControlDisabled: Bool {
+        isScheduleOff || allSourcesOff
+    }
+
+    private var excludedRules: [AppUpdatesSupport.UpdateRule] {
+        updates.rules.filter { $0.version == nil }
+    }
+
+    private var excludedCount: Int {
+        excludedRules.count
+    }
+
+    private var excludedSummaryText: String {
+        "\(excludedCount) \(excludedCount == 1 ? "app" : "apps") excluded from update checks"
+    }
+
+    private var notifyDisplayBinding: Binding<Bool> {
+        Binding {
+            isNotifyControlDisabled ? false : notify
+        } set: { newValue in
+            guard !isNotifyControlDisabled else { return }
+            notify = newValue
+            if newValue {
+                Notifier.requestPermission()
+            }
+        }
+    }
 
     private var text: AppUpdateStrings { FeatureStrings.appUpdates(l10n.language) }
     /// The row menu holds both rule actions, so it is named for neither.
@@ -105,58 +155,64 @@ struct AppUpdatesListView: View {
     // MARK: - Overhauled Page Layout
 
     private var overhauledBody: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            statusCard
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("App Updates")
+                    .font(.system(size: 22, weight: .bold))
+                    .padding(.bottom, 2)
 
-            ScrollView(.vertical, showsIndicators: true) {
-                VStack(alignment: .leading, spacing: 10) {
-                    if !updates.items.isEmpty {
-                        HStack(alignment: .firstTextBaseline) {
-                            Text("Available Updates")
-                                .font(.system(size: 12.5, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text("\(updates.items.count) \(updates.items.count == 1 ? "app" : "apps")")
-                                .font(.system(size: 11.5))
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal, 4)
-                        .padding(.top, 2)
+                statusCard
 
-                        LazyVStack(spacing: 8) {
-                            ForEach(updates.items) { item in
-                                row(item)
-                                    .transition(reduceMotion ? .identity : .opacity)
-                            }
-                        }
-                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: updates.items)
-                    } else if !updates.isChecking {
-                        if let error = updates.lastError, !error.isEmpty {
-                            errorCard
-                                .transition(reduceMotion ? .identity : .opacity)
-                        } else if updates.hasCheckedThisSession {
-                            caughtUpCard
+                preferencesSection
+
+                if !updates.items.isEmpty {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Available Updates")
+                            .font(.system(size: 12.5, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("\(updates.items.count) \(updates.items.count == 1 ? "app" : "apps")")
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 2)
+                    .padding(.top, 4)
+
+                    LazyVStack(spacing: 8) {
+                        ForEach(updates.items) { item in
+                            row(item)
                                 .transition(reduceMotion ? .identity : .opacity)
                         }
                     }
-
-                    if let status = homebrew.operationStatus {
-                        HomebrewOperationStatusView(status: status,
-                                                    log: homebrew.log,
-                                                    terminalFallbackCommand: homebrew.terminalFallbackCommand,
-                                                    compact: false,
-                                                    showDetails: $showOperationDetails,
-                                                    onCancel: homebrew.cancelOperation,
-                                                    onClear: homebrew.clearLog,
-                                                    onOpenTerminal: homebrew.openTerminalFallback)
-                            .padding(.top, 6)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: updates.items)
+                } else if !updates.isChecking {
+                    if let error = updates.lastError, !error.isEmpty {
+                        errorCard
+                            .transition(reduceMotion ? .identity : .opacity)
+                    } else if updates.hasCheckedThisSession {
+                        caughtUpCard
+                            .transition(reduceMotion ? .identity : .opacity)
                     }
                 }
-                .padding(.vertical, 2)
+
+                if let status = homebrew.operationStatus {
+                    HomebrewOperationStatusView(status: status,
+                                                log: homebrew.log,
+                                                terminalFallbackCommand: homebrew.terminalFallbackCommand,
+                                                compact: false,
+                                                showDetails: $showOperationDetails,
+                                                onCancel: homebrew.cancelOperation,
+                                                onClear: homebrew.clearLog,
+                                                onOpenTerminal: homebrew.openTerminalFallback)
+                        .padding(.top, 6)
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(18)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .sheet(isPresented: $showingALS) {
+            alsSheet
+        }
         .onChange(of: statusHeadline) { _, newHeadline in
             AccessibilityNotification.Announcement("\(newHeadline), \(statusDetail)").post()
         }
@@ -167,7 +223,7 @@ struct AppUpdatesListView: View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(statusHeadline)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                 Text(statusDetail)
                     .font(.system(size: 11.5))
                     .foregroundStyle(.secondary)
@@ -184,33 +240,271 @@ struct AppUpdatesListView: View {
                     if updates.isChecking {
                         if reduceMotion {
                             Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(.system(size: 10))
+                                .font(.system(size: 11))
                         } else {
                             ProgressView()
                                 .controlSize(.small)
                         }
-                        Text("Checking")
-                            .font(.system(size: 11.5, weight: .medium))
+                        Text("Checking…")
+                            .font(.system(size: 12, weight: .medium))
                     } else {
                         Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 10))
+                            .font(.system(size: 11))
                         Text("Check now")
-                            .font(.system(size: 11.5, weight: .medium))
+                            .font(.system(size: 12, weight: .medium))
                     }
                 }
-                .frame(width: 100, height: 24)
+                .foregroundStyle(updates.isChecking || !AppFeature.appUpdates.isAvailable ? Color.secondary.opacity(0.6) : Color.primary.opacity(0.85))
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            .buttonStyle(.plain)
             .disabled(updates.isChecking || !AppFeature.appUpdates.isAvailable)
             .accessibilityLabel(updates.isChecking ? "Checking for updates" : "Check now")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color.primary.opacity(0.04))
         )
+    }
+
+    // MARK: - Update Preferences
+
+    private var preferencesSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Update Preferences")
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .padding(.leading, 2)
+
+            VStack(alignment: .leading, spacing: 0) {
+                // Row 1: Automatic checks
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Automatic checks")
+                            .font(.system(size: 12.5, weight: .medium))
+                        Text("How often to check")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    scheduleSegmentControl
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+
+                if allSourcesOff {
+                    Text("Choose at least one source")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.orange)
+                        .padding(.horizontal, 14)
+                        .padding(.bottom, 8)
+                }
+
+                preferenceDivider
+
+                // Row 2: Notify when updates are available
+                HStack(alignment: .center) {
+                    Text("Notify when updates are available")
+                        .font(.system(size: 12.5, weight: .medium))
+                    Spacer()
+                    Toggle("Notify when updates are available", isOn: notifyDisplayBinding)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .disabled(isNotifyControlDisabled)
+                        .opacity(isNotifyControlDisabled ? 0.45 : 1.0)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+
+                preferenceDivider
+
+                // Row 3: Update sources
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Update sources")
+                        .font(.system(size: 12.5, weight: .medium))
+
+                    HStack(spacing: 8) {
+                        sourcePill(title: "Homebrew", isOn: $includeHomebrewApps)
+                        sourcePill(title: "App Store", isOn: $includeAppStore)
+                        sourcePill(title: "App Channels", isOn: $includeOnlineCatalog)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+
+                preferenceDivider
+
+                // Row 4: Excluded Apps
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Excluded Apps")
+                            .font(.system(size: 12.5, weight: .medium))
+                        Text(excludedSummaryText)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button {
+                        showingALS = true
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text("Manage")
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 9, weight: .semibold))
+                        }
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Manage excluded apps")
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.primary.opacity(0.04))
+            )
+        }
+    }
+
+    private var scheduleSegmentControl: some View {
+        HStack(spacing: 0) {
+            scheduleSegment(title: "Off", frequency: .off)
+            scheduleSegment(title: "Daily", frequency: .daily)
+            scheduleSegment(title: "Weekly", frequency: .weekly)
+        }
+        .padding(2)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(Color.primary.opacity(0.07))
+        )
+        .disabled(isScheduleControlDisabled)
+        .opacity(isScheduleControlDisabled ? 0.45 : 1.0)
+    }
+
+    private func scheduleSegment(title: String, frequency: AppUpdatesSupport.CheckFrequency) -> some View {
+        let isSelected = currentFrequency == frequency
+        return Button {
+            guard !isScheduleControlDisabled else { return }
+            frequencyRaw = frequency.rawValue
+            updates.syncWithPreferences()
+            if frequency != .off, notify {
+                Notifier.requestPermission()
+            }
+        } label: {
+            Text(title)
+                .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
+                .foregroundStyle(isSelected ? Color.white : Color.primary.opacity(0.8))
+                .padding(.horizontal, 12)
+                .frame(height: 22)
+                .background(
+                    isSelected
+                        ? RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Color.accentColor)
+                        : RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Color.clear)
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func sourcePill(title: String, isOn: Binding<Bool>) -> some View {
+        Button {
+            isOn.wrappedValue.toggle()
+            updates.sourceSelectionDidChange()
+            updates.syncWithPreferences()
+        } label: {
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: isOn.wrappedValue ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 13))
+                    .foregroundStyle(isOn.wrappedValue ? Color.accentColor : Color.secondary.opacity(0.4))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.primary.opacity(0.05))
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityValue(isOn.wrappedValue ? "On" : "Off")
+    }
+
+    private var preferenceDivider: some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.06))
+            .frame(height: 1)
+    }
+
+    // MARK: - ALS (App List Sheet)
+
+    private var alsSheet: some View {
+        AppListSheet(
+            caption: "Updates won’t be checked for these apps.",
+            title: "Excluded Apps",
+            centersContent: excludedRules.isEmpty,
+            onDone: { showingALS = false }
+        ) {
+            if excludedRules.isEmpty {
+                ContentUnavailableView("No Excluded Apps", systemImage: "app.dashed",
+                                       description: Text("Apps you exclude from update checks will appear here."))
+            } else {
+                LazyVStack(spacing: 8) {
+                    ForEach(excludedRules) { rule in
+                        HStack(spacing: 9) {
+                            Image(nsImage: InstalledApps.icon(for: rule.bundleID))
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                            Text(rule.name)
+                                .font(.system(size: 12))
+                                .lineLimit(1)
+                            Spacer()
+                            Button {
+                                updates.removeRule(rule)
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Remove: \(rule.name)")
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                    }
+                }
+                .padding(12)
+            }
+        } footer: {
+            Button {
+                showingAppPicker = true
+            } label: {
+                Label("Add App…", systemImage: "plus")
+            }
+        }
+        .sheet(isPresented: $showingAppPicker) {
+            let listed = Set(excludedRules.map(\.bundleID))
+            AppPickerView(canBrowseApplications: true, acceptsExecutables: false) {
+                showingAppPicker = false
+            } onSelect: { url in
+                showingAppPicker = false
+                updates.addExclusion(appAt: url)
+            } onSelectApp: { app in
+                showingAppPicker = false
+                if let id = app.explicitIdentity ?? app.bundleID {
+                    updates.storeRule(bundleID: id, name: app.name, version: nil)
+                }
+            } loadApps: {
+                InstalledApps.installedBundleApplications(excluding: listed, includeRunningApplications: true)
+            }
+        }
     }
 
     private var caughtUpCard: some View {
@@ -270,7 +564,7 @@ struct AppUpdatesListView: View {
         let buttonLabel = isInstalling ? "Updating…" : (isWebApp ? "Open to update" : "Update")
         let accessibleActionName = isWebApp ? "Open to update \(item.name)" : "Update \(item.name)"
 
-        return HStack(spacing: 10) {
+        return HStack(spacing: 12) {
             Image(nsImage: icon(for: item))
                 .resizable()
                 .aspectRatio(contentMode: .fit)
@@ -278,15 +572,12 @@ struct AppUpdatesListView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 5) {
-                    Text(item.name)
-                        .font(.system(size: compact ? 11.5 : 12.5, weight: .semibold))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    sourceChip(for: item.source)
-                }
+                Text(item.name)
+                    .font(.system(size: compact ? 11.5 : 13, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
                 Text(item.versionSummary)
-                    .font(.system(size: compact ? 9.5 : 10.5))
+                    .font(.system(size: compact ? 9.5 : 11))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -298,8 +589,8 @@ struct AppUpdatesListView: View {
                 Text(buttonLabel)
                     .font(.system(size: compact ? 10.5 : 11.5, weight: .semibold))
                     .lineLimit(1)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 3.5)
+                    .padding(.horizontal, compact ? 10 : 14)
+                    .padding(.vertical, compact ? 3.5 : 5.5)
                     .background(Color.accentColor, in: Capsule())
                     .foregroundStyle(.white)
             }
@@ -322,12 +613,12 @@ struct AppUpdatesListView: View {
                 .accessibilityLabel("\(moreOptions): \(item.name)")
             }
         }
-        .padding(.horizontal, compact ? 8 : 12)
-        .padding(.vertical, compact ? 6 : 8)
-        .frame(height: compact ? Self.compactRowHeight : 50)
+        .padding(.horizontal, compact ? 8 : 14)
+        .padding(.vertical, compact ? 6 : 10)
+        .frame(height: compact ? Self.compactRowHeight : nil)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.primary.opacity(compact ? 0.035 : 0.035))
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(compact ? 0.035 : 0.04))
         )
         .contextMenu { ruleActions(for: item) }
     }
@@ -381,7 +672,6 @@ struct AppUpdatesListView: View {
             } else {
                 compactList
             }
-            compactRulesSection
             if coverageIncomplete {
                 incompleteCheck
             }

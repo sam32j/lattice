@@ -39,11 +39,7 @@ extension SettingsView {
         case .urlCleaner: URLCleanerSettings()
         case .cleaner: FeatureActivationPage(feature: .cleaner) { CleanerView() }
         case .homebrew: FeatureActivationPage(feature: .homebrew) { HomebrewSettings() }
-        case .appUpdates:
-            FeatureActivationPage(feature: .appUpdates,
-                                  options: { AnyView(AppUpdatesOptions()) }) {
-                AppUpdatesSettings()
-            }
+        case .appUpdates: FeatureActivationPage(feature: .appUpdates) { AppUpdatesSettings() }
         case .media: FeatureActivationPage(feature: .mediaTools) { MediaSettings() }
         case .videoDownloader: VideoDownloaderSettings()
         case .clipboard: ClipboardSettings()
