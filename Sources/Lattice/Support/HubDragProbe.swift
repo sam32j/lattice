@@ -5,7 +5,7 @@ enum HubDragProbe {
     static func run(launcher: LatticeHubService) throws {
         let defaults = UserDefaults.standard
         defaults.set("screenshot,media,scratchpad,homebrew,clipboard,urlCleaner", forKey: DefaultsKey.quickLauncherItemOrder)
-        defaults.set(false, forKey: AppFeature.homebrew.availabilityKey)
+        SettingsRefactorProbe.setPreviewAvailability(AppFeature.homebrew, enabled: false)
         launcher.hiddenItemsRaw = "media"
         defaults.set("media", forKey: DefaultsKey.quickLauncherHiddenItems)
         launcher.isEditing = true

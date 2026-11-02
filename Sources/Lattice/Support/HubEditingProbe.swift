@@ -17,7 +17,7 @@ enum HubEditingProbe {
         defaults.register(defaults: Defaults.registeredDefaults)
         defaults.set(AppLanguage.enUS.rawValue, forKey: DefaultsKey.language)
         for feature in AppFeature.allCases {
-            defaults.set(false, forKey: feature.availabilityKey)
+            SettingsRefactorProbe.setPreviewAvailability(feature, enabled: false)
             for key in feature.enabledKeys { defaults.set(false, forKey: key) }
         }
         let launcher = LatticeHubService.shared
@@ -29,16 +29,16 @@ enum HubEditingProbe {
             try require(launcher.canManageTools, "Hidden quick controls must remain manageable")
             launcher.setControlHidden(.cleaningMode, false)
             for item in LatticeHubItem.allCases {
-                defaults.set(true, forKey: item.feature.availabilityKey)
+                SettingsRefactorProbe.setPreviewAvailability(item.feature, enabled: true)
                 for key in item.feature.enabledKeys { defaults.set(true, forKey: key) }
             }
             for feature in [AppFeature.quickLauncher, .micMute, .keepAwake, .commandBar, .brightness] {
-                defaults.set(true, forKey: feature.availabilityKey)
+                SettingsRefactorProbe.setPreviewAvailability(feature, enabled: true)
             }
             try HubColdDragProbe.run()
             try HubPageLayoutProbe.run(output: output)
             try HubDragProbe.run(launcher: launcher)
-            defaults.set(true, forKey: AppFeature.homebrew.availabilityKey)
+            SettingsRefactorProbe.setPreviewAvailability(AppFeature.homebrew, enabled: true)
             launcher.hiddenItemsRaw = "wallpaper,media,homebrew,clipboard,urlCleaner,scratchpad"
             defaults.set(launcher.hiddenItemsRaw, forKey: DefaultsKey.quickLauncherHiddenItems)
             try HubHUDDragProbe.run(launcher: launcher, output: output)
@@ -173,7 +173,7 @@ enum HubEditingProbe {
             let hideControls = scenario != 0
             if scenario == 2 {
                 for item in LatticeHubItem.allCases {
-                    UserDefaults.standard.set(false, forKey: item.feature.availabilityKey)
+                    SettingsRefactorProbe.setPreviewAvailability(item.feature, enabled: false)
                     for key in item.feature.enabledKeys { UserDefaults.standard.set(false, forKey: key) }
                 }
                 try require(launcher.enabledCount == 0 && launcher.canManageTools,
@@ -206,7 +206,7 @@ enum HubEditingProbe {
 
     private static func verifyIsland(output: URL) throws {
         let defaults = UserDefaults.standard
-        defaults.set(true, forKey: AppFeature.notch.availabilityKey)
+        SettingsRefactorProbe.setPreviewAvailability(AppFeature.notch, enabled: true)
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
         defaults.set(NotchModule.allCases.filter { $0 != .hub }.map(\.rawValue).joined(separator: ","),
                      forKey: DefaultsKey.notchHiddenModules)

@@ -18,7 +18,7 @@ enum HubPresentationProbe {
         defaults.register(defaults: Defaults.registeredDefaults)
         defaults.set(AppLanguage.enUS.rawValue, forKey: DefaultsKey.language)
         for feature in AppFeature.allCases {
-            defaults.set(false, forKey: feature.availabilityKey)
+            SettingsRefactorProbe.setPreviewAvailability(feature, enabled: false)
             for key in feature.enabledKeys { defaults.set(false, forKey: key) }
         }
         for item in LatticeHubItem.allCases {
@@ -28,7 +28,7 @@ enum HubPresentationProbe {
         for feature in [AppFeature.micMute, .keepAwake, .brightness, .commandBar] {
             SettingsRefactorProbe.setPreviewAvailability(feature, enabled: true)
         }
-        defaults.set(true, forKey: AppFeature.quickLauncher.availabilityKey)
+        SettingsRefactorProbe.setPreviewAvailability(AppFeature.quickLauncher, enabled: true)
         defaults.set("", forKey: DefaultsKey.hubControlsHidden)
         var failures = [String]()
         do {
@@ -63,7 +63,7 @@ enum HubPresentationProbe {
             }
         }
         let defaults = UserDefaults.standard
-        defaults.set(true, forKey: AppFeature.notch.availabilityKey)
+        SettingsRefactorProbe.setPreviewAvailability(AppFeature.notch, enabled: true)
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
         defaults.set(NotchModule.allCases.filter { $0 != .hub }.map(\.rawValue).joined(separator: ","),
                      forKey: DefaultsKey.notchHiddenModules)

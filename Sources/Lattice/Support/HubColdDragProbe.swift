@@ -5,7 +5,7 @@ import AppKit
 enum HubColdDragProbe {
     static func run() throws {
         let defaults = UserDefaults.standard
-        defaults.set(true, forKey: AppFeature.notch.availabilityKey)
+        SettingsRefactorProbe.setPreviewAvailability(AppFeature.notch, enabled: true)
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
         defaults.set(NotchModule.allCases.filter { $0 != .hub }.map(\.rawValue).joined(separator: ","),
                      forKey: DefaultsKey.notchHiddenModules)
