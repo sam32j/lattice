@@ -2532,7 +2532,7 @@ def main():
     write("WindowEdgeSnapRuntime.swift", "import AppKit\nimport CoreGraphics\nimport Foundation\n"
           + "extension WindowEdgeSnapRuntimeTests {\n"
           + "".join(declaration(window_directional, prefix).replace("private ", "", 1)
-                    for prefix in ["private enum WindowEdgeSnapPointerInput {",
+                    for prefix in ["private final class WindowGestureApplyContext {", "private enum WindowEdgeSnapPointerInput {",
                                    "private struct WindowEdgeSnapDrag {",
                                    "private struct WindowLayoutTarget {",
                                    "private struct WindowPointerGesture {",
@@ -2566,7 +2566,8 @@ def main():
               "    private func handleGestureEvent(",
               "    private func gestureChord(",
               "    private func arm(",
-              "    private func promote("])
+              "    private func promote(", "    private func makeGestureApplySession()",
+              "    private func enqueueGestureApply(", "    private func endGestureAssistiveMode("])
           + "}\n}\n")
     write("ScreenshotPinHoverFocus.swift", "import Foundation\nextension ScreenshotPinHoverFocusTests {\n"
           + "final class ScreenshotPinWindow: PinState {\n"
@@ -2577,7 +2578,7 @@ def main():
     write("WindowGestureFrontingRuntime.swift", "import AppKit\nimport CoreGraphics\nimport Foundation\n"
           + "extension WindowGestureFrontingRuntimeTests {\n"
           + "".join(declaration(window_directional, prefix).replace("private ", "", 1)
-                    for prefix in ["private struct WindowPointerGesture {",
+                    for prefix in ["private final class WindowGestureApplyContext {", "private struct WindowPointerGesture {",
                                    "private struct PendingWindowGesture {",
                                    "private struct WindowGestureTarget {",
                                    "private enum WindowEdgeSnapPointerInput {"])
@@ -2586,18 +2587,20 @@ def main():
                     for prefix in ["    private var gestureState:", "    private var trackedGestureButton:",
                                    "    private func handleGestureEvent(", "    private func gestureChord(",
                                    "    private func arm(", "    private func promote(",
-                                   "    private func enqueueGestureApply(", "    private func drainGestureApplies()",
-                                   "    private func flushGestureApplies()", "    private func endGestureAssistiveMode()",
-                                   "    private func apply(_ gesture: WindowPointerGesture,"])
+                                   "    private func enqueueGestureApply(", "    private func makeGestureApplySession()",
+                                   "    private func flushGestureApplies()", "    private func endGestureAssistiveMode(",
+                                   "    private func apply(_ gesture: WindowPointerGesture,", "    private func forwardToEdgeSnap("])
+          + declaration(window_directional, "    private func stopGestureTap()").replace("private func", "func", 1)
           + "}\n}\n")
     write("WindowGestureApplyRuntime.swift", "import AppKit\nimport CoreGraphics\nimport Foundation\n"
           + "extension WindowGestureApplyRuntimeTests {\n"
+          + declaration(window_directional, "private final class WindowGestureApplyContext {").replace("private ", "", 1)
           + declaration(window_directional, "private struct WindowPointerGesture {").replace("private ", "", 1)
           + "final class Host: Fixture {\n"
           + "".join(declaration(window_directional, prefix).replace("private ", "", 1)
                     for prefix in [
               "    private func enqueueGestureApply(",
-              "    private func drainGestureApplies()",
+              "    private func makeGestureApplySession()",
               "    private func flushGestureApplies()"])
           + "}\n}\n")
     write("WindowDirectionalModifierRuntime.swift", "import AppKit\nimport CoreGraphics\nimport Foundation\n"

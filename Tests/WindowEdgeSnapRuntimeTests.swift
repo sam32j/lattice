@@ -40,6 +40,7 @@ enum WindowEdgeSnapRuntimeTests {
     static var appIgnored = false
     /// Whether the window's server ID can be read from its Accessibility element.
     static var windowIDReadable = true
+    static var serverIDReads = 0
     /// A real timer fires at or after its deadline, here a millisecond after,
     /// so a look set for exactly the rest of a pause finds it complete.
     static let timerLatency: TimeInterval = 0.001
@@ -99,16 +100,27 @@ enum WindowEdgeSnapRuntimeTests {
                 }
             }
             /// The queued jobs and the timers already due, with no time passing.
-            func runDue() { run(until: clock) }
+            func runDue() { DispatchQueue.drainGestures(); run(until: clock) }
             /// Everything, timers included, as if the pointer then rested until
             /// nothing was left.
-            func drain() { run(until: .infinity) }
+            func drain() { DispatchQueue.drainGestures(); run(until: .infinity) }
         }
         static let main = Jobs()
         static let lookup = Jobs()
+        static var gestures: [Jobs] = []
+        let jobs: Jobs
         static func global(qos: DispatchQoS = .default) -> Jobs { lookup }
-        init(label: String, qos: DispatchQoS) {}
-        func async(execute: @escaping () -> Void) { Self.lookup.async(execute: execute) }
+        init(label: String, qos: DispatchQoS) {
+            if label == "test lookup" { jobs = Self.lookup }
+            else { jobs = Jobs(); Self.gestures.append(jobs) }
+        }
+        func async(execute: @escaping () -> Void) { jobs.async(execute: execute) }
+        static func drainGestures() {
+            let previous = onLookupQueue
+            onLookupQueue = true
+            for queue in gestures { queue.run(until: clock) }
+            onLookupQueue = previous
+        }
         /// The lookup queue's jobs, run the way the real queue runs them, off
         /// the main run loop.
         static func drainLookups() {
@@ -209,6 +221,7 @@ enum WindowEdgeSnapRuntimeTests {
     }
     enum AXWindowResolver {
         static func windowID(for window: Window) -> CGWindowID? {
+            serverIDReads += 1
             countAX()
             return windowIDReadable ? window.id : nil
         }
@@ -253,6 +266,9 @@ enum WindowEdgeSnapRuntimeTests {
         var pendingGesture: PendingWindowGesture?
         var gestureTap: CFMachPort?
         var gestureAssistiveMode: EnhancedUserInterfaceSuspension?
+        var gestureApplySession: WindowGestureApplySession<(gesture: WindowPointerGesture, pointer: CGPoint)>?
+        var gestureApplySessions: [WindowGestureApplySession<(gesture: WindowPointerGesture, pointer: CGPoint)>] = []
+        var modifierEdgeSnapSession: UUID?
         let moveGestureUpdateInterval: TimeInterval = 0
         let resizeGestureUpdateInterval: TimeInterval = 0
         let edgeSnapResolveAttemptLimit = 4
@@ -306,7 +322,6 @@ enum WindowEdgeSnapRuntimeTests {
             pendingGesture = nil
             replayedClicks += 1
         }
-        func endGestureAssistiveMode() {}
         func gestureTarget(at point: CGPoint, requiresResize: Bool) -> WindowGestureTarget? {
             guard currentFrame.contains(point), let app = NSRunningApplication(processIdentifier: processID)
             else { return nil }
@@ -314,14 +329,15 @@ enum WindowEdgeSnapRuntimeTests {
                                        frame: WindowLayoutFrame(origin: currentFrame.origin, size: currentFrame.size))
         }
         /// The app takes every frame the gesture writes at once.
-        func enqueueGestureApply(_ gesture: WindowPointerGesture, pointer: CGPoint) {
+        func apply(_ gesture: WindowPointerGesture, pointer: CGPoint) {
+            let originalFrame = gesture.applyContext.originalFrame ?? gesture.originalFrame
             switch gesture.kind {
             case .move:
-                currentFrame.origin = WindowGestureSupport.movedOrigin(from: gesture.originalFrame.origin,
+                currentFrame.origin = WindowGestureSupport.movedOrigin(from: originalFrame.origin,
                                                                        pointerStart: gesture.pointerStart,
                                                                        pointerNow: pointer)
             case .resize(let edges):
-                currentFrame = WindowGestureSupport.resizedFrame(from: gesture.originalFrame,
+                currentFrame = WindowGestureSupport.resizedFrame(from: originalFrame,
                                                                  pointerStart: gesture.pointerStart,
                                                                  pointerNow: pointer, edges: edges)
             }
@@ -353,6 +369,8 @@ enum WindowEdgeSnapRuntimeTests {
         zoneActions = nil
         appIgnored = false
         windowIDReadable = true
+        serverIDReads = 0
+        DispatchQueue.gestures.removeAll()
         NSScreen.screens = [NSScreen.primary]
         WindowEdgeSnapSupport.isSystemTilingEnabled = false
         WindowEdgeSnapSupport.isSystemTopWindowOverviewDragEnabled = false
@@ -425,9 +443,11 @@ enum WindowEdgeSnapRuntimeTests {
     /// A modifier move or resize as the gesture tap promotes it from the press.
     private static func gesture(_ kind: WindowPointerGesture.Kind = .move,
                                 snapsAtEdges: Bool = true) -> WindowPointerGesture {
-        WindowPointerGesture(window: Window(pid: processID, id: windowID), kind: kind, button: .primary,
+        let gesture = WindowPointerGesture(window: Window(pid: processID, id: windowID), kind: kind, button: .primary,
                              originalFrame: initialFrame, pointerStart: pressPoint, lastAppliedAt: 0,
                              snapsAtEdges: snapsAtEdges)
+        gesture.applyContext.originalFrame = initialFrame
+        return gesture
     }
 
     /// The promotion past the drag slop, handed over the way the gesture tap
@@ -957,7 +977,7 @@ enum WindowEdgeSnapRuntimeTests {
         _ = gestureEvent(tapResize, .leftMouseUp, edgePoint, flags: chord.union(.maskShift))
         DispatchQueue.main.drain()
         suite.expect(tapResizeDrag.heldPress && !tapResizeDrag.preview && tapResize.placements.isEmpty
-                        && mainAXWhileHeld + lookupQueueAX + mainAXAfterRelease == 0,
+                        && mainAXWhileHeld == 0 && serverIDReads == 0,
                      "a resize chord through the gesture tap never previews, snaps or asks for the window's server ID")
 
         reset()
@@ -966,7 +986,7 @@ enum WindowEdgeSnapRuntimeTests {
         _ = gestureEvent(tapSnapOff, .leftMouseUp, edgePoint)
         DispatchQueue.main.drain()
         suite.expect(tapSnapOffDrag.heldPress && !tapSnapOffDrag.preview && tapSnapOff.placements.isEmpty
-                        && mainAXWhileHeld + lookupQueueAX + mainAXAfterRelease == 0,
+                        && mainAXWhileHeld == 0 && serverIDReads == 0,
                      "a chord drag while edge snapping is off moves the window without snapping or asking for its server ID")
 
         reset()

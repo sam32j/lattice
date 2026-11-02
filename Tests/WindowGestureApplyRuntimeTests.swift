@@ -14,6 +14,8 @@ enum WindowGestureApplyRuntimeTests {
         let gestureApplyLock = NSLock()
         var pendingGestureApply: (gesture: WindowPointerGesture, pointer: CGPoint)?
         var gestureApplyDraining = false
+        var gestureApplySession: WindowGestureApplySession<(gesture: WindowPointerGesture, pointer: CGPoint)>?
+        var gestureApplySessions: [WindowGestureApplySession<(gesture: WindowPointerGesture, pointer: CGPoint)>] = []
         /// Set before the first frame is queued and released by the test.
         var firstWriteHold: DispatchSemaphore?
         var writeDuration: TimeInterval = 0
