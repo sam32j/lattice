@@ -24,6 +24,7 @@ struct WindowLayoutSettings: View {
     @AppStorage(DefaultsKey.windowLayoutMarginPercent) var marginPercent = WindowLayoutMargin.defaultPercent
     @AppStorage(DefaultsKey.windowLayoutSideRepeatCyclesThirds) var sideRepeatCyclesThirds = false
     @AppStorage(DefaultsKey.spacesOrderEnabled) var spacesOrderEnabled = false
+    @AppStorage(DefaultsKey.autoQuitEnabled) var autoQuitEnabled = false
     @AppStorage(DefaultsKey.windowLayoutShortcutMarginMaximize) var marginShortcutRaw = WindowLayoutAction.marginMaximize.defaultShortcut?.storageValue ?? WindowLayoutAction.clearedShortcutStorageValue
     @State var directionalError: String?
     @State var systemTilingEnabled = WindowEdgeSnapSupport.isSystemTilingEnabled
@@ -55,7 +56,7 @@ struct WindowLayoutSettings: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             refreshSystemTilingState()
         }
-        .settingsExpansionAnimation(value: [systemTilingEnabled, edgeSnapEnabled, permissions.accessibility])
+        .settingsExpansionAnimation(value: [systemTilingEnabled, edgeSnapEnabled, permissions.accessibility, maximizeEnabled, gestureEnabled, windowLayoutInstalled, autoQuitEnabled])
     }
 
     var windowsAndSpaces: some View {
@@ -67,14 +68,16 @@ struct WindowLayoutSettings: View {
                         PermissionGatedToggle(l10n.s.windowMaximizeName, isOn: $maximizeEnabled).labelsHidden()
                             .onChange(of: maximizeEnabled) { _, _ in FeatureRuntime.shared.sync([.windowMaximizer]) }
                     }
-                    WindowMaximizerExclusionsList()
-                        .padding(.leading, settingsRowTextInset)
-                        .disabled(!maximizeEnabled)
-                        .opacity(maximizeEnabled ? 1 : 0.55)
+                    if maximizeEnabled {
+                        WindowMaximizerExclusionsList()
+                            .padding(.leading, settingsRowTextInset)
+                    }
                 }
                 .settingsSectionAnchor(.windowMaximizer, cornerRadius: 16)
                 Divider()
             }
+            moveAndResizeDragging
+            Divider()
             DockQuitOnCloseSettings()
             if AppFeature.spacesOrder.isPresentInControls() {
                 Divider()
@@ -84,6 +87,35 @@ struct WindowLayoutSettings: View {
                         .onChange(of: spacesOrderEnabled) { _, _ in FeatureRuntime.shared.sync([.spacesOrder]) }
                 }
                 .settingsSectionAnchor(.spacesOrder, cornerRadius: 16)
+            }
+        }
+    }
+
+    var moveAndResizeDragging: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            SettingsRow(symbol: "arrow.up.and.down.and.arrow.left.and.right",
+                        title: text.gestureEnable,
+                        caption: text.gestureCaption) {
+                PermissionGatedToggle(text.gestureEnable, isOn: $gestureEnabled)
+                    .labelsHidden()
+                    .onChange(of: gestureEnabled) { _, newValue in
+                        UserDefaults.standard.set(newValue, forKey: DefaultsKey.windowGestureEnabled)
+                        WindowLayoutService.shared.syncWithPreferences()
+                    }
+            }
+            if gestureEnabled {
+                VStack(alignment: .leading, spacing: 13) {
+                    WindowGestureModifierPicker(storageValue: $gestureModifiers,
+                                                title: text.gestureModifiers)
+                        .onChange(of: gestureModifiers) { _, _ in
+                            WindowLayoutService.shared.syncWithPreferences()
+                        }
+                    WindowGestureHints(modifierStorage: gestureModifiers,
+                                       moveText: text.gestureMove,
+                                       resizeText: text.gestureResize)
+                    SettingsToggleRow(title: text.gestureRaiseWindow, isOn: $gestureRaiseWindow)
+                }
+                .padding(.leading, settingsRowTextInset)
             }
         }
     }
@@ -100,14 +132,14 @@ struct WindowLayoutSettings: View {
                 ))
                 .labelsHidden()
             }
-            VStack(alignment: .leading, spacing: 16) {
-                WindowLayoutIgnoredAppsList()
-                    .padding(.leading, settingsRowTextInset)
-                snappingControls
+            if windowLayoutInstalled {
+                VStack(alignment: .leading, spacing: 16) {
+                    WindowLayoutIgnoredAppsList()
+                        .padding(.leading, settingsRowTextInset)
+                    snappingControls
+                }
+                .toggleStyle(TrailingSwitchToggleStyle())
             }
-            .toggleStyle(TrailingSwitchToggleStyle())
-            .disabled(!windowLayoutInstalled)
-            .opacity(windowLayoutInstalled ? 1 : 0.55)
         }
     }
 
