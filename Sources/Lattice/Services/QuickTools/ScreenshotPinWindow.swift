@@ -149,6 +149,9 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
             updateImageOpacity()
             chrome.setControlsVisible(hovered)
         }
+        if hovered && !ignoresMouseEvents && !isKeyWindow {
+            makeKey()
+        }
     }
 
     func setOpacity(_ value: CGFloat) {

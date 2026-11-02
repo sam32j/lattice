@@ -59,20 +59,24 @@ struct ScreenshotPinGestureSource {
     private var ended = false
 
     mutating func begin(_ source: Source) {
-        if ended || owner == source {
-            owner = nil
-            ended = false
-        }
+        owner = nil
+        ended = false
     }
 
     mutating func accepts(_ source: Source) -> Bool {
-        guard !ended else { return false }
+        if ended {
+            owner = nil
+            ended = false
+        }
         if owner == nil { owner = source }
         return owner == source
     }
 
     mutating func finish(_ source: Source) {
-        if owner == source { ended = true }
+        if owner == source || owner == nil {
+            ended = true
+            owner = nil
+        }
     }
 
     mutating func reset() {
