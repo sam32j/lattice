@@ -2736,7 +2736,8 @@ struct NotchGeometry: Equatable {
                       hubRecentCaptures: Bool = false,
                       hubIsEditing: Bool = false,
                       hubAvailableCount: Int = 0,
-                      hubOptionsHeight: CGFloat = 0) -> CGSize {
+                      hubOptionsHeight: CGFloat = 0,
+                      hubActiveUtilityHeight: CGFloat? = nil) -> CGSize {
         let budget = contentBudget
         let showsCapturePreview = module == .captures && !detail && capturePreviewHeight != nil
         let showsFileMedia = module == .files && !detail && fileMediaHeight != nil
@@ -2777,6 +2778,10 @@ struct NotchGeometry: Equatable {
             case .hub:
                 if hubRecentCaptures {
                     contentHeight = budget
+                    break
+                }
+                if let utilityHeight = hubActiveUtilityHeight {
+                    contentHeight = min(budget, utilityHeight)
                     break
                 }
                 guard let toolCount else { contentHeight = pageBudget; break }

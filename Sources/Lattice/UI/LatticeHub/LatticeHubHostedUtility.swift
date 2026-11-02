@@ -8,6 +8,23 @@ struct LatticeHubHostedUtility: View {
     let notchSize: CGSize?
     let onClose: () -> Void
 
+    private var fallbackHeight: CGFloat {
+        switch item {
+        case .appUpdates:
+            let count = AppUpdatesService.shared.items.count
+            if count == 0 {
+                return 148
+            } else {
+                let rows = min(count, 4)
+                return min(290, 85 + CGFloat(rows * 40 + (rows - 1) * 5))
+            }
+        case .videoDownloader:
+            return 172
+        default:
+            return 470
+        }
+    }
+
     var body: some View {
         if item == .recentCaptures {
             RecentCapturesView(onClose: onClose, notchSize: notchSize)
@@ -43,7 +60,7 @@ struct LatticeHubHostedUtility: View {
                     }
                 }
             }
-            .frame(height: notchSize?.height ?? 470)
+            .frame(height: notchSize?.height ?? fallbackHeight)
         }
     }
 }
