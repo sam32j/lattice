@@ -41,7 +41,7 @@ extension SettingsView {
         case .homebrew: FeatureActivationPage(feature: .homebrew) { HomebrewSettings() }
         case .appUpdates:
             FeatureActivationPage(feature: .appUpdates,
-                                  options: { AnyView(AppUpdatesOptions().frame(width: 380, height: 420)) }) {
+                                  options: { AnyView(AppUpdatesOptions()) }) {
                 AppUpdatesSettings()
             }
         case .media: FeatureActivationPage(feature: .mediaTools) { MediaSettings() }
