@@ -17,16 +17,10 @@ struct DockQuitOnCloseSettings: View {
             if enabled {
                 DockQuitOnCloseExceptions()
                     .padding(.leading, settingsRowTextInset)
-            } else {
-                SettingsControlRow(title: SettingsFollowupLabels.text(.dontQuitApps, l10n.language)) {
-                    Button(SettingsAppListStrings.text(l10n.language).edit) {}
-                }
-                .padding(.leading, settingsRowTextInset)
-                .disabled(true)
-                .opacity(0.55)
             }
         }
         .settingsSectionAnchor(.autoQuit, cornerRadius: 16)
+        .settingsExpansionAnimation(value: enabled)
     }
 }
 

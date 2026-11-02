@@ -586,7 +586,7 @@ private struct DockPreviewCard: View {
             statusBadge(systemName: "arrow.up.left.and.arrow.down.right")
         }
         if window.isOnHiddenSpace {
-            statusBadge(systemName: "rectangle.stack")
+            statusBadge(systemName: "arrow.right.arrow.left")
         }
     }
 
