@@ -63,8 +63,7 @@ struct AudioInputSettings: View {
                         .toggleStyle(.switch)
                     }
 
-                    ShortcutPreferenceRow(role: .micMute, alignment: .center,
-                                          label: "Mute Microphone with Shortcut") {
+                    ShortcutPreferenceRow(role: .micMute, alignment: .center) {
                         MicMuteService.shared.syncWithPreferences()
                     }
                     if micShortcutEnabled, micMute.shortcutRegistrationFailed {

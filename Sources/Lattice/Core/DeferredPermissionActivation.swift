@@ -53,7 +53,15 @@ enum DeferredPermissionActivation {
         clear(in: defaults)
         // System audio is a distinct Core Audio permission. A screen grant
         // cannot complete an old visualizer enable across restart.
-        guard feature != .notchLiveEqualizer, verify(.screenRecording) else { return nil }
+        guard feature != .notchLiveEqualizer,
+              requiredPermissions(for: feature).allSatisfy(verify) else { return nil }
         return feature
+    }
+
+    private static func requiredPermissions(for feature: AppFeature) -> [SettingsPermission] {
+        switch feature {
+        case .dockPreview, .switcher: return [.accessibility, .screenRecording]
+        default: return [.screenRecording]
+        }
     }
 }

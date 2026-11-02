@@ -682,6 +682,11 @@ def main():
                         "    private func rememberForResume(", "    private func stopIdleWorkIfPossible(",
                         "    @objc private func workspaceDidWake("])
           + "}\n}\n")
+    visualizer_entry = declaration("Sources/Lattice/Services/Notch/NotchService.swift", "    func syncWithPreferences()")
+    visualizer_entry = visualizer_entry.split("        preferenceSyncWork?.cancel()", 1)[0]
+    visualizer_entry = visualizer_entry.replace("func syncWithPreferences()", "func synchronizeEntry()")
+    write("NotchVisualizerEntry.swift", "import Foundation\nextension NotchVisualizerEntryContract {\nfinal class Service {\n"
+          + visualizer_entry + "}\n}\n}\n#sourceLocation()\n")
     write("NotchAudioLevelLifecycle.swift", "import Combine\nimport Foundation\n"
           + "extension NotchAudioLevelLifecycleContract {\n"
           + declaration("Sources/Lattice/Services/Notch/NotchAudioLevelService.swift",
@@ -1887,6 +1892,29 @@ def main():
             "AppFeature.textSnippets.isAvailable", "AppFeature.textSnippets.isAvailable(in: ReviewDefaults.current!)").replace(
             "AppFeature.quickLauncher.isAvailable", "AppFeature.quickLauncher.isAvailable(in: ReviewDefaults.current!)").replace(
             "AppFeature.clipboardHistory.isAvailable", "AppFeature.clipboardHistory.isAvailable(in: ReviewDefaults.current!)")
+    write("PermissionPortalRefresh.swift", "import Foundation\nextension PermissionPortalRefreshTests {\nfinal class Portal: State {\n"
+          + declaration("Sources/Lattice/UI/PermissionsPortalSections.swift", "    private func refreshAutomation()")
+              .replace("private func", "func", 1) + "}\n}\n")
+    write("PermissionResetDialog.swift", "import Foundation\nextension PermissionResetStateTests {\nfinal class DialogPresenter: DialogState {\n"
+          + declaration("Sources/Lattice/UI/Settings/PermissionResetSettingsRow.swift", "    private func makePermissionAlert(")
+              .replace("private func", "func", 1).replace("NSAlert", "Alert")
+          + declaration("Sources/Lattice/UI/Settings/PermissionResetSettingsRow.swift", "    private func confirmReset()")
+              .replace("private func", "func", 1)
+          + declaration("Sources/Lattice/UI/Settings/PermissionResetSettingsRow.swift", "    private func presentRestartIfNeeded()")
+              .replace("private func", "func", 1).replace("NSAlert()", "Alert()")
+              .replace("            showingRestartDialog = false", "            self.showingRestartDialog = false")
+              .replace("            presentRestartIfNeeded()", "            self.presentRestartIfNeeded()") + "}\n}\n")
+    native_request = declaration("Sources/Lattice/UI/Settings/SettingsPermissionAccess.swift", "    static func request(")
+    native_request = native_request.replace("Permissions.shared", "PermissionPortalDispatchTests.Permissions.shared").split("        case .camera, .microphone:")[0] + "        default: completion(.denied)\n        }\n    }\n"
+    write("NativePermissionRequest.swift", "import Foundation\nextension PermissionPortalDispatchTests.NativeRequestAdapter {\n"
+          + native_request + "}\n")
+    permission_row = "Sources/Lattice/UI/PermissionPortalRow.swift"
+    portal_methods = declaration(permission_row, "    private func request()", None).replace("private func", "func", 1).replace("_ in requestingMicrophone =", "_ in self.requestingMicrophone =")
+    if "    private func finishRequest()" in (ROOT / permission_row).read_text():
+        portal_methods += declaration(permission_row, "    private func finishRequest()").replace("private func", "func", 1)
+    portal_methods += declaration(permission_row, "    private func openSystemSettings()").replace("private func", "func", 1)
+    write("PermissionPortalDispatch.swift", "import Foundation\nextension PermissionPortalDispatchTests {\nfinal class Row: State {\n"
+          + portal_methods + "}\n}\n")
     write("PermissionRevocationObserver.swift", "import Foundation\nimport Combine\nimport CoreBluetooth\nextension PermissionRevocationRuntimeTests {\nenum Observer {\n"
           + declaration("Sources/Lattice/App/PermissionRevocationRuntime.swift", "    static func observe()")
               .replace("in: .standard", "in: defaults").replace("defaults: .standard", "defaults: defaults")

@@ -37,6 +37,10 @@ struct AudioInputDeviceControls: View {
                         .lineLimit(1)
                 } else {
                     Picker(l10n.s.mixerInputTooltip, selection: inputSelectionBinding) {
+                        if !audioPriority.inputPriorityEnabled {
+                            Text(l10n.s.mixerOutputDefault)
+                                .tag(MixerRoutingSupport.systemDefaultSelectionID)
+                        }
                         ForEach(inputManager.inputDevices) { device in
                             Text(inputDeviceTitle(device))
                                 .tag(device.uid)
@@ -100,15 +104,14 @@ struct AudioInputDeviceControls: View {
                         ?? ""
                 }
                 return inputManager.preferredInputDeviceUID
-                    ?? inputManager.currentInputDeviceUID
-                    ?? inputManager.inputDevices.first?.uid
-                    ?? ""
+                    ?? MixerRoutingSupport.systemDefaultSelectionID
             },
             set: { selection in
                 if audioPriority.inputPriorityEnabled {
                     inputManager.setCurrentInputDeviceUID(selection)
                 } else {
-                    inputManager.setPreferredInputDeviceUID(selection)
+                    inputManager.setPreferredInputDeviceUID(
+                        selection == MixerRoutingSupport.systemDefaultSelectionID ? nil : selection)
                 }
             }
         )

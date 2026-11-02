@@ -285,12 +285,21 @@ final class QuickTogglesService: ObservableObject {
         if killStatus == 0 {
             return true
         }
-        // If Finder was already not running or killall returned non-zero, ensure Finder is running
-        let url = URL(fileURLWithPath: "/System/Library/CoreServices/Finder.app")
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.activates = false
-        NSWorkspace.shared.openApplication(at: url, configuration: configuration)
-        return true
+        // If Finder was not running, launch it; if Finder is still running after failed killall, report failure.
+        if Shell.run("/usr/bin/pgrep", ["-x", "Finder"]).status != 0 {
+            let url = URL(fileURLWithPath: "/System/Library/CoreServices/Finder.app")
+            let configuration = NSWorkspace.OpenConfiguration()
+            configuration.activates = false
+            let semaphore = DispatchSemaphore(value: 0)
+            var launchSuccess = false
+            NSWorkspace.shared.openApplication(at: url, configuration: configuration) { app, error in
+                launchSuccess = (app != nil && error == nil)
+                semaphore.signal()
+            }
+            _ = semaphore.wait(timeout: .now() + 2.0)
+            return launchSuccess
+        }
+        return false
     }
 
     /// A quit Finder stays quit (nothing relaunches it), so the poll only

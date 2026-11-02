@@ -179,6 +179,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             }
             .store(in: &cancellables)
 
+        DeferredPermissionActivationService.recoverIfNeeded()
+
         // Keep the menu titles in step with the in-app language.
         L10n.shared.$language
             .dropFirst()
