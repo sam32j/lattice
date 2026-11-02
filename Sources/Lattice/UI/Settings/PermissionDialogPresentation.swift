@@ -1,35 +1,54 @@
 import AppKit
 import SwiftUI
 
-/// Danger zone dialogs share owner-relative placement without a backdrop dim.
+/// Danger zone dialogs and assistant file panels share owner-relative placement without a backdrop dim.
 enum PermissionDialogPresentation {
+    @discardableResult
     static func run(_ alert: NSAlert, over parent: NSWindow?,
                     runModal: (() -> NSApplication.ModalResponse)? = nil) -> NSApplication.ModalResponse {
-        guard let parent else { return (runModal ?? alert.runModal)() }
         alert.layout()
-        let dialog = alert.window
+        return run(alert.window, over: parent, runModal: runModal ?? alert.runModal)
+    }
 
-        func center() {
-            dialog.level = NSWindow.Level(rawValue: max(NSWindow.Level.modalPanel.rawValue, parent.level.rawValue + 1))
-            dialog.setFrameOrigin(NSPoint(x: parent.frame.midX - dialog.frame.width / 2,
-                                          y: parent.frame.midY - dialog.frame.height / 2))
+    @discardableResult
+    static func run(_ dialog: NSWindow, over parent: NSWindow?,
+                    runModal: (() -> NSApplication.ModalResponse)? = nil) -> NSApplication.ModalResponse {
+        guard let parent else {
+            return (runModal ?? {
+                if let panel = dialog as? NSSavePanel { return panel.runModal() }
+                return NSApp.runModal(for: dialog)
+            })()
         }
-        center()
+
+        func place() {
+            dialog.level = NSWindow.Level(rawValue: max(NSWindow.Level.modalPanel.rawValue, parent.level.rawValue + 1))
+            let x = parent.frame.midX - dialog.frame.width / 2
+            let topInset: CGFloat = 30
+            let y = max(parent.frame.minY + 20, parent.frame.maxY - dialog.frame.height - topInset)
+            dialog.setFrameOrigin(NSPoint(x: x, y: y))
+        }
+        place()
         let notifications = NotificationCenter.default
-        // NSAlert may apply native placement while entering its modal loop.
-        // Reapply the same center before the newly key window is rendered.
+        // Modal presentation may apply native placement while entering its modal loop.
+        // Reapply the owner-relative placement before the newly key window is rendered.
         let observations = [
             (NSWindow.didBecomeKeyNotification, dialog),
             (NSWindow.didResizeNotification, dialog),
             (NSWindow.didMoveNotification, parent),
             (NSWindow.didResizeNotification, parent)
         ].map { name, window in
-            notifications.addObserver(forName: name, object: window, queue: .main) { _ in center() }
+            notifications.addObserver(forName: name, object: window, queue: .main) { _ in place() }
         }
         defer {
             observations.forEach(notifications.removeObserver)
         }
-        return (runModal ?? alert.runModal)()
+        if let runModal {
+            return runModal()
+        } else if let panel = dialog as? NSSavePanel {
+            return panel.runModal()
+        } else {
+            return NSApp.runModal(for: dialog)
+        }
     }
 }
 
