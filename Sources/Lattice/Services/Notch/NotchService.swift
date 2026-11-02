@@ -4039,7 +4039,7 @@ final class NotchService: ObservableObject {
             // hosted utility turns it into a page.
             let launcher = LatticeHubService.shared
             launcher.$isEditing.map { _ in () }
-                .merge(with: launcher.$activeUtility.map { _ in () }, launcher.$hiddenItemsRaw.map { _ in () }, AppUpdatesService.shared.$items.map { _ in () })
+                .merge(with: launcher.$activeUtility.map { _ in () }, launcher.$hiddenItemsRaw.map { _ in () })
                 .dropFirst(3).receive(on: DispatchQueue.main)
                 .sink { [weak self] in
                     guard let self, self.expanded, self.selected == .hub, !self.showingAppPanel, !self.showingSections else { return }

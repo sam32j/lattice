@@ -25,8 +25,13 @@ enum PermissionDialogPresentation {
 
         func place() {
             dialog.level = NSWindow.Level(rawValue: max(NSWindow.Level.modalPanel.rawValue, parent.level.rawValue + 1))
-            let x = (parent.frame.midX - dialog.frame.width / 2).rounded()
-            let y = max(parent.frame.minY + 20, parent.frame.maxY - dialog.frame.height - topInset).rounded()
+            var x = (parent.frame.midX - dialog.frame.width / 2).rounded()
+            var y = max(parent.frame.minY + 20, parent.frame.maxY - dialog.frame.height - topInset).rounded()
+            if let visible = (parent.screen ?? NSScreen.main)?.visibleFrame {
+                x = min(max(x, visible.minX), max(visible.minX, visible.maxX - dialog.frame.width))
+                // An oversized native panel keeps its title bar reachable.
+                y = min(max(y, visible.minY), visible.maxY - dialog.frame.height)
+            }
             dialog.setFrameOrigin(NSPoint(x: x, y: y))
         }
         place()

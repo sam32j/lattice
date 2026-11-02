@@ -2,6 +2,7 @@ import AppKit
 
 enum PermissionDialogPresentationTests {
     static func run(_ suite: TestSuite) {
+        PermissionDialogBoundsTests.run(suite)
         let parent = NSWindow(contentRect: NSRect(x: 180, y: 240, width: 800, height: 600),
                               styleMask: [.titled], backing: .buffered, defer: false)
         let content = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
