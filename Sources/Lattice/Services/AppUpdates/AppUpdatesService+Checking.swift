@@ -200,7 +200,13 @@ extension AppUpdatesService {
                                                           knownIDs: knownIDs,
                                                           items: newItems)
         knownIDs = Set(newItems.map(\.id))
-        items = newItems
+        if !items.isEmpty {
+            let existingIDs = Set(items.map(\.id))
+            let remaining = newItems.filter { !existingIDs.contains($0.id) }
+            items = items.filter { item in newItems.contains(where: { $0.id == item.id }) } + remaining
+        } else {
+            items = newItems
+        }
         packageManagerAvailable = available
         onlineCatalogAvailable = catalogAvailable
         appStoreAvailable = storeAvailable
