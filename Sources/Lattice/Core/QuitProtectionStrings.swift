@@ -78,7 +78,7 @@ extension FeatureStrings {
 
 extension QuitProtectionStrings {
     static let enUS = QuitProtectionStrings(
-        name: "Quit & close protection",
+        name: "Quit & Close Protection",
         description: "Protects ⌘Q and ⌘W from accidental presses",
         intro: "Configure each shortcut independently. The original action passes only after the selected confirmation.",
         enabled: "Protect this shortcut",

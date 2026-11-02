@@ -142,7 +142,7 @@ final class QuitProtectionHUD {
         /// Width the two labels need for what they currently hold, straight
         /// from the cells that draw them.
         var textWidth: CGFloat {
-            max(title.fittingSize.width, detail.fittingSize.width)
+            max(title.fittingSize.width, detail.stringValue.isEmpty ? 0 : detail.fittingSize.width)
         }
 
         override init(frame frameRect: NSRect) {
@@ -174,9 +174,24 @@ final class QuitProtectionHUD {
         override func layout() {
             super.layout()
             let inset = QuitProtectionHUD.textInset
-            let offset: CGFloat = showsProgress ? 8 : 0
-            title.frame = CGRect(x: inset, y: 23 + offset, width: bounds.width - inset * 2, height: 17)
-            detail.frame = CGRect(x: inset, y: 7 + offset, width: bounds.width - inset * 2, height: 14)
+            let hasDetail = !detail.stringValue.isEmpty
+            if hasDetail {
+                detail.isHidden = false
+                let offset: CGFloat = showsProgress ? 8 : 0
+                title.frame = CGRect(x: inset, y: 23 + offset, width: bounds.width - inset * 2, height: 17)
+                detail.frame = CGRect(x: inset, y: 7 + offset, width: bounds.width - inset * 2, height: 14)
+            } else {
+                detail.isHidden = true
+                if showsProgress {
+                    let titleY = (10 + (bounds.height - 10 - 17) / 2).rounded()
+                    title.frame = CGRect(x: inset, y: titleY, width: bounds.width - inset * 2, height: 17)
+                    detail.frame = CGRect(x: inset, y: titleY, width: bounds.width - inset * 2, height: 0)
+                } else {
+                    let titleY = ((bounds.height - 17) / 2).rounded()
+                    title.frame = CGRect(x: inset, y: titleY, width: bounds.width - inset * 2, height: 17)
+                    detail.frame = CGRect(x: inset, y: titleY, width: bounds.width - inset * 2, height: 0)
+                }
+            }
             CATransaction.begin()
             CATransaction.setDisableActions(true)
             progressTrack.frame = CGRect(x: 24, y: 7, width: bounds.width - 48, height: 3)

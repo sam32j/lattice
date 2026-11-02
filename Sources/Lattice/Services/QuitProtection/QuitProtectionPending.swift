@@ -134,6 +134,7 @@ extension QuitProtectionService {
             title = String(format: strings.doubleHUDFormat(for: shortcut), shortcut.symbol)
         }
         let deadline = configuration.mode == .hold ? holdTimer?.fireDate : nil
+        let detail = configuration.mode == .hold ? "" : strings.cancelHint
         QuitProtectionHUD.resolveTargetWindow(forPID: press.targetProcessIdentifier) { [weak self] targetRect in
             guard let self, self.isRunning, !self.deferToSwitcherIfNeeded(),
                   self.pending?.id == press.id,
@@ -142,7 +143,7 @@ extension QuitProtectionService {
                   AppFeature.quitWindowProtection.isAvailable,
                   self.configuration(for: shortcut) == configuration,
                   deadline.map({ $0 > Date() }) ?? true else { return }
-            self.hud.show(title: title, detail: strings.cancelHint,
+            self.hud.show(title: title, detail: detail,
                           holdDeadline: deadline, targetRect: targetRect)
         }
     }

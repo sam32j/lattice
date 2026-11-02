@@ -38,6 +38,40 @@ enum QuitProtectionHoldPreset: Double, CaseIterable, Identifiable {
 
 }
 
+enum QuitProtectionDoublePressPreset: Double, CaseIterable, Identifiable {
+    case shorter = 300
+    case `default` = 500
+    case longer = 700
+
+    var id: Double { rawValue }
+
+    func title(_ language: AppLanguage) -> String {
+        let titles: [String]
+        switch language {
+        case .enUS: titles = ["Shorter", "Default", "Longer"]
+        case .ptBR: titles = ["Mais curto", "Padrão", "Mais longo"]
+        case .es: titles = ["Más breve", "Predeterminado", "Más largo"]
+        case .de: titles = ["Kürzer", "Standard", "Länger"]
+        case .fr: titles = ["Plus court", "Par défaut", "Plus long"]
+        case .it: titles = ["Più breve", "Predefinito", "Più lungo"]
+        case .ja: titles = ["短め", "デフォルト", "長め"]
+        case .ko: titles = ["짧게", "기본값", "길게"]
+        case .zhHans: titles = ["较短", "默认", "较长"]
+        case .zhTW, .zhHK: titles = ["較短", "預設", "較長"]
+        case .ru: titles = ["Короче", "По умолчанию", "Дольше"]
+        case .uk: titles = ["Коротша", "Стандартна", "Довша"]
+        case .tr: titles = ["Daha kısa", "Saptanmış", "Daha uzun"]
+        case .sk: titles = ["Kratšie", "Predvolené", "Dlhšie"]
+        }
+        switch self {
+        case .shorter: return titles[0]
+        case .default: return titles[1]
+        case .longer: return titles[2]
+        }
+    }
+
+}
+
 extension KeyboardSettings {
     // MARK: - Quit & Close Protection Card
 
@@ -118,10 +152,26 @@ extension KeyboardSettings {
                     }
                 }
                 if currentMode == .doublePress {
-                    SettingsSliderRow(title: quitStrings.doublePressInterval, value: doubleInterval,
-                                      range: QuitProtectionSupport.doublePressIntervalRange, step: 50,
-                                      readout: "\(Int(doubleInterval.wrappedValue.rounded())) ms")
-                        .onChange(of: doubleInterval.wrappedValue) { _, _ in quitService.syncWithPreferences() }
+                    let doublePresetBinding = Binding<Double>(
+                        get: { doubleInterval.wrappedValue },
+                        set: { newValue in
+                            doubleInterval.wrappedValue = newValue
+                            quitService.syncWithPreferences()
+                        }
+                    )
+                    SettingsControlRow(title: quitStrings.doublePressInterval) {
+                        Picker(quitStrings.doublePressInterval, selection: doublePresetBinding) {
+                            if !QuitProtectionDoublePressPreset.allCases.contains(where: { $0.rawValue == doubleInterval.wrappedValue }) {
+                                Text("\(Int(doubleInterval.wrappedValue.rounded())) ms").tag(doubleInterval.wrappedValue)
+                            }
+                            ForEach(QuitProtectionDoublePressPreset.allCases) { preset in
+                                Text(preset.title(l10n.language)).tag(preset.rawValue)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(width: 220, alignment: .trailing)
+                    }
                 }
                 if currentMode == .extraModifier {
                     SettingsControlRow(title: quitStrings.modifier,

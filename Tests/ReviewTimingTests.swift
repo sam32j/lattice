@@ -18,5 +18,17 @@ enum ReviewTimingTests {
             suite.expect(QuitProtectionHoldPreset.allCases.allSatisfy { !$0.title(language).isEmpty },
                          "all hold presets have localized titles for \(language)")
         }
+        suite.expect(QuitProtectionDoublePressPreset.allCases.map(\.rawValue) == [300, 500, 700],
+                     "double press choices are 300, 500, 700 ms")
+        suite.expect(QuitProtectionDoublePressPreset.default.rawValue == QuitProtectionSupport.defaultDoublePressIntervalMilliseconds,
+                     "the default double press preset matches runtime default")
+        suite.expect(QuitProtectionDoublePressPreset.shorter.title(.de) == "Kürzer"
+                     && QuitProtectionDoublePressPreset.default.title(.fr) == "Par défaut"
+                     && QuitProtectionDoublePressPreset.longer.title(.enUS) == "Longer",
+                     "double press preset labels follow the selected language")
+        for language in AppLanguage.allCases {
+            suite.expect(QuitProtectionDoublePressPreset.allCases.allSatisfy { !$0.title(language).isEmpty },
+                         "all double press presets have localized titles for \(language)")
+        }
     }
 }
