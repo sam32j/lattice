@@ -9,6 +9,7 @@ struct DataPermissionsRow: View {
     var status: String? = nil
     var tone: DataSettingsTone = .neutral
     var descriptionIsError = false
+    var descriptionLineLimit: Int? = 2
     var information: AnyView? = nil
     let actionTitle: String
     var actionTone: DataSettingsActionTone = .quiet
@@ -46,7 +47,7 @@ struct DataPermissionsRow: View {
                 } else if let description {
                     Text(description).font(.caption)
                         .foregroundStyle(descriptionIsError ? palette.foreground(.destructive) : palette.secondary)
-                        .lineLimit(2)
+                        .lineLimit(descriptionLineLimit)
                         .fixedSize(horizontal: false, vertical: true)
                         .help(description)
                 }

@@ -53,7 +53,7 @@ enum DeferredPermissionActivationService {
             SettingsRouter.shared.request(feature.settingsDestination)
             appDelegate()?.openSettingsWindow()
             let title = feature.hubTitle(L10n.shared.s, hub: FeatureStrings.hub(L10n.shared.language))
-            QuickToolHUD.show(icon: "checkmark", message: "\(title) enabled")
+            QuickToolHUD.show(icon: "checkmark", message: SettingsOwnershipStrings.enabled(title, L10n.shared.language))
         }
     }
 }

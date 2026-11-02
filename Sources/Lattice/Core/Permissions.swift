@@ -255,14 +255,22 @@ final class Permissions: ObservableObject {
     }
 
     /// Requests native Accessibility consent without an app-owned guide window.
-    func requestAccessibility() {
+    func requestAccessibility(offerSettingsRecovery: Bool = true) {
+        if offerSettingsRecovery {
+            SettingsPermissionAccess.requestWithRecovery(.accessibility)
+            return
+        }
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         AXIsProcessTrustedWithOptions(options)
         refreshActivePermissions()
     }
 
     /// Requests native Screen Recording consent without an app-owned guide window.
-    func requestScreenRecording() {
+    func requestScreenRecording(offerSettingsRecovery: Bool = true) {
+        if offerSettingsRecovery {
+            SettingsPermissionAccess.requestWithRecovery(.screenRecording)
+            return
+        }
         CGRequestScreenCaptureAccess()
         refreshActivePermissions()
     }

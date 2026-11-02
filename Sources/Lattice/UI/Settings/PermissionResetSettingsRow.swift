@@ -5,6 +5,7 @@ struct PermissionResetSettingsRow: View {
     @StateObject private var state: PermissionResetState
     @State private var dialogWindow = PermissionDialogWindowReference()
     @State private var showingRestartDialog = false
+    @State private var restartAttemptReturned = false
     let reset: (@escaping (Bool) -> Void) -> Void
     let restart: () -> Void
     let restartDialogEnabled: Bool
@@ -32,13 +33,15 @@ struct PermissionResetSettingsRow: View {
     var body: some View {
         DataPermissionsRow(symbol: "arrow.counterclockwise",
             title: l10n.s.advancedClearButton,
-            description: copy(.description),
+            description: resetDescription,
             tone: .destructive,
-            descriptionIsError: false,
-            actionTitle: copy(.clearButton),
+            descriptionIsError: state.phase == .failed,
+            descriptionLineLimit: needsRestart ? nil : 2,
+            actionTitle: needsRestart ? copy(.restartButton) : copy(.clearButton),
             actionTone: .destructive,
             actionRole: .destructive,
-            actionEnabled: state.phase == .ready) {
+            actionEnabled: state.phase == .ready || (needsRestart && restartAttemptReturned)) {
+                if needsRestart { restart(); return }
                 guard confirmReset() else { return }
                 beginReset()
             }
@@ -55,6 +58,15 @@ struct PermissionResetSettingsRow: View {
     }
 
     private var cancelTitle: String { l10n.s.uninstallerCancel }
+
+    private var resetDescription: String {
+        var message = state.phase == .failed ? l10n.s.advancedClearFailed
+            : needsRestart ? copy(.restartDescription) : copy(.description)
+        if restartAttemptReturned {
+            message += "\n" + PermissionResetCopy.manualRestart(l10n.language)
+        }
+        return message
+    }
 
     private func makePermissionAlert(_ title: String, message: String) -> NSAlert {
         let alert = NSAlert()
@@ -106,7 +118,7 @@ struct PermissionResetSettingsRow: View {
     }
 
     private func presentRestartIfNeeded() {
-        guard restartDialogEnabled, needsRestart, !showingRestartDialog else { return }
+        guard restartDialogEnabled, needsRestart, !showingRestartDialog, !restartAttemptReturned else { return }
         showingRestartDialog = true
         let alert = makePermissionAlert(copy(.restartTitle), message: copy(.restartDescription))
         alert.addButton(withTitle: copy(.restartButton))
@@ -115,10 +127,10 @@ struct PermissionResetSettingsRow: View {
             restart()
         }
         // Successful termination ends this process. If relaunch fails or quitting is
-        // vetoed, restore the required action instead of stranding a disabled row.
+        // vetoed, expose a persistent action and manual instructions in the row.
         scheduleRestartReminder {
             showingRestartDialog = false
-            presentRestartIfNeeded()
+            restartAttemptReturned = true
         }
     }
 

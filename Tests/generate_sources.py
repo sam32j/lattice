@@ -1903,11 +1903,14 @@ def main():
           + declaration("Sources/Lattice/UI/Settings/PermissionResetSettingsRow.swift", "    private func presentRestartIfNeeded()")
               .replace("private func", "func", 1).replace("NSAlert()", "Alert()")
               .replace("            showingRestartDialog = false", "            self.showingRestartDialog = false")
+              .replace("            restartAttemptReturned = true", "            self.restartAttemptReturned = true")
               .replace("            presentRestartIfNeeded()", "            self.presentRestartIfNeeded()") + "}\n}\n")
     native_request = declaration("Sources/Lattice/UI/Settings/SettingsPermissionAccess.swift", "    static func request(")
     native_request = native_request.replace("Permissions.shared", "PermissionPortalDispatchTests.Permissions.shared").split("        case .camera, .microphone:")[0] + "        default: completion(.denied)\n        }\n    }\n"
     write("NativePermissionRequest.swift", "import Foundation\nextension PermissionPortalDispatchTests.NativeRequestAdapter {\n"
-          + native_request + "}\n")
+          + native_request
+          + declaration("Sources/Lattice/UI/Settings/SettingsPermissionAccess.swift", "    static func requestWithRecovery(")
+          + "}\n")
     permission_row = "Sources/Lattice/UI/PermissionPortalRow.swift"
     portal_methods = declaration(permission_row, "    private func request()", None).replace("private func", "func", 1).replace("_ in requestingMicrophone =", "_ in self.requestingMicrophone =")
     if "    private func finishRequest()" in (ROOT / permission_row).read_text():

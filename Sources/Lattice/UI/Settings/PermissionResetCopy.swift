@@ -1,6 +1,25 @@
 import Foundation
 
 enum PermissionResetCopy {
+    static func manualRestart(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "Quit and reopen Lattice manually. If the reset was incomplete, retry it after reopening."
+        case .ptBR: return "Encerre e reabra o Lattice manualmente. Se a redefinição ficou incompleta, tente novamente após reabrir."
+        case .es: return "Cierra y vuelve a abrir Lattice manualmente. Si el restablecimiento quedó incompleto, inténtalo de nuevo."
+        case .de: return "Beende und öffne Lattice manuell. Falls die Rücksetzung unvollständig war, wiederhole sie danach."
+        case .fr: return "Quittez et rouvrez Lattice manuellement. Si la réinitialisation était incomplète, réessayez ensuite."
+        case .it: return "Chiudi e riapri Lattice manualmente. Se la reimpostazione era incompleta, riprova dopo la riapertura."
+        case .ja: return "Latticeを手動で終了して開き直してください。リセットが不完全な場合は、開き直してから再試行してください。"
+        case .ko: return "Lattice를 직접 종료한 후 다시 여세요. 초기화가 완료되지 않았다면 다시 연 후 재시도하세요."
+        case .zhHans: return "请手动退出并重新打开 Lattice。如果重置未完成，请重新打开后重试。"
+        case .zhTW, .zhHK: return "請手動結束並重新開啟 Lattice。如果重設未完成，請重新開啟後重試。"
+        case .ru: return "Закройте и откройте Lattice вручную. Если сброс не завершён, повторите его после открытия."
+        case .uk: return "Закрийте й відкрийте Lattice вручну. Якщо скидання не завершено, повторіть його після відкриття."
+        case .tr: return "Lattice’i elle kapatıp yeniden açın. Sıfırlama tamamlanmadıysa yeniden açtıktan sonra tekrar deneyin."
+        case .sk: return "Ukončite a znova otvorte Lattice ručne. Ak obnovenie nebolo úplné, po otvorení ho zopakujte."
+        }
+    }
+
     enum Key: Int { case description, confirmation, restartTitle, restartDescription, restartButton, clearTitle, clearButton }
     static func text(_ key: Key, _ language: AppLanguage) -> String {
         let values: [String]

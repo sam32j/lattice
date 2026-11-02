@@ -18,6 +18,7 @@ enum PermissionResetStateTests {
     class DialogState {
         let state: PermissionResetState
         var showingRestartDialog = false
+        var restartAttemptReturned = false
         var restarts = 0
         var restartDialogEnabled = true
         var reminders: [() -> Void] = []
@@ -54,12 +55,13 @@ enum PermissionResetStateTests {
         suite.expect(Alert.shown.count == 1, "duplicate lifecycle updates cannot stack restart dialogs")
         suite.expect(completed.reminders.count == 1, "a relaunch that returns leaves a scheduled required restart retry")
         completed.reminders.first?()
-        suite.expect(completed.restarts == 2 && Alert.shown.count == 2,
-                     "an app still alive after relaunch receives another required restart action")
+        completed.presentRestartIfNeeded()
+        suite.expect(completed.restarts == 1 && Alert.shown.count == 1 && completed.restartAttemptReturned,
+                     "failed relaunch enables manual restart without repeating modal alerts")
         let probe = DialogPresenter(.restartRequired)
         probe.restartDialogEnabled = false
         probe.presentRestartIfNeeded()
-        suite.expect(Alert.shown.count == 2 && probe.restarts == 0 && probe.reminders.isEmpty,
+        suite.expect(Alert.shown.count == 1 && probe.restarts == 0 && probe.reminders.isEmpty,
                      "rendering fixtures can explicitly suppress native restart dialogs and retries")
         let failed = DialogPresenter(.failed)
         failed.presentRestartIfNeeded()
