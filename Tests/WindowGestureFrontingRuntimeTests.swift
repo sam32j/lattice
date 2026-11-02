@@ -11,22 +11,36 @@ enum WindowGestureFrontingRuntimeTests {
     static var raiseEnabled = true
     static var windowIDReadable = true
     static var boundary = Boundary()
+    static var targetWindow = Window()
 
     final class Boundary {
         private let lock = NSLock()
         var frontDelay: TimeInterval = 0
+        var frontStarted: DispatchSemaphore?
+        var frontHold: DispatchSemaphore?
         private var entries: [String] = []
         private var enhanced = true
         private var current = CGRect(x: 100, y: 100, width: 800, height: 500)
+        private var otherFrames: [CGWindowID: CGRect] = [:]
         var log: [String] { lock.lock(); defer { lock.unlock() }; return entries }
         var frame: CGRect { lock.lock(); defer { lock.unlock() }; return current }
         func record(_ entry: String) { lock.lock(); entries.append(entry); lock.unlock() }
         func setEnhanced(_ enabled: Bool) {
             lock.lock(); enhanced = enabled; entries.append(enabled ? "restore" : "suspend"); lock.unlock()
         }
-        func frame(_ point: CGPoint) {
+        func frame(for windowID: CGWindowID) -> CGRect {
             lock.lock(); defer { lock.unlock() }
-            current.origin = point
+            return windowID == 7 ? current : otherFrames[windowID] ?? CGRect(x: 400, y: 400, width: 800, height: 500)
+        }
+        func frame(_ point: CGPoint, windowID: CGWindowID = 7) {
+            lock.lock(); defer { lock.unlock() }
+            if windowID == 7 { current.origin = point }
+            else {
+                var frame = otherFrames[windowID] ?? CGRect(x: 400, y: 400, width: 800, height: 500)
+                frame.origin = point
+                otherFrames[windowID] = frame
+                entries.append("target:\(windowID)")
+            }
             entries.append("frame:\(Int(point.x)),\(Int(point.y)):\(enhanced ? "enhanced" : "direct")")
         }
         func size(_ size: CGSize) {
@@ -36,7 +50,7 @@ enum WindowGestureFrontingRuntimeTests {
         }
     }
 
-    struct Window { let pid: pid_t = 1001; let id: CGWindowID = 7 }
+    struct Window { var pid: pid_t = 1001; var id: CGWindowID = 7 }
     typealias AXUIElement = Window
     static func AXIsProcessTrusted() -> Bool { true }
     static func AXUIElementGetPid(_ window: Window, _ pid: inout pid_t) -> AXError {
@@ -53,6 +67,8 @@ enum WindowGestureFrontingRuntimeTests {
         static func orderWindowFront(_ windowID: CGWindowID, ownerPID: pid_t) -> Bool {
             let recorder = boundary
             recorder.record("front-start:\(windowID)")
+            recorder.frontStarted?.signal()
+            if let hold = recorder.frontHold { _ = hold.wait(timeout: .now() + 1) }
             Thread.sleep(forTimeInterval: recorder.frontDelay)
             recorder.record("front-end:\(windowID)")
             return true
@@ -86,6 +102,8 @@ enum WindowGestureFrontingRuntimeTests {
         var pendingGesture: PendingWindowGesture?
         var gestureAssistiveMode: EnhancedUserInterfaceSuspension?
         var gestureTap: CFMachPort?
+        var gestureRunLoopSource: CFRunLoopSource?
+        var isGestureRunning = true
         var edgeSnapTap: CFMachPort?
         let moveGestureUpdateInterval: TimeInterval = 0
         let resizeGestureUpdateInterval: TimeInterval = 0
@@ -93,23 +111,30 @@ enum WindowGestureFrontingRuntimeTests {
         let gestureApplyLock = NSLock()
         var pendingGestureApply: (gesture: WindowPointerGesture, pointer: CGPoint)?
         var gestureApplyDraining = false
+        var gestureApplySession: WindowGestureApplySession<(gesture: WindowPointerGesture, pointer: CGPoint)>?
+        var gestureApplySessions: [WindowGestureApplySession<(gesture: WindowPointerGesture, pointer: CGPoint)>] = []
+        var modifierEdgeSnapSession: UUID?
         var replayedClicks = 0
 
         func syncWithPreferences() {}
         func isTrackedButtonDown() -> Bool { false }
-        func forwardToEdgeSnap(_ gesture: WindowPointerGesture, _ input: WindowEdgeSnapPointerInput) {}
+        var snapInputs: [WindowEdgeSnapPointerInput] = []
+        func handleEdgeSnapInput(_ input: WindowEdgeSnapPointerInput) { snapInputs.append(input) }
+        func cancelEdgeSnapTracking() {}
         static func seconds(of event: CGEvent) -> TimeInterval { Double(event.timestamp) / 1e9 }
         func gestureTarget(at point: CGPoint, requiresResize: Bool) -> WindowGestureTarget? {
-            WindowGestureTarget(window: Window(), app: NSRunningApplication(processIdentifier: 1001)!,
-                frame: WindowLayoutFrame(origin: boundary.frame.origin, size: boundary.frame.size))
+            let frame = boundary.frame(for: targetWindow.id)
+            return WindowGestureTarget(window: targetWindow, app: NSRunningApplication(processIdentifier: targetWindow.pid)!,
+                frame: WindowLayoutFrame(origin: frame.origin, size: frame.size))
         }
         func flushPending(proxy: CGEventTapProxy?, at point: CGPoint?) {
             if pendingGesture != nil { replayedClicks += 1; pendingGesture = nil }
         }
-        func setPosition(_ point: CGPoint, on window: Window) -> Bool { boundary.frame(point); return true }
+        func setPosition(_ point: CGPoint, on window: Window) -> Bool { boundary.frame(point, windowID: window.id); return true }
         func setSize(_ size: CGSize, on window: Window) -> Bool { boundary.size(size); return true }
         func frame(of window: Window) -> WindowLayoutFrame? {
-            WindowLayoutFrame(origin: boundary.frame.origin, size: boundary.frame.size)
+            let frame = boundary.frame(for: window.id)
+            return WindowLayoutFrame(origin: frame.origin, size: frame.size)
         }
     }
 
@@ -133,7 +158,11 @@ enum WindowGestureFrontingRuntimeTests {
         send(host, .leftMouseDragged, at: CGPoint(x: 240, y: 210))
         let duration = ProcessInfo.processInfo.systemUptime - began
         send(host, .leftMouseDragged, at: CGPoint(x: 300, y: 230))
+        let releasedAt = ProcessInfo.processInfo.systemUptime
         send(host, .leftMouseUp, at: CGPoint(x: 350, y: 240))
+        let releaseDuration = ProcessInfo.processInfo.systemUptime - releasedAt
+        suite.expect(releaseDuration < 0.075, "slow fronting never blocks mouse-up or subsequent input")
+        host.flushGestureApplies()
         RunLoop.main.run(until: Date().addingTimeInterval(0.01))
         let log = boundary.log
         print("WINDOW_FRONTING callbackMs=\(duration * 1000) log=\(log)")
@@ -153,6 +182,7 @@ enum WindowGestureFrontingRuntimeTests {
         send(background, .leftMouseDown, at: CGPoint(x: 200, y: 200))
         send(background, .leftMouseDragged, at: CGPoint(x: 240, y: 210))
         send(background, .leftMouseUp, at: CGPoint(x: 350, y: 240))
+        background.flushGestureApplies()
         suite.expect(boundary.log.first == "suspend" && boundary.log.last == "restore"
                      && boundary.log.contains("frame:250,140:direct")
                      && !boundary.log.contains { $0.hasPrefix("front") || $0.hasPrefix("raise") || $0 == "activate" },
@@ -172,6 +202,7 @@ enum WindowGestureFrontingRuntimeTests {
         send(cancelled, .leftMouseDragged, at: CGPoint(x: 240, y: 210))
         cancelled.flushGestureApplies()
         send(cancelled, .tapDisabledByTimeout, at: .zero)
+        cancelled.flushGestureApplies()
         let cancelledLog = boundary.log
         send(cancelled, .leftMouseUp, at: CGPoint(x: 350, y: 240))
         suite.expect(cancelled.activeGesture == nil && cancelledLog.last == "restore"
@@ -184,11 +215,12 @@ enum WindowGestureFrontingRuntimeTests {
         send(earlyCancel, .leftMouseDown, at: CGPoint(x: 200, y: 200))
         send(earlyCancel, .leftMouseDragged, at: CGPoint(x: 240, y: 210))
         send(earlyCancel, .tapDisabledByTimeout, at: .zero)
+        earlyCancel.flushGestureApplies()
         let afterCancel = boundary.log
         RunLoop.main.run(until: Date().addingTimeInterval(0.02))
-        suite.expect(earlyCancel.activeGesture == nil && afterCancel.last == "restore"
+        suite.expect(earlyCancel.activeGesture == nil && !afterCancel.contains(where: { $0.hasPrefix("frame:") })
                      && afterCancel == boundary.log,
-                     "cancelling during delayed startup finishes its queued work before restoring and leaves no late focus or frames")
+                     "cancelling during delayed startup skips remaining preparation and frames")
 
         boundary = Boundary()
         let consecutive = Host()
@@ -197,6 +229,7 @@ enum WindowGestureFrontingRuntimeTests {
             send(consecutive, .leftMouseDragged, at: CGPoint(x: 240, y: 210))
             send(consecutive, .leftMouseUp, at: end)
         }
+        consecutive.flushGestureApplies()
         let suspensions = boundary.log.indices.filter { boundary.log[$0] == "suspend" }
         suite.expect(suspensions.count == 2 && boundary.log[suspensions[1] - 1] == "raise:7"
                      && boundary.log.last == "restore" && boundary.frame.origin == CGPoint(x: 210, y: 145)
@@ -209,6 +242,7 @@ enum WindowGestureFrontingRuntimeTests {
         send(withoutID, .leftMouseDown, at: CGPoint(x: 200, y: 200))
         send(withoutID, .leftMouseDragged, at: CGPoint(x: 240, y: 210))
         send(withoutID, .leftMouseUp, at: CGPoint(x: 350, y: 240))
+        withoutID.flushGestureApplies()
         suite.expect(boundary.log.prefix(4) == ["activate", "restore", "raise:7", "suspend"]
                      && boundary.log.last == "restore" && boundary.frame.origin == CGPoint(x: 250, y: 140),
                      "when a server ID is unavailable app activation and the selected AX raise precede the normal drag")
@@ -220,8 +254,10 @@ enum WindowGestureFrontingRuntimeTests {
         send(resized, .leftMouseDown, at: CGPoint(x: 850, y: 550), flags: resizeFlags)
         send(resized, .leftMouseDragged, at: CGPoint(x: 900, y: 580), flags: resizeFlags)
         send(resized, .leftMouseUp, at: CGPoint(x: 900, y: 580), flags: resizeFlags)
+        resized.flushGestureApplies()
         suite.expect(boundary.frame == CGRect(x: 100, y: 100, width: 850, height: 530)
                      && !boundary.log.contains { $0.hasSuffix(":enhanced") },
                      "fronting preserves bottom-right resize geometry without an intermediate position write")
+        completionChecks(suite)
     }
 }

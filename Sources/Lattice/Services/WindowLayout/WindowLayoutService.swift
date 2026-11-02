@@ -1535,6 +1535,7 @@ final class WindowLayoutService: ObservableObject {
     private func handleEdgeSnapInput(_ input: WindowEdgeSnapPointerInput) {
         switch input {
         case .down(let location, let flags):
+            if !edgeSnapConflictsWithWindowGesture(flags: flags) { modifierEdgeSnapSession = nil }
             cancelEdgeSnapTracking()
             edgeSnapSequenceSuppressed = false
             // A press with the move or resize chord belongs to the gesture
@@ -2101,6 +2102,11 @@ final class WindowLayoutService: ObservableObject {
     }
 
     private func stopGestureTap() {
+        for session in gestureApplySessions { session.cancel() }
+        if modifierEdgeSnapSession != nil {
+            modifierEdgeSnapSession = nil
+            cancelEdgeSnapTracking()
+        }
         // A press still under custody has to go back to the app before the
         // tap that is holding it disappears, or that click is simply lost.
         flushPending(proxy: nil, at: nil)
@@ -2116,7 +2122,7 @@ final class WindowLayoutService: ObservableObject {
         if let activeGesture { forwardToEdgeSnap(activeGesture, .moveGestureDropped) }
         activeGesture = nil
         pendingGesture = nil
-        endGestureAssistiveMode()
+        endGestureAssistiveMode(cancelled: true)
         isGestureRunning = false
     }
 
@@ -2251,10 +2257,12 @@ final class WindowLayoutService: ObservableObject {
                 enqueueGestureApply(finished, pointer: event.location)
             }
             activeGesture = nil
-            endGestureAssistiveMode()
-            // The last frame write has landed, so a snap cannot be undone by it.
-            if let finished {
-                forwardToEdgeSnap(finished, .up(location: event.location, time: Self.seconds(of: event)))
+            let releasePoint = event.location
+            let releaseTime = Self.seconds(of: event)
+            endGestureAssistiveMode { [weak self] in
+                if let finished {
+                    self?.forwardToEdgeSnap(finished, .up(location: releasePoint, time: releaseTime))
+                }
             }
             return nil
 
@@ -2275,7 +2283,7 @@ final class WindowLayoutService: ObservableObject {
             if let activeGesture { forwardToEdgeSnap(activeGesture, .moveGestureDropped) }
             activeGesture = nil
             pendingGesture = nil
-            endGestureAssistiveMode()
+            endGestureAssistiveMode(cancelled: true)
             return Unmanaged.passUnretained(event)
         }
     }
@@ -2286,31 +2294,45 @@ final class WindowLayoutService: ObservableObject {
     private func forwardToEdgeSnap(_ gesture: WindowPointerGesture,
                                    _ input: WindowEdgeSnapPointerInput) {
         guard gesture.snapsAtEdges, case .move = gesture.kind else { return }
-        DispatchQueue.main.async { [weak self] in self?.handleEdgeSnapInput(input) }
+        if case .moveGestureBegan = input { modifierEdgeSnapSession = gesture.applyContext.id }
+        let cancels: Bool
+        if case .moveGestureDropped = input { cancels = true } else { cancels = false }
+        gestureApplyQueue.async { [weak self] in
+            guard cancels || !gesture.applyContext.isCancelled() else { return }
+            let routedInput: WindowEdgeSnapPointerInput
+            if case let .moveGestureBegan(origin, _, windowID, processID) = input {
+                guard let frame = gesture.applyContext.originalFrame else { return }
+                routedInput = .moveGestureBegan(pressOrigin: origin, initialFrame: frame,
+                                                windowID: windowID, processID: processID)
+            } else { routedInput = input }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                guard self.modifierEdgeSnapSession == gesture.applyContext.id,
+                      cancels || !gesture.applyContext.isCancelled() else { return }
+                self.handleEdgeSnapInput(routedInput)
+            }
+        }
     }
 
-    /// Lets every queued frame write land before the caller continues.
-    ///
-    /// Gesture ends are the only place this is paid, never the per-event path,
-    /// and at most one write per window is ever outstanding because they
-    /// coalesce. It is what keeps two separate things in order: a gesture's
-    /// last write going out before the flag it suspended is restored, and that
-    /// whole sequence finishing before the next gesture suspends the flag
-    /// again. Without it a second gesture can read the flag while the first
-    /// gesture's restore is still queued, and then drive its own writes with
-    /// the flag back on, which is the case the suspension exists to prevent.
+    /// Explicit drain for diagnostics; event callbacks use asynchronous completion.
     private func flushGestureApplies() {
+        while let session = gestureApplySession, !session.isIdle { gestureApplyQueue.sync {} }
         gestureApplyQueue.sync {}
     }
 
-    private func endGestureAssistiveMode() {
-        flushGestureApplies()
-        let suspension = gestureAssistiveMode
-        gestureAssistiveMode = nil
-        // With the grant revoked there is no safe way to touch the app again;
-        // the flag comes back when the assistive client sets it.
-        guard AXIsProcessTrusted() else { return }
-        suspension?.resume()
+    private func endGestureAssistiveMode(cancelled: Bool = false, completion: (() -> Void)? = nil) {
+        guard let session = gestureApplySession else { completion?(); return }
+        gestureApplySession = nil
+        session.finish(cancelled: cancelled) { [weak self] in
+            guard let self else { return }
+            let suspension = self.gestureAssistiveMode
+            self.gestureAssistiveMode = nil
+            if AXIsProcessTrusted() { suspension?.resume() }
+            if !session.isCancelled { completion?() }
+            DispatchQueue.main.async { [weak self] in
+                self?.gestureApplySessions.removeAll { $0 === session }
+            }
+        }
     }
 
     private func gestureChord(type: CGEventType,
@@ -2372,22 +2394,6 @@ final class WindowLayoutService: ObservableObject {
     private func promote(_ pending: PendingWindowGesture, pointer: CGPoint) {
         pendingGesture = nil
         let raise = UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureRaiseWindow)
-        // Front once before preparing the normal drag. Sharing the frame queue
-        // prevents a slow raise from racing position writes or blocking input.
-        gestureApplyQueue.async { [weak self] in
-            guard let self else { return }
-            self.gestureAssistiveMode?.resume()
-            if raise {
-                let fronted = AXWindowResolver.windowID(for: pending.window).map {
-                    SpaceWindowBridge.orderWindowFront($0, ownerPID: pending.app.processIdentifier)
-                } ?? false
-                if !fronted { _ = pending.app.activate(options: []) }
-                _ = AXUIElementPerformAction(pending.window, kAXRaiseAction as CFString)
-            }
-            // Focus changes finish before suspension, then both option states
-            // use the same coalesced writes until the final frame is flushed.
-            self.gestureAssistiveMode = EnhancedUserInterfaceSuspension.suspend(forAppOf: pending.window)
-        }
         // Edge snapping follows this exact window. One more question beside
         // the ones above, asked only once a move that may snap has begun, so a
         // plain modifier click never pays for it.
@@ -2404,6 +2410,26 @@ final class WindowLayoutService: ObservableObject {
                                            pointerStart: pending.origin,
                                            lastAppliedAt: ProcessInfo.processInfo.systemUptime,
                                            snapsAtEdges: snapWindowID != nil)
+        let session = makeGestureApplySession()
+        let context = gesture.applyContext
+        context.isCancelled = { session.isCancelled }
+        gestureApplySession = session
+        gestureApplyQueue.async { [weak self] in
+            guard let self, !session.isCancelled, AXIsProcessTrusted(),
+                  let frame = self.frame(of: pending.window) else { session.cancel(); return }
+            // Read accepted geometry after the preceding gesture's final write.
+            context.originalFrame = CGRect(origin: frame.origin, size: frame.size)
+            if raise {
+                let fronted = AXWindowResolver.windowID(for: pending.window).map {
+                    SpaceWindowBridge.orderWindowFront($0, ownerPID: pending.app.processIdentifier)
+                } ?? false
+                guard !session.isCancelled else { return }
+                if !fronted { _ = pending.app.activate(options: []) }
+                _ = AXUIElementPerformAction(pending.window, kAXRaiseAction as CFString)
+            }
+            guard !session.isCancelled else { return }
+            self.gestureAssistiveMode = EnhancedUserInterfaceSuspension.suspend(forAppOf: pending.window)
+        }
         if let windowID = snapWindowID {
             forwardToEdgeSnap(gesture, .moveGestureBegan(pressOrigin: pending.origin,
                                                          initialFrame: pending.originalFrame,
@@ -2449,41 +2475,32 @@ final class WindowLayoutService: ObservableObject {
     /// finished: only the newest position is ever pending.
     private let gestureApplyQueue = DispatchQueue(label: "io.github.sam32j.lattice.window-gesture-apply",
                                                   qos: .userInteractive)
-    private let gestureApplyLock = NSLock()
-    private var pendingGestureApply: (gesture: WindowPointerGesture, pointer: CGPoint)?
-    private var gestureApplyDraining = false
+    private var gestureApplySession: WindowGestureApplySession<(gesture: WindowPointerGesture, pointer: CGPoint)>?
+    private var gestureApplySessions: [WindowGestureApplySession<(gesture: WindowPointerGesture, pointer: CGPoint)>] = []
+    private var modifierEdgeSnapSession: UUID?
 
-    private func enqueueGestureApply(_ gesture: WindowPointerGesture, pointer: CGPoint) {
-        gestureApplyLock.lock()
-        pendingGestureApply = (gesture, pointer)
-        let alreadyDraining = gestureApplyDraining
-        gestureApplyDraining = true
-        gestureApplyLock.unlock()
-        guard !alreadyDraining else { return }
-        gestureApplyQueue.async { [weak self] in self?.drainGestureApplies() }
+    private func makeGestureApplySession() -> WindowGestureApplySession<(gesture: WindowPointerGesture, pointer: CGPoint)> {
+        let session = WindowGestureApplySession<(gesture: WindowPointerGesture, pointer: CGPoint)>(schedule: { [gestureApplyQueue] in gestureApplyQueue.async(execute: $0) },
+                                  apply: { [weak self] in self?.apply($0.gesture, pointer: $0.pointer) })
+        gestureApplySessions.append(session)
+        return session
     }
 
-    private func drainGestureApplies() {
-        while true {
-            gestureApplyLock.lock()
-            let next = pendingGestureApply
-            pendingGestureApply = nil
-            if next == nil { gestureApplyDraining = false }
-            gestureApplyLock.unlock()
-            guard let next else { return }
-            apply(next.gesture, pointer: next.pointer)
-        }
+    private func enqueueGestureApply(_ gesture: WindowPointerGesture, pointer: CGPoint) {
+        if gestureApplySession == nil { gestureApplySession = makeGestureApplySession() }
+        gestureApplySession?.enqueue((gesture, pointer))
     }
 
     private func apply(_ gesture: WindowPointerGesture, pointer: CGPoint) {
+        let originalFrame = gesture.applyContext.originalFrame ?? gesture.originalFrame
         switch gesture.kind {
         case .move:
-            let origin = WindowGestureSupport.movedOrigin(from: gesture.originalFrame.origin,
+            let origin = WindowGestureSupport.movedOrigin(from: originalFrame.origin,
                                                           pointerStart: gesture.pointerStart,
                                                           pointerNow: pointer)
             _ = setPosition(origin, on: gesture.window)
         case .resize(let edges):
-            let frame = WindowGestureSupport.resizedFrame(from: gesture.originalFrame,
+            let frame = WindowGestureSupport.resizedFrame(from: originalFrame,
                                                           pointerStart: gesture.pointerStart,
                                                           pointerNow: pointer,
                                                           edges: edges)
@@ -2498,7 +2515,7 @@ final class WindowLayoutService: ObservableObject {
             // Right and bottom resizing keeps the original origin, so the
             // helper returns nil instead of adding a non-atomic position write.
             guard let anchoredOrigin = WindowGestureSupport.anchoredOriginIfNeeded(
-                original: gesture.originalFrame,
+                original: originalFrame,
                 requestedOrigin: frame.origin,
                 acceptedSize: acceptedSize,
                 edges: edges
@@ -3119,6 +3136,13 @@ private struct PendingWindowGesture {
     let origin: CGPoint
 }
 
+private final class WindowGestureApplyContext {
+    let id = UUID()
+    // Owned by gestureApplyQueue after queued preparation.
+    var originalFrame: CGRect?
+    var isCancelled: () -> Bool = { false }
+}
+
 private struct WindowPointerGesture {
     enum Button {
         case primary
@@ -3130,6 +3154,7 @@ private struct WindowPointerGesture {
         case resize(WindowGestureResizeEdges)
     }
 
+    let applyContext = WindowGestureApplyContext()
     let window: AXUIElement
     let kind: Kind
     let button: Button
