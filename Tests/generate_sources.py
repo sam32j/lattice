@@ -1339,6 +1339,7 @@ def main():
           + "}\n")
     write("ReviewTiming.swift", "import SwiftUI\n"
           + declaration("Sources/Lattice/UI/Settings/KeyboardQuitProtectionSettings.swift", "enum QuitProtectionHoldPreset:")
+          + declaration("Sources/Lattice/UI/Settings/KeyboardQuitProtectionSettings.swift", "enum QuitProtectionDoublePressPreset:")
           + "extension ReviewTimingTests {\nfinal class Dock {\nvar dockPreviewOpenDelay: Int\ninit(dockPreviewOpenDelay: Int) { self.dockPreviewOpenDelay = dockPreviewOpenDelay }\n"
           + declaration("Sources/Lattice/UI/Settings/DockSettings.swift", "    private var dockPreviewHoverDelayBinding:")
               .replace("private var", "var", 1)
@@ -2537,6 +2538,7 @@ def main():
                                    "private struct PendingWindowGesture {",
                                    "private struct WindowGestureTarget {"])
           + "final class Host: Fixture {\n"
+          + "let gestureApplyQueue = DispatchQueue(label: \"test gesture preparation\", qos: .userInteractive)\n"
           + "".join(declaration(window_directional, prefix).replace("private ", "", 1)
                     .replace("AXIsProcessTrusted()", "WindowEdgeSnapRuntimeTests.accessibilityGranted")
                     for prefix in [
@@ -2564,6 +2566,22 @@ def main():
               "    private func gestureChord(",
               "    private func arm(",
               "    private func promote("])
+          + "}\n}\n")
+    write("WindowGestureFrontingRuntime.swift", "import AppKit\nimport CoreGraphics\nimport Foundation\n"
+          + "extension WindowGestureFrontingRuntimeTests {\n"
+          + "".join(declaration(window_directional, prefix).replace("private ", "", 1)
+                    for prefix in ["private struct WindowPointerGesture {",
+                                   "private struct PendingWindowGesture {",
+                                   "private struct WindowGestureTarget {",
+                                   "private enum WindowEdgeSnapPointerInput {"])
+          + "final class Host: Fixture {\n"
+          + "".join(declaration(window_directional, prefix).replace("private ", "", 1)
+                    for prefix in ["    private var gestureState:", "    private var trackedGestureButton:",
+                                   "    private func handleGestureEvent(", "    private func gestureChord(",
+                                   "    private func arm(", "    private func promote(",
+                                   "    private func enqueueGestureApply(", "    private func drainGestureApplies()",
+                                   "    private func flushGestureApplies()", "    private func endGestureAssistiveMode()",
+                                   "    private func apply(_ gesture: WindowPointerGesture,"])
           + "}\n}\n")
     write("WindowGestureApplyRuntime.swift", "import AppKit\nimport CoreGraphics\nimport Foundation\n"
           + "extension WindowGestureApplyRuntimeTests {\n"

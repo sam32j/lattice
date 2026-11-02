@@ -109,8 +109,10 @@ final class WindowLayoutService: ObservableObject {
     func syncWithPreferences() {
         WindowLayoutIgnoredApps.shared.reload()
         let available = AppFeature.windowLayout.isAvailable
+        let gestureWanted = UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureEnabled)
+        let anyWanted = available || gestureWanted
         let trusted = SessionActivitySupport.tapShouldRun(
-            featureWanted: available,
+            featureWanted: anyWanted,
             accessibilityGranted: AXIsProcessTrusted(),
             sessionIsActive: SessionActivity.shared.isActive)
         let shortcutsEnabled = available
@@ -119,8 +121,7 @@ final class WindowLayoutService: ObservableObject {
         let directionalEnabled = available
             && UserDefaults.standard.bool(forKey: DefaultsKey.windowDirectionalEnabled)
             && trusted
-        let gestureEnabled = available
-            && UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureEnabled)
+        let gestureEnabled = gestureWanted
             && trusted
         let edgeSnapEnabled = edgeSnapCanTrack && trusted
         // The pointer shortcut needs no Accessibility, so it counts on its own.
@@ -2370,13 +2371,22 @@ final class WindowLayoutService: ObservableObject {
     /// so a plain modifier click never activates or reorders a window.
     private func promote(_ pending: PendingWindowGesture, pointer: CGPoint) {
         pendingGesture = nil
-        // Suspended for the whole gesture, not per frame write: the writes come
-        // at pointer speed and the flag only needs to move twice.
-        gestureAssistiveMode?.resume()
-        gestureAssistiveMode = EnhancedUserInterfaceSuspension.suspend(forAppOf: pending.window)
-        if UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureRaiseWindow) {
-            _ = pending.app.activate(options: [])
-            AXUIElementPerformAction(pending.window, kAXRaiseAction as CFString)
+        let raise = UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureRaiseWindow)
+        // Front once before preparing the normal drag. Sharing the frame queue
+        // prevents a slow raise from racing position writes or blocking input.
+        gestureApplyQueue.async { [weak self] in
+            guard let self else { return }
+            self.gestureAssistiveMode?.resume()
+            if raise {
+                let fronted = AXWindowResolver.windowID(for: pending.window).map {
+                    SpaceWindowBridge.orderWindowFront($0, ownerPID: pending.app.processIdentifier)
+                } ?? false
+                if !fronted { _ = pending.app.activate(options: []) }
+                _ = AXUIElementPerformAction(pending.window, kAXRaiseAction as CFString)
+            }
+            // Focus changes finish before suspension, then both option states
+            // use the same coalesced writes until the final frame is flushed.
+            self.gestureAssistiveMode = EnhancedUserInterfaceSuspension.suspend(forAppOf: pending.window)
         }
         // Edge snapping follows this exact window. One more question beside
         // the ones above, asked only once a move that may snap has begun, so a

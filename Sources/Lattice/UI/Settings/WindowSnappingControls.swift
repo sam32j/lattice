@@ -5,56 +5,41 @@ extension WindowLayoutSettings {
         VStack(alignment: .leading, spacing: 16) {
             Divider()
             VStack(alignment: .leading, spacing: 13) {
-                PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
-                    .font(.headline)
-                .onChange(of: edgeSnapEnabled) { _, _ in
-                    WindowLayoutService.shared.syncWithPreferences()
-                }
-                WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
-                                         zoneActionsStorage: $edgeSnapZoneActions,
-                                         text: text,
-                                         resetTitle: l10n.s.shortcutReset)
-                    .disabled(!edgeSnapEnabled)
-                    .opacity(edgeSnapEnabled ? 1 : 0.45)
-                    .onChange(of: edgeSnapDisabledZones) { _, _ in
-                        WindowLayoutService.shared.syncWithPreferences()
-                    }
-                if systemTilingEnabled {
-                    Label(text.edgeSnapSystemConflict, systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                    if edgeSnapEnabled {
-                        Text(text.edgeSnapWaitingForSystem)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Button(text.edgeSnapOpenSystemSettings) {
-                        NSWorkspace.shared.open(WindowEdgeSnapSupport.desktopAndDockSettingsURL)
-                    }
-                    .controlSize(.small)
-                }
-            }
-
-            Divider()
-            VStack(alignment: .leading, spacing: 13) {
-                PermissionGatedToggle(text.gestureEnable, isOn: $gestureEnabled)
-                    .font(.headline)
-                .onChange(of: gestureEnabled) { _, _ in
-                    WindowLayoutService.shared.syncWithPreferences()
-                }
-                VStack(alignment: .leading, spacing: 13) {
-                    WindowGestureModifierPicker(storageValue: $gestureModifiers,
-                                                title: text.gestureModifiers)
-                        .onChange(of: gestureModifiers) { _, _ in
+                SettingsRow(symbol: "macwindow.and.cursorarrow", title: text.edgeSnapSection, caption: text.edgeSnapCaption) {
+                    PermissionGatedToggle("", isOn: $edgeSnapEnabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .onChange(of: edgeSnapEnabled) { _, _ in
                             WindowLayoutService.shared.syncWithPreferences()
                         }
-                    WindowGestureHints(modifierStorage: gestureModifiers,
-                                       moveText: text.gestureMove,
-                                       resizeText: text.gestureResize)
-                    Toggle(text.gestureRaiseWindow, isOn: $gestureRaiseWindow)
                 }
-                .disabled(!gestureEnabled)
-                .opacity(gestureEnabled ? 1 : 0.45)
+                if edgeSnapEnabled {
+                    WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
+                                             zoneActionsStorage: $edgeSnapZoneActions,
+                                             text: text,
+                                             resetTitle: l10n.s.shortcutReset)
+                        .padding(.leading, settingsRowTextInset)
+                        .onChange(of: edgeSnapDisabledZones) { _, _ in
+                            WindowLayoutService.shared.syncWithPreferences()
+                        }
+                }
+                if systemTilingEnabled {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label(text.edgeSnapSystemConflict, systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                        if edgeSnapEnabled {
+                            Text(text.edgeSnapWaitingForSystem)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Button(text.edgeSnapOpenSystemSettings) {
+                            NSWorkspace.shared.open(WindowEdgeSnapSupport.desktopAndDockSettingsURL)
+                        }
+                        .controlSize(.small)
+                    }
+                    .padding(.leading, settingsRowTextInset)
+                }
             }
 
             Divider()
@@ -116,7 +101,6 @@ extension WindowLayoutSettings {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 13) { WindowLayoutShortcutActivation() }
             placementSections
 
             Divider()

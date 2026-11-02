@@ -106,6 +106,7 @@ enum WindowEdgeSnapRuntimeTests {
         }
         static let main = Jobs()
         static let lookup = Jobs()
+        static func global(qos: DispatchQoS = .default) -> Jobs { lookup }
         init(label: String, qos: DispatchQoS) {}
         func async(execute: @escaping () -> Void) { Self.lookup.async(execute: execute) }
         /// The lookup queue's jobs, run the way the real queue runs them, off
@@ -169,6 +170,10 @@ enum WindowEdgeSnapRuntimeTests {
             windowExists && id == windowID ? currentFrame : nil
         }
     }
+    enum SpaceWindowBridge {
+        static func frontWindow(_ windowID: CGWindowID, ownerPID: pid_t) -> Bool { true }
+        static func orderWindowFront(_ windowID: CGWindowID, ownerPID: pid_t) -> Bool { true }
+    }
     final class NSRunningApplication {
         enum ActivationPolicy { case regular }
         let processIdentifier: pid_t
@@ -212,7 +217,7 @@ enum WindowEdgeSnapRuntimeTests {
         static func suspend(forAppOf window: Window) -> EnhancedUserInterfaceSuspension? { nil }
         func resume() {}
     }
-    static func AXUIElementPerformAction(_ window: Window, _ action: CFString) {}
+    static func AXUIElementPerformAction(_ window: Window, _ action: CFString) -> AXError { .success }
 
     /// Every question to the window's app. Asked from the main run loop it
     /// holds the taps until that app answers.
