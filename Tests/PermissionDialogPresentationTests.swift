@@ -18,12 +18,12 @@ enum PermissionDialogPresentationTests {
             suite.expect((parent.childWindows ?? []).isEmpty,
                          "no backdrop dimming child window is attached to the parent")
             suite.expect(abs(alert.window.frame.midX - parent.frame.midX) < 1
-                         && abs(alert.window.frame.maxY - (parent.frame.maxY - 30)) < 1,
+                         && abs(alert.window.frame.maxY - (parent.frame.maxY - PermissionDialogPresentation.topInset)) < 1,
                          "native permission dialogs are positioned in the upper part of their owning Settings window")
             alert.window.setFrameOrigin(NSPoint(x: 0, y: 0))
             NotificationCenter.default.post(name: NSWindow.didBecomeKeyNotification, object: alert.window)
             suite.expect(abs(alert.window.frame.midX - parent.frame.midX) < 1
-                         && abs(alert.window.frame.maxY - (parent.frame.maxY - 30)) < 1,
+                         && abs(alert.window.frame.maxY - (parent.frame.maxY - PermissionDialogPresentation.topInset)) < 1,
                          "native modal activation cannot move the dialog away from the requested placement")
             return .alertFirstButtonReturn
         }
@@ -42,7 +42,7 @@ enum PermissionDialogPresentationTests {
         let openPanel = NSOpenPanel()
         _ = PermissionDialogPresentation.run(openPanel, over: parent) {
             suite.expect(abs(openPanel.frame.midX - parent.frame.midX) < 1
-                         && abs(openPanel.frame.maxY - (parent.frame.maxY - 30)) < 1,
+                         && abs(openPanel.frame.maxY - (parent.frame.maxY - PermissionDialogPresentation.topInset)) < 1,
                          "file panels are positioned in the upper part of the parent window")
             return .OK
         }

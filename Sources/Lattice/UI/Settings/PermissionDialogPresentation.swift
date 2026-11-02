@@ -3,6 +3,9 @@ import SwiftUI
 
 /// Danger zone dialogs and assistant file panels share owner-relative placement without a backdrop dim.
 enum PermissionDialogPresentation {
+    /// Inset from the owning window's top frame, matching the placement of system permission request prompts.
+    static let topInset: CGFloat = 150
+
     @discardableResult
     static func run(_ alert: NSAlert, over parent: NSWindow?,
                     runModal: (() -> NSApplication.ModalResponse)? = nil) -> NSApplication.ModalResponse {
@@ -23,7 +26,6 @@ enum PermissionDialogPresentation {
         func place() {
             dialog.level = NSWindow.Level(rawValue: max(NSWindow.Level.modalPanel.rawValue, parent.level.rawValue + 1))
             let x = parent.frame.midX - dialog.frame.width / 2
-            let topInset: CGFloat = 30
             let y = max(parent.frame.minY + 20, parent.frame.maxY - dialog.frame.height - topInset)
             dialog.setFrameOrigin(NSPoint(x: x, y: y))
         }
