@@ -1574,9 +1574,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     func openSettingsWindow() {
         NotchService.shared.prepareForSettings()
         LatticeHubService.shared.hide()
+        let isAlreadyVisible = settingsWindow?.isVisible == true
         let targetScreen = (popover.isShown
             ? popoverAnchor?.screen ?? popover.contentViewController?.view.window?.screen
             : nil) ?? NSScreen.withMouse
+        if popover.isShown {
+            closePopover(reason: .action)
+        }
         let createdWindow = settingsWindow == nil
         if settingsWindow == nil {
             let host = SettingsHostingController(rootView: SettingsView())
@@ -1606,7 +1610,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             settingsWindow = window
         }
         settingsWindow?.title = L10n.shared.s.settingsTitle
-        if let window = settingsWindow {
+        if let window = settingsWindow, !isAlreadyVisible {
             positionSettingsWindow(window, force: createdWindow, on: targetScreen)
         }
         if !settingsKeepsAppRegular {
@@ -1621,9 +1625,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         SecureInputMonitor.shared.setSettingsWindowOpen(true)
         SettingsWindowVisibility.shared.set(true)
         NotificationCenter.default.post(name: LaunchAtLoginSupport.settingsRefreshRequested, object: nil)
-        DispatchQueue.main.async { [weak self] in
-            guard let self, let window = self.settingsWindow else { return }
-            self.positionSettingsWindow(window, force: false, on: targetScreen)
+        if !isAlreadyVisible {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, let window = self.settingsWindow else { return }
+                self.positionSettingsWindow(window, force: false, on: targetScreen)
+            }
         }
     }
 
@@ -1663,7 +1669,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
 
     private func positionSettingsWindow(_ window: NSWindow, force: Bool, on targetScreen: NSScreen? = nil) {
         window.contentView?.layoutSubtreeIfNeeded()
-        let popoverWindow = popover.isShown ? popover.contentViewController?.view.window : nil
+        let popoverWindow = (popover.isShown && !popoverIsClosing) ? popover.contentViewController?.view.window : nil
         let screen = targetScreen.flatMap { $0.isStillAttached ? $0 : nil } ?? popoverWindow?.screen ?? window.screen
         let visible = screen?.visibleFrame ?? NSScreen.pointerVisibleFrame
         let shouldCenter = force || screen?.displayID != window.screen?.displayID || !visible.intersects(window.frame)
