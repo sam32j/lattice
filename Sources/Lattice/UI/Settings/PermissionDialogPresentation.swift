@@ -25,8 +25,8 @@ enum PermissionDialogPresentation {
 
         func place() {
             dialog.level = NSWindow.Level(rawValue: max(NSWindow.Level.modalPanel.rawValue, parent.level.rawValue + 1))
-            let x = parent.frame.midX - dialog.frame.width / 2
-            let y = max(parent.frame.minY + 20, parent.frame.maxY - dialog.frame.height - topInset)
+            let x = (parent.frame.midX - dialog.frame.width / 2).rounded()
+            let y = max(parent.frame.minY + 20, parent.frame.maxY - dialog.frame.height - topInset).rounded()
             dialog.setFrameOrigin(NSPoint(x: x, y: y))
         }
         place()

@@ -930,16 +930,7 @@ final class NotchService: ObservableObject {
         guard let utility else { return nil }
         switch utility {
         case .appUpdates:
-            let count = AppUpdatesService.shared.items.count
-            if count == 0 {
-                return 148
-            } else {
-                let rows = min(count, 4)
-                let rowHeight: CGFloat = 40
-                let rowSpacing: CGFloat = 5
-                let listHeight = CGFloat(rows) * rowHeight + CGFloat(rows - 1) * rowSpacing
-                return min(290, 85 + listHeight)
-            }
+            return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count)
         case .videoDownloader:
             return 172
         default:
