@@ -53,7 +53,7 @@ enum QuitProtectionSupport {
     static let holdDurationRange = 250.0...2_000.0
     static let doublePressIntervalRange = 200.0...1_500.0
     static let defaultHoldDurationMilliseconds = 800.0
-    static let defaultDoublePressIntervalMilliseconds = 600.0
+    static let defaultDoublePressIntervalMilliseconds = 500.0
 
     static func sanitizedHoldDuration(_ value: Double) -> Double {
         guard value.isFinite else { return defaultHoldDurationMilliseconds }

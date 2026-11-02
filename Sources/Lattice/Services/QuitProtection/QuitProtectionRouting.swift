@@ -74,9 +74,13 @@ extension QuitProtectionService {
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
         let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
 
-        if keyCode == 53, pending != nil {
-            cancelPending()
-            return nil
+        if keyCode == 53 {
+            if let pending, pending.mode != .hold {
+                cancelPending()
+                return nil
+            } else if pending?.mode == .hold {
+                return Unmanaged.passUnretained(event)
+            }
         }
 
         // Every branch below either needs Command held or belongs to a press
