@@ -38,9 +38,7 @@ extension AppUpdatesService {
         lastError = nil
         checkedAppsCount = 0
         items = []
-        if totalAppsCount == 0 {
-            totalAppsCount = 48
-        }
+        totalAppsCount = 0
         scanGeneration += 1
         let generation = scanGeneration
         let cancellation = AppUpdateCheckCancellation()
@@ -87,8 +85,8 @@ extension AppUpdatesService {
             }
             let total = activeApps.count
             DispatchQueue.main.async {
+                guard generation == self.scanGeneration, !cancellation.isCancelled else { return }
                 self.totalAppsCount = total
-                self.checkedAppsCount = max(0, min(total, total / 4))
                 UserDefaults.standard.set(total, forKey: "appUpdatesTotalAppsCount")
             }
 
@@ -117,9 +115,6 @@ extension AppUpdatesService {
                                operatingSystemVersion: operatingSystemVersion, cancellation: cancellation) { [weak self] result in
                 guard let self else { return }
                 storeResult = result
-                DispatchQueue.main.async {
-                    self.checkedAppsCount = max(self.checkedAppsCount, (total * 3) / 4)
-                }
                 let visibleStoreItems = AppUpdatesSupport.visibleItems(result.items, rules: checkedRules)
                 for (idx, item) in visibleStoreItems.enumerated() {
                     DispatchQueue.main.asyncAfter(deadline: .now() + Double(idx) * 0.1) { [weak self] in

@@ -2781,7 +2781,7 @@ struct NotchGeometry: Equatable {
                     break
                 }
                 if let utilityHeight = hubActiveUtilityHeight {
-                    contentHeight = min(budget, utilityHeight)
+                    contentHeight = min(pageBudget, utilityHeight)
                     break
                 }
                 guard let toolCount else { contentHeight = pageBudget; break }

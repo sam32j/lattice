@@ -24,7 +24,7 @@ def module_source(path):
 
 def declaration(path, prefix, scope=None):
     source = ROOT / path
-    if source.stem in {"KeepAwakeManager", "AppUpdatesService", "RadialMenuSettings", "MenuPanelView", "HomebrewManager", "KillProcessService", "MediaService", "RadialNowPlayingService", "JunkCleaner", "AppUninstaller"}:
+    if source.stem in {"KeepAwakeManager", "AppUpdatesService", "AppUpdatesListView", "RadialMenuSettings", "MenuPanelView", "HomebrewManager", "KillProcessService", "MediaService", "RadialNowPlayingService", "JunkCleaner", "AppUninstaller"}:
         candidates = [source, *sorted(source.parent.glob(source.stem + "+*.swift"))]
         matches = []
         for candidate in candidates:
@@ -1182,6 +1182,18 @@ def main():
           + declaration(updates, "    private func publisherFindings(").replace("private func", "func", 1).replace("Date()", "self.clock.now()")
           + declaration(updates, "    private func onlineCatalogFindings(").replace("private func", "func", 1).replace("Date()", "self.clock.now()")
           + declaration(updates, "    private func onlineResult(").replace("private func", "func", 1)
+          + "}\n}\n")
+    write("AppUpdateScanProgress.swift", "import Foundation\nextension AppUpdateScanProgressTests {\n"
+          + "final class Service: State {\n"
+          + declaration(updates, "    struct PackageResult {")
+          + declaration(updates, "    struct SourceResult {")
+          + declaration(updates, "    func check(")
+          + "}\n}\n")
+    write("AppUpdatePresentation.swift", "import Foundation\nextension AppUpdatePresentationTests {\n"
+          + "final class Presentation: State {\n"
+          + "".join(declaration("Sources/Lattice/UI/AppUpdates/AppUpdatesListView.swift", prefix)
+                    .replace("private var", "var", 1)
+                    for prefix in ["    private var totalAppsCount:", "    private var statusHeadline:", "    private var statusDetail:", "    var successfulEmptyCheck:"])
           + "}\n}\n")
     # Rule mutations and completion stay verbatim; only declaration visibility changes.
     write("AppUpdateRules.swift", "import CoreServices\nimport Foundation\nextension AppUpdateRulesContract {\n"

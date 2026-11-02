@@ -565,6 +565,7 @@ if (( TEST )); then
         Sources/Lattice/Services/AppUpdates/AppUpdatesSupport.swift
         Sources/Lattice/Services/AppUpdates/AppUpdateFeedSupport.swift
         Sources/Lattice/Core/AppUpdateStrings.swift
+        Sources/Lattice/Core/AppUpdateStrings+*.swift
         Sources/Lattice/Core/DiskImageInstallerStrings.swift
         Sources/Lattice/Services/DiskImageInstaller/DiskImageInstallerSupport.swift
         Sources/Lattice/UI/NonModalAlert.swift

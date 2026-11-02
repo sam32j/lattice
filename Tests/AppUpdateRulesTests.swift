@@ -192,8 +192,11 @@ enum AppUpdateRulesContract {
     }
 
     private static func listControls(_ suite: TestSuite) {
-        let source = (try? String(contentsOfFile: "Sources/Lattice/UI/AppUpdates/AppUpdatesListView.swift",
-                                  encoding: .utf8)) ?? ""
+        let folder = URL(fileURLWithPath: "Sources/Lattice/UI/AppUpdates")
+        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
+        let source = files.filter { $0.lastPathComponent.hasPrefix("AppUpdatesListView") }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            .compactMap { try? String(contentsOf: $0, encoding: .utf8) }.joined(separator: "\n")
         suite.expect(source.contains("guard !inNotch else {")
                      && source.contains("guard panel.runAboveIsland() == .OK, let url = panel.url else { return }"),
                      "inside the island the app picker opens above it instead of below it")
@@ -201,8 +204,8 @@ enum AppUpdateRulesContract {
                      && source.contains(".accessibilityLabel(\"\\(moreOptions): \\(item.name)\")")
                      && !source.contains(".help(text.excludeApp)"),
                      "the row menu is named for both rule actions and says which app it belongs to")
-        suite.expect(source.contains("private var coveragePartial: Bool { coverageIncomplete || versionsUncompared }")
-                     && source.contains("Label(coveragePartial ? text.partialUpToDate")
+        suite.expect(source.contains("var coveragePartial: Bool { coverageIncomplete || versionsUncompared }")
+                     && source.contains("Label(statusHeadline,")
                      && source.contains("if versionsUncompared {")
                      && source.contains("Text(updates.uncomparableAppNames.joined(separator: \", \"))"),
                      "apps named as not compared get their own note and keep an empty list from reading as current")
@@ -213,8 +216,8 @@ enum AppUpdateRulesContract {
                                     encoding: .utf8)) ?? ""
         let panel = (try? String(contentsOfFile: "Sources/Lattice/UI/MenuPanel/PanelAppUpdatesView.swift",
                                  encoding: .utf8)) ?? ""
-        let row = (source.components(separatedBy: "private func row(_ item: AppUpdatesSupport.Item) -> some View {")
-            .dropFirst().first ?? "").components(separatedBy: "private func ruleActions(").first ?? ""
+        let row = (source.components(separatedBy: "func row(_ item: AppUpdatesSupport.Item) -> some View {")
+            .dropFirst().first ?? "").components(separatedBy: "func ruleActions(").first ?? ""
         let glyph = "Image(systemName: \"ellipsis.circle\")"
         let gated = row.components(separatedBy: "if !compact, item.bundleID != nil {")
         suite.expect(source.contains("var compact = false")
