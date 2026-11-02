@@ -35,7 +35,7 @@ private extension Text {
     }
 
     func capsuleDetail() -> some View {
-        font(Font(CapsuleLayout.detailFont as CTFont)).foregroundStyle(.white.opacity(0.62)).lineLimit(1)
+        font(Font(CapsuleLayout.detailFont as CTFont)).lineLimit(1)
     }
 }
 
@@ -105,6 +105,7 @@ struct NotchCapsuleNoticeView: View {
             Text(content.compactTitle).capsuleTitle().layoutPriority(1)
             if !content.compactDetail.isEmpty {
                 Text(content.compactDetail).capsuleDetail()
+                    .foregroundStyle(.white.opacity(0.62))
                     .padding(.leading, CapsuleLayout.groupSpacing - CapsuleLayout.spacing)
             }
         }

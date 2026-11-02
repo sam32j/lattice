@@ -699,7 +699,7 @@ enum FeatureCatalogTests {
                      "the companion leaves with the island but only comes when picked, with a page of its own")
         suite.expect(AppPermission.allCases.map(\.rawValue) == [
             "accessibility", "screenRecording", "audioCapture", "fullDiskAccess", "filesAndFolders", "notifications",
-            "automationFinder", "automationTerminal", "automationPlayback", "microphone", "camera",
+            "automationFinder", "automationTerminal", "automationSystemEvents", "automationPlayback", "microphone", "camera",
             "appManagement", "calendar", "bluetooth",
         ], "permission portal contains every supported permission")
         suite.expect(AppFeature.fanControl.group == .monitor

@@ -110,7 +110,7 @@ struct PermissionsPortalSections: View {
         }
         guard !targets.isEmpty else { return }
         DispatchQueue.global(qos: .userInitiated).async {
-            let readings = Dictionary(uniqueKeysWithValues: targets.map { ($0, Permissions.automationStatus(for: $0)) })
+            let readings: [Permissions.AutomationTarget: Permissions.AutomationStatus] = Dictionary(uniqueKeysWithValues: targets.map { ($0, Permissions.automationStatus(for: $0)) })
             DispatchQueue.main.async {
                 guard self.automationRefreshID == request else { return }
                 self.automation = readings

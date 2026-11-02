@@ -33,14 +33,16 @@ struct PermissionGatedToggle: View {
             if let feature {
                 DeferredPermissionActivation.record(feature: feature)
             }
-        } else if !value {
+        } else if !value, let feature, DeferredPermissionActivation.pendingFeature() == feature {
             DeferredPermissionActivation.clear()
         }
         let next = PermissionActivationCoordinator(requirements: requiring,
             verify: access.verify,
             requestAccess: access.request,
             applyEnabled: { enabled in
-                if enabled { DeferredPermissionActivation.clear() }
+                if enabled, let feature, DeferredPermissionActivation.pendingFeature() == feature {
+                    DeferredPermissionActivation.clear()
+                }
                 binding.wrappedValue = enabled
             })
         coordinator = next

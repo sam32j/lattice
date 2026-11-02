@@ -38,7 +38,7 @@ enum FeatureGroup: String, CaseIterable {
 /// System permissions surfaced by the hub's transparency portal.
 enum AppPermission: String, CaseIterable {
     case accessibility, screenRecording, audioCapture, fullDiskAccess, filesAndFolders, notifications,
-         automationFinder, automationTerminal, automationPlayback, microphone, camera, appManagement, calendar, bluetooth
+         automationFinder, automationTerminal, automationSystemEvents, automationPlayback, microphone, camera, appManagement, calendar, bluetooth
 }
 
 enum PermissionPollingSupport {

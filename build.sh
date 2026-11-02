@@ -448,6 +448,10 @@ if (( TEST )); then
         Sources/Lattice/Core/FeedbackStrings.swift
         Sources/Lattice/Core/FeedbackDraftStrings.swift
         Sources/Lattice/Core/PermissionActivationSupport.swift
+        Sources/Lattice/Core/DeferredPermissionActivation.swift
+        Sources/Lattice/Core/NotchVisualizerActivation.swift
+        Sources/Lattice/Core/SystemAudioPermissionProbe.swift
+        Sources/Lattice/Core/SystemAudioAuthorization.swift
         Sources/Lattice/Core/PermissionRevocationPolicy.swift
         Sources/Lattice/Core/PermissionRevocationTracker.swift
         Sources/Lattice/Core/BrightnessKeyStepActivation.swift
@@ -456,6 +460,7 @@ if (( TEST )); then
         Sources/Lattice/Core/SettingsFollowupStrings.swift
         Sources/Lattice/Core/AppMenuDestination.swift
         Sources/Lattice/Core/AppMenuReopenCoordinator.swift
+        Sources/Lattice/UI/Settings/PermissionDialogPresentation.swift
         Sources/Lattice/Core/PermissionResetState.swift
         Sources/Lattice/UI/Settings/ShortcutSettingsObserver.swift
         Sources/Lattice/Core/RadialMenuStrings.swift
@@ -469,7 +474,6 @@ if (( TEST )); then
         Sources/Lattice/Core/MonitorLayoutStrings.swift
         Sources/Lattice/Core/KeepAwakeStrings.swift
         Sources/Lattice/Core/BluetoothSleepStrings.swift
-        Sources/Lattice/Core/PermissionGuideStrings.swift
         Sources/Lattice/Core/FanControlStrings.swift
         Sources/Lattice/Core/ConnectedDevicesStrings.swift
         Sources/Lattice/Services/FanControl/FanControlSupport.swift
