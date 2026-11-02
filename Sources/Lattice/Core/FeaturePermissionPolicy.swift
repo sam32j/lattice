@@ -134,7 +134,7 @@ extension AppFeature {
                     || boolFor(DefaultsKey.monitorAlertBatteryTemperature)
             case (.monitorPower, .bluetooth): return boolFor(DefaultsKey.monitorPwrPeripherals)
             case (.notchAccessories, .bluetooth):
-                return isAvailable(.notch) && isAvailable(.monitorPower) && boolFor(DefaultsKey.notchEnabled)
+                return isAvailable(.notch) && boolFor(DefaultsKey.notchEnabled)
             case (.appUpdates, .notifications):
                 return AppUpdatesSupport.CheckFrequency
                     .sanitized(stringFor(DefaultsKey.appUpdatesCheckFrequency)) != .off

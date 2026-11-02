@@ -617,7 +617,7 @@ final class SystemMonitor: ObservableObject {
         if !available(.monitorPower) {
             plan.needPower = false
             plan.needPowerDraw = false
-            plan.needPeripheralBattery = false
+            plan.needPeripheralBattery = notchAccessoryMonitoring
             plan.needBatteryTemperature = false
         }
         if !available(.fanControl) { plan.needFanSpeed = false }

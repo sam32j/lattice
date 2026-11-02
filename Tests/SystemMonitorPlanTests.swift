@@ -103,6 +103,22 @@ enum SystemMonitorPlanTests {
         defaults.set(false, forKey: AppFeature.monitorPower.availabilityKey)
         suite.expect(!monitor.currentPlan(defaults: defaults).needPeripheralBattery,
                      "an uninstalled Power monitor reads no peripheral battery for its card")
+        monitor.notchAccessoryMonitoring = true
+        let accessoryPlan = monitor.currentPlan(defaults: defaults)
+        suite.expect(accessoryPlan.needPeripheralBattery && !accessoryPlan.needPower && !accessoryPlan.needPowerDraw,
+                     "accessory-only demand samples batteries without enabling Power Monitoring")
+        defaults.set(true, forKey: AppFeature.notch.availabilityKey)
+        defaults.set(true, forKey: AppFeature.notchAccessories.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.notchEnabled)
+        defaults.set(true, forKey: DefaultsKey.notchAccessoriesEnabled)
+        suite.expect(NotchAccessorySupport.isEnabled(in: defaults)
+                     && AppFeature.activeFeatures(using: .bluetooth,
+                        isAvailable: { $0.isAvailable(in: defaults) }, boolFor: defaults.bool(forKey:),
+                        stringFor: defaults.string(forKey:)).contains(.notchAccessories),
+                     "accessories retain their runtime and Bluetooth demand with Power Monitoring uninstalled")
+        monitor.notchAccessoryMonitoring = false
+        suite.expect(!monitor.currentPlan(defaults: defaults).needPeripheralBattery,
+                     "releasing accessory demand stops accessory-only battery sampling")
         defaults.set(true, forKey: AppFeature.monitorPower.availabilityKey)
         monitor.menuPanelNeeds = .none
         suite.expect(!monitor.currentPlan(defaults: defaults).needPeripheralBattery,

@@ -8,7 +8,6 @@ enum NotchAccessorySupport {
     static let recoveryThreshold = 25
     static func isEnabled(in defaults: UserDefaults = .standard) -> Bool {
         NotchSupport.isEnabled(in: defaults) && AppFeature.notchAccessories.isAvailable(in: defaults)
-            && AppFeature.monitorPower.isAvailable(in: defaults)
             && defaults.bool(forKey: DefaultsKey.notchAccessoriesEnabled)
     }
 

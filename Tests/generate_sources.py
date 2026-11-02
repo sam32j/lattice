@@ -1490,6 +1490,11 @@ def main():
           + "".join(declaration(notch, prefix).replace("    private ", "    ", 1) for prefix in [
               "    private func handleScroll(", "    private func handleSectionScroll("])
           + "}\n}\n")
+    write("NotchClipboardNotice.swift", "import Foundation\nextension NotchClipboardNoticeTests {\nfinal class Service: State {\n"
+          + declaration(notch, "    private func startClipboardMonitoring()").replace("private func", "func", 1)
+          + declaration(notch, "    private func stopClipboardMonitoring()").replace("private func", "func", 1)
+          + declaration(notch, "    func noteOwnClipboardChange(")
+          + "}\n}\n")
     write("NotchMascotHiding.swift", "import CoreGraphics\nimport Foundation\n"
           + "extension NotchMascotHidingContract {\nfinal class Service: State {\n"
           + "".join(declaration(notch, prefix).replace("    fileprivate ", "    ", 1).replace("    private ", "    ", 1)
