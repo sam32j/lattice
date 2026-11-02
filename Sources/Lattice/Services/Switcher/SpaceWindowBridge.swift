@@ -369,6 +369,17 @@ enum SpaceWindowBridge {
     /// is turned back into (0, 0) by some apps, which then click whatever sits
     /// at their top-left corner; a far positive point keeps any such fallback
     /// on the opposite corner.
+    /// Brings a specific window and its application process to the front in WindowServer
+    /// without sending any synthetic mouse clicks or focus events.
+    @discardableResult
+    static func orderWindowFront(_ windowID: CGWindowID, ownerPID: pid_t) -> Bool {
+        guard let setFrontProcess, let processForPID else { return false }
+        var psn = ProcessSerialNumber()
+        guard processForPID(ownerPID, &psn) == noErr else { return false }
+        let userGenerated: UInt32 = 0x200
+        return setFrontProcess(&psn, windowID, userGenerated) == .success
+    }
+
     /// Returns false when the window server did not take the request, so the
     /// caller can fall back to app-level activation.
     @discardableResult
