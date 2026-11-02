@@ -91,6 +91,7 @@ struct AppUpdatesListView: View {
     private var coveragePartial: Bool { coverageIncomplete || versionsUncompared }
 
     private var totalAppsCount: Int {
+        if allSourcesOff { return 0 }
         if updates.totalAppsCount > 0 { return updates.totalAppsCount }
         let count = InstalledApps.installedApplications().count
         return count > 0 ? count : 48
@@ -157,11 +158,9 @@ struct AppUpdatesListView: View {
     private var overhauledBody: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 14) {
-                Text("App Updates")
-                    .font(.system(size: 22, weight: .bold))
-                    .padding(.bottom, 2)
-
                 statusCard
+
+                updateSourcesSection
 
                 preferencesSection
 
@@ -268,6 +267,82 @@ struct AppUpdatesListView: View {
         )
     }
 
+    // MARK: - Update Sources
+
+    private var updateSourcesSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Update sources")
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .padding(.leading, 2)
+
+            VStack(alignment: .leading, spacing: 0) {
+                // Homebrew row
+                HStack(alignment: .center) {
+                    Text("Homebrew")
+                        .font(.system(size: 13, weight: .regular))
+                    Spacer()
+                    Toggle("Homebrew", isOn: $includeHomebrewApps)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .accessibilityLabel("Homebrew")
+                        .onChange(of: includeHomebrewApps) { _, _ in handleSourceChange() }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+
+                preferenceDivider
+
+                // App Store row
+                HStack(alignment: .center) {
+                    Text("App Store")
+                        .font(.system(size: 13, weight: .regular))
+                    Spacer()
+                    Toggle("App Store", isOn: $includeAppStore)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .accessibilityLabel("App Store")
+                        .onChange(of: includeAppStore) { _, _ in handleSourceChange() }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+
+                preferenceDivider
+
+                // Application Channel row
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Application Channel")
+                            .font(.system(size: 13, weight: .regular))
+                        Text("Checks web-downloaded app's own update source")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle("Application Channel", isOn: $includeOnlineCatalog)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .accessibilityLabel("Application Channel")
+                        .onChange(of: includeOnlineCatalog) { _, _ in handleSourceChange() }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.primary.opacity(0.04))
+            )
+        }
+    }
+
+    private func handleSourceChange() {
+        updates.sourceSelectionDidChange()
+        updates.syncWithPreferences()
+    }
+
     // MARK: - Update Preferences
 
     private var preferencesSection: some View {
@@ -280,13 +355,8 @@ struct AppUpdatesListView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // Row 1: Automatic checks
                 HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Automatic checks")
-                            .font(.system(size: 12.5, weight: .medium))
-                        Text("How often to check")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                    }
+                    Text("Automatic checks")
+                        .font(.system(size: 13, weight: .regular))
                     Spacer()
                     scheduleSegmentControl
                 }
@@ -306,7 +376,7 @@ struct AppUpdatesListView: View {
                 // Row 2: Notify when updates are available
                 HStack(alignment: .center) {
                     Text("Notify when updates are available")
-                        .font(.system(size: 12.5, weight: .medium))
+                        .font(.system(size: 13, weight: .regular))
                     Spacer()
                     Toggle("Notify when updates are available", isOn: notifyDisplayBinding)
                         .labelsHidden()
@@ -320,27 +390,11 @@ struct AppUpdatesListView: View {
 
                 preferenceDivider
 
-                // Row 3: Update sources
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Update sources")
-                        .font(.system(size: 12.5, weight: .medium))
-
-                    HStack(spacing: 8) {
-                        sourcePill(title: "Homebrew", isOn: $includeHomebrewApps)
-                        sourcePill(title: "App Store", isOn: $includeAppStore)
-                        sourcePill(title: "App Channels", isOn: $includeOnlineCatalog)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-
-                preferenceDivider
-
-                // Row 4: Excluded Apps
+                // Row 3: Excluded Apps
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Excluded Apps")
-                            .font(.system(size: 12.5, weight: .medium))
+                            .font(.system(size: 13, weight: .regular))
                         Text(excludedSummaryText)
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
@@ -408,34 +462,6 @@ struct AppUpdatesListView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    private func sourcePill(title: String, isOn: Binding<Bool>) -> some View {
-        Button {
-            isOn.wrappedValue.toggle()
-            updates.sourceSelectionDidChange()
-            updates.syncWithPreferences()
-        } label: {
-            HStack(spacing: 6) {
-                Text(title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.primary)
-                Spacer()
-                Image(systemName: isOn.wrappedValue ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 13))
-                    .foregroundStyle(isOn.wrappedValue ? Color.accentColor : Color.secondary.opacity(0.4))
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.primary.opacity(0.05))
-            )
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
-        .accessibilityValue(isOn.wrappedValue ? "On" : "Off")
     }
 
     private var preferenceDivider: some View {
@@ -736,26 +762,11 @@ struct AppUpdatesListView: View {
 
     @ViewBuilder
     private var compactEmptyState: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if updates.hasCheckedThisSession, !updates.isChecking {
-                Label(coveragePartial ? text.partialUpToDate
-                      : (updates.rules.isEmpty ? text.upToDate : text.noVisibleUpdates),
-                      systemImage: coveragePartial || !updates.rules.isEmpty
-                          ? "info.circle" : "checkmark.circle.fill")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(coveragePartial || !updates.rules.isEmpty
-                                     ? Color.secondary : Color.green)
-            }
-            Text(text.coverageNote)
-                .font(.system(size: 9.5))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            if updates.hasCheckedThisSession, !updates.packageManagerAvailable {
-                Text(text.packageMissing)
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        VStack(alignment: .leading, spacing: 4) {
+            Label(coveragePartial ? text.partialUpToDate : "No updates available",
+                  systemImage: coveragePartial ? "info.circle" : "checkmark.circle.fill")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(coveragePartial ? Color.secondary : Color.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
