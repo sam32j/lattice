@@ -119,6 +119,7 @@ struct MetricsTests {
                 CommandBarSelectionTests.run(suite)
             }),
             ("transient-paste", { TransientPasteTests.run(suite) }),
+            ("clipboard-notice", { NotchClipboardNoticeTests.run(suite) }),
             ("notch-music", { NotchMusicExtrasTests.run(suite) }),
             ("notch-input", { NotchMusicMixedInputTests.run(suite); NotchMusicMouseRecoveryTests.run(suite); NotchMusicColdStartHapticTests.run(suite); NotchReviewInteractionTests.run(suite); NotchMissionControlRestorationTests.run(suite); NotchMusicDirectionRegressionTests.run(suite) }),
             ("notch-timer", { NotchTimerValidationTests.run(suite); NotchTimerAnnouncementTests.run(suite) }),
