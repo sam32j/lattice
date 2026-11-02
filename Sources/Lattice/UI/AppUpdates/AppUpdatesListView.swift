@@ -94,8 +94,7 @@ struct AppUpdatesListView: View {
     private var totalAppsCount: Int {
         if allSourcesOff { return 0 }
         if updates.totalAppsCount > 0 { return updates.totalAppsCount }
-        let count = InstalledApps.installedApplications().count
-        return count > 0 ? count : 48
+        return 48
     }
 
     // MARK: - Status text & detail
@@ -142,14 +141,18 @@ struct AppUpdatesListView: View {
         return "Checked \(lastCheckRelativeText) · \(totalAppsCount) apps"
     }
 
+    private static let relativeDateFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        formatter.dateTimeStyle = .named
+        return formatter
+    }()
+
     private var lastCheckRelativeText: String {
         guard let last = updates.lastCheck else { return "just now" }
         let interval = Date().timeIntervalSince(last)
         if interval < 60 { return "just now" }
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        formatter.dateTimeStyle = .named
-        return formatter.localizedString(for: last, relativeTo: Date())
+        return Self.relativeDateFormatter.localizedString(for: last, relativeTo: Date())
     }
 
     var body: some View {
@@ -738,24 +741,6 @@ struct AppUpdatesListView: View {
         .contextMenu { ruleActions(for: item) }
     }
 
-    private func sourceChip(for source: AppUpdatesSupport.Source) -> some View {
-        let labelText: String
-        switch source {
-        case .onlineCatalog: labelText = "Web"
-        case .packageManager: labelText = "Homebrew"
-        case .appStore: labelText = "App Store"
-        }
-        return Text(labelText)
-            .font(.system(size: 9.5, weight: .medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1.5)
-            .background(
-                Capsule()
-                    .fill(Color.primary.opacity(0.06))
-            )
-    }
-
     @ViewBuilder
     private func ruleActions(for item: AppUpdatesSupport.Item) -> some View {
         if item.bundleID != nil {
@@ -850,11 +835,8 @@ struct AppUpdatesListView: View {
     private var lastCheckLine: String {
         if allSourcesOff { return "No sources selected" }
         guard let last = updates.lastCheck else { return text.neverChecked }
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        formatter.dateTimeStyle = .named
         return String(format: text.lastCheckFormat,
-                      formatter.localizedString(for: last, relativeTo: Date()))
+                      Self.relativeDateFormatter.localizedString(for: last, relativeTo: Date()))
     }
 
     @ViewBuilder
@@ -953,58 +935,6 @@ struct AppUpdatesListView: View {
         }
     }
 
-    private var compactRulesSection: some View {
-        DisclosureGroup(text.rulesTitle) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 8) {
-                    Text(text.rulesHint)
-                        .font(.system(size: 9.5))
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                    Button(action: chooseExceptionApp) {
-                        Image(systemName: "plus")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(isBusy)
-                    .help(text.addException)
-                    .accessibilityLabel(text.addException)
-                }
-                if updates.rules.isEmpty {
-                    EmptyView()
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 6) {
-                            ForEach(updates.rules) { rule in
-                                HStack(spacing: 8) {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(rule.name).fontWeight(.medium).lineLimit(1)
-                                        Text(rule.version.map { String(format: text.skippedVersionFormat, $0) }
-                                             ?? text.excludedApp)
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(1)
-                                    }
-                                    .help(rule.bundleID)
-                                    Spacer(minLength: 0)
-                                    Button(text.removeRule) { updates.removeRule(rule) }
-                                        .buttonStyle(.bordered)
-                                        .controlSize(.small)
-                                        .disabled(isBusy)
-                                        .accessibilityLabel("\(text.removeRule): \(rule.name)")
-                                }
-                                .frame(height: 48)
-                            }
-                        }
-                    }
-                    .frame(height: CGFloat(min(updates.rules.count, 3)) * 54)
-                }
-            }
-            .padding(.top, 4)
-        }
-        .font(.system(size: 10.5))
-    }
-
     private func chooseExceptionApp() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = false
@@ -1045,5 +975,10 @@ struct AppUpdatesListView: View {
         let visible = min(max(rowCount, 1), compactVisibleRows)
         return CGFloat(visible) * compactRowHeight
             + CGFloat(visible - 1) * compactRowSpacing
+    }
+
+    static func compactUtilityHeight(itemCount: Int) -> CGFloat {
+        if itemCount == 0 { return 148 }
+        return min(290, 85 + compactHeight(rowCount: itemCount))
     }
 }

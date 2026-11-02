@@ -11,13 +11,7 @@ struct LatticeHubHostedUtility: View {
     private var fallbackHeight: CGFloat {
         switch item {
         case .appUpdates:
-            let count = AppUpdatesService.shared.items.count
-            if count == 0 {
-                return 148
-            } else {
-                let rows = min(count, 4)
-                return min(290, 85 + CGFloat(rows * 40 + (rows - 1) * 5))
-            }
+            return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count)
         case .videoDownloader:
             return 172
         default:

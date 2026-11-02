@@ -39,8 +39,7 @@ extension AppUpdatesService {
         checkedAppsCount = 0
         items = []
         if totalAppsCount == 0 {
-            let count = InstalledApps.installedApplications().count
-            totalAppsCount = count > 0 ? count : 48
+            totalAppsCount = 48
         }
         scanGeneration += 1
         let generation = scanGeneration
