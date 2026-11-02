@@ -158,7 +158,7 @@ final class ScreenshotPinController {
         // Retain the target while fingers move beyond the pin. A quiet gap
         // recovers ownership if AppKit omitted the preceding end packet.
         if activeGesturePin == nil || time - lastGestureTime > 0.25
-            || (gestureFinished && sequenceBegan) {
+            || gestureFinished || sequenceBegan {
             activeGesturePin?.resetGestureTracking()
             var windows = NSApp.orderedWindows.filter { window in
                 window.isVisible && pins.contains { $0 === window }

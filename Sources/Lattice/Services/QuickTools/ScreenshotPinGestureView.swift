@@ -95,11 +95,12 @@ class ScreenshotPinGestureView: NSView {
     func applyPinch(by factor: CGFloat, at point: CGPoint,
                     source: ScreenshotPinGestureSource.Source, phase: NSEvent.Phase) {
         guard let window, !window.ignoresMouseEvents, !isPositionLocked else { return }
+        let isEnding = phase.contains(.ended) || phase.contains(.cancelled)
         if phase.contains(.began) { pinchSource.begin(source) }
         defer {
-            if phase.contains(.ended) || phase.contains(.cancelled) { pinchSource.finish(source) }
+            if isEnding { pinchSource.finish(source) }
         }
-        guard factor.isFinite, factor > 0, factor != 1, pinchSource.accepts(source) else { return }
+        guard !isEnding, factor.isFinite, factor > 0, factor != 1, pinchSource.accepts(source) else { return }
         zoom(by: factor, at: point)
     }
 
