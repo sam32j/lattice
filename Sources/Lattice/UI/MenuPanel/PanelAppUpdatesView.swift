@@ -16,7 +16,6 @@ struct PanelAppUpdatesView: View {
         VStack(alignment: .leading, spacing: 10) {
             header
             AppUpdatesListView(compact: true)
-                .panelCard()
         }
         .onAppear {
             PanelInteractionState.shared.viewKeepsPopoverOpen = true
