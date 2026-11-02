@@ -59,6 +59,7 @@ struct ScreenshotPinGestureSource {
     private var ended = false
 
     mutating func begin(_ source: Source) {
+        guard ended || owner == nil || owner == source else { return }
         owner = nil
         ended = false
     }

@@ -3742,16 +3742,7 @@ enum ScreenshotFeatureTests {
                 && MicMuteSupport.absentClaims(recorded: nil, present: ["mic-a"]).isEmpty
                 && MicMuteSupport.absentClaims(recorded: ["headset"], present: []) == ["headset"],
                "a sweep keeps the claim on a microphone this app muted that is unplugged right now, so it is released when it returns")
-        let micMuteServiceSource = (try? String(
-            contentsOfFile: "Sources/Lattice/Services/QuickTools/MicMuteService.swift",
-            encoding: .utf8)) ?? ""
-        let reapply = micMuteServiceSource.range(of: "private func reapplyIfNeeded() {")
-            .map { micMuteServiceSource[$0.lowerBound...] }
-            .flatMap { body in body.range(of: "\n    }\n").map { body[..<$0.lowerBound] } }
-            .map(String.init) ?? ""
-        suite.expect(reapply.contains("if wantsMute {") && !reapply.contains("micMuteActive")
-                && micMuteServiceSource.contains(
-                    "private func apply(muted: Bool, announce: Bool) {\n        wantsMute = muted"),
+        suite.expect(MixerInputVolumeContract.pendingMuteSurvivesDeviceChange(),
                "a device change re-asserts the mute request in flight, never the persisted flag it is about to replace")
 
         suite.expect(Defaults.registeredDefaults[DefaultsKey.radialMenuEnabled] as? Bool == false,

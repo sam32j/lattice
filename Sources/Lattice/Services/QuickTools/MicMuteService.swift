@@ -32,6 +32,7 @@ final class MicMuteService: ObservableObject {
     /// A sweep that finished after a newer one started must not publish what
     /// it saw.
     private var applyGeneration = 0
+    private var muteReadGeneration = 0
     /// What the last request asked for, kept from the moment it is queued.
     /// `isMuted` and the persisted flag only follow once the sweep has
     /// published, so a device change or a preference sync that lands while a
@@ -84,12 +85,11 @@ final class MicMuteService: ObservableObject {
                 // comes back now if it is here, else when it returns.
                 apply(muted: false, announce: false)
                 isMuted = false
-            } else if Self.isDefaultDeviceMuted() {
-                isMuted = true
             } else {
-                isMuted = false
+                refreshDefaultDeviceMute()
             }
         } else {
+            muteReadGeneration += 1
             // Switching the feature off must not strand a muted microphone
             // with no control left to unmute it.
             if wantsMute || hasOutstandingClaims {
@@ -126,7 +126,7 @@ final class MicMuteService: ObservableObject {
     }
 
     func setMuted(_ muted: Bool) {
-        apply(muted: muted, announce: true)
+        apply(muted: muted, announce: true, explicitUserUnmute: !muted)
     }
 
     var inputVolumeAdjustmentLifetime: UUID? {
@@ -177,8 +177,24 @@ final class MicMuteService: ObservableObject {
         } else if hasOutstandingClaims {
             apply(muted: false, announce: false)
         } else {
-            let hwMuted = Self.isDefaultDeviceMuted()
-            if isMuted != hwMuted { isMuted = hwMuted }
+            refreshDefaultDeviceMute()
+        }
+    }
+
+    private func refreshDefaultDeviceMute() {
+        muteReadGeneration += 1
+        let generation = muteReadGeneration
+        let requestGeneration = applyGeneration
+        guard AppFeature.micMute.isAvailable else { return }
+        halQueue.async { [weak self] in
+            let muted = Self.isDefaultDeviceMuted()
+            DispatchQueue.main.async {
+                guard let self, self.muteReadGeneration == generation,
+                      self.applyGeneration == requestGeneration, !self.wantsMute,
+                      !self.hasOutstandingClaims, AppFeature.micMute.isAvailable else { return }
+                self.isMuted = muted
+                self.syncListeners()
+            }
         }
     }
 
@@ -200,7 +216,7 @@ final class MicMuteService: ObservableObject {
 
     /// Hands the sweep to the audio queue and keeps the published state, the
     /// wanted state and the HUD on the main thread, where they belong.
-    private func apply(muted: Bool, announce: Bool) {
+    private func apply(muted: Bool, announce: Bool, explicitUserUnmute: Bool = false) {
         wantsMute = muted
         inputVolumeLock.withLock {
             inputVolumeBlocked = muted
@@ -209,7 +225,7 @@ final class MicMuteService: ObservableObject {
         applyGeneration += 1
         let generation = applyGeneration
         halQueue.async { [weak self] in
-            let outcome = Self.sweep(muted: muted)
+            let outcome = Self.sweep(muted: muted, explicitUserUnmute: explicitUserUnmute)
             DispatchQueue.main.async {
                 self?.finish(outcome, muted: muted, announce: announce, generation: generation)
             }
@@ -224,7 +240,7 @@ final class MicMuteService: ObservableObject {
     /// for, both would start from the same record; the second would then find
     /// the devices the first had just silenced already quiet and unclaimed,
     /// leave them to "the user", and the unmute would never release them.
-    private static func sweep(muted: Bool) -> MuteOutcome {
+    private static func sweep(muted: Bool, explicitUserUnmute: Bool = false) -> MuteOutcome {
         let defaults = UserDefaults.standard
         let outcome = applyToDevices(
             muted: muted,
@@ -234,7 +250,8 @@ final class MicMuteService: ObservableObject {
             // Missing means never tracked; an empty list means tracked and
             // owning nothing, and the sweep must keep those two apart.
             mutedDevices: defaults.stringArray(forKey: DefaultsKey.micMuteMutedDevices),
-            legacyVolume: defaults.double(forKey: DefaultsKey.micMuteSavedVolume))
+            legacyVolume: defaults.double(forKey: DefaultsKey.micMuteSavedVolume),
+            explicitUserUnmute: explicitUserUnmute)
         // A sweep that reached nothing leaves the record alone: it is what a
         // later unmute needs to put every level back.
         if outcome.applied {
@@ -299,7 +316,8 @@ final class MicMuteService: ObservableObject {
                                        savedVolumes: [String: Double],
                                        savedChannelVolumes: [String: [String: Double]],
                                        mutedDevices: [String]?,
-                                       legacyVolume: Double) -> MuteOutcome {
+                                       legacyVolume: Double,
+                                       explicitUserUnmute: Bool = false) -> MuteOutcome {
         let devices = inputDevices()
         guard !devices.isEmpty else {
             // Nothing to silence. An unmute has still done its job, and keeps
@@ -311,7 +329,7 @@ final class MicMuteService: ObservableObject {
             ? mute(devices, savedVolumes: savedVolumes, savedChannelVolumes: savedChannelVolumes,
                    mutedDevices: mutedDevices)
             : unmute(devices, savedVolumes: savedVolumes, savedChannelVolumes: savedChannelVolumes,
-                     mutedDevices: mutedDevices, legacyVolume: legacyVolume)
+                     mutedDevices: mutedDevices, legacyVolume: legacyVolume, explicitUserUnmute: explicitUserUnmute)
     }
 
     private static func mute(_ devices: [InputDevice],
@@ -372,7 +390,8 @@ final class MicMuteService: ObservableObject {
                                savedVolumes: [String: Double],
                                savedChannelVolumes: [String: [String: Double]],
                                mutedDevices: [String]?,
-                               legacyVolume: Double) -> MuteOutcome {
+                               legacyVolume: Double,
+                               explicitUserUnmute: Bool = false) -> MuteOutcome {
         let present = devices.map(\.uid)
         var outcome = MuteOutcome(applied: false,
                                   savedVolumes: savedVolumes,
@@ -381,7 +400,8 @@ final class MicMuteService: ObservableObject {
                                                                             present: present))
         let targets = Set(MicMuteSupport.restoreTargets(recorded: mutedDevices, present: present))
         var attempted = false
-        for device in devices where targets.contains(device.uid) || muteSwitchValue(of: device.id) == 1 {
+        for device in devices where targets.contains(device.uid)
+            || (explicitUserUnmute && muteSwitchValue(of: device.id) == 1) {
             // A saved level only leaves once the device really opened: a
             // restore that failed keeps the claim and the level, so the next
             // attempt still knows the device is this app's to release.

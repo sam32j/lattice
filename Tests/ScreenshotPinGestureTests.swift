@@ -38,6 +38,8 @@ enum ScreenshotPinGestureTests {
         var source = ScreenshotPinGestureSource()
         suite.expect(source.accepts(.touches) && !source.accepts(.magnify) && source.accepts(.touches),
                      "raw pinch packets own a gesture and suppress duplicate magnify packets")
+        source.begin(.magnify)
+        suite.expect(!source.accepts(.magnify), "phase-less magnify cannot steal an active raw-touch pinch")
         source.finish(.touches)
         source.begin(.magnify)
         suite.expect(source.accepts(.magnify) && !source.accepts(.touches),

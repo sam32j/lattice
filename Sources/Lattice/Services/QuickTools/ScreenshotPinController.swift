@@ -14,6 +14,7 @@ final class ScreenshotPinController {
     private var lastGestureTime: TimeInterval = 0
     private var gestureFinished = false
     private var hoverTimer: Timer?
+    private weak var hoverFocusPin: ScreenshotPinWindow?
     private var preferenceObserver: NSObjectProtocol?
     private var dragObservers: [NSObjectProtocol] = []
     private init() {
@@ -87,7 +88,7 @@ final class ScreenshotPinController {
         if !pins.isEmpty, hoverTimer == nil {
             let timer = Timer(timeInterval: 0.05, repeats: true) { [weak self] _ in
                 let location = NSEvent.mouseLocation
-                self?.pins.forEach { $0.updateHover(at: location) }
+                self?.updateHover(at: location)
             }
             timer.tolerance = 0.02
             RunLoop.main.add(timer, forMode: .common)
@@ -97,6 +98,7 @@ final class ScreenshotPinController {
                     self?.pins.forEach { $0.refreshAppearance() }
                 }
         } else if pins.isEmpty {
+            hoverFocusPin = nil
             hoverTimer?.invalidate()
             hoverTimer = nil
             if let preferenceObserver { NotificationCenter.default.removeObserver(preferenceObserver) }
@@ -123,6 +125,19 @@ final class ScreenshotPinController {
             dragObservers.forEach { center.removeObserver($0) }
             dragObservers.removeAll()
         }
+    }
+
+    private func updateHover(at point: CGPoint) {
+        pins.forEach { $0.updateHover(at: point) }
+        let windows = NSApp.orderedWindows.filter { window in
+            window.isVisible && pins.contains { $0 === window }
+        }
+        let target = ScreenshotPinWindow.hoverTarget(at: point, windows: windows)
+        guard target !== hoverFocusPin else { return }
+        hoverFocusPin = target
+        // Entering a pin grants focus once. A stationary pointer must not
+        // keep taking focus back from an editor opened over the same pin.
+        if let target, !target.isKeyWindow { target.makeKey() }
     }
 
     private func refreshGestureMonitor() {

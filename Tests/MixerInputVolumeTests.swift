@@ -130,6 +130,7 @@ enum MixerInputVolumeContract {
         static var uids: [UInt32: String] = [:]
         static var aggregates: Set<UInt32> = []
         static var running: Set<UInt32> = []
+        static var reads = 0
         static func key(_ d: UInt32, _ e: UInt32 = 0, _ s: UInt32 = kAudioDevicePropertyVolumeScalar)
             -> Key
         {
@@ -139,6 +140,7 @@ enum MixerInputVolumeContract {
                     mSelector: s, mScope: kAudioDevicePropertyScopeInput, mElement: e))
         }
         static func reset() {
+            reads = 0
             levels = [:]
             readOnly = []
             readFails = []
@@ -189,6 +191,7 @@ enum MixerInputVolumeContract {
             _ d: UInt32, _ a: UnsafePointer<AudioObjectPropertyAddress>, _ q: UInt32,
             _ qp: UnsafeRawPointer?, _ size: UnsafeMutablePointer<UInt32>, _ p: UnsafeMutableRawPointer
         ) -> OSStatus {
+            reads += 1
             let k = Key(d, a.pointee)
             if readFails.contains(k) { return -1 }
             if let v = levels[k] {
@@ -271,6 +274,7 @@ enum MixerInputVolumeContract {
         }
     }
     static func run(_ suite: TestSuite) {
+        reviewChecks(suite)
         func check(_ condition: @autoclosure () -> Bool, _ name: String) {
             suite.expect(condition(), name)
         }

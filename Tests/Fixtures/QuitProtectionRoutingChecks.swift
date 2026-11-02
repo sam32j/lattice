@@ -30,6 +30,15 @@ extension QuitProtectionRoutingContract.QuitProtectionService {
         }
 
         defaults.set("hold", forKey: DefaultsKey.quitProtectionQuitMode)
+        Contract.NSRunningApplication.terminated = []
+        send(12)
+        let escapedTimer = service.holdTimer
+        let escapePassed = send(53)
+        escapedTimer?.fire()
+        suite.expect(escapePassed && service.pending == nil && Contract.NSRunningApplication.terminated.isEmpty,
+                     "Escape cancels a held quit shortcut before passing through to its app")
+        send(12, .keyUp)
+        Contract.QuitProtectionHUD.lookups = []
         Contract.QuitProtectionHUD.lookupCount = 0
         send(12)
         suite.expect(Contract.QuitProtectionHUD.lookupCount == 0 && !service.hud.visible,

@@ -1563,6 +1563,7 @@ def main():
           + "quickAccess: quickAccess, revealFromHidden: revealFromHidden, hideWhenSettled: hideWhenSettled, usesGlass: usesGlass, steady: steady)\n    }\n#sourceLocation()\n"
           + declaration(canvas, "    func setMouseEventsIgnored(")
           + declaration(canvas, "    private func restoreFromMissionControl(").replace("private func", "func", 1)
+          + declaration(canvas, "    private func completeMissionControlConcealment(").replace("private func", "func", 1)
           + "}\n")
     metric_view = "Sources/Lattice/UI/MenuPanel/MetricDetailView.swift"
     renderer = "Sources/Lattice/App/MenuBarRenderer.swift"
@@ -2566,6 +2567,12 @@ def main():
               "    private func gestureChord(",
               "    private func arm(",
               "    private func promote("])
+          + "}\n}\n")
+    write("ScreenshotPinHoverFocus.swift", "import Foundation\nextension ScreenshotPinHoverFocusTests {\n"
+          + "final class ScreenshotPinWindow: PinState {\n"
+          + declaration("Sources/Lattice/Services/QuickTools/ScreenshotPinWindow.swift", "    static func hoverTarget(")
+          + "}\nfinal class Controller: State {\n"
+          + declaration("Sources/Lattice/Services/QuickTools/ScreenshotPinController.swift", "    private func updateHover(").replace("private func", "func", 1)
           + "}\n}\n")
     write("WindowGestureFrontingRuntime.swift", "import AppKit\nimport CoreGraphics\nimport Foundation\n"
           + "extension WindowGestureFrontingRuntimeTests {\n"

@@ -48,21 +48,20 @@ struct AudioInputSettings: View {
             if microphoneControlEnabled {
                 VStack(alignment: .leading, spacing: 14) {
                     AudioInputDeviceControls(title: l10n.s.mixerInputSourceLabel,
-                                             levelTitle: "Input level",
+                                             levelTitle: SettingsOwnershipStrings.audioInput(l10n.language).level,
                                              sliderWidth: 140,
                                              showsUnavailableLabel: false,
                                              showsIcons: false)
 
                     HStack(alignment: .center) {
-                        Text("Mute microphone")
+                        Text(l10n.s.micMuteName)
                             .font(.body)
                         Spacer(minLength: 12)
                         muteStateButton
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        ShortcutPreferenceRow(role: .micMute, alignment: .center,
-                                              label: "Mute shortcut") {
+                        ShortcutPreferenceRow(role: .micMute, alignment: .center) {
                             MicMuteService.shared.syncWithPreferences()
                         }
                         if micShortcutEnabled, micMute.shortcutRegistrationFailed {
@@ -87,7 +86,7 @@ struct AudioInputSettings: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "mic.slash")
-                    Text("Muted")
+                    Text(SettingsOwnershipStrings.audioInput(l10n.language).muted)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -101,7 +100,7 @@ struct AudioInputSettings: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "mic")
-                    Text("Unmuted")
+                    Text(SettingsOwnershipStrings.audioInput(l10n.language).unmuted)
                 }
                 .frame(maxWidth: .infinity)
             }

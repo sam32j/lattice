@@ -132,11 +132,11 @@ struct WindowLayoutSettings: View {
                 ))
                 .labelsHidden()
             }
-            if windowLayoutInstalled {
+            if windowLayoutInstalled || gestureEnabled {
                 VStack(alignment: .leading, spacing: 16) {
                     WindowLayoutIgnoredAppsList()
                         .padding(.leading, settingsRowTextInset)
-                    snappingControls
+                    if windowLayoutInstalled { snappingControls }
                 }
                 .toggleStyle(TrailingSwitchToggleStyle())
             }

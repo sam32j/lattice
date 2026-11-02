@@ -107,6 +107,12 @@ enum ScreenshotPinWindowTests {
         suite.expect(ScreenshotPinWindow.gestureTarget(at: center, windows: [other, pin]) === other,
                      "overlapping pins route gestures in front-to-back window order")
         other.setPositionLocked(true)
+        suite.expect(ScreenshotPinWindow.hoverTarget(at: center, windows: [other, pin]) === other,
+                     "hover focus chooses the frontmost pin, including a position-locked pin")
+        other.setClickThrough(true)
+        suite.expect(ScreenshotPinWindow.hoverTarget(at: center, windows: [other, pin]) === pin,
+                     "a click-through front pin leaves hover focus to the pin underneath")
+        other.setClickThrough(false)
         suite.expect(ScreenshotPinWindow.gestureTarget(at: center, windows: [other, pin]) === pin,
                      "a locked front pin leaves the eligible pin underneath reachable")
         pin.setZoom(0.5)
@@ -126,6 +132,7 @@ enum ScreenshotPinWindowTests {
         suite.expect(pin.isClosed && closed == 1, "a successful ordinary file drop closes its pin once")
         ScreenshotPinFilePromiseTests.run(suite, image: image)
         ScreenshotPinChromeTests.run(suite, image: image)
+        ScreenshotPinHoverFocusTests.run(suite)
         ScreenshotQuickLookTests.run(suite, image: image)
     }
 }

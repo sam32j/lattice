@@ -198,6 +198,7 @@ final class FeatureRuntime: ObservableObject {
         }
         if !AppFeature.windowLayout.isAvailable,
            UserDefaults.standard.bool(forKey: DefaultsKey.windowGestureEnabled) {
+            loadedThisSession.insert(.windowLayout)
             Self.bindings[.windowLayout]?()
         }
     }
