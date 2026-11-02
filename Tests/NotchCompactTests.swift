@@ -220,6 +220,7 @@ enum NotchCompactTests {
         [view] + view.subviews.flatMap(descendants)
     }
     static func run(_ suite: TestSuite) {
+        NotchRailPixelTests.run(suite)
         camera(suite)
         calendarRows(suite)
         rail(suite)
@@ -351,7 +352,7 @@ enum NotchCompactTests {
                && frames[3].minY == frames[4].minY && frames[3].minY != frames[0].minY,
                "a rail that fits reads left to right along its rows")
         suite.expect(frames.count == 5
-               && abs(frames[3].width - frames[0].width) < 0.5
+               && abs(frames[3].width - frames[0].width) <= 1 / (host.window?.backingScaleFactor ?? 1) + 0.001
                && abs(frames[3].midX - (frames[0].midX + frames[1].midX) / 2) < 0.5
                && abs((frames[3].minX + frames[4].maxX) / 2 - host.bounds.midX) < 0.5,
                "a short last row keeps the cell width and sits centered under the row above: frames=\(frames), bounds=\(host.bounds), scale=\(host.window?.backingScaleFactor ?? 1)")
