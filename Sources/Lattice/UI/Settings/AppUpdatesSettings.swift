@@ -8,7 +8,6 @@ struct AppUpdatesSettings: View {
 
     var body: some View {
         AppUpdatesListView()
-            .padding(20)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .onAppear { updates.checkIfNeeded() }
     }
