@@ -72,6 +72,8 @@ enum NotchSectionPagingTests {
     // The generated Service uses the production scroll handlers verbatim.
     // Events stay inside this fixture and never post input to the desktop.
     struct NSEvent {
+        static var mouseLocation = CGPoint.zero
+        var window: Int? = 1
         var locationInWindow: CGPoint
         var scrollingDeltaY: CGFloat = -24
         var timestamp: TimeInterval = 10
@@ -88,7 +90,8 @@ enum NotchSectionPagingTests {
     }
     final class Host {
         var acceptsPoint = true
-        func containsSurface(_ point: CGPoint) -> Bool { acceptsPoint }
+        var receivedPoint: CGPoint?
+        func containsSurface(_ point: CGPoint) -> Bool { receivedPoint = point; return acceptsPoint }
     }
     class State {
         var running = true, suspended = false, expanded = true, showingSections = true, trackingMenu = false
@@ -104,6 +107,13 @@ enum NotchSectionPagingTests {
     }
 
     private static func routing(_ suite: TestSuite) {
+        let global = Service()
+        NSEvent.mouseLocation = CGPoint(x: 200, y: 200)
+        var windowless = NSEvent(locationInWindow: CGPoint(x: 900, y: 900))
+        windowless.window = nil
+        _ = global.handleScroll(windowless)
+        suite.expect(global.windowHost?.receivedPoint == NSEvent.mouseLocation && global.movedRows == 1,
+                     "windowless gallery scrolling uses the pointer's screen coordinates without a second conversion")
         for (layout, cameraHeight): (NotchSize, Double) in [(.spacious, 32), (.compact, 32), (.spacious, 0), (.compact, 52)] {
             let service = Service()
             service.geometry = NotchGeometry(screen: service.geometry.screen, safeAreaTop: cameraHeight,

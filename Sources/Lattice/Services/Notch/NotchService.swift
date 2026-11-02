@@ -196,6 +196,8 @@ final class NotchService: ObservableObject {
     private var powerSampler: PowerSampler?
     private var clipboardTimer: Timer?
     private var lastClipboardChangeCount: Int = NSPasteboard.general.changeCount
+    private var lastOwnClipboardChangeCount = 0
+    private var clipboardMonitoringGeneration = UUID()
     private var captureID: UUID?
     private let deferredCapturePresentation = CapturePresentationDeferral()
     private var captureFallback: (() -> Void)?
@@ -3818,7 +3820,7 @@ final class NotchService: ObservableObject {
             sectionScroll = NotchSectionScroll()
             return false
         }
-        let screenPoint = panel.convertPoint(toScreen: event.locationInWindow)
+        let screenPoint = event.window != nil ? panel.convertPoint(toScreen: event.locationInWindow) : NSEvent.mouseLocation
         // The header keeps its own gesture; the tiles and the rest of the body step rows.
         guard windowHost?.containsSurface(screenPoint) == true,
               panel.frame.maxY - screenPoint.y > expandedGeometry.headerTopInset + expandedGeometry.headerRowHeight else {
@@ -4306,15 +4308,29 @@ final class NotchService: ObservableObject {
         stopClipboardMonitoring()
         guard NotchSupport.routes(.clipboard) else { return }
         lastClipboardChangeCount = NSPasteboard.general.changeCount
+        let generation = clipboardMonitoringGeneration
 
         let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
-            guard let self, self.running, !self.suspended else { return }
+            guard let self, self.running else { return }
             let count = NSPasteboard.general.changeCount
             guard count != self.lastClipboardChangeCount else { return }
             self.lastClipboardChangeCount = count
-            let text = FeatureStrings.clipboard(L10n.shared.language)
-            _ = self.show(NotchNotice(event: .clipboard, title: "",
-                                      detail: text.copied, symbol: "doc.on.clipboard"))
+            guard !self.suspended, count > self.lastOwnClipboardChangeCount else { return }
+            // Source data can be promised by another app. Read it on the
+            // shared pasteboard lane and never wait for its provider on main.
+            let owner = Bundle.main.bundleIdentifier
+            GeneralPasteboardAccess.shared.async({
+                let board = NSPasteboard.general
+                return board.changeCount != count || (owner != nil && board.string(forType: .source) == owner)
+            }, then: { [weak self] ownOrSuperseded in
+                guard let self, self.running, !self.suspended,
+                      self.clipboardMonitoringGeneration == generation,
+                      self.lastClipboardChangeCount == count,
+                      count > self.lastOwnClipboardChangeCount, !ownOrSuperseded else { return }
+                let text = FeatureStrings.clipboard(L10n.shared.language)
+                _ = self.show(NotchNotice(event: .clipboard, title: "",
+                                          detail: text.copied, symbol: "doc.on.clipboard"))
+            })
         }
         timer.tolerance = 0.15
         RunLoop.main.add(timer, forMode: .common)
@@ -4322,8 +4338,14 @@ final class NotchService: ObservableObject {
     }
 
     private func stopClipboardMonitoring() {
+        clipboardMonitoringGeneration = UUID()
         clipboardTimer?.invalidate()
         clipboardTimer = nil
+    }
+
+    func noteOwnClipboardChange(upTo count: Int) {
+        lastOwnClipboardChangeCount = max(lastOwnClipboardChangeCount, count)
+        lastClipboardChangeCount = max(lastClipboardChangeCount, count)
     }
 
     private func powerChanged() {

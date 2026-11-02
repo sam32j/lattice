@@ -720,6 +720,7 @@ extension VideoDownloaderSettings {
                         }
                         Button("Copy File Path") {
                             NSPasteboard.general.clearContents()
+                            NSPasteboard.general.declareLatticeSource()
                             NSPasteboard.general.setString(item.fileURL.path, forType: .string)
                         }
                         Divider()

@@ -506,14 +506,15 @@ enum NotchPlaybackRoutingTests {
         Adapter.sources = [browser]
         Adapter.NotchNativeQueue.request = UUID()
         Adapter.command = nil
+        let refreshesBeforeSelection = Adapter.refreshes
         Adapter.sendPlaybackCommand(NotchPlaybackRequest(command: .source(browser.selection)))
-        suite.expect(Adapter.selection == browser.selection && Adapter.refreshes == 1
+        suite.expect(Adapter.selection == browser.selection && Adapter.refreshes == refreshesBeforeSelection + 1
                      && Adapter.NotchNativeQueue.request == nil && Adapter.command == nil,
                      "choosing a source refreshes metadata and retires its old queue without changing playback")
         Adapter.choose(.init(pid: 202, bundleIdentifier: "unrelated.app"))
         suite.expect(Adapter.selection == browser.selection, "a reused PID cannot select an undiscovered application")
         Adapter.sendPlaybackCommand(NotchPlaybackRequest(command: .source(nil)))
-        suite.expect(Adapter.selection == nil && Adapter.refreshes == 2,
+        suite.expect(Adapter.selection == nil && Adapter.refreshes == refreshesBeforeSelection + 2,
                      "automatic source selection can be restored without sending a transport command")
         Adapter.sources = []
         sourceDiscovery(suite)

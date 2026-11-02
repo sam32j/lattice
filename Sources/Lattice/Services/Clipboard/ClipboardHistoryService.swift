@@ -133,6 +133,7 @@ final class ClipboardHistoryService: ObservableObject {
     /// use this so their intermediate writes never churn the history.
     func ignoreNextChange(upTo changeCount: Int) {
         lastChangeCount = max(lastChangeCount, changeCount)
+        NotchService.shared.noteOwnClipboardChange(upTo: changeCount)
     }
 
     /// ClipboardAutoClearService calls this after it actually empties the
@@ -192,7 +193,7 @@ final class ClipboardHistoryService: ObservableObject {
             // Consume our mutation even if result delivery already expired.
             // This also excludes a partial write whose required format failed.
             if let result {
-                self.lastChangeCount = max(self.lastChangeCount, result.changeCount)
+                self.ignoreNextChange(upTo: result.changeCount)
             }
         })
     }

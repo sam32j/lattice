@@ -1297,7 +1297,7 @@ extension Strings {
         advancedUninstallDescription: "Remova o Lattice e suas configurações do seu Mac.",
         advancedUninstallButton: "Desinstalar o Lattice",
         advancedUninstallConfirmTitle: "Desinstalar o Lattice?",
-        advancedUninstallConfirmBody: "O Lattice e suas configurações serão movidos para a Lixeira.",
+        advancedUninstallConfirmBody: "O app Lattice será movido para a Lixeira. Suas configurações e os dados do app serão excluídos permanentemente e não poderão ser recuperados da Lixeira.",
         advancedUninstallFailedTitle: "A desinstalação parou",
         advancedUninstallFailedBody: "O Lattice não conseguiu restaurar uma configuração do sistema que ele mudou: repouso, velocidade das ventoinhas, aceleração do mouse ou ordem dos Espaços. Nada foi removido. Tente de novo e permita o pedido de senha, se ele aparecer.",
 
@@ -2269,7 +2269,7 @@ extension Strings {
         advancedUninstallDescription: "Remove Lattice and its settings from your Mac.",
         advancedUninstallButton: "Uninstall Lattice",
         advancedUninstallConfirmTitle: "Uninstall Lattice?",
-        advancedUninstallConfirmBody: "Lattice and its settings will be moved to the Trash.",
+        advancedUninstallConfirmBody: "The Lattice app will move to the Trash. Its settings and app-owned data will be permanently deleted and cannot be recovered from the Trash.",
         advancedUninstallFailedTitle: "Uninstall stopped",
         advancedUninstallFailedBody: "Lattice could not put back a system setting it changed: sleep, fan speed, mouse acceleration or Space order. Nothing was removed. Try again and allow the password request if it appears.",
 

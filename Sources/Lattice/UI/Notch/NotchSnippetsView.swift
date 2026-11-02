@@ -236,6 +236,7 @@ struct NotchSnippetsView: View {
             ? NSPasteboard.general.string(forType: .string) : nil
         let expanded = TextSnippetSupport.expand(snippet.replacement, date: Date(), clipboard: clipboard)
         NSPasteboard.general.clearContents()
+        NSPasteboard.general.declareLatticeSource()
         NSPasteboard.general.setString(expanded, forType: .string)
         withAnimation(reduceMotion ? nil : .spring(response: 0.2, dampingFraction: 0.7)) {
             copiedID = snippet.id

@@ -361,6 +361,7 @@ final class NotchMusicService: ObservableObject {
 
     private func disconnect() {
         endPlaybackGap()
+        NotchBrowserArtwork.shared.cancel()
         artworkWork?.cancel()
         artworkWork = nil
         artworkCache = .init()
