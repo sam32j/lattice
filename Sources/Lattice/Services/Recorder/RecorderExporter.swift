@@ -334,7 +334,15 @@ final class RecorderExporter {
             }
         }
 
-        guard reader.startReading(), writer.startWriting() else { return .writeFailed }
+        func logFailure(_ stage: String) {
+            let readError = reader.error as NSError?
+            let writeError = writer.error as NSError?
+            NSLog("Recorder export \(stage): reader=\(reader.status.rawValue) error=\(readError?.domain ?? "none")/\(readError?.code ?? 0), writer=\(writer.status.rawValue) error=\(writeError?.domain ?? "none")/\(writeError?.code ?? 0)")
+        }
+        guard reader.startReading(), writer.startWriting() else {
+            logFailure("start failed")
+            return .writeFailed
+        }
         writer.startSession(atSourceTime: .zero)
 
         let expectedFrames = max(1, Int((timelineDuration.seconds
@@ -375,6 +383,7 @@ final class RecorderExporter {
         }
         let readerStatus = reader.status
         guard readerStatus == .completed else {
+            logFailure("read failed")
             reader.cancelReading()
             writer.cancelWriting()
             try? FileManager.default.removeItem(at: destination)
@@ -383,6 +392,7 @@ final class RecorderExporter {
         progress(0.95)
         await writer.finishWriting()
         guard writer.status == .completed else {
+            logFailure("finish failed")
             try? FileManager.default.removeItem(at: destination)
             return .writeFailed
         }

@@ -354,7 +354,7 @@ enum NotchCompactTests {
                && abs(frames[3].width - frames[0].width) < 0.5
                && abs(frames[3].midX - (frames[0].midX + frames[1].midX) / 2) < 0.5
                && abs((frames[3].minX + frames[4].maxX) / 2 - host.bounds.midX) < 0.5,
-               "a short last row keeps the cell width and sits centered under the row above")
+               "a short last row keeps the cell width and sits centered under the row above: frames=\(frames), bounds=\(host.bounds), scale=\(host.window?.backingScaleFactor ?? 1)")
         // Four tiles in one row just miss the narrowest page with their gaps.
         // A rail that may close them keeps every tile whole, side by side;
         // any other still scrolls its last column past the edge.
