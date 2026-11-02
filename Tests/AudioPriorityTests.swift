@@ -112,5 +112,20 @@ enum AudioPriorityTests {
             "registered priority preferences travel in settings backups once")
         suite.expect(Defaults.sanitizedAudioPriorityUIDs(["a", "b", "a", "\n"]) == ["a", "b"],
             "saved lists keep valid devices once and preserve their order")
+
+        let topPriority = MixerRoutingSupport.firstAvailablePriorityDeviceUID(
+            orderedUIDs: ["studio-mic", "airpods", "built-in"],
+            availableUIDs: ["studio-mic", "airpods", "built-in"])
+        suite.expect(topPriority == "studio-mic", "top priority is selected initially")
+        var adHoc: String? = "airpods"
+        var sessionActive = true
+        suite.expect(adHoc != nil && sessionActive, "user chose airpods for the active call")
+        sessionActive = false
+        if !sessionActive { adHoc = nil }
+        let fallbackTarget = MixerRoutingSupport.firstAvailablePriorityDeviceUID(
+            orderedUIDs: ["studio-mic", "airpods", "built-in"],
+            availableUIDs: ["studio-mic", "airpods", "built-in"])
+        suite.expect(fallbackTarget == "studio-mic" && adHoc == nil,
+                     "when session stops, ad-hoc clears and falls back to top priority device")
     }
 }

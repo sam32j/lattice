@@ -40,6 +40,8 @@ final class AudioPriorityService: ObservableObject {
     private var unplacedOutputUIDs = Set<String>()
     private var unplacedInputUIDs = Set<String>()
     private var placementWork: DispatchWorkItem?
+    private var adHocInputDeviceUID: String?
+    private var adHocSessionActive = false
     private var started = false
 
     private init() {}
@@ -79,6 +81,16 @@ final class AudioPriorityService: ObservableObject {
             .sink { [weak self] in self?.observeInputDevices($0) }
             .store(in: &cancellables)
 
+        AudioInputDeviceManager.shared.$currentInputDeviceUID
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.observeCurrentInputDevice($0) }
+            .store(in: &cancellables)
+
+        AudioInputDeviceManager.shared.$isInputActive
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.observeInputActiveState($0) }
+            .store(in: &cancellables)
+
         mergeAvailableDevicesIntoPriorityLists()
         updateDeviceNames()
     }
@@ -98,6 +110,8 @@ final class AudioPriorityService: ObservableObject {
         placementWork = nil
         unplacedOutputUIDs.removeAll()
         unplacedInputUIDs.removeAll()
+        adHocInputDeviceUID = nil
+        adHocSessionActive = false
         if outputPriorityEnabled { outputPriorityEnabled = false }
         if inputPriorityEnabled { inputPriorityEnabled = false }
         AudioInputDeviceManager.shared.setInputPriorityActive(false)
@@ -139,6 +153,8 @@ final class AudioPriorityService: ObservableObject {
         let defaults = UserDefaults.standard
         defaults.set(enabled, forKey: DefaultsKey.audioPriorityInputEnabled)
         inputPriorityEnabled = enabled
+        adHocInputDeviceUID = nil
+        adHocSessionActive = false
         AudioInputDeviceManager.shared.setInputPriorityActive(enabled)
         mergeAvailableDevicesIntoPriorityLists()
         updateDeviceNames()
@@ -177,6 +193,8 @@ final class AudioPriorityService: ObservableObject {
             defaults.set(sanitized, forKey: DefaultsKey.audioPriorityInputUIDs)
         }
         inputPriorityUIDs = sanitized
+        adHocInputDeviceUID = nil
+        adHocSessionActive = false
         updateDeviceNames()
         if inputPriorityEnabled {
             pendingInputPreferenceChange = true
@@ -427,10 +445,49 @@ final class AudioPriorityService: ObservableObject {
         AppVolumeMixer.shared.setPriorityOutputDeviceUID(target)
     }
 
+    private func observeCurrentInputDevice(_ currentUID: String?) {
+        guard started, inputPriorityEnabled, let currentUID else { return }
+        let availableUIDs = Set(AudioInputDeviceManager.shared.inputDevices.map(\.uid))
+        let topPriority = MixerRoutingSupport.firstAvailablePriorityDeviceUID(
+            orderedUIDs: inputPriorityUIDs,
+            availableUIDs: availableUIDs)
+        if currentUID == topPriority {
+            adHocInputDeviceUID = nil
+            adHocSessionActive = false
+        } else if isInputAvailable(currentUID) {
+            adHocInputDeviceUID = currentUID
+            adHocSessionActive = AudioInputDeviceManager.shared.isInputActive
+        }
+    }
+
+    private func observeInputActiveState(_ isActive: Bool) {
+        guard started, inputPriorityEnabled else { return }
+        if isActive {
+            if adHocInputDeviceUID != nil {
+                adHocSessionActive = true
+            }
+        } else {
+            // When the microphone session stops, fall back to first priority
+            if let _ = adHocInputDeviceUID, adHocSessionActive {
+                adHocInputDeviceUID = nil
+                adHocSessionActive = false
+                enforceInputPriority()
+            }
+        }
+    }
+
     private func enforceInputPriority() {
         let availableUIDs = Set(AudioInputDeviceManager.shared.inputDevices.map(\.uid))
         let currentUID = AudioInputDeviceManager.shared.currentInputDeviceUID
         if let currentUID, unplacedInputUIDs.contains(currentUID) { return }
+        if let adHoc = adHocInputDeviceUID {
+            if availableUIDs.contains(adHoc) {
+                return
+            } else {
+                adHocInputDeviceUID = nil
+                adHocSessionActive = false
+            }
+        }
         guard let target = MixerRoutingSupport.firstAvailablePriorityDeviceUID(
             orderedUIDs: inputPriorityUIDs,
             availableUIDs: availableUIDs) else { return }

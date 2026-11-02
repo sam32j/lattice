@@ -28,6 +28,7 @@ final class AudioInputDeviceManager: ObservableObject {
     @Published private(set) var inputVolume: Double?
     @Published private(set) var preferredUnavailable = false
     @Published private(set) var lastError: String?
+    @Published private(set) var isInputActive = false
 
     private var listenerInstalled = false
     /// Stored so stop() can remove the HAL listeners when the mixer leaves
@@ -35,6 +36,7 @@ final class AudioInputDeviceManager: ObservableObject {
     private var globalListeners: [AudioObjectPropertySelector] = []
     private var volumeDeviceID: AudioObjectID?
     private var volumeListenerAddresses: [AudioObjectPropertyAddress] = []
+    private var runningListenerAddress: AudioObjectPropertyAddress?
     private var volumeRefreshGeneration = 0
     private let volumeWriteLock = NSLock()
     private var volumeWriteLifetime = UUID()
@@ -115,6 +117,7 @@ final class AudioInputDeviceManager: ObservableObject {
         if preferredUnavailable { preferredUnavailable = false }
         if lastError != nil { lastError = nil }
         if inputVolume != nil { inputVolume = nil }
+        if isInputActive { isInputActive = false }
         inputPriorityIsActive = false
     }
 
@@ -162,6 +165,9 @@ final class AudioInputDeviceManager: ObservableObject {
         refresh.discardInFlight()
         halQueue.async { [weak self] in
             let status = Self.setDefaultInputDevice(device.audioObjectID)
+            if !MicMuteService.shared.isMuted {
+                Self.unmuteDeviceIfNeeded(device.audioObjectID)
+            }
             DispatchQueue.main.async {
                 guard let self, self.listenerInstalled else { return }
                 if status == noErr {
@@ -202,6 +208,9 @@ final class AudioInputDeviceManager: ObservableObject {
                       deviceUID as String == uid,
                       self.volumeWriteLock.withLock({ self.volumeWriteLifetime == lifetime }) else { return }
                 _ = Self.setInputVolume(Float32(clamped), for: device.audioObjectID)
+                if clamped > 0 && !MicMuteService.shared.isMuted {
+                    Self.unmuteDeviceIfNeeded(device.audioObjectID)
+                }
             }
             DispatchQueue.main.async {
                 guard self.volumeWriteLock.withLock({ self.volumeWriteLifetime == lifetime }) else { return }
@@ -231,6 +240,14 @@ final class AudioInputDeviceManager: ObservableObject {
         return noErr
     }
 
+    private static let runningListenerCallback: AudioObjectPropertyListenerProc = {
+        device, _, _, client in
+        guard let client else { return noErr }
+        let manager = Unmanaged<AudioInputDeviceManager>.fromOpaque(client).takeUnretainedValue()
+        DispatchQueue.main.async { manager.updateInputActiveState(for: device) }
+        return noErr
+    }
+
     /// Unretained is safe here and only here: this is a single instance that
     /// lives as long as the app.
     private var listenerClient: UnsafeMutableRawPointer {
@@ -253,6 +270,12 @@ final class AudioInputDeviceManager: ObservableObject {
     /// stream going. Isolated notifications refresh immediately; bursts fold
     /// into a single trailing refresh.
     private func scheduleListenerRefresh() {
+        if let current = Self.defaultInputDeviceUID(), !inputPriorityIsActive, !applyingPreferred, !preferredUnavailable {
+            if preferredInputDeviceUID != current && UserDefaults.standard.string(forKey: DefaultsKey.preferredInputDevice) != current {
+                UserDefaults.standard.set(current, forKey: DefaultsKey.preferredInputDevice)
+                preferredInputDeviceUID = current
+            }
+        }
         guard !refreshPending else { return }
         let now = CFAbsoluteTimeGetCurrent()
         let elapsed = now - lastListenerRefreshAt
@@ -451,6 +474,9 @@ final class AudioInputDeviceManager: ObservableObject {
             lastError = nil
         }
         appliedInputDeviceUID = device.uid
+        if !MicMuteService.shared.isMuted {
+            Self.unmuteDeviceIfNeeded(device.audioObjectID)
+        }
         if currentInputDeviceUID != device.uid {
             currentInputDeviceUID = device.uid
         }
@@ -505,6 +531,24 @@ final class AudioInputDeviceManager: ObservableObject {
                                           &nextDeviceID)
     }
 
+    static func unmuteDeviceIfNeeded(_ deviceID: AudioObjectID) {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyMute,
+            mScope: kAudioDevicePropertyScopeInput,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        guard AudioObjectHasProperty(deviceID, &address) else { return }
+        var isMuted: UInt32 = 0
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        if AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &isMuted) == noErr, isMuted != 0 {
+            var settable = DarwinBoolean(false)
+            if AudioObjectIsPropertySettable(deviceID, &address, &settable) == noErr, settable.boolValue {
+                var zero: UInt32 = 0
+                _ = AudioObjectSetPropertyData(deviceID, &address, 0, nil, size, &zero)
+            }
+        }
+    }
+
     private static let inputVolumeSelectors: [AudioObjectPropertySelector] = [
         kAudioHardwareServiceDeviceProperty_VirtualMainVolume,
         kAudioDevicePropertyVolumeScalar,
@@ -555,11 +599,42 @@ final class AudioInputDeviceManager: ObservableObject {
                                                  listenerClient) == noErr else { continue }
             volumeListenerAddresses.append(address)
         }
+        var runningAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        if AudioObjectAddPropertyListener(deviceID, &runningAddress, Self.runningListenerCallback, listenerClient) == noErr {
+            runningListenerAddress = runningAddress
+        }
+        updateInputActiveState(for: deviceID)
+    }
+
+    private func updateInputActiveState(for deviceID: AudioObjectID) {
+        guard volumeDeviceID == deviceID else { return }
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var isRunning: UInt32 = 0
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        let status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &isRunning)
+        let active = status == noErr && isRunning != 0
+        if isInputActive != active {
+            isInputActive = active
+        }
     }
 
     private func removeVolumeListeners() {
         volumeWriteLock.withLock { volumeWriteLifetime = UUID() }
         volumeRefreshGeneration &+= 1
+        if let runningAddress = runningListenerAddress, let deviceID = volumeDeviceID {
+            var addr = runningAddress
+            AudioObjectRemovePropertyListener(deviceID, &addr, Self.runningListenerCallback, listenerClient)
+            runningListenerAddress = nil
+        }
+        if isInputActive { isInputActive = false }
         guard let deviceID = volumeDeviceID else {
             volumeListenerAddresses.removeAll()
             return

@@ -4,8 +4,10 @@ import SwiftUI
 /// Shared microphone controls used by Audio Input and the live menu panel.
 struct AudioInputDeviceControls: View {
     var title: String? = nil
+    var levelTitle: String? = nil
     var sliderWidth: CGFloat = 140
     var showsUnavailableLabel = false
+    var showsIcons: Bool = true
     @Environment(\.notchPresentation) private var inNotch
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var inputManager = AudioInputDeviceManager.shared
@@ -16,23 +18,28 @@ struct AudioInputDeviceControls: View {
     @State private var lastResolvedAccent: NSColor?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: showsIcons ? 8 : 14) {
             HStack(spacing: 8) {
-                Label {
+                if showsIcons {
+                    Label {
+                        Text(title ?? l10n.s.mixerInputTitle)
+                            .font(.system(size: 11.5, weight: .medium))
+                    } icon: {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .frame(width: 16)
+                    }
+                    .foregroundStyle(.secondary)
+                } else {
                     Text(title ?? l10n.s.mixerInputTitle)
-                        .font(.system(size: 11.5, weight: .medium))
-                } icon: {
-                    Image(systemName: "mic.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .frame(width: 16)
+                        .font(.body)
                 }
-                .foregroundStyle(.secondary)
 
                 Spacer(minLength: 6)
 
                 if inputManager.inputDevices.isEmpty {
                     Text(l10n.s.mixerInputNoDevices)
-                        .font(.system(size: 11.5))
+                        .font(showsIcons ? .system(size: 11.5) : .body)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 } else {
@@ -54,7 +61,7 @@ struct AudioInputDeviceControls: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.menu)
-                    .controlSize(.small)
+                    .controlSize(showsIcons ? .small : .regular)
                     .frame(width: 164)
                     .disabled(inputManager.inputDevices.isEmpty)
                     .help(l10n.s.mixerInputTooltip)
@@ -64,28 +71,28 @@ struct AudioInputDeviceControls: View {
             let hasVolume = inputManager.inputVolume != nil
             let volume = inputManager.inputVolume ?? 1.0
             HStack(spacing: 8) {
-                Image(systemName: micMute.isMuted || (hasVolume && volume <= 0.001) ? "mic.slash.fill" : "mic.fill")
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 16)
+                if showsIcons {
+                    Image(systemName: micMute.isMuted || (hasVolume && volume <= 0.001) ? "mic.slash.fill" : "mic.fill")
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16)
+                }
 
-                Text(l10n.s.mixerInputLevelLabel)
-                    .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(.secondary)
+                Text(levelTitle ?? l10n.s.mixerInputLevelLabel)
+                    .font(showsIcons ? .system(size: 11.5, weight: .medium) : .body)
+                    .foregroundStyle(showsIcons ? .secondary : .primary)
                 Spacer(minLength: 12)
-                SettingsValueSlider(title: l10n.s.mixerInputLevelLabel,
+                SettingsValueSlider(title: levelTitle ?? l10n.s.mixerInputLevelLabel,
                                     value: inputVolumeBinding, range: 0...1, step: 0.01,
                                     readout: "\(Int((volume * 100).rounded()))%",
                                     usesSystemAppearance: true)
                     .frame(width: sliderWidth)
                     .disabled(!hasVolume)
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, showsIcons ? 4 : 0)
             .disabled(micMute.isMuted)
 
-            if !inputManager.inputDevices.isEmpty, !audioPriority.inputPriorityEnabled, inputManager.preferredUnavailable {
-                inputMessage(l10n.s.mixerInputFallback, systemImage: "mic.badge.xmark")
-            } else if let lastError = inputManager.lastError {
+            if let lastError = inputManager.lastError {
                 inputMessage(String(format: l10n.s.mixerInputErrorFormat, lastError),
                              systemImage: "exclamationmark.triangle")
             }
