@@ -11,13 +11,14 @@ import UniformTypeIdentifiers
 enum SettingsBackup {
     /// Shows the save panel and writes the file. nil = user cancelled.
     @discardableResult
-    static func runExportPanel() -> Bool? {
+    static func runExportPanel(over parent: NSWindow? = nil) -> Bool? {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "Lattice Settings.plist"
         panel.allowedContentTypes = [.propertyList]
         panel.canCreateDirectories = true
         NSApp.activate(ignoringOtherApps: true)
-        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        let response = PermissionDialogPresentation.run(panel, over: parent)
+        guard response == .OK, let url = panel.url else { return nil }
         ScratchpadService.shared.prepareForSettingsBackup()
         let defaults = UserDefaults.standard
         // object(forKey:) sees through to registered defaults, so the file is
@@ -38,13 +39,14 @@ enum SettingsBackup {
     }
 
     /// Shows the open panel; nil = user cancelled.
-    static func runImportPanel() -> URL? {
+    static func runImportPanel(over parent: NSWindow? = nil) -> URL? {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.propertyList, .xml]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         NSApp.activate(ignoringOtherApps: true)
-        guard panel.runModal() == .OK else { return nil }
+        let response = PermissionDialogPresentation.run(panel, over: parent)
+        guard response == .OK else { return nil }
         return panel.url
     }
 

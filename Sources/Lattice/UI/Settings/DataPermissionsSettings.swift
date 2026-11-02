@@ -88,7 +88,8 @@ struct DataPermissionsSettings: View {
                         descriptionIsError: importFailed, actionTitle: backup.compactImport(l10n.language)) {
                             exported = nil
                             importFailed = false
-                            guard let url = SettingsBackup.runImportPanel() else { return }
+                            let parent = dialogWindow.window ?? NSApp.mainWindow
+                            guard let url = SettingsBackup.runImportPanel(over: parent) else { return }
                             if let settings = SettingsBackup.readSettings(at: url) {
                                 pendingImport = settings
                                 showImportConfirm = true
@@ -99,7 +100,8 @@ struct DataPermissionsSettings: View {
                         description: exportDescription, descriptionIsError: exported == false,
                         actionTitle: backup.compactExport(l10n.language)) {
                             importFailed = false
-                            exported = SettingsBackup.runExportPanel()
+                            let parent = dialogWindow.window ?? NSApp.mainWindow
+                            exported = SettingsBackup.runExportPanel(over: parent)
                         }
                 }
                 DataSettingsSection(title: FeatureStrings.hub(l10n.language).tabPermissions) {

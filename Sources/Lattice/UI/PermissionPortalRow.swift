@@ -88,8 +88,7 @@ struct PermissionPortalRow: View {
         .popover(isPresented: $showsDetails, arrowEdge: .leading) {
             PermissionDetailsSheet(title: title, explanation: permission.explainer(hub),
                 features: activeFeatures.map { ($0.hubTitle(l10n.s, hub: hub), $0.symbolName) },
-                isUnused: status == .granted && activeFeatures.isEmpty, hub: hub,
-                onOpenSystemSettings: openSystemSettings)
+                isUnused: status == .granted && activeFeatures.isEmpty, hub: hub)
         }
     }
 

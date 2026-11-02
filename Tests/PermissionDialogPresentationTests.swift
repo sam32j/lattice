@@ -18,13 +18,13 @@ enum PermissionDialogPresentationTests {
             suite.expect((parent.childWindows ?? []).isEmpty,
                          "no backdrop dimming child window is attached to the parent")
             suite.expect(abs(alert.window.frame.midX - parent.frame.midX) < 1
-                         && abs(alert.window.frame.midY - parent.frame.midY) < 1,
-                         "native permission dialogs are centered over their owning Settings window")
+                         && abs(alert.window.frame.maxY - (parent.frame.maxY - 30)) < 1,
+                         "native permission dialogs are positioned in the upper part of their owning Settings window")
             alert.window.setFrameOrigin(NSPoint(x: 0, y: 0))
             NotificationCenter.default.post(name: NSWindow.didBecomeKeyNotification, object: alert.window)
             suite.expect(abs(alert.window.frame.midX - parent.frame.midX) < 1
-                         && abs(alert.window.frame.midY - parent.frame.midY) < 1,
-                         "native modal activation cannot move the dialog away from the requested center")
+                         && abs(alert.window.frame.maxY - (parent.frame.maxY - 30)) < 1,
+                         "native modal activation cannot move the dialog away from the requested placement")
             return .alertFirstButtonReturn
         }
         suite.expect(result == .alertFirstButtonReturn && modals == 1,
@@ -39,6 +39,13 @@ enum PermissionDialogPresentationTests {
         let fallback = PermissionDialogPresentation.run(NSAlert(), over: nil) { .alertSecondButtonReturn }
         suite.expect(fallback == .alertSecondButtonReturn,
                      "presentation without an available owner still preserves Cancel")
+        let openPanel = NSOpenPanel()
+        _ = PermissionDialogPresentation.run(openPanel, over: parent) {
+            suite.expect(abs(openPanel.frame.midX - parent.frame.midX) < 1
+                         && abs(openPanel.frame.maxY - (parent.frame.maxY - 30)) < 1,
+                         "file panels are positioned in the upper part of the parent window")
+            return .OK
+        }
         let visibleParent = NSWindow(contentRect: NSRect(x: 180, y: 240, width: 800, height: 600),
                                      styleMask: [.titled], backing: .buffered, defer: false)
         visibleParent.orderFront(nil)
