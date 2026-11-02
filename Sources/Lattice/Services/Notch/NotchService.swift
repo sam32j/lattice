@@ -54,6 +54,16 @@ struct NotchNotice: Equatable {
         // An empty title leaves the mark alone, without the space after it.
         let mark = fitted(leading > 0 ? leading + 18 + 8 : 18)
         guard level == nil else { return NotchNoticeWings(leading: mark, trailing: mark) }
+        if event == .microphone {
+            // Keep fixed wings accommodating both "Unmuted" and "Muted" so the
+            // island width, placement, and icon do not shift when toggling.
+            let text = L10n.shared.s
+            let mutedWidth = (text.micMutedHUD as NSString).size(withAttributes: [.font: font]).width
+            let unmutedWidth = (text.micUnmutedHUD as NSString).size(withAttributes: [.font: font]).width
+            let detailWidth = (detail as NSString).size(withAttributes: [.font: font]).width
+            let maxTextWidth = max(mutedWidth, unmutedWidth, detailWidth)
+            return NotchNoticeWings(leading: mark, trailing: fitted(maxTextWidth))
+        }
         return NotchNoticeWings(leading: mark, trailing: fitted((detail as NSString).size(withAttributes: [.font: font]).width))
     }
 
@@ -2127,6 +2137,15 @@ final class NotchService: ObservableObject {
         deferredCapturePresentation.restore()
     }
 
+    private func missionControlDidConceal() {
+        trackWork?.cancel()
+        trackWork = nil
+        releaseTrackHold()
+        if notice != nil {
+            dismissNotice()
+        }
+    }
+
     private func missionControlDidRestore() {
         // Read the landed Space before choosing island vs floating fallback.
         fullscreenEnvironmentDidChange()
@@ -2318,6 +2337,7 @@ final class NotchService: ObservableObject {
             // The open island already shows the song, or holds something else
             // the person is doing.
             guard !self.expanded, !self.peeking, !self.dragPlaceholder,
+                  self.windowHost?.isConcealedForMissionControl != true,
                   let playback = NotchMusicService.shared.playback, playback.isPlaying,
                   let title = playback.track.title, !title.isEmpty else { return }
             self.show(NotchNotice(event: .track, title: title, detail: playback.track.artist ?? "",
@@ -3381,6 +3401,7 @@ final class NotchService: ObservableObject {
                                         background: { AnyView(NotchWindowBackground(presentation: $0)) },
                                         quickAccess: { AnyView(NotchQuickAccessView(service: self, motion: $0, backdrop: $1)) })
             windowHost?.missionControlDidRestore = { [weak self] in self?.missionControlDidRestore() }
+            windowHost?.missionControlDidConceal = { [weak self] in self?.missionControlDidConceal() }
             windowHost?.setHoverHandler { [weak self] in self?.hover($0) }
             panel?.title = FeatureStrings.notch(L10n.shared.language).title
             syncGestures()
