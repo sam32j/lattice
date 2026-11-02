@@ -37,7 +37,7 @@ enum PermissionRevocationPolicy {
                 let keys: [String]
                 switch feature {
                 case .textSnippets: keys = [DefaultsKey.textSnippetsEnabled]
-                case .windowLayout: keys = [DefaultsKey.windowLayoutShortcutsEnabled, DefaultsKey.windowDirectionalEnabled]
+                case .windowLayout: keys = [DefaultsKey.windowLayoutShortcutsEnabled, DefaultsKey.windowDirectionalEnabled, DefaultsKey.windowGestureEnabled]
                 default: keys = feature.enabledKeys.isEmpty && feature.isToggleOwned
                     ? [feature.availabilityKey] : feature.enabledKeys
                 }
