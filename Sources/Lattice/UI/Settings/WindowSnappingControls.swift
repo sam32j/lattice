@@ -6,7 +6,7 @@ extension WindowLayoutSettings {
             Divider()
             VStack(alignment: .leading, spacing: 13) {
                 SettingsRow(symbol: "macwindow.and.cursorarrow", title: text.edgeSnapSection, caption: text.edgeSnapCaption) {
-                    PermissionGatedToggle("", isOn: $edgeSnapEnabled)
+                    PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
                         .labelsHidden()
                         .toggleStyle(.switch)
                         .onChange(of: edgeSnapEnabled) { _, _ in

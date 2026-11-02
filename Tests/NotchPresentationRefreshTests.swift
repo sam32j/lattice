@@ -100,6 +100,7 @@ enum NotchPresentationRefreshContract {
         var departsContent = false
         func finishDeparture() { departsContent = false }
         var concealedForMissionControl = false
+        var missionControlConcealmentHandled = false
         var isConcealedForMissionControl: Bool { concealedForMissionControl }
         var missionControlDidRestore: (() -> Void)?
         var missionControlDidConceal: (() -> Void)?

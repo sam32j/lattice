@@ -79,6 +79,7 @@ extension QuitProtectionService {
                 cancelPending()
                 return nil
             } else if pending?.mode == .hold {
+                cancelPending()
                 return Unmanaged.passUnretained(event)
             }
         }

@@ -36,6 +36,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
     private var frameProbe: NotchFrameProbe?
     private var missionControlTimer: Timer?
     private var concealedForMissionControl = false
+    private var missionControlConcealmentHandled = false
     private var missionControlAlpha: CGFloat = 1
     private var missionControlMouseEvents = false
     private var desktopReadings = 0
@@ -636,6 +637,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             desktopReadings = 0
             guard !concealedForMissionControl else { panel.ignoresMouseEvents = true; return }
             concealedForMissionControl = true
+            missionControlConcealmentHandled = false
             recordMissionControlRequest(size: hidesWhenSettled ? nil : targetSize, geometry: currentGeometry, usesGlass: targetUsesGlass)
             // Reopened during the fade back in, the panel is still on its way
             // to the alpha kept from the first entry.
@@ -645,11 +647,11 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             if panel.isVisible {
                 fadeMissionControl(to: 0) { [weak self] in
                     guard let self, self.concealedForMissionControl else { return }
-                    self.missionControlDidConceal?()
+                    self.completeMissionControlConcealment()
                 }
             } else {
                 panel.alphaValue = 0
-                missionControlDidConceal?()
+                completeMissionControlConcealment()
                 syncMissionControlMonitoring()
             }
         } else if concealedForMissionControl {
@@ -671,7 +673,7 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         panel.ignoresMouseEvents = hidesWhenSettled ? true : missionControlMouseEvents
         // If the fade completion hasn't executed yet because Mission Control was exited quickly,
         // run notice dismissal now so restoration restores the compact live activity.
-        missionControlDidConceal?()
+        completeMissionControlConcealment()
         let restoreSize = missionControlRestorationSize
         let restoreGeometry = missionControlRestorationGeometry ?? currentGeometry
         let usesGlass = missionControlRestorationUsesGlass
@@ -695,6 +697,12 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             syncMissionControlMonitoring()
         }
         missionControlDidRestore?()
+    }
+
+    private func completeMissionControlConcealment() {
+        guard !missionControlConcealmentHandled else { return }
+        missionControlConcealmentHandled = true
+        missionControlDidConceal?()
     }
 
     private func fadeMissionControl(to alpha: CGFloat, completion: (() -> Void)? = nil) {
@@ -897,11 +905,11 @@ private final class NotchFrameProbe {
     }
 
     /// On macOS 27 Mission Control and App Exposé cover the display with a
-    /// WindowManager window at layer 19; Show Desktop uses layer 18 and keeps
-    /// the island, and its own transition would read as animated. Earlier
-    /// systems had Dock's overview window at layer 18. This is only a reason
-    /// to run the frame probe, never a visibility decision by itself, and the
-    /// size check leaves Stage Manager's strip out.
+    /// WindowManager's full-screen layer-19 overview and the older Dock
+    /// layer-18 heuristic trigger concealment, alongside the frame probe.
+    /// The WindowManager size check excludes Stage Manager's strip and its
+    /// layer-18 Show Desktop window. Dock-owned layer-18 windows retain the
+    /// existing heuristic; their Show Desktop behavior needs OS verification.
     static func overviewIsVisible(on screen: CGRect) -> Bool {
         guard let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID)
                 as? [[String: Any]] else { return false }

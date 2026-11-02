@@ -15,7 +15,11 @@ enum NotchMissionControlRestorationTests {
             return host
         }
         let untouched = concealed()
+        var concealments = 0
+        untouched.missionControlDidConceal = { concealments += 1 }
+        untouched.completeMissionControlConcealment()
         untouched.restoreFromMissionControl()
+        suite.expect(concealments == 1, "leaving Mission Control never dismisses a notice a second time")
         suite.expect(untouched.targetSize == original && untouched.usesGlass && untouched.panel.isVisible,
                      "Mission Control restores the original requested surface when nothing changed")
         let changed = concealed()

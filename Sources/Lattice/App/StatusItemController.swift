@@ -872,7 +872,7 @@ final class StatusItemController {
                 button.toolTip = L10n.shared.s.micUnmuteName
             }
         } else {
-            removeMicMuteStatusItem()
+            micMuteStatusItem?.isVisible = false
         }
     }
 

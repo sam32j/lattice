@@ -102,6 +102,12 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         }
     }
 
+    static func hoverTarget(at point: CGPoint, windows: [NSWindow]) -> ScreenshotPinWindow? {
+        windows.lazy.compactMap { $0 as? ScreenshotPinWindow }.first {
+            !$0.isHiddenForDrag && !$0.isClosed && !$0.ignoresMouseEvents && $0.frame.contains(point)
+        }
+    }
+
     func resetGestureTracking() { surface.resetGestureTracking() }
 
     func handleGestureEvent(_ event: NSEvent, screenLocation: CGPoint = NSEvent.mouseLocation) {
@@ -148,9 +154,6 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
             isHovered = hovered
             updateImageOpacity()
             chrome.setControlsVisible(hovered)
-        }
-        if hovered && !ignoresMouseEvents && !isKeyWindow {
-            makeKey()
         }
     }
 

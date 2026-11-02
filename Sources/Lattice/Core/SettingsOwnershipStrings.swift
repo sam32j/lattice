@@ -3,6 +3,25 @@
 import Foundation
 
 enum SettingsOwnershipStrings {
+    static func audioInput(_ language: AppLanguage) -> (level: String, muted: String, unmuted: String) {
+        switch language {
+        case .enUS: return ("Input level", "Muted", "Unmuted")
+        case .ptBR: return ("Nível de entrada", "Silenciado", "Ativo")
+        case .es: return ("Nivel de entrada", "Silenciado", "Sin silenciar")
+        case .de: return ("Eingangspegel", "Stumm", "Nicht stumm")
+        case .fr: return ("Niveau d’entrée", "En sourdine", "Micro actif")
+        case .it: return ("Livello di ingresso", "Disattivato", "Attivo")
+        case .ja: return ("入力レベル", "ミュート中", "ミュート解除")
+        case .ko: return ("입력 음량", "음소거됨", "음소거 해제됨")
+        case .zhHans: return ("输入音量", "已静音", "未静音")
+        case .zhTW, .zhHK: return ("輸入音量", "已靜音", "未靜音")
+        case .ru: return ("Уровень входа", "Звук выключен", "Звук включён")
+        case .uk: return ("Рівень входу", "Звук вимкнено", "Звук увімкнено")
+        case .tr: return ("Giriş düzeyi", "Sessiz", "Ses açık")
+        case .sk: return ("Vstupná úroveň", "Stlmené", "Nestlmené")
+        }
+    }
+
     static func enabled(_ name: String, _ language: AppLanguage) -> String {
         switch language {
         case .enUS: return "\(name) enabled"

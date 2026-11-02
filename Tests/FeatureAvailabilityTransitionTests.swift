@@ -42,6 +42,17 @@ enum FeatureAvailabilityTransitionTests {
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain); State.bindings = [:] }
         let service = Runtime(defaults)
+        defaults.set(false, forKey: AppFeature.windowLayout.availabilityKey)
+        defaults.set(true, forKey: DefaultsKey.windowGestureEnabled)
+        var gestureSyncs = 0
+        State.bindings[.windowLayout] = { gestureSyncs += 1 }
+        service.syncAtLaunch()
+        _ = PermissionRevocationPolicy.apply([.accessibility: false], in: defaults)
+        service.sync([.windowLayout])
+        suite.expect(gestureSyncs == 2 && !defaults.bool(forKey: DefaultsKey.windowGestureEnabled),
+                     "gesture-only launch remains loaded so permission revocation reaches tap teardown")
+        State.bindings.removeValue(forKey: .windowLayout)
+        service.loadedThisSession.remove(.windowLayout)
         defaults.set(false, forKey: DefaultsKey.brightnessControlEnabled)
         defaults.set(true, forKey: DefaultsKey.keyboardBrightnessShortcutsEnabled)
         var keyboardOnlySyncs = 0

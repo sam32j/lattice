@@ -270,12 +270,6 @@ final class AudioInputDeviceManager: ObservableObject {
     /// stream going. Isolated notifications refresh immediately; bursts fold
     /// into a single trailing refresh.
     private func scheduleListenerRefresh() {
-        if let current = Self.defaultInputDeviceUID(), !inputPriorityIsActive, !applyingPreferred, !preferredUnavailable {
-            if preferredInputDeviceUID != current && UserDefaults.standard.string(forKey: DefaultsKey.preferredInputDevice) != current {
-                UserDefaults.standard.set(current, forKey: DefaultsKey.preferredInputDevice)
-                preferredInputDeviceUID = current
-            }
-        }
         guard !refreshPending else { return }
         let now = CFAbsoluteTimeGetCurrent()
         let elapsed = now - lastListenerRefreshAt
@@ -585,8 +579,11 @@ final class AudioInputDeviceManager: ObservableObject {
 
     private func updateVolumeListeners(for deviceID: AudioObjectID?) {
         guard volumeDeviceID != deviceID else { return }
-        removeVolumeListeners()
-        guard let deviceID else { return }
+        removeVolumeListeners(resetActivity: false)
+        guard let deviceID else {
+            if isInputActive { isInputActive = false }
+            return
+        }
 
         // The active device is also needed for explicit read-back when a
         // driver cannot install notifications.
@@ -626,7 +623,7 @@ final class AudioInputDeviceManager: ObservableObject {
         }
     }
 
-    private func removeVolumeListeners() {
+    private func removeVolumeListeners(resetActivity: Bool = true) {
         volumeWriteLock.withLock { volumeWriteLifetime = UUID() }
         volumeRefreshGeneration &+= 1
         if let runningAddress = runningListenerAddress, let deviceID = volumeDeviceID {
@@ -634,7 +631,7 @@ final class AudioInputDeviceManager: ObservableObject {
             AudioObjectRemovePropertyListener(deviceID, &addr, Self.runningListenerCallback, listenerClient)
             runningListenerAddress = nil
         }
-        if isInputActive { isInputActive = false }
+        if resetActivity, isInputActive { isInputActive = false }
         guard let deviceID = volumeDeviceID else {
             volumeListenerAddresses.removeAll()
             return
