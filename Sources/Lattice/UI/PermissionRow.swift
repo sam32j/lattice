@@ -58,9 +58,9 @@ struct PermissionRow: View {
                     Button(l10n.s.permissionRequest) {
                         switch kind {
                         case .accessibility:
-                            permissions.requestAccessibility()
+                            permissions.requestAccessibility(offerSettingsRecovery: false)
                         case .screenRecording:
-                            permissions.requestScreenRecording()
+                            permissions.requestScreenRecording(offerSettingsRecovery: false)
                         case .microphone:
                             permissions.requestMicrophone()
                         }

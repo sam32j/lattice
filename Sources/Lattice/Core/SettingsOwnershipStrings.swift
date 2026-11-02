@@ -3,6 +3,25 @@
 import Foundation
 
 enum SettingsOwnershipStrings {
+    static func enabled(_ name: String, _ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "\(name) enabled"
+        case .ptBR: return "\(name) ativado"
+        case .tr: return "\(name) etkinleştirildi"
+        case .ru: return "\(name) включено"
+        case .es: return "\(name) activado"
+        case .sk: return "\(name) zapnuté"
+        case .de: return "\(name) aktiviert"
+        case .fr: return "\(name) activé"
+        case .it: return "\(name) attivato"
+        case .ja: return "\(name)を有効にしました"
+        case .ko: return "\(name) 활성화됨"
+        case .zhHans: return "已启用\(name)"
+        case .zhTW, .zhHK: return "已啟用\(name)"
+        case .uk: return "\(name) увімкнено"
+        }
+    }
+
     static func enable(_ name: String, _ language: AppLanguage) -> String {
         switch language {
         case .enUS: return "Enable \(name)"

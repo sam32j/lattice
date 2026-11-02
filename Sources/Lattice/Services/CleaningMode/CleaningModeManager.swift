@@ -451,7 +451,6 @@ final class CleaningModeManager: ObservableObject {
         NSApp.activate(ignoringOtherApps: true)
         if alert.runModal() == .alertFirstButtonReturn {
             Permissions.shared.requestAccessibility()
-            Permissions.shared.openAccessibilitySettings()
         }
     }
 }

@@ -15,7 +15,6 @@ extension KeyboardSettings {
                             features.finishAvailabilityChange()
                             guard value, !permissions.accessibility else { return }
                             permissions.requestAccessibility()
-                            permissions.openAccessibilitySettings()
                         }
                 }
 

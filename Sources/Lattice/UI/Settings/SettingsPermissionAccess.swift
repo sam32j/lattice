@@ -8,6 +8,39 @@ import EventKit
 
 /// Live, synchronous verification separated from the asynchronously published UI cache.
 enum SettingsPermissionAccess {
+    private static var attemptedAccessibility = false
+
+    static func requestWithRecovery(_ permission: SettingsPermission,
+                                    offerRecovery: @escaping (SettingsPermission) -> Void = showRecovery) {
+        if permission == .accessibility {
+            // AX prompting is asynchronous: its immediate false result is
+            // still pending consent. Only a later explicit retry offers Settings.
+            if attemptedAccessibility, !isGranted(permission) {
+                offerRecovery(permission)
+                return
+            }
+            attemptedAccessibility = true
+        }
+        request(permission) { result in
+            if permission != .accessibility, result == .needsSettings || result == .denied {
+                offerRecovery(permission)
+            }
+        }
+    }
+
+    private static func showRecovery(_ permission: SettingsPermission) {
+        let strings = L10n.shared.s
+        let alert = NSAlert()
+        alert.messageText = strings.permissionRequired
+        alert.informativeText = (permission == .accessibility
+            ? strings.permissionAccessibility : strings.permissionScreenRecording) + "\n\n" + strings.permissionRestartNote
+        alert.addButton(withTitle: strings.permissionOpenSettings)
+        alert.addButton(withTitle: strings.mediaCancel)
+        guard PermissionDialogPresentation.run(alert, over: NSApp.mainWindow) == .alertFirstButtonReturn else { return }
+        if permission == .accessibility { Permissions.shared.openAccessibilitySettings() }
+        else if permission == .screenRecording { Permissions.shared.openScreenRecordingSettings() }
+    }
+
     static func isGranted(_ permission: SettingsPermission) -> Bool {
         PermissionPreflight.isGranted(permission)
     }
@@ -17,13 +50,13 @@ enum SettingsPermissionAccess {
         let permissions = Permissions.shared
         switch permission {
         case .accessibility:
-            permissions.requestAccessibility()
+            permissions.requestAccessibility(offerSettingsRecovery: false)
             if isGranted(permission) { completion(.granted) }
             else {
                 completion(.needsSettings)
             }
         case .screenRecording:
-            permissions.requestScreenRecording()
+            permissions.requestScreenRecording(offerSettingsRecovery: false)
             if isGranted(permission) { completion(.granted) }
             else {
                 completion(.needsSettings)

@@ -12,6 +12,7 @@ enum PermissionPortalDispatchTests {
             set { requestingMicrophone = newValue }
         }
         var attemptedManualRequest = false, requestInFlight = false
+        var status = PermissionRowStatus.unknown
         var audioRequest: FeatureWorkCancellation?
         var finished = 0
         var onRequestFinished: () -> Void = { events.append("finished") }
@@ -26,8 +27,8 @@ enum PermissionPortalDispatchTests {
     final class Permissions {
         static let shared = Permissions()
         enum AutomationTarget: String { case finder, terminal, systemEvents }
-        func requestAccessibility() { events.append("native:accessibility") }
-        func requestScreenRecording() { events.append("native:screenRecording") }
+        func requestAccessibility(offerSettingsRecovery: Bool = true) { events.append("native:accessibility") }
+        func requestScreenRecording(offerSettingsRecovery: Bool = true) { events.append("native:screenRecording") }
         func openAccessibilitySettings() { events.append("accessibility-settings") }
         func openScreenRecordingSettings() { events.append("screen-settings") }
         func openFilesAndFoldersSettings() { events.append("settings") }
@@ -39,6 +40,7 @@ enum PermissionPortalDispatchTests {
         func openAppManagementSettings() { events.append("settings") }
         func openAudioCaptureSettings() { events.append("audio-settings") }
         func requestFullDiskAccess() { events.append("disk") }
+        func openFullDiskAccessSettings() { events.append("disk-settings") }
         func requestCalendar() { events.append("calendar") }
         func refresh() { events.append("refresh") }
         func requestMicrophone(completion: @escaping (Bool) -> Void) {
@@ -70,7 +72,9 @@ enum PermissionPortalDispatchTests {
     }
     enum NativeRequestAdapter {
         static var granted = false
+        static var attemptedAccessibility = false
         static func isGranted(_ permission: SettingsPermission) -> Bool { granted }
+        static func showRecovery(_ permission: SettingsPermission) { events.append("offer:\(permission)") }
     }
     static func run(_ suite: TestSuite) {
         for (permission, expected) in [(SettingsPermission.accessibility, "native:accessibility"),
@@ -86,6 +90,22 @@ enum PermissionPortalDispatchTests {
             NativeRequestAdapter.request(permission) { result = $0 }
             suite.expect(events == [expected] && result == .granted,
                          "native request for \(permission) preserves verified successful activation")
+            events = []
+            NativeRequestAdapter.granted = false
+            NativeRequestAdapter.attemptedAccessibility = false
+            NativeRequestAdapter.requestWithRecovery(permission)
+            suite.expect(events == (permission == .accessibility ? [expected] : [expected, "offer:\(permission)"]),
+                         "asynchronous Accessibility consent is not mistaken for an immediate denial")
+            if permission == .accessibility {
+                events = []
+                NativeRequestAdapter.requestWithRecovery(permission)
+                suite.expect(events == ["offer:accessibility"],
+                             "an explicit Accessibility retry offers Settings without another native prompt")
+            }
+            events = []
+            NativeRequestAdapter.granted = true
+            NativeRequestAdapter.requestWithRecovery(permission)
+            suite.expect(events == [expected], "successful direct requests offer no unnecessary recovery")
         }
         for (permission, expected) in [
             (AppPermission.camera, "native:camera"), (.bluetooth, "native:bluetooth"),
@@ -117,5 +137,10 @@ enum PermissionPortalDispatchTests {
             Row(permission).request()
             suite.expect(events == [expected], "existing \(permission) request entry point stays available")
         }
+        events = []
+        let grantedDisk = Row(.fullDiskAccess)
+        grantedDisk.status = .granted
+        grantedDisk.openSystemSettings()
+        suite.expect(events == ["disk-settings"], "granted Full Disk Access opens Settings without probing protected files")
     }
 }

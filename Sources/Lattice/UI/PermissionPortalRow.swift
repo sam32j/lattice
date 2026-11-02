@@ -140,7 +140,9 @@ struct PermissionPortalRow: View {
         switch permission {
         case .accessibility: Permissions.shared.openAccessibilitySettings()
         case .screenRecording: Permissions.shared.openScreenRecordingSettings()
-        case .fullDiskAccess: Permissions.shared.requestFullDiskAccess()
+        case .fullDiskAccess:
+            if status == .granted { Permissions.shared.openFullDiskAccessSettings() }
+            else { Permissions.shared.requestFullDiskAccess() }
         case .filesAndFolders: Permissions.shared.openFilesAndFoldersSettings()
         case .notifications: Permissions.shared.openNotificationSettings()
         case .automationFinder, .automationTerminal, .automationSystemEvents, .automationPlayback: Permissions.shared.openAutomationSettings()
