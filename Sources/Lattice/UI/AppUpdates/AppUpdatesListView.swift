@@ -24,6 +24,7 @@ struct AppUpdatesListView: View {
     @State private var showingALS = false
     @State private var showingAppPicker = false
     @State private var showOperationDetails = false
+    @State private var skeletonPulse = false
     var compact = false
 
     private var currentFrequency: AppUpdatesSupport.CheckFrequency {
@@ -100,6 +101,9 @@ struct AppUpdatesListView: View {
     // MARK: - Status text & detail
 
     private var statusHeadline: String {
+        if allSourcesOff {
+            return "No update sources selected"
+        }
         if !AppFeature.appUpdates.isAvailable {
             return "Update checks are off"
         }
@@ -122,6 +126,9 @@ struct AppUpdatesListView: View {
     }
 
     private var statusDetail: String {
+        if allSourcesOff {
+            return "Turn on at least one source to check for updates"
+        }
         if !AppFeature.appUpdates.isAvailable {
             return "Turn on update checks to scan automatically"
         }
@@ -164,19 +171,15 @@ struct AppUpdatesListView: View {
 
                 preferencesSection
 
-                if !updates.items.isEmpty {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Available Updates")
-                            .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text("\(updates.items.count) \(updates.items.count == 1 ? "app" : "apps")")
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 2)
-                    .padding(.top, 4)
+                availableUpdatesHeader
 
+                if allSourcesOff {
+                    noSourcesCard
+                        .transition(reduceMotion ? .identity : .opacity)
+                } else if updates.isChecking && updates.items.isEmpty {
+                    skeletonSection
+                        .transition(reduceMotion ? .identity : .opacity)
+                } else if !updates.items.isEmpty {
                     LazyVStack(spacing: 8) {
                         ForEach(updates.items) { item in
                             row(item)
@@ -184,11 +187,11 @@ struct AppUpdatesListView: View {
                         }
                     }
                     .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: updates.items)
-                } else if !updates.isChecking {
+                } else {
                     if let error = updates.lastError, !error.isEmpty {
                         errorCard
                             .transition(reduceMotion ? .identity : .opacity)
-                    } else if updates.hasCheckedThisSession {
+                    } else {
                         caughtUpCard
                             .transition(reduceMotion ? .identity : .opacity)
                     }
@@ -215,6 +218,81 @@ struct AppUpdatesListView: View {
         .onChange(of: statusHeadline) { _, newHeadline in
             AccessibilityNotification.Announcement("\(newHeadline), \(statusDetail)").post()
         }
+    }
+
+    private var availableUpdatesHeader: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text("Available Updates")
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Spacer()
+            if !updates.items.isEmpty {
+                Text("\(updates.items.count) \(updates.items.count == 1 ? "app" : "apps")")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+            } else if updates.isChecking {
+                Text("Checking…")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+            } else if !allSourcesOff && updates.hasCheckedThisSession {
+                Text("0 apps")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 2)
+        .padding(.top, 4)
+    }
+
+    private var skeletonSection: some View {
+        VStack(spacing: 8) {
+            skeletonRow(titleWidth: 130, subtitleWidth: 90)
+            skeletonRow(titleWidth: 100, subtitleWidth: 70)
+            skeletonRow(titleWidth: 150, subtitleWidth: 110)
+        }
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                skeletonPulse = true
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Checking for updates…")
+    }
+
+    private func skeletonRow(titleWidth: CGFloat, subtitleWidth: CGFloat) -> some View {
+        let shimmerOpacity = skeletonPulse ? 0.08 : 0.04
+        return HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(Color.primary.opacity(shimmerOpacity))
+                .frame(width: 36, height: 36)
+
+            VStack(alignment: .leading, spacing: 6) {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(Color.primary.opacity(shimmerOpacity))
+                    .frame(width: titleWidth, height: 12)
+
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(Color.primary.opacity(shimmerOpacity * 0.75))
+                    .frame(width: subtitleWidth, height: 10)
+            }
+
+            Spacer(minLength: 8)
+
+            Capsule()
+                .fill(Color.primary.opacity(shimmerOpacity))
+                .frame(width: 72, height: 24)
+
+            Circle()
+                .fill(Color.primary.opacity(shimmerOpacity * 0.7))
+                .frame(width: 14, height: 14)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(0.025))
+        )
     }
 
     // Status Card
@@ -253,10 +331,10 @@ struct AppUpdatesListView: View {
                             .font(.system(size: 12, weight: .medium))
                     }
                 }
-                .foregroundStyle(updates.isChecking || !AppFeature.appUpdates.isAvailable ? Color.secondary.opacity(0.6) : Color.primary.opacity(0.85))
+                .foregroundStyle(updates.isChecking || !AppFeature.appUpdates.isAvailable || allSourcesOff ? Color.secondary.opacity(0.6) : Color.primary.opacity(0.85))
             }
             .buttonStyle(.plain)
-            .disabled(updates.isChecking || !AppFeature.appUpdates.isAvailable)
+            .disabled(updates.isChecking || !AppFeature.appUpdates.isAvailable || allSourcesOff)
             .accessibilityLabel(updates.isChecking ? "Checking for updates" : "Check now")
         }
         .padding(.horizontal, 16)
@@ -362,14 +440,6 @@ struct AppUpdatesListView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-
-                if allSourcesOff {
-                    Text("Choose at least one source")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.orange)
-                        .padding(.horizontal, 14)
-                        .padding(.bottom, 8)
-                }
 
                 preferenceDivider
 
@@ -545,7 +615,26 @@ struct AppUpdatesListView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
+        .frame(height: 142)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.primary.opacity(0.025))
+        )
+    }
+
+    private var noSourcesCard: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 26))
+                .foregroundStyle(.orange)
+            Text("Select update source to check for updates")
+                .font(.system(size: 13.5, weight: .semibold))
+            Text("Turn on at least one source above to look for updates.")
+                .font(.system(size: 11.5))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 142)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color.primary.opacity(0.025))
@@ -693,16 +782,22 @@ struct AppUpdatesListView: View {
     private var compactBody: some View {
         VStack(alignment: .leading, spacing: 8) {
             summaryRow
-            if updates.items.isEmpty {
+                .panelCard()
+
+            if allSourcesOff {
+                compactNoSourcesState
+            } else if updates.items.isEmpty {
                 compactEmptyState
             } else {
                 compactList
             }
             if coverageIncomplete {
                 incompleteCheck
+                    .panelCard()
             }
             if versionsUncompared {
                 uncomparableVersions
+                    .panelCard()
             }
             if let status = homebrew.operationStatus {
                 HomebrewOperationStatusView(status: status,
@@ -720,13 +815,14 @@ struct AppUpdatesListView: View {
                     .foregroundStyle(.orange)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
+                    .panelCard()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var summaryRow: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
+        HStack(alignment: .center, spacing: 8) {
             Text(lastCheckLine)
                 .font(.system(size: 10.5))
                 .foregroundStyle(.secondary)
@@ -747,11 +843,12 @@ struct AppUpdatesListView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
-            .disabled(isBusy)
+            .disabled(isBusy || allSourcesOff)
         }
     }
 
     private var lastCheckLine: String {
+        if allSourcesOff { return "No sources selected" }
         guard let last = updates.lastCheck else { return text.neverChecked }
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .full
@@ -762,13 +859,55 @@ struct AppUpdatesListView: View {
 
     @ViewBuilder
     private var compactEmptyState: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Label(coveragePartial ? text.partialUpToDate : "No updates available",
-                  systemImage: coveragePartial ? "info.circle" : "checkmark.circle.fill")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(coveragePartial ? Color.secondary : Color.secondary)
+        if updates.isChecking {
+            VStack(spacing: inNotch ? 5 : 8) {
+                if reduceMotion {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: inNotch ? 16 : 22))
+                        .foregroundStyle(.secondary)
+                } else {
+                    ProgressView()
+                        .controlSize(inNotch ? .mini : .small)
+                }
+                Text("Checking for updates…")
+                    .font(.system(size: inNotch ? 11 : 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, inNotch ? 10 : 28)
+        } else {
+            VStack(spacing: inNotch ? 5 : 8) {
+                Image(systemName: coveragePartial ? "info.circle" : "checkmark.circle.fill")
+                    .font(.system(size: inNotch ? 20 : 26))
+                    .foregroundStyle(coveragePartial ? Color.secondary : Color.green)
+                Label(coveragePartial ? text.partialUpToDate : "No updates available",
+                      systemImage: coveragePartial ? "info.circle" : "checkmark.circle.fill")
+                    .labelStyle(.titleOnly)
+                    .font(.system(size: inNotch ? 11.5 : 13, weight: .medium))
+                    .foregroundStyle(.secondary)
+                if !coveragePartial {
+                    Text("All installed apps are up to date")
+                        .font(.system(size: inNotch ? 9.5 : 11))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, inNotch ? 10 : 28)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var compactNoSourcesState: some View {
+        VStack(spacing: inNotch ? 5 : 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: inNotch ? 18 : 24))
+                .foregroundStyle(.orange)
+            Text("Select update source to check for updates")
+                .font(.system(size: inNotch ? 11 : 12.5, weight: .medium))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, inNotch ? 10 : 28)
     }
 
     private var incompleteCheck: some View {
