@@ -17,8 +17,8 @@ enum BluetoothPermissionTests {
         let activityKeys = [DefaultsKey.notchEnabled, DefaultsKey.notchAccessoriesEnabled]
         let withoutPower = AppFeature.activeFeatures(using: .bluetooth,
             isAvailable: { $0 != .monitorPower }, boolFor: { activityKeys.contains($0) }, stringFor: { _ in nil })
-        suite.expect(withoutPower.isEmpty,
-                     "an island accessory activity cannot claim Bluetooth use while its power module is uninstalled")
+        suite.expect(withoutPower == [.notchAccessories],
+                     "island accessories retain Bluetooth attribution independently of Power Monitoring")
         let withPower = AppFeature.activeFeatures(using: .bluetooth,
             isAvailable: { _ in true }, boolFor: { activityKeys.contains($0) }, stringFor: { _ in nil })
         suite.expect(withPower == [.notchAccessories],
