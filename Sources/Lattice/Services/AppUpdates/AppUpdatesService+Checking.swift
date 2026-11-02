@@ -5,20 +5,29 @@ import CoreServices
 extension AppUpdatesService {
     // MARK: - Checking
 
-    /// A source switch changes the answer. Let an in-flight scan finish its
-    /// read, discard that answer and immediately run once with the new choice.
+    /// A source switch changes the answer. Debounces rapid toggles so changing
+    /// multiple sources triggers only one scan after the user stops toggling.
     func sourceSelectionDidChange() {
+        sourceRefreshWorkItem?.cancel()
         if isChecking {
             sourceRefreshPending = true
-        } else {
-            check()
+            return
         }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.sourceRefreshWorkItem = nil
+            self.check()
+        }
+        sourceRefreshWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
     }
 
     /// Scans the enabled sources. `automatic` marks the background pass,
     /// which alone can post a notification and re-arm the schedule.
     func check(automatic: Bool = false) {
         guard AppFeature.appUpdates.isAvailable else { return }
+        sourceRefreshWorkItem?.cancel()
+        sourceRefreshWorkItem = nil
         if isChecking {
             automaticCheckPending = automaticCheckPending || automatic
             return
@@ -49,27 +58,12 @@ extension AppUpdatesService {
             let apps = AppUpdatesSupport.checkedApps(
                 Self.scanInstalledApps(includePublisherFeeds: includeOnlineCatalog, cancellation: cancellation), rules: checkedRules)
             guard !cancellation.isCancelled else { return }
-            let total = max(1, apps.count)
-            DispatchQueue.main.async {
-                self.totalAppsCount = total
-                self.checkedAppsCount = max(1, total / 4)
-                UserDefaults.standard.set(total, forKey: "appUpdatesTotalAppsCount")
-            }
             let packageResult = includeHomebrewApps || includeOnlineCatalog
                 ? self.packageManagerFindings(apps: apps, includeUpdates: includeHomebrewApps, cancellation: cancellation)
                 : PackageResult(items: [], coveredPaths: [], available: true,
                                 onlineCoverageAvailable: true)
             guard !cancellation.isCancelled else { return }
-            DispatchQueue.main.async {
-                self.checkedAppsCount = max(self.checkedAppsCount, (total * 2) / 4)
-            }
-            let visiblePackageItems = AppUpdatesSupport.visibleItems(packageResult.items, rules: checkedRules)
-            for (idx, item) in visiblePackageItems.enumerated() {
-                DispatchQueue.main.asyncAfter(deadline: .now() + Double(idx) * 0.1) { [weak self] in
-                    guard let self, self.isChecking, generation == self.scanGeneration else { return }
-                    self.appendUpdate(item, rules: checkedRules)
-                }
-            }
+
             let coveredPaths = packageResult.coveredPaths
             let storeCandidates = includeAppStore
                 ? AppUpdatesSupport.appStoreCandidates(
@@ -79,6 +73,33 @@ extension AppUpdatesService {
                 && packageResult.onlineCoverageAvailable
                 ? AppUpdatesSupport.onlineCatalogCandidates(apps: apps, coveredPaths: coveredPaths)
                 : []
+
+            let activeApps = apps.filter { app in
+                if includeAppStore && (app.isFromAppStore || storeCandidates.contains(where: { $0.path == app.path })) {
+                    return true
+                }
+                if includeHomebrewApps && (coveredPaths.contains(app.path) || packageResult.items.contains { $0.bundlePath == app.path }) {
+                    return true
+                }
+                if includeOnlineCatalog && onlineCandidates.contains(where: { $0.path == app.path }) {
+                    return true
+                }
+                return false
+            }
+            let total = activeApps.count
+            DispatchQueue.main.async {
+                self.totalAppsCount = total
+                self.checkedAppsCount = max(0, min(total, total / 4))
+                UserDefaults.standard.set(total, forKey: "appUpdatesTotalAppsCount")
+            }
+
+            let visiblePackageItems = AppUpdatesSupport.visibleItems(packageResult.items, rules: checkedRules)
+            for (idx, item) in visiblePackageItems.enumerated() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(idx) * 0.1) { [weak self] in
+                    guard let self, self.isChecking, generation == self.scanGeneration else { return }
+                    self.appendUpdate(item, rules: checkedRules)
+                }
+            }
             let os = ProcessInfo.processInfo.operatingSystemVersion
             let operatingSystemVersion = "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)"
             let group = DispatchGroup()
@@ -214,7 +235,7 @@ extension AppUpdatesService {
         self.uncomparableAppNames = uncomparableAppNames
         hasCheckedThisSession = true
         isChecking = false
-        totalAppsCount = max(totalAppsCount, scannedItems.count)
+        totalAppsCount = max(totalAppsCount, newItems.count)
         checkedAppsCount = totalAppsCount
         installingItemIDs.formIntersection(newItems.map(\.id))
         let now = Date()

@@ -65,6 +65,7 @@ final class AppUpdatesService: ObservableObject {
     var scanGeneration = 0
     var checkCancellation: AppUpdateCheckCancellation?
     var sourceRefreshPending = false
+    var sourceRefreshWorkItem: DispatchWorkItem?
     var automaticCheckPending = false
     var knownIDs = Set<String>()
     /// The person was sent elsewhere to finish an update, so the list is
