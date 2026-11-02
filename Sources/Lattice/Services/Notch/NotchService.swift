@@ -195,9 +195,11 @@ final class NotchService: ObservableObject {
     private var powerSource: CFRunLoopSource?
     private var powerSampler: PowerSampler?
     private var clipboardTimer: Timer?
-    private var lastClipboardChangeCount: Int = NSPasteboard.general.changeCount
+    private var lastClipboardChangeCount = 0
     private var lastOwnClipboardChangeCount = 0
     private var clipboardMonitoringGeneration = UUID()
+    private var clipboardReadInFlight = false
+    private var clipboardBaselinePending = false
     private var captureID: UUID?
     private let deferredCapturePresentation = CapturePresentationDeferral()
     private var captureFallback: (() -> Void)?
@@ -4307,38 +4309,54 @@ final class NotchService: ObservableObject {
     private func startClipboardMonitoring() {
         stopClipboardMonitoring()
         guard NotchSupport.routes(.clipboard) else { return }
-        lastClipboardChangeCount = NSPasteboard.general.changeCount
-        let generation = clipboardMonitoringGeneration
-
+        clipboardBaselinePending = true
         let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
-            guard let self, self.running else { return }
-            let count = NSPasteboard.general.changeCount
-            guard count != self.lastClipboardChangeCount else { return }
-            self.lastClipboardChangeCount = count
-            guard !self.suspended, count > self.lastOwnClipboardChangeCount else { return }
-            // Source data can be promised by another app. Read it on the
-            // shared pasteboard lane and never wait for its provider on main.
-            let owner = Bundle.main.bundleIdentifier
-            GeneralPasteboardAccess.shared.async({
-                let board = NSPasteboard.general
-                return board.changeCount != count || (owner != nil && board.string(forType: .source) == owner)
-            }, then: { [weak self] ownOrSuperseded in
-                guard let self, self.running, !self.suspended,
-                      self.clipboardMonitoringGeneration == generation,
-                      self.lastClipboardChangeCount == count,
-                      count > self.lastOwnClipboardChangeCount, !ownOrSuperseded else { return }
-                let text = FeatureStrings.clipboard(L10n.shared.language)
-                _ = self.show(NotchNotice(event: .clipboard, title: "",
-                                          detail: text.copied, symbol: "doc.on.clipboard"))
-            })
+            self?.pollClipboardMonitoring()
         }
         timer.tolerance = 0.15
         RunLoop.main.add(timer, forMode: .common)
         clipboardTimer = timer
+        pollClipboardMonitoring()
+    }
+
+    /// Both count and source reads can stall in another app's pasteboard provider.
+    /// Admit one snapshot at a time and publish only on the main queue.
+    private func pollClipboardMonitoring() {
+        guard running, clipboardTimer != nil, !clipboardReadInFlight else { return }
+        clipboardReadInFlight = true
+        let baseline = clipboardBaselinePending
+        clipboardBaselinePending = false
+        let previousCount = lastClipboardChangeCount
+        let generation = clipboardMonitoringGeneration
+        let wasSuspended = suspended
+        let owner = Bundle.main.bundleIdentifier
+        GeneralPasteboardAccess.shared.async({
+            let board = NSPasteboard.general
+            let count = board.changeCount
+            if baseline || wasSuspended || count <= previousCount { return (count, true) }
+            let own = owner != nil && board.string(forType: .source) == owner
+            return (count, own || board.changeCount != count)
+        }, then: { [weak self] snapshot in
+            guard let self else { return }
+            self.clipboardReadInFlight = false
+            guard self.clipboardMonitoringGeneration == generation else {
+                if self.clipboardBaselinePending { self.pollClipboardMonitoring() }
+                return
+            }
+            let (count, ownOrSuperseded) = snapshot
+            guard self.running, count > self.lastClipboardChangeCount else { return }
+            self.lastClipboardChangeCount = count
+            guard !baseline, !wasSuspended, !self.suspended,
+                  count > self.lastOwnClipboardChangeCount, !ownOrSuperseded else { return }
+            let text = FeatureStrings.clipboard(L10n.shared.language)
+            _ = self.show(NotchNotice(event: .clipboard, title: "",
+                                      detail: text.copied, symbol: "doc.on.clipboard"))
+        })
     }
 
     private func stopClipboardMonitoring() {
         clipboardMonitoringGeneration = UUID()
+        clipboardBaselinePending = false
         clipboardTimer?.invalidate()
         clipboardTimer = nil
     }

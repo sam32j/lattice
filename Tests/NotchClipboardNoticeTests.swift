@@ -8,9 +8,18 @@ enum NotchClipboardNoticeTests {
     enum NSPasteboard {
         static let general = Board()
         final class Board {
-            var changeCount = 0
+            var storedCount = 0
+            var offLaneReads = 0
+            var sourceReads = 0
+            var changeCount: Int {
+                get {
+                    if !GeneralPasteboardAccess.shared.onLane { offLaneReads += 1 }
+                    return storedCount
+                }
+                set { storedCount = newValue }
+            }
             var source: String?
-            func string(forType: Kind) -> String? { source }
+            func string(forType: Kind) -> String? { sourceReads += 1; return source }
         }
         enum Kind { case source }
     }
@@ -31,8 +40,14 @@ enum NotchClipboardNoticeTests {
     final class GeneralPasteboardAccess {
         static let shared = GeneralPasteboardAccess()
         var work: [() -> Void] = []
+        var onLane = false
         func async<T>(_ body: @escaping () -> T, then completion: @escaping (T) -> Void) {
-            work.append { completion(body()) }
+            work.append {
+                self.onLane = true
+                let result = body()
+                self.onLane = false
+                completion(result)
+            }
         }
         func drain() { while !work.isEmpty { work.removeFirst()() } }
     }
@@ -40,6 +55,8 @@ enum NotchClipboardNoticeTests {
         var running = true, suspended = false
         var lastClipboardChangeCount = 0, lastOwnClipboardChangeCount = 0
         var clipboardMonitoringGeneration = UUID()
+        var clipboardReadInFlight = false
+        var clipboardBaselinePending = false
         var clipboardTimer: Timer?
         var notices: [NotchNotice] = []
         func show(_ notice: NotchNotice) -> Bool { notices.append(notice); return true }
@@ -48,8 +65,13 @@ enum NotchClipboardNoticeTests {
     static func run(_ suite: TestSuite) {
         let board = NSPasteboard.general
         board.changeCount = 0; board.source = nil
+        board.offLaneReads = 0
         let service = Service()
         service.startClipboardMonitoring()
+        service.clipboardTimer?.fire()
+        suite.expect(board.offLaneReads == 0,
+                     "startup and timer polling never read the pasteboard on the caller's lane")
+        GeneralPasteboardAccess.shared.drain()
         service.suspended = true
         board.changeCount = 1
         service.clipboardTimer?.fire()
@@ -65,6 +87,11 @@ enum NotchClipboardNoticeTests {
         service.clipboardTimer?.fire()
         GeneralPasteboardAccess.shared.drain()
         suite.expect(service.notices.count == 1, "an external copy still announces once")
+        let sourceReads = board.sourceReads
+        service.clipboardTimer?.fire()
+        GeneralPasteboardAccess.shared.drain()
+        suite.expect(board.sourceReads == sourceReads,
+                     "an unchanged pasteboard never invokes a promised source provider")
         board.changeCount = 4
         service.clipboardTimer?.fire()
         service.noteOwnClipboardChange(upTo: 4)
@@ -75,5 +102,31 @@ enum NotchClipboardNoticeTests {
         service.stopClipboardMonitoring()
         GeneralPasteboardAccess.shared.drain()
         suite.expect(service.notices.count == 1, "stopping monitoring invalidates a pending clipboard result")
+        service.startClipboardMonitoring()
+        for count in 6...15 {
+            board.changeCount = count
+            service.clipboardTimer?.fire()
+        }
+        suite.expect(GeneralPasteboardAccess.shared.work.count == 1,
+                     "a blocked provider admits at most one clipboard read instead of an unbounded timer backlog")
+        GeneralPasteboardAccess.shared.drain()
+        suite.expect(board.offLaneReads == 0, "every change-count read stays on the pasteboard lane")
+        service.stopClipboardMonitoring()
+        board.changeCount = 20
+        service.startClipboardMonitoring()
+        for _ in 0..<5 {
+            service.stopClipboardMonitoring()
+            service.startClipboardMonitoring()
+        }
+        suite.expect(GeneralPasteboardAccess.shared.work.count == 1,
+                     "restarting monitoring cannot enqueue more baselines behind a blocked provider")
+        GeneralPasteboardAccess.shared.drain()
+        suite.expect(service.lastClipboardChangeCount == 20 && service.notices.count == 1,
+                     "a stale completion establishes one fresh baseline for the latest monitoring generation")
+        board.changeCount = 21
+        service.clipboardTimer?.fire()
+        GeneralPasteboardAccess.shared.drain()
+        suite.expect(service.notices.count == 2, "copy notices resume after the latest restart baseline")
+        service.stopClipboardMonitoring()
     }
 }
