@@ -10,10 +10,16 @@ extension AppUpdatesService {
             UserDefaults.standard.string(forKey: DefaultsKey.appUpdatesCheckFrequency))
     }
 
+    var anySourcesEnabled: Bool {
+        UserDefaults.standard.bool(forKey: DefaultsKey.appUpdatesIncludeHomebrewApps)
+            || UserDefaults.standard.bool(forKey: DefaultsKey.appUpdatesIncludeAppStore)
+            || UserDefaults.standard.bool(forKey: DefaultsKey.appUpdatesIncludeOnlineCatalog)
+    }
+
     func syncWithPreferences() {
         reloadRules()
         if !AppFeature.appUpdates.isAvailable { cancelChecks() }
-        guard AppFeature.appUpdates.isAvailable, frequency != .off else {
+        guard AppFeature.appUpdates.isAvailable, frequency != .off, anySourcesEnabled else {
             stop()
             return
         }

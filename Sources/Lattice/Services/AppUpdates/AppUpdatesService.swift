@@ -40,6 +40,9 @@ final class AppUpdatesService: ObservableObject {
     /// A check finished in THIS process. The time of the last check survives
     /// relaunches, but its findings do not, so nothing may claim the Mac is
     /// up to date until a scan has actually run here.
+    @Published var totalAppsCount: Int = 0
+    @Published var checkedAppsCount: Int = 0
+    @Published var installingItemIDs: Set<String> = []
     @Published var hasCheckedThisSession = false
     @Published var lastError: String?
 
@@ -80,6 +83,8 @@ final class AppUpdatesService: ObservableObject {
         lastCheck = stamp > 0 ? Date(timeIntervalSince1970: stamp) : nil
         rules = AppUpdatesSupport.decodedRules(
             UserDefaults.standard.string(forKey: DefaultsKey.appUpdatesRules))
+        let savedTotal = UserDefaults.standard.integer(forKey: "appUpdatesTotalAppsCount")
+        totalAppsCount = savedTotal > 0 ? savedTotal : 0
     }
 
 }

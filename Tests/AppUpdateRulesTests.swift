@@ -23,6 +23,9 @@ enum AppUpdateRulesContract {
         var selection: Set<String> = []
         var knownIDs: Set<String> = []
         var isChecking = false
+        var totalAppsCount = 0
+        var checkedAppsCount = 0
+        var installingItemIDs: Set<String> = []
         var sourceRefreshPending = false
         var automaticCheckPending = false
         var packageManagerAvailable = true
