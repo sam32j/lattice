@@ -455,6 +455,7 @@ struct MenuPanelView: View {
                 // The hosted utility's own page, or the general one from the
                 // panel's lists: the router is sticky, so it is set every time.
                 SettingsRouter.shared.page = PanelInteractionState.shared.hostedSettingsPage ?? .general
+                appDelegate()?.closePopover(reason: .action)
                 appDelegate()?.openSettingsWindow()
             }
 

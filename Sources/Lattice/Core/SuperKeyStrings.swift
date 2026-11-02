@@ -66,7 +66,7 @@ extension SuperKeyStrings {
     }
 
     static let enUS = SuperKeyStrings(
-        pageTitle: "Super key",
+        pageTitle: "Super Key",
         hubDescription: "Turns one key into the modifier combination you choose.",
         enableToggle: "Use this key as the super key",
         enableCaption: "Hold your chosen key to send a combination of modifier keys.",

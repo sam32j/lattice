@@ -28,10 +28,11 @@ struct AudioInputSettings: View {
             .frame(maxWidth: .infinity)
             .padding(22)
         }
+        .settingsExpansionAnimation(value: [microphoneControlEnabled, priority.inputPriorityEnabled])
     }
 
     private var microphoneCard: some View {
-        SettingsCard(title: l10n.s.microphoneControlEnable, headerAccessory: {
+        SettingsCard(symbol: "mic", title: l10n.s.microphoneControlEnable, headerAccessory: {
             Toggle(l10n.s.microphoneControlEnable, isOn: $microphoneControlEnabled)
                 .labelsHidden()
                 .toggleStyle(.switch)
@@ -44,44 +45,73 @@ struct AudioInputSettings: View {
                     MicMuteService.shared.syncWithPreferences()
                 }
         }) {
-            VStack(alignment: .leading, spacing: 14) {
-                AudioInputDeviceControls(title: l10n.s.mixerInputSourceLabel, sliderWidth: 140,
-                                         showsUnavailableLabel: false)
+            if microphoneControlEnabled {
+                VStack(alignment: .leading, spacing: 14) {
+                    AudioInputDeviceControls(title: l10n.s.mixerInputSourceLabel,
+                                             levelTitle: "Input level",
+                                             sliderWidth: 140,
+                                             showsUnavailableLabel: false,
+                                             showsIcons: false)
 
-                Divider()
-
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text(l10n.s.muteAudioInputSubtitle)
-                            .font(.headline)
-                        Spacer()
-                        Toggle(l10n.s.muteAudioInputSubtitle, isOn: Binding(
-                            get: { micMute.isMuted },
-                            set: { micMute.setMuted($0) }
-                        ))
-                        .labelsHidden()
-                        .toggleStyle(.switch)
+                    HStack(alignment: .center) {
+                        Text("Mute microphone")
+                            .font(.body)
+                        Spacer(minLength: 12)
+                        muteStateButton
                     }
 
-                    ShortcutPreferenceRow(role: .micMute, alignment: .center) {
-                        MicMuteService.shared.syncWithPreferences()
-                    }
-                    if micShortcutEnabled, micMute.shortcutRegistrationFailed {
-                        Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 4) {
+                        ShortcutPreferenceRow(role: .micMute, alignment: .center,
+                                              label: "Mute shortcut") {
+                            MicMuteService.shared.syncWithPreferences()
+                        }
+                        if micShortcutEnabled, micMute.shortcutRegistrationFailed {
+                            Text(l10n.s.shortcutUnavailable)
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
                     }
 
                     SettingsToggleRow(title: l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
                 }
+                .padding(.leading, settingsRowTextInset)
             }
-            .disabled(!microphoneControlEnabled)
-            .opacity(microphoneControlEnabled ? 1 : 0.55)
+        }
+    }
+
+    @ViewBuilder
+    private var muteStateButton: some View {
+        if micMute.isMuted {
+            Button {
+                micMute.toggle()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "mic.slash")
+                    Text("Muted")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .foregroundStyle(.white)
+            .frame(width: 140)
+        } else {
+            Button {
+                micMute.toggle()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "mic")
+                    Text("Unmuted")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .frame(width: 140)
         }
     }
 
     private var inputPriorityCard: some View {
-        SettingsCard(title: l10n.s.manageAudioInputPriorityTitle, headerAccessory: {
+        SettingsCard(symbol: "line.horizontal.2.decrease.circle", title: l10n.s.manageAudioInputPriorityTitle, headerAccessory: {
             Toggle(l10n.s.audioPriorityInputEnable, isOn: Binding(
                 get: { priority.inputPriorityEnabled },
                 set: { priority.setInputPriorityEnabled($0) }
@@ -96,7 +126,6 @@ struct AudioInputSettings: View {
                 AudioInputPriorityControls(showsHeader: false)
             }
         }
-        .settingsExpansionAnimation(value: priority.inputPriorityEnabled)
         .onAppear {
             AudioInputDeviceManager.shared.syncWithPreferences()
             MicMuteService.shared.syncWithPreferences()

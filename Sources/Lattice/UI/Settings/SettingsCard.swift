@@ -7,17 +7,20 @@ import SwiftUI
 /// an optional heading. The same card the Dynamic Island page draws, so the
 /// pages read as one design.
 struct SettingsCard<Content: View>: View {
+    let symbol: String?
     let title: String?
     let headerAccessory: AnyView?
     let content: Content
 
-    init(title: String? = nil, @ViewBuilder content: () -> Content) {
+    init(symbol: String? = nil, title: String? = nil, @ViewBuilder content: () -> Content) {
+        self.symbol = symbol
         self.title = title
         self.headerAccessory = nil
         self.content = content()
     }
 
-    init<Accessory: View>(title: String, @ViewBuilder headerAccessory: () -> Accessory, @ViewBuilder content: () -> Content) {
+    init<Accessory: View>(symbol: String? = nil, title: String, @ViewBuilder headerAccessory: () -> Accessory, @ViewBuilder content: () -> Content) {
+        self.symbol = symbol
         self.title = title
         self.headerAccessory = AnyView(headerAccessory())
         self.content = content()
@@ -26,14 +29,20 @@ struct SettingsCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
             if let title {
-                if let headerAccessory {
-                    HStack(alignment: .center) {
-                        Text(title).font(.headline)
+                HStack(alignment: .center, spacing: 10) {
+                    if let symbol {
+                        Image(systemName: symbol)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                            .frame(width: 26, height: 26)
+                            .background(Color.accentColor.opacity(0.12),
+                                        in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    }
+                    Text(title).font(.headline)
+                    if let headerAccessory {
                         Spacer()
                         headerAccessory
                     }
-                } else {
-                    Text(title).font(.headline)
                 }
             }
             content
