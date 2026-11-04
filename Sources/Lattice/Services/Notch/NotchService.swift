@@ -4333,7 +4333,12 @@ final class NotchService: ObservableObject {
         GeneralPasteboardAccess.shared.async({
             let board = NSPasteboard.general
             let count = board.changeCount
-            if baseline || wasSuspended || count <= previousCount { return (count, true) }
+            let types = (board.types ?? []).map(\.rawValue)
+            let empty = types.isEmpty
+            let concealed = ClipboardHistorySensitiveText.isConcealed(types)
+            if baseline || wasSuspended || count <= previousCount || empty || concealed {
+                return (count, true)
+            }
             let own = owner != nil && board.string(forType: .source) == owner
             return (count, own || board.changeCount != count)
         }, then: { [weak self] snapshot in
@@ -4344,7 +4349,13 @@ final class NotchService: ObservableObject {
                 return
             }
             let (count, ownOrSuperseded) = snapshot
-            guard self.running, count > self.lastClipboardChangeCount else { return }
+            guard self.running else { return }
+            if count < self.lastClipboardChangeCount {
+                self.lastClipboardChangeCount = count
+                self.lastOwnClipboardChangeCount = count
+                return
+            }
+            guard count > self.lastClipboardChangeCount else { return }
             self.lastClipboardChangeCount = count
             guard !baseline, !wasSuspended, !self.suspended,
                   count > self.lastOwnClipboardChangeCount, !ownOrSuperseded else { return }

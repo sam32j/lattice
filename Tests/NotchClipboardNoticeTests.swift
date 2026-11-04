@@ -19,9 +19,18 @@ enum NotchClipboardNoticeTests {
                 set { storedCount = newValue }
             }
             var source: String?
+            var types: [Kind]? = [.source]
             func string(forType: Kind) -> String? { sourceReads += 1; return source }
         }
-        enum Kind { case source }
+        enum Kind: String {
+            case source = "org.nspasteboard.source"
+            case concealed = "org.nspasteboard.ConcealedType"
+        }
+    }
+    enum ClipboardHistorySensitiveText {
+        static func isConcealed(_ types: [String]) -> Bool {
+            types.contains("org.nspasteboard.ConcealedType")
+        }
     }
     enum NotchSupport { static func routes(_ event: NotchEvent) -> Bool { true } }
     final class Timer {
@@ -127,6 +136,25 @@ enum NotchClipboardNoticeTests {
         service.clipboardTimer?.fire()
         GeneralPasteboardAccess.shared.drain()
         suite.expect(service.notices.count == 2, "copy notices resume after the latest restart baseline")
+        board.changeCount = 22
+        board.types = []
+        service.clipboardTimer?.fire()
+        GeneralPasteboardAccess.shared.drain()
+        suite.expect(service.notices.count == 2, "empty pasteboard clear never announces")
+        board.changeCount = 23
+        board.types = [.concealed]
+        service.clipboardTimer?.fire()
+        GeneralPasteboardAccess.shared.drain()
+        suite.expect(service.notices.count == 2, "concealed pasteboard copy never announces")
+        board.changeCount = 2
+        board.types = [.source]
+        service.clipboardTimer?.fire()
+        GeneralPasteboardAccess.shared.drain()
+        suite.expect(service.notices.count == 2, "count decrease establishes a new baseline without notice")
+        board.changeCount = 3
+        service.clipboardTimer?.fire()
+        GeneralPasteboardAccess.shared.drain()
+        suite.expect(service.notices.count == 3, "notices resume after pasteboard count decrease")
         service.stopClipboardMonitoring()
     }
 }
