@@ -319,6 +319,7 @@ final class BrightnessService: ObservableObject {
         keyboardBrightnessIncreaseHotkey.onPress = { [weak self] in
             self?.stepKeyboardLight(direction: 1)
         }
+        refreshKeyboardLight()
     }
 
     func setKeyboardLightEnabled(_ enabled: Bool) {

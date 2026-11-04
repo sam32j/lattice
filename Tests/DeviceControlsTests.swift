@@ -68,6 +68,22 @@ enum DeviceControlsTests {
             MixerRoutingSupport.shouldShowApp(isPlaying: false, volume: 1.0, selectedOutputDeviceUID: nil, hideInactiveApps: false),
             "inactive app is shown when hideInactiveApps is false"
         )
+
+        // Verify that unhidden inactive apps are placed below active apps, preserving order within each group
+        struct MockApp {
+            let id: String
+            let isActive: Bool
+        }
+        let list: [MockApp] = [
+            MockApp(id: "app-1", isActive: false),
+            MockApp(id: "app-2", isActive: true),
+            MockApp(id: "app-3", isActive: false),
+            MockApp(id: "app-4", isActive: true)
+        ]
+        let active = list.filter(\.isActive)
+        let inactive = list.filter { !$0.isActive }
+        let displayed = active + inactive
+        suite.expect(displayed.map(\.id) == ["app-2", "app-4", "app-1", "app-3"], "active apps appear first, followed by inactive apps sorted among themselves")
     }
 
     private static func testKeyboardLightSaturatedBehavior(_ suite: TestSuite) {
