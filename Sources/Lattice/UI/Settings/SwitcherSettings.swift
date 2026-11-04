@@ -12,6 +12,7 @@ struct SwitcherSettingsSection: View {
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var secureInput = SecureInputMonitor.shared
+    @State private var switcherCoversSecureInput = AppSwitcher.shared.coversSecureInput
     @AppStorage(DefaultsKey.switcherEnabled) private var switcherEnabled = true
     @AppStorage(DefaultsKey.switcherShortcut) private var switcherShortcutStorage = GlobalShortcut.switcherDefault.storageValue
     @AppStorage(DefaultsKey.switcherWindowShortcut) private var switcherWindowShortcutStorage = GlobalShortcut.switcherWindowDefault.storageValue
@@ -45,7 +46,9 @@ struct SwitcherSettingsSection: View {
     }
 
     private var showsSecureInputWarning: Bool {
-        switcherReplacesSystemShortcuts && secureInput.holder != .off
+        // Carbon stand-ins keep the shortcut working under secure input. Only
+        // when they cannot register does ⌘Tab go back to macOS until it ends.
+        switcherReplacesSystemShortcuts && secureInput.holder != .off && !switcherCoversSecureInput
     }
 
 
@@ -54,6 +57,7 @@ struct SwitcherSettingsSection: View {
             .settingsSectionAnchor(.switcher, cornerRadius: 16)
             .toggleStyle(.switch)
             .observesSecureInput(isActive: switcherReplacesSystemShortcuts)
+            .onReceive(AppSwitcher.shared.$coversSecureInput) { switcherCoversSecureInput = $0 }
             .settingsExpansionAnimation(value: [
                 switcherEngaged,
                 permissions.accessibility,
