@@ -760,6 +760,7 @@ if (( TEST )); then
         Sources/Lattice/Services/Switcher/SwitcherSupport.swift
         Sources/Lattice/Services/Switcher/SpaceHopSupport.swift
         Sources/Lattice/Services/Switcher/WindowUseOrder.swift
+        Sources/Lattice/Services/Switcher/WindowEnumeratorAccessibilityPrefetch.swift
         Sources/Lattice/Services/Metrics/MetricFormat.swift
         Sources/Lattice/Services/Metrics/UsageMetricHistory.swift
         Sources/Lattice/Services/Metrics/ProcessCPUEnergy.swift
