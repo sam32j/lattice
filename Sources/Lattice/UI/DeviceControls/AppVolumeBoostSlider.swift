@@ -4,263 +4,247 @@
 import AppKit
 import SwiftUI
 
-/// Custom volume slider featuring a 0-100% main bar and an attached 100-200% boost stub.
+/// App volume slider featuring a 0-100% main bar and an attached 100-200% boost stub,
+/// built with native AppKit components (NSSlider / NSSliderCell) to preserve the genuine
+/// macOS native slider knob, bevel, and OS appearance.
 struct AppVolumeBoostSlider: View {
     let title: String
     @Binding var value: Double
     var onEditingChanged: (Bool) -> Void = { _ in }
 
-    @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    @State private var isDragging = false
-    @State private var isHovering = false
-    @State private var previousValue: Double = 1.0
-    @State private var lastTapTimestamp: TimeInterval = 0
+    @State private var isTracking = false
 
     private var percent: Int {
         Int((value * 100).rounded())
     }
 
-    private var isBoosted: Bool {
-        value > 1.0
-    }
-
-    private var accessibilityValueString: String {
-        if isBoosted {
-            return "\(percent) percent, boosted"
-        } else {
-            return "\(percent) percent"
-        }
-    }
-
     var body: some View {
-        GeometryReader { geometry in
-            let totalWidth = geometry.size.width
-            let mainWidth = AppVolumeSliderMetrics.mainBarWidth(totalWidth: totalWidth)
-            let thumbX = AppVolumeSliderMetrics.thumbPosition(for: value, totalWidth: totalWidth)
-            let height = geometry.size.height
-
-            ZStack(alignment: .leading) {
-                // Background and fill tracks
-                tracksView(mainWidth: mainWidth, height: height)
-
-                // Thumb
-                thumbView(thumbX: thumbX, centerY: height / 2)
-
-                // Tooltip pill while dragging
-                if isDragging {
-                    tooltipView(thumbX: thumbX, totalWidth: totalWidth)
-                }
-            }
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { gesture in
-                        if !isDragging {
-                            isDragging = true
-                            onEditingChanged(true)
-                        }
-                        let newVal = AppVolumeSliderMetrics.value(for: gesture.location.x, totalWidth: totalWidth)
-                        checkHaptics(oldValue: previousValue, newValue: newVal)
-                        previousValue = newVal
-                        value = newVal
-                    }
-                    .onEnded { gesture in
-                        isDragging = false
-                        onEditingChanged(false)
-                        handleTapOrDoubleTap(gesture: gesture)
-                    }
-            )
-            .onHover { isHovering = $0 }
-        }
+        NativeAppVolumeSliderRepresentable(
+            title: title,
+            value: $value,
+            isTracking: $isTracking,
+            onEditingChanged: onEditingChanged
+        )
         .frame(height: 22)
-        .focusable()
-        .focusEffectDisabled()
-        .onKeyPress { press in
-            let isFine = press.modifiers.contains(.option)
-            let step = isFine ? 0.01 : 0.05
-            if press.key == .leftArrow || press.key == .downArrow {
-                adjustVolume(by: -step)
-                return .handled
-            } else if press.key == .rightArrow || press.key == .upArrow {
-                adjustVolume(by: step)
-                return .handled
-            }
-            return .ignored
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(title)
-        .accessibilityValue(accessibilityValueString)
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment:
-                adjustVolume(by: 0.05)
-            case .decrement:
-                adjustVolume(by: -0.05)
-            @unknown default:
-                break
+        .overlay {
+            if isTracking {
+                GeometryReader { geometry in
+                    let totalWidth = geometry.size.width
+                    let thumbX = AppVolumeSliderMetrics.thumbPosition(for: value, totalWidth: totalWidth)
+                    Text("\(percent)%")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+                        )
+                        .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
+                        .fixedSize()
+                        .position(x: min(max(thumbX, 24), totalWidth - 24), y: -12)
+                }
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
             }
         }
     }
+}
 
-    // MARK: - Tracks
+private struct NativeAppVolumeSliderRepresentable: NSViewRepresentable {
+    let title: String
+    @Binding var value: Double
+    @Binding var isTracking: Bool
+    let onEditingChanged: (Bool) -> Void
+    @Environment(\.isEnabled) private var isEnabled
 
-    @ViewBuilder
-    private func tracksView(mainWidth: CGFloat, height: CGFloat) -> some View {
-        let trackY = (height - AppVolumeSliderMetrics.trackHeight) / 2
-        let thumbRadius = AppVolumeSliderMetrics.thumbRadius
+    func makeNSView(context: Context) -> AppVolumeBoostSliderControl {
+        let slider = AppVolumeBoostSliderControl()
+        slider.cell = AppVolumeBoostSliderCell()
+        slider.minValue = 0.0
+        slider.maxValue = 2.0
+        slider.doubleValue = value
+        slider.isContinuous = true
+        slider.numberOfTickMarks = 0
+        slider.target = context.coordinator
+        slider.action = #selector(Coordinator.sliderChanged(_:))
+        slider.setAccessibilityLabel(title)
+
+        slider.onTrackingChanged = { [weak coordinator = context.coordinator] tracking in
+            coordinator?.owner.isTracking = tracking
+            coordinator?.owner.onEditingChanged(tracking)
+        }
+
+        return slider
+    }
+
+    func updateNSView(_ slider: AppVolumeBoostSliderControl, context: Context) {
+        context.coordinator.owner = self
+        slider.isEnabled = isEnabled
+        let clamped = min(max(value, 0.0), 2.0)
+        if !slider.isCurrentlyTracking && slider.doubleValue != clamped {
+            slider.doubleValue = clamped
+        }
+        slider.setAccessibilityLabel(title)
+        let percent = Int((clamped * 100).rounded())
+        let valueDesc = clamped > 1.0 ? "\(percent) percent, boosted" : "\(percent) percent"
+        slider.setAccessibilityValueDescription(valueDesc)
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject {
+        var owner: NativeAppVolumeSliderRepresentable
+        init(_ owner: NativeAppVolumeSliderRepresentable) { self.owner = owner }
+
+        @objc func sliderChanged(_ sender: NSSlider) {
+            let next = min(max(sender.doubleValue, 0.0), 2.0)
+            owner.value = next
+        }
+    }
+}
+
+private final class AppVolumeBoostSliderCell: NSSliderCell {
+    override func drawBar(inside rect: NSRect, flipped: Bool) {
+        guard let view = controlView else { return }
+        let totalWidth = view.bounds.width
         let stubWidth = AppVolumeSliderMetrics.stubWidth
         let gap = AppVolumeSliderMetrics.gap
+        let trackHeight = AppVolumeSliderMetrics.trackHeight
+        let thumbRadius = AppVolumeSliderMetrics.thumbRadius
+        let mainWidth = AppVolumeSliderMetrics.mainBarWidth(totalWidth: totalWidth)
+        let y = (view.bounds.height - trackHeight) / 2
+
+        let isDark = view.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
 
         // 1. Main bar track (0-100%)
-        ZStack(alignment: .leading) {
-            // Neutral track background
-            Capsule(style: .continuous)
-                .fill(Color.secondary.opacity(colorScheme == .dark ? 0.25 : 0.15))
+        let mainRect = NSRect(x: thumbRadius, y: y, width: mainWidth, height: trackHeight)
+        let mainPath = NSBezierPath(roundedRect: mainRect, xRadius: trackHeight / 2, yRadius: trackHeight / 2)
+        NSColor.secondaryLabelColor.withAlphaComponent(isDark ? 0.25 : 0.15).setFill()
+        mainPath.fill()
 
-            // Main bar fill (accent color)
-            if value > 0.001 {
-                let fillFraction = min(max(CGFloat(value), 0), 1.0)
-                Rectangle()
-                    .fill(Color.accentColor)
-                    .frame(width: fillFraction * mainWidth)
-            }
+        // Main bar fill (accent)
+        if doubleValue > 0.001 {
+            let fillFraction = min(max(CGFloat(doubleValue), 0), 1.0)
+            NSGraphicsContext.saveGraphicsState()
+            mainPath.addClip()
+            let fillRect = NSRect(x: thumbRadius, y: y, width: mainWidth * fillFraction, height: trackHeight)
+            NSColor.controlAccentColor.setFill()
+            fillRect.fill()
+            NSGraphicsContext.restoreGraphicsState()
         }
-        .clipShape(Capsule(style: .continuous))
-        .frame(width: mainWidth, height: AppVolumeSliderMetrics.trackHeight)
-        .offset(x: thumbRadius, y: trackY)
 
         // 2. Boost stub (100-200%)
         let stubX = thumbRadius + mainWidth + gap
-        ZStack(alignment: .leading) {
-            // Stub background (faint or medium orange)
-            Capsule(style: .continuous)
-                .fill(stubBackgroundColor)
+        let stubRect = NSRect(x: stubX, y: y, width: stubWidth, height: trackHeight)
+        let stubPath = NSBezierPath(roundedRect: stubRect, xRadius: trackHeight / 2, yRadius: trackHeight / 2)
 
-            // Solid orange fill when boosted
-            if isBoosted {
-                let boostFraction = min(max(CGFloat(value - 1.0), 0), 1.0)
-                Rectangle()
-                    .fill(Color.orange)
-                    .frame(width: boostFraction * stubWidth)
-            }
-        }
-        .clipShape(Capsule(style: .continuous))
-        .frame(width: stubWidth, height: AppVolumeSliderMetrics.trackHeight)
-        .offset(x: stubX, y: trackY)
-    }
+        let isBoosted = doubleValue > 1.0
+        let stubBg = isBoosted
+            ? NSColor.systemOrange.withAlphaComponent(isDark ? 0.45 : 0.38)
+            : NSColor.systemOrange.withAlphaComponent(isDark ? 0.22 : 0.16)
+        stubBg.setFill()
+        stubPath.fill()
 
-    private var stubBackgroundColor: Color {
+        // Boost fill
         if isBoosted {
-            // Medium orange beyond the thumb when boosted
-            return Color.orange.opacity(colorScheme == .dark ? 0.45 : 0.38)
-        } else if isDragging {
-            // Medium orange while dragging below 100%
-            return Color.orange.opacity(colorSchemeContrast == .increased ? 0.6 : (colorScheme == .dark ? 0.42 : 0.35))
-        } else {
-            // Very faint orange normally, strengthened under Increase Contrast
-            return Color.orange.opacity(colorSchemeContrast == .increased ? 0.4 : (colorScheme == .dark ? 0.22 : 0.16))
+            let boostFraction = min(max(CGFloat(doubleValue - 1.0), 0), 1.0)
+            NSGraphicsContext.saveGraphicsState()
+            stubPath.addClip()
+            let boostFillRect = NSRect(x: stubX, y: y, width: stubWidth * boostFraction, height: trackHeight)
+            NSColor.systemOrange.setFill()
+            boostFillRect.fill()
+            NSGraphicsContext.restoreGraphicsState()
         }
     }
 
-    // MARK: - Liquid Glass Knob
+    override func knobRect(flipped: Bool) -> NSRect {
+        var base = super.knobRect(flipped: flipped)
+        guard let view = controlView else { return base }
+        let totalWidth = view.bounds.width
+        let centerX = AppVolumeSliderMetrics.thumbPosition(for: doubleValue, totalWidth: totalWidth)
+        base.origin.x = centerX - base.width / 2
+        return base
+    }
 
-    private func thumbView(thumbX: CGFloat, centerY: CGFloat) -> some View {
-        let knobWidth: CGFloat = 10
-        let knobHeight: CGFloat = 20
-        let shape = Capsule(style: .continuous)
+    override func drawKnob(_ knobRect: NSRect) {
+        // Renders the genuine native macOS slider knob with OS materials and shadows!
+        super.drawKnob(knobRect)
+    }
+}
 
-        return ZStack {
-#if compiler(>=6.2)
-            if #available(macOS 26.0, *), LiquidGlassSupport.isSupported, !reduceTransparency {
-                shape
-                    .fill(Color.clear)
-                    .glassEffect(.regular.interactive(isDragging), in: shape)
-                    .overlay(
-                        shape.fill(Color.white.opacity(colorScheme == .dark ? 0.22 : 0.40))
-                    )
-            } else {
-                shape
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        shape.fill(Color.white.opacity(colorScheme == .dark ? 0.25 : 0.45))
-                    )
+private final class AppVolumeBoostSliderControl: NSSlider {
+    var onTrackingChanged: ((Bool) -> Void)?
+    private(set) var isCurrentlyTracking = false
+    private var previousValue: Double = 1.0
+
+    override var acceptsFirstResponder: Bool { true }
+    override var focusRingType: NSFocusRingType {
+        get { .none }
+        set { }
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        guard isEnabled, let trackingWindow = window else {
+            super.mouseDown(with: event)
+            return
+        }
+
+        if event.clickCount == 2 {
+            // Double click: reset to 100%
+            updateValue(1.0)
+            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+            return
+        }
+
+        isCurrentlyTracking = true
+        onTrackingChanged?(true)
+        defer {
+            isCurrentlyTracking = false
+            onTrackingChanged?(false)
+        }
+
+        func pointX(_ event: NSEvent) -> CGFloat {
+            let screen = event.window?.convertPoint(toScreen: event.locationInWindow) ?? event.locationInWindow
+            let local = convert(trackingWindow.convertPoint(fromScreen: screen), from: nil)
+            return local.x
+        }
+
+        func handleEvent(_ event: NSEvent) {
+            let x = pointX(event)
+            let totalWidth = bounds.width
+            let newVal = AppVolumeSliderMetrics.value(for: x, totalWidth: totalWidth)
+            checkHaptics(oldValue: previousValue, newValue: newVal)
+            updateValue(newVal)
+        }
+
+        handleEvent(event)
+
+        while window === trackingWindow && trackingWindow.isVisible && isEnabled {
+            guard let next = NSApp.nextEvent(
+                matching: [.leftMouseDragged, .leftMouseUp, .keyDown, .appKitDefined],
+                until: Date().addingTimeInterval(0.1),
+                inMode: .eventTracking,
+                dequeue: true
+            ) else { continue }
+
+            guard window === trackingWindow && trackingWindow.isVisible && isEnabled else { break }
+            if next.type == .appKitDefined || next.type == .keyDown {
+                NSApp.sendEvent(next)
+                continue
             }
-#else
-            shape
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    shape.fill(Color.white.opacity(colorScheme == .dark ? 0.25 : 0.45))
-                )
-#endif
-
-            // Specular glass highlight rim
-            shape
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(colorScheme == .dark ? 0.8 : 0.95),
-                            Color.white.opacity(colorScheme == .dark ? 0.2 : 0.35)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 0.75
-                )
-
-            // Tactile center grip notch
-            Capsule(style: .continuous)
-                .fill(Color.primary.opacity(colorScheme == .dark ? 0.35 : 0.22))
-                .frame(width: 1.5, height: 8)
+            handleEvent(next)
+            if next.type == .leftMouseUp { break }
         }
-        .frame(width: knobWidth, height: knobHeight)
-        .shadow(
-            color: Color.black.opacity(colorScheme == .dark ? 0.45 : 0.2),
-            radius: isDragging ? 3.5 : 2.5,
-            y: isDragging ? 1.5 : 1
-        )
-        .shadow(
-            color: Color.black.opacity(colorScheme == .dark ? 0.25 : 0.08),
-            radius: 1,
-            y: 0.5
-        )
-        .scaleEffect(isDragging && !reduceMotion ? 1.08 : 1.0)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.12), value: isDragging)
-        .position(x: thumbX, y: centerY)
-        .allowsHitTesting(false)
     }
 
-    // MARK: - Tooltip
-
-    private func tooltipView(thumbX: CGFloat, totalWidth: CGFloat) -> some View {
-        Text("\(percent)%")
-            .font(.system(size: 11, weight: .semibold, design: .monospaced))
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
-            )
-            .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
-            .fixedSize()
-            .position(x: min(max(thumbX, 24), totalWidth - 24), y: -12)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-    }
-
-    // MARK: - Helpers
-
-    private func adjustVolume(by delta: Double) {
-        let current = value
-        let next = min(max(current + delta, 0.0), 2.0)
-        checkHaptics(oldValue: current, newValue: next)
-        previousValue = next
-        value = next
+    private func updateValue(_ newVal: Double) {
+        let clamped = min(max(newVal, 0.0), 2.0)
+        previousValue = clamped
+        doubleValue = clamped
+        _ = sendAction(action, to: target)
+        needsDisplay = true
     }
 
     private func checkHaptics(oldValue: Double, newValue: Double) {
@@ -269,19 +253,36 @@ struct AppVolumeBoostSlider: View {
         }
     }
 
-    private func handleTapOrDoubleTap(gesture: DragGesture.Value) {
-        let now = Date().timeIntervalSinceReferenceDate
-        let moveDistanceSq = gesture.translation.width * gesture.translation.width + gesture.translation.height * gesture.translation.height
-        if moveDistanceSq < 16 {
-            if now - lastTapTimestamp < 0.35 {
-                // Double click: reset to 100%
-                value = 1.0
-                previousValue = 1.0
-                lastTapTimestamp = 0
-                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
-                return
-            }
-            lastTapTimestamp = now
+    override func keyDown(with event: NSEvent) {
+        let isFine = event.modifierFlags.contains(.option)
+        let step = isFine ? 0.01 : 0.05
+        switch event.keyCode {
+        case 123, 125: // Left, Down
+            let next = max(0.0, doubleValue - step)
+            checkHaptics(oldValue: doubleValue, newValue: next)
+            updateValue(next)
+        case 124, 126: // Right, Up
+            let next = min(2.0, doubleValue + step)
+            checkHaptics(oldValue: doubleValue, newValue: next)
+            updateValue(next)
+        default:
+            super.keyDown(with: event)
         }
+    }
+
+    override func accessibilityPerformIncrement() -> Bool {
+        guard isEnabled else { return false }
+        let next = min(2.0, doubleValue + 0.05)
+        checkHaptics(oldValue: doubleValue, newValue: next)
+        updateValue(next)
+        return true
+    }
+
+    override func accessibilityPerformDecrement() -> Bool {
+        guard isEnabled else { return false }
+        let next = max(0.0, doubleValue - 0.05)
+        checkHaptics(oldValue: doubleValue, newValue: next)
+        updateValue(next)
+        return true
     }
 }
