@@ -128,11 +128,22 @@ struct DeviceControlsMainView: View {
             .controlSize(.small)
             .accessibilityLabel("Keyboard backlight brightness")
 
-            Text("\(Int(((brightness.keyboardLightLevel ?? 0) * 100).rounded()))%")
+            Text(keyboardLightReadout)
                 .font(.system(size: 11.5, weight: .medium).monospacedDigit())
                 .foregroundStyle(.secondary)
-                .frame(width: 38, alignment: .trailing)
+                .lineLimit(1)
+                .frame(minWidth: 38, alignment: .trailing)
         }
+    }
+
+    private var keyboardLightReadout: String {
+        let hubStrings = FeatureStrings.keepAwakeHub(l10n.language)
+        return BrightnessSupport.keyboardLightDisplayReadout(
+            level: brightness.keyboardLightLevel,
+            isSaturated: brightness.keyboardLightSaturated,
+            onText: hubStrings.on,
+            offText: hubStrings.off
+        )
     }
 
     private func brightnessBinding(_ display: BrightnessDisplay) -> Binding<Double> {
@@ -144,8 +155,28 @@ struct DeviceControlsMainView: View {
 
     private var keyboardLightBinding: Binding<Double> {
         Binding(
-            get: { Double(brightness.keyboardLightLevel ?? 0) },
-            set: { brightness.setKeyboardLightLevel(Float($0)) }
+            get: {
+                BrightnessSupport.keyboardLightDisplayLevel(
+                    level: brightness.keyboardLightLevel,
+                    isSaturated: brightness.keyboardLightSaturated
+                )
+            },
+            set: { newValue in
+                if brightness.keyboardLightSaturated {
+                    let currentlyOn = (brightness.keyboardLightLevel ?? 0) > 0
+                    if currentlyOn {
+                        if newValue < 0.5 {
+                            brightness.setKeyboardLightEnabled(false)
+                        }
+                    } else {
+                        if newValue > 0.0 {
+                            brightness.setKeyboardLightEnabled(true)
+                        }
+                    }
+                } else {
+                    brightness.setKeyboardLightLevel(Float(newValue))
+                }
+            }
         )
     }
 

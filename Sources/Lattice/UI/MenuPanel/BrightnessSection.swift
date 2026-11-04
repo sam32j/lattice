@@ -148,7 +148,7 @@ struct BrightnessSection: View {
                     .font(.system(size: 11.5, weight: .medium))
                     .lineLimit(1)
                 Spacer(minLength: 4)
-                Text("\(Int(((service.keyboardLightLevel ?? 0) * 100).rounded()))%")
+                Text(keyboardLightReadout)
                     .font(.system(size: 10.5, weight: .semibold).monospacedDigit())
                     .foregroundStyle(.secondary)
             }
@@ -159,9 +159,41 @@ struct BrightnessSection: View {
         }
     }
 
+    private var keyboardLightReadout: String {
+        let hubStrings = FeatureStrings.keepAwakeHub(l10n.language)
+        return BrightnessSupport.keyboardLightDisplayReadout(
+            level: service.keyboardLightLevel,
+            isSaturated: service.keyboardLightSaturated,
+            onText: hubStrings.on,
+            offText: hubStrings.off
+        )
+    }
+
     private var keyboardLightBinding: Binding<Double> {
-        Binding(get: { Double(service.keyboardLightLevel ?? 0) },
-                set: { service.setKeyboardLightLevel(Float($0)) })
+        Binding(
+            get: {
+                BrightnessSupport.keyboardLightDisplayLevel(
+                    level: service.keyboardLightLevel,
+                    isSaturated: service.keyboardLightSaturated
+                )
+            },
+            set: { newValue in
+                if service.keyboardLightSaturated {
+                    let currentlyOn = (service.keyboardLightLevel ?? 0) > 0
+                    if currentlyOn {
+                        if newValue < 0.5 {
+                            service.setKeyboardLightEnabled(false)
+                        }
+                    } else {
+                        if newValue > 0.0 {
+                            service.setKeyboardLightEnabled(true)
+                        }
+                    }
+                } else {
+                    service.setKeyboardLightLevel(Float(newValue))
+                }
+            }
+        )
     }
 
     private func brightnessBinding(_ display: BrightnessDisplay) -> Binding<Double> {

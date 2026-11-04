@@ -8,6 +8,7 @@ enum DeviceControlsTests {
         testItemProperties(suite)
         testNavigationState(suite)
         testActiveAppFilteringContract(suite)
+        testKeyboardLightSaturatedBehavior(suite)
     }
 
     private static func testItemProperties(_ suite: TestSuite) {
@@ -64,5 +65,41 @@ enum DeviceControlsTests {
             MixerRoutingSupport.shouldShowApp(isPlaying: false, volume: 1.0, selectedOutputDeviceUID: nil, hideInactiveApps: false),
             "inactive app is shown when hideInactiveApps is false"
         )
+    }
+
+    private static func testKeyboardLightSaturatedBehavior(_ suite: TestSuite) {
+        // Normal condition (isSaturated == false):
+        // Display level matches actual level, readout is percentage
+        let normalLevel = BrightnessSupport.keyboardLightDisplayLevel(level: 0.5, isSaturated: false)
+        suite.expect(normalLevel == 0.5, "normal condition returns exact level")
+        let normalReadout = BrightnessSupport.keyboardLightDisplayReadout(level: 0.5, isSaturated: false, onText: "On", offText: "Off")
+        suite.expect(normalReadout == "50%", "normal condition displays percentage")
+
+        let normalFloorReadout = BrightnessSupport.keyboardLightDisplayReadout(level: 0.0625, isSaturated: false, onText: "On", offText: "Off")
+        suite.expect(normalFloorReadout == "6%", "normal condition displays 6% at step 1")
+
+        let normalZeroReadout = BrightnessSupport.keyboardLightDisplayReadout(level: 0, isSaturated: false, onText: "On", offText: "Off")
+        suite.expect(normalZeroReadout == "0%", "normal condition displays 0% when off")
+
+        // Saturated condition (isSaturated == true):
+        // Sliderbar is full (1.0) when on (>0), 0 when off (0)
+        // Readout is "On" when on (>0), "Off" when off (0)
+        let satOnLevel = BrightnessSupport.keyboardLightDisplayLevel(level: 0.0625, isSaturated: true)
+        suite.expect(satOnLevel == 1.0, "saturated condition shows full sliderbar when on at 6%")
+
+        let satOnReadout = BrightnessSupport.keyboardLightDisplayReadout(level: 0.0625, isSaturated: true, onText: "On", offText: "Off")
+        suite.expect(satOnReadout == "On", "saturated condition shows 'On' instead of 6%")
+
+        let satOffLevel = BrightnessSupport.keyboardLightDisplayLevel(level: 0, isSaturated: true)
+        suite.expect(satOffLevel == 0.0, "saturated condition shows 0 sliderbar when off")
+
+        let satOffReadout = BrightnessSupport.keyboardLightDisplayReadout(level: 0, isSaturated: true, onText: "On", offText: "Off")
+        suite.expect(satOffReadout == "Off", "saturated condition shows 'Off' when off")
+
+        let satNilLevel = BrightnessSupport.keyboardLightDisplayLevel(level: nil, isSaturated: true)
+        suite.expect(satNilLevel == 0.0, "saturated condition handles nil level as 0")
+
+        let satNilReadout = BrightnessSupport.keyboardLightDisplayReadout(level: nil, isSaturated: true, onText: "On", offText: "Off")
+        suite.expect(satNilReadout == "Off", "saturated condition handles nil level as Off")
     }
 }
