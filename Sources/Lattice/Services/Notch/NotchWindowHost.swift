@@ -1523,8 +1523,7 @@ private final class NotchCanvas: NSView {
     /// frame as it began to open or settled after closing. Under glass the
     /// fill gives way as the backdrop's resting black does.
     func updateCanvasBlack() {
-        let alpha = usesGlass ? CGFloat(backdropPresentation.restingBlack) : 1
-        let color = NSColor.black.withAlphaComponent(alpha).cgColor
+        let color = NSColor.black.cgColor
         guard layer?.backgroundColor != color else { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)

@@ -481,35 +481,10 @@ struct NotchSurfaceBackground: View {
     }
 
     var body: some View {
-        ZStack {
-            // The black the island rests in stays beneath the glass until
-            // the glass has opened, and the glass exists only while that
-            // black lets it show, so the window's resizes at either end of a
-            // transition happen in plain black.
-            Color.black.opacity(showsGlass || showsTranslucent ? presentation.restingBlack : 1)
-#if compiler(>=6.2)
-            if #available(macOS 26, *), showsGlass, presentation.restingBlack < 1 {
-                let shape = NotchBackdropShape(contour: presentation.contour)
-                Color.clear
-                    .glassEffect(.clear, in: shape)
-                    .environment(\.appearsActive, true)
-                    .materialActiveAppearance(.active)
-                    .overlay {
-                        LinearGradient(stops: Self.shade(openness: presentation.openness, contrast: contrast),
-                                       startPoint: .top, endPoint: .bottom)
-                            .frame(height: presentation.contourBottom)
-                            .frame(maxHeight: .infinity, alignment: .top)
-                            .mask(shape)
-                    }
-            }
-#endif
-            if showsTranslucent, presentation.restingBlack < 1 {
-                translucentOrBlack
-            }
-        }
-        .environment(\.colorScheme, .dark)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
+        Color.black
+            .environment(\.colorScheme, .dark)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 
     /// The dimming over the glass, from the top of the island to its lip. Near
