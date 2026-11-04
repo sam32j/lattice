@@ -9,10 +9,11 @@ extension LatticeHubView {
             ZStack {
                 HubDragHandle()
                     .frame(height: 30)
-                if launcher.activeUtility == .deviceControls {
-                    Text(DeviceControlsNavigationState.shared.currentSubpage == .appVolumes ? "App Volumes" : "Device Controls")
+                if let utility = launcher.activeUtility {
+                    Text(title(for: utility))
                         .font(.system(size: 14.5, weight: .semibold))
                         .foregroundStyle(.primary)
+                        .lineLimit(1)
                         .frame(height: 30)
                         .frame(maxWidth: .infinity, alignment: .center)
                 } else {
@@ -29,10 +30,7 @@ extension LatticeHubView {
                         closeButton
                     }
                     Spacer()
-                    if launcher.activeUtility == .deviceControls {
-                        Color.clear
-                            .frame(width: 26, height: 26)
-                    } else if launcher.activeUtility != nil {
+                    if launcher.activeUtility != nil {
                         closeButton
                     } else if launcher.isEditing {
                         doneEditingButton

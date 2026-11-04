@@ -809,29 +809,32 @@ struct CleanerView: View {
 /// shared header and close affordance of the other hosted utilities.
 struct PanelCleanerView: View {
     @ObservedObject private var l10n = L10n.shared
-    var onClose: () -> Void
+    var showHeader: Bool = true
+    var onClose: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "sparkle")
-                    .font(.system(size: 13, weight: .semibold))
-                Text(l10n.s.cleanerName)
-                    .font(.system(size: 13, weight: .semibold))
-                Spacer()
-                Button {
-                    // Closing means cancel: a scan left running would come
-                    // back on the next open. Cleaning in progress is left alone.
-                    let cleaner = JunkCleaner.shared
-                    if cleaner.phase == .scanning { cleaner.reset() }
-                    onClose()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(.secondary)
+            if showHeader {
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkle")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(l10n.s.cleanerName)
+                        .font(.system(size: 13, weight: .semibold))
+                    Spacer()
+                    Button {
+                        // Closing means cancel: a scan left running would come
+                        // back on the next open. Cleaning in progress is left alone.
+                        let cleaner = JunkCleaner.shared
+                        if cleaner.phase == .scanning { cleaner.reset() }
+                        onClose()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(l10n.s.menuClose)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(l10n.s.menuClose)
             }
             CleanerView(compact: true)
         }

@@ -17,11 +17,12 @@ struct PanelHomebrewView: View {
     @State private var pendingAction: HomebrewPendingAction?
     @State private var showOperationDetails = false
 
-    var onClose: () -> Void
+    var showHeader: Bool = true
+    var onClose: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            header
+            if showHeader { header }
             if homebrew.brewPath == nil {
                 missingState
             } else {

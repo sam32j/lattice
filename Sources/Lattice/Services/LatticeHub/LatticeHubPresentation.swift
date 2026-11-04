@@ -93,7 +93,7 @@ extension LatticeHubService {
     }
 
     var dismissesOnOutsideInteraction: Bool {
-        !stayAwakeOptionsPresented && activeUtility == nil && NSApp.modalWindow == nil
+        false
     }
 
 }

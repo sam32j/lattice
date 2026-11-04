@@ -14,8 +14,6 @@ struct LatticeHubHostedUtility: View {
             return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count)
         case .videoDownloader:
             return 172
-        case .deviceControls:
-            return 486
         default:
             return 470
         }
@@ -23,7 +21,7 @@ struct LatticeHubHostedUtility: View {
 
     var body: some View {
         if item == .recentCaptures {
-            RecentCapturesView(onClose: onClose, notchSize: notchSize)
+            RecentCapturesView(onClose: onClose, showHeader: false, notchSize: notchSize)
                 .frame(height: notchSize?.height)
         } else if item == .deviceControls {
             DeviceControlsHubView(onClose: onClose)
@@ -33,25 +31,25 @@ struct LatticeHubHostedUtility: View {
                 VStack(alignment: .leading, spacing: 0) {
                     switch item {
                     case .homebrew:
-                        PanelHomebrewView(onClose: onClose)
+                        PanelHomebrewView(showHeader: false, onClose: onClose)
                     case .media:
-                        PanelMediaView(onClose: onClose)
+                        PanelMediaView(showHeader: false, onClose: onClose)
                     case .urlCleaner:
-                        PanelURLCleanerView(onClose: onClose)
+                        PanelURLCleanerView(showHeader: false, onClose: onClose)
                     case .uninstaller:
-                        PanelUninstallerView(onClose: onClose)
+                        PanelUninstallerView(showHeader: false, onClose: onClose)
                     case .cleaner:
-                        PanelCleanerView(onClose: onClose)
+                        PanelCleanerView(showHeader: false, onClose: onClose)
                     case .windowLayout:
-                        PanelWindowLayoutView(onClose: onClose)
+                        PanelWindowLayoutView(showHeader: false, onClose: onClose)
                     case .appUpdates:
-                        PanelAppUpdatesView(onClose: onClose)
+                        PanelAppUpdatesView(showHeader: false, onClose: onClose)
                     case .portManager:
-                        PanelPortManagerView(onClose: onClose)
+                        PanelPortManagerView(showHeader: false, onClose: onClose)
                     case .killProcess:
                         KillProcessView(inlineOptions: true)
                     case .wallpaper:
-                        WallpaperSection(collapsible: false, onClose: onClose)
+                        WallpaperSection(collapsible: false, showHeader: false, onClose: onClose)
                     case .videoDownloader:
                         NotchVideoDownloaderView(size: CGSize(width: notchSize?.width ?? 420, height: notchSize?.height ?? 470))
                     default:

@@ -50,15 +50,15 @@ struct LatticeHubView: View {
                     .layoutPriority(1)
                 }
             }
-            if notchSize == nil, launcher.activeUtility != .deviceControls {
+            if notchSize == nil, launcher.activeUtility == nil {
                 footer.padding(.top, 12)
             }
         }
         .padding(notchSize == nil ? 16 : 0)
-        .frame(width: notchSize?.width ?? (launcher.activeUtility == .deviceControls ? 450 : 420),
-               height: notchSize?.height ?? (launcher.activeUtility == .deviceControls ? 560 : nil),
+        .frame(width: notchSize?.width ?? 420,
+               height: notchSize?.height,
                alignment: .top)
-        .fixedSize(horizontal: false, vertical: notchSize == nil && launcher.activeUtility != .deviceControls)
+        .fixedSize(horizontal: false, vertical: notchSize == nil)
         .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
             if notchSize == nil { launcher.updatePanelSize(size) }
         }

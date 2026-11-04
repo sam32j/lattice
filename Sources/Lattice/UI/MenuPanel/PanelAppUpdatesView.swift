@@ -8,13 +8,14 @@ struct PanelAppUpdatesView: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var updates = AppUpdatesService.shared
 
-    var onClose: () -> Void
+    var showHeader: Bool = true
+    var onClose: () -> Void = {}
 
     private var text: AppUpdateStrings { FeatureStrings.appUpdates(l10n.language) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            header
+            if showHeader { header }
             AppUpdatesListView(compact: true)
         }
         .onAppear {

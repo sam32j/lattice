@@ -14,10 +14,11 @@ struct MediaSettings: View {
 }
 
 struct PanelMediaView: View {
-    var onClose: () -> Void
+    var showHeader: Bool = true
+    var onClose: () -> Void = {}
 
     var body: some View {
-        MediaWorkspaceView(compact: true, onClose: onClose)
+        MediaWorkspaceView(compact: true, showHeader: showHeader, onClose: onClose)
             .onAppear { PanelInteractionState.shared.viewKeepsPopoverOpen = true }
             .onDisappear { PanelInteractionState.shared.viewKeepsPopoverOpen = false }
     }
@@ -128,19 +129,21 @@ struct MediaWorkspaceView: View {
 
     var compact: Bool
     var onClose: (() -> Void)?
+    var showHeader: Bool = true
     private let initialInputs: [URL]
     private let initialTool: MediaTool?
     private let preservesServiceState: Bool
     private let onContentHeightChange: ((CGFloat) -> Void)?
     private let onToolChange: (() -> Void)?
 
-    init(compact: Bool, onClose: (() -> Void)? = nil,
+    init(compact: Bool, showHeader: Bool = true, onClose: (() -> Void)? = nil,
          media: MediaService = .shared, initialInputs: [URL] = [],
          initialTool: MediaTool? = nil, preservesServiceState: Bool = false,
          workspace: MediaWorkspaceSelection? = nil,
          onContentHeightChange: ((CGFloat) -> Void)? = nil,
          onToolChange: (() -> Void)? = nil) {
         self.compact = compact
+        self.showHeader = showHeader
         self.onClose = onClose
         self.media = media
         self.initialInputs = initialInputs
@@ -267,23 +270,26 @@ struct MediaWorkspaceView: View {
         }
     }
 
+    @ViewBuilder
     private var header: some View {
-        HStack(spacing: 9) {
-            Label(l10n.s.mediaName, systemImage: "rectangle.compress.vertical")
-                .font(.system(size: compact ? 12 : 16, weight: .semibold))
-            Spacer(minLength: 0)
-            Text(l10n.s.mediaLocalNote)
-                .font(.system(size: compact ? 9.5 : 11, weight: .medium))
-                .foregroundStyle(.secondary)
-            if let onClose {
-                Button(action: onClose) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 22, height: 22)
+        if showHeader {
+            HStack(spacing: 9) {
+                Label(l10n.s.mediaName, systemImage: "rectangle.compress.vertical")
+                    .font(.system(size: compact ? 12 : 16, weight: .semibold))
+                Spacer(minLength: 0)
+                Text(l10n.s.mediaLocalNote)
+                    .font(.system(size: compact ? 9.5 : 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                if let onClose {
+                    Button(action: onClose) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 22, height: 22)
+                    }
+                    .buttonStyle(.plain)
+                    .help(l10n.s.uninstallerCancel)
                 }
-                .buttonStyle(.plain)
-                .help(l10n.s.uninstallerCancel)
             }
         }
     }

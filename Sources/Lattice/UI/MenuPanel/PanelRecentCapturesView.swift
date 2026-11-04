@@ -24,6 +24,7 @@ struct RecentCapturesView: View {
     @State private var confirmingClear = false
 
     var onClose: (() -> Void)?
+    var showHeader: Bool = true
     /// The island uses the same compact vertical rows as the capture history.
     var notchSize: CGSize? = nil
 
@@ -43,7 +44,11 @@ struct RecentCapturesView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if notchSize == nil { header }
+            if showHeader && notchSize == nil {
+                header
+            } else if !showHeader && notchSize == nil {
+                clearBar
+            }
             content
         }
         .onAppear { history.reload() }
@@ -85,6 +90,22 @@ struct RecentCapturesView: View {
                 .accessibilityLabel(l10n.s.uninstallerCancel)
             }
         }
+    }
+
+    private var clearBar: some View {
+        HStack {
+            Spacer()
+            Button {
+                confirmingClear = true
+            } label: {
+                Label(text.clear, systemImage: "trash")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(visibleEntries.isEmpty)
+        }
+        .padding(.horizontal, 4)
     }
 
     /// The dialog would hang from the island as a sheet; there it asks on its own.

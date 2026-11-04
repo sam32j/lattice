@@ -10,13 +10,14 @@ struct PanelPortManagerView: View {
     @State private var pending: PortManagerEntry?
     @State private var force = false
 
-    var onClose: () -> Void
+    var showHeader: Bool = true
+    var onClose: () -> Void = {}
 
     private var strings: PortManagerFeatureStrings { FeatureStrings.portManager(l10n.language) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            header
+            if showHeader { header }
             controls
             if service.refreshFailed {
                 Label(strings.loadFailed, systemImage: "exclamationmark.triangle")
