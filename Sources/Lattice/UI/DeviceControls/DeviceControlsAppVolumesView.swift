@@ -157,6 +157,7 @@ struct DeviceControlsAppVolumesView: View {
 
                 Text(app.name)
                     .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(active ? Color.primary : Color.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
 
@@ -181,20 +182,23 @@ struct DeviceControlsAppVolumesView: View {
 
             // Row 2 — Volume control
             HStack(spacing: 8) {
-                // Mute button: aligned horizontally with the app icon (32 pt width)
+                // Speaker icon: doubles as reset button (aligned with app icon, 32 pt width)
                 Button {
-                    mixer.toggleMute(app)
+                    if (app.volume * 100).rounded() == 100 {
+                        mixer.toggleMute(app)
+                    } else {
+                        mixer.setVolume(1.0, for: app)
+                        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+                    }
                 } label: {
-                    Image(systemName: app.volume <= 0.001 ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    Image(systemName: speakerIcon(for: app.volume))
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(app.volume <= 0.001
-                                         ? PanelMetricColor.red(for: colorScheme)
-                                         : Color.secondary)
+                        .foregroundStyle(speakerColor(for: app.volume))
                         .frame(width: 32, height: 24, alignment: .center)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(app.volume <= 0.001 ? "Unmute \(app.name)" : "Mute \(app.name)")
+                .accessibilityLabel(speakerAccessibilityLabel(for: app))
 
                 if app.isBypassed {
                     Text(l10n.s.mixerBypassedCaption)
@@ -203,17 +207,12 @@ struct DeviceControlsAppVolumesView: View {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    DeviceControlsSlider(
+                    AppVolumeBoostSlider(
                         title: "\(app.name) volume",
                         value: Binding(
                             get: { app.volume },
                             set: { mixer.setVolume($0, for: app) }
-                        ),
-                        range: 0...AppVolumeMixer.maxVolume,
-                        readout: "\(Int((app.volume * 100).rounded()))%",
-                        tintColor: (app.volume * 100).rounded() > 100
-                            ? PanelMetricColor.orange(for: colorScheme)
-                            : nil
+                        )
                     )
                 }
             }
@@ -221,6 +220,36 @@ struct DeviceControlsAppVolumesView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .opacity(active ? 1.0 : 0.65)
+    }
+
+    private func speakerIcon(for volume: Double) -> String {
+        if volume <= 0.001 {
+            return "speaker.slash.fill"
+        } else if volume <= 0.33 {
+            return "speaker.wave.1.fill"
+        } else if volume <= 0.66 {
+            return "speaker.wave.2.fill"
+        } else {
+            return "speaker.wave.3.fill"
+        }
+    }
+
+    private func speakerColor(for volume: Double) -> Color {
+        if volume <= 0.001 {
+            return Color.secondary
+        } else if volume > 1.0 {
+            return Color.orange
+        } else {
+            return Color.secondary
+        }
+    }
+
+    private func speakerAccessibilityLabel(for app: MixerApp) -> String {
+        if (app.volume * 100).rounded() == 100 {
+            return "Mute \(app.name)"
+        } else {
+            return "Reset \(app.name) volume to 100%"
+        }
     }
 
     private func outputPicker(for app: MixerApp) -> some View {
