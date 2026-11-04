@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Vorssaint
 
 import CoreAudio
+import CoreGraphics
 import Foundation
 
 struct MixerInputRouteResolution: Equatable {
@@ -1067,5 +1068,69 @@ enum AudioListenerClients {
 
     static func forget(_ client: UnsafeMutableRawPointer) {
         lock.withLock { entries[UInt(bitPattern: client)] = nil }
+    }
+}
+
+/// Pure metrics and mapping calculations for the app volume slider with boost stub.
+/// Kept as pure functions for testability.
+enum AppVolumeSliderMetrics {
+    static let stubWidth: CGFloat = 28
+    static let gap: CGFloat = 4
+    static let snapMargin: CGFloat = 6
+    static let stickyLead: CGFloat = 3
+    static let trackHeight: CGFloat = 6
+    static let thumbDiameter: CGFloat = 16
+    static let thumbRadius: CGFloat = thumbDiameter / 2
+
+    /// Available horizontal travel for the thumb center between track insets.
+    static func usableWidth(totalWidth: CGFloat) -> CGFloat {
+        max(totalWidth - thumbDiameter, 20)
+    }
+
+    /// Width of the main bar (0-100% volume).
+    static func mainBarWidth(totalWidth: CGFloat) -> CGFloat {
+        max(usableWidth(totalWidth: totalWidth) - stubWidth - gap, 20)
+    }
+
+    /// Maps pointer X coordinate to volume value (0.0 to 2.0).
+    static func value(for x: CGFloat, totalWidth: CGFloat) -> Double {
+        let usable = usableWidth(totalWidth: totalWidth)
+        let clampedX = min(max(x - thumbRadius, 0), usable)
+        let mainWidth = mainBarWidth(totalWidth: totalWidth)
+
+        // Main bar: 0 - 100%
+        if clampedX <= mainWidth {
+            // Snapping zone near the end of the main bar
+            if clampedX >= mainWidth - snapMargin {
+                return 1.0
+            }
+            let fraction = clampedX / (mainWidth - snapMargin)
+            return min(max(Double(fraction), 0.0), 1.0)
+        }
+
+        // Sticky zone: gap and first stickyLead points of the stub stay at exactly 100%
+        let stubStart = mainWidth + gap
+        if clampedX <= stubStart + stickyLead {
+            return 1.0
+        }
+
+        // Boost stub: 100% - 200%
+        let effectiveStubWidth = max(stubWidth - stickyLead, 1)
+        let stubOffset = clampedX - (stubStart + stickyLead)
+        let boostFraction = min(max(Double(stubOffset / effectiveStubWidth), 0.0), 1.0)
+        return 1.0 + boostFraction
+    }
+
+    /// Maps volume value (0.0 to 2.0) to thumb center X coordinate.
+    static func thumbPosition(for value: Double, totalWidth: CGFloat) -> CGFloat {
+        let mainWidth = mainBarWidth(totalWidth: totalWidth)
+        let clamped = min(max(value, 0.0), 2.0)
+        if clamped <= 1.0 {
+            return thumbRadius + CGFloat(clamped) * mainWidth
+        } else {
+            let stubStart = thumbRadius + mainWidth + gap
+            let boostFraction = CGFloat(clamped - 1.0)
+            return stubStart + boostFraction * stubWidth
+        }
     }
 }

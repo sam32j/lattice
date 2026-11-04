@@ -11,6 +11,7 @@ enum DeviceControlsTests {
         testActiveAppFilteringContract(suite)
         testKeyboardLightSaturatedBehavior(suite)
         testLauncherNavigationAndWindowBehavior(suite)
+        testAppVolumeBoostSliderMetrics(suite)
     }
 
     private static func testItemProperties(_ suite: TestSuite) {
@@ -130,5 +131,56 @@ enum DeviceControlsTests {
         LatticeHubContract.events.removeAll()
         _ = launcher.handlePanelKey(LatticeHubContract.NSEvent(keyCode: UInt16(kVK_ANSI_W), modifierFlags: .command))
         suite.expect(LatticeHubContract.events == ["hide"], "Cmd+W closes launcher")
+    }
+
+    private static func testAppVolumeBoostSliderMetrics(_ suite: TestSuite) {
+        let totalWidth: CGFloat = 200
+        let mainWidth = AppVolumeSliderMetrics.mainBarWidth(totalWidth: totalWidth)
+        suite.expect(mainWidth == 200 - 16 - 28 - 4, "mainBarWidth is total - insets - stub - gap")
+
+        // 0 position -> 0%
+        suite.expect(AppVolumeSliderMetrics.value(for: 0, totalWidth: totalWidth) == 0.0, "x=0 yields 0 volume")
+        suite.expect(AppVolumeSliderMetrics.value(for: AppVolumeSliderMetrics.thumbRadius, totalWidth: totalWidth) == 0.0, "x=thumbRadius yields 0 volume")
+
+        // Main bar middle -> ~50%
+        let midVal = AppVolumeSliderMetrics.value(for: AppVolumeSliderMetrics.thumbRadius + (mainWidth - AppVolumeSliderMetrics.snapMargin) / 2, totalWidth: totalWidth)
+        suite.expect(abs(midVal - 0.5) < 0.05, "middle of main bar yields approx 0.5")
+
+        // Snapping near end of main bar -> 100%
+        let snapVal = AppVolumeSliderMetrics.value(for: AppVolumeSliderMetrics.thumbRadius + mainWidth - 2, totalWidth: totalWidth)
+        suite.expect(snapVal == 1.0, "within snap margin snaps to exactly 1.0")
+
+        // End of main bar -> 100%
+        let endBarVal = AppVolumeSliderMetrics.value(for: AppVolumeSliderMetrics.thumbRadius + mainWidth, totalWidth: totalWidth)
+        suite.expect(endBarVal == 1.0, "end of main bar yields 1.0")
+
+        // Sticky zone (gap) -> exactly 100%
+        let gapVal = AppVolumeSliderMetrics.value(for: AppVolumeSliderMetrics.thumbRadius + mainWidth + 2, totalWidth: totalWidth)
+        suite.expect(gapVal == 1.0, "sticky zone in gap yields exactly 1.0")
+
+        // Sticky lead in stub -> exactly 100%
+        let stickyLeadVal = AppVolumeSliderMetrics.value(for: AppVolumeSliderMetrics.thumbRadius + mainWidth + AppVolumeSliderMetrics.gap + 1, totalWidth: totalWidth)
+        suite.expect(stickyLeadVal == 1.0, "sticky lead in stub yields exactly 1.0")
+
+        // Middle of stub -> ~150% (boosted)
+        let stubMidX = AppVolumeSliderMetrics.thumbRadius + mainWidth + AppVolumeSliderMetrics.gap + AppVolumeSliderMetrics.stickyLead + (AppVolumeSliderMetrics.stubWidth - AppVolumeSliderMetrics.stickyLead) / 2
+        let stubMidVal = AppVolumeSliderMetrics.value(for: stubMidX, totalWidth: totalWidth)
+        suite.expect(abs(stubMidVal - 1.5) < 0.05, "midpoint of boost stub yields approx 1.5")
+
+        // End of stub -> 200% (max boost)
+        let stubEndVal = AppVolumeSliderMetrics.value(for: totalWidth, totalWidth: totalWidth)
+        suite.expect(stubEndVal == 2.0, "end of stub yields 2.0 (200%)")
+
+        // Thumb positions
+        let posZero = AppVolumeSliderMetrics.thumbPosition(for: 0.0, totalWidth: totalWidth)
+        suite.expect(posZero == AppVolumeSliderMetrics.thumbRadius, "0 volume thumb is at thumbRadius")
+
+        let pos100 = AppVolumeSliderMetrics.thumbPosition(for: 1.0, totalWidth: totalWidth)
+        let expectedPos100 = AppVolumeSliderMetrics.thumbRadius + mainWidth
+        suite.expect(pos100 == expectedPos100, "100% volume thumb is at end of main bar")
+
+        let pos200 = AppVolumeSliderMetrics.thumbPosition(for: 2.0, totalWidth: totalWidth)
+        let expectedPos200 = AppVolumeSliderMetrics.thumbRadius + mainWidth + AppVolumeSliderMetrics.gap + AppVolumeSliderMetrics.stubWidth
+        suite.expect(pos200 == expectedPos200, "200% volume thumb is at end of stub")
     }
 }
