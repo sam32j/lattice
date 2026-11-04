@@ -16,7 +16,8 @@ struct PanelURLCleanerView: View {
     @State private var input = ""
     @State private var copied: String?
 
-    var onClose: () -> Void
+    var showHeader: Bool = true
+    var onClose: () -> Void = {}
     /// Worked out from the field on every render, so Copy always takes the
     /// link that is in the field now under the rules in force now.
     private var result: URLCleaning.Result? {
@@ -26,7 +27,7 @@ struct PanelURLCleanerView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            header
+            if showHeader { header }
             autoCleanToggle
             manualCleaner
         }

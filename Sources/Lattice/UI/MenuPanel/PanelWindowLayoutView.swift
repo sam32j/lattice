@@ -17,7 +17,8 @@ struct PanelWindowLayoutView: View {
     @State private var editingActions = false
     @State private var systemTilingEnabled = WindowEdgeSnapSupport.isSystemTilingEnabled
 
-    var onClose: () -> Void
+    var showHeader: Bool = true
+    var onClose: () -> Void = {}
 
     private var text: WindowLayoutFeatureStrings {
         FeatureStrings.windowLayout(l10n.language)
@@ -30,7 +31,7 @@ struct PanelWindowLayoutView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            header
+            if showHeader { header }
             intro
             actionGroup(title: text.halves, actions: [.leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerHalf])
             actionGroup(title: text.thirds, actions: [

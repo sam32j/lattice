@@ -7,10 +7,17 @@ import Carbon.HIToolbox
 extension LatticeHubService {
     func handlePanelKey(_ event: NSEvent,
                         flow: QuickToolsSupport.GridFlow = .rows(columns: LatticeHubService.columns)) -> NSEvent? {
-        if stayAwakeOptionsPresented { return event }
         if event.keyCode == UInt16(kVK_Escape) {
             if (event.window?.firstResponder as? NSTextView)?.hasMarkedText() == true { return event }
-            if activeUtility != nil {
+            if stayAwakeOptionsPresented {
+                stayAwakeOptionsPresented = false
+            } else if activeUtility == .deviceControls,
+                      DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
+                DeviceControlsNavigationState.shared.currentSubpage = .main
+            } else if activeUtility != nil {
+                if activeUtility == .deviceControls {
+                    DeviceControlsNavigationState.shared.resetSubpage()
+                }
                 activeUtility = nil
             } else if editingOptionsItem != nil {
                 editingOptionsItem = nil
@@ -21,11 +28,16 @@ extension LatticeHubService {
             }
             return nil
         }
+        if event.modifierFlags.contains(.command), Int(event.keyCode) == kVK_ANSI_W {
+            hide()
+            return nil
+        }
         if event.modifierFlags.contains(.command), Int(event.keyCode) == kVK_ANSI_Comma {
             hide()
             openSettings()
             return nil
         }
+        if stayAwakeOptionsPresented { return event }
         guard !isEditing, activeUtility == nil else { return event }
 
         let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
@@ -74,36 +86,8 @@ extension LatticeHubService {
     func installMonitors(for panel: NSPanel) {
         removeMonitors()
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self, weak panel] event in
-            guard let self, let panel, event.window === panel else { return event }
+            guard let self, let panel, event.window === panel, panel.isKeyWindow else { return event }
             return self.handlePanelKey(event)
-        }
-        let mouseEvents: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
-        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: mouseEvents) { [weak self, weak panel] event in
-            guard let self, let panel, panel.isVisible, self.dismissesOnOutsideInteraction else { return event }
-            if event.window !== panel, !Self.mouseIsInside(panel) {
-                self.hide()
-            }
-            return event
-        }
-        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: mouseEvents) { [weak self, weak panel] event in
-            guard let self, let panel, panel.isVisible, self.dismissesOnOutsideInteraction else { return }
-            if event.windowNumber != panel.windowNumber, !Self.mouseIsInside(panel),
-               !AssistiveKeyboard.ownsCocoaPoint(NSEvent.mouseLocation) {
-                self.hide()
-            }
-        }
-        activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            guard let self,
-                  self.dismissesOnOutsideInteraction,
-                  let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-                  app.bundleIdentifier != Bundle.main.bundleIdentifier,
-                  app.bundleIdentifier != AssistiveKeyboard.bundleID
-            else { return }
-            self.hide()
         }
     }
 

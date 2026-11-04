@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Samuel Ji
 
 import Foundation
+import Carbon.HIToolbox
 
 enum DeviceControlsTests {
     static func run(_ suite: TestSuite) {
@@ -9,6 +10,7 @@ enum DeviceControlsTests {
         testNavigationState(suite)
         testActiveAppFilteringContract(suite)
         testKeyboardLightSaturatedBehavior(suite)
+        testLauncherNavigationAndWindowBehavior(suite)
     }
 
     private static func testItemProperties(_ suite: TestSuite) {
@@ -101,5 +103,32 @@ enum DeviceControlsTests {
 
         let satNilReadout = BrightnessSupport.keyboardLightDisplayReadout(level: nil, isSaturated: true, onText: "On", offText: "Off")
         suite.expect(satNilReadout == "Off", "saturated condition handles nil level as Off")
+    }
+
+    private static func testLauncherNavigationAndWindowBehavior(_ suite: TestSuite) {
+        // Hierarchical escape behavior
+        let launcher = LatticeHubContract.Launcher()
+        let nav = DeviceControlsNavigationState.shared
+        nav.currentSubpage = .appVolumes
+        launcher.activeUtility = .deviceControls
+
+        // Escape on nested subpage (App Volumes) returns to parent subpage (.main)
+        _ = launcher.handlePanelKey(LatticeHubContract.NSEvent(keyCode: UInt16(kVK_Escape)))
+        suite.expect(nav.currentSubpage == .main, "escape on appVolumes returns to main page")
+        suite.expect(launcher.activeUtility == .deviceControls, "activeUtility remains deviceControls")
+
+        // Escape on feature page (.main) returns to root launcher (activeUtility == nil)
+        _ = launcher.handlePanelKey(LatticeHubContract.NSEvent(keyCode: UInt16(kVK_Escape)))
+        suite.expect(launcher.activeUtility == nil, "escape on deviceControls main returns to root launcher")
+
+        // Escape on root launcher closes launcher
+        LatticeHubContract.events.removeAll()
+        _ = launcher.handlePanelKey(LatticeHubContract.NSEvent(keyCode: UInt16(kVK_Escape)))
+        suite.expect(LatticeHubContract.events == ["hide"], "escape on root launcher closes launcher")
+
+        // Cmd+W closes launcher
+        LatticeHubContract.events.removeAll()
+        _ = launcher.handlePanelKey(LatticeHubContract.NSEvent(keyCode: UInt16(kVK_ANSI_W), modifierFlags: .command))
+        suite.expect(LatticeHubContract.events == ["hide"], "Cmd+W closes launcher")
     }
 }

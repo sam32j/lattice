@@ -13,6 +13,7 @@ struct WallpaperSection: View {
     @State private var isRemovingSources = false
     @State private var viewerID = UUID()
     var collapsible = true
+    var showHeader = true
     var onClose: (() -> Void)? = nil
 
     private var text: WallpaperFeatureStrings {
@@ -39,7 +40,7 @@ struct WallpaperSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            header
+            if showHeader { header }
             controls
             if isRemovingSources, !service.removableChipSources.isEmpty {
                 sourceRemoveStrip

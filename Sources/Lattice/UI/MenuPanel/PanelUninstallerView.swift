@@ -16,11 +16,12 @@ struct PanelUninstallerView: View {
     @State private var pendingHomebrewRemoval: AppUninstaller.HomebrewRemovalConfirmation?
     @State private var showHomebrewDetails = false
 
-    var onClose: () -> Void
+    var showHeader: Bool = true
+    var onClose: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            header
+            if showHeader { header }
             content
         }
         .dropDestination(for: URL.self) { urls, _ in
