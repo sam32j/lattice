@@ -2,6 +2,225 @@
 
 ## [3.4.1-d.2] - 2026-10-17
 
+## [3.4.2-d.5] - 2026-11-04
+
+### Added
+- **Settings**: Position backup and danger zone dialogs on top of app window and remove link from permission popover
+- **App Updates**: Add skeleton loading, decouple hub empty state, and polish no-sources view
+- **App Updates**: Separate update sources section and polish HUB empty state
+- **App Updates**: Debounce source rechecks and filter active apps count by enabled sources
+- **App Updates**: Inline preferences into main updates page and remove toolbar popover
+- **App Updates**: Overhaul main updates view with incremental cards and remove exclusion card
+- **App Updates**: Redesign options popover with compact layout and embedded exclusions
+- **App Updates**: Support incremental discovery streaming and track in-progress updates
+- **Settings**: Add card header symbols and reorganize audio input settings
+- **Dock Preview**: Update space badge icon and use dock symbol for preview size options
+- **Quit Protection**: Add double-press interval presets and polish HUD layout during hold
+- **Window Layout**: Add window fronting bridge and include gesture dragging in permission revocation
+- **Audio Priority**: Add ad-hoc session selection and remove obsolete fallback warnings
+- **Mic Mute**: Add dedicated menu bar status item for muted microphone
+- **Window Layout**: Front windows asynchronously on drag start without blocking drag motion
+- **Hub**: Paginated two-row strip layout with live sliding and dashed box drag preview in dynamic island
+- **Notch**: Require 3/4-inch swipe up to dismiss from main window while keeping slight swipe in toolbar
+- **Notch**: Improve Dynamic Island corner radius, curvature and preview clipping
+- **Dev**: Add developer CLI probes for hub drag, editing and presentation
+- **L10n**: Refine control titles, labels and widget wordings
+- **L10n**: Update localizations for uninstallation and system monitor
+- **Runtime**: Wire launch lifecycles and settings dismiss actions
+- **Settings**: Extract permissions module options and refine indicator list
+- **Settings**: Sort utilities section alphabetically in settings sidebar
+- **Hub**: Refine quick controls editing and layout integration
+- **Hub**: Support recent captures item and condition manage tools button
+- **Hub**: Add keyboard typeahead search and tab navigation
+- **Hub**: Add native drag session and edge scrolling coordinator
+- **Hub**: Add localized hub customization strings
+- **Hub**: Split hub editing tray into dedicated view
+- **Hub**: Split hub header and footer chrome into dedicated view
+- **Hub**: Stabilize floating panel frame during accordion animation
+- **Hub**: Add accordion layout for hub editing expansion
+- **Hub**: Add hub editing presentation state coordinator
+- **Hub**: Extract hub presentation lifecycle into dedicated service extension
+- **Notch**: Add two-row threshold and hub geometry calculation
+- **Hud**: Show red tint for muted microphone status notices
+- **Settings**: Improve microphone mute toggle and shortcut row in audio settings
+- **Settings**: Present native alert for self-uninstall confirmation
+- **Settings**: Refine permission reset lifecycle and restart modal handling
+- **Settings**: Localize permission reset and restart copy
+- **Settings**: Add owner-relative permission dialog presentation helper
+- **Notifier**: Add completion callback to notification authorization requests
+- **Permissions**: Guard against out-of-order automation refresh races
+- **Permissions**: Route portal rows to native system permission requests
+- **Quick Tools**: Route hidden files and desktop icons toggles to modern system events
+- **Permissions**: Add automation targets and async permission request routing
+- **Settings**: Integrate deferred permission recording into permission-gated toggles
+- **Permissions**: Add service to recover deferred activations on launch
+- **Permissions**: Add deferred permission activation coordinator
+- **Settings**: Add dedicated audio visualizer toggle with permission request
+- **Notch**: Add runtime parent reconciliation and audio tap syncing for visualizer
+- **Notch**: Add visualizer activation coordinator with permission lifecycle
+- **Permissions**: Add system audio authorization and recording access probes
+- **Settings**: Move activation to owning pages
+- **Keep Awake**: Integrate timed sessions into Hub controls
+- **Hub**: Move camera preview into ordered quick toggles
+- **Notch**: Bake low battery amber and red warnings into resting indicators
+- **Settings**: Modernize opening section with hover dropdown and clean layout
+- **Localization**: Add hover action preview and expand localized strings
+- **Notch**: Update preview navigation icons and click behaviors
+- **Notch**: Track explore page and app panel as last visited destination
+- **Notch**: Redesign opening settings with delay preset dropdowns
+- **Notch**: Implement restorable timer sessions via ephemeral cache
+- **Notch**: Implement rising two-tone chime for timer alerts
+- **Notch**: Use 0-300ms looping ping for timer ring
+- **Settings**: Route dynamic island widgets to dedicated subpages with router history
+- **Ui**: Update wallpaper SF Symbol to rectangle.inset.filled.and.cursorarrow
+- **Notch**: Support undoing trackpad music swipe by reversing direction
+- **Explore**: Replace search and shortcuts with Finder-style typeahead navigation
+- **Settings**: Streamline Dynamic Island settings and add live screen quick actions editor
+- **Notch**: Add Dynamic Island UI and routing for Text Snippets
+- **Ui**: Update symbols for utilities and actions across the app
+- **Settings**: Modernize utility presentation controls and Hub Dynamic Island toggle
+- **Notch**: Decouple Explore gallery and optimize Dynamic Island Hub rail layout
+- **Hub**: Expand Lattice Hub utilities catalog and wire runners
+- **Catalog**: Register videoDownloader across catalog, policies, profiles and settings
+- **Settings**: Update Lattice Hub settings copy for shortcut target and key recorder
+- **Hub**: Dismiss app menu popover when opening floating hub
+- **Hub**: Shorten shortcut target caption and add native drag handle to floating HUD header
+- **Settings**: Refine hub shortcut target selector, reorder child rows, and restore HUD draggability
+- **Hub**: Add cleaning mode toggle, align energy/power icons, add contrast & off-state icons, and speed up tooltips
+- **Hub**: Modernize hub icon to 2x2 grid, fix dynamic island height clipping, and uncrowd controls and settings
+- **Hub**: Unify quick controls into Lattice Hub, add shortcut target setting, and ensure notch parity
+- **Interface**: Unify Quick Toggles and Utilities into Lattice Hub
+  - Consolidate Quick Toggles and workflow utilities into a unified two-tier Lattice Hub.
+  - Streamline Menu Bar panel by replacing redundant 14-tool list with a spatial bridge button to Lattice Hub anchored under the status item.
+  - Provide canonical naming ('Lattice Hub') across services, views, settings, and all 14 localizations.
+  - Purge zombie launcher entries (screenOCR, colorPicker) from UI enums while preserving underlying capture and OCR engines.
+  - Decompose services and views into modular files under 300 lines.
+  - Update test harnesses and pass all 105,221 checks.
+
+### Changed
+- **App Updates**: Clean up dead code, share utility height calculation, and optimize relative date formatting
+- **Menu Panel**: Remove keep awake section and add reorder drag feedback
+- **Notch**: Simplify lyrics service by removing manual import panel
+- **Notch**: Extract NotchRail into dedicated component
+- **Permissions**: Remove floating permission guide overlay and unused strings
+- **Notch**: Extract music module settings and integrate audio visualizer toggle
+- **Services**: Restore private storage and type docs
+- **Features**: Isolate owned service lifecycles
+- **Keep Awake**: Unify bolt indicators and compact readings
+- **Notch**: Remove custom sizing and redundant display hint
+- **Settings**: Simplify Dynamic Island configuration and copy
+- **Settings**: Remove low battery warning options from settings
+- **Settings**: Relocate quick actions card under separator
+- **Settings**: Reorder opening container and clean section dividers
+- **Settings**: Convert dynamic island size selector to dropdown menu
+- **Settings**: Rename widgets list container to Widgets and update editor strings
+- **Notch**: Remove display icon from show dynamic island on row
+- **Notch**: Remove extra segment padding and redundant back button
+- **Notch**: Update dynamic island display label and space hint copy
+- **Notch**: Update dynamic island settings layout, icons, and live activity copy
+- **Notch**: Reorganize dynamic island settings layout and live activity controls
+- **Menubar**: Simplify status bar right-click context menu
+- **Notch**: Rename accessory alerts to accessory status
+- **Settings**: Move Keep Awake indicator toggle from Controls to Indicators
+- **Panel**: Decouple wallpaper section from App Menu panel
+- **Notch**: Gate launcher controls height evaluation in expandedSize to tools page
+- **Onboarding**: Remove unused isNewFeature property from WhatsNewSupport
+- **App Menu**: Remove unused features observation from AppMenuDestinationSettings
+- **Permissions**: Remove unused features observation from PermissionsPortalSections
+- **Monitoring**: Remove unused features observation from MonitorPanelConfig
+- **Monitoring**: Remove unused features observation from MonitorAppearanceSettings
+- **Display**: Remove unused features observation from DisplaySettings
+- **Clipboard**: Remove unused features observation from ClipboardSettings
+- **Dock**: Remove unused features observation and pages property from DockSettings
+- **Mouse**: Remove dead activeBadge helper from MousePointerSettings
+- **Ui**: Remove obsolete ShortcutCaps and KeyCap components from SharedUI
+- **Switcher**: Remove dead tertiaryText color from SwitcherView
+- **Audio**: Remove dead editingVolumeID and glassEnabled properties from AudioInputDeviceControls
+- **Wallpaper**: Remove dead openSystemWallpaperSettings helper from WallpaperService
+- **Video Downloader**: Remove unused VideoWebsiteSessionError enum from VideoWebsiteSessions
+- **Video Downloader**: Remove dead isValidURL and installTools from VideoDownloader
+- **Video Downloader**: Remove dead segmentedOptions property from VideoDownloadInfo
+- **Video Downloader**: Remove dead hasDeno property from VideoDownloadDependencies
+- **Video Downloader**: Remove dead ensureDeno lazy installer from ToolchainManager
+- **Screenshots**: Remove unused permissions and runtime observations from ScreenshotSettings
+- **Screen Recording**: Remove unused runtime observation from ScreenRecorderSettings
+- **Screen Recording**: Remove unused cameraPreviewVisible from RecorderOverlayController
+- **Quick Tools**: Remove dead systemImageName property from ScreenshotSupport
+- **Quick Tools**: Remove dead ejectableVolumeCount and refreshPermissionStates from QuickTogglesService
+- **Notch**: Remove dead hidesMenuBarIcon storage from NotchSettings
+- **Notch**: Remove dead chromeHeight and nominalContentTop constants from NotchSupport
+- **Hub**: Remove dead launcherShortcut storage from DedicatedUtilitySettings
+- **Hub**: Remove unused controlOrderBinding from LatticeHubControlsSupport
+- **Hub**: Remove obsolete QuickLauncherView typealias from LatticeHubView
+- **Menu Panel**: Remove unused features observation from PanelLayoutEditor
+- **Menu Panel**: Remove unused features observation from BrightnessSection
+- **Menu Panel**: Purge dead utility action buttons and toggle rows from MenuPanelView
+- **App Delegate**: Remove dead iconIsSettling helper from AppDelegate
+- **Menubar**: Remove unused resetStatusItemPlacementIdentity from StatusItemController
+- **Menubar**: Remove dead currentAllowance helper from MenuBarAllowanceSupport
+- **Menubar**: Remove dead column sizing and snapshot helpers from MenuBarRenderer
+- **Settings**: Remove vestigial 'Show in panel' toggles from clipboard, window layout, and app updates
+- **Interface**: Remove redundant Controls section and simplify Quick Launcher
+
+### Fixed
+- **App Updates**: Correct scan status, localization, and hosted layout
+- **Settings**: Push dialog placement down to align with system permission request dialog
+- **Notch**: Reduce Dynamic Island vertical height for compact hub utilities like app updates
+- **App Updates**: Preserve discovery order without re-sorting when scan completes
+- **Window Layout**: Complete drag sessions without blocking input
+- **Audio**: Preserve external mute and refresh selected input state
+- **Quick Tools**: Preserve input ownership and focus across lifecycle changes
+- **Notch**: Smooth mission control concealment and use fixed crossfading mic notice
+- **Screenshot Pin**: Restore pinch-to-zoom tracking and hover key window focus
+- **Notch**: Ignore empty clears and concealed copies in clipboard notices
+- **Notch**: Read clipboard snapshots off the main thread
+- **Hub**: Guard preview availability and diagnose CI rendering failures
+- **Notch**: Preserve accessory independence and clipboard notice ownership
+- **Hub**: Size island pages for compact and spacious layouts
+- **Hub**: Synchronize editor fades and prevent clipped content
+- **Hub**: Unify native tile dragging and insertion previews
+- **Notch**: Poll pasteboard change count for clipboard notices
+- **Notch**: Support expanded header hit testing and hover expands option
+- **Permissions**: Recover denied requests and failed restart attempts
+- **Permissions**: Address review comments on permissions recovery, automation targets and audio controls
+- **Audio**: Refine audio input device picker and volume fallback
+- **Settings**: Do not open system settings during permission preflight
+- **Notch**: Recover mouse swipes after trackpad gestures
+- **Homebrew**: Reset cancelled read and trust state
+- **Keep Awake**: Localize Hub controls and compact time units
+- **Keep Awake**: Use fixed amber active indicators
+- **Notch**: Release mouse suppression on raw cancellation
+- **Timer**: Consume announced completions without recaching them
+- **Snippets**: Localize copy feedback and label the copy action
+- **Notch**: Recover Magic Mouse swipes without changing trackpad feedback
+- **Settings**: Localize Dynamic Island quick-action editing
+- **Notch**: Preserve input routing and current presentation requests
+- **Timer**: Validate restored sessions and chime PCM layout
+- **Notch**: Normalize AI usage and battery idle indicators
+- **Lock Screen**: Coordinate island handoff and retire outgoing surfaces
+- **Navigation**: Clarify Explore returns and capture history controls
+- **Notch**: Preserve live activity previews and gesture haptics
+- **Notch**: Remove native system tooltip popups from compact activity strips
+- **Lock Screen**: Size island dynamically with playback and remove padlock delay
+- **Notch**: Animate cutout shrink and restoration across Mission Control
+- **Notch**: Collapse and reveal from physical notch cutout bounds without menu bar protrusion
+- **Notch**: Collapse to physical notch cutout width and ensure hidden panel orders out
+- **Notch**: Prevent SDFLayer invalid bounds crash on zero-height shape layout
+- **Notch**: Resolve lingering notch artifact on hidden until hover dismissal
+- **Notch**: Preserve timer cache on app termination for relaunch restoration
+- **Notch**: Optimize physical notch hover emphasis geometry and synchronous wall emergence
+- **Notch**: Decouple music live activity from companion and idle content preference
+- **Strings**: Titlecase quick toggle control labels and rename Hub actions
+- **Hub**: Use renamed module when opening floating panel
+- **Hub**: Preserve settings across module reorganization
+- **Hub**: Restore interface behavior and remove retired code
+- **Notch**: Compute tools rail rows from remaining height after controls
+- **Hub**: Dismiss existing HUD when shortcut is triggered while set to Dynamic Island
+- **Video Downloader**: Localize browser session strings and refine auth error classification
+- **Panel**: Prevent selecting toggles action tab and update feature gate
+- **Hub**: Correct island presentation routing, notch drag handle, and probe expectations
+- **App**: Validate status item frame and restore documentation in AppDelegate
+
 ## [3.4.2-d.4] - 2026-10-27
 
 ### Added
