@@ -13,6 +13,7 @@ struct AppVolumeBoostSlider: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     @State private var isDragging = false
     @State private var isHovering = false
@@ -123,11 +124,12 @@ struct AppVolumeBoostSlider: View {
             // Main bar fill (accent color)
             if value > 0.001 {
                 let fillFraction = min(max(CGFloat(value), 0), 1.0)
-                Capsule(style: .continuous)
+                Rectangle()
                     .fill(Color.accentColor)
                     .frame(width: fillFraction * mainWidth)
             }
         }
+        .clipShape(Capsule(style: .continuous))
         .frame(width: mainWidth, height: AppVolumeSliderMetrics.trackHeight)
         .offset(x: thumbRadius, y: trackY)
 
@@ -141,11 +143,12 @@ struct AppVolumeBoostSlider: View {
             // Solid orange fill when boosted
             if isBoosted {
                 let boostFraction = min(max(CGFloat(value - 1.0), 0), 1.0)
-                Capsule(style: .continuous)
+                Rectangle()
                     .fill(Color.orange)
                     .frame(width: boostFraction * stubWidth)
             }
         }
+        .clipShape(Capsule(style: .continuous))
         .frame(width: stubWidth, height: AppVolumeSliderMetrics.trackHeight)
         .offset(x: stubX, y: trackY)
     }
@@ -163,17 +166,71 @@ struct AppVolumeBoostSlider: View {
         }
     }
 
-    // MARK: - Thumb
+    // MARK: - Liquid Glass Knob
 
     private func thumbView(thumbX: CGFloat, centerY: CGFloat) -> some View {
-        Circle()
-            .fill(Color.white)
-            .shadow(color: .black.opacity(0.18), radius: 2, y: 1)
-            .frame(width: AppVolumeSliderMetrics.thumbDiameter, height: AppVolumeSliderMetrics.thumbDiameter)
-            .scaleEffect(isDragging && !reduceMotion ? 1.15 : 1.0)
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.12), value: isDragging)
-            .position(x: thumbX, y: centerY)
-            .allowsHitTesting(false)
+        let knobWidth: CGFloat = 10
+        let knobHeight: CGFloat = 20
+        let shape = Capsule(style: .continuous)
+
+        return ZStack {
+#if compiler(>=6.2)
+            if #available(macOS 26.0, *), LiquidGlassSupport.isSupported, !reduceTransparency {
+                shape
+                    .fill(Color.clear)
+                    .glassEffect(.regular.interactive(isDragging), in: shape)
+                    .overlay(
+                        shape.fill(Color.white.opacity(colorScheme == .dark ? 0.22 : 0.40))
+                    )
+            } else {
+                shape
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        shape.fill(Color.white.opacity(colorScheme == .dark ? 0.25 : 0.45))
+                    )
+            }
+#else
+            shape
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    shape.fill(Color.white.opacity(colorScheme == .dark ? 0.25 : 0.45))
+                )
+#endif
+
+            // Specular glass highlight rim
+            shape
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(colorScheme == .dark ? 0.8 : 0.95),
+                            Color.white.opacity(colorScheme == .dark ? 0.2 : 0.35)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 0.75
+                )
+
+            // Tactile center grip notch
+            Capsule(style: .continuous)
+                .fill(Color.primary.opacity(colorScheme == .dark ? 0.35 : 0.22))
+                .frame(width: 1.5, height: 8)
+        }
+        .frame(width: knobWidth, height: knobHeight)
+        .shadow(
+            color: Color.black.opacity(colorScheme == .dark ? 0.45 : 0.2),
+            radius: isDragging ? 3.5 : 2.5,
+            y: isDragging ? 1.5 : 1
+        )
+        .shadow(
+            color: Color.black.opacity(colorScheme == .dark ? 0.25 : 0.08),
+            radius: 1,
+            y: 0.5
+        )
+        .scaleEffect(isDragging && !reduceMotion ? 1.08 : 1.0)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.12), value: isDragging)
+        .position(x: thumbX, y: centerY)
+        .allowsHitTesting(false)
     }
 
     // MARK: - Tooltip
