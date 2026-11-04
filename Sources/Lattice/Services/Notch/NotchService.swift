@@ -1547,6 +1547,7 @@ final class NotchService: ObservableObject {
         guard !heldDrag else { return }
         let closeCapture = detachCaptureIfClosingOnCollapse()
         let closesCommandBar = showingCommandBar
+        hoverEmphasized = false
         hoverState.close(pointerInside: windowHost?.containsHover(NSEvent.mouseLocation) == true)
         pinned = false
         clipboardPinnedOnly = false
@@ -1556,6 +1557,8 @@ final class NotchService: ObservableObject {
             lastVisitedSections = showingSections
             lastVisitedAppPanel = showingAppPanel
         }
+        panel?.acceptsKeyFocus = false
+        resignPanelKey()
         mutatePresentation(transitionContent: (expanded || noticeExpanded) ? .dismiss : .none) {
             if noticeExpanded { notice = nil; noticeExpanded = false }
             expanded = false
@@ -1569,8 +1572,6 @@ final class NotchService: ObservableObject {
             highlightedSection = nil
             sectionRow = 0
         }
-        panel?.acceptsKeyFocus = false
-        resignPanelKey()
         if closesCommandBar { commandBarDidClose() }
         removeEventMonitors()
         syncVisibleConsumers()
@@ -1646,7 +1647,8 @@ final class NotchService: ObservableObject {
         let hoverExpands = UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover)
             && UserDefaults.standard.bool(forKey: DefaultsKey.notchHoverExpands)
         let opensOnHover = hoverExpands && !showsCompactActivityPicker
-        let emphasize = inside && !hiddenInFullscreen && !hiddenUntilHover && !expanded && !peeking && !dragPlaceholder
+        let emphasize = inside && !hoverState.suppressed && !hiddenInFullscreen && !hiddenUntilHover
+            && !expanded && !peeking && !dragPlaceholder
             && notice == nil && !opensOnHover
             && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         if hoverEmphasized != emphasize || showedPicker != showsCompactActivityPicker || unnamesMusic {
@@ -3950,10 +3952,10 @@ final class NotchService: ObservableObject {
         switch action {
         case .open:
             open(feedback: false)
-            provideHapticFeedback(pattern: .levelChange)
+            provideHapticFeedback(pattern: .alignment)
         case .close:
             collapse()
-            provideHapticFeedback(pattern: .levelChange)
+            provideHapticFeedback(pattern: .alignment)
         }
         return true
     }
