@@ -1734,8 +1734,9 @@ def main():
           + declaration(input_slider, "struct SettingsValueSlider:")
           + declaration(settings_card, "struct SettingsControlRow<")
           + declaration(input_slider, "struct SettingsSliderRow:")
-          + "final class LightState { var keyboardLightLevel: Float? = 0; var keyboardLightEnabled: Bool? = false\n"
+          + "final class LightState { var keyboardLightLevel: Float? = 0; var keyboardLightEnabled: Bool? = false; var keyboardLightSaturated: Bool = false\n"
           + "func setKeyboardLightLevel(_ value: Float) { keyboardLightLevel = value; keyboardLightEnabled = value > 0 }\n"
+          + "func setKeyboardLightEnabled(_ value: Bool) { keyboardLightEnabled = value; keyboardLightLevel = value ? 1.0 : 0.0 }\n"
           + "func keyboardLightDragChanged(_ editing: Bool) {}\n}\n"
           + "struct LightControl: View { let brightness: LightState\nstruct Language { var language: AppLanguage = .enUS }; let l10n = Language()\n"
           + "var body: some View { keyboardLightSlider }\n"

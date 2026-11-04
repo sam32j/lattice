@@ -48,13 +48,40 @@ struct KeyboardLightSettings: View {
 
     var keyboardLightSlider: some View {
         let strings = FeatureStrings.brightness(l10n.language)
-        return SettingsSliderRow(title: strings.keyboardLightLevel, value: Binding(
-            get: { Double(brightness.keyboardLightLevel ?? 0) },
-            set: { brightness.setKeyboardLightLevel(Float($0)) }
-        ), range: 0...1,
-            readout: "\(Int(((brightness.keyboardLightLevel ?? 0) * 100).rounded()))%",
+        let hubStrings = FeatureStrings.keepAwakeHub(l10n.language)
+        let readout = BrightnessSupport.keyboardLightDisplayReadout(
+            level: brightness.keyboardLightLevel,
+            isSaturated: brightness.keyboardLightSaturated,
+            onText: hubStrings.on,
+            offText: hubStrings.off
+        )
+        let binding = Binding<Double>(
+            get: {
+                BrightnessSupport.keyboardLightDisplayLevel(
+                    level: brightness.keyboardLightLevel,
+                    isSaturated: brightness.keyboardLightSaturated
+                )
+            },
+            set: { newValue in
+                if brightness.keyboardLightSaturated {
+                    let shouldBeOn = newValue >= 0.5
+                    let isCurrentlyOn = (brightness.keyboardLightLevel ?? 0) > 0
+                    if shouldBeOn != isCurrentlyOn {
+                        brightness.setKeyboardLightEnabled(shouldBeOn)
+                    }
+                } else {
+                    brightness.setKeyboardLightLevel(Float(newValue))
+                }
+            }
+        )
+        return SettingsSliderRow(
+            title: strings.keyboardLightLevel,
+            value: binding,
+            range: 0...1,
+            readout: readout,
             sliderWidth: 140,
             usesSystemAppearance: true,
-            onEditingChanged: brightness.keyboardLightDragChanged)
+            onEditingChanged: brightness.keyboardLightDragChanged
+        )
     }
 }
