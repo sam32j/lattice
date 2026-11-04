@@ -110,10 +110,18 @@ struct DeviceControlsMainView: View {
 
     private var keyboardRow: some View {
         HStack(spacing: 8) {
-            Image(systemName: "keyboard")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 18, alignment: .center)
+            Button {
+                let currentlyOn = (brightness.keyboardLightLevel ?? 0) > 0
+                brightness.setKeyboardLightEnabled(!currentlyOn)
+            } label: {
+                Image(systemName: (brightness.keyboardLightLevel ?? 0) > 0 ? "keyboard.fill" : "keyboard")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle((brightness.keyboardLightLevel ?? 0) > 0 ? Color.primary : Color.secondary)
+                    .frame(width: 18, alignment: .center)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Toggle keyboard backlight")
 
             Text("Keyboard")
                 .font(.system(size: 13, weight: .medium))
@@ -163,15 +171,10 @@ struct DeviceControlsMainView: View {
             },
             set: { newValue in
                 if brightness.keyboardLightSaturated {
-                    let currentlyOn = (brightness.keyboardLightLevel ?? 0) > 0
-                    if currentlyOn {
-                        if newValue < 0.5 {
-                            brightness.setKeyboardLightEnabled(false)
-                        }
-                    } else {
-                        if newValue > 0.0 {
-                            brightness.setKeyboardLightEnabled(true)
-                        }
+                    let shouldBeOn = newValue >= 0.5
+                    let isCurrentlyOn = (brightness.keyboardLightLevel ?? 0) > 0
+                    if shouldBeOn != isCurrentlyOn {
+                        brightness.setKeyboardLightEnabled(shouldBeOn)
                     }
                 } else {
                     brightness.setKeyboardLightLevel(Float(newValue))

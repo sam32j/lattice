@@ -179,15 +179,10 @@ struct BrightnessSection: View {
             },
             set: { newValue in
                 if service.keyboardLightSaturated {
-                    let currentlyOn = (service.keyboardLightLevel ?? 0) > 0
-                    if currentlyOn {
-                        if newValue < 0.5 {
-                            service.setKeyboardLightEnabled(false)
-                        }
-                    } else {
-                        if newValue > 0.0 {
-                            service.setKeyboardLightEnabled(true)
-                        }
+                    let shouldBeOn = newValue >= 0.5
+                    let isCurrentlyOn = (service.keyboardLightLevel ?? 0) > 0
+                    if shouldBeOn != isCurrentlyOn {
+                        service.setKeyboardLightEnabled(shouldBeOn)
                     }
                 } else {
                     service.setKeyboardLightLevel(Float(newValue))

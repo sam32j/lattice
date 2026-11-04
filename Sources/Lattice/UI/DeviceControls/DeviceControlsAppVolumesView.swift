@@ -36,8 +36,16 @@ struct DeviceControlsAppVolumesView: View {
         arrangement.ordered(mixer.apps, identity: { $0.persistenceID })
     }
 
+    private var activeApps: [MixerApp] {
+        orderedApps.filter { isActiveApp($0) }
+    }
+
+    private var inactiveApps: [MixerApp] {
+        orderedApps.filter { !isActiveApp($0) }
+    }
+
     private var activeCount: Int {
-        orderedApps.filter { isActiveApp($0) }.count
+        activeApps.count
     }
 
     private var totalCount: Int {
@@ -46,9 +54,9 @@ struct DeviceControlsAppVolumesView: View {
 
     private var displayedApps: [MixerApp] {
         if navigation.showInactiveApps {
-            return orderedApps
+            return activeApps + inactiveApps
         } else {
-            return orderedApps.filter { isActiveApp($0) }
+            return activeApps
         }
     }
 
