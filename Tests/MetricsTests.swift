@@ -226,7 +226,7 @@ struct MetricsTests {
             }),
             ("force-quit", { ProcessForceQuitTests.run(suite) }),
             ("hub-editing", { HubEditingLayoutTests.run(suite) }),
-            ("launcher", { LatticeHubContract.run(suite); HubControlActionTests.run(suite); HubStayAwakeTests.run(suite) }),
+            ("launcher", { LatticeHubContract.run(suite); HubControlActionTests.run(suite); HubStayAwakeTests.run(suite); DeviceControlsTests.run(suite) }),
             ("dock-autohide", {
                 DockPreviewPositionTests.run(suite)
                 DockPreviewScrollTests.run(suite)

@@ -9,11 +9,19 @@ extension LatticeHubView {
             ZStack {
                 HubDragHandle()
                     .frame(height: 30)
-                BrandMark(width: 52, tint: colorScheme == .light ? Color(white: 0.03) : .white)
-                    .frame(height: 30)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .accessibilityHidden(true)
-                    .allowsHitTesting(false)
+                if launcher.activeUtility == .deviceControls {
+                    Text(DeviceControlsNavigationState.shared.currentSubpage == .appVolumes ? "App Volumes" : "Device Controls")
+                        .font(.system(size: 14.5, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .frame(height: 30)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                } else {
+                    BrandMark(width: 52, tint: colorScheme == .light ? Color(white: 0.03) : .white)
+                        .frame(height: 30)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .accessibilityHidden(true)
+                        .allowsHitTesting(false)
+                }
                 HStack {
                     if launcher.activeUtility != nil {
                         backButton
@@ -21,7 +29,10 @@ extension LatticeHubView {
                         closeButton
                     }
                     Spacer()
-                    if launcher.activeUtility != nil {
+                    if launcher.activeUtility == .deviceControls {
+                        Color.clear
+                            .frame(width: 26, height: 26)
+                    } else if launcher.activeUtility != nil {
                         closeButton
                     } else if launcher.isEditing {
                         doneEditingButton
@@ -69,7 +80,17 @@ extension LatticeHubView {
     }
 
     var backButton: some View {
-        Button { launcher.closeUtility() } label: {
+        Button {
+            if launcher.activeUtility == .deviceControls,
+               DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
+                DeviceControlsNavigationState.shared.currentSubpage = .main
+            } else {
+                if launcher.activeUtility == .deviceControls {
+                    DeviceControlsNavigationState.shared.resetSubpage()
+                }
+                launcher.closeUtility()
+            }
+        } label: {
             Image(systemName: "chevron.backward.circle.fill")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.secondary)

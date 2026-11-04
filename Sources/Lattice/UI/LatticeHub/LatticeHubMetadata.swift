@@ -8,6 +8,11 @@ extension LatticeHubView {
         if item == .screenRecorder, recorder.isRecording {
             return FeatureStrings.recorder(l10n.language).stopButton
         }
+        if item == .deviceControls {
+            return DeviceControlsNavigationState.shared.currentSubpage == .appVolumes
+                ? "App Volumes"
+                : item.title(language: l10n.language)
+        }
         return item.title(language: l10n.language)
     }
 
@@ -31,6 +36,7 @@ extension LatticeHubView {
         case .textSnippets: return "text.append"
         case .killProcess: return "xmark.octagon"
         case .wallpaper: return "rectangle.inset.filled.and.cursorarrow"
+        case .deviceControls: return "slider.horizontal.3"
         }
     }
 
