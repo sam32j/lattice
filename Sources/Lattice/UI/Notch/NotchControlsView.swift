@@ -338,6 +338,39 @@ private struct NotchKeyboardLightControls: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var title: String { FeatureStrings.brightness(l10n.language).keyboardLight }
 
+    private var keyboardLightReadout: String {
+        let hubStrings = FeatureStrings.keepAwakeHub(l10n.language)
+        return BrightnessSupport.keyboardLightDisplayReadout(
+            level: service.keyboardLightLevel,
+            isSaturated: service.keyboardLightSaturated,
+            onText: hubStrings.on,
+            offText: hubStrings.off
+        )
+    }
+
+    private var keyboardLightBinding: Binding<Double> {
+        Binding(
+            get: {
+                BrightnessSupport.keyboardLightDisplayLevel(
+                    level: service.keyboardLightLevel,
+                    isSaturated: service.keyboardLightSaturated
+                )
+            },
+            set: { newValue in
+                NotchService.shared.noteOwnLevelAdjustment(.keyboardLight)
+                if service.keyboardLightSaturated {
+                    let shouldBeOn = newValue >= 0.5
+                    let isCurrentlyOn = (service.keyboardLightLevel ?? 0) > 0
+                    if shouldBeOn != isCurrentlyOn {
+                        service.setKeyboardLightEnabled(shouldBeOn)
+                    }
+                } else {
+                    service.setKeyboardLightLevel(Float(newValue))
+                }
+            }
+        )
+    }
+
     var body: some View {
         HStack(spacing: 6) {
             glyph
@@ -351,15 +384,16 @@ private struct NotchKeyboardLightControls: View {
     /// The switch the panel has, where volume keeps its mute button: off,
     /// or back on at the level the light last had.
     private var glyph: some View {
-        Button {
-            guard let enabled = service.keyboardLightEnabled else { return }
+        let isCurrentlyOn = (service.keyboardLightLevel ?? 0) > 0
+        return Button {
+            guard service.keyboardLightEnabled != nil else { return }
             NotchService.shared.noteOwnLevelAdjustment(.keyboardLight)
-            service.setKeyboardLightEnabled(!enabled)
+            service.setKeyboardLightEnabled(!isCurrentlyOn)
         } label: {
-            Image(systemName: service.keyboardLightEnabled == false ? "light.min" : "light.max")
+            Image(systemName: isCurrentlyOn ? "light.max" : "light.min")
                 .font(.system(size: 12, weight: .medium))
                 .contentTransition(.symbolEffect(.replace))
-                .animation(reduceMotion ? nil : .smooth(duration: 0.24), value: service.keyboardLightEnabled)
+                .animation(reduceMotion ? nil : .smooth(duration: 0.24), value: isCurrentlyOn)
                 .frame(width: 18, height: 18)
                 .contentShape(Rectangle())
         }
@@ -369,12 +403,16 @@ private struct NotchKeyboardLightControls: View {
     }
 
     @ViewBuilder private var slider: some View {
-        if let level = service.keyboardLightLevel {
-            NotchLevelSlider(value: Binding(get: { Double(level) }, set: {
-                NotchService.shared.noteOwnLevelAdjustment(.keyboardLight)
-                service.setKeyboardLightLevel(Float($0))
-            }), label: title, trackThickness: 8, easesChanges: true, onEditingChanged: service.keyboardLightDragChanged)
-                .frame(height: 24)
+        if service.keyboardLightEnabled != nil {
+            NotchLevelSlider(
+                value: keyboardLightBinding,
+                label: title,
+                trackThickness: 8,
+                valueLabel: keyboardLightReadout,
+                easesChanges: true,
+                onEditingChanged: service.keyboardLightDragChanged
+            )
+            .frame(height: 24)
         } else {
             Text(FeatureStrings.notchEditor(l10n.language).keyboardLightUnavailable)
                 .font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(2)

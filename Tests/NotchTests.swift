@@ -859,6 +859,18 @@ enum NotchTests {
         suite.expect(geom.noticeSize(wings: mutedNotice.preferredWings) == geom.noticeSize(wings: unmutedNotice.preferredWings)
                      && geom.noticeShift(mutedNotice.preferredWings) == geom.noticeShift(unmutedNotice.preferredWings),
                      "microphone notice size and surface shift remain fixed when toggling mute state")
+        let kbOnNotice = NotchNotice(event: .keyboardLight, title: "Keyboard Backlight", detail: "On",
+                                     symbol: "keyboard", level: 1.0)
+        let kbOffNotice = NotchNotice(event: .keyboardLight, title: "Keyboard Backlight", detail: "Off",
+                                      symbol: "keyboard", level: 0.0)
+        let kbPercentNotice = NotchNotice(event: .keyboardLight, title: "Keyboard Backlight", detail: "6%",
+                                          symbol: "keyboard", level: 0.0625)
+        suite.expect(kbOnNotice.preferredWings == kbOffNotice.preferredWings
+                     && kbOnNotice.preferredWings == kbPercentNotice.preferredWings,
+                     "keyboard light on, off, and saturated 6% percent notices use identical fixed wings")
+        suite.expect(geom.noticeSize(wings: kbOnNotice.preferredWings) == geom.noticeSize(wings: kbPercentNotice.preferredWings)
+                     && geom.noticeShift(kbOnNotice.preferredWings) == geom.noticeShift(kbPercentNotice.preferredWings),
+                     "keyboard light dynamic island size remains fixed between on/off and percent states")
     }
 
     private static func simulatedMenuBoundsContracts(_ suite: TestSuite) {

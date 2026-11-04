@@ -41,7 +41,10 @@ struct NotchNotice: Equatable {
                                     trailing: max(minimumWings.trailing, fitted.trailing))
         }
         let font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium)
-        let leading = ((level == nil ? title : detail) as NSString).size(withAttributes: [.font: font]).width
+        var leading = ((level == nil ? title : detail) as NSString).size(withAttributes: [.font: font]).width
+        if event == .keyboardLight {
+            leading = max(leading, Self.keyboardLightMaxReadoutWidth(font: font, detail: detail))
+        }
         // A level's wings are as wide as its mark and its reading; the meter
         // takes the same width on the other side.
         if level != nil, event != .accessory {
@@ -76,6 +79,19 @@ struct NotchNotice: Equatable {
     /// Room a level keeps inside its curved ends, as wide as its wings had
     /// when they were a fixed 80 pt.
     static let levelInset: CGFloat = 13
+
+    /// Fixed width accommodating on/off and the corresponding percent baseline in the
+    /// keyboard light notice so the dynamic island does not change width between states.
+    static func keyboardLightMaxReadoutWidth(font: NSFont, detail: String) -> CGFloat {
+        let percentBaseline = ("0%" as NSString).size(withAttributes: [.font: font]).width
+        guard !detail.hasSuffix("%") else {
+            return (detail as NSString).size(withAttributes: [.font: font]).width
+        }
+        let hubStrings = FeatureStrings.keepAwakeHub(L10n.shared.language)
+        let onWidth = (hubStrings.on as NSString).size(withAttributes: [.font: font]).width
+        let offWidth = (hubStrings.off as NSString).size(withAttributes: [.font: font]).width
+        return max(percentBaseline, onWidth, offWidth)
+    }
 
     /// Two lines of text sit at the island's two ends, each as far from its
     /// curved edge, so a short one leaves its spare room beside the camera
@@ -2393,12 +2409,13 @@ final class NotchService: ObservableObject {
     }
 
     @discardableResult
-    func showKeyboardLight(_ level: Double) -> Bool {
+    func showKeyboardLight(_ level: Double, readout: String? = nil) -> Bool {
         guard level.isFinite, (0...1).contains(level) else { return false }
         if ownsLevelAdjustment(.keyboardLight) { return true }
+        let text = readout ?? "\(BrightnessSupport.wholePercent(level))%"
         return show(NotchNotice(event: .keyboardLight,
                                 title: FeatureStrings.brightness(L10n.shared.language).keyboardLight,
-                                detail: "\(BrightnessSupport.wholePercent(level))%",
+                                detail: text,
                                 symbol: "keyboard", level: level))
     }
 

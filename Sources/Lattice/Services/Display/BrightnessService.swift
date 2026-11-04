@@ -448,7 +448,15 @@ final class BrightnessService: ObservableObject {
     private func showKeyboardLightNotice(_ level: Float) {
         guard NotchSupport.routes(.keyboardLight), SessionActivity.shared.isActive,
               level.isFinite, (0...1).contains(level) else { return }
-        NotchService.shared.showKeyboardLight(Double(level))
+        let displayLevel = BrightnessSupport.keyboardLightDisplayLevel(level: level, isSaturated: keyboardLightSaturated)
+        let hubStrings = FeatureStrings.keepAwakeHub(L10n.shared.language)
+        let readout = BrightnessSupport.keyboardLightDisplayReadout(
+            level: level,
+            isSaturated: keyboardLightSaturated,
+            onText: hubStrings.on,
+            offText: hubStrings.off
+        )
+        NotchService.shared.showKeyboardLight(displayLevel, readout: readout)
     }
 
     /// Observe native keys without consuming them. A bounded, coalesced read

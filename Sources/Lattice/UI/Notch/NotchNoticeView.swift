@@ -122,13 +122,24 @@ struct NotchNoticeView: View {
                 }
                 .frame(width: 18)
                 if !notice.title.isEmpty || notice.level != nil {
-                    Text(notice.level == nil ? notice.title : notice.detail)
+                    let text = Text(notice.level == nil ? notice.title : notice.detail)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(textTint)
                         .monospacedDigit()
                         .lineLimit(1)
                         .truncationMode(notice.event == .track ? .tail : .middle)
                         .contentTransition(.numericText())
+                    if notice.event == .keyboardLight {
+                        text.frame(
+                            minWidth: NotchNotice.keyboardLightMaxReadoutWidth(
+                                font: .monospacedDigitSystemFont(ofSize: 11, weight: .medium),
+                                detail: notice.detail
+                            ),
+                            alignment: .trailing
+                        )
+                    } else {
+                        text
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: notice.readsFromEnds ? .leading : .trailing)
