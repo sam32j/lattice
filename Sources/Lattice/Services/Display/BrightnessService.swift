@@ -284,6 +284,7 @@ final class BrightnessService: ObservableObject {
         keyThreadLock.withLock { inputTapsSuspended }
     }
     @Published private(set) var keyboardLightLevel: Float?
+    @Published private(set) var keyboardLightSaturated: Bool = false
     private var keyboardNoticeWork: DispatchWorkItem?
     /// A drag folds into one write of its newest value, like the display
     /// sliders. Non-nil means a write is already scheduled.
@@ -335,6 +336,7 @@ final class BrightnessService: ObservableObject {
         }
         keyboardLightLevel = target
         keyboardLightEnabled = target > 0
+        keyboardLightSaturated = keyboardLightBridge.isBacklightSaturated()
         showKeyboardLightNotice(target)
     }
 
@@ -369,6 +371,7 @@ final class BrightnessService: ObservableObject {
             refreshKeyboardLight()
             return
         }
+        keyboardLightSaturated = keyboardLightBridge.isBacklightSaturated()
         showKeyboardLightNotice(target)
     }
 
@@ -403,14 +406,18 @@ final class BrightnessService: ObservableObject {
         // A read landing mid-drag would show the level the keyboard is still
         // catching up to, so the slider keeps its own value until the write lands.
         guard keyboardLevelWork == nil else { return }
-        guard let level = keyboardLightBridge?.brightness(), level >= 0, level <= 1 else {
+        guard let bridge = keyboardLightBridge,
+              let level = bridge.brightness() as Float?,
+              level >= 0, level <= 1 else {
             keyboardLightLevel = nil
             keyboardLightEnabled = nil
+            keyboardLightSaturated = false
             return
         }
         keyboardLightLevel = level
         if level > 0 { lastKeyboardLightLevel = level }
         keyboardLightEnabled = level > 0
+        keyboardLightSaturated = bridge.isBacklightSaturated()
     }
 
     func stepKeyboardLight(direction: Int) {
@@ -429,7 +436,12 @@ final class BrightnessService: ObservableObject {
         keyboardLightLevel = target
         if target > 0 { lastKeyboardLightLevel = target }
         keyboardLightEnabled = target > 0
+        keyboardLightSaturated = keyboardLightBridge.isBacklightSaturated()
         showKeyboardLightNotice(target)
+    }
+
+    func setKeyboardLightSaturatedForTesting(_ saturated: Bool) {
+        keyboardLightSaturated = saturated
     }
 
     private func showKeyboardLightNotice(_ level: Float) {
@@ -2781,16 +2793,20 @@ private final class KeyboardLightBridge {
         (NSObject, Selector, Float, Int32, Bool, UInt64) -> ObjCBool
     private typealias SuspendIdleDimmingFn = @convention(c)
         (NSObject, Selector, Bool, UInt64) -> ObjCBool
+    private typealias IsSaturatedFn = @convention(c)
+        (NSObject, Selector, UInt64) -> ObjCBool
 
     private let client: NSObject
     private let keyboardID: UInt64
     private let getBrightness: GetBrightnessFn
     private let setBrightnessValue: SetBrightnessFn
     private let suspendIdleDimming: SuspendIdleDimmingFn
+    private let isSaturated: IsSaturatedFn?
     private let getSelector = NSSelectorFromString("brightnessForKeyboard:")
     private let setSelector = NSSelectorFromString(
         "setBrightness:fadeSpeed:commit:forKeyboard:")
     private let suspendSelector = NSSelectorFromString("suspendIdleDimming:forKeyboard:")
+    private let saturatedSelector = NSSelectorFromString("isBacklightSaturatedOnKeyboard:")
 
     init?() {
         guard let framework = Bundle(
@@ -2802,6 +2818,7 @@ private final class KeyboardLightBridge {
         let client = clientClass.init()
         let copySelector = NSSelectorFromString("copyKeyboardBacklightIDs")
         let builtInSelector = NSSelectorFromString("isKeyboardBuiltIn:")
+        let saturatedSelector = NSSelectorFromString("isBacklightSaturatedOnKeyboard:")
         guard let copyIDs: CopyIDsFn = Self.implementation(
             client, selector: copySelector, as: CopyIDsFn.self),
               let isBuiltIn: IsBuiltInFn = Self.implementation(
@@ -2823,10 +2840,17 @@ private final class KeyboardLightBridge {
         self.getBrightness = getBrightness
         self.setBrightnessValue = setBrightness
         self.suspendIdleDimming = suspendIdleDimming
+        self.isSaturated = Self.implementation(
+            client, selector: saturatedSelector, as: IsSaturatedFn.self)
     }
 
     func brightness() -> Float {
         getBrightness(client, getSelector, keyboardID)
+    }
+
+    func isBacklightSaturated() -> Bool {
+        guard let isSaturated else { return false }
+        return isSaturated(client, saturatedSelector, keyboardID).boolValue
     }
 
     func setBrightness(_ value: Float) -> Bool {

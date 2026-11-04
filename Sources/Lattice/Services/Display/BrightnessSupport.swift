@@ -101,6 +101,26 @@ enum BrightnessSupport {
         return min(max(current + step, 0), 1)
     }
 
+    /// When ambient light saturates the backlight sensor, macOS enforces a ceiling
+    /// at the minimum active step (~6%). Presenting that condition as a binary
+    /// full/empty slider makes the control intuitive while saturated.
+    static func keyboardLightDisplayLevel(level: Float?, isSaturated: Bool) -> Double {
+        if isSaturated {
+            return (level ?? 0) > 0 ? 1.0 : 0.0
+        }
+        return Double(level ?? 0)
+    }
+
+    /// Readout for the keyboard light row: switches between on/off when ambient
+    /// light is saturated, and the standard rounded percentage under normal conditions.
+    static func keyboardLightDisplayReadout(level: Float?, isSaturated: Bool,
+                                            onText: String, offText: String) -> String {
+        if isSaturated {
+            return (level ?? 0) > 0 ? onText : offText
+        }
+        return "\(Int(((level ?? 0) * 100).rounded()))%"
+    }
+
     /// The DDC/CI standard also spaces whole commands apart: a host waits at
     /// least 50ms after one command before starting the next. The pauses
     /// above pace the steps inside a command; without this one, a slider
