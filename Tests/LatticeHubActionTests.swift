@@ -111,6 +111,7 @@ enum LatticeHubContract {
             (.wallpaper, .wallpaper, nil, nil),
             (.videoDownloader, .videoDownloader, nil, nil),
             (.recentCaptures, .screenshot, nil, nil),
+            (.deviceControls, .mixer, nil, nil),
         ]
         suite.expect(Set(cases.map { $0.0 }) == Set(LatticeHubItem.allCases),
                      "every launcher tile has an activation contract")

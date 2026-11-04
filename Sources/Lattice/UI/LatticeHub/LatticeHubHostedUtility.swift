@@ -14,6 +14,8 @@ struct LatticeHubHostedUtility: View {
             return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count)
         case .videoDownloader:
             return 172
+        case .deviceControls:
+            return 486
         default:
             return 470
         }
@@ -23,6 +25,9 @@ struct LatticeHubHostedUtility: View {
         if item == .recentCaptures {
             RecentCapturesView(onClose: onClose, notchSize: notchSize)
                 .frame(height: notchSize?.height)
+        } else if item == .deviceControls {
+            DeviceControlsHubView(onClose: onClose)
+                .frame(height: notchSize?.height ?? fallbackHeight)
         } else {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {

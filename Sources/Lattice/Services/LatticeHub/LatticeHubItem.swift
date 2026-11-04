@@ -9,7 +9,7 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
     case screenshot, screenRecorder, recentCaptures, cleaner, uninstaller, clipboard, windowLayout,
          media, urlCleaner, scratchpad,
          homebrew, appUpdates, portManager, videoDownloader, shelf,
-         textSnippets, killProcess, wallpaper
+         textSnippets, killProcess, wallpaper, deviceControls
 
     var id: String { rawValue }
 
@@ -38,6 +38,7 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
         case .textSnippets: return .textSnippets
         case .killProcess: return .killProcess
         case .wallpaper: return .wallpaper
+        case .deviceControls: return .mixer
         }
     }
 
@@ -78,6 +79,23 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
         case .killProcess: return FeatureStrings.killProcess(language).pageTitle
         case .wallpaper: return FeatureStrings.wallpaper(language).pageTitle
         case .recentCaptures: return FeatureStrings.recentCaptures(language).title
+        case .deviceControls:
+            switch language {
+            case .enUS: return "Device Controls"
+            case .ptBR: return "Controles do dispositivo"
+            case .tr: return "Aygıt Denetimleri"
+            case .ru: return "Управление устройством"
+            case .es: return "Controles del dispositivo"
+            case .sk: return "Ovládanie zariadenia"
+            case .de: return "Gerätesteuerung"
+            case .fr: return "Commandes de l’appareil"
+            case .it: return "Controlli dispositivo"
+            case .ja: return "デバイスコントロール"
+            case .ko: return "기기 제어"
+            case .zhHans: return "设备控制"
+            case .zhTW, .zhHK: return "裝置控制"
+            case .uk: return "Керування пристроєм"
+            }
         }
     }
 }

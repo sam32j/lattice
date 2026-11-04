@@ -250,7 +250,7 @@ final class LatticeHubService: ObservableObject {
                 SnippetLibraryService.shared.show()
             }
         case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner, .appUpdates, .portManager,
-             .killProcess, .wallpaper, .videoDownloader, .recentCaptures:
+             .killProcess, .wallpaper, .videoDownloader, .recentCaptures, .deviceControls:
             activeUtility = item
         }
     }

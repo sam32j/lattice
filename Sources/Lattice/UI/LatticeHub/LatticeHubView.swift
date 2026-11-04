@@ -50,13 +50,15 @@ struct LatticeHubView: View {
                     .layoutPriority(1)
                 }
             }
-            if notchSize == nil {
+            if notchSize == nil, launcher.activeUtility != .deviceControls {
                 footer.padding(.top, 12)
             }
         }
         .padding(notchSize == nil ? 16 : 0)
-        .frame(width: notchSize?.width ?? 420, height: notchSize?.height, alignment: .top)
-        .fixedSize(horizontal: false, vertical: notchSize == nil)
+        .frame(width: notchSize?.width ?? (launcher.activeUtility == .deviceControls ? 450 : 420),
+               height: notchSize?.height ?? (launcher.activeUtility == .deviceControls ? 560 : nil),
+               alignment: .top)
+        .fixedSize(horizontal: false, vertical: notchSize == nil && launcher.activeUtility != .deviceControls)
         .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
             if notchSize == nil { launcher.updatePanelSize(size) }
         }
@@ -66,7 +68,13 @@ struct LatticeHubView: View {
         .transaction { if reduceMotion { $0.animation = nil } }
         .notchBand(leading: {
             if notchSize != nil, let utility = launcher.activeUtility {
-                NotchBandBackButton(title: title(for: utility), action: launcher.closeUtility)
+                NotchBandBackButton(title: title(for: utility), action: {
+                    if utility == .deviceControls, DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
+                        DeviceControlsNavigationState.shared.currentSubpage = .main
+                    } else {
+                        launcher.closeUtility()
+                    }
+                })
             }
         }, trailing: {
             if notchSize != nil {

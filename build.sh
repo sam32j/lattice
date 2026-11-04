@@ -57,6 +57,7 @@ if (( DEV )); then
     BUILD_VARIANT_FLAGS=(-D LATTICE_DEVELOPMENT)
     APP_OPTIMIZATION_FLAGS=(-Onone)
     BUILD_CONFIGURATION="debug"
+    LINKER_FLAGS=()
 else
     APP_NAME="Lattice"
     EXECUTABLE="Lattice"
@@ -64,6 +65,7 @@ else
     BUILD_VARIANT_FLAGS=()
     APP_OPTIMIZATION_FLAGS=(-O)
     BUILD_CONFIGURATION="release"
+    LINKER_FLAGS=(-Xlinker -dead_strip)
 fi
 FAN_HELPER_ID="$APP_BUNDLE_ID.fan-control"
 # Now Playing is read through /usr/bin/perl loading this library; see
@@ -544,6 +546,7 @@ if (( TEST )); then
         Sources/Lattice/Services/Audio/AirPlayRouteManager.swift
         Sources/Lattice/Services/Audio/MixerRoutingSupport.swift
         Sources/Lattice/Services/Audio/AudioPriorityPresentation.swift
+        Sources/Lattice/UI/DeviceControls/DeviceControlsNavigationState.swift
         Sources/Lattice/Services/Feedback/FeedbackDraft.swift
         Sources/Lattice/UI/Feedback/FeedbackWindowPresentation.swift
         Sources/Lattice/Services/Audio/MusicLaunchSupport.swift
@@ -796,14 +799,14 @@ write_swift_output_file_map "$APP_OUTPUT_FILE_MAP" "$APP_OBJECT_DIR" "${APP_SOUR
 # each file's compiler parses the whole module again: a clean release took a
 # quarter of an hour. Batches share that work and run on every core, and the
 # optimization stays per file, as before.
-swiftc "${APP_OPTIMIZATION_FLAGS[@]}" -incremental -enable-batch-mode -j "$COMPILER_JOBS" \
+swiftc "${APP_OPTIMIZATION_FLAGS[@]}" "${LINKER_FLAGS[@]}" -incremental -enable-batch-mode -j "$COMPILER_JOBS" \
     -output-file-map "$APP_OUTPUT_FILE_MAP" \
     -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${VM_STATISTICS_COMPAT_FLAGS[@]}" "${HID_EVENT_SYSTEM_FLAGS[@]}" \
     "${BUILD_VARIANT_FLAGS[@]}" \
     "${APP_SOURCES[@]}" -o "build/$EXECUTABLE"
 
 echo "▸ Compiling protected fan helper…"
-swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${BUILD_VARIANT_FLAGS[@]}" \
+swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${BUILD_VARIANT_FLAGS[@]}" "${LINKER_FLAGS[@]}" \
     Sources/Lattice/Core/DownstreamIdentity.swift \
     Sources/Lattice/Services/FanControl/FanControlSupport.swift \
     Sources/Lattice/Services/FanControl/FanControlXPC.swift \
@@ -815,7 +818,7 @@ swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${BUILD_VARIAN
 "build/$FAN_HELPER_ID" --selftest
 
 echo "▸ Compiling Now Playing adapter…"
-swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" -emit-library \
+swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${LINKER_FLAGS[@]}" -emit-library \
     -module-name LatticeNowPlaying \
     Sources/NowPlayingAdapter/NowPlayingAdapter.swift \
     Sources/NowPlayingAdapter/NowPlayingQueue.swift \
@@ -871,6 +874,15 @@ cp "build/$EXECUTABLE" "$STAGE/Contents/MacOS/$EXECUTABLE"
 cp "build/$FAN_HELPER_ID" "$STAGE/Contents/Library/LaunchServices/$FAN_HELPER_ID"
 mkdir -p "$STAGE/Contents/Frameworks"
 cp "build/$NOW_PLAYING_ADAPTER" "$STAGE/Contents/Frameworks/$NOW_PLAYING_ADAPTER"
+if (( ! DEV )); then
+    echo "▸ Stripping binary symbols…"
+    if xcrun --find dsymutil >/dev/null 2>&1; then
+        dsymutil "build/$EXECUTABLE" -o "build/$EXECUTABLE.dSYM" 2>/dev/null || true
+    fi
+    strip -u -r "$STAGE/Contents/MacOS/$EXECUTABLE"
+    strip -u -r "$STAGE/Contents/Library/LaunchServices/$FAN_HELPER_ID"
+    strip -x "$STAGE/Contents/Frameworks/$NOW_PLAYING_ADAPTER"
+fi
 cp Resources/now-playing.pl "$STAGE/Contents/Resources/now-playing.pl"
 cp Resources/agent-prices.json "$STAGE/Contents/Resources/agent-prices.json"
 cp Resources/io.github.sam32j.lattice.fan-control.plist \
