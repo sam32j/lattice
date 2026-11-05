@@ -66,7 +66,10 @@ enum LatticeHubContract {
         func showHistoryWindow() { events.append(name + ".showHistoryWindow") }
         func summon() { events.append(name + ".summon") }
         func activate() { events.append(name + ".activate") }
+        func open(_ module: NotchModule) { events.append(name + ".open" + module.rawValue.capitalized) }
     }
+    enum NotchModule: String { case agents, watch, system }
+    enum NotchService { static let shared = Spy(name: "notch") }
     enum KeepAwakeManager { static let shared = Spy(name: "keepAwake") }
     enum MicMuteService { static let shared = Spy(name: "micMute") }
     enum ScreenshotService { static let shared = Spy(name: "screenshot") }
@@ -112,6 +115,9 @@ enum LatticeHubContract {
             (.videoDownloader, .videoDownloader, nil, nil),
             (.recentCaptures, .screenshot, nil, nil),
             (.deviceControls, .mixer, nil, nil),
+            (.aiUsage, .notchAgents, "notch.openAgents", 0.1),
+            (.watch, .notchWatch, "notch.openWatch", 0.1),
+            (.system, .monitorCPU, "notch.openSystem", 0.1),
         ]
         suite.expect(Set(cases.map { $0.0 }) == Set(LatticeHubItem.allCases),
                      "every launcher tile has an activation contract")

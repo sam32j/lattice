@@ -57,8 +57,8 @@ enum NotchModule: String, CaseIterable, Identifiable {
         // The quick panel's own mark; the grid belongs to the sections button.
         case .hub: return AppFeature.quickLauncher.symbolName
         case .scratchpad: return "note.text"
-        case .agents: return "sparkles"
-        case .watch: return "eye"
+        case .agents: return "apple.intelligence"
+        case .watch: return "photo.badge.magnifyingglass"
         case .videoDownloader: return "arrow.down.circle.dotted"
         case .snippets: return "text.append"
         }
@@ -2747,7 +2747,8 @@ struct NotchGeometry: Equatable {
                       hubIsEditing: Bool = false,
                       hubAvailableCount: Int = 0,
                       hubOptionsHeight: CGFloat = 0,
-                      hubActiveUtilityHeight: CGFloat? = nil) -> CGSize {
+                      hubActiveUtilityHeight: CGFloat? = nil,
+                      hubWidgetsHeight: CGFloat? = nil) -> CGSize {
         let budget = contentBudget
         let showsCapturePreview = module == .captures && !detail && capturePreviewHeight != nil
         let showsFileMedia = module == .files && !detail && fileMediaHeight != nil
@@ -2795,9 +2796,12 @@ struct NotchGeometry: Equatable {
                     break
                 }
                 guard let toolCount else { contentHeight = pageBudget; break }
-                contentHeight = hubContentHeight(toolCount: toolCount,
+                let widgetsHeight = hubWidgetsHeight ?? 0
+                let computedHeight = hubContentHeight(toolCount: toolCount,
                     controlsHeight: toolsControlsHeight ?? 0, editing: hubIsEditing,
-                    optionsHeight: max(0, hubOptionsHeight))
+                    optionsHeight: max(0, hubOptionsHeight),
+                    widgetsHeight: widgetsHeight)
+                contentHeight = toolsControlsHeight != nil ? computedHeight : min(budget, computedHeight)
             case .timer:
                 contentHeight = min(budget, NotchLayout.timer(mode: timerMode, hasSession: timerHasSession, height: budget))
             case .agents:

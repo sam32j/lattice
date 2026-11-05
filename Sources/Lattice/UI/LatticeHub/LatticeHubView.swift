@@ -151,6 +151,9 @@ struct LatticeHubView: View {
                                  dragSession: dragSession) { launcher.hide() }
                     .frame(height: notchSize == nil ? nil : launcher.notchControlsHeight, alignment: .top)
             }
+            if notchSize != nil, launcher.activeUtility == nil {
+                HubIslandWidgetSection(isEditing: launcher.isEditing)
+            }
             if let utility = launcher.activeUtility, utility.isAvailable() {
                 LatticeHubHostedUtility(item: utility, notchSize: notchSize) { launcher.closeUtility() }
             } else if launcher.visibleCount == 0 {
@@ -185,12 +188,8 @@ struct LatticeHubView: View {
     }
 
     var updateOffered: Bool {
-        #if LATTICE_DEVELOPMENT
-        return true
-        #else
         if case .available = updates.state { return true }
         return false
-        #endif
     }
 
     private var notificationSymbol: String {

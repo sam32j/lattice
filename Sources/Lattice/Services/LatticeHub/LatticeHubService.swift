@@ -281,6 +281,21 @@ final class LatticeHubService: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 SnippetLibraryService.shared.show()
             }
+        case .aiUsage:
+            hide()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                NotchService.shared.open(.agents)
+            }
+        case .watch:
+            hide()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                NotchService.shared.open(.watch)
+            }
+        case .system:
+            hide()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                NotchService.shared.open(.system)
+            }
         case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner, .appUpdates, .portManager,
              .killProcess, .wallpaper, .videoDownloader, .recentCaptures, .deviceControls:
             activeUtility = item

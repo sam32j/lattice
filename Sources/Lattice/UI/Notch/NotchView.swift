@@ -424,6 +424,10 @@ struct NotchView: View {
             NotchBandBackButton(title: service.selected.title(l10n.language), action: service.toggleSections)
         } else if showsDetail {
             NotchBandBackButton(title: service.detailTitle, action: service.goBack)
+        } else if service.selected == .system {
+            NotchBandBackButton(title: NotchModule.system.title(l10n.language)) {
+                service.select(.hub)
+            }
         } else if service.selected == .captures {
             if service.captureContent != nil {
                 NotchIconButton(symbol: "clock.arrow.circlepath", title: FeatureStrings.recentCaptures(l10n.language).title,

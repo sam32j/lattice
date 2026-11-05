@@ -47,16 +47,25 @@ struct NotchWatchView: View {
                     NotchWatchRuleRow()
                     footer
                 }
-                // What is watched and its two actions sit in the island's top
-                // row, beside the camera where they fit; setup leaves it empty.
-                .notchBand(leading: { watched }, trailing: {
-                    NotchIconButton(symbol: "viewfinder", title: text.chooseAgain) {
-                        NotchService.shared.perform { NotchWatchService.shared.chooseArea() }
-                    }
-                    NotchIconButton(symbol: "xmark", title: text.stop) { watch.stop() }
-                })
             }
         }
+        .notchBand(leading: {
+            HStack(spacing: 6) {
+                NotchBandBackButton(title: NotchModule.watch.title(l10n.language)) {
+                    NotchService.shared.select(.hub)
+                }
+                if enabled, watch.target != nil, !preview {
+                    watched
+                }
+            }
+        }, trailing: {
+            if enabled, watch.target != nil, !preview {
+                NotchIconButton(symbol: "viewfinder", title: text.chooseAgain) {
+                    NotchService.shared.perform { NotchWatchService.shared.chooseArea() }
+                }
+                NotchIconButton(symbol: "xmark", title: text.stop) { watch.stop() }
+            }
+        })
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear { if !preview { watch.pageVisible = true } }
         .onDisappear { if !preview { watch.pageVisible = false } }

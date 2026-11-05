@@ -8,9 +8,15 @@ extension LatticeHubView {
         HubStripLayout.rows(for: launcher.visibleItems.count, columns: NotchService.shared.expandedGeometry.hubColumns)
     }
 
+    var islandWidgetsHeight: CGFloat {
+        let hasWidget = NotchService.shared.modules.contains { [.music, .calendar, .timer].contains($0) }
+        return hasWidget ? NotchLayout.hubWidgetTileHeight : 0
+    }
+
     var islandMainHeight: CGFloat {
         NotchService.shared.expandedGeometry.hubContentHeight(toolCount: launcher.visibleItems.count,
-            controlsHeight: launcher.notchControlsHeight, editing: false)
+            controlsHeight: launcher.notchControlsHeight, editing: false,
+            widgetsHeight: islandWidgetsHeight)
     }
 
     @ViewBuilder var grid: some View {
