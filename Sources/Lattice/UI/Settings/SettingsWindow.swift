@@ -28,6 +28,22 @@ class SettingsWindow: NSWindow {
     // The app supplies capture state without making the window own a global input service.
     var isMouseButtonCaptureActive: () -> Bool = { false }
     private var navigationButtons: Set<Int> = []
+    var isExplicitlyOrderedKey = false
+
+    override var canBecomeKey: Bool {
+        if isExplicitlyOrderedKey || attachedSheet != nil { return true }
+        if let event = NSApp.currentEvent,
+           (event.type == .leftMouseDown || event.type == .rightMouseDown || event.type == .otherMouseDown),
+           frame.contains(NSEvent.mouseLocation) {
+            return true
+        }
+        if isKeyWindow { return true }
+        return false
+    }
+
+    override var canBecomeMain: Bool {
+        canBecomeKey
+    }
 
     static func navigationMenu(language: AppLanguage) -> NSMenu {
         let strings = SettingsNavigationStrings.localized(language)

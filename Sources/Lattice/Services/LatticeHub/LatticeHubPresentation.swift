@@ -84,6 +84,9 @@ extension LatticeHubService {
             })
         previousApp = nil
         panel?.resignKey()
+        if (NSApp.delegate as? AppDelegate)?.settingsWindow?.isKeyWindow == true {
+            (NSApp.delegate as? AppDelegate)?.settingsWindow?.resignKey()
+        }
         if let target {
             NSApp.yieldActivation(to: target)
             target.activate()
