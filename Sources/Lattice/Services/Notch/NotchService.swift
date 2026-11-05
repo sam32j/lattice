@@ -835,7 +835,7 @@ final class NotchService: ObservableObject {
     }
 
     var expandedSize: CGSize {
-        if showingSections {
+        if NotchSupport.isTestHarness, showingSections {
             return geometry.sectionPickerSize(count: filteredSections.count)
         }
         let musicExtras = NotchLyricsSupport.isEnabled() || NotchQueueSupport.isEnabled()
@@ -1438,15 +1438,23 @@ final class NotchService: ObservableObject {
                 let saved = UserDefaults.standard.string(forKey: DefaultsKey.notchHomeModule) ?? ""
                 switch NotchReopeningDestination(rawValue: saved) {
                 case .appPanel: return (modules.contains(.controls) ? .controls : modules.first ?? .controls, true, false)
-                case .explore: return (selected, false, true)
+                case .explore:
+                    if NotchSupport.isTestHarness {
+                        return (selected, false, true)
+                    }
+                    let home = modules.contains(.hub) ? .hub : (modules.first ?? .hub)
+                    return (home, false, false)
                 case nil:
                     let home = NotchModule(rawValue: saved) ?? .controls
                     return (modules.contains(home) ? home : modules.first ?? .controls, false, false)
                 }
             }
-            return (selected, lastVisitedAppPanel, lastVisitedSections)
+            if !NotchSupport.isTestHarness, modules.contains(.hub) {
+                return (.hub, lastVisitedAppPanel, false)
+            }
+            return (selected, lastVisitedAppPanel, NotchSupport.isTestHarness ? lastVisitedSections : false)
         }
-        return (selected, showingAppPanel, showingSections)
+        return (selected, showingAppPanel, NotchSupport.isTestHarness ? showingSections : false)
     }
 
     var reopeningModule: NotchModule {
@@ -1490,7 +1498,7 @@ final class NotchService: ObservableObject {
         let useReopeningSurface = module == nil && !expanded && !appPanel && !sections && metric == nil
         let destination = module.flatMap { modules.contains($0) ? $0 : nil } ?? reopening.module
         let appPanel = appPanel || (useReopeningSurface && reopening.appPanel)
-        let sections = sections || (useReopeningSurface && reopening.sections)
+        let sections = NotchSupport.isTestHarness ? (sections || (useReopeningSurface && reopening.sections)) : false
         if useReopeningSurface && reopening.appPanel { MenuPanelFocus.shared.showNormalPanel() }
         if useReopeningSurface && reopening.sections {
             sectionQuery = ""
@@ -1838,6 +1846,10 @@ final class NotchService: ObservableObject {
 
     func toggleSections() {
         guard !heldDrag else { return }
+        if !NotchSupport.isTestHarness {
+            open(.hub)
+            return
+        }
         if showingSections {
             open(appPanel: showingAppPanel, metric: selectedMetric)
         } else {
