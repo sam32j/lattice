@@ -39,7 +39,7 @@ final class DiskSampler {
 
     func sample(now: TimeInterval, refreshMetadata: Bool = true) -> DiskReading {
         let counters = Self.readCounters()
-        var devices = Self.mountedVolumes().map { volume -> DiskDeviceReading in
+        let devices = Self.mountedVolumes().map { volume -> DiskDeviceReading in
             let metadata = metadata(for: volume, now: now, refresh: refreshMetadata)
             let wholeDisk = metadata.wholeDisk
             let counter = Self.bestCounter(from: metadata.ioCounterIDs, counters: counters)
