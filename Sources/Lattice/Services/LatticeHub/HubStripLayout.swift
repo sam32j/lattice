@@ -212,8 +212,23 @@ struct HubStripScrollTargetBehavior: ScrollTargetBehavior {
     func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
         guard !isDragging else { return }
         let maxScroll = max(0, context.contentSize.width - context.containerSize.width)
+        guard maxScroll > 0, stride > 0 else { return }
         let rawX = target.rect.origin.x
-        let snapped = round(rawX / stride) * stride
+        let startX = context.originalTarget.rect.origin.x
+        let delta = rawX - startX
+
+        let snapped: CGFloat
+        if abs(delta) > stride * 0.12 || abs(delta) > 24 {
+            if delta > 0 {
+                let next = floor(startX / stride) * stride + stride
+                snapped = min(maxScroll, next)
+            } else {
+                let prev = ceil(startX / stride) * stride - stride
+                snapped = max(0, prev)
+            }
+        } else {
+            snapped = round(rawX / stride) * stride
+        }
         target.rect.origin.x = max(0, min(snapped, maxScroll))
     }
 }

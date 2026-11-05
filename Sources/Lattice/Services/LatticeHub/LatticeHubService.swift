@@ -46,7 +46,8 @@ final class LatticeHubService: ObservableObject {
     var outsideClickMonitor: Any?
     var globalKeyMonitor: Any?
     var activationObserver: NSObjectProtocol?
-    var resignKeyObserver: NSObjectProtocol?
+    var resignActiveObserver: NSObjectProtocol?
+    var spaceChangeObserver: NSObjectProtocol?
 
     private var notchSubscription: AnyCancellable?
 

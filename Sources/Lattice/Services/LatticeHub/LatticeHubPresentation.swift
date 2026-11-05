@@ -74,24 +74,19 @@ extension LatticeHubService {
 
     func restorePreviousAppActivation() {
         let ownPID = ProcessInfo.processInfo.processIdentifier
-        if let currentFront = NSWorkspace.shared.frontmostApplication,
-           currentFront.processIdentifier != ownPID {
-            previousApp = nil
-            return
-        }
-        guard let source = previousApp, !source.isTerminated else {
-            previousApp = nil
-            return
-        }
+        let target = (previousApp != nil && !previousApp!.isTerminated && previousApp!.processIdentifier != ownPID)
+            ? previousApp
+            : NSWorkspace.shared.runningApplications.first(where: {
+                $0.activationPolicy == .regular &&
+                $0.processIdentifier != ownPID &&
+                !$0.isTerminated &&
+                !$0.isHidden
+            })
         previousApp = nil
-        ActivationHandoff.yield(to: source)
-        if !source.activate(from: NSRunningApplication.current, options: []) {
-            source.activate(options: [])
-        }
-        DispatchQueue.main.async {
-            if !source.isTerminated {
-                source.activate(options: [])
-            }
+        panel?.resignKey()
+        if let target {
+            NSApp.yieldActivation(to: target)
+            target.activate()
         }
     }
 

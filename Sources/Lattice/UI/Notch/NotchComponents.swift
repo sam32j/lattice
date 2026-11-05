@@ -643,13 +643,15 @@ struct NotchMenuButton<Label: View>: View {
     let title: String
     let items: [NotchMenuItem]
     var cornerRadius: CGFloat = 6
+    var lifts = false
     @ViewBuilder let label: () -> Label
     @State private var anchor = NotchMenuAnchor()
 
     var body: some View {
         Button { anchor.popUp(items) } label: { label() }
-            .buttonStyle(NotchButtonStyle(cornerRadius: cornerRadius, lifts: false))
+            .buttonStyle(NotchButtonStyle(cornerRadius: cornerRadius, lifts: lifts))
             .background(NotchMenuAnchorView(anchor: anchor))
+            .help(title)
             .accessibilityLabel(title)
     }
 }
