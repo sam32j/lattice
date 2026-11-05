@@ -276,5 +276,10 @@ struct NotchSettings: View {
         if hover && hideUntilHover, idle != NotchIdleContent.none.rawValue {
             idle = NotchIdleContent.none.rawValue
         }
+        if homeModule == NotchReopeningDestination.explore.rawValue
+            || homeModule == NotchModule.controls.rawValue
+            || homeModule == NotchModule.mixer.rawValue {
+            homeModule = NotchModule.hub.rawValue
+        }
     }
 }
