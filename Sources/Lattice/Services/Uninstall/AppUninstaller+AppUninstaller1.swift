@@ -155,6 +155,22 @@ extension AppUninstaller {
         items[index].include = include
     }
 
+    /// What the select-all checkbox beside the results count shows.
+    var bulkSelection: UninstallerSupport.BulkSelection {
+        UninstallerSupport.BulkSelection(included: items.filter(\.include).count, total: items.count)
+    }
+
+    /// Checks or clears every detected file at once, optional ones included.
+    /// Like a single row, it refuses to change a removal that already started.
+    func setAllIncluded(_ include: Bool) {
+        guard !isRemoving else { return }
+        var updated = items
+        for index in updated.indices {
+            updated[index].include = include
+        }
+        items = updated
+    }
+
     func retryHomebrewCheck() {
         guard phase == .results, homebrewCheckFailed, let target else { return }
         select(appURL: target.url)

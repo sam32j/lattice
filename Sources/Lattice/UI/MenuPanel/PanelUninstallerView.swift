@@ -428,6 +428,16 @@ struct PanelUninstallerView: View {
 
     private var footer: some View {
         HStack(spacing: 10) {
+            MixedStateCheckbox(
+                title: l10n.s.uninstallerSelectAll,
+                isOn: uninstaller.bulkSelection == .all,
+                isMixed: uninstaller.bulkSelection == .some,
+                isEnabled: !uninstaller.isRemoving && !uninstaller.items.isEmpty,
+                fontSize: 11,
+                showsTitle: false
+            ) {
+                uninstaller.setAllIncluded(uninstaller.bulkSelection.nextInclude)
+            }
             VStack(alignment: .leading, spacing: 1) {
                 Text(String(format: l10n.s.uninstallerSelectedFormat,
                             uninstaller.items.filter(\.include).count, uninstaller.items.count))

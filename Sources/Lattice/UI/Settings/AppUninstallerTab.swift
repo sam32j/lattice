@@ -323,6 +323,17 @@ struct AppUninstallerTab: View {
 
     private var resultsFooter: some View {
         AppManagerDockedFooter {
+            MixedStateCheckbox(
+                title: l10n.s.uninstallerSelectAll,
+                isOn: uninstaller.bulkSelection == .all,
+                isMixed: uninstaller.bulkSelection == .some,
+                isEnabled: !uninstaller.isRemoving && !uninstaller.items.isEmpty,
+                fontSize: 12.5,
+                showsTitle: false
+            ) {
+                uninstaller.setAllIncluded(uninstaller.bulkSelection.nextInclude)
+                armed = false
+            }
             VStack(alignment: .leading, spacing: 1) {
                 Text(String(format: s.uninstallerSelectedFormat,
                             uninstaller.items.filter(\.include).count, uninstaller.items.count))
