@@ -11,9 +11,22 @@ final class DoNotDisturbState: ObservableObject {
 
     private var dndEnabledObserver: NSObjectProtocol?
     private var dndDisabledObserver: NSObjectProtocol?
+    private var dirSource: DispatchSourceFileSystemObject?
+    private var dirFD: Int32 = -1
+    private var pollTimer: Timer?
 
     private init() {
         refresh()
+        setupNotificationObservers()
+        setupFileSystemWatcher()
+        setupPollTimer()
+    }
+
+    deinit {
+        cleanup()
+    }
+
+    private func setupNotificationObservers() {
         let distributed = DistributedNotificationCenter.default()
         dndEnabledObserver = distributed.addObserver(
             forName: Notification.Name("_NSDoNotDisturbEnabledNotification"),
@@ -31,19 +44,63 @@ final class DoNotDisturbState: ObservableObject {
         }
     }
 
-    deinit {
+    private func setupFileSystemWatcher() {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/DoNotDisturb/DB")
+        let fd = open((url as NSURL).fileSystemRepresentation, O_EVTONLY)
+        guard fd >= 0 else { return }
+        dirFD = fd
+        let queue = DispatchQueue(label: "com.lattice.dnd-monitor", qos: .utility)
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: fd,
+            eventMask: [.write, .extend, .attrib, .rename, .link],
+            queue: queue
+        )
+        source.setEventHandler { [weak self] in
+            self?.refresh()
+        }
+        source.setCancelHandler {
+            close(fd)
+        }
+        dirSource = source
+        source.resume()
+    }
+
+    private func setupPollTimer() {
+        let timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.refresh()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        pollTimer = timer
+    }
+
+    private func cleanup() {
         if let dndEnabledObserver {
             DistributedNotificationCenter.default().removeObserver(dndEnabledObserver)
         }
         if let dndDisabledObserver {
             DistributedNotificationCenter.default().removeObserver(dndDisabledObserver)
         }
+        pollTimer?.invalidate()
+        pollTimer = nil
+        dirSource?.cancel()
+        dirSource = nil
+        dirFD = -1
     }
 
     func refresh() {
         let active = checkDNDActive()
-        if isActive != active {
-            isActive = active
+        if Thread.isMainThread {
+            if isActive != active {
+                isActive = active
+            }
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if self.isActive != active {
+                    self.isActive = active
+                }
+            }
         }
     }
 

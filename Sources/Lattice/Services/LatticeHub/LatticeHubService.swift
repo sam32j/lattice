@@ -49,6 +49,7 @@ final class LatticeHubService: ObservableObject {
     var activationObserver: NSObjectProtocol?
     var resignActiveObserver: NSObjectProtocol?
     var resignKeyObserver: NSObjectProtocol?
+    var otherKeyObserver: NSObjectProtocol?
     var spaceChangeObserver: NSObjectProtocol?
     var missionControlTimer: Timer?
 

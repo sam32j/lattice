@@ -94,7 +94,21 @@ extension LatticeHubService {
     func installMonitors(for panel: NSPanel) {
         removeMonitors()
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self, weak panel] event in
-            guard let self, let panel, event.window === panel, panel.isKeyWindow else { return event }
+            guard let self, let panel, panel.isVisible else { return event }
+
+            let shortcutModifiers = event.modifierFlags.intersection([.command, .control, .option])
+            if !shortcutModifiers.isEmpty {
+                let key = Int(event.keyCode)
+                let isTextEditing = key == kVK_ANSI_C || key == kVK_ANSI_V || key == kVK_ANSI_X
+                    || key == kVK_ANSI_A || key == kVK_ANSI_Z
+                let isInsideTextField = (event.window?.firstResponder as? NSTextView) != nil
+                if event.keyCode == UInt16(kVK_Space) || (!isInsideTextField && !isTextEditing && key != kVK_ANSI_Comma && key != kVK_ANSI_W) {
+                    if !self.isPinned { self.hide() }
+                    return event
+                }
+            }
+
+            guard event.window === panel, panel.isKeyWindow else { return event }
             return self.handlePanelKey(event)
         }
         let mouseEvents: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
@@ -142,6 +156,17 @@ extension LatticeHubService {
                 if !panel.isKeyWindow && (NSApp.keyWindow == nil || NSApp.keyWindow !== panel) {
                     self.hide()
                 }
+            }
+        }
+        otherKeyObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self, weak panel] notification in
+            guard let self, let panel, !self.isPinned, panel.isVisible else { return }
+            if self.stayAwakeOptionsPresented { return }
+            if let window = notification.object as? NSWindow, window !== panel {
+                self.hide()
             }
         }
         spaceChangeObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -193,6 +218,10 @@ extension LatticeHubService {
         if let resignKeyObserver {
             NotificationCenter.default.removeObserver(resignKeyObserver)
             self.resignKeyObserver = nil
+        }
+        if let otherKeyObserver {
+            NotificationCenter.default.removeObserver(otherKeyObserver)
+            self.otherKeyObserver = nil
         }
         if let spaceChangeObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(spaceChangeObserver)

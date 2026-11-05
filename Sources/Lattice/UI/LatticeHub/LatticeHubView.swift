@@ -80,10 +80,10 @@ struct LatticeHubView: View {
                         }
                     })
                 } else {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 3) {
                         islandToolsMenuButton
                         if updateOffered {
-                            NotchUpdateControl(action: service.showUpdate, compact: true)
+                            islandUpdateButton
                         }
                     }
                 }
@@ -235,6 +235,20 @@ struct LatticeHubView: View {
             service.pinned.toggle()
             launcher.isPinned = service.pinned
         }
+    }
+
+    private var islandUpdateButton: some View {
+        Button(action: service.showUpdate) {
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.blue)
+                .frame(width: 28, height: 28)
+                .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+        }
+        .buttonStyle(NotchButtonStyle(cornerRadius: 9))
+        .focusable(false)
+        .help(updateTooltip)
+        .accessibilityLabel(updateTooltip)
     }
 
     // Chrome, editing tray, grid and metadata have dedicated view files.
