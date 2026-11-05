@@ -27,13 +27,9 @@ struct NotchUpdateControl: View {
                 }
                 .font(.system(size: 11, weight: .semibold))
                 .lineLimit(1)
-                .foregroundStyle(Color.primary)
+                .foregroundStyle(Color.blue)
                 .padding(.horizontal, compact ? 4 : 8)
                 .padding(.vertical, compact ? 4 : 3)
-                .background(
-                    Capsule()
-                        .fill(Color.primary.opacity(0.12))
-                )
             }
             .buttonStyle(.plain)
             .fixedSize()
@@ -60,13 +56,9 @@ struct NotchUpdateControl: View {
                 }
                 .font(.system(size: 11, weight: .semibold))
                 .lineLimit(1)
-                .foregroundStyle(Color.primary)
+                .foregroundStyle(Color.blue)
                 .padding(.horizontal, compact ? 4 : 8)
                 .padding(.vertical, compact ? 4 : 3)
-                .background(
-                    Capsule()
-                        .fill(Color.primary.opacity(0.12))
-                )
             }
             .buttonStyle(.plain)
             .fixedSize()

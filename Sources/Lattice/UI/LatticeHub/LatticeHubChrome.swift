@@ -5,9 +5,10 @@ import SwiftUI
 
 struct HubHeaderButtonStyle: ButtonStyle {
     var isSelected: Bool = false
+    var overrideForeground: Color? = nil
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(isSelected || configuration.isPressed ? Color.primary : Color.secondary)
+            .foregroundStyle(overrideForeground ?? (isSelected || configuration.isPressed ? Color.primary : Color.secondary))
             .opacity(configuration.isPressed ? 0.75 : 1.0)
             .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
             .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
@@ -108,15 +109,16 @@ extension LatticeHubView {
         Button(action: service.showUpdate) {
             Image(systemName: "arrow.down.circle.fill")
                 .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.blue)
                 .frame(width: 26, height: 26)
         }
-        .buttonStyle(HubHeaderButtonStyle())
+        .buttonStyle(HubHeaderButtonStyle(overrideForeground: .blue))
         .focusable(false)
         .help(updateTooltip)
         .accessibilityLabel(updateTooltip)
     }
 
-    private var updateTooltip: String {
+    var updateTooltip: String {
         #if LATTICE_DEVELOPMENT
         let version = "2.1.0"
         return "\(l10n.s.updateBannerTitle): \(version)"

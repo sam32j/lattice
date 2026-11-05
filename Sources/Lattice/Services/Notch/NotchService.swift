@@ -2020,6 +2020,11 @@ final class NotchService: ObservableObject {
 
     func select(_ module: NotchModule) {
         guard modules.contains(module) else { return }
+        if module != .captures, captureContent != nil {
+            let close = captureClose
+            clearCapture()
+            close?()
+        }
         open(module)
     }
 
@@ -3747,6 +3752,21 @@ final class NotchService: ObservableObject {
         }) { eventMonitors.append(token) }
         if let token = NSEvent.addLocalMonitorForEvents(matching: clicks.union(.keyDown), handler: { [weak self] event in
             guard let self else { return event }
+            if event.type == .keyDown {
+                if event.window === self.panel, self.showingCommandBar { return event }
+                let shortcutModifiers: NSEvent.ModifierFlags = [.command, .control, .option]
+                if !event.modifierFlags.intersection(shortcutModifiers).isEmpty {
+                    let key = Int(event.keyCode)
+                    let isTextEditing = key == 8 || key == 9 || key == 7 || key == 0 || key == 6
+                    let isInsideTextField = (event.window?.firstResponder as? NSTextView)?.isFieldEditor == true
+                    if event.keyCode == 49 || (!isInsideTextField && !isTextEditing && key != 43 && key != 13) {
+                        if !self.pinned, self.expanded, !self.keepsWorkingSurface {
+                            self.collapse()
+                            return event
+                        }
+                    }
+                }
+            }
             if event.type == .rightMouseDown, self.ownsWindow(event.window) {
                 let hoverExpands = UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover)
                     && UserDefaults.standard.bool(forKey: DefaultsKey.notchHoverExpands)
