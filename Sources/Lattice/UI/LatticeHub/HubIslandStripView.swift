@@ -25,16 +25,18 @@ struct HubIslandStripView<Content: View>: View {
                             HStack(spacing: 0) {
                                 ForEach(0..<layout.pages, id: \.self) { pageIndex in
                                     Color.clear
-                                        .frame(width: layout.pageStride, height: 1)
+                                        .frame(width: pageIndex == layout.pages - 1 ? notchWidth : layout.pageStride,
+                                               height: layout.size.height)
                                         .id("hub_island_page_\(pageIndex)")
                                 }
                             }
+                            .scrollTargetLayout()
                             surface
                         }
                     }
                     .scrollIndicators(.never)
                     .scrollDisabled(session.active != nil)
-                    .scrollTargetBehavior(HubStripScrollTargetBehavior(isDragging: session.active != nil, stride: layout.pageStride))
+                    .scrollTargetBehavior(.viewAligned)
                     .onChange(of: launcher.selectedIndex) { _, newIndex in
                         guard let newIndex, items.indices.contains(newIndex) else { return }
                         let capacity = max(1, columns * 2)

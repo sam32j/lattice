@@ -37,11 +37,6 @@ struct HubToolSurface<Content: View>: View {
                     .animation(reduceMotion ? nil : .easeInOut(duration: 0.14), value: preview)
                     .opacity(session.active == .tool(item) ? 0 : 1)
                     .id(item.id)
-                    .simultaneousGesture(
-                        isEditing ? nil : LongPressGesture(minimumDuration: 0.8).onEnded { _ in
-                            onManage()
-                        }
-                    )
             }
             if sourceIndex != nil, let target = insertionIndex, !session.targetsHiddenTray {
                 let frame = layout.frames[target]
@@ -53,6 +48,11 @@ struct HubToolSurface<Content: View>: View {
             }
         }
         .frame(width: layout.size.width, height: layout.size.height, alignment: .topLeading)
+        .simultaneousGesture(
+            isEditing ? nil : LongPressGesture(minimumDuration: 0.8).onEnded { _ in
+                onManage()
+            }
+        )
         .overlay {
             HubDragView(destination: .tools, session: session, isEnabled: isEditing,
                         toolItems: items, toolLayout: layout, onToolTap: onTap)

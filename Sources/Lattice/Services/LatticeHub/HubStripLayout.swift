@@ -203,32 +203,4 @@ struct HubToolLayout: Equatable {
     }
 }
 
-// MARK: - Column Snapping Behavior
 
-struct HubStripScrollTargetBehavior: ScrollTargetBehavior {
-    var isDragging: Bool
-    var stride: CGFloat = HubStripLayout.columnStride
-
-    func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
-        guard !isDragging else { return }
-        let maxScroll = max(0, context.contentSize.width - context.containerSize.width)
-        guard maxScroll > 0, stride > 0 else { return }
-        let rawX = target.rect.origin.x
-        let page = rawX / stride
-        let progress = page - floor(page)
-
-        let targetPage: CGFloat
-        if context.velocity.dx > 15 {
-            targetPage = ceil(page) == floor(page) ? floor(page) + 1 : ceil(page)
-        } else if context.velocity.dx < -15 {
-            targetPage = floor(page)
-        } else if progress > 0.12 {
-            targetPage = ceil(page)
-        } else {
-            targetPage = floor(page)
-        }
-
-        let snapped = targetPage * stride
-        target.rect.origin.x = max(0, min(snapped, maxScroll))
-    }
-}
