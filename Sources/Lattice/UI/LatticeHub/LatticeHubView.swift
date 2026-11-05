@@ -79,8 +79,13 @@ struct LatticeHubView: View {
                             launcher.closeUtility()
                         }
                     })
-                } else if updateOffered {
-                    NotchUpdateControl(action: service.showUpdate, compact: true)
+                } else {
+                    HStack(spacing: 8) {
+                        islandToolsMenuButton
+                        if updateOffered {
+                            NotchUpdateControl(action: service.showUpdate, compact: true)
+                        }
+                    }
                 }
             }
         }, trailing: {
@@ -102,7 +107,6 @@ struct LatticeHubView: View {
                                 islandDownloadButton
                             }
                             islandPinButton
-                            islandToolsMenuButton
                         } else {
                             islandPinButton
                             NotchIconButton(symbol: "checkmark",
@@ -179,8 +183,12 @@ struct LatticeHubView: View {
     }
 
     private var updateOffered: Bool {
+        #if LATTICE_DEVELOPMENT
+        return true
+        #else
         if case .available = updates.state { return true }
         return false
+        #endif
     }
 
     private var notificationSymbol: String {

@@ -77,17 +77,9 @@ extension LatticeHubService {
         let isLatticeFront = NSWorkspace.shared.frontmostApplication?.processIdentifier == ownPID
         let target = (previousApp != nil && !previousApp!.isTerminated && previousApp!.processIdentifier != ownPID)
             ? previousApp
-            : (isLatticeFront ? NSWorkspace.shared.runningApplications.first(where: {
-                $0.activationPolicy == .regular &&
-                $0.processIdentifier != ownPID &&
-                !$0.isTerminated &&
-                !$0.isHidden
-            }) : nil)
+            : nil
         previousApp = nil
         panel?.resignKey()
-        if (NSApp.delegate as? AppDelegate)?.settingsWindow?.isKeyWindow == true {
-            (NSApp.delegate as? AppDelegate)?.settingsWindow?.resignKey()
-        }
         if isLatticeFront, let target {
             NSApp.yieldActivation(to: target)
             target.activate()
@@ -96,7 +88,6 @@ extension LatticeHubService {
 
     func hide() {
         stayAwakeOptionsPresented = false
-        if NotchService.shared.expanded, NotchService.shared.selected == .hub { NotchService.shared.collapse() }
         removeMonitors()
         isEditing = false
         editingOptionsItem = nil

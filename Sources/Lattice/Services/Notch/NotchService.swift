@@ -2186,7 +2186,6 @@ final class NotchService: ObservableObject {
         }
         if !pinned {
             collapse()
-            windowHost?.cancelMissionControlRestoration()
         }
         if !LatticeHubService.shared.isPinned {
             LatticeHubService.shared.hide()
@@ -2757,6 +2756,12 @@ final class NotchService: ObservableObject {
                 }
             }, activate: { [weak self] in
                 guard let self else { return }
+                if LatticeHubService.shared.isVisible {
+                    LatticeHubService.shared.previousApp = nil
+                    LatticeHubService.shared.hide()
+                    self.open(.hub)
+                    return
+                }
                 // The capsule's button covers its music bars too, which play or pause there.
                 if self.geometry.floats, self.musicStripShowsControl { self.toggleMusicStripSong() }
                 else if !self.expanded, self.compactActivity == .calendar {
