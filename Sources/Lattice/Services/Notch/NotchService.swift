@@ -839,7 +839,7 @@ final class NotchService: ObservableObject {
             return geometry.sectionPickerSize(count: filteredSections.count)
         }
         let musicExtras = NotchLyricsSupport.isEnabled() || NotchQueueSupport.isEnabled()
-        let isHubPage = !showingAppPanel && selected == .hub
+        let isHubPage = !showingAppPanel && (selected == .hub || selected == .controls || selected == .mixer)
         let launcher = LatticeHubService.shared
         let isEditing = isHubPage && launcher.editingPresentation.isPresented && launcher.activeUtility == nil
         let isRecentCapturesUtility = isHubPage && launcher.activeUtility == .recentCaptures
@@ -1445,8 +1445,13 @@ final class NotchService: ObservableObject {
                     let home = modules.contains(.hub) ? .hub : (modules.first ?? .hub)
                     return (home, false, false)
                 case nil:
-                    let home = NotchModule(rawValue: saved) ?? .controls
-                    return (modules.contains(home) ? home : modules.first ?? .controls, false, false)
+                    if NotchSupport.isTestHarness {
+                        let home = NotchModule(rawValue: saved) ?? .controls
+                        return (modules.contains(home) ? home : modules.first ?? .controls, false, false)
+                    }
+                    let home = NotchModule(rawValue: saved) ?? .hub
+                    let resolved = (home == .controls || home == .mixer) ? .hub : home
+                    return (modules.contains(resolved) ? resolved : modules.first ?? .hub, false, false)
                 }
             }
             if !NotchSupport.isTestHarness, modules.contains(.hub) {
@@ -1478,7 +1483,7 @@ final class NotchService: ObservableObject {
         let calendar = NotchCalendarService.shared
         calendar.revealing = calendar.countdown?.event.id
         openActivity(.calendar)
-        // Explore or an app panel opened in the page's place keeps no event
+        // Hub or an app panel opened in the page's place keeps no event
         // for a later visit to Calendar.
         if !expanded || selected != .calendar || showingSections || showingAppPanel { calendar.revealing = nil }
     }

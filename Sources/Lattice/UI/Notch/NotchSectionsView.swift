@@ -13,6 +13,6 @@ struct NotchSectionsView: View {
     @ObservedObject var service: NotchService
 
     var body: some View {
-        EmptyView()
+        LatticeHubView(notchSize: service.expandedSize)
     }
 }
