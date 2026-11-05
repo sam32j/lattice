@@ -476,14 +476,8 @@ struct NotchView: View {
         var size = service.contentSize
         guard !showsDetail else { return size }
         switch service.selected {
-        case .controls:
-            let items = NotchSupport.controls()
-            let shortcuts = items.filter { $0 != .music && !$0.isLevel }
-            let levels = items.filter(\.isLevel).count
-            let band = NotchBand(geometry: service.expandedGeometry, contentWidth: size.width)
-            size.height = max(size.height, NotchLayout.controls(
-                hasCards: items.contains(.music), levelRow: NotchLayout.bandLevelCount(levels, band: band) < levels,
-                shortcutCount: shortcuts.count, width: size.width, height: size.height).height)
+        case .controls, .mixer:
+            break
         case .timer:
             let session = NotchTimerService.shared.session
             size.height = max(size.height, NotchLayout.timer(
@@ -499,9 +493,6 @@ struct NotchView: View {
         case .camera:
             // Keep permission and error messages reachable.
             size.height = max(size.height, 144)
-        case .mixer:
-            // Shorten the tracks before pushing mute and level controls offscreen.
-            size.height = max(size.height, NotchLayout.mixerMinimumHeight)
         case .music:
             size.height = max(size.height, NotchLayout.musicPlayerHeight(band: service.expandedGeometry.musicBandHeight,
                                                                          playing: music.playback != nil))
@@ -617,8 +608,7 @@ struct NotchView: View {
                         }
                     })
             case .calendar: NotchCalendarView(size: pageSize)
-            case .controls: NotchControlsView(service: service, size: pageSize)
-            case .mixer: NotchMixerView(size: pageSize)
+            case .controls, .mixer: EmptyView()
             case .music: NotchMusicView(size: pageSize, extrasHeight: service.geometry.musicExtrasHeight)
             case .clipboard: NotchClipboardView(service: service, size: pageSize)
             case .snippets: NotchSnippetsView(service: service, size: pageSize)

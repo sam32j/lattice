@@ -91,23 +91,7 @@ extension NotchSettings {
     }
 
 
-    var orderedShortcuts: [NotchControlItem] {
-        let stored = controlOrder.split(separator: ",").compactMap { NotchControlItem(rawValue: String($0)) }
-        var seen = Set<NotchControlItem>()
-        return (stored + NotchControlItem.allCases).filter {
-            !$0.isLevel && $0 != .music && seen.insert($0).inserted
-        }
-    }
 
-    func controlBinding(_ item: NotchControlItem) -> Binding<Bool> {
-        Binding {
-            !hiddenControls.split(separator: ",").contains(Substring(item.rawValue))
-        } set: { shown in
-            var values = Set(hiddenControls.split(separator: ",").map(String.init))
-            if shown { values.remove(item.rawValue) } else { values.insert(item.rawValue) }
-            hiddenControls = values.sorted().joined(separator: ",")
-        }
-    }
 
     func moduleBinding(_ module: NotchModule) -> Binding<Bool> {
         Binding {

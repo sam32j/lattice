@@ -27,7 +27,7 @@ struct NotchQuickActionPicker: View {
 
                     actionSection(
                         title: editor.sectionActions,
-                        actions: [.explore, .settings] + NotchModule.allCases.map(NotchQuickAction.module)
+                        actions: [.explore, .settings] + NotchSupport.widgetModules.map(NotchQuickAction.module)
                     )
 
                     actionSection(

@@ -36,6 +36,9 @@ extension NotchSettings {
             SettingsControlRow(title: opening.defaultPage) {
                 Picker(opening.defaultPage, selection: Binding(get: {
                     guard returnHome else { return "" }
+                    if homeModule == NotchModule.controls.rawValue || homeModule == NotchModule.mixer.rawValue {
+                        return NotchModule.hub.rawValue
+                    }
                     return NotchModule(rawValue: homeModule)?.rawValue
                         ?? NotchReopeningDestination(rawValue: homeModule)?.rawValue
                         ?? NotchModule.hub.rawValue
@@ -63,9 +66,11 @@ extension NotchSettings {
     }
 
     var defaultPageModules: [NotchModule] {
-        var modules = NotchSupport.modules()
-        if let saved = NotchModule(rawValue: homeModule), !modules.contains(saved) { modules.append(saved) }
-        return modules.filter { $0 != .hub }.sorted {
+        var modules = NotchSupport.modules().filter { $0 != .controls && $0 != .mixer }
+        if let saved = NotchModule(rawValue: homeModule), saved != .controls, saved != .mixer, !modules.contains(saved) {
+            modules.append(saved)
+        }
+        return modules.filter { $0 != .hub && $0 != .controls && $0 != .mixer }.sorted {
             $0.title(l10n.language).compare($1.title(l10n.language), options: [.caseInsensitive, .numeric],
                                           locale: Locale(identifier: l10n.language.rawValue)) == .orderedAscending
         }
@@ -144,28 +149,7 @@ extension NotchSettings {
         }
     }
 
-    /// A control that opens a page is off while that page is hidden, or while
-    /// the feature behind it is disabled; the others follow their feature.
-    func controlReason(_ item: NotchControlItem) -> String {
-        // The keyboard light also needs a keyboard that has one.
-        if item == .keyboardLight, AppFeature.brightness.isAvailable { return editor.keyboardLightUnavailable }
-        switch item.setupRequirement {
-        case .feature(let feature): return feature.enableReason(l10n)
-        case .page(let module, let feature): return pageReason(module, feature: feature)
-        case .none: return text.disabled
-        }
-    }
 
-    func controlUnavailableAction(_ item: NotchControlItem) -> (() -> Void)? {
-        if item == .keyboardLight, AppFeature.brightness.isAvailable { return nil }
-        switch item.setupRequirement {
-        case .feature(let feature):
-            return { feature.showInFeatures() }
-        case .page(let module, let feature):
-            return pageAction(module, feature: feature)
-        case .none: return nil
-        }
-    }
 
     /// The one feature a page needs; Captures and System accept any of several.
     func moduleFeature(_ module: NotchModule) -> AppFeature? {
