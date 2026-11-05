@@ -644,14 +644,11 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             if !restoringFromMissionControl { missionControlAlpha = panel.alphaValue }
             missionControlMouseEvents = mouseEventsBeforeHide ?? panel.ignoresMouseEvents
             panel.ignoresMouseEvents = true
+            completeMissionControlConcealment()
             if panel.isVisible {
-                fadeMissionControl(to: 0) { [weak self] in
-                    guard let self, self.concealedForMissionControl else { return }
-                    self.completeMissionControlConcealment()
-                }
+                fadeMissionControl(to: 0)
             } else {
                 panel.alphaValue = 0
-                completeMissionControlConcealment()
                 syncMissionControlMonitoring()
             }
         } else if concealedForMissionControl {
@@ -883,7 +880,7 @@ enum NotchStage {
 /// reads back at once, inside it the previous size is still reported while the
 /// server animates. Only a size change is applied synchronously, once the
 /// layer tree is flushed; a move is deferred and would read back stale anywhere.
-private final class NotchFrameProbe {
+final class NotchFrameProbe {
     private let window: NotchPanel
     private var grown = false
 
@@ -922,6 +919,8 @@ private final class NotchFrameProbe {
         return windows.contains { window in
             let owner = window[kCGWindowOwnerName as String] as? String
             let layer = window[kCGWindowLayer as String] as? Int
+            let name = window[kCGWindowName as String] as? String
+            if name == "ExposeShieldWindow" || name == "Spaces Bar" { return true }
             if owner == "Dock" { return layer == 18 }
             guard owner == "WindowManager", layer == 19,
                   let bounds = window[kCGWindowBounds as String] as? [String: CGFloat] else { return false }
