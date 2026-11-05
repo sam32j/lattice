@@ -26,28 +26,48 @@ struct SoftwareDimmingButton: View {
         return !(compact && display.readable)
     }
 
+    /// The opt-out from DDC for a readable monitor. Some monitors answer
+    /// reads but black out on brightness writes, and the only way to stop
+    /// sending them is to leave DDC (issue #3621). Settings only, and only
+    /// while no other choice is on: once chosen, the main button carries it.
+    private var pictureDimmingOffered: Bool {
+        guard !compact, !chosen, display.isActive, !display.isBuiltIn,
+              display.canChooseDimming else { return false }
+        return display.method == .ddc && display.readable
+    }
+
     var body: some View {
         if offered {
-            Button {
+            choice(usesExtendedDimming ? strings.extendedDimming : strings.softwareDimming,
+                   chosen: chosen) {
                 if usesExtendedDimming {
                     service.setExtendedDimmingPreferred(!extendedChosen, for: display.id)
                 } else {
                     service.setSoftwareDimmingPreferred(!softwareChosen, for: display.id)
                 }
-            } label: {
-                HStack(spacing: compact ? 4 : 5) {
-                    Image(systemName: chosen ? "checkmark.circle.fill" : "circle.lefthalf.filled")
-                        .font(.system(size: compact ? 9.5 : 11, weight: .semibold))
-                    Text(usesExtendedDimming ? strings.extendedDimming : strings.softwareDimming)
-                        .font(.system(size: compact ? 10 : 12, weight: .medium))
-                        .lineLimit(1)
-                }
-                .foregroundStyle(chosen ? Color.accentColor : Color.secondary)
             }
-            .buttonStyle(.plain)
-            .disabled(service.isDisplayPending(display.id))
-            .accessibilityLabel("\(display.name): \(usesExtendedDimming ? strings.extendedDimming : strings.softwareDimming)")
         }
+        if pictureDimmingOffered {
+            choice(strings.softwareDimming, chosen: false) {
+                service.setSoftwareDimmingPreferred(true, for: display.id)
+            }
+        }
+    }
+
+    private func choice(_ title: String, chosen: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: compact ? 4 : 5) {
+                Image(systemName: chosen ? "checkmark.circle.fill" : "circle.lefthalf.filled")
+                    .font(.system(size: compact ? 9.5 : 11, weight: .semibold))
+                Text(title)
+                    .font(.system(size: compact ? 10 : 12, weight: .medium))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(chosen ? Color.accentColor : Color.secondary)
+        }
+        .buttonStyle(.plain)
+        .disabled(service.isDisplayPending(display.id))
+        .accessibilityLabel("\(display.name): \(title)")
     }
 }
 
