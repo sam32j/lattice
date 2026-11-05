@@ -54,6 +54,6 @@ extension LatticeHubService {
         let controls = visibleControls
         guard !controls.isEmpty else { return 0 }
         let rows = HubControlAction.rows(controls)
-        return rows.first.isEmpty || rows.second.isEmpty ? 34 : 66
+        return rows.first.isEmpty || rows.second.isEmpty ? 26 : 57
     }
 }
