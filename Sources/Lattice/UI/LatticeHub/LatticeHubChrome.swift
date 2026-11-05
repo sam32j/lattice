@@ -7,7 +7,7 @@ struct HubHeaderButtonStyle: ButtonStyle {
     var isSelected: Bool = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(isSelected || configuration.isPressed ? Color.accentColor : Color.secondary)
+            .foregroundStyle(isSelected || configuration.isPressed ? Color.primary : Color.secondary)
             .opacity(configuration.isPressed ? 0.75 : 1.0)
             .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
             .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
@@ -46,6 +46,7 @@ struct HubToolsMenuButton: View {
         }
         .buttonStyle(HubHeaderButtonStyle(isSelected: isMenuOpen))
         .background(NotchMenuAnchorView(anchor: anchor))
+        .focusable(false)
         .onAppear {
             anchor.onMenuOpenChanged = { open in
                 isMenuOpen = open
@@ -80,12 +81,10 @@ extension LatticeHubView {
                     if launcher.activeUtility != nil {
                         backButton
                     } else {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 6) {
                             toolsMenuButton
                             if updateOffered {
-                                NotchUpdateControl(action: service.showUpdate,
-                                                   compact: false,
-                                                   title: l10n.language == .enUS ? "Update Available" : l10n.s.updateBannerTitle)
+                                updateButton
                             }
                         }
                     }
@@ -105,6 +104,32 @@ extension LatticeHubView {
         }
     }
 
+    var updateButton: some View {
+        Button(action: service.showUpdate) {
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .frame(width: 26, height: 26)
+        }
+        .buttonStyle(HubHeaderButtonStyle())
+        .focusable(false)
+        .help(updateTooltip)
+        .accessibilityLabel(updateTooltip)
+    }
+
+    private var updateTooltip: String {
+        #if LATTICE_DEVELOPMENT
+        let version = "2.1.0"
+        return "\(l10n.s.updateBannerTitle): \(version)"
+        #else
+        switch updates.state {
+        case let .available(version):
+            return "\(l10n.s.updateBannerTitle): \(version)"
+        default:
+            return l10n.s.updateBannerTitle
+        }
+        #endif
+    }
+
     var pinButton: some View {
         Button {
             launcher.isPinned.toggle()
@@ -114,6 +139,7 @@ extension LatticeHubView {
                 .frame(width: 26, height: 26)
         }
         .buttonStyle(HubHeaderButtonStyle(isSelected: launcher.isPinned))
+        .focusable(false)
         .help(launcher.isPinned ? FeatureStrings.notch(l10n.language).unpin : FeatureStrings.notch(l10n.language).pin)
         .accessibilityLabel(launcher.isPinned ? FeatureStrings.notch(l10n.language).unpin : FeatureStrings.notch(l10n.language).pin)
     }
@@ -127,6 +153,7 @@ extension LatticeHubView {
                 .frame(width: 26, height: 26)
         }
         .buttonStyle(HubHeaderButtonStyle(isSelected: true))
+        .focusable(false)
         .help(l10n.s.doneButton)
         .accessibilityLabel(l10n.s.doneButton)
     }
@@ -147,6 +174,7 @@ extension LatticeHubView {
                 .frame(width: 26, height: 26)
         }
         .buttonStyle(HubHeaderButtonStyle())
+        .focusable(false)
         .help(l10n.s.menuClose)
         .accessibilityLabel(l10n.s.menuClose)
     }
@@ -168,6 +196,7 @@ extension LatticeHubView {
                 .frame(width: 26, height: 26)
         }
         .buttonStyle(HubHeaderButtonStyle())
+        .focusable(false)
         .help(l10n.s.navigationBack)
         .accessibilityLabel(l10n.s.navigationBack)
     }

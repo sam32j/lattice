@@ -15,7 +15,6 @@ struct NotchUpdateControl: View {
     @ViewBuilder var body: some View {
         switch updates.state {
         case let .available(version):
-            let tint: Color = UpdateServiceSupport.SemanticVersion(raw: version)?.isPrerelease == true ? .orange : .blue
             let titleText = title ?? l10n.s.updateBannerAction
             let title = "\(l10n.s.updateBannerTitle), \(l10n.s.versionPrefix) \(version)"
             Button(action: action) {
@@ -28,12 +27,17 @@ struct NotchUpdateControl: View {
                 }
                 .font(.system(size: 11, weight: .semibold))
                 .lineLimit(1)
+                .foregroundStyle(Color.primary)
+                .padding(.horizontal, compact ? 4 : 8)
+                .padding(.vertical, compact ? 4 : 3)
+                .background(
+                    Capsule()
+                        .fill(Color.primary.opacity(0.12))
+                )
             }
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
-            .controlSize(.small)
-            .tint(tint)
+            .buttonStyle(.plain)
             .fixedSize()
+            .focusable(false)
             .help(title)
             .accessibilityLabel(title)
             .accessibilityHint(l10n.s.updateBannerAction)
@@ -44,7 +48,6 @@ struct NotchUpdateControl: View {
         default:
             #if LATTICE_DEVELOPMENT
             let version = "2.1.0"
-            let tint: Color = .blue
             let titleText = title ?? l10n.s.updateBannerAction
             let title = "\(l10n.s.updateBannerTitle), \(l10n.s.versionPrefix) \(version)"
             Button(action: action) {
@@ -57,12 +60,17 @@ struct NotchUpdateControl: View {
                 }
                 .font(.system(size: 11, weight: .semibold))
                 .lineLimit(1)
+                .foregroundStyle(Color.primary)
+                .padding(.horizontal, compact ? 4 : 8)
+                .padding(.vertical, compact ? 4 : 3)
+                .background(
+                    Capsule()
+                        .fill(Color.primary.opacity(0.12))
+                )
             }
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
-            .controlSize(.small)
-            .tint(tint)
+            .buttonStyle(.plain)
             .fixedSize()
+            .focusable(false)
             .help(title)
             .accessibilityLabel(title)
             .accessibilityHint(l10n.s.updateBannerAction)
