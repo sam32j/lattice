@@ -145,9 +145,10 @@ struct HubToolLayout: Equatable {
     let size: CGSize
     let pageStride: CGFloat
     let isPaged: Bool
+    let pages: Int
 
-    init(frames: [CGRect], size: CGSize, pageStride: CGFloat = 0, isPaged: Bool = false) {
-        self.frames = frames; self.size = size; self.pageStride = pageStride; self.isPaged = isPaged
+    init(frames: [CGRect], size: CGSize, pageStride: CGFloat = 0, isPaged: Bool = false, pages: Int = 1) {
+        self.frames = frames; self.size = size; self.pageStride = pageStride; self.isPaged = isPaged; self.pages = pages
     }
 
     static func island(count: Int, width: CGFloat = 424, columns: Int = 5) -> Self {
@@ -171,7 +172,7 @@ struct HubToolLayout: Equatable {
             return CGRect(x: CGFloat(position.col) * stride, y: CGFloat(position.row) * HubStripLayout.rowStride,
                           width: tileWidth, height: HubStripLayout.itemHeight)
         }, size: CGSize(width: CGFloat(pages - 1) * pageStride + width, height: height),
-                    pageStride: pageStride, isPaged: paged)
+                    pageStride: pageStride, isPaged: paged, pages: pages)
     }
 
     static func hudHeight(count: Int) -> CGFloat {
