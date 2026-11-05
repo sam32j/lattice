@@ -378,9 +378,11 @@ struct NotchView: View {
                 // offers the same actions either way.
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 6) { items.trailing; trailingSections(band); updateControl(band); pinMark }
-                    HStack(spacing: 6) {
-                        items.trailing; trailingSections(band)
-                        NotchUpdateControl(action: service.showUpdate, compact: true); pinMark
+                    if service.selected != .hub {
+                        HStack(spacing: 6) {
+                            items.trailing; trailingSections(band)
+                            NotchUpdateControl(action: service.showUpdate, compact: true); pinMark
+                        }
                     }
                     HStack(spacing: 6) { items.trailing; trailingSections(band); pinMark }
                     HStack(spacing: 6) { items.trailing; trailingSections(band) }
@@ -406,13 +408,15 @@ struct NotchView: View {
         if band.trailingSectionsButton { NotchSectionsButton(action: service.toggleSections) }
     }
 
-    private func updateControl(_ band: NotchBand) -> some View {
-        NotchUpdateControl(action: service.showUpdate, compact: band.besideCamera)
+    @ViewBuilder private func updateControl(_ band: NotchBand) -> some View {
+        if service.selected != .hub {
+            NotchUpdateControl(action: service.showUpdate, compact: band.besideCamera)
+        }
     }
 
     /// A kept-open island says so, and one click lets it go.
     @ViewBuilder private var pinMark: some View {
-        if service.pinned {
+        if service.selected != .hub, service.pinned {
             NotchIconButton(symbol: "pin.fill", title: text.unpin, selected: true) { service.pinned = false }
         }
     }

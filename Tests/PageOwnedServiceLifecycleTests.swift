@@ -43,6 +43,7 @@ enum PageOwnedServiceLifecycleTests {
         var inserted = false
         var monitors = 2
         var isEditing = true
+        var isPinned = false
         var presentationID = UUID()
         var editingOptionsItem: Int? = 1
         var activeUtility: Int? = 1

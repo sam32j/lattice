@@ -90,6 +90,22 @@ extension LatticeHubService {
             guard let self, let panel, event.window === panel, panel.isKeyWindow else { return event }
             return self.handlePanelKey(event)
         }
+        let mouseEvents: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: mouseEvents) { [weak self, weak panel] event in
+            guard let self, let panel, panel.isVisible, !self.isPinned else { return event }
+            if event.window !== panel, !Self.mouseIsInside(panel) {
+                self.hide()
+            }
+            return event
+        }
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: mouseEvents) { [weak self, weak panel] event in
+            guard let self, let panel, panel.isVisible, !self.isPinned else { return }
+            if event.windowNumber != panel.windowNumber,
+               !Self.mouseIsInside(panel),
+               !AssistiveKeyboard.ownsCocoaPoint(NSEvent.mouseLocation) {
+                self.hide()
+            }
+        }
         activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
@@ -100,6 +116,9 @@ extension LatticeHubService {
                   app.processIdentifier != ProcessInfo.processInfo.processIdentifier
             else { return }
             self.previousApp = app
+            if !self.isPinned, self.panel?.isVisible == true {
+                self.hide()
+            }
         }
     }
 

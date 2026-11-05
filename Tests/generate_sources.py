@@ -1890,7 +1890,7 @@ def main():
     protocol = next(line for line in panel_layout.splitlines() if line.startswith("protocol PanelOrderItem:"))
     write("LatticeHubBodies.swift", "import Foundation\nimport Carbon.HIToolbox\n" + protocol + "\n\nextension LatticeHubContract {\n"
           + declaration(item_file, "enum LatticeHubItem:")
-          + "final class Launcher {\nvar isEditing = false\nvar activeUtility: LatticeHubItem?\n"
+          + "final class Launcher {\nvar isEditing = false\nvar activeUtility: LatticeHubItem?\nvar isPinned = false\n"
           + "var stayAwakeOptionsPresented = false\nvar editingOptionsItem: LatticeHubItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar presentationID = UUID()\nvar typeaheadBuffer = \"\"\nvar typeaheadTimestamp: TimeInterval = 0\nstatic let typeaheadCooldown: TimeInterval = 0.8\n"
           + "var candidates: [LatticeHubItem] = LatticeHubItem.allCases\n"
           + "var visibleItems: [LatticeHubItem] { candidates.filter { $0.isAvailable(in: ReviewDefaults.current) } }\n"

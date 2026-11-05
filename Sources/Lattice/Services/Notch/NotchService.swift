@@ -274,7 +274,6 @@ final class NotchService: ObservableObject {
             || (expanded && !showingSections && selected == .calendar && Permissions.shared.keepsCalendarPrompt)
             || (expanded && !showingSections && selected == .files && fileInteractionActive)
             || CameraPreviewService.shared.keepsNotchPermissionPrompt
-            || (expanded && !showingSections && selected == .hub && (LatticeHubService.shared.activeUtility != nil || LatticeHubService.shared.isEditing))
     }
     /// Up and measuring its display. Settings previews read the island's
     /// size only then.
