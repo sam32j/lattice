@@ -32,6 +32,7 @@ enum MenuPanelRecoveryTests {
         var windowNumber = 71
         var alphaValue = 1.0
         var ignoresMouseEvents = false
+        var isVisible = false
         var contentView: View? = View()
         init(_ frame: CGRect) { self.frame = frame }
         func convertToScreen(_ rect: CGRect) -> CGRect { rect.offsetBy(dx: frame.minX, dy: frame.minY) }
@@ -45,6 +46,7 @@ enum MenuPanelRecoveryTests {
         }
         func animator() -> NSWindow { self }
         func makeKey() {}
+        func resignKey() {}
         func close() {}
     }
     typealias NSPanel = NSWindow
