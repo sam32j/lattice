@@ -2114,14 +2114,10 @@ final class NotchService: ObservableObject {
         NSHapticFeedbackManager.defaultPerformer.perform(pattern, performanceTime: .now)
     }
 
-    /// Provides maximum tactile impulse by firing a rapid dual .levelChange actuation burst.
+    /// Provides maximum tactile impulse by firing a .levelChange actuation.
     func provideStrongHapticFeedback() {
         guard acceptsUserInteraction, panel?.isVisible == true, NotchSupport.usesHapticFeedback() else { return }
-        let performer = NSHapticFeedbackManager.defaultPerformer
-        performer.perform(.levelChange, performanceTime: .now)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.032) {
-            performer.perform(.levelChange, performanceTime: .now)
-        }
+        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
     }
 
     func fileDragChanged(_ active: Bool, internalDrag: Bool = false) {
