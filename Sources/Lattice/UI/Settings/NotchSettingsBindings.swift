@@ -162,6 +162,6 @@ extension NotchSettings {
     var orderedModules: [NotchModule] {
         let stored = order.split(separator: ",").compactMap { NotchModule(rawValue: String($0)) }
         var seen = Set<NotchModule>()
-        return (stored + NotchSupport.rootModules).filter { seen.insert($0).inserted && NotchSupport.isExploreModule($0) }
+        return (stored + NotchSupport.widgetModules).filter { seen.insert($0).inserted && NotchSupport.isWidgetModule($0) }
     }
 }

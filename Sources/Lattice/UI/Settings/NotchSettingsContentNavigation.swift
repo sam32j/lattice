@@ -139,9 +139,9 @@ extension NotchSettings {
         module.isAvailable() && moduleBinding(module).wrappedValue
     }
 
-    /// The mixer, the system page and the tools arrange themselves in the island.
+    /// The controls, mixer, system page and tools arrange themselves in the island or have no extra options card.
     func hasOptions(_ module: NotchModule) -> Bool {
-        ![.mixer, .system, .hub].contains(module)
+        ![.controls, .mixer, .system, .hub].contains(module)
     }
 
 
