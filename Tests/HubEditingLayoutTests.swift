@@ -161,5 +161,20 @@ enum HubEditingLayoutTests {
                      "compact single pages fill the same full viewport")
         suite.expect(eleven.isPaged && eleven.frames[10].minX == 410 && eleven.size.width == 834,
                      "compact paging retains its peek and enough trailing room for the final page")
+
+        // 3. Dynamic Island Arrow Navigation (continuous reading-order layout)
+        // 12 tools: row 0: [0, 1, 2, 3, 4 | 10, 11], row 1: [5, 6, 7, 8, 9]
+        suite.expect(HubStripLayout.railIndex(after: 0, count: 12, direction: .right) == 1, "right from 0 goes to 1")
+        suite.expect(HubStripLayout.railIndex(after: 1, count: 12, direction: .left) == 0, "left from 1 goes to 0")
+        suite.expect(HubStripLayout.railIndex(after: 4, count: 12, direction: .right) == 10, "right from 4 crosses to next page at 10")
+        suite.expect(HubStripLayout.railIndex(after: 10, count: 12, direction: .left) == 4, "left from 10 crosses to previous page at 4")
+        suite.expect(HubStripLayout.railIndex(after: 10, count: 12, direction: .right) == 11, "right from 10 goes to 11")
+        suite.expect(HubStripLayout.railIndex(after: 11, count: 12, direction: .right) == 11, "right from 11 clamps")
+        suite.expect(HubStripLayout.railIndex(after: 0, count: 12, direction: .down) == 5, "down from 0 goes to 5")
+        suite.expect(HubStripLayout.railIndex(after: 5, count: 12, direction: .up) == 0, "up from 5 goes to 0")
+        suite.expect(HubStripLayout.railIndex(after: 4, count: 12, direction: .down) == 9, "down from 4 goes to 9")
+        suite.expect(HubStripLayout.railIndex(after: 9, count: 12, direction: .up) == 4, "up from 9 goes to 4")
+        suite.expect(HubStripLayout.railIndex(after: 9, count: 12, direction: .right) == 10, "right from 9 advances to next page")
+        suite.expect(HubStripLayout.railIndex(after: 10, count: 12, direction: .down) == 10, "down from 10 clamps when bottom row is empty")
     }
 }

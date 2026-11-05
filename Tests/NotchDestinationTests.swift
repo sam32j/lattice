@@ -248,13 +248,20 @@ enum NotchDestinationContract {
         let launcher = LatticeHubService.shared
         let firstPresentation = launcher.presentationID
         service.open(.hub)
-        suite.expect(service.selected == .hub && launcher.selectedIndex == 0 && launcher.presentationID != firstPresentation,
-               "opening Tools inside the island prepares keyboard selection on its first presentation")
+        suite.expect(service.selected == .hub && launcher.selectedIndex == nil && launcher.presentationID != firstPresentation,
+               "opening Tools inside the island leaves selection empty until navigated")
         LatticeHubContract.events.removeAll()
         let enter = LatticeHubContract.NSEvent(keyCode: UInt16(kVK_Return))
         suite.expect(launcher.handlePanelKey(enter, flow: .columns(rows: 2)) == nil
+               && LatticeHubContract.events.isEmpty,
+               "Return does not trigger an action before keyboard navigation begins")
+        let right = LatticeHubContract.NSEvent(keyCode: UInt16(kVK_RightArrow))
+        _ = launcher.handlePanelKey(right, flow: .rows(columns: 5), isIsland: true)
+        suite.expect(launcher.selectedIndex == 0,
+               "arrow navigation establishes selection on the first tool")
+        suite.expect(launcher.handlePanelKey(enter, flow: .rows(columns: 5), isIsland: true) == nil
                && LatticeHubContract.events == ["hide"],
-               "Return works immediately after the island opens Tools")
+               "Return triggers the selected tool after navigation")
         LatticeHubContract.DispatchQueue.main.drain()
         suite.expect(LatticeHubContract.events == ["hide", "screenshot.capture"],
                "the selected tool action executes after hide")

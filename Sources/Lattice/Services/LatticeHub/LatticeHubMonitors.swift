@@ -6,7 +6,8 @@ import Carbon.HIToolbox
 
 extension LatticeHubService {
     func handlePanelKey(_ event: NSEvent,
-                        flow: QuickToolsSupport.GridFlow = .rows(columns: LatticeHubService.columns)) -> NSEvent? {
+                        flow: QuickToolsSupport.GridFlow = .rows(columns: LatticeHubService.columns),
+                        isIsland: Bool = false) -> NSEvent? {
         if event.keyCode == UInt16(kVK_Escape) {
             if (event.window?.firstResponder as? NSTextView)?.hasMarkedText() == true { return event }
             if stayAwakeOptionsPresented {
@@ -54,16 +55,16 @@ extension LatticeHubService {
             activateSelection()
             return nil
         case kVK_LeftArrow:
-            moveSelection(.left, flow: flow)
+            moveSelection(.left, flow: flow, isIsland: isIsland)
             return nil
         case kVK_RightArrow:
-            moveSelection(.right, flow: flow)
+            moveSelection(.right, flow: flow, isIsland: isIsland)
             return nil
         case kVK_UpArrow:
-            moveSelection(.up, flow: flow)
+            moveSelection(.up, flow: flow, isIsland: isIsland)
             return nil
         case kVK_DownArrow:
-            moveSelection(.down, flow: flow)
+            moveSelection(.down, flow: flow, isIsland: isIsland)
             return nil
         case kVK_Delete:
             clearTypeahead()
@@ -88,6 +89,17 @@ extension LatticeHubService {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self, weak panel] event in
             guard let self, let panel, event.window === panel, panel.isKeyWindow else { return event }
             return self.handlePanelKey(event)
+        }
+        activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self,
+                  let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.processIdentifier != ProcessInfo.processInfo.processIdentifier
+            else { return }
+            self.previousApp = app
         }
     }
 

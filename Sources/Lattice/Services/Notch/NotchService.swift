@@ -1499,7 +1499,6 @@ final class NotchService: ObservableObject {
         if changesPresentation, destination == .hub, !appPanel, !sections, metric == nil {
             let launcher = LatticeHubService.shared
             launcher.prepareForPresentation()
-            launcher.selectedIndex = launcher.visibleItems.isEmpty ? nil : 0
         }
         (NSApp.delegate as? AppDelegate)?.closePopover(preservingNotch: true)
         if !expanded, modules.contains(.clipboard) { ClipboardHistoryService.shared.rememberPasteTarget() }
@@ -3766,7 +3765,7 @@ final class NotchService: ObservableObject {
                     ? .rows(columns: NotchSupport.toolColumns)
                     : self.expandedGeometry.toolFlow(count: launcher.visibleItems.count,
                                                      controlsHeight: launcher.notchControlsHeight)
-                return launcher.handlePanelKey(event, flow: flow)
+                return launcher.handlePanelKey(event, flow: flow, isIsland: !launcher.isEditing)
             }
             if event.type == .keyDown, event.window === self.panel, event.keyCode == 53 {
                 // A level being typed in the mixer cancels on Escape by

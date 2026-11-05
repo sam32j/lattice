@@ -19,10 +19,18 @@ struct HubIslandStripView<Content: View>: View {
     var body: some View {
         Group {
             if layout.isPaged {
-                ScrollView(.horizontal) { surface }
-                    .scrollIndicators(.never)
-                    .scrollDisabled(session.active != nil)
-                    .scrollTargetBehavior(HubStripScrollTargetBehavior(isDragging: session.active != nil, stride: layout.pageStride))
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal) { surface }
+                        .scrollIndicators(.never)
+                        .scrollDisabled(session.active != nil)
+                        .scrollTargetBehavior(HubStripScrollTargetBehavior(isDragging: session.active != nil, stride: layout.pageStride))
+                        .onChange(of: launcher.selectedIndex) { _, newIndex in
+                            guard let newIndex, items.indices.contains(newIndex) else { return }
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                proxy.scrollTo(items[newIndex].id, anchor: .center)
+                            }
+                        }
+                }
             } else { surface }
         }
         .frame(width: notchWidth, height: layout.size.height, alignment: .leading)
