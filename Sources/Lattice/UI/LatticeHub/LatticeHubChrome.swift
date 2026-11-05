@@ -71,12 +71,6 @@ extension LatticeHubView {
                         .lineLimit(1)
                         .frame(height: 30)
                         .frame(maxWidth: .infinity, alignment: .center)
-                } else {
-                    BrandMark(width: 52, tint: colorScheme == .light ? Color(white: 0.03) : .white)
-                        .frame(height: 30)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .accessibilityHidden(true)
-                        .allowsHitTesting(false)
                 }
                 HStack(spacing: 6) {
                     if launcher.activeUtility != nil {
@@ -318,6 +312,7 @@ private struct HubDragHandle: NSViewRepresentable {
     func updateNSView(_ nsView: DragHandleView, context: Context) {}
 
     final class DragHandleView: NSView {
+        override var focusRingType: NSFocusRingType { get { .none } set {} }
         override var mouseDownCanMoveWindow: Bool { true }
         override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 

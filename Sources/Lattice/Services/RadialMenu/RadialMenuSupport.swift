@@ -254,7 +254,7 @@ struct RadialMenuItem: Codable, Identifiable, Equatable {
             switch mediaKey {
             case .previousTrack: return "backward.fill"
             case .nextTrack: return "forward.fill"
-            case .nowPlaying: return "music.note"
+            case .nowPlaying: return "waveform"
             default: return "playpause.fill"
             }
         case .submenu: return "ellipsis.circle"

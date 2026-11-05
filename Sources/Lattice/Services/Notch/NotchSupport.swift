@@ -44,7 +44,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
         // A speaker reads as sound at a glance; faders beside the settings
         // gear looked like a second settings button.
         case .mixer: return "speaker.wave.2"
-        case .music: return "music.note"
+        case .music: return "waveform"
         case .timer: return "timer"
         case .camera: return "person.crop.square.badge.camera"
         case .downloads: return "arrow.down.circle"

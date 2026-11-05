@@ -22,7 +22,7 @@ struct HubIslandWidgetSection: View {
         if service.modules.contains(.music) {
             result.append(WidgetItem(
                 id: .music,
-                symbol: "waveform.mid",
+                symbol: "waveform",
                 tint: .pink,
                 title: "Now Playing"
             ))
