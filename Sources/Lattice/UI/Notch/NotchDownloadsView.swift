@@ -148,11 +148,6 @@ struct NotchDownloadsView: View {
                 .scrollIndicators(.automatic)
             }
         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .notchBand(leading: {
-            NotchBandBackButton(title: text.downloadsTitle) {
-                NotchService.shared.select(.hub)
-            }
-        })
         // Another section or a collapse takes the page away; its chooser
         // could no longer return the folder here. Settings keeps its own.
         .onDisappear { if !preview { downloads.cancelNotchFolderChoice() } }

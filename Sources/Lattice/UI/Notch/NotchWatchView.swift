@@ -50,13 +50,8 @@ struct NotchWatchView: View {
             }
         }
         .notchBand(leading: {
-            HStack(spacing: 6) {
-                NotchBandBackButton(title: NotchModule.watch.title(l10n.language)) {
-                    NotchService.shared.select(.hub)
-                }
-                if enabled, watch.target != nil, !preview {
-                    watched
-                }
+            if enabled, watch.target != nil, !preview {
+                watched
             }
         }, trailing: {
             if enabled, watch.target != nil, !preview {

@@ -413,10 +413,6 @@ struct NotchView: View {
     @ViewBuilder private func bandLeading(_ band: NotchBand) -> some View {
         if showsDetail {
             NotchBandBackButton(title: service.detailTitle, action: service.goBack)
-        } else if service.selected == .system {
-            NotchBandBackButton(title: NotchModule.system.title(l10n.language)) {
-                service.select(.hub)
-            }
         } else if service.selected == .captures {
             if service.captureContent != nil {
                 NotchIconButton(symbol: "clock.arrow.circlepath", title: FeatureStrings.recentCaptures(l10n.language).title,
@@ -580,18 +576,9 @@ struct NotchView: View {
                     .notchBand(leading: { NotchCameraChooser() }, trailing: { NotchCameraStopButton() })
             case .notifications:
                 NotchNotificationsView(size: pageSize)
-                    .notchBand(leading: {
-                        NotchBandBackButton(title: NotchModule.notifications.title(l10n.language)) {
-                            service.select(.hub)
-                        }
-                    }, trailing: { NotchClearNotificationsButton() })
+                    .notchBand(trailing: { NotchClearNotificationsButton() })
             case .downloads:
                 NotchDownloadsView(size: pageSize)
-                    .notchBand(leading: {
-                        NotchBandBackButton(title: NotchModule.downloads.title(l10n.language)) {
-                            service.select(.hub)
-                        }
-                    })
             case .calendar: NotchCalendarView(size: pageSize)
             case .controls, .mixer: LatticeHubView(notchSize: pageSize)
             case .music: NotchMusicView(size: pageSize, extrasHeight: service.geometry.musicExtrasHeight)
