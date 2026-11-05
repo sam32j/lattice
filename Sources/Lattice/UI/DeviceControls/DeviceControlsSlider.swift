@@ -55,7 +55,11 @@ struct DeviceControlsSlider: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                        .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+                        )
+                        .shadow(color: .black.opacity(0.14), radius: 3, y: 1)
                         .fixedSize()
                         .position(x: 8 + fraction * max(geometry.size.width - 16, 0), y: -14)
                 }

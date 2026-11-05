@@ -3925,7 +3925,12 @@ final class NotchService: ObservableObject {
         // Scroll deltas are accelerated and cannot enforce physical distance.
         // The native touch receiver owns this gesture, including over the header.
         if captureSurface { return !interaction.control && event.hasPreciseScrollingDeltas }
-        let hubSurface = expanded && selected == .hub && !showingAppPanel && !showingSections && !showingCommandBar
+        let isHub = expanded && selected == .hub && !showingAppPanel && !showingSections && !showingCommandBar
+        if isHub && LatticeHubService.shared.activeUtility != nil {
+            gesture = NotchGestureSupport()
+            return false
+        }
+        let hubSurface = isHub && LatticeHubService.shared.activeUtility == nil
         let vertical = NotchGestureSupport.allowsVertical(expanded: expanded, inHeader: inHeader,
                                                           musicSurface: musicSurface,
                                                           hubSurface: hubSurface,
