@@ -49,21 +49,57 @@ extension LatticeHubView {
         let index = launcher.visibleItems.firstIndex(of: item)
         let showsFocus = launcher.keyboardIndex != nil
         let isSelected = !launcher.isEditing && showsFocus && index != nil && index == launcher.selectedIndex
-        let isHovered = hoveredItem == item
 
+        return HubToolCellView(
+            item: item,
+            isNotch: notchSize != nil,
+            isEditing: launcher.isEditing,
+            isSelected: isSelected,
+            titleInset: titleInset,
+            isDragging: dragSession.active != nil,
+            onTap: { handleToolTap(item) },
+            onManage: { launcher.isEditing = true },
+            onHide: { launcher.setHidden(item, true) },
+            iconName: icon(for: item),
+            itemTitle: title(for: item),
+            iconColor: iconColor(item)
+        )
+    }
+}
+
+struct HubToolCellView: View {
+    let item: LatticeHubItem
+    let isNotch: Bool
+    let isEditing: Bool
+    let isSelected: Bool
+    let titleInset: CGFloat
+    let isDragging: Bool
+    let onTap: () -> Void
+    let onManage: () -> Void
+    let onHide: () -> Void
+    let iconName: String
+    let itemTitle: String
+    let iconColor: Color
+
+    @State private var isHovered = false
+    @ObservedObject private var l10n = L10n.shared
+
+    private var customizationText: HubCustomizationStrings { FeatureStrings.hubCustomization(l10n.language) }
+
+    var body: some View {
         let tileContent = Group {
-            if notchSize != nil {
-                Image(systemName: icon(for: item))
+            if isNotch {
+                Image(systemName: iconName)
                     .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(iconColor(item))
+                    .foregroundStyle(iconColor)
                     .frame(height: NotchLayout.toolHeight)
             } else {
                 VStack(spacing: 5) {
-                    Image(systemName: icon(for: item))
+                    Image(systemName: iconName)
                         .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(iconColor(item))
+                        .foregroundStyle(iconColor)
                         .frame(height: 24)
-                    Text(title(for: item))
+                    Text(itemTitle)
                         .font(.system(size: 11, weight: .medium))
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -73,7 +109,7 @@ extension LatticeHubView {
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: notchSize == nil ? 64 : NotchLayout.toolHeight)
+        .frame(height: isNotch ? NotchLayout.toolHeight : 64)
         .padding(.horizontal, 4)
         .background {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -84,23 +120,26 @@ extension LatticeHubView {
                 .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 1.5)
         }
 
-        return Button { handleToolTap(item) } label: { tileContent }
+        return Button(action: onTap) { tileContent }
             .buttonStyle(.plain)
             .contextMenu {
-                if launcher.isEditing {
-                    Button(customizationText.hideFromHub) { launcher.setHidden(item, true) }
+                if isEditing {
+                    Button(customizationText.hideFromHub) { onHide() }
                 } else {
-                    Button(customizationText.manageTools + "…") { launcher.isEditing = true }
+                    Button(customizationText.manageTools + "…") { onManage() }
                 }
             }
-            .help(launcher.isEditing ? customizationText.dragHint : title(for: item))
-            .accessibilityLabel(title(for: item))
+            .help(isEditing ? customizationText.dragHint : itemTitle)
+            .accessibilityLabel(itemTitle)
             .onHover { hovering in
-                guard dragSession.active == nil else { return }
-                if hovering {
-                    if hoveredItem != item { hoveredItem = item }
-                    if !launcher.isEditing, launcher.keyboardIndex != nil { launcher.keyboardIndex = nil }
-                } else if hoveredItem == item { hoveredItem = nil }
+                guard !isDragging else {
+                    if isHovered { isHovered = false }
+                    return
+                }
+                if isHovered != hovering { isHovered = hovering }
+                if hovering, !isEditing, LatticeHubService.shared.keyboardIndex != nil {
+                    LatticeHubService.shared.keyboardIndex = nil
+                }
             }
     }
 }

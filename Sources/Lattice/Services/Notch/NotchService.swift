@@ -2184,6 +2184,13 @@ final class NotchService: ObservableObject {
         if notice != nil {
             dismissNotice()
         }
+        if !pinned {
+            collapse()
+            windowHost?.cancelMissionControlRestoration()
+        }
+        if !LatticeHubService.shared.isPinned {
+            LatticeHubService.shared.hide()
+        }
     }
 
     private func missionControlDidRestore() {
@@ -3555,7 +3562,17 @@ final class NotchService: ObservableObject {
             self?.schedulePreferenceSync()
         }
         observe(workspace, NSWorkspace.activeSpaceDidChangeNotification) { [weak self] in
-            self?.fullscreenEnvironmentDidChange()
+            guard let self else { return }
+            self.fullscreenEnvironmentDidChange()
+            if self.expanded, !self.pinned, self.selected == .hub {
+                self.collapse()
+            }
+        }
+        observe(NotificationCenter.default, NSApplication.didResignActiveNotification) { [weak self] in
+            guard let self, self.expanded, !self.pinned else { return }
+            if self.selected == .hub {
+                self.collapse()
+            }
         }
         observe(workspace, NSWorkspace.didActivateApplicationNotification) { [weak self] in self?.applicationDidActivate() }
         observe(workspace, NSWorkspace.willSleepNotification) { [weak self] in

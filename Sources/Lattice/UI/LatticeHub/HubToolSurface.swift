@@ -37,9 +37,11 @@ struct HubToolSurface<Content: View>: View {
                     .animation(reduceMotion ? nil : .easeInOut(duration: 0.14), value: preview)
                     .opacity(session.active == .tool(item) ? 0 : 1)
                     .id(item.id)
-                    .highPriorityGesture(LongPressGesture(minimumDuration: 0.8).onEnded { _ in
-                        if !isEditing { onManage() }
-                    })
+                    .simultaneousGesture(
+                        isEditing ? nil : LongPressGesture(minimumDuration: 0.8).onEnded { _ in
+                            onManage()
+                        }
+                    )
             }
             if sourceIndex != nil, let target = insertionIndex, !session.targetsHiddenTray {
                 let frame = layout.frames[target]

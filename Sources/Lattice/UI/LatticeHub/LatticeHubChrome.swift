@@ -141,26 +141,32 @@ extension LatticeHubView {
     }
 
     var islandToolsMenuButton: some View {
-        Menu {
-            Button(customizationText.manageTools + "…") {
-                withAnimation(.easeInOut(duration: 0.22)) { launcher.isEditing = true }
-            }
-            .disabled(!launcher.canManageTools)
-
-            Button(customizationText.openSettings + "…") {
-                openSettingsToTools()
-            }
-        } label: {
+        NotchMenuButton(
+            title: customizationText.toolsMenu,
+            items: [
+                NotchMenuItem(
+                    title: customizationText.manageTools + "…",
+                    enabled: launcher.canManageTools,
+                    action: {
+                        withAnimation(.easeInOut(duration: 0.22)) { launcher.isEditing = true }
+                    }
+                ),
+                NotchMenuItem(
+                    title: customizationText.openSettings + "…",
+                    action: {
+                        openSettingsToTools()
+                    }
+                )
+            ],
+            cornerRadius: 9,
+            lifts: true
+        ) {
             Image(systemName: "gearshape")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Color.white.opacity(0.55))
                 .frame(width: 28, height: 28)
                 .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
-        .buttonStyle(NotchButtonStyle(cornerRadius: 9))
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
         .help(customizationText.tools)
         .accessibilityLabel(customizationText.toolsMenu)
     }

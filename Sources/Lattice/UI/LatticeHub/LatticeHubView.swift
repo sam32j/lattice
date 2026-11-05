@@ -18,7 +18,6 @@ struct LatticeHubView: View {
     @ObservedObject var notifications = NotchNotificationService.shared
     @ObservedObject var dnd = DoNotDisturbState.shared
     @StateObject var dragSession = HubDragSession()
-    @State var hoveredItem: LatticeHubItem?
 
     private var optionsItem: LatticeHubItem? {
         launcher.editingOptionsItem ?? editing.outgoingOptions
@@ -87,14 +86,14 @@ struct LatticeHubView: View {
         }, trailing: {
             if notchSize != nil {
                 if launcher.activeUtility != nil {
-                    HStack(spacing: 2) {
+                    HStack(spacing: 0) {
                         if launcher.activeUtility == .recentCaptures {
                             NotchClearCapturesButton()
                         }
                         islandPinButton
                     }
                 } else {
-                    HStack(spacing: 2) {
+                    HStack(spacing: 0) {
                         if !launcher.isEditing {
                             if service.modules.contains(.notifications) {
                                 islandNotificationButton
@@ -124,7 +123,6 @@ struct LatticeHubView: View {
         }
         .onChange(of: features.revision, initial: true) { launcher.refreshAvailability() }
         .onChange(of: launcher.presentationID) { _, _ in
-            hoveredItem = nil
             dragSession.cancel()
             dnd.refresh()
         }
