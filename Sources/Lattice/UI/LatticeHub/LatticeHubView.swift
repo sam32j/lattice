@@ -91,14 +91,14 @@ struct LatticeHubView: View {
         }, trailing: {
             if notchSize != nil {
                 if launcher.activeUtility != nil {
-                    HStack(spacing: 0) {
+                    HStack(spacing: 3) {
                         if launcher.activeUtility == .recentCaptures {
                             NotchClearCapturesButton()
                         }
                         islandPinButton
                     }
                 } else {
-                    HStack(spacing: 0) {
+                    HStack(spacing: 3) {
                         if !launcher.isEditing {
                             if service.modules.contains(.notifications) {
                                 islandNotificationButton
@@ -182,7 +182,7 @@ struct LatticeHubView: View {
         if notchSize != nil { NotchService.shared.refreshPresentation() }
     }
 
-    private var updateOffered: Bool {
+    var updateOffered: Bool {
         #if LATTICE_DEVELOPMENT
         return true
         #else

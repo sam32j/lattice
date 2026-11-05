@@ -744,17 +744,29 @@ struct NotchDeviceMenu: View {
 
 /// Owns the native menu's targets while it is up and remembers the view it
 /// pops up from. Menu tracking keeps the island open on its own.
-final class NotchMenuAnchor: NSObject {
-    fileprivate weak var view: NSView?
+final class NotchMenuAnchor: NSObject, NSMenuDelegate {
+    weak var view: NSView?
     private var actions: [() -> Void] = []
+    var onMenuOpenChanged: ((Bool) -> Void)?
 
-    func popUp(_ items: [NotchMenuItem]) {
+    func menuWillOpen(_ menu: NSMenu) {
+        onMenuOpenChanged?(true)
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        onMenuOpenChanged?(false)
+    }
+
+    func popUp(_ items: [NotchMenuItem], appearance: NSAppearance? = NSAppearance(named: .darkAqua)) {
         guard let view else { return }
         actions = items.map(\.action)
         let menu = NSMenu()
+        menu.delegate = self
         menu.autoenablesItems = false
         // The island is dark whatever the system is, so its menus are too.
-        menu.appearance = NSAppearance(named: .darkAqua)
+        if let appearance {
+            menu.appearance = appearance
+        }
         for (index, item) in items.enumerated() {
             guard !item.isSeparator else { menu.addItem(.separator()); continue }
             let entry = NSMenuItem(title: item.title, action: #selector(choose(_:)), keyEquivalent: "")
@@ -784,7 +796,7 @@ final class NotchMenuAnchor: NSObject {
     }
 }
 
-private struct NotchMenuAnchorView: NSViewRepresentable {
+struct NotchMenuAnchorView: NSViewRepresentable {
     let anchor: NotchMenuAnchor
 
     func makeNSView(context: Context) -> NSView {
