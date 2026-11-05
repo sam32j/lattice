@@ -20,16 +20,32 @@ struct HubIslandStripView<Content: View>: View {
         Group {
             if layout.isPaged {
                 ScrollViewReader { proxy in
-                    ScrollView(.horizontal) { surface }
-                        .scrollIndicators(.never)
-                        .scrollDisabled(session.active != nil)
-                        .scrollTargetBehavior(HubStripScrollTargetBehavior(isDragging: session.active != nil, stride: layout.pageStride))
-                        .onChange(of: launcher.selectedIndex) { _, newIndex in
-                            guard let newIndex, items.indices.contains(newIndex) else { return }
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                proxy.scrollTo(items[newIndex].id, anchor: .center)
+                    ScrollView(.horizontal) {
+                        ZStack(alignment: .topLeading) {
+                            HStack(spacing: 0) {
+                                ForEach(0..<layout.pages, id: \.self) { pageIndex in
+                                    Color.clear
+                                        .frame(width: layout.pageStride, height: 1)
+                                        .id("hub_island_page_\(pageIndex)")
+                                }
                             }
+                            surface
                         }
+                    }
+                    .scrollIndicators(.never)
+                    .scrollDisabled(session.active != nil)
+                    .scrollTargetBehavior(HubStripScrollTargetBehavior(isDragging: session.active != nil, stride: layout.pageStride))
+                    .onChange(of: launcher.selectedIndex) { _, newIndex in
+                        guard let newIndex, items.indices.contains(newIndex) else { return }
+                        let capacity = max(1, columns * 2)
+                        let targetPage = min(max(0, newIndex / capacity), max(0, layout.pages - 1))
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            proxy.scrollTo("hub_island_page_\(targetPage)", anchor: .leading)
+                        }
+                    }
+                    .onChange(of: launcher.presentationID) { _, _ in
+                        proxy.scrollTo("hub_island_page_0", anchor: .leading)
+                    }
                 }
             } else { surface }
         }

@@ -162,6 +162,15 @@ enum HubEditingLayoutTests {
         suite.expect(eleven.isPaged && eleven.frames[10].minX == 410 && eleven.size.width == 834,
                      "compact paging retains its peek and enough trailing room for the final page")
 
+        suite.expect(ten.pages == 1, "compact 10 tools is 1 page")
+        suite.expect(eleven.pages == 2, "compact 11 tools is 2 pages")
+        let twenty = HubToolLayout.island(count: 20, width: 424)
+        suite.expect(twenty.pages == 2, "compact 20 tools is 2 pages")
+        let twentyOne = HubToolLayout.island(count: 21, width: 424)
+        suite.expect(twentyOne.pages == 3, "compact 21 tools is 3 pages")
+        suite.expect(twelve.pages == 1, "spacious 12 tools is 1 page")
+        suite.expect(thirteen.pages == 2, "spacious 13 tools is 2 pages")
+
         // 3. Dynamic Island Arrow Navigation (continuous reading-order layout)
         // 12 tools: row 0: [0, 1, 2, 3, 4 | 10, 11], row 1: [5, 6, 7, 8, 9]
         suite.expect(HubStripLayout.railIndex(after: 0, count: 12, direction: .right) == 1, "right from 0 goes to 1")

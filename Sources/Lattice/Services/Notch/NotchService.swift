@@ -2113,9 +2113,10 @@ final class NotchService: ObservableObject {
         NSHapticFeedbackManager.defaultPerformer.perform(pattern, performanceTime: .now)
     }
 
-    /// Provides maximum tactile impulse by firing a .levelChange actuation.
+    /// Provides maximum tactile impulse by firing mactic-style level 6 actuation on Force Touch trackpads.
     func provideStrongHapticFeedback() {
-        guard acceptsUserInteraction, panel?.isVisible == true, NotchSupport.usesHapticFeedback() else { return }
+        guard acceptsUserInteraction, NotchSupport.usesHapticFeedback() else { return }
+        TrackpadActuator.shared.actuate(waveform: 6)
         NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
     }
 
