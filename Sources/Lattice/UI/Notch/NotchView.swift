@@ -210,14 +210,8 @@ struct NotchView: View {
         HStack {
             navigation
             Spacer(minLength: 8)
-            if service.reopeningDestination.sections {
-                NotchIconButton(symbol: service.selected.symbol, title: service.selected.title(l10n.language)) {
-                    service.open(service.selected)
-                }
-            } else {
-                NotchIconButton(symbol: "square.grid.3x1.below.line.grid.1x2", title: text.sectionsTitle) {
-                    service.toggleSections()
-                }
+            NotchIconButton(symbol: "house", title: "Home") {
+                service.select(.hub)
             }
         }
         .padding(.horizontal, NotchLayout.horizontalInset)
@@ -322,7 +316,6 @@ struct NotchView: View {
     }
 
     private var pageName: String {
-        if service.showingSections { return text.sectionsTitle }
         if showsDetail || service.modules.isEmpty { return service.detailTitle }
         return service.selected.title(l10n.language)
     }
@@ -331,8 +324,6 @@ struct NotchView: View {
         if service.choosingFileDropDestination {
             NotchMediaDropTargets(service: service)
                 .frame(width: service.contentSize.width, height: service.contentSize.height)
-        } else if service.showingSections {
-            NotchSectionsView(service: service)
         } else if scrollsVertically {
             ScrollView {
                 content
@@ -420,9 +411,7 @@ struct NotchView: View {
     }
 
     @ViewBuilder private func bandLeading(_ band: NotchBand) -> some View {
-        if service.showingSections {
-            NotchBandBackButton(title: service.selected.title(l10n.language), action: service.toggleSections)
-        } else if showsDetail {
+        if showsDetail {
             NotchBandBackButton(title: service.detailTitle, action: service.goBack)
         } else if service.selected == .system {
             NotchBandBackButton(title: NotchModule.system.title(l10n.language)) {
@@ -432,41 +421,38 @@ struct NotchView: View {
             if service.captureContent != nil {
                 NotchIconButton(symbol: "clock.arrow.circlepath", title: FeatureStrings.recentCaptures(l10n.language).title,
                                 action: service.showCaptureHistory)
-            } else if band.sectionsButton {
-                NotchSectionsButton(action: service.toggleSections)
+            } else {
+                NotchBandBackButton(title: "Home") {
+                    service.select(.hub)
+                }
             }
-        } else if band.sectionsButton {
-            // Without the floating button, the sections stay one click away;
-            // the row keeps it room before the page's own controls.
-            NotchSectionsButton(action: service.toggleSections)
+        } else if service.selected != .hub {
+            NotchBandBackButton(title: "Home") {
+                service.select(.hub)
+            }
         }
     }
 
     /// The island's own actions, on a secondary click anywhere a page has no
     /// menu of its own. The floating buttons and the keys reach them too.
     @ViewBuilder private var islandMenu: some View {
-        if !service.modules.isEmpty {
-            Button(action: service.toggleSections) {
-                Label(service.showingSections ? l10n.s.navigationBack : text.sectionsTitle, systemImage: "square.grid.2x2")
-            }
+        Button {
+            service.select(.hub)
+        } label: {
+            Label("Home", systemImage: "house")
         }
         Button {
             service.pinned.toggle()
         } label: {
-            Label(service.pinned ? text.unpin : text.pin, systemImage: service.pinned ? "pin.slash" : "pin")
-        }
-        Button(action: service.openSettings) {
-            Label(l10n.s.menuSettings, systemImage: "gearshape")
-        }
-        // An offer the row has no room for still reaches the island.
-        if updateOffered {
-            Button(action: service.showUpdate) {
-                Label(l10n.s.updateBannerAction, systemImage: "arrow.down.circle")
-            }
+            Label(service.pinned ? "Unpin Dynamic Island" : "Pin Dynamic Island",
+                  systemImage: service.pinned ? "pin.slash" : "pin")
         }
         Divider()
         Button(action: service.collapse) {
-            Label(text.collapse, systemImage: "chevron.up")
+            Label("Close Dynamic Island", systemImage: "xmark")
+        }
+        Button(action: service.openSettings) {
+            Label("Lattice Settings", systemImage: "gearshape")
         }
     }
 

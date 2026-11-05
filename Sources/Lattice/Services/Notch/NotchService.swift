@@ -149,7 +149,7 @@ final class NotchService: ObservableObject {
     @Published private(set) var optimizationDropAvailable = false
     @Published private(set) var selectedMetric: MetricDetailKind?
     @Published var pinned = false
-    @Published private(set) var selected: NotchModule = .controls { didSet { if oldValue != selected { musicSwipe.cancel() } } }
+    @Published private(set) var selected: NotchModule = .hub { didSet { if oldValue != selected { musicSwipe.cancel() } } }
     @Published private(set) var showingAppPanel = false { didSet { if oldValue != showingAppPanel { musicSwipe.cancel() } } }
     @Published private(set) var showingSections = false { didSet { if oldValue != showingSections { musicSwipe.cancel() } } }
     @Published private(set) var sectionQuery = ""

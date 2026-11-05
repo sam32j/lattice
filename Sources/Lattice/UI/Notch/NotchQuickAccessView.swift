@@ -109,22 +109,21 @@ struct NotchQuickAccessView: View {
 
     private func bubble(_ button: NotchQuickButton) -> some View {
         let action = button.action ?? .explore
-        let isBack = action == .explore && service.showingSections
         let selected: Bool = {
-            if action == .explore { return service.showingSections }
+            if action == .explore { return service.selected == .hub }
             if action == .pin { return service.pinned }
             if action == .control(.keepAwake) { return awake.isActive }
             if action == .control(.microphone) { return microphone.isMuted }
             if action == .control(.recording) { return recorder.isRecording }
             if case .module(let module) = action {
-                return !service.showingSections && !service.showingAppPanel && service.selected == module
+                return !service.showingAppPanel && service.selected == module
             }
             return false
         }()
         var actionTitle = action.title(l10n)
         var symbol = action.symbol
         switch action {
-        case .explore where isBack: symbol = "arrow.uturn.backward"
+        case .explore: symbol = "house"
         case .pin:
             actionTitle = service.pinned ? FeatureStrings.notch(l10n.language).unpin : FeatureStrings.notch(l10n.language).pin
             if service.pinned { symbol = "pin.fill" }
@@ -135,7 +134,7 @@ struct NotchQuickAccessView: View {
         case .control(.recording) where recorder.isRecording: symbol = "stop.circle.fill"
         default: break
         }
-        let title = isBack ? l10n.s.navigationBack : button.label.isEmpty ? actionTitle : button.label
+        let title = button.label.isEmpty ? actionTitle : button.label
         return Button {
             service.activateQuickAction(action)
         } label: {
@@ -272,7 +271,7 @@ struct NotchQuickAccessDrop: Shape {
 extension NotchQuickAction {
     var symbol: String {
         switch self {
-        case .explore: return "square.grid.2x2"
+        case .explore: return "house"
         case .settings: return "gearshape"
         case .pin: return "pin"
         case .module(let module): return module.symbol
@@ -282,7 +281,7 @@ extension NotchQuickAction {
 
     func title(_ l10n: L10n) -> String {
         switch self {
-        case .explore: return FeatureStrings.notch(l10n.language).sectionsTitle
+        case .explore: return "Home"
         case .settings: return l10n.s.menuSettings
         case .pin: return FeatureStrings.notch(l10n.language).pin
         case .module(let module): return module.title(l10n.language)
