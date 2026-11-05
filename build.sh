@@ -531,6 +531,7 @@ if (( TEST )); then
         Sources/Lattice/Services/KillProcess/KillProcessCatalog.swift
         Sources/Lattice/UI/LatticeSymbol.swift
         Sources/Lattice/Services/Recorder/RecorderSupport.swift
+        Sources/Lattice/Core/RecorderExportFormatStrings.swift
         Sources/Lattice/Services/Recorder/RecorderSampleTiming.swift
         Sources/Lattice/Services/Recorder/RecorderWriter.swift
         Sources/Lattice/Services/Recorder/RecorderCaptureEngine.swift

@@ -144,7 +144,7 @@ struct RecorderEditorView: View {
             Menu {
                 Button(strings.saveVideoButton, action: controller.saveVideo)
                     .keyboardShortcut("s", modifiers: .command)
-                Button(strings.saveAsButton, action: controller.saveVideoAs)
+                Button(strings.saveAsButton, action: controller.saveAs)
                     .keyboardShortcut("s", modifiers: [.command, .shift])
                 Button(strings.saveGIFButton, action: controller.saveGIF)
                 Divider()
@@ -457,48 +457,8 @@ struct RecorderEditorView: View {
             Spacer()
 
             RecorderExportSpeedControl(model: model)
-
-            Menu {
-                Picker(strings.qualityLabel, selection: qualityBinding) {
-                    Text(strings.qualitySmall).tag(RecorderSupport.Quality.small.rawValue)
-                    Text(strings.qualityBalanced).tag(RecorderSupport.Quality.balanced.rawValue)
-                    Text(strings.qualityHigh).tag(RecorderSupport.Quality.high.rawValue)
-                }
-                .pickerStyle(.inline)
-            } label: {
-                Label(qualityTitle + "  " + outputSizeLabel, systemImage: "slider.horizontal.3")
-                    .font(.system(size: 12, weight: .medium))
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .screenshotSafeHelp(strings.qualityLabel)
+            RecorderExportOptionsMenu(model: model)
         }
-    }
-
-    private var qualityBinding: Binding<String> {
-        Binding(get: { model.document.quality },
-                set: { value in
-                    var next = model.document
-                    next.quality = value
-                    model.document = next
-                })
-    }
-
-    private var qualityTitle: String {
-        switch model.document.resolvedQuality {
-        case .small: return strings.qualitySmall
-        case .balanced: return strings.qualityBalanced
-        case .high: return strings.qualityHigh
-        }
-    }
-
-    /// What this preset actually produces for THIS recording. A file size
-    /// would be a guess, because a bitrate is a ceiling and screen content
-    /// undershoots it hard; the resolution is a fact.
-    private var outputSizeLabel: String {
-        let size = model.exportSize
-        guard size.width > 0 else { return "" }
-        return "\(Int(size.width)) × \(Int(size.height))"
     }
 
     private var timeLabel: String {

@@ -18,8 +18,7 @@ struct ScreenRecorderSettings: View {
     @AppStorage(DefaultsKey.shelfEnabled) private var shelfEnabled = false
     @AppStorage(AppFeature.shelf.availabilityKey) private var shelfAvailable = false
     @AppStorage(DefaultsKey.recorderOpenEditor) private var opensEditor = true
-    @AppStorage(DefaultsKey.recorderGIFSize) private var gifSizeRaw =
-        RecorderSupport.GIFSize.medium.rawValue
+    @AppStorage(DefaultsKey.recorderGIFScalePercent) private var gifScalePercent = 75
     @AppStorage(DefaultsKey.recorderGIFFrameRate) private var gifFrameRate = 12
     @AppStorage(DefaultsKey.recentRecordingLimit) private var recentRecordingLimit = 0
     @State private var showingRecordingDefaults = false
@@ -143,10 +142,13 @@ struct ScreenRecorderSettings: View {
                 Text(copy(.gifExportFormat)).font(.headline)
 
                 SettingsControlRow(title: copy(.gifQuality)) {
-                    Picker(copy(.gifQuality), selection: $gifSizeRaw) {
-                        Text(copy(.low)).tag(RecorderSupport.GIFSize.small.rawValue)
-                        Text(copy(.standard)).tag(RecorderSupport.GIFSize.medium.rawValue)
-                        Text(copy(.best)).tag(RecorderSupport.GIFSize.large.rawValue)
+                    // The editor's presets; a recording can still pick another.
+                    Picker(copy(.gifQuality), selection: Binding(
+                        get: { RecorderSupport.nearestGIFScalePreset(gifScalePercent) },
+                        set: { gifScalePercent = $0 })) {
+                        Text(copy(.low) + " (50%)").tag(50)
+                        Text(copy(.standard) + " (75%)").tag(75)
+                        Text(copy(.best) + " (100%)").tag(100)
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()
@@ -158,6 +160,9 @@ struct ScreenRecorderSettings: View {
                         Text(String(format: strings.frameRateFormat, 8)).tag(8)
                         Text(String(format: strings.frameRateFormat, 12)).tag(12)
                         Text(String(format: strings.frameRateFormat, 15)).tag(15)
+                        Text(String(format: strings.frameRateFormat, 24)).tag(24)
+                        Text(String(format: strings.frameRateFormat, 30)).tag(30)
+                        Text(String(format: strings.frameRateFormat, 50)).tag(50)
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()

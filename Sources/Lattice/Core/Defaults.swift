@@ -606,7 +606,8 @@ enum DefaultsKey {
     static let recorderSaveFolder = "recorderSaveFolder"
     static let recorderOpenEditor = "recorderOpenEditor"
     static let recorderAutomaticZoom = "recorderAutomaticZoom"
-    static let recorderGIFSize = "recorderGIFSize"
+    static let recorderGIFSize = "recorderGIFSize" // retired; migrated to recorderGIFScalePercent
+    static let recorderGIFScalePercent = "recorderGIFScalePercent" // default GIF size for new recordings, in percent
     static let recorderGIFFrameRate = "recorderGIFFrameRate"
     static let recorderEditorPresets = "recorderEditorPresets"
     static let recorderSharingEnabled = "recorderSharingEnabled"
@@ -1451,6 +1452,7 @@ enum Defaults {
         DefaultsKey.recorderOpenEditor: true,
         DefaultsKey.recorderAutomaticZoom: true,
         DefaultsKey.recorderGIFSize: RecorderSupport.GIFSize.medium.rawValue,
+        DefaultsKey.recorderGIFScalePercent: 75,
         DefaultsKey.recorderGIFFrameRate: 12,
         DefaultsKey.recorderEditorPresets: Data(),
         DefaultsKey.recorderSharingEnabled: true,
@@ -1581,6 +1583,7 @@ enum Defaults {
         migrateExistingNotchDefaults(in: defaults)
         migrateFanControlVisibility(in: defaults)
         migrateScrollInverterAxes(in: defaults)
+        migrateRecorderGIFScale(in: defaults)
         migrateLinearScrollAvailability(in: defaults)
         migrateRemovedScrollExceptions(in: defaults)
         migratePowerPeripheralsVisibility(in: defaults)
@@ -1830,6 +1833,20 @@ enum Defaults {
     /// The former single switch also reversed vertical wheel events redirected
     /// sideways with Shift. Mirror that choice once so updates and older
     /// settings backups keep the same behavior until the user separates axes.
+    /// The GIF size default moved from a fixed long edge to the editor's
+    /// percentage presets. A choice made before keeps its place in the list.
+    static func migrateRecorderGIFScale(in defaults: UserDefaults) {
+        guard defaults.object(forKey: DefaultsKey.recorderGIFScalePercent) == nil,
+              let old = defaults.string(forKey: DefaultsKey.recorderGIFSize) else { return }
+        let percent: Int
+        switch RecorderSupport.sanitizedGIFSize(old) {
+        case .small: percent = 50
+        case .medium: percent = 75
+        case .large: percent = 100
+        }
+        defaults.set(percent, forKey: DefaultsKey.recorderGIFScalePercent)
+    }
+
     static func migrateScrollInverterAxes(in defaults: UserDefaults) {
         guard defaults.object(forKey: DefaultsKey.scrollInverterHorizontalEnabled) == nil else {
             return
