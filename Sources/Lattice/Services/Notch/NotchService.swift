@@ -2011,13 +2011,13 @@ final class NotchService: ObservableObject {
             case .recording: perform { ScreenRecorderService.shared.toggle() }
             case .speedTest: showMetric(.network)
             case .panel: openAppPanel()
-            case .mixer: select(.mixer)
+            case .mixer: select(.hub)
             case .music: select(.music)
             case .timer: select(.timer)
             case .calendar: select(.calendar)
             case .commandBar: perform { CommandBarService.shared.show() }
             case .scratchpad: openScratchpad()
-            case .volume, .brightness, .keyboardLight: select(.controls)
+            case .volume, .brightness, .keyboardLight: select(.hub)
             }
         }
     }

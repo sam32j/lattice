@@ -451,7 +451,13 @@ private struct NotchMusicOutputButton: View {
         .accessibilityValue(deviceName)
     }
 
-    private var items: [NotchMenuItem] { NotchAudioControls.outputItems(mixer: mixer, notch: notch, l10n: l10n) }
+    private var items: [NotchMenuItem] {
+        mixer.outputDevices.filter(\.canBeDefaultOutput).map { device in
+            NotchMenuItem(title: device.name, checked: device.uid == mixer.currentOutputDeviceUID) {
+                _ = mixer.setUniversalOutputDeviceUID(device.uid)
+            }
+        }
+    }
 }
 
 /// The transport as it looks with nothing playing. Every button opens the

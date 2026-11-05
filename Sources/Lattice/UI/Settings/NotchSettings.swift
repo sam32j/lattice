@@ -47,7 +47,7 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchHoverDelay) var hoverDelay = NotchSupport.defaultHoverDelay
     @AppStorage(DefaultsKey.notchCloseDelay) var closeDelay = NotchSupport.defaultCloseDelay
     @AppStorage(DefaultsKey.notchReturnHome) var returnHome = false
-    @AppStorage(DefaultsKey.notchHomeModule) var homeModule = NotchModule.controls.rawValue
+    @AppStorage(DefaultsKey.notchHomeModule) var homeModule = NotchModule.hub.rawValue
     @AppStorage(DefaultsKey.notchOpensActivity) var opensActivity = true
     @AppStorage(DefaultsKey.notchHiddenModules) var hidden = ""
     @AppStorage(DefaultsKey.notchModuleOrder) var order = ""
@@ -83,10 +83,9 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchHoverExpands) var hoverExpand = true
     @AppStorage(DefaultsKey.notchQuickAccessLayout) var accessData = Data()
     @State var tab = NotchSettingsTab.layout
-    @State var selectedModule = NotchModule.controls
+    @State var selectedModule = NotchModule.hub
     @State var contentSelection: NotchContentDestination?
     @State var draggingModule: NotchModule?
-    @State var draggingControl: NotchControlItem?
     @State var preferredPlayers: [NotchPreferredPlayer.Choice]?
     @State var scrollTarget: String?
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -119,7 +118,7 @@ struct NotchSettings: View {
         .onChange(of: hideUntilHover) { _, _ in enforceIdleSelection() }
         .onChange(of: hover) { _, _ in enforceIdleSelection() }
         .onChange(of: idle) { _, _ in enforceIdleSelection() }
-        .onChange(of: tab) { _, _ in draggingModule = nil; draggingControl = nil }
+        .onChange(of: tab) { _, _ in draggingModule = nil }
         .onAppear(perform: consumeTabHint)
         .onChange(of: router.notchSettingsTab) { _, _ in consumeTabHint() }
         .onAppear(perform: consumeModuleHint)
@@ -279,5 +278,3 @@ struct NotchSettings: View {
         }
     }
 }
-
-extension NotchControlItem: PanelOrderItem {}

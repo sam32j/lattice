@@ -154,8 +154,7 @@ struct NotchPagePreview: View {
             NotchNotificationsView(size: size).notchBand(trailing: { NotchClearNotificationsButton() })
         case .downloads: NotchDownloadsView(size: size)
         case .calendar: NotchCalendarView(size: size)
-        case .controls: NotchControlsView(service: notch, size: size)
-        case .mixer: NotchMixerView(size: size)
+        case .controls, .mixer: EmptyView()
         case .music: NotchMusicView(size: size, extrasHeight: notch.geometry.musicExtrasHeight)
         case .clipboard: NotchClipboardView(service: notch, size: size)
         case .captures:
