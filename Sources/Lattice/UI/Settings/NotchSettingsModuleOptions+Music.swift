@@ -4,7 +4,7 @@ import EventKit
 extension NotchSettings {
     @ViewBuilder var musicModuleOptions: some View {
         let music = FeatureStrings.notchMusicExtras(l10n.language)
-        switchRow("music.note", text.playingMusic, isOn: $showPlayingMusic)
+        switchRow("waveform", text.playingMusic, isOn: $showPlayingMusic)
         switchRow("play.rectangle", music.includeOtherPlayers, isOn: $includeOtherPlayers)
         SettingsRow(symbol: "arrow.up.forward.app", title: music.preferredPlayer) {
             Picker(music.preferredPlayer, selection: $preferredPlayer) {

@@ -474,6 +474,9 @@ struct DiskSection: View {
                 .truncationMode(.middle)
             Spacer(minLength: 0)
             if showsTags {
+                if let mediaType = disk.mediaType {
+                    titleTag(mediaType)
+                }
                 if let fileSystem = disk.fileSystem {
                     titleTag(fileSystem)
                 }

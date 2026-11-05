@@ -2416,7 +2416,7 @@ final class NotchService: ObservableObject {
                   let playback = NotchMusicService.shared.playback, playback.isPlaying,
                   let title = playback.track.title, !title.isEmpty else { return }
             self.show(NotchNotice(event: .track, title: title, detail: playback.track.artist ?? "",
-                                  symbol: "music.note"))
+                                  symbol: "waveform"))
         }
         trackWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)

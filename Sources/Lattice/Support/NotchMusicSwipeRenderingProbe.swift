@@ -58,7 +58,7 @@ enum NotchMusicSwipeRenderingProbe {
             let geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1440, height: 900),
                 safeAreaTop: physical ? 32 : 0, cameraWidth: physical ? 210 : 0, menuBarHeight: 32,
                 compactSideRoom: 420, silhouette: capsule ? .capsule : .notch)
-            let notice = NotchNotice(event: .track, title: "Example track title", detail: "Artist name", symbol: "music.note")
+            let notice = NotchNotice(event: .track, title: "Example track title", detail: "Artist name", symbol: "waveform")
             let wings = notice.wings(in: geometry)
             let size = capsule ? NotchMusicNoticeLayout.capsuleSize(title: notice.title, artist: notice.detail, geometry: geometry)
                 : geometry.noticeSize(wings: wings)

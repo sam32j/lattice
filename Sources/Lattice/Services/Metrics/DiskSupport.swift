@@ -58,6 +58,12 @@ struct DiskDeviceReading: Identifiable, Equatable {
     var ejectBSDName: String? {
         wholeDisk ?? bsdName
     }
+
+    var mediaType: String? {
+        if name.localizedCaseInsensitiveContains("ssd") { return "SSD" }
+        if name.localizedCaseInsensitiveContains("hdd") { return "HDD" }
+        return nil
+    }
 }
 
 enum DiskMenuBarStyle: String, CaseIterable {

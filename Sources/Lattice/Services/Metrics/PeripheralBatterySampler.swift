@@ -101,9 +101,22 @@ final class PeripheralBatterySampler {
         lock.unlock()
 
         let fastDevices = readFast()
-        let devices = Self.uniqueDevices(from: fastDevices + bluetoothDevices)
+        var devices = Self.uniqueDevices(from: fastDevices + bluetoothDevices)
+#if LATTICE_DEVELOPMENT
+        if !NotchSupport.isTestHarness {
+            devices.append(contentsOf: Self.mockPeripheralDevices)
+            devices = Self.uniqueDevices(from: devices)
+        }
+#endif
         var observedAt = Dictionary(fastDevices.map { ($0.id, now) }, uniquingKeysWith: { max($0, $1) })
         for device in bluetoothDevices { observedAt[device.id] = bluetoothTime }
+#if LATTICE_DEVELOPMENT
+        if !NotchSupport.isTestHarness {
+            for mock in Self.mockPeripheralDevices {
+                observedAt[mock.id] = now
+            }
+        }
+#endif
         let result = PeripheralBatterySample(devices: devices, observedAt: observedAt)
 
         lock.lock()
@@ -273,4 +286,41 @@ final class PeripheralBatterySampler {
         }
         return result
     }
+
+#if LATTICE_DEVELOPMENT
+    static var mockPeripheralDevices: [PeripheralBatteryDevice] {
+        [
+            PeripheralBatteryDevice(
+                id: "mock-airpods-pro",
+                name: "AirPods Pro",
+                percent: 85,
+                kind: .audio
+            ),
+            PeripheralBatteryDevice(
+                id: "mock-magic-keyboard",
+                name: "Magic Keyboard with Touch ID",
+                percent: 92,
+                kind: .keyboard
+            ),
+            PeripheralBatteryDevice(
+                id: "mock-magic-mouse",
+                name: "Magic Mouse",
+                percent: 78,
+                kind: .mouse
+            ),
+            PeripheralBatteryDevice(
+                id: "mock-magic-trackpad",
+                name: "Magic Trackpad",
+                percent: 64,
+                kind: .trackpad
+            ),
+            PeripheralBatteryDevice(
+                id: "mock-game-controller",
+                name: "Wireless Controller",
+                percent: 50,
+                kind: .device
+            )
+        ]
+    }
+#endif
 }

@@ -189,7 +189,7 @@ extension NotchSettings {
                                      title: SettingsFollowupLabels.text(.clipboardActivity, l10n.language),
                                      available: true, isOn: $clipboard)
                     Divider()
-                    IndicatorListRow(symbol: "music.note", title: text.newTrack,
+                    IndicatorListRow(symbol: "waveform", title: text.newTrack,
                                      subtitle: "Require “Music”",
                                      available: musicAvailable, isOn: $trackChange,
                                      unavailableAction: pageAction(.music, feature: nil))
