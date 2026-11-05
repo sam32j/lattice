@@ -34,30 +34,26 @@ extension NotchSettings {
                 }
             }
             SettingsControlRow(title: opening.defaultPage) {
-                Picker(opening.defaultPage, selection: Binding(get: {
-                    guard returnHome else { return "" }
-                    if homeModule == NotchModule.controls.rawValue || homeModule == NotchModule.mixer.rawValue
-                        || homeModule == NotchReopeningDestination.explore.rawValue {
-                        return NotchModule.hub.rawValue
-                    }
-                    return NotchModule(rawValue: homeModule)?.rawValue
-                        ?? NotchReopeningDestination(rawValue: homeModule)?.rawValue
-                        ?? NotchModule.hub.rawValue
-                }, set: { value in
-                    returnHome = !value.isEmpty
-                    if returnHome { homeModule = value }
-                })) {
-                    Text(editor.lastPage).tag("")
-                    Text(NotchModule.hub.title(l10n.language)).tag(NotchModule.hub.rawValue)
-                        .disabled(!NotchSupport.modules().contains(.hub))
-                    Text(text.panel).tag(NotchReopeningDestination.appPanel.rawValue)
-                    ForEach(defaultPageModules) { module in
-                        Text(module.title(l10n.language)).tag(module.rawValue)
-                            .disabled(!NotchSupport.modules().contains(module))
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
+                NotchDefaultPagePicker(
+                    title: opening.defaultPage,
+                    selection: Binding(get: {
+                        guard returnHome else { return "" }
+                        if homeModule == NotchModule.controls.rawValue || homeModule == NotchModule.mixer.rawValue
+                            || homeModule == NotchReopeningDestination.explore.rawValue {
+                            return NotchModule.hub.rawValue
+                        }
+                        return NotchModule(rawValue: homeModule)?.rawValue
+                            ?? NotchReopeningDestination(rawValue: homeModule)?.rawValue
+                            ?? NotchModule.hub.rawValue
+                    }, set: { value in
+                        returnHome = !value.isEmpty
+                        if returnHome { homeModule = value }
+                    }),
+                    lastPageTitle: editor.lastPage,
+                    hubTitle: NotchModule.hub.title(l10n.language),
+                    panelTitle: text.panel,
+                    modules: defaultPageModules.map { (id: $0.rawValue, title: $0.title(l10n.language)) }
+                )
             }
             SettingsToggleRow(title: opening.openVisibleActivity,
                               caption: opening.openVisibleActivityHint,
@@ -75,6 +71,31 @@ extension NotchSettings {
                                           locale: Locale(identifier: l10n.language.rawValue)) == .orderedAscending
         }
     }
+}
+
+private struct NotchDefaultPagePicker: View {
+    let title: String
+    @Binding var selection: String
+    let lastPageTitle: String
+    let hubTitle: String
+    let panelTitle: String
+    let modules: [(id: String, title: String)]
+
+    var body: some View {
+        Picker(title, selection: $selection) {
+            Text(lastPageTitle).tag("")
+            Text(hubTitle).tag(NotchModule.hub.rawValue)
+            Text(panelTitle).tag(NotchReopeningDestination.appPanel.rawValue)
+            ForEach(modules, id: \.id) { module in
+                Text(module.title).tag(module.id)
+            }
+        }
+        .pickerStyle(.menu)
+        .labelsHidden()
+    }
+}
+
+extension NotchSettings {
 
     var destinationsCard: some View {
         SettingsCard(title: editor.destinations) {
