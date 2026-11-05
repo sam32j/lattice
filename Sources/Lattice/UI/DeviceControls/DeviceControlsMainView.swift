@@ -85,25 +85,24 @@ struct DeviceControlsMainView: View {
                 .font(.system(size: 13, weight: .medium))
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .frame(width: 78, alignment: .leading)
+
+            Spacer(minLength: 8)
 
             if display.isActive, display.method != nil {
-                Slider(value: brightnessBinding(display), in: 0...1)
-                    .controlSize(.small)
-                    .disabled(brightness.isDisplayPending(display.id))
-                    .accessibilityLabel(display.name)
+                DeviceControlsSlider(
+                    title: display.name,
+                    value: brightnessBinding(display),
+                    range: 0...1,
+                    step: 0.01,
+                    readout: "\(Int((display.brightness * 100).rounded()))%"
+                )
+                .frame(width: 200)
+                .disabled(brightness.isDisplayPending(display.id))
             } else {
-                Spacer()
                 Text(FeatureStrings.brightness(l10n.language).displayOff)
                     .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(.secondary)
-            }
-
-            if display.isActive, display.method != nil {
-                Text("\(Int((display.brightness * 100).rounded()))%")
-                    .font(.system(size: 11.5, weight: .medium).monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .frame(width: 38, alignment: .trailing)
+                    .frame(width: 200, alignment: .trailing)
             }
         }
     }
@@ -126,21 +125,18 @@ struct DeviceControlsMainView: View {
             Text("Keyboard")
                 .font(.system(size: 13, weight: .medium))
                 .lineLimit(1)
-                .frame(width: 78, alignment: .leading)
 
-            Slider(
+            Spacer(minLength: 8)
+
+            DeviceControlsSlider(
+                title: "Keyboard",
                 value: keyboardLightBinding,
-                in: 0...1,
+                range: 0...1,
+                step: brightness.keyboardLightSaturated ? 1.0 : 0.01,
+                readout: keyboardLightReadout,
                 onEditingChanged: brightness.keyboardLightDragChanged
             )
-            .controlSize(.small)
-            .accessibilityLabel("Keyboard backlight brightness")
-
-            Text(keyboardLightReadout)
-                .font(.system(size: 11.5, weight: .medium).monospacedDigit())
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .frame(minWidth: 38, alignment: .trailing)
+            .frame(width: 200)
         }
     }
 
@@ -274,6 +270,8 @@ struct DeviceControlsMainView: View {
                 .font(.system(size: 13, weight: .medium))
                 .lineLimit(1)
 
+            Spacer(minLength: 8)
+
             DeviceControlsSlider(
                 title: "Volume",
                 value: systemOutputVolumeBinding,
@@ -281,6 +279,7 @@ struct DeviceControlsMainView: View {
                 step: 0.01,
                 readout: "\(Int(((mixer.systemOutputVolume ?? 0) * 100).rounded()))%"
             )
+            .frame(width: 200)
         }
     }
 
@@ -470,6 +469,8 @@ struct DeviceControlsMainView: View {
                 .font(.system(size: 13, weight: .medium))
                 .lineLimit(1)
 
+            Spacer(minLength: 8)
+
             DeviceControlsSlider(
                 title: "Input level",
                 value: inputVolumeBinding,
@@ -477,6 +478,7 @@ struct DeviceControlsMainView: View {
                 step: 0.01,
                 readout: "\(Int((volume * 100).rounded()))%"
             )
+            .frame(width: 200)
             .disabled(!hasVolume || micMute.isMuted)
         }
     }
