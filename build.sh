@@ -346,6 +346,7 @@ if (( TEST )); then
         Sources/Lattice/UI/Settings/DataPermissionsRow.swift
         Sources/Lattice/UI/Settings/SettingsExpansionAnimation.swift
         Sources/Lattice/Core/WindowLayoutShortcutEditor.swift
+        Sources/Lattice/Core/WindowEdgeSnapRestoreStrings.swift
         Sources/Lattice/Core/NotchStrings.swift
         Sources/Lattice/Core/NotchEditorStrings.swift
         Sources/Lattice/Core/NotchWidgetTitleSupport.swift

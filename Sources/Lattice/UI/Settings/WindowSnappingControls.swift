@@ -41,6 +41,13 @@ extension WindowLayoutSettings {
                     Text(WindowLayoutFeatureStrings.edgeSnapCustomizeHint(l10n.language))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    let restore = WindowEdgeSnapRestoreStrings.localized(l10n.language)
+                    SettingsControlRow(title: restore.title, caption: restore.caption) {
+                        Toggle(restore.title, isOn: $edgeSnapRestoreOnDrag)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
+                    .padding(.top, 9)
                 }
                 .padding(.top, 17)
                 .transition(.settingsReveal)

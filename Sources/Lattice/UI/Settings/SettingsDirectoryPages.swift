@@ -114,6 +114,10 @@ extension SettingsDirectory {
                                         (.windowMaximizer,
                                          [s.windowMaximizeName,
                                           FeatureStrings.windowMaximizerExclusions(language).listTitle]),
+                                      ],
+                                      followupKeywords: [
+                                        (.windowLayout, DefaultsKey.windowEdgeSnapEnabled,
+                                         [WindowEdgeSnapRestoreStrings.localized(language).title]),
                                       ]),
                 SettingsDirectoryItem(page: .screenshot,
                                       title: CaptureSettings.title(for: language),
