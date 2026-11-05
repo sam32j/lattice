@@ -18,7 +18,8 @@ struct PanelMediaView: View {
     var onClose: () -> Void = {}
 
     var body: some View {
-        MediaWorkspaceView(compact: true, showHeader: showHeader, onClose: onClose)
+        // The Hub already scrolls its hosted utility content; one region only.
+        MediaWorkspaceView(compact: true, showHeader: showHeader, onClose: onClose, scrollsContent: false)
             .onAppear { PanelInteractionState.shared.viewKeepsPopoverOpen = true }
             .onDisappear { PanelInteractionState.shared.viewKeepsPopoverOpen = false }
     }
@@ -135,13 +136,15 @@ struct MediaWorkspaceView: View {
     private let preservesServiceState: Bool
     private let onContentHeightChange: ((CGFloat) -> Void)?
     private let onToolChange: (() -> Void)?
+    private let scrollsContent: Bool
 
     init(compact: Bool, showHeader: Bool = true, onClose: (() -> Void)? = nil,
          media: MediaService = .shared, initialInputs: [URL] = [],
          initialTool: MediaTool? = nil, preservesServiceState: Bool = false,
          workspace: MediaWorkspaceSelection? = nil,
          onContentHeightChange: ((CGFloat) -> Void)? = nil,
-         onToolChange: (() -> Void)? = nil) {
+         onToolChange: (() -> Void)? = nil,
+         scrollsContent: Bool = true) {
         self.compact = compact
         self.showHeader = showHeader
         self.onClose = onClose
@@ -151,6 +154,7 @@ struct MediaWorkspaceView: View {
         self.preservesServiceState = preservesServiceState
         self.onContentHeightChange = onContentHeightChange
         self.onToolChange = onToolChange
+        self.scrollsContent = scrollsContent
         _workspace = StateObject(wrappedValue: workspace ?? MediaWorkspaceSelection())
     }
 
@@ -243,30 +247,23 @@ struct MediaWorkspaceView: View {
         .settingsExpansionAnimation(value: [videoSizingRaw, gifSizingRaw, imageResizeKindRaw, imageWatermarkKindRaw, imageFormatRaw])
     }
 
-    private var layout: some View {
-        Group {
-            if let onContentHeightChange {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: compact ? 10 : 14) {
-                        header
-                        toolPicker
-                        content.padding(.trailing, 1)
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
-                        onContentHeightChange($0)
-                    }
-                }
-            } else {
-                VStack(alignment: .leading, spacing: compact ? 10 : 14) {
-                    header
-                    toolPicker
-                    ScrollView {
-                        content.padding(.trailing, 1)
-                    }
-                    .frame(maxHeight: compact ? 430 : .infinity)
-                }
-            }
+    @ViewBuilder private var layout: some View {
+        if scrollsContent {
+            ScrollView { workspaceContent }
+        } else {
+            workspaceContent
+        }
+    }
+
+    private var workspaceContent: some View {
+        VStack(alignment: .leading, spacing: compact ? 10 : 14) {
+            header
+            toolPicker
+            content.padding(.trailing, 1)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
+            onContentHeightChange?($0)
         }
     }
 

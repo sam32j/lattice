@@ -2088,11 +2088,13 @@ def main():
           + "extension MediaWorkspaceLayoutTests {\n"
           + "struct Workspace: View {\nlet compact = true\n@ObservedObject var fixture: Fixture\n"
           + "let onContentHeightChange: ((CGFloat) -> Void)?\n"
+          + "var scrollsContent = true\n"
           + "var header: some View { Color.clear.frame(height: 22) }\n"
           + "var toolPicker: some View { Color.clear.frame(height: 24) }\n"
           + "var content: some View { Color.clear.frame(height: fixture.height) }\n"
           + "var body: some View { layout }\n"
-          + declaration(media_workspace, "    private var layout:")
+          + declaration(media_workspace, "    @ViewBuilder private var layout:")
+          + declaration(media_workspace, "    private var workspaceContent:")
           + "}\nstruct Input: View {\nlet inNotch: Bool\n@State var isDropTargeted = false\n"
           + "var inputSelector: some View { Color.clear.frame(width: 300, height: 70) }\n"
           + "func acceptDrop(_ providers: [NSItemProvider]) -> Bool { false }\n"
