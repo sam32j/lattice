@@ -47,7 +47,9 @@ final class LatticeHubService: ObservableObject {
     var globalKeyMonitor: Any?
     var activationObserver: NSObjectProtocol?
     var resignActiveObserver: NSObjectProtocol?
+    var resignKeyObserver: NSObjectProtocol?
     var spaceChangeObserver: NSObjectProtocol?
+    var missionControlTimer: Timer?
 
     private var notchSubscription: AnyCancellable?
 

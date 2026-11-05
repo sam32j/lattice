@@ -3554,7 +3554,16 @@ final class NotchService: ObservableObject {
         }
         observe(.default, .menuPanelWillShow) { [weak self] in self?.collapse() }
         observe(.default, NSWindow.didBecomeKeyNotification) { [weak self] in self?.syncPanelKey() }
-        observe(.default, NSWindow.didResignKeyNotification) { [weak self] in self?.syncPanelKey() }
+        observe(.default, NSWindow.didResignKeyNotification) { [weak self] in
+            guard let self else { return }
+            self.syncPanelKey()
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.expanded, !self.pinned, !self.keepsWorkingSurface else { return }
+                if self.panel?.isKeyWindow == false && (NSApp.keyWindow == nil || !self.ownsWindow(NSApp.keyWindow)) {
+                    self.collapse()
+                }
+            }
+        }
         session.onConsole = SessionActivity.shared.isActive
         session.locked = (CGSessionCopyCurrentDictionary() as? [String: Any])?["CGSSessionScreenIsLocked"] as? Bool ?? false
         let workspace = NSWorkspace.shared.notificationCenter
@@ -3564,15 +3573,13 @@ final class NotchService: ObservableObject {
         observe(workspace, NSWorkspace.activeSpaceDidChangeNotification) { [weak self] in
             guard let self else { return }
             self.fullscreenEnvironmentDidChange()
-            if self.expanded, !self.pinned, self.selected == .hub {
+            if self.expanded, !self.pinned {
                 self.collapse()
             }
         }
         observe(NotificationCenter.default, NSApplication.didResignActiveNotification) { [weak self] in
             guard let self, self.expanded, !self.pinned else { return }
-            if self.selected == .hub {
-                self.collapse()
-            }
+            self.collapse()
         }
         observe(workspace, NSWorkspace.didActivateApplicationNotification) { [weak self] in self?.applicationDidActivate() }
         observe(workspace, NSWorkspace.willSleepNotification) { [weak self] in
@@ -3636,7 +3643,7 @@ final class NotchService: ObservableObject {
         if expanded, modules.contains(.clipboard) { ClipboardHistoryService.shared.rememberPasteTarget() }
         if expanded, modules.contains(.snippets) { SnippetLibraryService.shared.rememberPasteTarget() }
         if expanded, !pinned,
-           (selected == .hub || (!keepsWorkingSurface && NotchSupport.closesOnActivation(openedByHover: openedByHover, clicked: clickedSinceOpening,
+           (!keepsWorkingSurface && (selected == .hub || NotchSupport.closesOnActivation(openedByHover: openedByHover, clicked: clickedSinceOpening,
                                            pointerInside: windowHost?.containsHover(NSEvent.mouseLocation) == true))) {
             collapse()
         }
@@ -3717,12 +3724,10 @@ final class NotchService: ObservableObject {
         if let token = NSEvent.addGlobalMonitorForEvents(matching: clicks.union(.keyDown), handler: { [weak self] event in
             guard let self else { return }
             if event.type == .keyDown {
-                guard !self.pinned, self.expanded else { return }
+                guard !self.pinned, self.expanded, !self.keepsWorkingSurface else { return }
                 let shortcutModifiers: NSEvent.ModifierFlags = [.command, .control, .option]
                 guard !event.modifierFlags.intersection(shortcutModifiers).isEmpty else { return }
-                if self.selected == .hub {
-                    self.collapse()
-                }
+                self.collapse()
                 return
             }
             guard !self.keepsWorkingSurfaceOnOutsideClick,

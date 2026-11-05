@@ -38,6 +38,13 @@ extension LatticeHubService {
             openSettings()
             return nil
         }
+        let shortcutModifiers = event.modifierFlags.intersection([.command, .control, .option])
+        if !shortcutModifiers.isEmpty {
+            if !isPinned {
+                hide()
+            }
+            return event
+        }
         if stayAwakeOptionsPresented { return event }
         guard !isEditing, activeUtility == nil else { return event }
 
@@ -47,14 +54,6 @@ extension LatticeHubService {
         if Int(event.keyCode) == kVK_Tab, modifiers.isEmpty || modifiers == .shift {
             advanceSelection(backwards: modifiers == .shift)
             return nil
-        }
-
-        let shortcutModifiers = event.modifierFlags.intersection([.command, .control, .option])
-        if !shortcutModifiers.isEmpty {
-            if !isPinned {
-                hide()
-            }
-            return event
         }
 
         guard modifiers.isEmpty else { return event }
@@ -126,6 +125,21 @@ extension LatticeHubService {
             guard let self, !self.isPinned, self.panel?.isVisible == true else { return }
             self.hide()
         }
+        resignKeyObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification,
+            object: panel,
+            queue: .main
+        ) { [weak self, weak panel] _ in
+            guard let self, let panel, !self.isPinned, panel.isVisible else { return }
+            if self.stayAwakeOptionsPresented { return }
+            DispatchQueue.main.async { [weak self, weak panel] in
+                guard let self, let panel, !self.isPinned, panel.isVisible else { return }
+                if self.stayAwakeOptionsPresented { return }
+                if !panel.isKeyWindow && (NSApp.keyWindow == nil || NSApp.keyWindow !== panel) {
+                    self.hide()
+                }
+            }
+        }
         spaceChangeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification,
             object: nil,
@@ -148,6 +162,15 @@ extension LatticeHubService {
                 self.hide()
             }
         }
+        let screen = panel.screen?.frame ?? NSScreen.main?.frame ?? .zero
+        let mcTimer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self, !self.isPinned, self.panel?.isVisible == true else { return }
+            if NotchFrameProbe.overviewIsVisible(on: screen) {
+                self.hide()
+            }
+        }
+        RunLoop.main.add(mcTimer, forMode: .common)
+        self.missionControlTimer = mcTimer
     }
 
     func removeMonitors() {
@@ -163,10 +186,16 @@ extension LatticeHubService {
             NotificationCenter.default.removeObserver(resignActiveObserver)
             self.resignActiveObserver = nil
         }
+        if let resignKeyObserver {
+            NotificationCenter.default.removeObserver(resignKeyObserver)
+            self.resignKeyObserver = nil
+        }
         if let spaceChangeObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(spaceChangeObserver)
             self.spaceChangeObserver = nil
         }
+        missionControlTimer?.invalidate()
+        missionControlTimer = nil
     }
 
     static func mouseIsInside(_ panel: NSPanel) -> Bool {
