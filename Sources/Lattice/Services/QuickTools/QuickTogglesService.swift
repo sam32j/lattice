@@ -114,8 +114,8 @@ final class QuickTogglesService: ObservableObject {
     // MARK: - Finder flags
 
     /// Toggles hidden files visibility by updating AppleShowAllFiles in com.apple.finder
-    /// and reloading Finder in the background without stealing focus, prompting on deleted
-    /// items, or duplicating open tabs/windows.
+    /// and posting Command+Shift+Period directly to Finder while refreshing open windows,
+    /// without killing Finder, stealing focus, or opening tabs/windows.
     func toggleHiddenFiles() {
         guard QuickToggleAction.hiddenFiles.feature.isAvailable else { return }
         let targetShown = !hiddenFilesShown
@@ -125,8 +125,34 @@ final class QuickTogglesService: ObservableObject {
         CFPreferencesAppSynchronize(QuickTogglesSupport.finderDomain as CFString)
         objectWillChange.send()
 
-        workQueue.async { [weak self] in
-            _ = self?.restartFinder()
+        workQueue.async {
+            if let finder = NSRunningApplication.runningApplications(withBundleIdentifier: QuickTogglesSupport.finderDomain).first {
+                let pid = finder.processIdentifier
+                let src = CGEventSource(stateID: .hidSystemState)
+                let kd = CGEvent(keyboardEventSource: src, virtualKey: 47, keyDown: true)
+                kd?.flags = [.maskCommand, .maskShift]
+                let ku = CGEvent(keyboardEventSource: src, virtualKey: 47, keyDown: false)
+                ku?.flags = [.maskCommand, .maskShift]
+                kd?.postToPid(pid)
+                ku?.postToPid(pid)
+            }
+
+            let script = """
+            tell application "Finder"
+                repeat with w in (get every Finder window)
+                    set v to current view of w
+                    if v is list view then
+                        set current view of w to icon view
+                        set current view of w to list view
+                    else
+                        set current view of w to list view
+                        set current view of w to icon view
+                    end if
+                end repeat
+                update desktop
+            end tell
+            """
+            _ = AppleScriptRunner.run(script)
         }
     }
 
@@ -241,41 +267,7 @@ final class QuickTogglesService: ObservableObject {
         }
     }
 
-    private func toggleFinderFlag(_ action: QuickToggleAction, key: String, to value: Bool) {
-        guard action.feature.isAvailable, beginRun(action) else { return }
-        workQueue.async {
-            CFPreferencesSetAppValue(key as CFString,
-                                     value as CFBoolean,
-                                     QuickTogglesSupport.finderDomain as CFString)
-            CFPreferencesAppSynchronize(QuickTogglesSupport.finderDomain as CFString)
-            self.finishRun(action, state: self.restartFinder() ? nil : .failed)
-        }
-    }
 
-    /// The Finder only reads these preferences at launch, so it has to
-    /// restart. When the Finder Automation grant is already in (the Trash
-    /// and cut and paste share it), the restart is polite: a regular quit
-    /// followed by our own relaunch, which keeps launchd out of it and
-    /// avoids its "running in background" churn. Without the grant, or when
-    /// the Finder will not quit (an operation in progress), the classic
-    /// killall does it; never prompts either way. Work-queue only: the exit
-    /// poll blocks.
-    @discardableResult
-    private func restartFinder() -> Bool {
-        let killStatus = Shell.run("/usr/bin/killall", ["Finder"]).status
-        if killStatus == 0 {
-            return true
-        }
-        // If Finder was not running, launch it in the background without activating.
-        if Shell.run("/usr/bin/pgrep", ["-x", "Finder"]).status != 0 {
-            let url = URL(fileURLWithPath: "/System/Library/CoreServices/Finder.app")
-            let configuration = NSWorkspace.OpenConfiguration()
-            configuration.activates = false
-            NSWorkspace.shared.openApplication(at: url, configuration: configuration)
-            return true
-        }
-        return false
-    }
 
     /// Marks the action as running; a second click while it runs is ignored.
     private func beginRun(_ action: QuickToggleAction) -> Bool {

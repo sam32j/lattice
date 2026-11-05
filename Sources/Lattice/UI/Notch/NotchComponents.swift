@@ -175,7 +175,7 @@ struct NotchSectionsButton: View {
     @ObservedObject private var l10n = L10n.shared
 
     var body: some View {
-        NotchIconButton(symbol: "square.grid.2x2", title: FeatureStrings.notch(l10n.language).sectionsTitle, action: action)
+        NotchIconButton(symbol: "house", title: "Home", action: action)
     }
 }
 
