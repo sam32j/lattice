@@ -9,12 +9,25 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
     case screenshot, screenRecorder, recentCaptures, cleaner, uninstaller, clipboard, windowLayout,
          media, urlCleaner, scratchpad,
          homebrew, appUpdates, portManager, videoDownloader, shelf,
-         textSnippets, killProcess, wallpaper, deviceControls
+         textSnippets, killProcess, wallpaper, deviceControls,
+         aiUsage, system, watch
 
     var id: String { rawValue }
 
     func isAvailable(in defaults: UserDefaults = .standard) -> Bool {
-        feature.isAvailable(in: defaults)
+        switch self {
+        case .aiUsage:
+            return AppFeature.notchAgents.isAvailable(in: defaults)
+        case .watch:
+            return AppFeature.notchWatch.isAvailable(in: defaults)
+        case .system:
+            return ([.monitorCPU, .monitorGPU, .monitorMemory, .monitorNetwork,
+                     .monitorDisk, .monitorPower, .fanControl, .connectedDevices] as [AppFeature]).contains {
+                $0.isAvailable(in: defaults)
+            }
+        default:
+            return feature.isAvailable(in: defaults)
+        }
     }
 
     /// The hub feature behind the tile; off in the hub removes it from the
@@ -39,6 +52,9 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
         case .killProcess: return .killProcess
         case .wallpaper: return .wallpaper
         case .deviceControls: return .mixer
+        case .aiUsage: return .notchAgents
+        case .watch: return .notchWatch
+        case .system: return .monitorCPU
         }
     }
 
@@ -96,6 +112,9 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
             case .zhTW, .zhHK: return "裝置控制"
             case .uk: return "Керування пристроєм"
             }
+        case .aiUsage: return FeatureStrings.notchAgents(language).title
+        case .watch: return FeatureStrings.notchWatch(language).title
+        case .system: return FeatureStrings.notch(language).system
         }
     }
 }

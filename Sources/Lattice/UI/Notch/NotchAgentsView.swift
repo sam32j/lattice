@@ -66,13 +66,17 @@ struct NotchAgentsView: View {
                         grid(rows, now: context.date)
                     }
                 }
-                // The period drives several cards, so it sits in the island's
-                // top row, beside the camera, while any of them shows.
-                .notchBand(leading: {
-                    if rows.joined().contains(where: { $0.card.followsPeriod }) { periodMenu }
-                })
             }
         }
+        .notchBand(leading: {
+            NotchBandBackButton(title: NotchModule.agents.title(l10n.language)) {
+                NotchService.shared.select(.hub)
+            }
+        }, trailing: {
+            if rows.joined().contains(where: { $0.card.followsPeriod }) {
+                periodMenu
+            }
+        })
         .frame(width: size.width, height: size.height, alignment: .top)
         .environment(\.locale, l10n.language.formattingLocale())
         .onAppear {

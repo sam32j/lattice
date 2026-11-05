@@ -8,6 +8,12 @@ extension NotchLayout {
     static let hubOptionsHeight: CGFloat = 118
     static let hubEmptyHeight: CGFloat = 160
     static let toolTwoRowThreshold = 8
+    static let hubWidgetTileHeight: CGFloat = 45
+
+    static func hubIslandWidgetsHeight(in defaults: UserDefaults = .standard) -> CGFloat {
+        let hasWidget = NotchSupport.modules(in: defaults).contains { [.music, .calendar, .timer].contains($0) }
+        return hasWidget ? hubWidgetTileHeight : 0
+    }
 
     /// Presets intentionally keep large catalogs in two rows.
     static func toolRailRows(count: Int, width: CGFloat, height: CGFloat) -> Int {
@@ -23,10 +29,12 @@ extension NotchGeometry {
     /// Both modes keep the same rail. Hidden tools scroll horizontally in a
     /// fixed strip, so the number hidden never changes the island's height.
     func hubContentHeight(toolCount: Int, controlsHeight: CGFloat,
-                          editing: Bool, optionsHeight: CGFloat = 0) -> CGFloat {
+                          editing: Bool, optionsHeight: CGFloat = 0,
+                          widgetsHeight: CGFloat = 0) -> CGFloat {
         let rail = toolCount == 0 ? NotchLayout.hubEmptyHeight : HubStripLayout.contentSize(count: toolCount, columns: hubColumns).height
         let spacing: CGFloat = controlsHeight > 0 ? 6 : 0
-        let normal = controlsHeight + spacing + rail
+        let widgetGap: CGFloat = widgetsHeight > 0 ? 6 : 0
+        let normal = controlsHeight + spacing + widgetsHeight + widgetGap + rail
         return normal + (editing ? NotchLayout.hubEditingStripHeight + optionsHeight : 0)
     }
 }

@@ -859,7 +859,8 @@ final class NotchService: ObservableObject {
                         hubIsEditing: isEditing,
                         hubAvailableCount: launcher.hiddenItems.count + launcher.hiddenControls.count,
                         hubOptionsHeight: optionsHeight,
-                        hubActiveUtilityHeight: utilityHeight)
+                        hubActiveUtilityHeight: utilityHeight,
+                        hubWidgetsHeight: isHubPage && launcher.activeUtility == nil && modules.contains { [.music, .calendar, .timer].contains($0) } ? NotchLayout.hubWidgetTileHeight : nil)
     }
 
     /// The open island as Settings previews a section: at rest, with no
@@ -867,7 +868,8 @@ final class NotchService: ObservableObject {
     func previewSize(for module: NotchModule) -> CGSize {
         pageSize(in: previewGeometry(for: module), module: module, detail: false, panel: false, detailHeight: nil, musicExtraHeight: 0,
                  fileMediaHeight: nil, toolCount: LatticeHubService.shared.visibleItems.count, capturePreviewHeight: nil,
-                 toolsControlsHeight: module == .hub ? LatticeHubService.shared.notchControlsHeight : nil)
+                 toolsControlsHeight: module == .hub ? LatticeHubService.shared.notchControlsHeight : nil,
+                 hubWidgetsHeight: module == .hub && modules.contains { [.music, .calendar, .timer].contains($0) } ? NotchLayout.hubWidgetTileHeight : nil)
     }
 
     /// The island around a previewed section, with the top row its page has.
@@ -902,7 +904,8 @@ final class NotchService: ObservableObject {
                           hubIsEditing: Bool = false,
                           hubAvailableCount: Int = 0,
                           hubOptionsHeight: CGFloat = 0,
-                          hubActiveUtilityHeight: CGFloat? = nil) -> CGSize {
+                          hubActiveUtilityHeight: CGFloat? = nil,
+                          hubWidgetsHeight: CGFloat? = nil) -> CGSize {
         let controls = NotchSupport.controls()
         let sliders = controls.filter(\.isLevel).count
         let shortcuts = controls.filter { !$0.isLevel && $0 != .music }.count
@@ -923,7 +926,8 @@ final class NotchService: ObservableObject {
                                      hubIsEditing: hubIsEditing,
                                      hubAvailableCount: hubAvailableCount,
                                      hubOptionsHeight: hubOptionsHeight,
-                                     hubActiveUtilityHeight: hubActiveUtilityHeight)
+                                     hubActiveUtilityHeight: hubActiveUtilityHeight,
+                                     hubWidgetsHeight: hubWidgetsHeight)
     }
 
     /// The AI page is as tall as the cards it shows; nil while the logs are

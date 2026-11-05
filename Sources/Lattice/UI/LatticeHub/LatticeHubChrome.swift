@@ -119,17 +119,12 @@ extension LatticeHubView {
     }
 
     var updateTooltip: String {
-        #if LATTICE_DEVELOPMENT
-        let version = "2.1.0"
-        return "\(l10n.s.updateBannerTitle): \(version)"
-        #else
         switch updates.state {
         case let .available(version):
             return "\(l10n.s.updateBannerTitle): \(version)"
         default:
             return l10n.s.updateBannerTitle
         }
-        #endif
     }
 
     var pinButton: some View {

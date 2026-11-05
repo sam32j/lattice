@@ -37,6 +37,9 @@ extension LatticeHubView {
         case .killProcess: return "xmark.octagon"
         case .wallpaper: return "rectangle.inset.filled.and.cursorarrow"
         case .deviceControls: return "slider.horizontal.3"
+        case .aiUsage: return "apple.intelligence"
+        case .watch: return "photo.badge.magnifyingglass"
+        case .system: return "gauge.with.dots.needle.50percent"
         }
     }
 
