@@ -36,7 +36,8 @@ extension NotchSettings {
             SettingsControlRow(title: opening.defaultPage) {
                 Picker(opening.defaultPage, selection: Binding(get: {
                     guard returnHome else { return "" }
-                    if homeModule == NotchModule.controls.rawValue || homeModule == NotchModule.mixer.rawValue {
+                    if homeModule == NotchModule.controls.rawValue || homeModule == NotchModule.mixer.rawValue
+                        || homeModule == NotchReopeningDestination.explore.rawValue {
                         return NotchModule.hub.rawValue
                     }
                     return NotchModule(rawValue: homeModule)?.rawValue
@@ -47,7 +48,6 @@ extension NotchSettings {
                     if returnHome { homeModule = value }
                 })) {
                     Text(editor.lastPage).tag("")
-                    Text(text.sectionsTitle).tag(NotchReopeningDestination.explore.rawValue)
                     Text(NotchModule.hub.title(l10n.language)).tag(NotchModule.hub.rawValue)
                         .disabled(!NotchSupport.modules().contains(.hub))
                     Text(text.panel).tag(NotchReopeningDestination.appPanel.rawValue)

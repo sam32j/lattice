@@ -170,7 +170,7 @@ struct NotchClipboardView: View {
 
     /// The page opens on the entry copied last, so Return pastes it and the
     /// arrows move from it. Typing filters it from the first key, as in
-    /// Explore: the field takes the focus while it is still hidden.
+    /// Hub: the field takes the focus while it is still hidden.
     private func appeared() {
         guard !preview else { return }
         highlightedID = searchHighlight(keeping: nil)

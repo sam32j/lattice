@@ -1854,7 +1854,7 @@ enum NotchSupport {
         isEnabled(in: defaults) && defaults.bool(forKey: DefaultsKey.notchShortcutEnabled)
     }
 
-    /// The primary Dynamic Island modules displayed in Explore and navigation.
+    /// The primary Dynamic Island modules displayed in navigation.
     /// Pure workflow utilities live in the Lattice Hub.
     static let rootModules: [NotchModule] = [
         .music, .system, .calendar,

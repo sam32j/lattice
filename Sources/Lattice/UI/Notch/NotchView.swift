@@ -528,14 +528,13 @@ struct NotchView: View {
 
     private var navigationTitle: String {
         let destination = service.reopeningDestination
-        return destination.appPanel || destination.sections
-            ? text.sectionsTitle : destination.module.title(l10n.language)
+        if destination.appPanel { return text.panel }
+        return destination.module.title(l10n.language)
     }
 
     private var navigationSymbol: String {
         let destination = service.reopeningDestination
         if destination.appPanel { return "square.grid.3x1.below.line.grid.1x2" }
-        if destination.sections { return "square.grid.3x1.below.line.grid.1x2" }
         return destination.module.symbol
     }
 
