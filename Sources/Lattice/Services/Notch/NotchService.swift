@@ -2112,10 +2112,10 @@ final class NotchService: ObservableObject {
         NSHapticFeedbackManager.defaultPerformer.perform(pattern, performanceTime: .now)
     }
 
-    /// Provides maximum tactile impulse by firing mactic-style level 6 actuation on Force Touch trackpads.
+    /// Provides gentle tactile impulse by firing level 3 actuation on Force Touch trackpads.
     func provideStrongHapticFeedback() {
         guard acceptsUserInteraction, NotchSupport.usesHapticFeedback() else { return }
-        TrackpadActuator.shared.actuate(waveform: 6)
+        TrackpadActuator.shared.actuate(waveform: 3)
         NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
     }
 
@@ -3769,6 +3769,13 @@ final class NotchService: ObservableObject {
             // The Command Bar inside the island reads its own keys, Escape included.
             if event.type == .keyDown, event.window === self.panel, self.showingCommandBar { return event }
             if event.type == .keyDown, event.window === self.panel {
+                let shortcutModifiers: NSEvent.ModifierFlags = [.command, .control, .option]
+                if event.keyCode == 49, !event.modifierFlags.intersection(shortcutModifiers).isEmpty {
+                    if !self.pinned, !self.keepsWorkingSurface {
+                        self.collapse()
+                    }
+                    return event
+                }
                 let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
                 if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "k" {
                     self.toggleSections()
@@ -3802,7 +3809,16 @@ final class NotchService: ObservableObject {
                     ? .rows(columns: NotchSupport.toolColumns)
                     : self.expandedGeometry.toolFlow(count: launcher.visibleItems.count,
                                                      controlsHeight: launcher.notchControlsHeight)
-                return launcher.handlePanelKey(event, flow: flow, isIsland: !launcher.isEditing)
+                let result = launcher.handlePanelKey(event, flow: flow, isIsland: !launcher.isEditing)
+                if !self.pinned, !self.keepsWorkingSurface,
+                   !event.modifierFlags.intersection([.command, .control, .option]).isEmpty {
+                    let key = Int(event.keyCode)
+                    let isTextEditing = key == 8 || key == 9 || key == 7 || key == 0 || key == 6
+                    if event.keyCode == 49 || (!isTextEditing && key != 43 && key != 13) {
+                        self.collapse()
+                    }
+                }
+                return result
             }
             if event.type == .keyDown, event.window === self.panel, event.keyCode == 53 {
                 // A level being typed in the mixer cancels on Escape by

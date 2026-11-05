@@ -59,8 +59,8 @@ final class TrackpadActuator {
     }
 
     /// Triggers a low-level haptic waveform on the Force Touch trackpad asynchronously.
-    /// Waveform 6 matches mactic's strong tap feedback.
-    func actuate(waveform: Int32 = 6) {
+    /// Waveform 3 provides a clean, gentle tap feedback.
+    func actuate(waveform: Int32 = 3) {
         guard isAvailable else { return }
         queue.async { [weak self] in
             self?.performActuation(waveform: waveform)

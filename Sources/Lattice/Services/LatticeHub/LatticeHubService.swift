@@ -20,7 +20,7 @@ final class LatticeHubService: ObservableObject {
         didSet {
             guard isEditing != oldValue else { return }
             if isEditing {
-                TrackpadActuator.shared.actuate(waveform: 6)
+                TrackpadActuator.shared.actuate(waveform: 3)
                 NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
             }
             editingPresentation.setEditing(isEditing, options: editingOptionsItem)

@@ -378,12 +378,7 @@ struct NotchView: View {
                 // offers the same actions either way.
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 6) { items.trailing; trailingSections(band); updateControl(band); pinMark }
-                    if service.selected != .hub {
-                        HStack(spacing: 6) {
-                            items.trailing; trailingSections(band)
-                            NotchUpdateControl(action: service.showUpdate, compact: true); pinMark
-                        }
-                    }
+                    HStack(spacing: 6) { items.trailing; trailingSections(band); updateControl(band) }
                     HStack(spacing: 6) { items.trailing; trailingSections(band); pinMark }
                     HStack(spacing: 6) { items.trailing; trailingSections(band) }
                 }
@@ -409,9 +404,7 @@ struct NotchView: View {
     }
 
     @ViewBuilder private func updateControl(_ band: NotchBand) -> some View {
-        if service.selected != .hub {
-            NotchUpdateControl(action: service.showUpdate, compact: band.besideCamera)
-        }
+        EmptyView()
     }
 
     /// A kept-open island says so, and one click lets it go.
