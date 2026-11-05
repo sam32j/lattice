@@ -81,6 +81,7 @@ enum NotchKeyMonitorTests {
         var windowHost: Host? = Host()
         var modules = NotchModule.allCases
         var selected = NotchModule.controls
+        var pinned = false
         var expanded = true
         var peeking = false
         var showingAppPanel = false
@@ -104,6 +105,7 @@ enum NotchKeyMonitorTests {
         func handleScratchpadKey(_ event: NSEvent) -> Bool { false }
         func handleClipboardPasteKey(_ event: NSEvent) -> Bool { false }
         func ownsWindow(_ window: Panel?) -> Bool { window === panel }
+        func pointerOverChildWindow(_ point: CGPoint) -> Bool { false }
     }
 
     static func run(_ suite: TestSuite) {

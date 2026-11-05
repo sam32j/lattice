@@ -126,6 +126,7 @@ enum NotchScreenRefreshContract {
         var panel: Panel? = Panel()
         var windowHost: Host? = Host()
         var modules: [NotchModule] = [.controls]
+        var selected = NotchModule.controls
         var pinned = false
         var keepsWorkingSurface = false
         var openedByHover = false

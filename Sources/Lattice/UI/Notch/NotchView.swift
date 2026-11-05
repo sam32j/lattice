@@ -607,8 +607,18 @@ struct NotchView: View {
                     .notchBand(leading: { NotchCameraChooser() }, trailing: { NotchCameraStopButton() })
             case .notifications:
                 NotchNotificationsView(size: pageSize)
-                    .notchBand(trailing: { NotchClearNotificationsButton() })
-            case .downloads: NotchDownloadsView(size: pageSize)
+                    .notchBand(leading: {
+                        NotchBandBackButton(title: NotchModule.notifications.title(l10n.language)) {
+                            service.select(.hub)
+                        }
+                    }, trailing: { NotchClearNotificationsButton() })
+            case .downloads:
+                NotchDownloadsView(size: pageSize)
+                    .notchBand(leading: {
+                        NotchBandBackButton(title: NotchModule.downloads.title(l10n.language)) {
+                            service.select(.hub)
+                        }
+                    })
             case .calendar: NotchCalendarView(size: pageSize)
             case .controls: NotchControlsView(service: service, size: pageSize)
             case .mixer: NotchMixerView(size: pageSize)

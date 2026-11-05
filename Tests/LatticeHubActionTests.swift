@@ -197,11 +197,9 @@ enum LatticeHubContract {
         DispatchQueue.main.drain()
         events.removeAll()
         DispatchQueue.main.jobs.removeAll()
-        suite.expect(launcher.handlePanelKey(NSEvent(keyCode: UInt16(kVK_ANSI_Keypad1))) == nil
-                     && events == ["hide"],
-                     "the numeric keypad's 1 activates the first item like the top row's")
-        DispatchQueue.main.drain()
-        suite.expect(events == ["hide", "screenshot.capture"], "keypad activates the first item")
+        suite.expect(launcher.handlePanelKey(NSEvent(keyCode: UInt16(kVK_ANSI_Keypad1))) != nil
+                     && events.isEmpty,
+                     "numeric keys no longer activate items directly")
         for item in [LatticeHubItem.urlCleaner, .homebrew, .uninstaller, .media] {
             launcher.activeUtility = item
             launcher.prepareForPresentation()
