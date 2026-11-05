@@ -51,7 +51,7 @@ struct LatticeHubHostedUtility: View {
                     case .wallpaper:
                         WallpaperSection(collapsible: false, showHeader: false, onClose: onClose)
                     case .videoDownloader:
-                        NotchVideoDownloaderView(size: CGSize(width: notchSize?.width ?? 420, height: notchSize?.height ?? 470))
+                        NotchVideoDownloaderView(size: CGSize(width: notchSize?.width ?? 388, height: notchSize?.height ?? 470))
                     default:
                         EmptyView()
                     }

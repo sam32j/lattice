@@ -36,10 +36,10 @@ struct NotchVideoDownloaderView: View {
                 }
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, size.width < 400 ? 0 : 12)
         .padding(.top, 6)
         .padding(.bottom, 6)
-        .frame(width: size.width, alignment: .top)
+        .frame(maxWidth: .infinity, alignment: .top)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: downloader.info != nil)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: downloader.isDownloading)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: downloader.output != nil)

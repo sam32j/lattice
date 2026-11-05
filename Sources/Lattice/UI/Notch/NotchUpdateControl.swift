@@ -9,19 +9,21 @@ struct NotchUpdateControl: View {
     @ObservedObject private var updates = UpdateService.shared
     let action: () -> Void
     var compact = false
+    var title: String? = nil
     @ObservedObject private var l10n = L10n.shared
 
     @ViewBuilder var body: some View {
         switch updates.state {
         case let .available(version):
             let tint: Color = UpdateServiceSupport.SemanticVersion(raw: version)?.isPrerelease == true ? .orange : .blue
+            let titleText = title ?? l10n.s.updateBannerAction
             let title = "\(l10n.s.updateBannerTitle), \(l10n.s.versionPrefix) \(version)"
             Button(action: action) {
                 Group {
                     if compact {
                         Image(systemName: "arrow.down.circle.fill")
                     } else {
-                        Label(l10n.s.updateBannerAction, systemImage: "arrow.down.circle.fill")
+                        Label(titleText, systemImage: "arrow.down.circle.fill")
                     }
                 }
                 .font(.system(size: 11, weight: .semibold))
@@ -43,13 +45,14 @@ struct NotchUpdateControl: View {
             #if LATTICE_DEVELOPMENT
             let version = "2.1.0"
             let tint: Color = .blue
+            let titleText = title ?? l10n.s.updateBannerAction
             let title = "\(l10n.s.updateBannerTitle), \(l10n.s.versionPrefix) \(version)"
             Button(action: action) {
                 Group {
                     if compact {
                         Image(systemName: "arrow.down.circle.fill")
                     } else {
-                        Label(l10n.s.updateBannerAction, systemImage: "arrow.down.circle.fill")
+                        Label(titleText, systemImage: "arrow.down.circle.fill")
                     }
                 }
                 .font(.system(size: 11, weight: .semibold))

@@ -3,6 +3,59 @@
 
 import SwiftUI
 
+struct HubHeaderButtonStyle: ButtonStyle {
+    var isSelected: Bool = false
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(isSelected || configuration.isPressed ? Color.accentColor : Color.secondary)
+            .opacity(configuration.isPressed ? 0.75 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
+            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+struct HubToolsMenuButton: View {
+    let customizationText: HubCustomizationStrings
+    @ObservedObject var launcher: LatticeHubService
+    let onOpenSettings: () -> Void
+    var appearance: NSAppearance? = nil
+
+    @State private var anchor = NotchMenuAnchor()
+    @State private var isMenuOpen = false
+
+    var body: some View {
+        Button {
+            anchor.popUp([
+                NotchMenuItem(
+                    title: customizationText.manageTools + "…",
+                    enabled: launcher.canManageTools,
+                    action: {
+                        withAnimation(.easeInOut(duration: 0.22)) { launcher.isEditing = true }
+                    }
+                ),
+                NotchMenuItem(
+                    title: customizationText.openSettings + "…",
+                    action: onOpenSettings
+                )
+            ], appearance: appearance)
+        } label: {
+            Image(systemName: isMenuOpen ? "gearshape.fill" : "gearshape")
+                .font(.system(size: 14, weight: .semibold))
+                .frame(width: 26, height: 26)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(HubHeaderButtonStyle(isSelected: isMenuOpen))
+        .background(NotchMenuAnchorView(anchor: anchor))
+        .onAppear {
+            anchor.onMenuOpenChanged = { open in
+                isMenuOpen = open
+            }
+        }
+        .help(customizationText.tools)
+        .accessibilityLabel(customizationText.toolsMenu)
+    }
+}
+
 extension LatticeHubView {
     var header: some View {
         VStack(spacing: 6) {
@@ -27,18 +80,25 @@ extension LatticeHubView {
                     if launcher.activeUtility != nil {
                         backButton
                     } else {
-                        closeButton
+                        HStack(spacing: 8) {
+                            toolsMenuButton
+                            if updateOffered {
+                                NotchUpdateControl(action: service.showUpdate,
+                                                   compact: false,
+                                                   title: l10n.language == .enUS ? "Update Available" : l10n.s.updateBannerTitle)
+                            }
+                        }
                     }
                     Spacer()
                     if launcher.activeUtility != nil {
-                        closeButton
                         pinButton
+                        closeButton
                     } else if launcher.isEditing {
                         pinButton
                         doneEditingButton
                     } else {
                         pinButton
-                        toolsMenuButton
+                        closeButton
                     }
                 }
             }
@@ -51,10 +111,9 @@ extension LatticeHubView {
         } label: {
             Image(systemName: launcher.isPinned ? "pin.fill" : "pin")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(launcher.isPinned ? Color.accentColor : Color.secondary)
                 .frame(width: 26, height: 26)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HubHeaderButtonStyle(isSelected: launcher.isPinned))
         .help(launcher.isPinned ? FeatureStrings.notch(l10n.language).unpin : FeatureStrings.notch(l10n.language).pin)
         .accessibilityLabel(launcher.isPinned ? FeatureStrings.notch(l10n.language).unpin : FeatureStrings.notch(l10n.language).pin)
     }
@@ -65,10 +124,9 @@ extension LatticeHubView {
         } label: {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
                 .frame(width: 26, height: 26)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HubHeaderButtonStyle(isSelected: true))
         .help(l10n.s.doneButton)
         .accessibilityLabel(l10n.s.doneButton)
     }
@@ -86,10 +144,9 @@ extension LatticeHubView {
         Button { launcher.hide() } label: {
             Image(systemName: "xmark.circle.fill")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.secondary)
                 .frame(width: 26, height: 26)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HubHeaderButtonStyle())
         .help(l10n.s.menuClose)
         .accessibilityLabel(l10n.s.menuClose)
     }
@@ -108,36 +165,20 @@ extension LatticeHubView {
         } label: {
             Image(systemName: "chevron.backward.circle.fill")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.secondary)
                 .frame(width: 26, height: 26)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HubHeaderButtonStyle())
         .help(l10n.s.navigationBack)
         .accessibilityLabel(l10n.s.navigationBack)
     }
 
     var toolsMenuButton: some View {
-        Menu {
-            Button(customizationText.manageTools + "…") {
-                withAnimation(.easeInOut(duration: 0.22)) { launcher.isEditing = true }
-            }
-            .disabled(!launcher.canManageTools)
-
-            Button(customizationText.openSettings + "…") {
-                openSettingsToTools()
-            }
-        } label: {
-            Image(systemName: "gearshape")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color.secondary)
-                .frame(width: 26, height: 26)
-                .contentShape(Rectangle())
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .help(customizationText.tools)
-        .accessibilityLabel(customizationText.toolsMenu)
+        HubToolsMenuButton(
+            customizationText: customizationText,
+            launcher: launcher,
+            onOpenSettings: openSettingsToTools,
+            appearance: NSAppearance(named: colorScheme == .light ? .aqua : .darkAqua)
+        )
     }
 
     var islandToolsMenuButton: some View {
