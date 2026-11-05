@@ -1298,7 +1298,9 @@ final class NotchService: ObservableObject {
     private func refreshModules() {
         let updated = NotchSupport.modules()
         if modules != updated { modules = updated }
-        let selection = modules.contains(selected) ? selected : modules.first ?? .controls
+        let current = (!NotchSupport.isTestHarness && (selected == .controls || selected == .mixer)) ? .hub : selected
+        let fallback = (!NotchSupport.isTestHarness && modules.contains(.hub)) ? .hub : (modules.first ?? .controls)
+        let selection = modules.contains(current) ? current : fallback
         if selected != selection { selected = selection }
         if let selectedMetric, !metricIsAvailable(selectedMetric) { self.selectedMetric = nil }
     }
@@ -1501,7 +1503,8 @@ final class NotchService: ObservableObject {
         guard let panel else { return }
         let reopening = reopeningDestination
         let useReopeningSurface = module == nil && !expanded && !appPanel && !sections && metric == nil
-        let destination = module.flatMap { modules.contains($0) ? $0 : nil } ?? reopening.module
+        let targetModule = module.map { (!NotchSupport.isTestHarness && ($0 == .controls || $0 == .mixer)) ? .hub : $0 }
+        let destination = targetModule.flatMap { modules.contains($0) ? $0 : nil } ?? reopening.module
         let appPanel = appPanel || (useReopeningSurface && reopening.appPanel)
         let sections = NotchSupport.isTestHarness ? (sections || (useReopeningSurface && reopening.sections)) : false
         if useReopeningSurface && reopening.appPanel { MenuPanelFocus.shared.showNormalPanel() }
@@ -2040,13 +2043,14 @@ final class NotchService: ObservableObject {
     }
 
     func select(_ module: NotchModule) {
-        guard modules.contains(module) else { return }
-        if module != .captures, captureContent != nil {
+        let target = (!NotchSupport.isTestHarness && (module == .controls || module == .mixer)) ? .hub : module
+        guard modules.contains(target) else { return }
+        if target != .captures, captureContent != nil {
             let close = captureClose
             clearCapture()
             close?()
         }
-        open(module)
+        open(target)
     }
 
     /// The pad lives in the island when its page is on; otherwise the

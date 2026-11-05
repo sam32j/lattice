@@ -69,16 +69,6 @@ final class DiskProtectionService: ObservableObject {
         DispatchQueue.main.async {
             self.states[disk.id] = .ejecting
         }
-#if LATTICE_DEVELOPMENT
-        if disk.id.hasPrefix("/mock/") {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                DiskSampler.ejectMockDisk(id: disk.id)
-                self.complete(diskID: disk.id, state: .ready)
-                SystemMonitor.shared.refreshNow()
-            }
-            return
-        }
-#endif
         let volumeURL = URL(fileURLWithPath: disk.mountPath)
         DispatchQueue.global(qos: .utility).async {
             do {

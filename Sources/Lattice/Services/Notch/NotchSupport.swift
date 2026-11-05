@@ -91,6 +91,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
     func isAvailable(in defaults: UserDefaults = .standard) -> Bool {
         switch self {
         case .controls, .music: return true
+        case .hub: return NotchSupport.isTestHarness ? AppFeature.quickLauncher.isAvailable(in: defaults) : true
         case .videoDownloader: return defaults.bool(forKey: DefaultsKey.videoDownloaderEnabled)
         case .snippets: return AppFeature.textSnippets.isAvailable(in: defaults)
         case .timer: return AppFeature.notchTimer.isAvailable(in: defaults)
@@ -99,7 +100,6 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case .notifications: return AppFeature.notchNotifications.isAvailable(in: defaults)
         case .calendar: return AppFeature.notchCalendar.isAvailable(in: defaults)
         case .mixer: return AppFeature.mixer.isAvailable(in: defaults)
-        case .hub: return AppFeature.quickLauncher.isAvailable(in: defaults)
         case .clipboard: return AppFeature.clipboardHistory.isAvailable(in: defaults)
         case .captures:
             return AppFeature.screenshot.isAvailable(in: defaults)
@@ -1882,6 +1882,9 @@ enum NotchSupport {
             .split(separator: ",").compactMap { NotchModule(rawValue: String($0)) }
         var seen = Set<NotchModule>()
         return (stored + NotchModule.allCases).filter {
+            if !NotchSupport.isTestHarness && ($0 == .controls || $0 == .mixer) {
+                return false
+            }
             let isHidden = hidden.contains($0.rawValue) || ($0 == .hub && hidden.contains("tools"))
             return seen.insert($0).inserted && !isHidden && $0.isAvailable(in: defaults)
                 && ($0 != .timer || defaults.bool(forKey: DefaultsKey.notchTimerEnabled))

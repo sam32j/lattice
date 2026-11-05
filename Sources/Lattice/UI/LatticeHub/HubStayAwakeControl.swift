@@ -51,6 +51,7 @@ struct HubStayAwakeControl: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .focusable(false)
                 .accessibilityLabel(awake.isActive ? text.stop : text.startHour)
                 .accessibilityValue(status)
 
@@ -65,6 +66,7 @@ struct HubStayAwakeControl: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .focusable(false)
                 .accessibilityLabel(text.options)
                 .accessibilityValue(showingOptions ? text.open : text.closed)
                 .popover(isPresented: $showingOptions, arrowEdge: .bottom) {

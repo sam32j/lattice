@@ -40,12 +40,6 @@ final class USBDeviceSampler {
             scan(className: kIOUSBDeviceClassName)
         }
 
-#if LATTICE_DEVELOPMENT
-        if !NotchSupport.isTestHarness {
-            devices.append(contentsOf: Self.mockConnectedDevices)
-        }
-#endif
-
         return Self.deduplicated(devices).sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
@@ -140,43 +134,4 @@ final class USBDeviceSampler {
             locationId: locationIdNumber
         )
     }
-
-#if LATTICE_DEVELOPMENT
-    static var mockConnectedDevices: [ConnectedUSBDevice] {
-        [
-            ConnectedUSBDevice(
-                id: "mock-usb-samsung-t7",
-                name: "Samsung Portable SSD T7",
-                vendorName: "Samsung Electronics Co., Ltd.",
-                vendorId: 0x04e8,
-                productId: 0x61f5,
-                locationId: 0x01100000
-            ),
-            ConnectedUSBDevice(
-                id: "mock-usb-seagate-hdd",
-                name: "Seagate Expansion HDD",
-                vendorName: "Seagate Technology LLC",
-                vendorId: 0x0bc2,
-                productId: 0x231a,
-                locationId: 0x01200000
-            ),
-            ConnectedUSBDevice(
-                id: "mock-usb-focusrite-audio",
-                name: "Scarlett 2i2 USB",
-                vendorName: "Focusrite Audio Engineering",
-                vendorId: 0x1235,
-                productId: 0x8210,
-                locationId: 0x01300000
-            ),
-            ConnectedUSBDevice(
-                id: "mock-usb-logitech-cam",
-                name: "Logitech Brio 4K Stream Edition",
-                vendorName: "Logitech, Inc.",
-                vendorId: 0x046d,
-                productId: 0x085e,
-                locationId: 0x01400000
-            )
-        ]
-    }
-#endif
 }

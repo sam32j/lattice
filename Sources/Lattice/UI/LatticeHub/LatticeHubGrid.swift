@@ -128,6 +128,7 @@ struct HubToolCellView: View {
 
         return Button(action: onTap) { tileContent }
             .buttonStyle(.plain)
+            .focusable(false)
             .contextMenu {
                 if isEditing {
                     Button(customizationText.hideFromHub) { onHide() }

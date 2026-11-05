@@ -71,6 +71,12 @@ extension LatticeHubView {
                         .lineLimit(1)
                         .frame(height: 30)
                         .frame(maxWidth: .infinity, alignment: .center)
+                } else {
+                    BrandMark(width: 52, tint: colorScheme == .light ? Color(white: 0.03) : .white)
+                        .frame(height: 30)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .accessibilityHidden(true)
+                        .allowsHitTesting(false)
                 }
                 HStack(spacing: 6) {
                     if launcher.activeUtility != nil {
