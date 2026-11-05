@@ -72,11 +72,6 @@ final class DiskSampler {
                                      totalReadBytes: rates.totalRead,
                                      totalWrittenBytes: rates.totalWritten)
         }
-#if LATTICE_DEVELOPMENT
-        if !NotchSupport.isTestHarness {
-            devices.append(contentsOf: Self.activeMockDisks)
-        }
-#endif
         return DiskReading(devices: devices.sorted(by: sortVolumes))
     }
 
@@ -453,82 +448,4 @@ final class DiskSampler {
         IORegistryEntryCreateCFProperty(entry, key as CFString, kCFAllocatorDefault, 0)?
             .takeRetainedValue()
     }
-
-#if LATTICE_DEVELOPMENT
-    private static var ejectedMockDiskIDs: Set<String> = []
-
-    static func ejectMockDisk(id: String) {
-        ejectedMockDiskIDs.insert(id)
-    }
-
-    static var activeMockDisks: [DiskDeviceReading] {
-        let allMocks: [DiskDeviceReading] = [
-            DiskDeviceReading(
-                id: "/mock/volumes/samsung-t7-ssd",
-                name: "Samsung T7 Shield SSD",
-                mountPath: "/Volumes/Samsung T7 SSD",
-                volumeUUID: "MOCK-UUID-SAMSUNG-T7-SSD",
-                bsdName: "disk4s1",
-                wholeDisk: "disk4",
-                ioCounterID: "disk4",
-                fileSystem: "APFS",
-                totalBytes: 1_000_204_886_016,
-                freeBytes: 580_204_886_016,
-                purgeableBytes: nil,
-                usedBytes: 420_000_000_000,
-                isInternal: false,
-                isRemovable: true,
-                isEjectable: true,
-                smart: DiskSMARTReading(
-                    status: "Verified",
-                    totalReadBytes: 1_420_000_000_000,
-                    totalWrittenBytes: 890_000_000_000,
-                    temperatureCelsius: 29.0,
-                    healthPercent: 100,
-                    powerCycles: 45,
-                    powerOnHours: 320,
-                    unsafeShutdowns: 0,
-                    mediaErrors: 0
-                ),
-                readBytesPerSec: 245_000_000,
-                writeBytesPerSec: 180_000_000,
-                totalReadBytes: 1_420_000_000_000,
-                totalWrittenBytes: 890_000_000_000
-            ),
-            DiskDeviceReading(
-                id: "/mock/volumes/seagate-expansion-hdd",
-                name: "Seagate Expansion HDD",
-                mountPath: "/Volumes/Seagate HDD",
-                volumeUUID: "MOCK-UUID-SEAGATE-EXPANSION-HDD",
-                bsdName: "disk3s1",
-                wholeDisk: "disk3",
-                ioCounterID: "disk3",
-                fileSystem: "ExFAT",
-                totalBytes: 2_000_398_934_016,
-                freeBytes: 760_398_934_016,
-                purgeableBytes: nil,
-                usedBytes: 1_240_000_000_000,
-                isInternal: false,
-                isRemovable: true,
-                isEjectable: true,
-                smart: DiskSMARTReading(
-                    status: "Verified",
-                    totalReadBytes: 5_240_000_000_000,
-                    totalWrittenBytes: 3_890_000_000_000,
-                    temperatureCelsius: 34.0,
-                    healthPercent: 98,
-                    powerCycles: 180,
-                    powerOnHours: 1420,
-                    unsafeShutdowns: 2,
-                    mediaErrors: 0
-                ),
-                readBytesPerSec: 12_500_000,
-                writeBytesPerSec: 34_200_000,
-                totalReadBytes: 5_240_000_000_000,
-                totalWrittenBytes: 3_890_000_000_000
-            )
-        ]
-        return allMocks.filter { !ejectedMockDiskIDs.contains($0.id) }
-    }
-#endif
 }

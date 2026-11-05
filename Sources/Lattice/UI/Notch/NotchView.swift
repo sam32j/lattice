@@ -400,7 +400,7 @@ struct NotchView: View {
 
     /// A kept-open island says so, and one click lets it go.
     @ViewBuilder private var pinMark: some View {
-        if service.selected != .hub, service.pinned {
+        if service.selected != .hub, service.selected != .controls, service.selected != .mixer, service.pinned {
             NotchIconButton(symbol: "pin.fill", title: text.unpin, selected: true) { service.pinned = false }
         }
     }
@@ -422,7 +422,7 @@ struct NotchView: View {
                     service.select(.hub)
                 }
             }
-        } else if service.selected != .hub {
+        } else if service.selected != .hub, service.selected != .controls, service.selected != .mixer {
             NotchBandBackButton(title: "Home") {
                 service.select(.hub)
             }
