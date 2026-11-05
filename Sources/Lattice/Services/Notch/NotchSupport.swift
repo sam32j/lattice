@@ -1854,12 +1854,22 @@ enum NotchSupport {
     /// The primary Dynamic Island modules displayed in Explore and navigation.
     /// Pure workflow utilities live in the Lattice Hub.
     static let rootModules: [NotchModule] = [
-        .controls, .mixer, .music, .system, .calendar, .notifications,
-        .timer, .downloads, .agents, .watch, .hub
+        .music, .system, .calendar,
+        .timer, .agents, .watch, .hub
     ]
 
     static func isExploreModule(_ module: NotchModule) -> Bool {
         rootModules.contains(module)
+    }
+
+    /// Modules available in the Dynamic Island's Widgets section in Settings.
+    static let widgetModules: [NotchModule] = [
+        .music, .system, .calendar, .notifications,
+        .timer, .downloads, .agents, .watch, .hub
+    ]
+
+    static func isWidgetModule(_ module: NotchModule) -> Bool {
+        widgetModules.contains(module)
     }
 
     static func modules(in defaults: UserDefaults = .standard) -> [NotchModule] {
@@ -2781,7 +2791,7 @@ struct NotchGeometry: Equatable {
                     break
                 }
                 if let utilityHeight = hubActiveUtilityHeight {
-                    contentHeight = min(pageBudget, utilityHeight)
+                    contentHeight = utilityHeight
                     break
                 }
                 guard let toolCount else { contentHeight = pageBudget; break }

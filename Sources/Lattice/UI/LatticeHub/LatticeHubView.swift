@@ -139,6 +139,8 @@ struct LatticeHubView: View {
         .onChange(of: launcher.visibleControls.count) { _, _ in refreshIslandLayout() }
         .onChange(of: launcher.hiddenControls.count) { _, _ in refreshIslandLayout() }
         .onChange(of: appUpdates.items.count) { _, _ in refreshIslandLayout() }
+        .onChange(of: DeviceControlsNavigationState.shared.contentHeight) { _, _ in refreshIslandLayout() }
+        .onChange(of: DeviceControlsNavigationState.shared.currentSubpage) { _, _ in refreshIslandLayout() }
         .onDisappear { dragSession.cancel() }
     }
 

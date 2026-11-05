@@ -4,27 +4,8 @@ import EventKit
 extension NotchSettings {
     @ViewBuilder func moduleOptions(_ module: NotchModule) -> some View {
         switch module {
-        case .controls:
-            let primary = [NotchControlItem.music, .volume, .brightness, .keyboardLight]
-            HStack(spacing: 10) {
-                ForEach(primary) { item in
-                    toggleCard(item.title(l10n), symbol: item.symbol, value: controlBinding(item), available: item.isAvailable(),
-                               reason: controlReason(item), reservesReason: !primary.allSatisfy { $0.isAvailable() },
-                               unavailableAction: controlUnavailableAction(item))
-                }
-            }
-            Text(text.controlShortcuts).font(.subheadline.weight(.medium))
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), spacing: 8)], spacing: 8) {
-                ForEach(orderedShortcuts) { item in
-                    PanelReorderableItem(item: item,
-                        order: Binding(get: { orderedShortcuts }, set: { controlOrder = $0.map(\.rawValue).joined(separator: ",") }),
-                        dragging: $draggingControl) {
-                        toggleCard(item.title(l10n), symbol: item.symbol, value: controlBinding(item), available: item.isAvailable(),
-                                   reason: controlReason(item), reservesReason: !orderedShortcuts.allSatisfy { $0.isAvailable() },
-                                   unavailableAction: controlUnavailableAction(item))
-                    }
-                }
-            }
+        case .controls, .mixer, .system, .hub:
+            EmptyView()
         case .music:
             musicModuleOptions
         case .notifications:
@@ -91,8 +72,6 @@ extension NotchSettings {
             VideoDownloaderDestinationRow()
         case .snippets:
             destination(FeatureStrings.snippets(l10n.language).pageTitle, symbol: "text.append", value: $snippetsWindow, available: AppFeature.textSnippets.isAvailable)
-        case .mixer, .system, .hub:
-            EmptyView()
         }
     }
 

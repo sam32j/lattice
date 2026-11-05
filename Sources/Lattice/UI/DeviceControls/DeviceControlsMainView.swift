@@ -153,7 +153,7 @@ struct DeviceControlsMainView: View {
     private func brightnessBinding(_ display: BrightnessDisplay) -> Binding<Double> {
         Binding(
             get: { display.brightness },
-            set: { brightness.setBrightness($0, for: display.id) }
+            set: { brightness.setBrightness($0, for: display.id, announces: false) }
         )
     }
 
@@ -253,6 +253,7 @@ struct DeviceControlsMainView: View {
         HStack(spacing: 8) {
             Button {
                 if let muted = mixer.systemOutputMuted {
+                    NotchService.shared.noteOwnLevelAdjustment(.volume)
                     mixer.requestOutputAdjustment(muted: !muted)
                 }
             } label: {
@@ -386,7 +387,10 @@ struct DeviceControlsMainView: View {
     private var systemOutputVolumeBinding: Binding<Double> {
         Binding(
             get: { mixer.systemOutputVolume ?? 0 },
-            set: { mixer.setCurrentOutputVolume($0) }
+            set: {
+                NotchService.shared.noteOwnLevelAdjustment(.volume)
+                mixer.setCurrentOutputVolume($0)
+            }
         )
     }
 

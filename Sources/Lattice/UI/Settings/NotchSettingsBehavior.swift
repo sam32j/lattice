@@ -38,7 +38,7 @@ extension NotchSettings {
                     guard returnHome else { return "" }
                     return NotchModule(rawValue: homeModule)?.rawValue
                         ?? NotchReopeningDestination(rawValue: homeModule)?.rawValue
-                        ?? NotchModule.controls.rawValue
+                        ?? NotchModule.hub.rawValue
                 }, set: { value in
                     returnHome = !value.isEmpty
                     if returnHome { homeModule = value }

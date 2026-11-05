@@ -14,6 +14,8 @@ final class DeviceControlsNavigationState: ObservableObject {
     }
 
     @Published var currentSubpage: Subpage = .main
+    /// Measured content height of the active Device Controls subpage to fit perfectly in the Dynamic Island.
+    @Published var contentHeight: CGFloat = 430
     /// Inactive applications are hidden by default on a fresh session.
     /// Preserved while navigating between Device Controls and App Volumes in the same session.
     @Published var showInactiveApps: Bool = false

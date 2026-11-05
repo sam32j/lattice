@@ -14,6 +14,8 @@ struct LatticeHubHostedUtility: View {
             return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count)
         case .videoDownloader:
             return 172
+        case .deviceControls:
+            return DeviceControlsNavigationState.shared.contentHeight
         default:
             return 470
         }

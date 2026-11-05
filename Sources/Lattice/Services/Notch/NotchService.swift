@@ -948,6 +948,8 @@ final class NotchService: ObservableObject {
             return AppUpdatesListView.compactUtilityHeight(itemCount: AppUpdatesService.shared.items.count)
         case .videoDownloader:
             return 172
+        case .deviceControls:
+            return DeviceControlsNavigationState.shared.contentHeight
         default:
             return nil
         }
@@ -2417,6 +2419,7 @@ final class NotchService: ObservableObject {
     }
 
     func showBrightness(_ level: Double) -> Bool {
+        if ownsLevelAdjustment(.brightness) { return true }
         let text = FeatureStrings.notch(L10n.shared.language)
         return show(NotchNotice(event: .brightness, title: text.brightness,
                                 detail: "\(BrightnessSupport.wholePercent(level))%",
@@ -4386,8 +4389,17 @@ final class NotchService: ObservableObject {
         ownLevelAdjustmentUntil[event] = ProcessInfo.processInfo.systemUptime + 1
     }
 
+    func noteDeviceControlsSuppression(active: Bool) {
+        let until: TimeInterval = active ? .infinity : 0
+        for event in [NotchEvent.volume, .brightness, .keyboardLight] {
+            ownLevelAdjustmentUntil[event] = until
+        }
+    }
+
     private func ownsLevelAdjustment(_ event: NotchEvent) -> Bool {
-        expanded && ProcessInfo.processInfo.systemUptime < ownLevelAdjustmentUntil[event, default: 0]
+        let until = ownLevelAdjustmentUntil[event, default: 0]
+        if until == .infinity { return true }
+        return expanded && ProcessInfo.processInfo.systemUptime < until
     }
 
     /// The Command Bar borrows a Latin layout while it is up and gives it
