@@ -3858,6 +3858,7 @@ final class NotchService: ObservableObject {
         panel?.handleScroll = { [weak self] event in self?.handleScroll(event) ?? false }
         panel?.handleIndirectTouches = { [weak self] event, view in
             guard let self else { return false }
+            guard self.selected == .music || self.selected == .captures else { return false }
             self.panel?.acceptsKeyFocus = true
             if self.panel?.isKeyWindow != true { self.panel?.makeKey() }
             let music = self.musicSwipe.handle(event, in: view, enabled: self.musicSwipeEnabled(event), expanded: self.expanded)

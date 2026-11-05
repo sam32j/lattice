@@ -22,7 +22,7 @@ enum HorizontalWheelScrolling {
     /// Scrolls the strip under the pointer sideways and reports whether the
     /// event was used.
     static func handle(_ event: NSEvent) -> Bool {
-        guard event.type == .scrollWheel, let cgEvent = event.cgEvent else { return false }
+        guard event.type == .scrollWheel, !event.hasPreciseScrollingDeltas, let cgEvent = event.cgEvent else { return false }
         let traits = ScrollWheelEventTraits(
             isContinuous: cgEvent.getIntegerValueField(.scrollWheelEventIsContinuous) != 0,
             momentumPhase: cgEvent.getIntegerValueField(.scrollWheelEventMomentumPhase),
