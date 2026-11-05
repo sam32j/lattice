@@ -193,6 +193,8 @@ extension Strings {
         switcherMaxColumnsAuto: "Auto",
         switcherInstantSelection: "Sélection instantanée",
         switcherInstantSelectionCaption: "Déplace immédiatement la surbrillance et fait défiler la liste pendant la navigation entre les apps et les fenêtres.",
+        switcherIgnoreHoverSelection: "Ignorer la sélection au survol",
+        switcherIgnoreHoverSelectionCaption: "Déplacer le pointeur sur les apps et les fenêtres laisse la surbrillance en place. Un clic ouvre toujours l’élément.",
         switcherMergeTabs: "Regrouper les fenêtres par app",
         switcherMergeTabsCaption: "Une entrée par app au lieu d’une par fenêtre.",
         switcherWindowlessApps: "Masquer les apps sans fenêtre",

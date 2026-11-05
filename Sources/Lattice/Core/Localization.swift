@@ -359,6 +359,8 @@ struct Strings {
     let switcherMaxColumnsAuto: String
     let switcherInstantSelection: String
     let switcherInstantSelectionCaption: String
+    let switcherIgnoreHoverSelection: String
+    let switcherIgnoreHoverSelectionCaption: String
     let switcherMergeTabs: String
     let switcherMergeTabsCaption: String
     let switcherWindowlessApps: String
@@ -1313,6 +1315,8 @@ extension Strings {
         switcherMaxColumnsAuto: "Automático",
         switcherInstantSelection: "Seleção instantânea",
         switcherInstantSelectionCaption: "Move o destaque e a rolagem imediatamente ao navegar por apps e janelas.",
+        switcherIgnoreHoverSelection: "Ignorar seleção ao passar o cursor",
+        switcherIgnoreHoverSelectionCaption: "Mover o ponteiro sobre apps e janelas deixa o destaque onde está. Clicar ainda abre um.",
         switcherMergeTabs: "Agrupar janelas por app",
         switcherMergeTabsCaption: "Uma entrada por app em vez de uma por janela.",
         switcherWindowlessApps: "Ocultar apps sem janelas",
@@ -2228,6 +2232,8 @@ extension Strings {
         switcherMaxColumnsAuto: "Auto",
         switcherInstantSelection: "Instant selection",
         switcherInstantSelectionCaption: "Moves the highlight and scroll position immediately as you browse apps and windows.",
+        switcherIgnoreHoverSelection: "Ignore hover selection",
+        switcherIgnoreHoverSelectionCaption: "Moving the pointer over apps and windows leaves the highlight where it is. Clicking still opens one.",
         switcherMergeTabs: "Group windows by app",
         switcherMergeTabsCaption: "One entry per app instead of one per window.",
         switcherWindowlessApps: "Hide apps without windows",

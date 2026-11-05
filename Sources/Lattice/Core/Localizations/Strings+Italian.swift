@@ -193,6 +193,8 @@ extension Strings {
         switcherMaxColumnsAuto: "Auto",
         switcherInstantSelection: "Selezione istantanea",
         switcherInstantSelectionCaption: "Sposta subito l’evidenziazione e scorre l’elenco mentre navighi tra app e finestre.",
+        switcherIgnoreHoverSelection: "Ignora la selezione al passaggio",
+        switcherIgnoreHoverSelectionCaption: "Spostare il puntatore su app e finestre lascia l’evidenziazione dov’è. Un clic apre comunque un elemento.",
         switcherMergeTabs: "Raggruppa finestre per app",
         switcherMergeTabsCaption: "Una voce per app invece di una per finestra.",
         switcherWindowlessApps: "Nascondi app senza finestre",

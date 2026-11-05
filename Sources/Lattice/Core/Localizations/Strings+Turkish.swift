@@ -193,6 +193,8 @@ extension Strings {
         switcherMaxColumnsAuto: "Otomatik",
         switcherInstantSelection: "Anında seçim",
         switcherInstantSelectionCaption: "Uygulamalar ve pencereler arasında gezinirken vurguyu ve kaydırma konumunu anında değiştirir.",
+        switcherIgnoreHoverSelection: "Hover ile seçmeyi kapat",
+        switcherIgnoreHoverSelectionCaption: "İmleç uygulamaların ve pencerelerin üzerinden geçerken vurgu yerinde kalır. Tıklamak yine açar.",
         switcherMergeTabs: "Pencereleri uygulamaya göre grupla",
         switcherMergeTabsCaption: "Her pencere yerine her uygulama için tek giriş.",
         switcherWindowlessApps: "Penceresiz uygulamaları gizle",

@@ -28,6 +28,7 @@ struct SwitcherSettingsSection: View {
     @AppStorage(DefaultsKey.switcherCurrentDisplayOnly) private var switcherCurrentDisplayOnly = false
     @AppStorage(DefaultsKey.switcherCurrentSpaceOnly) private var switcherCurrentSpaceOnly = false
     @AppStorage(DefaultsKey.switcherAppearanceDelay) private var switcherAppearanceDelay = SwitcherSupport.defaultAppearanceDelayMilliseconds
+    @AppStorage(DefaultsKey.switcherIgnoreHoverSelection) private var switcherIgnoreHoverSelection = false
 
     private var pages: SettingsPageStrings { FeatureStrings.settingsPages(l10n.language) }
     private var copy: SwitcherSettingsCopy { SwitcherSettingsCopy.text(l10n.language) }
@@ -152,6 +153,12 @@ struct SwitcherSettingsSection: View {
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .fixedSize()
+            }
+
+            SettingsControlRow(title: l10n.s.switcherIgnoreHoverSelection,
+                               caption: l10n.s.switcherIgnoreHoverSelectionCaption) {
+                Toggle(l10n.s.switcherIgnoreHoverSelection, isOn: $switcherIgnoreHoverSelection)
+                    .labelsHidden()
             }
         }
     }

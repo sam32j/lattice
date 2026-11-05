@@ -193,6 +193,8 @@ extension Strings {
         switcherMaxColumnsAuto: "Auto",
         switcherInstantSelection: "Selección instantánea",
         switcherInstantSelectionCaption: "Mueve el resaltado y desplaza la lista de inmediato al recorrer apps y ventanas.",
+        switcherIgnoreHoverSelection: "Ignorar la selección al pasar el cursor",
+        switcherIgnoreHoverSelectionCaption: "Mover el puntero sobre apps y ventanas deja el resaltado donde está. Un clic sigue abriendo uno.",
         switcherMergeTabs: "Agrupar ventanas por app",
         switcherMergeTabsCaption: "Una entrada por app en lugar de una por ventana.",
         switcherWindowlessApps: "Ocultar apps sin ventanas",

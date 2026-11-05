@@ -92,7 +92,7 @@ extension SettingsDirectory {
                                                      s.tabSwitcher,
                                                      SwitcherSettingsCopy.text(language).switchAppsShortcut,
                                                      SwitcherSettingsCopy.text(language).switchWindowsShortcut,
-                                                     s.switcherAppearanceDelay,
+                                                     s.switcherAppearanceDelay, s.switcherIgnoreHoverSelection,
                                                      s.switcherMinimizedPlacementLabel,
                                                      s.switcherScreenPlacementLabel,
                                                      s.switcherMergeTabs,

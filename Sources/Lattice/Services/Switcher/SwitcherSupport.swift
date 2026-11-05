@@ -943,6 +943,12 @@ enum SwitcherSupport {
         iconRowMode || simpleMode
     }
 
+    /// Hover follows the pointer unless that is turned off. Click, the keyboard
+    /// and an overflowing icon row's edge slide select through other paths.
+    static func hoverMovesSelection(ignoreHoverSelection: Bool) -> Bool {
+        !ignoreHoverSelection
+    }
+
     /// Whether a session draws window thumbnails. The window shortcut always
     /// opens the Window previews grid, whatever the layout: switching
     /// windows means seeing them. The layout choice shapes ⌘Tab alone.
