@@ -24,7 +24,7 @@ struct HubIslandWidgetSection: View {
                 id: .music,
                 symbol: "waveform.mid",
                 tint: .pink,
-                title: FeatureStrings.notch(l10n.language).music
+                title: "Now Playing"
             ))
         }
         if service.modules.contains(.calendar) {

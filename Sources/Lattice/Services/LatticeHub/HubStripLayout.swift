@@ -203,4 +203,31 @@ struct HubToolLayout: Equatable {
     }
 }
 
+// MARK: - Island Horizontal Paging Logic
+
+enum HubIslandPagingLogic {
+    static let slowThreshold: CGFloat = 100
+    static let flickMinDisplacement: CGFloat = 30
+    static let flickMinVelocity: CGFloat = 180
+
+    static func targetPage(
+        startPage: Int,
+        displacement: CGFloat,
+        velocity: CGFloat,
+        maxPage: Int,
+        slowThreshold: CGFloat = slowThreshold,
+        flickMinDisplacement: CGFloat = flickMinDisplacement,
+        flickMinVelocity: CGFloat = flickMinVelocity
+    ) -> Int {
+        if displacement >= slowThreshold || (displacement >= flickMinDisplacement && velocity > flickMinVelocity) {
+            return min(startPage + 1, maxPage)
+        } else if displacement <= -slowThreshold || (displacement <= -flickMinDisplacement && velocity < -flickMinVelocity) {
+            return max(startPage - 1, 0)
+        } else {
+            return startPage
+        }
+    }
+}
+
+
 

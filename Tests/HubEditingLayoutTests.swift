@@ -188,5 +188,23 @@ enum HubEditingLayoutTests {
 
         // 4. DoNotDisturbState
         suite.expect(DoNotDisturbState.shared.isActive == false || DoNotDisturbState.shared.isActive == true, "DND state is accessible")
+
+        // 5. HubIslandPagingLogic: at most 1 page per scroll/flick, 100px slow threshold, 30px+180pt/s flick threshold
+        suite.expect(HubIslandPagingLogic.targetPage(startPage: 0, displacement: 2, velocity: 200, maxPage: 2) == 0,
+                     "a 2px flick does not trigger a page scroll")
+        suite.expect(HubIslandPagingLogic.targetPage(startPage: 0, displacement: 40, velocity: 200, maxPage: 2) == 1,
+                     "a deliberate flick with sufficient displacement and velocity advances exactly 1 page")
+        suite.expect(HubIslandPagingLogic.targetPage(startPage: 0, displacement: 500, velocity: 2000, maxPage: 2) == 1,
+                     "a high momentum flick advances at most 1 page and never skips from 1 to 3")
+        suite.expect(HubIslandPagingLogic.targetPage(startPage: 0, displacement: 80, velocity: 0, maxPage: 2) == 0,
+                     "a slow swipe under 100px snaps back without advancing")
+        suite.expect(HubIslandPagingLogic.targetPage(startPage: 0, displacement: 100, velocity: 0, maxPage: 2) == 1,
+                     "a slow swipe of 100px advances to the next page")
+        suite.expect(HubIslandPagingLogic.targetPage(startPage: 1, displacement: -100, velocity: 0, maxPage: 2) == 0,
+                     "a slow swipe backward of 100px retreats to the previous page")
+        suite.expect(HubIslandPagingLogic.targetPage(startPage: 1, displacement: -40, velocity: -200, maxPage: 2) == 0,
+                     "a backward flick retreats exactly 1 page")
+        suite.expect(HubIslandPagingLogic.targetPage(startPage: 2, displacement: 150, velocity: 500, maxPage: 2) == 2,
+                     "paging clamps at the maximum page")
     }
 }
