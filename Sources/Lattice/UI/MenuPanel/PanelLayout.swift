@@ -77,7 +77,10 @@ enum PanelSectionID: String, CaseIterable, Identifiable, Hashable {
     }
 
     var isAvailable: Bool {
-        featureGate.contains(where: \.isAvailable)
+        switch self {
+        case .brightness, .mixer: return false // Retired from menu panel in favor of Lattice Hub
+        default: return featureGate.contains(where: \.isAvailable)
+        }
     }
 }
 
@@ -135,8 +138,7 @@ enum PanelLayout {
     /// from Settings rather than from an empty panel screen. The one rule the
     /// live panel and its preview in Settings both read.
     static func isVisibleInPanel(_ id: PanelSectionID) -> Bool {
-        guard id.isAvailable, isShown(id) else { return false }
-        return id != .brightness || defaults.bool(forKey: DefaultsKey.brightnessControlEnabled)
+        id.isAvailable && isShown(id)
     }
 
     static func isCollapsed(_ id: PanelSectionID) -> Bool {

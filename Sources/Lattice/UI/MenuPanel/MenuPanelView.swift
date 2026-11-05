@@ -72,21 +72,18 @@ struct MenuPanelView: View {
     @ObservedObject private var panelFocus = MenuPanelFocus.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage(DefaultsKey.monitorShowMixer) private var showMixer = true
     @AppStorage(DefaultsKey.monitorShowSystem) private var showSystem = true
     @AppStorage(DefaultsKey.monitorShowNetwork) private var showNetwork = true
     @AppStorage(DefaultsKey.monitorShowDisk) private var showDisk = true
     @AppStorage(DefaultsKey.monitorShowPower) private var showPower = true
     @AppStorage(DefaultsKey.panelShowFanControl) private var showFanControl = true
     @AppStorage(DefaultsKey.panelShowKeepAwake) private var showKeepAwake = true
-    @AppStorage(DefaultsKey.panelShowBrightness) private var showBrightness = true
-    @AppStorage(DefaultsKey.brightnessControlEnabled) private var brightnessEnabled = false
     @AppStorage(DefaultsKey.panelShowToggles) private var showToggles = true
     @AppStorage(DefaultsKey.panelSectionOrder) private var sectionOrderRaw = ""
     @State private var navigableContentHeight: CGFloat = 0
     @State private var metricContentHeight: CGFloat = 0
     @State private var updateBannerHeight: CGFloat = 0
-    @State private var selectedSection: PanelSectionID = PanelLayout.order.first ?? .brightness
+    @State private var selectedSection: PanelSectionID = PanelLayout.order.first ?? .system
     @State private var selectedMetric: MetricDetailKind?
     @FocusState private var focusedSection: PanelSectionID?
 
@@ -263,7 +260,7 @@ struct MenuPanelView: View {
 
     private var activeSection: PanelSectionID {
         let nonAction = visibleSections.filter { $0 != .toggles }
-        return nonAction.contains(selectedSection) ? selectedSection : (nonAction.first ?? .brightness)
+        return nonAction.contains(selectedSection) ? selectedSection : (nonAction.first ?? .system)
     }
 
     private var navigableScrollHeight: CGFloat {
@@ -293,8 +290,7 @@ struct MenuPanelView: View {
 
     private var estimatedNavigableContentHeight: CGFloat {
         switch activeSection {
-        case .brightness: return 140
-        case .mixer: return 250
+        case .brightness, .mixer: return 0
         case .system: return 460
         case .network: return 190
         case .disk: return 360
@@ -321,8 +317,6 @@ struct MenuPanelView: View {
     @ViewBuilder
     private func section(for id: PanelSectionID, collapsible: Bool = true) -> some View {
         switch id {
-        case .brightness: if showBrightness { BrightnessSection(collapsible: collapsible) }
-        case .mixer: if showMixer { mixerOrPrioritySection(collapsible: collapsible) }
         case .system:
             if showSystem {
                 SystemSection(collapsible: collapsible) {
@@ -339,24 +333,14 @@ struct MenuPanelView: View {
             if showFanControl, notchSize != nil || panelFocus.popoverIsVisible {
                 FanControlSection(collapsible: collapsible)
             }
-        case .toggles: EmptyView()
-        }
-    }
-
-    /// Shows the full mixer when installed, or the priority lists on their own.
-    @ViewBuilder
-    private func mixerOrPrioritySection(collapsible: Bool) -> some View {
-        if AppFeature.mixer.isAvailable {
-            MixerSection(collapsible: collapsible)
-        } else {
-            AudioPrioritySection(collapsible: collapsible)
+        case .toggles, .brightness, .mixer: EmptyView()
         }
     }
 
     /// The rule lives in PanelLayout; reading the @AppStorage values here is
     /// what keeps the tabs refreshing when Settings flips one of them.
     private func isSectionVisible(_ id: PanelSectionID) -> Bool {
-        _ = (showKeepAwake, showBrightness, brightnessEnabled, showMixer, showSystem, showNetwork,
+        _ = (showKeepAwake, showSystem, showNetwork,
              showDisk, showPower, showFanControl, showToggles)
         return PanelLayout.isVisibleInPanel(id)
     }

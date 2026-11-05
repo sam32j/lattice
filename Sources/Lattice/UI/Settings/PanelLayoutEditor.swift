@@ -14,7 +14,6 @@ struct PanelLayoutEditor: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @AppStorage(DefaultsKey.panelShowFanControl) private var showFanControl = true
-    @AppStorage(DefaultsKey.brightnessControlEnabled) private var brightnessEnabled = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var order: [PanelSectionID] = PanelLayout.order
     @State private var dragging: PanelSectionID?
@@ -98,7 +97,6 @@ struct PanelLayoutEditor: View {
         order.filter {
             $0.isAvailable
                 && ($0 != .fanControl || showFanControl)
-                && ($0 != .brightness || brightnessEnabled)
         }
     }
 

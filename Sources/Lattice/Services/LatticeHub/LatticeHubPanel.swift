@@ -6,7 +6,7 @@ import SwiftUI
 
 final class KeyableHubPanel: OverlayPanel {
     override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
+    override var canBecomeMain: Bool { false }
 }
 
 extension LatticeHubService {

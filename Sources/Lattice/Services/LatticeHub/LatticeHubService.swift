@@ -18,6 +18,9 @@ final class LatticeHubService: ObservableObject {
     @Published var isEditing = false {
         didSet {
             guard isEditing != oldValue else { return }
+            if isEditing {
+                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+            }
             editingPresentation.setEditing(isEditing, options: editingOptionsItem)
             if !isEditing { editingOptionsItem = nil }
         }

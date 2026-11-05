@@ -50,9 +50,6 @@ struct LatticeHubView: View {
                     .layoutPriority(1)
                 }
             }
-            if notchSize == nil, launcher.activeUtility == nil {
-                footer.padding(.top, 12)
-            }
         }
         .padding(notchSize == nil ? 16 : 0)
         .frame(width: notchSize?.width ?? 420,

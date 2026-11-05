@@ -1594,6 +1594,7 @@ final class NotchService: ObservableObject {
               NSWorkspace.shared.frontmostApplication?.processIdentifier == ProcessInfo.processInfo.processIdentifier,
               let next = NSApp.orderedWindows.first(where: {
                   $0 !== panel && $0.isVisible && $0.isOnActiveSpace && $0.canBecomeMain
+                      && String(describing: type(of: $0)) != "SettingsWindow"
               })
         else { return }
         next.makeKey()
@@ -2111,6 +2112,16 @@ final class NotchService: ObservableObject {
     func provideHapticFeedback(pattern: NSHapticFeedbackManager.FeedbackPattern = .alignment) {
         guard acceptsUserInteraction, panel?.isVisible == true, NotchSupport.usesHapticFeedback() else { return }
         NSHapticFeedbackManager.defaultPerformer.perform(pattern, performanceTime: .now)
+    }
+
+    /// Provides maximum tactile impulse by firing a rapid dual .levelChange actuation burst.
+    func provideStrongHapticFeedback() {
+        guard acceptsUserInteraction, panel?.isVisible == true, NotchSupport.usesHapticFeedback() else { return }
+        let performer = NSHapticFeedbackManager.defaultPerformer
+        performer.perform(.levelChange, performanceTime: .now)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.032) {
+            performer.perform(.levelChange, performanceTime: .now)
+        }
     }
 
     func fileDragChanged(_ active: Bool, internalDrag: Bool = false) {
@@ -3956,11 +3967,11 @@ final class NotchService: ObservableObject {
         guard let action else { return musicConsumed }
         switch action {
         case .open:
+            provideStrongHapticFeedback()
             open(feedback: false)
-            provideHapticFeedback(pattern: .alignment)
         case .close:
+            provideStrongHapticFeedback()
             collapse()
-            provideHapticFeedback(pattern: .alignment)
         }
         return true
     }

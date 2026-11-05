@@ -6,9 +6,9 @@ import SwiftUI
 extension LatticeHubView {
     var hiddenTray: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(dragSession.active != nil ? customizationText.dropToHide : customizationText.availableTools)
+            Text(customizationText.availableTools)
                 .font(.system(size: 9.5, weight: .bold))
-                .foregroundStyle(dragSession.active != nil ? Color.accentColor : Color.secondary)
+                .foregroundStyle(Color.secondary)
                 .lineLimit(1)
                 .frame(height: 12, alignment: .leading)
             if launcher.hiddenControls.isEmpty && launcher.hiddenItems.isEmpty {
