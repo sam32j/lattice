@@ -4319,6 +4319,7 @@ final class NotchService: ObservableObject {
     }
 
     func showCurrentVolume() {
+        if ownLevelAdjustmentUntil[.volume] == .infinity { return }
         let mixer = AppVolumeMixer.shared
         guard let volume = mixer.systemOutputVolume else { return }
         showVolume(volume, muted: mixer.systemOutputMuted)
@@ -4384,6 +4385,7 @@ final class NotchService: ObservableObject {
     /// output's first reading. False leaves the confirmation to the caller.
     @discardableResult
     func showVolume(_ volume: Double, muted: Bool? = nil) -> Bool {
+        if ownLevelAdjustmentUntil[.volume] == .infinity { return true }
         guard volume.isFinite else { return false }
         let value = muted == true ? 0 : min(1, max(0, volume))
         let mixer = AppVolumeMixer.shared
@@ -4406,6 +4408,7 @@ final class NotchService: ObservableObject {
     /// keyboard's write that follows a moment later, leave the open island's
     /// top row in view instead of covering it with the same level.
     func noteOwnLevelAdjustment(_ event: NotchEvent) {
+        guard ownLevelAdjustmentUntil[event] != .infinity else { return }
         ownLevelAdjustmentUntil[event] = ProcessInfo.processInfo.systemUptime + 1
     }
 
