@@ -38,9 +38,16 @@ extension LatticeHubService {
             openSettings()
             return nil
         }
-        if event.keyCode == UInt16(kVK_Space), event.modifierFlags.contains(.command) || event.modifierFlags.contains(.option) {
-            if !isPinned { hide() }
-            return event
+        let shortcutModifiers = event.modifierFlags.intersection([.command, .control, .option])
+        if !shortcutModifiers.isEmpty {
+            let key = Int(event.keyCode)
+            let isTextEditing = key == kVK_ANSI_C || key == kVK_ANSI_V || key == kVK_ANSI_X
+                || key == kVK_ANSI_A || key == kVK_ANSI_Z
+            let isInsideTextField = (event.window?.firstResponder as? NSTextView) != nil
+            if event.keyCode == UInt16(kVK_Space) || (!isInsideTextField && !isTextEditing && key != kVK_ANSI_Comma && key != kVK_ANSI_W) {
+                if !isPinned { hide() }
+                return event
+            }
         }
         if stayAwakeOptionsPresented { return event }
         guard !isEditing, activeUtility == nil else { return event }
