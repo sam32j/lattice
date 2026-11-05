@@ -68,11 +68,7 @@ struct NotchAgentsView: View {
                 }
             }
         }
-        .notchBand(leading: {
-            NotchBandBackButton(title: NotchModule.agents.title(l10n.language)) {
-                NotchService.shared.select(.hub)
-            }
-        }, trailing: {
+        .notchBand(trailing: {
             if rows.joined().contains(where: { $0.card.followsPeriod }) {
                 periodMenu
             }

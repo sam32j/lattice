@@ -43,11 +43,6 @@ struct NotchNotificationsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .notchBand(leading: {
-            NotchBandBackButton(title: text.title) {
-                NotchService.shared.select(.hub)
-            }
-        })
         .environment(\.locale, l10n.language.formattingLocale())
     }
 }
