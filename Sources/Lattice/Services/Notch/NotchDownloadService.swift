@@ -67,19 +67,18 @@ final class NotchDownloadService: ObservableObject {
               UserDefaults.standard.bool(forKey: DefaultsKey.notchDownloadsEnabled),
               NotchSupport.modules().contains(.downloads) else { stop(); return }
         guard folder == nil else { return }
-        guard let bookmark = UserDefaults.standard.data(forKey: DefaultsKey.notchDownloadsFolderBookmark) else {
-            folderName = nil
-            folderUnavailable = false
-            return
+        if let bookmark = UserDefaults.standard.data(forKey: DefaultsKey.notchDownloadsFolderBookmark) {
+            var stale = false
+            if let url = try? URL(resolvingBookmarkData: bookmark,
+                                  options: [.withSecurityScope, .withoutUI, .withoutMounting],
+                                  relativeTo: nil, bookmarkDataIsStale: &stale), !stale {
+                start(url)
+                return
+            }
         }
-        var stale = false
-        guard let url = try? URL(resolvingBookmarkData: bookmark,
-                                 options: [.withSecurityScope, .withoutUI, .withoutMounting],
-                                 relativeTo: nil, bookmarkDataIsStale: &stale), !stale else {
-            folderUnavailable = true
-            return
-        }
-        start(url)
+        let defaultDownloads = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSHomeDirectory() + "/Downloads")
+        start(defaultDownloads)
     }
 
     func chooseFolder() {

@@ -3618,9 +3618,9 @@ final class NotchService: ObservableObject {
         panel?.resignKey()
         if expanded, modules.contains(.clipboard) { ClipboardHistoryService.shared.rememberPasteTarget() }
         if expanded, modules.contains(.snippets) { SnippetLibraryService.shared.rememberPasteTarget() }
-        if expanded, !pinned, !keepsWorkingSurface,
-           NotchSupport.closesOnActivation(openedByHover: openedByHover, clicked: clickedSinceOpening,
-                                           pointerInside: windowHost?.containsHover(NSEvent.mouseLocation) == true) {
+        if expanded, !pinned,
+           (selected == .hub || (!keepsWorkingSurface && NotchSupport.closesOnActivation(openedByHover: openedByHover, clicked: clickedSinceOpening,
+                                           pointerInside: windowHost?.containsHover(NSEvent.mouseLocation) == true))) {
             collapse()
         }
     }
@@ -3697,8 +3697,18 @@ final class NotchService: ObservableObject {
         guard eventMonitors.isEmpty else { return }
         clickedSinceOpening = false
         let clicks: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
-        if let token = NSEvent.addGlobalMonitorForEvents(matching: clicks, handler: { [weak self] _ in
-            guard let self, !self.keepsWorkingSurfaceOnOutsideClick,
+        if let token = NSEvent.addGlobalMonitorForEvents(matching: clicks.union(.keyDown), handler: { [weak self] event in
+            guard let self else { return }
+            if event.type == .keyDown {
+                guard !self.pinned, self.expanded else { return }
+                let shortcutModifiers: NSEvent.ModifierFlags = [.command, .control, .option]
+                guard !event.modifierFlags.intersection(shortcutModifiers).isEmpty else { return }
+                if self.selected == .hub {
+                    self.collapse()
+                }
+                return
+            }
+            guard !self.keepsWorkingSurfaceOnOutsideClick,
                   self.windowHost?.contains(NSEvent.mouseLocation) != true,
                   (NSApp.delegate as? AppDelegate)?.isOverStatusItem(NSEvent.mouseLocation) != true,
                   !AssistiveKeyboard.ownsCocoaPoint(NSEvent.mouseLocation) else { return }
@@ -3779,9 +3789,13 @@ final class NotchService: ObservableObject {
             }
             let click = clicks.contains(NSEvent.EventTypeMask(rawValue: 1 << event.type.rawValue))
             let islandWindow = self.ownsWindow(event.window)
-            if click, islandWindow { self.clickedSinceOpening = true }
-            if click, !islandWindow, !self.keepsWorkingSurfaceOnOutsideClick,
-               self.windowHost?.contains(NSEvent.mouseLocation) != true,
+            let insideSurface = islandWindow && (
+                self.windowHost?.contains(NSEvent.mouseLocation) == true ||
+                self.pointerOverChildWindow(NSEvent.mouseLocation)
+            )
+            if click, insideSurface { self.clickedSinceOpening = true }
+            if click, !self.keepsWorkingSurfaceOnOutsideClick,
+               !insideSurface,
                (NSApp.delegate as? AppDelegate)?.isOverStatusItem(NSEvent.mouseLocation) != true,
                !AssistiveKeyboard.ownsCocoaPoint(NSEvent.mouseLocation) { self.dismissForOutsideClick() }
             return event

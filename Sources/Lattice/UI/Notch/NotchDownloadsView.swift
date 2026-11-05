@@ -148,25 +148,14 @@ struct NotchDownloadsView: View {
                 .scrollIndicators(.automatic)
             }
         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        // The watched folder heads the island's top row, so the cards start at
-        // the top of the page. The setup offers its own choice instead.
-        .notchBand(leading: { if !needsSetup { folderMenu } })
+        .notchBand(leading: {
+            NotchBandBackButton(title: text.downloadsTitle) {
+                NotchService.shared.select(.hub)
+            }
+        })
         // Another section or a collapse takes the page away; its chooser
         // could no longer return the folder here. Settings keeps its own.
         .onDisappear { if !preview { downloads.cancelNotchFolderChoice() } }
-    }
-
-    /// The watched folder by name, with the choice of another one or none.
-    private var folderMenu: some View {
-        let name = downloads.folderName ?? text.downloadsTitle
-        return NotchMenuButton(title: text.downloadsTitle, items: [
-            NotchMenuItem(title: text.chooseFolder, action: downloads.chooseFolder),
-            NotchMenuItem(title: text.clearFolder, action: downloads.forgetFolder)
-        ], cornerRadius: 9) {
-            NotchBandMenuLabel(title: name, symbol: "folder", truncation: .middle)
-        }
-        .help(name)
-        .accessibilityValue(name)
     }
 
     private func downloadCard(_ item: NotchDownloadItem) -> some View {

@@ -87,14 +87,14 @@ struct LatticeHubView: View {
         }, trailing: {
             if notchSize != nil {
                 if launcher.activeUtility != nil {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 2) {
                         if launcher.activeUtility == .recentCaptures {
                             NotchClearCapturesButton()
                         }
                         islandPinButton
                     }
                 } else {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 2) {
                         if !launcher.isEditing {
                             if service.modules.contains(.notifications) {
                                 islandNotificationButton
@@ -103,7 +103,7 @@ struct LatticeHubView: View {
                                 islandDownloadButton
                             }
                             islandPinButton
-                            toolsMenuButton
+                            islandToolsMenuButton
                         } else {
                             islandPinButton
                             NotchIconButton(symbol: "checkmark",

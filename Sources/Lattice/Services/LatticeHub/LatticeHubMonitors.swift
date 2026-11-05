@@ -49,6 +49,14 @@ extension LatticeHubService {
             return nil
         }
 
+        let shortcutModifiers = event.modifierFlags.intersection([.command, .control, .option])
+        if !shortcutModifiers.isEmpty {
+            if !isPinned {
+                hide()
+            }
+            return event
+        }
+
         guard modifiers.isEmpty else { return event }
         switch Int(event.keyCode) {
         case kVK_Return, kVK_ANSI_KeypadEnter, kVK_Space:
@@ -70,10 +78,6 @@ extension LatticeHubService {
             clearTypeahead()
             return nil
         default:
-            if let index = Self.digitIndex(for: event.keyCode) {
-                activate(at: index)
-                return nil
-            }
             if let chars = event.characters, !chars.isEmpty,
                chars.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }) {
                 if handleTypeahead(chars) {
@@ -106,6 +110,22 @@ extension LatticeHubService {
                 self.hide()
             }
         }
+        globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, !self.isPinned else { return }
+            let modifiers = event.modifierFlags.intersection([.command, .control, .option])
+            guard !modifiers.isEmpty else { return }
+            if self.panel?.isVisible == true {
+                self.hide()
+            }
+        }
+        resignKeyObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification,
+            object: panel,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, !self.isPinned, self.panel?.isVisible == true else { return }
+            self.hide()
+        }
         activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
@@ -126,9 +146,14 @@ extension LatticeHubService {
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor); self.keyMonitor = nil }
         if let localClickMonitor { NSEvent.removeMonitor(localClickMonitor); self.localClickMonitor = nil }
         if let outsideClickMonitor { NSEvent.removeMonitor(outsideClickMonitor); self.outsideClickMonitor = nil }
+        if let globalKeyMonitor { NSEvent.removeMonitor(globalKeyMonitor); self.globalKeyMonitor = nil }
         if let activationObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(activationObserver)
             self.activationObserver = nil
+        }
+        if let resignKeyObserver {
+            NotificationCenter.default.removeObserver(resignKeyObserver)
+            self.resignKeyObserver = nil
         }
     }
 
