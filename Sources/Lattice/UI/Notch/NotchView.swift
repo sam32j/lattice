@@ -594,7 +594,7 @@ struct NotchView: View {
                         }
                     })
             case .calendar: NotchCalendarView(size: pageSize)
-            case .controls, .mixer: EmptyView()
+            case .controls, .mixer: LatticeHubView(notchSize: pageSize)
             case .music: NotchMusicView(size: pageSize, extrasHeight: service.geometry.musicExtrasHeight)
             case .clipboard: NotchClipboardView(service: service, size: pageSize)
             case .snippets: NotchSnippetsView(service: service, size: pageSize)

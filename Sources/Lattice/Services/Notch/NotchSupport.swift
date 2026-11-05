@@ -1653,6 +1653,9 @@ enum NotchEvent: String, CaseIterable {
 }
 
 enum NotchSupport {
+    static var isTestHarness: Bool {
+        CommandLine.arguments.first?.contains("test") == true
+    }
     /// Whether a connected display has a camera housing, wherever the island
     /// is: it can be off, withdrawn with the lid closed or on another display.
     static var hasNotchedDisplay: Bool {
