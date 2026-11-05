@@ -42,8 +42,6 @@ struct MonitorPanelConfig: View {
     @AppStorage(DefaultsKey.monitorPwrTimeRemaining) private var pwrTimeRemaining = true
     @AppStorage(DefaultsKey.monitorPwrHealth) private var pwrHealth = true
 
-    @AppStorage(DefaultsKey.monitorShowMixer) private var showMixer = true
-
     @AppStorage(DefaultsKey.monitorGraphCPU) private var graphCPU = true
     @AppStorage(DefaultsKey.monitorGraphGPU) private var graphGPU = true
     @AppStorage(DefaultsKey.monitorGraphMemory) private var graphMemory = true
@@ -83,7 +81,7 @@ struct MonitorPanelConfig: View {
                     }
                 }
             }
-            if let block = currentBlock, block != .mixer {
+            if let block = currentBlock {
                 Text(block.section.title(l10n.s))
                     .font(.subheadline.weight(.medium))
                 LazyVGrid(columns: monitorLargeTokenColumns, spacing: 10) {
@@ -100,7 +98,6 @@ struct MonitorPanelConfig: View {
         case .network: return $showNetwork
         case .disk: return $showDisk
         case .power: return $showPower
-        case .mixer: return $showMixer
         }
     }
 
@@ -165,8 +162,6 @@ struct MonitorPanelConfig: View {
                          available: available)
                 itemTile(l10n.s.powerHealth, symbol: "heart", value: $pwrHealth, available: available)
             }
-        case .mixer:
-            EmptyView()
         }
     }
 
@@ -193,7 +188,7 @@ struct MonitorPanelConfig: View {
 }
 
 private enum PanelConfigBlock: CaseIterable, Hashable {
-    case system, network, disk, power, mixer
+    case system, network, disk, power
 
     var section: PanelSectionID {
         switch self {
@@ -201,7 +196,6 @@ private enum PanelConfigBlock: CaseIterable, Hashable {
         case .network: return .network
         case .disk: return .disk
         case .power: return .power
-        case .mixer: return .mixer
         }
     }
 }

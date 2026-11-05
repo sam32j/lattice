@@ -36,8 +36,11 @@ struct HubToolSurface<Content: View>: View {
                     .offset(x: frame.minX, y: frame.minY)
                     .animation(reduceMotion ? nil : .easeInOut(duration: 0.14), value: preview)
                     .opacity(session.active == .tool(item) ? 0 : 1)
-                    .highPriorityGesture(LongPressGesture(minimumDuration: 0.25).onEnded { _ in
-                        if !isEditing { onManage() }
+                    .highPriorityGesture(LongPressGesture(minimumDuration: 2.0).onEnded { _ in
+                        if !isEditing {
+                            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+                            onManage()
+                        }
                     })
             }
             if sourceIndex != nil, let target = insertionIndex, !session.targetsHiddenTray {

@@ -1169,6 +1169,8 @@ private final class NotchCanvas: NSView {
     private var contentSize: CGSize
     override var isFlipped: Bool { true }
     override var isOpaque: Bool { false }
+    override var focusRingType: NSFocusRingType { get { .none } set {} }
+    override func drawFocusRingMask() {}
 
     init(content: AnyView, background: (NotchBackdropPresentation) -> AnyView, size: CGSize) {
         contentSize = size
@@ -1176,15 +1178,18 @@ private final class NotchCanvas: NSView {
         backdrop.sizingOptions = []
         backdrop.wantsLayer = true
         backdrop.autoresizingMask = []
+        backdrop.focusRingType = .none
         host = NotchHostingView(rootView: content)
         host.allowedTouchTypes = [.indirect]
         host.wantsRestingTouches = true
         host.sizingOptions = []
         host.wantsLayer = true
         host.autoresizingMask = []
+        host.focusRingType = .none
         super.init(frame: CGRect(origin: .zero, size: size))
         autoresizesSubviews = false
         wantsLayer = true
+        focusRingType = .none
         // The backdrop stays independent of the content fade and follows the
         // animated silhouette, keeping its glass lip visible while closing.
         layer?.backgroundColor = NSColor.black.cgColor
@@ -1924,6 +1929,14 @@ final class NotchActivationButton: NSButton {
 }
 
 private final class NotchHostingView: NSHostingView<AnyView> {
+    override var focusRingType: NSFocusRingType { get { .none } set {} }
+    override func drawFocusRingMask() {}
+    override func setKeyboardFocusRingNeedsDisplay(_ rect: NSRect) {}
+    override func noteFocusRingMaskChanged() {}
+    override func viewWillDraw() {
+        super.viewWillDraw()
+        focusRingType = .none
+    }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func touchesBegan(with event: NSEvent) {
         if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }

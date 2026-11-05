@@ -60,6 +60,7 @@ struct NotchView: View {
             .environment(\.notchPresentation, true)
             .environment(\.notchGlassSurface, usesGlassSurface)
             .tint(.white)
+            .focusEffectDisabled()
             .accessibilityIdentifier("notch.surface")
     }
 
@@ -316,9 +317,7 @@ struct NotchView: View {
             .frame(width: service.expandedSize.width, height: service.expandedSize.height, alignment: .top)
             .contentShape(Rectangle())
             .contextMenu { islandMenu }
-            // Opening the island makes its panel key, so Keyboard navigation would ring
-            // the first control. Show the ring once keyboard input begins.
-            .focusEffectDisabled(!service.showsKeyboardFocus)
+            .focusEffectDisabled()
             .onAppear { UpdateService.shared.checkIfStale() }
     }
 
