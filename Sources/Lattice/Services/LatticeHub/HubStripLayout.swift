@@ -214,21 +214,21 @@ struct HubStripScrollTargetBehavior: ScrollTargetBehavior {
         let maxScroll = max(0, context.contentSize.width - context.containerSize.width)
         guard maxScroll > 0, stride > 0 else { return }
         let rawX = target.rect.origin.x
-        let startX = context.originalTarget.rect.origin.x
-        let delta = rawX - startX
+        let page = rawX / stride
+        let progress = page - floor(page)
 
-        let snapped: CGFloat
-        if abs(delta) > stride * 0.12 || abs(delta) > 24 {
-            if delta > 0 {
-                let next = floor(startX / stride) * stride + stride
-                snapped = min(maxScroll, next)
-            } else {
-                let prev = ceil(startX / stride) * stride - stride
-                snapped = max(0, prev)
-            }
+        let targetPage: CGFloat
+        if context.velocity.dx > 15 {
+            targetPage = ceil(page) == floor(page) ? floor(page) + 1 : ceil(page)
+        } else if context.velocity.dx < -15 {
+            targetPage = floor(page)
+        } else if progress > 0.12 {
+            targetPage = ceil(page)
         } else {
-            snapped = round(rawX / stride) * stride
+            targetPage = floor(page)
         }
+
+        let snapped = targetPage * stride
         target.rect.origin.x = max(0, min(snapped, maxScroll))
     }
 }
