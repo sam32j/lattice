@@ -13,6 +13,10 @@ struct LatticeHubView: View {
     @ObservedObject var recorder = ScreenRecorderService.shared
     @ObservedObject var appUpdates = AppUpdatesService.shared
     @ObservedObject var editing = LatticeHubService.shared.editingPresentation
+    @ObservedObject var service = NotchService.shared
+    @ObservedObject var updates = UpdateService.shared
+    @ObservedObject var notifications = NotchNotificationService.shared
+    @ObservedObject var dnd = DoNotDisturbState.shared
     @StateObject var dragSession = HubDragSession()
     @State var hoveredItem: LatticeHubItem?
 
@@ -64,32 +68,55 @@ struct LatticeHubView: View {
         .clipShape(RoundedRectangle(cornerRadius: notchSize == nil ? 22 : 0, style: .continuous))
         .transaction { if reduceMotion { $0.animation = nil } }
         .notchBand(leading: {
-            if notchSize != nil, let utility = launcher.activeUtility {
-                NotchBandBackButton(title: title(for: utility), action: {
-                    if utility == .deviceControls, DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
-                        DeviceControlsNavigationState.shared.currentSubpage = .main
-                    } else {
-                        launcher.closeUtility()
-                    }
-                })
+            if notchSize != nil {
+                if let utility = launcher.activeUtility {
+                    NotchBandBackButton(title: title(for: utility), action: {
+                        if utility == .deviceControls, DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
+                            DeviceControlsNavigationState.shared.currentSubpage = .main
+                        } else {
+                            if utility == .deviceControls {
+                                DeviceControlsNavigationState.shared.resetSubpage()
+                            }
+                            launcher.closeUtility()
+                        }
+                    })
+                } else if updateOffered {
+                    NotchUpdateControl(action: service.showUpdate, compact: true)
+                }
             }
         }, trailing: {
             if notchSize != nil {
-                if launcher.activeUtility == .recentCaptures {
-                    NotchClearCapturesButton()
-                } else if launcher.activeUtility == nil {
-                    if launcher.isEditing {
-                        NotchIconButton(symbol: "checkmark",
-                                        title: FeatureStrings.notch(l10n.language).customizeHub,
-                                        selected: true, hasBackdrop: false) {
-                            withAnimation(.easeInOut(duration: 0.22)) { launcher.isEditing = false }
+                if launcher.activeUtility != nil {
+                    HStack(spacing: 6) {
+                        if launcher.activeUtility == .recentCaptures {
+                            NotchClearCapturesButton()
                         }
-                    } else {
-                        toolsMenuButton
+                        islandPinButton
+                    }
+                } else {
+                    HStack(spacing: 6) {
+                        if !launcher.isEditing {
+                            if service.modules.contains(.notifications) {
+                                islandNotificationButton
+                            }
+                            if service.modules.contains(.downloads) {
+                                islandDownloadButton
+                            }
+                            islandPinButton
+                            toolsMenuButton
+                        } else {
+                            islandPinButton
+                            NotchIconButton(symbol: "checkmark",
+                                            title: FeatureStrings.notch(l10n.language).customizeHub,
+                                            selected: true, hasBackdrop: false) {
+                                withAnimation(.easeInOut(duration: 0.22)) { launcher.isEditing = false }
+                            }
+                        }
                     }
                 }
             }
         })
+        .onAppear { dnd.refresh() }
         .onChange(of: launcher.canManageTools) { _, available in
             if !available {
                 launcher.isEditing = false
@@ -99,6 +126,7 @@ struct LatticeHubView: View {
         .onChange(of: launcher.presentationID) { _, _ in
             hoveredItem = nil
             dragSession.cancel()
+            dnd.refresh()
         }
         .onChange(of: launcher.activeUtility) { _, _ in refreshIslandLayout() }
         .onChange(of: launcher.isEditing) { _, _ in dragSession.cancel() }
@@ -150,6 +178,55 @@ struct LatticeHubView: View {
 
     private func refreshIslandLayout() {
         if notchSize != nil { NotchService.shared.refreshPresentation() }
+    }
+
+    private var updateOffered: Bool {
+        if case .available = updates.state { return true }
+        return false
+    }
+
+    private var notificationSymbol: String {
+        if !notifications.items.isEmpty {
+            return "bell.badge.fill"
+        } else if dnd.isActive {
+            return "bell.slash"
+        } else {
+            return "bell"
+        }
+    }
+
+    private var islandNotificationButton: some View {
+        NotchIconButton(
+            symbol: notificationSymbol,
+            title: NotchModule.notifications.title(l10n.language),
+            selected: false,
+            hasBackdrop: false
+        ) {
+            service.select(.notifications)
+        }
+    }
+
+    private var islandDownloadButton: some View {
+        NotchIconButton(
+            symbol: "arrow.down.circle",
+            title: NotchModule.downloads.title(l10n.language),
+            selected: false,
+            hasBackdrop: false
+        ) {
+            service.select(.downloads)
+        }
+    }
+
+    private var islandPinButton: some View {
+        NotchIconButton(
+            symbol: service.pinned ? "pin.fill" : "pin",
+            title: service.pinned ? FeatureStrings.notch(l10n.language).unpin : FeatureStrings.notch(l10n.language).pin,
+            selected: service.pinned,
+            hasBackdrop: false
+        ) {
+            service.pinned.toggle()
+            launcher.isPinned = service.pinned
+        }
     }
 
     // Chrome, editing tray, grid and metadata have dedicated view files.

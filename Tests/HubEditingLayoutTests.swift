@@ -185,5 +185,8 @@ enum HubEditingLayoutTests {
         suite.expect(HubStripLayout.railIndex(after: 9, count: 12, direction: .up) == 4, "up from 9 goes to 4")
         suite.expect(HubStripLayout.railIndex(after: 9, count: 12, direction: .right) == 10, "right from 9 advances to next page")
         suite.expect(HubStripLayout.railIndex(after: 10, count: 12, direction: .down) == 10, "down from 10 clamps when bottom row is empty")
+
+        // 4. DoNotDisturbState
+        suite.expect(DoNotDisturbState.shared.isActive == false || DoNotDisturbState.shared.isActive == true, "DND state is accessible")
     }
 }

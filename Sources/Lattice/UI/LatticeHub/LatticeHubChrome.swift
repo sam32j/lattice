@@ -23,7 +23,7 @@ extension LatticeHubView {
                         .accessibilityHidden(true)
                         .allowsHitTesting(false)
                 }
-                HStack {
+                HStack(spacing: 6) {
                     if launcher.activeUtility != nil {
                         backButton
                     } else {
@@ -32,14 +32,31 @@ extension LatticeHubView {
                     Spacer()
                     if launcher.activeUtility != nil {
                         closeButton
+                        pinButton
                     } else if launcher.isEditing {
+                        pinButton
                         doneEditingButton
                     } else {
+                        pinButton
                         toolsMenuButton
                     }
                 }
             }
         }
+    }
+
+    var pinButton: some View {
+        Button {
+            launcher.isPinned.toggle()
+        } label: {
+            Image(systemName: launcher.isPinned ? "pin.fill" : "pin")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(launcher.isPinned ? Color.accentColor : Color.secondary)
+                .frame(width: 26, height: 26)
+        }
+        .buttonStyle(.plain)
+        .help(launcher.isPinned ? FeatureStrings.notch(l10n.language).unpin : FeatureStrings.notch(l10n.language).pin)
+        .accessibilityLabel(launcher.isPinned ? FeatureStrings.notch(l10n.language).unpin : FeatureStrings.notch(l10n.language).pin)
     }
 
     var doneEditingButton: some View {

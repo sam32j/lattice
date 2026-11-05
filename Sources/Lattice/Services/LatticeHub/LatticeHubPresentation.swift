@@ -60,6 +60,7 @@ extension LatticeHubService {
         presentationID = UUID()
         isEditing = false
         editingOptionsItem = nil
+        isPinned = false
         selectedIndex = nil
         keyboardIndex = nil
         clearTypeahead()
@@ -72,6 +73,12 @@ extension LatticeHubService {
     }
 
     func restorePreviousAppActivation() {
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        if let currentFront = NSWorkspace.shared.frontmostApplication,
+           currentFront.processIdentifier != ownPID {
+            previousApp = nil
+            return
+        }
         guard let source = previousApp, !source.isTerminated else {
             previousApp = nil
             return
@@ -95,6 +102,7 @@ extension LatticeHubService {
         isEditing = false
         editingOptionsItem = nil
         activeUtility = nil
+        isPinned = false
         clearTypeahead()
         selectedIndex = nil
         keyboardIndex = nil
@@ -116,7 +124,7 @@ extension LatticeHubService {
     }
 
     var dismissesOnOutsideInteraction: Bool {
-        false
+        !isPinned
     }
 
 }

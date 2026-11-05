@@ -3,6 +3,7 @@
 
 import AppKit
 import Carbon.HIToolbox
+import Combine
 import SwiftUI
 
 /// The central controller for Lattice Hub: presents either a floating HUD
@@ -28,6 +29,7 @@ final class LatticeHubService: ObservableObject {
     }
     @Published var editingOptionsItem: LatticeHubItem?
     @Published var activeUtility: LatticeHubItem?
+    @Published var isPinned: Bool = false
     @Published var selectedIndex: Int?
     @Published var keyboardIndex: Int?
     @Published var presentationID = UUID() {
@@ -44,8 +46,18 @@ final class LatticeHubService: ObservableObject {
     var outsideClickMonitor: Any?
     var activationObserver: NSObjectProtocol?
 
+    private var notchSubscription: AnyCancellable?
+
     private init() {
         hotkey.onPress = { [weak self] in self?.toggle() }
+        notchSubscription = NotchService.shared.$expanded
+            .dropFirst()
+            .sink { [weak self] expanded in
+                guard let self, !expanded, NotchService.shared.selected == .hub else { return }
+                self.activeUtility = nil
+                self.isEditing = false
+                self.isPinned = false
+            }
     }
 
     func syncWithPreferences() {
