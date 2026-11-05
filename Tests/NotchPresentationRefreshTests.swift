@@ -51,6 +51,13 @@ enum NotchPresentationRefreshContract {
         }
     }
     enum NotchContentTransition { case none, reveal, depart, replace }
+    final class LatticeHubService {
+        static var shared = LatticeHubService()
+        var isVisible = false
+        var isPinned = false
+        var previousApp: Any? = nil
+        func hide() { isVisible = false }
+    }
     struct NotchPlayback { let track: Int }
     struct NotchArtworkTint { let value: Int }
     final class NotchMusicService {

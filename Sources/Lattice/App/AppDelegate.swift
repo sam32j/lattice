@@ -1345,8 +1345,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         // dismissal itself focused has become key.
         DispatchQueue.main.async { [weak self] in
             guard let self, !self.popover.isShown, !source.isTerminated else { return }
-            let isSettingsKey = (self.settingsWindow != nil && NSApp.keyWindow === self.settingsWindow)
-            let ownWindowIsKey = (NSApp.keyWindow != nil && !isSettingsKey) || NSApp.modalWindow != nil
+            let ownWindowIsKey = NSApp.keyWindow != nil || NSApp.modalWindow != nil
             guard StatusItemAnchorSupport.shouldReturnActivation(
                       to: source.processIdentifier,
                       ownPID: NSRunningApplication.current.processIdentifier,
@@ -1355,9 +1354,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
                       closeReason: closeReason),
                   !self.handbackWouldSwitchDesktop(to: source.processIdentifier)
             else { return }
-            if isSettingsKey {
-                self.settingsWindow?.resignKey()
-            }
             ActivationHandoff.yield(to: source)
             if !source.activate(from: NSRunningApplication.current, options: []) {
                 source.activate(options: [])
@@ -1580,6 +1576,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
 
     func openSettingsWindow() {
         NotchService.shared.prepareForSettings()
+        LatticeHubService.shared.previousApp = nil
         LatticeHubService.shared.hide()
         let isAlreadyVisible = settingsWindow?.isVisible == true
         let targetScreen = (popover.isShown
@@ -1624,10 +1621,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             settingsKeepsAppRegular = true
             WindowActivationPolicy.retain()
         }
-        settingsWindow?.isExplicitlyOrderedKey = true
+        if let window = settingsWindow {
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
+            window.orderFrontRegardless()
+            window.makeKeyAndOrderFront(nil)
+        }
         NSApp.activate(ignoringOtherApps: true)
-        settingsWindow?.makeKeyAndOrderFront(nil)
-        settingsWindow?.isExplicitlyOrderedKey = false
         // Reopening on the very page that was showing at close never runs
         // that page's own onAppear, since its view was never removed from
         // the hierarchy; the window itself is the only reliable signal here.

@@ -40,7 +40,32 @@ struct NotchUpdateControl: View {
         case .installing:
             progressIndicator(title: l10n.s.updateInstalling)
         default:
+            #if LATTICE_DEVELOPMENT
+            let version = "2.1.0"
+            let tint: Color = .blue
+            let title = "\(l10n.s.updateBannerTitle), \(l10n.s.versionPrefix) \(version)"
+            Button(action: action) {
+                Group {
+                    if compact {
+                        Image(systemName: "arrow.down.circle.fill")
+                    } else {
+                        Label(l10n.s.updateBannerAction, systemImage: "arrow.down.circle.fill")
+                    }
+                }
+                .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+            }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.small)
+            .tint(tint)
+            .fixedSize()
+            .help(title)
+            .accessibilityLabel(title)
+            .accessibilityHint(l10n.s.updateBannerAction)
+            #else
             EmptyView()
+            #endif
         }
     }
 

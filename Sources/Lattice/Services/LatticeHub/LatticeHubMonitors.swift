@@ -38,11 +38,8 @@ extension LatticeHubService {
             openSettings()
             return nil
         }
-        let shortcutModifiers = event.modifierFlags.intersection([.command, .control, .option])
-        if !shortcutModifiers.isEmpty {
-            if !isPinned {
-                hide()
-            }
+        if event.keyCode == UInt16(kVK_Space), event.modifierFlags.contains(.command) || event.modifierFlags.contains(.option) {
+            if !isPinned { hide() }
             return event
         }
         if stayAwakeOptionsPresented { return event }
