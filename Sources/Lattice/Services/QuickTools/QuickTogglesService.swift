@@ -113,59 +113,48 @@ final class QuickTogglesService: ObservableObject {
 
     // MARK: - Finder flags
 
-    /// Toggles hidden files visibility. First tries simulating the native
-    /// Command+Shift+. shortcut via System Events so Finder does not need to quit
-    /// or close any open windows. If that is unavailable, falls back to restarting
-    /// Finder while saving and restoring all open Finder windows.
+    /// Toggles hidden files visibility by updating AppleShowAllFiles in com.apple.finder
+    /// and reloading Finder in the background without stealing focus, prompting on deleted
+    /// items, or duplicating open tabs/windows.
     func toggleHiddenFiles() {
+        guard QuickToggleAction.hiddenFiles.feature.isAvailable else { return }
         let targetShown = !hiddenFilesShown
-        guard QuickToggleAction.hiddenFiles.feature.isAvailable, beginRun(.hiddenFiles) else { return }
-        workQueue.async {
-            CFPreferencesSetAppValue(QuickTogglesSupport.showAllFilesKey as CFString,
-                                     targetShown as CFBoolean,
-                                     QuickTogglesSupport.finderDomain as CFString)
-            CFPreferencesAppSynchronize(QuickTogglesSupport.finderDomain as CFString)
+        CFPreferencesSetAppValue(QuickTogglesSupport.showAllFilesKey as CFString,
+                                 targetShown as CFBoolean,
+                                 QuickTogglesSupport.finderDomain as CFString)
+        CFPreferencesAppSynchronize(QuickTogglesSupport.finderDomain as CFString)
+        objectWillChange.send()
 
-            let shortcutResult = AppleScriptRunner.runDetailed(QuickTogglesSupport.toggleHiddenFilesShortcutSource)
-            if shortcutResult.ok {
-                self.finishRun(.hiddenFiles, state: nil)
-                return
-            }
-
-            let fallbackResult = AppleScriptRunner.runDetailed(QuickTogglesSupport.restartFinderPreservingWindowsSource)
-            if fallbackResult.ok {
-                self.finishRun(.hiddenFiles, state: nil)
-                return
-            }
-
-            self.finishRun(.hiddenFiles, state: self.restartFinder() ? nil : .failed)
+        workQueue.async { [weak self] in
+            _ = self?.restartFinder()
         }
     }
 
     /// Toggles desktop icons visibility. On modern macOS (Sonoma, Sequoia, etc.),
     /// desktop icons are drawn by WindowManager and toggled via StandardHideDesktopIcons.
-    /// Restarting Dock applies the change immediately without quitting Finder or closing
-    /// any open Finder windows.
+    /// Restarting Dock applies the change immediately without quitting Finder, stealing focus,
+    /// or entering an asynchronous waiting/warning state.
     func toggleDesktopIcons() {
+        guard QuickToggleAction.desktopIcons.feature.isAvailable else { return }
         let targetShown = !desktopIconsShown
-        guard QuickToggleAction.desktopIcons.feature.isAvailable, beginRun(.desktopIcons) else { return }
+        let hideIcons = !targetShown
+
+        CFPreferencesSetAppValue(QuickTogglesSupport.createDesktopKey as CFString,
+                                 targetShown as CFBoolean,
+                                 QuickTogglesSupport.finderDomain as CFString)
+        CFPreferencesAppSynchronize(QuickTogglesSupport.finderDomain as CFString)
+
+        CFPreferencesSetAppValue(QuickTogglesSupport.standardHideDesktopIconsKey as CFString,
+                                 hideIcons as CFBoolean,
+                                 QuickTogglesSupport.windowManagerDomain as CFString)
+        CFPreferencesSetAppValue(QuickTogglesSupport.hideDesktopKey as CFString,
+                                 hideIcons as CFBoolean,
+                                 QuickTogglesSupport.windowManagerDomain as CFString)
+        CFPreferencesAppSynchronize(QuickTogglesSupport.windowManagerDomain as CFString)
+        objectWillChange.send()
+
         workQueue.async {
-            CFPreferencesSetAppValue(QuickTogglesSupport.createDesktopKey as CFString,
-                                     targetShown as CFBoolean,
-                                     QuickTogglesSupport.finderDomain as CFString)
-            CFPreferencesAppSynchronize(QuickTogglesSupport.finderDomain as CFString)
-
-            let hideIcons = !targetShown
-            CFPreferencesSetAppValue(QuickTogglesSupport.standardHideDesktopIconsKey as CFString,
-                                     hideIcons as CFBoolean,
-                                     QuickTogglesSupport.windowManagerDomain as CFString)
-            CFPreferencesSetAppValue(QuickTogglesSupport.hideDesktopKey as CFString,
-                                     hideIcons as CFBoolean,
-                                     QuickTogglesSupport.windowManagerDomain as CFString)
-            CFPreferencesAppSynchronize(QuickTogglesSupport.windowManagerDomain as CFString)
-
-            let dockKillStatus = Shell.run("/usr/bin/killall", ["Dock"]).status
-            self.finishRun(.desktopIcons, state: dockKillStatus == 0 ? nil : .failed)
+            _ = Shell.run("/usr/bin/killall", ["Dock"])
         }
     }
 
@@ -271,46 +260,19 @@ final class QuickTogglesService: ObservableObject {
     /// the Finder will not quit (an operation in progress), the classic
     /// killall does it; never prompts either way. Work-queue only: the exit
     /// poll blocks.
+    @discardableResult
     private func restartFinder() -> Bool {
-        if Permissions.automationStatus(for: .finder) == .granted,
-           AppleScriptRunner.runDetailed(QuickTogglesSupport.quitFinderSource).ok,
-           waitForFinderExit() {
+        let killStatus = Shell.run("/usr/bin/killall", ["Finder"]).status
+        if killStatus == 0 {
+            return true
+        }
+        // If Finder was not running, launch it in the background without activating.
+        if Shell.run("/usr/bin/pgrep", ["-x", "Finder"]).status != 0 {
             let url = URL(fileURLWithPath: "/System/Library/CoreServices/Finder.app")
             let configuration = NSWorkspace.OpenConfiguration()
             configuration.activates = false
             NSWorkspace.shared.openApplication(at: url, configuration: configuration)
             return true
-        }
-        let killStatus = Shell.run("/usr/bin/killall", ["Finder"]).status
-        if killStatus == 0 {
-            return true
-        }
-        // If Finder was not running, launch it; if Finder is still running after failed killall, report failure.
-        if Shell.run("/usr/bin/pgrep", ["-x", "Finder"]).status != 0 {
-            let url = URL(fileURLWithPath: "/System/Library/CoreServices/Finder.app")
-            let configuration = NSWorkspace.OpenConfiguration()
-            configuration.activates = false
-            let semaphore = DispatchSemaphore(value: 0)
-            var launchSuccess = false
-            NSWorkspace.shared.openApplication(at: url, configuration: configuration) { app, error in
-                launchSuccess = (app != nil && error == nil)
-                semaphore.signal()
-            }
-            _ = semaphore.wait(timeout: .now() + 2.0)
-            return launchSuccess
-        }
-        return false
-    }
-
-    /// A quit Finder stays quit (nothing relaunches it), so the poll only
-    /// confirms the exit before the relaunch; a Finder that is still around
-    /// after the timeout is busy and falls back to killall.
-    private func waitForFinderExit() -> Bool {
-        for _ in 0..<30 {
-            if Shell.run("/usr/bin/pgrep", ["-x", "Finder"]).status != 0 {
-                return true
-            }
-            usleep(100_000)
         }
         return false
     }
