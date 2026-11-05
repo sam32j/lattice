@@ -182,7 +182,7 @@ extension NotchStrings {
         musicHint: "Your music and playback controls appear here.",
         music: "Music",
         captures: "Captures",
-        newTrack: "Now Playing",
+        newTrack: "Track Change",
         customizeHub: "Customize Hub",
         switchSection: "Switch section",
         sectionsTitle: "Explore",
