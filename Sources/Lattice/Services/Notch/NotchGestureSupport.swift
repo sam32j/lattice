@@ -19,7 +19,8 @@ struct NotchGestureSupport {
     private var pendingX = 0.0
     private var pendingY = 0.0
     private var distance = 0.0
-    private var fired = false
+    private var currentExpanded = false
+    private var hasFiredAction = false
     private var coasting = false
     private var lastTimestamp: TimeInterval?
     static let verticalThreshold = 16.0
@@ -71,16 +72,16 @@ struct NotchGestureSupport {
         let transition = coasting && !momentum && !hasPhase && precise
             && lastTimestamp.map({ timestamp >= $0 && timestamp - $0 <= 0.35 }) == true
         if momentum || transition {
-            guard coasting, !fired, let origin, let last = lastTimestamp,
+            guard coasting, !hasFiredAction, let origin, let last = lastTimestamp,
                   timestamp >= last, timestamp - last <= 0.35, abs(y) >= abs(x) * 1.5 else {
                 self = Self(); return nil
             }
             lastTimestamp = timestamp
             distance += y
-            return verticalAction(expanded: origin.expanded, deepDismiss: origin.deepDismiss)
+            return verticalAction(deepDismiss: origin.deepDismiss)
         }
         if ended {
-            coasting = origin != nil && axis == .vertical && !fired
+            coasting = origin != nil && axis == .vertical && !hasFiredAction
             if coasting { lastTimestamp = timestamp } else { self = Self() }
             return nil
         }
@@ -90,6 +91,7 @@ struct NotchGestureSupport {
                 self = Self()
                 origin = Origin(vertical: allowVertical, horizontal: allowHorizontal,
                                 expanded: expanded, deepDismiss: deepDismiss)
+                currentExpanded = expanded
             }
             // AppKit keeps a phased scroll attached to its original view.
             // A blocked beginning stays blocked, and an interrupted sequence
@@ -99,12 +101,11 @@ struct NotchGestureSupport {
         } else if origin != nil || began
                     || lastTimestamp.map({ timestamp < $0 || timestamp - $0 > 0.35 }) == true {
             self = Self()
+            currentExpanded = expanded
         }
         lastTimestamp = timestamp
-        guard !fired else { return nil }
         let allowVertical = origin?.vertical ?? allowVertical
         let allowHorizontal = origin?.horizontal ?? allowHorizontal
-        let expanded = origin?.expanded ?? expanded
         let deepDismiss = origin?.deepDismiss ?? deepDismiss
         if axis == nil {
             // Establish intent from a little accumulated travel, not the first
@@ -117,28 +118,57 @@ struct NotchGestureSupport {
             }
             else if allowVertical, abs(pendingY) >= 4, abs(pendingY) >= abs(pendingX) * 1.5 {
                 axis = .vertical
-                distance = pendingY
+                if currentExpanded {
+                    distance = min(0, pendingY)
+                } else {
+                    distance = max(0, pendingY)
+                }
             }
             else { return nil }
         } else {
-            distance += axis == .horizontal ? x : y
+            if axis == .vertical {
+                if !currentExpanded {
+                    if y > 0 {
+                        distance = max(0, distance) + y
+                    } else {
+                        distance = max(0, distance + y)
+                    }
+                } else {
+                    if y < 0 {
+                        distance = min(0, distance) + y
+                    } else {
+                        distance = min(0, distance + y)
+                    }
+                }
+            } else {
+                distance += x
+            }
         }
         switch axis {
         case .vertical where allowVertical:
-            return verticalAction(expanded: expanded, deepDismiss: deepDismiss)
+            return verticalAction(deepDismiss: deepDismiss)
         default:
             return nil
         }
     }
 
-    private mutating func verticalAction(expanded: Bool, deepDismiss: Bool) -> Action? {
-        let threshold = (expanded && distance < 0 && deepDismiss)
+    private mutating func verticalAction(deepDismiss: Bool) -> Action? {
+        let threshold = (currentExpanded && distance < 0 && deepDismiss)
             ? Self.deepVerticalThreshold
             : Self.verticalThreshold
         guard abs(distance) >= threshold else { return nil }
-        fired = true
-        if distance > 0, !expanded { return .open }
-        if distance < 0, expanded { return .close }
+        if distance > 0, !currentExpanded {
+            currentExpanded = true
+            distance = 0
+            hasFiredAction = true
+            return .open
+        }
+        if distance < 0, currentExpanded {
+            currentExpanded = false
+            distance = 0
+            hasFiredAction = true
+            return .close
+        }
         return nil
     }
 }

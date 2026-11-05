@@ -37,6 +37,7 @@ final class LatticeHubService: ObservableObject {
 
     private let hotkey = QuickToolHotkey(id: 14)
     var panel: NSPanel?
+    var previousApp: NSRunningApplication?
     var keyMonitor: Any?
     var localClickMonitor: Any?
     var outsideClickMonitor: Any?
@@ -136,19 +137,27 @@ final class LatticeHubService: ObservableObject {
     }
 
     func moveSelection(_ direction: QuickToolsSupport.GridDirection,
-                       flow: QuickToolsSupport.GridFlow = .rows(columns: LatticeHubService.columns)) {
+                       flow: QuickToolsSupport.GridFlow = .rows(columns: LatticeHubService.columns),
+                       isIsland: Bool = false) {
         let count = visibleItems.count
         guard count > 0 else { return }
         clearTypeahead()
         guard let current = selectedIndex else {
-            selectedIndex = count > 0 ? 0 : nil
+            selectedIndex = 0
             keyboardIndex = 0
             return
         }
-        selectedIndex = QuickToolsSupport.gridIndex(after: current,
-                                                    count: count,
-                                                    flow: flow,
-                                                    direction: direction)
+        if isIsland {
+            selectedIndex = HubStripLayout.railIndex(after: current,
+                                                     count: count,
+                                                     columns: NotchSupport.toolColumns,
+                                                     direction: direction)
+        } else {
+            selectedIndex = QuickToolsSupport.gridIndex(after: current,
+                                                        count: count,
+                                                        flow: flow,
+                                                        direction: direction)
+        }
         keyboardIndex = selectedIndex
     }
 
@@ -261,7 +270,6 @@ final class LatticeHubService: ObservableObject {
     func clampSelection() {
         let count = visibleItems.count
         guard count > 0, let current = selectedIndex else {
-            selectedIndex = count > 0 ? 0 : nil
             return
         }
         selectedIndex = min(current, count - 1)

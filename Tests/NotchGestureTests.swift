@@ -60,8 +60,8 @@ enum NotchGestureTests {
         }
         suite.expect(feed(0, 5, began: true) == nil && feed(0, 10) == nil && feed(0, 10) == .open,
                "small vertical movement accumulates into one intentional opening")
-        suite.expect(feed(0, -100, expanded: true) == nil,
-               "the remainder of an opening gesture cannot immediately close the notch")
+        suite.expect(feed(0, -100, expanded: true) == .close,
+               "continuous upward gesture closes the opened notch")
         suite.expect(feed(0, 0, ended: true) == nil && feed(0, -80, momentum: true, expanded: true) == nil,
                "momentum after a swipe that already acted never changes presentation")
         suite.expect(feed(0, -30, began: true, expanded: true) == .close,

@@ -37,6 +37,56 @@ enum HubStripLayout {
         return (row, col, page)
     }
 
+    static func index(row: Int, col: Int, columns: Int = itemsPerRowPerPage) -> Int {
+        let columns = max(1, columns)
+        let page = col / columns
+        let colInPage = col % columns
+        return page * (columns * 2) + row * columns + colInPage
+    }
+
+    static func railIndex(after current: Int,
+                          count: Int,
+                          columns: Int = itemsPerRowPerPage,
+                          direction: QuickToolsSupport.GridDirection) -> Int {
+        guard count > 0 else { return 0 }
+        let current = min(max(current, 0), count - 1)
+        let totalRows = rows(for: count, columns: columns)
+        if totalRows <= 1 {
+            switch direction {
+            case .left: return max(0, current - 1)
+            case .right: return min(count - 1, current + 1)
+            case .up, .down: return current
+            }
+        }
+        let pos = gridPosition(for: current, totalRows: totalRows, columns: columns)
+        switch direction {
+        case .left:
+            let targetCol = pos.col - 1
+            guard targetCol >= 0 else { return current }
+            let candidate = index(row: pos.row, col: targetCol, columns: columns)
+            if candidate < count { return candidate }
+            let fallback = index(row: 0, col: targetCol, columns: columns)
+            return fallback < count ? fallback : current
+        case .right:
+            let targetCol = pos.col + 1
+            let candidate = index(row: pos.row, col: targetCol, columns: columns)
+            if candidate < count { return candidate }
+            if pos.row == 1 {
+                let fallback = index(row: 0, col: targetCol, columns: columns)
+                if fallback < count { return fallback }
+            }
+            return current
+        case .up:
+            guard pos.row > 0 else { return current }
+            let candidate = index(row: pos.row - 1, col: pos.col, columns: columns)
+            return candidate < count ? candidate : current
+        case .down:
+            guard pos.row < totalRows - 1 else { return current }
+            let candidate = index(row: pos.row + 1, col: pos.col, columns: columns)
+            return candidate < count ? candidate : current
+        }
+    }
+
     static func totalColumns(count: Int, columns: Int = itemsPerRowPerPage) -> Int {
         guard count > 0 else { return 0 }
         let columns = max(1, columns)

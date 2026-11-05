@@ -47,7 +47,7 @@ extension LatticeHubView {
 
     func cell(_ item: LatticeHubItem, titleInset: CGFloat = 0) -> some View {
         let index = launcher.visibleItems.firstIndex(of: item)
-        let showsFocus = notchSize != nil ? NotchService.shared.showsKeyboardFocus : launcher.keyboardIndex != nil
+        let showsFocus = launcher.keyboardIndex != nil
         let isSelected = !launcher.isEditing && showsFocus && index != nil && index == launcher.selectedIndex
         let isHovered = hoveredItem == item
 

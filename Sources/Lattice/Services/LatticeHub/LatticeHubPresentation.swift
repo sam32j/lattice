@@ -25,6 +25,11 @@ extension LatticeHubService {
                 return
             }
         }
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        if let front = NSWorkspace.shared.frontmostApplication,
+           front.processIdentifier != ownPID {
+            previousApp = front
+        }
         (NSApp.delegate as? AppDelegate)?.closePopover()
         if NotchService.shared.expanded, NotchService.shared.selected == .hub {
             NotchService.shared.collapse()
@@ -66,6 +71,23 @@ extension LatticeHubService {
         clampSelection()
     }
 
+    func restorePreviousAppActivation() {
+        guard let source = previousApp, !source.isTerminated else {
+            previousApp = nil
+            return
+        }
+        previousApp = nil
+        ActivationHandoff.yield(to: source)
+        if !source.activate(from: NSRunningApplication.current, options: []) {
+            source.activate(options: [])
+        }
+        DispatchQueue.main.async {
+            if !source.isTerminated {
+                source.activate(options: [])
+            }
+        }
+    }
+
     func hide() {
         stayAwakeOptionsPresented = false
         if NotchService.shared.expanded, NotchService.shared.selected == .hub { NotchService.shared.collapse() }
@@ -76,6 +98,7 @@ extension LatticeHubService {
         clearTypeahead()
         selectedIndex = nil
         keyboardIndex = nil
+        restorePreviousAppActivation()
         panel?.orderOut(nil)
         presentationID = UUID()
     }

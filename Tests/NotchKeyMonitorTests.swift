@@ -61,7 +61,7 @@ enum NotchKeyMonitorTests {
         var notchControlsHeight: CGFloat = 0
         var visibleItems = [0, 1, 2]
         var flows: [QuickToolsSupport.GridFlow] = []
-        func handlePanelKey(_ event: NSEvent, flow: QuickToolsSupport.GridFlow) -> NSEvent? {
+        func handlePanelKey(_ event: NSEvent, flow: QuickToolsSupport.GridFlow, isIsland: Bool = false) -> NSEvent? {
             NotchKeyMonitorTests.actions.append("tools")
             flows.append(flow)
             return nil

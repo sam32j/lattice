@@ -54,6 +54,7 @@ enum PageOwnedServiceLifecycleTests {
         func rememberPasteTarget() {}
         func reloadSnippets() {}
         func refreshPanelLayout() {}
+        func restorePreviousAppActivation() {}
     }
     enum NSWorkspace {
         static let shared = Workspace()
