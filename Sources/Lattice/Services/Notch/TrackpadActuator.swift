@@ -5,19 +5,21 @@ import AppKit
 import Foundation
 
 /// Drives the physical Force Touch trackpad Taptic Engine via MultitouchSupport.
-/// Provides direct hardware waveforms (such as level 6 strong tap) matching the mactic utility.
+/// Provides direct hardware waveforms (such as level 3 gentle tap) matching the mactic utility.
 final class TrackpadActuator {
     static let shared = TrackpadActuator()
 
     private typealias CreateListFn = @convention(c) () -> Unmanaged<CFArray>?
+    private typealias GetIDFn = @convention(c) (UnsafeMutableRawPointer, UnsafeMutablePointer<UInt64>) -> Int32
     private typealias ActuatorCreateFn = @convention(c) (UInt64) -> Unmanaged<CFTypeRef>?
     private typealias ActuatorOpenFn = @convention(c) (CFTypeRef, UInt32) -> Int32
     private typealias ActuatorCloseFn = @convention(c) (CFTypeRef) -> Int32
-    private typealias ActuatorActuateFn = @convention(c) (CFTypeRef, Int32, UInt32, UInt32, UInt32) -> Int32
+    private typealias ActuatorActuateFn = @convention(c) (CFTypeRef, Int32, UInt32, Float, Float) -> Int32
 
     private let queue = DispatchQueue(label: "io.github.sam32j.lattice.trackpad-actuator", qos: .userInteractive)
     private var handle: UnsafeMutableRawPointer?
     private var createList: CreateListFn?
+    private var getID: GetIDFn?
     private var actCreate: ActuatorCreateFn?
     private var actOpen: ActuatorOpenFn?
     private var actClose: ActuatorCloseFn?
@@ -40,6 +42,9 @@ final class TrackpadActuator {
         if let sym = dlsym(h, "MTDeviceCreateList") {
             createList = unsafeBitCast(sym, to: CreateListFn.self)
         }
+        if let sym = dlsym(h, "MTDeviceGetDeviceID") {
+            getID = unsafeBitCast(sym, to: GetIDFn.self)
+        }
         if let sym = dlsym(h, "MTActuatorCreateFromDeviceID") {
             actCreate = unsafeBitCast(sym, to: ActuatorCreateFn.self)
         }
@@ -60,27 +65,40 @@ final class TrackpadActuator {
 
     /// Triggers a low-level haptic waveform on the Force Touch trackpad asynchronously.
     /// Waveform 3 provides a clean, gentle tap feedback.
-    func actuate(waveform: Int32 = 3) {
-        guard isAvailable else { return }
+    /// If hardware actuation fails or is unavailable, executes fallback.
+    func actuate(waveform: Int32 = 3, fallback: (() -> Void)? = nil) {
+        guard isAvailable else {
+            fallback?()
+            return
+        }
         queue.async { [weak self] in
-            self?.performActuation(waveform: waveform)
+            let success = self?.performActuation(waveform: waveform) ?? false
+            if !success, let fallback {
+                DispatchQueue.main.async { fallback() }
+            }
         }
     }
 
-    private func performActuation(waveform: Int32) {
-        guard let actCreate, let actOpen, let actClose, let actActuate else { return }
+    @discardableResult
+    private func performActuation(waveform: Int32) -> Bool {
+        guard let actCreate, let actOpen, let actClose, let actActuate else { return false }
 
         let devID: UInt64
         if let cached = cachedDeviceID {
             devID = cached
         } else {
-            guard let createList, let devices = createList()?.takeRetainedValue() else { return }
+            guard let createList, let devices = createList()?.takeRetainedValue() else { return false }
             let count = CFArrayGetCount(devices)
-            guard count > 0 else { return }
+            guard count > 0 else { return false }
             var foundID: UInt64?
             for i in 0..<count {
                 guard let dev = CFArrayGetValueAtIndex(devices, i) else { continue }
-                let id = dev.advanced(by: 64).load(as: UInt64.self)
+                var id: UInt64 = 0
+                if let getID {
+                    guard getID(UnsafeMutableRawPointer(mutating: dev), &id) == 0 else { continue }
+                } else {
+                    id = dev.advanced(by: 64).load(as: UInt64.self)
+                }
                 if let act = actCreate(id)?.takeRetainedValue() {
                     let ret = actOpen(act, 0)
                     if ret == 0 {
@@ -90,20 +108,23 @@ final class TrackpadActuator {
                     }
                 }
             }
-            guard let validID = foundID else { return }
+            guard let validID = foundID else { return false }
             cachedDeviceID = validID
             devID = validID
         }
 
         guard let actuator = actCreate(devID)?.takeRetainedValue() else {
             cachedDeviceID = nil
-            return
+            return false
         }
-        guard actOpen(actuator, 0) == 0 else {
-            cachedDeviceID = nil
-            return
+        var opened = actOpen(actuator, 0) == 0
+        if !opened {
+            usleep(1_500)
+            opened = actOpen(actuator, 0) == 0
         }
-        _ = actActuate(actuator, waveform, 0, 0, 0)
+        guard opened else { return false }
+        let ret = actActuate(actuator, waveform, 0, 0.0, 0.0)
         _ = actClose(actuator)
+        return ret == 0
     }
 }

@@ -2115,8 +2115,9 @@ final class NotchService: ObservableObject {
     /// Provides gentle tactile impulse by firing level 3 actuation on Force Touch trackpads.
     func provideStrongHapticFeedback() {
         guard acceptsUserInteraction, NotchSupport.usesHapticFeedback() else { return }
-        TrackpadActuator.shared.actuate(waveform: 3)
-        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+        TrackpadActuator.shared.actuate(waveform: 3) {
+            NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+        }
     }
 
     func fileDragChanged(_ active: Bool, internalDrag: Bool = false) {
