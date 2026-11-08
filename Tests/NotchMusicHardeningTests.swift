@@ -119,7 +119,6 @@ enum NotchLyricsContract {
         var acceptsUserInteraction = true
         var expanded = true
         var selected: NotchModule = .music
-        var showingAppPanel = false
         var selectedMetric: Bool?
         var pinned = false
         func open(_ module: NotchModule, feedback: Bool) {
