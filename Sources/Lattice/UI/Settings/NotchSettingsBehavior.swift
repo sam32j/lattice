@@ -24,7 +24,12 @@ extension NotchSettings {
                     .labelsHidden()
                 }
                 hoverDelayPicker(opening)
-                if hoverExpand { closeDelayPicker(opening) }
+                if hoverExpand {
+                    closeDelayPicker(opening)
+                    SettingsToggleRow(title: opening.openVisibleActivity,
+                                      caption: opening.openVisibleActivityHint,
+                                      isOn: $opensActivity)
+                }
                 SettingsToggleRow(title: opening.hiddenUntilHover,
                                   caption: opening.hiddenUntilHoverHint,
                                   isOn: $hideUntilHover)
@@ -33,32 +38,22 @@ extension NotchSettings {
                                       isOn: $hiddenShowsActivity)
                 }
             }
-            SettingsControlRow(title: opening.defaultPage) {
-                NotchDefaultPagePicker(
-                    title: opening.defaultPage,
-                    selection: Binding(get: {
-                        guard returnHome else { return "" }
-                        if homeModule == NotchModule.controls.rawValue || homeModule == NotchModule.mixer.rawValue
-                            || homeModule == NotchReopeningDestination.explore.rawValue {
-                            return NotchModule.hub.rawValue
-                        }
-                        return NotchModule(rawValue: homeModule)?.rawValue
-                            ?? NotchReopeningDestination(rawValue: homeModule)?.rawValue
-                            ?? NotchModule.hub.rawValue
-                    }, set: { value in
-                        returnHome = !value.isEmpty
-                        if returnHome { homeModule = value }
-                    }),
-                    lastPageTitle: editor.lastPage,
-                    hubTitle: NotchModule.hub.title(l10n.language),
-                    panelTitle: text.panel,
-                    modules: defaultPageModules.map { (id: $0.rawValue, title: $0.title(l10n.language)) }
-                )
-            }
-            SettingsToggleRow(title: opening.openVisibleActivity,
-                              caption: opening.openVisibleActivityHint,
-                              isOn: $opensActivity)
         }
+    }
+
+    var defaultPageBinding: Binding<String> {
+        Binding(get: {
+            guard returnHome else { return "" }
+            if homeModule == NotchModule.controls.rawValue || homeModule == NotchModule.mixer.rawValue
+                || homeModule == NotchReopeningDestination.explore.rawValue {
+                return NotchModule.hub.rawValue
+            }
+            return NotchModule(rawValue: homeModule)?.rawValue
+                ?? NotchModule.hub.rawValue
+        }, set: { value in
+            returnHome = !value.isEmpty
+            if returnHome { homeModule = value }
+        })
     }
 
     var defaultPageModules: [NotchModule] {
@@ -73,19 +68,17 @@ extension NotchSettings {
     }
 }
 
-private struct NotchDefaultPagePicker: View {
+struct NotchDefaultPagePicker: View {
     let title: String
     @Binding var selection: String
     let lastPageTitle: String
     let hubTitle: String
-    let panelTitle: String
     let modules: [(id: String, title: String)]
 
     var body: some View {
         Picker(title, selection: $selection) {
             Text(lastPageTitle).tag("")
             Text(hubTitle).tag(NotchModule.hub.rawValue)
-            Text(panelTitle).tag(NotchReopeningDestination.appPanel.rawValue)
             ForEach(modules, id: \.id) { module in
                 Text(module.title).tag(module.id)
             }
@@ -164,7 +157,7 @@ extension NotchSettings {
 
     func showModule(_ module: NotchModule) {
         if module == .hub {
-            router.request(FeatureSettingsDestination(.launcherGrid))
+            router.request(FeatureSettingsDestination(.general))
         } else {
             router.request(FeatureSettingsDestination(.notchWidget(module)))
         }
