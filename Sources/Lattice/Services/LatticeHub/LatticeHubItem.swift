@@ -25,6 +25,10 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
                      .monitorDisk, .monitorPower, .fanControl, .connectedDevices] as [AppFeature]).contains {
                 $0.isAvailable(in: defaults)
             }
+        case .deviceControls:
+            return ([.mixer, .brightness, .extraBrightness, .soundOutputSwitcher, .micMute, .audioPriority] as [AppFeature]).contains {
+                $0.isAvailable(in: defaults)
+            }
         default:
             return feature.isAvailable(in: defaults)
         }

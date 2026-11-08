@@ -127,8 +127,16 @@ elif (( STYLE_STATUS != 0 )); then
 fi
 
 sync
-hdiutil detach "$MOUNT" -quiet \
-    || hdiutil detach "$MOUNT" -force -quiet
+for i in {1..5}; do
+    if hdiutil detach "$MOUNT" -quiet 2>/dev/null; then
+        break
+    fi
+    sleep 1
+    if hdiutil detach "$MOUNT" -force -quiet 2>/dev/null; then
+        break
+    fi
+    sleep 1
+done
 MOUNT=""
 
 echo "▸ Compressing…"

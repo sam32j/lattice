@@ -177,7 +177,7 @@ struct HubControlButton: View {
                 }
         }
         .buttonStyle(.plain)
-        .focusable(false)
+        .focusable().focusEffectDisabled()
         .contextMenu {
             if let onHide {
                 Button(FeatureStrings.hubCustomization(l10n.language).hideFromHub) {

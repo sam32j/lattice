@@ -245,7 +245,7 @@ struct LatticeHubView: View {
                 .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
         .buttonStyle(NotchButtonStyle(cornerRadius: 9))
-        .focusable(false)
+        .focusable().focusEffectDisabled()
         .help(updateTooltip)
         .accessibilityLabel(updateTooltip)
     }

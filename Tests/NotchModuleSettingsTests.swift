@@ -35,6 +35,6 @@ enum NotchModuleSettingsTests {
         suite.expect(settings.reopeningSelection.isEmpty, "last-page reopening keeps its empty picker selection")
         state.returnHome = true
         state.homeModule = "unknown"
-        suite.expect(settings.reopeningSelection == "controls", "unknown reopening destinations retain their default")
+        suite.expect(settings.reopeningSelection == "hub", "unknown reopening destinations retain their default")
     }
 }

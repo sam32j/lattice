@@ -81,7 +81,7 @@ extension LatticeHubService {
         previousApp = nil
         panel?.resignKey()
         if isLatticeFront, let target {
-            NSApp.yieldActivation(to: target)
+            ActivationHandoff.yield(to: target)
             target.activate()
         }
     }

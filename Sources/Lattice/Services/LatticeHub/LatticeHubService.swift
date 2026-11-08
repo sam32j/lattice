@@ -19,7 +19,7 @@ final class LatticeHubService: ObservableObject {
     @Published var isEditing = false {
         didSet {
             guard isEditing != oldValue else { return }
-            if isEditing {
+            if isEditing, NotchSupport.usesHapticFeedback() {
                 TrackpadActuator.shared.actuate(waveform: 3) {
                     NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
                 }
