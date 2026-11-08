@@ -189,6 +189,9 @@ enum NotchPresentationRefreshContract {
         var captureContent: Bool?
         var captureContentHeight: CGFloat?
         var captureHistoryGestureProgress = 0.0
+        var captureOpenedFromHistory = false
+        var captureReturnsToHubHistory = false
+        var opensCaptureFromHubHistory = false
         let musicSwipe = NotchMusicSwipeController(state: NotchMusicSwipeState(), commit: { _ in false })
         var captureTrackpadGesture = NotchCaptureTrackpadGesture()
         var captureFallback: (() -> Void)?
@@ -205,9 +208,7 @@ enum NotchPresentationRefreshContract {
         }
         var pinned = false
         var showingSections = false
-        var showingAppPanel = false
         var lastVisitedSections = false
-        var lastVisitedAppPanel = false
         var showingCommandBar = false
         var commandBarClosings = 0
         func commandBarDidClose() { commandBarClosings += 1 }
@@ -255,7 +256,12 @@ enum NotchPresentationRefreshContract {
         var expandedPageTop = NotchPageTop.row
         var modules = NotchModule.allCases
         var homeControls: [NotchControlItem] = []
-        var expandedGeometry: NotchGeometry { geometry }
+        var expandedGeometry: NotchGeometry {
+            var result = geometry
+            result.requiresFullWidthHeader = selected == .captures && captureActions != nil
+                && !showingSections && selectedMetric == nil
+            return result
+        }
         var compactActivityGeometry: NotchGeometry { geometry.compactTimerGeometry(showsDownloads: false) }
         var surfaceSize: CGSize {
             if fullscreenCompact { return geometry.restingSize(showsContent: false) }
@@ -457,14 +463,26 @@ enum NotchPresentationRefreshContract {
         suite.expect(toolbar.expandedGeometry.headerCameraGap == 210,
                      "a standard wide page puts its top row beside the camera")
         toolbar.selected = .captures
+        let originalCaptureWidth = toolbar.expandedGeometry.expandedWidth
         toolbar.captureActions = true
         toolbar.captureContent = true
         toolbar.captureContentHeight = 150
         toolbar.refreshPresentation(animated: false)
         suite.expect(toolbar.expandedGeometry.headerCameraGap == 0
-                     && toolbar.expandedGeometry.headerTopInset == 42
-                     && toolbar.windowHost?.activationRect.height == 42,
-                     "a capture toolbar keeps a full row below the camera without losing actions to the cutout")
+                     && toolbar.expandedGeometry.headerTopInset == 42,
+                     "a capture toolbar keeps its full row below the camera")
+        suite.expect(toolbar.windowHost?.activationRect.isEmpty == true,
+                     "capture preview disables the native camera activation strip so Back and History receive clicks")
+        suite.expect(toolbar.expandedGeometry.expandedWidth == originalCaptureWidth,
+                     "capture preview actions and the upper-right Island pin do not widen the panel")
+        toolbar.captureContent = nil
+        toolbar.captureActions = nil
+        toolbar.selected = .hub
+        toolbar.refreshPresentation(animated: false)
+        suite.expect(toolbar.windowHost?.activationRect.width == toolbar.geometry.cameraWidth,
+                     "leaving the preview restores the ordinary camera activation target")
+        toolbar.selected = .captures
+        toolbar.captureActions = true
         toolbar.showingSections = true
         suite.expect(toolbar.expandedGeometry.headerCameraGap == 210,
                      "leaving capture editing puts the top row back beside the camera")
@@ -647,7 +665,7 @@ enum NotchPresentationRefreshContract {
                    "switching Timer, Pomodoro and Stopwatch updates the content height without reopening the island")
         }
         suite.expect(mismatches == 0, "content is invalidated before the native window receives its new size")
-        suite.expect(resizes == 4 && invalidations == resizes,
+        suite.expect(resizes == 6 && invalidations == resizes,
                "each mode change with a new size publishes it, and one keeping the size stays quiet")
         for _ in 0..<1000 { service.refreshPresentation() }
         suite.expect(invalidations == resizes, "unchanged presentations do not repeatedly invalidate SwiftUI layout")

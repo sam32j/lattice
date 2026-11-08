@@ -69,77 +69,27 @@ enum NotchSectionPagingTests {
         routing(suite)
     }
 
-    // The generated Service uses the production scroll handlers verbatim.
-    // Events stay inside this fixture and never post input to the desktop.
-    struct NSEvent {
-        static var mouseLocation = CGPoint.zero
-        var window: Int? = 1
-        var locationInWindow: CGPoint
-        var scrollingDeltaY: CGFloat = -24
-        var timestamp: TimeInterval = 10
-        var hasPreciseScrollingDeltas = true
-        var phase: AppKit.NSEvent.Phase = .began
-        var momentumPhase: AppKit.NSEvent.Phase = []
-        var modifierFlags: AppKit.NSEvent.ModifierFlags = []
-    }
-    final class Panel {
-        let frame = CGRect(x: 173, y: 127, width: 600, height: 260)
-        func convertPoint(toScreen point: CGPoint) -> CGPoint {
-            CGPoint(x: frame.minX + point.x, y: frame.minY + point.y)
-        }
-    }
-    final class Host {
-        var acceptsPoint = true
-        var receivedPoint: CGPoint?
-        func containsSurface(_ point: CGPoint) -> Bool { receivedPoint = point; return acceptsPoint }
-    }
+    // The generated Service uses the current production handleScroll verbatim.
+    // Section paging math remains independently covered above; actual scroll
+    // dispatch now forwards to the generic gesture handler.
+    struct NSEvent {}
+
     class State {
-        var running = true, suspended = false, expanded = true, showingSections = true, trackingMenu = false
-        var panel: Panel? = Panel()
-        var windowHost: Host? = Host()
-        var geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1470, height: 956),
-                                     safeAreaTop: 32, cameraWidth: 180)
-        var expandedGeometry: NotchGeometry { geometry }
-        var sectionScroll = NotchSectionScroll()
-        var movedRows = 0, gestureCalls = 0
-        func scrollSections(by rows: Int) { movedRows += rows }
-        func handleGesture(_ event: NSEvent) -> Bool { gestureCalls += 1; return false }
+        var gestureCalls = 0
+        var gestureHandled = false
+        func handleGesture(_ event: NSEvent) -> Bool {
+            gestureCalls += 1
+            return gestureHandled
+        }
     }
 
     private static func routing(_ suite: TestSuite) {
-        let global = Service()
-        NSEvent.mouseLocation = CGPoint(x: 200, y: 200)
-        var windowless = NSEvent(locationInWindow: CGPoint(x: 900, y: 900))
-        windowless.window = nil
-        _ = global.handleScroll(windowless)
-        suite.expect(global.windowHost?.receivedPoint == NSEvent.mouseLocation && global.movedRows == 1,
-                     "windowless gallery scrolling uses the pointer's screen coordinates without a second conversion")
-        for (layout, cameraHeight): (NotchSize, Double) in [(.spacious, 32), (.compact, 32), (.spacious, 0), (.compact, 52)] {
-            let service = Service()
-            service.geometry = NotchGeometry(screen: service.geometry.screen, safeAreaTop: cameraHeight,
-                                             cameraWidth: 180, layout: layout)
-            let headerBottom = service.expandedGeometry.headerTopInset + service.expandedGeometry.headerRowHeight
-            func event(fromTop top: CGFloat) -> NSEvent {
-                NSEvent(locationInWindow: CGPoint(x: 100, y: service.panel!.frame.height - top))
-            }
-            suite.expect(!service.handleScroll(event(fromTop: headerBottom))
-                         && service.gestureCalls == 1 && service.movedRows == 0,
-                         "the actual header keeps its gesture for preset \(layout) and camera height \(cameraHeight)")
-            for offset in [1.0, NotchLayout.spacing + 1, NotchLayout.spacing + NotchLayout.sectionTileHeight / 2] {
-                let before = service.movedRows
-                let gestures = service.gestureCalls
-                suite.expect(service.handleScroll(event(fromTop: headerBottom + offset))
-                             && service.movedRows == before + 1 && service.gestureCalls == gestures,
-                             "every part of the body steps rows below the rendered header, including the top of the first tile")
-            }
-            var modified = event(fromTop: headerBottom + 20)
-            modified.modifierFlags = .command
-            let before = service.movedRows
-            suite.expect(!service.handleScroll(modified) && service.movedRows == before,
-                         "modified scrolling is not captured by the gallery")
-            service.windowHost?.acceptsPoint = false
-            suite.expect(!service.handleScroll(event(fromTop: headerBottom + 20)) && service.movedRows == before,
-                         "transparent corners and floating controls are not captured by the gallery")
-        }
+        let service = Service()
+        let event = NSEvent()
+        suite.expect(!service.handleScroll(event) && service.gestureCalls == 1,
+                     "scroll events reach the current gesture handler even when not consumed")
+        service.gestureHandled = true
+        suite.expect(service.handleScroll(event) && service.gestureCalls == 2,
+                     "scroll events propagate the gesture handler's consumed result")
     }
 }

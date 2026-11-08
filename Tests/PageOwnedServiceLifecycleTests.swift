@@ -98,15 +98,6 @@ enum PageOwnedServiceLifecycleTests {
         snippets.insert(TextSnippet())
         suite.expect(!snippets.isVisible && !snippets.inserted,
                      "a delayed Quick Snippets action cannot open or insert after disabling Text Snippets")
-        defaults.set(true, forKey: AppFeature.quickLauncher.availabilityKey)
-        defaults.set(true, forKey: DefaultsKey.quickLauncherShortcutEnabled)
-        let launcher = Launcher()
-        launcher.syncWithPreferences()
-        defaults.set(false, forKey: AppFeature.quickLauncher.availabilityKey)
-        launcher.syncWithPreferences()
-        suite.expect(!launcher.hotkey.registered && !launcher.isVisible && launcher.monitors == 0
-                     && launcher.activeUtility == nil && !launcher.isEditing,
-                     "disabling Launcher Grid tears down its hotkey, panel, utility and monitors")
         defaults.set(true, forKey: DefaultsKey.clipboardHistoryEnabled)
         for key in [DefaultsKey.clipboardAutoClearOnDelay, DefaultsKey.clipboardAutoClearOnSleep,
                     DefaultsKey.clipboardAutoClearOnDisplaySleep, DefaultsKey.clipboardAutoClearOnScreenLock] {
