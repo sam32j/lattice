@@ -4,7 +4,7 @@ import EventKit
 extension NotchSettings {
     var layoutPage: some View {
         SettingsCard {
-            SettingsRow(symbol: "sparkles", title: editor.quickActions, caption: NotchQuickActionsCopy.caption(l10n.language)) {
+            SettingsRow(symbol: "sparkles", title: editor.quickActions) {
                 Button(FeatureStrings.screenshot(l10n.language).editButton + "...") {
                     NotchLiveQuickActionsEditorController.shared.show()
                 }

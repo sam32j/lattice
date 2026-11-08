@@ -16,6 +16,7 @@ struct NotchIslandPreview: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var monitoring = false
+    @State private var systemHeight = NotchSystemView.contentHeight(for: SystemMonitor.shared.snapshot)
     @State private var windowVisible = false
     private var editor: NotchEditorStrings { FeatureStrings.notchEditor(l10n.language) }
     private static let captionHeight: CGFloat = 28
@@ -39,6 +40,11 @@ struct NotchIslandPreview: View {
             .onAppear { monitor(windowVisible && module == .system) }
             .onChange(of: module) { _, value in monitor(windowVisible && value == .system) }
             .onChange(of: windowVisible) { _, visible in monitor(visible && module == .system) }
+            .onReceive(SystemMonitor.shared.$snapshot
+                .compactMap { snapshot in
+                    module == .system ? NotchSystemView.contentHeight(for: snapshot) : nil
+                }
+                .removeDuplicates()) { systemHeight = $0 }
             .onDisappear { monitor(false) }
     }
 
@@ -52,7 +58,7 @@ struct NotchIslandPreview: View {
 
     private func stage(in stageSize: CGSize) -> some View {
         let geometry = notch.previewGeometry(for: module)
-        let size = notch.previewSize(for: module)
+        let size = notch.previewSize(for: module, systemHeight: systemHeight)
         let scale = Self.scale(in: stageSize)
         return ZStack(alignment: .top) {
             Rectangle()
@@ -81,7 +87,12 @@ struct NotchIslandPreview: View {
     private func monitor(_ wanted: Bool) {
         guard wanted != monitoring else { return }
         monitoring = wanted
-        if wanted { SystemMonitor.shared.panelDidAppear() } else { SystemMonitor.shared.panelDidDisappear() }
+        if wanted {
+            systemHeight = NotchSystemView.contentHeight(for: SystemMonitor.shared.snapshot)
+            SystemMonitor.shared.panelDidAppear()
+        } else {
+            SystemMonitor.shared.panelDidDisappear()
+        }
     }
 
     private var glassSurface: Bool {
@@ -160,7 +171,7 @@ struct NotchPagePreview: View {
         case .captures:
             RecentCapturesView(onClose: nil, notchSize: size).notchBand(trailing: { NotchClearCapturesButton() })
         case .files: NotchFilesView(service: notch)
-        case .system: NotchSystemView(size: size) { _ in }
+        case .system: NotchSystemView { _ in }
         case .hub: LatticeHubView(notchSize: size)
         case .scratchpad: NotchScratchpadStill()
         case .agents:

@@ -4,6 +4,12 @@ import EventKit
 extension NotchSettings {
     func islandFeatureBinding(_ feature: AppFeature, value: Binding<Bool>) -> Binding<Bool> {
         Binding(get: { feature.isAvailable && value.wrappedValue }, set: { enabled in
+            if feature == .notch && !enabled {
+                let menuIconHidden = UserDefaults.standard.bool(forKey: DefaultsKey.notchHidesMenuBarIcon)
+                if menuIconHidden {
+                    guard LatticeInterfaceConfirmation.confirmHideLattice(over: dialogWindow.window) else { return }
+                }
+            }
             value.wrappedValue = enabled
             features.setIslandFeature(feature, enabled: enabled)
         })
@@ -129,7 +135,7 @@ extension NotchSettings {
          String(showPlayingMusic), String(includeOtherPlayers), idle, hiddenControls, controlOrder, size,
          String(timerEnabled), String(timerSoundEnabled), String(hideTimerCountdown),
          String(cameraEnabled), String(accessoriesEnabled), String(hapticFeedback),
-         String(shelfWindow), String(dragReveal), String(appPanel),
+         String(shelfWindow), String(dragReveal),
          String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(hideInFullscreen), String(coversMenus),
          display, silhouette, String(hover), hidden, order, String(volume), String(inputSource),
          String(brightness), String(keyboardLight),
