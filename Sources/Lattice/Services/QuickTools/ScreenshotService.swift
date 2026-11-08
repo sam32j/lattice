@@ -541,8 +541,9 @@ final class ScreenshotService: ObservableObject {
                        defaultAction: .none,
                        initialSaved: nil,
                        completedActions: [],
-                       dismissInterval: ScreenshotSupport.recoveryPreviewDismissInterval,
-                       latestCapture: nil)
+                       dismissInterval: nil, // Manual history previews do not expire.
+                       latestCapture: nil,
+                       openedFromHistory: true)
     }
 
     private func presentPreview(_ capture: ScreenshotSelectionController.Capture,
@@ -550,7 +551,8 @@ final class ScreenshotService: ObservableObject {
                                 initialSaved: SaveOutcome?,
                                 completedActions: Set<ScreenshotQuickPreviewController.Action>,
                                 dismissInterval: TimeInterval?,
-                                latestCapture: UUID?) {
+                                latestCapture: UUID?,
+                                openedFromHistory: Bool = false) {
         var saved = initialSaved
         let presented = capture.presentationCapture
         let controller = ScreenshotQuickPreviewController(
@@ -597,6 +599,16 @@ final class ScreenshotService: ObservableObject {
                     return [.discard]
                 }
             },
+            deleteCapture: { [weak self] completion in
+                RecentCaptureService.shared.deleteScreenshot(id: capture.id) { [weak self] removed in
+                    // Keep the old latest-capture/auto-shelf cleanup, including
+                    // the existing behavior for a separately saved export.
+                    if removed {
+                        self?.deletePreviewSideEffects(saved: saved, latestCapture: latestCapture)
+                    }
+                    completion(removed)
+                }
+            },
             share: { [weak self] duration, completion in
                 guard let self else {
                     Task { @MainActor in completion(nil) }
@@ -615,9 +627,24 @@ final class ScreenshotService: ObservableObject {
                 saved = outcome
                 return outcome.url
             },
+            openedFromHistory: openedFromHistory,
             onClose: { [weak self] in self?.preview = nil })
         preview = controller
         controller.show()
+    }
+
+    /// Preserve the previous discard side effects after the stored history
+    /// copy was successfully deleted, without running the old discard path
+    /// twice. User exports are moved to Trash rather than permanently erased.
+    private func deletePreviewSideEffects(saved: SaveOutcome?, latestCapture: UUID?) {
+        if let saved {
+            try? FileManager.default.trashItem(at: saved.url, resultingItemURL: nil)
+            if let consumed = saved.consumedNumber {
+                Self.rewindNumberSequence(toReuse: consumed)
+            }
+        }
+        unshelve(latestCapture)
+        discardLatestCapture(latestCapture)
     }
 
     func showTransformedPreview(_ capture: ScreenshotSelectionController.Capture) {
@@ -1057,6 +1084,32 @@ final class ScreenshotService: ObservableObject {
         guard let provider = NSItemProvider(contentsOf: url) else {
             try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
             return nil
+        }
+        return provider
+    }
+
+    /// The quick preview must start dragging without synchronously encoding
+    /// potentially multi-megapixel screenshots on the main thread. Export is
+    /// requested lazily by the drop destination; it still receives the exact
+    /// original PNG pixels and image scale, never the display thumbnail.
+    static func previewDragItemProvider(image: CGImage,
+                                        scale: CGFloat,
+                                        strings: ScreenshotFeatureStrings) -> NSItemProvider {
+        let provider = NSItemProvider()
+        provider.suggestedName = ScreenshotSupport.fileName(prefix: strings.fileNamePrefix,
+                                                             date: Date())
+        provider.registerFileRepresentation(forTypeIdentifier: UTType.png.identifier,
+                                            fileOptions: [], visibility: .all) { completion in
+            let progress = Progress(totalUnitCount: 1)
+            DispatchQueue.global(qos: .userInitiated).async {
+                if let url = temporaryExportFile(image: image, scale: scale, strings: strings) {
+                    progress.completedUnitCount = 1
+                    completion(url, false, nil)
+                } else {
+                    completion(nil, false, CocoaError(.fileWriteUnknown))
+                }
+            }
+            return progress
         }
         return provider
     }

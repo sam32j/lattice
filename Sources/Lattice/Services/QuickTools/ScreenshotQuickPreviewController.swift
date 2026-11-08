@@ -35,6 +35,7 @@ final class ScreenshotQuickPreviewController {
     /// save-and-copy can succeed by halves, and only the done halves gray
     /// their buttons out. Empty means the action failed entirely.
     private let action: (Action) -> Set<Action>
+    private let deleteCapture: (@escaping (Bool) -> Void) -> Void
     private let share: (ScreenshotShareDuration,
                         @escaping @MainActor (ScreenshotShareRecord?) -> Void) -> Void
     /// Writes the capture as it would be saved into a temporary file for the
@@ -44,6 +45,8 @@ final class ScreenshotQuickPreviewController {
     private let saveToDefault: (() -> URL?)?
     private var menuFileURL: URL?
     private let shareAnchor = ShelfSharePickerAnchor.Anchor()
+    private let sharePresenter = ShelfSharePresenter()
+    private var deletingCapture = false
     private var systemSharing = false
     private var contextMenuOpen = false
     private let onClose: () -> Void
@@ -58,6 +61,7 @@ final class ScreenshotQuickPreviewController {
     private var shownInNotch = false
     private var didStartPreview = false
     private var pointerInside = false
+    private let openedFromHistory: Bool
 
     var protectedWindowIDs: Set<CGWindowID> {
         guard let panel, panel.isVisible, panel.windowNumber > 0 else { return [] }
@@ -70,18 +74,24 @@ final class ScreenshotQuickPreviewController {
          completedActions: Set<Action>,
          dismissInterval: TimeInterval?,
          action: @escaping (Action) -> Set<Action>,
+         deleteCapture: @escaping (@escaping (Bool) -> Void) -> Void,
          share: @escaping (ScreenshotShareDuration,
                            @escaping @MainActor (ScreenshotShareRecord?) -> Void) -> Void,
          shareFile: @escaping () -> URL?,
          savedFile: @escaping () -> URL? = { nil },
          saveToDefault: (() -> URL?)? = nil,
+         openedFromHistory: Bool = false,
          onClose: @escaping () -> Void) {
         self.capture = capture
+        self.openedFromHistory = openedFromHistory
         self.strings = strings
         self.defaultAction = defaultAction
-        self.baseDismissDuration = dismissInterval
-        self.autoDismissDuration = dismissInterval
+        // A manually opened history image is persistent regardless of the
+        // transient confirmation timeout the caller may have supplied.
+        self.baseDismissDuration = openedFromHistory ? nil : dismissInterval
+        self.autoDismissDuration = openedFromHistory ? nil : dismissInterval
         self.action = action
+        self.deleteCapture = deleteCapture
         self.share = share
         self.shareFile = shareFile
         self.savedFile = savedFile
@@ -108,10 +118,18 @@ final class ScreenshotQuickPreviewController {
             perform: { [weak self] action in self?.perform(action) },
             dragItem: { [weak self] in
                 guard let self else { return NSItemProvider() }
-                return ScreenshotService.dragItemProvider(image: self.capture.image,
-                                                          scale: self.capture.scale,
-                                                          strings: self.strings)
-                    ?? NSItemProvider()
+                return ScreenshotService.previewDragItemProvider(image: self.capture.image,
+                                                                 scale: self.capture.scale,
+                                                                 strings: self.strings)
+            },
+            nativeDragFile: { [weak self] in
+                guard let self else { return nil }
+                // Lattice already uses this background file-promise writer for
+                // pinned captures. It exports original pixels, not the thumbnail.
+                return ScreenshotPinFilePromise.make(
+                    image: self.capture.image, scale: self.capture.scale,
+                    fileName: ScreenshotSupport.fileName(prefix: self.strings.fileNamePrefix,
+                                                         date: Date()))
             },
             share: { [weak self] duration in self?.performShare(duration) },
             systemShare: { [weak self] in self?.performSystemShare() },
@@ -137,6 +155,8 @@ final class ScreenshotQuickPreviewController {
             menuClosed: { [weak self] in self?.setContextMenuOpen(false) })
         if wantsNotch, NotchService.shared.presentCapture(
             id: presentationID, content: AnyView(content), actions: AnyView(content.toolbar), height: Self.size(showingLink: model.sharedRecord != nil).height,
+            fromHistory: openedFromHistory,
+            imageOverlay: true,
             takeFocus: presentationPolicy.takesFocus,
             closeOnCollapse: presentationPolicy.closesOnCollapse,
             fallback: { [weak self] in
@@ -280,6 +300,7 @@ final class ScreenshotQuickPreviewController {
 
     private func perform(_ requested: Action) {
         guard !closed else { return }
+        if requested == .discard { confirmDelete(); return }
         // Keyboard shortcuts honor the grayed-out buttons: what the
         // after-capture action already did is not done twice.
         guard !model.disabledActions.contains(requested) else { return }
@@ -361,9 +382,9 @@ final class ScreenshotQuickPreviewController {
         }
     }
 
-    /// The system share sheet: AirDrop, messages and every other target the
-    /// Mac offers. The preview waits while the sheet is up, and a chosen
-    /// target finishes it the way Copy does.
+    /// Anchor the native share picker to the actual window surface. The SwiftUI
+    /// NSViewRepresentable behind the icon can have zero bounds in the Island's
+    /// overlay toolbar, causing a picker with no usable presentation anchor.
     private func performSystemShare() {
         guard !closed, !systemSharing else { return }
         dismissWork?.cancel()
@@ -373,15 +394,79 @@ final class ScreenshotQuickPreviewController {
             scheduleAutoDismiss()
             return
         }
+        let window = shownInNotch ? NotchService.shared.presentationWindow : panel
+        guard let window, let content = window.contentView, window.isVisible else {
+            NSSound.beep()
+            scheduleAutoDismiss()
+            return
+        }
+        // An explicit Share click may be made while another app owns focus.
+        // Activating Lattice also keeps a native sharing picker above the Island.
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKey()
+        let location = content.convert(window.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil)
+        let bounds = content.bounds
+        let point = CGPoint(x: min(max(location.x, bounds.minX + 1), bounds.maxX - 1),
+                            y: min(max(location.y, bounds.minY + 1), bounds.maxY - 1))
+        let anchor = CGRect(origin: point, size: CGSize(width: 1, height: 1))
         systemSharing = true
-        let shown = shareAnchor.present([url]) { [weak self] chosen in
+        let shown = sharePresenter.present(for: [url], from: content, relativeTo: anchor) { [weak self] chosen in
             guard let self else { return }
             self.systemSharing = false
             if chosen { self.close() } else { self.scheduleAutoDismiss() }
         }
         if !shown {
             systemSharing = false
+            NSSound.beep()
             scheduleAutoDismiss()
+        }
+    }
+
+    /// Deleting an image is distinct from dismissing its preview. In particular,
+    /// history navigation must wait for the backing file and index to be removed.
+    private func confirmDelete() {
+        guard !closed, !deletingCapture else { return }
+        dismissWork?.cancel()
+        dismissWork = nil
+        let alert = NSAlert()
+        alert.messageText = "Delete screenshot?"
+        alert.informativeText = "This removes the stored screenshot from this Mac and Recent Captures."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Delete Screenshot")
+        alert.addButton(withTitle: strings.cancel)
+        let owner = shownInNotch ? NotchService.shared.presentationWindow : panel
+        guard NotchIslandAlert.run(alert, above: owner) == .alertFirstButtonReturn else {
+            scheduleAutoDismiss()
+            return
+        }
+        deletingCapture = true
+        deleteCapture { [weak self] succeeded in
+            guard let self, !self.closed else { return }
+            self.deletingCapture = false
+            guard succeeded else {
+                NSSound.beep()
+                let errorAlert = NSAlert()
+                errorAlert.messageText = "Couldn't delete screenshot"
+                errorAlert.informativeText = "The stored screenshot could not be removed. Try again."
+                errorAlert.alertStyle = .warning
+                errorAlert.addButton(withTitle: "OK")
+                _ = NotchIslandAlert.run(errorAlert, above: self.shownInNotch
+                    ? NotchService.shared.presentationWindow : self.panel)
+                self.scheduleAutoDismiss()
+                return
+            }
+            if self.openedFromHistory {
+                if self.shownInNotch && NotchService.shared.isCaptureVisible(id: self.presentationID) {
+                    NotchService.shared.showCaptureHistory()
+                } else {
+                    self.close()
+                    RecentCaptureService.shared.showHistoryWindow()
+                }
+            } else {
+                let wasInNotch = self.shownInNotch
+                self.close()
+                if wasInNotch { NotchService.shared.collapse() }
+            }
         }
     }
 
@@ -570,7 +655,9 @@ final class ScreenshotQuickPreviewController {
             guard flags.isDisjoint(with: [.command, .control, .option]) else { return event }
             let letter = event.charactersIgnoringModifiers?.lowercased()
             if key == kVK_Space || letter == " " {
-                self.perform(.copy)
+                // Space and Command-Y both toggle Quick Look. Copy remains
+                // Command-C; Space must not close a history-opened preview.
+                self.showQuickLook()
                 return nil
             }
             if letter == "p" || key == kVK_ANSI_P {
@@ -628,6 +715,7 @@ private struct ScreenshotQuickPreviewView: View {
     @ObservedObject private var featureRuntime = FeatureRuntime.shared
     let perform: (ScreenshotQuickPreviewController.Action) -> Void
     let dragItem: () -> NSItemProvider
+    let nativeDragFile: () -> NSFilePromiseProvider?
     let share: (ScreenshotShareDuration) -> Void
     let systemShare: () -> Void
     let shareAnchor: ShelfSharePickerAnchor.Anchor
@@ -717,7 +805,7 @@ private struct ScreenshotQuickPreviewView: View {
                 Button {
                     perform(.pin)
                 } label: {
-                    Image(systemName: "pin").frame(width: 28, height: 28)
+                    Image(systemName: "mappin").frame(width: 28, height: 28)
                 }
                 .modifier(ScreenshotPreviewActionStyle(embedded: true))
                 .controlSize(.small)
@@ -764,7 +852,7 @@ private struct ScreenshotQuickPreviewView: View {
                 thumbnailButton(symbol: "text.viewfinder", title: strings.copyTextButton,
                                 action: copyText)
             }
-            thumbnailButton(symbol: "pin", title: strings.pinButton) { perform(.pin) }
+            thumbnailButton(symbol: "mappin", title: strings.pinButton) { perform(.pin) }
         }
         .padding(6)
     }
@@ -882,6 +970,145 @@ private struct ScreenshotQuickPreviewView: View {
     }
 
     private var preview: some View {
+        Group {
+            if embedded { islandPreview } else { floatingPreview }
+        }
+    }
+
+    /// The Island size is owned by NotchService. The image fills only its
+    /// existing canvas (cropping at the edges when aspect ratios differ), and
+    /// the controls float above it without reserving an extra layout row.
+    private var islandPreview: some View {
+        GeometryReader { size in
+            VStack(spacing: 5) {
+                GeometryReader { canvas in
+                    Image(decorative: image, scale: 1)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFill()
+                        .frame(width: canvas.size.width, height: canvas.size.height)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        // Native AppKit dragging avoids SwiftUI recompositing
+                        // the image/Glass view as a drag moves over this Island.
+                        // The source owns just the image; toolbar overlays sit
+                        // above it and remain fully interactive.
+                        .overlay {
+                            ScreenshotIslandDragSurface(image: image,
+                                                        filePromise: nativeDragFile,
+                                                        expand: expand)
+                        }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.8)
+                                .allowsHitTesting(false)
+                        }
+                        .overlay(alignment: .topLeading) {
+                            // Quick Look is separate from the screenshot drag
+                            // surface, so this control doesn't enter the drag
+                            // preview or steal gestures outside its bounds.
+                            thumbnailButton(symbol: "eye", title: "Quick Look", action: expand)
+                                .padding(6)
+                        }
+                        .overlay(alignment: .topTrailing) {
+                            islandImageToolbar.padding(6)
+                        }
+                        .overlay(alignment: .bottomLeading) {
+                            if model.qr != nil { qrControl.padding(6) }
+                        }
+                }
+                if let record = model.sharedRecord {
+                    sharedLinkRow(record)
+                        .transition(.opacity)
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 3)
+            .padding(.bottom, 4)
+            .frame(width: size.size.width, height: size.size.height)
+        }
+    }
+
+    /// Every action uses the same 28-point hit target and symbol typography.
+    /// The native Menu style previously gave Quick Link a different baseline;
+    /// use its existing duration picker through the same button treatment.
+    private func islandTool(symbol: String, title: String,
+                            disabled: Bool = false,
+                            action: @escaping () -> Void) -> some View {
+        Button(action: action) { islandToolImage(symbol) }
+            .modifier(ScreenshotPreviewActionStyle(embedded: true))
+            .controlSize(.small)
+            .focusable(false)
+            .disabled(disabled)
+            .opacity(disabled ? 0.4 : 1)
+            .screenshotSafeHelp(title)
+            .accessibilityLabel(title)
+    }
+
+    private func islandToolImage(_ symbol: String) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 14, weight: .medium))
+            .symbolRenderingMode(.hierarchical)
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle()) // Tap the entire hover tile, not just the SF Symbol.
+    }
+
+    private var islandToolSeparator: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.18))
+            .frame(width: 1, height: 15)
+            .padding(.horizontal, 5)
+            .accessibilityHidden(true)
+    }
+
+    /// Copy, Save, Pin to Screen, OCR | Share, Quick Link | Edit, Delete.
+    /// The pin here is for the IMAGE, not the Island's camera-side pin.
+    private var islandImageToolbar: some View {
+        HStack(spacing: 3) {
+            islandTool(symbol: "doc.on.doc", title: strings.copyButton,
+                       disabled: model.disabledActions.contains(.copy)) { perform(.copy) }
+            islandTool(symbol: "square.and.arrow.down", title: strings.saveButton,
+                       disabled: model.disabledActions.contains(.save)) { perform(.save) }
+            islandTool(symbol: "mappin", title: strings.pinButton) { perform(.pin) }
+            if featureRuntime.isAvailable(.screenOCR) {
+                islandTool(symbol: "text.viewfinder", title: strings.copyTextButton,
+                           action: copyText)
+            }
+            islandToolSeparator
+            islandTool(symbol: "square.and.arrow.up", title: strings.shareButton,
+                       action: systemShare)
+            if sharingEnabled, model.sharedRecord == nil {
+                Button(action: showShareMenu) {
+                    if model.sharing {
+                        ProgressView().controlSize(.small).frame(width: 28, height: 28).contentShape(Rectangle())
+                    } else {
+                        islandToolImage("link")
+                    }
+                }
+                .modifier(ScreenshotPreviewActionStyle(embedded: true))
+                .controlSize(.small)
+                .focusable(false)
+                .disabled(model.sharing)
+                .screenshotSafeHelp(strings.shareSectionTitle)
+                .accessibilityLabel(strings.shareSectionTitle)
+            }
+            islandToolSeparator
+            islandTool(symbol: "pencil", title: strings.editButton) { perform(.edit) }
+            islandTool(symbol: "trash", title: strings.discardConfirm) { perform(.discard) }
+        }
+        .fixedSize(horizontal: true, vertical: true)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 3)
+        .background(HUDBackdrop(cornerRadius: 12, contrast: .standard))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.7)
+                .allowsHitTesting(false)
+        }
+        .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
+    }
+
+    private var floatingPreview: some View {
         VStack(spacing: 10) {
             ZStack {
                 Image(decorative: image, scale: 1)
@@ -914,15 +1141,9 @@ private struct ScreenshotQuickPreviewView: View {
                             viewportBottomTrailingButtons
                         }
                     }
-                } else if showsDismissButton {
-                    VStack {
-                        HStack {
-                            thumbnailDismissButton
-                            Spacer()
-                        }
-                        Spacer()
-                    }
                 }
+                // In Dynamic Island, Close lives in the camera-side header.
+                // Do not duplicate a dismiss X over a persistent screenshot.
 
                 if !embedded && isViewportHovered {
                     viewportCenterOverlay
@@ -1212,3 +1433,114 @@ private struct QuickPreviewCenterActions: View {
     }
 }
 
+
+// MARK: - Native Dynamic Island screenshot dragging
+
+/// The Island's glass/backdrop and its SwiftUI image should never be live drag
+/// artwork. AppKit carries a small, fixed image while a lazy file promise
+/// exports the original pixels only if a destination asks for the file.
+private struct ScreenshotIslandDragSurface: NSViewRepresentable {
+    let image: CGImage
+    let filePromise: () -> NSFilePromiseProvider?
+    let expand: () -> Void
+
+    func makeNSView(context: Context) -> DragView { DragView(frame: .zero) }
+
+    func updateNSView(_ view: DragView, context: Context) {
+        view.updateArtwork(for: image)
+        view.filePromise = filePromise
+        view.expand = expand
+    }
+
+    static func dismantleNSView(_ view: DragView, coordinator: ()) {
+        view.finishDrag()
+        view.filePromise = nil
+        view.expand = nil
+        view.sourceImage = nil
+        view.dragArtwork = nil
+    }
+
+    final class DragView: NSView, NSDraggingSource {
+        // The visible screenshot can be 1,200 pixels wide. NSImage(cgImage:size:)
+        // changes POINT size but retains the original pixels, so a native drag
+        // would still carry a large texture through the Island's compositor.
+        // Rasterize once at the actual cursor-artwork size, as HubTileDragPreview
+        // does for grid items. Never re-rasterize for mouse movement.
+        var sourceImage: CGImage?
+        var dragArtwork: NSImage?
+        var filePromise: (() -> NSFilePromiseProvider?)?
+        var expand: (() -> Void)?
+        private var press: NSEvent?
+        private var isDragging = false
+
+        func finishDrag() {
+            press = nil
+            guard isDragging else { return }
+            isDragging = false
+            NotchService.shared.capturePreviewDragChanged(false)
+        }
+
+        func updateArtwork(for image: CGImage) {
+            guard sourceImage !== image else { return }
+            sourceImage = image
+            let scale = min(240 / CGFloat(image.width), 150 / CGFloat(image.height), 1)
+            let width = max(1, Int((CGFloat(image.width) * scale).rounded()))
+            let height = max(1, Int((CGFloat(image.height) * scale).rounded()))
+            guard let context = CGContext(data: nil, width: width, height: height,
+                                          bitsPerComponent: 8, bytesPerRow: 0,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+                dragArtwork = nil
+                return
+            }
+            context.interpolationQuality = .medium
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            dragArtwork = context.makeImage().map {
+                NSImage(cgImage: $0, size: CGSize(width: width, height: height))
+            }
+        }
+
+        override var isFlipped: Bool { true }
+        override var mouseDownCanMoveWindow: Bool { false }
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseDown(with event: NSEvent) {
+            if event.clickCount == 2 {
+                press = nil
+                expand?()
+            } else {
+                press = event
+            }
+        }
+
+        override func mouseUp(with event: NSEvent) { press = nil }
+
+        override func mouseDragged(with event: NSEvent) {
+            guard let press,
+                  hypot(event.locationInWindow.x - press.locationInWindow.x,
+                        event.locationInWindow.y - press.locationInWindow.y) >= 4,
+                  let artwork = dragArtwork, let provider = filePromise?() else { return }
+            self.press = nil
+
+            // Pair the preview's frame with the ORIGINAL mouse-down, as the
+            // working Hub grid drag does. Starting from the later dragged event
+            // can cause the first drag frame to jump relative to the cursor.
+            let size = artwork.size
+            let point = convert(press.locationInWindow, from: nil)
+            let item = NSDraggingItem(pasteboardWriter: provider)
+            item.setDraggingFrame(CGRect(x: point.x - size.width / 2,
+                                         y: point.y - size.height / 2,
+                                         width: size.width, height: size.height),
+                                  contents: artwork)
+            isDragging = true
+            NotchService.shared.capturePreviewDragChanged(true)
+            beginDraggingSession(with: [item], event: press, source: self)
+        }
+
+        func draggingSession(_ session: NSDraggingSession,
+                             sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation { .copy }
+        func ignoreModifierKeys(for session: NSDraggingSession) -> Bool { true }
+        func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint,
+                             operation: NSDragOperation) { finishDrag() }
+    }
+}

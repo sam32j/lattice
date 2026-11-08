@@ -85,8 +85,7 @@ final class CameraPreviewService: ObservableObject {
     func showEmbedded() {
         let notch = NotchService.shared
         guard SessionActivity.shared.isActive,
-            NotchCameraSupport.canPresent(expanded: notch.expanded, selected: notch.selected,
-            appPanel: notch.showingAppPanel),
+            NotchCameraSupport.canPresent(expanded: notch.expanded, selected: notch.selected),
             !isEmbeddedPresented else { return }
         hide()
         isEmbeddedPresented = true
@@ -129,8 +128,7 @@ final class CameraPreviewService: ObservableObject {
         guard SessionActivity.shared.isActive, NotchCameraSupport.isEnabled() else { return false }
         let notch = NotchService.shared
         notch.open(.camera)
-        guard NotchCameraSupport.canPresent(expanded: notch.expanded, selected: notch.selected,
-            appPanel: notch.showingAppPanel) else { return false }
+        guard NotchCameraSupport.canPresent(expanded: notch.expanded, selected: notch.selected) else { return false }
         showEmbedded()
         return isEmbeddedPresented
     }
