@@ -11,6 +11,7 @@ struct NotchMusicView: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var shuffle = NotchShuffleService.shared
+    @ObservedObject private var repeating = NotchRepeatService.shared
     @AppStorage(DefaultsKey.notchLyricsEnabled) private var lyricsEnabled = true
     @AppStorage(DefaultsKey.notchQueueEnabled) private var queueEnabled = true
     @State private var extra: MusicExtra?
@@ -32,9 +33,16 @@ struct NotchMusicView: View {
         case nil: return nil
         }
     }
-    /// The page starts at the top of the row beside the camera, where the
-    /// cover tucks in beside it; without one the cover leads the page.
+    /// The camera row belongs to the island chrome. No song artwork, titles,
+    /// or accessories can occupy it; the player begins immediately below it.
     private var bandHeight: CGFloat { band.besideCamera ? band.height : 0 }
+
+    private var artworkSize: CGFloat {
+        // Preserve the island's width, but let the cover use approximately
+        // a quarter of it, like the reference layout. Never enter the camera band.
+        min(NotchLayout.musicHeroArtworkSize,
+            max(NotchLayout.musicArtworkSize, size.width * 0.23))
+    }
 
     var body: some View {
         // Both presets grow for extra content while retaining the player.
@@ -57,11 +65,9 @@ struct NotchMusicView: View {
                     Color.clear.frame(height: split.player)
                 }
             } else if band.besideCamera {
-                // The cover's side of the row is free while the player is away.
                 Color.clear.frame(height: reserve - NotchLayout.rowSpacing)
-                    .overlay(alignment: .topLeading) { sectionsButton.frame(height: band.height) }
             } else {
-                HStack(spacing: 6) { Spacer(minLength: 0); extraButtons; sectionsButton }.frame(height: 28)
+                inlineHeader(service.playback)
             }
             if let openExtra, let playback = service.playback {
                 Group {
@@ -76,9 +82,13 @@ struct NotchMusicView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        // Beside the camera the row holds the song's extras, across from the cover.
+        // The header contains only the existing back button (from NotchView),
+        // the playing-app chooser, and the inherited pin. Music content and
+        // animated color never enter the camera's reserved row.
+        // Keep the playback app on the camera's trailing side. The temporary
+        // volume/brightness feedback is positioned separately by NotchView.
         .notchBand(trailing: {
-            if band.besideCamera, service.playback != nil { extraButtons }
+            if band.besideCamera, let playback = service.playback { sourceMenu(playback) }
         })
         .onAppear {
             // A preview in Settings leaves the island's size and extras alone.
@@ -86,16 +96,23 @@ struct NotchMusicView: View {
             syncExtras()
             service.refreshAutomation()
             shuffle.refresh(for: service.playback)
+            repeating.refresh(for: service.playback)
         }
         .onChange(of: extra) { syncExtras() }
         .onChange(of: service.playback.map(NotchMusicIdentity.init)) {
             syncExtras()
-            if !preview { shuffle.refresh(for: service.playback) }
+            if !preview {
+                shuffle.refresh(for: service.playback)
+                repeating.refresh(for: service.playback)
+            }
         }
         // Shuffle and the playback buttons share one consent, so a grant
         // through the playback buttons also shows on shuffle.
         .onChange(of: service.automationAvailability?.access) { old, new in
-            if !preview, old != nil, new != nil { shuffle.refresh(for: service.playback) }
+            if !preview, old != nil, new != nil {
+                shuffle.refresh(for: service.playback)
+                repeating.refresh(for: service.playback)
+            }
         }
         .onChange(of: features.revision) { syncExtras() }
         .onChange(of: lyricsEnabled) { syncExtras() }
@@ -107,6 +124,7 @@ struct NotchMusicView: View {
             NotchLyricsService.shared.hide()
             service.setQueueVisible(false)
             shuffle.stop()
+            repeating.stop()
         }
     }
 
@@ -119,66 +137,66 @@ struct NotchMusicView: View {
         service.setQueueVisible(extra == .queue)
     }
 
-    /// The cover and what goes beside it. Beside a camera the cover reaches
-    /// up into the row and the song sits below the camera, level with the
-    /// cover's foot; without one the song is centred on the cover.
-    /// The cover and what goes beside it: the song level with the cover's
-    /// foot, below the camera where the cover reaches up beside it, and the
-    /// bars at the far end, level with the cover's middle. Without a camera
-    /// row the song's toggles and the way to the sections take the corner
-    /// above the bars; a camera's row too narrow for that way leaves it
-    /// beside the bars.
-    private func head<Artwork: View, Titles: View, Accessory: View, Corner: View>(
-        corner showsCorner: Bool = false,
-        @ViewBuilder artwork: () -> Artwork, @ViewBuilder titles: () -> Titles,
-        @ViewBuilder accessory: () -> Accessory, @ViewBuilder corner: () -> Corner = { EmptyView() }) -> some View {
-        HStack(alignment: .bottom, spacing: 14) {
-            artwork()
-            titles()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .frame(height: NotchLayout.musicTitleHeight)
-            VStack(alignment: .trailing, spacing: 0) {
-                if showsCorner {
-                    HStack(spacing: 6) { corner() }.frame(height: 28)
-                }
-                HStack(spacing: 8) { accessory() }.frame(maxHeight: .infinity)
+    /// No notch / floating windows have no inherited camera-side header.
+    /// Keep the same actions in a small local top row in that case.
+    private func inlineHeader(_ playback: NotchPlayback?) -> some View {
+        HStack(spacing: 6) {
+            NotchBandBackButton(title: SettingsFollowupStrings.text(.allTools, l10n.language), showsTitle: true) {
+                NotchService.shared.select(.hub)
             }
-            .frame(height: NotchLayout.musicArtworkSize)
+            Spacer(minLength: 0)
+            if let playback { sourceMenu(playback) }
+            NotchIconButton(symbol: NotchService.shared.pinned ? "pin.fill" : "pin",
+                            title: NotchService.shared.pinned ? FeatureStrings.notch(l10n.language).unpin : FeatureStrings.notch(l10n.language).pin,
+                            selected: NotchService.shared.pinned,
+                            hasBackdrop: false) {
+                NotchService.shared.pinned.toggle()
+                LatticeHubService.shared.isPinned = NotchService.shared.pinned
+            }
         }
-        .frame(height: NotchLayout.musicHeadHeight(band: bandHeight), alignment: .bottom)
+        .frame(height: NotchLayout.musicInlineHeaderHeight)
     }
 
     private var idle: some View {
         let player = preview ? nil : NotchPreferredPlayer.current()
         let opens = player != nil
         let openTitle = player.map { NotchPreferredPlayer.openTitle(for: $0) } ?? ""
-        return VStack(spacing: NotchLayout.musicHeadSpacing) {
-            head(corner: !band.besideCamera && band.pageSectionsButton) {
-                // With a music app to open, the cover and the buttons below open it.
+        return VStack(spacing: 0) {
+            if band.besideCamera {
+                Color.clear.frame(height: bandHeight)
+            } else {
+                inlineHeader(nil)
+            }
+            Color.clear.frame(height: NotchLayout.musicHeroTopGap)
+            HStack(alignment: .top, spacing: 12) {
                 Button { NotchPreferredPlayer.open() } label: {
-                    NotchArtwork(image: nil, size: NotchLayout.musicArtworkSize)
+                    NotchArtwork(image: nil, size: artworkSize)
                 }
-                .buttonStyle(NotchButtonStyle(cornerRadius: NotchLayout.musicArtworkSize * 0.19))
+                .buttonStyle(NotchButtonStyle(cornerRadius: artworkSize * 0.19))
                 .disabled(!opens)
                 .help(openTitle)
                 .accessibilityLabel(opens ? openTitle : text.mediaNothingPlaying)
-            } titles: {
-                VStack(alignment: .leading, spacing: 2) {
+
+                VStack(alignment: .leading, spacing: 4) {
                     if !service.sources.isEmpty || !service.sourceIsAutomatic {
                         sourcePicker(nil)
                     } else {
-                        Text(text.mediaNothingPlaying).font(.system(size: 14, weight: .semibold)).lineLimit(1)
+                        Text(text.mediaNothingPlaying)
+                            .font(.system(size: 14, weight: .semibold))
+                            .lineLimit(1)
                     }
-                    // Where the song's artist goes: which app the buttons open.
                     if opens {
-                        Text(openTitle).font(.system(size: 13)).foregroundStyle(.secondary).lineLimit(1)
+                        Text(openTitle)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                 }
-            } accessory: {
-                EmptyView()
-            } corner: {
-                sectionsButton
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 6)
             }
+            .frame(height: NotchLayout.musicHeroArtworkSize, alignment: .top)
+            Color.clear.frame(height: NotchLayout.musicHeroTransportGap)
             Group {
                 if opens {
                     transportRow(leading: { EmptyView() }) { slot in
@@ -186,14 +204,14 @@ struct NotchMusicView: View {
                     }
                 } else {
                     Text(FeatureStrings.notch(l10n.language).musicHint)
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                         .frame(maxWidth: .infinity)
                 }
             }
             .frame(height: NotchLayout.musicTransportHeight)
-            .padding(.bottom, NotchLayout.musicBottomRoom)
         }
         .accessibilityElement(children: .contain)
     }
@@ -206,11 +224,6 @@ struct NotchMusicView: View {
         if showsQueue {
             extraButton(.queue, title: FeatureStrings.notchMusicExtras(l10n.language).queue, symbol: "list.bullet")
         }
-    }
-
-    /// The island's way to its sections where its row does not hold it.
-    @ViewBuilder private var sectionsButton: some View {
-        if band.pageSectionsButton { NotchSectionsButton(action: NotchService.shared.toggleSections) }
     }
 
     private func extraButton(_ target: MusicExtra, title: String, symbol: String) -> some View {
@@ -229,9 +242,21 @@ struct NotchMusicView: View {
             .disabled(shuffle.requestingAccess || !shuffle.allowed)
     }
 
-    /// One row of five equal places across the island, the transport in the
-    /// middle three: shuffle before it and the output after it, each place
-    /// kept when its button is not offered so play stays in the middle.
+    /// The player's repeat state occupies the bottom-right transport slot.
+    /// It changes the actual player's state, not a local preference.
+    private var repeatButton: some View {
+        let mode = repeating.mode ?? .off
+        let hint = repeating.availability?.access == .consent
+            ? FeatureStrings.notchMusicExtras(l10n.language).allowPlayback : nil
+        return NotchMusicSideButton(symbol: mode.symbol, title: mode.title,
+                                    hint: hint, active: mode != .off, tint: accent) {
+            repeating.cycle()
+        }
+        .disabled(repeating.pending || repeating.requestingAccess)
+    }
+
+    /// Five stable places across the island. A missing shuffle or repeat
+    /// button never displaces the three central transport controls.
     private func transportRow<Leading: View, Middle: View>(
         @ViewBuilder leading: () -> Leading, @ViewBuilder middle: (CGFloat) -> Middle) -> some View {
         let slot = size.width / 5
@@ -241,61 +266,93 @@ struct NotchMusicView: View {
             Color.clear.frame(width: slot).overlay { leading() }
             middle(slot).frame(width: slot * 3)
             Color.clear.frame(width: slot).overlay {
-                if AppFeature.mixer.isAvailable { NotchMusicOutputButton() }
+                if !preview && repeating.isOffered { repeatButton }
             }
         }
         .frame(height: NotchLayout.musicTransportHeight)
     }
 
-    /// The cover and the song, the timeline across the island, then one row
-    /// of buttons, as a phone's island lays out its player.
-    private func player(_ playback: NotchPlayback) -> some View {
-        VStack(spacing: 0) {
-            head(corner: !band.besideCamera && (showsLyrics || showsQueue || band.pageSectionsButton)) {
-                Button { RadialNowPlayingApplication.open(playback.track) } label: {
-                    NotchArtwork(image: service.artwork, size: NotchLayout.musicArtworkSize, source: playback.track)
-                        .scaleEffect(playback.isPlaying || reduceMotion ? 1 : 0.94)
-                        .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: playback.isPlaying)
-                }
-                .buttonStyle(NotchButtonStyle(cornerRadius: NotchLayout.musicArtworkSize * 0.19))
-                .help(text.mediaNowPlaying)
-                .accessibilityLabel(text.mediaNowPlaying)
-            } titles: {
+    /// Artwork and all song content sit entirely below the camera row.
+    /// The cover is larger than the old 56pt art, but we keep original widths
+    /// and all the existing playback symbols and actions.
+    private func redesignedHead(_ playback: NotchPlayback) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Button { RadialNowPlayingApplication.open(playback.track) } label: {
+                NotchMusicCrossfadingArtwork(image: service.artwork, size: artworkSize, source: playback.track)
+                    .scaleEffect(playback.isPlaying || reduceMotion ? 1 : 0.96)
+                    .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: playback.isPlaying)
+            }
+            .buttonStyle(NotchButtonStyle(cornerRadius: artworkSize * 0.19))
+            .help(text.mediaNowPlaying)
+            .accessibilityLabel(text.mediaNowPlaying)
+
+            VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(playback.track.title ?? text.mediaNowPlaying)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
+                        .truncationMode(.tail)
                         .help(playback.track.title ?? text.mediaNowPlaying)
-                    Text(service.commandFailed ? FeatureStrings.notchMusicExtras(l10n.language).playbackFailed
+                    Text(service.commandFailed
+                         ? FeatureStrings.notchMusicExtras(l10n.language).playbackFailed
                          : playback.track.artist ?? playback.track.album ?? text.mediaNowPlaying)
-                        .font(.system(size: 13))
+                        .font(.system(size: 14))
                         .foregroundStyle(service.commandFailed ? .orange : .secondary)
                         .lineLimit(1)
+                        .truncationMode(.tail)
                 }
-            } accessory: {
-                // Which player the buttons drive, by its icon, when there is a choice.
-                if service.sources.count > 1 || !service.sourceIsAutomatic {
-                    sourceMenu(playback)
+                .padding(.top, 9)
+
+                Spacer(minLength: 0)
+
+                // One compact accessory group, in the reference order:
+                // Lyrics / Queue / output device / mute and volume.
+                // Unlike a trailing Spacer before Volume, this group stays
+                // together directly under the artist and never jumps right.
+                HStack(spacing: 5) {
+                    extraButtons
+                    if AppFeature.mixer.isAvailable {
+                        NotchMusicOutputButton(compact: true)
+                        NotchMusicVolumeControls()
+                            .frame(width: max(72, min(122, size.width * 0.29)))
+                    }
+                    Spacer(minLength: 0)
                 }
-                // Quiet beside the song, as the timeline's times are. The
-                // bars rest flat while paused, so the title keeps its width.
-                NotchLiveEqualizerBars(isPlaying: playback.isPlaying, bars: 4, barWidth: 2.5, height: 15,
-                                       tint: .white.opacity(0.5))
-                if band.besideCamera { sectionsButton }
-            } corner: {
-                extraButtons
-                sectionsButton
+                .frame(height: 28)
+                .padding(.bottom, 6)
             }
-            NotchMusicTimeline(playback: playback, service: service, tint: accent, timesBeside: true)
-                .padding(.top, NotchLayout.musicHeadSpacing)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: NotchLayout.musicHeroArtworkSize)
+        }
+        .frame(height: NotchLayout.musicHeroArtworkSize, alignment: .top)
+    }
+
+    /// The header's original back/player/pin actions are separate from the
+    /// content, so the cover and glow cannot overlap the physical camera.
+    private func player(_ playback: NotchPlayback) -> some View {
+        VStack(spacing: 0) {
+            if band.besideCamera {
+                Color.clear.frame(height: bandHeight)
+            } else {
+                inlineHeader(playback)
+            }
+            Color.clear.frame(height: NotchLayout.musicHeroTopGap)
+            redesignedHead(playback)
+            Color.clear.frame(height: NotchLayout.musicHeroTimelineGap)
+            NotchMusicTimeline(playback: playback, service: service,
+                               tint: .white, timesBeside: false)
+            Color.clear.frame(height: NotchLayout.musicHeroTransportGap)
             transportRow {
                 if !preview && shuffle.isOffered { shuffleButton }
             } middle: { slot in
                 NotchMusicTransport(playback: playback, slot: slot)
             }
-            .padding(.top, NotchLayout.rowSpacing)
-            Color.clear.frame(height: NotchLayout.musicBottomRoom)
         }
+
+        // The expanded Music glow lives in NotchWindowBackground, beneath
+        // the controls and all the way to the island's animated silhouette.
+        // Keeping it out of this inset player removes the dark interior rim.
     }
 
     /// The player the buttons drive, as its icon, opening the same choice.
@@ -365,10 +422,61 @@ struct NotchMusicView: View {
     }
 }
 
-/// A switch beside the transport, drawn like its buttons: a dimmed glyph
-/// with no plate while it is off. On, it takes the timeline's colour on the
-/// faint plate the island's other toggles use, which still reads where a
-/// neutral cover leaves that colour white.
+/// Keep the outgoing cover until the incoming cover has faded in. This view
+/// keys transitions to the decoded image object, not the once-a-second
+/// playback reading. Rapid track changes cancel the previous cleanup task.
+private struct NotchMusicCrossfadingArtwork: View {
+    let image: NSImage?
+    let size: CGFloat
+    let source: RadialNowPlayingSnapshot?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var displayed: NSImage?
+    @State private var outgoing: NSImage?
+    @State private var blend = 1.0
+
+    init(image: NSImage?, size: CGFloat, source: RadialNowPlayingSnapshot?) {
+        self.image = image
+        self.size = size
+        self.source = source
+        _displayed = State(initialValue: image)
+    }
+
+    var body: some View {
+        ZStack {
+            if let outgoing {
+                NotchArtwork(image: outgoing, size: size, source: source)
+                    .opacity(1 - blend)
+            }
+            NotchArtwork(image: displayed, size: size, source: source)
+                .opacity(outgoing == nil ? 1 : blend)
+        }
+        .frame(width: size, height: size)
+        .onChange(of: image.map(ObjectIdentifier.init)) { _, _ in
+            guard displayed !== image else { return }
+            if reduceMotion {
+                displayed = image
+                outgoing = nil
+                blend = 1
+                return
+            }
+            outgoing = displayed
+            displayed = image
+            blend = 0
+            withAnimation(.easeInOut(duration: 0.62)) { blend = 1 }
+        }
+        .task(id: image.map(ObjectIdentifier.init)) {
+            // SwiftUI cancels this cleanup if another cover arrives first.
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            guard !Task.isCancelled else { return }
+            outgoing = nil
+            blend = 1
+        }
+    }
+}
+
+/// Shuffle and Repeat keep their selected-state tint without a permanent
+/// plate. The shared button style supplies exactly one hover highlight;
+/// layering another selected circle under it produced a double-ring effect.
 private struct NotchMusicSideButton: View {
     let symbol: String
     let title: String
@@ -389,8 +497,8 @@ private struct NotchMusicSideButton: View {
                 .foregroundStyle(active ? tint : .white.opacity(isEnabled ? 0.55 : 0.3))
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: plate, height: plate)
-                .background(.white.opacity(active ? 0.12 : 0), in: Circle())
                 .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: active)
+                .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: symbol)
                 .frame(width: height, height: height)
                 .contentShape(Circle())
         }
@@ -417,9 +525,55 @@ private enum NotchPlayerApps {
     }
 }
 
-/// The output the island plays to, at the end of the player's row as on a
-/// phone's island: its glyph opens the list of outputs, and the mixer.
+/// Mute and native system-output level controls, in one compact group after
+/// the output-device picker. Reuse the existing mixer automation and slider.
+private struct NotchMusicVolumeControls: View {
+    @ObservedObject private var mixer = AppVolumeMixer.shared
+    @ObservedObject private var l10n = L10n.shared
+
+    private var level: Double? {
+        mixer.systemOutputVolume.map { mixer.systemOutputMuted == true ? 0 : $0 }
+    }
+
+    private func adjust(volume: Double? = nil, muted: Bool? = nil) {
+        NotchService.shared.noteOwnLevelAdjustment(.volume)
+        mixer.requestOutputAdjustment(volume: volume, muted: muted)
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button {
+                if let muted = mixer.systemOutputMuted { adjust(muted: !muted) }
+            } label: {
+                Image(systemName: mixer.systemOutputMuted == true
+                      ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.72))
+                    .frame(width: 18, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(mixer.systemOutputMuted == nil)
+            .accessibilityLabel(mixer.systemOutputMuted == true
+                                ? l10n.s.actionUnmute : l10n.s.actionMute)
+
+            if let level {
+                NotchLevelSlider(
+                    value: Binding(get: { level }, set: { adjust(volume: $0) }),
+                    label: FeatureStrings.notch(l10n.language).volume,
+                    trackThickness: 6, easesChanges: true
+                )
+                .frame(height: 24)
+            }
+
+        }
+        .frame(height: 28)
+    }
+
+}
+
 private struct NotchMusicOutputButton: View {
+    var compact = false
     @ObservedObject private var notch = NotchService.shared
     @ObservedObject private var mixer = AppVolumeMixer.shared
     @ObservedObject private var l10n = L10n.shared
@@ -440,11 +594,12 @@ private struct NotchMusicOutputButton: View {
     }
 
     var body: some View {
-        NotchMenuButton(title: l10n.s.mixerSystemOutputTitle, items: items, cornerRadius: 22) {
+        NotchMenuButton(title: l10n.s.mixerSystemOutputTitle, items: items,
+                        cornerRadius: compact ? 9 : 22) {
             Image(systemName: symbol)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.55))
-                .frame(width: 44, height: 44)
+                .font(.system(size: compact ? 14 : 16, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.72))
+                .frame(width: compact ? 28 : 44, height: compact ? 28 : 44)
                 .contentShape(Circle())
         }
         .help(mixer.outputSwitchError ?? deviceName)
@@ -543,7 +698,7 @@ struct NotchMusicTimeline: View {
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
             }
-            .frame(height: timesBeside ? NotchLayout.musicTimelineHeight : 30)
+            .frame(height: timesBeside ? NotchLayout.musicTimelineHeight : NotchLayout.musicHeroTimelineHeight)
             .onChange(of: playback.track) { clearScrub() }
             .onChange(of: playback.commandContext) { clearScrub() }
             .onChange(of: playback.sampledAt) {
@@ -654,6 +809,12 @@ struct NotchMusicControlsView: View {
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity)
         .frame(height: height)
+        .background {
+            NotchMusicArtworkGlow(palette: music.artworkGlowPalette,
+                                  isPlaying: music.playback?.isPlaying == true,
+                                  intensity: 0.45)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
         .modifier(NotchControlSurface(cornerRadius: 18))
         .onAppear { if !preview { music.refreshAutomation() } }
     }
@@ -684,5 +845,103 @@ struct NotchMusicControlsView: View {
         } else if idleOpens {
             NotchMusicIdleTransport(compact: true, openTitle: openTitle)
         }
+    }
+}
+
+/// A softly moving cover-colored wash. Only this child observes the existing
+/// seven-band audio service, keeping 30 Hz audio updates out of the page layout.
+/// The Show Audio Visualizer setting gates both this compact glow and the
+/// expanded window glow; no separate audio permission is requested here.
+/// A translucent, album-driven light field inside the existing Liquid Glass
+/// shape. The window still owns its border and clipping; the glow adds light
+/// within the content without replacing the native material.
+private struct NotchMusicArtworkGlow: View {
+    let palette: [NotchArtworkTint]
+    let isPlaying: Bool
+    var intensity: Double = 1
+    @AppStorage(DefaultsKey.notchLiveEqualizer) private var visualizerEnabled = false
+    @ObservedObject private var audio = NotchAudioLevelService.shared
+    @State private var envelope = NotchMusicGlowEnvelope()
+    @State private var audioPulse = 0.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.notchSettingsPreview) private var preview
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 24.0,
+                                paused: !visualizerEnabled || !isPlaying || reduceMotion || preview || palette.isEmpty)) { tick in
+            Canvas(opaque: false, rendersAsynchronously: true) { context, size in
+                guard size.width > 0, size.height > 0, !palette.isEmpty else { return }
+                let pulse = isPlaying && !reduceMotion && !preview ? CGFloat(audioPulse) : 0
+                let t = isPlaying && !reduceMotion && !preview
+                    ? tick.date.timeIntervalSinceReferenceDate : 0
+
+                // A low-opacity color veil fills the entire lower content area.
+                // Without it, separate radial blobs look like isolated stains.
+                let main = palette[0].color
+                let veil = Gradient(stops: [
+                    .init(color: main.opacity(0), location: 0),
+                    .init(color: main.opacity(0.035 * intensity), location: 0.30),
+                    .init(color: main.opacity(0.075 * intensity), location: 0.68),
+                    .init(color: main.opacity(0.105 * intensity), location: 1)
+                ])
+                context.fill(Path(CGRect(origin: .zero, size: size)),
+                             with: .linearGradient(veil,
+                                   startPoint: CGPoint(x: 0, y: 0),
+                                   endPoint: CGPoint(x: 0, y: size.height)))
+
+                // Album colours wander independently and blend, while bass
+                // still supplies the short pulse on top of that slow movement.
+                // Reuse the full-window flow field without any new refresh loop.
+                let positions: [CGFloat] = [0.18, 0.53, 0.82]
+                let extent = max(size.width, size.height)
+                for (index, tint) in palette.prefix(3).enumerated() {
+                    let offset = NotchMusicColorFlow.offset(index: index, time: t)
+                    let cx = size.width * (positions[index] + offset.x * 0.16)
+                    let cy = size.height * (0.79 + offset.y * 0.12)
+                    let radius = extent * (0.66 * NotchMusicColorFlow.radius(index: index, time: t)
+                                           + 0.012 * pulse)
+                    let strength = (0.15 * NotchMusicColorFlow.brightness(index: index, time: t)
+                                    + 0.040 * Double(pulse)) * intensity
+                    let center = CGPoint(x: cx, y: cy)
+                    let area = CGRect(x: cx - radius, y: cy - radius,
+                                      width: 2 * radius, height: 2 * radius)
+                    let gradient = Gradient(stops: [
+                        .init(color: tint.color.opacity(strength), location: 0),
+                        .init(color: tint.color.opacity(strength * 0.55), location: 0.40),
+                        .init(color: tint.color.opacity(0), location: 1)
+                    ])
+                    context.fill(Path(ellipseIn: area), with: .radialGradient(
+                        gradient, center: center, startRadius: 0, endRadius: radius))
+                }
+            }
+        }
+        // Screen blend lets sampled colors illuminate the dark glass instead
+        // of forming opaque muddy patches. The gradient itself is clipped by
+        // the existing island surface, so its outline and corners stay native.
+        .blendMode(.screen)
+        .mask {
+            LinearGradient(stops: [
+                .init(color: .clear, location: 0),
+                .init(color: .white.opacity(0.12), location: 0.18),
+                .init(color: .white.opacity(0.55), location: 0.42),
+                .init(color: .white.opacity(0.88), location: 0.66),
+                .init(color: .white, location: 1)
+            ], startPoint: .top, endPoint: .bottom)
+        }
+        .opacity(visualizerEnabled ? 1 : 0)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.28),
+                   value: visualizerEnabled)
+        .onReceive(audio.$levels) { levels in
+            guard visualizerEnabled else { return }
+            audioPulse = envelope.next(levels, at: ProcessInfo.processInfo.systemUptime)
+        }
+        .onChange(of: visualizerEnabled) { _, isEnabled in
+            if !isEnabled {
+                envelope = NotchMusicGlowEnvelope()
+                audioPulse = 0
+            }
+        }
+        .accessibilityHidden(true)
+        .allowsHitTesting(false)
     }
 }
