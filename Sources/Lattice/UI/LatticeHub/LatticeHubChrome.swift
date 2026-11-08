@@ -1,7 +1,32 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Samuel Ji
 
+import AppKit
 import SwiftUI
+
+/// The actual macOS Activity Monitor application icon, shared by the
+/// floating HUD and Dynamic Island headers. Resolve it once, not per redraw.
+struct HubActivityMonitorIcon: View {
+    @MainActor private static let appIcon: NSImage? = {
+        let fallback = URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app")
+        let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.ActivityMonitor")
+            ?? fallback
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return NSWorkspace.shared.icon(forFile: url.path)
+    }()
+
+    var body: some View {
+        Group {
+            if let icon = Self.appIcon {
+                Image(nsImage: icon).resizable().interpolation(.high).scaledToFit()
+            } else {
+                Image(systemName: "waveform.path.ecg").resizable().scaledToFit()
+            }
+        }
+        .frame(width: 18, height: 18)
+        .accessibilityHidden(true)
+    }
+}
 
 struct HubHeaderButtonStyle: ButtonStyle {
     var isSelected: Bool = false
@@ -28,7 +53,7 @@ struct HubToolsMenuButton: View {
         Button {
             anchor.popUp([
                 NotchMenuItem(
-                    title: customizationText.manageTools + "…",
+                    title: NotchQuickActionsCopy.editToolsMenu(L10n.shared.language),
                     enabled: launcher.canManageTools,
                     action: {
                         withAnimation(.easeInOut(duration: 0.22)) { launcher.isEditing = true }
@@ -81,6 +106,10 @@ extension LatticeHubView {
                 HStack(spacing: 6) {
                     if launcher.activeUtility != nil {
                         backButton
+                    } else if launcher.isEditing {
+                        Text(NotchQuickActionsCopy.editingTools(l10n.language))
+                            .font(.system(size: 13, weight: .semibold))
+                            .lineLimit(1)
                     } else {
                         HStack(spacing: 6) {
                             toolsMenuButton
@@ -91,10 +120,12 @@ extension LatticeHubView {
                     }
                     Spacer()
                     if launcher.activeUtility != nil {
+                        if launcher.activeUtility == .system {
+                            activityMonitorButton
+                        }
                         pinButton
                         closeButton
                     } else if launcher.isEditing {
-                        pinButton
                         doneEditingButton
                     } else {
                         pinButton
@@ -145,11 +176,15 @@ extension LatticeHubView {
         Button {
             withAnimation(.easeInOut(duration: 0.22)) { launcher.isEditing = false }
         } label: {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 15, weight: .semibold))
-                .frame(width: 26, height: 26)
+            Text(l10n.s.doneButton)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 15)
+                .frame(height: 26)
+                .background(Color.blue, in: Capsule())
+                .contentShape(Capsule())
         }
-        .buttonStyle(HubHeaderButtonStyle(isSelected: true))
+        .buttonStyle(.plain)
         .focusable(false)
         .help(l10n.s.doneButton)
         .accessibilityLabel(l10n.s.doneButton)
@@ -178,12 +213,21 @@ extension LatticeHubView {
 
     var backButton: some View {
         Button {
+            if let custom = NotchService.shared.customBackAction, custom() { return }
             if launcher.activeUtility == .deviceControls,
                DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
                 DeviceControlsNavigationState.shared.currentSubpage = .main
+            } else if launcher.activeUtility == .system,
+                      SystemNavigationState.shared.selectedMetric != nil {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    SystemNavigationState.shared.reset()
+                }
             } else {
                 if launcher.activeUtility == .deviceControls {
                     DeviceControlsNavigationState.shared.resetSubpage()
+                }
+                if launcher.activeUtility == .system {
+                    SystemNavigationState.shared.reset()
                 }
                 launcher.closeUtility()
             }
@@ -196,6 +240,22 @@ extension LatticeHubView {
         .focusable(false)
         .help(l10n.s.navigationBack)
         .accessibilityLabel(l10n.s.navigationBack)
+    }
+
+    var activityMonitorButton: some View {
+        Button {
+            let fallback = URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app")
+            let url = NSWorkspace.shared
+                .urlForApplication(withBundleIdentifier: "com.apple.ActivityMonitor") ?? fallback
+            NSWorkspace.shared.open(url)
+        } label: {
+            HubActivityMonitorIcon()
+                .frame(width: 26, height: 26)
+        }
+        .buttonStyle(HubHeaderButtonStyle())
+        .focusable(false)
+        .help(l10n.s.monitorOpenActivityMonitor)
+        .accessibilityLabel(l10n.s.monitorOpenActivityMonitor)
     }
 
     var toolsMenuButton: some View {
@@ -212,7 +272,7 @@ extension LatticeHubView {
             title: customizationText.toolsMenu,
             items: [
                 NotchMenuItem(
-                    title: customizationText.manageTools + "…",
+                    title: NotchQuickActionsCopy.editToolsMenu(L10n.shared.language),
                     enabled: launcher.canManageTools,
                     action: {
                         withAnimation(.easeInOut(duration: 0.22)) { launcher.isEditing = true }
@@ -240,7 +300,7 @@ extension LatticeHubView {
 
     func openSettingsToTools() {
         launcher.hide()
-        SettingsRouter.shared.request(FeatureSettingsDestination(.launcherGrid))
+        SettingsRouter.shared.request(FeatureSettingsDestination(.general))
         (NSApp.delegate as? AppDelegate)?.openSettingsWindow()
     }
 
