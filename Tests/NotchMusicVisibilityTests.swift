@@ -59,10 +59,8 @@ enum NotchMusicVisibilityTests {
         var suspended = false
         var expanded = false
         var peeking = false
-        var showingAppPanel = false
         var showingSections = false
         var lastVisitedSections = false
-        var lastVisitedAppPanel = false
         var showingCommandBar = false
         var commandBarClosings = 0
         var commandBarSurfaceSize = CGSize(width: 616, height: 132)
@@ -344,9 +342,8 @@ enum NotchMusicVisibilityTests {
         defaults.set(false, forKey: DefaultsKey.notchShowPlayingMusic)
         service.selected = .music
         service.expanded = true
-        for surface in ["sections", "appPanel", "unrelated", "hiddenModule", "hiddenControl"] {
+        for surface in ["sections", "unrelated", "hiddenModule", "hiddenControl"] {
             service.showingSections = surface == "sections"
-            service.showingAppPanel = surface == "appPanel"
             service.selected = surface == "unrelated" ? .files : surface == "hiddenControl" ? .controls : .music
             defaults.set(surface == "hiddenModule" ? "music" : "", forKey: DefaultsKey.notchHiddenModules)
             defaults.set(surface == "hiddenControl" ? "music" : "", forKey: DefaultsKey.notchHiddenControls)
