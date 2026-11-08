@@ -28,7 +28,7 @@ extension AppUpdateStrings {
         frequencyDaily: "Every day",
         frequencyWeekly: "Every week",
         nextCheckFormat: "Next check %@",
-        notifyToggle: "Tell me when an app has an update",
+        notifyToggle: "Notify me about new updates",
         includeStoreToggle: "Include apps from the App Store",
         includeStoreCaption: "Checks store versions using this Mac’s region. Apple installs these updates.",
         packageMissing: "Homebrew is not installed, so apps cannot be updated from here yet.",
