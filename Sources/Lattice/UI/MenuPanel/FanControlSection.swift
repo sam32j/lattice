@@ -22,7 +22,8 @@ struct FanControlSection: View {
     }
 
     var body: some View {
-        PanelSection(.fanControl, title: strings.title, collapsible: collapsible) {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle(strings.title)
             FanControlCardContent(strings: strings,
                                   betaLabel: l10n.s.betaBadge,
                                   snapshot: service.snapshot,

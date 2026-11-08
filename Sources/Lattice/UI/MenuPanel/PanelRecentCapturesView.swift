@@ -52,13 +52,17 @@ struct RecentCapturesView: View {
             content
         }
         .onAppear { history.reload() }
-        .confirmationDialog(text.clear,
+        .confirmationDialog("Delete recent captures?",
                             isPresented: $confirmingClear,
                             titleVisibility: .visible) {
-            Button(text.clear, role: .destructive) {
-                history.clear()
+            Button("Delete Captures", role: .destructive) {
+                history.clearAndDeleteCaptureFiles { result in
+                    Self.reportDeletionResult(result, aboveIsland: false)
+                }
             }
             Button(l10n.s.uninstallerCancel, role: .cancel) {}
+        } message: {
+            Text(Self.deletionWarning)
         }
     }
 
@@ -75,8 +79,8 @@ struct RecentCapturesView: View {
                     .frame(width: 22, height: 22)
             }
             .buttonStyle(.plain)
-            .help(text.clear)
-            .accessibilityLabel(text.clear)
+            .help("Delete Captures")
+            .accessibilityLabel("Delete Captures")
             .disabled(visibleEntries.isEmpty)
             if let onClose {
                 Button(action: onClose) {
@@ -98,7 +102,7 @@ struct RecentCapturesView: View {
             Button {
                 confirmingClear = true
             } label: {
-                Label(text.clear, systemImage: "trash")
+                Label("Delete Captures", systemImage: "trash")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
             }
@@ -108,14 +112,42 @@ struct RecentCapturesView: View {
         .padding(.horizontal, 4)
     }
 
-    /// The dialog would hang from the island as a sheet; there it asks on its own.
+    /// Confirm deletion of the on-disk captures as well as the history index.
     static func confirmClearAboveIsland() {
         DispatchQueue.main.async {
             let l10n = L10n.shared
             let text = FeatureStrings.recentCaptures(l10n.language)
-            guard NSAlert.confirmAboveIsland(text.clear, message: "", action: text.clear, destructive: true,
-                                             cancel: l10n.s.uninstallerCancel) else { return }
-            RecentCaptureService.shared.clear()
+            guard !visible(RecentCaptureService.shared.entries).isEmpty else { return }
+            let alert = NSAlert()
+            alert.messageText = "Delete recent captures?"
+            alert.informativeText = deletionWarning
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "Delete Captures").hasDestructiveAction = true
+            alert.addButton(withTitle: l10n.s.uninstallerCancel).keyEquivalent = "\u{1b}"
+            guard NotchIslandAlert.run(alert, above: NotchService.shared.presentationWindow)
+                == .alertFirstButtonReturn else { return }
+            RecentCaptureService.shared.clearAndDeleteCaptureFiles { result in
+                reportDeletionResult(result, aboveIsland: true)
+            }
+        }
+    }
+
+    private static let deletionWarning = """
+        This deletes the screenshots, editable copies, cached previews and stashed recordings stored by Recent Captures. Recordings saved elsewhere will be moved to Trash. Separately exported screenshots are not affected.
+        """
+
+    private static func reportDeletionResult(_ result: RecentCaptureService.CaptureDeletionResult,
+                                              aboveIsland: Bool) {
+        guard !result.succeeded else { return }
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Some recent captures could not be deleted"
+        alert.informativeText = "Some files or history entries could not be removed. Check file permissions and try again."
+        alert.addButton(withTitle: "OK")
+        if aboveIsland {
+            _ = NotchIslandAlert.run(alert, above: NotchService.shared.presentationWindow)
+        } else {
+            _ = alert.runModal()
         }
     }
 
@@ -179,7 +211,8 @@ struct RecentCapturesView: View {
                 height: 100,
                 cornerRadius: 8,
                 showsKindBadge: true,
-                text: text
+                text: text,
+                enablesImageDrag: true
             )
 
             HStack(spacing: 4) {
@@ -284,26 +317,50 @@ private struct RecentCapturePreviewThumbnail: View {
     let cornerRadius: CGFloat
     let showsKindBadge: Bool
     let text: RecentCaptureStrings
+    var enablesImageDrag = false
     @State private var isHovered = false
 
-    var body: some View {
+    @ViewBuilder var body: some View {
+        if enablesImageDrag && entry.kind == .screenshot {
+            thumbnailButton.onDrag {
+                history.dragItemProvider(for: entry) ?? NSItemProvider()
+            } preview: {
+                // Drag only the image artwork, not the card's badge, hover eye,
+                // dimming overlay, or focus outline. The payload remains the
+                // original full-resolution PNG from dragItemProvider(for:).
+                thumbnailArtwork
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            }
+        } else {
+            thumbnailButton
+        }
+    }
+
+    private var thumbnailArtwork: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(Color.black.opacity(0.13))
+            if let image = history.thumbnail(for: entry) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: width, height: height)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            } else {
+                Image(systemName: entry.kind == .screenshot ? "photo" : "film")
+                    .font(.system(size: min(width, height) * 0.32, weight: .medium))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .frame(width: width, height: height)
+    }
+
+    private var thumbnailButton: some View {
         Button(action: onOpen) {
             ZStack {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color.black.opacity(0.13))
-                if let image = history.thumbnail(for: entry) {
-                    Image(nsImage: image)
-                        .resizable()
-                        .interpolation(.high)
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: width, height: height)
-                        .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-                } else {
-                    Image(systemName: entry.kind == .screenshot ? "photo" : "film")
-                        .font(.system(size: min(width, height) * 0.32, weight: .medium))
-                        .foregroundStyle(.tertiary)
-                }
+                thumbnailArtwork
 
                 if entry.kind == .recording && !isHovered {
                     Image(systemName: "play.circle.fill")
