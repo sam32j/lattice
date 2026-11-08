@@ -30,6 +30,7 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchQueueEnabled) var queueEnabled = true
     @AppStorage(DefaultsKey.notchLiveEqualizer) var liveEqualizer = false
     @AppStorage(DefaultsKey.notchEnabled) var enabled = false
+    @State var dialogWindow = PermissionDialogWindowReference()
     @AppStorage(DefaultsKey.notchMascotEnabled) var mascotEnabled = false
     @AppStorage(DefaultsKey.notchMascotHidesWhenIdle) var mascotHidesWhenIdle = true
     @AppStorage(DefaultsKey.notchMascotStyle) var mascotStyle = NotchMascotStyle.minimal.rawValue
@@ -75,7 +76,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchHapticFeedback) var hapticFeedback = true
     @AppStorage(DefaultsKey.notchShelf) var shelfWindow = true
     @AppStorage(DefaultsKey.notchDragReveal) var dragReveal = true
-    @AppStorage(DefaultsKey.notchAppPanel) var appPanel = false
     @AppStorage(DefaultsKey.notchKeepAwakeActivity) var keepAwakeActivity = false
     @AppStorage(DefaultsKey.notchScratchpad) var scratchpad = true
     @AppStorage(DefaultsKey.brightnessControlEnabled) var brightnessControlEnabled = false
@@ -108,6 +108,7 @@ struct NotchSettings: View {
                 combinedPageView
             }
         }
+        .background(PermissionDialogWindowReader(reference: dialogWindow))
         .onChange(of: configuration) { _, _ in sync() }
         .onChange(of: lyricsEnabled) { _, enabled in
             lyricsOnline = enabled
@@ -185,6 +186,18 @@ struct NotchSettings: View {
                                 }
                                 .pickerStyle(.menu)
                                 .labelsHidden()
+                            }
+                            .padding(.leading, settingsRowTextInset)
+                            .disabled(!enabled)
+                            let opening = FeatureStrings.notchOpening(l10n.language)
+                            SettingsControlRow(title: opening.defaultPage) {
+                                NotchDefaultPagePicker(
+                                    title: opening.defaultPage,
+                                    selection: defaultPageBinding,
+                                    lastPageTitle: editor.lastPage,
+                                    hubTitle: SettingsFollowupStrings.text(.allTools, l10n.language),
+                                    modules: defaultPageModules.map { (id: $0.rawValue, title: $0.title(l10n.language)) }
+                                )
                             }
                             .padding(.leading, settingsRowTextInset)
                             .disabled(!enabled)
