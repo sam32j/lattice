@@ -16,9 +16,11 @@ final class LatticeHubService: ObservableObject {
     @Published private(set) var shortcutRegistrationFailed = false
     @Published var stayAwakeOptionsPresented = false
     let editingPresentation = HubEditingPresentation()
+    var editingChangedAt: TimeInterval = -.infinity
     @Published var isEditing = false {
         didSet {
             guard isEditing != oldValue else { return }
+            editingChangedAt = ProcessInfo.processInfo.systemUptime
             if isEditing, NotchSupport.usesHapticFeedback() {
                 TrackpadActuator.shared.actuate(waveform: 3) {
                     NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
@@ -29,10 +31,39 @@ final class LatticeHubService: ObservableObject {
         }
     }
     @Published var editingOptionsItem: LatticeHubItem?
-    @Published var activeUtility: LatticeHubItem?
+    @Published var activeUtility: LatticeHubItem? {
+        didSet {
+            if let activeUtility {
+                UserDefaults.standard.set(activeUtility.rawValue, forKey: DefaultsKey.recentHubUtility)
+            }
+        }
+    }
+    // One stable layout budget for the floating panel, established when it is
+    // positioned. SwiftUI must never derive its content height from the
+    // *animating* window frame, or the two systems feed back into each other.
+    @Published private(set) var floatingPanelHeightBudget: CGFloat = .greatestFiniteMagnitude
+    let panelResizer = HubPanelResizer()
+
+    func setFloatingPanelHeightBudget(_ height: CGFloat) {
+        guard height.isFinite, height >= 100,
+              abs(floatingPanelHeightBudget - height) > 0.5 else { return }
+        floatingPanelHeightBudget = height
+    }
+    var recentUtility: LatticeHubItem? {
+        guard let raw = UserDefaults.standard.string(forKey: DefaultsKey.recentHubUtility),
+              let item = LatticeHubItem(rawValue: raw),
+              item.isAvailable() else {
+            return nil
+        }
+        return item
+    }
     @Published var isPinned: Bool = false
     @Published var selectedIndex: Int?
     @Published var keyboardIndex: Int?
+    @Published var navigationToken = UUID()
+    @Published var hubIslandPage: Int = 0
+    var lastDismissedTime: TimeInterval = 0
+    var lastKeyboardActionTimestamp: TimeInterval = 0
     @Published var presentationID = UUID() {
         didSet { editingPresentation.reset() }
     }
@@ -61,7 +92,9 @@ final class LatticeHubService: ObservableObject {
             .dropFirst()
             .sink { [weak self] expanded in
                 guard let self, !expanded, NotchService.shared.selected == .hub else { return }
-                self.activeUtility = nil
+                if UserDefaults.standard.bool(forKey: DefaultsKey.notchReturnHome) {
+                    self.activeUtility = nil
+                }
                 self.isEditing = false
                 self.isPinned = false
             }
@@ -165,6 +198,8 @@ final class LatticeHubService: ObservableObject {
         guard let current = selectedIndex else {
             selectedIndex = 0
             keyboardIndex = 0
+            lastKeyboardActionTimestamp = ProcessInfo.processInfo.systemUptime
+            navigationToken = UUID()
             return
         }
         if isIsland {
@@ -179,6 +214,8 @@ final class LatticeHubService: ObservableObject {
                                                         direction: direction)
         }
         keyboardIndex = selectedIndex
+        lastKeyboardActionTimestamp = ProcessInfo.processInfo.systemUptime
+        navigationToken = UUID()
     }
 
     func advanceSelection(backwards: Bool = false) {
@@ -188,6 +225,8 @@ final class LatticeHubService: ObservableObject {
         guard let current = selectedIndex else {
             selectedIndex = backwards ? count - 1 : 0
             keyboardIndex = selectedIndex
+            lastKeyboardActionTimestamp = ProcessInfo.processInfo.systemUptime
+            navigationToken = UUID()
             return
         }
         if backwards {
@@ -196,6 +235,8 @@ final class LatticeHubService: ObservableObject {
             selectedIndex = (current + 1) % count
         }
         keyboardIndex = selectedIndex
+        lastKeyboardActionTimestamp = ProcessInfo.processInfo.systemUptime
+        navigationToken = UUID()
     }
 
     func clearTypeahead() {
@@ -226,6 +267,8 @@ final class LatticeHubService: ObservableObject {
                     typeaheadBuffer = newBuffer
                     selectedIndex = targetIndex
                     keyboardIndex = targetIndex
+                    lastKeyboardActionTimestamp = now
+                    navigationToken = UUID()
                     return true
                 }
             }
@@ -237,10 +280,14 @@ final class LatticeHubService: ObservableObject {
             typeaheadBuffer = newBuffer
             selectedIndex = matchIndex
             keyboardIndex = matchIndex
+            lastKeyboardActionTimestamp = now
+            navigationToken = UUID()
             return true
         }
 
-        return false
+        typeaheadBuffer = newBuffer
+        NSSound.beep()
+        return true
     }
 
     func select(_ item: LatticeHubItem) {
@@ -291,14 +338,19 @@ final class LatticeHubService: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 NotchService.shared.open(.watch)
             }
-        case .system:
-            hide()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                NotchService.shared.open(.system)
-            }
         case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner, .appUpdates, .portManager,
-             .killProcess, .wallpaper, .videoDownloader, .recentCaptures, .deviceControls:
-            activeUtility = item
+             .killProcess, .wallpaper, .videoDownloader, .recentCaptures, .deviceControls, .system:
+            if item == .system {
+                SystemNavigationState.shared.reset()
+            }
+            if isVisible {
+                // The floating HUD owns its own opacity transition.
+                activeUtility = item
+            } else {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    activeUtility = item
+                }
+            }
         }
     }
 

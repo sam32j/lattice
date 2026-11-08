@@ -7,15 +7,19 @@ import SwiftUI
 extension LatticeHubService {
     // MARK: - Presentation
 
-    func toggle() {
+    func toggle(forceFloating: Bool = false, anchoredBelow anchor: NSRect? = nil) {
+        let now = ProcessInfo.processInfo.systemUptime
         if isVisible {
             hide()
             return
         }
-        if shouldRouteToIsland() {
+        if now - lastDismissedTime < 0.35 {
+            return
+        }
+        if !forceFloating && anchor == nil && shouldRouteToIsland() {
             if NotchService.shared.openQuickPanel(toggle: true) { return }
         }
-        show()
+        show(anchoredBelow: anchor)
     }
 
     func show(anchoredBelow anchor: NSRect? = nil) {
@@ -48,14 +52,16 @@ extension LatticeHubService {
     }
 
     private func shouldRouteToIsland() -> Bool {
-        guard LauncherShortcutTarget.selected(in: .standard) == .automatic,
-              NotchSupport.routesQuickPanel() else {
+        guard NotchSupport.routesQuickPanel(),
+              LauncherShortcutTarget.selected(in: .standard) == .automatic else {
             return false
         }
-        return NSMouseInRect(NSEvent.mouseLocation, NotchService.shared.geometry.screen, false)
+        return true
     }
 
     func prepareForPresentation() {
+        // The Island owns hubIslandPage for its entire expanded session;
+        // presenting the floating Hub must not reset its scroll position.
         refreshAvailability()
         presentationID = UUID()
         isEditing = false
@@ -87,10 +93,13 @@ extension LatticeHubService {
     }
 
     func hide() {
+        panelResizer.cancel()
+        lastDismissedTime = ProcessInfo.processInfo.systemUptime
         stayAwakeOptionsPresented = false
         removeMonitors()
         isEditing = false
         editingOptionsItem = nil
+        SystemNavigationState.shared.reset()
         activeUtility = nil
         isPinned = false
         clearTypeahead()
@@ -102,7 +111,17 @@ extension LatticeHubService {
     }
 
     func closeUtility() {
-        activeUtility = nil
+        SystemNavigationState.shared.reset()
+        if isVisible {
+            // Floating HUD drives its own crossfade; an implicit SwiftUI
+            // animation here also animates layout and fights the panel resize.
+            activeUtility = nil
+        } else {
+            // The Dynamic Island still uses its usual page transition.
+            withAnimation(.easeInOut(duration: 0.22)) {
+                activeUtility = nil
+            }
+        }
     }
 
     func refocusAfterModal() {
