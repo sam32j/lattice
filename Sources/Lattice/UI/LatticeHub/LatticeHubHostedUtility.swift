@@ -28,6 +28,8 @@ struct LatticeHubHostedUtility: View {
         } else if item == .deviceControls {
             DeviceControlsHubView(onClose: onClose)
                 .frame(height: notchSize?.height ?? fallbackHeight)
+        } else if item == .system {
+            LatticeHubSystemUtility(notchSize: notchSize)
         } else {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -60,6 +62,41 @@ struct LatticeHubHostedUtility: View {
                 }
             }
             .frame(height: notchSize?.height ?? fallbackHeight)
+        }
+    }
+}
+
+private struct LatticeHubSystemUtility: View {
+    let notchSize: CGSize?
+    @ObservedObject private var navigation = SystemNavigationState.shared
+
+    var body: some View {
+        if let notchSize, navigation.selectedMetric != .cpu {
+            ScrollView {
+                content
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(height: notchSize.height)
+        } else {
+            content
+                .frame(height: notchSize?.height, alignment: .top)
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        if let metric = navigation.selectedMetric {
+            MetricDetailView(kind: metric, presentation: notchSize == nil ? .hubPanel : .island)
+                .id(metric)
+                .padding(.horizontal, 4)
+                .transition(.opacity)
+        } else {
+            NotchSystemView { kind in
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    navigation.selectMetric(kind)
+                    if notchSize != nil { NotchService.shared.refreshPresentation() }
+                }
+            }
+            .transition(.opacity)
         }
     }
 }

@@ -24,7 +24,7 @@ struct HubIslandWidgetSection: View {
                 id: .music,
                 symbol: "waveform",
                 tint: .pink,
-                title: "Now Playing"
+                title: FeatureStrings.radialMenu(l10n.language).mediaNowPlaying
             ))
         }
         if service.modules.contains(.calendar) {
