@@ -668,7 +668,7 @@ enum CommandBarCatalog {
                 title: bar.actionCheckAppUpdates,
                 subtitle: area(.appUpdates),
                 keywords: FeatureStrings.appUpdates(language).pageTitle,
-                icon: .symbol("square.and.arrow.down.badge.clock"),
+                icon: .symbol("app.badge.checkmark"),
                 run: { _ in
                     AppUpdatesService.shared.check()
                     openSettings(at: .appUpdates)
@@ -1236,7 +1236,7 @@ enum CommandBarCatalog {
     /// same reason: both cross into the kernel (IOKit power sources, the mach
     /// VM statistics), and the bar opens on a keystroke.
     static var cachedBattery: BatteryInfo?
-    static var cachedMemory: (used: UInt64, appUsed: UInt64, total: UInt64,
+    static var cachedMemory: (used: UInt64, appUsed: UInt64, total: UInt64, wired: UInt64,
                               compressed: UInt64, cached: UInt64, swapUsed: UInt64?)?
 
     static func readBootVolumeSpace() -> (free: UInt64, total: UInt64)? {

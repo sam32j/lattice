@@ -165,7 +165,7 @@ enum ReleaseChangeAliases {
             "compressed memory", "used memory", "ram metric", "ram usage"]
         case .monitorNetwork: return ["network speed", "network speeds", "network readings", "speed test",
             "speed tests", "network panel", "network menu bar metric"]
-        case .monitorDisk: return ["disk usage", "disk space", .exact("Disks"), "disks panel", "drives tab",
+        case .monitorDisk: return ["disk usage", "disk space", .exact("Disks"), .exact("Storage"), "disks panel", "drives tab",
             "eject all disks", "removable drive", "external drive"]
         case .monitorPower: return [.exact("Power"), "power reading", "battery time", "battery readings",
             "menu bar battery icon", "battery health", "battery section", "battery temperature",
