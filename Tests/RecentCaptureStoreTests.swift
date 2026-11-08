@@ -179,6 +179,8 @@ enum RecentCaptureStoreTests {
                    "orphan cleanup in date subfolder deletes unreferenced capture and removes empty date directory")
             suite.expect(!manager.fileExists(atPath: document.path),
                          "clear also removes the owned editable document")
+            suite.expect(!dateStore.hasManagedCaptureFiles(),
+                         "clear leaves no owned capture assets in the private capture and thumbnail roots")
             suite.expect([datedThumbnail, datedBase, datedAnnotations].allSatisfy {
                 !manager.fileExists(atPath: $0.path)
             } && manager.fileExists(atPath: outside.path)

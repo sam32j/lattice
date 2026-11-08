@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Vorssaint
 
 import AppKit
+import QuickLookUI
 
 enum ScreenshotQuickLookTests {
     @MainActor static func run(_ suite: TestSuite, image: CGImage) {
@@ -12,9 +13,19 @@ enum ScreenshotQuickLookTests {
         let preview = ScreenshotQuickLookController()
         defer { preview.close(); owner.close() }
         suite.expect(preview.show(image: image, scale: 2, owner: owner),
-                     "native Quick Look accepts a screenshot without launching an image editor")
+                     "original native Quick Look opens without launching an editor")
+        suite.expect(preview.presentationWindow === QLPreviewPanel.shared(),
+                     "Quick Look uses the native shared panel, not a custom window")
         suite.expect((preview.presentationWindow?.level.rawValue ?? 0) > owner.level.rawValue,
                      "Quick Look remains above its Dynamic Island owner")
+        owner.orderFrontRegardless()
+        owner.makeKey()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.03))
+        suite.expect(preview.isVisible &&
+                     (preview.presentationWindow?.level.rawValue ?? 0) > owner.level.rawValue,
+                     "Island focus does not leave the native Quick Look window underneath")
+        suite.expect((preview.presentationWindow as? QLPreviewPanel)?.currentController as AnyObject? === preview,
+                     "the native Quick Look panel still belongs to the capture preview after focus changes")
         let url = preview.previewURL
         suite.expect(url != nil && FileManager.default.fileExists(atPath: url!.path),
                      "Quick Look owns a preview file for its visible lifetime")
