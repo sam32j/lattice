@@ -4,6 +4,48 @@
 import Foundation
 
 enum NotchQuickActionsCopy {
+    static func editingTools(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "Editing Tools..."
+        case .ptBR: return "Editando ferramentas..."
+        case .es: return "Editando herramientas..."
+        case .sk: return "Úprava nástrojov..."
+        case .de: return "Tools bearbeiten..."
+        case .fr: return "Modification des outils..."
+        case .it: return "Modifica strumenti..."
+        case .ru: return "Редактирование инструментов..."
+        case .tr: return "Araçları düzenleme..."
+        case .ja: return "ツールを編集中..."
+        case .ko: return "도구 편집 중..."
+        case .zhHans: return "正在编辑工具..."
+        case .zhTW: return "正在編輯工具..."
+        case .zhHK: return "正在編輯工具..."
+        case .uk: return "Редагування інструментів..."
+        }
+    }
+
+    /// The gear menu action starts the same live editing mode as the Done button.
+    /// Keep it separate from `manageTools`, which is also used by non-menu UI.
+    static func editToolsMenu(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "Edit Tools..."
+        case .ptBR: return "Editar ferramentas..."
+        case .es: return "Editar herramientas..."
+        case .sk: return "Upraviť nástroje..."
+        case .de: return "Werkzeuge bearbeiten..."
+        case .fr: return "Modifier les outils..."
+        case .it: return "Modifica strumenti..."
+        case .ru: return "Редактировать инструменты..."
+        case .tr: return "Araçları düzenle..."
+        case .ja: return "ツールを編集..."
+        case .ko: return "도구 편집..."
+        case .zhHans: return "编辑工具..."
+        case .zhTW: return "編輯工具..."
+        case .zhHK: return "編輯工具..."
+        case .uk: return "Редагувати інструменти..."
+        }
+    }
+
     static func instructions(_ language: AppLanguage) -> String {
         switch language {
         case .enUS: return "Drag to rearrange. Use − and + to edit."
