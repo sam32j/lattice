@@ -7,10 +7,12 @@ enum BatteryTimeSupport {
     static func remainingSeconds(timeToEmptyMinutes: Int?,
                                  externalConnected: Bool,
                                  isCharging: Bool) -> TimeInterval? {
-        guard !externalConnected,
-              !isCharging,
-              let minutes = timeToEmptyMinutes,
-              (1..<(7 * 24 * 60)).contains(minutes) else { return nil }
+        guard !externalConnected, !isCharging else { return nil }
+        return validatedEstimate(minutes: timeToEmptyMinutes)
+    }
+
+    static func validatedEstimate(minutes: Int?) -> TimeInterval? {
+        guard let minutes, (1..<(7 * 24 * 60)).contains(minutes) else { return nil }
         return TimeInterval(minutes * 60)
     }
 

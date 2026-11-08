@@ -14,6 +14,7 @@ struct PowerReading {
     var batteryWatts: Double?      // + charging, - discharging
     var chargePercent: Int?        // current charge level
     var timeRemainingSeconds: TimeInterval? // system estimate while discharging
+    var timeToFullSeconds: TimeInterval?    // system estimate while charging
     var healthPercent: Double?     // max capacity vs design (battery health)
     var cycleCount: Int?
     var isCharging = false
@@ -92,10 +93,14 @@ final class PowerSampler {
         if Self.hasInternalBattery, let props {
             reading.hasBattery = true
             reading.isCharging = (props["IsCharging"] as? Bool) ?? false
+            let estimateMinutes = batteryEstimateMinutes(charging: reading.isCharging)
             reading.timeRemainingSeconds = BatteryTimeSupport.remainingSeconds(
-                timeToEmptyMinutes: timeToEmptyMinutes(),
+                timeToEmptyMinutes: estimateMinutes,
                 externalConnected: reading.externalConnected,
                 isCharging: reading.isCharging)
+            if reading.isCharging {
+                reading.timeToFullSeconds = BatteryTimeSupport.validatedEstimate(minutes: estimateMinutes)
+            }
 
             let voltageMv = (props["Voltage"] as? Int) ?? 0
             let amperageMa = (props["Amperage"] as? Int) ?? (props["InstantAmperage"] as? Int) ?? 0
@@ -162,7 +167,7 @@ final class PowerSampler {
     /// monitor users are likely to compare against. A negative value means the
     /// system is still calculating, so the UI keeps that state instead of
     /// substituting a more volatile private estimate.
-    private func timeToEmptyMinutes() -> Int? {
+    private func batteryEstimateMinutes(charging: Bool) -> Int? {
         guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
               let list = IOPSCopyPowerSourcesList(info)?.takeRetainedValue()
         else { return nil }
@@ -170,8 +175,9 @@ final class PowerSampler {
         for source in sources {
             guard let description = IOPSGetPowerSourceDescription(info, source)?.takeUnretainedValue()
                     as? [String: Any],
-                  description[kIOPSPowerSourceStateKey] as? String == kIOPSBatteryPowerValue,
-                  let minutes = intValue(description[kIOPSTimeToEmptyKey]) else { continue }
+                  description[kIOPSTypeKey] as? String == kIOPSInternalBatteryType,
+                  description[kIOPSPowerSourceStateKey] as? String == (charging ? kIOPSACPowerValue : kIOPSBatteryPowerValue),
+                  let minutes = intValue(description[charging ? kIOPSTimeToFullChargeKey : kIOPSTimeToEmptyKey]) else { continue }
             return minutes
         }
         return nil
