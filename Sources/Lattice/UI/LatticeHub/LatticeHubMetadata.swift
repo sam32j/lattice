@@ -13,6 +13,11 @@ extension LatticeHubView {
                 ? "App Volumes"
                 : item.title(language: l10n.language)
         }
+        if item == .system {
+            if let metric = SystemNavigationState.shared.selectedMetric {
+                return metric.title(l10n.s)
+            }
+        }
         return item.title(language: l10n.language)
     }
 
@@ -29,9 +34,9 @@ extension LatticeHubView {
         case .uninstaller: return "externaldrive.badge.minus"
         case .cleaner: return "sparkle"
         case .scratchpad: return "note.text"
-        case .appUpdates: return "square.and.arrow.down.badge.clock"
+        case .appUpdates: return "app.badge.checkmark"
         case .portManager: return "network"
-        case .videoDownloader: return "arrow.down.circle.dotted"
+        case .videoDownloader: return "square.and.arrow.down.on.square"
         case .shelf: return "tray.full"
         case .textSnippets: return "text.append"
         case .killProcess: return "xmark.octagon"
@@ -39,7 +44,7 @@ extension LatticeHubView {
         case .deviceControls: return "slider.horizontal.3"
         case .aiUsage: return "apple.intelligence"
         case .watch: return "photo.badge.magnifyingglass"
-        case .system: return "gauge.with.dots.needle.50percent"
+        case .system: return "cpu"
         }
     }
 
