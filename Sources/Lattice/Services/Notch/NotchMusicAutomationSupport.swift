@@ -3,11 +3,46 @@
 
 import Foundation
 
+enum NotchMusicRepeatMode: Equatable {
+    case off, all, one
+
+    func next(supportsOne: Bool) -> Self {
+        switch self {
+        case .off: return .all
+        case .all: return supportsOne ? .one : .off
+        case .one: return .off
+        }
+    }
+
+    var symbol: String { self == .one ? "repeat.1" : "repeat" }
+    var title: String {
+        switch self {
+        case .off: return "Repeat Off"
+        case .all: return "Repeat All"
+        case .one: return "Repeat One"
+        }
+    }
+}
+
 /// Only the installed dictionary's playback vocabulary is accepted. Event codes
 /// are data supplied by that dictionary, never inferred from an application's name.
 struct NotchMusicAutomationCapabilities: Equatable {
     struct Event: Equatable { let eventClass: UInt32; let eventID: UInt32 }
     struct Position: Equatable { let code: UInt32; let integer: Bool }
+    /// Only the installed player's dictionary decides which repeat modes exist.
+    struct Repeat: Equatable {
+        enum Values: Equatable {
+            case boolean
+            case enumerated(off: UInt32, all: UInt32, one: UInt32)
+        }
+        let property: UInt32
+        let values: Values
+        var supportsRepeatOne: Bool {
+            if case .enumerated = values { return true }
+            return false
+        }
+    }
+    var repeating: Repeat?
     var commands: [String: Event] = [:]
     var position: Position?
     /// The player's own shuffle switch, a writable Boolean of the application.
@@ -55,9 +90,10 @@ struct NotchMusicAutomationCapabilities: Equatable {
         parser.shouldResolveExternalEntities = false
         parser.externalEntityResolvingPolicy = .never
         parser.delegate = reader
-        guard parser.parse(), reader.isDictionary,
-              !reader.result.commands.isEmpty || reader.result.position != nil else { return nil }
-        return reader.result
+        guard parser.parse(), reader.isDictionary else { return nil }
+        let result = reader.finalizedResult()
+        guard !result.commands.isEmpty || result.position != nil else { return nil }
+        return result
     }
 }
 
@@ -72,6 +108,10 @@ private final class MusicDictionaryReader: NSObject, XMLParserDelegate {
     private var seenPosition = false
     private var seenShuffle = false
     private var seenShuffleAllowed = false
+    private var repeatProperty: (property: UInt32, type: String)?
+    private var seenRepeat = false
+    private var enumeration: (name: String, code: String, modes: [String: UInt32])?
+    private var enumerations: [String: [String: UInt32]] = [:]
     private let names: Set<String> = ["playpause", "play", "pause", "next track", "previous track"]
     /// Players call it "shuffling" or "shuffle enabled". A read-only
     /// "shuffling enabled" says whether shuffle is offered at all.
@@ -93,6 +133,15 @@ private final class MusicDictionaryReader: NSObject, XMLParserDelegate {
            (element == "class" && attributes["name"] == "application")
             || (element == "class-extension" && attributes["extends"] == "application") {
             applicationDepth = path.count
+        }
+        if element == "enumeration", path == ["dictionary", "suite", "enumeration"],
+           let name = attributes["name"], let type = attributes["code"] {
+            enumeration = (name, type, [:])
+        }
+        if element == "enumerator", path == ["dictionary", "suite", "enumeration", "enumerator"],
+           let name = attributes["name"], ["off", "one", "all"].contains(name),
+           let value = code(attributes["code"]) {
+            enumeration?.modes[name] = value
         }
         if element == "command", path == ["dictionary", "suite", "command"],
            let name = attributes["name"], names.contains(name) {
@@ -126,9 +175,32 @@ private final class MusicDictionaryReader: NSObject, XMLParserDelegate {
                   attributes["type"] == "boolean" else { result.shuffleAllowed = nil; return }
             result.shuffleAllowed = property
         }
+        // Music exposes song repeat as a three-value enumeration; Spotify only
+        // exposes a Boolean repeating switch. Never invent an unsupported mode.
+        if element == "property", let name = attributes["name"],
+           ["song repeat", "repeating"].contains(name),
+           let depth = applicationDepth, path.count == depth + 1 {
+            defer { seenRepeat = true }
+            guard !seenRepeat,
+                  attributes["access"] == nil || ["w", "rw"].contains(attributes["access"] ?? ""),
+                  let property = code(attributes["code"]), let type = attributes["type"] else {
+                repeatProperty = nil
+                return
+            }
+            // Only the exact player property declared in its dictionary.
+            if name == "repeating", type != "boolean" { return }
+            if name == "song repeat", type == "boolean" { return }
+            repeatProperty = (property, type)
+        }
     }
 
     func parser(_ parser: XMLParser, didEndElement element: String, namespaceURI: String?, qualifiedName: String?) {
+        if element == "enumeration", let enumeration {
+            // SDEF refers to enumerations by name or by their four-character type.
+            if enumerations[enumeration.name] == nil { enumerations[enumeration.name] = enumeration.modes }
+            if enumerations[enumeration.code] == nil { enumerations[enumeration.code] = enumeration.modes }
+            self.enumeration = nil
+        }
         if element == "command", let command {
             if !seenCommands.insert(command.name).inserted { result.commands[command.name] = nil }
             else if command.valid { result.commands[command.name] = command.event }
@@ -136,6 +208,18 @@ private final class MusicDictionaryReader: NSObject, XMLParserDelegate {
         }
         if applicationDepth == path.count { applicationDepth = nil }
         path.removeLast()
+    }
+
+    func finalizedResult() -> NotchMusicAutomationCapabilities {
+        guard let repeatProperty else { return result }
+        if repeatProperty.type == "boolean" {
+            result.repeating = .init(property: repeatProperty.property, values: .boolean)
+        } else if let modes = enumerations[repeatProperty.type],
+                  let off = modes["off"], let all = modes["all"], let one = modes["one"] {
+            result.repeating = .init(property: repeatProperty.property,
+                                     values: .enumerated(off: off, all: all, one: one))
+        }
+        return result
     }
 
     func parser(_ parser: XMLParser, foundInternalEntityDeclarationWithName name: String, value: String?) { parser.abortParsing() }
