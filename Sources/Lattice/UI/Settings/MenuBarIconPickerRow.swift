@@ -4,41 +4,8 @@
 import AppKit
 import SwiftUI
 
-/// Menu bar panel preferences, separate from General's app preferences.
-struct GeneralToolSettings: View {
-    @ObservedObject private var l10n = L10n.shared
-    @AppStorage(DefaultsKey.notchHidesMenuBarIcon) private var hideMenuIcon = false
-
-    private var text: GeneralSettingsStrings { FeatureStrings.generalSettings(l10n.language) }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                SettingsCard(title: l10n.s.menuBarSection) {
-                    SettingsRow(symbol: "menubar.rectangle", title: SettingsFollowupStrings.text(.showMenuIcon, l10n.language)) {
-                        Toggle(SettingsFollowupStrings.text(.showMenuIcon, l10n.language),
-                               isOn: Binding(get: { !hideMenuIcon }, set: { hideMenuIcon = !$0 }))
-                            .labelsHidden().toggleStyle(.switch)
-                    }
-                    if !hideMenuIcon { MenuBarIconPickerRow().padding(.leading, settingsRowTextInset) }
-                    Divider()
-                    Text(text.panelIntro)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    PanelLayoutEditor()
-                }
-            }
-            .frame(maxWidth: 760)
-            .frame(maxWidth: .infinity)
-            .padding(22)
-        }
-        .settingsExpansionAnimation(value: hideMenuIcon)
-    }
-}
-
 /// A setting row with a button that presents a searchable SF Symbol picker popover.
-private struct MenuBarIconPickerRow: View {
+struct MenuBarIconPickerRow: View {
     @ObservedObject private var l10n = L10n.shared
     @AppStorage(DefaultsKey.menuBarIconSymbol) private var savedName = ""
     @State private var showingPicker = false
@@ -105,7 +72,7 @@ private struct MenuBarIconPickerRow: View {
 }
 
 /// Searchable icon picker popover for selecting menu bar icons.
-private struct MenuBarIconSearchPopover: View {
+struct MenuBarIconSearchPopover: View {
     @ObservedObject private var l10n = L10n.shared
     @Environment(\.dismiss) private var dismiss
     @Binding var savedName: String
