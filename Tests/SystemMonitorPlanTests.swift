@@ -10,6 +10,7 @@ enum SystemMonitorPlanTests {
     class Fixture {
         var menuPanelNeeds = SystemMonitorPanelNeeds.none
         var notchDetailNeeds = SystemMonitorPanelNeeds.none
+        var metricViewNeeds = SystemMonitorPanelNeeds.none
         var fullMonitorVisible = false
         var notchVisible = false
         var notchAccessoryMonitoring = false
