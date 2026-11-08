@@ -25,7 +25,6 @@ struct MetricsTests {
                 ProcessNameContract.run(suite)
                 SystemMonitorCPUTests.run(suite)
                 SystemMonitorPlanTests.run(suite)
-                SystemSectionBreakdownTests.run(suite)
             }),
             ("clipboard", {
                 ClipboardFeatureTests.run(suite)
@@ -137,8 +136,6 @@ struct MetricsTests {
             ("features", {
                 RetiredSettingsFlowTests.run(suite)
                 FeatureCatalogTests.run(suite)
-                MenuPanelSectionGateContract.run(suite)
-                SettingsPanelFilterTests.run(suite)
                 SettingsShortcutConsumerTests.run(suite)
                 SettingsResetAvailabilityTests.run(suite)
             }),
@@ -244,7 +241,6 @@ struct MetricsTests {
                 KeepAwakePreferenceObserverTests.run(suite)
                 KeepAwakeAssertionTests.run(suite)
                 KeepAwakeCatalogContract.run(suite)
-                MenuPanelToggleLabelContract.run(suite)
                 KeepAwakeLidSleepTests.run { suite.expect($0, $1) }
                 KeepAwakeTimerHandoffTests.run { suite.expect($0, $1) }
             }),

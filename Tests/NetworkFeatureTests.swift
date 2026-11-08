@@ -174,9 +174,9 @@ enum NetworkFeatureTests {
                "nettop stream parser emits only active rows from the first delta section")
         suite.expectClose(streamedSections.first?.first?.bytesIn ?? -1, 416,
                     "nettop stream parser does not publish cumulative bytes")
-        suite.expect(NetworkProcessSupport.nettopArguments == ["-P", "-d", "-x", "-J", "bytes_in,bytes_out", "-L", "1", "-s", "1"],
+        suite.expect(NetworkProcessSupport.nettopArguments == ["-P", "-n", "-d", "-x", "-J", "bytes_in,bytes_out", "-L", "1", "-s", "1"],
                "nettop per-app sampling asks for one cumulative section and computes deltas in app")
-        suite.expect(NetworkProcessSupport.externalNettopArguments == ["-P", "-d", "-x", "-t", "external", "-J", "bytes_in,bytes_out", "-L", "1", "-s", "1"],
+        suite.expect(NetworkProcessSupport.externalNettopArguments == ["-P", "-n", "-d", "-x", "-t", "external", "-J", "bytes_in,bytes_out", "-L", "1", "-s", "1"],
                "network fallback samples only external process traffic")
         let cappedProcess = BoundedProcessRunner.run(
             "/bin/sh", ["-c", "/usr/bin/yes x | /usr/bin/head -c 200000"],
