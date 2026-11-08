@@ -78,6 +78,14 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.animationBehavior = .none
+        // Hover-opened islands deliberately leave the app underneath as key.
+        // Still receive pointer movement so its stale text/resize cursor does
+        // not show through the interactive Island.
+        panel.acceptsMouseMovedEvents = true
+        panel.nonKeyCursorSurfaceContains = { [weak self] windowPoint in
+            guard let self else { return false }
+            return self.contains(self.panel.convertPoint(toScreen: windowPoint))
+        }
         panel.level = NotchPanel.normalLevel
         // Stationary keeps the island in place when the desktop is revealed,
         // where files are dragged onto it; a transient overlay is swept away
@@ -981,6 +989,9 @@ final class NotchPanel: NSPanel {
     static let normalLevel = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
     static let fullscreenLevel = NSWindow.Level.floating
     var acceptsKeyFocus = false
+    /// The native window's silhouette is smaller than its reserved frame.
+    /// Only override a stale background-app cursor on the visible surface.
+    var nonKeyCursorSurfaceContains: ((CGPoint) -> Bool)?
     var handleScroll: ((NSEvent) -> Bool)?
     var handleIndirectTouches: ((NSEvent, NSView) -> Bool)?
     var visibilityDidChange: (() -> Void)?
@@ -1013,6 +1024,15 @@ final class NotchPanel: NSPanel {
     }
 
     override func sendEvent(_ event: NSEvent) {
+        if event.type == .mouseMoved,
+           !isKeyWindow, !ignoresMouseEvents, NSEvent.pressedMouseButtons == 0,
+           nonKeyCursorSurfaceContains?(event.locationInWindow) == true {
+            // Cursor rectangles ordinarily come from the key window. A
+            // nonactivating Island opened by hover isn't key, even when it is
+            // the uppermost interactive window. Reassert an arrow here rather
+            // than inheriting the I-beam from a text field beneath it.
+            NSCursor.arrow.set()
+        }
         if event.type == .scrollWheel {
             acceptsKeyFocus = true
             if !isKeyWindow { makeKey() }
@@ -1325,6 +1345,13 @@ private final class NotchCanvas: NSView {
     }
 
     override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        // This canvas only receives EXTERNAL file drops. An image being
+        // dragged out of our own preview must not enter the drop pipeline on
+        // every mouse move while its pointer is still over the Island.
+        if sender.draggingSource != nil {
+            if acceptingDrag { acceptingDrag = false; dropActions?.exit() }
+            return []
+        }
         guard containsVisiblePoint(convert(sender.draggingLocation, from: nil)) else {
             if acceptingDrag { acceptingDrag = false; dropActions?.exit() }
             return []
@@ -1533,7 +1560,8 @@ private final class NotchCanvas: NSView {
     /// frame as it began to open or settled after closing. Under glass the
     /// fill gives way as the backdrop's resting black does.
     func updateCanvasBlack() {
-        let color = NSColor.black.cgColor
+        let alpha = usesGlass ? CGFloat(backdropPresentation.restingBlack) : 1
+        let color = NSColor.black.withAlphaComponent(alpha).cgColor
         guard layer?.backgroundColor != color else { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)

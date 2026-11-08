@@ -106,7 +106,7 @@ extension AppFeature {
         case .monitorGPU: return s.monitorShowGPU
         case .monitorMemory: return s.monitorShowMemory
         case .monitorNetwork: return s.monitorShowNetwork
-        case .monitorDisk: return s.diskSection
+        case .monitorDisk: return s.diskStorageSettings
         case .monitorPower: return s.powerSection
         case .connectedDevices: return FeatureStrings.connectedDevices(L10n.shared.language).title
         case .fanControl: return FeatureStrings.fanControl(L10n.shared.language).title

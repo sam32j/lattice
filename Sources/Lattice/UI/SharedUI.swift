@@ -173,6 +173,8 @@ struct HUDBackdrop: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(Color.clear)
                 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .environment(\.appearsActive, true)
+                .materialActiveAppearance(.active)
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                         .fill(colorScheme == .dark ? Color.black : Color.white)
