@@ -25,7 +25,6 @@ enum ShelfDragCompletionContract {
         var presentationWindow: Window? = Window()
         var expanded = true
         var selected: NotchModule = .files
-        var showingAppPanel = false
         var showingSections = false
         var pinned = false
         var heldDrag = false
@@ -133,7 +132,7 @@ enum ShelfDragCompletionTests {
             switch changedSurface {
             case 0: notch.selected = .music
             case 1: notch.showingSections = true
-            case 2: notch.showingAppPanel = true
+            case 2: notch.selected = .controls
             case 3: notch.expanded = false
             default: notch.presentationWindow = Context.Window(); notch.heldDrag = false
             }

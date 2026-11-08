@@ -93,7 +93,6 @@ enum NotchDownloadFolderChoiceContract {
         var acceptsUserInteraction = true
         var expanded = true
         var selected: NotchModule = .downloads
-        var showingAppPanel = false
         var selectedMetric: Bool?
         var pinned = false
         var syncs = 0
