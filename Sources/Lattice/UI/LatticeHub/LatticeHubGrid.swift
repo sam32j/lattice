@@ -27,8 +27,8 @@ extension LatticeHubView {
                                isEditing: launcher.isEditing,
                                launcher: launcher,
                                session: dragSession,
-                               onTap: { handleToolTap($0) }) { item in
-                cell(item)
+                               onTap: { handleToolTap($0) }) { item, tapAction in
+                cell(item, onTap: tapAction)
             }
             .frame(height: NotchLayout.railHeight(rows: islandRailRows,
                                                  rowHeight: NotchLayout.toolHeight,
@@ -51,7 +51,7 @@ extension LatticeHubView {
         } else { launcher.run(item) }
     }
 
-    func cell(_ item: LatticeHubItem, titleInset: CGFloat = 0) -> some View {
+    func cell(_ item: LatticeHubItem, titleInset: CGFloat = 0, onTap: (() -> Void)? = nil) -> some View {
         let index = launcher.visibleItems.firstIndex(of: item)
         let showsFocus = launcher.keyboardIndex != nil
         let isSelected = !launcher.isEditing && showsFocus && index != nil && index == launcher.selectedIndex
@@ -63,7 +63,7 @@ extension LatticeHubView {
             isSelected: isSelected,
             titleInset: titleInset,
             isDragging: dragSession.active != nil,
-            onTap: { handleToolTap(item) },
+            onTap: onTap ?? { handleToolTap(item) },
             onManage: { launcher.isEditing = true },
             onHide: { launcher.setHidden(item, true) },
             iconName: icon(for: item),
@@ -89,6 +89,7 @@ struct HubToolCellView: View {
 
     @State private var isHovered = false
     @ObservedObject private var l10n = L10n.shared
+    private static var lastMouseLocation: NSPoint? = nil
 
     private var customizationText: HubCustomizationStrings { FeatureStrings.hubCustomization(l10n.language) }
 
@@ -144,7 +145,13 @@ struct HubToolCellView: View {
                     return
                 }
                 if isHovered != hovering { isHovered = hovering }
-                if hovering, !isEditing, LatticeHubService.shared.keyboardIndex != nil {
+                let currentLocation = NSEvent.mouseLocation
+                let mouseActuallyMoved = Self.lastMouseLocation != nil && Self.lastMouseLocation != currentLocation
+                Self.lastMouseLocation = currentLocation
+
+                let now = ProcessInfo.processInfo.systemUptime
+                let recentKeyboard = now - LatticeHubService.shared.lastKeyboardActionTimestamp < 0.8
+                if hovering, !isEditing, mouseActuallyMoved, !recentKeyboard, LatticeHubService.shared.keyboardIndex != nil {
                     LatticeHubService.shared.keyboardIndex = nil
                 }
             }
