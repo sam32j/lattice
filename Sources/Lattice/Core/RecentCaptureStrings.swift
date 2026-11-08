@@ -5,6 +5,8 @@ import Foundation
 
 struct RecentCaptureStrings {
     let title: String
+    let allCaptures: String
+    let close: String
     let empty: String
     let screenshot: String
     let recording: String
@@ -39,6 +41,8 @@ extension FeatureStrings {
 extension RecentCaptureStrings {
     static let enUS = RecentCaptureStrings(
         title: "Recent captures",
+        allCaptures: "All Captures",
+        close: "Close",
         empty: "Take a screenshot or save a recording to find it here.",
         screenshot: "Screenshot",
         recording: "Recording",
@@ -50,6 +54,8 @@ extension RecentCaptureStrings {
 
     static let ptBR = RecentCaptureStrings(
         title: "Capturas recentes",
+        allCaptures: "Todas as capturas",
+        close: "Fechar",
         empty: "Faça uma captura de tela ou salve uma gravação para encontrá-la aqui.",
         screenshot: "Captura de tela",
         recording: "Gravação",
@@ -61,6 +67,8 @@ extension RecentCaptureStrings {
 
     static let tr = RecentCaptureStrings(
         title: "Son yakalamalar",
+        allCaptures: "Tüm yakalamalar",
+        close: "Kapat",
         empty: "Burada görmek için ekran görüntüsü alın veya bir kayıt kaydedin.",
         screenshot: "Ekran görüntüsü",
         recording: "Kayıt",
@@ -72,6 +80,8 @@ extension RecentCaptureStrings {
 
     static let ru = RecentCaptureStrings(
         title: "Недавние снимки",
+        allCaptures: "Все снимки",
+        close: "Закрыть",
         empty: "Сделайте снимок экрана или сохраните запись, чтобы увидеть её здесь.",
         screenshot: "Снимок экрана",
         recording: "Запись",
@@ -83,6 +93,8 @@ extension RecentCaptureStrings {
 
     static let es = RecentCaptureStrings(
         title: "Capturas recientes",
+        allCaptures: "Todas las capturas",
+        close: "Cerrar",
         empty: "Haz una captura o guarda una grabación para verla aquí.",
         screenshot: "Captura de pantalla",
         recording: "Grabación",
@@ -94,6 +106,8 @@ extension RecentCaptureStrings {
 
     static let sk = RecentCaptureStrings(
         title: "Nedávne zábery",
+        allCaptures: "Všetky zábery",
+        close: "Zavrieť",
         empty: "Vytvorte snímku obrazovky alebo uložte nahrávku a nájdete ju tu.",
         screenshot: "Snímka obrazovky",
         recording: "Nahrávka",
@@ -105,6 +119,8 @@ extension RecentCaptureStrings {
 
     static let de = RecentCaptureStrings(
         title: "Letzte Aufnahmen",
+        allCaptures: "Alle Aufnahmen",
+        close: "Schließen",
         empty: "Erstelle ein Bildschirmfoto oder speichere eine Aufnahme, um sie hier zu sehen.",
         screenshot: "Bildschirmfoto",
         recording: "Aufnahme",
@@ -116,6 +132,8 @@ extension RecentCaptureStrings {
 
     static let fr = RecentCaptureStrings(
         title: "Captures récentes",
+        allCaptures: "Toutes les captures",
+        close: "Fermer",
         empty: "Prenez une capture ou enregistrez une vidéo pour la retrouver ici.",
         screenshot: "Capture d’écran",
         recording: "Enregistrement",
@@ -127,6 +145,8 @@ extension RecentCaptureStrings {
 
     static let it = RecentCaptureStrings(
         title: "Catture recenti",
+        allCaptures: "Tutte le catture",
+        close: "Chiudi",
         empty: "Cattura una schermata o salva una registrazione per trovarla qui.",
         screenshot: "Schermata",
         recording: "Registrazione",
@@ -138,6 +158,8 @@ extension RecentCaptureStrings {
 
     static let ja = RecentCaptureStrings(
         title: "最近のキャプチャ",
+        allCaptures: "すべてのキャプチャ",
+        close: "閉じる",
         empty: "スクリーンショットを撮るか録画を保存すると、ここに表示されます。",
         screenshot: "スクリーンショット",
         recording: "録画",
@@ -149,6 +171,8 @@ extension RecentCaptureStrings {
 
     static let ko = RecentCaptureStrings(
         title: "최근 캡처",
+        allCaptures: "모든 캡처",
+        close: "닫기",
         empty: "스크린샷을 찍거나 녹화를 저장하면 여기에 표시됩니다.",
         screenshot: "스크린샷",
         recording: "녹화",
@@ -160,6 +184,8 @@ extension RecentCaptureStrings {
 
     static let zhHans = RecentCaptureStrings(
         title: "最近捕捉",
+        allCaptures: "所有截图",
+        close: "关闭",
         empty: "截取屏幕或存储录屏后，就会显示在这里。",
         screenshot: "截图",
         recording: "录屏",
@@ -171,6 +197,8 @@ extension RecentCaptureStrings {
 
     static let zhTW = RecentCaptureStrings(
         title: "最近擷取",
+        allCaptures: "所有擷取",
+        close: "關閉",
         empty: "截取畫面或儲存螢幕錄影後，就會顯示在這裡。",
         screenshot: "截圖",
         recording: "螢幕錄影",
@@ -182,6 +210,8 @@ extension RecentCaptureStrings {
 
     static let zhHK = RecentCaptureStrings(
         title: "最近擷取",
+        allCaptures: "所有擷取",
+        close: "關閉",
         empty: "截取畫面或儲存螢幕錄影後，就會顯示喺呢度。",
         screenshot: "截圖",
         recording: "螢幕錄影",
@@ -192,6 +222,8 @@ extension RecentCaptureStrings {
     )
     static let uk = RecentCaptureStrings(
         title: "Недавні знімки",
+        allCaptures: "Усі знімки",
+        close: "Закрити",
         empty: "Зробіть знімок екрана або збережіть запис, щоб знайти його тут.",
         screenshot: "Знімок екрана",
         recording: "Запис",
