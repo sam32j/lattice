@@ -7,7 +7,10 @@ import Carbon.HIToolbox
 extension LatticeHubService {
     func handlePanelKey(_ event: NSEvent,
                         flow: QuickToolsSupport.GridFlow = .rows(columns: LatticeHubService.columns),
-                        isIsland: Bool = false) -> NSEvent? {
+                        isIsland: Bool = false,
+                        editingRequiresDone: Bool = false) -> NSEvent? {
+        if editingRequiresDone && isEditing,
+           event.keyCode == UInt16(kVK_Escape) { return nil }
         if event.keyCode == UInt16(kVK_Escape) {
             if (event.window?.firstResponder as? NSTextView)?.hasMarkedText() == true { return event }
             if stayAwakeOptionsPresented {
@@ -15,11 +18,17 @@ extension LatticeHubService {
             } else if activeUtility == .deviceControls,
                       DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
                 DeviceControlsNavigationState.shared.currentSubpage = .main
+            } else if activeUtility == .system,
+                      SystemNavigationState.shared.selectedMetric != nil {
+                SystemNavigationState.shared.reset()
             } else if activeUtility != nil {
                 if activeUtility == .deviceControls {
                     DeviceControlsNavigationState.shared.resetSubpage()
                 }
-                activeUtility = nil
+                if activeUtility == .system {
+                    SystemNavigationState.shared.reset()
+                }
+                closeUtility()
             } else if editingOptionsItem != nil {
                 editingOptionsItem = nil
             } else if isEditing {
