@@ -29,22 +29,10 @@ final class AppAppearanceController: ObservableObject {
         )
     }
 
-    /// The panel is a popover anchored to the menu bar item, so it takes its
-    /// appearance from that status bar window instead of from the app and has
-    /// to be told separately. Measured on macOS 27.
-    private weak var panel: NSPopover?
-
     /// Called once at launch, before any window exists, and again on every
     /// change from Settings.
     func apply() {
         NSApp.appearance = nsAppearance
-        panel?.appearance = nsAppearance
-    }
-
-    /// Registers the menu bar panel so it follows the choice too.
-    func follow(panel popover: NSPopover) {
-        panel = popover
-        popover.appearance = nsAppearance
     }
 
     private var nsAppearance: NSAppearance? {
