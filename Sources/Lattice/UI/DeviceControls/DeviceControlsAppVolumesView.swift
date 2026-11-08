@@ -76,6 +76,7 @@ struct DeviceControlsAppVolumesView: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 24)
+                    .frame(height: DeviceControlsAppVolumesLayout.emptyMessageHeight)
             } else if displayedApps.isEmpty {
                 emptyActiveState
             } else {
@@ -105,6 +106,7 @@ struct DeviceControlsAppVolumesView: View {
             .foregroundStyle(Color.accentColor)
         }
         .padding(.horizontal, 4)
+        .frame(height: DeviceControlsAppVolumesLayout.headerHeight)
     }
 
     // MARK: - Empty Active State
@@ -124,6 +126,7 @@ struct DeviceControlsAppVolumesView: View {
         }
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, 32)
+        .frame(height: DeviceControlsAppVolumesLayout.emptyMessageHeight)
     }
 
     // MARK: - Apps Grouped Container
@@ -134,8 +137,13 @@ struct DeviceControlsAppVolumesView: View {
                 if index > 0 {
                     Divider()
                         .padding(.horizontal, 10)
+                        .frame(height: DeviceControlsAppVolumesLayout.dividerHeight)
                 }
                 appRow(app)
+                    .frame(
+                        height: DeviceControlsAppVolumesLayout.rowHeight,
+                        alignment: .top
+                    )
             }
         }
         .panelCard(padded: false)
