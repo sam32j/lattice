@@ -279,7 +279,6 @@ final class SpeedTest: NSObject, ObservableObject {
         kind = .none
         DispatchQueue.main.async {
             self.liveMbps = 0
-            self.phaseProgress = 1.0
         }
         setPhase(.failed(error.localizedDescription))
     }

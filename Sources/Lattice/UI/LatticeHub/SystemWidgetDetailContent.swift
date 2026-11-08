@@ -88,7 +88,6 @@ enum SystemWidgetDetailContent {
             if let cycles = power.cycleCount {
                 list.append(("Power cycles", "\(cycles)"))
             }
-            list.append(("Condition", "Normal"))
             return list
         case .network:
             var list: [(String, String)] = []

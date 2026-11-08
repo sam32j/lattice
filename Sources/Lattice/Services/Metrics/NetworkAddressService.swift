@@ -19,6 +19,8 @@ final class NetworkAddressService: ObservableObject {
         let addresses = Self.readLocalAddresses()
         guard addresses != localAddresses else { return }
         localAddresses = addresses
+        publicIP = nil
+        lastPublicIPFetch = 0
     }
 
     func refreshPublicIP(force: Bool = false) {
@@ -27,7 +29,7 @@ final class NetworkAddressService: ObservableObject {
         isLoadingPublicIP = true
         lastPublicIPFetch = now
 
-        let url = URL(string: "https://api.ipify.org")!
+        let url = URL(string: "https://api64.ipify.org")!
         var request = URLRequest(url: url)
         request.timeoutInterval = 5
         URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
@@ -35,8 +37,10 @@ final class NetworkAddressService: ObservableObject {
                 self?.isLoadingPublicIP = false
                 guard let data,
                       let ip = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
-                      !ip.isEmpty, (response as? HTTPURLResponse)?.statusCode == 200,
-                      ip.range(of: #"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"#, options: .regularExpression) != nil else { return }
+                      !ip.isEmpty, (response as? HTTPURLResponse)?.statusCode == 200 else { return }
+                let isIPv4 = ip.range(of: #"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"#, options: .regularExpression) != nil
+                let isIPv6 = ip.contains(":") && ip.range(of: #"^[0-9a-fA-F:]+$"#, options: .regularExpression) != nil
+                guard isIPv4 || isIPv6 else { return }
                 self?.publicIP = ip
             }
         }.resume()

@@ -959,7 +959,7 @@ private struct ProcessRowSkeleton: View {
         case .upload:
             return "Testing upload"
         case .done:
-            return "Fast enough for 4K video and calls"
+            return "Test complete"
         case .failed(let msg):
             return msg.isEmpty ? "Speed test failed" : msg
         }
@@ -1278,7 +1278,7 @@ private struct ProcessRowSkeleton: View {
             if power.isCharging {
                 return "Charging · \(mins) min to full"
             } else if power.externalConnected {
-                return "Connected · Fully Charged"
+                return (power.chargePercent ?? 0) >= 100 ? "Connected · Fully Charged" : "Connected · Not Charging"
             } else {
                 return "On battery · \(mins) min left"
             }
