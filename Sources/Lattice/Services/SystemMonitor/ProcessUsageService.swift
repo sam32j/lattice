@@ -5,11 +5,25 @@ import AppKit
 import Foundation
 import IOKit
 
+/// Which per-app breakdown is requested for system resources.
+enum BreakdownKind {
+    case cpu, gpu, memory, energy, cpuPower, network, disk
+
+    func processRefreshInterval(configuredMonitorInterval: Int) -> TimeInterval {
+        switch self {
+        case .cpu, .gpu, .energy, .cpuPower, .disk:
+            return TimeInterval(Defaults.sanitizedMonitorInterval(configuredMonitorInterval))
+        case .memory, .network:
+            return 4
+        }
+    }
+}
+
 /// One row of the per-app breakdown shown when a System stat is expanded.
 struct ProcessUsage: Identifiable, Equatable {
     let pid: pid_t
     let name: String
-    /// CPU/GPU/energy: percentage (0–100). Memory: bytes. Network: total bytes/s.
+    /// CPU/GPU/energy: percentage. CPU power: watts. Memory: bytes. Network: bytes/s.
     let value: Double
     let networkDownBytesPerSec: Double?
     let networkUpBytesPerSec: Double?
@@ -55,12 +69,19 @@ final class ProcessUsageService {
     private var memoryCache: CachedRows?
     private var gpuCache: CachedRows?
     private var energyCache: CachedRows?
+    private var cpuPowerCache: CachedRows?
+    private var previousCPUPower: (time: ContinuousClock.Instant, counters: [pid_t: ProcessCPUEnergy])?
+    private var cpuPowerLoading = false
     private var networkCache: CachedRows?
+    private var diskCache: CachedRows?
     private var cpuLoading = false
     private var memoryLoading = false
     private var gpuLoading = false
     private var energyLoading = false
     private var networkLoading = false
+    private var diskLoading = false
+    private var previousDiskSample: (time: TimeInterval, perPid: [pid_t: UInt64])?
+    private let diskSampleLock = NSLock()
     private var networkLeaseExpiresAt: TimeInterval = 0
     private var networkDeltaTracker = NetworkProcessDeltaTracker()
     private let networkSamplerLock = NSLock()
@@ -79,7 +100,9 @@ final class ProcessUsageService {
         case .gpu: cache = gpuCache
         case .memory: cache = memoryCache
         case .energy: cache = energyCache
+        case .cpuPower: cache = cpuPowerCache
         case .network: cache = networkCache
+        case .disk: cache = diskCache
         }
         return limitedRows(cache, limit: limit, now: now, maxAge: maxAge)
     }
@@ -99,12 +122,14 @@ final class ProcessUsageService {
                           sampleInterval: sampleInterval,
                           aggregatePercentage: gpuPercentage)
         case .memory: return topMemory(limit: limit)
+        case .cpuPower: return topCPUPower(limit: limit, sampleInterval: sampleInterval)
         case .energy:
             return topEnergy(limit: limit,
                              sampleInterval: sampleInterval,
                              cpuPercentage: cpuPercentage,
                              gpuPercentage: gpuPercentage)
         case .network: return topNetwork(limit: limit)
+        case .disk: return topDisk(limit: limit, sampleInterval: sampleInterval)
         }
     }
 
@@ -114,7 +139,9 @@ final class ProcessUsageService {
         memoryCache = nil
         gpuCache = nil
         energyCache = nil
+        cpuPowerCache = nil
         networkCache = nil
+        diskCache = nil
         cacheLock.unlock()
     }
 
@@ -277,6 +304,45 @@ final class ProcessUsageService {
         return Array(rows.prefix(limit))
     }
 
+    private func topCPUPower(limit: Int, sampleInterval: TimeInterval) -> [ProcessUsage] {
+        let now = ProcessInfo.processInfo.systemUptime
+        let sampleTime = ContinuousClock.now
+        cacheLock.lock()
+        let previous = previousCPUPower
+        let elapsed = previous.map { $0.time.duration(to: sampleTime) / .seconds(1) }
+        if cpuPowerLoading || (elapsed ?? .infinity) < max(0.5, sampleInterval * 0.8) {
+            let rows = limitedRows(cpuPowerCache, limit: limit, now: now, maxAge: staleCacheSeconds) ?? []
+            cacheLock.unlock()
+            return rows
+        }
+        cpuPowerLoading = true
+        cacheLock.unlock()
+
+        let startedAt = AppFeature.killProcess.isAvailable ? mach_absolute_time() : nil
+        let counters = ProcessCPUEnergy.readCurrentUser()
+        let rows: [ProcessUsage]?
+        if !counters.values.contains(where: { $0.nanojoules > 0 }) {
+            rows = []
+        } else if let previous, let elapsed, (0.5...30).contains(elapsed) {
+            let deltas = counters.compactMap { pid, reading -> ProcessUsage? in
+                guard let old = previous.counters[pid],
+                      let watts = reading.watts(since: old, elapsed: elapsed),
+                      watts > 0 else { return nil }
+                return ProcessUsage(pid: pid, name: "pid \(pid)", value: watts)
+            }
+            rows = groupedByApp(deltas, sampleStartedAt: startedAt).filter { $0.value >= 0.001 }
+        } else {
+            rows = nil
+        }
+
+        cacheLock.lock()
+        previousCPUPower = (sampleTime, counters)
+        cpuPowerCache = rows.map { cachedRows(from: $0) }
+        cpuPowerLoading = false
+        cacheLock.unlock()
+        return rows.map { Array($0.prefix(limit)) } ?? []
+    }
+
     // MARK: - Network
 
     func topNetwork(limit: Int = 5) -> [ProcessUsage] {
@@ -382,7 +448,7 @@ final class ProcessUsageService {
         if rows.isEmpty,
            let cache = networkCache,
            !cache.rows.isEmpty,
-           now - cache.updatedAt <= cacheFreshSeconds {
+           now - cache.updatedAt <= max(6.0, cacheFreshSeconds) {
             cacheLock.unlock()
             return
         }
@@ -747,6 +813,93 @@ final class ProcessUsageService {
             return Array(rows.prefix(limit))
         }
         return limitedRows(gpuCache, limit: limit, now: ProcessInfo.processInfo.systemUptime, maxAge: staleCacheSeconds) ?? []
+    }
+
+    func topDisk(limit: Int = 5,
+                 sampleInterval: TimeInterval = 2) -> [ProcessUsage] {
+        let now = ProcessInfo.processInfo.systemUptime
+        let minimumInterval = max(0.5, sampleInterval * 0.8)
+
+        diskSampleLock.lock()
+        let previousTime = previousDiskSample?.time
+        diskSampleLock.unlock()
+        if let previousTime, now - previousTime < minimumInterval {
+            return cachedTop(.disk, limit: limit, maxAge: staleCacheSeconds) ?? []
+        }
+
+        cacheLock.lock()
+        if diskLoading {
+            let cached = limitedRows(diskCache, limit: limit, now: now, maxAge: staleCacheSeconds) ?? []
+            cacheLock.unlock()
+            return cached
+        }
+        diskLoading = true
+        cacheLock.unlock()
+
+        let sampleStartedAt: UInt64? = AppFeature.killProcess.isAvailable ? mach_absolute_time() : nil
+        let current = Self.diskIOPerPid()
+        diskSampleLock.lock()
+        let previous = previousDiskSample
+        previousDiskSample = (now, current)
+        diskSampleLock.unlock()
+
+        guard let previous, now > previous.time,
+              now - previous.time < max(30, sampleInterval * 4) else {
+            return finishDisk(nil, limit: limit)
+        }
+
+        let elapsed = now - previous.time
+        guard elapsed > 0 else { return finishDisk(nil, limit: limit) }
+
+        var rows: [ProcessUsage] = []
+        rows.reserveCapacity(current.count)
+        for (pid, total) in current {
+            guard let before = previous.perPid[pid], total > before else { continue }
+            let delta = Double(total - before)
+            let rate = delta / elapsed
+            guard rate >= 1024 else { continue }
+            rows.append(ProcessUsage(pid: pid, name: "pid \(pid)", value: rate))
+        }
+        let grouped = groupedByApp(rows, sampleStartedAt: sampleStartedAt)
+            .sorted { $0.value > $1.value }
+        return finishDisk(grouped, limit: limit)
+    }
+
+    private func finishDisk(_ rows: [ProcessUsage]?, limit: Int) -> [ProcessUsage] {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        diskLoading = false
+        if let rows {
+            diskCache = cachedRows(from: rows)
+            return Array(rows.prefix(limit))
+        }
+        return limitedRows(diskCache, limit: limit, now: ProcessInfo.processInfo.systemUptime, maxAge: staleCacheSeconds) ?? []
+    }
+
+    private static func diskIOPerPid() -> [pid_t: UInt64] {
+        let estimatedCount = max(1, Int(proc_listallpids(nil, 0)))
+        var pids = [pid_t](repeating: 0, count: estimatedCount + 32)
+        let count = pids.withUnsafeMutableBytes { buffer in
+            proc_listallpids(buffer.baseAddress, Int32(buffer.count))
+        }
+        guard count > 0 else { return [:] }
+
+        var perPid: [pid_t: UInt64] = [:]
+        perPid.reserveCapacity(Int(count))
+        for pid in pids.prefix(min(Int(count), pids.count)) where pid > 0 {
+            var info = rusage_info_current()
+            let status = withUnsafeMutablePointer(to: &info) { pointer in
+                pointer.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) { rebound in
+                    proc_pid_rusage(pid, RUSAGE_INFO_CURRENT, rebound)
+                }
+            }
+            guard status == 0 else { continue }
+            let total = info.ri_diskio_bytesread &+ info.ri_diskio_byteswritten
+            if total > 0 {
+                perPid[pid] = total
+            }
+        }
+        return perPid
     }
 
     private func cachedRows(from rows: [ProcessUsage]) -> CachedRows {

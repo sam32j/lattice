@@ -30,6 +30,11 @@ enum SystemInfo {
         return Int(elapsed.rounded(.down))
     }
 
+    static func uptimeString() -> String {
+        let total = wallClockUptimeSeconds() ?? Int(ProcessInfo.processInfo.systemUptime)
+        return MetricFormat.uptime(total)
+    }
+
     static func batterySnapshot() -> BatteryInfo? {
         guard PowerSampler.hasInternalBattery else { return nil }
         guard let blobRef = IOPSCopyPowerSourcesInfo() else { return nil }
@@ -52,7 +57,7 @@ enum SystemInfo {
                            isOnExternalPower: state == "AC Power")
     }
 
-    static func memoryUsage() -> (used: UInt64, appUsed: UInt64, total: UInt64, compressed: UInt64, cached: UInt64, swapUsed: UInt64?)? {
+    static func memoryUsage() -> (used: UInt64, appUsed: UInt64, total: UInt64, wired: UInt64, compressed: UInt64, cached: UInt64, swapUsed: UInt64?)? {
         guard let stats = VMStatisticsDecoder.read() else { return nil }
         let total = ProcessInfo.processInfo.physicalMemory
         let pageSize = UInt64(vm_kernel_page_size)
@@ -81,6 +86,7 @@ enum SystemInfo {
         let swapUsed = sysctlbyname("vm.swapusage", &swap, &swapSize, nil, 0) == 0
             ? swap.xsu_used
             : nil
-        return (used, appUsed, total, compressed, cached, swapUsed)
+        let wired = min(stats.wiredPages, total / pageSize) * pageSize
+        return (used, appUsed, total, wired, compressed, cached, swapUsed)
     }
 }
