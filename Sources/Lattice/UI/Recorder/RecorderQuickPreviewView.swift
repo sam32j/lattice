@@ -22,6 +22,9 @@ struct RecorderQuickPreviewView: View {
     let onDownload: () -> Void
     let onSaveAs: () -> Void
     let onShare: () -> Void
+    let onQuickLink: (RecordingShareDuration) -> Void
+    let onCopyLink: () -> Void
+    let onDelete: () -> Void
     let onQuickLook: () -> Void
     let onHoverChanged: (Bool) -> Void
     let applicationsForMenu: () -> [URL]
@@ -93,6 +96,137 @@ struct RecorderQuickPreviewView: View {
     }
 
     var body: some View {
+        Group {
+            if embedded { islandPreview }
+            else { floatingPreview }
+        }
+        .onHover(perform: onHoverChanged)
+        .contextMenu { contextMenuItems }
+    }
+
+    /// Reuses the image preview's measured canvas. The Island's native size
+    /// never changes: no lower action row, and the movie artwork fills the
+    /// full available rectangle underneath its floating toolbar.
+    private var islandPreview: some View {
+        GeometryReader { canvas in
+            ZStack(alignment: .topTrailing) {
+                Group {
+                    if let image = model.thumbnail {
+                        Image(decorative: image, scale: 1)
+                            .resizable()
+                            .interpolation(.high)
+                            .scaledToFill()
+                            .frame(width: canvas.size.width, height: canvas.size.height)
+                            .clipped()
+                            .onDrag {
+                                NSItemProvider(contentsOf: url) ?? NSItemProvider()
+                            } preview: {
+                                Image(decorative: image, scale: 1)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: min(canvas.size.width, 240),
+                                           height: min(canvas.size.height, 150))
+                                    .clipped()
+                            }
+                            .onTapGesture(count: 2, perform: onQuickLook)
+                    } else {
+                        Color.black.opacity(0.2)
+                            .overlay(ProgressView().controlSize(.small))
+                    }
+                }
+                .frame(width: canvas.size.width, height: canvas.size.height)
+                .background(Color.black.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.8)
+                        .allowsHitTesting(false)
+                }
+                .overlay(alignment: .topLeading) {
+                    // Playback is a deliberate action, not an icon covering the
+                    // center of the image or the source used for dragging.
+                    thumbnailButton(symbol: "play.fill", title: "Quick Look", action: onQuickLook)
+                        .padding(6)
+                }
+
+                islandVideoToolbar.padding(6)
+            }
+        }
+    }
+
+    private func islandTool(_ symbol: String, title: String,
+                            action: @escaping () -> Void) -> some View {
+        Button(action: action) { islandToolImage(symbol) }
+            .buttonStyle(NotchButtonStyle(cornerRadius: 8))
+            .controlSize(.small)
+            .focusable(false)
+            .screenshotSafeHelp(title)
+            .accessibilityLabel(title)
+    }
+
+    private func islandToolImage(_ symbol: String) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 14, weight: .medium))
+            .symbolRenderingMode(.hierarchical)
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle()) // Entire hover backdrop is clickable.
+    }
+
+    private var islandSeparator: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.18))
+            .frame(width: 1, height: 15)
+            .padding(.horizontal, 5)
+            .accessibilityHidden(true)
+    }
+
+    /// Copy, Save | Share, Quick Link | Trim, Delete.
+    private var islandVideoToolbar: some View {
+        HStack(spacing: 3) {
+            islandTool("doc.on.doc", title: recorder.copyButton, action: onCopy)
+            islandTool("square.and.arrow.down", title: recorder.saveButton, action: onDownload)
+            islandSeparator
+            islandTool("square.and.arrow.up", title: screenshot.shareButton, action: onShare)
+            if UserDefaults.standard.bool(forKey: DefaultsKey.recorderSharingEnabled) {
+                if model.sharedRecord != nil {
+                    islandTool("link", title: "Copy Quick Link", action: onCopyLink)
+                } else {
+                    Menu {
+                        ForEach(RecordingShareDuration.allCases) { duration in
+                            Button(duration.title(screenshot)) { onQuickLink(duration) }
+                        }
+                    } label: {
+                        if model.sharing {
+                            ProgressView().controlSize(.small).frame(width: 28, height: 28).contentShape(Rectangle())
+                        } else {
+                            islandToolImage("link")
+                        }
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .disabled(model.sharing)
+                    .screenshotSafeHelp("Quick Link")
+                    .accessibilityLabel("Quick Link")
+                }
+            }
+            islandSeparator
+            islandTool("scissors", title: screenshot.editButton, action: onEdit)
+            islandTool("trash", title: "Move recording to Trash", action: onDelete)
+        }
+        .fixedSize(horizontal: true, vertical: true)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 3)
+        .background(HUDBackdrop(cornerRadius: 12, contrast: .standard))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.7)
+                .allowsHitTesting(false)
+        }
+        .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
+    }
+
+    private var floatingPreview: some View {
         VStack(spacing: 10) {
             ZStack {
                 if let image = model.thumbnail {
@@ -169,10 +303,6 @@ struct RecorderQuickPreviewView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
             }
-        }
-        .onHover(perform: onHoverChanged)
-        .contextMenu {
-            contextMenuItems
         }
     }
 

@@ -19,7 +19,7 @@ enum NotchCameraSupport {
             && NotchSupport.modules(in: defaults).contains(.camera)
     }
 
-    static func canPresent(expanded: Bool, selected: NotchModule, appPanel: Bool, in defaults: UserDefaults = .standard) -> Bool {
-        isEnabled(in: defaults) && expanded && selected == .camera && !appPanel
+    static func canPresent(expanded: Bool, selected: NotchModule, in defaults: UserDefaults = .standard) -> Bool {
+        isEnabled(in: defaults) && expanded && selected == .camera
     }
 }
