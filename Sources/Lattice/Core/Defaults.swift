@@ -539,6 +539,7 @@ enum DefaultsKey {
     static let quickLauncherShortcut = "quickLauncherShortcut"
     static let quickLauncherItemOrder = "quickLauncherItemOrder"
     static let quickLauncherHiddenItems = "quickLauncherHiddenItems"
+    static let recentHubUtility = "recentHubUtility"
     static let launcherShortcutTarget = "launcherShortcutTarget"
     static let hubControlsOrder = "hubControlsOrder"
     static let hubControlsHidden = "hubControlsHidden"
@@ -716,6 +717,8 @@ enum DefaultsKey {
     static let notchControlOrder = "notchControlOrder"
     static let notchSize = "notchSize"
     static let notchOutlineEnabled = "notchOutlineEnabled"
+    static let notchLiquidGlassEnabled = "notchLiquidGlassEnabled"
+    static let notchTranslucentBackground = "notchTranslucentBackground"
     static let notchHideMenuBarGap = "notchHideMenuBarGap"
     // Fits the island to one Mac's camera housing; never backed up.
     static let notchCameraFitWidth = "notchCameraFitWidth"
@@ -724,7 +727,6 @@ enum DefaultsKey {
     static let notchShelf = "notchShelf"
     static let notchDragReveal = "notchDragReveal"
     static let notchQuickPanel = "notchQuickPanel"
-    static let notchAppPanel = "notchAppPanel"
     static let notchHidesMenuBarIcon = "notchHidesMenuBarIcon" // the island takes the glyph's place while it is on
     static let notchKeepAwakeActivity = "notchKeepAwakeActivity" // a running Keep Awake session in the closed island
     static let notchScratchpad = "notchScratchpad"
@@ -1150,8 +1152,6 @@ enum Defaults {
         DefaultsKey.notchShelf: true,
         DefaultsKey.notchDragReveal: true,
         DefaultsKey.notchQuickPanel: true,
-        DefaultsKey.notchAppPanel: false,
-        AppMenuDestination.disabledKey: false,
         DefaultsKey.notchHidesMenuBarIcon: false,
         DefaultsKey.notchKeepAwakeActivity: false,
         DefaultsKey.notchScratchpad: true,
@@ -1727,7 +1727,6 @@ enum Defaults {
             defaults.set(true, forKey: DefaultsKey.notchInitialExtensionsInstalled)
             let previous: [String: Any] = [
                 DefaultsKey.notchSize: NotchSize.spacious.rawValue,
-                DefaultsKey.notchAppPanel: true,
                 DefaultsKey.notchKeyboardLight: false,
                 DefaultsKey.notchNotificationsEnabled: false,
                 DefaultsKey.notchCameraEnabled: false,
