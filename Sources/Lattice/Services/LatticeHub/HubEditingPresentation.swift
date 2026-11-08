@@ -15,7 +15,7 @@ final class HubEditingPresentation: ObservableObject {
 
     private var islandIsActive: Bool {
         let island = NotchService.shared
-        return island.expanded && island.selected == .hub && !island.showingAppPanel && !island.showingSections
+        return island.expanded && island.selected == .hub && !island.showingSections
     }
 
     func setEditing(_ editing: Bool, options: LatticeHubItem?) {
