@@ -111,7 +111,7 @@ enum HubPresentationProbe {
         let originalHeader = try headerOffset(in: view)
         let originalFooter = try footerOffset(in: view)
         guard let handle = descendant("hub-drag-handle", in: view) else { throw CocoaError(.coderInvalidValue) }
-        let handleTop = panel.frame.minY + handle.convert(handle.bounds, to: nil).maxY
+        let handleTop = dragHandleTop(handle, in: panel)
         for (iteration, editing) in [true, false, true, false].enumerated() {
             if iteration == 3 {
                 launcher.editingOptionsItem = .clipboard
@@ -130,7 +130,7 @@ enum HubPresentationProbe {
                 RunLoop.main.run(until: Date().addingTimeInterval(1.0 / 120))
                 view.layoutSubtreeIfNeeded()
                 maxTopDrift = max(maxTopDrift, abs(panel.frame.maxY - top))
-                let currentHandleTop = panel.frame.minY + handle.convert(handle.bounds, to: nil).maxY
+                let currentHandleTop = dragHandleTop(handle, in: panel)
                 maxHeaderDrift = max(maxHeaderDrift, abs(currentHandleTop - handleTop))
                 let height = panel.frame.height
                 if editing ? height < previousHeight - 1 : height > previousHeight + 1 {
@@ -179,6 +179,79 @@ enum HubPresentationProbe {
         if abs(panel.frame.maxY - original.maxY) > 1 || abs(panel.frame.height - original.height) > 1 {
             failures.append("Rapid edit reversals do not restore the original HUD geometry")
         }
+        // Regression: the native panel grows/shrinks from its bottom edge,
+        // while the shared header stays stationary during the page crossfade.
+        let openingTop = panel.frame.maxY
+        let openingHandleTop = dragHandleTop(handle, in: panel)
+        launcher.activeUtility = .urlCleaner
+        var maxOpeningTopDrift: CGFloat = 0
+        var maxOpeningHeaderDrift: CGFloat = 0
+        let openingDeadline = Date().addingTimeInterval(0.65)
+        while Date() < openingDeadline {
+            RunLoop.main.run(until: Date().addingTimeInterval(1.0 / 120))
+            view.layoutSubtreeIfNeeded()
+            maxOpeningTopDrift = max(maxOpeningTopDrift, abs(panel.frame.maxY - openingTop))
+            let handleTop = dragHandleTop(handle, in: panel)
+            maxOpeningHeaderDrift = max(maxOpeningHeaderDrift, abs(handleTop - openingHandleTop))
+        }
+        if maxOpeningTopDrift > 1 {
+            failures.append("HUD top edge moves when opening a subpage")
+        }
+        if maxOpeningHeaderDrift > 1 {
+            failures.append("HUD shared header moves when opening a subpage")
+        }
+        settle(view)
+        let utilityHeight = panel.frame.height
+        let returnTop = panel.frame.maxY
+        let returnHandleTop = dragHandleTop(handle, in: panel)
+        launcher.closeUtility()
+        var intermediateReturnHeights = Set<Int>()
+        var maxReturnTopDrift: CGFloat = 0
+        var maxReturnHeaderDrift: CGFloat = 0
+        var lastReturnHeight = utilityHeight
+        var returnReversedDirection = false
+        let rootIsTaller = original.height > utilityHeight
+        let returnDeadline = Date().addingTimeInterval(0.85)
+        while Date() < returnDeadline {
+            RunLoop.main.run(until: Date().addingTimeInterval(1.0 / 120))
+            view.layoutSubtreeIfNeeded()
+            let height = panel.frame.height
+            maxReturnTopDrift = max(maxReturnTopDrift, abs(panel.frame.maxY - returnTop))
+            let currentHandleTop = dragHandleTop(handle, in: panel)
+            maxReturnHeaderDrift = max(maxReturnHeaderDrift, abs(currentHandleTop - returnHandleTop))
+            if rootIsTaller ? height < lastReturnHeight - 1 : height > lastReturnHeight + 1 {
+                returnReversedDirection = true
+            }
+            lastReturnHeight = height
+            if abs(height - utilityHeight) > 1, abs(height - original.height) > 1 {
+                intermediateReturnHeights.insert(Int(height.rounded()))
+            }
+        }
+        if abs(original.height - utilityHeight) > 12,
+           intermediateReturnHeights.count < 3,
+           !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            failures.append("Subpage return cuts to the root height instead of growing/shrinking smoothly")
+        }
+        if returnReversedDirection { failures.append("HUD reverses height direction during subpage return") }
+        if maxReturnTopDrift > 1 { failures.append("HUD top edge moves during subpage return") }
+        if maxReturnHeaderDrift > 1 { failures.append("HUD shared header moves during subpage return") }
+        if abs(panel.frame.height - original.height) > 1 {
+            failures.append("HUD does not settle at the root height after closing a subpage")
+        }
+        // The root can have more tools than fit on the screen. Its scroll
+        // viewport must keep the native panel within the visible desktop,
+        // with the same rounded layer mask throughout the transition.
+        let visibleScreen = panel.screen?.visibleFrame ?? NSScreen.pointerVisibleFrame
+        if panel.frame.minY < visibleScreen.minY + 15 {
+            failures.append("HUD grows below the visible screen while returning to root")
+        }
+        if let contentLayer = panel.contentView?.layer {
+            if contentLayer.cornerRadius < 21 || !contentLayer.masksToBounds {
+                failures.append("HUD loses its rounded native content mask")
+            }
+        } else {
+            failures.append("HUD has no native content mask")
+        }
         launcher.activeUtility = .urlCleaner
         settle(view)
         launcher.hide()
@@ -192,6 +265,12 @@ enum HubPresentationProbe {
             || abs(panel.frame.maxY - anchor.minY + 6) > 1 {
             failures.append("Reopening after a utility clips or snaps the anchored HUD")
         }
+    }
+
+    // Measure the drag handle in screen coordinates, independent of the
+    // NSPanel's changing height during presentation tests.
+    private static func dragHandleTop(_ handle: NSView, in panel: NSPanel) -> CGFloat {
+        panel.frame.minY + handle.convert(handle.bounds, to: nil).maxY
     }
 
     private static func descendant(_ identifier: String, in view: NSView) -> NSView? {

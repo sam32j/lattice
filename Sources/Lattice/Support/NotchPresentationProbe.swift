@@ -13,7 +13,7 @@ enum NotchPresentationProbe {
     /// Exercise the production backdrop, including its native glass rendering,
     /// without changing the app's preferences or making the test windows visible.
     private static func surface(_ presentation: NotchBackdropPresentation) -> AnyView {
-        AnyView(NotchSurfaceBackground(presentation: presentation)
+        AnyView(NotchSurfaceBackground(presentation: presentation, glass: CommandLine.arguments.contains("--glass"))
             .environment(\.colorScheme, .dark))
     }
 
