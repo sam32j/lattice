@@ -16,6 +16,8 @@ struct Sparkline: View {
     var fillOpacity: Double = 0.16
     var lineWidth: CGFloat = 1.5
     var showsZeroBaseline = false
+    /// Normalized x positions for a timed graph. Other sparklines use evenly spaced samples.
+    var horizontalPositions: [Double]? = nil
 
     var body: some View {
         GeometryReader { geometry in
@@ -46,18 +48,23 @@ struct Sparkline: View {
                     }
                     .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
                 }
+            } else if let point = points.first {
+                Path(ellipseIn: CGRect(x: point.x - 2, y: point.y - 2, width: 4, height: 4))
+                    .fill(color)
             }
         }
     }
 
     private func points(in size: CGSize, baselineY: CGFloat) -> [CGPoint] {
-        guard values.count >= 2 else { return [] }
+        guard values.count >= 2 || horizontalPositions?.count == 1 else { return [] }
         let peak = max(maxValue ?? (values.max() ?? 1), 0.0001)
         let topY: CGFloat = 0.5
         let plotHeight = max(1, baselineY - topY)
-        let lastIndex = values.count - 1
+        let positions = horizontalPositions?.count == values.count ? horizontalPositions : nil
+        let lastIndex = max(1, values.count - 1)
         return values.enumerated().map { index, value in
-            let x = size.width * CGFloat(index) / CGFloat(lastIndex)
+            let position = positions?[index] ?? Double(index) / Double(lastIndex)
+            let x = size.width * CGFloat(position)
             let normalized = min(1, max(0, value / peak))
             let y = baselineY - plotHeight * CGFloat(normalized)
             return CGPoint(x: x, y: y)
