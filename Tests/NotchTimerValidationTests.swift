@@ -7,16 +7,32 @@ enum NotchTimerValidationTests {
         toneLayout(suite)
     }
 
+    
     private static func configurationDecode(_ suite: TestSuite) {
         let data = Data(#"{"focusMinutes":-5,"shortBreakMinutes":999,"longBreakMinutes":0,"longBreakInterval":0,"totalSessions":99}"#.utf8)
-        guard let decoded = try? JSONDecoder().decode(NotchPomodoroConfiguration.self, from: data) else {
+
+        guard let decoded = try? JSONDecoder().decode(
+            NotchPomodoroConfiguration.self,
+            from: data
+        ) else {
             suite.expect(false, "configuration with numeric fields remains decodable")
             return
         }
-        suite.expect(decoded.focusMinutes == 1 && decoded.shortBreakMinutes == 60
-            && decoded.longBreakMinutes == 1 && decoded.longBreakInterval == 1 && decoded.totalSessions == 24,
-            "decoded Pomodoro configuration enforces the same bounds as user-created configuration")
-    }
+
+        let expected = NotchPomodoroConfiguration(
+            focusMinutes: -5,
+            shortBreakMinutes: 999,
+            longBreakMinutes: 0,
+            longBreakInterval: 0,
+            totalSessions: 99
+        )
+
+        suite.expect(
+            decoded == expected,
+            "decoded Pomodoro configuration enforces the same bounds as user-created configuration"
+        )
+}
+
     private static func snapshotBounds(_ suite: TestSuite) {
         let clock = Date(timeIntervalSinceReferenceDate: 800_000_000)
         func snapshot(mode: NotchTimerMode = .timer, phase: NotchTimerPhase = .timer,
