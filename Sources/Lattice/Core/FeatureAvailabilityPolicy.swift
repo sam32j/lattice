@@ -35,6 +35,9 @@ extension AppFeature {
 
     func isAvailable(in defaults: UserDefaults, hardwareSupported: Bool? = nil) -> Bool {
         guard hardwareSupported ?? isHardwareSupported else { return false }
+        if self == .quickLauncher {
+            return true
+        }
         if self == .pastePlain {
             return AppFeature.clipboardHistory.isAvailable(in: defaults) && isToggledOn(in: defaults)
         }
