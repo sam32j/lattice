@@ -55,6 +55,15 @@ struct NotchView: View {
             .onChange(of: contrast) {
                 DispatchQueue.main.async { service.refreshPresentation(animated: false) }
             }
+            .onChange(of: launcher.isEditing) { _, _ in
+                NotchLiveQuickActionsEditorController.shared.updateLiveBackdrop()
+            }
+            .onChange(of: service.expanded) { _, _ in
+                NotchLiveQuickActionsEditorController.shared.updateLiveBackdrop()
+            }
+            .onAppear {
+                NotchLiveQuickActionsEditorController.shared.updateLiveBackdrop()
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .environment(\.colorScheme, .dark)
             .environment(\.notchPresentation, true)
@@ -210,7 +219,7 @@ struct NotchView: View {
         HStack {
             navigation
             Spacer(minLength: 8)
-            NotchIconButton(symbol: "house", title: "Home") {
+            NotchIconButton(symbol: "house", title: SettingsFollowupStrings.text(.allTools, l10n.language)) {
                 service.select(.hub)
             }
         }
@@ -268,7 +277,7 @@ struct NotchView: View {
             .frame(width: service.surfaceSize.width, height: service.surfaceSize.height, alignment: .top)
     }
 
-    private var showsDetail: Bool { service.showingAppPanel || service.selectedMetric != nil }
+    private var showsDetail: Bool { service.selectedMetric != nil }
 
     /// The open island names no page. Its top row holds the page's own
     /// controls, beside the camera where they fit, as a phone's island wraps
@@ -309,6 +318,53 @@ struct NotchView: View {
             .padding(.top, geometry.headerTopInset)
             .padding(.bottom, NotchLayout.bottomInset)
             .frame(width: service.expandedSize.width, height: service.expandedSize.height, alignment: .top)
+            // Image previews reuse the EXISTING panel dimensions. Paint the
+            // screenshot over the otherwise empty capture-toolbar row and the
+            // content area, rather than reserving a second row for actions.
+            // The navigation and Island pin remain beside the camera above it.
+            .overlay(alignment: .topLeading) {
+                if service.selected == .captures, service.captureUsesImageOverlay,
+                   let capture = service.captureContent {
+                    capture
+                        .frame(width: service.contentSize.width,
+                               height: service.contentSize.height + geometry.pageTopInset - geometry.headerTopInset)
+                        .overlay {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 26, weight: .medium))
+                                .padding(16)
+                                .background(.ultraThinMaterial, in: Circle())
+                                .opacity(service.captureHistoryGestureProgress)
+                                .offset(y: 12 * (1 - service.captureHistoryGestureProgress))
+                                .animation(.easeOut(duration: 0.12), value: service.captureHistoryGestureProgress)
+                                .allowsHitTesting(false)
+                                .accessibilityHidden(true)
+                        }
+                        .padding(.leading, NotchLayout.horizontalInset)
+                        .padding(.top, geometry.headerTopInset)
+                }
+            }
+            // Capture previews use two distinct rows without changing the
+            // island width: navigation beside the camera, and the unchanged
+            // capture-action band immediately above the image. Neither upper
+            // control participates in the toolbar's width measurement.
+            .overlay(alignment: .topLeading) {
+                if service.selected == .captures && service.captureContent != nil
+                    && geometry.isNotched && !geometry.floats {
+                    capturePreviewNavigation
+                        .frame(width: max(0, (service.expandedSize.width - geometry.cameraWidth) / 2
+                                          - NotchLayout.horizontalInset - NotchBand.cameraClearance),
+                               alignment: .leading)
+                        .padding(.top, max(0, (geometry.cameraHeight - 28) / 2))
+                        .padding(.leading, NotchLayout.horizontalInset)
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if service.selected == .captures && service.captureContent != nil {
+                    pinMark
+                        .padding(.top, max(0, (geometry.cameraHeight - 28) / 2))
+                        .padding(.trailing, NotchLayout.horizontalInset)
+                }
+            }
             .contentShape(Rectangle())
             .contextMenu { islandMenu }
             .focusEffectDisabled()
@@ -327,7 +383,9 @@ struct NotchView: View {
         } else if scrollsVertically {
             ScrollView {
                 content
-                    .frame(height: contentOverflows ? pageSize.height : nil)
+                    // Detail content must retain its natural height when the
+                    // display is too short, so scrolling can actually reach it.
+                    .frame(height: contentOverflows && !showsDetail ? pageSize.height : nil)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
                     .padding(.bottom, 4)
                     .contentShape(Rectangle())
@@ -350,13 +408,20 @@ struct NotchView: View {
             && !service.showingSections && !service.modules.isEmpty
         let homeReading = homeRow
             ? NotchLayout.homeReadingWidth(levels: NotchSupport.controls().filter(\.isLevel).count, side: band.leadingRoom) : nil
-        let side: HorizontalEdge = wraps || homeReading != nil ? .trailing : .leading
+        // The music page keeps its playback-app chooser on the trailing side.
+        // A temporary volume/brightness/keyboard-light reading instead covers
+        // the leading side, as it does on the other non-home pages.
+        let side: HorizontalEdge = (wraps && service.selected != .music) || homeReading != nil
+            ? .trailing : .leading
         let readingWidth = homeReading ?? (band.besideCamera ? band.side : min(band.side, 220))
         let makesRoom = homeReading != nil && feedback != nil
+        let previewPinAtEdge = service.selected == .captures && service.captureContent != nil
         // A level reading covers its side for the moment it shows; the
         // controls there stay mounted, so a search keeps its focus.
         return NotchBandRow(band: band, covered: feedback == nil ? nil : side) {
-            if !wraps {
+            if !wraps || service.selected == .music {
+                // Music no longer draws its artwork in the camera row; give
+                // the left side back to the inherited Home/back control.
                 bandLeading(band)
                 items.leading
             }
@@ -367,11 +432,11 @@ struct NotchView: View {
                 // The island's own marks follow the page's controls while they
                 // fit their side, never pushing them under the camera; the menu
                 // offers the same actions either way.
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 6) { items.trailing; trailingSections(band); updateControl(band); pinMark }
-                    HStack(spacing: 6) { items.trailing; trailingSections(band); updateControl(band) }
-                    HStack(spacing: 6) { items.trailing; trailingSections(band); pinMark }
-                    HStack(spacing: 6) { items.trailing; trailingSections(band) }
+                // The capture preview's Island pin sits above, beside the
+                // camera. All of its original toolbar actions stay here.
+                HStack(spacing: 6) {
+                    items.trailing
+                    if !previewPinAtEdge { pinMark }
                 }
             }
         }
@@ -388,20 +453,18 @@ struct NotchView: View {
         .environment(\.locale, l10n.language.formattingLocale())
     }
 
-    /// A page that lays out its leading side itself ends its row with the
-    /// way to the sections, after its own controls, where they fit together.
-    @ViewBuilder private func trailingSections(_ band: NotchBand) -> some View {
-        if band.trailingSectionsButton { NotchSectionsButton(action: service.toggleSections) }
-    }
-
-    @ViewBuilder private func updateControl(_ band: NotchBand) -> some View {
-        EmptyView()
-    }
-
     /// A kept-open island says so, and one click lets it go.
     @ViewBuilder private var pinMark: some View {
-        if service.selected != .hub, service.selected != .controls, service.selected != .mixer, service.pinned {
-            NotchIconButton(symbol: "pin.fill", title: text.unpin, selected: true) { service.pinned = false }
+        if service.selected != .hub {
+            NotchIconButton(
+                symbol: service.pinned ? "pin.fill" : "pin",
+                title: service.pinned ? text.unpin : text.pin,
+                selected: service.pinned,
+                hasBackdrop: false
+            ) {
+                service.pinned.toggle()
+                LatticeHubService.shared.isPinned = service.pinned
+            }
         }
     }
 
@@ -412,43 +475,96 @@ struct NotchView: View {
 
     @ViewBuilder private func bandLeading(_ band: NotchBand) -> some View {
         if showsDetail {
-            NotchBandBackButton(title: service.detailTitle, action: service.goBack)
+            NotchBandBackButton(title: FeatureStrings.notch(l10n.language).system, action: service.goBack)
         } else if service.selected == .captures {
             if service.captureContent != nil {
-                NotchIconButton(symbol: "clock.arrow.circlepath", title: FeatureStrings.recentCaptures(l10n.language).title,
-                                action: service.showCaptureHistory)
+                // A physical camera gets preview navigation in the upper-left
+                // wing. On other displays keep it in the regular header row.
+                if !service.expandedGeometry.isNotched || service.expandedGeometry.floats {
+                    capturePreviewNavigation
+                }
             } else {
-                NotchBandBackButton(title: "Home") {
+                NotchBandBackButton(title: SettingsFollowupStrings.text(.allTools, l10n.language)) {
                     service.select(.hub)
                 }
             }
-        } else if service.selected != .hub, service.selected != .controls, service.selected != .mixer {
-            NotchBandBackButton(title: "Home") {
+        } else if service.selected != .hub {
+            NotchBandBackButton(title: SettingsFollowupStrings.text(.allTools, l10n.language)) {
                 service.select(.hub)
             }
         }
     }
 
+    @ViewBuilder private var capturePreviewNavigation: some View {
+        let labels = FeatureStrings.recentCaptures(l10n.language)
+        let compactWidth = service.expandedGeometry.layout == .compact
+        if service.captureOpenedFromHistory {
+            // Both labels use the same history destination. Shorten only
+            // the compact English title; keep translations as provided.
+            let backTitle = compactWidth && l10n.language == .enUS ? "Recent" : labels.title
+            NotchBandBackButton(title: backTitle, action: service.showCaptureHistory)
+        } else {
+            // Fresh capture: X closes the Island; the clock opens history.
+            // Keep the X accessible as "Close" even when its text is hidden.
+            HStack(spacing: 6) {
+                captureCloseButton(title: labels.close, showsTitle: !compactWidth)
+                NotchIconButton(symbol: "clock.arrow.circlepath", title: labels.title,
+                                action: service.showCaptureHistory)
+            }
+        }
+    }
+
+    /// Compact width shows only X; the regular width shows X Close.
+    /// Both use the same collapse action and accessible Close label.
+    private func captureCloseButton(title: String, showsTitle: Bool) -> some View {
+        Button(action: service.collapse) {
+            HStack(spacing: 4) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.55))
+                if showsTitle {
+                    Text(title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, showsTitle ? 7 : 8)
+            .frame(height: 28)
+            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+        }
+        .buttonStyle(NotchButtonStyle(cornerRadius: 9))
+        .help(title)
+        .accessibilityLabel(title)
+    }
+
     /// The island's own actions, on a secondary click anywhere a page has no
     /// menu of its own. The floating buttons and the keys reach them too.
     @ViewBuilder private var islandMenu: some View {
-        Button {
-            service.select(.hub)
-        } label: {
-            Label("Home", systemImage: "house")
+        let isAlreadyOnHub = (service.selected == .hub || service.selected == .controls || service.selected == .mixer)
+            && !showsDetail && LatticeHubService.shared.activeUtility == nil
+        if !isAlreadyOnHub {
+            Button {
+                SystemNavigationState.shared.reset()
+                LatticeHubService.shared.closeUtility()
+                service.select(.hub)
+            } label: {
+                Label("Show All Tools", systemImage: "square.grid.2x2")
+            }
         }
         Button {
             service.pinned.toggle()
         } label: {
-            Label(service.pinned ? "Unpin Dynamic Island" : "Pin Dynamic Island",
+            Label(service.pinned ? "Unpin Island" : "Pin Island",
                   systemImage: service.pinned ? "pin.slash" : "pin")
         }
-        Divider()
         Button(action: service.collapse) {
-            Label("Close Dynamic Island", systemImage: "xmark")
+            Label("Close Island", systemImage: "xmark")
         }
-        Button(action: service.openSettings) {
-            Label("Lattice Settings", systemImage: "gearshape")
+        Divider()
+        Button {
+            NSApp.terminate(nil)
+        } label: {
+            Label("Quit Lattice", systemImage: "power")
         }
     }
 
@@ -497,12 +613,21 @@ struct NotchView: View {
         return size
     }
 
-    private var contentOverflows: Bool { pageSize.height > service.contentSize.height }
+    private var contentOverflows: Bool {
+        // Most metric detail pages already size the Island to their measured
+        // content. Only scroll if the available screen height actually clips
+        // that content. (Fan details use a separate measured-height path.)
+        if let metric = service.selectedMetric, metric != .fan {
+            return SystemNavigationState.shared.height(for: SystemMonitor.shared.snapshot)
+                > service.contentSize.height + 1
+        }
+        return pageSize.height > service.contentSize.height
+    }
 
     private var scrollsVertically: Bool {
-        guard !service.showingAppPanel else { return false }
-        return contentOverflows || service.selectedMetric != nil
-            || (service.selected == .captures && service.captureContent != nil)
+        contentOverflows || service.selectedMetric == .fan
+            || (service.selected == .captures && service.captureContent != nil
+                && !service.captureUsesImageOverlay)
     }
 
     private var headerFeedback: NotchNotice? {
@@ -524,13 +649,11 @@ struct NotchView: View {
 
     private var navigationTitle: String {
         let destination = service.reopeningDestination
-        if destination.appPanel { return text.panel }
         return destination.module.title(l10n.language)
     }
 
     private var navigationSymbol: String {
         let destination = service.reopeningDestination
-        if destination.appPanel { return "square.grid.3x1.below.line.grid.1x2" }
         return destination.module.symbol
     }
 
@@ -555,9 +678,7 @@ struct NotchView: View {
     }
 
     @ViewBuilder private var content: some View {
-        if service.showingAppPanel {
-            MenuPanelView(notchSize: pageSize)
-        } else if let metric = service.selectedMetric {
+        if let metric = service.selectedMetric {
             if metric == .fan {
                 NotchFanControlView()
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { service.updateFanDetailHeight($0) }
@@ -586,27 +707,22 @@ struct NotchView: View {
             case .snippets: NotchSnippetsView(service: service, size: pageSize)
             case .captures:
                 if let capture = service.captureContent {
-                    // The capture's own toolbar takes a full row, below a camera.
-                    capture.frame(maxWidth: .infinity)
-                        .notchBand(trailing: { service.captureActions?.fixedSize() })
-                        .overlay {
-                            Image(systemName: "clock.arrow.circlepath")
-                                .font(.system(size: 26, weight: .medium))
-                                .padding(16)
-                                .background(.ultraThinMaterial, in: Circle())
-                                .opacity(service.captureHistoryGestureProgress)
-                                .offset(y: 12 * (1 - service.captureHistoryGestureProgress))
-                                .animation(.easeOut(duration: 0.12), value: service.captureHistoryGestureProgress)
-                                .allowsHitTesting(false)
-                                .accessibilityHidden(true)
-                        }
+                    if service.captureUsesImageOverlay {
+                        // Rendered in the expanded surface overlay above, to
+                        // reclaim the otherwise unused capture-action row.
+                        Color.clear
+                    } else {
+                        // Recordings keep their existing header actions.
+                        capture.frame(maxWidth: .infinity)
+                            .notchBand(trailing: { service.captureActions?.fixedSize() })
+                    }
                 } else {
                     RecentCapturesView(onClose: nil, notchSize: pageSize)
                         .notchBand(trailing: { NotchClearCapturesButton() })
                 }
             case .files: NotchFilesView(service: service)
             case .system:
-                NotchSystemView(size: pageSize) { service.showMetric($0) }
+                NotchSystemView { service.showMetric($0) }
             // The launcher hands the row its own controls, which a row set
             // here would replace.
             case .hub: LatticeHubView(notchSize: pageSize)
