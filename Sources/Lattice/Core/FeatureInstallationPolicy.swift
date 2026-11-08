@@ -13,7 +13,7 @@ extension AppFeature {
     var retainsControlWhenOff: Bool {
         switch self {
         case .clipboardHistory, .shelf, .textSnippets, .urlCleaner, .cameraPreview,
-             .diskImageInstaller, .quickLauncher, .scratchpad, .videoDownloader: return false
+             .diskImageInstaller, .scratchpad, .videoDownloader: return false
         default: return isToggleOwned
         }
     }
@@ -25,7 +25,7 @@ extension AppFeature {
         case .dockClick, .spacesOrder, .windowMaximizer, .autoQuit, .pastePlain,
              .brightness, .bluetoothSleep, .extraBrightness, .fanControl,
              .clipboardHistory, .shelf, .textSnippets, .urlCleaner, .cameraPreview,
-             .diskImageInstaller, .quickLauncher, .scratchpad, .videoDownloader:
+             .diskImageInstaller, .scratchpad, .videoDownloader:
             return true
         default: return false
         }
@@ -36,7 +36,7 @@ extension AppFeature {
         if group == .monitor || Self.migratedPageFeatures.contains(self) { return true }
         switch self {
         case .clipboardHistory, .shelf, .textSnippets, .urlCleaner, .cameraPreview,
-             .diskImageInstaller, .quickLauncher, .scratchpad, .videoDownloader,
+             .diskImageInstaller, .scratchpad, .videoDownloader, .quickLauncher,
              .screenshot, .screenRecorder,
              .mixer, .soundOutputSwitcher, .audioPriority, .micMute, .musicBlock,
              .wallpaper, .windowLayout, .switcher, .dockPreview,
