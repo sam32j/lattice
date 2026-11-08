@@ -60,7 +60,7 @@ extension FeatureStrings {
             totalSessions: "Total sessions",
             longBreakInterval: "Sessions between long breaks",
             sessionProgress: "Session %d of %d",
-            pomodoroFinished: "Pomodoro complete",
+            pomodoroFinished: "Pomodoro completed",
             minutes: "Minutes",
             start: "Start",
             resume: "Resume",
@@ -498,6 +498,240 @@ extension FeatureStrings {
             lowBattery: "Низький заряд",
             keepAwakeActivity: "Показувати «Не давати Mac заснути» в закритому острівці",
             keepAwakeActivityHint: "Поточний сеанс з’являється біля камери із залишком часу або знаком ∞, якщо він не має завершення.")
+        }
+    }
+}
+
+// Labels introduced by the compact timer redesign. Keep them separate from
+// the older activity strings so every supported language has the same UI fields.
+struct NotchTimerUIStrings {
+    let done: String
+    let stop: String
+    let focusAndBreaks: String
+    let longEvery: String
+    let sessions: String
+    let off: String
+    let ready: String
+    let paused: String
+    let running: String
+    let modePicker: String
+    let sessionUnit: String
+    let breakUnit: String
+}
+
+extension FeatureStrings {
+    static func notchTimerUI(_ language: AppLanguage) -> NotchTimerUIStrings {
+        switch language {
+        case .enUS:
+            return NotchTimerUIStrings(
+                done: "Done",
+                stop: "Stop",
+                focusAndBreaks: "Focus & breaks",
+                longEvery: "Long every",
+                sessions: "Sessions",
+                off: "Off",
+                ready: "Ready",
+                paused: "Paused",
+                running: "Running",
+                modePicker: "Timer mode",
+                sessionUnit: "sessions",
+                breakUnit: "breaks")
+        case .ptBR:
+            return NotchTimerUIStrings(
+                done: "Concluído",
+                stop: "Parar",
+                focusAndBreaks: "Foco e pausas",
+                longEvery: "Longa a cada",
+                sessions: "Sessões",
+                off: "Desativado",
+                ready: "Pronto",
+                paused: "Pausado",
+                running: "Em andamento",
+                modePicker: "Modo do temporizador",
+                sessionUnit: "sessões",
+                breakUnit: "pausas")
+        case .es:
+            return NotchTimerUIStrings(
+                done: "Listo",
+                stop: "Detener",
+                focusAndBreaks: "Concentración y descansos",
+                longEvery: "Larga cada",
+                sessions: "Sesiones",
+                off: "Desactivado",
+                ready: "Listo",
+                paused: "Pausado",
+                running: "En curso",
+                modePicker: "Modo del temporizador",
+                sessionUnit: "sesiones",
+                breakUnit: "descansos")
+        case .sk:
+            return NotchTimerUIStrings(
+                done: "Hotovo",
+                stop: "Zastaviť",
+                focusAndBreaks: "Sústredenie a prestávky",
+                longEvery: "Dlhá po",
+                sessions: "Relácie",
+                off: "Vypnuté",
+                ready: "Pripravené",
+                paused: "Pozastavené",
+                running: "Prebieha",
+                modePicker: "Režim časovača",
+                sessionUnit: "relácií",
+                breakUnit: "prestávky")
+        case .de:
+            return NotchTimerUIStrings(
+                done: "Fertig",
+                stop: "Stopp",
+                focusAndBreaks: "Fokus und Pausen",
+                longEvery: "Lange nach",
+                sessions: "Sitzungen",
+                off: "Aus",
+                ready: "Bereit",
+                paused: "Pausiert",
+                running: "Läuft",
+                modePicker: "Timer-Modus",
+                sessionUnit: "Sitzungen",
+                breakUnit: "Pausen")
+        case .fr:
+            return NotchTimerUIStrings(
+                done: "Terminé",
+                stop: "Arrêter",
+                focusAndBreaks: "Concentration et pauses",
+                longEvery: "Longue après",
+                sessions: "Sessions",
+                off: "Désactivé",
+                ready: "Prêt",
+                paused: "En pause",
+                running: "En cours",
+                modePicker: "Mode minuteur",
+                sessionUnit: "sessions",
+                breakUnit: "pauses")
+        case .it:
+            return NotchTimerUIStrings(
+                done: "Fine",
+                stop: "Interrompi",
+                focusAndBreaks: "Concentrazione e pause",
+                longEvery: "Lunga ogni",
+                sessions: "Sessioni",
+                off: "Disattivato",
+                ready: "Pronto",
+                paused: "In pausa",
+                running: "In corso",
+                modePicker: "Modalità timer",
+                sessionUnit: "sessioni",
+                breakUnit: "pause")
+        case .ru:
+            return NotchTimerUIStrings(
+                done: "Готово",
+                stop: "Остановить",
+                focusAndBreaks: "Фокус и перерывы",
+                longEvery: "Длинный через",
+                sessions: "Сеансы",
+                off: "Выкл.",
+                ready: "Готово",
+                paused: "Пауза",
+                running: "Идёт",
+                modePicker: "Режим таймера",
+                sessionUnit: "сеансов",
+                breakUnit: "перерывов")
+        case .tr:
+            return NotchTimerUIStrings(
+                done: "Bitti",
+                stop: "Durdur",
+                focusAndBreaks: "Odaklanma ve molalar",
+                longEvery: "Uzun mola aralığı",
+                sessions: "Oturumlar",
+                off: "Kapalı",
+                ready: "Hazır",
+                paused: "Duraklatıldı",
+                running: "Çalışıyor",
+                modePicker: "Zamanlayıcı modu",
+                sessionUnit: "oturum",
+                breakUnit: "mola")
+        case .ja:
+            return NotchTimerUIStrings(
+                done: "完了",
+                stop: "停止",
+                focusAndBreaks: "集中と休憩",
+                longEvery: "長い休憩の間隔",
+                sessions: "セッション",
+                off: "オフ",
+                ready: "準備完了",
+                paused: "一時停止中",
+                running: "実行中",
+                modePicker: "タイマーモード",
+                sessionUnit: "セッション",
+                breakUnit: "休憩")
+        case .ko:
+            return NotchTimerUIStrings(
+                done: "완료",
+                stop: "중지",
+                focusAndBreaks: "집중 및 휴식",
+                longEvery: "긴 휴식 간격",
+                sessions: "세션",
+                off: "끔",
+                ready: "준비됨",
+                paused: "일시 정지됨",
+                running: "진행 중",
+                modePicker: "타이머 모드",
+                sessionUnit: "세션",
+                breakUnit: "휴식")
+        case .zhHans:
+            return NotchTimerUIStrings(
+                done: "完成",
+                stop: "停止",
+                focusAndBreaks: "专注与休息",
+                longEvery: "长休息间隔",
+                sessions: "专注次数",
+                off: "关闭",
+                ready: "就绪",
+                paused: "已暂停",
+                running: "进行中",
+                modePicker: "计时器模式",
+                sessionUnit: "次专注",
+                breakUnit: "次休息")
+        case .zhTW:
+            return NotchTimerUIStrings(
+                done: "完成",
+                stop: "停止",
+                focusAndBreaks: "專注與休息",
+                longEvery: "長休息間隔",
+                sessions: "專注次數",
+                off: "關閉",
+                ready: "就緒",
+                paused: "已暫停",
+                running: "進行中",
+                modePicker: "計時器模式",
+                sessionUnit: "次專注",
+                breakUnit: "次休息")
+        case .zhHK:
+            return NotchTimerUIStrings(
+                done: "完成",
+                stop: "停止",
+                focusAndBreaks: "專注與休息",
+                longEvery: "長休息間隔",
+                sessions: "專注次數",
+                off: "關閉",
+                ready: "就緒",
+                paused: "已暫停",
+                running: "進行中",
+                modePicker: "計時器模式",
+                sessionUnit: "次專注",
+                breakUnit: "次休息")
+        case .uk:
+            return NotchTimerUIStrings(
+                done: "Готово",
+                stop: "Зупинити",
+                focusAndBreaks: "Зосередження й перерви",
+                longEvery: "Довга через",
+                sessions: "Сеанси",
+                off: "Вимк.",
+                ready: "Готово",
+                paused: "Призупинено",
+                running: "Виконується",
+                modePicker: "Режим таймера",
+                sessionUnit: "сеансів",
+                breakUnit: "перерв")
         }
     }
 }
