@@ -146,6 +146,7 @@ struct NotchIconButton: View {
     let title: String
     var selected = false
     var hasBackdrop = true
+    var tint: Color? = nil
     let action: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -153,7 +154,7 @@ struct NotchIconButton: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(selected ? .white : .white.opacity(0.55))
+                .foregroundStyle(tint ?? (selected ? Color.white : Color.white.opacity(0.55)))
                 .contentTransition(.symbolEffect(.replace))
                 .animation(reduceMotion ? nil : .smooth(duration: 0.24), value: symbol)
                 .frame(width: 28, height: 28)
@@ -175,7 +176,7 @@ struct NotchSectionsButton: View {
     @ObservedObject private var l10n = L10n.shared
 
     var body: some View {
-        NotchIconButton(symbol: "house", title: "Home", action: action)
+        NotchIconButton(symbol: "house", title: SettingsFollowupStrings.text(.allTools, l10n.language), action: action)
     }
 }
 
@@ -456,35 +457,331 @@ struct NotchBackdropShape: Shape {
 
 struct NotchWindowBackground: View {
     @ObservedObject var presentation: NotchBackdropPresentation
+    @ObservedObject private var notch = NotchService.shared
+    @ObservedObject private var music = NotchMusicService.shared
+    private let glass = LiquidGlassSupport.isSupported
+    @AppStorage(DefaultsKey.notchTranslucentBackground) private var translucent = false
+    @AppStorage(DefaultsKey.notchLiveEqualizer) private var visualizerEnabled = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var showsMusicGlow: Bool {
+        notch.isMusicPageExpanded
+            // The same backdrop component is used by compact mirror islands.
+            // Never color their shorter silhouettes when Music is open elsewhere.
+            && presentation.contour.boundingRect.height >= 160
+            // Keep the glow view mounted through an empty-palette interval,
+            // so a departing cover fades out instead of cutting to black.
+            && music.playback != nil
+    }
 
     var body: some View {
-        NotchSurfaceBackground(presentation: presentation)
+        NotchSurfaceBackground(presentation: presentation, glass: glass, translucent: translucent)
+            .overlay {
+                if showsMusicGlow, let playback = music.playback {
+                    // The backdrop is a separate AppKit hosting view under the
+                    // page content, and its contour is the window's exact mask.
+                    // A player-local background cannot reach these curved edges.
+                    NotchMusicWindowGlow(palette: music.artworkGlowPalette,
+                                         isPlaying: playback.isPlaying,
+                                         contour: presentation.contour,
+                                         cameraHeight: presentation.stripHeight,
+                                         enabled: visualizerEnabled)
+                        .mask(NotchBackdropShape(contour: presentation.contour))
+                        .opacity(visualizerEnabled ? min(1, max(0, presentation.openness)) : 0)
+                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.28),
+                                   value: visualizerEnabled)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+    }
+}
+
+/// Convert the equalizer's seven frequency bands into an ambient light pulse.
+/// The equalizer has its own fast attack and per-band gain; a second, slower
+/// envelope prevents each 30Hz bar update from jostling the entire backdrop.
+/// Input band order is low bass to high treble (50 Hz to 12 kHz).
+struct NotchMusicGlowEnvelope {
+    private var lastSampleTime: TimeInterval?
+    private var baseline = 0.0
+    private var previousEnergy = 0.0
+    private var transientPeak = 0.08
+    private(set) var value = 0.0
+
+    mutating func next(_ levels: [Double]?, at time: TimeInterval) -> Double {
+        guard let levels, levels.count >= 6 else {
+            // No captured audio is different from a quiet musical passage.
+            // Re-arm when a tap begins again; ambient drift remains independent.
+            self = Self()
+            return 0
+        }
+
+        let dt = lastSampleTime.map { min(0.15, max(1.0 / 60.0, time - $0)) } ?? (1.0 / 30.0)
+        let bass = 0.52 * levels[0] + 0.48 * levels[1] // 50-250 Hz
+        let body = 0.5 * (levels[2] + levels[3])      // 250-1000 Hz
+        let presence = 0.5 * (levels[4] + levels[5])  // 1-4.5 kHz
+        let energy = min(1, max(0, bass * 0.54 + body * 0.34 + presence * 0.12))
+
+        if lastSampleTime == nil {
+            // Starting at the current song level avoids a false flash when
+            // a tap comes online or the music resumes after silence.
+            baseline = energy
+            previousEnergy = energy
+            lastSampleTime = time
+            return value
+        }
+        lastSampleTime = time
+
+        // A slow baseline tracks differences in master volume and mastering.
+        // Only changes relative to that baseline should create a beat pulse.
+        let baselineAlpha = 1 - exp(-dt / 1.7)
+        baseline += (energy - baseline) * baselineAlpha
+        let rise = max(0, energy - previousEnergy)
+        previousEnergy = energy
+        let transient = max(0, energy - baseline) * 0.78 + rise * 0.30
+        transientPeak = max(0.065, transient, transientPeak * exp(-dt / 3.2))
+
+        // Adaptive peak reference responds to quiet tracks without maxing out
+        // every sample. A small deadband removes flicker from tiny variations.
+        let relative = min(1, transient / transientPeak)
+        let target = min(1, max(0, (relative - 0.12) / 0.88))
+        let tau = target > value ? 0.16 : 0.60
+        value += (target - value) * (1 - exp(-dt / tau))
+        return value
+    }
+}
+
+/// A deterministic, non-repeating-looking drift for album-colored light.
+/// Combining several slow, incommensurate waves gives the movement of a
+/// free-flowing gradient without the flicker of per-frame random positions.
+/// Both the full Island and the compact music card share these trajectories;
+/// the audio envelope remains responsible for beat-driven brightness.
+struct NotchMusicColorFlow {
+    static func offset(index: Int, time: TimeInterval) -> CGPoint {
+        let seed = Double(index) * 2.399963229728653
+        let x = 0.63 * sin(time * (0.19 + Double(index) * 0.013) + seed)
+              + 0.25 * sin(time * (0.34 + Double(index) * 0.017) + seed * 1.73)
+              + 0.12 * cos(time * 0.11 + seed * 0.61)
+        let y = 0.58 * cos(time * (0.16 + Double(index) * 0.011) + seed * 1.31)
+              + 0.29 * sin(time * (0.29 + Double(index) * 0.014) + seed * 0.83)
+              + 0.13 * cos(time * 0.10 + seed * 1.97)
+        return CGPoint(x: x, y: y)
+    }
+
+    static func radius(index: Int, time: TimeInterval) -> CGFloat {
+        let seed = Double(index) * 2.399963229728653
+        return CGFloat(0.94 + 0.075 * sin(time * 0.21 + seed * 0.93)
+                     + 0.025 * cos(time * 0.37 + seed * 1.51))
+    }
+
+    static func brightness(index: Int, time: TimeInterval) -> Double {
+        0.91 + 0.09 * sin(time * 0.23 + Double(index) * 2.11)
+    }
+}
+
+/// Album colors illuminate the actual window backdrop, not an inset card.
+/// The stage can be wider than the visible island, so all drawing coordinates
+/// are relative to the animated contour's bounding rectangle.
+private struct NotchMusicWindowGlow: View {
+    let palette: [NotchArtworkTint]
+    let isPlaying: Bool
+    let contour: Path
+    let cameraHeight: CGFloat
+    let enabled: Bool
+    @ObservedObject private var audio = NotchAudioLevelService.shared
+    @State private var envelope = NotchMusicGlowEnvelope()
+    @State private var audioPulse = 0.0
+    @State private var outgoingPalette: [NotchArtworkTint] = []
+    @State private var paletteTransitionStarted: Date?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    private var bounds: CGRect { contour.boundingRect }
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 24.0,
+                                paused: !enabled || reduceMotion || (!isPlaying && paletteTransitionStarted == nil)
+                                    || (palette.isEmpty && outgoingPalette.isEmpty))) { tick in
+            Canvas(opaque: false, rendersAsynchronously: true) { context, _ in
+                let b = bounds
+                guard b.width > 0, b.height > 0 else { return }
+
+                let pulse = isPlaying && !reduceMotion ? audioPulse : 0
+                let time = isPlaying && !reduceMotion ? tick.date.timeIntervalSinceReferenceDate : 0
+                let elapsed = paletteTransitionStarted.map { tick.date.timeIntervalSince($0) } ?? 0.62
+                let fraction = min(1, max(0, elapsed / 0.62))
+                let fade = fraction * fraction * (3 - 2 * fraction)
+
+                if !outgoingPalette.isEmpty && fade < 1 {
+                    draw(palette: outgoingPalette, opacity: 1 - fade,
+                         pulse: pulse, time: time, bounds: b, context: context)
+                }
+                draw(palette: palette, opacity: paletteTransitionStarted == nil ? 1 : fade,
+                     pulse: pulse, time: time, bounds: b, context: context)
+            }
+        }
+        // Screen blending lifts light out of black without a muddy dark fill.
+        // The fade protects the camera band; it is NOT a clip of the player.
+        .blendMode(.screen)
+        .mask {
+            Canvas(opaque: false) { context, _ in
+                let b = bounds
+                guard b.width > 0, b.height > 0 else { return }
+                let darkTo = min(0.66, max(0, cameraHeight / b.height))
+                let clearTo = min(1, darkTo + 0.34)
+                let cameraFade = Gradient(stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .clear, location: darkTo),
+                    .init(color: .white.opacity(0.72), location: clearTo),
+                    .init(color: .white, location: 1)
+                ])
+                context.fill(Path(b), with: .linearGradient(
+                    cameraFade,
+                    startPoint: CGPoint(x: b.midX, y: b.minY),
+                    endPoint: CGPoint(x: b.midX, y: b.maxY)))
+            }
+        }
+        .opacity(reduceTransparency ? 0.72 : 1)
+        .onReceive(audio.$levels) { levels in
+            guard enabled else { return }
+            audioPulse = envelope.next(levels, at: ProcessInfo.processInfo.systemUptime)
+        }
+        .onChange(of: enabled) { _, isEnabled in
+            if !isEnabled {
+                envelope = NotchMusicGlowEnvelope()
+                audioPulse = 0
+            }
+        }
+        .onChange(of: palette) { old, new in
+            guard old != new else { return }
+            if reduceMotion {
+                outgoingPalette = []
+                paletteTransitionStarted = nil
+            } else {
+                outgoingPalette = old
+                paletteTransitionStarted = Date()
+            }
+        }
+        .task(id: paletteTransitionStarted) {
+            guard paletteTransitionStarted != nil else { return }
+            // Draw both palettes for the brief transition only. A new cover
+            // cancels this task and starts a fresh blend without a hard cut.
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            guard !Task.isCancelled else { return }
+            outgoingPalette = []
+            paletteTransitionStarted = nil
+        }
+        .accessibilityHidden(true)
+        .allowsHitTesting(false)
+    }
+
+    /// Draw a single palette into the SAME canvas as its outgoing version.
+    /// Alpha weights sum to one, avoiding doubled brightness and extra audio
+    /// observers while the artwork and glow crossfade.
+    private func draw(palette: [NotchArtworkTint], opacity: Double,
+                      pulse: Double, time: Double, bounds b: CGRect,
+                      context: GraphicsContext) {
+        guard let firstTint = palette.first, opacity > 0 else { return }
+        let first = softened(firstTint)
+        let foundation = Gradient(stops: [
+            .init(color: first.opacity(0.035 * opacity), location: 0),
+            .init(color: first.opacity(0.065 * opacity), location: 0.48),
+            .init(color: first.opacity(0.11 * opacity), location: 1)
+        ])
+        context.fill(Path(b), with: .linearGradient(
+            foundation,
+            startPoint: CGPoint(x: b.midX, y: b.minY),
+            endPoint: CGPoint(x: b.midX, y: b.maxY)))
+
+        let horizontal: [CGFloat] = [0.22, 0.76, 0.47]
+        let vertical: [CGFloat] = [0.54, 0.71, 0.91]
+        let radiusBase = max(b.width * 0.73, b.height * 0.85)
+        for (index, tint) in palette.prefix(3).enumerated() {
+            // Each colour follows a different, smoothly wandering path.
+            // Only the light fields move; the Island contour and UI stay put.
+            let offset = NotchMusicColorFlow.offset(index: index, time: time)
+            let cx = b.minX + b.width * (horizontal[index] + offset.x * 0.19)
+            let cy = b.minY + b.height * (vertical[index] + offset.y * 0.13)
+            let radius = radiusBase * (NotchMusicColorFlow.radius(index: index, time: time)
+                                       + CGFloat(pulse) * 0.012)
+            let strength = ((index == 0 ? 0.22 : 0.17)
+                            * NotchMusicColorFlow.brightness(index: index, time: time)
+                            + pulse * 0.040) * opacity
+            let color = softened(tint)
+            let gradient = Gradient(stops: [
+                .init(color: color.opacity(strength), location: 0),
+                .init(color: color.opacity(strength * 0.64), location: 0.43),
+                .init(color: color.opacity(0), location: 1)
+            ])
+            context.fill(Path(ellipseIn: CGRect(
+                x: cx - radius, y: cy - radius,
+                width: radius * 2, height: radius * 2)),
+                with: .radialGradient(gradient, center: CGPoint(x: cx, y: cy),
+                                      startRadius: 0, endRadius: radius))
+        }
+    }
+
+    /// Bright covers, such as neon-green artwork, retain their hue without
+    /// spraying pure saturated RGB over the Liquid Glass surface.
+    private func softened(_ tint: NotchArtworkTint) -> Color {
+        Color(.sRGB,
+              red: 0.30 + tint.red * 0.61,
+              green: 0.30 + tint.green * 0.61,
+              blue: 0.30 + tint.blue * 0.61,
+              opacity: 1)
     }
 }
 
 /// Keep the upper content dark and open the lower surface into a refractive lip.
 struct NotchSurfaceBackground: View {
     @ObservedObject var presentation: NotchBackdropPresentation
+    let glass: Bool
+    var translucent = false
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     private var offersGlass: Bool {
 #if compiler(>=6.2)
-        if #available(macOS 26, *) { return !reduceTransparency }
+        if #available(macOS 26, *) { return glass && !reduceTransparency }
 #endif
         return false
     }
 
     private var showsGlass: Bool { offersGlass && presentation.usesGlass }
     private var showsTranslucent: Bool {
-        !offersGlass && presentation.usesGlass && !reduceTransparency
+        translucent && !offersGlass && presentation.usesGlass && !reduceTransparency
     }
 
     var body: some View {
-        Color.black
-            .environment(\.colorScheme, .dark)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
+        ZStack {
+            // The black the island rests in stays beneath the glass until
+            // the glass has opened, and the glass exists only while that
+            // black lets it show, so the window's resizes at either end of a
+            // transition happen in plain black.
+            Color.black.opacity(showsGlass || showsTranslucent ? presentation.restingBlack : 1)
+#if compiler(>=6.2)
+            if #available(macOS 26, *), showsGlass, presentation.restingBlack < 1 {
+                let shape = NotchBackdropShape(contour: presentation.contour)
+                Color.clear
+                    .glassEffect(.clear, in: shape)
+                    .environment(\.appearsActive, true)
+                    .materialActiveAppearance(.active)
+                    .overlay {
+                        LinearGradient(stops: Self.shade(openness: presentation.openness, contrast: contrast),
+                                       startPoint: .top, endPoint: .bottom)
+                            .frame(height: presentation.contourBottom)
+                            .frame(maxHeight: .infinity, alignment: .top)
+                            .mask(shape)
+                    }
+            }
+#endif
+            if showsTranslucent, presentation.restingBlack < 1 {
+                translucentOrBlack
+            }
+        }
+        .environment(\.colorScheme, .dark)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     /// The dimming over the glass, from the top of the island to its lip. Near
@@ -505,7 +802,7 @@ extension NotchSurfaceBackground {
     /// the camera strip so every open state meets the housing as the resting
     /// island does. Reduce Transparency keeps it black.
     @ViewBuilder var translucentOrBlack: some View {
-        if presentation.usesGlass, !reduceTransparency {
+        if translucent, presentation.usesGlass, !reduceTransparency {
             let shape = NotchBackdropShape(contour: presentation.contour)
             let height = presentation.contourBottom
             let stops = NotchTranslucentTint.stops(height: height, stripHeight: presentation.stripHeight,
@@ -588,6 +885,7 @@ struct NotchControlSurface: ViewModifier {
     let cornerRadius: CGFloat
     var selected = false
     var interactive = true
+    private let glass = LiquidGlassSupport.isSupported
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.notchGlassSurface) private var glassSurface
@@ -604,20 +902,26 @@ struct NotchControlSurface: ViewModifier {
                     }
             } else {
 #if compiler(>=6.2)
-                if #available(macOS 26, *), !reduceTransparency {
+                if #available(macOS 26, *), glass, !reduceTransparency {
                     content.background(.white.opacity(selected ? 0.12 : 0.065), in: shape)
                         .glassEffect(.regular.interactive(interactive), in: shape)
                 } else {
                     content.background(.white.opacity(selected ? 0.12 : 0.065), in: shape)
+                        .overlay {
+                            shape.strokeBorder(.white.opacity(contrast == .increased ? 0.24 : (selected ? 0.16 : 0.065)),
+                                               lineWidth: 0.5)
+                                .allowsHitTesting(false)
+                        }
                 }
 #else
                 content.background(.white.opacity(selected ? 0.12 : 0.065), in: shape)
+                    .overlay {
+                        shape.strokeBorder(.white.opacity(contrast == .increased ? 0.24 : (selected ? 0.16 : 0.065)),
+                                           lineWidth: 0.5)
+                            .allowsHitTesting(false)
+                    }
 #endif
             }
-        }
-        .overlay {
-            shape.strokeBorder(.white.opacity(contrast == .increased ? 0.5 : 0), lineWidth: 0.75)
-                .allowsHitTesting(false)
         }
     }
 }
@@ -660,6 +964,7 @@ struct NotchMenuButton<Label: View>: View {
 /// did above a detail before the island stopped naming its pages.
 struct NotchBandBackButton: View {
     let title: String
+    var showsTitle: Bool = true
     let action: () -> Void
     @ObservedObject private var l10n = L10n.shared
 
@@ -669,11 +974,14 @@ struct NotchBandBackButton: View {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.55))
-                Text(title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1)
+                if showsTitle && !title.isEmpty {
+                    Text(title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
             }
-            .padding(.horizontal, 7)
+            .padding(.horizontal, showsTitle && !title.isEmpty ? 7 : 8)
             .frame(height: 28)
             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
