@@ -7,13 +7,34 @@ enum NotchCaptureNavigationTests {
     static func run(_ suite: TestSuite) {
         suite.expect(NotchModule.captures.presentationTitle(.enUS, hasCapturePreview: true) == "Preview",
                      "an active Island capture is titled Preview rather than Recent captures")
+        suite.expect(FeatureStrings.recentCaptures(.enUS).allCaptures == "All Captures",
+                     "history previews use an All Captures back label")
         for language in AppLanguage.allCases {
+            let labels = FeatureStrings.recentCaptures(language)
+            suite.expect(!labels.allCaptures.isEmpty && !labels.close.isEmpty,
+                         "preview Back and Close labels are localized")
             suite.expect(NotchModule.captures.presentationTitle(language, hasCapturePreview: false)
                          == FeatureStrings.recentCaptures(language).title,
                          "the history page keeps its own localized Recent captures title")
             suite.expect(!NotchModule.captures.presentationTitle(language, hasCapturePreview: true).isEmpty,
                          "the active preview title is localized")
         }
+        // History-origin previews are persistent only against timeouts; they
+        // are not implicitly pinned when the user switches applications.
+        let notchSource = (try? String(contentsOfFile:
+            "Sources/Lattice/Services/Notch/NotchService.swift", encoding: .utf8)) ?? ""
+        let clickProtection = notchSource.components(separatedBy: "private var keepsWorkingSurfaceOnOutsideClick:")
+            .dropFirst().first?.components(separatedBy: "/// Up and measuring").first ?? ""
+        suite.expect(!clickProtection.contains("captureOpenedFromHistory")
+                     && clickProtection.contains("|| pinned"),
+                     "manual capture previews are not protected from click-away without Pin")
+        let islandSource = (try? String(contentsOfFile:
+            "Sources/Lattice/UI/Notch/NotchView.swift", encoding: .utf8)) ?? ""
+        let scrollRule = islandSource.components(separatedBy: "private var scrollsVertically:")
+            .dropFirst().first?.components(separatedBy: "private var headerFeedback:").first ?? ""
+        suite.expect(!scrollRule.contains("service.selectedMetric != nil")
+                     && islandSource.contains("SystemNavigationState.shared.height(for:"),
+                     "metric details only scroll if measured content exceeds the Island")
         let service = NotchPresentationRefreshContract.Service()
         let id = UUID()
         service.selected = .captures
@@ -39,6 +60,36 @@ enum NotchCaptureNavigationTests {
                      "preview cleanup leaves the history page expanded with no stale gesture cue")
         suite.expect(service.capturePageCrossfades == 1,
                      "preview to history requests a content crossfade without closing the Island session")
+        // A preview entered from the Hub's Recent Captures utility must
+        // return to that same Hub page, not create a second history layer.
+        let hubHistory = NotchPresentationRefreshContract.Service()
+        hubHistory.selected = .hub
+        hubHistory.opensCaptureFromHubHistory = true
+        _ = hubHistory.presentCapture(id: UUID(), content: true, height: 200,
+            fromHistory: true, takeFocus: true, closeOnCollapse: true,
+            fallback: {}, close: {}, hover: { _ in })
+        suite.expect(hubHistory.captureOpenedFromHistory && hubHistory.captureReturnsToHubHistory,
+                     "preview remembers that it came from the Hub history utility")
+        hubHistory.selected = .captures
+        hubHistory.showCaptureHistory()
+        suite.expect(hubHistory.openedPages.last?.module == .hub && !hubHistory.captureReturnsToHubHistory
+                     && !hubHistory.captureOpenedFromHistory,
+                     "back from a Hub capture preview returns directly to Hub history, with no parallel Captures page")
+        let fresh = NotchPresentationRefreshContract.Service()
+        fresh.selected = .hub
+        fresh.opensCaptureFromHubHistory = true
+        _ = fresh.presentCapture(id: UUID(), content: true, height: 200,
+            takeFocus: true, closeOnCollapse: true, fallback: {}, close: {}, hover: { _ in })
+        suite.expect(!fresh.captureOpenedFromHistory && !fresh.captureReturnsToHubHistory,
+                     "a new screenshot taken over Hub history still has Close and History controls, not Back")
+        let standaloneHistory = NotchPresentationRefreshContract.Service()
+        standaloneHistory.selected = .captures
+        _ = standaloneHistory.presentCapture(id: UUID(), content: true, height: 200,
+            fromHistory: true, takeFocus: true, closeOnCollapse: true,
+            fallback: {}, close: {}, hover: { _ in })
+        suite.expect(standaloneHistory.captureOpenedFromHistory && !standaloneHistory.captureReturnsToHubHistory,
+                     "a preview opened from standalone history has a Back control")
+        service.selected = .captures
         let presented = service.presentCapture(id: UUID(), content: true, height: 200,
             takeFocus: true, closeOnCollapse: true, fallback: {}, close: {}, hover: { _ in })
         suite.expect(presented && service.expanded && service.capturePageCrossfades == 2,

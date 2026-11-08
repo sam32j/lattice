@@ -58,6 +58,26 @@ enum ScreenshotFeatureTests {
             return Unmanaged<CFData>.fromOpaque(pointer).takeUnretainedValue() as Data
         }
 
+        // Regression: Delete is not another dismiss action. It must confirm
+        // above the Island, remove the Application Support entry, then route
+        // based on whether the preview was opened from history.
+        let previewSource = (try? String(contentsOfFile:
+            "Sources/Lattice/Services/QuickTools/ScreenshotQuickPreviewController.swift",
+            encoding: .utf8)) ?? ""
+        let recentSource = (try? String(contentsOfFile:
+            "Sources/Lattice/Services/QuickTools/RecentCaptureService.swift",
+            encoding: .utf8)) ?? ""
+        suite.expect(previewSource.contains("if requested == .discard { confirmDelete(); return }")
+            && previewSource.contains("NotchIslandAlert.run(alert, above: owner)")
+            && previewSource.contains("NotchService.shared.showCaptureHistory()")
+            && previewSource.contains("if wasInNotch { NotchService.shared.collapse() }")
+            && recentSource.contains("func deleteScreenshot(id: UUID")
+            && recentSource.contains("guard self.store.persist()"),
+            "screenshot Delete confirms above the Island, removes stored history, and chooses the originating destination")
+        suite.expect(previewSource.contains("let anchor = CGRect(origin: point")
+            && previewSource.contains("sharePresenter.present(for: [url], from: content, relativeTo: anchor)"),
+            "image Share uses a visible native window anchor instead of the zero-size overlay anchor")
+
         // MARK: Screenshot tool
 
         let copyRecord = ScreenshotShareRecord(
@@ -1097,6 +1117,16 @@ enum ScreenshotFeatureTests {
                 && panelRecentCapturesSource.contains("formattedCaptureTime")
                 && panelRecentCapturesSource.contains("islandCard"),
                "recent captures in dynamic island do not track seconds and use redesigned cards")
+        suite.expect(panelRecentCapturesSource.contains("NotchIslandAlert.run(alert, above: NotchService.shared.presentationWindow)")
+                && panelRecentCapturesSource.contains("alert.addButton(withTitle: text.clear).hasDestructiveAction = true")
+                && panelRecentCapturesSource.contains("RecentCaptureService.shared.clearAndDeleteCaptureFiles")
+                && panelRecentCapturesSource.contains("Recordings saved elsewhere will be moved to Trash"),
+               "island Clear History confirms above the Island before deleting stored captures and history")
+        suite.expect(recentCaptureServiceSource.contains("func clearAndDeleteCaptureFiles(")
+                && recentCaptureServiceSource.contains("self.manager.trashItem(at: file, resultingItemURL: nil)")
+                && recentCaptureServiceSource.contains("self.store.hasManagedCaptureFiles()")
+                && recentCaptureServiceSource.contains("failedPaths.contains("),
+               "clear and delete purges owned cache files, trashes indexed external movies, and retains failures")
         suite.expect(!ScreenshotSupport.captureAvailabilityChanged(
                     activeTools: [.screenshot, .recording],
                     availableTools: [.screenshot, .recording])
@@ -1288,6 +1318,57 @@ enum ScreenshotFeatureTests {
             screenshotServiceCode.components(separatedBy: start).dropFirst().first?
                 .components(separatedBy: "\n    }\n").first ?? ""
         }
+        // The quick preview must not encode a full-resolution PNG on the
+        // gesture thread. Its lightweight lift preview is display-only;
+        // exported image bytes still come from the original captured pixels.
+        let previewDragProvider = serviceBody("    static func previewDragItemProvider(")
+        suite.expect(previewDragProvider.contains("registerFileRepresentation(")
+                && previewDragProvider.contains("DispatchQueue.global(qos: .userInitiated).async")
+                && previewDragProvider.contains("temporaryExportFile(image: image, scale: scale"),
+                "image preview drag promises the original PNG off the main thread")
+        let quickPreviewSource = (try? String(
+            contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenshotQuickPreviewController.swift",
+            encoding: .utf8)) ?? ""
+        let islandCanvas = quickPreviewSource.components(separatedBy: "    private var islandPreview:")
+            .dropFirst().first?.components(separatedBy: "    /// Every action uses").first ?? ""
+        suite.expect(islandCanvas.contains(".scaledToFill()")
+                && islandCanvas.contains("ScreenshotIslandDragSurface(image: image")
+                && !islandCanvas.contains(".onDrag(dragItem)")
+                && islandCanvas.contains(".overlay(alignment: .topTrailing)")
+                && islandCanvas.contains("islandImageToolbar.padding(6)"),
+                "island image keeps its fill and toolbar but delegates dragging to a native surface")
+        suite.expect(quickPreviewSource.contains("islandTool(symbol: \"mappin\"")
+            && !quickPreviewSource.contains("mappin.square")
+            && quickPreviewSource.contains(".contentShape(Rectangle()) // Tap the entire hover tile"),
+            "image pin uses mappin and overlay action tiles are fully clickable")
+        let nativeDrag = quickPreviewSource.components(separatedBy: "private struct ScreenshotIslandDragSurface:")
+            .dropFirst().first ?? ""
+        suite.expect(nativeDrag.contains("NSDraggingSource")
+                && nativeDrag.contains("NSDraggingItem(pasteboardWriter: provider)")
+                && nativeDrag.contains("beginDraggingSession(with: [item], event: press, source: self)")
+                && nativeDrag.contains("guard sourceImage !== image else { return }")
+                && nativeDrag.contains("context.makeImage().map")
+                && nativeDrag.contains("dragArtwork = context.makeImage()")
+                && nativeDrag.contains("let size = artwork.size")
+                && nativeDrag.contains("capturePreviewDragChanged(true)")
+                && nativeDrag.contains("capturePreviewDragChanged(false)")
+                && quickPreviewSource.contains("ScreenshotPinFilePromise.make("),
+                "preview caches a pixel-small drag bitmap and uses the original mouse-down while promising full-resolution PNG")
+        let notchServiceSource = (try? String(
+            contentsOfFile: "Sources/Lattice/Services/Notch/NotchService.swift",
+            encoding: .utf8)) ?? ""
+        suite.expect(notchServiceSource.contains("if captureHistoryGestureProgress != progress")
+                && notchServiceSource.contains("guard !self.heldDrag else { return false }")
+                && notchServiceSource.contains("func capturePreviewDragChanged(_ active: Bool)"),
+                "trackpad image dragging does not re-publish stationary history-swipe progress")
+        let notchHostSource = (try? String(
+            contentsOfFile: "Sources/Lattice/Services/Notch/NotchWindowHost.swift",
+            encoding: .utf8)) ?? ""
+        let nativeDropUpdate = notchHostSource.components(separatedBy: "    override func draggingUpdated(_ sender: NSDraggingInfo)")
+            .dropFirst().first?.components(separatedBy: "    override func draggingExited").first ?? ""
+        suite.expect(nativeDropUpdate.contains("sender.draggingSource != nil")
+                && nativeDropUpdate.contains("return []"),
+                "Island external drop destination skips local screenshot drags")
         let routeStatements = serviceBody("    private func route(_ capture:")
             .components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
@@ -1301,6 +1382,16 @@ enum ScreenshotFeatureTests {
                 && serviceBody("    func restorePreview(").contains("latestCapture: nil)")
                 && screenshotServiceCode.contains("self.discardLatestCapture(latestCapture)\n                    return [.discard]"),
                "discarding the preview of the latest capture withholds it, while a preview reopened from history does not")
+        let restoredPreview = serviceBody("    func restorePreview(")
+        suite.expect(restoredPreview.contains("dismissInterval: nil")
+                     && restoredPreview.contains("openedFromHistory: true"),
+                     "manually opened capture history previews never inherit the automatic capture timeout")
+        let previewControllerCode = (try? String(
+            contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenshotQuickPreviewController.swift",
+            encoding: .utf8)) ?? ""
+        suite.expect(previewControllerCode.contains("openedFromHistory ? nil : dismissInterval")
+                     && previewControllerCode.contains("imageOverlay: true"),
+                     "history origin suppresses preview dismissal and screenshots use a canvas-overlay toolbar")
         let previewDiscard = screenshotServiceCode.components(separatedBy: "case .discard:")
             .dropFirst().first?.components(separatedBy: "return [.discard]").first ?? ""
         let routeBody = serviceBody("    private func route(_ capture:")
