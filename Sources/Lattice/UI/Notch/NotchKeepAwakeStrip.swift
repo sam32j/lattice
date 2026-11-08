@@ -37,8 +37,8 @@ struct NotchKeepAwakeStrip: View {
         let wing = geometry.compactActivityWingWidth
         let iconSize = NotchKeepAwakeSupport.iconSize
         let textSize = NotchKeepAwakeSupport.textSize(bodyHeight: geometry.stripBodyHeight)
-        return Button { service.openActivity(NotchCompactActivity.keepAwake.module) } label: {
-            HStack(spacing: 0) {
+        return HStack(spacing: 0) {
+            Button { service.openActivity(NotchCompactActivity.keepAwake.module) } label: {
                 Group {
                     if wing >= 28 {
                         Image(systemName: NotchKeepAwakeSupport.symbol)
@@ -47,7 +47,13 @@ struct NotchKeepAwakeStrip: View {
                 }
                 .padding(.leading, geometry.compactActivityEdgeInset(boxHeight: iconSize, radius: iconSize / 2))
                 .frame(width: wing, height: height, alignment: .leading)
-                Color.clear.frame(width: geometry.compactActivityCameraGap)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Color.clear.frame(width: geometry.compactActivityCameraGap)
+
+            Button { service.openDefault() } label: {
                 Group {
                     if wing >= 42 {
                         if let end {
@@ -62,12 +68,13 @@ struct NotchKeepAwakeStrip: View {
                 // Digits carry no descenders, so their ink is about the cap height.
                 .padding(.trailing, geometry.compactActivityEdgeInset(boxHeight: textSize * 0.72, radius: 0))
                 .frame(width: wing, height: height, alignment: .trailing)
+                .contentShape(Rectangle())
             }
-            .foregroundStyle(KeepAwakeAppearance.indicatorColor)
-            .frame(height: height)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .foregroundStyle(KeepAwakeAppearance.indicatorColor)
+        .frame(height: height)
+        .contentShape(Rectangle())
         .padding(.horizontal, geometry.compactActivityHorizontalPadding)
         .padding(.top, geometry.compactActivityTopPadding)
         .accessibilityElement(children: .ignore)
@@ -91,7 +98,7 @@ struct NotchKeepAwakeStrip: View {
     /// What the menu bar panel says about the session, read aloud.
     static func status(end: Date?, language: AppLanguage) -> String {
         let strings = Strings.localized(language)
-        if let end { return "\(strings.keepAwakeEndsIn) \(KeepAwakeCard.remainingText(until: end))" }
+        if let end { return "\(strings.keepAwakeEndsIn) \(DurationPicker.remainingText(until: end))" }
         let awake = KeepAwakeManager.shared
         if awake.sessionTrigger == .automation {
             return FeatureStrings.keepAwakeAutomation(language).activeStatus(for: awake.activeAutomationConditions)
