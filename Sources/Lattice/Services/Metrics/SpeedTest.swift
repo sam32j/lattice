@@ -26,6 +26,11 @@ final class SpeedTest: NSObject, ObservableObject {
     @Published private(set) var latencyMs: Double?
     @Published private(set) var downloadMbps: Double?
     @Published private(set) var uploadMbps: Double?
+    @Published private(set) var liveMbps: Double = 0
+    @Published private(set) var sparklinePoints: [Double] = [0]
+    @Published private(set) var downloadPoints: [Double] = [0]
+    @Published private(set) var uploadPoints: [Double] = [0]
+    @Published private(set) var phaseProgress: Double = 0
 
     var isRunning: Bool {
         switch phase { case .latency, .download, .upload: return true; default: return false }
@@ -52,6 +57,7 @@ final class SpeedTest: NSObject, ObservableObject {
     private var finished = false
     private var generation = 0
     private var cancelTimeBox: (() -> Void)?
+    private var sampleTimer: DispatchSourceTimer?
 
     init(configuration: URLSessionConfiguration = .ephemeral, sampleSeconds: TimeInterval = 5,
          clock: @escaping Clock = { ProcessInfo.processInfo.systemUptime },
@@ -72,7 +78,13 @@ final class SpeedTest: NSObject, ObservableObject {
 
     func start() {
         guard !isRunning else { return }
+        stopLiveSampling()
         latencyMs = nil; downloadMbps = nil; uploadMbps = nil
+        liveMbps = 0
+        sparklinePoints = [0]
+        downloadPoints = [0]
+        uploadPoints = [0]
+        phaseProgress = 0
         setPhase(.latency)
         queue.addOperation { [weak self] in
             guard let self else { return }
@@ -82,6 +94,7 @@ final class SpeedTest: NSObject, ObservableObject {
     }
 
     func cancel() {
+        stopLiveSampling()
         queue.addOperation { [weak self] in
             guard let self else { return }
             self.generation += 1
@@ -89,6 +102,10 @@ final class SpeedTest: NSObject, ObservableObject {
             self.task?.cancel(); self.task = nil
             self.kind = .none
             self.finished = true
+            DispatchQueue.main.async {
+                self.liveMbps = 0
+                self.phaseProgress = 0
+            }
             self.setPhase(.idle)   // inside the op, so it orders after any pending transition
         }
     }
@@ -102,13 +119,18 @@ final class SpeedTest: NSObject, ObservableObject {
     private func measureLatency(remaining: Int, best: Double) {
         guard remaining > 0 else {
             let value = best == .greatestFiniteMagnitude ? nil : best
-            DispatchQueue.main.async { self.latencyMs = value }
+            DispatchQueue.main.async {
+                self.latencyMs = value
+                self.phaseProgress = 0.15
+            }
             startTransfer(.download)
             return
         }
         let url = URL(string: "\(host)/__down?bytes=0")!
         let started = clock()
         let generation = self.generation
+        let progress = min(0.15, Double(5 - remaining) * 0.03)
+        DispatchQueue.main.async { self.phaseProgress = progress }
         task = session.dataTask(with: url) { [weak self] _, response, error in
             guard let self else { return }
             let rtt = (self.clock() - started) * 1000
@@ -135,6 +157,7 @@ final class SpeedTest: NSObject, ObservableObject {
         finished = false
         setPhase(transfer == .download ? .download : .upload)
         startedAt = clock()
+        startLiveSampling(for: transfer)
 
         let generation = self.generation
         cancelTimeBox?()   // defensive: never leave a previous time box armed
@@ -165,6 +188,7 @@ final class SpeedTest: NSObject, ObservableObject {
     private func finishTransfer(timedOut: Bool) {
         guard !finished else { return }
         finished = true
+        stopLiveSampling()
         cancelTimeBox?(); cancelTimeBox = nil
 
         let elapsed = clock() - startedAt
@@ -176,7 +200,15 @@ final class SpeedTest: NSObject, ObservableObject {
 
         let mbps = elapsed > 0 ? max(0, Double(bytes) * 8 / elapsed / 1_000_000) : 0
         DispatchQueue.main.async {
-            if finishedKind == .download { self.downloadMbps = mbps } else { self.uploadMbps = mbps }
+            if finishedKind == .download {
+                self.downloadMbps = mbps
+                self.liveMbps = mbps
+                self.phaseProgress = 0.65
+            } else {
+                self.uploadMbps = mbps
+                self.liveMbps = mbps
+                self.phaseProgress = 1.0
+            }
         }
 
         if finishedKind == .download {
@@ -184,6 +216,53 @@ final class SpeedTest: NSObject, ObservableObject {
         } else {
             setPhase(.done)
         }
+    }
+
+    private func startLiveSampling(for transfer: Kind) {
+        stopLiveSampling()
+        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .utility))
+        timer.schedule(deadline: .now() + 0.08, repeating: 0.08)
+        let generation = self.generation
+        timer.setEventHandler { [weak self] in
+            guard let self else { return }
+            self.queue.addOperation {
+                guard self.generation == generation, !self.finished, self.kind == transfer else { return }
+                let elapsed = self.clock() - self.startedAt
+                guard elapsed > 0.05 else { return }
+                let currentBytes = self.transferred
+                let currentMbps = Double(currentBytes) * 8.0 / elapsed / 1_000_000.0
+                let fraction = min(1.0, max(0.0, elapsed / self.sampleSeconds))
+                let baseProgress = transfer == .download ? 0.15 : 0.65
+                let scaleProgress = transfer == .download ? 0.50 : 0.35
+                let totalProgress = baseProgress + fraction * scaleProgress
+                DispatchQueue.main.async {
+                    self.liveMbps = currentMbps
+                    self.phaseProgress = totalProgress
+                    self.sparklinePoints.append(currentMbps)
+                    if self.sparklinePoints.count > 60 {
+                        self.sparklinePoints.removeFirst()
+                    }
+                    if transfer == .download {
+                        self.downloadPoints.append(currentMbps)
+                        if self.downloadPoints.count > 60 {
+                            self.downloadPoints.removeFirst()
+                        }
+                    } else if transfer == .upload {
+                        self.uploadPoints.append(currentMbps)
+                        if self.uploadPoints.count > 60 {
+                            self.uploadPoints.removeFirst()
+                        }
+                    }
+                }
+            }
+        }
+        sampleTimer = timer
+        timer.resume()
+    }
+
+    private func stopLiveSampling() {
+        sampleTimer?.cancel()
+        sampleTimer = nil
     }
 
     private static func isSuccessful(_ response: URLResponse?) -> Bool {
@@ -194,9 +273,14 @@ final class SpeedTest: NSObject, ObservableObject {
     private func fail(_ error: Error) {
         generation += 1
         finished = true
+        stopLiveSampling()
         cancelTimeBox?(); cancelTimeBox = nil
         task?.cancel(); task = nil
         kind = .none
+        DispatchQueue.main.async {
+            self.liveMbps = 0
+            self.phaseProgress = 1.0
+        }
         setPhase(.failed(error.localizedDescription))
     }
 }
