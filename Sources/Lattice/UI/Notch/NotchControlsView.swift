@@ -102,8 +102,6 @@ struct NotchControlsView: View {
         case .recording: NotchRecorderButton(service: service)
         case .speedTest:
             NotchActionTile(symbol: item.symbol, title: item.title(l10n)) { service.showMetric(.network) }
-        case .panel:
-            NotchActionTile(symbol: item.symbol, title: item.title(l10n)) { service.openAppPanel() }
         case .mixer:
             NotchActionTile(symbol: item.symbol, title: item.title(l10n)) { service.select(.mixer) }
         case .commandBar:
@@ -128,7 +126,6 @@ extension NotchControlItem {
         case .screenshot: return FeatureStrings.recentCaptures(l10n.language).screenshot
         case .recording: return FeatureStrings.recorder(l10n.language).pageTitle
         case .speedTest: return l10n.s.speedTestRun
-        case .panel: return FeatureStrings.notch(l10n.language).panel
         case .mixer: return l10n.s.mixerSection
         case .commandBar: return FeatureStrings.commandBar(l10n.language).pageTitle
         case .scratchpad: return FeatureStrings.scratchpad(l10n.language).pageTitle

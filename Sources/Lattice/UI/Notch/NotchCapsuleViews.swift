@@ -256,13 +256,25 @@ struct NotchCapsuleTimerStrip: View {
         NotchCapsuleRow(size: size, geometry: geometry,
                         leading: companion == .music ? CapsuleLayout.artworkInset(geometry) : CapsuleLayout.endPadding) {
             HStack(spacing: CapsuleLayout.markGap(companion)) {
-                mark
-                if timer.session.isRunning {
-                    TimelineView(.periodic(from: Date(timeIntervalSinceNow: NotchTimerSupport.tickScheduleOffset(
-                        for: timer.session, at: timer.now)), by: 1)) { _ in reading }
-                } else {
-                    reading
+                Button {
+                    if companion == .calendar { service.openCountdownEvent() }
+                    else { service.open(companion?.module ?? .timer) }
+                } label: {
+                    mark
                 }
+                .buttonStyle(.plain)
+
+                Button {
+                    service.openDefault()
+                } label: {
+                    if timer.session.isRunning {
+                        TimelineView(.periodic(from: Date(timeIntervalSinceNow: NotchTimerSupport.tickScheduleOffset(
+                            for: timer.session, at: timer.now)), by: 1)) { _ in reading }
+                    } else {
+                        reading
+                    }
+                }
+                .buttonStyle(.plain)
             }
         }
         .accessibilityElement(children: .ignore)
@@ -374,19 +386,23 @@ struct NotchCapsuleAgentStrip: View {
         let working = working(live)
         NotchCapsuleRow(size: size, geometry: displayGeometry ?? service.geometry) {
             HStack(spacing: CapsuleLayout.spacing) {
-                NotchCapsuleAgentMarks(providers: working)
-                NotchAgentReadoutTimeline(readout: NotchAgentReadout(rawValue: readout) ?? .elapsed) { date in
-                    let text = reading(at: date, live: live)
-                    Text(text)
-                        .font(Font(CapsuleLayout.readingFont as CTFont))
-                        .foregroundStyle(working.first?.tint ?? .white)
-                        .lineLimit(1).fixedSize()
-                        // A reading that gains a digit, like an hour passing,
-                        // widens the capsule; the service measures the same.
-                        .onChange(of: NotchAgentSupport.readingShape(text)) { _, _ in
-                            DispatchQueue.main.async { service.refreshPresentation() }
-                        }
-                }
+                Button { service.openActivity(.agents) } label: {
+                    NotchCapsuleAgentMarks(providers: working)
+                }.buttonStyle(.plain)
+                Button { service.openDefault() } label: {
+                    NotchAgentReadoutTimeline(readout: NotchAgentReadout(rawValue: readout) ?? .elapsed) { date in
+                        let text = reading(at: date, live: live)
+                        Text(text)
+                            .font(Font(CapsuleLayout.readingFont as CTFont))
+                            .foregroundStyle(working.first?.tint ?? .white)
+                            .lineLimit(1).fixedSize()
+                            // A reading that gains a digit, like an hour passing,
+                            // widens the capsule; the service measures the same.
+                            .onChange(of: NotchAgentSupport.readingShape(text)) { _, _ in
+                                DispatchQueue.main.async { service.refreshPresentation() }
+                            }
+                    }
+                }.buttonStyle(.plain)
             }
         }
         .accessibilityElement(children: .ignore)
@@ -418,19 +434,25 @@ struct NotchCapsuleDownloadStrip: View {
         let name = item?.name ?? FeatureStrings.notchFiles(l10n.language).downloadsTitle
         NotchCapsuleRow(size: size, geometry: displayGeometry ?? service.geometry) {
             HStack(spacing: CapsuleLayout.spacing) {
-                NotchCapsuleSymbol(name: "arrow.down.circle.fill")
-                Text(name).font(Font(CapsuleLayout.detailFont as CTFont)).lineLimit(1).truncationMode(.middle)
-                if let fraction = item?.fraction {
-                    NotchMeter(value: fraction, height: CapsuleLayout.meterHeight)
-                        .frame(width: CapsuleLayout.downloadMeterWidth)
-                        .padding(.leading, CapsuleLayout.groupSpacing - CapsuleLayout.spacing)
-                    Text(fraction, format: NotchDownloadSupport.percentFormat(l10n.language))
-                        .font(Font(CapsuleLayout.smallFont as CTFont))
-                        .lineLimit(1)
-                        .frame(width: CapsuleLayout.downloadPercentWidth(l10n.language), alignment: .trailing)
-                } else {
-                    ProgressView().controlSize(.mini).frame(width: CapsuleLayout.spinnerWidth)
-                }
+                Button { service.openActivity(.downloads) } label: {
+                    NotchCapsuleSymbol(name: "arrow.down.circle.fill")
+                }.buttonStyle(.plain)
+                Button { service.openDefault() } label: {
+                    HStack(spacing: CapsuleLayout.spacing) {
+                        Text(name).font(Font(CapsuleLayout.detailFont as CTFont)).lineLimit(1).truncationMode(.middle)
+                        if let fraction = item?.fraction {
+                            NotchMeter(value: fraction, height: CapsuleLayout.meterHeight)
+                                .frame(width: CapsuleLayout.downloadMeterWidth)
+                                .padding(.leading, CapsuleLayout.groupSpacing - CapsuleLayout.spacing)
+                            Text(fraction, format: NotchDownloadSupport.percentFormat(l10n.language))
+                                .font(Font(CapsuleLayout.smallFont as CTFont))
+                                .lineLimit(1)
+                                .frame(width: CapsuleLayout.downloadPercentWidth(l10n.language), alignment: .trailing)
+                        } else {
+                            ProgressView().controlSize(.mini).frame(width: CapsuleLayout.spinnerWidth)
+                        }
+                    }
+                }.buttonStyle(.plain)
             }
         }
         .accessibilityElement(children: .ignore)
@@ -454,21 +476,27 @@ struct NotchCapsuleWatchStrip: View {
         let geometry = displayGeometry ?? service.geometry
         NotchCapsuleRow(size: size, geometry: geometry) {
             HStack(spacing: CapsuleLayout.spacing) {
-                NotchWatchEye(size: CapsuleLayout.symbolSize, hidden: watch.state == .hidden)
-                    .frame(width: CapsuleLayout.symbolWidth)
-                if watch.showsThumbnail, let preview = watch.preview {
-                    NotchWatchThumbnail(image: preview, height: max(8, geometry.stripBodyHeight - 6))
-                } else if watch.headline.isEmpty {
-                    // A hidden window's slashed eye says enough until it is read.
-                    if watch.state == .hidden {
-                        Color.clear.frame(width: CapsuleLayout.spinnerWidth, height: 1)
-                    } else {
-                        ProgressView().controlSize(.mini).frame(width: CapsuleLayout.spinnerWidth)
+                Button { service.openActivity(.watch) } label: {
+                    NotchWatchEye(size: CapsuleLayout.symbolSize, hidden: watch.state == .hidden)
+                        .frame(width: CapsuleLayout.symbolWidth)
+                }.buttonStyle(.plain)
+                Button { service.openDefault() } label: {
+                    Group {
+                        if watch.showsThumbnail, let preview = watch.preview {
+                            NotchWatchThumbnail(image: preview, height: max(8, geometry.stripBodyHeight - 6))
+                        } else if watch.headline.isEmpty {
+                            // A hidden window's slashed eye says enough until it is read.
+                            if watch.state == .hidden {
+                                Color.clear.frame(width: CapsuleLayout.spinnerWidth, height: 1)
+                            } else {
+                                ProgressView().controlSize(.mini).frame(width: CapsuleLayout.spinnerWidth)
+                            }
+                        } else {
+                            Text(watch.headline).font(Font(CapsuleLayout.levelFont as CTFont))
+                                .lineLimit(1).truncationMode(.tail)
+                        }
                     }
-                } else {
-                    Text(watch.headline).font(Font(CapsuleLayout.levelFont as CTFont))
-                        .lineLimit(1).truncationMode(.tail)
-                }
+                }.buttonStyle(.plain)
             }
         }
         .accessibilityElement(children: .ignore)
@@ -509,27 +537,37 @@ struct NotchCapsuleCalendarStrip: View {
                         // Paired, what shares the capsule takes the title's place,
                         // and the title moves to the tooltip and VoiceOver.
                         HStack(spacing: CapsuleLayout.markGap(.calendar)) {
-                            NotchCapsuleCompanionMark(companion: companion, geometry: geometry)
-                            Self.clockMark(countdown, now: context.date)
+                            Button { service.openActivity(companion.module) } label: {
+                                NotchCapsuleCompanionMark(companion: companion, geometry: geometry)
+                            }.buttonStyle(.plain)
+                            Button { service.openCountdownEvent() } label: {
+                                Self.clockMark(countdown, now: context.date)
+                            }.buttonStyle(.plain)
                         }
                     } else {
                         HStack(spacing: CapsuleLayout.spacing) {
-                            Self.dot(countdown.event)
-                            Text(title).capsuleTitle().truncationMode(.tail)
-                            // The time left keeps its place; the start or end time
-                            // beside it gives way first when the bar is short.
-                            ViewThatFits(in: .horizontal) {
-                                HStack(spacing: CapsuleLayout.markSpacing) {
-                                    Self.clock(remaining, ongoing: countdown.ongoing)
-                                    Text(NotchCalendarSupport.timeText(countdown, locale: l10n.language.formattingLocale()))
-                                        .font(Font(CapsuleLayout.smallFont as CTFont))
-                                        .foregroundStyle(.white.opacity(0.55))
-                                        .lineLimit(1).fixedSize()
+                            Button { service.openCountdownEvent() } label: {
+                                Self.dot(countdown.event)
+                            }.buttonStyle(.plain)
+                            Button { service.openDefault() } label: {
+                                HStack(spacing: CapsuleLayout.spacing) {
+                                    Text(title).capsuleTitle().truncationMode(.tail)
+                                    // The time left keeps its place; the start or end time
+                                    // beside it gives way first when the bar is short.
+                                    ViewThatFits(in: .horizontal) {
+                                        HStack(spacing: CapsuleLayout.markSpacing) {
+                                            Self.clock(remaining, ongoing: countdown.ongoing)
+                                            Text(NotchCalendarSupport.timeText(countdown, locale: l10n.language.formattingLocale()))
+                                                .font(Font(CapsuleLayout.smallFont as CTFont))
+                                                .foregroundStyle(.white.opacity(0.55))
+                                                .lineLimit(1).fixedSize()
+                                        }
+                                        Self.clock(remaining, ongoing: countdown.ongoing)
+                                    }
+                                    .padding(.leading, CapsuleLayout.groupSpacing - CapsuleLayout.spacing)
+                                    .layoutPriority(1)
                                 }
-                                Self.clock(remaining, ongoing: countdown.ongoing)
-                            }
-                            .padding(.leading, CapsuleLayout.groupSpacing - CapsuleLayout.spacing)
-                            .layoutPriority(1)
+                            }.buttonStyle(.plain)
                         }
                     }
                 }
@@ -599,28 +637,35 @@ struct NotchCapsuleKeepAwakeStrip: View {
         return NotchCapsuleRow(size: size, geometry: displayGeometry ?? service.geometry) {
             HStack(spacing: CapsuleLayout.spacing) {
                 // Measure the same symbol and reading scale as the capsule.
-                Image(systemName: NotchKeepAwakeSupport.symbol)
-                    .font(.system(size: NotchKeepAwakeSupport.capsuleIconSize, weight: .medium))
-                    .foregroundStyle(KeepAwakeAppearance.indicatorColor)
-                    .capsuleCentred(NotchKeepAwakeSupport.symbol, size: NotchKeepAwakeSupport.capsuleIconSize)
-                if let end {
-                    let text = NotchKeepAwakeSupport.compactText(until: end, now: now,
-                                                                locale: Locale(identifier: l10n.language.rawValue))
-                    Text(text)
-                        .font(.system(size: textSize, weight: .medium)).monospacedDigit()
+                Button { service.openActivity(NotchCompactActivity.keepAwake.module) } label: {
+                    Image(systemName: NotchKeepAwakeSupport.symbol)
+                        .font(.system(size: NotchKeepAwakeSupport.capsuleIconSize, weight: .medium))
                         .foregroundStyle(KeepAwakeAppearance.indicatorColor)
-                        .lineLimit(1).fixedSize()
-                        // A reading that gains or loses a character, like 10m
-                        // becoming 9m, resizes the capsule; the service measures the same.
-                        .onChange(of: NotchAgentSupport.readingShape(text)) { _, _ in
-                            DispatchQueue.main.async { service.refreshPresentation() }
+                        .capsuleCentred(NotchKeepAwakeSupport.symbol, size: NotchKeepAwakeSupport.capsuleIconSize)
+                }.buttonStyle(.plain)
+
+                Button { service.openDefault() } label: {
+                    Group {
+                        if let end {
+                            let text = NotchKeepAwakeSupport.compactText(until: end, now: now,
+                                                                        locale: Locale(identifier: l10n.language.rawValue))
+                            Text(text)
+                                .font(.system(size: textSize, weight: .medium)).monospacedDigit()
+                                .foregroundStyle(KeepAwakeAppearance.indicatorColor)
+                                .lineLimit(1).fixedSize()
+                                // A reading that gains or loses a character, like 10m
+                                // becoming 9m, resizes the capsule; the service measures the same.
+                                .onChange(of: NotchAgentSupport.readingShape(text)) { _, _ in
+                                    DispatchQueue.main.async { service.refreshPresentation() }
+                                }
+                        } else {
+                            Image(systemName: NotchKeepAwakeSupport.openSymbol)
+                                .font(.system(size: textSize, weight: .medium))
+                                .foregroundStyle(KeepAwakeAppearance.indicatorColor)
+                                .capsuleCentred(NotchKeepAwakeSupport.openSymbol, size: textSize)
                         }
-                } else {
-                    Image(systemName: NotchKeepAwakeSupport.openSymbol)
-                        .font(.system(size: textSize, weight: .medium))
-                        .foregroundStyle(KeepAwakeAppearance.indicatorColor)
-                        .capsuleCentred(NotchKeepAwakeSupport.openSymbol, size: textSize)
-                }
+                    }
+                }.buttonStyle(.plain)
             }
         }
         .accessibilityElement(children: .ignore)
