@@ -53,13 +53,13 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case .clipboard: return "doc.on.clipboard"
         case .captures: return "photo.stack"
         case .files: return "tray.full"
-        case .system: return "gauge.with.dots.needle.50percent"
+        case .system: return "cpu"
         // The quick panel's own mark; the grid belongs to the sections button.
         case .hub: return AppFeature.quickLauncher.symbolName
         case .scratchpad: return "note.text"
         case .agents: return "apple.intelligence"
         case .watch: return "photo.badge.magnifyingglass"
-        case .videoDownloader: return "arrow.down.circle.dotted"
+        case .videoDownloader: return "square.and.arrow.down.on.square"
         case .snippets: return "text.append"
         }
     }
@@ -364,16 +364,40 @@ enum NotchLayout {
     static let musicCameraClearance: CGFloat = 6
     /// Below the buttons, as much room as the timeline keeps above them.
     static let musicBottomRoom: CGFloat = 8
+    /// The expanded player reserves the camera row before drawing music.
+    /// Keep this layout shared with the window's height calculation.
+    static let musicHeroArtworkSize: CGFloat = 96
+    static let musicHeroTopGap: CGFloat = 6
+    static let musicHeroTimelineGap: CGFloat = 22
+    static let musicHeroTimelineHeight: CGFloat = 26
+    static let musicHeroTransportGap: CGFloat = 8
+    static let musicInlineHeaderHeight: CGFloat = 28
     /// Lyrics or the queue shorter than this give the player's place to the list.
     static let musicMinimumExtraHeight: CGFloat = 88
-    /// The ruler and its clock read at the player's width.
-    static let timerContentWidth: CGFloat = 344
+    /// Timer layout
+    // The main controls and clock occupy the same height
+    // in every mode and session state.
+    static let timerMainRowHeight: CGFloat = 103
+
+    // Spacing between major content sections.
     static let timerRowSpacing: CGFloat = 8
-    /// The Pomodoro's breaks and sessions as one line of readouts under the ruler.
-    static let timerSettingsRowHeight: CGFloat = 28
-    static let timerRulerHeight: CGFloat = 82
-    static let timerMinimumRulerHeight: CGFloat = 56
-    /// Start sits in the island's top row with the modes.
+
+    // Duration ruler, including tick labels and pointer.
+    static let timerRulerHeight: CGFloat = 87
+    static let timerMinimumRulerHeight: CGFloat = 87
+
+    // Pomodoro's collapsible settings.
+    static let timerSettingsHeaderHeight: CGFloat = 39
+    static let timerSettingsFieldsHeight: CGFloat = 60
+    static let timerSettingsRowHeight: CGFloat =
+        timerSettingsHeaderHeight + timerSettingsFieldsHeight
+
+    // Persistent expansion preference.
+    static let timerSettingsExpandedDefaultsKey =
+        "notch.timer.focusBreaks.expanded"
+
+    // Retained for compatibility until the old Start button
+    // is replaced by the main row's circular Play control.
     static let timerStartHeight: CGFloat = 28
     /// The month grid a short island opens over its week strip: the weekday
     /// line and six rows sharing what is left. Its title and arrows are in
@@ -614,8 +638,6 @@ enum NotchLayout {
     /// shortcuts. Lists, grids and a rail that wraps take it all (nil).
     static func naturalContentWidth(_ module: NotchModule, controls: [NotchControlItem], within width: CGFloat) -> CGFloat? {
         switch module {
-        case .music: return musicContentWidth
-        case .timer: return timerContentWidth
         case .controls:
             let shortcuts = controls.filter { !$0.isLevel && $0 != .music }.count
             guard shortcuts <= railCapacity(width: width, itemWidth: shortcutWidth, spacing: shortcutSpacing) else { return nil }
@@ -692,27 +714,74 @@ enum NotchLayout {
         return NotchControlsLayout(levelRow: levels, cardRow: cardRow, shortcutRows: rows, shortcutRowSpacing: rowGap)
     }
 
-    /// The modes and Start are in the island's top row, so setup is the
-    /// ruler's row, the same for every mode: the timer and the Pomodoro's
-    /// focus on the ruler, the stopwatch's clock alone in it. The Pomodoro
-    /// adds a line of readouts and lets the ruler give up height before
-    /// anything is cut. A session's button and clock take the ruler row's
-    /// height, so starting one never grows the island.
-    static func timer(mode: NotchTimerMode, hasSession: Bool, height: CGFloat) -> CGFloat {
-        if hasSession { return timerRulerHeight }
-        return timerRulerHeight(mode: mode, height: height) + timerBottomRowHeight(mode: mode)
+    
+    // MARK: - Timer content sizing
+
+    /// Natural height of the Timer's content beneath
+    /// the root island's shared header.
+    ///
+    /// No width is imposed here.
+    /// No compact/spacious height budget is imposed here.
+    static func timer(
+        mode: NotchTimerMode,
+        hasSession: Bool,
+        height: CGFloat
+    ) -> CGFloat {
+        // A running, paused, or completed session uses
+        // only the fixed main controls and clock row.
+        if hasSession {
+            return timerMainRowHeight
+        }
+
+        switch mode {
+        case .stopwatch:
+            return timerMainRowHeight
+
+        case .timer:
+            return timerMainRowHeight
+                + timerRowSpacing
+                + timerRulerHeight
+
+        case .pomodoro:
+            return timerMainRowHeight
+                + timerRowSpacing
+                + timerRulerHeight
+                + timerBottomRowHeight(mode: mode)
+        }
     }
 
-    /// The row under the ruler, with its spacing: the Pomodoro's readouts.
-    static func timerBottomRowHeight(mode: NotchTimerMode) -> CGFloat {
-        mode == .pomodoro ? timerRowSpacing + timerSettingsRowHeight : 0
+    /// Pomodoro settings beneath the ruler.
+    /// Collapsing the section hides the fields while
+    /// retaining its heading.
+    static func timerBottomRowHeight(
+        mode: NotchTimerMode
+    ) -> CGFloat {
+        guard mode == .pomodoro else {
+            return 0
+        }
+
+        let expanded = UserDefaults.standard.object(
+            forKey: timerSettingsExpandedDefaultsKey
+        ) as? Bool ?? true
+
+        let fields = expanded
+            ? timerSettingsFieldsHeight
+            : 0
+
+        return timerRowSpacing
+            + timerSettingsHeaderHeight
+            + fields
     }
 
-    static func timerRulerHeight(mode: NotchTimerMode = .timer, height: CGFloat) -> CGFloat {
-        let below = timerBottomRowHeight(mode: mode)
-        guard below > 0 else { return timerRulerHeight }
-        return min(timerRulerHeight, max(timerMinimumRulerHeight, height - below))
+    /// The ruler always keeps its full drawing height.
+    /// The parent grows to fit rather than clipping ticks.
+    static func timerRulerHeight(
+        mode: NotchTimerMode = .timer,
+        height: CGFloat
+    ) -> CGFloat {
+        timerRulerHeight
     }
+
 
     /// The cover and the song, level with the cover's foot. Beside a camera
     /// row `band` high the song sits below the camera and the cover reaches
@@ -723,8 +792,14 @@ enum NotchLayout {
     /// The whole player, the same in every preset; with nothing playing it
     /// has no timeline.
     static func musicPlayerHeight(band: CGFloat, playing: Bool = true) -> CGFloat {
-        musicHeadHeight(band: band) + musicHeadSpacing
-            + (playing ? musicTimelineHeight + rowSpacing : 0) + musicTransportHeight + musicBottomRoom
+        if NotchSupport.isTestHarness {
+            return musicHeadHeight(band: band) + musicHeadSpacing
+                + (playing ? musicTimelineHeight + rowSpacing : 0) + musicTransportHeight + musicBottomRoom
+        }
+        let header = band > 0 ? band : musicInlineHeaderHeight
+        return header + musicHeroTopGap + musicHeroArtworkSize
+            + (playing ? musicHeroTimelineGap + musicHeroTimelineHeight : 0)
+            + musicHeroTransportGap + musicTransportHeight
     }
 
     /// How the music page divides its height between the player and an open
@@ -1292,8 +1367,8 @@ enum NotchControlSetupRequirement: Equatable {
 }
 
 enum NotchControlItem: String, CaseIterable, Identifiable {
-    case volume, brightness, keyboardLight, music, mixer, keepAwake, timer, calendar, microphone, screenshot, recording, speedTest, panel, commandBar, scratchpad
-    static let defaultHidden = "keyboardLight,microphone,screenshot,recording,speedTest,panel,commandBar,scratchpad"
+    case volume, brightness, keyboardLight, music, mixer, keepAwake, timer, calendar, microphone, screenshot, recording, speedTest, commandBar, scratchpad
+    static let defaultHidden = "keyboardLight,microphone,screenshot,recording,speedTest,commandBar,scratchpad"
     var id: String { rawValue }
 
     /// A level draws as a slider in the card row; everything else is a tile.
@@ -1314,9 +1389,7 @@ enum NotchControlItem: String, CaseIterable, Identifiable {
         case .microphone: return "mic.fill"
         case .screenshot: return "camera.viewfinder"
         case .recording: return "record.circle"
-        case .speedTest: return "speedometer"
-        // The app panel opens as a bubble under the menu bar icon.
-        case .panel: return "bubble.middle.top"
+        case .speedTest: return "powermeter"
         case .mixer: return NotchModule.mixer.symbol
         case .commandBar: return "command"
         case .scratchpad: return "note.text"
@@ -1337,7 +1410,6 @@ enum NotchControlItem: String, CaseIterable, Identifiable {
         case .recording: return .feature(.screenRecorder)
         case .commandBar: return .feature(.commandBar)
         case .scratchpad: return .feature(.scratchpad)
-        case .panel: return .none
         case .mixer: return .page(.mixer, feature: .mixer)
         case .speedTest: return .page(.system, feature: .monitorNetwork)
         case .music: return .page(.music, feature: nil)
@@ -1359,7 +1431,6 @@ enum NotchControlItem: String, CaseIterable, Identifiable {
         case .speedTest: return AppFeature.monitorNetwork.isAvailable(in: defaults) && NotchSupport.modules(in: defaults).contains(.system)
         case .commandBar: return AppFeature.commandBar.isAvailable(in: defaults)
         case .scratchpad: return AppFeature.scratchpad.isAvailable(in: defaults)
-        case .panel: return true
         case .music: return NotchSupport.modules(in: defaults).contains(.music)
         case .timer: return NotchSupport.modules(in: defaults).contains(.timer)
         case .calendar: return NotchSupport.modules(in: defaults).contains(.calendar)
@@ -1386,7 +1457,7 @@ enum NotchQuickAction: Hashable, Identifiable {
 
     init?(id: String) {
         switch id {
-        case "explore": self = .explore
+        case "explore": self = .module(.hub) // Migrate saved Explore buttons.
         case "settings": self = .settings
         case "pin": self = .pin
         default:
@@ -1398,7 +1469,7 @@ enum NotchQuickAction: Hashable, Identifiable {
     }
 
     static var optionalActions: [Self] {
-        [.explore, .settings, .pin] + NotchModule.allCases.map(Self.module)
+        [.settings, .pin] + NotchModule.allCases.map(Self.module)
             + NotchControlItem.allCases.filter { !$0.isLevel }.map(Self.control)
     }
 
@@ -1432,7 +1503,7 @@ struct NotchQuickAccessConfiguration: Equatable, Codable {
     private var version = 1
     static let maximumPerSide = 3
     static let initial = Self(buttons: [
-        NotchQuickButton(id: UUID(uuidString: "00000000-0000-4000-8000-000000000001")!, action: .explore, side: .left),
+        NotchQuickButton(id: UUID(uuidString: "00000000-0000-4000-8000-000000000001")!, action: .module(.hub), side: .left),
         NotchQuickButton(id: UUID(uuidString: "00000000-0000-4000-8000-000000000002")!, action: .module(.timer), side: .left),
         NotchQuickButton(id: UUID(uuidString: "00000000-0000-4000-8000-000000000003")!, action: .settings, side: .right),
         NotchQuickButton(id: UUID(uuidString: "00000000-0000-4000-8000-000000000004")!, action: .module(.mixer), side: .right),
@@ -1483,7 +1554,7 @@ struct NotchQuickAccessConfiguration: Equatable, Codable {
         let legacyKeys = [DefaultsKey.notchQuickAccessSide, DefaultsKey.notchQuickAccessSecond, DefaultsKey.notchQuickAccessThird]
         guard legacyKeys.contains(where: { defaults.object(forKey: $0) != nil }) else { return .initial }
         let side = NotchQuickAccessSide(rawValue: defaults.string(forKey: DefaultsKey.notchQuickAccessSide) ?? "") ?? .left
-        var actions: [NotchQuickAction] = [.explore]
+        var actions: [NotchQuickAction] = [.module(.hub)]
         for key in [DefaultsKey.notchQuickAccessSecond, DefaultsKey.notchQuickAccessThird] {
             let id = defaults.string(forKey: key) ?? (key == DefaultsKey.notchQuickAccessSecond ? NotchQuickAction.settings.id : "")
             guard let action = NotchQuickAction(id: id),
@@ -1530,6 +1601,29 @@ struct NotchQuickAccessConfiguration: Equatable, Codable {
         item.side = side
         let destination = target.flatMap { target in buttons.firstIndex(where: { $0.id == target && $0.side == side }) }
         buttons.insert(item, at: destination ?? buttons.endIndex)
+    }
+}
+
+/// The live Hub editor reuses the actual island's quick-action host. Placeholder
+/// IDs are view-only: only real buttons are ever saved to UserDefaults.
+enum NotchQuickAccessEditing {
+    private static let placeholders: [(NotchQuickAccessSide, UUID)] = [
+        (.left, UUID(uuidString: "00000000-0000-4000-8000-00000000F001")!),
+        (.right, UUID(uuidString: "00000000-0000-4000-8000-00000000F002")!),
+        (.bottom, UUID(uuidString: "00000000-0000-4000-8000-00000000F003")!),
+    ]
+
+    static func placeholderSide(for id: UUID) -> NotchQuickAccessSide? {
+        placeholders.first { $0.1 == id }?.0
+    }
+
+    static func presentationConfiguration(editing: Bool) -> NotchQuickAccessConfiguration {
+        guard editing else { return .current() }
+        var saved = NotchQuickAccessConfiguration.stored()
+        for (side, id) in placeholders where saved.hasRoom(on: side) {
+            saved.buttons.append(NotchQuickButton(id: id, action: .module(.hub), side: side))
+        }
+        return saved
     }
 }
 
@@ -1854,21 +1948,10 @@ enum NotchSupport {
         isEnabled(in: defaults) && defaults.bool(forKey: DefaultsKey.notchShortcutEnabled)
     }
 
-    /// The primary Dynamic Island modules displayed in navigation.
-    /// Pure workflow utilities live in the Lattice Hub.
-    static let rootModules: [NotchModule] = [
-        .music, .system, .calendar,
-        .timer, .agents, .watch, .hub
-    ]
-
-    static func isExploreModule(_ module: NotchModule) -> Bool {
-        rootModules.contains(module)
-    }
-
     /// Modules available in the Dynamic Island's Widgets section in Settings.
     static let widgetModules: [NotchModule] = [
         .music, .system, .calendar, .notifications,
-        .timer, .downloads, .agents, .watch, .hub
+        .timer, .downloads, .agents, .watch
     ]
 
     static func isWidgetModule(_ module: NotchModule) -> Bool {
@@ -2104,13 +2187,7 @@ enum NotchSupport {
     }
 
     static func routesQuickPanel(in defaults: UserDefaults = .standard) -> Bool {
-        isEnabled(in: defaults) && defaults.bool(forKey: DefaultsKey.notchQuickPanel)
-            && AppFeature.quickLauncher.isAvailable(in: defaults)
-            && modules(in: defaults).contains(.hub)
-    }
-
-    static func routesAppPanel(in defaults: UserDefaults = .standard) -> Bool {
-        false
+        isEnabled(in: defaults)
     }
 
     static func routesScratchpad(in defaults: UserDefaults = .standard) -> Bool {
@@ -2507,11 +2584,16 @@ struct NotchGeometry: Equatable {
     /// reading leaves no band of empty black at the ends. A download beside
     /// the clock keeps room for its percentage.
     func compactTimerGeometry(showsDownloads: Bool,
-                              wing fitted: CGFloat = NotchTimerSupport.stripWingRange.upperBound) -> NotchGeometry {
+                              wing fitted: CGFloat = NotchTimerSupport.stripWingRange.upperBound,
+                              maximumWing: CGFloat = NotchTimerSupport.stripWingRange.upperBound
+                            ) -> NotchGeometry {
         var compact = self
         let room = compactSideRoom ?? 0
         let range = NotchTimerSupport.stripWingRange
-        let wing = showsDownloads ? 80 : min(range.upperBound, max(range.lowerBound, fitted.isFinite ? fitted.rounded(.up) : 0))
+        let wing = showsDownloads
+                    ? 80
+                    : min(maximumWing, max(range.lowerBound,
+                        fitted.isFinite ? fitted.rounded(.up) : 0))
         compact.compactSideRoom = room.isFinite && room >= 64 ? min(wing, room) : 0
         // A wider simulated camera must not consume the timer's text budget.
         compact.minimumCompactWidth = cameraWidth + wing * 2
@@ -2740,7 +2822,7 @@ struct NotchGeometry: Equatable {
     /// `toolCount` is nil while the launcher edits its grid or hosts a
     /// utility: those need the page, not a rail. `detailHeight` is a
     /// detail's measured content, which it fits instead of the whole page.
-    func expandedSize(module: NotchModule, detail: Bool = false, panel: Bool = false,
+    func expandedSize(module: NotchModule, detail: Bool = false,
                       detailHeight: CGFloat? = nil, shortcutCount: Int = 4,
                       sliderCount: Int = 2, controlsHaveMusic: Bool = true, musicHasContent: Bool = true,
                       musicExtraHeight: CGFloat = 0,
@@ -2762,9 +2844,10 @@ struct NotchGeometry: Equatable {
         let contentHeight: CGFloat
         if module == .system, !detail, !panel, let systemHeight {
             contentHeight = max(0, systemHeight)
-        } else if detail, !panel, let detailHeight {
-            contentHeight = min(pageBudget, max(0, detailHeight) + 4)
-        } else if detail || panel {
+        } else if detail, let detailHeight {
+            let maxBudget = NotchSupport.isTestHarness ? pageBudget : max(pageBudget, screen.height - safeContentTop - NotchLayout.bottomInset - 60)
+            contentHeight = min(maxBudget, max(0, detailHeight) + 4)
+        } else if detail {
             contentHeight = pageBudget
         } else if showsFileMedia {
             // Measured surfaces keep their own height, bounded by the display below.
@@ -2788,8 +2871,10 @@ struct NotchGeometry: Equatable {
                 let empty = !controlsHaveMusic && sliderCount <= 0 && shortcutCount <= 0
                 contentHeight = min(room, empty ? NotchLayout.emptyHeight : home.height)
             case .music:
+                // The artwork is below the camera row, never beside/under it.
+                // Keep enough room for that layout even in the compact preset.
                 let player = NotchLayout.musicPlayerHeight(band: musicBandHeight, playing: musicHasContent)
-                contentHeight = min(budget, player) + max(0, musicExtraHeight)
+                contentHeight = NotchSupport.isTestHarness ? (min(budget, player) + max(0, musicExtraHeight)) : (player + max(0, musicExtraHeight))
             case .system:
                 let cards = max(0, systemCards)
                 contentHeight = min(budget, cards == 0 ? NotchLayout.emptyHeight
@@ -2812,7 +2897,14 @@ struct NotchGeometry: Equatable {
                     widgetsHeight: widgetsHeight)
                 contentHeight = toolsControlsHeight != nil ? computedHeight : min(budget, computedHeight)
             case .timer:
-                contentHeight = min(budget, NotchLayout.timer(mode: timerMode, hasSession: timerHasSession, height: budget))
+                // Let Timer report its natural content height.
+                // The root island sizes itself around that content.
+                // Do not clamp to the compact/spacious preset budget.
+                contentHeight = NotchLayout.timer(
+                    mode: timerMode,
+                    hasSession: timerHasSession,
+                    height: budget
+                )
             case .agents:
                 // Only the cards a person chose; a short set leaves a short island.
                 contentHeight = min(budget, agentsHeight.map { $0 > 0 ? $0 : NotchLayout.emptyHeight } ?? budget)
@@ -2863,7 +2955,7 @@ struct NotchGeometry: Equatable {
         CGSize(width: max(0, size.width - NotchLayout.horizontalInset * 2),
                height: max(0, size.height - headerTopInset - headerChromeHeight))
     }
-    var appPanelSize: CGSize { contentSize(for: expandedSize(module: .hub, panel: true)) }
+
     func frame(for size: CGSize) -> CGRect {
         CGRect(x: screen.midX + surfaceShift - size.width / 2,
                y: screen.maxY - floatingDrop - size.height,

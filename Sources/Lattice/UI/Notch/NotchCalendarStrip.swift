@@ -35,18 +35,16 @@ struct NotchCalendarStrip: View {
                         paired(countdown, companion: companion, title: displayTitle, remaining: remaining,
                                now: context.date)
                     } else {
-                        Button { service.openCountdownEvent() } label: {
-                            Group {
-                                if usesFullRow {
-                                    fullRow(countdown, title: displayTitle, remaining: remaining)
-                                } else {
-                                    wings(countdown, title: displayTitle, remaining: remaining)
-                                }
+                        Group {
+                            if usesFullRow {
+                                fullRow(countdown, title: displayTitle, remaining: remaining)
+                            } else {
+                                wings(countdown, title: displayTitle, remaining: remaining)
                             }
-                            .frame(width: geometry.compactActivitySize.width - geometry.compactActivityHorizontalPadding * 2,
-                                   height: geometry.compactActivityContentHeight)
-                            .contentShape(Rectangle())
                         }
+                        .frame(width: geometry.compactActivitySize.width - geometry.compactActivityHorizontalPadding * 2,
+                               height: geometry.compactActivityContentHeight)
+                        .contentShape(Rectangle())
                         .modifier(countdownAccessibility(countdown, title: displayTitle, now: context.date))
                     }
                 }
@@ -70,12 +68,14 @@ struct NotchCalendarStrip: View {
         // The row below the camera ends in the island's deep lower corners;
         // a fixed margin left the dot and the clock on their curve.
         HStack(spacing: 6) {
-            Self.dot(countdown.event)
-            Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .lineLimit(1).truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Self.clock(remaining, ongoing: countdown.ongoing)
+            Button { service.openCountdownEvent() } label: { Self.dot(countdown.event) }.buttonStyle(.plain)
+            Button { service.openDefault() } label: {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(1).truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }.buttonStyle(.plain)
+            Button { service.openDefault() } label: { Self.clock(remaining, ongoing: countdown.ongoing) }.buttonStyle(.plain)
         }
         .padding(.horizontal, rowInset)
     }
@@ -86,10 +86,12 @@ struct NotchCalendarStrip: View {
         let inset = geometry.compactActivityEdgeInset(boxHeight: 9, radius: 0)
         return HStack(spacing: 0) {
             HStack(spacing: NotchCalendarSupport.stripTitleSpacing) {
-                Self.dot(countdown.event)
-                Text(title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .lineLimit(1).truncationMode(.tail)
+                Button { service.openCountdownEvent() } label: { Self.dot(countdown.event) }.buttonStyle(.plain)
+                Button { service.openDefault() } label: {
+                    Text(title)
+                        .font(.system(size: 11, weight: .semibold))
+                        .lineLimit(1).truncationMode(.tail)
+                }.buttonStyle(.plain)
             }
             .padding(.leading, inset)
             .frame(width: geometry.compactActivityWingWidth, alignment: .trailing)
@@ -98,14 +100,18 @@ struct NotchCalendarStrip: View {
             // The start or end time fills the side the clock alone left
             // mostly empty; a wing narrowed by the menus keeps just the clock.
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: NotchCalendarSupport.stripClockSpacing) {
+                Button { service.openDefault() } label: {
+                    HStack(spacing: NotchCalendarSupport.stripClockSpacing) {
+                        Self.clock(remaining, ongoing: countdown.ongoing)
+                        Text(NotchCalendarSupport.timeText(countdown, locale: l10n.language.formattingLocale()))
+                            .font(.system(size: 11, weight: .medium)).monospacedDigit()
+                            .foregroundStyle(.white.opacity(0.55))
+                            .fixedSize()
+                    }
+                }.buttonStyle(.plain)
+                Button { service.openDefault() } label: {
                     Self.clock(remaining, ongoing: countdown.ongoing)
-                    Text(NotchCalendarSupport.timeText(countdown, locale: l10n.language.formattingLocale()))
-                        .font(.system(size: 11, weight: .medium)).monospacedDigit()
-                        .foregroundStyle(.white.opacity(0.55))
-                        .fixedSize()
-                }
-                Self.clock(remaining, ongoing: countdown.ongoing)
+                }.buttonStyle(.plain)
             }
             .padding(.trailing, inset)
             .frame(width: geometry.compactActivityWingWidth, alignment: .leading)

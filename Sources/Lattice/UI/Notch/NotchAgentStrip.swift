@@ -53,7 +53,7 @@ struct NotchAgentStrip: View {
                 .contentShape(Rectangle())
             }
             Color.clear.frame(width: geometry.compactActivityCameraGap)
-            Button { service.openActivity(.agents) } label: {
+            Button { service.openDefault() } label: {
                 Group {
                     if geometry.compactActivityWingWidth >= 42 {
                         NotchAgentReadoutTimeline(readout: NotchAgentReadout(rawValue: readout) ?? .elapsed) { date in

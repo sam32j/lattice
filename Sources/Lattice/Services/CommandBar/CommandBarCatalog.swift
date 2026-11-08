@@ -668,7 +668,7 @@ enum CommandBarCatalog {
                 title: bar.actionCheckAppUpdates,
                 subtitle: area(.appUpdates),
                 keywords: FeatureStrings.appUpdates(language).pageTitle,
-                icon: .symbol("square.and.arrow.down.badge.clock"),
+                icon: .symbol("app.badge.checkmark"),
                 run: { _ in
                     AppUpdatesService.shared.check()
                     openSettings(at: .appUpdates)
