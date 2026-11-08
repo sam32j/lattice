@@ -30,7 +30,7 @@ struct PanelAppUpdatesView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Label(text.pageTitle, systemImage: "square.and.arrow.down.badge.clock")
+            Label(text.pageTitle, systemImage: "app.badge.checkmark")
                 .font(.system(size: 12, weight: .semibold))
             Spacer()
             // The panel's own footer already has a plain Settings button, so
