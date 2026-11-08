@@ -21,10 +21,8 @@ struct DeviceControlsHubView: View {
             .padding(.horizontal, 2)
             .padding(.vertical, 4)
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                let target = ceil(height)
-                if abs(navigation.contentHeight - target) > 1 {
-                    navigation.contentHeight = target
-                }
+                guard navigation.currentSubpage == .main else { return }
+                navigation.updateMeasuredMainHeight(height)
             }
         }
         .onAppear {
