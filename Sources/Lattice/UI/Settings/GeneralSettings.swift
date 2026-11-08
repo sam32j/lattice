@@ -8,6 +8,11 @@ import ServiceManagement
 struct GeneralSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var appearance = AppAppearanceController.shared
+    @ObservedObject private var features = FeatureRuntime.shared
+    @AppStorage(DefaultsKey.notchHidesMenuBarIcon) private var hideMenuIcon = false
+    @AppStorage(DefaultsKey.notchEnabled) private var islandEnabled = false
+    @AppStorage(DefaultsKey.launcherShortcutTarget) private var preferredTarget = LauncherShortcutTarget.automatic.rawValue
+    @State private var dialogWindow = PermissionDialogWindowReference()
     // Seeded from the stored choice so the switch does not flash off while
     // the status read is still on its way.
     @State private var loginRegistration: LaunchAtLoginSupport.Registration =
@@ -35,8 +40,12 @@ struct GeneralSettings: View {
             for: LaunchAtLoginSupport.settingsRefreshRequested)) { _ in
             refreshLaunchAtLogin()
         }
+        .background(PermissionDialogWindowReader(reference: dialogWindow))
         .settingsExpansionAnimation(value: loginRegistration)
         .settingsExpansionAnimation(value: loginError)
+        .settingsExpansionAnimation(value: hideMenuIcon)
+        .settingsExpansionAnimation(value: islandEnabled && features.isAvailable(.notch))
+        .settingsExpansionAnimation(value: preferredTarget)
     }
 
     private var basicsCard: some View {
@@ -81,7 +90,47 @@ struct GeneralSettings: View {
                 .labelsHidden()
             }
             Divider()
-            AppMenuDestinationSettings()
+            SettingsRow(symbol: "menubar.rectangle", title: SettingsFollowupStrings.text(.showMenuIcon, l10n.language)) {
+                Toggle(SettingsFollowupStrings.text(.showMenuIcon, l10n.language),
+                       isOn: Binding(
+                           get: { !hideMenuIcon },
+                           set: { show in
+                               if !show {
+                                   let islandOn = islandEnabled && features.isAvailable(.notch)
+                                   if !islandOn {
+                                       guard LatticeInterfaceConfirmation.confirmHideLattice(over: dialogWindow.window) else { return }
+                                   }
+                               }
+                               hideMenuIcon = !show
+                           }
+                       ))
+                    .labelsHidden().toggleStyle(.switch)
+            }
+            if !hideMenuIcon { MenuBarIconPickerRow().padding(.leading, settingsRowTextInset) }
+
+            Divider()
+            SettingsRow(symbol: "squareshape.split.2x2", title: SettingsFollowupStrings.text(.openLatticeShortcut, l10n.language)) {
+                CompactShortcutRecorder(role: .quickLauncher,
+                                        enabledKey: DefaultsKey.quickLauncherShortcutEnabled,
+                                        onChange: {
+                    FeatureRuntime.shared.sync([.quickLauncher])
+                })
+            }
+
+            if islandEnabled && features.isAvailable(.notch) {
+                Divider()
+                SettingsRow(symbol: "bookmark", title: SettingsFollowupStrings.text(.preferOpensAt, l10n.language)) {
+                    Picker(SettingsFollowupStrings.text(.preferOpensAt, l10n.language), selection: $preferredTarget) {
+                        Text(SettingsOwnershipStrings.text(.floatingWindow, l10n.language))
+                            .tag(LauncherShortcutTarget.floatingWindow.rawValue)
+                        Text(SettingsOwnershipStrings.text(.dynamicIsland, l10n.language))
+                            .tag(LauncherShortcutTarget.automatic.rawValue)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
+                }
+            }
         }
     }
 
