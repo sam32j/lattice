@@ -165,12 +165,12 @@ extension FeatureStrings {
                 showActivityOnLockScreen: "잠금 화면에 실시간 활동 표시")
         case .zhHans:
             return NotchLiveActivitySettingsStrings(
-                openWithShortcut: "通过快捷键打开 Dynamic Island",
-                showOn: "显示 Dynamic Island 于",
-                dynamicIslandSize: "全景光斑大小",
+                openWithShortcut: "使用快捷键打开灵动岛",
+                showOn: "在以下屏幕显示灵动岛",
+                dynamicIslandSize: "灵动岛大小",
                 useScrollGestures: "使用滚动手势",
                 turnOnHapticFeedback: "开启触感反馈",
-                showInScreenshots: "在屏幕截图中显示 Dynamic Island",
+                showInScreenshots: "在屏幕截图中显示灵动岛",
                 onlyShowActivityWhenRoom: "仅在空间允许时显示实时活动",
                 onlyShowActivityWhenRoomHint: "如果菜单栏空间不足，实时活动将被隐藏。",
                 hideActivityInFullscreen: "全屏时隐藏实时活动",
@@ -178,12 +178,12 @@ extension FeatureStrings {
                 showActivityOnLockScreen: "在锁定屏幕上显示实时活动")
         case .zhTW:
             return NotchLiveActivitySettingsStrings(
-                openWithShortcut: "使用快捷鍵開啟 Dynamic Island",
-                showOn: "顯示 Dynamic Island 於",
+                openWithShortcut: "使用快捷鍵開啟動態島",
+                showOn: "在以下螢幕顯示動態島",
                 dynamicIslandSize: "動態島大小",
                 useScrollGestures: "使用捲動手勢",
                 turnOnHapticFeedback: "開啟觸覺回饋",
-                showInScreenshots: "在螢幕截圖中顯示 Dynamic Island",
+                showInScreenshots: "在螢幕截圖中顯示動態島",
                 onlyShowActivityWhenRoom: "僅在空間允許時顯示即時動態",
                 onlyShowActivityWhenRoomHint: "若選單列空間不足，即時動態將會隱藏。",
                 hideActivityInFullscreen: "全螢幕時隱藏即時動態",
@@ -191,12 +191,12 @@ extension FeatureStrings {
                 showActivityOnLockScreen: "在鎖定畫面上顯示即時動態")
         case .zhHK:
             return NotchLiveActivitySettingsStrings(
-                openWithShortcut: "使用快捷鍵開啟 Dynamic Island",
-                showOn: "顯示 Dynamic Island 於",
+                openWithShortcut: "使用快捷鍵開啟動態島",
+                showOn: "在以下螢幕顯示動態島",
                 dynamicIslandSize: "動態島大小",
                 useScrollGestures: "使用捲動手勢",
                 turnOnHapticFeedback: "開啟觸覺回饋",
-                showInScreenshots: "在螢幕截圖中顯示 Dynamic Island",
+                showInScreenshots: "在螢幕截圖中顯示動態島",
                 onlyShowActivityWhenRoom: "僅在空間允許時顯示即時動態",
                 onlyShowActivityWhenRoomHint: "若選單列空間不足，即時動態將會隱藏。",
                 hideActivityInFullscreen: "全螢幕時隱藏即時動態",
