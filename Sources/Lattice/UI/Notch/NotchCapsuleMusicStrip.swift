@@ -51,40 +51,56 @@ struct NotchCapsuleMusicStrip: View {
                         geometry: geometry, leading: 0, trailing: 0) {
             HStack(spacing: 0) {
                 if named {
-                    VStack(alignment: .trailing, spacing: 1) {
-                        Text(title).font(Font(NotchMusicStripLayout.titleFont as CTFont)).lineLimit(1)
-                        if let artist {
-                            Text(artist).font(Font(NotchMusicStripLayout.artistFont as CTFont))
-                                .foregroundStyle(.white.opacity(0.62)).lineLimit(1)
+                    Button { service.openDefault() } label: {
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text(title).font(Font(NotchMusicStripLayout.titleFont as CTFont)).lineLimit(1)
+                            if let artist {
+                                Text(artist).font(Font(NotchMusicStripLayout.artistFont as CTFont))
+                                    .foregroundStyle(.white.opacity(0.62)).lineLimit(1)
+                            }
                         }
                     }
+                    .buttonStyle(.plain)
                     .padding(.horizontal, CapsuleLayout.endPadding)
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .contentShape(Rectangle())
                     .onHover { if live { service.hoverMusicStrip(.cover, entered: $0) } }
                 }
-                NotchMusicCover(artwork: artwork, side: side, radius: side / 2, source: playback?.track)
-                    .padding(.leading, named ? 0 : CapsuleLayout.artworkInset(geometry))
-                    .frame(maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                    .onHover { if live { service.hoverMusicStrip(.cover, entered: $0) } }
+                Button { service.open(.music) } label: {
+                    NotchMusicCover(artwork: artwork, side: side, radius: side / 2, source: playback?.track)
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, named ? 0 : CapsuleLayout.artworkInset(geometry))
+                .frame(maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .onHover { if live { service.hoverMusicStrip(.cover, entered: $0) } }
                 if named { Color.clear.frame(width: CapsuleLayout.endPadding) }
-                else { Spacer(minLength: CapsuleLayout.endPadding) }
-                NotchMusicSwipeVisualizer(frame: live ? swipe.frame : .init(), height: CapsuleLayout.barsHeight(geometry)) {
-                    ZStack {
-                        NotchLiveEqualizerBars(isPlaying: playing && !showsControl,
-                                               bars: NotchLayout.compactMusicBarCount,
-                                               barWidth: NotchLayout.compactMusicBarWidth,
-                                               height: CapsuleLayout.barsHeight(geometry),
-                                               tint: tint?.color ?? .white)
-                            .opacity(showsControl ? 0 : 1)
-                        if showsControl {
-                            NotchMusicStripButton(playing: playing, tint: tint?.color ?? .white,
-                                                  height: CapsuleLayout.barsHeight(geometry))
-                                .transition(.opacity)
+                else {
+                    Button { service.openDefault() } label: {
+                        Spacer(minLength: CapsuleLayout.endPadding).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                Button {
+                    if !service.toggleMusicStripSong() { service.open(.music) }
+                } label: {
+                    NotchMusicSwipeVisualizer(frame: live ? swipe.frame : .init(), height: CapsuleLayout.barsHeight(geometry)) {
+                        ZStack {
+                            NotchLiveEqualizerBars(isPlaying: playing && !showsControl,
+                                                   bars: NotchLayout.compactMusicBarCount,
+                                                   barWidth: NotchLayout.compactMusicBarWidth,
+                                                   height: CapsuleLayout.barsHeight(geometry),
+                                                   tint: tint?.color ?? .white)
+                                .opacity(showsControl ? 0 : 1)
+                            if showsControl {
+                                NotchMusicStripButton(playing: playing, tint: tint?.color ?? .white,
+                                                      height: CapsuleLayout.barsHeight(geometry))
+                                    .transition(.opacity)
+                            }
                         }
                     }
                 }
+                .buttonStyle(.plain)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: showsControl)
                 .padding(.trailing, CapsuleLayout.endPadding)
                 .frame(maxHeight: .infinity)
