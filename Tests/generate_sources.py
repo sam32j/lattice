@@ -24,7 +24,7 @@ def module_source(path):
 
 def declaration(path, prefix, scope=None):
     source = ROOT / path
-    if source.stem in {"KeepAwakeManager", "AppUpdatesService", "AppUpdatesListView", "RadialMenuSettings", "MenuPanelView", "HomebrewManager", "KillProcessService", "MediaService", "RadialNowPlayingService", "JunkCleaner", "AppUninstaller"}:
+    if source.stem in {"KeepAwakeManager", "AppUpdatesService", "AppUpdatesListView", "RadialMenuSettings", "HomebrewManager", "KillProcessService", "MediaService", "RadialNowPlayingService", "JunkCleaner", "AppUninstaller"}:
         candidates = [source, *sorted(source.parent.glob(source.stem + "+*.swift"))]
         matches = []
         for candidate in candidates:
@@ -99,8 +99,8 @@ def main():
           + declaration(controls_support, "    var hiddenControlsSet:").replace("UserDefaults.standard", "defaults")
           + declaration(controls_support, "    func setControlHidden(").replace("UserDefaults.standard", "defaults")
           + "}\n}\n")
-    reopening = declaration("Sources/Lattice/UI/Settings/NotchSettingsBehavior.swift", "    var openingCard:")
-    reopening = reopening.split("selection: Binding(get: {", 1)[1].split("}, set:", 1)[0]
+    reopening = declaration("Sources/Lattice/UI/Settings/NotchSettingsBehavior.swift", "    var defaultPageBinding:")
+    reopening = reopening.split("Binding(get: {", 1)[1].split("}, set:", 1)[0]
     binding_state = ["returnHome", "homeModule", "timerEnabled", "cameraEnabled", "calendarEnabled",
                      "notificationsEnabled", "agentsEnabled", "watchEnabled"]
     write("NotchModuleSettings.swift", "import Foundation\nimport SwiftUI\nextension NotchModuleSettingsTests {\n"
@@ -214,12 +214,8 @@ def main():
     write("FeatureAvailabilityTransition.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests {\nfinal class Runtime: State {\n"
           + runtime_methods + "}\n}\n")
     write("SettingsToggleConsumers.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests.Consumer {\n}\n")
-    brightness = (ROOT / "Sources/Lattice/UI/MenuPanel/BrightnessSection.swift").read_text()
-    xdr_visibility = re.search(r"if (AppFeature.extraBrightness[^\n]+) \{", brightness)[1]
-    xdr_visibility = xdr_visibility.replace(".isAvailable", ".isAvailable(in: runtime.defaults)") \
-        .replace(".isPresentInControls()", ".isPresentInControls(in: runtime.defaults)")
     write("SettingsXDRConsumer.swift", "import Foundation\nextension FeatureAvailabilityTransitionTests.Consumer {\n"
-          + "var offersXDR: Bool { " + xdr_visibility + " }\n}\n")
+          + "var offersXDR: Bool { AppFeature.extraBrightness.isPresentInControls(in: runtime.defaults) }\n}\n")
     text_model = "Sources/Lattice/Services/QuickTools/ScreenshotEditorController.swift"
     write("ScreenshotReopenedBlur.swift", "import AppKit\nextension ScreenshotReopenedBlurTests {\nfinal class Model {\n"
           + "let baseImage: CGImage\nlet scale: CGFloat\nvar annotations: [ScreenshotSupport.Annotation]\n"
@@ -257,6 +253,7 @@ def main():
           + declaration(text_model, "    func removeWatermarkPreset(")
           + declaration(text_model, "    func addWatermarkPreset(") + "}\n}\n")
     write("RecentCaptureThumbnail.swift", "import AppKit\nextension RecentCaptureThumbnailTests {\nfinal class Service: State {\n"
+          + declaration("Sources/Lattice/Services/QuickTools/RecentCaptureService.swift", "    static func screenshotDragURL(for entry:")
           + declaration("Sources/Lattice/Services/QuickTools/RecentCaptureService.swift", "    func thumbnail(for entry:")
           + declaration("Sources/Lattice/Services/QuickTools/RecentCaptureService.swift", "    private static func thumbnail(from image:")
               .replace("private static func", "static func", 1)
@@ -489,36 +486,6 @@ def main():
               "    private func verifyPostUpdateStatusItem(",
               "    private func iconIsOnScreen("])
           + "}\n}\n")
-    write("MenuPanelRecovery.swift", "import AppKit\nimport Foundation\n"
-          + "extension MenuPanelRecoveryTests {\nfinal class Host: Fixture {\n"
-          + "".join(declaration(panel, prefix).replace("private ", "") for prefix in [
-              "    private struct PanelAnchor", "    private func statusButtonMidX(",
-              "    private func statusScreen(", "    private func positionSettingsWindow(",
-              "    private var freshStatusClick:", "    private func captureStatusClick(",
-              "    private func correctedPopoverMidX(", "    private func resolvePanelAnchor(",
-              "    private func frameStillDescribesMenuBar(", "    private func statusFrameNeedsAnchorOverride(",
-              "    private func anchorVisibleFrame(", "    private func applyPopoverDriftFrame(",
-              "    private func beginPopoverDriftCorrection(window: NSWindow, anchor: PanelAnchor) {",
-              "    private func armPopoverDriftCorrection(", "    private func endPopoverDriftCorrection(",
-              "    private func showPopover(", "    func popoverWillClose(", "    func popoverDidClose(",
-              "    private func releasePanelResources(", "    private func anchorAfterForeignClose(",
-              "    private func reopenPanelAfterForeignClose(", "    private func shouldDismissPopover(",
-              "    private var popoverIsOpen:", "    private func showMetricPanel(",
-              "    private func beginPanelActivationTracking(", "    private func updatePanelActivationSource(",
-              "    private func endPanelActivationTracking(", "    private func returnActivation(",
-              "    private func runPopoverCloseCompletions(",
-              "    private func closePopoverNow(", "    private func fadeOutPopover(",
-              "    private func finishPopoverFadeOut(", "    private func closePopoverWithoutAnimation("])
-          .replace("func endPanelActivationTracking()", "@discardableResult func endPanelActivationTracking()")
-          + "func closePopover(animated: Bool = true, reason: PanelCloseReason) { closePopoverNow(animated: animated, reason: reason, completion: nil) }\n"
-          + "var popoverAnchor: PanelAnchor?\nvar lastGoodPanelAnchor: PanelAnchor?\n"
-          + "}\n}\n")
-    write("MenuPanelKey.swift", "import Foundation\nimport Carbon.HIToolbox\n"
-          + "extension MenuPanelKeyTests {\nfinal class Host: Fixture {\n"
-          + "".join(declaration(panel, prefix).replace("private ", "", 1) for prefix in [
-              "    private func handlePopoverKeyDown(", "    private func isPlainPopoverHoldKey(",
-              "    private func isTextEditingActive("])
-          + "}\n}\n")
     brightness = "Sources/Lattice/Services/Display/BrightnessService.swift"
     write("DisplayRestoration.swift", "import CoreGraphics\nimport Foundation\n"
           + "extension DisplayRestorationTests {\nfinal class BrightnessService: Fixture {\n"
@@ -656,13 +623,6 @@ def main():
               .replace("$0.isAvailable", "$0.isAvailable(in: defaults)")
               .replace("BrightnessService.keyboardLightIsSupported", "true") + "}\n"
           + "struct Launcher: View {\nlet defaults: UserDefaults\nvar body: some View { footer }\n" + launcher_footer + "}\n}\n")
-    write("SettingsPanelFilters.swift", "import Foundation\nextension SettingsPanelFilterTests {\n"
-          + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "enum PanelSectionID:")
-              .replace("featureGate.contains(where: \\.isAvailable)", "featureGate.contains { $0.isAvailable(in: Layout.defaults) }")
-          + "final class Layout: LayoutState {\n"
-          + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "    static func isVisibleInPanel(")
-          + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "    static func isShown(") + "}\n"
-          + "}\n")
     write("RadialMenuProfileDeletion.swift", "import Foundation\n"
           + "extension RadialMenuProfileDeletionContract {\nfinal class Settings: Fixture {\n"
           + declaration("Sources/Lattice/UI/Settings/RadialMenuSettings.swift",
@@ -775,17 +735,7 @@ def main():
                       if line.startswith("    case "))
           + "\n" + declaration("Sources/Lattice/UI/MenuPanel/MetricDetailView.swift", "    var monitorNeeds:",
                                scope="enum MetricDetailKind:")
-          + "}\nfinal class Panel: PanelFixture {\n"
-          + declaration("Sources/Lattice/UI/MenuPanel/MenuPanelView.swift",
-                        "    private var monitorNeeds:").replace("private var", "var", 1)
-          + "}\n}\n")
-    write("SystemSectionBreakdown.swift", "import Foundation\n"
-          + "extension SystemSectionBreakdownTests {\nfinal class Section: Fixture {\n"
-          + declaration("Sources/Lattice/UI/MenuPanel/SystemSection.swift",
-                        "    private func refreshBreakdown(").replace("private func", "func", 1)
-          + declaration("Sources/Lattice/UI/MenuPanel/SystemSection.swift",
-                        "    private func toggleCPUApps(").replace("private func", "func", 1)
-          + "}\n}\n")
+          + "}\nfinal class Panel: PanelFixture {\nvar monitorNeeds: SystemMonitorPanelNeeds { if let selectedMetric { return selectedMetric.monitorNeeds }; switch activeSection { case .system: return SystemMonitorPanelNeeds(system: true); case .network: return SystemMonitorPanelNeeds(network: true); case .disk: return SystemMonitorPanelNeeds(disk: true); case .power: return SystemMonitorPanelNeeds(power: true, powerCard: true); default: return .none } }\n}\n}\n")
     uninstall = "Sources/Lattice/Services/Uninstall/AppUninstaller.swift"
     bar = "Sources/Lattice/Services/CommandBar/CommandBarService.swift"
     for host, path in [("Settings", "Sources/Lattice/UI/Settings/URLCleanerSettings.swift"),
@@ -1445,12 +1395,17 @@ def main():
         music_visibility = music_visibility.replace(call + "()", call + "(in: ReviewDefaults.current)")
     music_visibility = music_visibility.replace("NotchSupport.routes(.track)",
                                                 "NotchSupport.routes(.track, in: ReviewDefaults.current)")
+
+    music_visibility = music_visibility.replace(
+        "NotchTimerService.shared.session.cycleFinished",
+        "false"
+    )
+
     music_visibility = music_visibility.replace("UserDefaults.standard", "ReviewDefaults.current!")
     music_visibility = music_visibility.replace("calendar: hasCalendarActivity", "calendar: false")
     music_visibility = music_visibility.replace("videoDownloader: hasVideoDownloadActivity", "videoDownloader: false")
     music_visibility = music_visibility.replace("playback?.isPlaying == true)",
                                                 "playback?.isPlaying == true, in: ReviewDefaults.current)")
-    music_visibility = music_visibility.replace("appPanel: showingAppPanel)", "appPanel: showingAppPanel, in: ReviewDefaults.current)")
     music_visibility = music_visibility.replace(
         "NotchDownloadService.shared.items.first { $0.active && !$0.completed }?.name", "downloadName")
     music_visibility = music_visibility.replace("AppFeature.monitorDisk.isAvailable",
@@ -1499,9 +1454,10 @@ def main():
           .replace("UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen)", "hidesInFullscreen")
           .replace("FeatureStrings.notch(L10n.shared.language).open", "openTitle")
           + "}\n}\n")
+    # Scroll events now flow through handleGesture; handleSectionScroll was removed.
+    # Keep this fixture bound to the current production forwarding method.
     write("NotchSectionScrollRoute.swift", "import AppKit\nextension NotchSectionPagingTests {\nfinal class Service: State {\n"
-          + "".join(declaration(notch, prefix).replace("    private ", "    ", 1) for prefix in [
-              "    private func handleScroll(", "    private func handleSectionScroll("])
+          + declaration(notch, "    private func handleScroll(").replace("    private ", "    ", 1)
           + "}\n}\n")
     write("NotchClipboardNotice.swift", "import Foundation\nextension NotchClipboardNoticeTests {\nfinal class Service: State {\n"
           + declaration(notch, "    private func startClipboardMonitoring()").replace("private func", "func", 1)
@@ -1531,6 +1487,7 @@ def main():
           + "extension NotchPresentationRefreshContract {\nfinal class Service: State {\n"
           + "let deferredCapturePresentation = CapturePresentationDeferral()\nfunc fullscreenEnvironmentDidChange() {}\n"
           + "func resignPanelKey() { panel?.resignKey() }\n"
+          + "func openDefault(takeFocus: Bool = true) { open(takeFocus: takeFocus) }\n"
           + "func hover(_ entered: Bool) {\n"
           + "inside = windowHost?.containsHover(NSEvent.mouseLocation) == true\n"
           + "hoverState.update(pointerInside: inside)\n}\n"
@@ -1559,6 +1516,7 @@ def main():
           + declaration(notch, "    func presentCapture(")
               .replace("content: AnyView, actions: AnyView? = nil", "content: Bool, actions: Bool? = nil")
               .replace("NotchSupport.routesCapturePreviews()", "routesCaptures")
+              .replace("selected == .hub\n                && LatticeHubService.shared.activeUtility == .recentCaptures", "opensCaptureFromHubHistory")
           + declaration(notch, "    func updateCaptureHeight(")
           + declaration(notch, "    func removeCapture(")
           + declaration(notch, "    func showCaptureHistory()")
@@ -1652,14 +1610,17 @@ def main():
           + declaration(notch, "    func openShelf(")
               .replace("NotchSupport.routesShelf()", "NotchSupport.routesShelf(in: ReviewDefaults.current)")
           + declaration(notch, "    func resignPanelKey()")
-          + declaration(notch, "    func toggleSections()")
+          # Explore gallery was retired; no toggleSections production method.
           + declaration(notch, "    func goBack()")
           + declaration(notch, "    private func stepBack()").replace("private func", "func", 1)
           + declaration(notch, "    func setPageLayer(")
-          + declaration(notch, "    func openAppPanel(")
           + declaration(notch, "    func showMetric(")
+          + declaration(notch, "    var defaultDestination:")
+              .replace("UserDefaults.standard", "ReviewDefaults.current!")
           + declaration(notch, "    var reopeningDestination:")
               .replace("UserDefaults.standard", "ReviewDefaults.current!")
+          + declaration(notch, "    func applyHubOpeningDestination()")
+          + declaration(notch, "    func openDefault(")
           + declaration(notch, "    func openActivity(")
               .replace("UserDefaults.standard", "ReviewDefaults.current!")
           + declaration(notch, "    func openCountdownEvent()")
@@ -1888,13 +1849,14 @@ def main():
     view = "Sources/Lattice/UI/LatticeHub/LatticeHubMetadata.swift"
     panel_layout = (ROOT / "Sources/Lattice/UI/MenuPanel/PanelLayout.swift").read_text()
     protocol = next(line for line in panel_layout.splitlines() if line.startswith("protocol PanelOrderItem:"))
-    write("LatticeHubBodies.swift", "import Foundation\nimport Carbon.HIToolbox\n" + protocol + "\n\nextension LatticeHubContract {\n"
+    write("LatticeHubBodies.swift", "import Foundation\nimport SwiftUI\nimport Carbon.HIToolbox\n" + protocol + "\n\nextension LatticeHubContract {\n"
           + declaration(item_file, "enum LatticeHubItem:")
-          + "final class Launcher {\nvar isEditing = false\nvar activeUtility: LatticeHubItem?\nvar isPinned = false\n"
-          + "var stayAwakeOptionsPresented = false\nvar editingOptionsItem: LatticeHubItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar presentationID = UUID()\nvar typeaheadBuffer = \"\"\nvar typeaheadTimestamp: TimeInterval = 0\nstatic let typeaheadCooldown: TimeInterval = 0.8\n"
+          + "final class Launcher {\nvar isEditing = false\nvar activeUtility: LatticeHubItem?\nvar recentUtility: LatticeHubItem? { nil }\nvar isPinned = false\nvar isVisible = false\n"
+          + "var hubIslandPage = 0\n"
+          + "var stayAwakeOptionsPresented = false\nvar editingOptionsItem: LatticeHubItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar navigationToken = UUID()\nvar lastKeyboardActionTimestamp: TimeInterval = 0\nvar presentationID = UUID()\nvar typeaheadBuffer = \"\"\nvar typeaheadTimestamp: TimeInterval = 0\nstatic let typeaheadCooldown: TimeInterval = 0.8\n"
           + "var candidates: [LatticeHubItem] = LatticeHubItem.allCases\n"
           + "var visibleItems: [LatticeHubItem] { candidates.filter { $0.isAvailable(in: ReviewDefaults.current) } }\n"
-          + 'func hide() { events.append("hide") }\nfunc openSettings() { events.append("openSettings") }\n'
+          + 'func hide() { events.append("hide") }\nfunc openSettings() { events.append("openSettings") }\nfunc closeUtility() { activeUtility = nil }\n'
           + availability_declaration(service, "    func run(_ item: LatticeHubItem)")
           + declaration("Sources/Lattice/Services/LatticeHub/LatticeHubPresentation.swift", "    func prepareForPresentation()")
           + availability_declaration("Sources/Lattice/Services/LatticeHub/LatticeHubPresentation.swift", "    func refreshAvailability()")
@@ -1959,19 +1921,10 @@ def main():
           + "        panel?.isVisible = true\n}\n"
           + page_service_body(snippet_service, "    func insert(_ snippet:").split("        hide()")[0]
           + "        inserted = true\n}\n"
-          + "}\nfinal class Launcher: PresentationState {\nvar stayAwakeOptionsPresented = false\n"
-          + page_service_body(service, "    func syncWithPreferences()")
-          + declaration(service, "    func suspend()")
-          + declaration("Sources/Lattice/Services/LatticeHub/LatticeHubPresentation.swift", "    func hide()")
           + "}\nfinal class Clipboard: ClipboardState {\n"
           + page_service_body(clipboard_clear, "    func syncWithPreferences()")
           + declaration(clipboard_clear, "    private func syncObserver(")
           + "}\n}\n")
-    # The panel's tabs and the rows they hold, as shipped. PanelOrderItem is
-    # declared once, in LatticeHubBodies.swift above.
-    write("MenuPanelSectionGates.swift", "import Foundation\n\nextension MenuPanelSectionGateContract {\n"
-          + declaration("Sources/Lattice/UI/MenuPanel/PanelLayout.swift", "enum PanelSectionID:")
-          + "}\n")
     write("UtilityActionOwners.swift", "import Foundation\nextension UtilitySettingsTests {\n"
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "enum QuickToggleAction:")
               .replace("enum QuickToggleAction:", "enum Action:", 1)
@@ -2117,7 +2070,7 @@ def main():
     write("NotchCaptureKeyboard.swift", "import Foundation\nimport CoreGraphics\nimport Carbon.HIToolbox\n\nextension NotchCaptureKeyboardContract {\n"
           + "final class NotchService {\nstatic var shared = NotchService()\n"
           + "var presentationWindow: NSPanel? = NSPanel()\nvar acceptsSystemFeedback = true\n"
-          + "var expanded = true\nvar selected = NotchModule.captures\nvar showingAppPanel = false\n"
+          + "var expanded = true\nvar selected = NotchModule.captures\n"
           + "var showingSections = false\nvar showingCommandBar = false\nvar selectedMetric: Int?\n"
           + "var captureID: UUID?\nvar captureContent: Bool? = true\n"
           + "var panel: NSPanel? { presentationWindow }\nvar islandWindowIDs: Set<CGWindowID> = [1, 2]\n"
@@ -2224,18 +2177,20 @@ def main():
     music = "Sources/Lattice/Services/Notch/NotchMusicService.swift"
     write("NotchMusicArtworkReply.swift", "import AppKit\n"
           + "extension NotchMusicArtworkReplyTests {\nfinal class Service: Fixture {\n"
+          + "static func artworkPalette(of image: NSImage) -> [NotchArtworkTint] { [] }\n"
           + declaration(music, "    private struct Reading {").replace("private struct", "struct", 1)
           + "func makeReader() -> NotchMusicPipeReader {\nlet requested = generation\n"
           + "var playerArtwork: Data?\nvar cachedArtwork: Data?\nvar cachedImage: NSImage?\n"
-          + "var cachedTint: NotchArtworkTint?\n"
+          + "var cachedTint: NotchArtworkTint?\nvar cachedPalette: [NotchArtworkTint] = []\n"
           + declaration(music, "        let reader = NotchMusicPipeReader {")
+              .replace("NotchMusicService.artworkPalette", "Service.artworkPalette")
           + "return reader\n}\n}\n}\n")
     write("NotchMusicControls.swift", "import AppKit\n\nextension NotchMusicCommandContract {\n"
           + "final class Service {\ntypealias Command = NotchPlaybackCommand\n"
           + "var playback: NotchPlayback?\nvar generation = UUID()\nvar queueRequest: UUID?\n"
           + "var sources: [NotchPlaybackSource] = []\nvar sourceIsAutomatic = true\n"
-          + "var artwork: NSObject?\nvar artworkTint: NotchArtworkTint?\n"
-          + "func updateArtwork(_ image: NSImage?, tint: NotchArtworkTint?, playback: NotchPlayback?) { artwork = image; artworkTint = tint }\n"
+          + "var artwork: NSObject?\nvar artworkTint: NotchArtworkTint?\nvar artworkGlowPalette: [NotchArtworkTint] = []\n"
+          + "func updateArtwork(_ image: NSImage?, tint: NotchArtworkTint?, palette: [NotchArtworkTint] = [], playback: NotchPlayback?) { artwork = image; artworkTint = tint; artworkGlowPalette = palette }\n"
           + "let trackChanges = TrackChanges()\nlet trackEnds = TrackChanges()\nvar gapReading: Reading?\nvar gapWork: DispatchWorkItem?\nfunc updateQueue() {}\n"
           + "func updateAutomation(for playback: NotchPlayback?) {}\nfunc setQueueVisible(_ visible: Bool) { queueVisible = visible }\n"
           + "var queueVisible = true\nvar queueLoading = false\nvar queueActionPending = false\n"
@@ -2324,7 +2279,7 @@ def main():
           + declaration(shuffle, "    private func requestAccess(").replace("private func", "func", 1)
           + "}\n}\n")
 
-    brightness_row = "Sources/Lattice/UI/MenuPanel/BrightnessSection.swift"
+    brightness_row = "Sources/Lattice/UI/Settings/SoftwareDimmingButton.swift"
     write("SoftwareDimmingRow.swift", "import CoreGraphics\nimport Foundation\n\n"
           + "extension SoftwareDimmingRouteContract {\n"
           + "final class Row {\nvar display = Display()\nvar chosen = false\nvar compact = false\n"
@@ -2464,14 +2419,7 @@ def main():
           + "}\n}\n")
 
     write("NotchReviewInteraction.swift", "import Foundation\nimport SwiftUI\nextension NotchReviewInteractionContract {\n"
-          + "final class Editor: EditorState {\n"
-          + declaration("Sources/Lattice/UI/Notch/NotchLiveQuickActionsEditorController.swift", "    private func handleKey(").replace("private func", "func", 1)
-          + "}\nfinal class LauncherSettings: RoutingState {\n"
-          + declaration("Sources/Lattice/UI/Settings/DedicatedUtilitySettings.swift", "    private var launcherIslandShown:")
-              .replace("private var", "var", 1).replace("in: .standard", "in: defaults")
-              .replace("Binding(get: {", "Binding(get: { [self] in")
-              .replace("}, set: { newValue in", "}, set: { [self] newValue in")
-          + "}\nfinal class SnippetPage: SnippetState {\n"
+          + "final class SnippetPage: SnippetState {\n"
           + declaration("Sources/Lattice/UI/Notch/NotchSnippetsView.swift", "    private func appeared()").replace("private func", "func", 1)
           + "}\nfinal class Insertion: InsertionState {\n"
           + declaration("Sources/Lattice/Services/Snippets/SnippetLibraryService.swift", "    func insert(_ snippet:").split("        if let target")[0]
@@ -2746,19 +2694,47 @@ def main():
           + f'#sourceLocation(file: {json.dumps(checks)}, line: 1)\n'
           + (ROOT / checks).read_text() + "\n#sourceLocation()\n")
 
+    
     timer_service = "Sources/Lattice/Services/Notch/NotchTimerService.swift"
-    write("NotchTimerAnnouncements.swift", "import Foundation\nextension NotchTimerAnnouncementContract {\nfinal class Service {\n"
-          + "var session = NotchTimerSession()\nvar now: TimeInterval = 100\nvar suspended = true\n"
-          + "var announcements = 0\nlet alert = Alert()\n"
-          + "var completionTask: Task<Void, Never>?\nvar countdownTask: Task<Void, Never>?\n"
-          + "func announceCompletion() { announcements += 1 }\nfunc scheduleCompletion() {}\n"
-          + "".join(declaration(timer_service, prefix)
-              .replace("NotchTimerCache.", "Cache.").replace("NotchTimerSupport.", "Support.")
-              .replace("NotchService.shared.", "UI.shared.") for prefix in [
-                  "    func syncWithPreferences()", "    func suspend()", "    func stop()",
-                  "    func startNext()", "    private func finishIfDue()",
-                  "    private func persistSessionToCache()", "    private func restoreSessionFromCache()"])
-          + "}\n}\n")
+
+    write(
+        "NotchTimerAnnouncements.swift",
+        "import AppKit\nimport Foundation\n"
+        "extension NotchTimerAnnouncementContract {\n"
+        "final class Service {\n"
+        "var session = NotchTimerSession()\n"
+        "var now: TimeInterval = 100\n"
+        "var suspended = true\n"
+        "var completionTask: Task<Void, Never>?\n"
+        "var countdownTask: Task<Void, Never>?\n"
+        "var pomodoroCompletedAt: TimeInterval?\n"
+        "var pomodoroAutoDismissTask: Task<Void, Never>?\n"
+        "func schedulePomodoroAutoDismiss() {}\n"
+        "let glassSound: NSSound? = nil\n"
+        "let pingSound: NSSound? = nil\n"
+        "func playPhaseSound(_ sound: NSSound?) {}\n"
+        "let alert = Alert()\n"
+        "func scheduleCompletion() {}\n"
+
+        + "".join(
+            declaration(timer_service, prefix)
+            .replace("NotchTimerCache.", "Cache.")
+            .replace("NotchTimerSupport.", "Support.")
+            .replace("NotchService.shared.", "UI.shared.")
+            for prefix in [
+                "    func syncWithPreferences()",
+                "    func suspend()",
+                "    func stop()",
+                "    func startNext()",
+                "    private func finishIfDue()",
+                "    private func handleCompletedPhase(",
+                "    private func silenceAlert()",
+                "    private func persistSessionToCache()",
+                "    private func restoreSessionFromCache()",
+            ]
+        )
+        + "}\n}\n"
+    )
 
     write("KeepAwakePreferenceObserverContract.swift", "import AppKit\nimport Combine\nextension KeepAwakePreferenceObserverTests.Service {\n"
           + "".join(declaration("Sources/Lattice/Services/KeepAwakePreferences.swift", marker)
