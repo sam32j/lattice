@@ -253,6 +253,7 @@ def main():
           + declaration(text_model, "    func removeWatermarkPreset(")
           + declaration(text_model, "    func addWatermarkPreset(") + "}\n}\n")
     write("RecentCaptureThumbnail.swift", "import AppKit\nextension RecentCaptureThumbnailTests {\nfinal class Service: State {\n"
+          + declaration("Sources/Lattice/Services/QuickTools/RecentCaptureService.swift", "    static func screenshotDragURL(for entry:")
           + declaration("Sources/Lattice/Services/QuickTools/RecentCaptureService.swift", "    func thumbnail(for entry:")
           + declaration("Sources/Lattice/Services/QuickTools/RecentCaptureService.swift", "    private static func thumbnail(from image:")
               .replace("private static func", "static func", 1)
@@ -1396,12 +1397,17 @@ def main():
         music_visibility = music_visibility.replace(call + "()", call + "(in: ReviewDefaults.current)")
     music_visibility = music_visibility.replace("NotchSupport.routes(.track)",
                                                 "NotchSupport.routes(.track, in: ReviewDefaults.current)")
+
+    music_visibility = music_visibility.replace(
+        "NotchTimerService.shared.session.cycleFinished",
+        "false"
+    )
+
     music_visibility = music_visibility.replace("UserDefaults.standard", "ReviewDefaults.current!")
     music_visibility = music_visibility.replace("calendar: hasCalendarActivity", "calendar: false")
     music_visibility = music_visibility.replace("videoDownloader: hasVideoDownloadActivity", "videoDownloader: false")
     music_visibility = music_visibility.replace("playback?.isPlaying == true)",
                                                 "playback?.isPlaying == true, in: ReviewDefaults.current)")
-    music_visibility = music_visibility.replace("appPanel: showingAppPanel)", "appPanel: showingAppPanel, in: ReviewDefaults.current)")
     music_visibility = music_visibility.replace(
         "NotchDownloadService.shared.items.first { $0.active && !$0.completed }?.name", "downloadName")
     music_visibility = music_visibility.replace("AppFeature.monitorDisk.isAvailable",
@@ -1450,9 +1456,10 @@ def main():
           .replace("UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen)", "hidesInFullscreen")
           .replace("FeatureStrings.notch(L10n.shared.language).open", "openTitle")
           + "}\n}\n")
+    # Scroll events now flow through handleGesture; handleSectionScroll was removed.
+    # Keep this fixture bound to the current production forwarding method.
     write("NotchSectionScrollRoute.swift", "import AppKit\nextension NotchSectionPagingTests {\nfinal class Service: State {\n"
-          + "".join(declaration(notch, prefix).replace("    private ", "    ", 1) for prefix in [
-              "    private func handleScroll(", "    private func handleSectionScroll("])
+          + declaration(notch, "    private func handleScroll(").replace("    private ", "    ", 1)
           + "}\n}\n")
     write("NotchClipboardNotice.swift", "import Foundation\nextension NotchClipboardNoticeTests {\nfinal class Service: State {\n"
           + declaration(notch, "    private func startClipboardMonitoring()").replace("private func", "func", 1)
@@ -1482,6 +1489,7 @@ def main():
           + "extension NotchPresentationRefreshContract {\nfinal class Service: State {\n"
           + "let deferredCapturePresentation = CapturePresentationDeferral()\nfunc fullscreenEnvironmentDidChange() {}\n"
           + "func resignPanelKey() { panel?.resignKey() }\n"
+          + "func openDefault(takeFocus: Bool = true) { open(takeFocus: takeFocus) }\n"
           + "func hover(_ entered: Bool) {\n"
           + "inside = windowHost?.containsHover(NSEvent.mouseLocation) == true\n"
           + "hoverState.update(pointerInside: inside)\n}\n"
@@ -1510,6 +1518,7 @@ def main():
           + declaration(notch, "    func presentCapture(")
               .replace("content: AnyView, actions: AnyView? = nil", "content: Bool, actions: Bool? = nil")
               .replace("NotchSupport.routesCapturePreviews()", "routesCaptures")
+              .replace("selected == .hub\n                && LatticeHubService.shared.activeUtility == .recentCaptures", "opensCaptureFromHubHistory")
           + declaration(notch, "    func updateCaptureHeight(")
           + declaration(notch, "    func removeCapture(")
           + declaration(notch, "    func showCaptureHistory()")
@@ -1603,17 +1612,17 @@ def main():
           + declaration(notch, "    func openShelf(")
               .replace("NotchSupport.routesShelf()", "NotchSupport.routesShelf(in: ReviewDefaults.current)")
           + declaration(notch, "    func resignPanelKey()")
-          + declaration(notch, "    func toggleSections()")
+          # Explore gallery was retired; no toggleSections production method.
           + declaration(notch, "    func goBack()")
           + declaration(notch, "    private func stepBack()").replace("private func", "func", 1)
           + declaration(notch, "    func setPageLayer(")
-          + declaration(notch, "    func openAppPanel(")
           + declaration(notch, "    func showMetric(")
           + declaration(notch, "    var defaultDestination:")
               .replace("UserDefaults.standard", "ReviewDefaults.current!")
           + declaration(notch, "    var reopeningDestination:")
               .replace("UserDefaults.standard", "ReviewDefaults.current!")
           + declaration(notch, "    func applyHubOpeningDestination()")
+          + declaration(notch, "    func openDefault(")
           + declaration(notch, "    func openActivity(")
               .replace("UserDefaults.standard", "ReviewDefaults.current!")
           + declaration(notch, "    func openCountdownEvent()")
@@ -1842,13 +1851,14 @@ def main():
     view = "Sources/Lattice/UI/LatticeHub/LatticeHubMetadata.swift"
     panel_layout = (ROOT / "Sources/Lattice/UI/MenuPanel/PanelLayout.swift").read_text()
     protocol = next(line for line in panel_layout.splitlines() if line.startswith("protocol PanelOrderItem:"))
-    write("LatticeHubBodies.swift", "import AppKit\nimport SwiftUI\nimport Foundation\nimport Carbon.HIToolbox\n" + protocol + "\n\nextension LatticeHubContract {\n"
+    write("LatticeHubBodies.swift", "import AppKit\nimport Foundation\nimport SwiftUI\nimport Carbon.HIToolbox\n" + protocol + "\n\nextension LatticeHubContract {\n"
           + declaration(item_file, "enum LatticeHubItem:")
-          + "final class Launcher {\nvar isEditing = false\nvar isVisible = false\nvar activeUtility: LatticeHubItem?\nvar recentUtility: LatticeHubItem? { nil }\nvar isPinned = false\n"
+          + "final class Launcher {\nvar isEditing = false\nvar activeUtility: LatticeHubItem?\nvar recentUtility: LatticeHubItem? { nil }\nvar isPinned = false\nvar isVisible = false\n"
+          + "var hubIslandPage = 0\n"
           + "var stayAwakeOptionsPresented = false\nvar editingOptionsItem: LatticeHubItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar navigationToken = UUID()\nvar lastKeyboardActionTimestamp: TimeInterval = 0\nvar presentationID = UUID()\nvar typeaheadBuffer = \"\"\nvar typeaheadTimestamp: TimeInterval = 0\nstatic let typeaheadCooldown: TimeInterval = 0.8\n"
           + "var candidates: [LatticeHubItem] = LatticeHubItem.allCases\n"
           + "var visibleItems: [LatticeHubItem] { candidates.filter { $0.isAvailable(in: ReviewDefaults.current) } }\n"
-          + 'func hide() { events.append("hide") }\nfunc openSettings() { events.append("openSettings") }\n'
+          + 'func hide() { events.append("hide") }\nfunc openSettings() { events.append("openSettings") }\nfunc closeUtility() { activeUtility = nil }\n'
           + availability_declaration(service, "    func run(_ item: LatticeHubItem)")
           + declaration("Sources/Lattice/Services/LatticeHub/LatticeHubPresentation.swift", "    func prepareForPresentation()")
           + availability_declaration("Sources/Lattice/Services/LatticeHub/LatticeHubPresentation.swift", "    func refreshAvailability()")
@@ -2062,7 +2072,7 @@ def main():
     write("NotchCaptureKeyboard.swift", "import Foundation\nimport CoreGraphics\nimport Carbon.HIToolbox\n\nextension NotchCaptureKeyboardContract {\n"
           + "final class NotchService {\nstatic var shared = NotchService()\n"
           + "var presentationWindow: NSPanel? = NSPanel()\nvar acceptsSystemFeedback = true\n"
-          + "var expanded = true\nvar selected = NotchModule.captures\nvar showingAppPanel = false\n"
+          + "var expanded = true\nvar selected = NotchModule.captures\n"
           + "var showingSections = false\nvar showingCommandBar = false\nvar selectedMetric: Int?\n"
           + "var captureID: UUID?\nvar captureContent: Bool? = true\n"
           + "var panel: NSPanel? { presentationWindow }\nvar islandWindowIDs: Set<CGWindowID> = [1, 2]\n"
@@ -2169,18 +2179,20 @@ def main():
     music = "Sources/Lattice/Services/Notch/NotchMusicService.swift"
     write("NotchMusicArtworkReply.swift", "import AppKit\n"
           + "extension NotchMusicArtworkReplyTests {\nfinal class Service: Fixture {\n"
+          + "static func artworkPalette(of image: NSImage) -> [NotchArtworkTint] { [] }\n"
           + declaration(music, "    private struct Reading {").replace("private struct", "struct", 1)
           + "func makeReader() -> NotchMusicPipeReader {\nlet requested = generation\n"
           + "var playerArtwork: Data?\nvar cachedArtwork: Data?\nvar cachedImage: NSImage?\n"
-          + "var cachedTint: NotchArtworkTint?\n"
+          + "var cachedTint: NotchArtworkTint?\nvar cachedPalette: [NotchArtworkTint] = []\n"
           + declaration(music, "        let reader = NotchMusicPipeReader {")
+              .replace("NotchMusicService.artworkPalette", "Service.artworkPalette")
           + "return reader\n}\n}\n}\n")
     write("NotchMusicControls.swift", "import AppKit\n\nextension NotchMusicCommandContract {\n"
           + "final class Service {\ntypealias Command = NotchPlaybackCommand\n"
           + "var playback: NotchPlayback?\nvar generation = UUID()\nvar queueRequest: UUID?\n"
           + "var sources: [NotchPlaybackSource] = []\nvar sourceIsAutomatic = true\n"
-          + "var artwork: NSObject?\nvar artworkTint: NotchArtworkTint?\n"
-          + "func updateArtwork(_ image: NSImage?, tint: NotchArtworkTint?, playback: NotchPlayback?) { artwork = image; artworkTint = tint }\n"
+          + "var artwork: NSObject?\nvar artworkTint: NotchArtworkTint?\nvar artworkGlowPalette: [NotchArtworkTint] = []\n"
+          + "func updateArtwork(_ image: NSImage?, tint: NotchArtworkTint?, palette: [NotchArtworkTint] = [], playback: NotchPlayback?) { artwork = image; artworkTint = tint; artworkGlowPalette = palette }\n"
           + "let trackChanges = TrackChanges()\nlet trackEnds = TrackChanges()\nvar gapReading: Reading?\nvar gapWork: DispatchWorkItem?\nfunc updateQueue() {}\n"
           + "func updateAutomation(for playback: NotchPlayback?) {}\nfunc setQueueVisible(_ visible: Bool) { queueVisible = visible }\n"
           + "var queueVisible = true\nvar queueLoading = false\nvar queueActionPending = false\n"
@@ -2409,9 +2421,7 @@ def main():
           + "}\n}\n")
 
     write("NotchReviewInteraction.swift", "import Foundation\nimport SwiftUI\nextension NotchReviewInteractionContract {\n"
-          + "final class Editor: EditorState {\n"
-          + declaration("Sources/Lattice/UI/Notch/NotchLiveQuickActionsEditorController.swift", "    private func handleKey(").replace("private func", "func", 1)
-          + "}\nfinal class SnippetPage: SnippetState {\n"
+          + "final class SnippetPage: SnippetState {\n"
           + declaration("Sources/Lattice/UI/Notch/NotchSnippetsView.swift", "    private func appeared()").replace("private func", "func", 1)
           + "}\nfinal class Insertion: InsertionState {\n"
           + declaration("Sources/Lattice/Services/Snippets/SnippetLibraryService.swift", "    func insert(_ snippet:").split("        if let target")[0]
@@ -2686,19 +2696,47 @@ def main():
           + f'#sourceLocation(file: {json.dumps(checks)}, line: 1)\n'
           + (ROOT / checks).read_text() + "\n#sourceLocation()\n")
 
+    
     timer_service = "Sources/Lattice/Services/Notch/NotchTimerService.swift"
-    write("NotchTimerAnnouncements.swift", "import Foundation\nextension NotchTimerAnnouncementContract {\nfinal class Service {\n"
-          + "var session = NotchTimerSession()\nvar now: TimeInterval = 100\nvar suspended = true\n"
-          + "var announcements = 0\nlet alert = Alert()\n"
-          + "var completionTask: Task<Void, Never>?\nvar countdownTask: Task<Void, Never>?\n"
-          + "func announceCompletion() { announcements += 1 }\nfunc scheduleCompletion() {}\n"
-          + "".join(declaration(timer_service, prefix)
-              .replace("NotchTimerCache.", "Cache.").replace("NotchTimerSupport.", "Support.")
-              .replace("NotchService.shared.", "UI.shared.") for prefix in [
-                  "    func syncWithPreferences()", "    func suspend()", "    func stop()",
-                  "    func startNext()", "    private func finishIfDue()",
-                  "    private func persistSessionToCache()", "    private func restoreSessionFromCache()"])
-          + "}\n}\n")
+
+    write(
+        "NotchTimerAnnouncements.swift",
+        "import AppKit\nimport Foundation\n"
+        "extension NotchTimerAnnouncementContract {\n"
+        "final class Service {\n"
+        "var session = NotchTimerSession()\n"
+        "var now: TimeInterval = 100\n"
+        "var suspended = true\n"
+        "var completionTask: Task<Void, Never>?\n"
+        "var countdownTask: Task<Void, Never>?\n"
+        "var pomodoroCompletedAt: TimeInterval?\n"
+        "var pomodoroAutoDismissTask: Task<Void, Never>?\n"
+        "func schedulePomodoroAutoDismiss() {}\n"
+        "let glassSound: NSSound? = nil\n"
+        "let pingSound: NSSound? = nil\n"
+        "func playPhaseSound(_ sound: NSSound?) {}\n"
+        "let alert = Alert()\n"
+        "func scheduleCompletion() {}\n"
+
+        + "".join(
+            declaration(timer_service, prefix)
+            .replace("NotchTimerCache.", "Cache.")
+            .replace("NotchTimerSupport.", "Support.")
+            .replace("NotchService.shared.", "UI.shared.")
+            for prefix in [
+                "    func syncWithPreferences()",
+                "    func suspend()",
+                "    func stop()",
+                "    func startNext()",
+                "    private func finishIfDue()",
+                "    private func handleCompletedPhase(",
+                "    private func silenceAlert()",
+                "    private func persistSessionToCache()",
+                "    private func restoreSessionFromCache()",
+            ]
+        )
+        + "}\n}\n"
+    )
 
     write("KeepAwakePreferenceObserverContract.swift", "import AppKit\nimport Combine\nextension KeepAwakePreferenceObserverTests.Service {\n"
           + "".join(declaration("Sources/Lattice/Services/KeepAwakePreferences.swift", marker)
