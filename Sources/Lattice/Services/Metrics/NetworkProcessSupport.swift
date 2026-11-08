@@ -13,13 +13,13 @@ struct NetworkProcessSample: Equatable {
 
 enum NetworkProcessSupport {
     static let nettopArguments = [
-        "-P", "-d", "-x",
+        "-P", "-n", "-d", "-x",
         "-J", "bytes_in,bytes_out",
         "-L", "1",
         "-s", "1",
     ]
     static let externalNettopArguments = [
-        "-P", "-d", "-x",
+        "-P", "-n", "-d", "-x",
         "-t", "external",
         "-J", "bytes_in,bytes_out",
         "-L", "1",
@@ -103,7 +103,7 @@ enum NetworkProcessSupport {
 enum NetworkProcessSamplingPolicy {
     static let leaseDuration: TimeInterval = 12
     static let stopGrace: TimeInterval = 4
-    static let sampleInterval: TimeInterval = 5
+    static let sampleInterval: TimeInterval = 2.0
     static let maxDeltaGap: TimeInterval = 30
 
     static func renewedLease(now: TimeInterval) -> TimeInterval {
@@ -139,9 +139,13 @@ struct NetworkProcessDeltaTracker {
 
     mutating func rates(from samples: [NetworkProcessSample],
                         now: TimeInterval) -> [NetworkProcessSample] {
+        guard !samples.isEmpty else { return [] }
+        let aggregated = Dictionary(samples.map { ($0.pid, $0) }, uniquingKeysWith: { a, b in
+            NetworkProcessSample(pid: a.pid, name: a.name, bytesIn: a.bytesIn + b.bytesIn, bytesOut: a.bytesOut + b.bytesOut)
+        })
         defer {
             previousAt = now
-            previousByPID = Dictionary(uniqueKeysWithValues: samples.map { ($0.pid, $0) })
+            previousByPID = aggregated
         }
 
         guard let previousAt,
@@ -149,14 +153,16 @@ struct NetworkProcessDeltaTracker {
               now - previousAt <= maxGap
         else { return [] }
 
-        let elapsed = now - previousAt
-        return samples.compactMap { sample in
-            guard let previous = previousByPID[sample.pid] else { return nil }
-            let bytesIn = sample.bytesIn >= previous.bytesIn
-                ? (sample.bytesIn - previous.bytesIn) / elapsed
+        let elapsed = max(0.5, now - previousAt)
+        return aggregated.values.compactMap { sample in
+            let previous = previousByPID[sample.pid]
+            let prevIn = previous?.bytesIn ?? 0
+            let prevOut = previous?.bytesOut ?? 0
+            let bytesIn = sample.bytesIn >= prevIn
+                ? (sample.bytesIn - prevIn) / elapsed
                 : 0
-            let bytesOut = sample.bytesOut >= previous.bytesOut
-                ? (sample.bytesOut - previous.bytesOut) / elapsed
+            let bytesOut = sample.bytesOut >= prevOut
+                ? (sample.bytesOut - prevOut) / elapsed
                 : 0
             guard bytesIn > 0 || bytesOut > 0 else { return nil }
             return NetworkProcessSample(pid: sample.pid,
