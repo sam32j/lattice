@@ -16,7 +16,6 @@ enum SettingsPage: Hashable {
 /// pages. Raw values may be persisted or used by UI identifiers, so cases can
 /// be added but never renamed.
 enum SettingsSectionAnchor: String, CaseIterable, Hashable {
-    case panelConfiguration
     case mixer
     case audioPriority
     case audioOutputPriority
@@ -60,8 +59,6 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
 
     var page: SettingsPage {
         switch self {
-        case .panelConfiguration:
-            return .general
         case .mixer, .musicBlocking, .soundOutputSwitcher, .audioOutputPriority:
             return .audioOutput
         case .audioPriority, .micMute:
@@ -79,7 +76,7 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
         case .dock, .dockClick: return .dock
         case .autoQuit: return .windowLayout
         case .clipboardHistory, .pastePlain: return .clipboard
-        case .quickLauncher: return .launcherGrid
+        case .quickLauncher: return .general
         case .cameraPreview: return .cameraPreview
         case .screenshot:
             return .screenshot
@@ -197,7 +194,7 @@ extension AppFeature {
             return FeatureSettingsDestination(.energy, sectionAnchor: .bluetoothSleep)
 
         case .quickLauncher:
-            return FeatureSettingsDestination(.launcherGrid)
+            return FeatureSettingsDestination(.general)
         case .colorPicker, .screenOCR:
             return FeatureSettingsDestination(.screenshot)
         case .cleaningMode:
@@ -274,9 +271,8 @@ enum FeatureVisibilitySupport {
         case .screenRecorder: return [.screenRecorder]
         case .cameraPreview: return [.cameraPreview]
         case .diskImageInstaller: return [.diskImageInstaller]
-        case .launcherGrid: return [.quickLauncher]
         case .videoDownloader: return [.videoDownloader]
-        case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard, .audioInput, .audioOutput:
+        case .general, .features, .shortcuts, .dataPermissions, .about, .mouse, .keyboard, .audioInput, .audioOutput, .launcherGrid:
             return []
         }
     }
