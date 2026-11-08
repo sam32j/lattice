@@ -37,5 +37,41 @@ enum RecorderPreviewModelTests {
         loader.pending.removeValue(forKey: a)?.resume(returning: image(3))
         RunLoop.main.run(until: Date().addingTimeInterval(0.03))
         suite.expect(model.thumbnail == nil, "closed previews cannot publish late thumbnails")
+        model.sharing = true
+        model.close()
+        suite.expect(!model.sharing && model.sharedRecord == nil,
+                     "closing a recording preview resets pending Quick Link UI state")
+
+        let controller = (try? String(contentsOfFile:
+            "Sources/Lattice/Services/Recorder/RecorderQuickPreviewController.swift",
+            encoding: .utf8)) ?? ""
+        let view = (try? String(contentsOfFile:
+            "Sources/Lattice/UI/Recorder/RecorderQuickPreviewView.swift",
+            encoding: .utf8)) ?? ""
+        suite.expect(controller.contains("imageOverlay: true")
+            && view.contains("private var islandPreview:")
+            && view.contains(".scaledToFill()")
+            && view.contains("islandVideoToolbar.padding(6)"),
+            "video shares the image preview canvas without adding a control row")
+        suite.expect(controller.contains("!openedFromHistory, !pointerInside")
+            && controller.contains("openedFromHistory: openedFromHistory"),
+            "manually reopened recordings never inherit the confirmation timeout")
+        let islandPart = view.components(separatedBy: "    private var islandPreview:")
+            .dropFirst().first?.components(separatedBy: "    private func islandTool(").first ?? ""
+        suite.expect(islandPart.contains("thumbnailButton(symbol: \"play.fill\"")
+            && !islandPart.contains("play.circle.fill")
+            && islandPart.contains(".overlay(alignment: .topLeading)"),
+            "recording Quick Look uses a top-left button instead of a centered play overlay")
+        suite.expect(view.contains(".contentShape(Rectangle())")
+            && controller.contains("sharePresenter.present(for: [url], from: content")
+            && controller.contains("NotchIslandAlert.run(alert, above: owner)")
+            && controller.contains("NotchService.shared.showCaptureHistory()")
+            && controller.contains("owner: panel ?? NotchService.shared.presentationWindow"),
+            "recording actions have full hit areas, real share anchor, elevated deletion, and Island Quick Look ownership")
+        suite.expect(controller.contains("exportForSharing(")
+            && controller.contains("RecordingShareService.shared.createLink(")
+            && controller.contains("try FileManager.default.trashItem(at: source")
+            && controller.contains("RecentCaptureService.shared.removeRecording(at: source)"),
+            "video Quick Link uses validated MP4 export; Delete moves the real file to Trash")
     }
 }

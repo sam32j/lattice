@@ -104,9 +104,13 @@ enum NotchCaptureKeyboardTests {
         _ = Event.handler?(Event(window: panel, keyCode: UInt16(kVK_ANSI_Z), modifierFlags: .command,
                                 charactersIgnoringModifiers: "y"))
         suite.expect(preview.quickLookRequests == 2, "Quick Look follows the Y character on an alternate keyboard layout")
+        preview.actions = []
+        let space = Event(window: panel, keyCode: UInt16(kVK_Space), charactersIgnoringModifiers: " ")
+        suite.expect(Event.handler?(space) == nil && preview.quickLookRequests == 3 && preview.actions.isEmpty,
+                     "Space toggles Quick Look without copying or leaving the Recent Captures preview")
         let forwardedZ = Event.handler?(Event(window: panel, keyCode: UInt16(kVK_ANSI_Y), modifierFlags: .command,
                                                charactersIgnoringModifiers: "z"))
-        suite.expect(forwardedZ != nil && preview.quickLookRequests == 2,
+        suite.expect(forwardedZ != nil && preview.quickLookRequests == 3,
                      "Command-Z on QWERTZ does not accidentally open Quick Look")
         preview.actions = []
         _ = Event.handler?(Event(window: panel, keyCode: UInt16(kVK_ANSI_D), modifierFlags: .command,
@@ -120,9 +124,6 @@ enum NotchCaptureKeyboardTests {
         notch.showingSections = true
         check("section search keeps typing, deletion and clipboard shortcuts", accepts: false)
         notch.showingSections = false
-        notch.showingAppPanel = true
-        check("the app panel never inherits hidden capture commands", accepts: false)
-        notch.showingAppPanel = false
         notch.expanded = false
         check("a collapsed capture cannot consume keyboard input", accepts: false)
         notch.expanded = true

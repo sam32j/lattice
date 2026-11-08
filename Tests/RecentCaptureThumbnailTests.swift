@@ -30,6 +30,21 @@ enum RecentCaptureThumbnailTests {
                 recordingPath: nil, thumbnailName: thumbnailName, scale: 1,
                 anchorX: nil, anchorY: nil, anchorWidth: nil, anchorHeight: nil)
             let service = Service(root: root, cache: cache)
+            let fullResolutionURL = root.appendingPathComponent(name)
+            try RecentCaptureStore.write(png, to: fullResolutionURL)
+            suite.expect(Service.screenshotDragURL(for: entry, capturesRoot: root) == fullResolutionURL,
+                         "dragging a history card exports the stored full-resolution PNG, not the cached thumbnail")
+            let recording = RecentCaptureEntry(id: id, kind: .recording, createdAt: Date(),
+                screenshotName: name, recordingPath: nil, thumbnailName: thumbnailName, scale: 1,
+                anchorX: nil, anchorY: nil, anchorWidth: nil, anchorHeight: nil)
+            suite.expect(Service.screenshotDragURL(for: recording, capturesRoot: root) == nil,
+                         "only image captures advertise PNG dragging")
+            let missingID = UUID()
+            let missingEntry = RecentCaptureEntry(id: missingID, kind: .screenshot, createdAt: Date(),
+                screenshotName: "2026-10-20/\(missingID).png", recordingPath: nil, thumbnailName: nil, scale: 1,
+                anchorX: nil, anchorY: nil, anchorWidth: nil, anchorHeight: nil)
+            suite.expect(Service.screenshotDragURL(for: missingEntry, capturesRoot: root) == nil,
+                         "missing captures cannot advertise a nonexistent drag file")
             suite.expect(service.thumbnail(for: entry)?.size.width == 24,
                          "an evicted thumbnail regenerates from the committed rendered document")
             suite.expect(manager.fileExists(atPath: cache.appendingPathComponent(thumbnailName).path)
