@@ -44,7 +44,7 @@ struct EnergyKeepAwakeSettings: View {
             // automatic session names its condition instead, as in the panel.
             if awake.isActive, awake.sessionTrigger != .automation, let end = awake.endDate {
                 TimelineView(.periodic(from: .now, by: 1)) { _ in
-                    sessionRow(status: "\(l10n.s.keepAwakeEndsIn) \(KeepAwakeCard.remainingText(until: end))")
+                    sessionRow(status: "\(l10n.s.keepAwakeEndsIn) \(DurationPicker.remainingText(until: end))")
                 }
             } else {
                 sessionRow(status: sessionStatus)
@@ -227,5 +227,51 @@ struct EnergyKeepAwakeSettings: View {
 
     private var displaySleepStrings: KeepAwakeDisplaySleepStrings {
         FeatureStrings.keepAwakeDisplaySleep(l10n.language)
+    }
+}
+
+enum DurationPicker {
+    static let choices = [15, 30, 60, 120, 240, 480, 0]
+
+    static func title(for minutes: Int, _ s: Strings) -> String {
+        switch minutes {
+        case 15: return s.minutes15
+        case 30: return s.minutes30
+        case 60: return s.hour1
+        case 120: return s.hours2
+        case 240: return s.hours4
+        case 480: return s.hours8
+        default: return s.indefinite
+        }
+    }
+
+    static func remainingText(until end: Date) -> String {
+        let total = max(0, Int(end.timeIntervalSinceNow))
+        let hours = total / 3600
+        let minutes = (total % 3600) / 60
+        let seconds = total % 60
+        if hours > 0 { return String(format: "%d h %02d min", hours, minutes) }
+        if minutes > 0 { return String(format: "%d min %02d s", minutes, seconds) }
+        return "\(seconds) s"
+    }
+}
+
+struct KeepAwakeMouseJiggleIntervalPicker: View {
+    @Binding var selection: Int
+
+    var body: some View {
+        Picker("", selection: $selection) {
+            ForEach(Defaults.allowedKeepAwakeMouseJiggleIntervals, id: \.self) { minutes in
+                Text(Self.label(for: minutes)).tag(minutes)
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .controlSize(.small)
+        .fixedSize()
+    }
+
+    static func label(for minutes: Int) -> String {
+        "\(minutes) min"
     }
 }

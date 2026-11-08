@@ -57,7 +57,7 @@ struct MonitorPanelConfig: View {
     // MARK: - Tiles
 
     private var availableBlocks: [PanelConfigBlock] {
-        PanelConfigBlock.allCases.filter { $0.section.isAvailable }
+        PanelConfigBlock.allCases.filter { $0.isAvailable }
     }
 
     private var currentBlock: PanelConfigBlock? {
@@ -70,8 +70,8 @@ struct MonitorPanelConfig: View {
         VStack(alignment: .leading, spacing: 10) {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 175), spacing: 10)], spacing: 10) {
                 ForEach(availableBlocks, id: \.self) { block in
-                    MonitorToken(symbol: block.section.symbolName,
-                                 title: block.section.title(l10n.s),
+                    MonitorToken(symbol: block.symbolName,
+                                 title: block.title(l10n.s),
                                  included: master(block),
                                  selected: currentBlock == block,
                                  large: true) {
@@ -82,7 +82,7 @@ struct MonitorPanelConfig: View {
                 }
             }
             if let block = currentBlock {
-                Text(block.section.title(l10n.s))
+                Text(block.title(l10n.s))
                     .font(.subheadline.weight(.medium))
                 LazyVGrid(columns: monitorLargeTokenColumns, spacing: 10) {
                     itemTiles(for: block)
@@ -140,7 +140,7 @@ struct MonitorPanelConfig: View {
             itemTile(l10n.s.networkApps, symbol: "app.badge", value: $netApps, available: available)
             itemTile(l10n.s.monitorItemNetTotals, symbol: "sum", value: $netTotals, available: available)
             itemTile(l10n.s.networkIPAddresses, symbol: "network", value: $netAddresses, available: available)
-            itemTile(l10n.s.monitorItemNetTest, symbol: "gauge.with.needle", value: $netTest, available: available)
+            itemTile(l10n.s.monitorItemNetTest, symbol: "powermeter", value: $netTest, available: available)
         case .disk:
             itemTile(l10n.s.monitorItemDiskUsage, symbol: "internaldrive", value: $diskUsage, available: available)
             itemTile(l10n.s.monitorItemDiskActivity, symbol: "arrow.up.arrow.down", value: $diskActivity, available: available,
@@ -190,12 +190,34 @@ struct MonitorPanelConfig: View {
 private enum PanelConfigBlock: CaseIterable, Hashable {
     case system, network, disk, power
 
-    var section: PanelSectionID {
+    var symbolName: String {
         switch self {
-        case .system: return .system
-        case .network: return .network
-        case .disk: return .disk
-        case .power: return .power
+        case .system: return "cpu"
+        case .network: return "network"
+        case .disk: return "internaldrive"
+        case .power: return "powerplug.portrait"
+        }
+    }
+
+    func title(_ s: Strings) -> String {
+        switch self {
+        case .system: return s.systemSection
+        case .network: return s.networkSection
+        case .disk: return s.diskStorageSettings
+        case .power: return s.powerSection
+        }
+    }
+
+    var isAvailable: Bool {
+        switch self {
+        case .system:
+            return [AppFeature.monitorCPU, AppFeature.monitorGPU, AppFeature.monitorMemory, AppFeature.connectedDevices].contains(where: \.isAvailable)
+        case .network:
+            return AppFeature.monitorNetwork.isAvailable
+        case .disk:
+            return AppFeature.monitorDisk.isAvailable
+        case .power:
+            return AppFeature.monitorPower.isAvailable
         }
     }
 }

@@ -12,9 +12,6 @@ struct DedicatedUtilitySettings: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage private var enabled: Bool
     @AppStorage(DefaultsKey.notchEnabled) private var islandEnabled = false
-    @AppStorage(DefaultsKey.notchQuickPanel) private var launcherIslandRoute = true
-    @AppStorage(DefaultsKey.quickLauncherShortcutEnabled) private var launcherShortcutEnabled = false
-    @AppStorage(DefaultsKey.launcherShortcutTarget) private var launcherShortcutTarget = LauncherShortcutTarget.island.rawValue
 
     init(feature: AppFeature) {
         self.feature = feature
@@ -25,7 +22,7 @@ struct DedicatedUtilitySettings: View {
         switch feature {
         case .cameraPreview: return FeatureStrings.cameraPreview(l10n.language).pageTitle
         case .diskImageInstaller: return SettingsOwnershipStrings.text(.dmgInstaller, l10n.language)
-        default: return l10n.s.launcherName
+        default: return ""
         }
     }
 
@@ -37,31 +34,6 @@ struct DedicatedUtilitySettings: View {
 
     private var islandAvailable: Bool {
         islandEnabled && features.isAvailable(.notch)
-    }
-
-    private var launcherIslandShown: Binding<Bool> {
-        _ = launcherIslandRoute
-        return Binding(get: {
-            launcherShortcutTarget != LauncherShortcutTarget.floatingWindow.rawValue
-                && IslandDestination.launcherGrid.isShown(in: .standard)
-        }, set: { newValue in
-            withAnimation(reduceMotion ? nil : .settingsExpansion) {
-                launcherShortcutTarget = newValue
-                    ? LauncherShortcutTarget.automatic.rawValue : LauncherShortcutTarget.floatingWindow.rawValue
-                IslandDestination.launcherGrid.setShown(newValue, in: .standard)
-                NotchService.shared.syncWithPreferences()
-                LatticeHubService.shared.syncWithPreferences()
-            }
-        })
-    }
-
-    private var shortcutHasValue: Bool {
-        guard launcherShortcutEnabled else { return false }
-        let raw = UserDefaults.standard.string(forKey: DefaultsKey.quickLauncherShortcut)
-        if let raw, raw.trimmingCharacters(in: .whitespaces).isEmpty { return false }
-        let shortcut = GlobalShortcut.saved(for: DefaultsKey.quickLauncherShortcut,
-                                            fallback: .quickLauncherDefault)
-        return shortcut.isValid
     }
 
     var body: some View {
@@ -78,32 +50,15 @@ struct DedicatedUtilitySettings: View {
                         }
                 }
                 if childrenEnabled {
-                    if feature == .quickLauncher {
-                        ShortcutPreferenceRow(role: .quickLauncher, label: UtilitySettingsCopy.openWithShortcut(title, l10n.language)) {
+                    if let shortcut {
+                        ShortcutPreferenceRow(role: shortcut, label: UtilitySettingsCopy.open(title, l10n.language)) {
                             FeatureRuntime.shared.sync([feature])
                         }
                         .padding(.leading, settingsRowTextInset)
-
-                        if islandAvailable {
-                            SettingsToggleRow(
-                                title: SettingsOwnershipStrings.text(.showIsland, l10n.language),
-                                caption: SettingsOwnershipStrings.text(.hubIslandCaption, l10n.language),
-                                isOn: launcherIslandShown
-                            )
+                    }
+                    if let destination {
+                        IslandDestinationSettings(destination: destination)
                             .padding(.leading, settingsRowTextInset)
-                            .disabled(!shortcutHasValue)
-                        }
-                    } else {
-                        if let shortcut {
-                            ShortcutPreferenceRow(role: shortcut, label: UtilitySettingsCopy.open(title, l10n.language)) {
-                                FeatureRuntime.shared.sync([feature])
-                            }
-                            .padding(.leading, settingsRowTextInset)
-                        }
-                        if let destination {
-                            IslandDestinationSettings(destination: destination)
-                                .padding(.leading, settingsRowTextInset)
-                        }
                     }
                 }
             }
@@ -111,13 +66,12 @@ struct DedicatedUtilitySettings: View {
         }
         .toggleStyle(.switch)
         .controlSize(.regular)
-        .settingsExpansionAnimation(value: [childrenEnabled, islandAvailable, launcherIslandShown.wrappedValue, shortcutHasValue])
+        .settingsExpansionAnimation(value: [childrenEnabled, islandAvailable])
     }
 
     private var destination: IslandDestination? {
         switch feature {
         case .cameraPreview: return .cameraPreview
-        case .quickLauncher: return .launcherGrid
         default: return nil
         }
     }
@@ -125,7 +79,6 @@ struct DedicatedUtilitySettings: View {
     private var shortcut: GlobalShortcutRole? {
         switch feature {
         case .cameraPreview: return .cameraPreview
-        case .quickLauncher: return .quickLauncher
         default: return nil
         }
     }
