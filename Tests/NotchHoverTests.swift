@@ -87,6 +87,7 @@ enum NotchHoverTests {
         }
     }
     class State {
+        var defersHoverRevealForOutsideDismiss = false
         var noticeFitsInPlace = false
         func schedulePointerFollow() {}
         var hiddenInFullscreen = false

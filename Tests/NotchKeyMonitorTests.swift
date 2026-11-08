@@ -63,7 +63,10 @@ enum NotchKeyMonitorTests {
     }
     final class MixerPercentNativeTextField {}
     enum PlainTextEditor { static func findBarHasKeyboard(in window: Panel?) -> Bool { false } }
-    final class Host { func contains(_ point: CGPoint) -> Bool { false } }
+    final class Host {
+        func contains(_ point: CGPoint) -> Bool { false }
+        func whenSettled(_ block: @escaping () -> Void) { block() }
+    }
     final class AppDelegate { func isOverStatusItem(_ point: CGPoint) -> Bool { false } }
     final class Application {
         let delegate: AnyObject? = nil
@@ -80,7 +83,7 @@ enum NotchKeyMonitorTests {
         var notchControlsHeight: CGFloat = 0
         var visibleItems = [0, 1, 2]
         var flows: [QuickToolsSupport.GridFlow] = []
-        func handlePanelKey(_ event: NSEvent, flow: QuickToolsSupport.GridFlow, isIsland: Bool = false) -> NSEvent? {
+        func handlePanelKey(_ event: NSEvent, flow: QuickToolsSupport.GridFlow, isIsland: Bool = false, editingRequiresDone: Bool = false) -> NSEvent? {
             NotchKeyMonitorTests.actions.append("tools")
             flows.append(flow)
             return nil
@@ -89,6 +92,7 @@ enum NotchKeyMonitorTests {
     enum LatticeHubService { static let shared = Launcher() }
 
     class State {
+        var defersHoverRevealForOutsideDismiss = false
         var eventMonitors: [Any] = []
         var clickedSinceOpening = false
         var showsKeyboardFocus = false
@@ -124,6 +128,7 @@ enum NotchKeyMonitorTests {
         func handleClipboardPasteKey(_ event: NSEvent) -> Bool { false }
         func ownsWindow(_ window: Panel?) -> Bool { window === panel }
         func pointerOverChildWindow(_ point: CGPoint) -> Bool { false }
+        func hover(_ inside: Bool) {}
     }
 
     static func run(_ suite: TestSuite) {
@@ -207,7 +212,6 @@ enum NotchKeyMonitorTests {
         // the Scratchpad editor.
         let destinations: [(name: String, module: NotchModule, sections: Bool,
                             field: NSTextView, action: String)] = [
-            ("the gallery search", .controls, true, NSTextView(isFieldEditor: true), "sections"),
             ("a Tools utility", .hub, false, NSTextView(isFieldEditor: true), "tools"),
             ("the Scratchpad editor", .scratchpad, false, NSTextView(isFieldEditor: false), "stepBack"),
         ]

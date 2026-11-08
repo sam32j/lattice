@@ -1526,7 +1526,6 @@ def main():
           + declaration(notch, "    private func detachCaptureIfClosingOnCollapse(")
           + "}\n}\nextension NotchPresentationRefreshContract.Host {\n"
           + "typealias NotchContentTransition = NotchPresentationRefreshContract.NotchContentTransition\n"
-          + "typealias NotchQuickAccessConfiguration = NotchPresentationRefreshContract.NotchQuickAccessConfiguration\n"
           + "typealias NSWorkspace = NotchPresentationRefreshContract.NSWorkspace\n"
           + declaration(canvas, "    private func recordMissionControlRequest(").replace("private func", "func", 1)
           + declaration(canvas, "    func hide(animated:").replace("        guard isPresented", "        hideAnimations.append(animated)\n        guard isPresented", 1)
@@ -1951,7 +1950,11 @@ def main():
                     ["    enum Outcome:", "    static func outcome(", "    private static func recognizedLines("])
           + "}\n}\n")
     write("ScreenshotOCRControl.swift", "import AppKit\nimport SwiftUI\n"
+          + "private final class NotchService { static let shared = NotchService(); func capturePreviewDragChanged(_ dragging: Bool) {} }\n"
           + declaration(preview, "@objc final class ScreenshotQuickPreviewMenuHelper:")
+          + declaration(preview, "private struct ScreenshotIslandDragSurface:").replace("private struct", "struct", 1)
+          + declaration("Sources/Lattice/UI/SharedUI.swift", "struct HUDBackdrop:")
+          + declaration("Sources/Lattice/UI/SharedUI.swift", "private struct HUDBackdropMaterial:").replace("private struct", "struct", 1)
           + "extension ScreenshotOCRControlTests {\n"
           + declaration(preview, "final class ScreenshotQuickPreviewModel:")
           + declaration(preview, "private struct ScreenshotQuickPreviewView:").replace("private struct", "struct", 1)

@@ -1615,10 +1615,10 @@ final class NotchService: ObservableObject {
         let closesCommandBar = showingCommandBar
         let changesPresentation = !expanded || selected != destination || closesCommandBar
             || selectedMetric != metric || crossfadeContent
-        if !expanded, changesPresentation, destination == .hub, metric == nil {
+        if changesPresentation, destination == .hub, metric == nil {
             let launcher = LatticeHubService.shared
             launcher.prepareForPresentation()
-            if !NotchSupport.isTestHarness, module == nil {
+            if !expanded, !NotchSupport.isTestHarness, module == nil {
                 applyHubOpeningDestination()
             }
         }
