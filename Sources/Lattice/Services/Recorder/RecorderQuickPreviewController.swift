@@ -6,7 +6,7 @@ import SwiftUI
 
 /// A transient video capture preview that matches the image quick preview experience:
 /// displays thumbnail, supports double-click Quick Look, drag-and-drop, Download/Save,
-/// Copy, Share (via native share sheet, not quick link), and Edit (with scissors icon).
+/// Copy, Share, temporary recording links, and Edit (with scissors icon).
 final class RecorderQuickPreviewController {
     static let shared = RecorderQuickPreviewController()
 
@@ -15,6 +15,10 @@ final class RecorderQuickPreviewController {
     private var keyMonitor: Any?
     private var dismissWork: DispatchWorkItem?
     private let autoDismissDuration = ScreenshotSupport.recoveryPreviewDismissInterval
+    /// A history-opened preview is navigation, not a transient capture confirmation.
+    private var openedFromHistory = false
+    private var quickLinkTask: Task<Void, Never>?
+    private var quickLinkGeneration = UUID()
     private var closed = false
     private var pointerInside = false
     private var systemSharing = false
@@ -22,17 +26,21 @@ final class RecorderQuickPreviewController {
     private var shownInNotch = false
     private let presentationID = UUID()
     private let shareAnchor = ShelfSharePickerAnchor.Anchor()
+    private let sharePresenter = ShelfSharePresenter()
     private let model = RecorderQuickPreviewModel(loadThumbnail: RecentCaptureService.recordingThumbnail)
 
     private init() {}
 
-    func show(url: URL, initialThumbnail: CGImage? = nil, inNotch: Bool = true) {
+    func show(url: URL, initialThumbnail: CGImage? = nil, inNotch: Bool = true,
+              openedFromHistory: Bool = false) {
         close()
         self.url = url
         self.closed = false
         self.pointerInside = false
         self.systemSharing = false
         self.menuOpen = false
+        self.quickLinkGeneration = UUID()
+        self.openedFromHistory = openedFromHistory
         model.show(url: url, initialThumbnail: initialThumbnail)
 
         let wantsNotch = inNotch && NotchSupport.routesCapturePreviews()
@@ -49,6 +57,9 @@ final class RecorderQuickPreviewController {
             onDownload: { [weak self] in self?.performDownload() },
             onSaveAs: { [weak self] in self?.performSaveAs() },
             onShare: { [weak self] in self?.performSystemShare() },
+            onQuickLink: { [weak self] duration in self?.performQuickLink(duration) },
+            onCopyLink: { [weak self] in self?.copyQuickLink() },
+            onDelete: { [weak self] in self?.performDelete() },
             onQuickLook: { [weak self] in self?.performQuickLook() },
             onHoverChanged: { [weak self] inside in self?.hoverChanged(inside) },
             applicationsForMenu: { [weak self] in self?.applicationsForMenu() ?? [] },
@@ -62,6 +73,8 @@ final class RecorderQuickPreviewController {
             content: AnyView(content),
             actions: AnyView(content.toolbar),
             height: 138,
+            fromHistory: openedFromHistory,
+            imageOverlay: true,
             takeFocus: false,
             closeOnCollapse: false,
             fallback: { [weak self] in
@@ -70,7 +83,8 @@ final class RecorderQuickPreviewController {
                 self.pointerInside = false
                 if let keyMonitor = self.keyMonitor { NSEvent.removeMonitor(keyMonitor) }
                 self.keyMonitor = nil
-                self.show(url: url, initialThumbnail: self.model.thumbnail, inNotch: false)
+                self.show(url: url, initialThumbnail: self.model.thumbnail, inNotch: false,
+                          openedFromHistory: openedFromHistory)
             },
             close: { [weak self] in self?.close() },
             hover: { [weak self] inside in self?.hoverChanged(inside) }
@@ -111,6 +125,9 @@ final class RecorderQuickPreviewController {
         closed = true
         dismissWork?.cancel()
         dismissWork = nil
+        quickLinkTask?.cancel()
+        quickLinkTask = nil
+        quickLinkGeneration = UUID()
         if let keyMonitor {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
@@ -133,7 +150,7 @@ final class RecorderQuickPreviewController {
     }
 
     private func scheduleAutoDismiss() {
-        guard !closed, !pointerInside, !systemSharing, !menuOpen else { return }
+        guard !closed, !openedFromHistory, !pointerInside, !systemSharing, !menuOpen else { return }
         dismissWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.close() }
         dismissWork = work
@@ -250,18 +267,146 @@ final class RecorderQuickPreviewController {
         }
     }
 
+    /// Present the system picker from the *visible* window. The zero-sized
+    /// representable behind the embedded toolbar is not a reliable popover anchor.
     private func performSystemShare() {
         guard !closed, !systemSharing, let url else { return }
         dismissWork?.cancel()
         dismissWork = nil
+        let window = shownInNotch ? NotchService.shared.presentationWindow : panel
+        guard let window, let content = window.contentView, window.isVisible else {
+            NSSound.beep()
+            scheduleAutoDismiss()
+            return
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKey()
+        let pointInContent = content.convert(window.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil)
+        let bounds = content.bounds
+        let anchorPoint = CGPoint(x: min(max(pointInContent.x, bounds.minX + 1), bounds.maxX - 1),
+                                  y: min(max(pointInContent.y, bounds.minY + 1), bounds.maxY - 1))
         systemSharing = true
-        let shown = shareAnchor.present([url]) { [weak self] chosen in
+        let shown = sharePresenter.present(for: [url], from: content,
+                                          relativeTo: CGRect(origin: anchorPoint,
+                                                             size: CGSize(width: 1, height: 1))) { [weak self] chosen in
             guard let self else { return }
             self.systemSharing = false
             if chosen { self.close() } else { self.scheduleAutoDismiss() }
         }
         if !shown {
             systemSharing = false
+            NSSound.beep()
+            scheduleAutoDismiss()
+        }
+    }
+
+    /// The recording sharing endpoint only accepts a validated MP4 artifact.
+    /// Reuse the same import/export pipeline as the recorder editor; never send
+    /// the original MOV directly or block the main thread while encoding.
+    private func performQuickLink(_ duration: RecordingShareDuration) {
+        guard !closed, !model.sharing, model.sharedRecord == nil, let source = url else { return }
+        model.sharing = true
+        let generation = quickLinkGeneration
+        quickLinkTask = Task { @MainActor [weak self] in
+            let take = await Task.detached(priority: .userInitiated) {
+                RecorderTakeStore.shared.importVideo(at: source)
+            }.value
+            guard let take else {
+                if let self, !Task.isCancelled, self.quickLinkGeneration == generation {
+                    self.finishQuickLink(failed: true)
+                }
+                return
+            }
+            defer { RecorderTakeStore.shared.delete(take) }
+            guard let self, !Task.isCancelled, !self.closed,
+                  self.quickLinkGeneration == generation else { return }
+            let exporter = RecorderExporter()
+            let result = await exporter.exportForSharing(take: take,
+                                                         document: RecorderEditDocument()) { _ in }
+            guard !Task.isCancelled, !self.closed, self.quickLinkGeneration == generation else {
+                result.artifact?.discard()
+                return
+            }
+            if let artifact = result.artifact {
+                do {
+                    let record = try await RecordingShareService.shared.createLink(
+                        artifact: artifact, duration: duration)
+                    guard !Task.isCancelled, !self.closed,
+                          self.quickLinkGeneration == generation else { return }
+                    self.model.sharedRecord = record
+                    _ = RecordingShareService.shared.copy(record.url)
+                    QuickToolHUD.show(icon: "link",
+                                      message: FeatureStrings.recorder(L10n.shared.language).copiedHUD)
+                    self.finishQuickLink(failed: false)
+                } catch {
+                    if self.quickLinkGeneration == generation && !Task.isCancelled {
+                        self.finishQuickLink(failed: true)
+                    }
+                }
+            } else if self.quickLinkGeneration == generation {
+                self.finishQuickLink(failed: true)
+            }
+        }
+    }
+
+    private func finishQuickLink(failed: Bool) {
+        guard !closed else { return }
+        model.sharing = false
+        quickLinkTask = nil
+        if failed {
+            NSSound.beep()
+            QuickToolHUD.show(icon: "link",
+                message: FeatureStrings.recorderShare(L10n.shared.language).failed)
+        }
+    }
+
+    private func copyQuickLink() {
+        guard let linkURL = model.sharedRecord?.url else { return }
+        Task { @MainActor in
+            _ = RecordingShareService.shared.copy(linkURL)
+        }
+    }
+
+    /// Delete the on-disk recording only after an Island-level confirmation.
+    /// A history preview returns to history; a fresh confirmation closes the Island.
+    private func performDelete() {
+        guard !closed, let source = url else { return }
+        dismissWork?.cancel()
+        dismissWork = nil
+        let alert = NSAlert()
+        alert.messageText = "Delete recording?"
+        alert.informativeText = "The video file will be moved to Trash and removed from Recent Captures."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Move to Trash")
+        alert.addButton(withTitle: "Cancel")
+        let owner = shownInNotch ? NotchService.shared.presentationWindow : panel
+        guard NotchIslandAlert.run(alert, above: owner) == .alertFirstButtonReturn else {
+            scheduleAutoDismiss()
+            return
+        }
+        do {
+            try FileManager.default.trashItem(at: source, resultingItemURL: nil)
+            RecentCaptureService.shared.removeRecording(at: source)
+            if openedFromHistory {
+                if shownInNotch && NotchService.shared.isCaptureVisible(id: presentationID) {
+                    NotchService.shared.showCaptureHistory()
+                } else {
+                    close()
+                    RecentCaptureService.shared.showHistoryWindow()
+                }
+            } else {
+                let wasInNotch = shownInNotch
+                close()
+                if wasInNotch { NotchService.shared.collapse() }
+            }
+        } catch {
+            NSSound.beep()
+            let failure = NSAlert()
+            failure.messageText = "Couldn't delete recording"
+            failure.informativeText = "The video could not be moved to Trash. Try again."
+            failure.alertStyle = .warning
+            failure.addButton(withTitle: "OK")
+            _ = NotchIslandAlert.run(failure, above: owner)
             scheduleAutoDismiss()
         }
     }
@@ -273,7 +418,8 @@ final class RecorderQuickPreviewController {
             ScreenshotQuickLookController.shared.close()
             return
         }
-        if !ScreenshotQuickLookController.shared.show(url: url, owner: panel) {
+        if !ScreenshotQuickLookController.shared.show(
+            url: url, owner: panel ?? NotchService.shared.presentationWindow) {
             NSSound.beep()
         }
     }

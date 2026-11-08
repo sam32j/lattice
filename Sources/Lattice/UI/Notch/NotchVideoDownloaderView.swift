@@ -106,18 +106,17 @@ struct NotchVideoDownloaderStrip: View {
     var rightInset: CGFloat { geometry.compactMusicBarsInset }
 
     var body: some View {
-        Button {
-            // When complete, clicking compact mode opens the file in Finder without expanding
-            if downloader.output != nil || downloader.isCompletedSustaining {
-                if let output = downloader.output {
-                    NSWorkspace.shared.activateFileViewerSelecting([output])
+        HStack(spacing: 0) {
+            // Left wing: thumbnail or download icon
+            Button {
+                if downloader.output != nil || downloader.isCompletedSustaining {
+                    if let output = downloader.output {
+                        NSWorkspace.shared.activateFileViewerSelecting([output])
+                    }
+                } else {
+                    service.openActivity(.videoDownloader)
                 }
-            } else {
-                service.openActivity(.videoDownloader)
-            }
-        } label: {
-            HStack(spacing: 0) {
-                // Left wing: thumbnail or download icon
+            } label: {
                 HStack(spacing: 0) {
                     if let thumb = downloader.thumbnailImage {
                         Image(nsImage: thumb)
@@ -134,12 +133,18 @@ struct NotchVideoDownloaderStrip: View {
                 .padding(.leading, artworkInset)
                 .frame(width: wing, height: geometry.compactActivityContentHeight, alignment: .leading)
                 .clipped()
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
-                // Center camera cutout: empty, NO text
-                Color.clear
-                    .frame(width: geometry.compactActivityCameraGap, height: geometry.compactActivityContentHeight)
+            // Center camera cutout: empty, NO text
+            Color.clear
+                .frame(width: geometry.compactActivityCameraGap, height: geometry.compactActivityContentHeight)
 
-                // Right wing: completion checkmark or circular progress ring
+            // Right wing: completion checkmark or circular progress ring
+            Button {
+                service.openDefault()
+            } label: {
                 HStack(spacing: 0) {
                     if downloader.output != nil || downloader.isCompletedSustaining {
                         Image(systemName: "checkmark.circle.fill")
@@ -158,11 +163,12 @@ struct NotchVideoDownloaderStrip: View {
                 .padding(.trailing, rightInset)
                 .frame(width: wing, height: geometry.compactActivityContentHeight, alignment: .trailing)
                 .clipped()
+                .contentShape(Rectangle())
             }
-            .frame(height: geometry.compactActivityContentHeight)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .frame(height: geometry.compactActivityContentHeight)
+        .contentShape(Rectangle())
         .frame(width: wing * 2 + geometry.compactActivityCameraGap, alignment: .center)
     }
 }
@@ -178,49 +184,59 @@ struct NotchCapsuleVideoDownloaderStrip: View {
     var iconSize: CGFloat { min(16, geometry.stripHeight - 10) }
 
     var body: some View {
-        Button {
-            // When complete, clicking compact mode opens the file in Finder without expanding
-            if downloader.output != nil || downloader.isCompletedSustaining {
-                if let output = downloader.output {
-                    NSWorkspace.shared.activateFileViewerSelecting([output])
-                }
-            } else {
-                service.openActivity(.videoDownloader)
-            }
-        } label: {
-            HStack(spacing: 8) {
-                if let thumb = downloader.thumbnailImage {
-                    Image(nsImage: thumb)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: iconSize * 1.35, height: iconSize)
-                        .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
-                } else {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.system(size: iconSize))
-                        .foregroundStyle(.white)
-                }
-
-                Spacer(minLength: 12)
-
+        HStack(spacing: 8) {
+            Button {
+                // When complete, clicking compact mode opens the file in Finder without expanding
                 if downloader.output != nil || downloader.isCompletedSustaining {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: iconSize))
-                        .foregroundStyle(.green)
-                } else if downloader.error != nil {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: iconSize))
-                        .foregroundStyle(.red)
-                } else if let fraction = downloader.progress {
-                    CircleProgressRing(fraction: fraction, size: iconSize)
+                    if let output = downloader.output {
+                        NSWorkspace.shared.activateFileViewerSelecting([output])
+                    }
                 } else {
-                    ProgressView().controlSize(.mini)
+                    service.openActivity(.videoDownloader)
                 }
+            } label: {
+                HStack(spacing: 0) {
+                    if let thumb = downloader.thumbnailImage {
+                        Image(nsImage: thumb)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: iconSize * 1.35, height: iconSize)
+                            .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
+                    } else {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.system(size: iconSize))
+                            .foregroundStyle(.white)
+                    }
+                }
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 10)
-            .frame(width: size.width, height: geometry.stripHeight)
-            .contentShape(Capsule())
+            .buttonStyle(.plain)
+
+            Button {
+                service.openDefault()
+            } label: {
+                HStack(spacing: 8) {
+                    Spacer(minLength: 12)
+
+                    if downloader.output != nil || downloader.isCompletedSustaining {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: iconSize))
+                            .foregroundStyle(.green)
+                    } else if downloader.error != nil {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: iconSize))
+                            .foregroundStyle(.red)
+                    } else if let fraction = downloader.progress {
+                        CircleProgressRing(fraction: fraction, size: iconSize)
+                    } else {
+                        ProgressView().controlSize(.mini)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .frame(width: size.width, height: geometry.stripHeight)
     }
 }

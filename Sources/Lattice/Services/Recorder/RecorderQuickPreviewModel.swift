@@ -8,6 +8,8 @@ import Foundation
 /// Thumbnail work belongs to one presentation, even when a loader ignores cancellation.
 final class RecorderQuickPreviewModel: ObservableObject {
     @Published private(set) var thumbnail: CGImage?
+    @Published var sharing = false
+    @Published var sharedRecord: RecordingShareRecord?
     private let loadThumbnail: (URL) async -> CGImage?
     private var task: Task<Void, Never>?
     private var generation = UUID()
@@ -34,6 +36,8 @@ final class RecorderQuickPreviewModel: ObservableObject {
         task?.cancel()
         task = nil
         thumbnail = nil
+        sharing = false
+        sharedRecord = nil
     }
 
     deinit { task?.cancel() }

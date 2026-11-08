@@ -234,23 +234,30 @@ struct NotchDownloadStrip: View {
 
     var body: some View {
         let item = downloads.items.first { $0.active && !$0.completed }
-        Button { service.openActivity(.downloads) } label: {
-            HStack(spacing: 0) {
-                HStack(spacing: 6) {
-                    if geometry.compactActivityWingWidth >= 40 {
+        HStack(spacing: 0) {
+            HStack(spacing: 6) {
+                if geometry.compactActivityWingWidth >= 40 {
+                    Button { service.openActivity(.downloads) } label: {
                         Image(systemName: "arrow.down.circle.fill").font(.system(size: iconSize))
-                        if NotchDownloadSupport.showsCompactName(in: geometry) {
+                    }
+                    .buttonStyle(.plain)
+
+                    if NotchDownloadSupport.showsCompactName(in: geometry) {
+                        Button { service.openDefault() } label: {
                             Text(item?.name ?? FeatureStrings.notchFiles(l10n.language).downloadsTitle)
                                 .font(.system(size: 11, weight: .medium)).lineLimit(1).truncationMode(.middle)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
-                .padding(.leading, geometry.compactActivityWingWidth >= 40 ? iconInset : 0)
-                .padding(.trailing, 4)
-                // Each wing anchors to its own edge, so the silhouette's curve
-                // decides the margin instead of the content's own width.
-                .frame(width: geometry.compactActivityWingWidth, alignment: .leading).clipped()
-                Color.clear.frame(width: geometry.compactActivityCameraGap)
+            }
+            .padding(.leading, geometry.compactActivityWingWidth >= 40 ? iconInset : 0)
+            .padding(.trailing, 4)
+            // Each wing anchors to its own edge, so the silhouette's curve
+            // decides the margin instead of the content's own width.
+            .frame(width: geometry.compactActivityWingWidth, alignment: .leading).clipped()
+            Color.clear.frame(width: geometry.compactActivityCameraGap)
+            Button { service.openDefault() } label: {
                 HStack(spacing: 6) {
                     // The name widens both wings; the bar fills the side the
                     // percentage alone would leave as a band of black.
@@ -274,13 +281,14 @@ struct NotchDownloadStrip: View {
                 .padding(.trailing, geometry.compactActivityWingWidth >= 36
                                     ? NotchDownloadSupport.percentInset(in: geometry) : 0)
                 .frame(width: geometry.compactActivityWingWidth, alignment: .trailing).clipped()
+                .contentShape(Rectangle())
             }
-            .frame(height: geometry.compactActivityContentHeight)
-            .padding(.horizontal, geometry.compactActivityHorizontalPadding)
-            .padding(.top, geometry.compactActivityTopPadding)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .frame(height: geometry.compactActivityContentHeight)
+        .padding(.horizontal, geometry.compactActivityHorizontalPadding)
+        .padding(.top, geometry.compactActivityTopPadding)
+        .contentShape(Rectangle())
         .accessibilityLabel(item?.name ?? FeatureStrings.notchFiles(l10n.language).downloadsTitle)
         .accessibilityHint(FeatureStrings.notch(l10n.language).open)
     }

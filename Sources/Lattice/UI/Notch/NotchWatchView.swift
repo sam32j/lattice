@@ -408,24 +408,31 @@ struct NotchWatchStrip: View {
     private var textInset: CGFloat { geometry.compactActivityEdgeInset(boxHeight: textSize * 0.72, radius: 0) }
 
     var body: some View {
-        Button { service.openActivity(.watch) } label: {
-            HStack(spacing: 0) {
+        HStack(spacing: 0) {
+            Button { service.openActivity(.watch) } label: {
                 NotchWatchEye(size: iconSize, hidden: watch.state == .hidden)
                     .padding(.leading, iconInset)
                     .frame(width: geometry.compactActivityWingWidth, alignment: .leading)
                     .opacity(geometry.compactActivityWingWidth >= 28 ? 1 : 0)
-                Color.clear.frame(width: geometry.compactActivityCameraGap)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Color.clear.frame(width: geometry.compactActivityCameraGap)
+
+            Button { service.openDefault() } label: {
                 reading
                     .padding(.trailing, textInset)
                     .frame(width: geometry.compactActivityWingWidth, alignment: .trailing)
                     .clipped()
+                    .contentShape(Rectangle())
             }
-            .frame(height: geometry.compactActivityContentHeight)
-            .padding(.horizontal, geometry.compactActivityHorizontalPadding)
-            .padding(.top, geometry.compactActivityTopPadding)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .frame(height: geometry.compactActivityContentHeight)
+        .padding(.horizontal, geometry.compactActivityHorizontalPadding)
+        .padding(.top, geometry.compactActivityTopPadding)
+        .contentShape(Rectangle())
         .accessibilityLabel(FeatureStrings.notchWatch(l10n.language).title)
         .accessibilityValue(watch.headline)
         .accessibilityHint(FeatureStrings.notch(l10n.language).open)

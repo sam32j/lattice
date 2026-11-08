@@ -25,11 +25,12 @@ final class ShelfSharePresenter: NSObject, NSSharingServicePickerDelegate {
     /// closes. It never runs when there was no window to show the sheet
     /// from, which the result reports as false.
     @discardableResult
-    func present(for urls: [URL], from view: NSView, completion: ((Bool) -> Void)? = nil) -> Bool {
+    func present(for urls: [URL], from view: NSView, relativeTo rect: CGRect? = nil,
+                 completion: ((Bool) -> Void)? = nil) -> Bool {
         guard view.window != nil else { return false }
         let picker = makePicker(for: urls)
         self.completion = completion
-        picker.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
+        picker.show(relativeTo: rect ?? view.bounds, of: view, preferredEdge: .minY)
         return true
     }
 

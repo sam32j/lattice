@@ -498,6 +498,74 @@ final class RecentCaptureService: ObservableObject {
         }
     }
 
+    /// Delete a screenshot's Application Support copy and history index on
+    /// the history queue. Persisting the new index invokes the store's existing
+    /// orphan cleanup for the rendered PNG, editable document and thumbnails.
+    /// Call back only when the indexed removal has completed.
+    func deleteScreenshot(id: UUID, completion: @escaping (Bool) -> Void) {
+        queue.async { [weak self] in
+            var succeeded = false
+            defer {
+                let result = succeeded
+                DispatchQueue.main.async { completion(result) }
+            }
+            guard let self, self.store.loadIfNeeded() else { return }
+            guard let entry = self.store.entries.first(where: { $0.id == id }) else {
+                // A fresh unsaved draft may not have been indexed.
+                succeeded = true
+                return
+            }
+            guard entry.kind == .screenshot,
+                  let name = entry.screenshotName,
+                  Self.isSafeRelativePath(name),
+                  let root = self.capturesRoot else { return }
+            let rendered = root.appendingPathComponent(name)
+            let editable = RecentCaptureEditableImage.documentURL(for: rendered)
+            let prior = self.store.entries
+            self.store.entries.removeAll { $0.id == id }
+            guard self.store.persist() else {
+                self.store.entries = prior
+                return
+            }
+            // The store normally removes these during persist. If an owned
+            // image survives cleanup (e.g. a filesystem permission failure),
+            // restore the history entry so the user can retry deletion.
+            guard !self.manager.fileExists(atPath: rendered.path),
+                  !self.manager.fileExists(atPath: editable.path) else {
+                self.store.entries = prior
+                _ = self.store.persist()
+                return
+            }
+            if let thumb = entry.thumbnailName {
+                self.thumbnailCache.removeObject(forKey: thumb as NSString)
+            }
+            self.publish()
+            succeeded = true
+        }
+    }
+
+    /// Remove a recording's history entry after a confirmed move to Trash.
+    /// The file operation belongs to the caller, so a failed Trash action
+    /// cannot silently erase history while leaving the movie on disk.
+    func removeRecording(at url: URL) {
+        let path = url.standardizedFileURL.path
+        queue.async { [weak self] in
+            guard let self, self.store.loadIfNeeded() else { return }
+            let matches = self.store.entries.filter {
+                $0.kind == .recording && $0.recordingURL?.standardizedFileURL.path == path
+            }
+            guard !matches.isEmpty else { return }
+            let ids = Set(matches.map(\.id))
+            let previous = self.store.entries
+            self.store.entries.removeAll { ids.contains($0.id) }
+            guard self.store.persist() else {
+                self.store.entries = previous
+                return
+            }
+            self.publish()
+        }
+    }
+
     struct CaptureDeletionResult {
         let historySaved: Bool
         let failedRecordings: Int
@@ -658,7 +726,8 @@ final class RecentCaptureService: ObservableObject {
             appDelegate()?.closePopover(preservingNotch: inNotch)
             let thumb = thumbnail(for: entry)?.cgImage(forProposedRect: nil, context: nil, hints: nil)
             DispatchQueue.main.asyncAfter(deadline: .now() + (inNotch ? 0 : 0.12)) {
-                RecorderQuickPreviewController.shared.show(url: url, initialThumbnail: thumb, inNotch: true)
+                RecorderQuickPreviewController.shared.show(url: url, initialThumbnail: thumb,
+                                                               inNotch: true, openedFromHistory: true)
             }
         }
     }
