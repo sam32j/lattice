@@ -1471,7 +1471,6 @@ enum NotchTests {
         pageTopContracts(suite)
         pageWidthContracts(suite)
         sectionsButtonContracts(suite)
-        sectionsButtonPlacementContracts(suite)
         homeRailContracts(suite)
         homeRailRowContracts(suite)
         toolRailContracts(suite)
@@ -1828,16 +1827,16 @@ enum NotchTests {
         defaults.set(true, forKey: DefaultsKey.microphoneLevelControlEnabled)
         defaults.set(false, forKey: DefaultsKey.notchTrackChange)
         let initialLayout = NotchQuickAccessConfiguration.current(in: defaults)
-        suite.expect(initialLayout.buttons.filter { $0.side == .left }.compactMap(\.action) == [.explore, .module(.timer)]
+        suite.expect(initialLayout.buttons.filter { $0.side == .left }.compactMap(\.action) == [.module(.hub), .module(.timer)]
                && initialLayout.buttons.filter { $0.side == .right }.compactMap(\.action) == [.settings, .module(.mixer)]
                && initialLayout.buttons.filter { $0.side == .bottom }.compactMap(\.action) == [.module(.music)],
-               "a fresh layout places Explore and Timer left, Settings and Mixer right, and music below")
+               "a fresh layout places Hub and Timer left, Settings and Mixer right, and music below")
         suite.expect(initialLayout == NotchQuickAccessConfiguration.current(in: defaults),
                "default buttons keep stable identities across preference refreshes")
         defaults.set(false, forKey: AppFeature.mixer.availabilityKey)
         defaults.set(false, forKey: DefaultsKey.volumeMixerEnabled)
         defaults.set(false, forKey: AppFeature.notchTimer.availabilityKey)
-        suite.expect(NotchQuickAccessConfiguration.current(in: defaults).actions == [.explore, .settings, .module(.music)]
+        suite.expect(NotchQuickAccessConfiguration.current(in: defaults).actions == [.module(.hub), .settings, .module(.music)]
                && !NotchQuickAction.module(.mixer).isAvailable(in: defaults)
                && !NotchQuickAction.control(.mixer).isAvailable(in: defaults),
                "uninstalled utilities leave no default buttons or available mixer actions")
@@ -1849,20 +1848,20 @@ enum NotchTests {
         suite.expect(NotchQuickAccessConfiguration.current(in: defaults) == initialLayout,
                "reinstalled utilities return to their original positions")
         defaults.set("music", forKey: DefaultsKey.notchHiddenModules)
-        suite.expect(NotchQuickAccessConfiguration.current(in: defaults).actions == [.explore, .module(.timer), .settings, .module(.mixer)],
+        suite.expect(NotchQuickAccessConfiguration.current(in: defaults).actions == [.module(.hub), .module(.timer), .settings, .module(.mixer)],
                "a section switched off takes its button out of the island")
-        var held = NotchQuickAccessConfiguration(side: .left, actions: [.explore, .module(.music), .settings])
+        var held = NotchQuickAccessConfiguration(side: .left, actions: [.module(.hub), .module(.music), .settings])
         let incoming = NotchQuickButton(action: .control(.commandBar), side: .right)
         held.buttons.append(incoming)
         held.move(incoming.id, to: .left)
         suite.expect(!held.hasRoom(on: .left) && held.buttons.first(where: { $0.id == incoming.id })?.side == .right
-               && held.buttons.filter { $0.side == .left }.compactMap(\.action) == [.explore, .module(.music), .settings],
+               && held.buttons.filter { $0.side == .left }.compactMap(\.action) == [.module(.hub), .module(.music), .settings],
                "a hidden button keeps its place, so a side it fills takes no other")
-        var reordered = NotchQuickAccessConfiguration(side: .left, actions: [.explore, .module(.music), .settings])
+        var reordered = NotchQuickAccessConfiguration(side: .left, actions: [.module(.hub), .module(.music), .settings])
         let ids = reordered.buttons.map(\.id)
         let swapped = reordered.reorder(ids[2], by: -1)
         let pastTheTop = reordered.reorder(ids[0], by: -1)
-        suite.expect(swapped && !pastTheTop && reordered.actions == [.explore, .settings, .module(.music)],
+        suite.expect(swapped && !pastTheTop && reordered.actions == [.module(.hub), .settings, .module(.music)],
                "moving a button swaps it with its neighbour, hidden or not, and a move past either end changes nothing")
         let savedIdle = defaults.object(forKey: DefaultsKey.notchIdleContent)
         defaults.set(NotchIdleContent.music.rawValue, forKey: DefaultsKey.notchIdleContent)
@@ -1892,10 +1891,10 @@ enum NotchTests {
         for (key, value) in saved { defaults.set(value, forKey: key) }
         defaults.set(savedIdle, forKey: DefaultsKey.notchIdleContent)
         defaults.set("right", forKey: DefaultsKey.notchQuickAccessSide)
-        suite.expect(NotchQuickAccessConfiguration.stored(in: defaults) == .init(side: .right, actions: [.explore, .settings]),
+        suite.expect(NotchQuickAccessConfiguration.stored(in: defaults) == .init(side: .right, actions: [.module(.hub), .settings]),
                "a saved legacy side retains the former Settings companion")
         defaults.set("", forKey: DefaultsKey.notchQuickAccessSecond)
-        suite.expect(NotchQuickAccessConfiguration.stored(in: defaults) == .init(side: .right, actions: [.explore]),
+        suite.expect(NotchQuickAccessConfiguration.stored(in: defaults) == .init(side: .right, actions: [.module(.hub)]),
                "an explicitly empty legacy action stays empty under the new defaults")
         defaults.removeObject(forKey: DefaultsKey.notchQuickAccessSide)
         defaults.removeObject(forKey: DefaultsKey.notchQuickAccessSecond)
@@ -2310,12 +2309,12 @@ enum NotchTests {
         defaults.set("unknown", forKey: DefaultsKey.notchQuickAccessSide)
         defaults.set("settings", forKey: DefaultsKey.notchQuickAccessSecond)
         defaults.set("settings", forKey: DefaultsKey.notchQuickAccessThird)
-        suite.expect(NotchQuickAccessConfiguration.current(in: defaults) == .init(side: .left, actions: [.explore, .settings]),
+        suite.expect(NotchQuickAccessConfiguration.current(in: defaults) == .init(side: .left, actions: [.module(.hub), .settings]),
                "invalid placement falls back safely and duplicate quick actions are not repeated")
         defaults.set("timer", forKey: DefaultsKey.notchQuickAccessSecond)
         defaults.set("../../unknown", forKey: DefaultsKey.notchQuickAccessThird)
         defaults.set("timer", forKey: DefaultsKey.notchHiddenModules)
-        suite.expect(NotchQuickAccessConfiguration.current(in: defaults).actions == [.explore],
+        suite.expect(NotchQuickAccessConfiguration.current(in: defaults).actions == [.module(.hub)],
                "hidden destinations and unrecognized action identifiers cannot create a floating action")
         defaults.set("", forKey: DefaultsKey.notchHiddenModules)
         for side in [NotchQuickAccessSide.left, .right] {

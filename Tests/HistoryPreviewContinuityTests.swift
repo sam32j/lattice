@@ -42,7 +42,7 @@ enum HistoryPreviewContinuityTests {
         static let shared = Controller()
         final class Controller {
             var shown = 0
-            func show(url: URL, initialThumbnail: CGImage?, inNotch: Bool) { shown += 1 }
+            func show(url: URL, initialThumbnail: CGImage?, inNotch: Bool, openedFromHistory: Bool = false) { shown += 1 }
         }
     }
     class State {

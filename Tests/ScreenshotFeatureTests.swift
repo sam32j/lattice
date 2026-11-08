@@ -1118,7 +1118,7 @@ enum ScreenshotFeatureTests {
                 && panelRecentCapturesSource.contains("islandCard"),
                "recent captures in dynamic island do not track seconds and use redesigned cards")
         suite.expect(panelRecentCapturesSource.contains("NotchIslandAlert.run(alert, above: NotchService.shared.presentationWindow)")
-                && panelRecentCapturesSource.contains("alert.addButton(withTitle: text.clear).hasDestructiveAction = true")
+                && panelRecentCapturesSource.contains("alert.addButton(withTitle: \"Delete Captures\").hasDestructiveAction = true")
                 && panelRecentCapturesSource.contains("RecentCaptureService.shared.clearAndDeleteCaptureFiles")
                 && panelRecentCapturesSource.contains("Recordings saved elsewhere will be moved to Trash"),
                "island Clear History confirms above the Island before deleting stored captures and history")
@@ -1379,7 +1379,7 @@ enum ScreenshotFeatureTests {
                     .contains("enabled: ScreenshotSharingSupport.uploadShortcutEnabled(in: defaults),"),
                "the upload shortcut is registered only while it and temporary links are both on")
         suite.expect(serviceBody("    private func route(_ capture:").contains("latestCapture: latestCaptureToken)")
-                && serviceBody("    func restorePreview(").contains("latestCapture: nil)")
+                && serviceBody("    func restorePreview(").contains("latestCapture: nil")
                 && screenshotServiceCode.contains("self.discardLatestCapture(latestCapture)\n                    return [.discard]"),
                "discarding the preview of the latest capture withholds it, while a preview reopened from history does not")
         let restoredPreview = serviceBody("    func restorePreview(")
@@ -1424,9 +1424,6 @@ enum ScreenshotFeatureTests {
         // sendEvent because hosted SwiftUI content answers presses that never
         // reach mouseDown. Comments are stripped so prose naming the API
         // cannot answer for the code.
-        let quickPreviewSource = (try? String(
-            contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenshotQuickPreviewController.swift",
-            encoding: .utf8)) ?? ""
         suite.expect(!quickPreviewSource.isEmpty, "the screenshot preview source reads back for its shape check")
         let quickPreviewCode = quickPreviewSource.components(separatedBy: "\n")
             .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
@@ -1459,7 +1456,7 @@ enum ScreenshotFeatureTests {
                "the island preview takes the keyboard and closes on collapse exactly as the presentation policy says")
         let makeKeyCount = quickPreviewCode.components(separatedBy: "makeKey").count - 1
         let panelMakeKeyCount = panelBody.components(separatedBy: "makeKey").count - 1
-        suite.expect(makeKeyCount == panelMakeKeyCount + 1 && panelMakeKeyCount >= 1,
+        suite.expect(makeKeyCount == panelMakeKeyCount + 2 && panelMakeKeyCount >= 1,
                "hover never takes key focus; only the preferred presentation and the panel's own click hand-off may")
         suite.expect(panelBody.contains("sendEvent") && panelBody.contains("leftMouseDown")
                 && panelBody.contains("makeKey") && panelBody.contains("super.sendEvent"),

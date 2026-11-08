@@ -44,6 +44,10 @@ enum NotchMusicVisibilityTests {
     }
     enum NotchPanel { static let normalLevel = 0 }
     enum NSEvent { static let mouseLocation = CGPoint.zero }
+    final class LatticeHubService {
+        static let shared = LatticeHubService()
+        var hubIslandPage = 0
+    }
 
     class State {
         var activitySelection = NotchActivitySelection()

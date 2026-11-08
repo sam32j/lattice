@@ -55,6 +55,8 @@ enum NotchPresentationRefreshContract {
         static var shared = LatticeHubService()
         var isVisible = false
         var isPinned = false
+        var isEditing = false
+        var hubIslandPage = 0
         var previousApp: Any? = nil
         func hide() { isVisible = false }
     }
@@ -79,10 +81,6 @@ enum NotchPresentationRefreshContract {
             self.playback = playback; self.artwork = artwork; self.tint = tint; self.namedWing = namedWing
             self.namesSong = namesSong
         }
-    }
-    struct NotchQuickAccessConfiguration {
-        let buttons: [Int] = []
-        static func current() -> Self { Self() }
     }
     enum FeatureStrings {
         static func notch(_ language: Int) -> (collapse: String, open: String) { ("Close", "Open") }
@@ -188,6 +186,7 @@ enum NotchPresentationRefreshContract {
         var captureActions: Bool?
         var captureContent: Bool?
         var captureContentHeight: CGFloat?
+        var captureUsesImageOverlay = false
         var captureHistoryGestureProgress = 0.0
         var captureOpenedFromHistory = false
         var captureReturnsToHubHistory = false
