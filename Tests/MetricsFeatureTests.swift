@@ -13,6 +13,20 @@ import VMStatisticsCompat
 
 enum MetricsFeatureTests {
     static func run(_ suite: TestSuite) {
+        usageHistoryWindow(suite)
+        let baseline = ProcessCPUEnergy(startedAt: 1, nanojoules: 100)
+        let sampled = ProcessCPUEnergy(startedAt: 1, nanojoules: 500_000_100)
+        suite.expect(sampled.watts(since: baseline, elapsed: 5) == 0.1,
+                     "half a joule over five seconds is 100 milliwatts")
+        suite.expect(sampled.watts(since: baseline, elapsed: 31) == nil
+                     && baseline.watts(since: sampled, elapsed: 5) == nil,
+                     "CPU power discards stale intervals and reset counters")
+        let reusedPID = ProcessCPUEnergy(startedAt: 2, nanojoules: 500_000_100)
+        suite.expect(reusedPID.watts(since: baseline, elapsed: 5) == nil,
+                     "CPU power does not attribute a reused PID's energy to its previous process")
+        suite.expect(BatteryTimeSupport.validatedEstimate(minutes: 88) == 5280
+                     && BatteryTimeSupport.validatedEstimate(minutes: -1) == nil,
+                     "charging countdown uses a valid system estimate")
         func expectEqual(_ actual: String, _ expected: String, _ label: String,
                          file: StaticString = #filePath, line: UInt = #line) {
             suite.expect(actual == expected, "\(label): got \(actual), expected \(expected)",
@@ -1117,5 +1131,28 @@ enum MetricsFeatureTests {
         }
 
         MetricFormat.locale = originalLocale
+    }
+
+    private static func usageHistoryWindow(_ suite: TestSuite) {
+        let now = ContinuousClock.now
+        var history = UsageMetricHistory(capacity: 120)
+        history.push(0.9, at: now - .seconds(61))
+        history.push(0.4, at: now - .seconds(60))
+        history.push(0.2, at: now - .seconds(15))
+        history.push(0.3, at: now)
+
+        let samples = history.publishedSamples(whileVisible: true)
+        let points = UsageMetricHistory.window(samples, endingAt: now)
+        suite.expect(points.map(\.value) == [0.4, 0.2, 0.3],
+                     "usage history excludes readings older than 60 seconds")
+        suite.expect(points.map(\.position) == [0, 0.75, 1],
+                     "usage history positions irregular samples by elapsed time")
+        suite.expect(UsageMetricHistory.window(samples, endingAt: now + .seconds(61)).isEmpty,
+                     "usage history expires without any new readings")
+        let hour = Duration.seconds(3600)
+        let hourPoints = UsageMetricHistory.window(samples, endingAt: now, duration: hour)
+        let segments = UsageMetricHistory.segments(hourPoints, duration: hour, maximumGap: .seconds(30))
+        suite.expect(segments.map { $0.map(\.value) } == [[0.9, 0.4], [0.2, 0.3]],
+                     "power chart leaves a gap where monitoring paused")
     }
 }
