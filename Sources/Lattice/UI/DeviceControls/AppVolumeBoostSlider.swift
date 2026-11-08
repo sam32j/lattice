@@ -177,7 +177,6 @@ private final class AppVolumeBoostSliderCell: NSSliderCell {
 private final class AppVolumeBoostSliderControl: NSSlider {
     var onTrackingChanged: ((Bool) -> Void)?
     private(set) var isCurrentlyTracking = false
-    private var previousValue: Double = 1.0
 
     override var acceptsFirstResponder: Bool { true }
     override var focusRingType: NSFocusRingType {
@@ -215,7 +214,7 @@ private final class AppVolumeBoostSliderControl: NSSlider {
             let x = pointX(event)
             let totalWidth = bounds.width
             let newVal = AppVolumeSliderMetrics.value(for: x, totalWidth: totalWidth)
-            checkHaptics(oldValue: previousValue, newValue: newVal)
+            checkHaptics(oldValue: doubleValue, newValue: newVal)
             updateValue(newVal)
         }
 
@@ -241,7 +240,6 @@ private final class AppVolumeBoostSliderControl: NSSlider {
 
     private func updateValue(_ newVal: Double) {
         let clamped = min(max(newVal, 0.0), 2.0)
-        previousValue = clamped
         doubleValue = clamped
         _ = sendAction(action, to: target)
         needsDisplay = true

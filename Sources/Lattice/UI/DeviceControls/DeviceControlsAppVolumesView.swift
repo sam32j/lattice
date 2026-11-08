@@ -206,6 +206,7 @@ struct DeviceControlsAppVolumesView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .disabled(app.isBypassed)
                 .accessibilityLabel(speakerAccessibilityLabel(for: app))
 
                 if app.isBypassed {

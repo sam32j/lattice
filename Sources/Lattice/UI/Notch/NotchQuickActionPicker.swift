@@ -13,13 +13,25 @@ struct NotchQuickActionPicker: View {
 
     private var editor: NotchEditorStrings { FeatureStrings.notchEditor(l10n.language) }
 
+    private var sectionActions: [NotchQuickAction] {
+        [.explore, .settings] + NotchSupport.widgetModules.filter { $0 != .hub }.map(NotchQuickAction.module)
+    }
+
+    private var controlActions: [NotchQuickAction] {
+        [.pin] + NotchControlItem.allCases.filter { !$0.isLevel }.map(NotchQuickAction.control)
+    }
+
+    private var availableActions: [NotchQuickAction] {
+        sectionActions + controlActions
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             searchBar
 
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
-                    if !NotchQuickAction.optionalActions.contains(where: matchesQuery) {
+                    if !availableActions.contains(where: matchesQuery) {
                         Text(FeatureStrings.clipboard(l10n.language).noResults)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, minHeight: 120, alignment: .center)
@@ -27,12 +39,12 @@ struct NotchQuickActionPicker: View {
 
                     actionSection(
                         title: editor.sectionActions,
-                        actions: [.explore, .settings] + NotchSupport.widgetModules.filter { $0 != .hub }.map(NotchQuickAction.module)
+                        actions: sectionActions
                     )
 
                     actionSection(
                         title: editor.quickActions,
-                        actions: [.pin] + NotchControlItem.allCases.filter { !$0.isLevel }.map(NotchQuickAction.control)
+                        actions: controlActions
                     )
                 }
                 .padding(.horizontal, 1)

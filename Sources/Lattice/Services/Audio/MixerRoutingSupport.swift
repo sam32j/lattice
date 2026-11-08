@@ -1104,7 +1104,7 @@ enum AppVolumeSliderMetrics {
             if clampedX >= mainWidth - snapMargin {
                 return 1.0
             }
-            let fraction = clampedX / (mainWidth - snapMargin)
+            let fraction = clampedX / mainWidth
             return min(max(Double(fraction), 0.0), 1.0)
         }
 
