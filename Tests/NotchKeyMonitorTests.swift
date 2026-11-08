@@ -39,7 +39,21 @@ enum NotchKeyMonitorTests {
             return 1
         }
     }
-    final class Panel { var firstResponder: AnyObject? }
+    // Matches the production Quick Look shortcut contract in the generated
+    // Island event-monitor fixture, where native AppKit helpers are stubbed.
+    enum ScreenshotWindowLayering {
+        static func isQuickLookShortcut(_ event: NSEvent) -> Bool {
+            let flags = event.modifierFlags.intersection([.command, .control, .option, .shift])
+            return flags == .command && (event.charactersIgnoringModifiers?.lowercased() == "y"
+                                        || (event.charactersIgnoringModifiers == nil && event.keyCode == 16))
+        }
+    }
+    final class Panel {
+        var firstResponder: AnyObject?
+        var acceptsKeyFocus = false
+        var isKeyWindow = false
+        func makeKey() { isKeyWindow = true }
+    }
     final class NSTextView {
         let isFieldEditor: Bool
         let delegate: AnyObject? = nil
@@ -51,13 +65,18 @@ enum NotchKeyMonitorTests {
     enum PlainTextEditor { static func findBarHasKeyboard(in window: Panel?) -> Bool { false } }
     final class Host { func contains(_ point: CGPoint) -> Bool { false } }
     final class AppDelegate { func isOverStatusItem(_ point: CGPoint) -> Bool { false } }
-    struct Application { let delegate: AnyObject? = nil }
+    final class Application {
+        let delegate: AnyObject? = nil
+        var activations = 0
+        func activate(ignoringOtherApps: Bool) { activations += 1 }
+    }
     static let NSApp = Application()
     enum AssistiveKeyboard { static func ownsCocoaPoint(_ point: CGPoint) -> Bool { false } }
     /// What each Escape did: the gallery toggled, Tools took it or the island closed.
     static var actions: [String] = []
     final class Launcher {
         var isEditing = false
+        var isVisible = false
         var notchControlsHeight: CGFloat = 0
         var visibleItems = [0, 1, 2]
         var flows: [QuickToolsSupport.GridFlow] = []
@@ -84,7 +103,6 @@ enum NotchKeyMonitorTests {
         var pinned = false
         var expanded = true
         var peeking = false
-        var showingAppPanel = false
         var showingSections = false
         var showingCommandBar = false
         var geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1470, height: 956),
@@ -113,7 +131,9 @@ enum NotchKeyMonitorTests {
             NSEvent.handler = nil
             NSEvent.globalHandler = nil
             actions = []
+            NSApp.activations = 0
         }
+        NSApp.activations = 0
         let service = Service()
         service.installEventMonitors()
         let settings = NSEvent(window: service.panel, keyCode: 43,
@@ -144,9 +164,30 @@ enum NotchKeyMonitorTests {
         suite.expect(actions.isEmpty, "a dialog or menu still protects the Island from click-away dismissal")
         service.keepsWorkingSurface = false
         service.keepsWorkingSurfaceOnOutsideClick = false
+        service.selected = .captures
+        service.captureContent = true
+        service.clickedSinceOpening = false
+        let previewHeaderClick = NSEvent(type: .leftMouseDown, window: service.panel, keyCode: 0)
+        _ = NSEvent.handler?(previewHeaderClick)
+        suite.expect(actions.isEmpty && service.captureContent == true && service.clickedSinceOpening,
+                     "camera-side capture navigation clicks remain inside the Island even when the native silhouette hit test lags")
+        suite.expect(NSApp.activations == 1 && service.panel?.acceptsKeyFocus == true
+                     && service.panel?.isKeyWindow == true,
+                     "clicking a capture preview activates Lattice and allows it to receive keyboard input")
+        // The Island must forward Quick Look keys to the screenshot preview
+        // instead of collapsing the underlying Island first.
+        actions = []
+        let previewSpace = NSEvent(window: service.panel, keyCode: 49)
+        let previewCommandY = NSEvent(window: service.panel, keyCode: 16,
+                                    modifierFlags: .command, charactersIgnoringModifiers: "y")
+        suite.expect(NSEvent.handler?(previewSpace) != nil && NSEvent.handler?(previewCommandY) != nil
+                     && actions.isEmpty && service.captureContent != nil,
+                     "Space and Command-Y reach the capture preview without collapsing the Island")
         service.selected = .controls
         let click = NSEvent(type: .leftMouseDown, window: service.panel, keyCode: 0)
         _ = NSEvent.handler?(click)
+        suite.expect(NSApp.activations == 1,
+                     "ordinary Island pages do not activate Lattice just from a pointer click")
         _ = NSEvent.handler?(NSEvent(window: Panel(), keyCode: 48))
         suite.expect(!service.showsKeyboardFocus,
                      "pointer input and keys in another window do not expose the island's automatic focus")
@@ -162,19 +203,17 @@ enum NotchKeyMonitorTests {
                      "reverse keyboard navigation restores visible focus without consuming Shift-Tab")
         let escape = NSEvent(window: service.panel, keyCode: 53)
         // Each Escape branch, reached from a field that can hold a composing
-        // input method: the gallery search, a field in a Tools utility, one
-        // in the app panel and the Scratchpad editor.
-        let destinations: [(name: String, module: NotchModule, sections: Bool, appPanel: Bool,
+        // input method: the gallery search, a field in a Tools utility, and
+        // the Scratchpad editor.
+        let destinations: [(name: String, module: NotchModule, sections: Bool,
                             field: NSTextView, action: String)] = [
-            ("the gallery search", .controls, true, false, NSTextView(isFieldEditor: true), "sections"),
-            ("a Tools utility", .hub, false, false, NSTextView(isFieldEditor: true), "tools"),
-            ("the app panel", .hub, false, true, NSTextView(isFieldEditor: true), "stepBack"),
-            ("the Scratchpad editor", .scratchpad, false, false, NSTextView(isFieldEditor: false), "stepBack"),
+            ("the gallery search", .controls, true, NSTextView(isFieldEditor: true), "sections"),
+            ("a Tools utility", .hub, false, NSTextView(isFieldEditor: true), "tools"),
+            ("the Scratchpad editor", .scratchpad, false, NSTextView(isFieldEditor: false), "stepBack"),
         ]
         for destination in destinations {
             service.selected = destination.module
             service.showingSections = destination.sections
-            service.showingAppPanel = destination.appPanel
             service.panel?.firstResponder = destination.field
             destination.field.composing = true
             actions = []
@@ -189,7 +228,6 @@ enum NotchKeyMonitorTests {
         // back through its search, and Command-K is its actions, not the gallery.
         service.selected = .controls
         service.showingSections = false
-        service.showingAppPanel = false
         service.panel?.firstResponder = nil
         service.showingCommandBar = true
         actions = []
@@ -223,7 +261,6 @@ enum NotchKeyMonitorTests {
         launcher.visibleItems = Array(0..<12)
         service.selected = .hub
         service.showingSections = false
-        service.showingAppPanel = false
         service.panel?.firstResponder = nil
         service.geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1710, height: 1112), safeAreaTop: 37.5,
                                          cameraWidth: 208, layout: .compact)

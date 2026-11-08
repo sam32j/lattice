@@ -115,10 +115,8 @@ enum NotchDestinationContract {
         var selectedMetric: MetricDetailKind?
         var expanded = false
         var showsKeyboardFocus = false
-        var showingAppPanel = false
         var showingSections = false
         var lastVisitedSections = false
-        var lastVisitedAppPanel = false
         var showingCommandBar = false
         var commandBarClosings = 0
         func commandBarDidClose() { commandBarClosings += 1 }

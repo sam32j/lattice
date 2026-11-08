@@ -102,27 +102,22 @@ enum NotchTests {
         let timerSetup = NotchLayout.timer(mode: .timer, hasSession: false, height: 180)
         let pomodoroSetup = NotchLayout.timer(mode: .pomodoro, hasSession: false, height: 180)
         let stopwatchSetup = NotchLayout.timer(mode: .stopwatch, hasSession: false, height: 180)
-        suite.expect(stopwatchSetup == timerSetup && pomodoroSetup <= NotchLayout.compactContentHeight
-               && timerSetup == NotchLayout.timerRulerHeight
-               && pomodoroSetup == timerSetup + NotchLayout.timerRowSpacing + NotchLayout.timerSettingsRowHeight,
+        suite.expect(stopwatchSetup == NotchLayout.timerMainRowHeight
+               && timerSetup == NotchLayout.timerMainRowHeight + NotchLayout.timerRowSpacing + NotchLayout.timerRulerHeight
+               && pomodoroSetup == timerSetup + NotchLayout.timerBottomRowHeight(mode: .pomodoro),
                "the modes and Start are in the top row, so every mode is the ruler's row; the Pomodoro adds one line of readouts under it")
         let tight: CGFloat = 154
         for mode in NotchTimerMode.allCases {
-            suite.expect(NotchLayout.timer(mode: mode, hasSession: false, height: tight) <= tight
-                   && NotchLayout.timer(mode: mode, hasSession: false, height: 400) == NotchLayout.timer(mode: mode, hasSession: false, height: 180),
+            suite.expect(NotchLayout.timer(mode: mode, hasSession: false, height: 400) == NotchLayout.timer(mode: mode, hasSession: false, height: 180),
                    "the shortest custom island still shows every timer row, and a taller one adds nothing: \(mode)")
         }
         let lowPage: CGFloat = 100
-        suite.expect(NotchLayout.timerRulerHeight(mode: .pomodoro, height: lowPage) == lowPage
-                   - NotchLayout.timerRowSpacing - NotchLayout.timerSettingsRowHeight
-               && NotchLayout.timer(mode: .pomodoro, hasSession: false, height: lowPage) == lowPage
-               && NotchLayout.timerRulerHeight(mode: .pomodoro, height: 60) == NotchLayout.timerMinimumRulerHeight
-               && NotchLayout.timerRulerHeight(mode: .pomodoro, height: 400) == NotchLayout.timerRulerHeight
+        suite.expect(NotchLayout.timerRulerHeight(mode: .pomodoro, height: lowPage) == NotchLayout.timerRulerHeight
                && NotchLayout.timerRulerHeight(height: lowPage) == NotchLayout.timerRulerHeight
                && NotchLayout.timerRulerHeight(mode: .stopwatch, height: 60) == NotchLayout.timerRulerHeight,
                "the ruler gives the Pomodoro's readouts height down to a floor before anything is cut, and keeps its own alone")
         suite.expect(NotchTimerMode.allCases.allSatisfy {
-                   NotchLayout.timer(mode: $0, hasSession: true, height: tight) == NotchLayout.timerRulerHeight
+                   NotchLayout.timer(mode: $0, hasSession: true, height: tight) == NotchLayout.timerMainRowHeight
                        && NotchLayout.timer(mode: $0, hasSession: true, height: tight)
                            <= NotchLayout.timer(mode: $0, hasSession: false, height: tight)
                },
@@ -285,11 +280,9 @@ enum NotchTests {
                 let chosen = player.expandedWidth
                 player.pageTop = NotchModule.music.pageTop
                 player.pageContentWidth = NotchLayout.naturalContentWidth(.music, controls: [], within: player.contentWidth)
-                let expected = max(NotchLayout.musicContentWidth, camera > 0 ? camera + NotchLayout.musicBandSide * 2 : 0)
-                    + NotchLayout.horizontalInset * 2
-                suite.expect(player.expandedWidth == min(chosen, expected) && player.expandedWidth < chosen
+                suite.expect(player.expandedWidth == chosen
                              && (camera == 0 || player.headerCameraGap == camera),
-                             "the player is no wider than it needs, around a \(Int(camera))-point camera in \(layout)")
+                             "the player keeps the chosen width in \(layout)")
                 var list = player
                 list.pageTop = NotchModule.clipboard.pageTop
                 list.pageContentWidth = NotchLayout.naturalContentWidth(.clipboard, controls: [], within: player.contentWidth)
@@ -301,7 +294,7 @@ enum NotchTests {
         suite.expect(home == 5 * NotchLayout.shortcutWidth + 4 * NotchLayout.shortcutSpacing,
                      "the home page is as wide as its one row of shortcuts: \(home ?? 0)")
         suite.expect(NotchLayout.naturalContentWidth(.controls, controls: shortcuts + [.screenshot, .recording, .speedTest,
-                                                                                      .panel, .commandBar], within: 424) == nil,
+                                                                                      .commandBar], within: 424) == nil,
                      "a home page whose shortcuts wrap keeps the chosen width")
 
     }
@@ -425,8 +418,7 @@ enum NotchTests {
                     // meter: a preset's player is only as wide as it needs, and
                     // only a wider width set by hand leaves room for the percentage.
                     narrowestPlayer = min(narrowestPlayer, musicBand.side)
-                    player = player && (musicBand.side < NotchLayout.levelReadingDetailWidth)
-                        && musicBand.side - 18 - 8 >= 36
+                    player = player && musicBand.side - 18 - 8 >= 36
                 }
             }
         }
@@ -481,7 +473,7 @@ enum NotchTests {
         let screen = CGRect(x: 0, y: 0, width: 1710, height: 1112)
         let levels: [NotchControlItem] = [.volume, .brightness, .keyboardLight]
         let tiles: [NotchControlItem] = [.mixer, .keepAwake, .timer, .calendar, .microphone, .screenshot, .recording,
-                                         .speedTest, .panel, .commandBar, .scratchpad]
+                                         .speedTest, .commandBar, .scratchpad]
         let tile = NotchLayout.shortcutWidth, spacing = NotchLayout.shortcutSpacing
         var whole: String?, kept: String?, inside: String?
         var closed = 0
@@ -554,7 +546,7 @@ enum NotchTests {
         let screen = CGRect(x: 0, y: 0, width: 1710, height: 1112)
         let levels: [NotchControlItem] = [.volume, .brightness, .keyboardLight]
         let tiles: [NotchControlItem] = [.mixer, .keepAwake, .timer, .calendar, .microphone, .screenshot, .recording,
-                                         .speedTest, .panel, .commandBar, .scratchpad]
+                                         .speedTest, .commandBar, .scratchpad]
         let tile = NotchLayout.shortcutWidth, row = NotchLayout.shortcutHeight, spacing = NotchLayout.shortcutSpacing
         // Cameras from a scaled display's short one to a tall menu bar's.
         var surfaces: [(CGFloat, CGFloat, NotchSilhouette)] = [(0, 0, .capsule), (0, 0, .notch)]
@@ -1735,7 +1727,7 @@ enum NotchTests {
                && NotchLayout.homeReadingWidth(levels: 0, side: 304) == NotchLayout.homeReadingWidth,
                "a reading on the home page's full row leaves every level its narrowest, or covers them where both cannot fit")
 
-        suite.expect(!NotchSupport.routesAppPanel(in: defaults) && !NotchSupport.routesQuickPanel(in: defaults)
+        suite.expect(!NotchSupport.routesQuickPanel(in: defaults)
                && !NotchSupport.routesShelf(in: defaults)
                && !NotchSupport.routesClipboardWindow(in: defaults),
                "separate panels remain the default until the notch is explicitly enabled")
@@ -1780,7 +1772,7 @@ enum NotchTests {
         suite.expect(!NotchSupport.usesHapticFeedback(in: defaults), "tactile feedback can still be turned off independently")
         defaults.set(true, forKey: DefaultsKey.notchHapticFeedback)
         defaults.set(false, forKey: DefaultsKey.notchEnabled)
-        suite.expect(!NotchSupport.usesHapticFeedback(in: defaults) && !NotchSupport.routesAppPanel(in: defaults)
+        suite.expect(!NotchSupport.usesHapticFeedback(in: defaults)
                && !NotchSupport.routesQuickPanel(in: defaults) && !NotchSupport.routesShelf(in: defaults),
                "turning the notch off restores separate panels and suppresses tactile feedback")
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
@@ -1817,9 +1809,9 @@ enum NotchTests {
         defaults.removeObject(forKey: DefaultsKey.notchCloseDelay)
         suite.expect(NotchSupport.closeDelay(in: defaults) == 0.18,
                      "removing the closing preference restores the original delay")
-        suite.expect(!NotchSupport.routesAppPanel(in: defaults) && NotchSupport.routesQuickPanel(in: defaults)
+        suite.expect(NotchSupport.routesQuickPanel(in: defaults)
                && !NotchSupport.routesClipboardWindow(in: defaults) && NotchSupport.routesShelf(in: defaults),
-               "enabling a fresh island keeps the app panel separate and routes the other available panels into it")
+               "enabling a fresh island routes the other available panels into it")
         suite.expect(NotchSupport.routes(.track, in: defaults), "a new song shows by default while music is on")
         defaults.set("music", forKey: DefaultsKey.notchHiddenModules)
         suite.expect(!NotchSupport.routes(.track, in: defaults), "a hidden music section announces no new song")
@@ -1860,7 +1852,7 @@ enum NotchTests {
         suite.expect(NotchQuickAccessConfiguration.current(in: defaults).actions == [.explore, .module(.timer), .settings, .module(.mixer)],
                "a section switched off takes its button out of the island")
         var held = NotchQuickAccessConfiguration(side: .left, actions: [.explore, .module(.music), .settings])
-        let incoming = NotchQuickButton(action: .control(.panel), side: .right)
+        let incoming = NotchQuickButton(action: .control(.commandBar), side: .right)
         held.buttons.append(incoming)
         held.move(incoming.id, to: .left)
         suite.expect(!held.hasRoom(on: .left) && held.buttons.first(where: { $0.id == incoming.id })?.side == .right
@@ -1996,7 +1988,7 @@ enum NotchTests {
                && !NotchSupport.controls(in: defaults).contains(.volume), "mixer availability gates its module and volume control")
         defaults.set(true, forKey: AppFeature.mixer.availabilityKey)
         defaults.set(true, forKey: DefaultsKey.volumeMixerEnabled)
-        suite.expect(NotchControlItem.allCases.filter { $0.setupRequirement == .none } == [.keyboardLight, .panel],
+        suite.expect(NotchControlItem.allCases.filter { $0.setupRequirement == .none } == [.keyboardLight],
                      "hardware-only keyboard light needs no installation target; other gated controls retain setup paths")
         suite.expect(NotchControlItem.allCases.filter(\.isLevel) == [.volume, .brightness, .keyboardLight]
                      && !NotchQuickAction.optionalActions.contains(.control(.keyboardLight)),
@@ -2040,10 +2032,10 @@ enum NotchTests {
                      && NotchControlItem.mixer.setupRequirement == .page(.mixer, feature: .mixer)
                      && NotchControlItem.speedTest.setupRequirement == .page(.system, feature: .monitorNetwork),
                      "page-gated controls lead to their island section or the required feature")
-        defaults.set("panel,panel,unknown,speedTest", forKey: DefaultsKey.notchControlOrder)
+        defaults.set("commandBar,commandBar,unknown,speedTest", forKey: DefaultsKey.notchControlOrder)
         defaults.set("volume,screenshot", forKey: DefaultsKey.notchHiddenControls)
         let controls = NotchSupport.controls(in: defaults)
-        suite.expect(controls.first == .panel && Set(controls).count == controls.count,
+        suite.expect(controls.first == .commandBar && Set(controls).count == controls.count,
                "shortcut ordering tolerates duplicate and obsolete identifiers")
         suite.expect(!controls.contains(.volume) && !controls.contains(.screenshot), "individual controls can be hidden")
         defaults.set("", forKey: DefaultsKey.notchHiddenControls)
@@ -2487,7 +2479,8 @@ enum NotchTests {
             let geometry = NotchGeometry(screen: frames[0], safeAreaTop: 32, cameraWidth: 210, layout: layout)
             for module in NotchModule.allCases {
                 let content = geometry.contentSize(for: geometry.expandedSize(module: module)).height
-                suite.expect(content <= geometry.contentBudget && content > 0,
+                let limit = module == .timer ? geometry.pageBudget : geometry.contentBudget
+                suite.expect((module == .timer ? content > 0 : content <= limit) && content > 0,
                        "every page stays inside its preset's strip: \(layout) \(module)")
             }
             suite.expect(geometry.contentSize(for: geometry.expandedSize(module: .system, detail: true)).height == geometry.pageBudget

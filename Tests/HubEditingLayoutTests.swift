@@ -153,13 +153,13 @@ enum HubEditingLayoutTests {
         let thirteen = HubToolLayout.island(count: 13, width: 504, columns: 6)
         suite.expect(thirteen.isPaged && thirteen.frames[12].minY == 0
                      && abs(thirteen.frames[12].minX - thirteen.pageStride) < 0.01
-                     && abs(thirteen.frames[12].minX - 490) < 0.01,
-                     "tool thirteen starts the next spacious page with a fourteen-point preview")
+                     && abs(thirteen.frames[12].minX - 487) < 0.01,
+                     "tool thirteen starts the next spacious page with a seven-point preview")
         let ten = HubToolLayout.island(count: 10, width: 424)
         let eleven = HubToolLayout.island(count: 11, width: 424)
         suite.expect(!ten.isPaged && ten.size.width == 424 && ten.frames[4].maxX == 424,
                      "compact single pages fill the same full viewport")
-        suite.expect(eleven.isPaged && eleven.frames[10].minX == 410 && eleven.size.width == 834,
+        suite.expect(eleven.isPaged && eleven.frames[10].minX == 407 && eleven.size.width == 811,
                      "compact paging retains its peek and enough trailing room for the final page")
 
         suite.expect(ten.pages == 1, "compact 10 tools is 1 page")

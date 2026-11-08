@@ -6,12 +6,6 @@ enum NotchReviewInteractionContract {
     struct PowerReading { var chargePercent: Int?; var isCharging = false; var externalConnected = false }
     final class Window {}
     struct NSEvent { let keyCode: UInt16; var window: Window? }
-    class EditorState {
-        var panel: Window? = Window()
-        var pickerPresented = false
-        var dismissals = 0
-        func dismiss() { dismissals += 1 }
-    }
     struct Entry { let id = UUID() }
     final class Library {
         var query = "foo"
@@ -63,15 +57,22 @@ enum NotchReviewInteractionTests {
         suite.expect(C.NotchRestingBattery.tint(for: C.PowerReading(chargePercent: 10)) == Color.red
             && C.NotchRestingBattery.tint(for: C.PowerReading(chargePercent: 20)) == Color.orange,
             "the island retains the accepted fixed-on red and amber battery policy")
-        let editor = C.Editor()
-        suite.expect(editor.handleKey(C.NSEvent(keyCode: 53, window: C.Window())) != nil && editor.dismissals == 0,
-                     "Escape in another window leaves the quick-action editor open")
-        editor.pickerPresented = true
-        suite.expect(editor.handleKey(C.NSEvent(keyCode: 53, window: editor.panel)) != nil && editor.dismissals == 0,
-                     "Escape dismisses a picker before the quick-action editor")
-        editor.pickerPresented = false
-        suite.expect(editor.handleKey(C.NSEvent(keyCode: 53, window: editor.panel)) == nil && editor.dismissals == 1,
-                     "Escape in the editor dismisses it when no picker is open")
+        // Editing Quick Access now uses the live Island, not the retired
+        // separate panel and its Escape-to-dismiss monitor.
+        let editorSource = (try? String(contentsOfFile:
+            "Sources/Lattice/UI/Notch/NotchLiveQuickActionsEditorController.swift",
+            encoding: .utf8)) ?? ""
+        suite.expect(editorSource.contains("NotchService.shared.open(.hub")
+                   && editorSource.contains("LatticeHubService.shared.isEditing = true")
+                   && !editorSource.contains("NotchLiveQuickActionsEditorView("),
+                     "Quick Access editing uses the real island and Hub edit state")
+        let accessSource = (try? String(contentsOfFile:
+            "Sources/Lattice/UI/Notch/NotchQuickAccessView.swift",
+            encoding: .utf8)) ?? ""
+        suite.expect(accessSource.contains("editingBubble(placement)")
+                   && accessSource.contains("NotchQuickActionPicker(")
+                   && accessSource.contains("saveEditingConfiguration(configuration)"),
+                     "live quick-access gutters support selecting, adding, and removing actions")
         let snippets = C.SnippetPage()
         snippets.appeared()
         suite.expect(snippets.library.query.isEmpty && !snippets.searchOpen
