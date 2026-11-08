@@ -71,13 +71,6 @@ enum SettingsDirectory {
                         destination: FeatureSettingsDestination(.energy, sectionAnchor: .brightness),
                         title: FeatureStrings.brightness(language).pageTitle, icon: "display.2"), at: 0)
                 }
-                if pageItem.page == .general {
-                    rows.insert(SettingsSidebarItem(
-                        id: .setting(.panelConfiguration),
-                        destination: FeatureSettingsDestination(
-                            .general, sectionAnchor: .panelConfiguration),
-                        title: s.menuBarSection, icon: "menubar.rectangle"), at: 1)
-                }
                 if pageItem.page == .energy {
                     rows.removeAll { $0.id == .feature(.keepAwake) }
                 }
@@ -124,13 +117,6 @@ enum SettingsDirectory {
         }
         var items = SettingsSearchSupport.combinedItems(pageItems: pageItems,
                                                         featureItems: featureItems)
-        items.append(SettingsSearchItem(
-            id: .setting(.panelConfiguration),
-            destination: FeatureSettingsDestination(
-                .general, sectionAnchor: .panelConfiguration),
-            title: s.menuBarSection, icon: "menubar.rectangle",
-            keywords: [SettingsFollowupStrings.text(.showMenuIcon, language),
-                       FeatureStrings.generalSettings(language).menuBarIconTitle, "SF Symbols"]))
         if BrightnessService.keyboardLightIsSupported {
             items.append(SettingsSearchSupport.keyboardBrightnessShortcutItem(language: language))
         }
