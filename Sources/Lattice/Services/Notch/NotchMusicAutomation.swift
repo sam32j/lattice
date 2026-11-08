@@ -118,6 +118,65 @@ enum NotchMusicAutomation {
         return (reply.paramDescriptor(forKeyword: keyErrorNumber)?.int32Value ?? 0) == 0
     }
 
+    /// The repeat switch belonging to the *currently playing app*. The
+    /// three-state and Boolean versions are both supplied by its SDEF.
+    private static func repeatEvent(_ mode: NotchMusicRepeatMode?,
+                                    availability: Availability) -> NSAppleEventDescriptor? {
+        guard let repeating = availability.capabilities.repeating, availability.target.isCurrent,
+              let event = propertyEvent(mode == nil ? kAEGetData : kAESetData,
+                                        code: repeating.property,
+                                        address: NSAppleEventDescriptor(processIdentifier: availability.target.pid))
+        else { return nil }
+        if let mode {
+            switch repeating.values {
+            case .boolean:
+                guard mode != .one else { return nil }
+                event.setParam(NSAppleEventDescriptor(boolean: mode == .all), forKeyword: keyAEData)
+            case .enumerated(let off, let all, let one):
+                let code: UInt32
+                switch mode {
+                case .off: code = off
+                case .all: code = all
+                case .one: code = one
+                }
+                event.setParam(NSAppleEventDescriptor(enumCode: OSType(code)), forKeyword: keyAEData)
+            }
+        }
+        return event
+    }
+
+    static func repeatMode(of availability: Availability) -> NotchMusicRepeatMode? {
+        guard availability.target.isCurrent,
+              access(to: availability.target) == .granted,
+              let repeating = availability.capabilities.repeating,
+              let event = repeatEvent(nil, availability: availability),
+              let reply = try? event.sendEvent(options: [.waitForReply, .neverInteract, .dontRecord], timeout: 1),
+              (reply.paramDescriptor(forKeyword: keyErrorNumber)?.int32Value ?? 0) == 0,
+              let value = reply.paramDescriptor(forKeyword: keyDirectObject) else { return nil }
+        switch repeating.values {
+        case .boolean:
+            guard [typeTrue, typeFalse, typeBoolean].contains(value.descriptorType) else { return nil }
+            return value.booleanValue ? .all : .off
+        case .enumerated(let off, let all, let one):
+            guard value.descriptorType == typeEnumerated else { return nil }
+            switch value.enumCodeValue {
+            case off: return .off
+            case all: return .all
+            case one: return .one
+            default: return nil
+            }
+        }
+    }
+
+    static func setRepeat(_ mode: NotchMusicRepeatMode, availability: Availability) -> Bool {
+        guard availability.target.isCurrent,
+              access(to: availability.target) == .granted,
+              let event = repeatEvent(mode, availability: availability),
+              let reply = try? event.sendEvent(options: [.waitForReply, .neverInteract, .dontRecord], timeout: 1)
+        else { return false }
+        return (reply.paramDescriptor(forKeyword: keyErrorNumber)?.int32Value ?? 0) == 0
+    }
+
     /// Gets or sets one property of the application itself.
     private static func propertyEvent(_ eventID: AEEventID, code: UInt32,
                                       address: NSAppleEventDescriptor) -> NSAppleEventDescriptor? {

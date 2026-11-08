@@ -80,7 +80,7 @@ struct NotchMusicTransport: View {
                 .frame(width: height, height: height)
                 .contentShape(Circle())
         }
-        .buttonStyle(NotchButtonStyle(cornerRadius: height / 2))
+        .buttonStyle(.plain)
         // A second tap before the player answers asks for the state after it,
         // so only the player reaching what was asked ends the early word.
         .onChange(of: playback.isPlaying) { if playback.isPlaying == requestedPlaying { requestedPlaying = nil } }

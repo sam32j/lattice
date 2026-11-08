@@ -92,42 +92,51 @@ struct NotchMusicStrip: View {
     var body: some View {
         let wing = geometry.compactActivityWingWidth
         let named = namedWing
-        Button(action: activateStrip) {
-            HStack(spacing: 0) {
-                HStack(spacing: Layout.spacing) {
-                    // The words grow out from behind the cover, which keeps its place.
-                    if named != nil { namedLabel }
-                    if wing > 0 {
-                        // Circular corners, like the strip's, so the two stay parallel.
+        HStack(spacing: 0) {
+            HStack(spacing: Layout.spacing) {
+                // The words grow out from behind the cover, which keeps its place.
+                if named != nil {
+                    Button { service.openDefault() } label: { namedLabel }.buttonStyle(.plain)
+                }
+                if wing > 0 {
+                    // Circular corners, like the strip's, so the two stay parallel.
+                    Button { service.open(.music) } label: {
                         NotchMusicCover(artwork: artwork, side: artworkSide, radius: artworkRadius,
                                         source: playback?.track)
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.leading, named == nil ? artworkInset : Layout.endInset)
-                .padding(.trailing, named == nil ? innerInset : wing - artworkInset - artworkSide)
-                .frame(width: named ?? wing, height: geometry.compactActivityContentHeight,
-                       alignment: named == nil ? .leading : .trailing)
-                .clipped()
-                .contentShape(Rectangle())
-                .onHover { if live { service.hoverMusicStrip(.cover, entered: $0) } }
-                Group {
-                    if fillsCameraGap { trackLabel } else { Color.clear }
-                }
-                .frame(width: geometry.compactActivityCameraGap, height: geometry.compactActivityContentHeight)
-                .clipped()
-                HStack {
-                    if wing > 0 { bars }
-                }
-                .padding(.leading, innerInset)
-                .padding(.trailing, barsInset)
-                .frame(width: wing, height: geometry.compactActivityContentHeight, alignment: .trailing)
-                .contentShape(Rectangle())
-                .onHover { if live { service.hoverMusicStrip(.bars, entered: $0) } }
             }
-            .frame(height: geometry.compactActivityContentHeight)
+            .padding(.leading, named == nil ? artworkInset : Layout.endInset)
+            .padding(.trailing, named == nil ? innerInset : wing - artworkInset - artworkSide)
+            .frame(width: named ?? wing, height: geometry.compactActivityContentHeight,
+                   alignment: named == nil ? .leading : .trailing)
+            .clipped()
             .contentShape(Rectangle())
+            .onHover { if live { service.hoverMusicStrip(.cover, entered: $0) } }
+            Group {
+                if fillsCameraGap {
+                    Button { service.openDefault() } label: { trackLabel }.buttonStyle(.plain)
+                } else {
+                    Button { service.openDefault() } label: { Color.clear.contentShape(Rectangle()) }.buttonStyle(.plain)
+                }
+            }
+            .frame(width: geometry.compactActivityCameraGap, height: geometry.compactActivityContentHeight)
+            .clipped()
+            HStack {
+                if wing > 0 {
+                    Button(action: activateStrip) { bars }.buttonStyle(.plain)
+                }
+            }
+            .padding(.leading, innerInset)
+            .padding(.trailing, barsInset)
+            .frame(width: wing, height: geometry.compactActivityContentHeight, alignment: .trailing)
+            .clipped()
+            .contentShape(Rectangle())
+            .onHover { if live { service.hoverMusicStrip(.bars, entered: $0) } }
         }
-        .buttonStyle(.plain)
+        .frame(height: geometry.compactActivityContentHeight)
+        .contentShape(Rectangle())
         .accessibilityLabel([title, artist].compactMap { $0 }.joined(separator: ", "))
         .accessibilityHint(FeatureStrings.notch(l10n.language).open)
         .accessibilityAction(named: Text(FeatureStrings.radialMenu(l10n.language).mediaPlayPause)) {

@@ -17,6 +17,8 @@ final class NotchMusicService: ObservableObject {
     @Published private(set) var awaitingPlayback = false
     @Published private(set) var artwork: NSImage?
     @Published private(set) var artworkTint: NotchArtworkTint?
+    /// Up to three distinct colors for the local, audio-reactive music glow.
+    @Published private(set) var artworkGlowPalette: [NotchArtworkTint] = []
     @Published private(set) var commandFailed = false
     @Published private(set) var commandPending = false
     @Published private(set) var automationAvailability: NotchMusicAutomation.Availability?
@@ -45,9 +47,22 @@ final class NotchMusicService: ObservableObject {
         let playback: NotchPlayback?
         let artwork: NSImage?
         let tint: NotchArtworkTint?
+        let palette: [NotchArtworkTint]
         let sources: [NotchPlaybackSource]
         let automatic: Bool?
         let selectedPID: Int32?
+
+        init(playback: NotchPlayback?, artwork: NSImage?, tint: NotchArtworkTint?,
+             palette: [NotchArtworkTint] = [], sources: [NotchPlaybackSource],
+             automatic: Bool?, selectedPID: Int32?) {
+            self.playback = playback
+            self.artwork = artwork
+            self.tint = tint
+            self.palette = palette
+            self.sources = sources
+            self.automatic = automatic
+            self.selectedPID = selectedPID
+        }
     }
     /// An empty reading waiting out a gap between songs; see receive(_:).
     private var gapReading: Reading?
@@ -69,7 +84,7 @@ final class NotchMusicService: ObservableObject {
     /// never saved across launches of the app.
     private var chosenSource: NotchPlaybackSource.Selection?
     private var restoringSource = false
-    private var artworkCache = NotchArtworkCache<(image: NSImage, tint: NotchArtworkTint?)>()
+    private var artworkCache = NotchArtworkCache<(image: NSImage, tint: NotchArtworkTint?, palette: [NotchArtworkTint])>()
     private var artworkWork: DispatchWorkItem?
     private var automationTarget: NotchMusicAutomation.Target?
     private var automationDiscovery = DispatchWorkItem {}
@@ -132,6 +147,7 @@ final class NotchMusicService: ObservableObject {
         var cachedArtwork: Data?
         var cachedImage: NSImage?
         var cachedTint: NotchArtworkTint?
+        var cachedPalette: [NotchArtworkTint] = []
         let reader = NotchMusicPipeReader { [weak self] data in
             let reply = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
             if let reply, reply["validationRequest"] != nil {
@@ -164,6 +180,7 @@ final class NotchMusicService: ObservableObject {
                 cachedArtwork = next?.track.artworkData
                 cachedImage = cachedArtwork.flatMap { ImageThumbnailer.thumbnail(data: $0, pointSize: 160, scale: 2) }
                 cachedTint = cachedImage.flatMap(NotchMusicService.artworkTint(of:))
+                cachedPalette = cachedImage.map(NotchMusicService.artworkPalette(of:)) ?? []
             }
             let image = cachedImage
             let tint = cachedTint
@@ -174,7 +191,7 @@ final class NotchMusicService: ObservableObject {
                 guard let self, self.generation == requested,
                       self.acceptsSourceReply(automatic: automatic, sources: sources) else { return }
                 self.requestBrowserArtwork(for: next)
-                self.receive(Reading(playback: next, artwork: image, tint: tint, sources: sources,
+                self.receive(Reading(playback: next, artwork: image, tint: tint, palette: cachedPalette, sources: sources,
                                      automatic: automatic, selectedPID: selectedPID))
             }
         }
@@ -266,7 +283,7 @@ final class NotchMusicService: ObservableObject {
         else if !first, let current = playback, NotchTrackChange.isBetweenSongs(reading.playback, after: current) {
             trackEnds.send()
         }
-        updateArtwork(reading.artwork, tint: reading.tint, playback: reading.playback)
+        updateArtwork(reading.artwork, tint: reading.tint, palette: reading.palette, playback: reading.playback)
         playback = reading.playback
         sources = reading.sources
         NotchPreferredPlayer.remember(reading.playback, in: reading.sources)
@@ -305,15 +322,18 @@ final class NotchMusicService: ObservableObject {
     private func applyBrowserArtwork() {
         guard let playback, let cover = NotchBrowserArtwork.shared.artwork(for: playback),
               let image = ImageThumbnailer.thumbnail(data: cover, pointSize: 160, scale: 2) else { return }
-        updateArtwork(image, tint: Self.artworkTint(of: image), playback: playback.withArtwork(cover))
+        updateArtwork(image, tint: Self.artworkTint(of: image),
+                      palette: Self.artworkPalette(of: image), playback: playback.withArtwork(cover))
     }
 
-    private func updateArtwork(_ image: NSImage?, tint: NotchArtworkTint?, playback: NotchPlayback?) {
+    private func updateArtwork(_ image: NSImage?, tint: NotchArtworkTint?,
+                               palette: [NotchArtworkTint], playback: NotchPlayback?) {
         artworkWork?.cancel()
         artworkWork = nil
-        artworkCache.update(image.map { (image: $0, tint: tint) }, for: playback)
+        artworkCache.update(image.map { (image: $0, tint: tint, palette: palette) }, for: playback)
         artwork = artworkCache.artwork?.image
         artworkTint = artworkCache.artwork?.tint
+        artworkGlowPalette = artworkCache.artwork?.palette ?? []
         guard let deadline = artworkCache.expiresAt else { return }
         let requested = generation
         let work = DispatchWorkItem { [weak self] in
@@ -321,6 +341,7 @@ final class NotchMusicService: ObservableObject {
             self.artworkCache.expire(at: deadline)
             self.artwork = self.artworkCache.artwork?.image
             self.artworkTint = self.artworkCache.artwork?.tint
+            self.artworkGlowPalette = self.artworkCache.artwork?.palette ?? []
             self.artworkWork = nil
         }
         artworkWork = work
@@ -347,6 +368,83 @@ final class NotchMusicService: ObservableObject {
         return NotchArtworkTint.from(red: Double(pixel[0]) / 255,
                                      green: Double(pixel[1]) / 255,
                                      blue: Double(pixel[2]) / 255)
+    }
+
+    /// Small, one-time sampling of a decoded cover. Kept out of the view's
+    /// animation loop and out of the audio callback. The existing single
+    /// averaged tint remains untouched for transport, meters and other UI.
+    static func artworkPalette(of image: NSImage) -> [NotchArtworkTint] {
+        guard let cover = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
+              let space = CGColorSpace(name: CGColorSpace.sRGB) else { return [] }
+
+        let side = 24
+        var pixels = [UInt8](repeating: 0, count: side * side * 4)
+        let rendered = pixels.withUnsafeMutableBytes { bytes -> Bool in
+            guard let base = bytes.baseAddress,
+                  let context = CGContext(
+                    data: base, width: side, height: side, bitsPerComponent: 8,
+                    bytesPerRow: side * 4, space: space,
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+                        | CGBitmapInfo.byteOrder32Big.rawValue)
+            else { return false }
+            context.interpolationQuality = .medium
+            context.draw(cover, in: CGRect(x: 0, y: 0, width: side, height: side))
+            return true
+        }
+        guard rendered else { return [] }
+
+        struct Bucket {
+            var red = 0.0
+            var green = 0.0
+            var blue = 0.0
+            var weight = 0.0
+        }
+        var buckets = Array(repeating: Bucket(), count: 18)
+        for offset in stride(from: 0, to: pixels.count, by: 4) {
+            let alpha = Double(pixels[offset + 3]) / 255
+            guard alpha > 0.5 else { continue }
+            let r = min(1, Double(pixels[offset]) / (255 * alpha))
+            let g = min(1, Double(pixels[offset + 1]) / (255 * alpha))
+            let b = min(1, Double(pixels[offset + 2]) / (255 * alpha))
+            let hi = max(r, g, b), lo = min(r, g, b)
+            let saturation = hi > 0 ? (hi - lo) / hi : 0
+            let luminance = r * 0.2126 + g * 0.7152 + b * 0.0722
+            guard saturation > 0.19, luminance > 0.09, luminance < 0.93 else { continue }
+
+            let delta = hi - lo
+            let sector: Double
+            if hi == r { sector = (g - b) / delta }
+            else if hi == g { sector = (b - r) / delta + 2 }
+            else { sector = (r - g) / delta + 4 }
+            let hue = (sector / 6 + 1).truncatingRemainder(dividingBy: 1)
+            let index = min(buckets.count - 1, Int(hue * Double(buckets.count)))
+            let weight = alpha * saturation * saturation * (0.5 + luminance)
+            buckets[index].red += r * weight
+            buckets[index].green += g * weight
+            buckets[index].blue += b * weight
+            buckets[index].weight += weight
+        }
+
+        // Select dominant distinct hue families, not three near-identical
+        // shades of the most common color. The tint converter also rejects
+        // grayscale / low-information covers.
+        var selected: [Int] = []
+        for index in buckets.indices.sorted(by: { buckets[$0].weight > buckets[$1].weight }) {
+            guard buckets[index].weight > 0 else { break }
+            let different = selected.allSatisfy { prior in
+                let distance = abs(index - prior)
+                return min(distance, buckets.count - distance) >= 2
+            }
+            if different { selected.append(index) }
+            if selected.count == 3 { break }
+        }
+        return selected.compactMap { index in
+            let bucket = buckets[index]
+            return NotchArtworkTint.from(
+                red: bucket.red / bucket.weight,
+                green: bucket.green / bucket.weight,
+                blue: bucket.blue / bucket.weight)
+        }
     }
 
     func stop() {
@@ -398,6 +496,7 @@ final class NotchMusicService: ObservableObject {
         selectedSourcePID = nil
         artwork = nil
         artworkTint = nil
+        artworkGlowPalette = []
         commandFailed = false
     }
 
@@ -420,6 +519,7 @@ final class NotchMusicService: ObservableObject {
         playback = nil
         artwork = nil
         artworkTint = nil
+        artworkGlowPalette = []
         awaitingPlayback = true
         updateAutomation(for: nil)
         NotchLyricsService.shared.playbackChanged(nil)
