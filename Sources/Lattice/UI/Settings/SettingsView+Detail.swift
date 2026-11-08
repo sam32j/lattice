@@ -4,18 +4,12 @@ extension SettingsView {
     @ViewBuilder
     var detail: some View {
         switch router.page {
-        case .general:
-            if router.destination.sectionAnchor == .panelConfiguration,
-               sidebarItems.contains(where: { $0.destination == router.destination }) {
-                GeneralToolSettings()
-            } else {
-                GeneralSettings()
-            }
+        case .general: GeneralSettings()
         case .features: GeneralSettings()
         case .textSnippets: TextSnippetsSettings()
         case .cameraPreview: DedicatedUtilitySettings(feature: .cameraPreview)
         case .diskImageInstaller: DedicatedUtilitySettings(feature: .diskImageInstaller)
-        case .launcherGrid: DedicatedUtilitySettings(feature: .quickLauncher)
+        case .launcherGrid: GeneralSettings()
         case .notch: NotchSettings().id("notch")
         case .notchWidget(let module): NotchSettings(initialContent: .module(module)).id(module)
         case .notchCompanion: NotchSettings(initialContent: .companion).id("companion")
