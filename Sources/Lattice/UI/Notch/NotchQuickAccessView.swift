@@ -69,6 +69,10 @@ struct NotchQuickAccessView: View {
     @ObservedObject private var awake = KeepAwakeManager.shared
     @ObservedObject private var microphone = MicMuteService.shared
     @ObservedObject private var recorder = ScreenRecorderService.shared
+    @ObservedObject private var launcher = LatticeHubService.shared
+    @State private var editingPopoverID: UUID?
+    @State private var draggedButtonID: UUID?
+    @State private var dragTranslation: CGSize = .zero
     private let glass = LiquidGlassSupport.isSupported
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
@@ -85,13 +89,20 @@ struct NotchQuickAccessView: View {
         let drops = NotchQuickAccessDrops(placements: motion.placements, progress: motion.progress)
         let buttons = ZStack(alignment: .topLeading) {
             ForEach(motion.placements) { placement in
-                bubble(placement.button)
-                    .scaleEffect(0.4 + 0.6 * motion.progress)
-                    .opacity(Double(motion.progress))
-                    .position(placement.center(progress: motion.progress))
+                Group {
+                    if liveEditing {
+                        editingBubble(placement)
+                    } else {
+                        bubble(placement.button)
+                    }
+                }
+                .scaleEffect(0.4 + 0.6 * motion.progress)
+                .opacity(Double(motion.progress))
+                .position(placement.center(progress: motion.progress))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .coordinateSpace(name: "liveQuickAccessStage")
         Group {
             if followsGlass {
                 buttons.modifier(NotchQuickAccessGlassSurface(presentation: backdrop, drops: drops))
@@ -107,6 +118,100 @@ struct NotchQuickAccessView: View {
         .accessibilityHidden(!motion.interactive)
     }
 
+    private var liveEditing: Bool {
+        launcher.isEditing && service.expanded && service.selected == .hub
+    }
+
+    @ViewBuilder
+    private func editingBubble(_ placement: NotchQuickAccessPlacement) -> some View {
+        let button = placement.button
+        let isSlot = NotchQuickAccessEditing.placeholderSide(for: button.id) != nil
+        ZStack(alignment: .topTrailing) {
+            Button { editingPopoverID = button.id } label: {
+                Image(systemName: isSlot ? "plus" : (button.action?.symbol ?? "questionmark"))
+                    .font(.system(size: 17, weight: .medium))
+                    .frame(width: NotchQuickAccessLayout.diameter, height: NotchQuickAccessLayout.diameter)
+                    .background(Color.black, in: Circle())
+                    .overlay {
+                        Circle().strokeBorder(isSlot ? Color.accentColor : Color.white.opacity(0.35),
+                                              style: StrokeStyle(lineWidth: 1.5,
+                                                                 dash: isSlot ? [4, 4] : []))
+                    }
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: Binding(
+                get: { editingPopoverID == button.id },
+                set: { if !$0 { editingPopoverID = nil } }
+            )) {
+                NotchQuickActionPicker(selected: isSlot ? nil : button.action) { action in
+                    var configuration = NotchQuickAccessConfiguration.stored()
+                    if let side = NotchQuickAccessEditing.placeholderSide(for: button.id) {
+                        guard configuration.hasRoom(on: side) else { return }
+                        configuration.buttons.append(NotchQuickButton(action: action, side: side))
+                    } else if let index = configuration.buttons.firstIndex(where: { $0.id == button.id }) {
+                        configuration.buttons[index].actionID = action.id
+                    }
+                    saveEditingConfiguration(configuration)
+                    editingPopoverID = nil
+                }
+            }
+            if !isSlot {
+                Button {
+                    var configuration = NotchQuickAccessConfiguration.stored()
+                    configuration.buttons.removeAll { $0.id == button.id }
+                    saveEditingConfiguration(configuration)
+                } label: {
+                    Image(systemName: "minus")
+                        .font(.system(size: 10, weight: .bold))
+                        .frame(width: 18, height: 18)
+                        .foregroundStyle(.white)
+                        .background(.red, in: Circle())
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .offset(x: 7, y: -7)
+            }
+        }
+        .offset(draggedButtonID == button.id ? dragTranslation : .zero)
+        .highPriorityGesture(
+            DragGesture(minimumDistance: 4, coordinateSpace: .named("liveQuickAccessStage"))
+                .onChanged { value in
+                    guard !isSlot else { return }
+                    editingPopoverID = nil
+                    draggedButtonID = button.id
+                    dragTranslation = value.translation
+                }
+                .onEnded { value in
+                    if !isSlot { moveEditingButton(button, to: value.location) }
+                    draggedButtonID = nil
+                    dragTranslation = .zero
+                }
+        )
+        .accessibilityIdentifier(isSlot ? "notch.quickAccess.add.\(button.side.rawValue)" : "notch.quickAccess.edit.\(button.id.uuidString)")
+    }
+
+    private func moveEditingButton(_ button: NotchQuickButton, to point: CGPoint) {
+        guard let target = motion.placements
+            .filter({ $0.button.id != button.id })
+            .min(by: {
+                let first = $0.center(progress: 1), second = $1.center(progress: 1)
+                return hypot(first.x - point.x, first.y - point.y) < hypot(second.x - point.x, second.y - point.y)
+            }) else { return }
+        let targetPoint = target.center(progress: 1)
+        guard hypot(targetPoint.x - point.x, targetPoint.y - point.y) <= 75 else { return }
+        var configuration = NotchQuickAccessConfiguration.stored()
+        let before = NotchQuickAccessEditing.placeholderSide(for: target.button.id) == nil
+            ? target.button.id : nil
+        configuration.move(button.id, to: target.side, before: before)
+        saveEditingConfiguration(configuration)
+    }
+
+    private func saveEditingConfiguration(_ configuration: NotchQuickAccessConfiguration) {
+        UserDefaults.standard.set(configuration.sanitized().encoded, forKey: DefaultsKey.notchQuickAccessLayout)
+        service.refreshPresentation(animated: false)
+    }
+
     private func bubble(_ button: NotchQuickButton) -> some View {
         let action = button.action ?? .explore
         let selected: Bool = {
@@ -116,7 +221,7 @@ struct NotchQuickAccessView: View {
             if action == .control(.microphone) { return microphone.isMuted }
             if action == .control(.recording) { return recorder.isRecording }
             if case .module(let module) = action {
-                return !service.showingAppPanel && service.selected == module
+                return service.selected == module
             }
             return false
         }()
@@ -281,7 +386,7 @@ extension NotchQuickAction {
 
     func title(_ l10n: L10n) -> String {
         switch self {
-        case .explore: return "Home"
+        case .explore: return SettingsFollowupStrings.text(.allTools, l10n.language)
         case .settings: return l10n.s.menuSettings
         case .pin: return FeatureStrings.notch(l10n.language).pin
         case .module(let module): return module.title(l10n.language)
