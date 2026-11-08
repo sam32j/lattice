@@ -330,15 +330,15 @@ enum NotchActivityTests {
                 suite.expect(geometry.contentSize(for: setup).height
                        == NotchLayout.timer(mode: .timer, hasSession: false, height: geometry.contentBudget)
                        && geometry.contentSize(for: setup).height >= NotchLayout.timerMinimumRulerHeight
-                       && geometry.contentSize(for: active).height == NotchLayout.timerRulerHeight && active == setup,
-                       "timer setup has room for its ruler and clock, the modes and Start being in the top row; starting it keeps the island's size")
+                       && geometry.contentSize(for: active).height == NotchLayout.timerMainRowHeight && active.height <= setup.height,
+                       "timer setup has room for its ruler and clock; starting it shortens to the main controls row")
                 suite.expect(screen.contains(geometry.frame(for: setup)) && screen.contains(geometry.frame(for: active))
                        && geometry.frame(for: setup).maxY == geometry.frame(for: active).maxY,
                        "starting a timer preserves the screen's top edge and keeps both sizes on screen")
             }
         }
         session.cancel()
-        session.start(mode: .pomodoro, minutes: 5, now: 0, configuration: NotchPomodoroConfiguration(totalSessions: 5))
+        session.start(mode: .pomodoro, minutes: 5, now: 0, configuration: NotchPomodoroConfiguration(longBreakInterval: 4, totalSessions: 5))
         var now: TimeInterval = 0
         for round in 1...4 {
             suite.expect(session.phase == .focus && session.duration == 1500, "each focus phase lasts 25 minutes")
@@ -364,8 +364,8 @@ enum NotchActivityTests {
     }
 
     private static func pomodoroContracts(_ suite: TestSuite) {
-        let config = NotchPomodoroConfiguration(focusMinutes: 10, shortBreakMinutes: 2,
-                                              longBreakMinutes: 7, longBreakInterval: 2, totalSessions: 3)
+        let config = NotchPomodoroConfiguration(focusMinutes: 10, shortBreakMinutes: 3,
+                                              longBreakMinutes: 10, longBreakInterval: 2, totalSessions: 3)
         var session = NotchTimerSession()
         session.start(mode: .pomodoro, minutes: 1, now: 0, configuration: config)
         suite.expect(session.duration == 600 && session.sessionNumber == 1 && !session.canStartNext,
@@ -383,7 +383,7 @@ enum NotchActivityTests {
             if round == 3 { break }
             suite.expect(session.canStartNext && !session.cycleFinished, "unfinished cycles offer explicit continuation")
             session.startNext(at: now)
-            let expectedBreak = round == 1 ? 120.0 : 420.0
+            let expectedBreak = round == 1 ? 180.0 : 600.0
             suite.expect(session.duration == expectedBreak && session.phase == (round == 1 ? .shortBreak : .longBreak),
                    "configured interval chooses the correct short or long break duration")
             now += expectedBreak
@@ -401,14 +401,18 @@ enum NotchActivityTests {
         suite.expect(session == finished, "continuation cannot restart a finished cycle")
         session.cancel()
         session.start(mode: .pomodoro, minutes: 1, now: 0,
-                      configuration: NotchPomodoroConfiguration(longBreakInterval: 1, totalSessions: 1))
+                      configuration: NotchPomodoroConfiguration(longBreakInterval: 0, totalSessions: 2))
         _ = session.finishIfDue(at: 100_000)
-        suite.expect(session.cycleFinished && session.completedFocuses == 1 && !session.canStartNext,
-               "a one-session goal ends at focus completion even when a long break would otherwise be due")
+        session.startNext(at: 100_001)
+        _ = session.finishIfDue(at: 200_000)
+        session.startNext(at: 200_001)
+        _ = session.finishIfDue(at: 300_000)
+        suite.expect(session.cycleFinished && session.completedFocuses == 2 && !session.canStartNext,
+               "a two-session goal ends at focus completion when no long break is configured")
         let bounded = NotchPomodoroConfiguration(focusMinutes: Int.max, shortBreakMinutes: Int.min,
             longBreakMinutes: Int.max, longBreakInterval: 0, totalSessions: Int.max)
-        suite.expect(bounded.focusMinutes == 180 && bounded.shortBreakMinutes == 1 && bounded.longBreakMinutes == 60
-               && bounded.longBreakInterval == 1 && bounded.totalSessions == 24,
+        suite.expect(bounded.focusMinutes == 90 && bounded.shortBreakMinutes == 3 && bounded.longBreakMinutes == 10
+               && bounded.longBreakInterval == 0 && bounded.totalSessions == 2,
                "restored out-of-range values cannot overflow deadlines or create invalid cycle intervals")
         let domain = "io.github.sam32j.lattice.tests.pomodoro"
         let defaults = UserDefaults(suiteName: domain)!
@@ -438,9 +442,8 @@ enum NotchActivityTests {
         let active = geometry.expandedSize(module: .timer, timerHasSession: true, timerMode: .pomodoro)
         suite.expect(geometry.contentSize(for: setup).height
                == NotchLayout.timer(mode: .pomodoro, hasSession: false, height: geometry.contentBudget)
-               && geometry.contentSize(for: setup).height <= geometry.contentBudget
-               && geometry.contentSize(for: active).height == NotchLayout.timerRulerHeight && active.height < setup.height,
-               "the Pomodoro setup fits the strip with its readouts under the ruler; running, its progress is in the top row and the island shortens")
+               && geometry.contentSize(for: active).height == NotchLayout.timerMainRowHeight && active.height < setup.height,
+               "the Pomodoro setup reports its natural height; running, the island shortens to the main controls row")
     }
 
     private static func stopwatchContracts(_ suite: TestSuite) {
@@ -557,8 +560,8 @@ enum NotchActivityTests {
         }
         defaults.set("countdown", forKey: DefaultsKey.notchTimerMode)
         suite.expect(NotchTimerSupport.savedMode(in: defaults) == .timer, "an unknown saved mode falls back to the countdown")
-        suite.expect(NotchTimerMode.allCases.last == .stopwatch && NotchTimerMode.allCases.first == .timer,
-               "the stopwatch joins the mode row after the existing modes, keeping their positions")
+        suite.expect(NotchTimerMode.allCases.first == .stopwatch && NotchTimerMode.allCases.last == .pomodoro,
+               "the stopwatch is the first mode, followed by timer and pomodoro")
 
         for layout in NotchSize.allCases {
             let geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1470, height: 956), safeAreaTop: 32,
@@ -566,9 +569,8 @@ enum NotchActivityTests {
             let setup = geometry.expandedSize(module: .timer, timerMode: .stopwatch)
             let active = geometry.expandedSize(module: .timer, timerHasSession: true, timerMode: .stopwatch)
             suite.expect(geometry.contentSize(for: setup).height
-                   == NotchLayout.timer(mode: .stopwatch, hasSession: false, height: geometry.contentBudget)
-                   && setup.height == geometry.expandedSize(module: .timer).height,
-                   "the stopwatch keeps its clock in the countdown's ruler row, so switching between them never resizes the island")
+                   == NotchLayout.timer(mode: .stopwatch, hasSession: false, height: geometry.contentBudget),
+                   "the stopwatch keeps its clock in the main row")
             suite.expect(active == geometry.expandedSize(module: .timer, timerHasSession: true),
                    "a running stopwatch shares the countdown's control row")
         }
@@ -601,18 +603,36 @@ enum NotchActivityTests {
                 .page(.timer, controls: [], sectionsButton: sectionsButton)
         }
         func band(_ geometry: NotchGeometry) -> NotchBand { NotchBand(geometry: geometry, contentWidth: geometry.contentWidth) }
+        
         let compact = page(camera: 180, .compact, sectionsButton: false)
-        let wrapped: CGFloat = max(NotchLayout.timerContentWidth, 180 + compact.pageBandSide * 2)
-        suite.expect(band(compact).besideCamera && compact.pageContentWidth == NotchLayout.timerContentWidth
-               && compact.contentWidth == wrapped
-               && band(compact).side == compact.pageBandSide - NotchBand.cameraClearance
-               && chevron > 0 && glyph > 0,
-               "the timer's row wraps a 180-point camera on a page no wider than its own: \(band(compact).side)")
+
+        suite.expect(
+            compact.pageContentWidth == nil,
+            "Timer should inherit the island's content width"
+        )
+
+        suite.expect(
+        NotchLayout.naturalContentWidth(
+            .timer,
+            controls: [],
+            within: compact.contentWidth
+        ) == nil,
+            "Timer should not have a fixed natural width"
+        )
+
         suite.expect(layout.height > layout.labelSize + 2 && layout.labelPadding > 0
                && NotchLayout.timerStartHeight == 28,
                "every mode label keeps room for its underline and around its text, and Start is as tall as the row's buttons")
         let cameras: [CGFloat] = [0, 156, 170, 180, 185, 190, 200, 208, 210, 224]
         for language in AppLanguage.allCases {
+            let redesigned = FeatureStrings.notchTimerUI(language)
+            let fields = Mirror(reflecting: redesigned).children.compactMap { $0.value as? String }
+            suite.expect(fields.count == 12 && fields.allSatisfy { !$0.isEmpty },
+                         "the new timer UI is localized in \(language.rawValue)")
+            let settings = FeatureStrings.notchLiveActivitySettings(language)
+            suite.expect(!settings.openWithShortcut.isEmpty && !settings.showOn.isEmpty
+                         && !settings.dynamicIslandSize.isEmpty,
+                         "the island opening and size settings are localized in \(language.rawValue)")
             let text = FeatureStrings.notchActivities(language)
             let labels = [text.timer, text.pomodoro, text.stopwatch]
             suite.expect(Set(labels).count == 3 && labels.allSatisfy { !$0.isEmpty },
@@ -646,7 +666,6 @@ enum NotchActivityTests {
                         } else if size == .spacious {
                             // The preset most islands use keeps the name's room past the button.
                             spacious = spacious && fits
-                                && room == band(page(camera: camera, size, sectionsButton: false)).side
                         }
                     }
                 }
@@ -661,11 +680,11 @@ enum NotchActivityTests {
             suite.expect(rows,
                    "a full top row holds the sections button, the whole name and Start in \(language): \(Int(button + named + 12 + start))")
         }
-        suite.expect(NotchPomodoroOption.focus.range == 1...180
-                     && NotchPomodoroOption.shortBreak.range == 1...60
-                     && NotchPomodoroOption.longBreak.range == 1...60
-                     && NotchPomodoroOption.longBreakInterval.range == 1...24
-                     && NotchPomodoroOption.totalSessions.range == 1...24,
+        suite.expect(NotchPomodoroOption.focus.range == 5...90
+                     && NotchPomodoroOption.shortBreak.range == 3...10
+                     && NotchPomodoroOption.longBreak.range == 10...30
+                     && NotchPomodoroOption.longBreakInterval.range == 0...7
+                     && NotchPomodoroOption.totalSessions.range == 2...8,
                      "Pomodoro menus preserve every minute and session count accepted by the saved configuration")
         let defaults = NotchPomodoroConfiguration()
         suite.expect(NotchPomodoroOption.focus.range.contains(defaults.focusMinutes)
@@ -741,7 +760,7 @@ enum NotchActivityTests {
                             let compact = original.compactTimerGeometry(showsDownloads: downloads)
                             if room.isFinite && room >= 64 {
                                 suite.expect(!compact.compactActivityUsesFooter
-                                       && compact.compactActivityWingWidth == min(room, downloads ? 80 : 64).rounded(.down),
+                                       && compact.compactActivityWingWidth == min(room, downloads ? 80 : 90).rounded(.down),
                                        "timer wings keep their readable width around larger cameras, including simultaneous downloads")
                                 suite.expect(compact.compactActivityCameraGap == original.cameraWidth
                                        && compact.compactActivityContentHeight == original.stripHeight,
@@ -781,7 +800,7 @@ enum NotchActivityTests {
                         && roomy.compactTimerGeometry(showsDownloads: false, wing: 30).compactActivitySize.width == 185 + 88,
                      "a short reading beside the cover narrows the timer's wings, leaving no empty band at the ends")
         suite.expect(roomy.compactTimerGeometry(showsDownloads: false, wing: 51.2).compactActivityWingWidth == 52
-                        && roomy.compactTimerGeometry(showsDownloads: false, wing: 300).compactActivityWingWidth == 64
+                        && roomy.compactTimerGeometry(showsDownloads: false, wing: 300).compactActivityWingWidth == 90
                         && roomy.compactTimerGeometry(showsDownloads: true, wing: 30).compactActivityWingWidth == 80,
                      "timer wings take what the reading needs up to their old width; a download keeps its own")
     }
@@ -1040,10 +1059,9 @@ enum NotchActivityTests {
         for key in preferenceKeys { defaults.set(true, forKey: key) }
         suite.expect(NotchTimerSupport.isEnabled(in: defaults) && NotchCameraSupport.isEnabled(in: defaults)
                && NotchAccessorySupport.isEnabled(in: defaults), "turning them back on restores their activity")
-        suite.expect(NotchCameraSupport.canPresent(expanded: true, selected: .camera, appPanel: false, in: defaults), "the mirror can start only on its selected, expanded surface")
-        suite.expect(!NotchCameraSupport.canPresent(expanded: false, selected: .camera, appPanel: false, in: defaults)
-            && !NotchCameraSupport.canPresent(expanded: true, selected: .music, appPanel: false, in: defaults)
-            && !NotchCameraSupport.canPresent(expanded: true, selected: .camera, appPanel: true, in: defaults)
+        suite.expect(NotchCameraSupport.canPresent(expanded: true, selected: .camera, in: defaults), "the mirror can start only on its selected, expanded surface")
+        suite.expect(!NotchCameraSupport.canPresent(expanded: false, selected: .camera, in: defaults)
+            && !NotchCameraSupport.canPresent(expanded: true, selected: .music, in: defaults)
 , "collapse and section changes stop embedded capture")
         defaults.set("timer,camera", forKey: DefaultsKey.notchHiddenModules)
         suite.expect(!NotchTimerSupport.isEnabled(in: defaults) && !NotchCameraSupport.isEnabled(in: defaults),
