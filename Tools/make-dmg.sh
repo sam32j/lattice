@@ -127,16 +127,24 @@ elif (( STYLE_STATUS != 0 )); then
 fi
 
 sync
+DETACHED=0
 for i in {1..5}; do
     if hdiutil detach "$MOUNT" -quiet 2>/dev/null; then
+        DETACHED=1
         break
     fi
     sleep 1
     if hdiutil detach "$MOUNT" -force -quiet 2>/dev/null; then
+        DETACHED=1
         break
     fi
     sleep 1
 done
+
+if (( !DETACHED )); then
+    echo "error: failed to detach $MOUNT after retry attempts" >&2
+    exit 1
+fi
 MOUNT=""
 
 echo "▸ Compressing…"

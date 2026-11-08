@@ -14,7 +14,8 @@ struct NotchQuickActionPicker: View {
     private var editor: NotchEditorStrings { FeatureStrings.notchEditor(l10n.language) }
 
     private var sectionActions: [NotchQuickAction] {
-        [.explore, .settings] + NotchSupport.widgetModules.filter { $0 != .hub }.map(NotchQuickAction.module)
+        let modules = (NotchSupport.widgetModules + [.clipboard]).filter { $0 != .hub }
+        return [.explore, .settings] + modules.map(NotchQuickAction.module)
     }
 
     private var controlActions: [NotchQuickAction] {
