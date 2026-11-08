@@ -36,6 +36,60 @@ struct NotchTimerStrip: View {
         return geometry.compactActivityEdgeInset(boxHeight: textSize * 0.72, radius: 0)
     }
 
+
+    private var timerTint: Color {
+        let session = timer.session
+
+        guard session.mode == .pomodoro else {
+            return .orange
+        }
+
+        if session.completed {
+            return .green
+        }
+
+        switch session.phase {
+        case .shortBreak:
+            return .blue
+
+        case .longBreak:
+            return .green
+
+        default:
+            return .orange
+        }
+    }
+
+    private var timerSymbol: String {
+        let session = timer.session
+
+        if session.completed {
+            return "checkmark.circle"
+        }
+
+        if session.isPaused {
+            return "pause.circle"
+        }
+
+        if session.mode == .pomodoro {
+            switch session.phase {
+            case .focus:
+                return "tachometer"
+
+            case .shortBreak, .longBreak:
+                return "cup.and.saucer"
+
+            default:
+                break
+            }
+        }
+
+        return session.countsUp ? "stopwatch" : "timer"
+    }
+
+
+
+
     var body: some View {
         HStack(spacing: 0) {
             Button {
@@ -47,10 +101,9 @@ struct NotchTimerStrip: View {
                         if let companion {
                             NotchCompanionMark(companion: companion, geometry: geometry)
                         } else {
-                            Image(systemName: timer.session.completed ? "checkmark.circle"
-                                  : timer.session.isPaused ? "pause.circle" : timer.session.countsUp ? "stopwatch" : "timer")
+                            Image(systemName: timerSymbol)
                                 .font(.system(size: iconSize, weight: .medium))
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(timerTint)
                         }
                     }
                 }
@@ -80,12 +133,12 @@ struct NotchTimerStrip: View {
         let now = timer.now
         let text = NotchTimerSupport.compactText(for: timer.session, at: now,
                                                  locale: Locale(identifier: l10n.language.rawValue))
-        return Button { service.openActivity(.timer) } label: {
+        return Button { service.openDefault() } label: {
             Group {
                 if geometry.compactActivityWingWidth >= 42 {
                     Text(text)
                         .font(.system(size: textSize, weight: .medium)).monospacedDigit()
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(timerTint)
                         .lineLimit(1).minimumScaleFactor(0.65)
                         .modifier(NotchRollingDigits(value: text, countsDown: !timer.session.countsUp, everySecond: false))
                         // A reading that gains or loses a character, like
