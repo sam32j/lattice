@@ -19,11 +19,11 @@ extension LatticeHubService {
         if !forceFloating && anchor == nil && shouldRouteToIsland() {
             if NotchService.shared.openQuickPanel(toggle: true) { return }
         }
-        show(anchoredBelow: anchor)
+        show(forceFloating: forceFloating, anchoredBelow: anchor)
     }
 
-    func show(anchoredBelow anchor: NSRect? = nil) {
-        if anchor == nil && shouldRouteToIsland() {
+    func show(forceFloating: Bool = false, anchoredBelow anchor: NSRect? = nil) {
+        if !forceFloating && anchor == nil && shouldRouteToIsland() {
             if NotchService.shared.openQuickPanel() {
                 if isVisible { hide() }
                 return
