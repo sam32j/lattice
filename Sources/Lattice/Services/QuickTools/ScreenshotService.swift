@@ -24,6 +24,9 @@ final class ScreenshotService: ObservableObject {
     /// Names the latest capture itself. Turning the shortcut off renews
     /// `latestCaptureID` but not this, so a later Discard still finds it.
     private var latestCaptureToken = UUID()
+    /// Real history identity survives changes to shortcut/retention settings.
+    /// The token above identifies a preview/Shelf task, not the history UUID.
+    private var latestCaptureHistoryID: UUID?
     /// Set once the latest capture went through an editor or was discarded:
     /// the stored original is then no longer what the person kept. The store
     /// keeps the same answer for the next launch.
@@ -41,6 +44,7 @@ final class ScreenshotService: ObservableObject {
     private var countdownMode: CaptureMode = .standard
     private var directCaptureTask: Task<Void, Never>?
     private var autoCopyTask: Task<Void, Never>?
+    private var autoCopyCaptureID: UUID?
     private var autoCopyGeneration = 0
     private var autoShelfTasks: [UUID: Task<Void, Never>] = [:]
     /// Only the latest capture still has a preview that can discard it.
@@ -443,6 +447,7 @@ final class ScreenshotService: ObservableObject {
     /// exists to reach for.
     private func route(_ capture: ScreenshotSelectionController.Capture) {
         beginLatestCapture(capture)
+        latestCaptureHistoryID = capture.id
         // The island's companion blinks hard, as a flash, if it is there to see.
         NotchService.shared.reactMascot(.flash, patience: 1)
         preview?.close()
@@ -605,14 +610,16 @@ final class ScreenshotService: ObservableObject {
             },
             deleteCapture: { [weak self] completion in
                 guard let self else { completion(false); return }
-                // The latest capture's durable ID also survives reopening an
-                // older history preview or restarting Lattice. Invalidate only
-                // if this exact screenshot is still the latest one.
-                if ScreenshotLastCaptureStore.matches(capture.id) {
-                    self.cancelAutoCopy(for: self.latestCaptureToken)
+                // Resolve the same screenshot's live Shelf token before an
+                // asynchronous history deletion can race with another capture.
+                // This also works when shortcut retention is switched off.
+                let matchingToken = self.latestCaptureHistoryID == capture.id
+                    ? self.latestCaptureToken : latestCapture
+                self.cancelAutoCopy(for: capture.id)
+                if ScreenshotLastCaptureStore.matches(capture.id)
+                    || (self.latestCaptureHistoryID == capture.id
+                        && matchingToken == self.latestCaptureToken) {
                     self.withholdLatestCapture()
-                } else {
-                    self.cancelAutoCopy(for: latestCapture)
                 }
                 // A failed Trash move must leave the stored capture and preview
                 // available for retry; the sequence number is still occupied.
@@ -626,7 +633,7 @@ final class ScreenshotService: ObservableObject {
                     }
                 }
                 RecentCaptureService.shared.deleteScreenshot(id: capture.id) { [weak self] removed in
-                    if removed { self?.deletePreviewSideEffects(latestCapture: latestCapture) }
+                    if removed { self?.deletePreviewSideEffects(latestCapture: matchingToken) }
                     completion(removed)
                 }
             },
@@ -654,13 +661,14 @@ final class ScreenshotService: ObservableObject {
         controller.show()
     }
 
-    /// Cancel a pending capture copy only if this preview still identifies
-    /// the latest capture. Detached export work checks the generation and
-    /// deletes its temporary file rather than publishing the stale pixels.
-    private func cancelAutoCopy(for capture: UUID?) {
-        guard let capture, capture == latestCaptureToken, autoCopyTask != nil else { return }
+    /// An after-capture clipboard task belongs to its history UUID, not a
+    /// preview token or the optional Last Screenshot cache. Detached export
+    /// work checks this generation before touching the clipboard.
+    private func cancelAutoCopy(for captureID: UUID) {
+        guard captureID == autoCopyCaptureID else { return }
         autoCopyTask?.cancel()
         autoCopyTask = nil
+        autoCopyCaptureID = nil
         autoCopyGeneration += 1
     }
 
@@ -889,10 +897,18 @@ final class ScreenshotService: ObservableObject {
         }
         let name = ScreenshotSupport.fileName(prefix: strings.fileNamePrefix, date: Date())
         autoCopyTask?.cancel()
+        autoCopyCaptureID = capture.id
         autoCopyGeneration += 1
         let generation = autoCopyGeneration
         let pasteboardChangeCount = NSPasteboard.general.changeCount
         autoCopyTask = Task { @MainActor [weak self] in
+            defer {
+                // An older task must not clear a newer capture's copy state.
+                if let self, self.autoCopyGeneration == generation {
+                    self.autoCopyTask = nil
+                    self.autoCopyCaptureID = nil
+                }
+            }
             let output = await Task.detached(priority: .userInitiated) {
                 guard let export = Self.flatten(capture, downscaleTo1x: downscale) else {
                     return nil as (URL, ScreenshotEditorController.ClipboardPayload)?
@@ -922,7 +938,6 @@ final class ScreenshotService: ObservableObject {
                 return
             }
             ScreenshotSupport.pruneCopiedFiles(in: folder, preserving: output.0)
-            self.autoCopyTask = nil
         }
     }
 
@@ -1233,8 +1248,8 @@ final class ScreenshotService: ObservableObject {
     }
 }
 
-/// One discardable PNG on disk keeps this shortcut useful across launches
-/// without holding a full-resolution screenshot in memory while the app rests.
+/// One atomic image-plus-ID cache record keeps the shortcut useful across
+/// launches. Legacy PNG/ID pairs are invalidated rather than guessed/migrated.
 enum ScreenshotLastCaptureStore {
     private static let writeQueue = DispatchQueue(
         label: "io.github.sam32j.lattice.latest-screenshot",
@@ -1250,7 +1265,27 @@ enum ScreenshotLastCaptureStore {
         else { return nil }
         return base
             .appendingPathComponent(bundleID, isDirectory: true)
-            .appendingPathComponent("LatestScreenshot.png")
+            .appendingPathComponent("LatestScreenshot.cache")
+    }
+
+    private static var legacyPNGURL: URL? {
+        fileURL?.deletingLastPathComponent().appendingPathComponent("LatestScreenshot.png")
+    }
+
+    private static var legacyIdentityURL: URL? {
+        fileURL?.deletingLastPathComponent().appendingPathComponent("LatestScreenshot.id")
+    }
+
+    private static func invalidateLegacyCache() {
+        if let legacyPNGURL { try? FileManager.default.removeItem(at: legacyPNGURL) }
+        if let legacyIdentityURL { try? FileManager.default.removeItem(at: legacyIdentityURL) }
+    }
+
+    private static func readRecord() -> ScreenshotLatestCaptureRecord? {
+        // Option A: never expose a pre-upgrade identity-less shortcut image.
+        invalidateLegacyCache()
+        guard let fileURL, let data = try? Data(contentsOf: fileURL) else { return nil }
+        return ScreenshotLatestCaptureRecord.decode(data)
     }
 
     /// Present while the stored capture was discarded or went through an
@@ -1259,23 +1294,12 @@ enum ScreenshotLastCaptureStore {
         fileURL?.deletingLastPathComponent().appendingPathComponent("LatestScreenshot.withheld")
     }
 
-    /// The image alone does not carry a capture ID when decoded after launch.
-    /// Store its identity beside the image to distinguish an old history item
-    /// from a newer latest capture when deciding whether to revoke uploads.
-    private static var identityURL: URL? {
-        fileURL?.deletingLastPathComponent().appendingPathComponent("LatestScreenshot.id")
-    }
-
     static func matches(_ id: UUID) -> Bool {
         stateLock.lock()
         let pending = pendingCapture
         stateLock.unlock()
         if let pending { return pending.id == id }
-        guard let fileURL, FileManager.default.fileExists(atPath: fileURL.path),
-              let identityURL, let raw = try? String(contentsOf: identityURL, encoding: .utf8),
-              let stored = UUID(uuidString: raw.trimmingCharacters(in: .whitespacesAndNewlines))
-        else { return false }
-        return stored == id
+        return readRecord()?.id == id
     }
 
     static var isWithheld: Bool {
@@ -1291,8 +1315,11 @@ enum ScreenshotLastCaptureStore {
     }
 
     static func save(_ capture: ScreenshotSelectionController.Capture) {
-        guard let fileURL, let identityURL else { return }
-        // A new capture starts out as the one the person kept.
+        guard let fileURL else { return }
+        // Retire all old snapshots before rendering. A crash cannot make the
+        // previous capture appear to be the new latest one.
+        invalidateLegacyCache()
+        try? FileManager.default.removeItem(at: fileURL)
         if let withheldURL { try? FileManager.default.removeItem(at: withheldURL) }
         stateLock.lock()
         generation += 1
@@ -1312,15 +1339,10 @@ enum ScreenshotLastCaptureStore {
                 try FileManager.default.createDirectory(
                     at: fileURL.deletingLastPathComponent(),
                     withIntermediateDirectories: true)
-                try data.write(to: fileURL, options: .atomic)
+                let record = ScreenshotLatestCaptureRecord(id: capture.id, png: data)
+                try record.encoded().write(to: fileURL, options: .atomic)
                 guard isCurrent(operation) else {
                     try? FileManager.default.removeItem(at: fileURL)
-                    return
-                }
-                try Data(capture.id.uuidString.utf8).write(to: identityURL, options: .atomic)
-                guard isCurrent(operation) else {
-                    try? FileManager.default.removeItem(at: fileURL)
-                    try? FileManager.default.removeItem(at: identityURL)
                     return
                 }
                 finish(operation, fileURL: fileURL, removeFile: false)
@@ -1336,16 +1358,17 @@ enum ScreenshotLastCaptureStore {
         stateLock.unlock()
         if let pending { return pending }
 
-        guard let fileURL else { return nil }
+        guard let record = readRecord() else { return nil }
         let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
-        guard let source = CGImageSourceCreateWithURL(fileURL as CFURL, sourceOptions),
+        guard let source = CGImageSourceCreateWithData(record.png as CFData, sourceOptions),
               let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as NSDictionary?,
               let dpi = properties[kCGImagePropertyDPIWidth] as? NSNumber,
               let scale = ScreenshotSupport.captureScale(fromDPI: dpi.doubleValue)
         else { return nil }
         let imageOptions = [kCGImageSourceShouldCacheImmediately: true] as CFDictionary
         guard let image = CGImageSourceCreateImageAtIndex(source, 0, imageOptions) else { return nil }
-        return ScreenshotSelectionController.Capture(image: image, scale: scale, anchorRect: .zero)
+        return ScreenshotSelectionController.Capture(
+            id: record.id, image: image, scale: scale, anchorRect: .zero)
     }
 
     static func clear() {
@@ -1354,7 +1377,7 @@ enum ScreenshotLastCaptureStore {
         pendingCapture = nil
         stateLock.unlock()
         if let withheldURL { try? FileManager.default.removeItem(at: withheldURL) }
-        if let identityURL { try? FileManager.default.removeItem(at: identityURL) }
+        invalidateLegacyCache()
         guard let fileURL else { return }
         try? FileManager.default.removeItem(at: fileURL)
     }
@@ -1369,7 +1392,6 @@ enum ScreenshotLastCaptureStore {
         guard isCurrent(operation) else { return }
         if removeFile {
             try? FileManager.default.removeItem(at: fileURL)
-            if let identityURL { try? FileManager.default.removeItem(at: identityURL) }
         }
         stateLock.lock()
         if generation == operation {
