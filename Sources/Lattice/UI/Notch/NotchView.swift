@@ -268,7 +268,7 @@ struct NotchView: View {
             .frame(width: service.surfaceSize.width, height: service.surfaceSize.height, alignment: .top)
     }
 
-    private var showsDetail: Bool { service.showingAppPanel || service.selectedMetric != nil }
+    private var showsDetail: Bool { service.selectedMetric != nil }
 
     /// The open island names no page. Its top row holds the page's own
     /// controls, beside the camera where they fit, as a phone's island wraps
@@ -500,8 +500,7 @@ struct NotchView: View {
     private var contentOverflows: Bool { pageSize.height > service.contentSize.height }
 
     private var scrollsVertically: Bool {
-        guard !service.showingAppPanel else { return false }
-        return contentOverflows || service.selectedMetric != nil
+        contentOverflows || service.selectedMetric != nil
             || (service.selected == .captures && service.captureContent != nil)
     }
 
@@ -524,13 +523,11 @@ struct NotchView: View {
 
     private var navigationTitle: String {
         let destination = service.reopeningDestination
-        if destination.appPanel { return text.panel }
         return destination.module.title(l10n.language)
     }
 
     private var navigationSymbol: String {
         let destination = service.reopeningDestination
-        if destination.appPanel { return "square.grid.3x1.below.line.grid.1x2" }
         return destination.module.symbol
     }
 
@@ -555,9 +552,7 @@ struct NotchView: View {
     }
 
     @ViewBuilder private var content: some View {
-        if service.showingAppPanel {
-            MenuPanelView(notchSize: pageSize)
-        } else if let metric = service.selectedMetric {
+        if let metric = service.selectedMetric {
             if metric == .fan {
                 NotchFanControlView()
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { service.updateFanDetailHeight($0) }
@@ -606,7 +601,7 @@ struct NotchView: View {
                 }
             case .files: NotchFilesView(service: service)
             case .system:
-                NotchSystemView(size: pageSize) { service.showMetric($0) }
+                NotchSystemView { service.showMetric($0) }
             // The launcher hands the row its own controls, which a row set
             // here would replace.
             case .hub: LatticeHubView(notchSize: pageSize)

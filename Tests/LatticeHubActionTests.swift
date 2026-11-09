@@ -9,6 +9,10 @@ import Carbon.HIToolbox
 enum LatticeHubContract {
     static var events: [String] = []
     static var cameraInNotch = false
+    enum NSSound {
+        static var beeps = 0
+        static func beep() { beeps += 1 }
+    }
     enum ReviewDefaults { static var current: UserDefaults! }
     enum LatticeHubService { static let columns = 3 }
     struct NSEvent {
@@ -117,7 +121,7 @@ enum LatticeHubContract {
             (.deviceControls, .mixer, nil, nil),
             (.aiUsage, .notchAgents, "notch.openAgents", 0.1),
             (.watch, .notchWatch, "notch.openWatch", 0.1),
-            (.system, .monitorCPU, "notch.openSystem", 0.1),
+            (.system, .monitorCPU, nil, nil),
         ]
         suite.expect(Set(cases.map { $0.0 }) == Set(LatticeHubItem.allCases),
                      "every launcher tile has an activation contract")
@@ -167,6 +171,7 @@ enum LatticeHubContract {
         presentationContracts(suite)
         compositionContracts(suite)
         railContracts(suite)
+        typeaheadContracts(suite)
     }
 
     private static func presentationContracts(_ suite: TestSuite) {
@@ -275,5 +280,50 @@ enum LatticeHubContract {
         suite.expect(launcher.handlePanelKey(right, flow: .columns(rows: 2)) == nil
                      && launcher.selectedIndex == 5 && launcher.keyboardIndex == 5,
                      "an arrow moves on from the hovered tile and scrolls the rail to the new one")
+    }
+
+    private static func typeaheadContracts(_ suite: TestSuite) {
+        let launcher = Launcher()
+        launcher.prepareForPresentation()
+        NSSound.beeps = 0
+
+        // Type "u" should match uninstaller
+        let uninstallerIndex = launcher.visibleItems.firstIndex(of: .uninstaller)
+        let cleanerIndex = launcher.visibleItems.firstIndex(of: .cleaner)
+        suite.expect(uninstallerIndex != nil && cleanerIndex != nil, "both uninstaller and cleaner are visible")
+
+        let typedU = launcher.handleTypeahead("u")
+        suite.expect(typedU && launcher.selectedIndex == uninstallerIndex && NSSound.beeps == 0,
+                     "typing 'u' selects uninstaller without beeping")
+
+        // Typing more matching characters keeps selection on uninstaller
+        _ = launcher.handleTypeahead("n")
+        _ = launcher.handleTypeahead("i")
+        _ = launcher.handleTypeahead("n")
+        _ = launcher.handleTypeahead("s")
+        _ = launcher.handleTypeahead("t")
+        _ = launcher.handleTypeahead("a")
+        _ = launcher.handleTypeahead("l")
+        _ = launcher.handleTypeahead("l")
+        _ = launcher.handleTypeahead("e")
+        _ = launcher.handleTypeahead("r")
+        suite.expect(launcher.selectedIndex == uninstallerIndex && launcher.typeaheadBuffer == "uninstaller",
+                     "typing 'uninstaller' retains uninstaller selection")
+
+        // Typing 'c' now gives 'uninstallerc', which has no match:
+        // Behavior must match macOS Finder: keep selection, beep, don't fall back to 'cleaner'
+        let beepsBefore = NSSound.beeps
+        let typedC = launcher.handleTypeahead("c")
+        suite.expect(typedC && launcher.selectedIndex == uninstallerIndex
+                     && launcher.typeaheadBuffer == "uninstallerc"
+                     && NSSound.beeps == beepsBefore + 1,
+                     "typing mismatching 'c' beeps, stays on uninstaller, and does not jump to cleaner")
+
+        // Simulating the pause / cooldown expiration resets the buffer
+        launcher.typeaheadTimestamp -= (Launcher.typeaheadCooldown + 0.1)
+        let typedNewC = launcher.handleTypeahead("c")
+        suite.expect(typedNewC && launcher.selectedIndex == cleanerIndex
+                     && launcher.typeaheadBuffer == "c",
+                     "typing 'c' after cooldown pause starts a fresh search and selects cleaner")
     }
 }

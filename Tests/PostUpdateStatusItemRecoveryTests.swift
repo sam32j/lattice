@@ -31,7 +31,6 @@ enum PostUpdateStatusItemRecoveryTests {
     enum NSScreen {
         static var screens = [Screen(frame: CGRect(x: 0, y: 0, width: 1470, height: 956))]
     }
-    final class Popover { var isShown = false }
     enum NSEvent { static var pressedMouseButtons = 0 }
     final class Application {
         var currentSystemPresentationOptions: NSApplication.PresentationOptions = []
@@ -69,7 +68,6 @@ enum PostUpdateStatusItemRecoveryTests {
     }
     class Fixture {
         var statusController: StatusController? = StatusController()
-        let popover = Popover()
         var isTerminating = false
         static let reshowVerifyInterval: TimeInterval = 0.8
         static var manager: String?
@@ -141,7 +139,6 @@ enum PostUpdateStatusItemRecoveryTests {
         let cancellations: [(String, (Host) -> Void)] = [
             ("user hides the icon", { _ in UserDefaults.standard.hideIcon = true }),
             ("system hides the item", { $0.statusController?.statusItem.isVisible = false }),
-            ("panel is open", { $0.popover.isShown = true }),
             ("context menu is open", { $0.statusController?.statusItem.menu = NSMenu() }),
             ("person is dragging an item", { _ in NSEvent.pressedMouseButtons = 1 }),
             ("app is quitting", { $0.isTerminating = true }),

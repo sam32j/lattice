@@ -25,7 +25,6 @@ enum SettingsShortcutConsumerTests {
         let utilityRoles: [(GlobalShortcutRole, String)] = [
             (.clipboard, DefaultsKey.clipboardHistoryEnabled), (.shelf, DefaultsKey.shelfEnabled),
             (.cameraPreview, AppFeature.cameraPreview.availabilityKey),
-            (.quickLauncher, AppFeature.quickLauncher.availabilityKey),
             (.scratchpad, AppFeature.scratchpad.availabilityKey)
         ]
         for (utility, enableKey) in utilityRoles {

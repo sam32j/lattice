@@ -91,7 +91,7 @@ struct NotchKeepAwakeStrip: View {
     /// What the menu bar panel says about the session, read aloud.
     static func status(end: Date?, language: AppLanguage) -> String {
         let strings = Strings.localized(language)
-        if let end { return "\(strings.keepAwakeEndsIn) \(KeepAwakeCard.remainingText(until: end))" }
+        if let end { return "\(strings.keepAwakeEndsIn) \(DurationPicker.remainingText(until: end))" }
         let awake = KeepAwakeManager.shared
         if awake.sessionTrigger == .automation {
             return FeatureStrings.keepAwakeAutomation(language).activeStatus(for: awake.activeAutomationConditions)

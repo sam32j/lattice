@@ -218,6 +218,45 @@ final class RecentCaptureStore {
         sweep(thumbDir)
     }
 
+    /// Check whether an explicit Clear + Delete still left owned capture assets
+    /// behind (for example, when a file cannot be removed). Only inspect our
+    /// private capture roots; never follow symlinks into other directories.
+    func hasManagedCaptureFiles() -> Bool {
+        func containsCaptureFiles(in root: URL?) -> Bool {
+            guard let root else { return false }
+            let directory = root.resolvingSymlinksInPath()
+            guard manager.fileExists(atPath: directory.path) else { return false }
+            do {
+                let files = try manager.contentsOfDirectory(at: directory, includingPropertiesForKeys: [
+                    .isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey
+                ])
+                for item in files {
+                    let values = try item.resourceValues(forKeys: [
+                        .isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey
+                    ])
+                    guard values.isSymbolicLink != true else { continue }
+                    if values.isRegularFile == true && Self.isCaptureFileName(item.lastPathComponent) {
+                        return true
+                    }
+                    if values.isDirectory == true && Self.isDateFolderName(item.lastPathComponent) {
+                        let datedFiles = try manager.contentsOfDirectory(at: item,
+                            includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+                        if datedFiles.contains(where: {
+                            Self.isRegularFile($0) && Self.isCaptureFileName($0.lastPathComponent)
+                        }) { return true }
+                    }
+                }
+                return false
+            } catch {
+                // An unreadable storage directory is not evidence that its
+                // files were removed successfully.
+                return true
+            }
+        }
+        return containsCaptureFiles(in: directoryURL)
+            || containsCaptureFiles(in: thumbnailDirectoryURL)
+    }
+
     private func contents(of directory: URL) -> [URL] {
         (try? manager.contentsOfDirectory(
             at: directory,
