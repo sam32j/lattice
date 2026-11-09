@@ -233,6 +233,8 @@ enum NotchPresentationRefreshContract {
             get { compactActivityOverride ?? (compactActivityIsVisible ? .timer : nil) }
             set { compactActivityOverride = newValue }
         }
+        // The production activation calculation also reads this choice.
+        var compactCompanion: NotchCompactActivity? = nil
         var compactMusicIsVisible: Bool { compactActivityIsVisible && compactActivity == .music }
         var trackNoticeVisible = false
         var compactMusicSwipeIsVisible: Bool { compactMusicIsVisible || trackNoticeVisible }

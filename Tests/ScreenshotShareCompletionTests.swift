@@ -111,6 +111,7 @@ enum ScreenshotShareCompletionTests {
         var systemSharing = false
         var previewDragInProgress = false
         var deletingCapture = false
+        var confirmingCaptureDeletion = false
         var contextMenuOpen = false
         var pointerInside = false
         var onClose: () -> Void = {}
