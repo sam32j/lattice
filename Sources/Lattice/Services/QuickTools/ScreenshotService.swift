@@ -605,9 +605,15 @@ final class ScreenshotService: ObservableObject {
             },
             deleteCapture: { [weak self] completion in
                 guard let self else { completion(false); return }
-                // Once deletion is confirmed, this capture must not publish a
-                // delayed automatic copy. Never cancel a newer capture's task.
-                self.cancelAutoCopy(for: latestCapture)
+                // The latest capture's durable ID also survives reopening an
+                // older history preview or restarting Lattice. Invalidate only
+                // if this exact screenshot is still the latest one.
+                if ScreenshotLastCaptureStore.matches(capture.id) {
+                    self.cancelAutoCopy(for: self.latestCaptureToken)
+                    self.withholdLatestCapture()
+                } else {
+                    self.cancelAutoCopy(for: latestCapture)
+                }
                 // A failed Trash move must leave the stored capture and preview
                 // available for retry; the sequence number is still occupied.
                 if let export = saved {
@@ -1253,6 +1259,25 @@ enum ScreenshotLastCaptureStore {
         fileURL?.deletingLastPathComponent().appendingPathComponent("LatestScreenshot.withheld")
     }
 
+    /// The image alone does not carry a capture ID when decoded after launch.
+    /// Store its identity beside the image to distinguish an old history item
+    /// from a newer latest capture when deciding whether to revoke uploads.
+    private static var identityURL: URL? {
+        fileURL?.deletingLastPathComponent().appendingPathComponent("LatestScreenshot.id")
+    }
+
+    static func matches(_ id: UUID) -> Bool {
+        stateLock.lock()
+        let pending = pendingCapture
+        stateLock.unlock()
+        if let pending { return pending.id == id }
+        guard let fileURL, FileManager.default.fileExists(atPath: fileURL.path),
+              let identityURL, let raw = try? String(contentsOf: identityURL, encoding: .utf8),
+              let stored = UUID(uuidString: raw.trimmingCharacters(in: .whitespacesAndNewlines))
+        else { return false }
+        return stored == id
+    }
+
     static var isWithheld: Bool {
         guard let withheldURL else { return false }
         return FileManager.default.fileExists(atPath: withheldURL.path)
@@ -1266,7 +1291,7 @@ enum ScreenshotLastCaptureStore {
     }
 
     static func save(_ capture: ScreenshotSelectionController.Capture) {
-        guard let fileURL else { return }
+        guard let fileURL, let identityURL else { return }
         // A new capture starts out as the one the person kept.
         if let withheldURL { try? FileManager.default.removeItem(at: withheldURL) }
         stateLock.lock()
@@ -1290,6 +1315,12 @@ enum ScreenshotLastCaptureStore {
                 try data.write(to: fileURL, options: .atomic)
                 guard isCurrent(operation) else {
                     try? FileManager.default.removeItem(at: fileURL)
+                    return
+                }
+                try Data(capture.id.uuidString.utf8).write(to: identityURL, options: .atomic)
+                guard isCurrent(operation) else {
+                    try? FileManager.default.removeItem(at: fileURL)
+                    try? FileManager.default.removeItem(at: identityURL)
                     return
                 }
                 finish(operation, fileURL: fileURL, removeFile: false)
@@ -1323,6 +1354,7 @@ enum ScreenshotLastCaptureStore {
         pendingCapture = nil
         stateLock.unlock()
         if let withheldURL { try? FileManager.default.removeItem(at: withheldURL) }
+        if let identityURL { try? FileManager.default.removeItem(at: identityURL) }
         guard let fileURL else { return }
         try? FileManager.default.removeItem(at: fileURL)
     }
@@ -1337,6 +1369,7 @@ enum ScreenshotLastCaptureStore {
         guard isCurrent(operation) else { return }
         if removeFile {
             try? FileManager.default.removeItem(at: fileURL)
+            if let identityURL { try? FileManager.default.removeItem(at: identityURL) }
         }
         stateLock.lock()
         if generation == operation {
