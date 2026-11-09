@@ -613,8 +613,9 @@ final class ScreenshotService: ObservableObject {
                 // Resolve the same screenshot's live Shelf token before an
                 // asynchronous history deletion can race with another capture.
                 // This also works when shortcut retention is switched off.
-                let matchingToken = self.latestCaptureHistoryID == capture.id
-                    ? self.latestCaptureToken : latestCapture
+                let matchingToken = ScreenshotCaptureOwnership.shelfToken(
+                    for: capture.id, latestHistoryID: self.latestCaptureHistoryID,
+                    latestToken: self.latestCaptureToken, previewToken: latestCapture)
                 self.cancelAutoCopy(for: capture.id)
                 if ScreenshotLastCaptureStore.matches(capture.id)
                     || (self.latestCaptureHistoryID == capture.id
@@ -665,7 +666,8 @@ final class ScreenshotService: ObservableObject {
     /// preview token or the optional Last Screenshot cache. Detached export
     /// work checks this generation before touching the clipboard.
     private func cancelAutoCopy(for captureID: UUID) {
-        guard captureID == autoCopyCaptureID else { return }
+        guard ScreenshotCaptureOwnership.ownsPendingCopy(
+            historyID: captureID, activeCopyID: autoCopyCaptureID) else { return }
         autoCopyTask?.cancel()
         autoCopyTask = nil
         autoCopyCaptureID = nil

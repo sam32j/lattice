@@ -52,6 +52,19 @@ struct ScreenshotLatestCaptureRecord: Codable, Equatable {
     }
 }
 
+/// Keep asynchronous deletion effects scoped to their original screenshot.
+/// Preview tokens differ from persisted history UUIDs.
+enum ScreenshotCaptureOwnership {
+    static func shelfToken(for historyID: UUID, latestHistoryID: UUID?,
+                           latestToken: UUID, previewToken: UUID?) -> UUID? {
+        historyID == latestHistoryID ? latestToken : previewToken
+    }
+
+    static func ownsPendingCopy(historyID: UUID, activeCopyID: UUID?) -> Bool {
+        historyID == activeCopyID
+    }
+}
+
 /// Keeps clipboard retries tied to the capture that produced the link.
 struct ScreenshotLinkCopyRetry {
     private var pending: (captureID: UUID, record: ScreenshotShareRecord)?
