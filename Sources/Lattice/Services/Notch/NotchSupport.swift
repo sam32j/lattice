@@ -2844,7 +2844,7 @@ struct NotchGeometry: Equatable {
         let showsCapturePreview = module == .captures && !detail && capturePreviewHeight != nil
         let showsFileMedia = module == .files && !detail && fileMediaHeight != nil
         let contentHeight: CGFloat
-        if module == .system, !detail, !panel, let systemHeight {
+        if module == .system, !detail, let systemHeight {
             contentHeight = max(0, systemHeight)
         } else if detail, let detailHeight {
             let maxBudget = NotchSupport.isTestHarness ? pageBudget : max(pageBudget, screen.height - safeContentTop - NotchLayout.bottomInset - 60)
