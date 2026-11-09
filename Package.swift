@@ -20,9 +20,14 @@ let package = Package(
             name: "VMStatisticsCompat",
             path: "Sources/VMStatisticsCompat"
         ),
+        .target(
+            name: "RecorderGIFCodec",
+            path: "Sources/RecorderGIFCodec",
+            sources: ["RecorderGIFCodec.c", "vendor/cgif/cgif_raw.c"]
+        ),
         .executableTarget(
             name: "Lattice",
-            dependencies: ["VMStatisticsCompat", "HIDEventSystem", "CoreAudioTapCompat"],
+            dependencies: ["VMStatisticsCompat", "HIDEventSystem", "CoreAudioTapCompat", "RecorderGIFCodec"],
             path: "Sources/Lattice"
         )
     ]

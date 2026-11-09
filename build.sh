@@ -261,6 +261,9 @@ SDK_COMPAT_FLAGS=()
 VM_STATISTICS_COMPAT_FLAGS=(-I Sources/VMStatisticsCompat)
 HID_EVENT_SYSTEM_FLAGS=(-I Sources/HIDEventSystem)
 CORE_AUDIO_TAP_FLAGS=(-I Sources/CoreAudioTapCompat)
+GIF_CODEC_FLAGS=(-I Sources/RecorderGIFCodec)
+GIF_CODEC_OBJECTS=(build/objects/recorder-gif-codec/RecorderGIFCodec.o
+                   build/objects/recorder-gif-codec/cgif_raw.o)
 if [[ "$SDK" == "$PINNED_SDK" ]]; then
     # Swift 6.4 can read the SDK 26 interfaces when given their compiler version.
     SDK_COMPAT_FLAGS=(-Xfrontend -interface-compiler-version -Xfrontend 6.3.2)
@@ -296,6 +299,13 @@ discard_test_preferences() {
     echo "✗ test preferences did not settle in $preferences ($survivors remaining)" >&2
     return 1
 }
+
+# The vendored GIF codec is C; the app and the tests link the same objects.
+mkdir -p build/objects/recorder-gif-codec
+xcrun clang -O3 -std=c99 -target "$TARGET" -isysroot "$SDK" \
+    -c Sources/RecorderGIFCodec/RecorderGIFCodec.c -o "$GIF_CODEC_OBJECTS[1]"
+xcrun clang -O3 -std=c99 -target "$TARGET" -isysroot "$SDK" \
+    -c Sources/RecorderGIFCodec/vendor/cgif/cgif_raw.c -o "$GIF_CODEC_OBJECTS[2]"
 
 # Standalone automated tests: pure contracts plus isolated disk, subprocess,
 # keyboard-data and media fixtures. No application windows or device capture.
@@ -544,6 +554,7 @@ if (( TEST )); then
         Sources/Lattice/Services/Recorder/RecorderExporter.swift
         Sources/Lattice/Services/Recorder/RecorderGIFClipboard.swift
         Sources/Lattice/Services/Recorder/RecorderGIFWriter.swift
+        Sources/Lattice/Services/Recorder/RecorderFastGIFWriter.swift
         Sources/Lattice/Services/Recorder/RecorderGIFWorkspace.swift
         Sources/Lattice/Services/Recorder/RecorderComposition.swift
         Sources/Lattice/Services/Recorder/RecordingSharingSupport.swift
@@ -828,7 +839,8 @@ if (( TEST )); then
     swiftc -Onone -incremental -enable-batch-mode -j "$COMPILER_JOBS" \
         -module-name LatticeTests -output-file-map "$TEST_OUTPUT_FILE_MAP" \
         -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" \
-        "${VM_STATISTICS_COMPAT_FLAGS[@]}" "${CORE_AUDIO_TAP_FLAGS[@]}" "${TEST_SOURCES[@]}" -o build/metrics-tests
+        "${VM_STATISTICS_COMPAT_FLAGS[@]}" "${CORE_AUDIO_TAP_FLAGS[@]}" "${GIF_CODEC_FLAGS[@]}" \
+        "${TEST_SOURCES[@]}" "${GIF_CODEC_OBJECTS[@]}" -o build/metrics-tests
     test_status=0
     ./build/metrics-tests "${TEST_ARGS[@]}" || test_status=$?
     if (( ${#TEST_ARGS} == 0 )); then
@@ -1002,9 +1014,9 @@ APP_STATUS=0
 swiftc "${APP_OPTIMIZATION_FLAGS[@]}" "${LINKER_FLAGS[@]}" -incremental -enable-batch-mode -j "$COMPILER_JOBS" \
     -output-file-map "$APP_OUTPUT_FILE_MAP" \
     -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${VM_STATISTICS_COMPAT_FLAGS[@]}" "${HID_EVENT_SYSTEM_FLAGS[@]}" \
-    "${CORE_AUDIO_TAP_FLAGS[@]}" \
+    "${CORE_AUDIO_TAP_FLAGS[@]}" "${GIF_CODEC_FLAGS[@]}" \
     "${BUILD_VARIANT_FLAGS[@]}" \
-    "${APP_SOURCES[@]}" -o "build/$EXECUTABLE" || APP_STATUS=$?
+    "${APP_SOURCES[@]}" "${GIF_CODEC_OBJECTS[@]}" -o "build/$EXECUTABLE" || APP_STATUS=$?
 if (( APP_STATUS == 0 )); then
     xcrun dyld_info -imports "build/$EXECUTABLE" | awk -f Tests/AudioTapImports.awk || APP_STATUS=$?
 fi
@@ -1100,6 +1112,7 @@ cp build/AppIcon.icns "$STAGE/Contents/Resources/AppIcon.icns"
 if [[ -f build/AppIcon-Dark.icns ]]; then
     cp build/AppIcon-Dark.icns "$STAGE/Contents/Resources/AppIcon-Dark.icns"
 fi
+cp Sources/RecorderGIFCodec/vendor/cgif/LICENSE "$STAGE/Contents/Resources/cgif-LICENSE.txt"
 cp build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png "$STAGE/Contents/Resources/"
 if [[ -f build/Assets.car ]]; then
     cp build/Assets.car "$STAGE/Contents/Resources/Assets.car"
