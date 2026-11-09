@@ -191,8 +191,17 @@ enum NotchTimerCache {
             return snapshot.phase == .stopwatch && snapshot.duration == 0
                 && !snapshot.completed && snapshot.completedFocuses == 0
         case .pomodoro:
-            guard [.focus, .shortBreak, .longBreak].contains(snapshot.phase), snapshot.duration > 0,
-                  (0...snapshot.configuration.totalSessions).contains(snapshot.completedFocuses) else { return false }
+            // Codable intentionally preserves historical raw numbers, even
+            // malformed ones. Reject impossible phases *before* restoring a
+            // running cycle, rather than changing the decoded configuration.
+            let config = snapshot.configuration
+            guard (1...180).contains(config.focusMinutes),
+                  (1...60).contains(config.shortBreakMinutes),
+                  (1...60).contains(config.longBreakMinutes),
+                  (0...24).contains(config.longBreakInterval),
+                  (1...24).contains(config.totalSessions),
+                  [.focus, .shortBreak, .longBreak].contains(snapshot.phase), snapshot.duration > 0,
+                  (0...config.totalSessions).contains(snapshot.completedFocuses) else { return false }
             return snapshot.completed || snapshot.phase != .focus
                 || snapshot.completedFocuses < snapshot.configuration.totalSessions
         }

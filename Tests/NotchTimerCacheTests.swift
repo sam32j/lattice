@@ -40,12 +40,26 @@ enum NotchTimerCacheTests {
         suite.expect(legacy?.focusMinutes == 180 && legacy?.shortBreakMinutes == 60
                         && legacy?.longBreakInterval == 24,
                      "valid legacy continuous values retain their original meaning")
-        suite.expect((try? decoder.decode(NotchPomodoroConfiguration.self,
-                                          from: data(25, -1, 15, 2, 4))) == nil,
-                     "negative break durations cannot restore a Pomodoro")
-        suite.expect((try? decoder.decode(NotchPomodoroConfiguration.self,
-                                          from: data(25, 5, 15, 2, -1))) == nil,
-                     "invalid session counts cannot restore a Pomodoro")
+        let invalidBreak = try? decoder.decode(NotchPomodoroConfiguration.self,
+                                               from: data(25, -1, 15, 2, 4))
+        let invalidSessions = try? decoder.decode(NotchPomodoroConfiguration.self,
+                                                  from: data(25, 5, 15, 2, -1))
+        suite.expect(invalidBreak?.shortBreakMinutes == -1 && invalidSessions?.totalSessions == -1,
+                     "old numeric configurations decode verbatim without changing their meaning")
+        let clock = Date(timeIntervalSince1970: 1700000000)
+        func canRestore(_ config: NotchPomodoroConfiguration) -> Bool {
+            let snapshot = NotchTimerCacheSnapshot(
+                mode: .pomodoro, phase: .focus, duration: 1500,
+                targetEndDate: clock.addingTimeInterval(100), startDate: nil,
+                isPaused: false, pausedReading: nil, completed: false,
+                completedFocuses: 0, configuration: config, savedAt: clock)
+            return NotchTimerCache.restoreSession(from: snapshot, now: 500, clockNow: clock) != nil
+        }
+        suite.expect(legacy.map(canRestore) == true,
+                     "valid continuous legacy Pomodoro values can still be restored")
+        suite.expect(invalidBreak.map(canRestore) == false
+                     && invalidSessions.map(canRestore) == false,
+                     "corrupt break duration and session count cannot resume a cycle")
     }
 
     private static func snapshotCreationContracts(_ suite: TestSuite) {
