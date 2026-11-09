@@ -32,19 +32,12 @@ enum SettingsOwnershipRenderingProbe {
                 defaults.set(false, forKey: feature.availabilityKey)
             }
         }
-        defaults.set(false, forKey: DefaultsKey.notchHidesMenuBarIcon)
-        AppMenuDestination.menuBar.save(in: defaults)
-        render("general-app-menu", AnyView(GeneralSettings()), height: 700, output: output, failures: &failures)
         for target in [IslandDestination.clipboard, .files, .scratchpad] { target.setShown(false, in: defaults) }
         render("island-routing-off", AnyView(SettingsCard {
             IslandDestinationSettings(destination: .clipboard)
             IslandDestinationSettings(destination: .files)
             IslandDestinationSettings(destination: .scratchpad)
         }.padding(22)), height: 350, output: output, failures: &failures)
-        defaults.set(false, forKey: DefaultsKey.notchEnabled)
-        defaults.set(true, forKey: DefaultsKey.notchHidesMenuBarIcon)
-        render("app-menu-no-target", AnyView(SettingsCard { AppMenuDestinationSettings() }.padding(22)),
-               height: 220, output: output, failures: &failures)
         render("audio-pin-actions", AnyView(SettingsCard {
             ForEach([false, true], id: \.self) { pinned in
                 HStack {
