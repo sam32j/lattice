@@ -255,6 +255,29 @@ enum ScreenshotShareCompletionTests {
     }
 
     static func run(_ suite: TestSuite) {
+        let first = UUID()
+        let second = UUID()
+        let latestToken = UUID()
+        suite.expect(ScreenshotCaptureOwnership.shelfToken(
+            for: first, latestHistoryID: first,
+            latestToken: latestToken, previewToken: nil) == latestToken,
+                     "history deletion finds the original latest screenshot's Shelf token")
+        suite.expect(ScreenshotCaptureOwnership.shelfToken(
+            for: first, latestHistoryID: second,
+            latestToken: latestToken, previewToken: nil) == nil,
+                     "deleting an older screenshot never removes a newer capture's Shelf copy")
+        suite.expect(ScreenshotCaptureOwnership.ownsPendingCopy(
+            historyID: first, activeCopyID: first)
+                     && !ScreenshotCaptureOwnership.ownsPendingCopy(
+                        historyID: first, activeCopyID: second),
+                     "clipboard cancellation is keyed to the screenshot ID, not retention or a preview token")
+        let png = Data([137, 80, 78, 71, 13, 10, 26, 10])
+        let snapshot = ScreenshotLatestCaptureRecord(id: first, png: png)
+        let encoded = try? snapshot.encoded()
+        suite.expect(encoded.flatMap(ScreenshotLatestCaptureRecord.decode) == snapshot,
+                     "one atomic cache blob restores screenshot bytes and identity together")
+        suite.expect(ScreenshotLatestCaptureRecord.decode(png) == nil,
+                     "an identity-less legacy PNG is never accepted for Last Screenshot uploads")
         var finished = false
         Task { @MainActor in
             await checks(suite)
