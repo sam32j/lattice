@@ -184,6 +184,7 @@ final class NotchMusicService: ObservableObject {
             }
             let image = cachedImage
             let tint = cachedTint
+            let palette = cachedPalette
             let automatic = reply?["sourceIsAutomatic"] as? Bool
             let selectedPID = automatic == false ? NotchPlaybackSource.decodePID(reply?["selectedPID"]) : nil
             let sources = NotchPlaybackSource.decode(reply?["sources"], selectedPID: selectedPID)
@@ -191,7 +192,7 @@ final class NotchMusicService: ObservableObject {
                 guard let self, self.generation == requested,
                       self.acceptsSourceReply(automatic: automatic, sources: sources) else { return }
                 self.requestBrowserArtwork(for: next)
-                self.receive(Reading(playback: next, artwork: image, tint: tint, palette: cachedPalette, sources: sources,
+                self.receive(Reading(playback: next, artwork: image, tint: tint, palette: palette, sources: sources,
                                      automatic: automatic, selectedPID: selectedPID))
             }
         }

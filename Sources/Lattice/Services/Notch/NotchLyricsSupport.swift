@@ -35,14 +35,14 @@ struct NotchLyrics: Equatable {
     let instrumental: Bool
 
     /// Highlighting changes only at lyric boundaries. Rebuild this schedule
-    /// when playback or the user's offset changes, with no clock while paused.
-    func changeDates(for playback: NotchPlayback, offset: Double, from now: Date) -> [Date] {
+    /// when playback changes, with no clock while paused.
+    func changeDates(for playback: NotchPlayback, from now: Date) -> [Date] {
         var dates = [now]
         guard playback.isPlaying, playback.hasPosition, playback.rate.isFinite, playback.rate > 0,
-              offset.isFinite else { return dates }
+              playback.duration.isFinite else { return dates }
         let position = playback.position(at: now)
         for line in lines {
-            let target = line.time + offset
+            let target = line.time
             guard target > position, target <= playback.duration else { continue }
             let time = playback.sampledAt.timeIntervalSinceReferenceDate
                 + (target - playback.elapsed) / playback.rate
@@ -58,9 +58,9 @@ struct NotchLyrics: Equatable {
         return dates
     }
 
-    func activeIndex(at position: Double, offset: Double = 0) -> Int? {
-        guard position.isFinite, offset.isFinite else { return nil }
-        let time = position - offset
+    func activeIndex(at position: Double) -> Int? {
+        guard position.isFinite else { return nil }
+        let time = position
         var lower = 0
         var upper = lines.count
         while lower < upper {
@@ -71,33 +71,24 @@ struct NotchLyrics: Equatable {
     }
 }
 
-/// At most one recording's lyrics and adjustment remain in memory. Hiding the
+/// At most one recording's lyrics remain in memory. Hiding the
 /// view does not alter this cache; a different or absent playback clears it.
 struct NotchLyricsMemory {
     private(set) var track: NotchMusicIdentity?
     private(set) var lyrics: NotchLyrics?
-    private(set) var offset = 0.0
 
     mutating func select(_ next: NotchMusicIdentity?) {
         guard next != track else { return }
         track = next
         lyrics = nil
-        offset = 0
     }
 
     @discardableResult mutating func replace(_ lyrics: NotchLyrics?, for expected: NotchMusicIdentity) -> Bool {
         guard track == expected else { return false }
         self.lyrics = lyrics
-        offset = 0
         return true
     }
 
-    mutating func adjustOffset(by amount: Double) {
-        guard track != nil, amount.isFinite else { return }
-        offset = min(10, max(-10, ((offset + amount) * 4).rounded() / 4))
-    }
-
-    mutating func resetOffset() { offset = 0 }
     mutating func clear() { self = Self() }
 }
 

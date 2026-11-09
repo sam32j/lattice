@@ -59,26 +59,46 @@ final class NotchRepeatService: ObservableObject {
         }
         guard availability.access == .granted, let current = mode,
               let repeating = availability.capabilities.repeating else { return }
-        let target = current.next(supportsOne: repeating.supportsRepeatOne)
         pending = true
         let request = UUID()
         switchID = request
+        // Snapshot the source and request before entering the serial automation
+        // queue. A delayed inspection must not overwrite a different player.
+        let source = availability.target
         queue.async { [weak self] in
-            let sent = NotchMusicAutomation.setRepeat(target, availability: availability)
+            // The player's repeat state may have changed outside Lattice since
+            // the last refresh. Read immediately before deciding the next mode.
+            let observed = NotchMusicAutomation.repeatMode(of: availability) ?? current
+            let target = observed.next(supportsOne: repeating.supportsRepeatOne)
+            var sent = false
+            // UI state is main-thread owned. Check the live request/source there
+            // before writing to the selected app, not just on completion.
+            DispatchQueue.main.sync {
+                guard let self, self.open, self.switchID == request,
+                      self.availability?.target == source,
+                      NotchMusicService.shared.playback.flatMap(NotchMusicAutomation.Target.init) == source,
+                      source.isCurrent else { return }
+                sent = true
+            }
+            guard sent else { return }
+            // Source changes after this check cannot be made atomic with the
+            // external Apple Event, but the operation is still targeted to the
+            // original process, never the newly selected app.
+            let success = source.isCurrent && NotchMusicAutomation.setRepeat(target, availability: availability)
             DispatchQueue.main.async {
                 guard let self, self.switchID == request else { return }
                 self.pending = false
-                guard self.availability?.target == availability.target else { return }
-                self.mode = sent ? target : current
-                if !sent { self.refresh(for: NotchMusicService.shared.playback) }
+                guard self.availability?.target == source else { return }
+                self.mode = success ? target : observed
+                if !success { self.refresh(for: NotchMusicService.shared.playback) }
             }
             self?.queue.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-                let observed = NotchMusicAutomation.repeatMode(of: availability)
+                let fresh = NotchMusicAutomation.repeatMode(of: availability)
                 DispatchQueue.main.async {
                     guard let self, self.switchID == request,
-                          self.availability?.target == availability.target,
-                          let observed else { return }
-                    self.mode = observed
+                          self.availability?.target == source,
+                          let fresh else { return }
+                    self.mode = fresh
                 }
             }
         }

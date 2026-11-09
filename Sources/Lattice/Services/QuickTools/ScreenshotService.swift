@@ -588,10 +588,14 @@ final class ScreenshotService: ObservableObject {
                     // Into the actual Trash: the person may be discarding a
                     // file the HUD just announced as saved.
                     if let saved {
-                        try? FileManager.default.trashItem(at: saved.url,
-                                                           resultingItemURL: nil)
-                        if let consumed = saved.consumedNumber {
-                            Self.rewindNumberSequence(toReuse: consumed)
+                        do {
+                            try FileManager.default.trashItem(at: saved.url, resultingItemURL: nil)
+                            if let consumed = saved.consumedNumber {
+                                Self.rewindNumberSequence(toReuse: consumed)
+                            }
+                        } catch {
+                            NSSound.beep()
+                            return []
                         }
                     }
                     self.unshelve(latestCapture)
@@ -600,12 +604,19 @@ final class ScreenshotService: ObservableObject {
                 }
             },
             deleteCapture: { [weak self] completion in
-                RecentCaptureService.shared.deleteScreenshot(id: capture.id) { [weak self] removed in
-                    // Keep the old latest-capture/auto-shelf cleanup, including
-                    // the existing behavior for a separately saved export.
-                    if removed {
-                        self?.deletePreviewSideEffects(saved: saved, latestCapture: latestCapture)
+                guard let self else { completion(false); return }
+                // A failed Trash move must leave the stored capture and preview
+                // available for retry; the sequence number is still occupied.
+                if let saved {
+                    do {
+                        try FileManager.default.trashItem(at: saved.url, resultingItemURL: nil)
+                    } catch { completion(false); return }
+                    if let consumed = saved.consumedNumber {
+                        Self.rewindNumberSequence(toReuse: consumed)
                     }
+                }
+                RecentCaptureService.shared.deleteScreenshot(id: capture.id) { [weak self] removed in
+                    if removed { self?.deletePreviewSideEffects(latestCapture: latestCapture) }
                     completion(removed)
                 }
             },
@@ -636,14 +647,10 @@ final class ScreenshotService: ObservableObject {
     /// Preserve the previous discard side effects after the stored history
     /// copy was successfully deleted, without running the old discard path
     /// twice. User exports are moved to Trash rather than permanently erased.
-    private func deletePreviewSideEffects(saved: SaveOutcome?, latestCapture: UUID?) {
-        if let saved {
-            try? FileManager.default.trashItem(at: saved.url, resultingItemURL: nil)
-            if let consumed = saved.consumedNumber {
-                Self.rewindNumberSequence(toReuse: consumed)
-            }
-        }
+    private func deletePreviewSideEffects(latestCapture: UUID?) {
         unshelve(latestCapture)
+        // discardLatestCapture checks the identity before clearing the latest
+        // pixels, so a newer screenshot cannot be invalidated by an old one.
         discardLatestCapture(latestCapture)
     }
 

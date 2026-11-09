@@ -7,6 +7,16 @@ struct LatticeHubHostedUtility: View {
     let item: LatticeHubItem
     let notchSize: CGSize?
     let onClose: () -> Void
+    @ObservedObject private var launcher = LatticeHubService.shared
+
+    private var viewportHeight: CGFloat {
+        // Floating panels can be moved upward; only content taller than the
+        // available display needs its own scroll viewport.
+        guard let notchSize else {
+            return min(fallbackHeight, max(100, launcher.floatingPanelHeightBudget - 92))
+        }
+        return notchSize.height
+    }
 
     private var fallbackHeight: CGFloat {
         switch item {
@@ -24,10 +34,10 @@ struct LatticeHubHostedUtility: View {
     var body: some View {
         if item == .recentCaptures {
             RecentCapturesView(onClose: onClose, showHeader: false, notchSize: notchSize)
-                .frame(height: notchSize?.height)
+                .frame(height: viewportHeight)
         } else if item == .deviceControls {
             DeviceControlsHubView(onClose: onClose)
-                .frame(height: notchSize?.height ?? fallbackHeight)
+                .frame(height: viewportHeight)
         } else if item == .system {
             LatticeHubSystemUtility(notchSize: notchSize)
         } else {
@@ -61,7 +71,7 @@ struct LatticeHubHostedUtility: View {
                     }
                 }
             }
-            .frame(height: notchSize?.height ?? fallbackHeight)
+            .frame(height: viewportHeight)
         }
     }
 }

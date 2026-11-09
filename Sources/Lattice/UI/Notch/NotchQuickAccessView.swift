@@ -55,7 +55,18 @@ final class NotchQuickAccessMotion: ObservableObject {
     func contains(_ point: CGPoint) -> Bool {
         interactive && placements.contains { value in
             let center = value.center(progress: 1)
-            return hypot(point.x - center.x, point.y - center.y) <= NotchQuickAccessLayout.diameter / 2
+            if hypot(point.x - center.x, point.y - center.y) <= NotchQuickAccessLayout.diameter / 2 {
+                return true
+            }
+            // During live editing the 18pt red remove badge protrudes 7pt
+            // beyond the original circle. Native NSPanel hit-testing must
+            // include the complete badge, not just the button's center.
+            guard NotchService.shared.expanded, NotchService.shared.selected == .hub,
+                  LatticeHubService.shared.isEditing,
+                  NotchQuickAccessEditing.placeholderSide(for: value.button.id) == nil else { return false }
+            let badge = CGPoint(x: center.x + NotchQuickAccessLayout.diameter / 2 + 7 - 9,
+                                y: center.y - NotchQuickAccessLayout.diameter / 2 - 7 + 9)
+            return hypot(point.x - badge.x, point.y - badge.y) <= 9
         }
     }
 }
@@ -140,6 +151,9 @@ struct NotchQuickAccessView: View {
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(isSlot
+                ? "\(FeatureStrings.notchEditor(l10n.language).addButton) · \(sideName(button.side))"
+                : "\(FeatureStrings.notchEditor(l10n.language).editButton) · \(button.action?.title(l10n) ?? button.label)")
             .popover(isPresented: Binding(
                 get: { editingPopoverID == button.id },
                 set: { if !$0 { editingPopoverID = nil } }
@@ -170,6 +184,7 @@ struct NotchQuickAccessView: View {
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(FeatureStrings.notchEditor(l10n.language).removeButton) · \(button.action?.title(l10n) ?? button.label)")
                 .offset(x: 7, y: -7)
             }
         }
@@ -191,6 +206,15 @@ struct NotchQuickAccessView: View {
         .accessibilityIdentifier(isSlot ? "notch.quickAccess.add.\(button.side.rawValue)" : "notch.quickAccess.edit.\(button.id.uuidString)")
     }
 
+    private func sideName(_ side: NotchQuickAccessSide) -> String {
+        let strings = FeatureStrings.notchMascot(l10n.language)
+        switch side {
+        case .left: return strings.left
+        case .right: return strings.right
+        case .bottom: return FeatureStrings.notchEditor(l10n.language).bottom
+        }
+    }
+
     private func moveEditingButton(_ button: NotchQuickButton, to point: CGPoint) {
         guard let target = motion.placements
             .filter({ $0.button.id != button.id })
@@ -201,8 +225,23 @@ struct NotchQuickAccessView: View {
         let targetPoint = target.center(progress: 1)
         guard hypot(targetPoint.x - point.x, targetPoint.y - point.y) <= 75 else { return }
         var configuration = NotchQuickAccessConfiguration.stored()
-        let before = NotchQuickAccessEditing.placeholderSide(for: target.button.id) == nil
-            ? target.button.id : nil
+        let targetIsSlot = NotchQuickAccessEditing.placeholderSide(for: target.button.id) != nil
+        let isAfter: Bool = {
+            switch target.side {
+            case .bottom: return point.x > targetPoint.x
+            case .left, .right: return point.y > targetPoint.y
+            }
+        }()
+        let sideButtons = configuration.buttons.filter { $0.side == target.side && $0.id != button.id }
+        let targetIndex = sideButtons.firstIndex { $0.id == target.button.id }
+        let before: UUID? = {
+            guard !targetIsSlot, let targetIndex else { return nil }
+            if isAfter {
+                let next = sideButtons.index(after: targetIndex)
+                return next < sideButtons.endIndex ? sideButtons[next].id : nil
+            }
+            return target.button.id
+        }()
         configuration.move(button.id, to: target.side, before: before)
         saveEditingConfiguration(configuration)
     }

@@ -3369,3 +3369,129 @@ extension ScreenshotFeatureStrings {
         }
     }
 }
+
+// Quick Preview confirmation and link labels share the app's language setting.
+// These are intentionally separate from the screenshot editor's document
+// deletion labels: a Recent Captures deletion also updates the local index.
+struct CapturePreviewNoticeStrings {
+    let screenshotTitle: String
+    let screenshotMessage: String
+    let screenshotAction: String
+    let screenshotFailureTitle: String
+    let screenshotFailureMessage: String
+    let recordingTitle: String
+    let recordingMessage: String
+    let trashAction: String
+    let quickLink: String
+    let copyQuickLink: String
+
+    static func localized(_ language: AppLanguage) -> Self {
+        switch language {
+        case .enUS: return Self(
+            screenshotTitle: "Delete screenshot?", screenshotMessage: "This removes the stored screenshot from this Mac and Recent Captures.",
+            screenshotAction: "Delete Screenshot", screenshotFailureTitle: "Couldn’t delete screenshot",
+            screenshotFailureMessage: "The stored screenshot could not be removed. Try again.", recordingTitle: "Delete recording?",
+            recordingMessage: "The video file will be moved to Trash and removed from Recent Captures.", trashAction: "Move to Trash",
+            quickLink: "Quick Link", copyQuickLink: "Copy Quick Link"
+        )
+        case .ptBR: return Self(
+            screenshotTitle: "Excluir captura de tela?", screenshotMessage: "Isso remove a captura salva deste Mac e das Capturas recentes.",
+            screenshotAction: "Excluir captura", screenshotFailureTitle: "Não foi possível excluir a captura",
+            screenshotFailureMessage: "Não foi possível remover a captura salva. Tente novamente.", recordingTitle: "Excluir gravação?",
+            recordingMessage: "O vídeo será movido para a Lixeira e removido das Capturas recentes.", trashAction: "Mover para a Lixeira",
+            quickLink: "Link rápido", copyQuickLink: "Copiar link rápido"
+        )
+        case .es: return Self(
+            screenshotTitle: "¿Eliminar captura de pantalla?", screenshotMessage: "Se quitará la captura guardada de este Mac y de Capturas recientes.",
+            screenshotAction: "Eliminar captura", screenshotFailureTitle: "No se pudo eliminar la captura",
+            screenshotFailureMessage: "No se pudo quitar la captura guardada. Inténtalo de nuevo.", recordingTitle: "¿Eliminar grabación?",
+            recordingMessage: "El vídeo se moverá a la Papelera y se quitará de Capturas recientes.", trashAction: "Mover a la Papelera",
+            quickLink: "Enlace rápido", copyQuickLink: "Copiar enlace rápido"
+        )
+        case .sk: return Self(
+            screenshotTitle: "Odstrániť snímku obrazovky?", screenshotMessage: "Uložená snímka sa odstráni z tohto Macu aj z Nedávnych snímok.",
+            screenshotAction: "Odstrániť snímku", screenshotFailureTitle: "Snímku sa nepodarilo odstrániť",
+            screenshotFailureMessage: "Uloženú snímku sa nepodarilo odstrániť. Skúste to znova.", recordingTitle: "Odstrániť záznam?",
+            recordingMessage: "Video sa presunie do Koša a odstráni z Nedávnych snímok.", trashAction: "Presunúť do Koša",
+            quickLink: "Rýchly odkaz", copyQuickLink: "Kopírovať rýchly odkaz"
+        )
+        case .de: return Self(
+            screenshotTitle: "Screenshot löschen?", screenshotMessage: "Der gespeicherte Screenshot wird von diesem Mac und aus „Letzte Aufnahmen“ entfernt.",
+            screenshotAction: "Screenshot löschen", screenshotFailureTitle: "Screenshot konnte nicht gelöscht werden",
+            screenshotFailureMessage: "Der gespeicherte Screenshot konnte nicht entfernt werden. Erneut versuchen.", recordingTitle: "Aufnahme löschen?",
+            recordingMessage: "Die Videodatei wird in den Papierkorb verschoben und aus „Letzte Aufnahmen“ entfernt.", trashAction: "In den Papierkorb",
+            quickLink: "Schnelllink", copyQuickLink: "Schnelllink kopieren"
+        )
+        case .fr: return Self(
+            screenshotTitle: "Supprimer la capture d’écran ?", screenshotMessage: "La capture enregistrée sera supprimée de ce Mac et des captures récentes.",
+            screenshotAction: "Supprimer la capture", screenshotFailureTitle: "Impossible de supprimer la capture",
+            screenshotFailureMessage: "La capture enregistrée n’a pas pu être supprimée. Réessayez.", recordingTitle: "Supprimer l’enregistrement ?",
+            recordingMessage: "La vidéo sera placée dans la corbeille et retirée des captures récentes.", trashAction: "Placer dans la corbeille",
+            quickLink: "Lien rapide", copyQuickLink: "Copier le lien rapide"
+        )
+        case .it: return Self(
+            screenshotTitle: "Eliminare lo screenshot?", screenshotMessage: "Lo screenshot salvato verrà rimosso da questo Mac e dalle acquisizioni recenti.",
+            screenshotAction: "Elimina screenshot", screenshotFailureTitle: "Impossibile eliminare lo screenshot",
+            screenshotFailureMessage: "Impossibile rimuovere lo screenshot salvato. Riprova.", recordingTitle: "Eliminare la registrazione?",
+            recordingMessage: "Il video sarà spostato nel Cestino e rimosso dalle acquisizioni recenti.", trashAction: "Sposta nel Cestino",
+            quickLink: "Link rapido", copyQuickLink: "Copia link rapido"
+        )
+        case .ru: return Self(
+            screenshotTitle: "Удалить снимок экрана?", screenshotMessage: "Сохранённый снимок будет удалён с этого Mac и из недавних снимков.",
+            screenshotAction: "Удалить снимок", screenshotFailureTitle: "Не удалось удалить снимок",
+            screenshotFailureMessage: "Не удалось удалить сохранённый снимок. Повторите попытку.", recordingTitle: "Удалить запись?",
+            recordingMessage: "Видеофайл будет перемещён в Корзину и удалён из недавних снимков.", trashAction: "Переместить в Корзину",
+            quickLink: "Быстрая ссылка", copyQuickLink: "Скопировать быструю ссылку"
+        )
+        case .tr: return Self(
+            screenshotTitle: "Ekran görüntüsü silinsin mi?", screenshotMessage: "Kaydedilen ekran görüntüsü bu Mac’ten ve Son Yakalamalar’dan kaldırılacak.",
+            screenshotAction: "Ekran Görüntüsünü Sil", screenshotFailureTitle: "Ekran görüntüsü silinemedi",
+            screenshotFailureMessage: "Kaydedilen ekran görüntüsü kaldırılamadı. Tekrar deneyin.", recordingTitle: "Kayıt silinsin mi?",
+            recordingMessage: "Video dosyası Çöp Sepeti’ne taşınacak ve Son Yakalamalar’dan kaldırılacak.", trashAction: "Çöp Sepeti’ne Taşı",
+            quickLink: "Hızlı Bağlantı", copyQuickLink: "Hızlı Bağlantıyı Kopyala"
+        )
+        case .ja: return Self(
+            screenshotTitle: "スクリーンショットを削除しますか？", screenshotMessage: "保存したスクリーンショットをこのMacと最近のキャプチャから削除します。",
+            screenshotAction: "スクリーンショットを削除", screenshotFailureTitle: "スクリーンショットを削除できませんでした",
+            screenshotFailureMessage: "保存したスクリーンショットを削除できませんでした。もう一度お試しください。", recordingTitle: "録画を削除しますか？",
+            recordingMessage: "動画ファイルをゴミ箱に移動し、最近のキャプチャから削除します。", trashAction: "ゴミ箱に移動",
+            quickLink: "クイックリンク", copyQuickLink: "クイックリンクをコピー"
+        )
+        case .ko: return Self(
+            screenshotTitle: "스크린샷을 삭제할까요?", screenshotMessage: "저장된 스크린샷이 이 Mac과 최근 캡처에서 삭제됩니다.",
+            screenshotAction: "스크린샷 삭제", screenshotFailureTitle: "스크린샷을 삭제할 수 없음",
+            screenshotFailureMessage: "저장된 스크린샷을 삭제하지 못했습니다. 다시 시도하세요.", recordingTitle: "녹화 파일을 삭제할까요?",
+            recordingMessage: "동영상 파일이 휴지통으로 이동하고 최근 캡처에서 제거됩니다.", trashAction: "휴지통으로 이동",
+            quickLink: "빠른 링크", copyQuickLink: "빠른 링크 복사"
+        )
+        case .zhHans: return Self(
+            screenshotTitle: "删除截图？", screenshotMessage: "这将从本机和最近捕获中移除已保存的截图。",
+            screenshotAction: "删除截图", screenshotFailureTitle: "无法删除截图",
+            screenshotFailureMessage: "无法移除已保存的截图，请重试。", recordingTitle: "删除录屏？",
+            recordingMessage: "视频文件将移到废纸篓，并从最近捕获中移除。", trashAction: "移到废纸篓",
+            quickLink: "快速链接", copyQuickLink: "复制快速链接"
+        )
+        case .zhTW: return Self(
+            screenshotTitle: "刪除截圖？", screenshotMessage: "這會從此 Mac 和最近擷取中移除已儲存的截圖。",
+            screenshotAction: "刪除截圖", screenshotFailureTitle: "無法刪除截圖",
+            screenshotFailureMessage: "無法移除已儲存的截圖，請再試一次。", recordingTitle: "刪除錄影？",
+            recordingMessage: "影片檔案將移到垃圾桶，並從最近擷取中移除。", trashAction: "移到垃圾桶",
+            quickLink: "快速連結", copyQuickLink: "複製快速連結"
+        )
+        case .zhHK: return Self(
+            screenshotTitle: "刪除截圖？", screenshotMessage: "這會從此 Mac 和最近擷取中移除已儲存的截圖。",
+            screenshotAction: "刪除截圖", screenshotFailureTitle: "無法刪除截圖",
+            screenshotFailureMessage: "無法移除已儲存的截圖，請再試一次。", recordingTitle: "刪除錄影？",
+            recordingMessage: "影片檔案將移至垃圾桶，並從最近擷取中移除。", trashAction: "移至垃圾桶",
+            quickLink: "快速連結", copyQuickLink: "複製快速連結"
+        )
+        case .uk: return Self(
+            screenshotTitle: "Видалити знімок екрана?", screenshotMessage: "Збережений знімок буде видалено з цього Mac та з недавніх знімків.",
+            screenshotAction: "Видалити знімок", screenshotFailureTitle: "Не вдалося видалити знімок",
+            screenshotFailureMessage: "Не вдалося видалити збережений знімок. Спробуйте ще раз.", recordingTitle: "Видалити запис?",
+            recordingMessage: "Відеофайл буде переміщено до Смітника й вилучено з недавніх знімків.", trashAction: "Перемістити до Смітника",
+            quickLink: "Швидке посилання", copyQuickLink: "Копіювати швидке посилання"
+        )
+        }
+    }
+}

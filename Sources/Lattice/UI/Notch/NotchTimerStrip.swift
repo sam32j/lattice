@@ -133,7 +133,10 @@ struct NotchTimerStrip: View {
         let now = timer.now
         let text = NotchTimerSupport.compactText(for: timer.session, at: now,
                                                  locale: Locale(identifier: l10n.language.rawValue))
-        return Button { service.openDefault() } label: {
+        return Button {
+            if timer.session.cycleFinished { timer.dismissCompletedPomodoroFromStrip() }
+            service.openDefault()
+        } label: {
             Group {
                 if geometry.compactActivityWingWidth >= 42 {
                     Text(text)

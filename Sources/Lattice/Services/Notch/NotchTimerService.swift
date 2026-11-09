@@ -123,7 +123,13 @@ final class NotchTimerService: ObservableObject {
         finishIfDue()
 
         if session.isRunning {
-            session.pause(at: now)
+            let timestamp = now
+            let deadline = session.deadline
+            session.pause(at: timestamp)
+            if session.completed {
+                handleCompletedPhase(at: timestamp, finishedAt: deadline)
+                return
+            }
         } else if session.isPaused {
             session.resume(at: now)
         }
@@ -192,8 +198,8 @@ final class NotchTimerService: ObservableObject {
 
     /// Called once for each completed countdown phase.
     ///
-    /// Every phase receives its existing completion notice.
-    /// Intermediate Pomodoro phases immediately advance.
+    /// Intermediate Pomodoro phases immediately advance with the existing
+    /// sound cue; no separate visual notice is introduced for each phase.
     /// The final phase remains completed until dismissed.
     
     private func handleCompletedPhase(
@@ -230,7 +236,7 @@ final class NotchTimerService: ObservableObject {
             scheduleCompletion()
 
             if session.mode == .pomodoro {
-                pomodoroCompletedAt = finishedAt ?? timestamp
+                pomodoroCompletedAt = timestamp
 
                 playPhaseSound(glassSound)
 
@@ -257,7 +263,7 @@ final class NotchTimerService: ObservableObject {
             // Opening a completed compact strip acknowledges it.
             cancel()
         } else {
-            // Closing the expanded page uses the original deadline.
+            // Closing the expanded page uses the acknowledgment window.
             schedulePomodoroAutoDismiss()
         }
     }

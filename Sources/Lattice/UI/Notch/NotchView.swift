@@ -61,6 +61,9 @@ struct NotchView: View {
             .onChange(of: service.expanded) { _, _ in
                 NotchLiveQuickActionsEditorController.shared.updateLiveBackdrop()
             }
+            .onChange(of: service.selected) { _, _ in
+                NotchLiveQuickActionsEditorController.shared.updateLiveBackdrop()
+            }
             .onAppear {
                 NotchLiveQuickActionsEditorController.shared.updateLiveBackdrop()
             }
@@ -324,6 +327,7 @@ struct NotchView: View {
             // The navigation and Island pin remain beside the camera above it.
             .overlay(alignment: .topLeading) {
                 if service.selected == .captures, service.captureUsesImageOverlay,
+                   !service.choosingFileDropDestination,
                    let capture = service.captureContent {
                     capture
                         .frame(width: service.contentSize.width,

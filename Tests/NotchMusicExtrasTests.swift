@@ -140,37 +140,33 @@ enum NotchMusicExtrasTests {
                           rate: rate, sampledAt: sampledAt, canSeek: false, hasPosition: hasPosition)
         }
         for rate in [0.25, 0.75, 1, 1.25, 2, 16] {
-            for offset in [-10.0, -0.25, 0, 0.25, 10] {
-                for elapsed in [0.0, 1, 7, 19, 20] {
-                    let playback = playback(elapsed: elapsed, rate: rate)
-                    let now = sampledAt.addingTimeInterval(0.123)
-                    let position = playback.position(at: now)
-                    let upcoming = lyrics.lines.enumerated().filter {
-                        $0.element.time + offset > position && $0.element.time + offset <= playback.duration
-                    }
-                    let dates = lyrics.changeDates(for: playback, offset: offset, from: now)
-                        .filter { $0 != .distantFuture }
-                    suite.expect(dates.first == now && dates.count == upcoming.count + 1,
-                           "lyrics refresh immediately after a seek or timing change and only at reachable future verses")
-                    suite.expect(zip(dates, dates.dropFirst()).allSatisfy { $0 < $1 },
-                           "lyric deadlines stay ordered at every supported rate and timing offset")
-                    for (date, line) in zip(dates.dropFirst(), upcoming) {
-                        suite.expect(lyrics.activeIndex(at: playback.position(at: date), offset: offset) == line.offset,
-                               "scheduled lyric dates highlight the new verse despite floating-point rate and date rounding")
-                        suite.expect(abs(playback.position(at: date) - (line.element.time + offset)) < 0.0001,
-                               "verse updates retain sub-millisecond precision when playback speed changes")
-                    }
+            for elapsed in [0.0, 1, 7, 19, 20] {
+                let playback = playback(elapsed: elapsed, rate: rate)
+                let now = sampledAt.addingTimeInterval(0.123)
+                let position = playback.position(at: now)
+                let upcoming = lyrics.lines.enumerated().filter {
+                    $0.element.time > position && $0.element.time <= playback.duration
+                }
+                let dates = lyrics.changeDates(for: playback, from: now)
+                    .filter { $0 != .distantFuture }
+                suite.expect(dates.first == now && dates.count == upcoming.count + 1,
+                             "lyrics refresh immediately after a seek and only at reachable future verses")
+                suite.expect(zip(dates, dates.dropFirst()).allSatisfy { $0 < $1 },
+                             "lyric deadlines stay ordered at every supported rate")
+                for (date, line) in zip(dates.dropFirst(), upcoming) {
+                    suite.expect(lyrics.activeIndex(at: playback.position(at: date)) == line.offset,
+                                 "scheduled lyric dates highlight the new verse across playback rates")
+                    suite.expect(abs(playback.position(at: date) - line.element.time) < 0.0001,
+                                 "verse updates retain sub-millisecond precision across playback rates")
                 }
             }
         }
         for stopped in [playback(playing: false), playback(rate: 0), playback(rate: .nan),
                         playback(rate: .infinity), playback(hasPosition: false), playback(elapsed: 20)] {
-            suite.expect(lyrics.changeDates(for: stopped, offset: 0, from: sampledAt) == [sampledAt],
+            suite.expect(lyrics.changeDates(for: stopped, from: sampledAt) == [sampledAt],
                    "paused, completed or unpositioned playback leaves no recurring lyric updates")
         }
-        suite.expect(lyrics.changeDates(for: playback(), offset: .nan, from: sampledAt) == [sampledAt],
-               "an invalid lyric offset cannot schedule a wakeup")
-        let resumed = lyrics.changeDates(for: playback(elapsed: 6), offset: 0, from: sampledAt)
+        let resumed = lyrics.changeDates(for: playback(elapsed: 6), from: sampledAt)
             .filter { $0 != .distantFuture }
         suite.expect(resumed.count == 4 && resumed[1].timeIntervalSince(sampledAt) < 0.626,
                "resuming or seeking back schedules the next verse from the new playback position")
@@ -595,10 +591,7 @@ enum NotchMusicExtrasTests {
         suite.expect(lyrics.activeIndex(at: 0) == nil && lyrics.activeIndex(at: 12.249) == nil
                && lyrics.activeIndex(at: 12.25) == 0 && lyrics.activeIndex(at: 19.875) == 1,
                "lyrics wait for the first timestamp and switch exactly at each line boundary")
-        suite.expect(lyrics.activeIndex(at: 19.875, offset: 0.5) == 0
-               && lyrics.activeIndex(at: 19.375, offset: -0.5) == 1,
-               "positive timing adjustment delays the lyric and a negative adjustment advances it")
-        suite.expect(lyrics.activeIndex(at: .nan) == nil && lyrics.activeIndex(at: 12, offset: .infinity) == nil,
+        suite.expect(lyrics.activeIndex(at: .nan) == nil,
                "invalid playback timing never highlights a lyric")
         suite.expect(NotchLyricsSupport.parse("[00:02]later\n[00:01]earlier", duration: 3).map(\.text) == ["earlier", "later"],
                "out-of-order lyric entries are sorted before following playback")

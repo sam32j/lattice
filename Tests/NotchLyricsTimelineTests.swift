@@ -21,12 +21,11 @@ enum NotchLyricsTimelineTests {
     private struct Content: View {
         let lyrics: NotchLyrics
         let playback: NotchPlayback
-        let offset: Double
         let observations: Observations
 
         var body: some View {
-            TimelineView(.explicit(lyrics.changeDates(for: playback, offset: offset, from: .now))) { context in
-                let _ = observations.record(lyrics.activeIndex(at: playback.position(at: context.date), offset: offset))
+            TimelineView(.explicit(lyrics.changeDates(for: playback, from: .now))) { context in
+                let _ = observations.record(lyrics.activeIndex(at: playback.position(at: context.date)))
                 Color.clear.frame(width: 40, height: 20)
             }
         }
@@ -35,7 +34,7 @@ enum NotchLyricsTimelineTests {
     static func run(expect: (Bool, String) -> Void) {
         let track = RadialNowPlayingSnapshot(title: "Timed verses", artist: nil, album: nil,
                                             artworkData: nil, appBundleIdentifier: nil, appPID: nil)
-        func check(_ times: [Double], duration: Double = 10, offset: Double = 0,
+        func check(_ times: [Double], duration: Double = 10,
                    blankLast: Bool = false, expected: Int, message: String) {
             let lyrics = NotchLyrics(lines: times.enumerated().map { index, time in
                 NotchLyricLine(time: time, text: blankLast && index == times.count - 1 ? "" : "Verse")
@@ -47,7 +46,7 @@ enum NotchLyricsTimelineTests {
                                 styleMask: .borderless, backing: .buffered, defer: false)
             window.isReleasedWhenClosed = false
             let host = NSHostingView(rootView: Content(lyrics: lyrics, playback: playback,
-                                                      offset: offset, observations: observations))
+                                                      observations: observations))
             window.contentView = host
             defer { window.contentView = nil }
             let deadline = Date().addingTimeInterval(2)
@@ -68,7 +67,7 @@ enum NotchLyricsTimelineTests {
               message: "a single future verse is highlighted when its time arrives")
         check([0, 0.08], blankLast: true, expected: 1,
               message: "a final instrumental gap clears the preceding verse")
-        check([0, 0.08, 0.16], duration: 0.2, offset: 0.05, expected: 1,
-              message: "timing adjustment delivers the last reachable verse when later verses exceed the duration")
+        check([0, 0.08, 0.16], duration: 0.12, expected: 1,
+              message: "the last reachable verse highlights when later verses exceed the duration")
     }
 }

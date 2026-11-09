@@ -101,13 +101,21 @@ extension NotchSettings {
 
     func moduleBinding(_ module: NotchModule) -> Binding<Bool> {
         Binding {
-            (module != .timer || timerEnabled) && (module != .camera || cameraEnabled)
+            (module == .hub || ((module != .timer || timerEnabled) && (module != .camera || cameraEnabled)
                 && (module != .calendar || calendarEnabled) && (module != .notifications || notificationsEnabled)
                 && (module != .agents || agentsEnabled) && (module != .watch || watchEnabled)
                 && (module != .videoDownloader || (UserDefaults.standard.bool(forKey: DefaultsKey.videoDownloaderEnabled) && (UserDefaults.standard.object(forKey: DefaultsKey.notchVideoDownloader) as? Bool ?? true)))
                 && (module != .snippets || (UserDefaults.standard.object(forKey: DefaultsKey.notchSnippetsWindow) as? Bool ?? true))
-                && !hidden.split(separator: ",").contains { NotchModule(rawValue: String($0)) == module }
+                && !hidden.split(separator: ",").contains { NotchModule(rawValue: String($0)) == module }))
         } set: { shown in
+            // Hub is mandatory; a stale "tools"/"hub" hidden value must not
+            // remove the entry point for live Quick Access editing.
+            if module == .hub {
+                var values = Set(hidden.split(separator: ",").map(String.init))
+                values.remove("hub"); values.remove("tools")
+                hidden = values.sorted().joined(separator: ",")
+                return
+            }
             if module == .timer { timerEnabled = shown }
             if module == .camera { cameraEnabled = shown }
             if module == .calendar { calendarEnabled = shown }

@@ -332,9 +332,23 @@ final class RecorderQuickPreviewController {
                     let record = try await RecordingShareService.shared.createLink(
                         artifact: artifact, duration: duration)
                     guard !Task.isCancelled, !self.closed,
-                          self.quickLinkGeneration == generation else { return }
+                          self.quickLinkGeneration == generation,
+                          UserDefaults.standard.bool(forKey: DefaultsKey.recorderSharingEnabled) else {
+                        // A closed preview or a preference change may race
+                        // upload completion. Never abandon an active URL.
+                        Task { @MainActor in
+                            try? await RecordingShareService.shared.delete(record)
+                        }
+                        if !self.closed && self.quickLinkGeneration == generation {
+                            self.finishQuickLink(failed: true)
+                        }
+                        return
+                    }
                     self.model.sharedRecord = record
-                    _ = RecordingShareService.shared.copy(record.url)
+                    guard RecordingShareService.shared.copy(record.url) else {
+                        self.finishQuickLink(failed: true)
+                        return
+                    }
                     QuickToolHUD.show(icon: "link",
                                       message: FeatureStrings.recorder(L10n.shared.language).copiedHUD)
                     self.finishQuickLink(failed: false)
@@ -363,7 +377,10 @@ final class RecorderQuickPreviewController {
     private func copyQuickLink() {
         guard let linkURL = model.sharedRecord?.url else { return }
         Task { @MainActor in
-            _ = RecordingShareService.shared.copy(linkURL)
+            guard RecordingShareService.shared.copy(linkURL) else {
+                self.finishQuickLink(failed: true)
+                return
+            }
         }
     }
 
@@ -373,12 +390,13 @@ final class RecorderQuickPreviewController {
         guard !closed, let source = url else { return }
         dismissWork?.cancel()
         dismissWork = nil
+        let notice = CapturePreviewNoticeStrings.localized(L10n.shared.language)
         let alert = NSAlert()
-        alert.messageText = "Delete recording?"
-        alert.informativeText = "The video file will be moved to Trash and removed from Recent Captures."
+        alert.messageText = notice.recordingTitle
+        alert.informativeText = notice.recordingMessage
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Move to Trash")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: notice.trashAction)
+        alert.addButton(withTitle: FeatureStrings.recorder(L10n.shared.language).cancelButton)
         let owner = shownInNotch ? NotchService.shared.presentationWindow : panel
         guard NotchIslandAlert.run(alert, above: owner) == .alertFirstButtonReturn else {
             scheduleAutoDismiss()

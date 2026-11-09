@@ -56,8 +56,10 @@ enum RecentCaptureEditableImage {
     }
 
     static func renderedImage(at rendered: URL) -> CGImage? {
-        if let document = document(at: documentURL(for: rendered)), let image = read(document.rendered) {
-            return image
+        let documentFile = documentURL(for: rendered)
+        if FileManager.default.fileExists(atPath: documentFile.path) {
+            guard let document = document(at: documentFile) else { return nil }
+            return read(document.rendered)
         }
         return read(rendered)
     }

@@ -57,8 +57,8 @@ struct NotchLyricsView: View {
     }
 
     private func synced(_ lyrics: NotchLyrics) -> some View {
-        TimelineView(.explicit(lyrics.changeDates(for: playback, offset: service.offset, from: .now))) { context in
-            let active = lyrics.activeIndex(at: playback.position(at: context.date), offset: service.offset)
+        TimelineView(.explicit(lyrics.changeDates(for: playback, from: .now))) { context in
+            let active = lyrics.activeIndex(at: playback.position(at: context.date))
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 12) {

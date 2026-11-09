@@ -52,6 +52,8 @@ enum RecentCaptureEditableImageTests {
                              "an interrupted save preserves the entire previous editable generation")
             }
             try Data("truncated document".utf8).write(to: document)
+            suite.expect(RecentCaptureEditableImage.renderedImage(at: rendered) == nil,
+                         "export must fail closed when the authoritative document is damaged, not drag an older mirror")
             loaded = RecentCaptureEditableImage.load(rendered: rendered, original: original, annotations: annotations)
             suite.expect(loaded?.image.width == 20 && loaded?.annotations.isEmpty == true,
                          "a damaged document falls back to flattened pixels, not stale legacy marks")

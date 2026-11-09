@@ -61,7 +61,9 @@ struct NotchCalendarStrip: View {
         NotchCountdownAccessibility(label: "\(countdown.ongoing ? text.ongoing : text.next): \(title)",
                                     value: NotchCalendarSupport.countdownAccessibilityText(
                                         until: countdown.target, now: now, locale: l10n.language.formattingLocale()),
-                                    hint: FeatureStrings.notch(l10n.language).open, help: title)
+                                    hint: FeatureStrings.notch(l10n.language).open, help: title,
+                                    openEvent: { service.openCountdownEvent() },
+                                    openDefault: { service.openDefault() })
     }
 
     private func fullRow(_ countdown: NotchCalendarCountdown, title: String, remaining: String) -> some View {
@@ -187,6 +189,8 @@ private struct NotchCountdownAccessibility: ViewModifier {
     let value: String
     let hint: String
     let help: String
+    let openEvent: () -> Void
+    let openDefault: () -> Void
 
     func body(content: Content) -> some View {
         content
@@ -194,5 +198,8 @@ private struct NotchCountdownAccessibility: ViewModifier {
             .accessibilityLabel(label)
             .accessibilityValue(value)
             .accessibilityHint(hint)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction(named: Text(help)) { openEvent() }
+            .accessibilityAction(named: Text(hint)) { openDefault() }
     }
 }
