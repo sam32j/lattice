@@ -184,6 +184,20 @@ extension LatticeHubService {
                 self.hide()
             }
         }
+        // A dragged HUD may cross to a shorter display without reopening.
+        // Update only on a display transition, never on each resize frame.
+        screenChangeObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didChangeScreenNotification,
+            object: panel,
+            queue: .main
+        ) { [weak self, weak panel] _ in
+            guard let self, let panel, panel.isVisible else { return }
+            let visible = panel.screen?.visibleFrame ?? NSScreen.pointerVisibleFrame
+            self.setFloatingPanelHeightBudget(max(100, visible.height - 32))
+            panel.contentViewController?.view.layoutSubtreeIfNeeded()
+            let fitted = panel.contentViewController?.view.fittingSize ?? panel.frame.size
+            self.updatePanelSize(fitted)
+        }
         spaceChangeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification,
             object: nil,
@@ -241,6 +255,10 @@ extension LatticeHubService {
         if let spaceChangeObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(spaceChangeObserver)
             self.spaceChangeObserver = nil
+        }
+        if let screenChangeObserver {
+            NotificationCenter.default.removeObserver(screenChangeObserver)
+            self.screenChangeObserver = nil
         }
         missionControlTimer?.invalidate()
         missionControlTimer = nil

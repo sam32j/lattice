@@ -303,19 +303,6 @@ struct NotchView: View {
             .accessibilityAction(named: l10n.s.menuSettings) { service.openSettings() }
             .accessibilityAction(named: text.collapse) { service.collapse() }
             .padding(.top, geometry.pageTopInset - geometry.headerTopInset)
-            .overlayPreferenceValue(NotchBandKey.self, alignment: .top) { items in
-                if geometry.headerRowHeight > 0 {
-                    bandRow(items, band: band, wraps: wraps)
-                } else if let feedback = headerFeedback {
-                    // With no row, the reading covers the page's top corner on
-                    // the side a row would give it, for the moment it shows.
-                    NotchExpandedLevelView(notice: feedback)
-                        .padding(.horizontal, 10)
-                        .frame(width: 170, height: 28)
-                        .background(.black, in: Capsule())
-                        .frame(maxWidth: .infinity, alignment: wraps ? .trailing : .leading)
-                }
-            }
             .environment(\.notchBand, band)
             .padding(.horizontal, NotchLayout.horizontalInset)
             .padding(.top, geometry.headerTopInset)
@@ -345,6 +332,21 @@ struct NotchView: View {
                         }
                         .padding(.leading, NotchLayout.horizontalInset)
                         .padding(.top, geometry.headerTopInset)
+                }
+            }
+            // Keep navigation above the capture's full-image drag overlay.
+            // Floating islands put Back/Close/History in this header row.
+            .overlayPreferenceValue(NotchBandKey.self, alignment: .top) { items in
+                if geometry.headerRowHeight > 0 {
+                    bandRow(items, band: band, wraps: wraps)
+                } else if let feedback = headerFeedback {
+                    // With no row, the reading covers the page's top corner on
+                    // the side a row would give it, for the moment it shows.
+                    NotchExpandedLevelView(notice: feedback)
+                        .padding(.horizontal, 10)
+                        .frame(width: 170, height: 28)
+                        .background(.black, in: Capsule())
+                        .frame(maxWidth: .infinity, alignment: wraps ? .trailing : .leading)
                 }
             }
             // Capture previews use two distinct rows without changing the

@@ -79,6 +79,8 @@ struct LatticeHubHostedUtility: View {
 private struct LatticeHubSystemUtility: View {
     let notchSize: CGSize?
     @ObservedObject private var navigation = SystemNavigationState.shared
+    @ObservedObject private var launcher = LatticeHubService.shared
+    @State private var floatingDetailNaturalHeight: CGFloat = 470
 
     var body: some View {
         if let notchSize, navigation.selectedMetric != .cpu {
@@ -87,6 +89,22 @@ private struct LatticeHubSystemUtility: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .frame(height: notchSize.height)
+        } else if notchSize == nil, navigation.selectedMetric != nil,
+                  navigation.selectedMetric != .cpu {
+            // Keep the natural detail height when it fits. Only oversized
+            // floating details get a bounded scroll viewport.
+            ScrollView {
+                content
+                    .fixedSize(horizontal: false, vertical: true)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        if height > 0, abs(floatingDetailNaturalHeight - height) > 0.5 {
+                            floatingDetailNaturalHeight = height
+                        }
+                    }
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(height: min(floatingDetailNaturalHeight,
+                               max(100, launcher.floatingPanelHeightBudget - 92)))
         } else {
             content
                 .frame(height: notchSize?.height, alignment: .top)
