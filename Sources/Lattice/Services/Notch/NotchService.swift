@@ -2822,11 +2822,22 @@ final class NotchService: ObservableObject {
             // Back and History, turning those clicks into Island collapse.
             // Keep explicit Close and the preview controls interactive instead.
             activationRect = .zero
-        } else if !expanded && geometry.floats && (compactActivity == .music || compactActivity == .timer) {
-            // The floating music cover and Timer mark have explicit SwiftUI
-            // buttons; a native overlay would swallow their distinct actions.
-            // The timer readout keeps its own default-opening button.
+        } else if !expanded && geometry.floats && compactActivity == .music {
+            // The floating music cover has an explicit SwiftUI button.
             activationRect = .zero
+        } else if !expanded && geometry.floats && compactActivity == .timer {
+            // Leave the leading Timer (or companion) mark to its SwiftUI
+            // button while retaining native default activation to its right.
+            let area = geometry.activationArea(in: size, hasHeader: false, compactActivity: true)
+            let leading = NotchCapsuleLayout.side(geometry)
+                + (compactCompanion == .music ? NotchCapsuleLayout.artworkInset(geometry)
+                    : NotchCapsuleLayout.endPadding)
+            let markWidth = compactCompanion == .music
+                ? NotchCapsuleLayout.artworkSide(geometry) : NotchCapsuleLayout.symbolWidth
+            let start = min(area.maxX, area.minX + leading + markWidth
+                            + NotchCapsuleLayout.markGap(compactCompanion) + 4)
+            activationRect = CGRect(x: start, y: area.minY,
+                                    width: max(0, area.maxX - start), height: area.height)
         } else if showsCompactActivityPicker {
             let strip = compactActivityGeometry.compactActivitySize
             activationRect = compactActivityGeometry.activationArea(
