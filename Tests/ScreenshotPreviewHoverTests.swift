@@ -20,6 +20,7 @@ enum ScreenshotPreviewHoverTests {
         var pointerInside = false
         var previewDragInProgress = false
         var deletingCapture = false
+        var confirmingCaptureDeletion = false
         var systemSharing = false
         var contextMenuOpen = false
         var dismissWork: DispatchWorkItem?

@@ -2825,7 +2825,7 @@ final class NotchService: ObservableObject {
         } else if !expanded && geometry.floats && compactActivity == .music {
             // The floating music cover has an explicit SwiftUI button.
             activationRect = .zero
-        } else if !expanded && geometry.floats && compactActivity == .timer {
+        } else if !expanded && geometry.floats && compactActivity == .timer && !showsCompactActivityPicker {
             // Leave the leading Timer (or companion) mark to its SwiftUI
             // button while retaining native default activation to its right.
             let area = geometry.activationArea(in: size, hasHeader: false, compactActivity: true)
