@@ -12,7 +12,7 @@ import ImageIO
 import VMStatisticsCompat
 
 enum FeatureCatalogTests {
-    private final class InstallerFileManager: FileManager, @unchecked Sendable {
+    private final class InstallerFileManager: FileManager {
         let localApplications: URL
         var userApplications: URL?
 
