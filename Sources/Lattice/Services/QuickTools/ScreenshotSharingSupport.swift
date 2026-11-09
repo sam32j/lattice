@@ -35,6 +35,23 @@ struct ScreenshotShareRecord: Codable, Equatable, Identifiable {
     }
 }
 
+/// The image and source identity share one atomic on-disk write. An
+/// identity-less legacy PNG is deliberately not eligible for shortcut upload.
+struct ScreenshotLatestCaptureRecord: Codable, Equatable {
+    let id: UUID
+    let png: Data
+
+    func encoded() throws -> Data {
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .binary
+        return try encoder.encode(self)
+    }
+
+    static func decode(_ data: Data) -> Self? {
+        try? PropertyListDecoder().decode(Self.self, from: data)
+    }
+}
+
 /// Keeps clipboard retries tied to the capture that produced the link.
 struct ScreenshotLinkCopyRetry {
     private var pending: (captureID: UUID, record: ScreenshotShareRecord)?
