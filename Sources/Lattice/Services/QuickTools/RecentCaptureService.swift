@@ -551,7 +551,7 @@ final class RecentCaptureService: ObservableObject {
                 guard self.manager.fileExists(atPath: path) else { continue }
                 // Do not follow symlinks or delete arbitrary files from a
                 // corrupted history.json: only regular movie files qualify.
-                guard ["mov", "mp4"].contains(file.pathExtension.lowercased()),
+                guard ["mov", "mp4", "gif"].contains(file.pathExtension.lowercased()),
                       RecentCaptureStore.isRegularFile(file) else {
                     failedPaths.insert(path)
                     continue

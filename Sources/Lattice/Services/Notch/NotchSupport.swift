@@ -2760,7 +2760,7 @@ struct NotchGeometry: Equatable {
         let showsCapturePreview = module == .captures && !detail && capturePreviewHeight != nil
         let showsFileMedia = module == .files && !detail && fileMediaHeight != nil
         let contentHeight: CGFloat
-        if let systemHeight {
+        if module == .system, !detail, !panel, let systemHeight {
             contentHeight = max(0, systemHeight)
         } else if detail, !panel, let detailHeight {
             contentHeight = min(pageBudget, max(0, detailHeight) + 4)

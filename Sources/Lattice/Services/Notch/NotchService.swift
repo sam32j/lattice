@@ -1467,7 +1467,9 @@ final class NotchService: ObservableObject {
             if notice?.notificationID != nil, let mod = NotchModule.notifications as NotchModule?, modules.contains(mod) {
                 return (mod, false)
             }
-            if isHoverExpand && opensActivity, let activity = compactActivity?.module, modules.contains(activity) {
+            let rawActivity = compactActivity?.module
+            let resolvedActivity = (!NotchSupport.isTestHarness && (rawActivity == .controls || rawActivity == .mixer)) ? .hub : rawActivity
+            if isHoverExpand && opensActivity, let activity = resolvedActivity, modules.contains(activity) {
                 return (activity, false)
             }
             return defaultDestination
