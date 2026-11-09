@@ -124,7 +124,7 @@ struct NotchView: View {
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, service.geometry.safeContentTop)
-        } else if let notice = service.notice ?? (service.peeking ? nil : service.departingNotice),
+        } else if let notice = service.stripNotice,
                    !NotchMusicNoticeLayout.isHandledBySelectedMusicStrip(
                        event: notice.event, selected: service.compactActivity) {
             if notice.event == .track {

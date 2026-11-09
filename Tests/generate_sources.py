@@ -1694,12 +1694,20 @@ def main():
     write("NotchMusicVisibility.swift", "import Foundation\nextension NotchMusicVisibilityTests {\n"
           + "final class Service: State {\nfunc resignPanelKey() { panel?.resignKey() }\n"
           + music_visibility + "}\n}\n")
-    write("NotchScreenEdgeClicks.swift", "import AppKit\nextension NotchScreenEdgeClickTests {\nfinal class Service: State {\n"
-          + "func open() { openings += 1; expanded = true; syncScreenEdgeClicks() }\n"
+    write("NotchScreenEdgeClicks.swift", "import AppKit\nextension NotchScreenEdgeClickTests.State {\n"
+          + declaration(notch, "    func capsuleNoticeSurface(")
+          + declaration(notch, "    private func capsuleNoticeSize(").replace("private func", "func", 1)
+          + "}\nextension NotchScreenEdgeClickTests {\nfinal class Service: State {\n"
+          + "func open(_ module: NotchModule? = nil) { openings += 1; opened = module; expanded = true; syncScreenEdgeClicks() }\n"
+          + "func refreshPresentation(animated: Bool) { syncScreenEdgeClicks() }\n"
           + "".join(declaration(notch, prefix).replace("    private ", "    ", 1) for prefix in [
+              "    var stripNotice:", "    private var noticeCanPresent:", "    var acceptsUserInteraction:",
+              "    var acceptsSystemFeedback:", "    func activateNotice(",
+              "    private func applyMenuSpace(",
               "    private var screenEdgeClickArea:", "    private func syncScreenEdgeClicks(",
               "    private func handleScreenEdgeEvent(", "    private func handleScreenEdgeClick(",
               "    private func removeScreenEdgeClickMonitors("])
+          .replace("NotchSupport.routes(selectedNotice.event)", "self.routesNotices")
           + "}\n}\n")
     write("NotchScreenRefresh.swift", "import Foundation\n\nextension NotchScreenRefreshContract {\nfinal class Service: State {\n"
           + declaration(notch, "    func schedulePreferenceSync()")
