@@ -73,6 +73,12 @@ enum ScreenshotPreviewHoverTests {
                              "moving between the image and header actions keeps the embedded preview open")
             }
 
+            controller.confirmingCaptureDeletion = true
+            controller.hoverChanged(false)
+            DispatchQueue.main.advance(duration)
+            suite.expect(!controller.closed && DispatchQueue.main.pending == 0,
+                         "a confirmation alert keeps the preview from expiring")
+            controller.confirmingCaptureDeletion = false
             controller.hoverChanged(false) // Leave the whole island.
             DispatchQueue.main.advance(duration - 0.5)
             suite.expect(!controller.closed, "leaving the island keeps the configured dismissal delay")

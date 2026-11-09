@@ -10,6 +10,7 @@ enum NotchTimerCacheTests {
         snapshotCreationContracts(suite)
         restorationContracts(suite)
         persistenceFileContracts(suite)
+        decodedConfigurationContracts(suite)
         serviceLifecycleContracts(suite)
     }
 
@@ -24,6 +25,27 @@ enum NotchTimerCacheTests {
         if let high = NotchTimerAlert.loadPing300msSound(sampleRate: highRate) {
             suite.expect(abs(high.duration - 0.3) < 0.005, "high tone duration is 300ms")
         }
+    }
+
+    private static func decodedConfigurationContracts(_ suite: TestSuite) {
+        let decoder = JSONDecoder()
+        func data(_ focus: Int, _ short: Int, _ long: Int, _ interval: Int, _ sessions: Int) -> Data {
+            let fields = ["focusMinutes": focus, "shortBreakMinutes": short,
+                          "longBreakMinutes": long, "longBreakInterval": interval,
+                          "totalSessions": sessions]
+            return (try? JSONSerialization.data(withJSONObject: fields)) ?? Data()
+        }
+        let legacy = try? decoder.decode(NotchPomodoroConfiguration.self,
+                                         from: data(180, 60, 60, 24, 24))
+        suite.expect(legacy?.focusMinutes == 180 && legacy?.shortBreakMinutes == 60
+                        && legacy?.longBreakInterval == 24,
+                     "valid legacy continuous values retain their original meaning")
+        suite.expect((try? decoder.decode(NotchPomodoroConfiguration.self,
+                                          from: data(25, -1, 15, 2, 4))) == nil,
+                     "negative break durations cannot restore a Pomodoro")
+        suite.expect((try? decoder.decode(NotchPomodoroConfiguration.self,
+                                          from: data(25, 5, 15, 2, -1))) == nil,
+                     "invalid session counts cannot restore a Pomodoro")
     }
 
     private static func snapshotCreationContracts(_ suite: TestSuite) {

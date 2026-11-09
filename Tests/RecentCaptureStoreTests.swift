@@ -30,6 +30,16 @@ enum RecentCaptureStoreTests {
                 anchorX: 0, anchorY: 0, anchorWidth: 1, anchorHeight: 1)
             fresh.entries = [entry]
             suite.expect(fresh.persist(), "a capture is committed before old files can be cleaned")
+            var failedDeletion = entry
+            failedDeletion.deletionFailed = true
+            let failureData = try JSONEncoder().encode([failedDeletion])
+            let reloadedFailure = try JSONDecoder().decode([RecentCaptureEntry].self, from: failureData)
+            suite.expect(reloadedFailure.first?.deletionFailed == true,
+                         "failed deletion marker survives index serialization")
+            let legacyData = try JSONEncoder().encode([entry])
+            let legacyDecoded = try JSONDecoder().decode([RecentCaptureEntry].self, from: legacyData)
+            suite.expect(legacyDecoded.first?.deletionFailed == nil,
+                         "unmarked historical captures remain readable")
             let validIndex = try Data(contentsOf: index)
             let healthy = RecentCaptureStore(directoryURL: root)
             suite.expect(healthy.loadIfNeeded() && healthy.entries == [entry] && healthy.persist(),
