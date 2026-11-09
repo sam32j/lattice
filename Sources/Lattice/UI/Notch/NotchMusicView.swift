@@ -98,6 +98,16 @@ struct NotchMusicView: View {
             shuffle.refresh(for: service.playback)
             repeating.refresh(for: service.playback)
         }
+        // The player may change Repeat without a track or permission event.
+        // SwiftUI cancels this task as soon as the music page disappears.
+        .task {
+            guard !preview else { return }
+            while !Task.isCancelled {
+                do { try await Task.sleep(for: .seconds(5)) } catch { break }
+                guard !Task.isCancelled else { break }
+                repeating.refresh(for: service.playback)
+            }
+        }
         .onChange(of: extra) { syncExtras() }
         .onChange(of: service.playback.map(NotchMusicIdentity.init)) {
             syncExtras()
