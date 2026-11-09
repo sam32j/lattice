@@ -51,7 +51,7 @@ enum FeaturePageOwnershipTests {
             (.textSnippets, DefaultsKey.textSnippetsEnabled), (.urlCleaner, DefaultsKey.urlCleanerEnabled),
             (.cameraPreview, AppFeature.cameraPreview.availabilityKey),
             (.diskImageInstaller, AppFeature.diskImageInstaller.availabilityKey),
-            (.quickLauncher, AppFeature.quickLauncher.availabilityKey), (.scratchpad, AppFeature.scratchpad.availabilityKey)
+            (.scratchpad, AppFeature.scratchpad.availabilityKey)
         ]
         for (feature, key) in controls {
             defaults.set(true, forKey: key)

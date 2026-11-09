@@ -498,6 +498,89 @@ final class RecentCaptureService: ObservableObject {
         }
     }
 
+    struct CaptureDeletionResult {
+        let historySaved: Bool
+        let failedRecordings: Int
+        let managedFilesRemain: Bool
+
+        var succeeded: Bool {
+            historySaved && failedRecordings == 0 && !managedFilesRemain
+        }
+    }
+
+    /// Clear the carousel AND the files behind it. Persisting an empty index
+    /// invokes RecentCaptureStore's symlink-safe cleanup of Application Support
+    /// images, editable documents, cached thumbnails and stashed recordings.
+    /// Recordings indexed by an absolute path live outside that private cache;
+    /// move those original movies to Trash instead of silently leaving them.
+    /// This is deliberately separate from clear(), whose history-only semantics
+    /// are used by settings and other features.
+    func clearAndDeleteCaptureFiles(completion: @escaping (CaptureDeletionResult) -> Void) {
+        generationLock.lock()
+        clearGeneration &+= 1
+        generationLock.unlock()
+        queue.async { [weak self] in
+            func finish(_ result: CaptureDeletionResult) {
+                DispatchQueue.main.async { completion(result) }
+            }
+            guard let self, self.store.loadIfNeeded() else {
+                finish(CaptureDeletionResult(historySaved: false, failedRecordings: 0,
+                                             managedFilesRemain: false))
+                return
+            }
+            let previous = self.store.entries
+            self.store.entries.removeAll()
+            // Never remove anything if the index could not first be committed.
+            guard self.store.persist() else {
+                self.store.entries = previous
+                finish(CaptureDeletionResult(historySaved: false, failedRecordings: 0,
+                                             managedFilesRemain: false))
+                return
+            }
+            // The store's cleanup only owns its private capture and cache roots.
+            // Older / externally saved recordings are represented by absolute
+            // URLs and need an explicit, recoverable move to macOS Trash.
+            let absoluteRecordings = Set(previous.compactMap { entry -> String? in
+                guard entry.kind == .recording,
+                      let path = entry.recordingPath, path.hasPrefix("/") else { return nil }
+                return URL(fileURLWithPath: path).standardizedFileURL.path
+            })
+            var failedPaths = Set<String>()
+            for path in absoluteRecordings {
+                let file = URL(fileURLWithPath: path)
+                guard self.manager.fileExists(atPath: path) else { continue }
+                // Do not follow symlinks or delete arbitrary files from a
+                // corrupted history.json: only regular movie files qualify.
+                guard ["mov", "mp4"].contains(file.pathExtension.lowercased()),
+                      RecentCaptureStore.isRegularFile(file) else {
+                    failedPaths.insert(path)
+                    continue
+                }
+                do {
+                    try self.manager.trashItem(at: file, resultingItemURL: nil)
+                } catch {
+                    failedPaths.insert(path)
+                }
+            }
+            // Keep entries for recordings whose files could not be moved,
+            // rather than silently hiding those files from the user.
+            if !failedPaths.isEmpty {
+                self.store.entries = previous.filter { entry in
+                    entry.kind == .recording && entry.recordingPath.map {
+                        failedPaths.contains(URL(fileURLWithPath: $0).standardizedFileURL.path)
+                    } == true
+                }
+            }
+            let historySaved = self.store.persist()
+            let managedFilesRemain = self.store.hasManagedCaptureFiles()
+            self.thumbnailCache.removeAllObjects()
+            self.publish()
+            finish(CaptureDeletionResult(historySaved: historySaved,
+                                         failedRecordings: failedPaths.count,
+                                         managedFilesRemain: managedFilesRemain))
+        }
+    }
+
     func clear() {
         generationLock.lock()
         clearGeneration &+= 1
@@ -542,6 +625,23 @@ final class RecentCaptureService: ObservableObject {
             return image
         }
         return nil
+    }
+
+    /// The image card is only a preview. Its drag payload must be the
+    /// full-resolution, rendered PNG kept in Application Support, never the
+    /// thumbnail in Caches (or the editable .latticecapture document).
+    static func screenshotDragURL(for entry: RecentCaptureEntry, capturesRoot: URL?) -> URL? {
+        guard entry.kind == .screenshot,
+              let name = entry.screenshotName, isSafeRelativePath(name),
+              name.lowercased().hasSuffix(".png"),
+              let capturesRoot else { return nil }
+        let url = capturesRoot.appendingPathComponent(name)
+        return RecentCaptureStore.isRegularFile(url) ? url : nil
+    }
+
+    func dragItemProvider(for entry: RecentCaptureEntry) -> NSItemProvider? {
+        guard let url = Self.screenshotDragURL(for: entry, capturesRoot: capturesRoot) else { return nil }
+        return NSItemProvider(contentsOf: url)
     }
 
     func open(_ entry: RecentCaptureEntry, inNotch: Bool = false) {

@@ -1916,9 +1916,8 @@ enum FeatureCatalogTests {
                "every feature anchor belongs to its destination page")
         suite.expect(Set(AppFeature.allCases.compactMap(\.settingsDestination.sectionAnchor))
                 == Set(SettingsSectionAnchor.allCases).subtracting([
-                    .panelConfiguration, .keyboardBrightnessShortcuts, .audioOutputPriority, .quickLauncher, .cameraPreview,
+                    .keyboardBrightnessShortcuts, .audioOutputPriority, .quickLauncher, .cameraPreview,
                 ])
-                && SettingsSectionAnchor.panelConfiguration.page == .general
                 && SettingsSectionAnchor.keyboardBrightnessShortcuts.page == .keyboard,
                "feature anchors and standalone Settings anchors reach their pages")
         suite.expect(AppFeature.dockPreview.settingsDestination
@@ -2356,8 +2355,7 @@ enum FeatureCatalogTests {
                 && !SettingsBackupSupport.exportKeys().contains(
                     DefaultsKey.brightnessExtendedDimmingPaths),
                "the per-monitor extended dimming choice stays on this Mac")
-        for surface in ["Sources/Lattice/UI/Settings/EnergyDisplaySettings.swift",
-                        "Sources/Lattice/UI/MenuPanel/BrightnessSection.swift"] {
+        for surface in ["Sources/Lattice/UI/Settings/EnergyDisplaySettings.swift"] {
             let source = (try? String(contentsOfFile: surface, encoding: .utf8)) ?? ""
             suite.expect(source.contains("SoftwareDimmingButton(display: display"),
                    "\(surface) offers the software dimming choice on its display rows")

@@ -51,16 +51,6 @@ enum NotchReviewInteractionContract {
         func openActivity(_ module: Module) { opens += 1 }
     }
     class MusicState { let music = Music(); let service = MusicService(); var live = true }
-    class RoutingState {
-        let defaults: UserDefaults
-        var reduceMotion = true
-        var launcherIslandRoute: Bool { defaults.object(forKey: DefaultsKey.notchQuickPanel) as? Bool ?? true }
-        var launcherShortcutTarget: String {
-            get { defaults.string(forKey: DefaultsKey.launcherShortcutTarget) ?? "automatic" }
-            set { defaults.set(newValue, forKey: DefaultsKey.launcherShortcutTarget) }
-        }
-        init(_ defaults: UserDefaults) { self.defaults = defaults }
-    }
     enum LatticeHubService { static let shared = Hub() }
     final class Hub { func syncWithPreferences() {} }
 }
@@ -73,23 +63,6 @@ enum NotchReviewInteractionTests {
         suite.expect(C.NotchRestingBattery.tint(for: C.PowerReading(chargePercent: 10)) == Color.red
             && C.NotchRestingBattery.tint(for: C.PowerReading(chargePercent: 20)) == Color.orange,
             "the island retains the accepted fixed-on red and amber battery policy")
-        let domain = "io.github.sam32j.lattice.tests.pr26-routing.\(UUID())"
-        let defaults = UserDefaults(suiteName: domain)!
-        defer { defaults.removePersistentDomain(forName: domain) }
-        defaults.set(false, forKey: DefaultsKey.notchQuickPanel)
-        defaults.set("tools,hub,clipboard", forKey: DefaultsKey.notchHiddenModules)
-        let routing = C.LauncherSettings(defaults)
-        suite.expect(!routing.launcherIslandShown.wrappedValue,
-                     "a hidden Hub route cannot look enabled just because shortcut routing is automatic")
-        routing.launcherIslandShown.wrappedValue = true
-        suite.expect(IslandDestination.launcherGrid.isShown(in: defaults)
-            && defaults.string(forKey: DefaultsKey.notchHiddenModules) == "clipboard"
-            && LauncherShortcutTarget.selected(in: defaults) == .automatic,
-            "enabling the island destination restores its route and both canonical/legacy hidden keys")
-        routing.launcherIslandShown.wrappedValue = false
-        suite.expect(!IslandDestination.launcherGrid.isShown(in: defaults)
-            && LauncherShortcutTarget.selected(in: defaults) == .floatingWindow,
-            "disabling the island destination consistently uses the floating route")
         let editor = C.Editor()
         suite.expect(editor.handleKey(C.NSEvent(keyCode: 53, window: C.Window())) != nil && editor.dismissals == 0,
                      "Escape in another window leaves the quick-action editor open")

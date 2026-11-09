@@ -54,8 +54,11 @@ enum NotchDestinationContract {
         var running = true
         var syncs = 0
         var suspensions = 0
+        var session = NotchTimerSession()
         func syncWithPreferences() { running = true; syncs += 1 }
         func suspend() { running = false; suspensions += 1 }
+        func cancel() { session.cancel() }
+        func dismissCompletedPomodoroFromStrip() {}
     }
     enum NotchTimerService { static var shared = Timer() }
     enum PreciseVolumeRollerService {
@@ -96,10 +99,8 @@ enum NotchDestinationContract {
         func collapse() {
             if expanded {
                 lastVisitedSections = showingSections
-                lastVisitedAppPanel = showingAppPanel
             }
             showingSections = false
-            showingAppPanel = false
             expanded = false
         }
         var hiddenInFullscreen = false
@@ -108,6 +109,7 @@ enum NotchDestinationContract {
         var suspended: Bool { !session.canPresent }
         var panel: Panel? = Panel()
         var windowHost: Host? = Host()
+        var customBackAction: (() -> Bool)?
         var modules: [NotchModule] = []
         var selected = NotchModule.controls
         var selectedMetric: MetricDetailKind?
@@ -299,32 +301,20 @@ enum NotchDestinationContract {
         metric.stepBack()
         suite.expect(!metric.expanded, "Escape closes the island once nothing lies behind the page")
 
-        let panel = Service()
-        panel.open(.music)
-        panel.open(.controls, appPanel: true)
-        panel.stepBack()
-        suite.expect(panel.expanded && panel.selected == .controls && !panel.showingAppPanel,
-                     "Escape steps back from the app panel opened inside the island")
+        let direct = Service()
+        direct.open(.system, metric: .cpu)
+        let detail = direct.selectedMetric == .cpu
+        direct.stepBack()
+        suite.expect(detail && !direct.expanded,
+                     "a detail the island opened on closes on Escape")
 
-        // Closing passes for any page, so these first check a detail is open.
-        for appPanel in [false, true] {
-            let direct = Service()
-            direct.open(appPanel ? .controls : .system, appPanel: appPanel, metric: appPanel ? nil : .cpu)
-            let detail = direct.showingAppPanel || direct.selectedMetric == .cpu
-            direct.stepBack()
-            suite.expect(detail && !direct.expanded,
-                         "a detail the island opened on closes on Escape like the menu panel (app panel: \(appPanel))")
-        }
-
-        for route in ["a metric", "the app panel"] {
-            let menuBar = Service()
-            menuBar.open(.music)
-            if route == "a metric" { menuBar.showMetric(.cpu, toggle: true) } else { menuBar.openAppPanel(toggle: true) }
-            let detail = menuBar.selectedMetric == .cpu || menuBar.showingAppPanel
-            menuBar.stepBack()
-            suite.expect(detail && !menuBar.expanded,
-                         "\(route) opened from the menu bar over an open island closes on Escape like the menu panel")
-        }
+        let menuBar = Service()
+        menuBar.open(.music)
+        menuBar.showMetric(.cpu, toggle: true)
+        let menuDetail = menuBar.selectedMetric == .cpu
+        menuBar.stepBack()
+        suite.expect(menuDetail && !menuBar.expanded,
+                     "a metric opened from the menu bar over an open island closes on Escape")
         let tile = Service()
         tile.open(.system)
         tile.showMetric(.cpu)
@@ -334,22 +324,11 @@ enum NotchDestinationContract {
 
         let switched = Service()
         switched.open(.system, metric: .cpu)
-        switched.toggleSections()
-        switched.toggleSections()
         switched.open(.system, metric: .memory)
         let switchedDetail = switched.selectedMetric == .memory && !switched.showingSections
         switched.stepBack()
         suite.expect(switchedDetail && !switched.expanded,
-                     "passing through the gallery or switching details keeps a direct detail closing on Escape")
-
-        let gallery = Service()
-        gallery.open(.system)
-        gallery.open(.system, metric: .cpu)
-        gallery.toggleSections()
-        gallery.toggleSections()
-        gallery.stepBack()
-        suite.expect(gallery.expanded && gallery.selected == .system && gallery.selectedMetric == nil,
-                     "the gallery opened over a detail keeps its way back to the page")
+                     "switching details keeps a direct detail closing on Escape")
 
         let reopened = Service()
         reopened.open(.system)
@@ -547,43 +526,33 @@ enum NotchDestinationContract {
             let service = Service()
             service.open(.files)
             service.expanded = false
-            let focusRequests = MenuPanelFocus.shared.normalRequests
             service.open()
-            suite.expect(service.showingAppPanel == (destination == .appPanel)
-                   && service.showingSections == (destination == .explore),
-                   "reopening shows the selected app panel or Explore destination")
-            if destination == .explore {
-                suite.expect(service.highlightedSection == .files && service.sectionQuery.isEmpty,
-                       "reopening Explore highlights its current page for keyboard navigation")
-            }
-            suite.expect(MenuPanelFocus.shared.normalRequests - focusRequests == (destination == .appPanel ? 1 : 0),
-                   "only opening the app panel resets its panel focus")
+            suite.expect(!service.showingSections && service.selected == .hub,
+                   "the retired Explore reopening preference migrates to Hub")
             service.expanded = false
             service.open(.music)
-            suite.expect(service.selected == .music && !service.showingAppPanel && !service.showingSections,
-                   "explicit page navigation wins over a saved app panel or Explore destination")
+            suite.expect(service.selected == .music && !service.showingSections,
+                   "explicit page navigation wins over a saved Explore destination")
 
             service.expanded = false
             service.compactActivity = .timer
             service.open()
-            suite.expect(service.selected == .timer && !service.showingAppPanel && !service.showingSections,
-                   "a visible activity wins over a saved app panel or Explore destination")
+            suite.expect(service.selected == .timer && !service.showingSections,
+                   "a visible activity wins over a saved Explore destination")
 
             defaults.set(false, forKey: DefaultsKey.notchOpensActivity)
             service.expanded = false
             service.open()
-            suite.expect(service.showingAppPanel == (destination == .appPanel)
-                   && service.showingSections == (destination == .explore),
-                   "with activities turned off, a visible activity leaves the saved app panel or Explore destination")
+            suite.expect(!service.showingSections && service.selected == .hub,
+                   "with activities disabled, the legacy Explore preference still resolves to Hub")
             service.expanded = false
             service.openActivity(.timer)
-            suite.expect(service.showingAppPanel == (destination == .appPanel)
-                   && service.showingSections == (destination == .explore),
-                   "with activities turned off, a tap on the activity's strip follows the reopening choice too")
+            suite.expect(!service.showingSections && service.selected == .hub,
+                   "with activities disabled, the activity strip uses the migrated Hub destination")
             defaults.set(true, forKey: DefaultsKey.notchOpensActivity)
             service.expanded = false
             service.openActivity(.timer)
-            suite.expect(service.selected == .timer && !service.showingAppPanel && !service.showingSections,
+            suite.expect(service.selected == .timer && !service.showingSections,
                    "a tap on the activity's strip opens its page while activities open")
         }
         defaults.set("unknown-page", forKey: DefaultsKey.notchHomeModule)
@@ -594,23 +563,20 @@ enum NotchDestinationContract {
         defaults.set(false, forKey: DefaultsKey.notchReturnHome)
         let lastVisitedService = Service()
         lastVisitedService.open(.music)
-        lastVisitedService.toggleSections()
-        suite.expect(lastVisitedService.showingSections && lastVisitedService.selected == .music,
-                     "visiting explore from music sets showingSections")
         lastVisitedService.collapse()
         suite.expect(!lastVisitedService.expanded, "collapsing quits the island")
-        suite.expect(lastVisitedService.reopeningDestination.sections,
-                     "the explore page is counted as last visited after quitting from it")
+        suite.expect(!lastVisitedService.reopeningDestination.sections
+                     && lastVisitedService.reopeningDestination.module == .music,
+                     "reopening remembers the last page without the retired Explore gallery")
         lastVisitedService.open()
-        suite.expect(lastVisitedService.expanded && lastVisitedService.showingSections && lastVisitedService.selected == .music,
-                     "reopening without a default page restores the explore page as last visited")
+        suite.expect(lastVisitedService.expanded && !lastVisitedService.showingSections
+                     && lastVisitedService.selected == .music,
+                     "reopening without a default page restores the last visited module")
         lastVisitedService.open(.files)
-        suite.expect(lastVisitedService.expanded && !lastVisitedService.showingSections && lastVisitedService.selected == .files,
-                     "navigating to files leaves the explore page")
         lastVisitedService.collapse()
         suite.expect(!lastVisitedService.reopeningDestination.sections
                      && lastVisitedService.reopeningDestination.module == .files,
-                     "quitting from files sets files as last visited")
+                     "quitting from files makes Files the last visited page")
         activityContracts(defaults: defaults) { suite.expect($0, $1) }
     }
 
@@ -643,8 +609,7 @@ enum NotchDestinationContract {
             service.selected = .calendar
             NotchCalendarService.shared.revealing = nil
             service.openCountdownEvent()
-            suite.expect(service.expanded && service.selected == .calendar
-                         && (service.showingSections || service.showingAppPanel)
+            suite.expect(service.expanded && service.selected == .hub
                          && NotchCalendarService.shared.revealing == nil,
                          "with activities turned off, \(destination.rawValue) opened in Calendar's place keeps no event for later")
         }
@@ -657,7 +622,7 @@ enum NotchDestinationContract {
             service.selected = returnHome ? .controls : .calendar
             NotchCalendarService.shared.revealing = nil
             service.openCountdownEvent()
-            suite.expect(service.selected == .calendar && !service.showingSections && !service.showingAppPanel
+            suite.expect(service.selected == .calendar && !service.showingSections
                          && NotchCalendarService.shared.revealing == event.id,
                          "with activities turned off, Calendar reopened as the last or saved page keeps its event")
         }

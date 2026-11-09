@@ -31,7 +31,6 @@ enum OverlayPanelTests {
         // HUDs, previews, pickers and the menu's positioning helper: none is a
         // document window, and each floats over other apps' windows.
         let surfaces = [
-            "Sources/Lattice/App/AppDelegate.swift",
             "Sources/Lattice/UI/QuitProtection/QuitProtectionHUD.swift",
             "Sources/Lattice/Services/QuickTools/QuickToolHUD.swift",
             "Sources/Lattice/Services/LatticeHub/LatticeHubPanel.swift",

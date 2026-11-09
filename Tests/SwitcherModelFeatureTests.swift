@@ -2196,9 +2196,6 @@ enum SwitcherModelFeatureTests {
                                                                    current: 501, isOwnApp: ownApp) == nil,
                "a desktop switch while the panel is open drops the remembered app")
 
-        MenuPanelRecoveryTests.run { suite.expect($0, $1) }
-        MenuPanelKeyTests.run(suite)
-
         // The built-in display and a taller one placed to its left.
         let builtInScreen = CGRect(x: 0, y: 0, width: 1470, height: 956)
         let secondScreen = CGRect(x: -1920, y: 100, width: 1920, height: 1080)
@@ -2269,11 +2266,6 @@ enum SwitcherModelFeatureTests {
         // panel would leave the tip in the plain system material. None of these
         // owners compiles into this binary, so pin the three pieces that together
         // carry the panel's own surface out to the tip.
-        let popoverSetUpCode = stripCommentLines((statusAnchorAppDelegateSource
-            .components(separatedBy: "private func setUpPopover() {").last ?? "")
-            .components(separatedBy: "\n    }").first ?? "")
-        suite.expect(popoverSetUpCode.contains("popover.hasFullSizeContent = PanelSurface.popoverHostsFullSizeContent"),
-               "the panel is hosted across the whole popover, arrow band included, where AppKit supports it")
         let panelThemeSource = (try? String(
             contentsOfFile: "Sources/Lattice/UI/Theme.swift",
             encoding: .utf8)) ?? ""
@@ -2305,23 +2297,6 @@ enum SwitcherModelFeatureTests {
         suite.expect(insetSurfaceCode.contains("RoundedRectangle(cornerRadius: 18, style: .continuous)")
                    && insetSurfaceCode.contains(".strokeBorder(PanelSurface.border(for: colorScheme)"),
                "an inset panel is a rounded, rimmed card inside the balloon")
-        let panelViewSource = TestSourceModules.read("Sources/Lattice/UI/MenuPanel/MenuPanelView.swift")
-        let panelBodyCode: (String) -> String = { header in
-            stripCommentLines((panelViewSource.components(separatedBy: header).last ?? "")
-                .components(separatedBy: "\n    }").first ?? "")
-        }
-        suite.expect(panelBodyCode("var navigablePanel: some View {").contains(".panelGlassSurface()")
-                   && panelBodyCode("var metricPanel: some View {").contains(".panelGlassSurface()"),
-               "both the navigable panel and the metric panel wear that surface")
-
-        // The popover window is the panel plus 13 pt for the arrow and 13 pt
-        // below it. A window taller than the usable height opens beside the
-        // icon (issue #2225), so the height cap has to leave at least 26 pt.
-        let panelCapMargin = panelBodyCode("var maxHeight: CGFloat {")
-            .components(separatedBy: "?? 760) - ").dropFirst().first
-            .flatMap { Int($0.prefix(while: \.isNumber)) } ?? 0
-        suite.expect(panelCapMargin >= 26,
-               "a panel at its height cap still fits under its icon, arrow and bottom margin included")
 
         // The panel keeps its top edge and its center while its content resizes.
         let panelArea = CGRect(x: 0, y: 0, width: 1470, height: 932)
@@ -2381,27 +2356,6 @@ enum SwitcherModelFeatureTests {
                      && keepAwakeHoldCode.contains("refresh()")
                      && statusControllerSource.contains("heldKeepAwakeSignal ?? currentKeepAwakeSignal"),
                "starting or stopping Keep Awake from an open panel does not bring the glyph back under it")
-        // popoverDidClose keeps the hold while the panel switches anchors, so
-        // a switch that ends with the panel closed has to release it itself.
-        // Otherwise the glyph ignores Keep Awake until the next panel closes.
-        // Each failure branch is sliced at its own closing brace.
-        for (header, guardEnd, branchEnd, condition, label) in [
-            ("private func reanchorMetricPopover(", "activeMetric == detailKind else {",
-             "\n            }", "if !self.popover.isShown {", "closes while moving between metric items"),
-            ("private func useStablePopoverPositioningViewIfNeeded(", "view.window else {",
-             "\n        }", "if !popover.isShown {", "does not come back on its stable anchor"),
-        ] {
-            let switchCode = stripCommentLines((statusAnchorAppDelegateSource
-                .components(separatedBy: header).last ?? "")
-                .components(separatedBy: "\n    }").first ?? "")
-            let releaseCode = ((switchCode.components(separatedBy: guardEnd).dropFirst().first ?? "")
-                .components(separatedBy: branchEnd).first ?? "")
-                .components(separatedBy: condition).dropFirst().first ?? ""
-            suite.expect(releaseCode.contains("statusController.setMicBadgeHeld(false)")
-                         && releaseCode.contains("releasePanelResources()")
-                         && releaseCode.contains("endPanelActivationTracking()"),
-                   "a panel that \(label) releases the held glyph, its resources and activation tracking")
-        }
         suite.expect(MenuBarSpacingSupport.shouldHideStatusIcon(optionEnabled: true, separateMetrics: false,
                                                           metricsEnabled: true, renderedTitleLength: 12,
                                                           mustShowForSignal: false),
@@ -2650,20 +2604,16 @@ enum SwitcherModelFeatureTests {
         let reopenCode = stripCommentLines((statusAnchorAppDelegateSource
             .components(separatedBy: "func applicationShouldHandleReopen(").last ?? "")
             .components(separatedBy: "\n    }").first ?? "")
-        let reopenCoordinator = (try? String(contentsOfFile:
-            "Sources/Lattice/Core/AppMenuReopenCoordinator.swift", encoding: .utf8)) ?? ""
-        suite.expect(reopenCode.contains("AppMenuReopenCoordinator.open(")
-                     && reopenCode.contains("iconHidden: { [weak self] in self?.statusController?.mainItemHiddenByChoice == true }")
-                     && reopenCoordinator.contains("if !iconHidden(), !iconVisible() { recreateIcon() }"),
-               "reopening the app leaves an item hidden by choice alone and opens Settings")
+        suite.expect(reopenCode.contains("LatticeHubService.shared.toggle()"),
+               "reopening the app toggles Lattice Hub")
         // macOS 27's Siri app reopens running apps on almost every interaction;
         // only a reopen the person asked for may rebuild the icon or open anything.
         let reopenJudged = reopenCode.range(of: "guard ReopenRequestSupport.isPersonOpeningApp(")
-        let reopenRebuild = reopenCode.range(of: "recreateStatusItem()")
-        suite.expect(reopenJudged != nil && reopenRebuild != nil
-                     && reopenJudged!.lowerBound < reopenRebuild!.lowerBound
+        let reopenToggle = reopenCode.range(of: "LatticeHubService.shared.toggle()")
+        suite.expect(reopenJudged != nil && reopenToggle != nil
+                     && reopenJudged!.lowerBound < reopenToggle!.lowerBound
                      && reopenCode.contains("ReopenRequestSupport.currentSender()"),
-               "reopening judges who asked before it touches the icon, the panel or Settings")
+               "reopening judges who asked before it toggles Lattice Hub")
         typealias ReopenSender = ReopenRequestSupport.Sender
         let personReopens: [(ReopenSender?, String)] = [
             (ReopenSender(bundleIdentifier: "com.apple.finder",

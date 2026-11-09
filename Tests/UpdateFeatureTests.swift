@@ -315,18 +315,18 @@ enum UpdateFeatureTests {
             preferredFeatures: [], includePage: true,
             isAvailable: { _ in true },
             featureTitle: { $0.rawValue })
-        let menuBarDestination = FeatureSettingsDestination(
-            .general, sectionAnchor: .panelConfiguration)
-        let menuBarRow = SettingsSidebarItem(
-            id: .setting(.panelConfiguration), destination: menuBarDestination,
-            title: "Menu bar", icon: "menubar.rectangle")
+        let standaloneDestination = FeatureSettingsDestination(
+            .general, sectionAnchor: .audioOutputPriority)
+        let standaloneRow = SettingsSidebarItem(
+            id: .setting(.audioOutputPriority), destination: standaloneDestination,
+            title: "Audio Output", icon: "speaker.wave.2")
         suite.expect(SettingsSidebarSupport.selection(
             for: FeatureSettingsDestination(.general),
-            in: generalRows + [menuBarRow]) == .page(.general)
+            in: generalRows + [standaloneRow]) == .page(.general)
             && SettingsSidebarSupport.selection(
-                for: menuBarDestination,
-                in: generalRows + [menuBarRow]) == .setting(.panelConfiguration),
-            "General and its menu bar editor keep distinct sidebar selections")
+                for: standaloneDestination,
+                in: generalRows + [standaloneRow]) == .setting(.audioOutputPriority),
+            "General and its sub-items keep distinct sidebar selections")
         let mouseRows = SettingsSidebarSupport.items(
             page: .mouse, title: "Mouse", icon: "computermouse",
             preferredFeatures: [.scrollInverter, .scrollHorizontal], includePage: false,
@@ -486,7 +486,7 @@ enum UpdateFeatureTests {
                                 keywordFeatures: [.homebrew]),
             SettingsSearchItem(id: .page(.appUpdates),
                                 destination: FeatureSettingsDestination(.appUpdates),
-                                title: "App Updates", icon: "square.and.arrow.down.badge.clock",
+                                title: "App Updates", icon: "app.badge.checkmark",
                                 keywords: ["Homebrew"]),
             SettingsSearchItem(id: .page(.shortcuts),
                                 destination: FeatureSettingsDestination(.shortcuts),
@@ -618,7 +618,7 @@ enum UpdateFeatureTests {
             title: "Features", icon: "square.grid.2x2", keywords: ["Homebrew Packages"])
         let partialTitleAfterKeyword = SettingsSearchItem(
             id: .page(.appUpdates), destination: FeatureSettingsDestination(.appUpdates),
-            title: "Homebrew Packages", icon: "square.and.arrow.down.badge.clock")
+            title: "Homebrew Packages", icon: "app.badge.checkmark")
         let partialMatches = SettingsSearchSupport.matchingItems(
             query: "brew", items: [keywordBeforePartialTitle, partialTitleAfterKeyword])
         suite.expect(partialMatches.map(\.id) == [.page(.appUpdates), .page(.features)],

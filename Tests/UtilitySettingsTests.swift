@@ -18,10 +18,10 @@ enum UtilitySettingsTests {
                == FeatureSettingsDestination(.audioOutput, sectionAnchor: .mixer),
                "selecting Volume Mixer opens its Audio Output section")
         expect(AppFeature.quickLauncher.settingsDestination
-               == FeatureSettingsDestination(.launcherGrid)
+               == FeatureSettingsDestination(.general)
                && AppFeature.cameraPreview.settingsDestination
                == FeatureSettingsDestination(.cameraPreview),
-               "Lattice Hub and Camera Preview open their dedicated settings pages")
+               "Lattice Hub opens General settings and Camera Preview opens its dedicated settings page")
         expect(!AppFeature.allCases.contains { $0.rawValue == "quickToggles" },
                "Quick Toggles is not independently installable")
         expect(Action.darkMode.feature == .brightness && Action.ejectDisks.feature == .commandBar,

@@ -194,6 +194,7 @@ final class NotchService: ObservableObject {
     @Published private var fanDetailHeight: CGFloat?
     @Published private(set) var power = PowerReading()
     @Published private var musicDetailVisible = false
+    var customBackAction: (() -> Bool)?
 
     private var windowHost: NotchWindowHost?
     private var panel: NotchPanel? { windowHost?.panel }
@@ -865,11 +866,12 @@ final class NotchService: ObservableObject {
 
     /// The open island as Settings previews a section: at rest, with no
     /// detail, app panel, capture or media editor in front of the page.
-    func previewSize(for module: NotchModule) -> CGSize {
+    func previewSize(for module: NotchModule, systemHeight: CGFloat? = nil) -> CGSize {
         pageSize(in: previewGeometry(for: module), module: module, detail: false, panel: false, detailHeight: nil, musicExtraHeight: 0,
                  fileMediaHeight: nil, toolCount: LatticeHubService.shared.visibleItems.count, capturePreviewHeight: nil,
                  toolsControlsHeight: module == .hub ? LatticeHubService.shared.notchControlsHeight : nil,
-                 hubWidgetsHeight: module == .hub && modules.contains { [.music, .calendar, .timer].contains($0) } ? NotchLayout.hubWidgetTileHeight : nil)
+                 hubWidgetsHeight: module == .hub && modules.contains { [.music, .calendar, .timer].contains($0) } ? NotchLayout.hubWidgetTileHeight : nil,
+                 systemHeight: systemHeight)
     }
 
     /// The island around a previewed section, with the top row its page has.
@@ -905,7 +907,8 @@ final class NotchService: ObservableObject {
                           hubAvailableCount: Int = 0,
                           hubOptionsHeight: CGFloat = 0,
                           hubActiveUtilityHeight: CGFloat? = nil,
-                          hubWidgetsHeight: CGFloat? = nil) -> CGSize {
+                          hubWidgetsHeight: CGFloat? = nil,
+                          systemHeight: CGFloat? = nil) -> CGSize {
         let controls = NotchSupport.controls()
         let sliders = controls.filter(\.isLevel).count
         let shortcuts = controls.filter { !$0.isLevel && $0 != .music }.count
@@ -927,7 +930,8 @@ final class NotchService: ObservableObject {
                                      hubAvailableCount: hubAvailableCount,
                                      hubOptionsHeight: hubOptionsHeight,
                                      hubActiveUtilityHeight: hubActiveUtilityHeight,
-                                     hubWidgetsHeight: hubWidgetsHeight)
+                                     hubWidgetsHeight: hubWidgetsHeight,
+                                     systemHeight: systemHeight)
     }
 
     /// The AI page is as tall as the cards it shows; nil while the logs are
@@ -1428,44 +1432,80 @@ final class NotchService: ObservableObject {
     }
 
     /// Opening without a page shows what the closed island is already
+    /// Opening without a page shows what the closed island is already
     /// presenting: a mirrored banner, or an activity unless the user turned
     /// that off. Otherwise the reopening preference decides.
-    var reopeningDestination: (module: NotchModule, appPanel: Bool, sections: Bool) {
-        if !expanded {
-            let opensActivity = UserDefaults.standard.object(forKey: DefaultsKey.notchOpensActivity) as? Bool ?? true
-            let activity = notice?.notificationID != nil ? NotchModule.notifications
-                : (!peeking && opensActivity) ? compactActivity?.module : nil
-            if let activity, modules.contains(activity) { return (activity, false, false) }
-            if UserDefaults.standard.bool(forKey: DefaultsKey.notchReturnHome) {
-                let saved = UserDefaults.standard.string(forKey: DefaultsKey.notchHomeModule) ?? ""
-                switch NotchReopeningDestination(rawValue: saved) {
-                case .appPanel: return (modules.contains(.controls) ? .controls : modules.first ?? .controls, true, false)
-                case .explore:
-                    if NotchSupport.isTestHarness {
-                        return (selected, false, true)
-                    }
-                    let home = modules.contains(.hub) ? .hub : (modules.first ?? .hub)
-                    return (home, false, false)
-                case nil:
-                    if NotchSupport.isTestHarness {
-                        let home = NotchModule(rawValue: saved) ?? .controls
-                        return (modules.contains(home) ? home : modules.first ?? .controls, false, false)
-                    }
-                    let home = NotchModule(rawValue: saved) ?? .hub
-                    let resolved = (home == .controls || home == .mixer) ? .hub : home
-                    return (modules.contains(resolved) ? resolved : modules.first ?? .hub, false, false)
+    var defaultDestination: (module: NotchModule, sections: Bool) {
+        if UserDefaults.standard.bool(forKey: DefaultsKey.notchReturnHome) {
+            let saved = UserDefaults.standard.string(forKey: DefaultsKey.notchHomeModule) ?? ""
+            switch NotchReopeningDestination(rawValue: saved) {
+            case .explore:
+                // Migrate a previously saved Explore reopening choice to Hub.
+                return (modules.contains(.hub) ? .hub : (modules.first ?? .hub), false)
+            case nil:
+                if NotchSupport.isTestHarness {
+                    let home = NotchModule(rawValue: saved) ?? .controls
+                    return (modules.contains(home) ? home : modules.first ?? .controls, false)
                 }
+                let home = NotchModule(rawValue: saved) ?? .hub
+                let resolved = (home == .controls || home == .mixer) ? .hub : home
+                return (modules.contains(resolved) ? resolved : modules.first ?? .hub, false)
             }
-            if !NotchSupport.isTestHarness, modules.contains(.hub) {
-                return (.hub, lastVisitedAppPanel, false)
-            }
-            return (selected, lastVisitedAppPanel, NotchSupport.isTestHarness ? lastVisitedSections : false)
         }
-        return (selected, showingAppPanel, NotchSupport.isTestHarness ? showingSections : false)
+        let safeSelected = (!NotchSupport.isTestHarness && (selected == .controls || selected == .mixer)) ? .hub : selected
+        let destinationModule = modules.contains(safeSelected) ? safeSelected : (modules.contains(.hub) ? .hub : (modules.first ?? .hub))
+        return (destinationModule, false)
+    }
+
+    var reopeningDestination: (module: NotchModule, sections: Bool) {
+        if !expanded {
+            let defaults = UserDefaults.standard
+            let opensActivity = defaults.object(forKey: DefaultsKey.notchOpensActivity) as? Bool ?? true
+            let isHoverExpand = NotchSupport.isTestHarness
+                || openedByHover
+                || (defaults.bool(forKey: DefaultsKey.notchOpenOnHover) && defaults.bool(forKey: DefaultsKey.notchHoverExpands))
+            if notice?.notificationID != nil, let mod = NotchModule.notifications as NotchModule?, modules.contains(mod) {
+                return (mod, false)
+            }
+            if isHoverExpand && opensActivity, let activity = compactActivity?.module, modules.contains(activity) {
+                return (activity, false)
+            }
+            return defaultDestination
+        }
+        let safeSelected = (!NotchSupport.isTestHarness && (selected == .controls || selected == .mixer)) ? .hub : selected
+        return (safeSelected, false)
     }
 
     var reopeningModule: NotchModule {
         reopeningDestination.module
+    }
+
+    func applyHubOpeningDestination() {
+        guard !NotchSupport.isTestHarness else { return }
+        let defaults = UserDefaults.standard
+        if defaults.bool(forKey: DefaultsKey.notchReturnHome) {
+            let saved = defaults.string(forKey: DefaultsKey.notchHomeModule) ?? ""
+            if saved == NotchModule.hub.rawValue || saved.isEmpty {
+                LatticeHubService.shared.activeUtility = nil
+            }
+        } else {
+            if let recent = LatticeHubService.shared.recentUtility {
+                if recent == .system {
+                    SystemNavigationState.shared.reset()
+                }
+                LatticeHubService.shared.activeUtility = recent
+            } else {
+                LatticeHubService.shared.activeUtility = nil
+            }
+        }
+    }
+
+    func openDefault(takeFocus: Bool = true) {
+        let destination = defaultDestination
+        if !NotchSupport.isTestHarness, destination.module == .hub {
+            applyHubOpeningDestination()
+        }
+        open(destination.module, takeFocus: takeFocus)
     }
 
     /// A compact strip opens its activity's page, as opening the island does:
@@ -1505,9 +1545,7 @@ final class NotchService: ObservableObject {
         let useReopeningSurface = module == nil && !expanded && !appPanel && !sections && metric == nil
         let targetModule = module.map { (!NotchSupport.isTestHarness && ($0 == .controls || $0 == .mixer)) ? .hub : $0 }
         let destination = targetModule.flatMap { modules.contains($0) ? $0 : nil } ?? reopening.module
-        let appPanel = appPanel || (useReopeningSurface && reopening.appPanel)
         let sections = NotchSupport.isTestHarness ? (sections || (useReopeningSurface && reopening.sections)) : false
-        if useReopeningSurface && reopening.appPanel { MenuPanelFocus.shared.showNormalPanel() }
         if useReopeningSurface && reopening.sections {
             sectionQuery = ""
             sectionRow = 0
@@ -2073,7 +2111,6 @@ final class NotchService: ObservableObject {
 
     func openAppPanel(toggle: Bool = false) {
         if toggle, expanded, showingAppPanel, !showingSections, !showingCommandBar { collapse(); return }
-        MenuPanelFocus.shared.showNormalPanel()
         open(.controls, appPanel: true)
         // The toggling route is the menu bar's. Opened from there, the panel
         // has nothing behind it and closes on Escape, like the menu panel.
@@ -2114,6 +2151,7 @@ final class NotchService: ObservableObject {
     }
 
     func goBack() {
+        if let custom = customBackAction, custom() { return }
         let changesPresentation = selectedMetric != nil || showingAppPanel
         mutatePresentation(transitionContent: changesPresentation ? .replace : .none) { selectedMetric = nil; showingAppPanel = false }
         syncVisibleConsumers()
@@ -2124,6 +2162,7 @@ final class NotchService: ObservableObject {
     /// once nothing lies behind.
     private func stepBack() {
         guard !heldDrag else { return }
+        if let custom = customBackAction, custom() { return }
         if showingAppPanel || selectedMetric != nil {
             if detailHasPage { goBack() } else { collapse() }
         } else if let close = pageLayers[selected] {
@@ -3591,7 +3630,6 @@ final class NotchService: ObservableObject {
         observe(.default, UserDefaults.didChangeNotification) { [weak self] in
             self?.schedulePreferenceSync()
         }
-        observe(.default, .menuPanelWillShow) { [weak self] in self?.collapse() }
         observe(.default, NSWindow.didBecomeKeyNotification) { [weak self] in self?.syncPanelKey() }
         observe(.default, NSWindow.didResignKeyNotification) { [weak self] in
             guard let self else { return }

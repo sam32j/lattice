@@ -462,8 +462,6 @@ if (( TEST )); then
         Sources/Lattice/Core/PermissionPreflight.swift
         Sources/Lattice/Core/BluetoothPermissionAccess.swift
         Sources/Lattice/Core/SettingsFollowupStrings.swift
-        Sources/Lattice/Core/AppMenuDestination.swift
-        Sources/Lattice/Core/AppMenuReopenCoordinator.swift
         Sources/Lattice/UI/Settings/PermissionDialogPresentation.swift
         Sources/Lattice/Core/PermissionResetState.swift
         Sources/Lattice/UI/Settings/ShortcutSettingsObserver.swift
@@ -547,8 +545,12 @@ if (( TEST )); then
         Sources/Lattice/Services/Clipboard/ClipboardHistoryWrite.swift
         Sources/Lattice/Services/Audio/AirPlayRouteManager.swift
         Sources/Lattice/Services/Audio/MixerRoutingSupport.swift
+        Sources/Lattice/Services/ImageThumbnailer.swift
+        Sources/Lattice/Services/ResponsibleProcess.swift
+        Sources/Lattice/Services/Audio/AppVolumeMixer.swift
         Sources/Lattice/Services/Audio/AudioPriorityPresentation.swift
         Sources/Lattice/UI/DeviceControls/DeviceControlsNavigationState.swift
+        Sources/Lattice/UI/LatticeHub/SystemNavigationState.swift
         Sources/Lattice/Services/Feedback/FeedbackDraft.swift
         Sources/Lattice/UI/Feedback/FeedbackWindowPresentation.swift
         Sources/Lattice/Services/Audio/MusicLaunchSupport.swift
@@ -713,6 +715,8 @@ if (( TEST )); then
         Sources/Lattice/Services/Switcher/SpaceHopSupport.swift
         Sources/Lattice/Services/Switcher/WindowUseOrder.swift
         Sources/Lattice/Services/Metrics/MetricFormat.swift
+        Sources/Lattice/Services/Metrics/UsageMetricHistory.swift
+        Sources/Lattice/Services/Metrics/ProcessCPUEnergy.swift
         Sources/Lattice/Services/Metrics/VMStatisticsDecoder.swift
         Sources/Lattice/Core/KeepAwakeHubStrings.swift
         Sources/Lattice/Core/HubCustomizationStrings.swift

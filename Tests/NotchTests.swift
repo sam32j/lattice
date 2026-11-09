@@ -1610,8 +1610,7 @@ enum NotchTests {
         suite.expect(fresh.string(forKey: DefaultsKey.notchSize) == NotchSize.spacious.rawValue
                      && !fresh.bool(forKey: DefaultsKey.notchInitialExtensionsInstalled)
                      && firstDefaults[DefaultsKey.notchSize] as? String == NotchSize.spacious.rawValue
-                     && firstDefaults[DefaultsKey.notchOpenOnHover] as? Bool == false
-                     && firstDefaults[DefaultsKey.notchAppPanel] as? Bool == false,
+                     && firstDefaults[DefaultsKey.notchOpenOnHover] as? Bool == false,
                      "a first island setup starts spacious, opens by click and uses a separate app panel")
         suite.expect(firstDefaults[DefaultsKey.notchGesturesEnabled] as? Bool == true
                      && firstDefaults[DefaultsKey.notchHapticFeedback] as? Bool == true
@@ -1644,7 +1643,6 @@ enum NotchTests {
                      && existing.bool(forKey: DefaultsKey.notchInitialExtensionsInstalled)
                      && existing.bool(forKey: DefaultsKey.notchNotificationsEnabled)
                      && existing.bool(forKey: DefaultsKey.notchOpenOnHover)
-                     && existing.bool(forKey: DefaultsKey.notchAppPanel)
                      && !existing.bool(forKey: DefaultsKey.notchAgentsEnabled),
                      "updating a configured island keeps explicit choices and previous implicit defaults")
         Defaults.migrateExistingNotchDefaults(in: fresh, domainName: firstInstall)
@@ -1660,10 +1658,6 @@ enum NotchTests {
         Defaults.migrateExistingNotchDefaults(in: existing, domainName: priorInstall)
         suite.expect(existing.string(forKey: DefaultsKey.notchSize) == NotchSize.compact.rawValue,
                      "an initialized profile preserves its previous implicit Compact size")
-        existing.removeObject(forKey: DefaultsKey.notchAppPanel)
-        Defaults.migrateExistingNotchDefaults(in: existing, domainName: priorInstall)
-        suite.expect(!existing.bool(forKey: DefaultsKey.notchAppPanel),
-                     "the one-time migration does not run again after a later preference change")
 
         let priorChoice = "io.github.sam32j.lattice.tests.notch-choice-\(UUID().uuidString)"
         let configured = UserDefaults(suiteName: priorChoice)!
@@ -2264,11 +2258,6 @@ enum NotchTests {
         suite.expect(NotchSupport.showsFiles(in: defaults) && !NotchSupport.routesShelf(in: defaults),
                "choosing a separate window keeps the choice on offer while the shelf stays out of the island")
         defaults.set(true, forKey: DefaultsKey.notchShelf)
-        defaults.set(false, forKey: AppFeature.quickLauncher.availabilityKey)
-        suite.expect(!NotchSupport.modules(in: defaults).contains(.hub) && !NotchSupport.routesQuickPanel(in: defaults),
-               "removing the quick panel also removes its embedded tools and shortcut routing")
-        defaults.set(false, forKey: DefaultsKey.notchQuickPanel)
-        suite.expect(!NotchSupport.routesQuickPanel(in: defaults), "quick panel shortcut can keep its original destination")
         defaults.set(false, forKey: DefaultsKey.shelfEnabled)
         suite.expect(!NotchSupport.modules(in: defaults).contains(.files), "unavailable shelf leaves no notch surface")
         defaults.set(false, forKey: AppFeature.notch.availabilityKey)
@@ -2279,7 +2268,7 @@ enum NotchTests {
 
         let keys: Set<String> = [DefaultsKey.notchShowPlayingMusic, DefaultsKey.notchIncludeOtherPlayers, DefaultsKey.notchShowInCaptures, DefaultsKey.notchIdleContent, DefaultsKey.notchHiddenControls, DefaultsKey.notchControlOrder, DefaultsKey.notchSize, DefaultsKey.notchOutlineEnabled, DefaultsKey.notchHideMenuBarGap, DefaultsKey.notchShelf, DefaultsKey.notchDragReveal,
                                 DefaultsKey.notchHapticFeedback,
-                                DefaultsKey.notchQuickPanel, DefaultsKey.notchAppPanel,
+                                DefaultsKey.notchQuickPanel,
                                 DefaultsKey.notchHidesMenuBarIcon, DefaultsKey.notchScratchpad,
                                 DefaultsKey.notchHoverExpands, DefaultsKey.notchEnabled, DefaultsKey.notchDisplay,
                                 DefaultsKey.notchOpenOnHover, DefaultsKey.notchHoverDelay, DefaultsKey.notchCloseDelay, DefaultsKey.notchHideUntilHover, DefaultsKey.notchHiddenModules,
@@ -2501,16 +2490,14 @@ enum NotchTests {
                 suite.expect(content <= geometry.contentBudget && content > 0,
                        "every page stays inside its preset's strip: \(layout) \(module)")
             }
-            suite.expect(geometry.contentSize(for: geometry.expandedSize(module: .hub, panel: true)).height == geometry.pageBudget
-                   && geometry.contentSize(for: geometry.expandedSize(module: .system, detail: true)).height == geometry.pageBudget
+            suite.expect(geometry.contentSize(for: geometry.expandedSize(module: .system, detail: true)).height == geometry.pageBudget
                    && geometry.pageBudget >= geometry.contentBudget,
-                   "the app panel and a metric detail get a readable page even inside a short preset: \(layout)")
-            let detail = { (height: CGFloat, panel: Bool) in
-                geometry.contentSize(for: geometry.expandedSize(module: .system, detail: true, panel: panel,
+                   "a metric detail gets a readable page even inside a short preset: \(layout)")
+            let detail = { (height: CGFloat) in
+                geometry.contentSize(for: geometry.expandedSize(module: .system, detail: true,
                                                                 detailHeight: height)).height
             }
-            suite.expect(detail(140, false) == 144 && detail(900, false) == geometry.pageBudget
-                   && detail(140, true) == geometry.pageBudget,
+            suite.expect(detail(140) == 144 && detail(900) == geometry.pageBudget,
                    "a measured detail such as Fan Control fits its card within the page instead of a tall empty page: \(layout)")
         }
         suite.expect(compact.contentBudget == NotchLayout.compactContentHeight && spacious.contentBudget == NotchLayout.spaciousContentHeight
@@ -2580,10 +2567,6 @@ enum NotchTests {
                            - NotchLayout.spacing - NotchLayout.bottomInset,
                        "content reserves one top navigation row, its spacing and the bottom inset")
                 suite.expect(geometry.safeContentTop > geometry.cameraHeight, "controls always clear the physical camera")
-                suite.expect(geometry.appPanelSize.width > 0 && geometry.appPanelSize.height >= 176
-                       && geometry.appPanelSize.height == geometry.pageBudget
-                       && geometry.appPanelSize.height < geometry.expandedSize(module: .hub, panel: true).height,
-                       "embedded panel reserves room for its navigation, content and footer")
             }
         }
         for frame in frames {

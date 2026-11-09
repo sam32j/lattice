@@ -120,7 +120,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
 }
 
 enum NotchReopeningDestination: String, CaseIterable {
-    case appPanel, explore
+    case explore
 }
 
 /// ⌘1 to ⌘9 on the island's clipboard page paste the entry at that place in
@@ -2110,7 +2110,7 @@ enum NotchSupport {
     }
 
     static func routesAppPanel(in defaults: UserDefaults = .standard) -> Bool {
-        AppMenuDestination.selected(in: defaults) == .island
+        false
     }
 
     static func routesScratchpad(in defaults: UserDefaults = .standard) -> Bool {
@@ -2754,12 +2754,15 @@ struct NotchGeometry: Equatable {
                       hubAvailableCount: Int = 0,
                       hubOptionsHeight: CGFloat = 0,
                       hubActiveUtilityHeight: CGFloat? = nil,
-                      hubWidgetsHeight: CGFloat? = nil) -> CGSize {
+                      hubWidgetsHeight: CGFloat? = nil,
+                      systemHeight: CGFloat? = nil) -> CGSize {
         let budget = contentBudget
         let showsCapturePreview = module == .captures && !detail && capturePreviewHeight != nil
         let showsFileMedia = module == .files && !detail && fileMediaHeight != nil
         let contentHeight: CGFloat
-        if detail, !panel, let detailHeight {
+        if let systemHeight {
+            contentHeight = max(0, systemHeight)
+        } else if detail, !panel, let detailHeight {
             contentHeight = min(pageBudget, max(0, detailHeight) + 4)
         } else if detail || panel {
             contentHeight = pageBudget
