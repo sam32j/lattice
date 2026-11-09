@@ -128,6 +128,8 @@ enum NotchScreenRefreshContract {
         var modules: [NotchModule] = [.controls]
         var selected = NotchModule.controls
         var pinned = false
+        var captureContent: Bool?
+        var captureClosesOnCollapse = false
         var keepsWorkingSurface = false
         var openedByHover = false
         var clickedSinceOpening = false
@@ -354,6 +356,31 @@ enum NotchScreenRefreshContract {
         simulated.applicationDidActivate()
         suite.expect(simulated.reads == beforeReads + 3, "a suspended island ignores activations")
         simulated.suspended = false
+
+        NSWorkspace.shared.frontmostApplication = RunningApplication(bundleIdentifier: "com.example.editor")
+        let timedCapture = Service()
+        timedCapture.expanded = true
+        timedCapture.selected = .captures
+        timedCapture.captureContent = true
+        timedCapture.keepsWorkingSurface = true
+        timedCapture.applicationDidActivate()
+        suite.expect(timedCapture.collapses == 0,
+                     "a timed screenshot preview survives an external app focus handoff")
+        let historyCapture = Service()
+        historyCapture.expanded = true
+        historyCapture.selected = .captures
+        historyCapture.captureContent = true
+        historyCapture.captureClosesOnCollapse = true
+        historyCapture.keepsWorkingSurface = true
+        historyCapture.applicationDidActivate()
+        suite.expect(historyCapture.collapses == 1,
+                     "an unpinned persistent history preview still closes on app activation")
+        let captureHistory = Service()
+        captureHistory.expanded = true
+        captureHistory.selected = .captures
+        captureHistory.applicationDidActivate()
+        suite.expect(captureHistory.collapses == 1,
+                     "the empty Captures page still dismisses when another application activates")
 
         let hovered = Service()
         hovered.expanded = true

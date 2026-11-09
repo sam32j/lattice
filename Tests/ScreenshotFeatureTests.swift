@@ -1432,8 +1432,10 @@ enum ScreenshotFeatureTests {
         // so the presentation statements are what remains.
         let presentBody = quickPreviewCode.components(separatedBy: "let host = NSHostingController")
             .dropFirst().first?.components(separatedBy: "private func").first ?? ""
-        suite.expect(presentBody.contains("orderFrontRegardless()"),
-               "the screenshot preview is presented without activating the app")
+        suite.expect(presentBody.contains("orderFrontRegardless()")
+                     && presentBody.contains("styleMask: [.borderless, .nonactivatingPanel]")
+                     && !presentBody.contains("NSApp.activate(ignoringOtherApps: true)"),
+               "the floating screenshot preview orders and keys only its own panel, not Settings")
         // A click is the hand-off, and it is read in sendEvent because the
         // hosted SwiftUI content answers presses that never reach mouseDown.
         let panelBody = quickPreviewCode.components(separatedBy: "class ScreenshotQuickPreviewPanel")
@@ -1450,10 +1452,12 @@ enum ScreenshotFeatureTests {
                "the screenshot preview takes key focus only behind the presentation policy, once the panel is on screen")
         // The island reads the same policy: whether it takes the keyboard and
         // whether a collapse closes the preview come from it, never a literal.
+        let islandPresentation = quickPreviewCode.components(separatedBy: "if wantsNotch, NotchService.shared.presentCapture(")
+            .dropFirst().first?.components(separatedBy: "let host = NSHostingController").first ?? ""
         suite.expect(quickPreviewCode.contains("takeFocus: presentationPolicy.takesFocus,")
                 && quickPreviewCode.contains("closeOnCollapse: presentationPolicy.closesOnCollapse,")
-                && quickPreviewCode.contains("if presentationPolicy.takesFocus {\n                NSApp.activate(ignoringOtherApps: true)"),
-               "the island preview takes the keyboard and closes on collapse exactly as the presentation policy says")
+                && !islandPresentation.contains("NSApp.activate(ignoringOtherApps: true)"),
+               "the Island preview takes key focus through its own nonactivating panel without activating Settings")
         let makeKeyCount = quickPreviewCode.components(separatedBy: "makeKey").count - 1
         let panelMakeKeyCount = panelBody.components(separatedBy: "makeKey").count - 1
         suite.expect(makeKeyCount == panelMakeKeyCount + 2 && panelMakeKeyCount >= 1,

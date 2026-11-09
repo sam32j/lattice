@@ -269,10 +269,12 @@ final class NotchService: ObservableObject {
     }
 
     private var keepsWorkingSurfaceOnOutsideClick: Bool {
-        // Manual history previews have no auto-dismiss timer, but an
-        // unpinned Island must still close when another app is activated.
-        // Pinned previews remain protected by the explicit pinned case below.
-        (expanded && selected == .hub && LatticeHubService.shared.isEditing)
+        // A timed screenshot confirmation has its own dismiss deadline.
+        // Capture-focus handoff (or activating the app beneath the Island)
+        // must not close it early. A persistent history preview still closes
+        // on click-away unless pinned.
+        (expanded && selected == .captures && captureContent != nil && !captureClosesOnCollapse)
+            || (expanded && selected == .hub && LatticeHubService.shared.isEditing)
             || pinned || trackingMenu || NSApp.modalWindow != nil || panel?.attachedSheet != nil
             // Like the lyrics chooser, these panels stand beside the island
             // instead of hanging from it; a click in them is not a click away.
@@ -3761,9 +3763,11 @@ final class NotchService: ObservableObject {
         if expanded, modules.contains(.clipboard) { ClipboardHistoryService.shared.rememberPasteTarget() }
         if expanded, modules.contains(.snippets) { SnippetLibraryService.shared.rememberPasteTarget() }
         if expanded, !pinned,
-           // Capture previews are not protected working surfaces when unpinned,
-           // even if Lattice did not first receive didResignActive.
-           (selected == .captures ||
+           // A transient capture owns its dismissal timer. Closing it here
+           // on the capture session's focus handoff made the preview flash
+           // open and immediately collapse. Persistent history and the empty
+           // Captures page remain dismissible when another app activates.
+           ((selected == .captures && (captureContent == nil || captureClosesOnCollapse)) ||
             (!keepsWorkingSurface && (selected == .hub || NotchSupport.closesOnActivation(openedByHover: openedByHover, clicked: clickedSinceOpening,
                                            pointerInside: windowHost?.containsHover(NSEvent.mouseLocation) == true)))) {
             collapse()

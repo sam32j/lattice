@@ -28,6 +28,8 @@ enum NotchCaptureNavigationTests {
         suite.expect(!clickProtection.contains("captureOpenedFromHistory")
                      && clickProtection.contains("|| pinned"),
                      "manual capture previews are not protected from click-away without Pin")
+        suite.expect(clickProtection.contains("captureContent != nil && !captureClosesOnCollapse"),
+                     "timed screenshot confirmations survive focus handoffs and outside clicks until their own timeout")
         let islandSource = (try? String(contentsOfFile:
             "Sources/Lattice/UI/Notch/NotchView.swift", encoding: .utf8)) ?? ""
         let scrollRule = islandSource.components(separatedBy: "private var scrollsVertically:")
