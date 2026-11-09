@@ -2,6 +2,109 @@
 
 ## [3.4.1-d.2] - 2026-10-17
 
+## [3.4.2-d.6] - 2026-11-09
+
+### Added
+- **Quick Tools**: Enhance screenshots, recent captures, and recorder quick previews
+- **Timer**: Add NotchTimerModeRail and enhance ruler, stopwatch, and pomodoro lifecycle
+- **Island**: Retire legacy sections view and live quick actions editor
+- **Island**: Unify back button to All Tools and ensure top-right pin control on all pages
+- **Music**: Redesign NotchMusicView below camera notch with transport and source controls
+- **Music**: Add NotchRepeatService and repeat mode model
+- **Device Controls**: Integrate subpage routing and back navigation in DeviceControlsHubView
+- **Device Controls**: Add DeviceControlsAppVolumesView subpage
+- **Device Controls**: Add DeviceControlsNavigationState for app volume subpages
+- **Hub**: Update HubIslandStripView, HubIslandWidgetSection, and HubGrid soft transitions
+- **Hub**: Add sub-subpage title resolution and back navigation in LatticeHubChrome and Metadata
+- **Hub**: Adopt top-aligned ZStack in LatticeHubView to prevent center-shrinking on navigation
+- **Hub**: Add outside interaction dismissal and floating hud toggle on app icon click
+- **Hub**: Bake Lattice Hub as primary interface and establish dual entry-point routing
+- **Settings**: Add SoftwareDimmingButton and refine utility settings
+- **Settings**: Update Dynamic Island settings with All Tools default page, recently used fix, and live activity toggle
+- **Settings**: Rework General settings with menubar icon toggle, prefer open location, and shortcut setter
+- **Settings**: Add LatticeInterfaceConfirmation dialog for interface disablement
+- **System Ui**: Update System summary view with uptime chip and reset on close
+- **System Ui**: Redesign Storage detail page with scrollable disk strip, SMART facts, and IO charts
+- **System Ui**: Add SystemWidgetDetailContent and memory pressure chip
+- **System Ui**: Add SystemWidgetLayout metrics calculation constants
+- **System Ui**: Add SystemNavigationState and MetricDetailTestShim
+- **L10n**: Expand NotchActivityStrings and NotchMusicExtrasStrings for timer and playback
+- **L10n**: Add strings for live activity hover settings and app updates
+- **L10n**: Add strings for recent captures and quick actions
+- **L10n**: Add localized strings for All Tools and subpage navigation
+- **Core**: Add DefaultsKey constants for interface routing and preferences
+- **Metrics**: Add NetworkAddressService and expand process network tracking
+- **Metrics**: Expand PowerSampler and BatteryTimeSupport wattage diagnostics
+- **Metrics**: Add GPUDetailSampler for Apple Silicon GPU frequency and utilization
+- **Metrics**: Add ProcessCPUEnergy sampler for per-process power tracking
+- **Metrics**: Add UsageMetricHistory thread-safe window buffer
+- **Dev**: Add mock external disks, USB peripherals, and accessories with updated waveform icons
+- **Hub, island**: Add di widget section, move ai usage, watch, system to hub, add back navigation, and remove update mock
+- **Hub, island**: Suppress indicators on device controls, fit island height, lower swipe threshold to 100px, and retire explore/widget controls
+- **Hub, island**: Polish header controls, dismiss on external shortcuts and margin clicks, remove number navigation, and add back navigation to downloads and notifications
+- **Hub, island**: Add outside interact dismiss, pin toggle, dynamic island widget buttons, and title bar update chip
+- **Haptics, island**: Add mactic level 6 trackpad actuator and horizontal auto-scroll paging
+- **Hub**: Refine edit mode triggers, haptics, hidden tray, and window layering
+  - Increase hold-to-edit duration to 2.0s with haptic feedback
+  - Retitle 'Available Tools' section to 'Hidden' and keep label secondary during tile dragging while preserving blue dashed drop border
+  - Prevent background Settings window from popping to front when clicking Hub tools or toggles
+  - Remove footer shortcut hint on Hub root page to reduce window height
+  - Eliminate Dynamic Island keyboard focus ring unconditionally
+  - Deliver strongest dual-pulse haptic actuation on Dynamic Island gestures
+  - Retire sound and display controls from Menu Bar popover
+- **Hub**: Integrate device controls and app volumes subpage
+
+### Changed
+- **Island**: Update NotchWindowHost, NotchService, NotchDownloadService, and NotchSupport
+- **Music**: Refine music automation, transport, and strip layouts
+- **Settings**: Extract MenuBarIconPickerRow and clean up settings directory
+- **Settings**: Delete legacy PanelLayoutEditor and AppMenuDestinationSettings
+- **App**: Remove app menu coordinators and status item references from AppDelegate and AppAppearance
+- **L10n**: Remove appPanel strings across all languages
+- **Menu Panel**: Clean up FanControlSection, PanelAppUpdatesView, and MixerSection
+- **Menu Panel**: Remove MenuPanelView and PanelLayout container
+- **Menu Panel**: Remove legacy menu panel section views
+- **Core**: Update FeatureCatalog, installation and availability policies
+- **Metrics**: Integrate modular samplers into SystemMonitor
+- **Metrics**: Expand ProcessUsageService with disk and energy breakdowns
+- **Metrics**: Improve SpeedTest engine responsiveness and status tracking
+- **Settings, island**: Thoroughly retire Volume Mixer and Controls from widget section and clean up dead code
+
+### Fixed
+- **Island**: Address rebase integration and unit test fixtures for island hub
+- **Island**: Remove retired panel check in expandedSize
+- **Tests**: Resolve unit test harness and assertion updates for island hub navigation
+- **Stack/2**: Address PR-38 review comments for dev probes, activity routing, and gif capture deletion
+- **Stack/2**: Resolve compilation errors and unit test harness for menu panel retirement
+- **Metrics**: Address PR-38 review comments for speed test, power, network address, and general settings
+- **Hub**: Restore clipboard in quick action picker and fail make-dmg on detach exhaustion
+- **Hub**: Address PR-37 review comments and CI test/DMG reliability
+- **Metrics**: Remove unused var warning in DiskSampler
+- **Hub, island**: Fix focus ring, restore brandmark, remove mocks, prevent hub back button, and use livephoto.play
+- **Hub, settings**: Remove header focus ring and update Now Playing icon to waveform
+- **Settings**: Resolve value-witness crash when opening dynamic island settings
+- **Island**: Remove duplicate back buttons from AI Usage, Watch, Notifications, and Downloads
+- **Island, settings**: Completely remove explore page references and ensure hub fallback
+- **Hub, island**: Align widget section padding, clamp paging to single page, refine flick threshold, and rename waveform tooltip to Now Playing
+- **Quick Tools**: Make hidden files and desktop icons toggles immediate, focusless, and without warning/failure states
+- **Device Controls, settings**: Suppress volume indicator on device controls page and rename now playing indicator to track change
+- **Hub, island**: Live update dnd status, style update button blue with standard hover, and fix shortcut dismissal
+- **Hub**: Balance header update control, remove focus ring, and eliminate blue tint
+- **Haptics**: Resolve inconsistent and doubled trackpad haptics by using exported MTDeviceGetDeviceID, correct float parameters, and single-actuation fallback
+- **Hub**: Update floating hud button ordering, gear styling, update chip, video downloader width, and island icon spacing
+- **Hub, island**: Switch to haptic waveform 3, restrict app updates to root hub only, and fix external shortcut dismissal
+- **Hub, island**: Restore live activity after mission control, fix floating hud toggle & island click, fix gear & update chip layout, and preserve settings focus
+- **Dismissal**: Fix dismissal on external shortcuts, mission control, and space changes
+- **Hub**: Adopt native view-aligned paging and eliminate trackpad touch overhead
+- **Settings**: Prevent background settings window from surfacing on menu open, close, or hub navigation
+- **Hub**: Enable effortless flick page switching with velocity detection and reduced threshold
+- **Hub, island**: Eliminate horizontal scroll lag, match gear styling, fix settings focus regression, and dismiss on shortcuts and spaces
+- **Hub, island**: Restore prior app focus, enable continuous swipe, fix arrow navigation and return activation
+- **Haptics**: Single strong gesture haptic and 800ms edit threshold
+  - Remove dual async pulse in NotchService so swipe gestures fire exactly one .levelChange haptic
+  - Set hold-to-edit duration to 800ms (0.8s) in HubToolSurface
+  - Eliminate duplicate haptic trigger on entering edit mode
+
 ## [3.4.2-d.5] - 2026-11-04
 
 ### Added
