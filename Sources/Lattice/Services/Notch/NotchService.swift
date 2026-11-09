@@ -2822,9 +2822,10 @@ final class NotchService: ObservableObject {
             // Back and History, turning those clicks into Island collapse.
             // Keep explicit Close and the preview controls interactive instead.
             activationRect = .zero
-        } else if !expanded && geometry.floats && compactActivity == .music {
-            // Native activation overlays the SwiftUI cover button in the
-            // capsule, wrongly routing its clicks to the default Hub.
+        } else if !expanded && geometry.floats && (compactActivity == .music || compactActivity == .timer) {
+            // The floating music cover and Timer mark have explicit SwiftUI
+            // buttons; a native overlay would swallow their distinct actions.
+            // The timer readout keeps its own default-opening button.
             activationRect = .zero
         } else if showsCompactActivityPicker {
             let strip = compactActivityGeometry.compactActivitySize
