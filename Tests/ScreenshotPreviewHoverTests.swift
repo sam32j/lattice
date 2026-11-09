@@ -18,6 +18,8 @@ enum ScreenshotPreviewHoverTests {
 
     class State {
         var pointerInside = false
+        var previewDragInProgress = false
+        var deletingCapture = false
         var systemSharing = false
         var contextMenuOpen = false
         var dismissWork: DispatchWorkItem?

@@ -76,7 +76,9 @@ enum ScreenshotOCRControlTests {
                 var presses = 0
                 let view = ScreenshotQuickPreviewView(
                     image: image, strings: strings, model: model, perform: { _ in },
-                    dragItem: { NSItemProvider() }, nativeDragFile: { nil }, share: { _ in }, systemShare: {},
+                    dragItem: { NSItemProvider() }, nativeDragFile: { nil },
+                    dragActivityChanged: { _ in },
+                    share: { _ in }, systemShare: {},
                     shareAnchor: ShelfSharePickerAnchor.Anchor(), copySharedLink: {},
                     deleteSharedLink: {}, showQR: {}, copyText: { presses += 1 },
                     dismiss: {}, expand: {}, hoverChanged: { _ in }, showsDismissButton: true,

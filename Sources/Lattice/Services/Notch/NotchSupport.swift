@@ -1968,9 +1968,7 @@ enum NotchSupport {
             if !NotchSupport.isTestHarness && ($0 == .controls || $0 == .mixer) {
                 return false
             }
-            // The real Hub is the Island root and cannot be hidden by
-            // migrated preferences from the retired Tools/Explore pages.
-            let isHidden = $0 != .hub && hidden.contains($0.rawValue)
+            let isHidden = hidden.contains($0.rawValue) || ($0 == .hub && hidden.contains("tools"))
             return seen.insert($0).inserted && !isHidden && $0.isAvailable(in: defaults)
                 && ($0 != .timer || defaults.bool(forKey: DefaultsKey.notchTimerEnabled))
                 && ($0 != .camera || defaults.bool(forKey: DefaultsKey.notchCameraEnabled))

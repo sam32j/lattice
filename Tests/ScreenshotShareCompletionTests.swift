@@ -109,6 +109,8 @@ enum ScreenshotShareCompletionTests {
     class State {
         typealias UserDefaults = SharingDefaults
         var systemSharing = false
+        var previewDragInProgress = false
+        var deletingCapture = false
         var contextMenuOpen = false
         var pointerInside = false
         var onClose: () -> Void = {}

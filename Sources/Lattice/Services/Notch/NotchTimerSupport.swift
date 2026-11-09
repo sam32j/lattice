@@ -81,6 +81,20 @@ struct NotchPomodoroConfiguration: Equatable, Codable {
     }
 
     init(
+        rawFocusMinutes: Int,
+        rawShortBreakMinutes: Int,
+        rawLongBreakMinutes: Int,
+        rawLongBreakInterval: Int,
+        rawTotalSessions: Int
+    ) {
+        self.focusMinutes = rawFocusMinutes
+        self.shortBreakMinutes = rawShortBreakMinutes
+        self.longBreakMinutes = rawLongBreakMinutes
+        self.longBreakInterval = rawLongBreakInterval
+        self.totalSessions = rawTotalSessions
+    }
+
+    init(
         focusMinutes: Int = 25,
         shortBreakMinutes: Int = 5,
         longBreakMinutes: Int = 15,
