@@ -1265,6 +1265,18 @@ enum NotchCapsuleLayout {
     /// group of its own, so a pair with one keeps two clocks apart.
     static func markGap(_ companion: NotchCompactActivity?) -> CGFloat { companion == .calendar ? groupSpacing : spacing }
 
+    /// Keep the Timer/companion mark's explicit SwiftUI button outside the
+    /// native default-opening hit region, including when the activity picker
+    /// uses a wider surface around the compact strip.
+    static func timerActivationArea(_ area: CGRect, geometry: NotchGeometry,
+                                    companion: NotchCompactActivity?) -> CGRect {
+        let leading = side(geometry) + (companion == .music ? artworkInset(geometry) : endPadding)
+        let markWidth = companion == .music ? artworkSide(geometry) : symbolWidth
+        let start = min(area.maxX, area.minX + leading + markWidth + markGap(companion) + 4)
+        return CGRect(x: start, y: area.minY,
+                      width: max(0, area.maxX - start), height: area.height)
+    }
+
     /// A timer's reading beside its mark, measured by its shape, so the
     /// capsule only moves when a character comes or goes.
     static func timerSurface(reading: String, companion: NotchCompactActivity?, workingAgents: Int,
