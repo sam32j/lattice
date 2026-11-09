@@ -180,9 +180,9 @@ final class ScreenshotQuickPreviewController {
             close: { [weak self] in self?.close() },
             hover: { [weak self] inside in self?.hoverChanged(inside) }) {
             shownInNotch = true
-            if presentationPolicy.takesFocus {
-                NSApp.activate(ignoringOtherApps: true)
-            }
+            // presentCapture already makes the nonactivating Island panel key
+            // when the preference requests it. Activating the whole app here
+            // can raise Settings and trigger another focus handoff.
             if let window = NotchService.shared.presentationWindow { installKeyMonitor(for: window) }
             finishShowing()
             return
@@ -191,7 +191,7 @@ final class ScreenshotQuickPreviewController {
         let size = Self.size(showingLink: model.sharedRecord != nil)
         let panel = ScreenshotQuickPreviewPanel(
             contentRect: CGRect(origin: .zero, size: size),
-            styleMask: [.borderless],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false)
         panel.contentViewController = host
@@ -210,8 +210,9 @@ final class ScreenshotQuickPreviewController {
         installKeyMonitor(for: panel)
         panel.orderFrontRegardless()
         if presentationPolicy.takesFocus {
+            // Nonactivating panels can accept shortcuts without bringing
+            // Lattice's other windows (especially Settings) to the front.
             panel.makeKey()
-            NSApp.activate(ignoringOtherApps: true)
         }
         finishShowing()
     }
@@ -707,6 +708,7 @@ final class ScreenshotQuickPreviewController {
 
 private final class ScreenshotQuickPreviewPanel: OverlayPanel {
     override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
 
     /// The preview shows up unasked for, so presenting it leaves the keyboard
     /// where it was unless the person opted in, and a click is what hands it
