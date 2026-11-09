@@ -605,13 +605,17 @@ final class ScreenshotService: ObservableObject {
             },
             deleteCapture: { [weak self] completion in
                 guard let self else { completion(false); return }
+                // Once deletion is confirmed, this capture must not publish a
+                // delayed automatic copy. Never cancel a newer capture's task.
+                self.cancelAutoCopy(for: latestCapture)
                 // A failed Trash move must leave the stored capture and preview
                 // available for retry; the sequence number is still occupied.
-                if let saved {
+                if let export = saved {
                     do {
-                        try FileManager.default.trashItem(at: saved.url, resultingItemURL: nil)
+                        try FileManager.default.trashItem(at: export.url, resultingItemURL: nil)
                     } catch { completion(false); return }
-                    if let consumed = saved.consumedNumber {
+                    saved = nil
+                    if let consumed = export.consumedNumber {
                         Self.rewindNumberSequence(toReuse: consumed)
                     }
                 }
@@ -642,6 +646,16 @@ final class ScreenshotService: ObservableObject {
             onClose: { [weak self] in self?.preview = nil })
         preview = controller
         controller.show()
+    }
+
+    /// Cancel a pending capture copy only if this preview still identifies
+    /// the latest capture. Detached export work checks the generation and
+    /// deletes its temporary file rather than publishing the stale pixels.
+    private func cancelAutoCopy(for capture: UUID?) {
+        guard let capture, capture == latestCaptureToken, autoCopyTask != nil else { return }
+        autoCopyTask?.cancel()
+        autoCopyTask = nil
+        autoCopyGeneration += 1
     }
 
     /// Preserve the previous discard side effects after the stored history

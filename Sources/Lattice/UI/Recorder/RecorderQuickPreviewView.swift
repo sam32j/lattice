@@ -230,7 +230,7 @@ struct RecorderQuickPreviewView: View {
             }
             islandSeparator
             islandTool("scissors", title: screenshot.editButton, action: onEdit)
-            islandTool("trash", title: "Move recording to Trash", action: onDelete)
+            islandTool("trash", title: previewNotice.trashAction, action: onDelete)
         }
         .fixedSize(horizontal: true, vertical: true)
         .padding(.horizontal, 5)

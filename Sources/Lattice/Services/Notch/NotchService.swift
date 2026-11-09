@@ -1033,7 +1033,7 @@ final class NotchService: ObservableObject {
         let language = L10n.shared.language
         guard let metric = selectedMetric else { return FeatureStrings.notch(language).title }
         if SystemWidgetLayout.isEnergyMetric(metric) {
-            return PowerSampler.hasInternalBattery ? L10n.shared.s.batteryLabel : "Energy"
+            return PowerSampler.hasInternalBattery ? L10n.shared.s.batteryLabel : L10n.shared.s.tabEnergy
         }
         // The fan card opens Fan Control, so its page shares that title.
         return metric == .fan ? FeatureStrings.fanControl(language).title : metric.title(L10n.shared.s)
@@ -1623,6 +1623,7 @@ final class NotchService: ObservableObject {
             (!expanded ||
             selected != .timer ||
             showingSections ||
+            showingCommandBar ||
             selectedMetric != nil)
 
         
@@ -2107,6 +2108,7 @@ final class NotchService: ObservableObject {
 
     func goBack() {
         if let custom = customBackAction, custom() { return }
+        if selectedMetric == .network, SpeedTest.shared.isRunning { SpeedTest.shared.cancel() }
         let changesPresentation = selectedMetric != nil
         mutatePresentation(transitionContent: changesPresentation ? .replace : .none) {
             selectedMetric = nil
@@ -2125,6 +2127,7 @@ final class NotchService: ObservableObject {
         guard !heldDrag else { return }
         if let custom = customBackAction, custom() { return }
         if selectedMetric != nil {
+            if selectedMetric == .network, SpeedTest.shared.isRunning { SpeedTest.shared.cancel() }
             if detailHasPage { goBack() } else { collapse() }
         } else if selected == .hub, let utility = LatticeHubService.shared.activeUtility {
             if utility == .deviceControls, DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {

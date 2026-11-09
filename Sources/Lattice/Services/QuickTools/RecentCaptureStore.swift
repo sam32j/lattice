@@ -223,6 +223,10 @@ final class RecentCaptureStore {
     /// An unreadable directory is a failure, not proof of erasure.
     func hasManagedCaptureFiles(for id: UUID) -> Bool {
         let prefix = id.uuidString + "-"
+        let exactNames: Set<String> = [id.uuidString + ".png", id.uuidString + ".latticecapture"]
+        func belongsToCapture(_ name: String) -> Bool {
+            name.hasPrefix(prefix) || exactNames.contains(name)
+        }
         func containsFiles(in root: URL?) -> Bool {
             guard let root else { return false }
             let directory = root.resolvingSymlinksInPath()
@@ -233,11 +237,11 @@ final class RecentCaptureStore {
                 for item in files {
                     let values = try item.resourceValues(forKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey])
                     guard values.isSymbolicLink != true else { continue }
-                    if values.isRegularFile == true && item.lastPathComponent.hasPrefix(prefix) { return true }
+                    if values.isRegularFile == true && belongsToCapture(item.lastPathComponent) { return true }
                     if values.isDirectory == true && Self.isDateFolderName(item.lastPathComponent) {
                         let children = try manager.contentsOfDirectory(at: item,
                             includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey])
-                        for child in children where child.lastPathComponent.hasPrefix(prefix) {
+                        for child in children where belongsToCapture(child.lastPathComponent) {
                             let resource = try child.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
                             if resource.isSymbolicLink != true && resource.isRegularFile == true { return true }
                         }

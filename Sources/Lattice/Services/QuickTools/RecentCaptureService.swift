@@ -820,9 +820,17 @@ final class RecentCaptureService: ObservableObject {
         let days = CleanerPolicy.sanitizedScreenshotAgeDays(
             UserDefaults.standard.integer(forKey: DefaultsKey.cleanerScreenshotAgeDays))
         let cutoff = days > 0 ? Date().addingTimeInterval(-Double(days) * 86_400) : nil
-        store.entries = RecentCaptureRetention.entries(
+        // An incomplete deletion can leave only a thumbnail or legacy sidecar.
+        // Keep its history entry as a recovery handle even without a readable
+        // primary screenshot; it must survive reload and normal age pruning.
+        let incomplete = store.entries.filter { entry in
+            entry.kind == .screenshot && !entryExists(entry)
+                && store.hasManagedCaptureFiles(for: entry.id)
+        }
+        let retained = RecentCaptureRetention.entries(
             store.entries.filter { entryExists($0) }, screenshotCutoff: cutoff,
             recordingLimit: UserDefaults.standard.integer(forKey: DefaultsKey.recentRecordingLimit))
+        store.entries = (retained + incomplete).sorted { $0.createdAt > $1.createdAt }
     }
 
     private func prepend(_ entry: RecentCaptureEntry) {

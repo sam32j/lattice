@@ -352,13 +352,11 @@
      private func select(_ value: Double) {
          guard isEnabled, value.isFinite else { return }
 
-         let bounded = min(
-             minuteRange.upperBound,
-             max(
-                 minuteRange.lowerBound,
-                 Int(value.rounded())
-             )
-         )
+         // Bound the floating-point value before converting to Int. VoiceOver
+         // can provide a finite number far outside Int's representable range.
+         let clamped = min(Double(minuteRange.upperBound),
+                           max(Double(minuteRange.lowerBound), value.rounded()))
+         let bounded = Int(clamped)
 
          guard integerValue != bounded else { return }
 
