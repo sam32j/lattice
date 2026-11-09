@@ -338,7 +338,13 @@ struct NotchView: View {
             // Floating islands put Back/Close/History in this header row.
             .overlayPreferenceValue(NotchBandKey.self, alignment: .top) { items in
                 if geometry.headerRowHeight > 0 {
+                    // This overlay stays above the capture drag surface, but
+                    // must use the same horizontal content inset as the page.
+                    // Without a width budget it can position the top controls
+                    // against (or outside) the silhouette rather than the page.
                     bandRow(items, band: band, wraps: wraps)
+                        .frame(width: service.contentSize.width)
+                        .padding(.horizontal, NotchLayout.horizontalInset)
                 } else if let feedback = headerFeedback {
                     // With no row, the reading covers the page's top corner on
                     // the side a row would give it, for the moment it shows.
