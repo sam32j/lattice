@@ -219,7 +219,7 @@ extension JunkCleaner {
             guard isDirectLeftoverRootChild(url),
                   CleanerSupport.isAttributableBundleID(item.detail),
                   !CleanerSupport.isProtectedBundleID(item.detail),
-                  !hasLivingOwner(item.detail, installed: installed) else { return false }
+                  !hasLivingLeftoverOwner(item.detail, at: url, installed: installed) else { return false }
         }
         if item.category == .screenshots {
             guard isScreenshotFolderChild(url), isScreenCapture(url) else { return false }

@@ -22,7 +22,7 @@ def module_source(path):
     return "\n".join(p.read_text() for p in [source, *sorted(source.parent.glob(source.stem + "+*.swift"))])
 
 
-def declaration(path, prefix, scope=None):
+def declaration(path, prefix, scope=None, *, closing="}"):
     source = ROOT / path
     if source.stem in {"KeepAwakeManager", "AppUpdatesService", "AppUpdatesListView", "RadialMenuSettings", "HomebrewManager", "KillProcessService", "MediaService", "RadialNowPlayingService", "JunkCleaner", "AppUninstaller"}:
         candidates = [source, *sorted(source.parent.glob(source.stem + "+*.swift"))]
@@ -54,7 +54,7 @@ def declaration(path, prefix, scope=None):
         raise ValueError(f"Expected one declaration {prefix!r} in {path}")
     start = starts[0]
     indent = prefix[:len(prefix) - len(prefix.lstrip())]
-    end = next(i for i in range(start + 1, len(lines)) if lines[i].rstrip() == indent + "}")
+    end = next(i for i in range(start + 1, len(lines)) if lines[i].rstrip() == indent + closing)
     body = "".join(lines[start:end + 1])
     # Existing lifecycle fixtures replace the native CGEvent boundary. Keep
     # those doubles while exercising the production gate independently.
@@ -1319,10 +1319,14 @@ def main():
           + "}\n")
     cleaner = "Sources/Lattice/Services/Cleaner/JunkCleaner.swift"
     write("CleanerEligibilityBodies.swift", "import Foundation\nextension CleanerEligibilityTests {\n"
+          + declaration(cleaner, "    private static let leftoverRoots:", closing="]")
+          + declaration(cleaner, "    private static func isDirectLeftoverRootChild(")
+          + declaration(cleaner, "    private static func hasLivingOwner(")
+          + declaration(cleaner, "    private static func hasLivingLeftoverOwner(")
           + "".join(declaration(cleaner, "    private static func " + name)
                     .replace("private static func", "static func", 1)
-                    for name in ["appendLeftovers(", "scanCaches(", "scanLogs(",
-                                 "directorySize(", "fileSize(", "sorted(",
+                    for name in ["scanLeftovers(", "appendLeftovers(", "scanCaches(", "scanLogs(",
+                                 "scanOrphanedLaunchPlists(", "directorySize(", "fileSize(", "sorted(",
                                  "scanScreenshots(", "isScreenCapture(", "extendedAttribute("])
           + declaration(cleaner, "    private static func mayRemove(")
           + "static func owner(_ url: URL, metadata: Bool = false) -> String? {\n"
