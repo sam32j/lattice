@@ -2133,7 +2133,15 @@ final class NotchService: ObservableObject {
             if utility == .deviceControls, DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
                 DeviceControlsNavigationState.shared.currentSubpage = .main
             } else if utility == .system, SystemNavigationState.shared.selectedMetric != nil {
-                SystemNavigationState.shared.reset()
+                // The speed-test subpage backs out to Network, not Hub home.
+                // Also works before the SwiftUI custom back action is installed.
+                let navigation = SystemNavigationState.shared
+                if navigation.showingSpeedTest {
+                    SpeedTest.shared.cancel()
+                    navigation.showingSpeedTest = false
+                } else {
+                    navigation.reset()
+                }
             } else {
                 if utility == .deviceControls {
                     DeviceControlsNavigationState.shared.resetSubpage()

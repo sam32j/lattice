@@ -20,6 +20,8 @@ struct RecentCaptureEntry: Codable, Equatable, Identifiable {
     let anchorY: Double?
     let anchorWidth: Double?
     let anchorHeight: Double?
+    // Missing in older history indexes; set only after a failed cleanup.
+    var deletionFailed: Bool? = nil
 
     var recordingURL: URL? {
         guard let recordingPath else { return nil }

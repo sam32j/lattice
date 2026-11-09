@@ -531,7 +531,11 @@ final class RecentCaptureService: ObservableObject {
             // restore the history entry so the user can retry deletion.
             guard !self.store.hasManagedCaptureFiles(for: id) else {
                 self.store.entries = prior
+                if let index = self.store.entries.firstIndex(where: { $0.id == id }) {
+                    self.store.entries[index].deletionFailed = true
+                }
                 _ = self.store.persist()
+                self.publish()
                 return
             }
             if let thumb = entry.thumbnailName {
@@ -640,11 +644,16 @@ final class RecentCaptureService: ObservableObject {
                       self.store.hasManagedCaptureFiles(for: entry.id) else { return nil }
                 return entry.id
             })
-            self.store.entries = previous.filter { entry in
-                if entry.kind == .screenshot { return failedImages.contains(entry.id) }
+            self.store.entries = previous.compactMap { entry in
+                if entry.kind == .screenshot {
+                    guard failedImages.contains(entry.id) else { return nil }
+                    var retry = entry
+                    retry.deletionFailed = true
+                    return retry
+                }
                 return entry.kind == .recording && entry.recordingPath.map {
                     failedPaths.contains(URL(fileURLWithPath: $0).standardizedFileURL.path)
-                } == true
+                } == true ? entry : nil
             }
             let historySaved = self.store.persist()
             let managedFilesRemain = self.store.hasManagedCaptureFiles()
@@ -764,9 +773,18 @@ final class RecentCaptureService: ObservableObject {
 
     private func restoreScreenshot(_ entry: RecentCaptureEntry, inNotch: Bool) {
         queue.async { [weak self] in
-            guard let self, let capture = self.loadScreenshot(entry) else {
+            guard let self else { return }
+            guard let capture = self.loadScreenshot(entry) else {
+                let incomplete = self.store.hasManagedCaptureFiles(for: entry.id)
                 DispatchQueue.main.async { [weak self] in
-                    self?.remove(entry)
+                    if incomplete {
+                        // A thumbnail or document can survive a failed cleanup:
+                        // keep its index entry as the retry handle.
+                        if inNotch { NotchService.shared.showCaptureHistory() }
+                        else { self?.showHistoryWindow() }
+                    } else {
+                        self?.remove(entry)
+                    }
                     NSSound.beep()
                 }
                 return
@@ -820,17 +838,18 @@ final class RecentCaptureService: ObservableObject {
         let days = CleanerPolicy.sanitizedScreenshotAgeDays(
             UserDefaults.standard.integer(forKey: DefaultsKey.cleanerScreenshotAgeDays))
         let cutoff = days > 0 ? Date().addingTimeInterval(-Double(days) * 86_400) : nil
-        // An incomplete deletion can leave only a thumbnail or legacy sidecar.
-        // Keep its history entry as a recovery handle even without a readable
-        // primary screenshot; it must survive reload and normal age pruning.
-        let incomplete = store.entries.filter { entry in
-            entry.kind == .screenshot && !entryExists(entry)
-                && store.hasManagedCaptureFiles(for: entry.id)
+        // Failed deletion can leave a readable PNG past the age cutoff, or
+        // only a thumbnail. Preserve either as a recoverable history entry.
+        let retry = store.entries.filter { entry in
+            entry.kind == .screenshot && store.hasManagedCaptureFiles(for: entry.id)
+                && (entry.deletionFailed == true || !entryExists(entry))
         }
+        let retryIDs = Set(retry.map(\.id))
         let retained = RecentCaptureRetention.entries(
-            store.entries.filter { entryExists($0) }, screenshotCutoff: cutoff,
+            store.entries.filter { !retryIDs.contains($0.id) && entryExists($0) },
+            screenshotCutoff: cutoff,
             recordingLimit: UserDefaults.standard.integer(forKey: DefaultsKey.recentRecordingLimit))
-        store.entries = (retained + incomplete).sorted { $0.createdAt > $1.createdAt }
+        store.entries = (retained + retry).sorted { $0.createdAt > $1.createdAt }
     }
 
     private func prepend(_ entry: RecentCaptureEntry) {
