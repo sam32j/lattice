@@ -338,6 +338,18 @@ enum NotchPresentationRefreshContract {
         suite.expect(strip.windowHost?.steady == false && !strip.musicStripFitsInPlace,
                      "a request left over when the strip is gone never steadies another activity")
 
+        let picker = Service()
+        picker.expanded = false
+        picker.geometry = NotchGeometry(screen: picker.geometry.screen, safeAreaTop: 0, cameraWidth: 0,
+                                        compactSideRoom: 64, silhouette: .capsule)
+        picker.compactActivityIsVisible = true
+        picker.compactActivity = .timer
+        picker.showsCompactActivityPicker = true
+        picker.refreshPresentation(animated: false)
+        let pickerRect = picker.windowHost!.activationRect
+        let pickerStrip = picker.compactActivityGeometry.compactActivitySize
+        suite.expect(pickerRect.minX > 0 && pickerRect.maxY <= pickerStrip.height,
+                     "a floating Timer picker leaves its leading mark clickable and the lower choices unobscured")
         let capsule = Service()
         capsule.expanded = false
         capsule.geometry = NotchGeometry(screen: capsule.geometry.screen, safeAreaTop: 0, cameraWidth: 0,

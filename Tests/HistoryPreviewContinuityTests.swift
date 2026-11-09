@@ -8,6 +8,7 @@ enum HistoryPreviewContinuityTests {
     struct RecentCaptureEntry {
         enum Kind { case screenshot, recording }
         let kind: Kind
+        var id = UUID()
         var recordingURL: URL? = URL(fileURLWithPath: "/recording.mov")
     }
     enum DispatchQueue {
@@ -45,14 +46,41 @@ enum HistoryPreviewContinuityTests {
             func show(url: URL, initialThumbnail: CGImage?, inNotch: Bool, openedFromHistory: Bool = false) { shown += 1 }
         }
     }
+    struct Store {
+        var hasFiles = true
+        func hasManagedCaptureFiles(for id: UUID) -> Bool { hasFiles }
+    }
     class State {
         let queue = DispatchQueue.Queue()
-        func loadScreenshot(_ entry: RecentCaptureEntry) -> Int? { 1 }
+        var store = Store()
+        var screenshotLoads = true
+        var historyReopens = 0
+        var removals = 0
+        func loadScreenshot(_ entry: RecentCaptureEntry) -> Int? { screenshotLoads ? 1 : nil }
         func hideHistoryWindow() {}
-        func remove(_ entry: RecentCaptureEntry) {}
+        func showHistoryWindow() { historyReopens += 1 }
+        func remove(_ entry: RecentCaptureEntry) { removals += 1 }
         func thumbnail(for entry: RecentCaptureEntry) -> NSImage? { nil }
     }
     static func run(_ suite: TestSuite) {
+        // An unreadable screenshot with recoverable private files must keep
+        // its originating history context and its deletion retry entry.
+        let hubFailure = Service()
+        hubFailure.screenshotLoads = false
+        hubFailure.open(.init(kind: .screenshot), inNotch: true)
+        suite.expect(hubFailure.historyReopens == 0 && hubFailure.removals == 0,
+                     "a failed Hub history open leaves Hub history and its retry entry intact")
+        let floatingFailure = Service()
+        floatingFailure.screenshotLoads = false
+        floatingFailure.open(.init(kind: .screenshot), inNotch: false)
+        suite.expect(floatingFailure.historyReopens == 1 && floatingFailure.removals == 0,
+                     "a failed standalone history open restores its history window")
+        let missingFiles = Service()
+        missingFiles.screenshotLoads = false
+        missingFiles.store.hasFiles = false
+        missingFiles.open(.init(kind: .screenshot), inNotch: false)
+        suite.expect(missingFiles.removals == 1,
+                     "a missing screenshot with no remaining private assets may lose its stale entry")
         for kind in [RecentCaptureEntry.Kind.screenshot, .recording] {
             for inNotch in [true, false] {
                 delegate.collapsed = 0

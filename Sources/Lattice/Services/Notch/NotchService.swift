@@ -2837,20 +2837,17 @@ final class NotchService: ObservableObject {
             // Leave the leading Timer (or companion) mark to its SwiftUI
             // button while retaining native default activation to its right.
             let area = geometry.activationArea(in: size, hasHeader: false, compactActivity: true)
-            let leading = NotchCapsuleLayout.side(geometry)
-                + (compactCompanion == .music ? NotchCapsuleLayout.artworkInset(geometry)
-                    : NotchCapsuleLayout.endPadding)
-            let markWidth = compactCompanion == .music
-                ? NotchCapsuleLayout.artworkSide(geometry) : NotchCapsuleLayout.symbolWidth
-            let start = min(area.maxX, area.minX + leading + markWidth
-                            + NotchCapsuleLayout.markGap(compactCompanion) + 4)
-            activationRect = CGRect(x: start, y: area.minY,
-                                    width: max(0, area.maxX - start), height: area.height)
+            activationRect = NotchCapsuleLayout.timerActivationArea(
+                area, geometry: geometry, companion: compactCompanion)
         } else if showsCompactActivityPicker {
             let strip = compactActivityGeometry.compactActivitySize
-            activationRect = compactActivityGeometry.activationArea(
+            let stripArea = compactActivityGeometry.activationArea(
                 in: strip, hasHeader: false, compactActivity: true)
                 .offsetBy(dx: (size.width - strip.width) / 2, dy: 0)
+            activationRect = compactActivity == .timer && geometry.floats
+                ? NotchCapsuleLayout.timerActivationArea(
+                    stripArea, geometry: compactActivityGeometry, companion: compactCompanion)
+                : stripArea
         } else {
             activationRect = (expanded ? expandedGeometry : compactActivityIsVisible ? compactActivityGeometry : geometry)
                 .activationArea(in: size, hasHeader: expanded || peeking, compactActivity: compactActivityIsVisible, expandedHeader: expanded)

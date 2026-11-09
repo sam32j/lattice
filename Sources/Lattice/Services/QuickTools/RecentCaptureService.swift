@@ -780,8 +780,9 @@ final class RecentCaptureService: ObservableObject {
                     if incomplete {
                         // A thumbnail or document can survive a failed cleanup:
                         // keep its index entry as the retry handle.
-                        if inNotch { NotchService.shared.showCaptureHistory() }
-                        else { self?.showHistoryWindow() }
+                        // The Island/Hub history is still the active view:
+                        // no preview was installed, so do not navigate away.
+                        if !inNotch { self?.showHistoryWindow() }
                     } else {
                         self?.remove(entry)
                     }
