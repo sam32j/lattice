@@ -85,6 +85,14 @@ def main():
               "Sources/Lattice/main.swift", "if let command = SettingsBackupSupport.command(")
               .splitlines() if not line.startswith("#sourceLocation")) + "\n"
           + "}\n}\n")
+    backup = "Sources/Lattice/Services/SettingsBackup.swift"
+    write("SettingsFileContract.swift", "import AppKit\nimport Darwin\n"
+          + "extension SettingsFileTests {\nenum Backup {\n"
+          + "".join(declaration(backup, prefix) for prefix in [
+              "    static func write(to ", "    static func readSettings(at ",
+              "    static func apply(settings:", "    static var configFileURL:",
+              "    static func applyConfigFileAtLaunch(", "    static func anotherInstanceIsRunning("])
+          + "}\n}\n")
     slider_area = "Sources/Lattice/UI/SliderScrollArea.swift"
     slider_control = "Sources/Lattice/UI/Notch/NotchLevelSlider.swift"
     wheel_route = "Sources/Lattice/Services/HorizontalWheelScrolling.swift"
