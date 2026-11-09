@@ -1343,6 +1343,24 @@ final class NotchService: ObservableObject {
     }
 
     private func refreshModules() {
+        if !NotchSupport.isTestHarness {
+            // Retired Tools/Explore/Controls cannot disable the Hub root or
+            // leave a stale home destination after an upgrade.
+            let defaults = UserDefaults.standard
+            let hiddenKey = DefaultsKey.notchHiddenModules
+            let savedHidden = defaults.string(forKey: hiddenKey) ?? ""
+            var hidden = Set(savedHidden.split(separator: ",").map(String.init))
+            if hidden.remove("hub") != nil || hidden.contains("tools") {
+                hidden.remove("tools")
+                defaults.set(hidden.sorted().joined(separator: ","), forKey: hiddenKey)
+            }
+            let homeKey = DefaultsKey.notchHomeModule
+            let savedHome = defaults.string(forKey: homeKey) ?? ""
+            if ["tools", "explore", NotchModule.controls.rawValue,
+                NotchModule.mixer.rawValue].contains(savedHome) {
+                defaults.set(NotchModule.hub.rawValue, forKey: homeKey)
+            }
+        }
         let updated = NotchSupport.modules()
         if modules != updated { modules = updated }
         let current = (!NotchSupport.isTestHarness && (selected == .controls || selected == .mixer)) ? .hub : selected
@@ -1525,7 +1543,11 @@ final class NotchService: ObservableObject {
         let defaults = UserDefaults.standard
         if defaults.bool(forKey: DefaultsKey.notchReturnHome) {
             let saved = defaults.string(forKey: DefaultsKey.notchHomeModule) ?? ""
-            if saved == NotchModule.hub.rawValue || saved.isEmpty {
+            // Legacy Tools and Controls are now aliases of the single Hub
+            // root. They must not retain a previously opened utility.
+            if saved == NotchModule.hub.rawValue || saved.isEmpty ||
+               saved == NotchModule.controls.rawValue || saved == NotchModule.mixer.rawValue ||
+               saved == "tools" || saved == "explore" {
                 LatticeHubService.shared.activeUtility = nil
             }
         } else {
@@ -1559,12 +1581,8 @@ final class NotchService: ObservableObject {
             open(module)
             return
         }
-        if NotchSupport.isTestHarness {
-            let opensActivity = UserDefaults.standard.object(forKey: DefaultsKey.notchOpensActivity) as? Bool ?? true
-            if opensActivity { open(module) } else { open() }
-        } else {
-            open(module)
-        }
+        let opensActivity = UserDefaults.standard.object(forKey: DefaultsKey.notchOpensActivity) as? Bool ?? true
+        if opensActivity { open(module) } else { openDefault() }
     }
 
     /// Opens the Calendar page scrolled to the countdown's event.
@@ -2020,6 +2038,9 @@ final class NotchService: ObservableObject {
             clearCapture()
             close?()
         }
+        if target == .hub {
+            LatticeHubService.shared.closeUtility()
+        }
         open(target)
     }
 
@@ -2046,7 +2067,8 @@ final class NotchService: ObservableObject {
         if LatticeHubService.shared.isVisible {
             LatticeHubService.shared.hide()
         }
-        if toggle, expanded, selected == .hub, !showingSections, !showingCommandBar { collapse() }
+        if toggle, expanded, selected == defaultDestination.module, !showingSections,
+           !showingCommandBar, selectedMetric == nil { collapse() }
         else {
             if !NotchSupport.isTestHarness {
                 openDefault()
@@ -2104,7 +2126,7 @@ final class NotchService: ObservableObject {
         if let custom = customBackAction, custom() { return }
         if selectedMetric != nil {
             if detailHasPage { goBack() } else { collapse() }
-        } else if let utility = LatticeHubService.shared.activeUtility {
+        } else if selected == .hub, let utility = LatticeHubService.shared.activeUtility {
             if utility == .deviceControls, DeviceControlsNavigationState.shared.currentSubpage == .appVolumes {
                 DeviceControlsNavigationState.shared.currentSubpage = .main
             } else if utility == .system, SystemNavigationState.shared.selectedMetric != nil {
@@ -2749,6 +2771,12 @@ final class NotchService: ObservableObject {
         }
         let access = NotchQuickAccessEditing.presentationConfiguration(
             editing: expanded && selected == .hub && LatticeHubService.shared.isEditing)
+        // The native size calculation must include the live Quick Access
+        // placeholder gutter on the very first editing frame.
+        let bottomInset = access.hasBottom ? NotchQuickAccessLayout.gutter : 0
+        if geometry.quickAccessBottomInset != bottomInset {
+            geometry.quickAccessBottomInset = bottomInset
+        }
         let size = surfaceSize
         let contentTransition = compactMusicTransition(transitionContent, animated: animated)
         // A simulated cutout yields to the menu bar when it reappears in full screen.
@@ -2790,6 +2818,10 @@ final class NotchService: ObservableObject {
             // In a capture preview its legacy camera-height strip can cover
             // Back and History, turning those clicks into Island collapse.
             // Keep explicit Close and the preview controls interactive instead.
+            activationRect = .zero
+        } else if !expanded && geometry.floats && compactActivity == .music {
+            // Native activation overlays the SwiftUI cover button in the
+            // capsule, wrongly routing its clicks to the default Hub.
             activationRect = .zero
         } else if showsCompactActivityPicker {
             let strip = compactActivityGeometry.compactActivitySize
@@ -3709,8 +3741,11 @@ final class NotchService: ObservableObject {
         if expanded, modules.contains(.clipboard) { ClipboardHistoryService.shared.rememberPasteTarget() }
         if expanded, modules.contains(.snippets) { SnippetLibraryService.shared.rememberPasteTarget() }
         if expanded, !pinned,
-           (!keepsWorkingSurface && (selected == .hub || NotchSupport.closesOnActivation(openedByHover: openedByHover, clicked: clickedSinceOpening,
-                                           pointerInside: windowHost?.containsHover(NSEvent.mouseLocation) == true))) {
+           // Capture previews are not protected working surfaces when unpinned,
+           // even if Lattice did not first receive didResignActive.
+           (selected == .captures ||
+            (!keepsWorkingSurface && (selected == .hub || NotchSupport.closesOnActivation(openedByHover: openedByHover, clicked: clickedSinceOpening,
+                                           pointerInside: windowHost?.containsHover(NSEvent.mouseLocation) == true)))) {
             collapse()
         }
     }

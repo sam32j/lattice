@@ -15,6 +15,31 @@ enum NotchMusicRepeatMode: Equatable {
     }
 
     var symbol: String { self == .one ? "repeat.1" : "repeat" }
+    func localizedTitle(_ language: AppLanguage) -> String {
+        let labels: (String, String, String)
+        switch language {
+        case .enUS: labels = ("Repeat Off", "Repeat All", "Repeat One")
+        case .ptBR: labels = ("Repetição desativada", "Repetir tudo", "Repetir uma")
+        case .es: labels = ("Repetición desactivada", "Repetir todo", "Repetir una")
+        case .sk: labels = ("Opakovanie vypnuté", "Opakovať všetko", "Opakovať jednu")
+        case .de: labels = ("Wiederholen aus", "Alle wiederholen", "Einen Titel wiederholen")
+        case .fr: labels = ("Répétition désactivée", "Tout répéter", "Répéter un titre")
+        case .it: labels = ("Ripetizione disattivata", "Ripeti tutto", "Ripeti un brano")
+        case .ru: labels = ("Повтор выключен", "Повторять всё", "Повторять одну")
+        case .tr: labels = ("Tekrarlama kapalı", "Tümünü tekrarla", "Birini tekrarla")
+        case .ja: labels = ("リピートオフ", "すべてリピート", "1曲リピート")
+        case .ko: labels = ("반복 끔", "전체 반복", "한 곡 반복")
+        case .zhHans: labels = ("关闭循环", "全部循环", "单曲循环")
+        case .zhTW: labels = ("關閉重複播放", "重複播放全部", "重複播放單曲")
+        case .zhHK: labels = ("關閉重複播放", "重複播放全部", "重複播放單曲")
+        case .uk: labels = ("Повтор вимкнено", "Повторювати все", "Повторювати одну")
+        }
+        switch self {
+        case .off: return labels.0
+        case .all: return labels.1
+        case .one: return labels.2
+        }
+    }
     var title: String {
         switch self {
         case .off: return "Repeat Off"

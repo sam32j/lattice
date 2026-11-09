@@ -248,7 +248,7 @@ struct NotchMusicView: View {
         let mode = repeating.mode ?? .off
         let hint = repeating.availability?.access == .consent
             ? FeatureStrings.notchMusicExtras(l10n.language).allowPlayback : nil
-        return NotchMusicSideButton(symbol: mode.symbol, title: mode.title,
+        return NotchMusicSideButton(symbol: mode.symbol, title: mode.localizedTitle(l10n.language),
                                     hint: hint, active: mode != .off, tint: accent) {
             repeating.cycle()
         }

@@ -11,7 +11,6 @@ final class NotchLyricsService: ObservableObject {
     @Published private(set) var state: State = .idle
     @Published private var memory = NotchLyricsMemory()
     var lyrics: NotchLyrics? { memory.lyrics }
-    var offset: Double { memory.offset }
     private var track: NotchMusicIdentity? { memory.track }
     private var session: URLSession?
     private var generation = UUID()
@@ -67,8 +66,6 @@ final class NotchLyricsService: ObservableObject {
         load(track)
     }
 
-    func adjustOffset(by amount: Double) { memory.adjustOffset(by: amount) }
-    func resetOffset() { memory.resetOffset() }
 
     func hide() {
         cancel()

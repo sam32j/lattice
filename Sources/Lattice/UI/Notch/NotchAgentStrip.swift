@@ -88,6 +88,9 @@ struct NotchAgentStrip: View {
         .accessibilityValue(reading(at: Date(), live: live))
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { service.openActivity(.agents) }
+        .accessibilityAction(named: Text(FeatureStrings.notch(l10n.language).open)) {
+            service.openDefault()
+        }
         .accessibilityHint(FeatureStrings.notch(l10n.language).open)
     }
 

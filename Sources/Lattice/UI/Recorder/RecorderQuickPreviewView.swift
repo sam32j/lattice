@@ -41,6 +41,7 @@ struct RecorderQuickPreviewView: View {
     var recorder: RecorderFeatureStrings { FeatureStrings.recorder(l10n.language) }
     var screenshot: ScreenshotFeatureStrings { FeatureStrings.screenshot(l10n.language) }
     var text: ScreenshotEditorRefinementStrings { FeatureStrings.editorRefinements(l10n.language) }
+    private var previewNotice: CapturePreviewNoticeStrings { .localized(l10n.language) }
 
     var toolbar: some View {
         HStack(spacing: 2) {
@@ -101,7 +102,24 @@ struct RecorderQuickPreviewView: View {
             else { floatingPreview }
         }
         .onHover(perform: onHoverChanged)
-        .contextMenu { contextMenuItems }
+        .contextMenu {
+            contextMenuItems
+            if !embedded {
+                Divider()
+                if UserDefaults.standard.bool(forKey: DefaultsKey.recorderSharingEnabled) {
+                    if model.sharedRecord != nil {
+                        Button(previewNotice.copyQuickLink, action: onCopyLink)
+                    } else {
+                        Menu(previewNotice.quickLink) {
+                            ForEach(RecordingShareDuration.allCases) { duration in
+                                Button(duration.title(screenshot)) { onQuickLink(duration) }
+                            }
+                        }.disabled(model.sharing)
+                    }
+                }
+                Button(previewNotice.trashAction, action: onDelete)
+            }
+        }
     }
 
     /// Reuses the image preview's measured canvas. The Island's native size
@@ -189,7 +207,7 @@ struct RecorderQuickPreviewView: View {
             islandTool("square.and.arrow.up", title: screenshot.shareButton, action: onShare)
             if UserDefaults.standard.bool(forKey: DefaultsKey.recorderSharingEnabled) {
                 if model.sharedRecord != nil {
-                    islandTool("link", title: "Copy Quick Link", action: onCopyLink)
+                    islandTool("link", title: previewNotice.copyQuickLink, action: onCopyLink)
                 } else {
                     Menu {
                         ForEach(RecordingShareDuration.allCases) { duration in
@@ -206,8 +224,8 @@ struct RecorderQuickPreviewView: View {
                     .menuIndicator(.hidden)
                     .fixedSize()
                     .disabled(model.sharing)
-                    .screenshotSafeHelp("Quick Link")
-                    .accessibilityLabel("Quick Link")
+                    .screenshotSafeHelp(previewNotice.quickLink)
+                    .accessibilityLabel(previewNotice.quickLink)
                 }
             }
             islandSeparator

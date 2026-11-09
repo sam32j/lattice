@@ -15,6 +15,7 @@ final class NotchLiveQuickActionsEditorController {
 
     func show() {
         NotchService.shared.open(.hub, takeFocus: true)
+        guard NotchService.shared.expanded, NotchService.shared.selected == .hub else { return }
         LatticeHubService.shared.activeUtility = nil
         LatticeHubService.shared.isEditing = true
         updateLiveBackdrop()

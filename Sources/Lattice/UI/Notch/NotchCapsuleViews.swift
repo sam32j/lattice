@@ -279,6 +279,13 @@ struct NotchCapsuleTimerStrip: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(FeatureStrings.notchActivities(l10n.language).phase(timer.session.phase))
+        .accessibilityAction(named: Text(FeatureStrings.notch(l10n.language).open)) {
+            service.openDefault()
+        }
+        .accessibilityAction(named: Text(FeatureStrings.notch(l10n.language).open + " " + (companion?.module ?? .timer).title(l10n.language))) {
+            if companion == .calendar { service.openCountdownEvent() }
+            else { service.open(companion?.module ?? .timer) }
+        }
         .accessibilityValue(NotchTimerSupport.clockText(for: timer.session, at: timer.now))
         .accessibilityHint(FeatureStrings.notch(l10n.language).open)
     }

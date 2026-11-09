@@ -709,19 +709,18 @@ enum NotchMusicHardeningTests {
         let service = NotchLyricsContract.Service()
         service.update(playback: current, visible: true)
         _ = service.memory.replace(imported, for: identity)
-        service.memory.adjustOffset(by: 0.75)
         let generation = service.generation
         service.hide()
         suite.expect(!service.visible && service.generation != generation && service.lyrics == imported
-               && service.memory.offset == 0.75, "the real hide path cancels work without discarding this song's imported lyrics or adjustment")
+              , "the real hide path cancels work without discarding this song's imported lyrics")
         service.update(playback: current, visible: true)
         suite.expect(service.state == .ready && service.lyrics == imported && service.loads.isEmpty
-               && service.memory.offset == 0.75, "returning to the same song reuses its import without a network request")
+              , "returning to the same song reuses its import without a network request")
         service.update(playback: current, visible: false)
         service.update(playback: nil, visible: false)
         suite.expect(service.lyrics == imported, "hiding or stopping the metadata consumer is not evidence that the song changed")
         service.playbackChanged(next)
-        suite.expect(service.track == NotchMusicIdentity(next) && service.lyrics == nil && service.memory.offset == 0,
+        suite.expect(service.track == NotchMusicIdentity(next) && service.lyrics == nil,
                "an observed track change clears the one-song cache while hidden")
         suite.expect(!service.memory.replace(imported, for: identity), "a late result cannot replace the new recording's lyrics")
         service.playbackChanged(nil)
@@ -738,10 +737,9 @@ enum NotchMusicHardeningTests {
         service.update(playback: current, visible: true)
         suite.expect(service.loads.count == 2, "reopening an uncached song starts one fresh lookup")
         _ = service.memory.replace(imported, for: identity)
-        service.memory.adjustOffset(by: 1)
         service.stop()
-        suite.expect(service.track == nil && service.lyrics == nil && service.memory.offset == 0 && !service.visible,
-               "explicit shutdown releases the retained song, lyrics and offset")
+        suite.expect(service.track == nil && service.lyrics == nil && !service.visible,
+               "explicit shutdown releases the retained song and lyrics")
         service.update(playback: current, visible: true)
         _ = service.memory.replace(imported, for: identity)
         NotchLyricsContract.Preferences.enabled = false

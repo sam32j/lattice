@@ -126,7 +126,7 @@ struct DeviceControlsAppVolumesView: View {
         }
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, 32)
-        .frame(height: DeviceControlsAppVolumesLayout.emptyMessageHeight)
+        .frame(height: DeviceControlsAppVolumesLayout.emptyActiveHeight)
     }
 
     // MARK: - Apps Grouped Container

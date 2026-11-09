@@ -218,6 +218,37 @@ final class RecentCaptureStore {
         sweep(thumbDir)
     }
 
+    /// An individual screenshot may own a rendered PNG, editable document,
+    /// legacy base/annotation files and thumbnails in either private root.
+    /// An unreadable directory is a failure, not proof of erasure.
+    func hasManagedCaptureFiles(for id: UUID) -> Bool {
+        let prefix = id.uuidString + "-"
+        func containsFiles(in root: URL?) -> Bool {
+            guard let root else { return false }
+            let directory = root.resolvingSymlinksInPath()
+            guard manager.fileExists(atPath: directory.path) else { return false }
+            do {
+                let files = try manager.contentsOfDirectory(at: directory,
+                    includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey])
+                for item in files {
+                    let values = try item.resourceValues(forKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey])
+                    guard values.isSymbolicLink != true else { continue }
+                    if values.isRegularFile == true && item.lastPathComponent.hasPrefix(prefix) { return true }
+                    if values.isDirectory == true && Self.isDateFolderName(item.lastPathComponent) {
+                        let children = try manager.contentsOfDirectory(at: item,
+                            includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+                        for child in children where child.lastPathComponent.hasPrefix(prefix) {
+                            let resource = try child.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+                            if resource.isSymbolicLink != true && resource.isRegularFile == true { return true }
+                        }
+                    }
+                }
+                return false
+            } catch { return true }
+        }
+        return containsFiles(in: directoryURL) || containsFiles(in: thumbnailDirectoryURL)
+    }
+
     /// Check whether an explicit Clear + Delete still left owned capture assets
     /// behind (for example, when a file cannot be removed). Only inspect our
     /// private capture roots; never follow symlinks into other directories.
@@ -241,9 +272,10 @@ final class RecentCaptureStore {
                     if values.isDirectory == true && Self.isDateFolderName(item.lastPathComponent) {
                         let datedFiles = try manager.contentsOfDirectory(at: item,
                             includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey])
-                        if datedFiles.contains(where: {
-                            Self.isRegularFile($0) && Self.isCaptureFileName($0.lastPathComponent)
-                        }) { return true }
+                        for file in datedFiles where Self.isCaptureFileName(file.lastPathComponent) {
+                            let resource = try file.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+                            if resource.isRegularFile == true && resource.isSymbolicLink != true { return true }
+                        }
                     }
                 }
                 return false

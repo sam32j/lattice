@@ -20,7 +20,13 @@ extension LatticeHubService {
                 DeviceControlsNavigationState.shared.currentSubpage = .main
             } else if activeUtility == .system,
                       SystemNavigationState.shared.selectedMetric != nil {
-                SystemNavigationState.shared.reset()
+                // Exiting a running speed test must cancel its network work;
+                // the user should return to the Network detail, not Home.
+                if SystemNavigationState.shared.selectedMetric == .network && SpeedTest.shared.isRunning {
+                    SpeedTest.shared.cancel()
+                } else {
+                    SystemNavigationState.shared.reset()
+                }
             } else if activeUtility != nil {
                 if activeUtility == .deviceControls {
                     DeviceControlsNavigationState.shared.resetSubpage()

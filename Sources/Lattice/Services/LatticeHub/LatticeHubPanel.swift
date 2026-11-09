@@ -146,21 +146,33 @@ extension LatticeHubService {
             y = screen.minY + (screen.height - size.height) * 0.62
         }
         let frame = NSRect(x: max(screen.minX + 16, min(x, screen.maxX - size.width - 16)),
-                           y: max(screen.minY + 16, y),
+                           y: min(screen.maxY - size.height - 16, max(screen.minY + 16, y)),
                            width: size.width, height: size.height)
         panel.setFrame(frame, display: true, animate: false)
         // A stable budget is established once on presentation, not recomputed
         // from panel.frame during each animation tick. Content can scroll once
         // this height is reached; the native panel never clips its own corners.
-        setFloatingPanelHeightBudget(max(100, frame.maxY - screen.minY - 16))
+        setFloatingPanelHeightBudget(maximumOpeningHeight)
     }
 
     func updatePanelSize(_ size: CGSize) {
         guard let panel, panel.isVisible,
               size.width >= 200, size.height >= 100 else { return }
         let screen = panel.screen?.visibleFrame ?? NSScreen.pointerVisibleFrame
-        let maximumHeight = min(floatingPanelHeightBudget,
-                                max(100, panel.frame.maxY - screen.minY - 16))
+        // A moved panel can grow by relocating upward before any clipping is
+        // needed. The height budget is screen-relative, never based on the
+        // panel's previous top edge (which may have been dragged downward).
+        let maximumHeight = max(100, screen.height - 32)
+        if panel.frame.maxY - min(size.height, maximumHeight) < screen.minY + 16 {
+            let requiredTop = screen.minY + 16 + min(size.height, maximumHeight)
+            let safeTop = min(screen.maxY - 16, requiredTop)
+            if safeTop > panel.frame.maxY + 0.5 {
+                panelResizer.cancel()
+                var shifted = panel.frame
+                shifted.origin.y += safeTop - panel.frame.maxY
+                panel.setFrame(shifted, display: true, animate: false)
+            }
+        }
         // During opening/closing of Manage Tools, the accordion produces
         // intermediate heights already. Later discrete grid/tray edits still
         // deserve a smooth native resize rather than an abrupt jump.

@@ -520,7 +520,6 @@ final class RecentCaptureService: ObservableObject {
                   Self.isSafeRelativePath(name),
                   let root = self.capturesRoot else { return }
             let rendered = root.appendingPathComponent(name)
-            let editable = RecentCaptureEditableImage.documentURL(for: rendered)
             let prior = self.store.entries
             self.store.entries.removeAll { $0.id == id }
             guard self.store.persist() else {
@@ -530,8 +529,7 @@ final class RecentCaptureService: ObservableObject {
             // The store normally removes these during persist. If an owned
             // image survives cleanup (e.g. a filesystem permission failure),
             // restore the history entry so the user can retry deletion.
-            guard !self.manager.fileExists(atPath: rendered.path),
-                  !self.manager.fileExists(atPath: editable.path) else {
+            guard !self.store.hasManagedCaptureFiles(for: id) else {
                 self.store.entries = prior
                 _ = self.store.persist()
                 return
@@ -597,8 +595,12 @@ final class RecentCaptureService: ObservableObject {
                 return
             }
             let previous = self.store.entries
-            self.store.entries.removeAll()
-            // Never remove anything if the index could not first be committed.
+            // Keep absolute-path recordings durably indexed until the Trash
+            // operation confirms success. A crash during Trash must not orphan
+            // external recordings after history was emptied.
+            self.store.entries = previous.filter {
+                $0.kind == .recording && $0.recordingPath?.hasPrefix("/") == true
+            }
             guard self.store.persist() else {
                 self.store.entries = previous
                 finish(CaptureDeletionResult(historySaved: false, failedRecordings: 0,
@@ -630,14 +632,19 @@ final class RecentCaptureService: ObservableObject {
                     failedPaths.insert(path)
                 }
             }
-            // Keep entries for recordings whose files could not be moved,
-            // rather than silently hiding those files from the user.
-            if !failedPaths.isEmpty {
-                self.store.entries = previous.filter { entry in
-                    entry.kind == .recording && entry.recordingPath.map {
-                        failedPaths.contains(URL(fileURLWithPath: $0).standardizedFileURL.path)
-                    } == true
-                }
+            // Keep both failed recording moves and screenshots whose owned
+            // pixels could not be erased. An error must never leave a private
+            // image on disk without a history entry for the retry action.
+            let failedImages = Set(previous.compactMap { entry -> UUID? in
+                guard entry.kind == .screenshot,
+                      self.store.hasManagedCaptureFiles(for: entry.id) else { return nil }
+                return entry.id
+            })
+            self.store.entries = previous.filter { entry in
+                if entry.kind == .screenshot { return failedImages.contains(entry.id) }
+                return entry.kind == .recording && entry.recordingPath.map {
+                    failedPaths.contains(URL(fileURLWithPath: $0).standardizedFileURL.path)
+                } == true
             }
             let historySaved = self.store.persist()
             let managedFilesRemain = self.store.hasManagedCaptureFiles()
@@ -695,9 +702,8 @@ final class RecentCaptureService: ObservableObject {
         return nil
     }
 
-    /// The image card is only a preview. Its drag payload must be the
-    /// full-resolution, rendered PNG kept in Application Support, never the
-    /// thumbnail in Caches (or the editable .latticecapture document).
+    /// The image card is only a preview. Drag from the authoritative rendered
+    /// contents when an editable document exists, never a stale PNG mirror.
     static func screenshotDragURL(for entry: RecentCaptureEntry, capturesRoot: URL?) -> URL? {
         guard entry.kind == .screenshot,
               let name = entry.screenshotName, isSafeRelativePath(name),
@@ -708,8 +714,32 @@ final class RecentCaptureService: ObservableObject {
     }
 
     func dragItemProvider(for entry: RecentCaptureEntry) -> NSItemProvider? {
-        guard let url = Self.screenshotDragURL(for: entry, capturesRoot: capturesRoot) else { return nil }
-        return NSItemProvider(contentsOf: url)
+        guard let name = entry.screenshotName, Self.isSafeRelativePath(name),
+              entry.kind == .screenshot, let root = capturesRoot else { return nil }
+        let rendered = root.appendingPathComponent(name)
+        let document = RecentCaptureEditableImage.documentURL(for: rendered)
+        guard manager.fileExists(atPath: document.path) else {
+            guard let url = Self.screenshotDragURL(for: entry, capturesRoot: root) else { return nil }
+            return NSItemProvider(contentsOf: url)
+        }
+        // Drag startup remains cheap. The file representation is rendered and
+        // encoded off the main thread only if a drop destination requests it.
+        let provider = NSItemProvider()
+        provider.suggestedName = "Capture-\(entry.id.uuidString)"
+        provider.registerDataRepresentation(forTypeIdentifier: "public.png", visibility: .all) { completion in
+            DispatchQueue.global(qos: .userInitiated).async {
+                guard let image = RecentCaptureEditableImage.renderedImage(at: rendered),
+                      let data = ScreenshotRenderer.pngData(from: image, scale: CGFloat(entry.scale ?? 1)) else {
+                    completion(nil, CocoaError(.fileReadCorruptFile))
+                    return
+                }
+                // Data-based registration leaves no untracked private render
+                // in the system temporary directory after a cancelled drag.
+                completion(data, nil)
+            }
+            return nil
+        }
+        return provider
     }
 
     func open(_ entry: RecentCaptureEntry, inNotch: Bool = false) {

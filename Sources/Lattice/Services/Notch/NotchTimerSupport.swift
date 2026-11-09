@@ -647,7 +647,7 @@ enum NotchTimerSupport {
         showMilliseconds: Bool = false
     ) -> String {
         if session.cycleFinished {
-            return "Completed"
+            return FeatureStrings.notchActivities(L10n.shared.language).pomodoroFinished
         }
         let reading = session.reading(at: now)
 

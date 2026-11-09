@@ -27,6 +27,7 @@
          view.mode = mode
          view.onSelect = onSelect
          view.setAccessibilityLabel(FeatureStrings.notchTimerUI(L10n.shared.language).modePicker)
+         view.configureAccessibility()
          return view
      }
 
@@ -38,6 +39,7 @@
          view.mode = mode
          view.onSelect = onSelect
          view.setAccessibilityLabel(FeatureStrings.notchTimerUI(L10n.shared.language).modePicker)
+         view.configureAccessibility()
      }
 
      func sizeThatFits(
@@ -66,6 +68,18 @@
      }
 
      var onSelect: ((NotchTimerMode) -> Void)?
+
+     func configureAccessibility() {
+         setAccessibilityRole(.group)
+         setAccessibilityValueDescription(accessibilityModeName(mode))
+         setAccessibilityCustomActions(Self.orderedModes.map { selection in
+             NSAccessibilityCustomAction(name: accessibilityModeName(selection)) { [weak self] in
+                 guard let self else { return false }
+                 self.select(selection)
+                 return true
+             }
+         })
+     }
 
      private let threshold: CGFloat = 40
      private let wheelQuietPeriod: TimeInterval = 0.45

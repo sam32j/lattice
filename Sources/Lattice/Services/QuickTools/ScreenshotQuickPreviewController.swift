@@ -47,6 +47,7 @@ final class ScreenshotQuickPreviewController {
     private let shareAnchor = ShelfSharePickerAnchor.Anchor()
     private let sharePresenter = ShelfSharePresenter()
     private var deletingCapture = false
+    private var previewDragInProgress = false
     private var systemSharing = false
     private var contextMenuOpen = false
     private let onClose: () -> Void
@@ -130,6 +131,14 @@ final class ScreenshotQuickPreviewController {
                     image: self.capture.image, scale: self.capture.scale,
                     fileName: ScreenshotSupport.fileName(prefix: self.strings.fileNamePrefix,
                                                          date: Date()))
+            },
+            dragActivityChanged: { [weak self] active in
+                guard let self else { return }
+                self.previewDragInProgress = active
+                if active {
+                    self.dismissWork?.cancel()
+                    self.dismissWork = nil
+                } else { self.scheduleAutoDismiss() }
             },
             share: { [weak self] duration in self?.performShare(duration) },
             systemShare: { [weak self] in self?.performSystemShare() },
@@ -299,7 +308,7 @@ final class ScreenshotQuickPreviewController {
     }
 
     private func perform(_ requested: Action) {
-        guard !closed else { return }
+        guard !closed, !deletingCapture else { return }
         if requested == .discard { confirmDelete(); return }
         // Keyboard shortcuts honor the grayed-out buttons: what the
         // after-capture action already did is not done twice.
@@ -428,11 +437,12 @@ final class ScreenshotQuickPreviewController {
         guard !closed, !deletingCapture else { return }
         dismissWork?.cancel()
         dismissWork = nil
+        let notice = CapturePreviewNoticeStrings.localized(L10n.shared.language)
         let alert = NSAlert()
-        alert.messageText = "Delete screenshot?"
-        alert.informativeText = "This removes the stored screenshot from this Mac and Recent Captures."
+        alert.messageText = notice.screenshotTitle
+        alert.informativeText = notice.screenshotMessage
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Delete Screenshot")
+        alert.addButton(withTitle: notice.screenshotAction)
         alert.addButton(withTitle: strings.cancel)
         let owner = shownInNotch ? NotchService.shared.presentationWindow : panel
         guard NotchIslandAlert.run(alert, above: owner) == .alertFirstButtonReturn else {
@@ -446,8 +456,8 @@ final class ScreenshotQuickPreviewController {
             guard succeeded else {
                 NSSound.beep()
                 let errorAlert = NSAlert()
-                errorAlert.messageText = "Couldn't delete screenshot"
-                errorAlert.informativeText = "The stored screenshot could not be removed. Try again."
+                errorAlert.messageText = notice.screenshotFailureTitle
+                errorAlert.informativeText = notice.screenshotFailureMessage
                 errorAlert.alertStyle = .warning
                 errorAlert.addButton(withTitle: "OK")
                 _ = NotchIslandAlert.run(errorAlert, above: self.shownInNotch
@@ -596,7 +606,7 @@ final class ScreenshotQuickPreviewController {
     }
 
     private func scheduleAutoDismiss() {
-        guard !closed, !pointerInside, !contextMenuOpen, !systemSharing, !model.sharing, !model.deletingShare,
+        guard !closed, !pointerInside, !previewDragInProgress, !contextMenuOpen, !systemSharing, !model.sharing, !model.deletingShare,
               let dismissDuration = autoDismissDuration
         else { return }
         dismissWork?.cancel()
@@ -716,6 +726,7 @@ private struct ScreenshotQuickPreviewView: View {
     let perform: (ScreenshotQuickPreviewController.Action) -> Void
     let dragItem: () -> NSItemProvider
     let nativeDragFile: () -> NSFilePromiseProvider?
+    let dragActivityChanged: (Bool) -> Void
     let share: (ScreenshotShareDuration) -> Void
     let systemShare: () -> Void
     let shareAnchor: ShelfSharePickerAnchor.Anchor
@@ -996,7 +1007,8 @@ private struct ScreenshotQuickPreviewView: View {
                         .overlay {
                             ScreenshotIslandDragSurface(image: image,
                                                         filePromise: nativeDragFile,
-                                                        expand: expand)
+                                                        expand: expand,
+                                                        dragActivityChanged: dragActivityChanged)
                         }
                         .overlay {
                             RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -1384,7 +1396,7 @@ private struct QuickPreviewCenterActions: View {
             .focusable(false)
             .disabled(disabledActions.contains(.copy))
             .onHover { isCopyHovered = $0 }
-            .screenshotSafeHelp("\(strings.copyButton)  (⌘C / Space)")
+            .screenshotSafeHelp("\(strings.copyButton)  (⌘C)")
 
             Button(action: onSave) {
                 HStack(spacing: 5) {
@@ -1443,6 +1455,7 @@ private struct ScreenshotIslandDragSurface: NSViewRepresentable {
     let image: CGImage
     let filePromise: () -> NSFilePromiseProvider?
     let expand: () -> Void
+    let dragActivityChanged: (Bool) -> Void
 
     func makeNSView(context: Context) -> DragView { DragView(frame: .zero) }
 
@@ -1450,12 +1463,14 @@ private struct ScreenshotIslandDragSurface: NSViewRepresentable {
         view.updateArtwork(for: image)
         view.filePromise = filePromise
         view.expand = expand
+        view.dragActivityChanged = dragActivityChanged
     }
 
     static func dismantleNSView(_ view: DragView, coordinator: ()) {
         view.finishDrag()
         view.filePromise = nil
         view.expand = nil
+        view.dragActivityChanged = nil
         view.sourceImage = nil
         view.dragArtwork = nil
     }
@@ -1470,6 +1485,7 @@ private struct ScreenshotIslandDragSurface: NSViewRepresentable {
         var dragArtwork: NSImage?
         var filePromise: (() -> NSFilePromiseProvider?)?
         var expand: (() -> Void)?
+        var dragActivityChanged: ((Bool) -> Void)?
         private var press: NSEvent?
         private var isDragging = false
 
@@ -1478,6 +1494,7 @@ private struct ScreenshotIslandDragSurface: NSViewRepresentable {
             guard isDragging else { return }
             isDragging = false
             NotchService.shared.capturePreviewDragChanged(false)
+            dragActivityChanged?(false)
         }
 
         func updateArtwork(for image: CGImage) {
@@ -1533,6 +1550,7 @@ private struct ScreenshotIslandDragSurface: NSViewRepresentable {
                                          width: size.width, height: size.height),
                                   contents: artwork)
             isDragging = true
+            dragActivityChanged?(true)
             NotchService.shared.capturePreviewDragChanged(true)
             beginDraggingSession(with: [item], event: press, source: self)
         }

@@ -38,6 +38,7 @@ extension NotchSettings {
                     PermissionGatedSettingsRow(title: SettingsContentStrings.enable(selectedModule.title(l10n.language), language: l10n.language),
                                       isOn: moduleEnableBinding(selectedModule),
                                       requiring: moduleFeature(selectedModule)?.activationPermissions ?? [])
+                        .disabled(selectedModule == .hub)
                     if selectedModule == .captures || selectedModule == .system {
                         Divider()
                         ForEach(contentFeatures(selectedModule), id: \.self) { feature in

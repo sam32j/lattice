@@ -187,11 +187,14 @@
              by: Double(x - previous.x)
          )
 
-         // Preserve fractional movement between drag events.
-         drag = (x: x, value: value)
+         // Discard overscroll beyond the configured duration bounds while
+         // retaining fractional minutes inside them.
+         let clamped = min(Double(minuteRange.upperBound),
+                           max(Double(minuteRange.lowerBound), value))
+         drag = (x: x, value: clamped)
 
          didDrag = true
-         select(value)
+         select(clamped)
      }
 
      override func mouseUp(with event: NSEvent) {
@@ -265,10 +268,13 @@
              by: points
          )
 
-         // Keep fractional scrolling between events.
-         scrollValue = value
+         // Discard excess wheel delta at the range boundary. Otherwise a
+         // reverse swipe appears frozen until it undoes all overscroll.
+         let clamped = min(Double(minuteRange.upperBound),
+                           max(Double(minuteRange.lowerBound), value))
+         scrollValue = clamped
 
-         select(value)
+         select(clamped)
 
          if !event.hasPreciseScrollingDeltas
              || event.phase.contains(.ended)

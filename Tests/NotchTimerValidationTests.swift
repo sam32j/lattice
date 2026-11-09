@@ -19,18 +19,16 @@ enum NotchTimerValidationTests {
             return
         }
 
-        let expected = NotchPomodoroConfiguration(
-            focusMinutes: -5,
-            shortBreakMinutes: 999,
-            longBreakMinutes: 0,
-            longBreakInterval: 0,
-            totalSessions: 99
-        )
-
-        suite.expect(
-            decoded == expected,
-            "decoded Pomodoro configuration enforces the same bounds as user-created configuration"
-        )
+        // Codable intentionally restores the original on-disk configuration,
+        // rather than normalizing it through the *new preset* initializer.
+        // Existing running cycles must keep their chosen session count.
+        suite.expect(decoded.totalSessions == 99 && decoded.focusMinutes == -5
+            && decoded.shortBreakMinutes == 999 && decoded.longBreakMinutes == 0,
+            "legacy cached Pomodoro configuration is decoded without preset rewriting")
+        let legacy = Data(#"{"focusMinutes":25,"shortBreakMinutes":5,"longBreakMinutes":15,"longBreakInterval":3,"totalSessions":7}"#.utf8)
+        let legacyConfig = try? JSONDecoder().decode(NotchPomodoroConfiguration.self, from: legacy)
+        suite.expect(legacyConfig?.totalSessions == 7 && legacyConfig?.longBreakInterval == 3,
+                     "seven-session cached cycle retains its exact historical configuration")
 }
 
     private static func snapshotBounds(_ suite: TestSuite) {
