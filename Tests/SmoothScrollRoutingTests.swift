@@ -34,6 +34,7 @@ enum SmoothScrollRoutingTests {
     }
     enum Capture {
         static func steppedLoupeNeedsRawWheel(optionPressed: Bool) -> Bool { false }
+        static func isActiveLoupeWindow(_ windowNumber: Int) -> Bool { false }
     }
     /// Whether the event came in at the HID stage; false stands for a remote
     /// screen's scroll, posted further down.
