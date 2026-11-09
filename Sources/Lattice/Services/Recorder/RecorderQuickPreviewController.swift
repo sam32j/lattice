@@ -420,8 +420,9 @@ final class RecorderQuickPreviewController {
         } catch {
             NSSound.beep()
             let failure = NSAlert()
-            failure.messageText = "Couldn't delete recording"
-            failure.informativeText = "The video could not be moved to Trash. Try again."
+            let failureText = CapturePreviewNoticeStrings.recordingFailure(L10n.shared.language)
+            failure.messageText = failureText.title
+            failure.informativeText = failureText.message
             failure.alertStyle = .warning
             failure.addButton(withTitle: "OK")
             _ = NotchIslandAlert.run(failure, above: owner)

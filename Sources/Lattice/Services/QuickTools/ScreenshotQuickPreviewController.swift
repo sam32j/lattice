@@ -47,6 +47,7 @@ final class ScreenshotQuickPreviewController {
     private let shareAnchor = ShelfSharePickerAnchor.Anchor()
     private let sharePresenter = ShelfSharePresenter()
     private var deletingCapture = false
+    private var confirmingCaptureDeletion = false
     private var previewDragInProgress = false
     private var systemSharing = false
     private var contextMenuOpen = false
@@ -434,7 +435,8 @@ final class ScreenshotQuickPreviewController {
     /// Deleting an image is distinct from dismissing its preview. In particular,
     /// history navigation must wait for the backing file and index to be removed.
     private func confirmDelete() {
-        guard !closed, !deletingCapture else { return }
+        guard !closed, !deletingCapture, !confirmingCaptureDeletion else { return }
+        confirmingCaptureDeletion = true
         dismissWork?.cancel()
         dismissWork = nil
         let notice = CapturePreviewNoticeStrings.localized(L10n.shared.language)
@@ -445,7 +447,9 @@ final class ScreenshotQuickPreviewController {
         alert.addButton(withTitle: notice.screenshotAction)
         alert.addButton(withTitle: strings.cancel)
         let owner = shownInNotch ? NotchService.shared.presentationWindow : panel
-        guard NotchIslandAlert.run(alert, above: owner) == .alertFirstButtonReturn else {
+        let confirmed = NotchIslandAlert.run(alert, above: owner) == .alertFirstButtonReturn
+        confirmingCaptureDeletion = false
+        guard confirmed else {
             scheduleAutoDismiss()
             return
         }
@@ -606,7 +610,8 @@ final class ScreenshotQuickPreviewController {
     }
 
     private func scheduleAutoDismiss() {
-        guard !closed, !pointerInside, !previewDragInProgress, !contextMenuOpen, !systemSharing, !model.sharing, !model.deletingShare,
+        guard !closed, !deletingCapture, !confirmingCaptureDeletion,
+              !pointerInside, !previewDragInProgress, !contextMenuOpen, !systemSharing, !model.sharing, !model.deletingShare,
               let dismissDuration = autoDismissDuration
         else { return }
         dismissWork?.cancel()

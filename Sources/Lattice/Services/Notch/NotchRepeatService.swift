@@ -80,7 +80,15 @@ final class NotchRepeatService: ObservableObject {
                       source.isCurrent else { return }
                 sent = true
             }
-            guard sent else { return }
+            guard sent else {
+                // A transient nil playback can reject preflight even when the
+                // original source later returns. Do not strand Repeat disabled.
+                DispatchQueue.main.async { [weak self] in
+                    guard let self, self.switchID == request else { return }
+                    self.pending = false
+                }
+                return
+            }
             // Source changes after this check cannot be made atomic with the
             // external Apple Event, but the operation is still targeted to the
             // original process, never the newly selected app.

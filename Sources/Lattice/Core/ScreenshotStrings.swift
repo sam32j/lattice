@@ -3385,6 +3385,26 @@ struct CapturePreviewNoticeStrings {
     let quickLink: String
     let copyQuickLink: String
 
+    static func recordingFailure(_ language: AppLanguage) -> (title: String, message: String) {
+        switch language {
+        case .enUS: return ("Couldn’t delete recording", "The video could not be moved to Trash. Try again.")
+        case .ptBR: return ("Não foi possível excluir a gravação", "Não foi possível mover o vídeo para a Lixeira. Tente novamente.")
+        case .es: return ("No se pudo eliminar la grabación", "No se pudo mover el vídeo a la Papelera. Inténtalo de nuevo.")
+        case .sk: return ("Záznam sa nepodarilo odstrániť", "Video sa nepodarilo presunúť do Koša. Skúste to znova.")
+        case .de: return ("Aufnahme konnte nicht gelöscht werden", "Das Video konnte nicht in den Papierkorb verschoben werden. Erneut versuchen.")
+        case .fr: return ("Impossible de supprimer l’enregistrement", "Impossible de placer la vidéo dans la corbeille. Réessayez.")
+        case .it: return ("Impossibile eliminare la registrazione", "Impossibile spostare il video nel Cestino. Riprova.")
+        case .ru: return ("Не удалось удалить запись", "Не удалось переместить видео в Корзину. Повторите попытку.")
+        case .tr: return ("Kayıt silinemedi", "Video Çöp Sepeti’ne taşınamadı. Tekrar deneyin.")
+        case .ja: return ("録画を削除できませんでした", "動画をゴミ箱に移動できませんでした。もう一度お試しください。")
+        case .ko: return ("녹화 파일을 삭제할 수 없음", "동영상을 휴지통으로 이동하지 못했습니다. 다시 시도하세요.")
+        case .zhHans: return ("无法删除录屏", "无法将视频移到废纸篓，请重试。")
+        case .zhTW: return ("無法刪除錄影", "無法將影片移到垃圾桶，請再試一次。")
+        case .zhHK: return ("無法刪除錄影", "無法將影片移到垃圾桶，請再試一次。")
+        case .uk: return ("Не вдалося видалити запис", "Не вдалося перемістити відео до Смітника. Спробуйте ще раз.")
+        }
+    }
+
     static func localized(_ language: AppLanguage) -> Self {
         switch language {
         case .enUS: return Self(
