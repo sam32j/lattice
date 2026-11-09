@@ -726,7 +726,7 @@ private struct ScreenshotQuickPreviewView: View {
     let perform: (ScreenshotQuickPreviewController.Action) -> Void
     let dragItem: () -> NSItemProvider
     let nativeDragFile: () -> NSFilePromiseProvider?
-    let dragActivityChanged: (Bool) -> Void
+    var dragActivityChanged: (Bool) -> Void = { _ in }
     let share: (ScreenshotShareDuration) -> Void
     let systemShare: () -> Void
     let shareAnchor: ShelfSharePickerAnchor.Anchor
