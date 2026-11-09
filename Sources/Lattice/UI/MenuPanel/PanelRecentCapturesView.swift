@@ -116,7 +116,6 @@ struct RecentCapturesView: View {
     static func confirmClearAboveIsland() {
         DispatchQueue.main.async {
             let l10n = L10n.shared
-            let text = FeatureStrings.recentCaptures(l10n.language)
             guard !visible(RecentCaptureService.shared.entries).isEmpty else { return }
             let alert = NSAlert()
             alert.messageText = "Delete recent captures?"

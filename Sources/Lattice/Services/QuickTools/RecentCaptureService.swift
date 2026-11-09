@@ -518,8 +518,7 @@ final class RecentCaptureService: ObservableObject {
             guard entry.kind == .screenshot,
                   let name = entry.screenshotName,
                   Self.isSafeRelativePath(name),
-                  let root = self.capturesRoot else { return }
-            let rendered = root.appendingPathComponent(name)
+                  self.capturesRoot != nil else { return }
             let prior = self.store.entries
             self.store.entries.removeAll { $0.id == id }
             guard self.store.persist() else {
