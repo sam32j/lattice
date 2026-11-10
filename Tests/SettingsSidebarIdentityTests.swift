@@ -36,17 +36,25 @@ enum SettingsSidebarIdentityTests {
         }, "Utilities section items are sorted alphabetically")
         let desktop = sections.first { $0.id == 1 }?.items ?? []
         suite.expect(desktop.map(\.id) == [.page(.dock), .feature(.switcher), .page(.windowLayout),
-                                           .page(.screenshot), .page(.screenRecorder)],
-                     "Desktop & Screen contains 1-5 items: dock, switcher, window layout, screenshot, screen recorder")
+                                           .page(.screenshot)],
+                     "Desktop & Screen exposes one Capture entry for screenshots and recording")
+        suite.expect(SettingsSidebarSupport.selection(
+            for: FeatureSettingsDestination(.screenRecorder, sectionAnchor: .screenRecorder),
+            in: desktop) == .page(.screenshot),
+            "recording deep links keep Capture selected in the sidebar")
+        suite.expect(SettingsSidebarSupport.selection(
+            for: FeatureSettingsDestination(.captureScreenshotOptions),
+            in: desktop) == .page(.screenshot),
+            "Screenshot Options keeps Capture selected in the sidebar")
         suite.expect(!sections.flatMap(\.items).contains { $0.id == .feature(.pastePlain) || $0.id == .page(.wallpaper) },
                      "Clipboard exposes one page rather than entries for its child controls, and wallpaper dedicated page is removed")
         let off = Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in false })
         suite.expect(off.first { $0.id == 1 }?.items.contains { $0.id == .page(.screenshot) } == true
-                     && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.screenRecorder) } == true
+                     && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.screenRecorder) } == false
                      && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.dock) } == true
                      && off.first { $0.id == 1 }?.items.contains { $0.id == .feature(.switcher) } == true
                      && off.first { $0.id == 1 }?.items.contains { $0.id == .page(.windowLayout) } == true,
-                     "dock, switcher, window layout, screenshot, and screen recorder remain visible on sidebar even when uninstalled")
+                     "Capture stays in the sidebar even when both capture features are uninstalled")
         suite.expect(off.flatMap(\.items).contains { $0.id == .page(.notch) },
                      "Dynamic Island remains in the sidebar when it and every extension are uninstalled")
         for feature in [AppFeature.notch, .notchTimer] {
