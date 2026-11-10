@@ -123,6 +123,9 @@ extension LatticeHubView {
                         if launcher.activeUtility == .system {
                             activityMonitorButton
                         }
+                        if launcher.activeUtility == .recentCaptures {
+                            floatingClearCapturesButton
+                        }
                         pinButton
                         closeButton
                     } else if launcher.isEditing {
@@ -156,6 +159,23 @@ extension LatticeHubView {
         default:
             return l10n.s.updateBannerTitle
         }
+    }
+
+    /// Hub's own floating toolbar, not the separate history palette.
+    /// This matches the capture Trash control in the Island header.
+    var floatingClearCapturesButton: some View {
+        Button {
+            confirmingClearCaptures = true
+        } label: {
+            Image(systemName: "trash")
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 26, height: 26)
+        }
+        .buttonStyle(HubHeaderButtonStyle())
+        .focusable(false)
+        .disabled(captureHistory.entries.isEmpty)
+        .help("Delete Captures")
+        .accessibilityLabel("Delete Captures")
     }
 
     var pinButton: some View {
