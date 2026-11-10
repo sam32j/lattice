@@ -52,9 +52,6 @@ final class ScreenCaptureService: ObservableObject {
     }()
     private var selection: ScreenshotSelectionController?
     private var options: ScreenCaptureSelectionOptions?
-    private var countdown: DispatchWorkItem?
-    private var countdownTools: [ScreenCaptureTool]?
-    private var countdownRemaining = 0
 
     var protectedWindowIDs: Set<CGWindowID> {
         selection?.protectedWindowIDs ?? []
@@ -74,7 +71,7 @@ final class ScreenCaptureService: ObservableObject {
             cancelSelection()
             return
         }
-        if let activeTools = options?.availableTools ?? countdownTools,
+        if let activeTools = options?.availableTools,
            ScreenshotSupport.captureAvailabilityChanged(activeTools: activeTools,
                                                         availableTools: availableTools) {
             cancelSelection()
@@ -118,10 +115,6 @@ final class ScreenCaptureService: ObservableObject {
         if duringRecording {
             guard let preferred, preferred.opensDuringRecording(fromShortcut: fromShortcut) else { return }
         }
-        if countdown != nil {
-            cancelSelection()
-            return
-        }
         guard selection == nil, !ScreenshotSelectionController.isSessionOnScreen else { return }
 
         let available = ScreenCaptureTool.available()
@@ -149,35 +142,7 @@ final class ScreenCaptureService: ObservableObject {
         }
 
         let showsCaptureMenu = selected.showsCaptureMenu(fromShortcut: fromShortcut)
-        let delay = selected == .screenshot
-            ? ScreenshotSupport.sanitizedDelay(
-                UserDefaults.standard.integer(forKey: DefaultsKey.screenshotDelay))
-            : 0
-        guard delay > 0 else {
-            beginSelection(tools: tools, selected: selected, showsCaptureMenu: showsCaptureMenu)
-            return
-        }
-        countdownRemaining = delay
-        countdownTools = tools
-        tickCountdown(tools: tools, selected: selected, showsCaptureMenu: showsCaptureMenu)
-    }
-
-    private func tickCountdown(tools: [ScreenCaptureTool], selected: ScreenCaptureTool,
-                               showsCaptureMenu: Bool) {
-        guard countdownRemaining > 0 else {
-            countdown = nil
-            countdownTools = nil
-            beginSelection(tools: tools, selected: selected, showsCaptureMenu: showsCaptureMenu)
-            return
-        }
-        QuickToolHUD.showCountdown(countdownRemaining)
-        let work = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            self.countdownRemaining -= 1
-            self.tickCountdown(tools: tools, selected: selected, showsCaptureMenu: showsCaptureMenu)
-        }
-        countdown = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
+        beginSelection(tools: tools, selected: selected, showsCaptureMenu: showsCaptureMenu)
     }
 
     private func beginSelection(tools: [ScreenCaptureTool], selected: ScreenCaptureTool,
@@ -284,10 +249,6 @@ final class ScreenCaptureService: ObservableObject {
     }
 
     private func cancelSelection() {
-        countdown?.cancel()
-        countdown = nil
-        countdownTools = nil
-        countdownRemaining = 0
         selection?.cancel()
         selection = nil
         options = nil
