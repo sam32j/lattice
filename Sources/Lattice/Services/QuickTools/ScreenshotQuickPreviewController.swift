@@ -13,7 +13,6 @@ final class ScreenshotQuickPreviewModel: ObservableObject {
     @Published var disabledActions: Set<ScreenshotQuickPreviewController.Action> = []
     @Published var sharing = false
     @Published var sharedRecord: ScreenshotShareRecord?
-    @Published var deletingShare = false
 }
 
 /// A transient capture preview that stays outside Command Tab and reflects
@@ -47,7 +46,6 @@ final class ScreenshotQuickPreviewController {
     private let shareAnchor = ShelfSharePickerAnchor.Anchor()
     private let sharePresenter = ShelfSharePresenter()
     private var deletingCapture = false
-    private var confirmingCaptureDeletion = false
     private var previewDragInProgress = false
     private var systemSharing = false
     private var contextMenuOpen = false
@@ -56,8 +54,8 @@ final class ScreenshotQuickPreviewController {
     private var panel: ScreenshotQuickPreviewPanel?
     private var keyMonitor: Any?
     private var dismissWork: DispatchWorkItem?
-    private let baseDismissDuration: TimeInterval?
-    private var autoDismissDuration: TimeInterval?
+    private let closePolicy: CapturePreviewClosePolicy
+    private var focusLossObserver: NSObjectProtocol?
     private var closed = false
     private let presentationID = UUID()
     private var shownInNotch = false
@@ -74,7 +72,6 @@ final class ScreenshotQuickPreviewController {
          strings: ScreenshotFeatureStrings,
          defaultAction: ScreenshotDefaultAction,
          completedActions: Set<Action>,
-         dismissInterval: TimeInterval?,
          action: @escaping (Action) -> Set<Action>,
          deleteCapture: @escaping (@escaping (Bool) -> Void) -> Void,
          share: @escaping (ScreenshotShareDuration,
@@ -88,10 +85,9 @@ final class ScreenshotQuickPreviewController {
         self.openedFromHistory = openedFromHistory
         self.strings = strings
         self.defaultAction = defaultAction
-        // A manually opened history image is persistent regardless of the
-        // transient confirmation timeout the caller may have supplied.
-        self.baseDismissDuration = openedFromHistory ? nil : dismissInterval
-        self.autoDismissDuration = openedFromHistory ? nil : dismissInterval
+        // Every preview, including one opened from history, follows the
+        // shared preference for focus and lifetime.
+        self.closePolicy = CapturePreviewClosePolicy.current()
         self.action = action
         self.deleteCapture = deleteCapture
         self.share = share
@@ -102,17 +98,19 @@ final class ScreenshotQuickPreviewController {
         model.disabledActions = completedActions.intersection([.save, .copy])
     }
 
-    func show(inNotch: Bool = true) {
+    func show(inNotch: Bool = CapturePresentationRouting.opensInIsland(origin: .external)) {
         guard panel == nil, !shownInNotch, !closed else { return }
+        Task { @MainActor [weak self] in
+            guard let self, !self.closed else { return }
+            self.model.sharedRecord = QuickLinkMediaIndex.shared.latestScreenshot(for: self.capture.id)
+        }
         if inNotch && NotchSupport.routesCapturePreviews(),
            NotchService.shared.deferCaptureUntilMissionControlRestores(id: presentationID, present: { [weak self] in
                self?.show(inNotch: true)
            }) { return }
         let wantsNotch = inNotch && NotchSupport.routesCapturePreviews()
             && NotchService.shared.acceptsSystemFeedback
-        let presentationPolicy = ScreenshotSupport.confirmationPreviewPresentationPolicy(
-            dismissInterval: baseDismissDuration,
-            defaults: .standard)
+        let takesFocus = UserDefaults.standard.bool(forKey: DefaultsKey.screenshotPreviewTakesFocus)
         let content = ScreenshotQuickPreviewView(
             image: Self.thumbnail(for: capture.image),
             strings: strings,
@@ -145,7 +143,6 @@ final class ScreenshotQuickPreviewController {
             systemShare: { [weak self] in self?.performSystemShare() },
             shareAnchor: shareAnchor,
             copySharedLink: { [weak self] in self?.copySharedLink() },
-            deleteSharedLink: { [weak self] in self?.deleteSharedLink() },
             showQR: { [weak self] in self?.showQRResult() },
             copyText: { [weak self] in self?.copyText() },
             dismiss: { [weak self] in self?.close() },
@@ -153,7 +150,7 @@ final class ScreenshotQuickPreviewController {
                 self?.showQuickLook()
             },
             hoverChanged: { [weak self] inside in self?.hoverChanged(inside) },
-            showsDismissButton: presentationPolicy.showsDismissButton,
+            showsDismissButton: true,
             embedded: wantsNotch,
             menuAction: { [weak self] in self?.performMenu($0) },
             menuApplications: { [weak self] in self?.applicationsForMenu() ?? [] },
@@ -167,8 +164,8 @@ final class ScreenshotQuickPreviewController {
             id: presentationID, content: AnyView(content), actions: AnyView(content.toolbar), height: Self.size(showingLink: model.sharedRecord != nil).height,
             fromHistory: openedFromHistory,
             imageOverlay: true,
-            takeFocus: presentationPolicy.takesFocus,
-            closeOnCollapse: presentationPolicy.closesOnCollapse,
+            takeFocus: takesFocus,
+            closeOnCollapse: closePolicy.closesOnIslandCollapse,
             fallback: { [weak self] in
                 guard let self else { return }
                 self.shownInNotch = false
@@ -185,6 +182,9 @@ final class ScreenshotQuickPreviewController {
             // can raise Settings and trigger another focus handoff.
             if let window = NotchService.shared.presentationWindow { installKeyMonitor(for: window) }
             finishShowing()
+            if closePolicy == .focusLost, let window = NotchService.shared.presentationWindow {
+                observeFocusLoss(of: window)
+            }
             return
         }
         let host = NSHostingController(rootView: content)
@@ -199,6 +199,7 @@ final class ScreenshotQuickPreviewController {
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
+        panel.isMovableByWindowBackground = false
         panel.hidesOnDeactivate = false
         panel.level = .statusBar
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary,
@@ -209,12 +210,13 @@ final class ScreenshotQuickPreviewController {
         self.panel = panel
         installKeyMonitor(for: panel)
         panel.orderFrontRegardless()
-        if presentationPolicy.takesFocus {
+        if takesFocus {
             // Nonactivating panels can accept shortcuts without bringing
             // Lattice's other windows (especially Settings) to the front.
             panel.makeKey()
         }
         finishShowing()
+        if closePolicy == .focusLost { observeFocusLoss(of: panel) }
     }
 
     private func finishShowing() {
@@ -293,6 +295,10 @@ final class ScreenshotQuickPreviewController {
     func close() {
         guard !closed else { return }
         closed = true
+        if let focusLossObserver {
+            NotificationCenter.default.removeObserver(focusLossObserver)
+            self.focusLossObserver = nil
+        }
         NotchService.shared.cancelDeferredCapturePresentation(id: presentationID)
         dismissWork?.cancel()
         dismissWork = nil
@@ -385,11 +391,21 @@ final class ScreenshotQuickPreviewController {
     }
 
     func shareLink() {
-        guard !closed, !model.deletingShare else { return }
+        guard !closed else { return }
         if model.sharedRecord != nil {
             copySharedLink()
         } else {
-            performShare(.saved())
+            // Always require the user to choose an expiry for each new link.
+            let menu = NSMenu()
+            for duration in ScreenshotShareDuration.allCases {
+                let item = NSMenuItem(title: duration.title(strings),
+                                      action: #selector(ScreenshotQuickPreviewMenuHelper.handleDurationAction(_:)),
+                                      keyEquivalent: "")
+                item.target = ScreenshotQuickPreviewMenuHelper.shared
+                item.representedObject = { [weak self] in self?.performShare(duration) }
+                menu.addItem(item)
+            }
+            menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
         }
     }
 
@@ -433,27 +449,12 @@ final class ScreenshotQuickPreviewController {
         }
     }
 
-    /// Deleting an image is distinct from dismissing its preview. In particular,
-    /// history navigation must wait for the backing file and index to be removed.
+    /// Called only after the inline red checkmark is confirmed.
     private func confirmDelete() {
-        guard !closed, !deletingCapture, !confirmingCaptureDeletion else { return }
-        confirmingCaptureDeletion = true
+        guard !closed, !deletingCapture else { return }
         dismissWork?.cancel()
         dismissWork = nil
         let notice = CapturePreviewNoticeStrings.localized(L10n.shared.language)
-        let alert = NSAlert()
-        alert.messageText = notice.screenshotTitle
-        alert.informativeText = notice.screenshotMessage
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: notice.screenshotAction)
-        alert.addButton(withTitle: strings.cancel)
-        let owner = shownInNotch ? NotchService.shared.presentationWindow : panel
-        let confirmed = NotchIslandAlert.run(alert, above: owner) == .alertFirstButtonReturn
-        confirmingCaptureDeletion = false
-        guard confirmed else {
-            scheduleAutoDismiss()
-            return
-        }
         deletingCapture = true
         deleteCapture { [weak self] succeeded in
             guard let self, !self.closed else { return }
@@ -475,7 +476,7 @@ final class ScreenshotQuickPreviewController {
                     NotchService.shared.showCaptureHistory()
                 } else {
                     self.close()
-                    RecentCaptureService.shared.showHistoryWindow()
+                    RecentCaptureService.shared.showHistoryWindow(origin: .floatingWindow)
                 }
             } else {
                 let wasInNotch = self.shownInNotch
@@ -510,23 +511,24 @@ final class ScreenshotQuickPreviewController {
                 self.scheduleAutoDismiss()
                 return
             }
+            QuickLinkMediaIndex.shared.rememberScreenshot(self.capture.id, record: record)
+            self.model.sharedRecord = record
             if self.copyLinkAndClose(record) { return }
             withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
                 self.model.sharedRecord = record
             }
-            self.autoDismissDuration = ScreenshotSupport.sharedPreviewDismissInterval(
-                base: self.baseDismissDuration)
             self.resizePanel(showingLink: true)
             self.scheduleAutoDismiss()
         }
     }
 
     private func copySharedLink() {
-        guard let record = model.sharedRecord else { return }
-        dismissWork?.cancel()
-        dismissWork = nil
         Task { @MainActor [weak self] in
-            guard let self, !self.closed else { return }
+            guard let self, !self.closed,
+                  let record = QuickLinkMediaIndex.shared.latestScreenshot(for: self.capture.id) else { return }
+            self.model.sharedRecord = record
+            self.dismissWork?.cancel()
+            self.dismissWork = nil
             if !self.copyLinkAndClose(record) { self.scheduleAutoDismiss() }
         }
     }
@@ -545,59 +547,31 @@ final class ScreenshotQuickPreviewController {
         return copied
     }
 
-    private func deleteSharedLink() {
-        guard let record = model.sharedRecord, !model.deletingShare else { return }
-        dismissWork?.cancel()
-        dismissWork = nil
-        model.deletingShare = true
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                try await ScreenshotShareService.shared.delete(record)
-                guard !self.closed else { return }
-                withAnimation(.easeOut(duration: 0.2)) {
-                    self.model.sharedRecord = nil
-                    self.model.deletingShare = false
-                }
-                QuickToolHUD.show(icon: "link", message: self.strings.linkDeletedHUD)
-                self.autoDismissDuration = self.baseDismissDuration
-                self.resizePanel(showingLink: false)
-            } catch {
-                guard !self.closed else { return }
-                self.model.deletingShare = false
-                QuickToolHUD.show(icon: "link", message: self.strings.deleteFailedHUD)
-                NSSound.beep()
-            }
-            self.scheduleAutoDismiss()
-        }
-    }
-
-    fileprivate static func size(showingLink: Bool) -> CGSize {
-        CGSize(width: 340, height: showingLink ? 216 : 158)
+    fileprivate static func size(showingLink _: Bool) -> CGSize {
+        // The link status now lives in the toolbar, not a second row.
+        CGSize(width: 340, height: 158)
     }
 
     private func previewFrame(for size: CGSize) -> CGRect {
         let pointer = NSEvent.mouseLocation
         let screens = NSScreen.screens.map { (frame: $0.frame, visibleFrame: $0.visibleFrame) }
+        let position = ScreenshotSupport.QuickPreviewPosition.current()
+        // 'Under cursor' is literal for both images and videos. The old
+        // automatic confirmation corner override contradicted this setting.
+        let anchor = position == .automatic
+            ? CGRect(origin: pointer, size: CGSize(width: 1, height: 1))
+            : capture.anchorRect
         let visibleFrame = ScreenshotSupport.quickPreviewVisibleFrame(
-            anchor: capture.anchorRect,
+            anchor: anchor,
             pointer: pointer,
             screens: screens,
             fallback: NSScreen.pointerVisibleFrame)
-        let position = ScreenshotSupport.QuickPreviewPosition.current()
-        // With an after-capture action the preview is just a confirmation,
-        // so it sits quietly in the corner and leaves sooner, instead of
-        // popping up next to the selection and waiting.
-        let effectivePosition: ScreenshotSupport.QuickPreviewPosition =
-            position == .automatic && defaultAction != .none
-                ? .bottomRight
-                : position
         return ScreenshotSupport.quickPreviewFrame(
             size: size,
-            anchor: capture.anchorRect,
+            anchor: anchor,
             pointer: pointer,
             visibleFrame: visibleFrame,
-            position: effectivePosition)
+            position: position)
     }
 
     private func resizePanel(showingLink: Bool) {
@@ -611,9 +585,9 @@ final class ScreenshotQuickPreviewController {
     }
 
     private func scheduleAutoDismiss() {
-        guard !closed, !deletingCapture, !confirmingCaptureDeletion,
-              !pointerInside, !previewDragInProgress, !contextMenuOpen, !systemSharing, !model.sharing, !model.deletingShare,
-              let dismissDuration = autoDismissDuration
+        guard !closed, !deletingCapture,
+              !pointerInside, !previewDragInProgress, !contextMenuOpen, !systemSharing, !model.sharing,
+              let dismissDuration = closePolicy.timeout
         else { return }
         dismissWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.close() }
@@ -621,8 +595,21 @@ final class ScreenshotQuickPreviewController {
         DispatchQueue.main.asyncAfter(deadline: .now() + dismissDuration, execute: work)
     }
 
+    private func observeFocusLoss(of window: NSWindow) {
+        guard focusLossObserver == nil else { return }
+        focusLossObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification, object: window, queue: .main
+        ) { [weak self] _ in
+            guard let self, !self.closed,
+                  !self.systemSharing, !self.contextMenuOpen,
+                  !self.model.sharing, !self.deletingCapture else { return }
+            self.close()
+        }
+    }
+
     private func setContextMenuOpen(_ open: Bool) {
         contextMenuOpen = open
+        if shownInNotch { NotchService.shared.setCaptureMenuInteractionActive(open) }
         dismissWork?.cancel()
         dismissWork = nil
         if !open { scheduleAutoDismiss() }
@@ -738,7 +725,6 @@ private struct ScreenshotQuickPreviewView: View {
     let systemShare: () -> Void
     let shareAnchor: ShelfSharePickerAnchor.Anchor
     let copySharedLink: () -> Void
-    let deleteSharedLink: () -> Void
     let showQR: () -> Void
     let copyText: () -> Void
     let dismiss: () -> Void
@@ -773,17 +759,11 @@ private struct ScreenshotQuickPreviewView: View {
 
     private var actionBar: some View {
         HStack(spacing: embedded ? 2 : 5) {
-            Button {
+            CaptureDeleteConfirmationButton(
+                presentation: embedded ? .island : .floating,
+                title: CaptureInterfaceStrings.localized(L10n.shared.language).delete) {
                 perform(.discard)
-            } label: {
-                Image(systemName: "trash")
-                    .frame(width: embedded ? 28 : 22, height: embedded ? 28 : 18)
             }
-            .modifier(ScreenshotPreviewActionStyle(embedded: embedded))
-            .controlSize(.small)
-            .focusable(false)
-            .screenshotSafeHelp("\(strings.discardConfirm)  (⌫)")
-            .accessibilityLabel(strings.discardConfirm)
             if model.qr != nil {
                 qrControl
                     .transition(.scale.combined(with: .opacity))
@@ -815,7 +795,7 @@ private struct ScreenshotQuickPreviewView: View {
                 .screenshotSafeHelp(strings.shareButton)
                 .accessibilityLabel(strings.shareButton)
             }
-            if sharingEnabled, model.sharedRecord == nil {
+            if sharingEnabled {
                 shareMenu
             }
             if !embedded { Spacer(minLength: 4) }
@@ -861,101 +841,98 @@ private struct ScreenshotQuickPreviewView: View {
         .accessibilityLabel(strings.done)
     }
 
+    /// One floating toolbar for both a just-captured image and history.
     private var viewportTopLeadingButtons: some View {
         HStack(spacing: 5) {
-            if showsDismissButton {
-                thumbnailDismissButton
-            }
-            if featureRuntime.isAvailable(.screenOCR) {
-                thumbnailButton(symbol: "text.viewfinder", title: strings.copyTextButton,
-                                action: copyText)
-            }
-            thumbnailButton(symbol: "mappin", title: strings.pinButton) { perform(.pin) }
+            thumbnailButton(symbol: "eye", title: CaptureInterfaceStrings.localized(L10n.shared.language).quickLook, action: expand)
+            thumbnailButton(symbol: "square.and.arrow.up", title: strings.shareButton,
+                            action: systemShare)
+                .background(ShelfSharePickerAnchor(anchor: shareAnchor))
+            if sharingEnabled { viewportLinkMenu }
         }
         .padding(6)
     }
 
     private var viewportTopTrailingButtons: some View {
-        HStack(spacing: 5) {
-            if sharingEnabled, model.sharedRecord == nil {
-                viewportLinkMenu
-            }
-            thumbnailButton(symbol: "square.and.arrow.up", title: strings.shareButton,
-                            action: systemShare)
-                .background(ShelfSharePickerAnchor(anchor: shareAnchor))
-        }
-        .padding(6)
+        // Always present the floating close button, even for a timed capture.
+        thumbnailDismissButton
     }
 
     private var viewportLinkMenu: some View {
         Button(action: showShareMenu) {
             Group {
                 if model.sharing {
-                    ProgressView()
-                        .controlSize(.small)
+                    ProgressView().controlSize(.small)
                 } else {
                     Image(systemName: "link")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .symbolRenderingMode(.monochrome)
+                        .foregroundColor(model.sharedRecord != nil ? Color.blue : Color.white)
                 }
             }
             .frame(width: 24, height: 24)
             .background(Color.black.opacity(0.65), in: Circle())
             .overlay(Circle().strokeBorder(Color.white.opacity(0.18), lineWidth: 0.8))
-            .shadow(color: Color.black.opacity(0.25), radius: 2, y: 1)
             .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .disabled(model.sharing)
         .focusable(false)
+        .disabled(model.sharing)
         .screenshotSafeHelp(strings.shareSectionTitle)
         .accessibilityLabel(strings.shareSectionTitle)
     }
 
     private func showShareMenu() {
+        guard !model.sharing else { return }
         let menu = NSMenu()
-        for duration in ScreenshotShareDuration.allCases {
-            let item = NSMenuItem(
-                title: duration.title(strings),
-                action: #selector(ScreenshotQuickPreviewMenuHelper.handleDurationAction(_:)),
-                keyEquivalent: ""
-            )
+        func add(_ title: String, to target: NSMenu, action: @escaping () -> Void) {
+            let item = NSMenuItem(title: title,
+                                  action: #selector(ScreenshotQuickPreviewMenuHelper.handleDurationAction(_:)),
+                                  keyEquivalent: "")
             item.target = ScreenshotQuickPreviewMenuHelper.shared
-            item.representedObject = {
-                self.share(duration)
-            }
-            menu.addItem(item)
+            item.representedObject = action
+            target.addItem(item)
         }
+        func addDurations(to target: NSMenu) {
+            for duration in ScreenshotShareDuration.allCases {
+                add(duration.title(strings), to: target) { share(duration) }
+            }
+        }
+        if model.sharedRecord != nil {
+            add(strings.copyLink, to: menu, action: copySharedLink)
+            let item = NSMenuItem(title: CaptureInterfaceStrings.localized(L10n.shared.language).createNewQuickLink, action: nil, keyEquivalent: "")
+            let durations = NSMenu(title: CaptureInterfaceStrings.localized(L10n.shared.language).createNewQuickLink)
+            addDurations(to: durations)
+            item.submenu = durations
+            menu.addItem(item)
+        } else {
+            addDurations(to: menu)
+        }
+        menuOpened()
+        defer { menuClosed() }
         menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
     }
 
     private var viewportBottomLeadingButtons: some View {
         HStack(spacing: 5) {
-            if model.qr != nil {
-                thumbnailButton(symbol: "qrcode", title: L10n.shared.s.qrResultTitle, action: showQR)
+            if featureRuntime.isAvailable(.screenOCR) {
+                thumbnailButton(symbol: "text.viewfinder", title: strings.copyTextButton,
+                                action: copyText)
             }
             thumbnailButton(symbol: "pencil", title: "\(strings.editButton)  (E)") {
                 perform(.edit)
+            }
+            thumbnailButton(symbol: "mappin", title: strings.pinButton) {
+                perform(.pin)
             }
         }
         .padding(6)
     }
 
     private var viewportBottomTrailingButtons: some View {
-        Button(action: { perform(.discard) }) {
-            Image(systemName: "trash")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.45))
-                .frame(width: 24, height: 24)
-                .background(Color.black.opacity(0.65), in: Circle())
-                .overlay(Circle().strokeBorder(Color.red.opacity(0.4), lineWidth: 0.8))
-                .shadow(color: Color.black.opacity(0.25), radius: 2, y: 1)
-                .contentShape(Circle())
+        CaptureDeleteConfirmationButton(presentation: .floating, title: CaptureInterfaceStrings.localized(L10n.shared.language).delete) {
+            perform(.discard)
         }
-        .buttonStyle(.plain)
-        .focusable(false)
-        .screenshotSafeHelp("\(strings.discardConfirm)  (⌫)")
-        .accessibilityLabel(strings.discardConfirm)
         .padding(6)
     }
 
@@ -1026,7 +1003,7 @@ private struct ScreenshotQuickPreviewView: View {
                             // Quick Look is separate from the screenshot drag
                             // surface, so this control doesn't enter the drag
                             // preview or steal gestures outside its bounds.
-                            thumbnailButton(symbol: "eye", title: "Quick Look", action: expand)
+                            thumbnailButton(symbol: "eye", title: CaptureInterfaceStrings.localized(L10n.shared.language).quickLook, action: expand)
                                 .padding(6)
                         }
                         .overlay(alignment: .topTrailing) {
@@ -1035,10 +1012,6 @@ private struct ScreenshotQuickPreviewView: View {
                         .overlay(alignment: .bottomLeading) {
                             if model.qr != nil { qrControl.padding(6) }
                         }
-                }
-                if let record = model.sharedRecord {
-                    sharedLinkRow(record)
-                        .transition(.opacity)
                 }
             }
             .padding(.horizontal, 4)
@@ -1096,13 +1069,20 @@ private struct ScreenshotQuickPreviewView: View {
             islandToolSeparator
             islandTool(symbol: "square.and.arrow.up", title: strings.shareButton,
                        action: systemShare)
-            if sharingEnabled, model.sharedRecord == nil {
+            if sharingEnabled {
                 Button(action: showShareMenu) {
-                    if model.sharing {
-                        ProgressView().controlSize(.small).frame(width: 28, height: 28).contentShape(Rectangle())
-                    } else {
-                        islandToolImage("link")
+                    Group {
+                        if model.sharing {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: "link")
+                                .font(.system(size: 14, weight: .medium))
+                                .symbolRenderingMode(.monochrome)
+                                .foregroundColor(model.sharedRecord != nil ? Color.blue : Color.primary)
+                        }
                     }
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
                 }
                 .modifier(ScreenshotPreviewActionStyle(embedded: true))
                 .controlSize(.small)
@@ -1113,7 +1093,10 @@ private struct ScreenshotQuickPreviewView: View {
             }
             islandToolSeparator
             islandTool(symbol: "pencil", title: strings.editButton) { perform(.edit) }
-            islandTool(symbol: "trash", title: strings.discardConfirm) { perform(.discard) }
+            CaptureDeleteConfirmationButton(presentation: .island,
+                title: CaptureInterfaceStrings.localized(L10n.shared.language).delete) {
+                perform(.discard)
+            }
         }
         .fixedSize(horizontal: true, vertical: true)
         .padding(.horizontal, 5)
@@ -1175,10 +1158,6 @@ private struct ScreenshotQuickPreviewView: View {
                 isViewportHovered = inside
             }
 
-            if let record = model.sharedRecord {
-                sharedLinkRow(record)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
         }
         .padding(10)
         .frame(width: embedded ? nil : ScreenshotQuickPreviewController.size(showingLink: false).width,
@@ -1195,6 +1174,7 @@ private struct ScreenshotQuickPreviewView: View {
                     .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
             }
         }
+        .overlay { FloatingCapturePreviewDragBorder() }
         .onHover(perform: previewHoverChanged)
     }
 
@@ -1203,58 +1183,6 @@ private struct ScreenshotQuickPreviewView: View {
         // image must not restart dismissal while its actions are still hovered.
         guard !embedded else { return }
         hoverChanged(inside)
-    }
-
-    private func sharedLinkRow(_ record: ScreenshotShareRecord) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "link")
-                .foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(record.url.absoluteString)
-                    .font(.system(size: 11, design: .rounded))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .textSelection(.enabled)
-                HStack(spacing: 3) {
-                    Text(strings.expiresLabel)
-                    Text(record.expiresAt, style: .relative)
-                }
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 2)
-            Button(action: copySharedLink) {
-                Image(systemName: "doc.on.doc")
-                    .frame(width: 18, height: 18)
-            }
-            .buttonStyle(.borderless)
-            .disabled(model.deletingShare)
-            .screenshotSafeHelp(strings.copyLink)
-            .accessibilityLabel(strings.copyLink)
-            Button(role: .destructive, action: deleteSharedLink) {
-                Group {
-                    if model.deletingShare {
-                        ProgressView()
-                            .controlSize(.mini)
-                    } else {
-                        Image(systemName: "trash")
-                    }
-                }
-                .frame(width: 18, height: 18)
-            }
-            .buttonStyle(.borderless)
-            .disabled(model.deletingShare)
-            .screenshotSafeHelp(strings.deleteLink)
-            .accessibilityLabel(strings.deleteLink)
-        }
-        .padding(.horizontal, 9)
-        .frame(width: embedded ? nil : 320, height: 48)
-        .background(Color.primary.opacity(0.055),
-                    in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.09), lineWidth: 1)
-        )
     }
 
     /// A code was found: open the result panel that spells out its content.
@@ -1283,46 +1211,26 @@ private struct ScreenshotQuickPreviewView: View {
         .accessibilityLabel(strings.copyTextButton)
     }
 
-    @ViewBuilder private var shareMenu: some View {
-        if embedded {
-            // The island hides the menu arrow, so a primary action would leave
-            // the durations behind a press and hold that nothing hints at. A
-            // click there opens the durations, as it always has.
-            shareMenuChrome(Menu { shareDurations } label: { shareMenuLabel },
-                            help: strings.shareSectionTitle)
-                .menuStyle(.borderlessButton).menuIndicator(.hidden)
-                .frame(width: 28, height: 28)
-        } else {
-            shareMenuChrome(Menu { shareDurations } label: { shareMenuLabel } primaryAction: {
-                share(.saved())
-            }, help: "\(strings.shareSectionTitle) · \(ScreenshotShareDuration.saved().title(strings))")
-                .menuStyle(.button).buttonStyle(.bordered).controlSize(.small)
-        }
-    }
-
-    private var shareDurations: some View {
-        ForEach(ScreenshotShareDuration.allCases) { duration in
-            Button(duration.title(strings)) { share(duration) }
-        }
-    }
-
-    private var shareMenuLabel: some View {
-        Group {
-            if model.sharing {
-                ProgressView()
-                    .controlSize(.small)
-            } else {
-                Image(systemName: "link")
+    private var shareMenu: some View {
+        Button(action: showShareMenu) {
+            Group {
+                if model.sharing {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Image(systemName: "link")
+                        .font(.system(size: 12, weight: .medium))
+                        .symbolRenderingMode(.monochrome)
+                        .foregroundColor(model.sharedRecord != nil ? Color.blue : Color.primary)
+                }
             }
+            .frame(width: embedded ? 28 : 22, height: embedded ? 28 : 18)
         }
-        .frame(width: embedded ? 28 : 22, height: embedded ? 28 : 18)
-    }
-
-    private func shareMenuChrome(_ menu: some View, help: String) -> some View {
-        menu
-            .disabled(model.sharing)
-            .screenshotSafeHelp(model.sharing ? strings.sharingHUD : help)
-            .accessibilityLabel(strings.shareSectionTitle)
+        .modifier(ScreenshotPreviewActionStyle(embedded: embedded))
+        .controlSize(.small)
+        .focusable(false)
+        .disabled(model.sharing)
+        .screenshotSafeHelp(strings.shareSectionTitle)
+        .accessibilityLabel(strings.shareSectionTitle)
     }
 
     private func actionButton(symbol: String,
