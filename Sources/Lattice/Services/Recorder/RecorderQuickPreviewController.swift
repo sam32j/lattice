@@ -14,7 +14,8 @@ final class RecorderQuickPreviewController {
     private var panel: RecorderQuickPreviewPanel?
     private var keyMonitor: Any?
     private var dismissWork: DispatchWorkItem?
-    private let autoDismissDuration = ScreenshotSupport.recoveryPreviewDismissInterval
+    private var closePolicy = CapturePreviewClosePolicy.fiveSeconds
+    private var focusLossObserver: NSObjectProtocol?
     /// A history-opened preview is navigation, not a transient capture confirmation.
     private var openedFromHistory = false
     private var quickLinkTask: Task<Void, Never>?
@@ -31,7 +32,8 @@ final class RecorderQuickPreviewController {
 
     private init() {}
 
-    func show(url: URL, initialThumbnail: CGImage? = nil, inNotch: Bool = true,
+    func show(url: URL, initialThumbnail: CGImage? = nil,
+              inNotch: Bool = CapturePresentationRouting.opensInIsland(origin: .external),
               openedFromHistory: Bool = false) {
         close()
         self.url = url
@@ -41,7 +43,12 @@ final class RecorderQuickPreviewController {
         self.menuOpen = false
         self.quickLinkGeneration = UUID()
         self.openedFromHistory = openedFromHistory
+        closePolicy = CapturePreviewClosePolicy.current()
         model.show(url: url, initialThumbnail: initialThumbnail)
+        Task { @MainActor [weak self] in
+            guard let self, !self.closed, self.url == url else { return }
+            self.model.sharedRecord = QuickLinkMediaIndex.shared.latestRecording(for: url)
+        }
 
         let wantsNotch = inNotch && NotchSupport.routesCapturePreviews()
             && NotchService.shared.acceptsSystemFeedback
@@ -75,8 +82,10 @@ final class RecorderQuickPreviewController {
             height: 138,
             fromHistory: openedFromHistory,
             imageOverlay: true,
-            takeFocus: false,
-            closeOnCollapse: false,
+            takeFocus: UserDefaults.standard.bool(forKey: DefaultsKey.screenshotPreviewTakesFocus),
+            // An unpinned video preview must close on outside clicks, just
+            // like the screenshot preview. Pinning still blocks collapse.
+            closeOnCollapse: closePolicy.closesOnIslandCollapse,
             fallback: { [weak self] in
                 guard let self else { return }
                 self.shownInNotch = false
@@ -92,6 +101,9 @@ final class RecorderQuickPreviewController {
             shownInNotch = true
             if let window = NotchService.shared.presentationWindow { installKeyMonitor(for: window) }
             scheduleAutoDismiss()
+            if closePolicy == .focusLost, let window = NotchService.shared.presentationWindow {
+                observeFocusLoss(of: window)
+            }
             return
         }
 
@@ -108,6 +120,7 @@ final class RecorderQuickPreviewController {
         previewPanel.isOpaque = false
         previewPanel.backgroundColor = .clear
         previewPanel.hasShadow = true
+        previewPanel.isMovableByWindowBackground = false
         previewPanel.hidesOnDeactivate = false
         previewPanel.level = .statusBar
         previewPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
@@ -117,12 +130,20 @@ final class RecorderQuickPreviewController {
         self.panel = previewPanel
         installKeyMonitor(for: previewPanel)
         previewPanel.orderFrontRegardless()
+        if UserDefaults.standard.bool(forKey: DefaultsKey.screenshotPreviewTakesFocus) {
+            previewPanel.makeKey()
+        }
         scheduleAutoDismiss()
+        if closePolicy == .focusLost { observeFocusLoss(of: previewPanel) }
     }
 
     func close() {
         guard !closed else { return }
         closed = true
+        if let focusLossObserver {
+            NotificationCenter.default.removeObserver(focusLossObserver)
+            self.focusLossObserver = nil
+        }
         dismissWork?.cancel()
         dismissWork = nil
         quickLinkTask?.cancel()
@@ -150,15 +171,28 @@ final class RecorderQuickPreviewController {
     }
 
     private func scheduleAutoDismiss() {
-        guard !closed, !openedFromHistory, !pointerInside, !systemSharing, !menuOpen else { return }
+        guard !closed, !pointerInside, !systemSharing, !menuOpen,
+              !model.sharing, let timeout = closePolicy.timeout else { return }
         dismissWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.close() }
         dismissWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + autoDismissDuration, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout, execute: work)
+    }
+
+    private func observeFocusLoss(of window: NSWindow) {
+        guard focusLossObserver == nil else { return }
+        focusLossObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification, object: window, queue: .main
+        ) { [weak self] _ in
+            guard let self, !self.closed, !self.systemSharing,
+                  !self.menuOpen, !self.model.sharing else { return }
+            self.close()
+        }
     }
 
     private func menuChanged(_ open: Bool) {
         menuOpen = open
+        if shownInNotch { NotchService.shared.setCaptureMenuInteractionActive(open) }
         dismissWork?.cancel()
         dismissWork = nil
         if !open { scheduleAutoDismiss() }
@@ -167,14 +201,17 @@ final class RecorderQuickPreviewController {
     private func previewFrame(for size: CGSize) -> CGRect {
         let pointer = NSEvent.mouseLocation
         let screens = NSScreen.screens.map { (frame: $0.frame, visibleFrame: $0.visibleFrame) }
+        // An automatic floating preview is anchored to the pointer,
+        // not the origin of the display (which previously looked like a corner).
+        let cursorAnchor = CGRect(origin: pointer, size: CGSize(width: 1, height: 1))
         let visibleFrame = ScreenshotSupport.quickPreviewVisibleFrame(
-            anchor: .zero,
+            anchor: cursorAnchor,
             pointer: pointer,
             screens: screens,
             fallback: NSScreen.pointerVisibleFrame)
         return ScreenshotSupport.quickPreviewFrame(
             size: size,
-            anchor: .zero,
+            anchor: cursorAnchor,
             pointer: pointer,
             visibleFrame: visibleFrame,
             position: ScreenshotSupport.QuickPreviewPosition.current())
@@ -304,7 +341,10 @@ final class RecorderQuickPreviewController {
     /// Reuse the same import/export pipeline as the recorder editor; never send
     /// the original MOV directly or block the main thread while encoding.
     private func performQuickLink(_ duration: RecordingShareDuration) {
-        guard !closed, !model.sharing, model.sharedRecord == nil, let source = url else { return }
+        guard !closed, !model.sharing, let source = url else { return }
+        // Encoding and upload can outlive the usual preview timeout.
+        dismissWork?.cancel()
+        dismissWork = nil
         model.sharing = true
         let generation = quickLinkGeneration
         quickLinkTask = Task { @MainActor [weak self] in
@@ -344,6 +384,7 @@ final class RecorderQuickPreviewController {
                         }
                         return
                     }
+                    QuickLinkMediaIndex.shared.rememberRecording(source, record: record)
                     self.model.sharedRecord = record
                     guard RecordingShareService.shared.copy(record.url) else {
                         self.finishQuickLink(failed: true)
@@ -352,6 +393,7 @@ final class RecorderQuickPreviewController {
                     QuickToolHUD.show(icon: "link",
                                       message: FeatureStrings.recorder(L10n.shared.language).copiedHUD)
                     self.finishQuickLink(failed: false)
+                    self.close()
                 } catch {
                     if self.quickLinkGeneration == generation && !Task.isCancelled {
                         self.finishQuickLink(failed: true)
@@ -372,36 +414,32 @@ final class RecorderQuickPreviewController {
             QuickToolHUD.show(icon: "link",
                 message: FeatureStrings.recorderShare(L10n.shared.language).failed)
         }
+        scheduleAutoDismiss()
     }
 
     private func copyQuickLink() {
-        guard let linkURL = model.sharedRecord?.url else { return }
-        Task { @MainActor in
-            guard RecordingShareService.shared.copy(linkURL) else {
+        Task { @MainActor [weak self] in
+            guard let self, !self.closed, let source = self.url,
+                  let record = QuickLinkMediaIndex.shared.latestRecording(for: source) else { return }
+            self.model.sharedRecord = record
+            self.dismissWork?.cancel()
+            self.dismissWork = nil
+            guard RecordingShareService.shared.copy(record.url) else {
                 self.finishQuickLink(failed: true)
                 return
             }
+            QuickToolHUD.show(icon: "link",
+                message: FeatureStrings.recorder(L10n.shared.language).copiedHUD)
+            self.close()
         }
     }
 
-    /// Delete the on-disk recording only after an Island-level confirmation.
-    /// A history preview returns to history; a fresh confirmation closes the Island.
+    /// Called only after the inline red checkmark is confirmed.
     private func performDelete() {
-        guard !closed, let source = url else { return }
+        guard !closed, !model.sharing, let source = url else { return }
         dismissWork?.cancel()
         dismissWork = nil
-        let notice = CapturePreviewNoticeStrings.localized(L10n.shared.language)
-        let alert = NSAlert()
-        alert.messageText = notice.recordingTitle
-        alert.informativeText = notice.recordingMessage
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: notice.trashAction)
-        alert.addButton(withTitle: FeatureStrings.recorder(L10n.shared.language).cancelButton)
         let owner = shownInNotch ? NotchService.shared.presentationWindow : panel
-        guard NotchIslandAlert.run(alert, above: owner) == .alertFirstButtonReturn else {
-            scheduleAutoDismiss()
-            return
-        }
         do {
             try FileManager.default.trashItem(at: source, resultingItemURL: nil)
             RecentCaptureService.shared.removeRecording(at: source)
@@ -410,7 +448,7 @@ final class RecorderQuickPreviewController {
                     NotchService.shared.showCaptureHistory()
                 } else {
                     close()
-                    RecentCaptureService.shared.showHistoryWindow()
+                    RecentCaptureService.shared.showHistoryWindow(origin: .floatingWindow)
                 }
             } else {
                 let wasInNotch = shownInNotch
