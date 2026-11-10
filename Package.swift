@@ -9,6 +9,10 @@ let package = Package(
     platforms: [.macOS(.v14)],
     targets: [
         .systemLibrary(
+            name: "CoreAudioTapCompat",
+            path: "Sources/CoreAudioTapCompat"
+        ),
+        .systemLibrary(
             name: "HIDEventSystem",
             path: "Sources/HIDEventSystem"
         ),
@@ -18,7 +22,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "Lattice",
-            dependencies: ["VMStatisticsCompat", "HIDEventSystem"],
+            dependencies: ["VMStatisticsCompat", "HIDEventSystem", "CoreAudioTapCompat"],
             path: "Sources/Lattice"
         )
     ]
