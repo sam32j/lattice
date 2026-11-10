@@ -12,11 +12,29 @@ struct CapturePreviewPositionPicker: View {
     var body: some View {
         let strings = FeatureStrings.screenshot(l10n.language)
         Picker(strings.previewPositionLabel, selection: $position) {
-            Text(strings.previewPositionAutomatic).tag(ScreenshotSupport.QuickPreviewPosition.automatic.rawValue)
+            Text(CaptureInterfaceStrings.localized(l10n.language).underCursor).tag(ScreenshotSupport.QuickPreviewPosition.automatic.rawValue)
             Text(strings.previewPositionTopLeft).tag(ScreenshotSupport.QuickPreviewPosition.topLeft.rawValue)
             Text(strings.previewPositionTopRight).tag(ScreenshotSupport.QuickPreviewPosition.topRight.rawValue)
             Text(strings.previewPositionBottomLeft).tag(ScreenshotSupport.QuickPreviewPosition.bottomLeft.rawValue)
             Text(strings.previewPositionBottomRight).tag(ScreenshotSupport.QuickPreviewPosition.bottomRight.rawValue)
         }
+    }
+}
+
+/// Shared display preference for Capture's native / floating presentations.
+/// Other preview and history features can reuse CapturePresentationRouting.
+struct CapturePresentationPicker: View {
+    @ObservedObject private var l10n = L10n.shared
+    @AppStorage(DefaultsKey.capturePresentationDestination) private var destination =
+        CapturePresentationRouting.Preference.automatic.rawValue
+
+    var body: some View {
+        let copy = CaptureInterfaceStrings.localized(l10n.language)
+        Picker(copy.openAt, selection: $destination) {
+            Text(copy.automatic).tag(CapturePresentationRouting.Preference.automatic.rawValue)
+            Text(copy.dynamicIsland).tag(CapturePresentationRouting.Preference.dynamicIsland.rawValue)
+            Text(copy.floatingWindow).tag(CapturePresentationRouting.Preference.floatingWindow.rawValue)
+        }
+        .pickerStyle(.menu)
     }
 }
