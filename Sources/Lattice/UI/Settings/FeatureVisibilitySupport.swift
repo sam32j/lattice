@@ -10,6 +10,7 @@ enum SettingsPage: Hashable {
     case general, features, energy, monitor, cameraPreview, diskImageInstaller, launcherGrid
     case mouse, keyboard, switcher, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, portManager, notch, notchMascot, notchWidget(NotchModule), notchCompanion
     case shortcuts, dataPermissions, about, videoDownloader
+    case captureScreenshotOptions
 }
 
 /// Stable, non-localized identities for destinations inside shared Settings
@@ -267,7 +268,8 @@ enum FeatureVisibilitySupport {
         case .notchWidget: return [.notch]
         case .radialMenu: return [.radialMenu]
         case .commandBar: return [.commandBar]
-        case .screenshot: return [.screenshot, .screenOCR, .colorPicker]
+        case .screenshot: return [.screenshot, .screenRecorder, .screenOCR, .colorPicker]
+        case .captureScreenshotOptions: return [.screenshot]
         case .screenRecorder: return [.screenRecorder]
         case .cameraPreview: return [.cameraPreview]
         case .diskImageInstaller: return [.diskImageInstaller]

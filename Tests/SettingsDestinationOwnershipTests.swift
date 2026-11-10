@@ -33,6 +33,27 @@ enum SettingsDestinationOwnershipTests {
         suite.expect(router.page == .notch,
                      "going back from companion returns to the Dynamic Island page")
 
+        let captureRouter = SettingsRouter()
+        captureRouter.page = .screenshot
+        captureRouter.request(FeatureSettingsDestination(.captureScreenshotOptions))
+        suite.expect(captureRouter.page == .captureScreenshotOptions && captureRouter.canGoBack(),
+                     "Screenshot Options is a native page in Settings history")
+        captureRouter.goBack()
+        suite.expect(captureRouter.page == .screenshot && captureRouter.canGoForward(),
+                     "Back returns from Screenshot Options to Capture")
+        captureRouter.goForward()
+        suite.expect(captureRouter.page == .captureScreenshotOptions,
+                     "Forward reopens Screenshot Options")
+        captureRouter.request(FeatureSettingsDestination(.screenRecorder))
+        suite.expect(captureRouter.page == .screenRecorder && captureRouter.canGoBack(),
+                     "Recording Options is a native page in Settings history")
+        captureRouter.goBack()
+        suite.expect(captureRouter.page == .captureScreenshotOptions,
+                     "Back from Recording restores Screenshot Options")
+        captureRouter.request(FeatureSettingsDestination(.screenshot, sectionAnchor: .screenshot))
+        suite.expect(captureRouter.page == .captureScreenshotOptions,
+                     "Legacy screenshot deep links open Screenshot Options")
+
         suite.expect(NotchSettingsStrings.widgetTitle(.music, language: .enUS) == "Now Playing Widget"
                      && NotchSettingsStrings.widgetTitle(.controls, language: .enUS) == "Controls Widget"
                      && NotchSettingsStrings.widgetTitle(.calendar, language: .enUS) == "Calendar Widget",
