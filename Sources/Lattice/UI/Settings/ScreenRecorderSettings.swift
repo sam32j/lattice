@@ -9,7 +9,6 @@ struct ScreenRecorderSettings: View {
     @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var sharing = RecordingShareService.shared
     @AppStorage(DefaultsKey.screenRecorderEnabled) var screenRecorderEnabled = true
-    @AppStorage(DefaultsKey.recorderCountdown) private var countdown = 3
     @AppStorage(DefaultsKey.recorderQuality) private var qualityRaw =
         RecorderSupport.Quality.balanced.rawValue
     @AppStorage(DefaultsKey.recorderFrameRate) private var frameRate = 60
@@ -27,6 +26,7 @@ struct ScreenRecorderSettings: View {
     @AppStorage(DefaultsKey.recentRecordingLimit) private var recentRecordingLimit = 0
     @State private var showingSharedLinks = false
     @State private var showingSharePrivacy = false
+    @State private var gifExpanded = false
 
     var strings: RecorderFeatureStrings {
         FeatureStrings.recorder(l10n.language)
@@ -45,15 +45,11 @@ struct ScreenRecorderSettings: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-
-                shortcutsCard
-                    .settingsSectionAnchor(.screenRecorder, cornerRadius: 16)
-
                 Group {
                     recordingCard
+                        .settingsSectionAnchor(.screenRecorder, cornerRadius: 16)
                     audioEditorCard
                     exportCard
-                    sharingCard
                 }
                 .disabled(!screenRecorderInstalled)
                 .opacity(screenRecorderInstalled ? 1 : 0.55)
@@ -62,14 +58,7 @@ struct ScreenRecorderSettings: View {
             .frame(maxWidth: .infinity)
             .padding(22)
         }
-        .onAppear { sharing.refresh() }
-        .sheet(isPresented: $showingSharedLinks) {
-            RecorderSharedLinksView()
-        }
-        .sheet(isPresented: $showingSharePrivacy) {
-            RecorderSharePrivacyView()
-        }
-        .settingsExpansionAnimation(value: [sharingEnabled, sharing.records.isEmpty])
+        .settingsExpansionAnimation(value: [gifExpanded])
     }
 
     // MARK: - Master Header & Shortcuts Card
@@ -80,21 +69,6 @@ struct ScreenRecorderSettings: View {
     private var recordingCard: some View {
         SettingsCard(title: workflow.recording) {
             VStack(alignment: .leading, spacing: 14) {
-                SettingsControlRow(title: strings.countdownLabel) {
-                    Picker(strings.countdownLabel, selection: $countdown) {
-                        ForEach(ScreenshotSupport.allowedDelays, id: \.self) { seconds in
-                            if seconds == 0 {
-                                Text(strings.countdownOff).tag(0)
-                            } else {
-                                Text(String(format: strings.countdownSecondsFormat, seconds)).tag(seconds)
-                            }
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
-                }
-
                 SettingsToggleRow(title: workflow.immediate,
                                   isOn: $immediateStart)
 
@@ -140,14 +114,6 @@ struct ScreenRecorderSettings: View {
     private var exportCard: some View {
         SettingsCard(title: workflow.export) {
             VStack(alignment: .leading, spacing: 14) {
-                folderRow
-
-                SettingsControlRow(title: screenshotStrings.previewPositionLabel) {
-                    CapturePreviewPositionPicker()
-                        .labelsHidden()
-                        .fixedSize()
-                }
-
                 SettingsControlRow(title: workflow.recentRecordings) {
                     Picker(workflow.recentRecordings, selection: $recentRecordingLimit) {
                         Text("5").tag(5)
@@ -184,26 +150,30 @@ struct ScreenRecorderSettings: View {
                     .fixedSize()
                 }
 
-                SettingsControlRow(title: strings.gifSizeLabel) {
-                    Picker(strings.gifSizeLabel, selection: $gifSizeRaw) {
-                        Text(strings.gifSizeSmall).tag(RecorderSupport.GIFSize.small.rawValue)
-                        Text(strings.gifSizeMedium).tag(RecorderSupport.GIFSize.medium.rawValue)
-                        Text(strings.gifSizeLarge).tag(RecorderSupport.GIFSize.large.rawValue)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
-                }
-
-                SettingsControlRow(title: strings.gifFrameRateLabel) {
-                    Picker(strings.gifFrameRateLabel, selection: $gifFrameRate) {
-                        ForEach(RecorderSupport.gifFrameRates, id: \.self) { rate in
-                            Text(String(format: strings.frameRateFormat, rate)).tag(rate)
+                DisclosureGroup("GIF Export", isExpanded: $gifExpanded) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        SettingsControlRow(title: strings.gifSizeLabel) {
+                            Picker(strings.gifSizeLabel, selection: $gifSizeRaw) {
+                                Text(strings.gifSizeSmall).tag(RecorderSupport.GIFSize.small.rawValue)
+                                Text(strings.gifSizeMedium).tag(RecorderSupport.GIFSize.medium.rawValue)
+                                Text(strings.gifSizeLarge).tag(RecorderSupport.GIFSize.large.rawValue)
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                            .fixedSize()
+                        }
+                        SettingsControlRow(title: strings.gifFrameRateLabel) {
+                            Picker(strings.gifFrameRateLabel, selection: $gifFrameRate) {
+                                ForEach(RecorderSupport.gifFrameRates, id: \.self) { rate in
+                                    Text(String(format: strings.frameRateFormat, rate)).tag(rate)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                            .fixedSize()
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
+                    .padding(.top, 8)
                 }
             }
         }
@@ -351,7 +321,7 @@ private struct RecorderSharePrivacyView: View {
     }
 }
 
-private struct RecorderSharedLinksView: View {
+struct RecorderSharedLinksView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var sharing = RecordingShareService.shared
