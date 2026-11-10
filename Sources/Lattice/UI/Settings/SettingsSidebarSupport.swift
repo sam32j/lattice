@@ -78,6 +78,11 @@ enum SettingsSidebarSupport {
                           in items: [SettingsSidebarItem],
                           preferredID: SettingsSidebarItem.ID? = nil)
         -> SettingsSidebarItem.ID? {
+        // Screenshot/recording options are detail pages, not sidebar entries.
+        if destination.page == .screenRecorder || destination.page == .captureScreenshotOptions,
+           items.contains(where: { $0.id == .page(.screenshot) }) {
+            return .page(.screenshot)
+        }
         if destination.page == .energy, destination.sectionAnchor == .extraBrightness,
            items.contains(where: { $0.id == .feature(.brightness) }) { return .feature(.brightness) }
         if let preferredID,

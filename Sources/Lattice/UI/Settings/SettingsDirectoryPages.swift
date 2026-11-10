@@ -105,7 +105,7 @@ extension SettingsDirectory {
                                           FeatureStrings.windowMaximizerExclusions(language).listTitle]),
                                       ]),
                 SettingsDirectoryItem(page: .screenshot,
-                                      title: FeatureStrings.screenshot(language).pageTitle,
+                                      title: CaptureSettings.title(for: language),
                                       icon: "camera.viewfinder",
                                       featureKeywords: [
                                         (.screenshot, [FeatureStrings.screenshot(language).pageTitle,
@@ -116,15 +116,9 @@ extension SettingsDirectory {
                                                        FeatureStrings.recentCaptures(language).title,
                                                        s.colorPickerName,
                                                        s.ocrName]),
-                                      ]),
-                SettingsDirectoryItem(page: .screenRecorder,
-                                      title: FeatureStrings.recorder(language).pageTitle,
-                                      icon: "record.circle",
-                                      featureKeywords: [
                                         (.screenRecorder, [FeatureStrings.recorder(language).pageTitle,
                                                            FeatureStrings.recorder(language).systemAudioToggle,
-                                                           FeatureStrings.recorder(language).microphoneToggle,
-                                                           FeatureStrings.recentCaptures(language).title]),
+                                                           FeatureStrings.recorder(language).microphoneToggle]),
                                       ]),
             ]),
             (categories.energyDisplay, [
