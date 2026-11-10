@@ -17,29 +17,23 @@ struct ScreenshotSettings: View {
     @AppStorage(DefaultsKey.screenshotIncludePointer) private var includePointer = false
     @AppStorage(DefaultsKey.screenshotShowLastRegion) private var showLastRegion = true
     @AppStorage(DefaultsKey.screenshotPlayShutterSound) private var playShutterSound = true
-    @AppStorage(DefaultsKey.screenshotHighlightWindows) private var highlightWindows = true
     @AppStorage(DefaultsKey.screenshotLoupeStartsOn) private var loupeStartsOn = false
     @AppStorage(DefaultsKey.screenshotLoupeRememberZoom) private var rememberLoupeZoom = false
     @AppStorage(DefaultsKey.screenshotLoupeDefaultZoom) private var loupeDefaultZoom = 1.0
-    @AppStorage(DefaultsKey.screenshotLoupeSteppedZoomByDefault)
-    private var steppedLoupeZoomByDefault = false
     @AppStorage(DefaultsKey.screenshotDownscale) private var downscale = false
-    @AppStorage(DefaultsKey.screenshotDelay) private var delay = 0
     @AppStorage(DefaultsKey.screenshotDefaultAction) private var defaultActionRaw = ""
     @AppStorage(DefaultsKey.screenshotToolShortcutsEnabled) private var toolShortcutsEnabled = true
     @AppStorage(DefaultsKey.screenshotCopyToClipboard) private var copyToClipboard = false
     @AppStorage(DefaultsKey.screenshotAddToShelf) private var addToShelf = false
     @AppStorage(DefaultsKey.shelfEnabled) private var shelfEnabled = false
     @AppStorage(AppFeature.shelf.availabilityKey) private var shelfAvailable = false
-    @AppStorage(DefaultsKey.screenshotPreviewTakesFocus) private var previewTakesFocus = true
     @AppStorage(DefaultsKey.screenshotPreviewEnabled) private var previewEnabled = true
-    @AppStorage(DefaultsKey.screenshotPreviewDuration) private var previewDuration =
-        ScreenshotSupport.defaultConfirmationPreviewDuration
     @AppStorage(DefaultsKey.screenshotSharingEnabled) var sharingEnabled = true
     @AppStorage(DefaultsKey.screenshotUploadDuration) private var uploadDuration = ScreenshotShareDuration.oneHour.rawValue
     @AppStorage(DefaultsKey.screenshotPinRoundedCorners) private var pinRoundedCorners = true
     @State private var showingSharedLinks = false
     @State private var showingSharePrivacy = false
+    @State private var toolsExpanded = false
 
     var strings: ScreenshotFeatureStrings {
         FeatureStrings.screenshot(l10n.language)
@@ -50,17 +44,13 @@ struct ScreenshotSettings: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-
-                shortcutsCard
-                    .settingsSectionAnchor(.screenshot, cornerRadius: 16)
-
                 Group {
                     selectionCard
+                        .settingsSectionAnchor(.screenshot, cornerRadius: 16)
                     magnifierCard
                     previewCard
                     destinationCard
                     toolsCard
-                    sharingCard
                 }
                 .disabled(!screenshotInstalled)
                 .opacity(screenshotInstalled ? 1 : 0.55)
@@ -69,15 +59,9 @@ struct ScreenshotSettings: View {
             .frame(maxWidth: .infinity)
             .padding(22)
         }
-        .onAppear { sharing.refresh() }
-        .sheet(isPresented: $showingSharedLinks) {
-            ScreenshotSharedLinksView()
-        }
-        .sheet(isPresented: $showingSharePrivacy) {
-            ScreenshotSharePrivacyView()
-        }
-        .settingsExpansionAnimation(value: [rememberLoupeZoom, usesAutomaticConfirmationPreview, previewEnabled,
-            sharingEnabled, sharing.records.isEmpty, ScreenshotSupport.fileNamePatternUsesNumber(fileNamePattern)])
+        .settingsExpansionAnimation(value: [rememberLoupeZoom, toolsExpanded,
+            usesAutomaticConfirmationPreview, previewEnabled,
+            ScreenshotSupport.fileNamePatternUsesNumber(fileNamePattern)])
     }
 
 
@@ -90,25 +74,6 @@ struct ScreenshotSettings: View {
                                   caption: strings.freezeCaption,
                                   isOn: $freeze)
 
-
-                SettingsControlRow(title: strings.delayLabel) {
-                    Picker(strings.delayLabel, selection: $delay) {
-                        ForEach(ScreenshotSupport.allowedDelays, id: \.self) { seconds in
-                            if seconds == 0 {
-                                Text(strings.delayOff).tag(0)
-                            } else {
-                                Text(String(format: strings.delaySecondsFormat, seconds)).tag(seconds)
-                            }
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
-                }
-
-                SettingsToggleRow(title: strings.highlightWindowsToggle,
-                                  caption: strings.highlightWindowsCaption,
-                                  isOn: $highlightWindows)
 
                 SettingsToggleRow(title: strings.pointerToggle,
                                   isOn: $includePointer)
@@ -147,17 +112,6 @@ struct ScreenshotSettings: View {
                     }
                 }
 
-                SettingsControlRow(title: strings.loupeWheelZoomLabel,
-                                   caption: strings.loupeZoomOptionCaption) {
-                    Picker(strings.loupeWheelZoomLabel,
-                           selection: $steppedLoupeZoomByDefault) {
-                        Text(strings.loupeZoomFast).tag(false)
-                        Text(strings.loupeZoomStepped).tag(true)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
-                }
             }
         }
     }
@@ -179,32 +133,7 @@ struct ScreenshotSettings: View {
                                       caption: previewEnabled ? strings.confirmationPreviewCaption : nil,
                                       isOn: $previewEnabled)
 
-                    if previewEnabled {
-                        SettingsControlRow(title: strings.confirmationPreviewDurationLabel) {
-                            Picker(strings.confirmationPreviewDurationLabel, selection: $previewDuration) {
-                                ForEach(ScreenshotSupport.confirmationPreviewDurations, id: \.self) { seconds in
-                                    if seconds == 0 {
-                                        Text(strings.confirmationPreviewUntilDismissed).tag(0)
-                                    } else {
-                                        Text(String(format: strings.delaySecondsFormat, seconds)).tag(seconds)
-                                    }
-                                }
-                            }
-                            .labelsHidden()
-                            .fixedSize()
-                        }
-                    }
                 }
-
-                SettingsControlRow(title: strings.previewPositionLabel) {
-                    CapturePreviewPositionPicker()
-                        .labelsHidden()
-                        .fixedSize()
-                }
-
-                SettingsToggleRow(title: strings.previewFocusToggle,
-                                  caption: strings.previewFocusCaption,
-                                  isOn: $previewTakesFocus)
 
                 SettingsToggleRow(title: ScreenshotPinStrings.localized(l10n.language).rounded,
                                   isOn: $pinRoundedCorners)
@@ -226,7 +155,6 @@ struct ScreenshotSettings: View {
                                   isOn: addToShelfBinding)
                     .disabled(!shelfIsOn)
 
-                folderRow
                 subfolderRow
                 fileNameRow
 
@@ -240,9 +168,12 @@ struct ScreenshotSettings: View {
     // MARK: - Tools
 
     private var toolsCard: some View {
-        SettingsCard(title: strings.toolShortcutsTitle) {
-            ScreenshotToolOrderControls(shortcutsEnabled: $toolShortcutsEnabled,
-                                        showsTitle: false)
+        SettingsCard {
+            DisclosureGroup(strings.toolShortcutsTitle, isExpanded: $toolsExpanded) {
+                ScreenshotToolOrderControls(shortcutsEnabled: $toolShortcutsEnabled,
+                                            showsTitle: false)
+                    .padding(.top, 10)
+            }
         }
     }
 
@@ -498,7 +429,7 @@ struct ScreenshotSharePrivacyView: View {
     }
 }
 
-private struct ScreenshotSharedLinksView: View {
+struct ScreenshotSharedLinksView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var sharing = ScreenshotShareService.shared
