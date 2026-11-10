@@ -3,7 +3,6 @@
 
 import AppKit
 import AVFoundation
-import Carbon.HIToolbox
 import ImageIO
 import SwiftUI
 
@@ -25,11 +24,6 @@ final class RecentCaptureService: ObservableObject {
     private lazy var store = RecentCaptureStore(directoryURL: capturesRoot,
                                                 thumbnailDirectoryURL: thumbnailRoot)
     private var clearGeneration = 0
-    private var panel: NSPanel?
-    private var panelKeyMonitor: Any?
-    private var panelLocalClickMonitor: Any?
-    private var panelGlobalClickMonitor: Any?
-    private var panelActivationObserver: NSObjectProtocol?
 
     private init() {
         thumbnailCache.countLimit = ScreenshotSupport.recentCaptureLimit
@@ -45,152 +39,38 @@ final class RecentCaptureService: ObservableObject {
                                             fallback: .recentCapturesDefault)
         shortcutRegistrationFailed = !hotkey.sync(enabled: enabled, shortcut: shortcut,
                                                   storageKey: DefaultsKey.recentCapturesShortcut)
-        if !available { hideHistoryWindow() }
     }
 
     func suspend() {
         hotkey.unregister()
-        hideHistoryWindow()
     }
 
-    // MARK: - History palette
+    // MARK: - Hub history entry point
 
-    func showHistoryWindow() {
+    /// The dedicated capture-history hotkey and existing recovery actions all
+    /// open the Hub's Recent captures utility directly. There is no separate
+    /// history panel or its own event-monitor/dismissal lifecycle.
+    func showHistoryWindow(origin: CapturePresentationRouting.Origin = .external) {
         guard Thread.isMainThread else {
-            DispatchQueue.main.async { [weak self] in self?.showHistoryWindow() }
+            DispatchQueue.main.async { [weak self] in self?.showHistoryWindow(origin: origin) }
             return
         }
-        guard AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable else {
-            return
-        }
-        let anchor = NSApp.keyWindow?.isVisible == true ? NSApp.keyWindow : nil
-        let panel = ensurePanel()
+        guard LatticeHubItem.recentCaptures.isAvailable() else { return }
         reload()
-        position(panel, over: anchor)
-        installPanelMonitors(for: panel)
-        panel.alphaValue = 0
-        panel.orderFrontRegardless()
-        panel.makeKey()
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.12
-            panel.animator().alphaValue = 1
+        if CapturePresentationRouting.opensInIsland(origin: origin) {
+            // Close a floating Hub before choosing the Island destination;
+            // hiding the Hub resets activeUtility, so set it afterwards.
+            if LatticeHubService.shared.isVisible { LatticeHubService.shared.hide() }
+            LatticeHubService.shared.activeUtility = .recentCaptures
+            NotchService.shared.open(.hub)
+        } else if origin == .floatingWindow && LatticeHubService.shared.isVisible {
+            // An ordinary tile click within the floating Hub keeps the Hub's
+            // navigation crossfade. Hotkeys use the direct-open path below.
+            LatticeHubService.shared.opensUtilityDirectly = false
+            LatticeHubService.shared.activeUtility = .recentCaptures
+        } else {
+            LatticeHubService.shared.openRecentCaptures()
         }
-    }
-
-    func hideHistoryWindow() {
-        guard Thread.isMainThread else {
-            DispatchQueue.main.async { [weak self] in self?.hideHistoryWindow() }
-            return
-        }
-        removePanelMonitors()
-        panel?.orderOut(nil)
-    }
-
-    private final class KeyableHistoryPanel: OverlayPanel {
-        override var canBecomeKey: Bool { true }
-    }
-
-    private func ensurePanel() -> NSPanel {
-        if let panel { return panel }
-        let panel = KeyableHistoryPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 468, height: 360),
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false)
-        panel.title = FeatureStrings.recentCaptures(L10n.shared.language).title
-        panel.isReleasedWhenClosed = false
-        panel.isMovableByWindowBackground = true
-        // The palette is summoned from other apps. A panel that hides on deactivate
-        // stays off screen until this app activates, so it would appear late.
-        panel.hidesOnDeactivate = false
-        panel.isFloatingPanel = true
-        panel.level = .floating
-        panel.backgroundColor = .clear
-        panel.isOpaque = false
-        panel.hasShadow = false
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
-        let host = NSHostingController(rootView: RecentCapturesWindowView(
-            onClose: { [weak self] in self?.hideHistoryWindow() }))
-        host.sizingOptions = .preferredContentSize
-        panel.contentViewController = host
-        self.panel = panel
-        return panel
-    }
-
-    private func position(_ panel: NSPanel, over anchor: NSWindow?) {
-        panel.contentViewController?.view.layoutSubtreeIfNeeded()
-        let size = panel.contentViewController?.view.fittingSize
-            ?? NSSize(width: 468, height: 360)
-        let screen = anchor?.screen?.visibleFrame ?? NSScreen.pointerVisibleFrame
-        let center = anchor.map { CGPoint(x: $0.frame.midX, y: $0.frame.midY) }
-            ?? CGPoint(x: screen.midX, y: screen.midY)
-        let x = min(max(center.x - size.width / 2, screen.minX + 16),
-                    screen.maxX - size.width - 16)
-        let y = min(max(center.y - size.height / 2, screen.minY + 16),
-                    screen.maxY - size.height - 16)
-        panel.setFrame(NSRect(origin: CGPoint(x: x, y: y), size: size),
-                       display: true,
-                       animate: false)
-    }
-
-    private func refreshPanelLayout() {
-        guard let panel, panel.isVisible else { return }
-        panel.contentViewController?.view.layoutSubtreeIfNeeded()
-        let size = panel.contentViewController?.view.fittingSize ?? panel.frame.size
-        let screen = panel.screen?.visibleFrame ?? NSScreen.pointerVisibleFrame
-        var frame = panel.frame
-        frame.origin.y = min(max(frame.maxY - size.height, screen.minY + 16),
-                             screen.maxY - size.height - 16)
-        frame.origin.x = min(max(frame.origin.x, screen.minX + 16),
-                             screen.maxX - size.width - 16)
-        frame.size = size
-        panel.setFrame(frame, display: true, animate: false)
-    }
-
-    private func installPanelMonitors(for panel: NSPanel) {
-        removePanelMonitors()
-        panelKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
-            [weak self, weak panel] event in
-            guard event.window === panel else { return event }
-            if Int(event.keyCode) == kVK_Escape {
-                self?.hideHistoryWindow()
-                return nil
-            }
-            return event
-        }
-        panelLocalClickMonitor = NSEvent.addLocalMonitorForEvents(
-            matching: [.leftMouseDown, .rightMouseDown]) { [weak self, weak panel] event in
-                if event.window !== panel { self?.hideHistoryWindow() }
-                return event
-            }
-        panelGlobalClickMonitor = NSEvent.addGlobalMonitorForEvents(
-            matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-                self?.hideHistoryWindow()
-            }
-        panelActivationObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification,
-            object: nil,
-            queue: .main) { [weak self] notification in
-                guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
-                    as? NSRunningApplication,
-                      app.bundleIdentifier != Bundle.main.bundleIdentifier,
-                      app.bundleIdentifier != AssistiveKeyboard.bundleID
-                else { return }
-                self?.hideHistoryWindow()
-            }
-    }
-
-    private func removePanelMonitors() {
-        if let panelKeyMonitor { NSEvent.removeMonitor(panelKeyMonitor) }
-        if let panelLocalClickMonitor { NSEvent.removeMonitor(panelLocalClickMonitor) }
-        if let panelGlobalClickMonitor { NSEvent.removeMonitor(panelGlobalClickMonitor) }
-        if let panelActivationObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(panelActivationObserver)
-        }
-        panelKeyMonitor = nil
-        panelLocalClickMonitor = nil
-        panelGlobalClickMonitor = nil
-        panelActivationObserver = nil
     }
 
     private var capturesRoot: URL? {
@@ -751,21 +631,27 @@ final class RecentCaptureService: ObservableObject {
     }
 
     func open(_ entry: RecentCaptureEntry, inNotch: Bool = false) {
-        hideHistoryWindow()
+        let destinationIsland = CapturePresentationRouting.opensInIsland(
+            origin: inNotch ? .dynamicIsland : .floatingWindow)
+        if LatticeHubService.shared.isVisible { LatticeHubService.shared.hide() }
+        if inNotch && !destinationIsland && NotchService.shared.expanded,
+           NotchService.shared.selected == .hub {
+            NotchService.shared.collapse()
+        }
         switch entry.kind {
         case .screenshot:
-            restoreScreenshot(entry, inNotch: inNotch)
+            restoreScreenshot(entry, inNotch: destinationIsland)
         case .recording:
             guard let url = entry.recordingURL, RecentCaptureStore.isRegularFile(url) else {
                 remove(entry)
                 NSSound.beep()
                 return
             }
-            appDelegate()?.closePopover(preservingNotch: inNotch)
+            appDelegate()?.closePopover(preservingNotch: destinationIsland)
             let thumb = thumbnail(for: entry)?.cgImage(forProposedRect: nil, context: nil, hints: nil)
-            DispatchQueue.main.asyncAfter(deadline: .now() + (inNotch ? 0 : 0.12)) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + (destinationIsland ? 0 : 0.12)) {
                 RecorderQuickPreviewController.shared.show(url: url, initialThumbnail: thumb,
-                                                               inNotch: true, openedFromHistory: true)
+                                                           inNotch: destinationIsland, openedFromHistory: true)
             }
         }
     }
@@ -781,7 +667,7 @@ final class RecentCaptureService: ObservableObject {
                         // keep its index entry as the retry handle.
                         // The Island/Hub history is still the active view:
                         // no preview was installed, so do not navigate away.
-                        if !inNotch { self?.showHistoryWindow() }
+                        if !inNotch { self?.showHistoryWindow(origin: .floatingWindow) }
                     } else {
                         self?.remove(entry)
                     }
@@ -792,7 +678,7 @@ final class RecentCaptureService: ObservableObject {
             DispatchQueue.main.async {
                 appDelegate()?.closePopover(preservingNotch: inNotch)
                 DispatchQueue.main.asyncAfter(deadline: .now() + (inNotch ? 0 : 0.12)) {
-                    ScreenshotService.shared.restorePreview(capture)
+                    ScreenshotService.shared.restorePreview(capture, inNotch: inNotch)
                 }
             }
         }
@@ -846,7 +732,18 @@ final class RecentCaptureService: ObservableObject {
         }
         let retryIDs = Set(retry.map(\.id))
         let retained = RecentCaptureRetention.entries(
-            store.entries.filter { !retryIDs.contains($0.id) && entryExists($0) },
+            store.entries.filter { entry in
+                guard !retryIDs.contains(entry.id) else { return false }
+                // Managed recordings have a durable index and a file in
+                // RecentCaptures. A single transient failed file check must
+                // never erase that index and trigger orphan-file deletion.
+                // Users can still explicitly remove a missing history item.
+                if entry.kind == .recording, let path = entry.recordingPath,
+                   !path.hasPrefix("/"), RecentCaptureStore.isSafeRelativePath(path) {
+                    return true
+                }
+                return entryExists(entry)
+            },
             screenshotCutoff: cutoff,
             recordingLimit: UserDefaults.standard.integer(forKey: DefaultsKey.recentRecordingLimit))
         store.entries = (retained + retry).sorted { $0.createdAt > $1.createdAt }
@@ -885,7 +782,6 @@ final class RecentCaptureService: ObservableObject {
         let value = store.entries
         DispatchQueue.main.async { [weak self] in
             self?.entries = value
-            DispatchQueue.main.async { [weak self] in self?.refreshPanelLayout() }
         }
     }
 
