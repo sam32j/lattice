@@ -90,13 +90,6 @@ struct NotchDefaultPagePicker: View {
 
 extension NotchSettings {
 
-    var destinationsCard: some View {
-        SettingsCard(title: editor.destinations) {
-            destination(text.captures, symbol: "photo.stack", value: $capture,
-                        available: AppFeature.screenshot.isAvailable || AppFeature.screenRecorder.isAvailable)
-        }
-    }
-
     func hoverDelayPicker(_ strings: NotchOpeningStrings) -> some View {
         let binding = Binding<NotchDelayPreset>(
             get: { NotchDelayPreset.closestHoverPreset(for: hoverDelay) },
