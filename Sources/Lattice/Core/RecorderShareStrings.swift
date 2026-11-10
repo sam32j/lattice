@@ -46,7 +46,7 @@ extension RecorderShareStrings {
         compressing: "Compressing for sharing…",
         uploading: "Uploading securely…",
         tooLarge: "This recording cannot fit under 100 MB without losing too much quality.",
-        failed: "The temporary link could not be created",
+        failed: "The Quick Link could not be created",
         tourCaption: "Compress a finished recording on this Mac and share it for 1 or 6 hours."
     )
 
@@ -58,7 +58,7 @@ extension RecorderShareStrings {
         compressing: "Comprimindo para compartilhar…",
         uploading: "Enviando com segurança…",
         tooLarge: "Esta gravação não cabe em 100 MB sem perder qualidade demais.",
-        failed: "Não foi possível criar o link temporário",
+        failed: "Não foi possível criar o link rápido",
         tourCaption: "Comprima uma gravação final neste Mac e compartilhe por 1 ou 6 horas."
     )
 
@@ -70,7 +70,7 @@ extension RecorderShareStrings {
         compressing: "Paylaşım için sıkıştırılıyor…",
         uploading: "Güvenli şekilde yükleniyor…",
         tooLarge: "Bu kayıt, kaliteden çok fazla ödün vermeden 100 MB altına sığmıyor.",
-        failed: "Geçici bağlantı oluşturulamadı",
+        failed: "Hızlı bağlantı oluşturulamadı",
         tourCaption: "Tamamlanan kaydı bu Mac’te sıkıştırıp 1 veya 6 saatliğine paylaşın."
     )
 
@@ -82,7 +82,7 @@ extension RecorderShareStrings {
         compressing: "Сжатие для публикации…",
         uploading: "Безопасная отправка…",
         tooLarge: "Эту запись нельзя уменьшить до 100 МБ без слишком большой потери качества.",
-        failed: "Не удалось создать временную ссылку",
+        failed: "Не удалось создать быструю ссылку",
         tourCaption: "Сожмите готовую запись на этом Mac и поделитесь ею на 1 или 6 часов."
     )
 
@@ -94,7 +94,7 @@ extension RecorderShareStrings {
         compressing: "Comprimiendo para compartir…",
         uploading: "Subiendo de forma segura…",
         tooLarge: "Esta grabación no cabe en 100 MB sin perder demasiada calidad.",
-        failed: "No se pudo crear el enlace temporal",
+        failed: "No se pudo crear el enlace rápido",
         tourCaption: "Comprime una grabación terminada en este Mac y compártela durante 1 o 6 horas."
     )
 
@@ -106,7 +106,7 @@ extension RecorderShareStrings {
         compressing: "Komprimuje sa na zdieľanie…",
         uploading: "Bezpečne sa nahráva…",
         tooLarge: "Toto nahrávanie sa nezmestí pod 100 MB bez príliš veľkej straty kvality.",
-        failed: "Dočasný odkaz sa nepodarilo vytvoriť",
+        failed: "Rýchly odkaz sa nepodarilo vytvoriť",
         tourCaption: "Skomprimujte dokončené nahrávanie na tomto Macu a zdieľajte ho na 1 alebo 6 hodín."
     )
 
@@ -118,7 +118,7 @@ extension RecorderShareStrings {
         compressing: "Wird zum Teilen komprimiert…",
         uploading: "Wird sicher hochgeladen…",
         tooLarge: "Diese Aufnahme passt nicht ohne zu großen Qualitätsverlust unter 100 MB.",
-        failed: "Der temporäre Link konnte nicht erstellt werden",
+        failed: "Der Quick Link konnte nicht erstellt werden",
         tourCaption: "Komprimiere eine fertige Aufnahme auf diesem Mac und teile sie für 1 oder 6 Stunden."
     )
 
@@ -130,7 +130,7 @@ extension RecorderShareStrings {
         compressing: "Compression pour le partage…",
         uploading: "Envoi sécurisé…",
         tooLarge: "Cet enregistrement ne peut pas tenir sous 100 Mo sans perdre trop de qualité.",
-        failed: "Impossible de créer le lien temporaire",
+        failed: "Impossible de créer le lien rapide",
         tourCaption: "Compressez un enregistrement terminé sur ce Mac et partagez-le pendant 1 ou 6 heures."
     )
 
@@ -142,7 +142,7 @@ extension RecorderShareStrings {
         compressing: "Compressione per la condivisione…",
         uploading: "Caricamento sicuro…",
         tooLarge: "Questa registrazione non può restare sotto i 100 MB senza perdere troppa qualità.",
-        failed: "Impossibile creare il link temporaneo",
+        failed: "Impossibile creare il link rapido",
         tourCaption: "Comprimi una registrazione finita su questo Mac e condividila per 1 o 6 ore."
     )
 
@@ -154,7 +154,7 @@ extension RecorderShareStrings {
         compressing: "共有用に圧縮中…",
         uploading: "安全にアップロード中…",
         tooLarge: "この録画は、品質を大きく落とさずに100 MB未満にできません。",
-        failed: "一時リンクを作成できませんでした",
+        failed: "クイックリンクを作成できませんでした",
         tourCaption: "完成した録画をこのMacで圧縮し、1時間または6時間だけ共有できます。"
     )
 
@@ -166,7 +166,7 @@ extension RecorderShareStrings {
         compressing: "공유용으로 압축 중…",
         uploading: "안전하게 업로드 중…",
         tooLarge: "이 녹화는 품질을 너무 많이 낮추지 않고 100MB 미만으로 만들 수 없습니다.",
-        failed: "임시 링크를 만들 수 없습니다",
+        failed: "빠른 링크를 만들 수 없습니다",
         tourCaption: "완성된 녹화를 이 Mac에서 압축해 1시간 또는 6시간 동안 공유하세요."
     )
 
@@ -178,7 +178,7 @@ extension RecorderShareStrings {
         compressing: "正在压缩以便分享…",
         uploading: "正在安全上传…",
         tooLarge: "这段录制无法在不过度损失画质的情况下压缩到100 MB以内。",
-        failed: "无法创建临时链接",
+        failed: "无法创建快捷链接",
         tourCaption: "在这台Mac上压缩完成的录制，并分享1小时或6小时。"
     )
 
@@ -190,7 +190,7 @@ extension RecorderShareStrings {
         compressing: "正在壓縮以供分享…",
         uploading: "正在安全上傳…",
         tooLarge: "這段錄製無法在不過度損失畫質的情況下壓縮至100 MB以內。",
-        failed: "無法建立暫時連結",
+        failed: "無法建立快速連結",
         tourCaption: "在這台Mac上壓縮完成的錄製，並分享1小時或6小時。"
     )
 
@@ -202,7 +202,7 @@ extension RecorderShareStrings {
         compressing: "正在壓縮以供分享…",
         uploading: "正在安全上載…",
         tooLarge: "這段錄製無法在不過度損失畫質的情況下壓縮至100 MB以內。",
-        failed: "無法建立暫時連結",
+        failed: "無法建立快速連結",
         tourCaption: "在這部Mac上壓縮完成的錄製，並分享1小時或6小時。"
     )
     static let uk = RecorderShareStrings(
@@ -213,7 +213,7 @@ extension RecorderShareStrings {
         compressing: "Стиснення для поширення…",
         uploading: "Безпечне завантаження…",
         tooLarge: "Цей запис не може уміститися в 100 МБ без зайвої втрати якості.",
-        failed: "Не вдалося створити тимчасове посилання",
+        failed: "Не вдалося створити швидке посилання",
         tourCaption: "Стисніть завершений запис на цьому Mac та поділіться ним на 1 або 6 годин."
     )
 }
