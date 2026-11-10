@@ -317,57 +317,6 @@ enum ScreenshotSupport {
         return kept
     }
 
-    /// Optional countdown before the capture starts, so menus, tooltips and
-    /// hover states can be staged first.
-    static let allowedDelays = [0, 3, 5, 10]
-
-    static func sanitizedDelay(_ raw: Int) -> Int {
-        allowedDelays.contains(raw) ? raw : 0
-    }
-
-    static let confirmationPreviewDurations = [1, 2, 3, 5, 10, 0]
-    static let defaultConfirmationPreviewDuration = 3
-    static let recoveryPreviewDismissInterval: TimeInterval = 12
-
-    struct ConfirmationPreviewPresentationPolicy: Equatable {
-        let takesFocus: Bool
-        let closesOnCollapse: Bool
-        let showsDismissButton: Bool
-    }
-
-    static func sanitizedConfirmationPreviewDuration(_ raw: Int) -> Int {
-        confirmationPreviewDurations.contains(raw) ? raw : defaultConfirmationPreviewDuration
-    }
-
-    static func confirmationPreviewDismissInterval(_ raw: Int) -> TimeInterval? {
-        let duration = sanitizedConfirmationPreviewDuration(raw)
-        return duration == 0 ? nil : TimeInterval(duration)
-    }
-
-    static func sharedPreviewDismissInterval(base: TimeInterval?) -> TimeInterval? {
-        base == nil ? nil : 30
-    }
-
-    static func confirmationPreviewPresentationPolicy(
-        dismissInterval: TimeInterval?,
-        prefersFocus: Bool
-    ) -> ConfirmationPreviewPresentationPolicy {
-        let persistent = dismissInterval == nil
-        return ConfirmationPreviewPresentationPolicy(
-            takesFocus: !persistent && prefersFocus,
-            closesOnCollapse: persistent,
-            showsDismissButton: persistent)
-    }
-
-    static func confirmationPreviewPresentationPolicy(
-        dismissInterval: TimeInterval?,
-        defaults: UserDefaults
-    ) -> ConfirmationPreviewPresentationPolicy {
-        confirmationPreviewPresentationPolicy(
-            dismissInterval: dismissInterval,
-            prefersFocus: defaults.bool(forKey: DefaultsKey.screenshotPreviewTakesFocus))
-    }
-
     static func automaticActionSucceeded(_ action: ScreenshotDefaultAction,
                                          saved: Bool,
                                          copied: Bool) -> Bool {
@@ -392,17 +341,15 @@ enum ScreenshotSupport {
         }
     }
 
-    /// What a finished capture shows once its after-capture action ran.
+    /// Whether a finished capture shows a preview after its automatic action.
+    /// Its lifetime is now controlled solely by CapturePreviewClosePolicy.
     enum QuickPreviewPresentation: Equatable {
         case hidden
-        /// A nil interval keeps the preview until it is dismissed.
-        case shown(dismissInterval: TimeInterval?)
+        case shown
     }
 
-    /// The whole decision `route` makes, read from the person's settings: a
-    /// successful action shows the confirmation for its chosen duration or
-    /// nothing at all, while a failed or partial action, or no action, gets
-    /// the recovery preview with its longer timer.
+    /// Decide only whether to show a preview. Its focus and lifetime come
+    /// from the shared image/video settings, not the retired per-action timer.
     static func quickPreviewPresentation(defaultAction: ScreenshotDefaultAction,
                                          saved: Bool,
                                          copied: Bool,
@@ -411,14 +358,7 @@ enum ScreenshotSupport {
             defaultAction: defaultAction, saved: saved, copied: copied,
             confirmationEnabled: defaults.bool(forKey: DefaultsKey.screenshotPreviewEnabled))
         else { return .hidden }
-        guard automaticActionSucceeded(defaultAction, saved: saved, copied: copied) else {
-            return .shown(dismissInterval: recoveryPreviewDismissInterval)
-        }
-        // A stored value that is not a number reads as the default duration,
-        // not as 0, which would keep every confirmation until dismissed.
-        let duration = (defaults.object(forKey: DefaultsKey.screenshotPreviewDuration) as? NSNumber)?
-            .intValue ?? defaultConfirmationPreviewDuration
-        return .shown(dismissInterval: confirmationPreviewDismissInterval(duration))
+        return .shown
     }
 
     /// Captures go to the shelf on their own only while the shelf is
@@ -427,16 +367,6 @@ enum ScreenshotSupport {
         defaults.bool(forKey: DefaultsKey.screenshotAddToShelf)
             && AppFeature.shelf.isAvailable(in: defaults)
             && defaults.bool(forKey: DefaultsKey.shelfEnabled)
-    }
-
-    /// Remaining stroke for the one-second countdown ring. Time drives the
-    /// value directly so a delayed frame catches up instead of restarting the
-    /// animation or leaving the ring frozen.
-    static func countdownRingProgress(elapsed: TimeInterval,
-                                      duration: TimeInterval = 0.92) -> CGFloat {
-        guard elapsed.isFinite, duration.isFinite, duration > 0 else { return 0 }
-        let fraction = min(max(elapsed / duration, 0), 1)
-        return CGFloat(1 - fraction)
     }
 
     // MARK: - Scrolling capture
@@ -3132,4 +3062,43 @@ enum ScreenshotDefaultAction: String, CaseIterable {
         case .none, .save, .edit: return self
         }
     }
+}
+
+/// One lifetime rule for screenshot and recording previews on both surfaces.
+/// A saved focus-change choice falls back to 5 seconds if autofocus is off.
+enum CapturePreviewClosePolicy: String {
+    case focusLost = "focusLost"
+    case fiveSeconds = "fiveSeconds"
+    case fifteenSeconds = "fifteenSeconds"
+    case untilClose = "untilClose"
+
+    /// Legacy selections retain their meaning when the two time choices move
+    /// from 15/60 to 5/15 seconds. New raw values cannot overlap old values.
+    static func migratedRawValue(_ raw: String) -> String {
+        switch raw {
+        case "15s": return Self.fiveSeconds.rawValue
+        case "60s": return Self.fifteenSeconds.rawValue
+        default: return raw
+        }
+    }
+
+    static func current(in defaults: UserDefaults = .standard) -> Self {
+        let raw = defaults.string(forKey: DefaultsKey.capturePreviewCloseAfter) ?? ""
+        let mode = Self(rawValue: migratedRawValue(raw)) ?? .fiveSeconds
+        if mode == .focusLost && !defaults.bool(forKey: DefaultsKey.screenshotPreviewTakesFocus) {
+            return .fiveSeconds
+        }
+        return mode
+    }
+
+    var timeout: TimeInterval? {
+        switch self {
+        case .fiveSeconds: 5
+        case .fifteenSeconds: 15
+        case .focusLost, .untilClose: nil
+        }
+    }
+
+    /// With no timer, collapsing a capture must clean up its hosted content.
+    var closesOnIslandCollapse: Bool { timeout == nil }
 }
