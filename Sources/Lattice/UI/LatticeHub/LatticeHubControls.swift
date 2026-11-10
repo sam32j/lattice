@@ -31,7 +31,9 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         case .micMute: return MicMuteService.shared.isMuted ? l10n.s.micUnmuteName : l10n.s.micMuteName
         case .keepAwake: return l10n.s.keepAwakeTitle
         case .cameraPreview: return FeatureStrings.cameraPreview(l10n.language).pageTitle
-        case .darkMode: return strings.toggleAppearance
+        case .darkMode:
+            let dark = QuickTogglesService.shared.systemAppearanceIsDark ?? (colorScheme == .dark)
+            return dark ? strings.darkModeToLight : strings.darkModeToDark
         case .keyboardLight: return FeatureStrings.brightness(l10n.language).keyboardLight
         case .hiddenFiles: return QuickTogglesService.shared.hiddenFilesShown ? strings.hiddenFilesHide : strings.hiddenFilesShow
         case .desktopIcons: return QuickTogglesService.shared.desktopIconsShown ? strings.desktopIconsHide : strings.desktopIconsShow
@@ -67,7 +69,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         case .micMute: return MicMuteService.shared.isMuted
         case .keepAwake: return KeepAwakeManager.shared.isActive
         case .cameraPreview: return CameraPreviewService.shared.isVisible || CameraPreviewService.shared.isEmbeddedPresented
-        case .darkMode: return colorScheme == .dark
+        case .darkMode: return QuickTogglesService.shared.systemAppearanceIsDark ?? (colorScheme == .dark)
         case .keyboardLight: return BrightnessService.shared.keyboardLightEnabled ?? false
         case .hiddenFiles: return QuickTogglesService.shared.hiddenFilesShown
         case .desktopIcons: return QuickTogglesService.shared.desktopIconsShown
@@ -153,10 +155,35 @@ struct HubControlButton: View {
     var iconSize: CGFloat = 13
     var isEditing: Bool = false
     var actionRawValue: String? = nil
+    var darkModeRotation: Double = 0
     var onHide: (() -> Void)? = nil
     let action: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovered = false
+
+    /// Microphone slash animates its stroke, Dark Mode spins only clockwise,
+    /// and Finder visibility toggles replace symbols. Other icons stay static.
+    @ViewBuilder private var controlSymbol: some View {
+        if actionRawValue == HubControlAction.micMute.rawValue {
+            AnimatedMicMuteSymbol(muted: MicMuteService.shared.isMuted, fontSize: iconSize)
+        } else if actionRawValue == HubControlAction.darkMode.rawValue {
+            Image(systemName: icon)
+                .font(.system(size: iconSize, weight: .semibold))
+                .rotationEffect(.degrees(darkModeRotation))
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.38),
+                           value: darkModeRotation)
+        } else if actionRawValue == HubControlAction.hiddenFiles.rawValue
+                    || actionRawValue == HubControlAction.desktopIcons.rawValue {
+            Image(systemName: icon)
+                .font(.system(size: iconSize, weight: .semibold))
+                .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.26), value: icon)
+        } else {
+            Image(systemName: icon)
+                .font(.system(size: iconSize, weight: .semibold))
+        }
+    }
 
     var body: some View {
         Button(action: {
@@ -166,8 +193,7 @@ struct HubControlButton: View {
                 action()
             }
         }) {
-            Image(systemName: icon)
-                .font(.system(size: iconSize, weight: .semibold))
+            controlSymbol
                 .foregroundStyle(isActive ? (tint == .yellow ? Color.black.opacity(0.85) : .white) : Color.primary.opacity(0.85))
                 .frame(maxWidth: .infinity)
                 .frame(height: height)
@@ -262,6 +288,7 @@ struct HubQuickControls: View {
                                      iconSize: isNotch ? 11 : 13,
                                      isEditing: isEditing,
                                      actionRawValue: action.rawValue,
+                                     darkModeRotation: action == .darkMode ? toggles.darkModeRotation : 0,
                                      onHide: {
                                          withAnimation(.easeInOut(duration: 0.22)) {
                                              launcher.setControlHidden(action, true)
