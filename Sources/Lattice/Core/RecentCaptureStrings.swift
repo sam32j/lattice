@@ -17,6 +17,26 @@ struct RecentCaptureStrings {
 }
 
 extension FeatureStrings {
+    /// The shortcut setting is an action, not a second Recent Captures page.
+    static func recentCapturesShortcutTitle(_ language: AppLanguage) -> String {
+        switch language {
+        case .enUS: return "Open recent captures with shortcut"
+        case .ptBR: return "Abrir capturas recentes com atalho"
+        case .tr: return "Son yakalamaları kısayolla aç"
+        case .ru: return "Открывать недавние снимки сочетанием клавиш"
+        case .es: return "Abrir capturas recientes con atajo"
+        case .sk: return "Otvoriť nedávne snímky skratkou"
+        case .de: return "Letzte Aufnahmen per Tastenkürzel öffnen"
+        case .fr: return "Ouvrir les captures récentes avec un raccourci"
+        case .it: return "Apri le acquisizioni recenti con una scorciatoia"
+        case .ja: return "ショートカットで最近のキャプチャを開く"
+        case .ko: return "단축키로 최근 캡처 열기"
+        case .zhHans: return "使用快捷键打开最近捕获"
+        case .zhTW, .zhHK: return "使用快速鍵開啟最近擷取"
+        case .uk: return "Відкрити нещодавні знімки комбінацією клавіш"
+        }
+    }
+
     static func recentCaptures(_ language: AppLanguage) -> RecentCaptureStrings {
         switch language {
         case .enUS: return .enUS
