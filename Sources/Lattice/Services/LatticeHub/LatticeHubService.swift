@@ -31,6 +31,9 @@ final class LatticeHubService: ObservableObject {
         }
     }
     @Published var editingOptionsItem: LatticeHubItem?
+    /// A dedicated utility hotkey skips the floating Hub root-page crossfade.
+    /// Cleared when users navigate normally or dismiss the Hub.
+    @Published var opensUtilityDirectly = false
     @Published var activeUtility: LatticeHubItem? {
         didSet {
             if let activeUtility {
@@ -339,15 +342,22 @@ final class LatticeHubService: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 NotchService.shared.open(.watch)
             }
+        case .recentCaptures:
+            // A click on the floating Hub tile stays floating in Automatic;
+            // the Island tile stays in the Island. Explicit preference wins.
+            RecentCaptureService.shared.showHistoryWindow(
+                origin: isVisible ? .floatingWindow : .dynamicIsland)
         case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner, .appUpdates, .portManager,
-             .killProcess, .wallpaper, .videoDownloader, .recentCaptures, .deviceControls, .system:
+             .killProcess, .wallpaper, .videoDownloader, .deviceControls, .system:
             if item == .system {
                 SystemNavigationState.shared.reset()
             }
             if isVisible {
-                // The floating HUD owns its own opacity transition.
+                // Normal Hub navigation still uses its familiar crossfade.
+                opensUtilityDirectly = false
                 activeUtility = item
             } else {
+                opensUtilityDirectly = false
                 withAnimation(.easeInOut(duration: 0.22)) {
                     activeUtility = item
                 }
