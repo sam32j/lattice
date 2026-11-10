@@ -31,6 +31,9 @@ final class QuickTogglesService: ObservableObject {
     }
 
     @Published private(set) var states: [QuickToggleAction: RunState] = [:]
+    /// Only advances after a synchronous, successful appearance switch.
+    /// Never reset to zero, so both directions rotate clockwise.
+    @Published private(set) var darkModeRotation: Double = 0
 
     private let workQueue = DispatchQueue(label: "io.github.sam32j.lattice.quick-toggles", qos: .userInitiated)
 
@@ -79,6 +82,7 @@ final class QuickTogglesService: ObservableObject {
             return
         }
         theme.set(!theme.get())
+        darkModeRotation += 180
         finishRun(.darkMode, state: nil)
     }
 
