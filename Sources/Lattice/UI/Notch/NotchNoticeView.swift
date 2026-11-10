@@ -104,16 +104,10 @@ struct NotchNoticeView: View {
                         NotchAgentMark(provider: agent, size: 13)
 
                     } else if notice.event == .microphone {
-                        ZStack {
-                            Image(systemName: notice.symbol)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(tint)
-                                .id(notice.symbol)
-                                .transition(reduceMotion ? .identity : .opacity)
-                        }
-                        .frame(width: 18)
-                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: notice.symbol)
-                        .transaction { $0.disablesAnimations = false }
+                        AnimatedMicMuteSymbol(muted: isMutedMic, fontSize: 14, weight: .medium,
+                                              animateInitialChange: true)
+                            .foregroundStyle(tint)
+                            .frame(width: 18)
                     } else {
                         Image(systemName: notice.symbol)
                             .font(.system(size: 14, weight: .medium))
