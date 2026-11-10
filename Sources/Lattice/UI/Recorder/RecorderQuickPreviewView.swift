@@ -107,15 +107,8 @@ struct RecorderQuickPreviewView: View {
             if !embedded {
                 Divider()
                 if UserDefaults.standard.bool(forKey: DefaultsKey.recorderSharingEnabled) {
-                    if model.sharedRecord != nil {
-                        Button(previewNotice.copyQuickLink, action: onCopyLink)
-                    } else {
-                        Menu(previewNotice.quickLink) {
-                            ForEach(RecordingShareDuration.allCases) { duration in
-                                Button(duration.title(screenshot)) { onQuickLink(duration) }
-                            }
-                        }.disabled(model.sharing)
-                    }
+                    Menu(previewNotice.quickLink) { quickLinkActions }
+                        .disabled(model.sharing)
                 }
                 Button(previewNotice.trashAction, action: onDelete)
             }
@@ -163,7 +156,7 @@ struct RecorderQuickPreviewView: View {
                 .overlay(alignment: .topLeading) {
                     // Playback is a deliberate action, not an icon covering the
                     // center of the image or the source used for dragging.
-                    thumbnailButton(symbol: "play.fill", title: "Quick Look", action: onQuickLook)
+                    thumbnailButton(symbol: "play.fill", title: CaptureInterfaceStrings.localized(l10n.language).quickLook, action: onQuickLook)
                         .padding(6)
                 }
 
@@ -179,6 +172,7 @@ struct RecorderQuickPreviewView: View {
             .controlSize(.small)
             .focusable(false)
             .screenshotSafeHelp(title)
+            .help(title)
             .accessibilityLabel(title)
     }
 
@@ -206,31 +200,13 @@ struct RecorderQuickPreviewView: View {
             islandSeparator
             islandTool("square.and.arrow.up", title: screenshot.shareButton, action: onShare)
             if UserDefaults.standard.bool(forKey: DefaultsKey.recorderSharingEnabled) {
-                if model.sharedRecord != nil {
-                    islandTool("link", title: previewNotice.copyQuickLink, action: onCopyLink)
-                } else {
-                    Menu {
-                        ForEach(RecordingShareDuration.allCases) { duration in
-                            Button(duration.title(screenshot)) { onQuickLink(duration) }
-                        }
-                    } label: {
-                        if model.sharing {
-                            ProgressView().controlSize(.small).frame(width: 28, height: 28).contentShape(Rectangle())
-                        } else {
-                            islandToolImage("link")
-                        }
-                    }
-                    .menuStyle(.borderlessButton)
-                    .menuIndicator(.hidden)
-                    .fixedSize()
-                    .disabled(model.sharing)
-                    .screenshotSafeHelp(previewNotice.quickLink)
-                    .accessibilityLabel(previewNotice.quickLink)
-                }
+                quickLinkIslandControl
             }
             islandSeparator
             islandTool("scissors", title: screenshot.editButton, action: onEdit)
-            islandTool("trash", title: previewNotice.trashAction, action: onDelete)
+            CaptureDeleteConfirmationButton(presentation: .island,
+                                            title: CaptureInterfaceStrings.localized(l10n.language).delete,
+                                            action: onDelete)
         }
         .fixedSize(horizontal: true, vertical: true)
         .padding(.horizontal, 5)
@@ -244,6 +220,9 @@ struct RecorderQuickPreviewView: View {
         .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
     }
 
+    /// Canonical floating controls, independent of how the preview opened.
+    /// The thumbnail alone is the media drag source; the 10-point rim moves
+    /// the panel. Island toolbar and preview layout are intentionally separate.
     private var floatingPreview: some View {
         VStack(spacing: 10) {
             ZStack {
@@ -252,76 +231,178 @@ struct RecorderQuickPreviewView: View {
                         .resizable()
                         .interpolation(.high)
                         .scaledToFill()
-                        .frame(width: embedded ? nil : 320, height: 138)
+                        .frame(width: 320, height: 138)
                         .clipped()
                         .background(Color.black.opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                        .overlay(
+                        .overlay {
                             RoundedRectangle(cornerRadius: 9, style: .continuous)
                                 .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
-                        )
+                                .allowsHitTesting(false)
+                        }
                         .onDrag { NSItemProvider(contentsOf: url) ?? NSItemProvider() }
                         .onTapGesture(count: 2, perform: onQuickLook)
                 } else {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .fill(Color.black.opacity(0.2))
-                        .frame(width: embedded ? nil : 320, height: 138)
+                        .frame(width: 320, height: 138)
                         .overlay(ProgressView().controlSize(.small))
                 }
 
-                // Play indicator when not hovered
-                if !isViewportHovered {
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 34, weight: .light))
-                        .foregroundStyle(.white.opacity(0.85))
-                        .shadow(color: .black.opacity(0.4), radius: 6, y: 2)
-                        .allowsHitTesting(false)
+                VStack(spacing: 0) {
+                    HStack(spacing: 5) {
+                        thumbnailButton(symbol: "play.fill", title: CaptureInterfaceStrings.localized(l10n.language).quickLook, action: onQuickLook)
+                        thumbnailButton(symbol: "square.and.arrow.up",
+                                        title: screenshot.shareButton, action: onShare)
+                            .background(ShelfSharePickerAnchor(anchor: shareAnchor))
+                        if UserDefaults.standard.bool(forKey: DefaultsKey.recorderSharingEnabled) {
+                            quickLinkFloatingControl
+                        }
+                        Spacer(minLength: 0)
+                        thumbnailButton(symbol: "xmark", title: "\(screenshot.done)  (⎋)",
+                                        action: onClose)
+                    }
+                    Spacer(minLength: 0)
+                    HStack(spacing: 5) {
+                        thumbnailButton(symbol: "scissors",
+                                        title: "\(screenshot.editButton)  (⏎ / E)", action: onEdit)
+                        Spacer(minLength: 0)
+                        CaptureDeleteConfirmationButton(presentation: .floating,
+                            title: CaptureInterfaceStrings.localized(l10n.language).delete, action: onDelete)
+                    }
+                }
+                .padding(6)
+
+                // Preserve the existing hover-only Copy / Save overlay.
+                if isViewportHovered {
+                    centerActions
                         .transition(.opacity.animation(.easeInOut(duration: 0.15)))
                 }
-
-                if !embedded {
-                    VStack {
-                        HStack {
-                            thumbnailButton(symbol: "xmark", title: "\(screenshot.done)  (⎋)", action: onClose)
-                            Spacer()
-                            thumbnailButton(symbol: "square.and.arrow.up", title: "\(screenshot.shareButton)", action: onShare)
-                                .background(ShelfSharePickerAnchor(anchor: shareAnchor))
-                        }
-                        Spacer()
-                        HStack {
-                            thumbnailButton(symbol: "scissors", title: "\(screenshot.editButton)  (⏎ / E)", action: onEdit)
-                            Spacer()
-                        }
-                    }
-                    .padding(6)
-
-                    if isViewportHovered {
-                        centerActions
-                            .transition(.opacity.animation(.easeInOut(duration: 0.15)))
-                    }
-                }
             }
-            .frame(width: embedded ? nil : 320, height: 138)
+            .frame(width: 320, height: 138)
             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .onHover { inside in
-                isViewportHovered = inside
-            }
+            .onHover { inside in isViewportHovered = inside }
         }
-        .padding(embedded ? 0 : 10)
-        .frame(width: embedded ? nil : 340, height: embedded ? nil : 158)
+        .padding(10)
+        .frame(width: 340, height: 158)
         .background {
-            if !embedded {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(.regularMaterial)
-                    .shadow(color: Color.black.opacity(colorScheme == .light ? 0.08 : 0.22), radius: 10, y: 4)
-            }
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.regularMaterial)
+                .shadow(color: Color.black.opacity(colorScheme == .light ? 0.08 : 0.22),
+                        radius: 10, y: 4)
         }
         .overlay {
-            if !embedded {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
+                .allowsHitTesting(false)
+        }
+        .overlay { FloatingCapturePreviewDragBorder() }
+    }
+
+
+
+    @ViewBuilder
+    private var quickLinkActions: some View {
+        if model.sharedRecord != nil {
+            Button(previewNotice.copyQuickLink, action: onCopyLink)
+            Menu(CaptureInterfaceStrings.localized(l10n.language).createNewQuickLink) {
+                quickLinkDurations
+            }
+        } else {
+            quickLinkDurations
+        }
+    }
+
+    private var quickLinkDurations: some View {
+        ForEach(RecordingShareDuration.allCases) { duration in
+            Button(duration.title(screenshot)) { onQuickLink(duration) }
+        }
+    }
+
+    /// Use a normal Button (not a SwiftUI Menu label) so the icon's green
+    /// status is rendered explicitly and cannot be overridden by macOS's
+    /// borderless menu-button styling. Keep the button mounted while loading.
+    private var quickLinkIslandControl: some View {
+        Button(action: showQuickLinkMenu) {
+            Group {
+                if model.sharing {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Image(systemName: "link")
+                        .font(.system(size: 14, weight: .medium))
+                        .symbolRenderingMode(.monochrome)
+                        .foregroundColor(model.sharedRecord != nil ? Color.blue : Color.primary)
+                }
+            }
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(NotchButtonStyle(cornerRadius: 8))
+        .controlSize(.small)
+        .focusable(false)
+        .disabled(model.sharing)
+        .screenshotSafeHelp(previewNotice.quickLink)
+        .help(previewNotice.quickLink)
+        .accessibilityLabel(previewNotice.quickLink)
+    }
+
+    private var quickLinkFloatingControl: some View {
+        Button(action: showQuickLinkMenu) {
+            Group {
+                if model.sharing {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Image(systemName: "link")
+                        .font(.system(size: 11, weight: .semibold))
+                        .symbolRenderingMode(.monochrome)
+                        .foregroundColor(model.sharedRecord != nil ? Color.blue : Color.white)
+                }
+            }
+            .frame(width: 24, height: 24)
+            .background(Color.black.opacity(0.65), in: Circle())
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .disabled(model.sharing)
+        .screenshotSafeHelp(previewNotice.quickLink)
+        .help(previewNotice.quickLink)
+        .accessibilityLabel(previewNotice.quickLink)
+    }
+
+    /// AppKit snapshots this menu when it opens. SwiftUI state updates while
+    /// export starts or the cache refreshes therefore cannot close it mid-tap.
+    private func showQuickLinkMenu() {
+        guard !model.sharing else { return }
+        let menu = NSMenu()
+        func add(_ title: String, to target: NSMenu, action: @escaping () -> Void) {
+            let item = NSMenuItem(title: title,
+                                  action: #selector(ScreenshotQuickPreviewMenuHelper.handleDurationAction(_:)),
+                                  keyEquivalent: "")
+            item.target = ScreenshotQuickPreviewMenuHelper.shared
+            item.representedObject = action
+            target.addItem(item)
+        }
+        func addDurations(to target: NSMenu) {
+            for duration in RecordingShareDuration.allCases {
+                add(duration.title(screenshot), to: target) { onQuickLink(duration) }
             }
         }
+        if model.sharedRecord != nil {
+            add(previewNotice.copyQuickLink, to: menu, action: onCopyLink)
+            let item = NSMenuItem(title: CaptureInterfaceStrings.localized(l10n.language).createNewQuickLink, action: nil, keyEquivalent: "")
+            let durations = NSMenu(title: CaptureInterfaceStrings.localized(l10n.language).createNewQuickLink)
+            addDurations(to: durations)
+            item.submenu = durations
+            menu.addItem(item)
+        } else {
+            addDurations(to: menu)
+        }
+        // Protect the Island from outside-click dismissal while the native
+        // popup and its submenus are open. End protection after the popup ends.
+        onMenuChanged(true)
+        defer { onMenuChanged(false) }
+        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
     }
 
     private var centerActions: some View {
@@ -404,5 +485,38 @@ struct RecorderQuickPreviewView: View {
         .focusable(false)
         .screenshotSafeHelp(title)
         .accessibilityLabel(title)
+    }
+}
+
+/// A transparent border around floating capture previews. The NSView owns
+/// window dragging; content inside the border keeps its own drag payload.
+struct FloatingCapturePreviewDragBorder: View {
+    var body: some View {
+        ZStack {
+            VStack(spacing: 0) {
+                FloatingCapturePreviewDragHandle().frame(maxWidth: .infinity).frame(height: 8)
+                Spacer(minLength: 0)
+                FloatingCapturePreviewDragHandle().frame(maxWidth: .infinity).frame(height: 8)
+            }
+            HStack(spacing: 0) {
+                FloatingCapturePreviewDragHandle().frame(width: 8).frame(maxHeight: .infinity)
+                Spacer(minLength: 0)
+                FloatingCapturePreviewDragHandle().frame(width: 8).frame(maxHeight: .infinity)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct FloatingCapturePreviewDragHandle: NSViewRepresentable {
+    func makeNSView(context: Context) -> Handle { Handle() }
+    func updateNSView(_ nsView: Handle, context: Context) {}
+
+    final class Handle: NSView {
+        override var mouseDownCanMoveWindow: Bool { true }
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+        override func mouseDown(with event: NSEvent) {
+            window?.performDrag(with: event)
+        }
     }
 }
