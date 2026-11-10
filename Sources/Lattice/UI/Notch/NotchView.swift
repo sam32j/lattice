@@ -755,7 +755,7 @@ struct NotchClearCapturesButton: View {
     var body: some View {
         NotchIconButton(symbol: "trash", title: FeatureStrings.recentCaptures(l10n.language).clear,
                         action: RecentCapturesView.confirmClearAboveIsland)
-            .disabled(RecentCapturesView.visible(history.entries).isEmpty)
+            .disabled(history.entries.isEmpty)
     }
 }
 

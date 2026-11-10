@@ -159,6 +159,13 @@ struct NotchCapsuleNoticeView: View {
         } else if notice.event == .agents, let agent = notice.agent, notice.symbol == agent.symbol {
             NotchAgentMark(provider: agent, size: CapsuleLayout.symbolSize).frame(width: CapsuleLayout.symbolWidth)
 
+        } else if notice.event == .microphone {
+            AnimatedMicMuteSymbol(muted: isMutedMic, fontSize: CapsuleLayout.symbolSize, weight: .medium,
+                                  animateInitialChange: true)
+                .foregroundStyle(tint)
+                .frame(width: CapsuleLayout.symbolWidth)
+                .capsuleCentred(notice.symbol)
+                .accessibilityHidden(true)
         } else {
             NotchCapsuleSymbol(name: notice.symbol, tint: tint)
         }
