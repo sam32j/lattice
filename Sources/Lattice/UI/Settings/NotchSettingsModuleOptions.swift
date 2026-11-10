@@ -202,7 +202,6 @@ extension NotchSettings {
                 .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 if enabled, (volume || brightness || keyboardLight), !permissions.accessibility { PermissionRow(kind: .accessibility) }
             }
-            destinationsCard
         }
     }
 

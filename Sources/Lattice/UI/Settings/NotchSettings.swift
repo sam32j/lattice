@@ -62,7 +62,6 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchSnippetsWindow) var snippetsWindow = true
     @AppStorage(DefaultsKey.notchClipboardCardSize) var clipboardCardSize = NotchClipboardCardSize.comfortable.rawValue
     @AppStorage(DefaultsKey.screenshotDefaultAction) var captureAction = ""
-    @AppStorage(DefaultsKey.notchCapture) var capture = true
     @AppStorage(DefaultsKey.notchTrackChange) var trackChange = true
     @AppStorage(DefaultsKey.notchShowPlayingMusic) var showPlayingMusic = true
     @AppStorage(DefaultsKey.notchIncludeOtherPlayers) var includeOtherPlayers = true
