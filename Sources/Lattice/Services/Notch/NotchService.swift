@@ -242,6 +242,7 @@ final class NotchService: ObservableObject {
     private var captureClose: (() -> Void)?
     private var captureHover: ((Bool) -> Void)?
     private var captureClosesOnCollapse = false
+    private var captureMenuInteractionActive = false
     private var inside = false
     private var hoverEmphasized = false
     private var activitySelection = NotchActivitySelection()
@@ -275,7 +276,8 @@ final class NotchService: ObservableObject {
         // on click-away unless pinned.
         (expanded && selected == .captures && captureContent != nil && !captureClosesOnCollapse)
             || (expanded && selected == .hub && LatticeHubService.shared.isEditing)
-            || pinned || trackingMenu || NSApp.modalWindow != nil || panel?.attachedSheet != nil
+            || pinned || trackingMenu || captureMenuInteractionActive
+            || NSApp.modalWindow != nil || panel?.attachedSheet != nil
             // Like the lyrics chooser, these panels stand beside the island
             // instead of hanging from it; a click in them is not a click away.
             || (expanded && MediaWorkspaceView.panelModalActive)
@@ -2571,6 +2573,7 @@ final class NotchService: ObservableObject {
         let keepOpen = expanded && pinned
         let replacesPage = expanded && selected == .captures && captureID != id
         if captureID != id {
+            captureMenuInteractionActive = false
             // Record the actual entry path before open(.captures) changes the page.
             // A newly taken screenshot may appear while Hub history is visible;
             // that is still a new capture, not a history-navigation action.
@@ -2593,6 +2596,13 @@ final class NotchService: ObservableObject {
              takeFocus: takeFocus, feedback: false, crossfadeContent: replacesPage)
         captureHover?(inside)
         return true
+    }
+
+    /// An open quick-link popup sits outside the Island window. Keep
+    /// capture interaction alive until the popup and submenus are dismissed.
+    func setCaptureMenuInteractionActive(_ active: Bool) {
+        guard captureContent != nil else { return }
+        captureMenuInteractionActive = active
     }
 
     func updateCaptureHeight(id: UUID, height: CGFloat) {
@@ -2642,6 +2652,7 @@ final class NotchService: ObservableObject {
         captureClose = nil
         captureHover = nil
         captureClosesOnCollapse = false
+        captureMenuInteractionActive = false
     }
 
     /// Persistent captures must detach before their close callback runs so a
@@ -4099,10 +4110,17 @@ final class NotchService: ObservableObject {
 
     private func handleCaptureTouches(_ event: NSEvent, in view: NSView) -> Bool {
         let interaction = NotchGestureSupport.nativeInteraction(at: panel?.contentView?.hitTest(event.locationInWindow))
+        let point = panel?.convertPoint(toScreen: event.locationInWindow) ?? NSEvent.mouseLocation
+        let inHeader = NotchSupport.gestureIsOverHeader(
+            expanded: expanded, peeking: false,
+            fromTop: (panel?.frame.maxY ?? point.y) - point.y,
+            safeTop: expanded ? expandedGeometry.headerTopInset : geometry.safeContentTop,
+            height: expanded ? expandedGeometry.headerRowHeight : NotchLayout.headerHeight)
         let enabled = running && !suspended && expanded && selected == .captures && captureContent != nil
             && NotchGestureSupport.isEnabled() && !trackingMenu && !heldDrag
             && !showingSections && !showingCommandBar && selectedMetric == nil
-            && !interaction.control && event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty
+            && !inHeader && !interaction.control
+            && event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty
         let completed = captureTrackpadGesture.handle(event, in: view, enabled: enabled)
         // One-finger trackpad drags generate frequent touchesMoved events,
         // although this TWO-finger history swipe reports progress 0 for all
@@ -4148,9 +4166,12 @@ final class NotchService: ObservableObject {
                                           && !showingCommandBar))
         let captureSurface = expanded && selected == .captures && captureContent != nil
             && !showingSections && !showingCommandBar && selectedMetric == nil
-        // Scroll deltas are accelerated and cannot enforce physical distance.
-        // The native touch receiver owns this gesture, including over the header.
-        if captureSurface { return !interaction.control && event.hasPreciseScrollingDeltas }
+        // The preview has a distance-checked two-finger gesture for History.
+        // The header must use the ordinary vertical scroll gesture so swiping
+        // up over the menu-bar strip collapses the Island instead.
+        if captureSurface && !inHeader {
+            return !interaction.control && event.hasPreciseScrollingDeltas
+        }
         let isHub = expanded && selected == .hub && !showingSections && !showingCommandBar
         if isHub && LatticeHubService.shared.activeUtility != nil {
             gesture = NotchGestureSupport()
