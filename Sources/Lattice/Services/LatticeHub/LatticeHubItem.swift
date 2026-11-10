@@ -20,6 +20,9 @@ enum LatticeHubItem: String, PanelOrderItem, Identifiable {
             return AppFeature.notchAgents.isAvailable(in: defaults)
         case .watch:
             return AppFeature.notchWatch.isAvailable(in: defaults)
+        case .recentCaptures:
+            return AppFeature.screenshot.isAvailable(in: defaults)
+                || AppFeature.screenRecorder.isAvailable(in: defaults)
         case .system:
             return ([.monitorCPU, .monitorGPU, .monitorMemory, .monitorNetwork,
                      .monitorDisk, .monitorPower, .fanControl, .connectedDevices] as [AppFeature]).contains {
