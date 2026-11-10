@@ -184,10 +184,10 @@ final class ScreenshotSelectionController {
     /// deliberately accelerated sweep through the zoom range.
     static func steppedLoupeNeedsRawWheel(optionPressed: Bool) -> Bool {
         guard activeSession?.loupeEnabled == true else { return false }
+        // Smooth wheel zoom is the default; Option temporarily uses
+        // discrete pixel-grid steps. There is no longer a preference.
         return ScreenshotSupport.captureLoupeUsesSteppedZoom(
-            steppedByDefault: UserDefaults.standard.bool(
-                forKey: DefaultsKey.screenshotLoupeSteppedZoomByDefault),
-            optionPressed: optionPressed)
+            steppedByDefault: false, optionPressed: optionPressed)
     }
 
     private let strings = FeatureStrings.screenshot(L10n.shared.language)
@@ -1304,7 +1304,6 @@ private final class ScreenshotOverlayView: NSView {
     private var hoverPoint: CGPoint = .zero
     private var pointerIsInside = false
     private var hoveredWindow: ScreenshotSupport.PickableWindow?
-    private let highlightWindows = true
     /// The value just copied with C, shown briefly in the loupe's info bar
     /// because the regular HUD sits under these shielding-level panels.
     private var copiedValue: String?
@@ -1568,10 +1567,8 @@ private final class ScreenshotOverlayView: NSView {
             super.scrollWheel(with: event)
             return
         }
-        let steppedByDefault = UserDefaults.standard.bool(
-            forKey: DefaultsKey.screenshotLoupeSteppedZoomByDefault)
         let stepped = ScreenshotSupport.captureLoupeUsesSteppedZoom(
-            steppedByDefault: steppedByDefault,
+            steppedByDefault: false,
             optionPressed: event.modifierFlags.contains(.option))
         let wheelDelta: CGFloat
         if let cgEvent = event.cgEvent {
@@ -1741,7 +1738,7 @@ private final class ScreenshotOverlayView: NSView {
         pointerIsInside = true
         hoverPoint = point
         let overControls = pointerIsOverFullScreenControl(point) || pointerIsOverTab(point)
-        hoveredWindow = highlightWindows && controller?.acceptsWindowClick == true
+        hoveredWindow = controller?.acceptsWindowClick == true
                 && !overControls
             ? ScreenshotSupport.window(at: point, in: windows)
             : nil
