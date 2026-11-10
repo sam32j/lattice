@@ -33,7 +33,7 @@ extension ScreenRecorderSettings {
                     ScreenCaptureService.shared.syncWithPreferences()
                     ScreenRecorderService.shared.syncWithPreferences()
                 }
-                CompactShortcutPreferenceRow(title: FeatureStrings.recentCaptures(l10n.language).title,
+                CompactShortcutPreferenceRow(title: FeatureStrings.recentCapturesShortcutTitle(l10n.language),
                                              role: .recentCaptures,
                                              enabledKey: DefaultsKey.recentCapturesShortcutEnabled) {
                     RecentCaptureService.shared.syncWithPreferences()
