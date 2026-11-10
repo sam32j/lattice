@@ -27,35 +27,37 @@ struct RecentCapturesView: View {
     var showHeader: Bool = true
     /// The island uses the same compact vertical rows as the capture history.
     var notchSize: CGSize? = nil
+    /// The standalone palette fills its fixed window; the menu-panel list
+    /// retains its compact intrinsic size.
+    var fillsAvailableSpace = false
 
     private var text: RecentCaptureStrings {
         FeatureStrings.recentCaptures(l10n.language)
     }
 
-    private var visibleEntries: [RecentCaptureEntry] { Self.visible(history.entries) }
-
-    static func visible(_ entries: [RecentCaptureEntry]) -> [RecentCaptureEntry] {
-        entries.filter { entry in
-            entry.kind == .screenshot
-                ? AppFeature.screenshot.isAvailable
-                : AppFeature.screenRecorder.isAvailable
-        }
-    }
+    // Recent Captures remains browsable regardless of capture-tool availability.
+    private var visibleEntries: [RecentCaptureEntry] { history.entries }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if showHeader && notchSize == nil {
                 header
-            } else if !showHeader && notchSize == nil {
+            } else if !showHeader && notchSize == nil && !fillsAvailableSpace {
                 clearBar
             }
             content
+                .frame(maxWidth: .infinity,
+                       maxHeight: fillsAvailableSpace ? .infinity : nil,
+                       alignment: .topLeading)
         }
+        .frame(maxWidth: .infinity,
+               maxHeight: fillsAvailableSpace ? .infinity : nil,
+               alignment: .topLeading)
         .onAppear { history.reload() }
-        .confirmationDialog("Delete recent captures?",
+        .confirmationDialog(CaptureInterfaceStrings.localized(L10n.shared.language).deleteRecentTitle,
                             isPresented: $confirmingClear,
                             titleVisibility: .visible) {
-            Button("Delete Captures", role: .destructive) {
+            Button(CaptureInterfaceStrings.localized(L10n.shared.language).deleteCaptures, role: .destructive) {
                 history.clearAndDeleteCaptureFiles { result in
                     Self.reportDeletionResult(result, aboveIsland: false)
                 }
@@ -79,8 +81,8 @@ struct RecentCapturesView: View {
                     .frame(width: 22, height: 22)
             }
             .buttonStyle(.plain)
-            .help("Delete Captures")
-            .accessibilityLabel("Delete Captures")
+            .help(CaptureInterfaceStrings.localized(L10n.shared.language).deleteCaptures)
+            .accessibilityLabel(CaptureInterfaceStrings.localized(L10n.shared.language).deleteCaptures)
             .disabled(visibleEntries.isEmpty)
             if let onClose {
                 Button(action: onClose) {
@@ -102,7 +104,7 @@ struct RecentCapturesView: View {
             Button {
                 confirmingClear = true
             } label: {
-                Label("Delete Captures", systemImage: "trash")
+                Label(CaptureInterfaceStrings.localized(L10n.shared.language).deleteCaptures, systemImage: "trash")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
             }
@@ -116,12 +118,12 @@ struct RecentCapturesView: View {
     static func confirmClearAboveIsland() {
         DispatchQueue.main.async {
             let l10n = L10n.shared
-            guard !visible(RecentCaptureService.shared.entries).isEmpty else { return }
+            guard !RecentCaptureService.shared.entries.isEmpty else { return }
             let alert = NSAlert()
-            alert.messageText = "Delete recent captures?"
+            alert.messageText = CaptureInterfaceStrings.localized(L10n.shared.language).deleteRecentTitle
             alert.informativeText = deletionWarning
             alert.alertStyle = .warning
-            alert.addButton(withTitle: "Delete Captures").hasDestructiveAction = true
+            alert.addButton(withTitle: CaptureInterfaceStrings.localized(L10n.shared.language).deleteCaptures).hasDestructiveAction = true
             alert.addButton(withTitle: l10n.s.uninstallerCancel).keyEquivalent = "\u{1b}"
             guard NotchIslandAlert.run(alert, above: NotchService.shared.presentationWindow)
                 == .alertFirstButtonReturn else { return }
@@ -131,17 +133,17 @@ struct RecentCapturesView: View {
         }
     }
 
-    private static let deletionWarning = """
-        This deletes the screenshots, editable copies, cached previews and stashed recordings stored by Recent Captures. Recordings saved elsewhere will be moved to Trash. Separately exported screenshots are not affected.
-        """
+    static var deletionWarning: String {
+        CaptureInterfaceStrings.localized(L10n.shared.language).deleteRecentWarning
+    }
 
-    private static func reportDeletionResult(_ result: RecentCaptureService.CaptureDeletionResult,
+    static func reportDeletionResult(_ result: RecentCaptureService.CaptureDeletionResult,
                                               aboveIsland: Bool) {
         guard !result.succeeded else { return }
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "Some recent captures could not be deleted"
-        alert.informativeText = "Some files or history entries could not be removed. Check file permissions and try again."
+        alert.messageText = CaptureInterfaceStrings.localized(L10n.shared.language).deleteRecentFailureTitle
+        alert.informativeText = CaptureInterfaceStrings.localized(L10n.shared.language).deleteRecentFailureBody
         alert.addButton(withTitle: "OK")
         if aboveIsland {
             _ = NotchIslandAlert.run(alert, above: NotchService.shared.presentationWindow)
@@ -174,8 +176,8 @@ struct RecentCapturesView: View {
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
-                .frame(height: notchSize == nil ? 92 : nil)
-                .frame(maxHeight: notchSize == nil ? nil : .infinity)
+                .frame(height: fillsAvailableSpace ? nil : (notchSize == nil ? 92 : nil))
+                .frame(maxHeight: fillsAvailableSpace || notchSize != nil ? .infinity : nil)
                 .panelCard()
         } else if let notchSize {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -195,8 +197,11 @@ struct RecentCapturesView: View {
                         row(entry)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .frame(maxHeight: 300)
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(maxWidth: .infinity,
+                   maxHeight: fillsAvailableSpace ? .infinity : 300)
         }
     }
 
@@ -205,7 +210,7 @@ struct RecentCapturesView: View {
             RecentCapturePreviewThumbnail(
                 entry: entry,
                 history: history,
-                onOpen: { history.open(entry, inNotch: inNotch) },
+                onOpen: { history.open(entry, inNotch: notchSize != nil) },
                 width: 149,
                 height: 100,
                 cornerRadius: 8,
@@ -249,7 +254,7 @@ struct RecentCapturesView: View {
             RecentCapturePreviewThumbnail(
                 entry: entry,
                 history: history,
-                onOpen: { history.open(entry, inNotch: inNotch) },
+                onOpen: { history.open(entry, inNotch: notchSize != nil) },
                 width: 104,
                 height: 68,
                 cornerRadius: 7,
@@ -283,27 +288,10 @@ struct RecentCapturesView: View {
 private struct RecentCaptureTrashButton: View {
     let action: () -> Void
     let helpText: String
-    @State private var isHovered = false
 
     var body: some View {
-        Button(action: action) {
-            Image(systemName: "trash")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(isHovered ? Color.red : Color.secondary)
-                .frame(width: 24, height: 22)
-                .background(
-                    isHovered ? Color.red.opacity(0.18) : Color.primary.opacity(0.06),
-                    in: RoundedRectangle(cornerRadius: 5, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .strokeBorder(isHovered ? Color.red.opacity(0.40) : Color.clear, lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
-        .help(helpText)
-        .accessibilityLabel(helpText)
+        CaptureDeleteConfirmationButton(presentation: .history, title: helpText,
+                                        action: action)
     }
 }
 
@@ -414,16 +402,119 @@ private struct RecentCapturePreviewThumbnail: View {
     }
 }
 
-/// Borderless palette content. Its compact fixed width keeps the same list
-/// readable over either editor without covering the work area.
-struct RecentCapturesWindowView: View {
-    var onClose: () -> Void
+/// Shared two-click deletion with a three-second minimum armed state.
+struct CaptureDeleteConfirmationButton: View {
+    enum Presentation { case floating, island, history }
+    let presentation: Presentation
+    let title: String
+    let action: () -> Void
+    @State private var armed = false
+    @State private var hovered = false
+    @State private var armedAt: Date?
+    @State private var disarmWork: DispatchWorkItem?
+
+    private let confirmAnimation = Animation.easeInOut(duration: 0.08)
+    private let minimumArmedDuration: TimeInterval = 3
+
+    private var width: CGFloat { presentation == .island ? 28 : 24 }
+    private var height: CGFloat { presentation == .history ? 22 : width }
+    private var radius: CGFloat { presentation == .island ? 8 : 5 }
+
+    private var backdrop: Color {
+        if armed { return .red }
+        switch presentation {
+        case .floating: return Color.black.opacity(0.65)
+        case .island: return Color.white.opacity(0.07)
+        case .history: return hovered ? Color.primary.opacity(0.10) : Color.primary.opacity(0.06)
+        }
+    }
+    private var stroke: Color {
+        if armed { return .red }
+        switch presentation {
+        case .floating: return Color.red.opacity(0.42)
+        case .island: return Color.white.opacity(0.12)
+        case .history: return Color.clear
+        }
+    }
+
+    private var iconColor: Color {
+        if armed { return .white }
+        switch presentation {
+        case .floating: return .red
+        case .island: return .primary
+        case .history: return hovered ? .primary : .secondary
+        }
+    }
+
+    private func resetConfirmation() {
+        disarmWork?.cancel()
+        disarmWork = nil
+        armedAt = nil
+        withAnimation(confirmAnimation) { armed = false }
+    }
+
+    private func hoverChanged(_ inside: Bool) {
+        hovered = inside
+        disarmWork?.cancel()
+        disarmWork = nil
+        guard !inside, armed else { return }
+        let elapsed = Date().timeIntervalSince(armedAt ?? Date())
+        let remaining = max(0, minimumArmedDuration - elapsed)
+        guard remaining > 0 else {
+            resetConfirmation()
+            return
+        }
+        let work = DispatchWorkItem {
+            if !hovered && armed { resetConfirmation() }
+        }
+        disarmWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + remaining, execute: work)
+    }
 
     var body: some View {
-        RecentCapturesView(onClose: onClose)
-            .padding(14)
-            .frame(width: 440)
-            .background(HUDBackdrop(cornerRadius: 18, contrast: .high))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        Button {
+            guard armed else {
+                disarmWork?.cancel()
+                disarmWork = nil
+                armedAt = Date()
+                withAnimation(confirmAnimation) { armed = true }
+                return
+            }
+            resetConfirmation()
+            action()
+        } label: {
+            Image(systemName: armed ? "checkmark" : "trash")
+                .font(.system(size: presentation == .island ? 14 : 11, weight: .semibold))
+                .foregroundStyle(iconColor)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: width, height: height)
+                .background {
+                    if presentation == .floating {
+                        Circle().fill(backdrop)
+                    } else {
+                        RoundedRectangle(cornerRadius: radius, style: .continuous).fill(backdrop)
+                    }
+                }
+                .overlay {
+                    if presentation == .floating {
+                        Circle().strokeBorder(stroke, lineWidth: 0.8)
+                    } else {
+                        RoundedRectangle(cornerRadius: radius, style: .continuous)
+                            .strokeBorder(stroke, lineWidth: 0.8)
+                    }
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .onHover(perform: hoverChanged)
+        .onDisappear {
+            disarmWork?.cancel()
+            disarmWork = nil
+            armed = false
+            armedAt = nil
+        }
+        .help(armed ? CaptureInterfaceStrings.localized(L10n.shared.language).clickAgain : title)
+        .accessibilityLabel(armed ? CaptureInterfaceStrings.localized(L10n.shared.language).confirmDelete : title)
     }
 }
