@@ -11,8 +11,11 @@ extension SettingsSearchSupport {
         -> [(feature: AppFeature, titles: [String])] {
         let screenshot = FeatureStrings.screenshot(language)
         let recorder = FeatureStrings.recorder(language)
+        let workflow = CaptureWorkflowStrings.localized(language)
         return [
-            (.screenshot, [screenshot.pageTitle, screenshot.freezeToggle,
+            (.screenshot, [screenshot.pageTitle, screenshot.captureBehaviorSection,
+                           workflow.shutter, screenshot.pointerToggle,
+                           screenshot.lastRegionToggle, screenshot.freezeToggle,
                            screenshot.loupeStartsOnToggle,
                            screenshot.fullScreenShortcutTitle, screenshot.previewPositionLabel,
                            screenshot.previewFocusToggle, screenshot.confirmationPreviewToggle,

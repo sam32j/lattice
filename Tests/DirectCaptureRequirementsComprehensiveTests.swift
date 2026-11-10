@@ -35,9 +35,9 @@ enum DirectCaptureRequirementsComprehensiveTests {
         suite.expect(!screenshotSettingsSource.isEmpty, "ScreenshotSettings.swift exists and is readable")
 
         // 1. Native Section headers and cards instead of empty lines / fake spacers
-        suite.expect(screenshotSettingsSource.contains("SettingsCard(title: workflow.selection)")
-                     && screenshotSettingsSource.contains("workflow.selection"),
-                     "ScreenshotSettings uses cards and headers instead of fake empty spacer lines")
+        suite.expect(screenshotSettingsSource.contains("SettingsCard(title: strings.captureBehaviorSection)")
+                     && screenshotSettingsSource.contains(".help(strings.freezeCaption)"),
+                     "ScreenshotSettings uses localized capture behavior heading and freeze help")
 
         // 2. Removed action buttons: "Capture now", "Scrolling capture now", "Show capture menu", "Highlight window under pointer"
         suite.expect(!screenshotSettingsSource.contains("captureNow")
