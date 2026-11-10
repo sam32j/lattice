@@ -575,14 +575,11 @@ enum DefaultsKey {
     static let screenshotDefaultAction = "screenshotDefaultAction"
     static let screenshotIncludePointer = "screenshotIncludePointer"
     static let screenshotShowLastRegion = "screenshotShowLastRegion"
-    static let screenshotHighlightWindows = "screenshotHighlightWindows"
     static let screenshotLoupeStartsOn = "screenshotLoupeStartsOn"
     static let screenshotLoupeRememberZoom = "screenshotLoupeRememberZoom"
     static let screenshotLoupeDefaultZoom = "screenshotLoupeDefaultZoom"
     static let screenshotLoupeLastZoom = "screenshotLoupeLastZoom"
-    static let screenshotLoupeSteppedZoomByDefault = "screenshotLoupeSteppedZoomByDefault"
     static let screenshotDownscale = "screenshotDownscale"
-    static let screenshotDelay = "screenshotDelay"
     static let screenshotLastTool = "screenshotLastTool"
     static let screenshotLastColor = "screenshotLastColor"
     static let screenshotLastStroke = "screenshotLastStroke"
@@ -605,12 +602,13 @@ enum DefaultsKey {
     static let screenshotCopyToClipboard = "screenshotCopyToClipboard"
     static let screenshotAddToShelf = "screenshotAddToShelf"
     static let screenshotPreviewPosition = "screenshotPreviewPosition"
+    static let capturePresentationDestination = "capturePresentationDestination"
     static let screenshotPreviewTakesFocus = "screenshotPreviewTakesFocus"
+    static let capturePreviewCloseAfter = "capturePreviewCloseAfter"
     static let screenshotUploadShortcutEnabled = "screenshotUploadShortcutEnabled"
     static let screenshotUploadShortcut = "screenshotUploadShortcut"
     static let screenshotUploadDuration = "screenshotUploadDuration"
     static let screenshotPreviewEnabled = "screenshotPreviewEnabled"
-    static let screenshotPreviewDuration = "screenshotPreviewDuration"
     static let screenshotSharingEnabled = "screenshotSharingEnabled"
     static let screenshotPlayShutterSound = "screenshotPlayShutterSound"
     // Developer-only endpoint for an isolated test tunnel. The official app
@@ -621,7 +619,6 @@ enum DefaultsKey {
     // in Application Support until retention sweeps it.
     static let recorderShortcutEnabled = "recorderShortcutEnabled"
     static let recorderShortcut = "recorderShortcut"
-    static let recorderCountdown = "recorderCountdown"
     static let recentRecordingLimit = "recentRecordingLimit"
     static let recorderPlaySound = "recorderPlaySound"
     static let recorderImmediateStartAfterSelection = "recorderImmediateStartAfterSelection"
@@ -1502,7 +1499,6 @@ enum Defaults {
         DefaultsKey.clipboardHistoryShortcut: GlobalShortcut.clipboardDefault.storageValue,
         DefaultsKey.recorderShortcutEnabled: false,
         DefaultsKey.recorderShortcut: GlobalShortcut.screenRecorderDefault.storageValue,
-        DefaultsKey.recorderCountdown: 3,
         DefaultsKey.recentRecordingLimit: 0,
         DefaultsKey.recorderPlaySound: true,
         DefaultsKey.recorderImmediateStartAfterSelection: true,
@@ -1544,14 +1540,11 @@ enum Defaults {
         DefaultsKey.screenshotDefaultAction: "",
         DefaultsKey.screenshotIncludePointer: false,
         DefaultsKey.screenshotShowLastRegion: true,
-        DefaultsKey.screenshotHighlightWindows: true,
         DefaultsKey.screenshotLoupeStartsOn: false,
         DefaultsKey.screenshotLoupeRememberZoom: false,
         DefaultsKey.screenshotLoupeDefaultZoom: 1.0,
         DefaultsKey.screenshotLoupeLastZoom: 1.0,
-        DefaultsKey.screenshotLoupeSteppedZoomByDefault: false,
         DefaultsKey.screenshotDownscale: false,
-        DefaultsKey.screenshotDelay: 0,
         DefaultsKey.screenshotLastTool: "arrow",
         DefaultsKey.screenshotLastColor: "red",
         DefaultsKey.screenshotLastStroke: "medium",
@@ -1574,13 +1567,14 @@ enum Defaults {
         DefaultsKey.screenshotCopyToClipboard: false,
         DefaultsKey.screenshotAddToShelf: false,
         DefaultsKey.screenshotPreviewPosition: ScreenshotSupport.QuickPreviewPosition.automatic.rawValue,
+        DefaultsKey.capturePresentationDestination: CapturePresentationRouting.Preference.automatic.rawValue,
         DefaultsKey.screenshotPinRoundedCorners: true,
         DefaultsKey.screenshotPreviewTakesFocus: true,
+        DefaultsKey.capturePreviewCloseAfter: CapturePreviewClosePolicy.fiveSeconds.rawValue,
         DefaultsKey.screenshotUploadShortcutEnabled: false,
         DefaultsKey.screenshotUploadShortcut: GlobalShortcut.screenshotUploadDefault.storageValue,
         DefaultsKey.screenshotUploadDuration: ScreenshotShareDuration.oneHour.rawValue,
         DefaultsKey.screenshotPreviewEnabled: true,
-        DefaultsKey.screenshotPreviewDuration: ScreenshotSupport.defaultConfirmationPreviewDuration,
         DefaultsKey.screenshotSharingEnabled: true,
         DefaultsKey.screenshotPlayShutterSound: true,
         DefaultsKey.windowLayoutShortcutsEnabled: false,

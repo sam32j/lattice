@@ -176,7 +176,6 @@ enum SettingsFeatureTests {
                 && backupKeys.contains(DefaultsKey.screenshotFullScreenShortcutEnabled)
                 && backupKeys.contains(DefaultsKey.screenshotFullScreenShortcut)
                 && backupKeys.contains(DefaultsKey.screenshotShowLastRegion)
-                && backupKeys.contains(DefaultsKey.screenshotHighlightWindows)
                 && backupKeys.contains(DefaultsKey.screenshotToolOrder)
                 && backupKeys.contains(DefaultsKey.screenshotToolShortcutsEnabled)
                 && backupKeys.contains(DefaultsKey.screenshotLastCaptureShortcutEnabled)
@@ -189,7 +188,8 @@ enum SettingsFeatureTests {
                 && backupKeys.contains(DefaultsKey.screenshotPreviewTakesFocus)
                 && backupKeys.contains(DefaultsKey.screenshotLoupeRememberZoom)
                 && backupKeys.contains(DefaultsKey.screenshotLoupeDefaultZoom)
-                && backupKeys.contains(DefaultsKey.screenshotLoupeSteppedZoomByDefault),
+                && backupKeys.contains(DefaultsKey.capturePreviewCloseAfter)
+                && backupKeys.contains(DefaultsKey.capturePresentationDestination),
                "screenshot preferences travel with the settings backup")
         suite.expect(!backupKeys.contains(DefaultsKey.screenshotSaveFolder),
                "the chosen screenshot save folder does not travel with the settings backup, being authority on one Mac")
