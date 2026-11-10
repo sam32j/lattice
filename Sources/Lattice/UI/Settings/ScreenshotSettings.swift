@@ -45,7 +45,7 @@ struct ScreenshotSettings: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Group {
-                    selectionCard
+                    captureBehaviorCard
                         .settingsSectionAnchor(.screenshot, cornerRadius: 16)
                     magnifierCard
                     previewCard
@@ -65,15 +65,13 @@ struct ScreenshotSettings: View {
     }
 
 
-    // MARK: - Selection
+    // MARK: - Capture behavior
 
-    private var selectionCard: some View {
-        SettingsCard(title: workflow.selection) {
+    private var captureBehaviorCard: some View {
+        SettingsCard(title: strings.captureBehaviorSection) {
             VStack(alignment: .leading, spacing: 14) {
-                SettingsToggleRow(title: strings.freezeToggle,
-                                  caption: strings.freezeCaption,
-                                  isOn: $freeze)
-
+                SettingsToggleRow(title: workflow.shutter,
+                                  isOn: $playShutterSound)
 
                 SettingsToggleRow(title: strings.pointerToggle,
                                   isOn: $includePointer)
@@ -81,8 +79,9 @@ struct ScreenshotSettings: View {
                 SettingsToggleRow(title: strings.lastRegionToggle,
                                   isOn: $showLastRegion)
 
-                SettingsToggleRow(title: workflow.shutter,
-                                  isOn: $playShutterSound)
+                SettingsToggleRow(title: strings.freezeToggle,
+                                  isOn: $freeze)
+                    .help(strings.freezeCaption)
             }
         }
     }
