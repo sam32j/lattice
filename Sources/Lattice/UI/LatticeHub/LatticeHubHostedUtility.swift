@@ -33,8 +33,11 @@ struct LatticeHubHostedUtility: View {
 
     var body: some View {
         if item == .recentCaptures {
-            RecentCapturesView(onClose: onClose, showHeader: false, notchSize: notchSize)
-                .frame(height: viewportHeight)
+            // Floating HUD history owns the whole viewport, not the
+            // compact menu-panel list height. Island history stays horizontal.
+            RecentCapturesView(onClose: onClose, showHeader: false, notchSize: notchSize,
+                               fillsAvailableSpace: notchSize == nil)
+                .frame(height: viewportHeight, alignment: .top)
         } else if item == .deviceControls {
             DeviceControlsHubView(onClose: onClose)
                 .frame(height: viewportHeight)
