@@ -22,8 +22,9 @@ extension LatticeHubService {
         show(forceFloating: forceFloating, anchoredBelow: anchor)
     }
 
-    func show(forceFloating: Bool = false, anchoredBelow anchor: NSRect? = nil) {
-        if !forceFloating && anchor == nil && shouldRouteToIsland() {
+    func show(forceFloating: Bool = false, anchoredBelow anchor: NSRect? = nil,
+              initialUtility: LatticeHubItem? = nil) {
+        if !forceFloating && anchor == nil && initialUtility == nil && shouldRouteToIsland() {
             if NotchService.shared.openQuickPanel() {
                 if isVisible { hide() }
                 return
@@ -38,6 +39,17 @@ extension LatticeHubService {
         if NotchService.shared.expanded, NotchService.shared.selected == .hub {
             NotchService.shared.collapse()
         }
+        // A collapse of an existing Island Hub can reset activeUtility
+        // ("return to home" preference). Set the destination AFTER that
+        // collapse but BEFORE creating/measuring/showing the floating panel.
+        // The HUD therefore never renders the home page as an intermediate.
+        if let initialUtility {
+            guard initialUtility.isAvailable() else { return }
+            opensUtilityDirectly = true
+            activeUtility = initialUtility
+        } else {
+            opensUtilityDirectly = false
+        }
         let panel = ensurePanel()
         prepareForPresentation()
         position(panel, anchoredBelow: anchor)
@@ -49,6 +61,21 @@ extension LatticeHubService {
             context.duration = 0.13
             panel.animator().alphaValue = 1
         }
+    }
+
+    /// Dedicated Recent Captures shortcut: use the existing floating
+    /// Hub utility without showing/animating through its home page.
+    /// Re-entering an already visible Hub switches pages immediately.
+    func openRecentCaptures() {
+        guard LatticeHubItem.recentCaptures.isAvailable() else { return }
+        RecentCaptureService.shared.reload()
+        if isVisible {
+            opensUtilityDirectly = true
+            activeUtility = .recentCaptures
+            panel?.makeKey()
+            return
+        }
+        show(forceFloating: true, initialUtility: .recentCaptures)
     }
 
     private func shouldRouteToIsland() -> Bool {
@@ -93,6 +120,7 @@ extension LatticeHubService {
     }
 
     func hide() {
+        opensUtilityDirectly = false
         panelResizer.cancel()
         lastDismissedTime = ProcessInfo.processInfo.systemUptime
         stayAwakeOptionsPresented = false
@@ -111,6 +139,7 @@ extension LatticeHubService {
     }
 
     func closeUtility() {
+        opensUtilityDirectly = false
         SystemNavigationState.shared.reset()
         if isVisible {
             // Floating HUD drives its own crossfade; an implicit SwiftUI
