@@ -51,17 +51,9 @@ enum RecorderFeatureTests {
                "temporary recording links stay visible but do nothing until explicitly used")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.recorderQuality] as? String == "balanced"
                 && Defaults.registeredDefaults[DefaultsKey.recorderFrameRate] as? Int == 60
-                && Defaults.registeredDefaults[DefaultsKey.recorderCountdown] as? Int == 3
                 && Defaults.registeredDefaults[DefaultsKey.recorderAutomaticZoom] as? Bool == true
                 && Defaults.registeredDefaults[DefaultsKey.recorderOpenEditor] as? Bool == true,
-               "the recorder ships balanced, smooth, with automatic zooms, a short countdown and the editor on")
-        suite.expect(ScreenshotSupport.countdownRingProgress(elapsed: 0) == 1
-                && ScreenshotSupport.countdownRingProgress(elapsed: 0.46) == 0.5
-                && ScreenshotSupport.countdownRingProgress(elapsed: 0.92) == 0,
-               "the countdown ring drains smoothly across each displayed number")
-        suite.expect(ScreenshotSupport.countdownRingProgress(elapsed: -1) == 1
-                && ScreenshotSupport.countdownRingProgress(elapsed: 2) == 0,
-               "the countdown ring clamps delayed and early frames")
+               "the recorder ships balanced, smooth, with automatic zooms and the editor on")
         suite.expect(GlobalShortcutRole.availableRoles(isAvailable: { _ in true })
                 .contains(.screenRecorder),
                "the restored recording shortcut is visible in the shortcut editor")

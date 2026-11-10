@@ -287,8 +287,6 @@ final class ScreenRecorderService: ObservableObject {
     private var editors: [RecorderEditorController] = []
     private var mediaOwnedEditorIDs: Set<ObjectIdentifier> = []
     private var elapsedTimer: Timer?
-    private var countdown: DispatchWorkItem?
-    private var countdownRemaining = 0
     private var pendingStartGeneration = 0
     private var isAwaitingMicrophone = false
     private var isPreparingRecording = false
@@ -370,17 +368,13 @@ final class ScreenRecorderService: ObservableObject {
     }
 
     var hasActiveCapture: Bool {
-        isRecording || session != nil || countdown != nil || isAwaitingMicrophone
+        isRecording || session != nil || isAwaitingMicrophone
             || isPreparingRecording || isFinishing
     }
 
     func stopOrCancelActiveCapture() -> Bool {
         if isRecording || session != nil {
             stop()
-            return true
-        }
-        if countdown != nil {
-            invalidatePendingStart()
             return true
         }
         if isAwaitingMicrophone || isPreparingRecording {
@@ -392,7 +386,7 @@ final class ScreenRecorderService: ObservableObject {
 
     func prepareForSelection() -> Bool {
         guard AppFeature.screenRecorder.isAvailable, !isFinishing,
-              session == nil, countdown == nil, !isAwaitingMicrophone,
+              session == nil, !isAwaitingMicrophone,
               !isPreparingRecording else { return false }
         guard Permissions.shared.screenRecording else {
             Permissions.shared.requestScreenRecording()
@@ -441,10 +435,10 @@ final class ScreenRecorderService: ObservableObject {
 
         // Selection owns the editable waiting state. Reaching this boundary
         // means Start was confirmed or immediate recording was requested.
-        prepareCountdown(for: region, wantsMicrophone: audioOptions.microphone, generation: generation)
+        prepareToRecord(for: region, wantsMicrophone: audioOptions.microphone, generation: generation)
     }
 
-    private func prepareCountdown(for region: RecorderSupport.Region,
+    private func prepareToRecord(for region: RecorderSupport.Region,
                                   wantsMicrophone: Bool,
                                   generation: Int) {
         guard pendingStartIsAuthorized(generation) else { return }
@@ -460,17 +454,17 @@ final class ScreenRecorderService: ObservableObject {
                     QuickToolHUD.show(icon: "video.slash", message: overlays.errorMessage ?? "The camera is unavailable.")
                     return
                 }
-                self.prepareCountdown(for: region, wantsMicrophone: wantsMicrophone, generation: generation)
+                self.prepareToRecord(for: region, wantsMicrophone: wantsMicrophone, generation: generation)
             }
             return
         }
         guard wantsMicrophone else {
-            startCountdown(for: region, generation: generation)
+            beginRecording(region: region, generation: generation)
             return
         }
         switch Permissions.shared.microphone {
         case .granted:
-            startCountdown(for: region, generation: generation)
+            beginRecording(region: region, generation: generation)
         case .undetermined:
             isAwaitingMicrophone = true
             Permissions.shared.requestMicrophone { [weak self] granted in
@@ -480,43 +474,12 @@ final class ScreenRecorderService: ObservableObject {
                     QuickToolHUD.show(icon: "mic.slash",
                                       message: self.strings.microphoneUnavailableHUD)
                 }
-                self.startCountdown(for: region, generation: generation)
+                self.beginRecording(region: region, generation: generation)
             }
         case .denied, .unknown:
             QuickToolHUD.show(icon: "mic.slash", message: strings.microphoneUnavailableHUD)
-            startCountdown(for: region, generation: generation)
-        }
-    }
-
-    // MARK: - Countdown
-
-    private func startCountdown(for region: RecorderSupport.Region, generation: Int) {
-        guard pendingStartIsAuthorized(generation), session == nil, !isFinishing else { return }
-        let delay = ScreenshotSupport.sanitizedDelay(
-            UserDefaults.standard.integer(forKey: DefaultsKey.recorderCountdown))
-        guard delay > 0 else {
             beginRecording(region: region, generation: generation)
-            return
         }
-        countdownRemaining = delay
-        tickCountdown(region: region, generation: generation)
-    }
-
-    private func tickCountdown(region: RecorderSupport.Region, generation: Int) {
-        guard pendingStartIsAuthorized(generation) else { return }
-        guard countdownRemaining > 0 else {
-            countdown = nil
-            beginRecording(region: region, generation: generation)
-            return
-        }
-        QuickToolHUD.showCountdown(countdownRemaining)
-        let work = DispatchWorkItem { [weak self] in
-            guard let self, self.pendingStartIsAuthorized(generation) else { return }
-            self.countdownRemaining -= 1
-            self.tickCountdown(region: region, generation: generation)
-        }
-        countdown = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
     }
 
     // MARK: - Recording
@@ -641,8 +604,6 @@ final class ScreenRecorderService: ObservableObject {
         pendingStartGeneration &+= 1
         isAwaitingMicrophone = false
         isPreparingRecording = false
-        countdown?.cancel()
-        countdown = nil
         indicator?.hide()
         indicator = nil
     }
@@ -716,7 +677,7 @@ final class ScreenRecorderService: ObservableObject {
             return
         }
         guard let session, !isFinishing else {
-            if isPreparingRecording || countdown != nil || isAwaitingMicrophone {
+            if isPreparingRecording || isAwaitingMicrophone {
                 invalidatePendingStart()
             }
             return
