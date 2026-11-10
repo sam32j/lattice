@@ -39,9 +39,6 @@ final class ScreenshotService: ObservableObject {
     private var session: ScreenshotSelectionController?
     private var preview: ScreenshotQuickPreviewController?
     private var editors: [ScreenshotEditorController] = []
-    private var countdown: DispatchWorkItem?
-    private var countdownRemaining = 0
-    private var countdownMode: CaptureMode = .standard
     private var directCaptureTask: Task<Void, Never>?
     private var autoCopyTask: Task<Void, Never>?
     private var autoCopyCaptureID: UUID?
@@ -188,8 +185,6 @@ final class ScreenshotService: ObservableObject {
     /// Hub-off means gone: open editors, pins and a selection in progress
     /// all leave the screen.
     private func teardownSurfaces() {
-        countdown?.cancel()
-        countdown = nil
         directCaptureTask?.cancel()
         directCaptureTask = nil
         autoCopyTask?.cancel()
@@ -215,8 +210,7 @@ final class ScreenshotService: ObservableObject {
 
     // MARK: - Entry
 
-    /// Starts a capture; pressing the shortcut again while a countdown runs
-    /// cancels it, and a session in progress is left alone.
+    /// Starts a capture immediately; an active selection is left alone.
     func capture() {
         ScreenCaptureService.shared.capture(initial: .screenshot)
     }
@@ -241,41 +235,11 @@ final class ScreenshotService: ObservableObject {
         // off the screen picks an area the same way).
         guard session == nil, directCaptureTask == nil,
               !ScreenshotSelectionController.isSessionOnScreen else { return }
-        if countdown != nil {
-            countdown?.cancel()
-            countdown = nil
-            return
-        }
         guard Permissions.shared.screenRecording else {
             Permissions.shared.requestScreenRecording()
             return
         }
-        let delay = ScreenshotSupport.sanitizedDelay(
-            UserDefaults.standard.integer(forKey: DefaultsKey.screenshotDelay))
-        if delay > 0 {
-            countdownMode = mode
-            countdownRemaining = delay
-            tickCountdown()
-        } else {
-            beginCapture(mode)
-        }
-    }
-
-    private func tickCountdown() {
-        guard countdownRemaining > 0 else {
-            let mode = countdownMode
-            countdown = nil
-            beginCapture(mode)
-            return
-        }
-        QuickToolHUD.showCountdown(countdownRemaining)
-        let work = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            self.countdownRemaining -= 1
-            self.tickCountdown()
-        }
-        countdown = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
+        beginCapture(mode)
     }
 
     private func beginCapture(_ mode: CaptureMode) {
@@ -472,7 +436,7 @@ final class ScreenshotService: ObservableObject {
         }
         let result = runDefaultAction(defaultAction, capture: capture)
         autoShelve(capture, saved: result.saved?.url)
-        guard case .shown(let dismissInterval) = ScreenshotSupport.quickPreviewPresentation(
+        guard case .shown = ScreenshotSupport.quickPreviewPresentation(
             defaultAction: defaultAction,
             saved: result.saved != nil,
             copied: result.performed.contains(.copy),
@@ -482,7 +446,6 @@ final class ScreenshotService: ObservableObject {
                        defaultAction: defaultAction,
                        initialSaved: result.saved,
                        completedActions: result.performed,
-                       dismissInterval: dismissInterval,
                        latestCapture: latestCaptureToken)
     }
 
@@ -538,26 +501,26 @@ final class ScreenshotService: ObservableObject {
         }
     }
 
-    /// A history item returns to the same floating preview without repeating
-    /// automatic copy or save actions that already ran when it was captured.
-    func restorePreview(_ capture: ScreenshotSelectionController.Capture) {
+    /// A history item reopens without repeating automatic copy or save
+    /// actions, on the selected surface and with the shared close policy.
+    func restorePreview(_ capture: ScreenshotSelectionController.Capture, inNotch: Bool? = nil) {
         preview?.close()
         presentPreview(capture,
                        defaultAction: .none,
                        initialSaved: nil,
                        completedActions: [],
-                       dismissInterval: nil, // Manual history previews do not expire.
                        latestCapture: nil,
-                       openedFromHistory: true)
+                       openedFromHistory: true,
+                       previewInNotch: inNotch)
     }
 
     private func presentPreview(_ capture: ScreenshotSelectionController.Capture,
                                 defaultAction: ScreenshotDefaultAction,
                                 initialSaved: SaveOutcome?,
                                 completedActions: Set<ScreenshotQuickPreviewController.Action>,
-                                dismissInterval: TimeInterval?,
                                 latestCapture: UUID?,
-                                openedFromHistory: Bool = false) {
+                                openedFromHistory: Bool = false,
+                                previewInNotch: Bool? = nil) {
         var saved = initialSaved
         let presented = capture.presentationCapture
         let controller = ScreenshotQuickPreviewController(
@@ -565,7 +528,6 @@ final class ScreenshotService: ObservableObject {
             strings: strings,
             defaultAction: defaultAction,
             completedActions: completedActions,
-            dismissInterval: dismissInterval,
             action: { [weak self] action in
                 guard let self else { return [] }
                 switch action {
@@ -659,7 +621,7 @@ final class ScreenshotService: ObservableObject {
             openedFromHistory: openedFromHistory,
             onClose: { [weak self] in self?.preview = nil })
         preview = controller
-        controller.show()
+        controller.show(inNotch: previewInNotch ?? CapturePresentationRouting.opensInIsland(origin: .external))
     }
 
     /// An after-capture clipboard task belongs to its history UUID, not a
@@ -689,7 +651,7 @@ final class ScreenshotService: ObservableObject {
         // A menu transform is a new draft, not permission to overwrite the
         // original file or repeat an automatic clipboard/save action.
         presentPreview(capture, defaultAction: .none, initialSaved: nil,
-            completedActions: [], dismissInterval: nil, latestCapture: nil)
+            completedActions: [], latestCapture: nil)
     }
 
     private func runDefaultAction(_ defaultAction: ScreenshotDefaultAction,
