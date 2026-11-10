@@ -10,6 +10,8 @@ struct LatticeHubView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject var l10n = L10n.shared
     @ObservedObject var launcher = LatticeHubService.shared
+    @ObservedObject var captureHistory = RecentCaptureService.shared
+    @State var confirmingClearCaptures = false
     @ObservedObject var features = FeatureRuntime.shared
     @ObservedObject var recorder = ScreenRecorderService.shared
     @ObservedObject var appUpdates = AppUpdatesService.shared
@@ -227,6 +229,18 @@ struct LatticeHubView: View {
         .onChange(of: DeviceControlsNavigationState.shared.contentHeight) { _, _ in refreshIslandLayout() }
         .onChange(of: SystemNavigationState.shared.selectedMetric) { _, _ in refreshIslandLayout() }
         .onDisappear { dragSession.cancel() }
+        .confirmationDialog("Delete recent captures?",
+                            isPresented: $confirmingClearCaptures,
+                            titleVisibility: .visible) {
+            Button("Delete Captures", role: .destructive) {
+                captureHistory.clearAndDeleteCaptureFiles { result in
+                    RecentCapturesView.reportDeletionResult(result, aboveIsland: false)
+                }
+            }
+            Button(l10n.s.uninstallerCancel, role: .cancel) {}
+        } message: {
+            Text(RecentCapturesView.deletionWarning)
+        }
     }
 
     @ViewBuilder
@@ -325,6 +339,13 @@ struct LatticeHubView: View {
     private func crossfadeFloatingHUD(from previous: LatticeHubItem?) {
         hudFadeGeneration += 1
         let generation = hudFadeGeneration
+        if launcher.opensUtilityDirectly {
+            // The hotkey prepared the destination before the panel appeared.
+            // Never crossfade in an outgoing root/utility page in that case.
+            outgoingHUDPage = nil
+            hudFadeProgress = 1
+            return
+        }
         guard !reduceMotion else {
             outgoingHUDPage = nil
             hudFadeProgress = 1
