@@ -72,6 +72,13 @@ final class SettingsRouter: ObservableObject {
     /// history entry, for a fallback when the visited tool went away.
     func request(_ destination: FeatureSettingsDestination, targetFeature: AppFeature? = nil,
                  sidebarFeature: AppFeature? = nil, replacingVisit: Bool = false) {
+        // Preserve historical Screenshot feature deep links after moving the
+        // options into their own Settings page.
+        if destination.page == .screenshot, destination.sectionAnchor == .screenshot {
+            request(FeatureSettingsDestination(.captureScreenshotOptions),
+                    targetFeature: targetFeature, replacingVisit: replacingVisit)
+            return
+        }
         if destination.page == .features {
             request(targetFeature?.settingsDestination ?? FeatureSettingsDestination(.general),
                     sidebarFeature: targetFeature, replacingVisit: replacingVisit)
