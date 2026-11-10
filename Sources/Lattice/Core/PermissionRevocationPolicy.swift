@@ -17,7 +17,7 @@ enum PermissionRevocationPolicy {
         var result = Changes()
         let essential: [SettingsPermission: [AppFeature]] = [
             .accessibility: [.scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll,
-                .linearScroll, .mouseNavigation, .mouseButtonShortcuts, .middleClick, .mouseClickDebounce,
+                .linearScroll, .scrollSpeed, .mouseNavigation, .mouseButtonShortcuts, .middleClick, .mouseClickDebounce,
                 .keyboardDebounce, .superKey, .quitWindowProtection, .textSnippets, .pastePlain,
                 .dockClick, .windowMaximizer, .windowLayout, .autoQuit, .radialMenu, .musicBlock,
                 .notch, .switcher, .dockPreview, .cleaningMode],

@@ -1081,8 +1081,14 @@ def main():
                             scope="final class ScrollInverter:")
     if wheel_tap.count("AppFeature.linearScroll.isAvailable") != 1:
         raise ValueError("Expected one linear scrolling availability read in ScrollInverter.handle")
+    wheel = "Sources/Lattice/Services/ScrollInverter.swift"
+    wheel_lifecycle = declaration(wheel, "    func syncWithPreferences()").replace(
+        "ScrollDirectionPreferences()", "ScrollDirectionPreferences(defaults: UserDefaults.standard)")
+    for setting in ["linearScrollWanted", "scrollSpeedWanted"]:
+        wheel_lifecycle += declaration(wheel, f"    private static var {setting}:").replace(
+            ".isAvailable\n", ".isAvailable(in: UserDefaults.standard)\n")
     write("LinearScrollTap.swift", "import CoreGraphics\nimport Foundation\nextension LinearScrollTapTests.Inverter {\n"
-          + wheel_tap.replace("private func", "func", 1)
+          + wheel_lifecycle + wheel_tap.replace("private func", "func", 1)
                      .replace("AppFeature.linearScroll.isAvailable", "AppFeature.linearScroll.isAvailable(in: defaults)")
           + declaration("Sources/Lattice/Services/ScrollInverter.swift", "    static func directionApplied(to event:",
                         scope="final class ScrollInverter:")

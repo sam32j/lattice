@@ -9,7 +9,7 @@ extension AppFeature {
 
     var isMouseFeature: Bool {
         switch self {
-        case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll,
+        case .scrollInverter, .scrollHorizontal, .focusFollowsMouse, .smoothScroll, .linearScroll, .scrollSpeed,
              .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts, .middleClick, .mouseClickDebounce:
             return true
         default:
@@ -98,6 +98,7 @@ extension AppFeature {
         case .focusFollowsMouse: return [DefaultsKey.focusFollowsMouseEnabled]
         case .smoothScroll: return [DefaultsKey.smoothScrollEnabled]
         case .linearScroll: return [DefaultsKey.linearScrollEnabled]
+        case .scrollSpeed: return [DefaultsKey.scrollSpeedEnabled]
         case .mouseAcceleration: return [DefaultsKey.mouseAccelerationDisabled]
         case .mouseNavigation: return [DefaultsKey.mouseNavigationEnabled]
         case .mouseButtonShortcuts: return [DefaultsKey.mouseButtonShortcutsEnabled,

@@ -192,6 +192,7 @@ extension SettingsDirectory {
                                                               s.focusFollowsMouseWaitForStop]),
                                         (.smoothScroll, [s.smoothScrollName]),
                                         (.linearScroll, [s.linearScrollName, s.linearScrollLinesLabel]),
+                                        (.scrollSpeed, [s.scrollSpeedName, "scroll faster", "scroll speed"]),
                                         (.mouseAcceleration, [s.mouseAccelerationName]),
                                         (.mouseNavigation, [s.mouseNavigationEnable]),
                                         (.mouseButtonShortcuts,
@@ -203,6 +204,10 @@ extension SettingsDirectory {
                                          [FeatureStrings.mouseClickDebounce(language).title,
                                           FeatureStrings.mouseClickDebounce(language).windowLabel,
                                           "debounce"]),
+                                      ],
+                                      followupKeywords: [
+                                        (.scrollSpeed, DefaultsKey.scrollSpeedEnabled,
+                                         [s.scrollSpeedMultiplierLabel]),
                                       ]),
                 SettingsDirectoryItem(page: .energy, title: FeatureStrings.brightness(language).pageTitle, icon: "display.2",
                                       keywords: [FeatureStrings.wallpaper(language).pageTitle,

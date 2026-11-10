@@ -65,6 +65,8 @@ extension AppFeature {
             return defaults.bool(forKey: DefaultsKey.smoothScrollEnabled)
         case .linearScroll:
             return defaults.bool(forKey: DefaultsKey.linearScrollEnabled)
+        case .scrollSpeed:
+            return defaults.bool(forKey: DefaultsKey.scrollSpeedEnabled)
         case .mouseAcceleration:
             return defaults.bool(forKey: DefaultsKey.mouseAccelerationDisabled)
         case .mouseNavigation:

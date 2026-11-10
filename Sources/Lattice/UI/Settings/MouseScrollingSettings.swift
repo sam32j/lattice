@@ -37,14 +37,18 @@ extension MouseSettings {
                     }
             }
             if horizontalScrollEnabled {
-                modifierKeys
+                modifierKeys($horizontalScrollModifier,
+                             takenBy: scrollSpeedEnabled ? (scrollSpeedModifier, l10n.s.scrollSpeedName) : nil)
+                    .onChange(of: horizontalScrollModifier) { _, _ in ScrollInverter.shared.syncWithPreferences() }
                     .transition(.settingsReveal)
             }
         }
     }
 
-    /// Follow-up controls share the trailing control column.
-    var modifierKeys: some View {
+    /// Follow-up controls share the trailing control column. A key the
+    /// other wheel shortcut already holds is offered disabled, named after it.
+    func modifierKeys(_ selection: Binding<ScrollHorizontalModifier>,
+                      takenBy other: (ScrollHorizontalModifier, String)?) -> some View {
         let modifierStrings = FeatureStrings.quitProtection(l10n.language)
         let choices: [(ScrollHorizontalModifier, String, String)] = [
             (.shift, "⇧", modifierStrings.shiftKey),
@@ -53,13 +57,44 @@ extension MouseSettings {
             (.command, "⌘", l10n.s.scrollHorizontalCommandKey),
         ]
         return SettingsControlRow(title: l10n.s.scrollHorizontalModifierLabel) {
-            Picker(l10n.s.scrollHorizontalModifierLabel, selection: $horizontalScrollModifier) {
+            Picker(l10n.s.scrollHorizontalModifierLabel, selection: selection) {
                 ForEach(choices, id: \.0) { modifier, glyph, name in
-                    Text("\(glyph) \(name)").tag(modifier)
+                    let taken = other?.0 == modifier && selection.wrappedValue != modifier
+                    Text(taken ? "\(glyph) \(name) · \(other?.1 ?? "")" : "\(glyph) \(name)")
+                        .tag(modifier)
+                        .disabled(taken)
                 }
             }
             .labelsHidden().pickerStyle(.menu)
             .frame(width: 220, alignment: .trailing)
+        }
+    }
+
+    // MARK: - Modifier-held scroll speed
+
+    var scrollSpeedControls: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SettingsControlRow(title: l10n.s.scrollSpeedName, caption: l10n.s.scrollSpeedCaption) {
+                PermissionGatedToggle(l10n.s.scrollSpeedName, isOn: $scrollSpeedEnabled)
+                    .labelsHidden()
+                    .onChange(of: scrollSpeedEnabled) { _, enabled in
+                        ScrollInverter.shared.syncWithPreferences()
+                        if enabled { permissions.requestAccessibility() }
+                    }
+            }
+            if scrollSpeedEnabled {
+                VStack(alignment: .leading, spacing: 10) {
+                    modifierKeys($scrollSpeedModifier,
+                                 takenBy: horizontalScrollEnabled
+                                    ? (horizontalScrollModifier, l10n.s.scrollHorizontalName) : nil)
+                        .onChange(of: scrollSpeedModifier) { _, _ in ScrollInverter.shared.syncWithPreferences() }
+                    let stops = ScrollWheelSupport.speedMultiplierPresets
+                    presetRow(l10n.s.scrollSpeedMultiplierLabel, value: $scrollSpeedMultiplier,
+                              stops: stops, names: stops.map { "\($0)×" },
+                              sanitize: ScrollWheelSupport.sanitizedSpeedMultiplier)
+                }
+                .transition(.settingsReveal)
+            }
         }
     }
 

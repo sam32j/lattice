@@ -1923,6 +1923,12 @@ enum SwitcherModelFeatureTests {
                 && registeredDefaults[DefaultsKey.linearScrollLines] as? Int
                     == ScrollWheelSupport.defaultLinesPerNotch,
                "linear scrolling is opt-in, starts at the default notch and shows in the panel when installed")
+        suite.expect(registeredDefaults[DefaultsKey.scrollSpeedEnabled] as? Bool == false
+                && registeredDefaults[DefaultsKey.scrollSpeedModifier] as? String
+                    == ScrollHorizontalModifier.option.rawValue
+                && registeredDefaults[DefaultsKey.scrollSpeedMultiplier] as? Int
+                    == ScrollWheelSupport.defaultSpeedMultiplier,
+               "modifier-held scroll speed is opt-in with Option and a 3× default")
         suite.expect(registeredDefaults[DefaultsKey.mouseClickDebounceEnabled] as? Bool == false,
                "mouse click debounce is opt-in")
         suite.expect(registeredDefaults[DefaultsKey.mouseClickDebounceWindowMs] as? Int

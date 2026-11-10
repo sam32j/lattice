@@ -29,6 +29,7 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
     case focusFollowsMouse
     case smoothScroll
     case linearScroll
+    case scrollSpeed
     case mouseAcceleration
     case mouseNavigation
     case mouseButtonShortcuts
@@ -69,7 +70,7 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
             return .audio
         case .keepAwake, .brightness, .extraBrightness, .bluetoothSleep, .wallpaper:
             return .energy
-        case .scrollDirection, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts,
+        case .scrollDirection, .focusFollowsMouse, .smoothScroll, .linearScroll, .scrollSpeed, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts,
              .middleClick, .mouseClickDebounce:
             return .mouse
         case .quitProtection, .keyboardDebounce, .superKey, .cleaningMode, .keyboardBrightnessShortcuts, .musicBlocking:
@@ -166,6 +167,8 @@ extension AppFeature {
             return FeatureSettingsDestination(.mouse, sectionAnchor: .smoothScroll)
         case .linearScroll:
             return FeatureSettingsDestination(.mouse, sectionAnchor: .linearScroll)
+        case .scrollSpeed:
+            return FeatureSettingsDestination(.mouse, sectionAnchor: .scrollSpeed)
         case .mouseAcceleration:
             return FeatureSettingsDestination(.mouse, sectionAnchor: .mouseAcceleration)
         case .mouseNavigation:
