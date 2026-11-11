@@ -87,6 +87,19 @@ enum CleanerEligibilityTests {
                      && !CleanerSupport.screenshotKeepsDefaultName("Screenshot 2026-03-01 at 09.00.00.png",
                                                                    created: taken, timeZone: utc),
                      "a renamed capture is no longer a default screenshot")
+        suite.expect(CleanerSupport.screenshotKeepsDefaultName("2026-09-21-141320.png",
+                                                               created: taken, timeZone: utc)
+                     && CleanerSupport.screenshotKeepsDefaultName("2026-09-21-141320 2.png",
+                                                                  created: taken, timeZone: utc)
+                     && CleanerSupport.screenshotKeepsDefaultName("2026-09-21-141320 12.png",
+                                                                  created: taken, timeZone: utc)
+                     && !CleanerSupport.screenshotKeepsDefaultName("2026-09-21-141320 1.png",
+                                                                   created: taken, timeZone: utc)
+                     && !CleanerSupport.screenshotKeepsDefaultName("2026-09-21-141320 copy.png",
+                                                                   created: taken, timeZone: utc)
+                     && !CleanerSupport.screenshotKeepsDefaultName("2026-09-21-256160.png",
+                                                                   created: taken, timeZone: utc),
+                     "compact unified capture names are recognized without accepting manual renames")
         // A rename that keeps the name macOS gave it and adds to it is still a
         // rename. Duplicating a capture in Finder is the everyday case, and the
         // day period on a twelve hour Mac has to survive the same check.

@@ -320,6 +320,10 @@ enum CleanerSupport {
     /// locales write a day period that carries a digit of its own.
     private static let captureTimePattern = try? NSRegularExpression(
         pattern: #"(\d{1,2})\.\d{2}\.\d{2}(.*)$"#)
+    /// Lattice's unified save template uses yyyy-MM-dd-HHmmss. The optional
+    /// space-number suffix is produced by collision-safe saves, not a rename.
+    private static let unifiedCaptureTimePattern = try? NSRegularExpression(
+        pattern: #"^(\d{4}-\d{2}-\d{2})-(\d{2})(\d{2})(\d{2})(?: (?:[2-9]|[1-9]\d+))?$"#)
 
     /// The spaces macOS puts before a day period. Only these are dropped when
     /// comparing: treating the whole whitespace class as blank would swallow
@@ -390,8 +394,20 @@ enum CleanerSupport {
         guard name.contains(formatter.string(from: created)) else { return false }
 
         let base = strippingCaptureCopyIndex((name as NSString).deletingPathExtension)
-        guard let captureTimePattern else { return true }
         let range = NSRange(base.startIndex..<base.endIndex, in: base)
+        if let pattern = unifiedCaptureTimePattern,
+           let match = pattern.firstMatch(in: base, range: range),
+           let day = Range(match.range(at: 1), in: base),
+           let hour = Range(match.range(at: 2), in: base),
+           let minute = Range(match.range(at: 3), in: base),
+           let second = Range(match.range(at: 4), in: base),
+           String(base[day]) == formatter.string(from: created),
+           let hours = Int(base[hour]), (0..<24).contains(hours),
+           let minutes = Int(base[minute]), (0..<60).contains(minutes),
+           let seconds = Int(base[second]), (0..<60).contains(seconds) {
+            return true
+        }
+        guard let captureTimePattern else { return true }
         guard let match = captureTimePattern.firstMatch(in: base, range: range),
               NSMaxRange(match.range) == range.length,
               let hourRange = Range(match.range(at: 1), in: base),
