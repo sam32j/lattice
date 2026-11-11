@@ -682,9 +682,6 @@ final class ScreenRecorderService: ObservableObject {
             }
             return
         }
-        if UserDefaults.standard.bool(forKey: DefaultsKey.recorderPlaySound) {
-            NSSound(contentsOfFile: "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/SystemSounds/system/end_record.caf", byReference: true)?.play()
-        }
         isFinishing = true
         invalidatePendingStart()
         endRecordingSurfaces()
@@ -740,71 +737,88 @@ final class ScreenRecorderService: ObservableObject {
 
     // MARK: - Output
 
-    /// A finished recording either opens in the editor, which is where trim,
-    /// sound and format are decided, or goes straight to a file for whoever
-    /// only wanted the raw recording.
+    /// Apply independent after-recording actions. Disabling automatic save
+    /// must never silently write another movie to Desktop.
     private func deliver(_ take: RecorderTakeStore.Take, reason: String?) {
-        // A low-space stop must not make another full-sized history copy.
-        guard reason == nil else {
-            saveDirect(take, reason: reason)
-            return
-        }
         pendingDeliveryTakeIDs.insert(take.id)
-        RecentCaptureService.shared.stashRecording(from: take.videoURL) { [weak self] preservedURL in
-            guard let self else { return }
-            defer { self.pendingDeliveryTakeIDs.remove(take.id) }
-            if UserDefaults.standard.bool(forKey: DefaultsKey.recorderOpenEditor),
-               self.openEditor(with: take, preservedRecordingURL: preservedURL) {
-                if preservedURL == nil {
-                    QuickToolHUD.show(icon: "record.circle", message: self.strings.exportFailed)
-                }
-                return
-            }
-            self.saveDirect(take, reason: reason)
+        // Every finished movie is indexed in Recent Captures, regardless of
+        // whether the separate File Cache (Shelf) receives a copy.
+        // On low-space stops use a hard link when possible.
+        RecentCaptureService.shared.stashRecording(from: take.videoURL,
+                                                   preferHardLink: reason != nil) { [weak self] cachedURL in
+            self?.finishDelivery(take, cachedURL: cachedURL, reason: reason)
         }
     }
 
-    private func saveDirect(_ take: RecorderTakeStore.Take, reason: String?) {
-        let destination = Self.saveDestination(strings: strings, fileExtension: "mov")
-        do {
-            try RecorderTakeStore.shared.saveDirectly(take, to: destination)
-        } catch {
-            NSSound.beep()
-            QuickToolHUD.show(icon: "record.circle", message: strings.recordFailed)
-            openEditor(with: take)
+    private func finishDelivery(_ take: RecorderTakeStore.Take, cachedURL: URL?, reason: String?) {
+        defer { pendingDeliveryTakeIDs.remove(take.id) }
+        let defaults = UserDefaults.standard
+        let saves = defaults.object(forKey: DefaultsKey.recorderSaveAutomatically) as? Bool ?? false
+        let opensEditor = defaults.object(forKey: DefaultsKey.recorderOpenEditor) as? Bool ?? true
+        // Explicitly copy the finished recording into Shelf's own durable
+        // store only when requested. The asynchronous copy never blocks the
+        // editor, preview or the Recent Captures history operation.
+        if defaults.bool(forKey: DefaultsKey.recorderAddToFileCache),
+           AppFeature.shelf.isAvailable,
+           defaults.bool(forKey: DefaultsKey.shelfEnabled) {
+            ShelfService.shared.shelveRecordingCopy(from: cachedURL ?? take.videoURL)
+        }
+        var savedURL: URL?
+        if saves {
+            do {
+                // Copy, not move: preview, history and the editor may still
+                // need the original untouched take afterwards.
+                let destination = try CaptureSaveLocation.withFolder { folder in
+                    try CaptureSaveNaming.copyFile(from: take.videoURL, in: folder,
+                                                   date: take.startedAt, media: .recording, ext: "mov")
+                }
+                savedURL = destination
+                let folder = destination.deletingLastPathComponent().lastPathComponent
+                QuickToolHUD.show(icon: "record.circle",
+                                  message: reason ?? String(format: strings.savedHUDFormat, folder))
+            } catch {
+                CaptureSaveLocation.presentSaveError(error)
+            }
+        }
+
+        // The private history copy is the preview's primary source. Deleting
+        // the preview should delete the recording, not a separate export.
+        let usableURL = cachedURL ?? savedURL ?? take.videoURL
+        if cachedURL == nil && savedURL == nil && reason == nil {
+            QuickToolHUD.show(icon: "record.circle", message: strings.exportFailed)
+        }
+        if defaults.bool(forKey: DefaultsKey.recorderCopyAfterRecording) {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            if pasteboard.writeObjects([usableURL as NSURL]) {
+                pasteboard.declareLatticeSource()
+            } else {
+                NSSound.beep()
+            }
+        }
+
+        if opensEditor, openEditor(with: take, preservedRecordingURL: cachedURL ?? savedURL) {
             return
         }
-        let folder = destination.deletingLastPathComponent().lastPathComponent
-        QuickToolHUD.show(icon: "record.circle",
-                          message: reason ?? String(format: strings.savedHUDFormat, folder))
+        // Always provide an actionable quick preview when auto-edit is off,
+        // even when all three storage/clipboard actions are disabled.
+        RecorderQuickPreviewController.shared.show(url: usableURL)
     }
 
-    /// The configured folder when it still exists, otherwise the Desktop, with
-    /// a unique dated name. Deliberately the same shape the screenshot tool
-    /// uses, so both tools behave the same way about where things land.
+    /// A suggested location only. Editor exports claim a unique file before
+    /// encoding; suggestions must not reserve or create empty files.
     static func saveDestination(strings: RecorderFeatureStrings,
-                                fileExtension: String) -> URL {
-        let manager = FileManager.default
-        var folder: URL?
-        let stored = UserDefaults.standard.string(forKey: DefaultsKey.recorderSaveFolder) ?? ""
-        if !stored.isEmpty {
-            let expanded = (stored as NSString).expandingTildeInPath
-            var isDirectory: ObjCBool = false
-            if manager.fileExists(atPath: expanded, isDirectory: &isDirectory),
-               isDirectory.boolValue {
-                folder = URL(fileURLWithPath: expanded)
-            }
+                                fileExtension: String, date: Date = Date()) -> URL {
+        let folder = CaptureSaveLocation.resolvedFolder() ?? CaptureSaveLocation.defaultFolder
+        return CaptureSaveNaming.proposedDestination(in: folder, date: date,
+                                                     media: .recording, ext: fileExtension)
+    }
+
+    static func claimExport(fileExtension: String, date: Date) throws -> URL {
+        try CaptureSaveLocation.withFolder { folder in
+            try CaptureSaveNaming.claim(in: folder, date: date, media: .recording,
+                                        ext: fileExtension)
         }
-        let destination = folder
-            ?? manager.urls(for: .desktopDirectory, in: .userDomainMask).first
-            ?? manager.homeDirectoryForCurrentUser
-        let name = ScreenshotSupport.fileName(prefix: strings.fileNamePrefix,
-                                              date: Date(),
-                                              fileExtension: fileExtension)
-        let unique = ScreenshotSupport.uniqueFileName(name) { candidate in
-            manager.fileExists(atPath: destination.appendingPathComponent(candidate).path)
-        }
-        return destination.appendingPathComponent(unique)
     }
 
     // MARK: - Failures

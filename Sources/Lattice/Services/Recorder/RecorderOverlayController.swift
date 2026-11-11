@@ -50,6 +50,14 @@ final class RecorderOverlayController: ObservableObject {
         keys.onImage = { [weak self] image in self?.showKeyImage(image) }
     }
 
+    /// Applied once when opening the chooser, before its per-take overrides.
+    func applyDefaultInputPreferences() {
+        guard !isRecording else { return }
+        let defaults = UserDefaults.standard
+        cameraEnabled = defaults.bool(forKey: DefaultsKey.recorderDefaultCamera)
+        keysEnabled = defaults.bool(forKey: DefaultsKey.recorderDefaultKeyboardEvents)
+    }
+
     func updateRegion(anchorRect: CGRect, pixelSize: CGSize) {
         guard anchorRect.width > 0, anchorRect.height > 0, pixelSize.width > 0, pixelSize.height > 0 else { return }
         self.anchorRect = anchorRect

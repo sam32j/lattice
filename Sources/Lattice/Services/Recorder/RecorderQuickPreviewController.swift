@@ -24,6 +24,7 @@ final class RecorderQuickPreviewController {
     private var pointerInside = false
     private var systemSharing = false
     private var menuOpen = false
+    private var quickLookOpen = false
     private var shownInNotch = false
     private let presentationID = UUID()
     private let shareAnchor = ShelfSharePickerAnchor.Anchor()
@@ -41,6 +42,7 @@ final class RecorderQuickPreviewController {
         self.pointerInside = false
         self.systemSharing = false
         self.menuOpen = false
+        self.quickLookOpen = false
         self.quickLinkGeneration = UUID()
         self.openedFromHistory = openedFromHistory
         closePolicy = CapturePreviewClosePolicy.current()
@@ -171,7 +173,7 @@ final class RecorderQuickPreviewController {
     }
 
     private func scheduleAutoDismiss() {
-        guard !closed, !pointerInside, !systemSharing, !menuOpen,
+        guard !closed, !quickLookOpen, !pointerInside, !systemSharing, !menuOpen,
               !model.sharing, let timeout = closePolicy.timeout else { return }
         dismissWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.close() }
@@ -184,7 +186,7 @@ final class RecorderQuickPreviewController {
         focusLossObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didResignKeyNotification, object: window, queue: .main
         ) { [weak self] _ in
-            guard let self, !self.closed, !self.systemSharing,
+            guard let self, !self.closed, !self.quickLookOpen, !self.systemSharing,
                   !self.menuOpen, !self.model.sharing else { return }
             self.close()
         }
@@ -252,6 +254,14 @@ final class RecorderQuickPreviewController {
         }
     }
 
+    /// Match screenshot quick-preview actions: success feedback survives a
+    /// dismissed preview, and a pinned Island must collapse as well.
+    private func completeQuickAction() {
+        let wasInNotch = shownInNotch
+        close()
+        if wasInNotch { NotchService.shared.collapse() }
+    }
+
     private func performCopy() {
         guard let url else { return }
         let pasteboard = NSPasteboard.general
@@ -262,18 +272,23 @@ final class RecorderQuickPreviewController {
         }
         pasteboard.declareLatticeSource()
         QuickToolHUD.show(icon: "doc.on.doc", message: FeatureStrings.recorder(L10n.shared.language).copiedHUD)
+        completeQuickAction()
     }
 
     private func performDownload() {
         guard let url else { return }
         let strings = FeatureStrings.recorder(L10n.shared.language)
         let ext = url.pathExtension.isEmpty ? "mov" : url.pathExtension
-        let destination = ScreenRecorderService.saveDestination(strings: strings, fileExtension: ext)
         do {
-            try RecorderFileCopy.save(from: url, to: destination, replacing: false)
+            let destination = try CaptureSaveLocation.withFolder { folder in
+                try CaptureSaveNaming.copyFile(from: url, in: folder,
+                                               date: (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date(),
+                                               media: .recording, ext: ext)
+            }
             let folder = destination.deletingLastPathComponent().lastPathComponent
             QuickToolHUD.show(icon: "square.and.arrow.down",
                               message: String(format: strings.savedHUDFormat, folder))
+            completeQuickAction()
         } catch {
             performSaveAs()
         }
@@ -297,7 +312,7 @@ final class RecorderQuickPreviewController {
             let folder = target.deletingLastPathComponent().lastPathComponent
             QuickToolHUD.show(icon: "square.and.arrow.down",
                               message: String(format: strings.savedHUDFormat, folder))
-            close()
+            completeQuickAction()
         } catch {
             NSSound.beep()
             scheduleAutoDismiss()
@@ -391,9 +406,9 @@ final class RecorderQuickPreviewController {
                         return
                     }
                     QuickToolHUD.show(icon: "link",
-                                      message: FeatureStrings.recorder(L10n.shared.language).copiedHUD)
+                                      message: FeatureStrings.screenshot(L10n.shared.language).sharedHUD)
                     self.finishQuickLink(failed: false)
-                    self.close()
+                    self.completeQuickAction()
                 } catch {
                     if self.quickLinkGeneration == generation && !Task.isCancelled {
                         self.finishQuickLink(failed: true)
@@ -429,8 +444,8 @@ final class RecorderQuickPreviewController {
                 return
             }
             QuickToolHUD.show(icon: "link",
-                message: FeatureStrings.recorder(L10n.shared.language).copiedHUD)
-            self.close()
+                message: FeatureStrings.screenshot(L10n.shared.language).sharedHUD)
+            self.completeQuickAction()
         }
     }
 
@@ -469,15 +484,25 @@ final class RecorderQuickPreviewController {
     }
 
     private func performQuickLook() {
-        guard let url else { return }
+        guard !closed, let url else { return }
         dismissWork?.cancel()
+        dismissWork = nil
         if ScreenshotQuickLookController.shared.isVisible {
             ScreenshotQuickLookController.shared.close()
             return
         }
-        if !ScreenshotQuickLookController.shared.show(
-            url: url, owner: panel ?? NotchService.shared.presentationWindow) {
+        quickLookOpen = true
+        let shown = ScreenshotQuickLookController.shared.show(
+            url: url, owner: panel ?? NotchService.shared.presentationWindow,
+            onDismiss: { [weak self] in
+                guard let self, self.url == url else { return }
+                self.quickLookOpen = false
+                if !self.closed { self.scheduleAutoDismiss() }
+            })
+        if !shown {
+            quickLookOpen = false
             NSSound.beep()
+            scheduleAutoDismiss()
         }
     }
 
