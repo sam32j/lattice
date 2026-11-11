@@ -301,9 +301,11 @@ if (( TEST )); then
         Sources/Lattice/Services/VideoDownloader/VideoDownloaderJob.swift
         Sources/Lattice/Core/QuitProtectionSupport.swift
         Sources/Lattice/Core/QuitProtectionStrings.swift
+        Sources/Lattice/Core/CaptureInterfaceStrings.swift
         Sources/Lattice/Core/LiquidGlassSupport.swift
         Sources/Lattice/Core/ShortcutConflictAlert.swift
         Sources/Lattice/Services/QuickTools/CaptureSaveNaming.swift
+        Sources/Lattice/Services/QuickTools/CapturePresentationRouting.swift
         Sources/Lattice/Core/Defaults.swift
         Sources/Lattice/Core/LauncherShortcutTarget.swift
         Sources/Lattice/Core/PermanentInputMigration.swift
