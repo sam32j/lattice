@@ -122,8 +122,8 @@ enum VideoWebsiteSessionsTests {
 
         // Saving Chromium session with long profile path (truncation check)
         store.saveSession(browser: .chromium, profile: "/Users/test/Library/Application Support/Crest-A16C1747-9BB6-491C-8BFA-D38410987654")
-        suite.expect(store.summaryText.hasPrefix("Chromium · Crest-A16C") && store.summaryText.hasSuffix("…"),
-                     "long profile folder name is truncated with trailing ellipsis")
+        suite.expect(store.summaryText == "Chromium · Crest-A16C1747-9BB6-491C-8BFA-D38410987654",
+                     "long profile folder name is preserved for chip-level middle truncation")
 
         // Persistence check in separate store instance
         let reloadedStore = VideoWebsiteSessions(defaults: testDefaults)
