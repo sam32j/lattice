@@ -9,10 +9,7 @@ enum ScreenshotPinWindowTests {
                                       bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
                                       bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
               let image = context.makeImage() else { suite.expect(false, "pin fixture image"); return }
-        let namespace = "io.github.sam32j.lattice.tests.pin-window-\(UUID().uuidString)"
-        guard let preferences = UserDefaults(suiteName: namespace) else { return }
-        defer { preferences.removePersistentDomain(forName: namespace) }
-        let pin = ScreenshotPinWindow(image: image, scale: 2, preferences: preferences)
+        let pin = ScreenshotPinWindow(image: image, scale: 2)
         defer { pin.closePin() }
         var saved = 0
         pin.onSave = { saved += 1 }
@@ -32,13 +29,8 @@ enum ScreenshotPinWindowTests {
         suite.expectClose(pin.alphaValue, 1, "pin controls retain an opaque window at ten percent image opacity")
         suite.expectClose(pin.displayedImageOpacity, 0.1, "only the image becomes ten percent opaque")
         suite.expectClose(pin.cornerRadius, 10, "pin corners use the fixed ten point default")
-        preferences.set(false, forKey: DefaultsKey.screenshotPinRoundedCorners)
         pin.refreshAppearance()
-        suite.expectClose(pin.cornerRadius, 0, "disabling rounded corners updates an existing pin")
-        preferences.set(true, forKey: DefaultsKey.screenshotPinRoundedCorners)
-        pin.refreshAppearance()
-        suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.screenshotPinRoundedCorners),
-                     "the rounded pin preference travels with settings backups")
+        suite.expectClose(pin.cornerRadius, 10, "pinned images always keep rounded corners")
 
         pin.setOpacity(0.9)
         pin.setClickThrough(true)
@@ -92,7 +84,7 @@ enum ScreenshotPinWindowTests {
         suite.expectClose(pin.frame.midX, center.x, "foreign-window pinch coordinates do not move the horizontal anchor", tol: 1)
         suite.expectClose(pin.frame.midY, center.y, "foreign-window pinch coordinates do not move the vertical anchor", tol: 1)
 
-        let other = ScreenshotPinWindow(image: image, scale: 2, preferences: preferences)
+        let other = ScreenshotPinWindow(image: image, scale: 2)
         defer { other.closePin() }
         let oldFrame = other.frame
         let oldZoom = other.zoomMultiplier
@@ -104,6 +96,25 @@ enum ScreenshotPinWindowTests {
         suite.expectClose(other.frame.midX, oldFrame.midX, "cropping keeps the pin horizontally centered")
         suite.expectClose(other.frame.midY, oldFrame.midY, "cropping keeps the pin vertically centered")
         other.setFrame(pin.frame, display: false)
+        // Both pins are real windows, not fake indices. Recreating the drag
+        // hide/restore cycle must finish with the selected pin on top.
+        pin.orderFrontRegardless()
+        other.orderFrontRegardless()
+        other.setHiddenForDrag(true)
+        ScreenshotPinController.restorePins([pin, other], selected: pin)
+        var displayedPinOrder = NSApp.orderedWindows.compactMap { $0 as? ScreenshotPinWindow }
+            .filter { $0 === pin || $0 === other }
+        suite.expect(displayedPinOrder.first === pin && other.isVisible,
+                     "a dragged image stays frontmost when its hidden peers return")
+        pin.setHiddenForDrag(true)
+        other.setHiddenForDrag(true)
+        ScreenshotPinController.restorePins([pin, other], selected: pin)
+        displayedPinOrder = NSApp.orderedWindows.compactMap { $0 as? ScreenshotPinWindow }
+            .filter { $0 === pin || $0 === other }
+        suite.expect(displayedPinOrder.first === pin && other.isVisible,
+                     "file-drag completion restores the source pin above its peers")
+        pin.orderOut(nil)
+        other.orderOut(nil)
         suite.expect(ScreenshotPinWindow.gestureTarget(at: center, windows: [other, pin]) === other,
                      "overlapping pins route gestures in front-to-back window order")
         other.setPositionLocked(true)
