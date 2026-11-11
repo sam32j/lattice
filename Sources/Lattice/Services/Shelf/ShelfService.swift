@@ -1652,6 +1652,30 @@ final class ShelfService: ObservableObject {
         return item.id
     }
 
+    /// Give a completed recording its own Shelf-owned file. Unlike addFiles,
+    /// this is independent of the Recent Captures source: removing a history
+    /// entry cannot orphan an item in File Cache. Copy on a worker because a
+    /// finished recording can be several gigabytes.
+    func shelveRecordingCopy(from sourceURL: URL) {
+        guard AppFeature.shelf.isAvailable,
+              UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled) else { return }
+        let store = Self.storeDirectory ?? tempDir
+        Self.persistQueue.async { [weak self] in
+            guard let copied = ShelfPersistenceSupport.copyGeneratedFile(
+                from: sourceURL, named: sourceURL.lastPathComponent, in: store) else { return }
+            DispatchQueue.main.async { [weak self] in
+                guard let self, AppFeature.shelf.isAvailable,
+                      UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled) else {
+                    ShelfFilePromiseTransfer.discard([copied], in: store)
+                    return
+                }
+                let item = self.fileItem(for: copied, deferImageThumbnail: true)
+                // append handles capacity and removes an unaccepted owned file.
+                _ = self.append(item)
+            }
+        }
+    }
+
     /// The pasteboard representation used when dragging an item out of the shelf.
     func pasteboardWriter(for item: Item) -> NSPasteboardWriting {
         switch item.payload {

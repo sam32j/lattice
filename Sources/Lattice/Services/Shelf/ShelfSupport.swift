@@ -827,6 +827,29 @@ enum ShelfPersistenceSupport {
         return url
     }
 
+    /// A large generated recording must be copied without ever holding its
+    /// bytes in memory. Each copy lives in its own item directory, so an
+    /// independently deleted history recording cannot invalidate the Shelf.
+    static func copyGeneratedFile(from source: URL, named name: String, in store: URL,
+                                  container: URL? = PrivateFileStore.containerURL) -> URL? {
+        guard source.isFileURL, !name.isEmpty, name != ".", name != "..",
+              !name.contains("/"), !name.contains(":") else { return nil }
+        let fm = FileManager.default
+        guard let values = try? source.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey]),
+              values.isRegularFile == true, values.isSymbolicLink != true else { return nil }
+        let directory = store.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        guard PrivateFileStore.createDirectory(at: directory, container: container) else { return nil }
+        let destination = directory.appendingPathComponent(name)
+        do {
+            try fm.copyItem(at: source, to: destination)
+            try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
+            return destination
+        } catch {
+            try? fm.removeItem(at: directory)
+            return nil
+        }
+    }
+
     static func discardablePayloadPaths(candidatePaths: [String],
                                         referencedPaths: Set<String>) -> Set<String> {
         Set(candidatePaths).subtracting(referencedPaths)
