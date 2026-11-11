@@ -21,6 +21,7 @@ struct VideoDownloaderSettings: View {
     @State var pasteboardChangeCount = -1
     @State var skeletonPulsing = false
     @State var isSearchHovered = false
+    @State private var showsBrowserSessionPath = false
     let clipboardTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
     init(model: VideoDownloader = .shared, toolchain: ToolchainManager = .shared) {
@@ -349,29 +350,59 @@ struct VideoDownloaderSettings: View {
         .padding(.leading, settingsRowTextInset)
     }
 
-    @ViewBuilder
     private var browserSessionStatusSpan: some View {
-        HStack(spacing: 4) {
+        let label = sessions.hasSession ? sessions.summaryText : VideoDownloaderStrings.inactive
+        let fullPath: String = {
+            guard let session = sessions.activeSession else { return label }
+            // A saved profile can be an absolute folder or just a profile ID.
+            // Default profiles (including Safari) have no stored path, so
+            // resolve their real on-disk location for the hover tooltip.
+            if session.profile.hasPrefix("/") { return session.profile }
+            let detected = VideoWebsiteSessions.detectDefaultProfile(for: session.browser)
+            if let profile = detected.profiles.first(where: { $0.id == session.profile }) {
+                return profile.path
+            }
+            return detected.path ?? (session.profile.isEmpty ? label : session.profile)
+        }()
+        // Fit short names naturally and cap lengthy profile names. Only the
+        // label is truncated, in the middle, so both ends remain visible.
+        let font = NSFont.systemFont(ofSize: 11, weight: .medium)
+        let measuredLabelWidth = (label as NSString).size(withAttributes: [.font: font]).width
+        let chipWidth = min(CGFloat(150), ceil(measuredLabelWidth) + 22)
+
+        return HStack(spacing: 4) {
             Circle()
                 .fill(sessions.hasSession ? Color.green : Color.secondary)
                 .frame(width: 6, height: 6)
-
-            if sessions.hasSession {
-                Text(sessions.summaryText)
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .frame(maxWidth: 135, alignment: .leading)
-            } else {
-                Text(VideoDownloaderStrings.inactive)
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(sessions.hasSession ? Color.primary : Color.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(maxWidth: chipWidth - 22, alignment: .leading)
         }
         .padding(.horizontal, 5)
         .padding(.vertical, 2.5)
+        .frame(width: chipWidth, alignment: .leading)
         .background(Capsule().fill(Color.primary.opacity(0.06)))
+        // The native .help tooltip wraps long profile identifiers at arbitrary
+        // characters. A one-line popover keeps the complete path on one line;
+        // exceptionally long paths can scroll horizontally instead.
+        .onHover { showsBrowserSessionPath = $0 }
+        .popover(isPresented: $showsBrowserSessionPath, arrowEdge: .bottom) {
+            let pathFont = NSFont.systemFont(ofSize: 11)
+            let pathWidth = ceil((fullPath as NSString).size(withAttributes: [.font: pathFont]).width)
+            let screenWidth = (NSScreen.main?.visibleFrame.width ?? 1024) - 80
+            let tooltipWidth = min(max(180, pathWidth + 20), max(180, screenWidth))
+            ScrollView(.horizontal, showsIndicators: false) {
+                Text(fullPath)
+                    .font(.system(size: 11))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 6)
+            }
+            .frame(width: tooltipWidth, height: 22)
+            .padding(6)
+        }
     }
 }
