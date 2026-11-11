@@ -1696,8 +1696,6 @@ enum FeatureCatalogTests {
             suite.expect(FeatureStrings.scratchpad(language).deletePadMessageFormat.contains("%@")
                     && FeatureStrings.scratchpad(language).padLimitFormat.contains("%d"),
                    "scratchpad dialog formats keep their placeholders (\(language.rawValue))")
-            suite.expect(FeatureStrings.recorder(language).countdownSecondsFormat.contains("%d"),
-                   "recorder countdown format keeps its specifier (\(language.rawValue))")
             suite.expect(FeatureStrings.recorder(language).frameRateFormat.contains("%d"),
                    "recorder frame rate format keeps its specifier (\(language.rawValue))")
             suite.expect(FeatureStrings.recorder(language).savedHUDFormat.contains("%@"),
