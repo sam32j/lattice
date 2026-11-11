@@ -58,7 +58,7 @@ extension NotchSettings {
             }
         case .captures:
             if AppFeature.screenshot.isAvailable {
-                ScreenshotDefaultActionPicker(strings: FeatureStrings.screenshot(l10n.language), selection: $captureAction)
+                Toggle(FeatureStrings.screenshot(l10n.language).afterCaptureEditor, isOn: $captureOpenEditor)
                     .padding(.leading, settingsRowTextInset)
             }
         case .scratchpad:

@@ -80,6 +80,12 @@ enum NotchVisualizerActivationTests {
         defer { defaults.removePersistentDomain(forName: domain) }
         defaults.set(true, forKey: DefaultsKey.notchLiveEqualizer)
         defaults.set(true, forKey: AppFeature.notchLiveEqualizer.availabilityKey)
+        for inconclusive in [SystemAudioAuthorizationStatus.unavailable, .notDetermined] {
+            NotchVisualizerActivation.reconcileAuthorization(inconclusive, in: defaults)
+            suite.expect(defaults.bool(forKey: DefaultsKey.notchLiveEqualizer)
+                         && defaults.bool(forKey: AppFeature.notchLiveEqualizer.availabilityKey),
+                         "inconclusive system-audio preflight must preserve the user's visualizer preference")
+        }
         NotchVisualizerActivation.reconcileAuthorization(.denied, in: defaults)
         suite.expect(!defaults.bool(forKey: DefaultsKey.notchLiveEqualizer), "startup rejects previously stored-on denied authorization")
         NotchVisualizerActivation.reconcileAuthorization(.granted, in: defaults)
@@ -103,11 +109,11 @@ enum NotchVisualizerActivationTests {
             defaults.set(true, forKey: AppFeature.notchLiveEqualizer.availabilityKey)
             let stopped = NotchVisualizerActivation.reconcileParents(islandEnabled: parents.0,
                 musicEnabled: parents.1, in: defaults)
-            suite.expect(stopped && !defaults.bool(forKey: DefaultsKey.notchLiveEqualizer),
-                         "disabling either parent clears visualizer activation outside Settings")
+            suite.expect(stopped && defaults.bool(forKey: DefaultsKey.notchLiveEqualizer),
+                         "losing a parent pauses visualization without overwriting the saved choice")
             _ = NotchVisualizerActivation.reconcileParents(islandEnabled: true, musicEnabled: true, in: defaults)
-            suite.expect(!defaults.bool(forKey: DefaultsKey.notchLiveEqualizer),
-                         "re-enabling either parent leaves the visualizer off")
+            suite.expect(defaults.bool(forKey: DefaultsKey.notchLiveEqualizer),
+                         "restoring a parent preserves the user's visualizer choice")
         }
     }
 }

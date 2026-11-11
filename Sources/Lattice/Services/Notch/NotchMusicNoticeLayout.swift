@@ -4,6 +4,13 @@ import AppKit
 /// Track announcements keep the music strip's cover and right visualizer,
 /// adding the same two-line metadata on the cover's left.
 enum NotchMusicNoticeLayout {
+    /// When Now Playing owns the compact surface, it names the track inline.
+    /// Otherwise a track change must use the dedicated music notice rather than
+    /// falling back to the generic system-feedback notice.
+    static func isHandledBySelectedMusicStrip(event: NotchEvent, selected: NotchCompactActivity?) -> Bool {
+        event == .track && selected == .music
+    }
+
     static func geometry(_ base: NotchGeometry) -> NotchGeometry { base.lockScreenMusicGeometry }
 
     static func wings(title: String, artist: String, geometry base: NotchGeometry) -> NotchNoticeWings {

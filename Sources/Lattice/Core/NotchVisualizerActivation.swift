@@ -69,16 +69,17 @@ final class NotchVisualizerActivation: ObservableObject {
         work = nil
     }
 
+    /// Losing a parent suspends the reader; it must not erase the user's choice.
     static func reconcileParents(islandEnabled: Bool, musicEnabled: Bool,
                                  in defaults: UserDefaults = .standard) -> Bool {
-        guard !islandEnabled || !musicEnabled else { return false }
-        disableForPermissionReset(in: defaults)
-        return true
+        !islandEnabled || !musicEnabled
     }
 
+    /// An inconclusive TCC preflight is not a permission revocation. In
+    /// particular, unavailable can mean that the private preflight API failed.
     static func reconcileAuthorization(_ status: SystemAudioAuthorizationStatus,
                                        in defaults: UserDefaults = .standard) {
-        if status != .granted { disableForPermissionReset(in: defaults) }
+        if status == .denied { disableForPermissionReset(in: defaults) }
     }
 
     static func disableForPermissionReset(in defaults: UserDefaults = .standard) {

@@ -48,7 +48,8 @@ struct NotchAudioVisualizerToggle: View {
             activation.returnedToApplication()
         }
         .onDisappear { showsPermissionInfo = false; activation.cancel() }
-        .onChange(of: contextEnabled) { _, enabled in if !enabled { activation.setEnabled(false) } }
+        // A hidden/disabled parent pauses the feature, not the stored switch.
+        .onChange(of: contextEnabled) { _, enabled in if !enabled { activation.cancel() } }
         .onChange(of: reset.phase) { _, phase in if phase != .ready { activation.cancel() } }
     }
 }

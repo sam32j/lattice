@@ -989,13 +989,17 @@ final class NotchPanel: NSPanel {
     static let normalLevel = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
     static let fullscreenLevel = NSWindow.Level.floating
     var acceptsKeyFocus = false
+    /// The native confirmation owns key focus until it closes. Several Island
+    /// input paths (including scroll/touch and frame restoration) call makeKey()
+    /// independently of the event monitors, so enforce this at the window.
+    var blocksKeyDuringConfirmation = false
     /// The native window's silhouette is smaller than its reserved frame.
     /// Only override a stale background-app cursor on the visible surface.
     var nonKeyCursorSurfaceContains: ((CGPoint) -> Bool)?
     var handleScroll: ((NSEvent) -> Bool)?
     var handleIndirectTouches: ((NSEvent, NSView) -> Bool)?
     var visibilityDidChange: (() -> Void)?
-    override var canBecomeKey: Bool { acceptsKeyFocus }
+    override var canBecomeKey: Bool { acceptsKeyFocus && !blocksKeyDuringConfirmation }
     override var canBecomeMain: Bool { false }
     // Liquid Glass swaps to a flat, blurred stand-in in a window that looks
     // inactive, and a non-activating panel only looks active while it holds
