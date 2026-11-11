@@ -50,6 +50,7 @@ enum NotchMusicVisibilityTests {
     }
 
     class State {
+        var islandConfirmationDepth = 0
         var activitySelection = NotchActivitySelection()
         var timerCompanions: [NotchCompactActivity] = []
         func compactCompanions(of primary: NotchCompactActivity) -> [NotchCompactActivity] {

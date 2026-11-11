@@ -92,6 +92,7 @@ enum NotchKeyMonitorTests {
     enum LatticeHubService { static let shared = Launcher() }
 
     class State {
+        var islandConfirmationDepth = 0
         var defersHoverRevealForOutsideDismiss = false
         var eventMonitors: [Any] = []
         var clickedSinceOpening = false
@@ -225,7 +226,7 @@ enum NotchKeyMonitorTests {
                          "a composing input method keeps Esc in \(destination.name)")
             destination.field.composing = false
             actions = []
-            suite.expect(NSEvent.handler?(escape) == nil && actions == [destination.action],
+            suite.expect(NSEvent.handler?(escape) == nil && actions == ["collapse"],
                          "Esc reaches the island from \(destination.name) once composition ends")
         }
         // The Command Bar inside the island reads its own keys: Escape steps
@@ -240,7 +241,7 @@ enum NotchKeyMonitorTests {
                      "the island hands Escape and its shortcuts to the Command Bar open inside it")
         service.showingCommandBar = false
         actions = []
-        suite.expect(NSEvent.handler?(escape) == nil && actions == ["stepBack"],
+        suite.expect(NSEvent.handler?(escape) == nil && actions == ["collapse"],
                      "without the bar, Escape steps back through the island again")
         // With no settings button in the island, Command-Comma opens its page.
         actions = []

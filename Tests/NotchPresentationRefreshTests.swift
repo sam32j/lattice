@@ -197,6 +197,7 @@ enum NotchPresentationRefreshContract {
         var captureClose: (() -> Void)?
         var captureHover: ((Bool) -> Void)?
         var captureClosesOnCollapse = false
+        var captureMenuInteractionActive = false
         var routesCaptures = true
         var openedPages: [(module: NotchModule, takeFocus: Bool)] = []
         var capturePageCrossfades = 0
