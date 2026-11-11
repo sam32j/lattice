@@ -104,13 +104,10 @@ struct RecorderQuickPreviewView: View {
         .onHover(perform: onHoverChanged)
         .contextMenu {
             contextMenuItems
-            if !embedded {
+            if !embedded && UserDefaults.standard.bool(forKey: DefaultsKey.recorderSharingEnabled) {
                 Divider()
-                if UserDefaults.standard.bool(forKey: DefaultsKey.recorderSharingEnabled) {
-                    Menu(previewNotice.quickLink) { quickLinkActions }
-                        .disabled(model.sharing)
-                }
-                Button(previewNotice.trashAction, action: onDelete)
+                Menu(previewNotice.quickLink) { quickLinkActions }
+                    .disabled(model.sharing)
             }
         }
     }
