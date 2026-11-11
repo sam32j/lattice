@@ -101,8 +101,8 @@ enum VideoDownloaderTests {
         suite.expect(sessions.summaryText == "Chrome · Work",
                      "chrome custom profile displays browser and profile name")
         sessions.saveSession(browser: .chromium, profile: "/Users/test/Library/Application Support/Crest-024F49D9-2F79-425F-84CC-D29E367143D8")
-        suite.expect(sessions.summaryText.hasPrefix("Chromium · Crest-024F49") && sessions.summaryText.hasSuffix("…"),
-                     "long profile path is truncated to prevent multiline wrap in UI")
+        suite.expect(sessions.summaryText == "Chromium · Crest-024F49D9-2F79-425F-84CC-D29E367143D8",
+                     "long profile path preserves full folder name for chip-level middle truncation")
         sessions.clearSession()
         suite.expect(!sessions.hasSession, "clearSession removes active session")
 
