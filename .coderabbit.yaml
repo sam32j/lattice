@@ -3,7 +3,7 @@ language: "en-US"
 reviews:
   profile: "chill"
   path_filters:
-    - "!Sources/Lattice/Core/*Strings.swift"
+    - "!Sources/Lattice/Core/*Strings*.swift"
     - "!Sources/Lattice/Core/Localizations/**"
     - "!Tests/**"
     - "!Resources/**"
