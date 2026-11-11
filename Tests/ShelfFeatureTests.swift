@@ -240,6 +240,23 @@ enum ShelfFeatureTests {
             suite.expect(ShelfPersistenceSupport.writeGeneratedFile(data, named: unwritableName, in: store,
                                                                     container: root) == nil,
                    "a file-system write failure refuses the generated file")
+            let recordingSource = root.appendingPathComponent("recording.mov")
+            let recording = Data("a standalone recorded movie".utf8)
+            try? recording.write(to: recordingSource)
+            let shelvedRecording = ShelfPersistenceSupport.copyGeneratedFile(
+                from: recordingSource, named: "recording.mov", in: store, container: root)
+            suite.expect(shelvedRecording != nil && shelvedRecording != recordingSource
+                         && shelvedRecording.flatMap { try? Data(contentsOf: $0) } == recording,
+                         "recordings are copied into a separately owned File Cache item")
+            try? fm.removeItem(at: recordingSource)
+            suite.expect(shelvedRecording.flatMap { try? Data(contentsOf: $0) } == recording,
+                         "deleting the original recording does not delete the File Cache copy")
+            if let shelvedRecording { ShelfFilePromiseTransfer.discard([shelvedRecording], in: store) }
+            for unsafe in ["../outside.mov", "subfolder/recording.mov", ":stream.mov"] {
+                suite.expect(ShelfPersistenceSupport.copyGeneratedFile(
+                    from: store, named: unsafe, in: store, container: root) == nil,
+                    "a malformed recording filename is not shelved")
+            }
             let storeEntries = (try? fm.contentsOfDirectory(atPath: store.path)) ?? []
             suite.expect(storeEntries.count == 1,
                    "refused names and failed writes leave no folder behind, found \(storeEntries.count) entries")
