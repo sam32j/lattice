@@ -151,6 +151,9 @@ final class ScreenCaptureService: ObservableObject {
         let options = ScreenCaptureSelectionOptions(availableTools: tools,
                                                     selectedTool: selected,
                                                     showsCaptureMenu: showsCaptureMenu)
+        if tools.contains(.recording), !ScreenRecorderService.shared.hasActiveCapture {
+            RecorderOverlayController.shared.applyDefaultInputPreferences()
+        }
         self.options = options
         startSelection(options: options)
     }

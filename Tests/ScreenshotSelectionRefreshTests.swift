@@ -71,9 +71,10 @@ enum ScreenshotSelectionRefreshContract {
         var highlightWindows = true
         var needsLayout = false, needsDisplay = false
         var guideVisibilityRefreshes = 0
+        var guideContentRefreshes = 0
         var fullScreenControlHovered = false
         func refreshGuideVisibility() { guideVisibilityRefreshes += 1 }
-        func refreshCaptureGuide() {}
+        func refreshCaptureGuide() { guideContentRefreshes += 1 }
         func refreshPointerState() {}
         func updateLoupeImage(_ image: CGImage?) { loupeImage = image }
     }
@@ -377,11 +378,19 @@ enum ScreenshotSelectionRefreshContract {
         } else {
             expect(false, "the full-screen control runs the screenshot capture path")
         }
-        for tool in [ScreenCaptureTool.recording, .text, .color] {
+        let fullScreenRecording = Chooser(.recording)
+        fullScreenRecording.captureFullScreenFromControl(on: fullScreenRecording.panels[0])
+        if case .region(let region)? = fullScreenRecording.outcome {
+            expect(region.windowID == nil && region.viewRect == fullScreenRecording.panels[0].screenFrame,
+                   "recording full screen chooses the whole display without a window target")
+        } else {
+            expect(false, "recording full screen returns a display-sized recording region")
+        }
+        for tool in [ScreenCaptureTool.text, .color] {
             let other = Chooser(tool)
             other.captureFullScreenFromControl(on: other.panels[0])
             expect(other.outcome == nil,
-                   "the full-screen control stays unavailable outside screenshot mode")
+                   "the full-screen control stays unavailable for OCR and color selection")
         }
         let scrolling = Chooser(.screenshot)
         scrolling.scrollingCaptureEnabled = true
@@ -450,6 +459,8 @@ enum ScreenshotSelectionRefreshContract {
                 ScreenshotCaptureEngine.complete(request, displays: [1, 2])
                 await drain()
                 expect(c.acceptsCaptureInput, "successful refresh restores capture input")
+                expect(c.panels.allSatisfy { $0.overlayView.guideContentRefreshes > 0 },
+                       "a ready source refreshes the full-screen strip hints after the capture gate clears")
                 expect(c.panels[0].overlayView.fullScreenHost.isHidden == (other != .screenshot)
                         && c.panels[1].overlayView.fullScreenHost.isHidden,
                        "a ready source restores the full-screen action only for screenshots on the pointer display")

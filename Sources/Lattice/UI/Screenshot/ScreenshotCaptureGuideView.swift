@@ -10,11 +10,16 @@ final class CaptureGuideViewModel: ObservableObject {
     @Published var isAreaDragging = false
     @Published var offersScrollingCapture = false
     @Published var offersRepeatLastRegion = false
+    @Published var offersFullScreenCapture = false
     @Published var requiresDraggedRegion = false
     @Published var scrollingCaptureEnabled = false
     @Published var loupeEnabled = false
     @Published var selectedWindowsCount = 0
     var onHoverChanged: ((Bool) -> Void)?
+    var onInteractiveRegionsChanged: (([CGRect]) -> Void)?
+    var interactiveRegions: [CGRect] = [] {
+        didSet { onInteractiveRegionsChanged?(interactiveRegions) }
+    }
     @Published var isHovered = false {
         didSet {
             if oldValue != isHovered {
@@ -52,6 +57,21 @@ struct CaptureGuideView: View {
         } else {
             standardGuide
         }
+        }
+        // The root fills the fixed-size NSHostingView. Anchors are resolved
+        // here, not in a Group-local coordinate space, so the rectangles used
+        // by AppKit hit-testing correspond to the actual visible controls.
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .backgroundPreferenceValue(CaptureGuideInteractiveRegionKey.self) { anchors in
+            GeometryReader { proxy in
+                let regions = anchors.map { proxy[$0] }.filter { !$0.isEmpty }
+                Color.clear
+                    .allowsHitTesting(false)
+                    .onAppear { model.interactiveRegions = regions }
+                    .onChange(of: regions) { _, updated in
+                        model.interactiveRegions = updated
+                    }
+            }
         }
         .opacity(CapturePresentationPolicy.toolbarOpacity(overlapsSelection: model.overlapsSelection,
                                                           isDragging: model.isAreaDragging))
@@ -93,7 +113,9 @@ struct CaptureGuideView: View {
                                icon: "rectangle.dashed",
                                isEnabled: model.offersRepeatLastRegion,
                                action: model.offersRepeatLastRegion ? onRepeatLastRegion : nil)
-                CaptureKeyHint(key: "F", icon: "rectangle.inset.filled", action: onFullScreen)
+                CaptureKeyHint(key: "F", icon: "rectangle.inset.filled",
+                               isEnabled: model.offersFullScreenCapture,
+                               action: model.offersFullScreenCapture ? onFullScreen : nil)
                 if model.offersScrollingCapture {
                     CaptureKeyHint(key: "S",
                                    icon: "rectangle.stack",
@@ -121,6 +143,7 @@ struct CaptureGuideView: View {
             model.isHovered = hovering
         }
         .allowsHitTesting(true)
+        .captureGuideInteractiveRegion()
     }
 
     private var subtitle: String {
@@ -128,5 +151,22 @@ struct CaptureGuideView: View {
             return CaptureWorkflowStrings.localized(L10n.shared.language).selectedWindows(model.selectedWindowsCount)
         }
         return strings.hintDrag + "  ·  " + strings.hintClick
+    }
+}
+
+/// Collect the actual strip bounds in SwiftUI, then resolve the anchors in
+/// the full hosting root. This avoids comparing a child Group's coordinates
+/// against AppKit's hosting-view coordinates (which let clicks fall through).
+enum CaptureGuideInteractiveRegionKey: PreferenceKey {
+    static var defaultValue: [Anchor<CGRect>] = []
+
+    static func reduce(value: inout [Anchor<CGRect>], nextValue: () -> [Anchor<CGRect>]) {
+        value.append(contentsOf: nextValue())
+    }
+}
+
+extension View {
+    func captureGuideInteractiveRegion() -> some View {
+        anchorPreference(key: CaptureGuideInteractiveRegionKey.self, value: .bounds) { [$0] }
     }
 }
