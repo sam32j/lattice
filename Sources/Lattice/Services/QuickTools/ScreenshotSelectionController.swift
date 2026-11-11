@@ -19,6 +19,7 @@ final class ScreenshotSelectionController {
 
     struct Capture {
         let id: UUID
+        let capturedAt: Date
         let image: CGImage
         /// Pixels per point of the source display, for 1x export math.
         let scale: CGFloat
@@ -28,8 +29,9 @@ final class ScreenshotSelectionController {
         /// The saved edit generation, without flattening the editable original.
         let renderedImage: CGImage?
 
-        init(id: UUID = UUID(), image: CGImage, scale: CGFloat, anchorRect: CGRect = .zero, annotations: [ScreenshotSupport.Annotation] = [], renderedImage: CGImage? = nil) {
+        init(id: UUID = UUID(), image: CGImage, scale: CGFloat, anchorRect: CGRect = .zero, annotations: [ScreenshotSupport.Annotation] = [], renderedImage: CGImage? = nil, capturedAt: Date = Date()) {
             self.id = id
+            self.capturedAt = capturedAt
             self.image = image
             self.scale = scale
             self.anchorRect = anchorRect
@@ -38,7 +40,7 @@ final class ScreenshotSelectionController {
         }
 
         var presentationCapture: Capture {
-            Capture(id: id, image: renderedImage ?? image, scale: scale, anchorRect: anchorRect)
+            Capture(id: id, image: renderedImage ?? image, scale: scale, anchorRect: anchorRect, capturedAt: capturedAt)
         }
     }
 
@@ -113,6 +115,7 @@ final class ScreenshotSelectionController {
         panels.forEach {
             $0.overlayView.refreshGuideVisibility()
             $0.overlayView.refreshFullScreenControlVisibility()
+            $0.overlayView.refreshCaptureControlCursors()
         }
     }
     fileprivate var scrollingCaptureEnabled = false {
@@ -128,7 +131,7 @@ final class ScreenshotSelectionController {
         supportsScrollingCapture && activeTool == .screenshot && activeMode == .image
     }
     fileprivate var offersFullScreenCapture: Bool {
-        acceptsCaptureInput && activeMode == .image
+        acceptsCaptureInput && (activeMode == .image || activeMode == .geometry)
             && ScreenshotSupport.fullScreenCaptureControlIsAvailable(
                 selectedTool: activeTool,
                 standaloneScreenshot: screenCaptureOptions == nil,
@@ -422,6 +425,9 @@ final class ScreenshotSelectionController {
         }
         sourceRefreshPending = false
         panels.forEach {
+            // Tool changes may disable actions during a live/frozen source
+            // refresh. Restore the clickable strip hints when pixels are ready.
+            $0.overlayView.refreshCaptureGuide()
             $0.overlayView.refreshPointerState()
             $0.overlayView.refreshFullScreenControlVisibility()
         }
@@ -1281,6 +1287,7 @@ private class ScreenshotOverlayContainerView: NSView {
 /// geometry matches image pixels (top-left origin) with no sign juggling.
 private final class ScreenshotOverlayView: NSView {
     private var pointerHasMoved = false
+    private var steppedScrollAccumulation: CGFloat = 0
     private var frozenImage: CGImage?
     fileprivate var loupeImage: CGImage?
     fileprivate var windows: [ScreenshotSupport.PickableWindow]
@@ -1362,6 +1369,7 @@ private final class ScreenshotOverlayView: NSView {
         self.screenCaptureOptions = screenCaptureOptions
         guideModel.offersScrollingCapture = controller.offersScrollingCapture
         guideModel.offersRepeatLastRegion = controller.offersRepeatLastRegion
+        guideModel.offersFullScreenCapture = controller.offersFullScreenCapture
         guideModel.requiresDraggedRegion = controller.requiresDraggedRegion
         guideModel.scrollingCaptureEnabled = controller.scrollingCaptureEnabled
         guideModel.loupeEnabled = controller.loupeEnabled
@@ -1391,6 +1399,12 @@ private final class ScreenshotOverlayView: NSView {
                 controller?.cancel()
             }))
         guideHost = host
+        // The guide occupies a wider frame than its visible strip. Keep the
+        // empty part transparent to selection gestures, but let its buttons
+        // receive the first click even while Dynamic Island owns key focus.
+        guideHost.passesThrough = false
+        guideHost.acceptsFirstClick = true
+        guideHost.interactiveRegions = []
         let hoverRelay = FullScreenControlHoverRelay()
         let fullScreen = PassThroughHostingView(interactiveRootView: FullScreenCaptureButton(
             action: { [weak controller, weak panel] in
@@ -1401,6 +1415,16 @@ private final class ScreenshotOverlayView: NSView {
         fullScreenHost = fullScreen
         fullScreenHost.isHidden = true
         super.init(frame: frame)
+        let isSelecting: () -> Bool = { [weak self] in
+            guard let self else { return false }
+            return self.isDragging || self.controller?.selectionInProgress == true
+        }
+        guideHost.selectionIsInProgress = isSelecting
+        fullScreenHost.selectionIsInProgress = isSelecting
+        guideModel.onInteractiveRegionsChanged = { [weak self] regions in
+            self?.guideHost.interactiveRegions = regions
+        }
+        guideHost.interactiveRegions = guideModel.interactiveRegions
         guideModel.onHoverChanged = { [weak self] isHovered in
             guard let self else { return }
             self.guideHost.isHovered = isHovered
@@ -1414,6 +1438,8 @@ private final class ScreenshotOverlayView: NSView {
                                       owner: self)
         addTrackingArea(tracking)
         addSubview(guideHost)
+        // This was previously only constructed, never attached to the overlay.
+        addSubview(fullScreenHost)
         refreshGuideVisibility()
         refreshFullScreenControlVisibility()
     }
@@ -1421,13 +1447,33 @@ private final class ScreenshotOverlayView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { nil }
 
+    func refreshCaptureControlCursors() {
+        guideHost.refreshCaptureCursor()
+        fullScreenHost.refreshCaptureCursor()
+    }
+
     fileprivate var activeCursor: NSCursor {
-        controller?.isWaitingForRecording == true ? .arrow : .crosshair
+        guard controller?.isWaitingForRecording != true else { return .arrow }
+        guard !isDragging, controller?.selectionInProgress != true,
+              let window else { return .crosshair }
+        let pointer = convert(window.mouseLocationOutsideOfEventStream, from: nil)
+        if !guideHost.isHidden,
+           guideHost.captureCursor(at: guideHost.convert(pointer, from: self)) === NSCursor.arrow {
+            return .arrow
+        }
+        if !fullScreenHost.isHidden,
+           fullScreenHost.captureCursor(at: fullScreenHost.convert(pointer, from: self)) === NSCursor.arrow {
+            return .arrow
+        }
+        return .crosshair
     }
 
     override func resetCursorRects() {
         discardCursorRects()
-        addCursorRect(bounds, cursor: activeCursor)
+        // The background stays crosshair. Child hosting views provide arrow
+        // rects only for their actual buttons; never paint an arrow across
+        // the entire selection canvas because the pointer was on a button.
+        addCursorRect(bounds, cursor: controller?.isWaitingForRecording == true ? .arrow : .crosshair)
     }
 
     override func cursorUpdate(with event: NSEvent) {
@@ -1514,6 +1560,7 @@ private final class ScreenshotOverlayView: NSView {
         guard let controller else { return }
         guideModel.offersScrollingCapture = controller.offersScrollingCapture
         guideModel.offersRepeatLastRegion = controller.offersRepeatLastRegion
+        guideModel.offersFullScreenCapture = controller.offersFullScreenCapture
         guideModel.requiresDraggedRegion = controller.requiresDraggedRegion
         guideModel.scrollingCaptureEnabled = controller.scrollingCaptureEnabled
         guideModel.loupeEnabled = controller.loupeEnabled
@@ -1537,19 +1584,19 @@ private final class ScreenshotOverlayView: NSView {
     // MARK: Mouse
 
     override func mouseMoved(with event: NSEvent) {
-        activeCursor.set()
         pointerHasMoved = true
         controller?.currentPointerLocation = nil
         updatePointerHover(convert(event.locationInWindow, from: nil))
         refreshFullScreenControlVisibility()
+        activeCursor.set()
         needsDisplay = true
     }
 
     override func mouseEntered(with event: NSEvent) {
-        activeCursor.set()
         refreshPointerState()
         refreshGuideVisibility()
         refreshFullScreenControlVisibility()
+        activeCursor.set()
     }
 
 
@@ -1569,7 +1616,8 @@ private final class ScreenshotOverlayView: NSView {
         }
         let stepped = ScreenshotSupport.captureLoupeUsesSteppedZoom(
             steppedByDefault: false,
-            optionPressed: event.modifierFlags.contains(.option))
+            optionPressed: event.modifierFlags.contains(.option)
+                || NSEvent.modifierFlags.contains(.option))
         let wheelDelta: CGFloat
         if let cgEvent = event.cgEvent {
             wheelDelta = ScreenshotSupport.captureLoupeWheelDelta(
@@ -1580,10 +1628,20 @@ private final class ScreenshotOverlayView: NSView {
         } else {
             wheelDelta = event.scrollingDeltaY
         }
-        controller.adjustLoupeZoom(
-            by: wheelDelta,
-            stepped: stepped,
-            isContinuous: event.hasPreciseScrollingDeltas)
+        if stepped, event.hasPreciseScrollingDeltas {
+            // One trackpad gesture sends many packets. Require a meaningful
+            // travel distance rather than advancing once per packet.
+            steppedScrollAccumulation += event.scrollingDeltaY
+            let threshold: CGFloat = 36
+            guard abs(steppedScrollAccumulation) >= threshold else { return }
+            let direction: CGFloat = steppedScrollAccumulation > 0 ? 1 : -1
+            steppedScrollAccumulation -= direction * threshold
+            controller.adjustLoupeZoom(by: direction, stepped: true, isContinuous: true)
+        } else {
+            steppedScrollAccumulation = 0
+            controller.adjustLoupeZoom(by: wheelDelta, stepped: stepped,
+                                       isContinuous: event.hasPreciseScrollingDeltas)
+        }
     }
 
     override func mouseDown(with event: NSEvent) {

@@ -32,6 +32,7 @@ struct UnifiedCaptureGuideContent: View {
         VStack(spacing: 8) {
             Spacer(minLength: 0)
             topControlBar
+                .captureGuideInteractiveRegion()
                 .onHover { hovering in
                     isTopHovered = hovering
                     updateHover()
@@ -53,6 +54,7 @@ struct UnifiedCaptureGuideContent: View {
                         updateHover()
                     }
             }
+            .captureGuideInteractiveRegion()
         }
     }
 
@@ -121,8 +123,8 @@ struct UnifiedCaptureGuideContent: View {
                                action: model.offersRepeatLastRegion && isEnabled ? onRepeatLastRegion : nil)
                 CaptureKeyHint(key: "F",
                                icon: "rectangle.inset.filled",
-                               isEnabled: isEnabled,
-                               action: isEnabled ? onFullScreen : nil)
+                               isEnabled: isEnabled && model.offersFullScreenCapture,
+                               action: isEnabled && model.offersFullScreenCapture ? onFullScreen : nil)
                 CaptureKeyHint(key: "Z",
                                icon: "plus.magnifyingglass",
                                isActive: model.loupeEnabled,
