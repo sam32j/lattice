@@ -1543,22 +1543,25 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
 
     // MARK: - Actions
 
-    func saveVideo() {
-        let destination = ScreenRecorderService.saveDestination(strings: strings,
-                                                                fileExtension: "mp4")
-        run(.video, to: destination)
-    }
+    func saveVideo() { saveWithDefaultName(.video, fileExtension: "mp4") }
 
-    func saveGIF() {
-        let destination = ScreenRecorderService.saveDestination(strings: strings,
-                                                                fileExtension: "gif")
-        run(.gif, to: destination)
+    func saveGIF() { saveWithDefaultName(.gif, fileExtension: "gif") }
+
+    private func saveWithDefaultName(_ output: RecorderExporter.Output, fileExtension: String) {
+        guard !model.isExporting else { return }
+        do {
+            let destination = try ScreenRecorderService.claimExport(fileExtension: fileExtension,
+                                                                     date: model.take.startedAt)
+            run(output, to: destination, reserved: true)
+        } catch {
+            CaptureSaveLocation.presentSaveError(error)
+        }
     }
 
     func saveVideoAs() {
         guard let window else { return }
         let suggested = ScreenRecorderService.saveDestination(strings: strings,
-                                                               fileExtension: "mp4")
+                                                               fileExtension: "mp4", date: model.take.startedAt)
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.mpeg4Movie]
         panel.canCreateDirectories = true
@@ -1579,7 +1582,7 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
         panel.allowsMultipleSelection = false
         panel.beginSheetModal(for: window) { response in
             guard response == .OK, let url = panel.url else { return }
-            UserDefaults.standard.set(url.path, forKey: DefaultsKey.recorderSaveFolder)
+            try? CaptureSaveLocation.store(url)
         }
     }
 
@@ -1699,9 +1702,11 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
     private func run(_ output: RecorderExporter.Output,
                      to destination: URL,
                      rememberDestination: Bool = true,
+                     reserved: Bool = false,
                      onSuccess: ((URL) -> Void)? = nil) {
         model.export(output, to: destination, rememberDestination: rememberDestination) {
             [weak self] failure in
+            if failure != nil && reserved { try? FileManager.default.removeItem(at: destination) }
             guard let self else { return }
             switch failure {
             case nil:

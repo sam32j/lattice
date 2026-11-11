@@ -78,13 +78,15 @@ final class RecorderExporter {
         let failure: Failure?
         switch output {
         case .video:
+            let preferredRate = UserDefaults.standard.object(
+                forKey: DefaultsKey.recorderExportFrameRate) as? Int ?? frameRate
             failure = await exportVideo(asset: asset,
                                         videoTrack: videoTrack,
                                         pointerURL: take.pointerURL,
                                         document: document,
                                         trim: trim,
                                         sourceSize: sourceSize,
-                                        frameRate: RecorderSupport.sanitizedFrameRate(frameRate),
+                                        frameRate: RecorderSupport.sanitizedFrameRate(preferredRate),
                                         to: staged,
                                         progress: progress)
         case .gif:

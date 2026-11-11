@@ -17,6 +17,13 @@ final class RecorderTakeStore: @unchecked Sendable {
     struct Take: Equatable, Sendable {
         let id: UUID
         let folder: URL
+        let startedAt: Date
+
+        init(id: UUID, folder: URL, startedAt: Date = Date()) {
+            self.id = id
+            self.folder = folder
+            self.startedAt = startedAt
+        }
 
         var videoURL: URL { folder.appendingPathComponent(RecorderSupport.takeVideoName) }
         var pointerURL: URL { folder.appendingPathComponent(RecorderSupport.takePointerName) }
