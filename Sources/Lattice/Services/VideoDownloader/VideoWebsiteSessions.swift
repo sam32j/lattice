@@ -130,10 +130,9 @@ final class VideoWebsiteSessions: ObservableObject {
         if session.profile.isEmpty || session.profile == "Default" {
             return browserName
         }
-        var folderName = (session.profile as NSString).lastPathComponent
-        if folderName.count > 20 {
-            folderName = String(folderName.prefix(12)) + "…"
-        }
+        // Let the status chip truncate the full value in the middle; shortening
+        // here added a second trailing ellipsis and hid the useful suffix.
+        let folderName = (session.profile as NSString).lastPathComponent
         return "\(browserName) · \(folderName)"
     }
 
