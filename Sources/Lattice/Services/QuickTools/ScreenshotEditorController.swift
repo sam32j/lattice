@@ -1497,6 +1497,9 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     private var scrollMonitor: Any?
     private var pointerMonitor: Any?
     private var doneSaveInFlight = false
+    /// Last successful explicit file export, distinct from the pre-editor
+    /// automatic save. The returning preview owns this result for Trash/Save. 
+    private(set) var finalSavedURL: URL?
 
     var protectedWindowIDs: Set<CGWindowID> {
         guard let window, window.isVisible, window.windowNumber > 0 else { return [] }
@@ -1841,6 +1844,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         do {
             let url = try ScreenshotService.saveImageData(data, at: capture.capturedAt)
             ScreenshotSupport.markAsScreenCapture(url)
+            finalSavedURL = url
             model.markExported()
             QuickToolHUD.show(icon: "camera.viewfinder",
                               message: String(format: strings.savedHUDFormat,
@@ -1864,6 +1868,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         else { return }
         do {
             try data.write(to: url, options: .atomic)
+            finalSavedURL = url
             model.markExported()
             self.window?.close()
         } catch {

@@ -362,7 +362,7 @@ struct VideoDownloaderSettings: View {
             if let profile = detected.profiles.first(where: { $0.id == session.profile }) {
                 return profile.path
             }
-            return detected.path ?? (session.profile.isEmpty ? label : session.profile)
+            return session.profile.isEmpty ? (detected.path ?? label) : session.profile
         }()
         // Fit short names naturally and cap lengthy profile names. Only the
         // label is truncated, in the middle, so both ends remain visible.

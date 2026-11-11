@@ -69,6 +69,7 @@ final class RecorderQuickPreviewController {
             onQuickLink: { [weak self] duration in self?.performQuickLink(duration) },
             onCopyLink: { [weak self] in self?.copyQuickLink() },
             onDelete: { [weak self] in self?.performDelete() },
+            onContextDelete: { [weak self] in self?.confirmContextDelete() },
             onQuickLook: { [weak self] in self?.performQuickLook() },
             onHoverChanged: { [weak self] inside in self?.hoverChanged(inside) },
             applicationsForMenu: { [weak self] in self?.applicationsForMenu() ?? [] },
@@ -290,7 +291,10 @@ final class RecorderQuickPreviewController {
                               message: String(format: strings.savedHUDFormat, folder))
             completeQuickAction()
         } catch {
-            performSaveAs()
+            // Cancel means cancel, not a second Save panel. Report actual
+            // write/bookmark failures instead of silently changing workflows.
+            CaptureSaveLocation.presentSaveError(error)
+            scheduleAutoDismiss()
         }
     }
 
@@ -447,6 +451,28 @@ final class RecorderQuickPreviewController {
                 message: FeatureStrings.screenshot(L10n.shared.language).sharedHUD)
             self.completeQuickAction()
         }
+    }
+
+    /// Context menus cannot use the inline two-click toolbar state, so
+    /// explicitly confirm before entering the shared deletion operation.
+    private func confirmContextDelete() {
+        // Let AppKit close the context menu before presenting a native alert.
+        // Opening it synchronously from a menu action can leave its buttons
+        // with the wrong appearance or keyboard focus.
+        DispatchQueue.main.async { [weak self] in
+            self?.presentContextDeleteConfirmation()
+        }
+    }
+
+    private func presentContextDeleteConfirmation() {
+        guard !closed else { return }
+        let notice = CapturePreviewNoticeStrings.localized(L10n.shared.language)
+        let label = notice.trashAction
+        guard NotchIslandAlert.confirmDestructive(
+            title: label, message: "", action: label,
+            cancel: FeatureStrings.screenshot(L10n.shared.language).cancel,
+            above: shownInNotch ? NotchService.shared.presentationWindow : panel) else { return }
+        performDelete()
     }
 
     /// Called only after the inline red checkmark is confirmed.

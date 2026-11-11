@@ -25,6 +25,7 @@ struct RecorderQuickPreviewView: View {
     let onQuickLink: (RecordingShareDuration) -> Void
     let onCopyLink: () -> Void
     let onDelete: () -> Void
+    let onContextDelete: () -> Void
     let onQuickLook: () -> Void
     let onHoverChanged: (Bool) -> Void
     let applicationsForMenu: () -> [URL]
@@ -110,7 +111,7 @@ struct RecorderQuickPreviewView: View {
                     Menu(previewNotice.quickLink) { quickLinkActions }
                         .disabled(model.sharing)
                 }
-                Button(previewNotice.trashAction, action: onDelete)
+                Button(previewNotice.trashAction, action: onContextDelete)
             }
         }
     }

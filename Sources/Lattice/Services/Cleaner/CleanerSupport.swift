@@ -386,10 +386,19 @@ enum CleanerSupport {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = timeZone
+        let base = strippingCaptureCopyIndex((name as NSString).deletingPathExtension)
+        // The shared capture exporter now uses yyyy-MM-dd-HHmmss, with
+        // an optional numeric collision suffix. Do not mistake a renamed
+        // screenshot for the untouched default by accepting arbitrary tails.
+        formatter.dateFormat = "yyyy-MM-dd-HHmmss"
+        let compact = formatter.string(from: created)
+        if base == compact { return true }
+        if base.hasPrefix(compact + " "),
+           let number = Int(base.dropFirst(compact.count + 1)), number >= 2 {
+            return true
+        }
         formatter.dateFormat = "yyyy-MM-dd"
         guard name.contains(formatter.string(from: created)) else { return false }
-
-        let base = strippingCaptureCopyIndex((name as NSString).deletingPathExtension)
         guard let captureTimePattern else { return true }
         let range = NSRange(base.startIndex..<base.endIndex, in: base)
         guard let match = captureTimePattern.firstMatch(in: base, range: range),

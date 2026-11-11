@@ -148,10 +148,12 @@ extension AppUpdatesListView {
                     .fixedSize(horizontal: false, vertical: true)
                     .help(updates.uncheckedAppNames.joined(separator: ", "))
             }
-            Text(text.onlineUnavailable)
-                .font(.system(size: 9.5))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            if includeOnlineCatalog && !updates.onlineCatalogAvailable {
+                Text(text.onlineUnavailable)
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if storeCoverageIncomplete {
                 Button(text.openAppStore) { updates.openAppStoreUpdates() }
                     .buttonStyle(.link)

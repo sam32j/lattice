@@ -176,8 +176,8 @@ extension LatticeHubView {
         .buttonStyle(HubHeaderButtonStyle())
         .focusable(false)
         .disabled(captureHistory.entries.isEmpty)
-        .help("Delete Captures")
-        .accessibilityLabel("Delete Captures")
+        .help(FeatureStrings.recentCaptures(l10n.language).clear)
+        .accessibilityLabel(FeatureStrings.recentCaptures(l10n.language).clear)
     }
 
     var pinButton: some View {

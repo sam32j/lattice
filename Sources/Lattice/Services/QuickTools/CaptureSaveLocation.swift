@@ -54,7 +54,7 @@ enum CaptureSaveLocation {
             defer { if scoped { resolved.stopAccessingSecurityScopedResource() } }
             if isWritable(resolved) { return try work(resolved) }
         }
-        folder = chooseFolder()
+        folder = try chooseFolderOrThrow()
         guard let folder else { throw Failure.notSelected }
         let scoped = folder.startAccessingSecurityScopedResource()
         defer { if scoped { folder.stopAccessingSecurityScopedResource() } }
@@ -80,19 +80,27 @@ enum CaptureSaveLocation {
     }
 
     static func chooseFolder() -> URL? {
-        if Thread.isMainThread { return presentPicker() }
-        return DispatchQueue.main.sync { presentPicker() }
+        do { return try chooseFolderOrThrow() }
+        catch {
+            presentSaveError(error)
+            return nil
+        }
     }
 
-    private static func presentPicker() -> URL? {
+    private static func chooseFolderOrThrow() throws -> URL {
+        if Thread.isMainThread { return try presentPicker() }
+        return try DispatchQueue.main.sync { try presentPicker() }
+    }
+
+    private static func presentPicker() throws -> URL {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
         panel.directoryURL = resolvedFolder() ?? defaultFolder
-        guard panel.runModal() == .OK, let chosen = panel.url else { return nil }
-        do { try store(chosen) } catch { return nil }
+        guard panel.runModal() == .OK, let chosen = panel.url else { throw Failure.notSelected }
+        try store(chosen)
         return chosen
     }
 }

@@ -463,6 +463,17 @@ final class ScreenshotQuickPreviewController {
         }
     }
 
+    /// Keyboard deletion must be explicitly confirmed, just like the
+    /// inline toolbar. A single Delete/Command-Delete must never erase the
+    /// only history copy or move an exported screenshot to Trash.
+    private func confirmKeyboardDelete() {
+        let label = CaptureInterfaceStrings.localized(L10n.shared.language).delete
+        guard NotchIslandAlert.confirmDestructive(
+            title: label, message: "", action: label, cancel: strings.cancel,
+            above: shownInNotch ? NotchService.shared.presentationWindow : panel) else { return }
+        confirmDelete()
+    }
+
     /// Called only after the inline red checkmark is confirmed.
     private func confirmDelete() {
         guard !closed, !deletingCapture else { return }
@@ -538,8 +549,14 @@ final class ScreenshotQuickPreviewController {
 
     private func copySharedLink() {
         Task { @MainActor [weak self] in
-            guard let self, !self.closed,
-                  let record = QuickLinkMediaIndex.shared.latestScreenshot(for: self.capture.id) else { return }
+            guard let self, !self.closed else { return }
+            guard let record = QuickLinkMediaIndex.shared.latestScreenshot(for: self.capture.id) else {
+                self.model.sharedRecord = nil
+                QuickToolHUD.show(icon: "link", message: self.strings.linkCopyFailedHUD)
+                NSSound.beep()
+                self.scheduleAutoDismiss()
+                return
+            }
             self.model.sharedRecord = record
             self.dismissWork?.cancel()
             self.dismissWork = nil
@@ -663,7 +680,7 @@ final class ScreenshotQuickPreviewController {
                     MainActor.assumeIsolated { self.performMenu(.printImage) }
                     return nil
                 case kVK_Delete, kVK_ForwardDelete:
-                    self.perform(.discard)
+                    self.confirmKeyboardDelete()
                     return nil
                 default:
                     return event
@@ -691,7 +708,7 @@ final class ScreenshotQuickPreviewController {
             }
             switch key {
             case kVK_Delete, kVK_ForwardDelete:
-                self.perform(.discard)
+                self.confirmKeyboardDelete()
                 return nil
             case kVK_Escape:
                 // Escape only dismisses. Before the after-capture actions it

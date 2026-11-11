@@ -287,7 +287,7 @@ def main():
           + "".join(declaration(recorder, prefix).replace("private func", "func", 1)
                 .replace("let defaults = UserDefaults.standard", "let defaults = self.defaults")
               for prefix in ["    private func deliver(", "    private func finishDelivery(",
-                             "    private func sweepTakes()"])
+                             "    private func completeDelivery(", "    private func sweepTakes()"])
           + "}\n}\n")
     shortcut = "Sources/Lattice/UI/CompactShortcutRecorder.swift"
     write("BindingRecorderEvents.swift", "import AppKit\nimport Carbon.HIToolbox\nextension BindingRecorderEventTests {\nfinal class Recorder: State {\n"

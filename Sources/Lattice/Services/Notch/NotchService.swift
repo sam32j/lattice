@@ -3914,6 +3914,7 @@ final class NotchService: ObservableObject {
                     if self.showingCommandBar { return event }
                     let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
                     if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "w" {
+                        if self.handleScratchpadKey(event) { return nil }
                         self.collapse()
                         return nil
                     }
@@ -3926,6 +3927,12 @@ final class NotchService: ObservableObject {
                                (editor.delegate as AnyObject?) is MixerPercentNativeTextField { return event }
                         }
                         if PlainTextEditor.findBarHasKeyboard(in: self.panel) { return event }
+                        // Hub rearrangement has an explicit Done action.
+                        // Escape must not silently discard in-progress edits.
+                        if self.selected == .hub, LatticeHubService.shared.isEditing {
+                            self.stepBack()
+                            return nil
+                        }
                         self.collapse()
                         return nil
                     }

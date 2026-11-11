@@ -709,18 +709,25 @@ final class ScreenshotService: ObservableObject {
         let capture: ScreenshotSelectionController.Capture
         if !editor.model.isDirty,
            let export = editor.model.exportImage(withBackdrop: true, downscaleTo1x: false) {
-            capture = .init(id: awaiting.capture.id, image: export.image, scale: export.scale,
-                            anchorRect: awaiting.capture.anchorRect)
+            // Rendered pixels belong only to display/export. Keep the base
+            // image and vector annotations so Edit remains fully editable.
+            capture = .init(id: awaiting.capture.id,
+                            image: editor.model.baseImage, scale: editor.model.scale,
+                            anchorRect: awaiting.capture.anchorRect,
+                            annotations: editor.model.annotations,
+                            renderedImage: export.image, capturedAt: awaiting.capture.capturedAt)
         } else {
             capture = awaiting.capture
         }
-        // Defer until AppKit has removed the editor window from the key-window
-        // chain; the newly created preview starts its own full close interval.
+        // The editor may have saved a different file after automatic saving.
+        // Trash and the Save state must refer to that final export, not to
+        // an older pre-editor path (or nil).
+        let finalSaved = editor.finalSavedURL.map { SaveOutcome(url: $0) } ?? awaiting.saved
         DispatchQueue.main.async { [weak self] in
             guard let self, self.preview == nil else { return }
             self.presentPreview(capture,
-                                initialSaved: awaiting.saved,
-                                completedActions: awaiting.saved == nil ? [] : [.save],
+                                initialSaved: finalSaved,
+                                completedActions: finalSaved == nil ? [] : [.save],
                                 latestCapture: nil)
         }
     }

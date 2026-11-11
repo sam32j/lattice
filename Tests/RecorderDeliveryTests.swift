@@ -21,6 +21,8 @@ enum RecorderDeliveryTests {
         static let shared = RecorderTakeStore()
         private let lock = NSLock()
         private var owned: Set<UUID>?
+        var deleted: [UUID] = []
+        func delete(_ take: Take) { deleted.append(take.id) }
         func sweep(keeping ids: Set<UUID>) { lock.lock(); owned = ids; lock.unlock() }
         func result() -> Set<UUID>? { lock.lock(); defer { lock.unlock() }; return owned }
         func reset() { lock.lock(); owned = nil; lock.unlock() }
@@ -166,8 +168,9 @@ enum RecorderDeliveryTests {
                      "File Cache off never skips Recent Captures preservation")
         stash.replies.removeFirst()(preserved)
         suite.expect(RecorderFileCopy.copies.isEmpty && preview.previews == [preserved]
-                     && ShelfService.shared.copies.isEmpty,
-                     "without File Cache, the history copy remains and no Shelf copy is created")
+                     && ShelfService.shared.copies.isEmpty
+                     && RecorderTakeStore.shared.deleted.contains(take.id),
+                     "without File Cache, the history copy remains and the private take is released")
 
         preview.previews = []
         let saved = Service()
@@ -179,6 +182,7 @@ enum RecorderDeliveryTests {
         suite.expect(stash.replies.count == 1,
                      "automatic export never prevents the private recording copy")
         stash.replies.removeFirst()(preserved)
+        RecordingStashTests.wait { preview.previews == [preserved] }
         let destination = URL(fileURLWithPath: "/exports/recording.mov")
         suite.expect(RecorderFileCopy.copies.count == 1
                      && RecorderFileCopy.copies[0].from == take.videoURL

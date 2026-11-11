@@ -750,59 +750,93 @@ final class ScreenRecorderService: ObservableObject {
         }
     }
 
+    /// A movie can be gigabytes: keep the entire destination copy, folder
+    /// lookup and fsync off the main queue. The private take remains owned by
+    /// pendingDeliveryTakeIDs until the completion returns to the UI thread.
     private func finishDelivery(_ take: RecorderTakeStore.Take, cachedURL: URL?, reason: String?) {
-        defer { pendingDeliveryTakeIDs.remove(take.id) }
         let defaults = UserDefaults.standard
         let saves = defaults.object(forKey: DefaultsKey.recorderSaveAutomatically) as? Bool ?? false
-        let opensEditor = defaults.object(forKey: DefaultsKey.recorderOpenEditor) as? Bool ?? true
-        // Explicitly copy the finished recording into Shelf's own durable
-        // store only when requested. The asynchronous copy never blocks the
-        // editor, preview or the Recent Captures history operation.
-        if defaults.bool(forKey: DefaultsKey.recorderAddToFileCache),
-           AppFeature.shelf.isAvailable,
-           defaults.bool(forKey: DefaultsKey.shelfEnabled) {
-            ShelfService.shared.shelveRecordingCopy(from: cachedURL ?? take.videoURL)
+        guard saves else {
+            completeDelivery(take, cachedURL: cachedURL, reason: reason, saveResult: nil)
+            return
         }
-        var savedURL: URL?
-        if saves {
-            do {
-                // Copy, not move: preview, history and the editor may still
-                // need the original untouched take afterwards.
-                let destination = try CaptureSaveLocation.withFolder { folder in
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let result: Result<URL, Error> = Result {
+                try CaptureSaveLocation.withFolder { folder in
                     try CaptureSaveNaming.copyFile(from: take.videoURL, in: folder,
                                                    date: take.startedAt, media: .recording, ext: "mov")
                 }
+            }
+            DispatchQueue.main.async { [weak self] in
+                self?.completeDelivery(take, cachedURL: cachedURL,
+                                       reason: reason, saveResult: result)
+            }
+        }
+    }
+
+    private func completeDelivery(_ take: RecorderTakeStore.Take, cachedURL: URL?,
+                                  reason: String?, saveResult: Result<URL, Error>?) {
+        defer { pendingDeliveryTakeIDs.remove(take.id) }
+        let defaults = UserDefaults.standard
+        let opensEditor = defaults.object(forKey: DefaultsKey.recorderOpenEditor) as? Bool ?? true
+        var savedURL: URL?
+        if let saveResult {
+            switch saveResult {
+            case .success(let destination):
                 savedURL = destination
                 let folder = destination.deletingLastPathComponent().lastPathComponent
                 QuickToolHUD.show(icon: "record.circle",
                                   message: reason ?? String(format: strings.savedHUDFormat, folder))
-            } catch {
+            case .failure(let error):
                 CaptureSaveLocation.presentSaveError(error)
+                if let reason { QuickToolHUD.show(icon: "record.circle", message: reason) }
             }
+        } else if let reason {
+            // A low-space/failed stop must be reported even when the user
+            // deliberately disabled automatic exporting.
+            QuickToolHUD.show(icon: "record.circle", message: reason)
         }
 
-        // The private history copy is the preview's primary source. Deleting
-        // the preview should delete the recording, not a separate export.
+        // Shelf owns a separate copy; hidden or deleted history entries do
+        // not invalidate files explicitly added to File Cache.
+        if defaults.bool(forKey: DefaultsKey.recorderAddToFileCache),
+           AppFeature.shelf.isAvailable,
+           defaults.bool(forKey: DefaultsKey.shelfEnabled) {
+            ShelfService.shared.shelveRecordingCopy(from: cachedURL ?? savedURL ?? take.videoURL)
+        }
+
         let usableURL = cachedURL ?? savedURL ?? take.videoURL
         if cachedURL == nil && savedURL == nil && reason == nil {
             QuickToolHUD.show(icon: "record.circle", message: strings.exportFailed)
         }
         if defaults.bool(forKey: DefaultsKey.recorderCopyAfterRecording) {
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
-            if pasteboard.writeObjects([usableURL as NSURL]) {
-                pasteboard.declareLatticeSource()
+            // A URL from the private take directory becomes invalid when its
+            // editor closes or the orphan sweeper runs. Never advertise that
+            // temporary URL as a successfully copied recording.
+            if let durableURL = cachedURL ?? savedURL {
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                if pasteboard.writeObjects([durableURL as NSURL]) {
+                    pasteboard.declareLatticeSource()
+                } else {
+                    NSSound.beep()
+                    QuickToolHUD.show(icon: "record.circle", message: strings.exportFailed)
+                }
             } else {
                 NSSound.beep()
+                QuickToolHUD.show(icon: "record.circle", message: strings.exportFailed)
             }
         }
 
         if opensEditor, openEditor(with: take, preservedRecordingURL: cachedURL ?? savedURL) {
             return
         }
-        // Always provide an actionable quick preview when auto-edit is off,
-        // even when all three storage/clipboard actions are disabled.
+        // The preview uses the durable copy whenever there is one. Without
+        // an editor, no other owner needs to hold a duplicate private master.
         RecorderQuickPreviewController.shared.show(url: usableURL)
+        if cachedURL != nil || savedURL != nil {
+            RecorderTakeStore.shared.delete(take)
+        }
     }
 
     /// A suggested location only. Editor exports claim a unique file before

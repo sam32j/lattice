@@ -93,7 +93,7 @@ struct CaptureSettings: View {
                                         .fixedSize()
                                 }
                             }
-                            if !islandEnabled || presentationDestination == CapturePresentationRouting.Preference.floatingWindow.rawValue {
+                            if !islandEnabled || presentationDestination != CapturePresentationRouting.Preference.dynamicIsland.rawValue {
                                 SettingsControlRow(title: screenshotStrings.previewPositionLabel) {
                                     CapturePreviewPositionPicker()
                                         .labelsHidden()
@@ -135,6 +135,11 @@ struct CaptureSettings: View {
                     // move transition painted these sections over Recording.
                     .transition(.opacity)
                     .clipped()
+                }
+                // Active links must remain revocable after both capture modes
+                // have been disabled. Hide only link creation, not management.
+                if !screenshotEnabled && !recorderEnabled && activeCreatedLinksCount > 0 {
+                    sharingCard
                 }
             }
             .frame(maxWidth: 760)
