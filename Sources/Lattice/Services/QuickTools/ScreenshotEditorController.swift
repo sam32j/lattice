@@ -1500,6 +1500,8 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     /// The last file the editor actually exported. Done only persists editable
     /// history, and must not be mistaken for an external Save operation.
     private(set) var lastSavedExportURL: URL?
+    /// Done persisted changed pixels/annotations without an exported file.
+    private(set) var didPersistImageChanges = false
 
     var protectedWindowIDs: Set<CGWindowID> {
         guard let window, window.isVisible, window.windowNumber > 0 else { return [] }
@@ -1924,6 +1926,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             let pin = self.originatingPin ?? ScreenshotPinController.shared.findPin(for: self.capture.id)
             pin?.updateImage(export.image, baseImage: original, annotations: annotations)
             pin?.showPin(orderFront: true)
+            self.didPersistImageChanges = self.model.isDirty
             self.model.markExported()
             self.window?.close()
         }

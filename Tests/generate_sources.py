@@ -2094,6 +2094,7 @@ def main():
           + declaration(preview, "    enum Action {")
           + "var keyMonitor: Any?\nvar closed = false\nvar shownInNotch = true\nlet presentationID = UUID()\n"
           + "var actions: [Action] = []\nfunc perform(_ action: Action) { actions.append(action) }\n"
+          + "var keyboardDeleteRequests = 0\nfunc confirmDeleteFromKeyboard() { keyboardDeleteRequests += 1 }\n"
           + "func close() { closed = true }\nfunc attach(_ panel: NSPanel) { installKeyMonitor(for: panel) }\n"
           + "func copyText() {}\n"
           + "var quickLookRequests = 0\nfunc showQuickLook() { quickLookRequests += 1 }\n"

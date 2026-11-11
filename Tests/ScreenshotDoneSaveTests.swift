@@ -14,6 +14,8 @@ enum ScreenshotDoneSaveTests {
         var watermarkStyle = ScreenshotSupport.WatermarkStyle()
         var annotationShadowsEnabled = false
         var markedClean = false
+        // Model a screenshot whose edits have not yet been persisted.
+        var isDirty = true
         var usedDownscale: Bool?
         init() {
             baseImage = CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0,
@@ -64,6 +66,7 @@ enum ScreenshotDoneSaveTests {
         var window: Window? = Window()
         var originatingPin: Pin?
         var doneSaveInFlight = false
+        var didPersistImageChanges = false
     }
     static func run(_ suite: TestSuite) {
         let pinning = Controller()
@@ -78,18 +81,28 @@ enum ScreenshotDoneSaveTests {
         suite.expect(failed.window?.closed == false && !failed.model.markedClean,
                      "Done waits for persistence before closing or marking edits clean")
         RecentCaptureService.shared.completion?(false)
-        suite.expect(failed.window?.closed == false && !failed.model.markedClean && !failed.doneSaveInFlight,
+        suite.expect(failed.window?.closed == false && !failed.model.markedClean && !failed.doneSaveInFlight
+                     && !failed.didPersistImageChanges,
                      "a failed Done save preserves editable unsaved work and permits retry")
         failed.done()
         RecentCaptureService.shared.completion?(true)
-        suite.expect(failed.window?.closed == true && failed.model.markedClean,
-                     "a successful retry completes Done")
+        suite.expect(failed.window?.closed == true && failed.model.markedClean
+                     && failed.didPersistImageChanges,
+                     "a successful retry tracks a persisted edit for the returned preview")
         let changed = Controller()
         changed.done()
         changed.model.annotations.append(.init(tool: .text, text: "A later edit"))
         RecentCaptureService.shared.completion?(true)
-        suite.expect(changed.window?.closed == false && !changed.model.markedClean,
+        suite.expect(changed.window?.closed == false && !changed.model.markedClean
+                     && !changed.didPersistImageChanges,
                      "a late save completion cannot discard edits made while saving")
+        let unchanged = Controller()
+        unchanged.model.isDirty = false
+        unchanged.done()
+        RecentCaptureService.shared.completion?(true)
+        suite.expect(unchanged.window?.closed == true && unchanged.model.markedClean
+                     && !unchanged.didPersistImageChanges,
+                     "Done without changes retains the original automatic export's saved state")
         RecentCaptureService.shared.completion = nil
     }
 }
