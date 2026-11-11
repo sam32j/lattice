@@ -3068,7 +3068,7 @@ def main():
           + "enum ScreenRecorderService { static func claimExport(fileExtension: String, date: Date) throws -> URL { URL(fileURLWithPath: \"/tmp/recording.\" + fileExtension) } }\n"
           + "enum CaptureSaveLocation { static func presentSaveError(_ error: Error) {} }\n"
           + "struct RecentCaptureService { static let shared = RecentCaptureService(); func recordRecording(at url: URL) {} }\n"
-          + "struct RecorderGIFClipboard { static var publications = 0; static func publish(fileURL: URL) -> Bool { publications += 1; return true } }\n"
+          + "struct RecorderGIFClipboard { static var publications = 0; static func publish(fileURL: URL, shouldPublish: () -> Bool) -> Bool { guard shouldPublish() else { return false }; publications += 1; return true } }\n"
           + "final class GeneralPasteboardAccess { static let shared = GeneralPasteboardAccess(); var pending: [(work: () -> Bool, completion: (Bool) -> Void)] = []; func async(_ work: @escaping () -> Bool, then completion: @escaping (Bool) -> Void) { pending.append((work, completion)) } }\n"
           + "func copyDestination(fileExtension: String) -> URL? { URL(fileURLWithPath: \"/tmp/copy.\" + fileExtension) }\n"
           + declaration(recorder, "    private func copyGIFAndDelete(").replace("private func copyGIFAndDelete", "func startGIFCopy", 1)
