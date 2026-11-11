@@ -53,9 +53,10 @@ enum RecorderPreviewModelTests {
             && view.contains(".scaledToFill()")
             && view.contains("islandVideoToolbar.padding(6)"),
             "video shares the image preview canvas without adding a control row")
-        suite.expect(controller.contains("!openedFromHistory, !pointerInside")
+        suite.expect(controller.contains("closePolicy = CapturePreviewClosePolicy.current()")
+            && controller.contains("let timeout = closePolicy.timeout")
             && controller.contains("openedFromHistory: openedFromHistory"),
-            "manually reopened recordings never inherit the confirmation timeout")
+            "video quick preview adopts unified capture close policy and forwards history origin")
         let islandPart = view.components(separatedBy: "    private var islandPreview:")
             .dropFirst().first?.components(separatedBy: "    private func islandTool(").first ?? ""
         suite.expect(islandPart.contains("thumbnailButton(symbol: \"play.fill\"")
@@ -64,7 +65,7 @@ enum RecorderPreviewModelTests {
             "recording Quick Look uses a top-left button instead of a centered play overlay")
         suite.expect(view.contains(".contentShape(Rectangle())")
             && controller.contains("sharePresenter.present(for: [url], from: content")
-            && controller.contains("NotchIslandAlert.run(alert, above: owner)")
+            && controller.contains("NotchIslandAlert.run(failure, above: owner)")
             && controller.contains("NotchService.shared.showCaptureHistory()")
             && controller.contains("owner: panel ?? NotchService.shared.presentationWindow"),
             "recording actions have full hit areas, real share anchor, elevated deletion, and Island Quick Look ownership")

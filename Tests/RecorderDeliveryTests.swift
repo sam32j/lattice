@@ -95,7 +95,7 @@ enum RecorderDeliveryTests {
         var preserved: URL?
 
         init() {
-            defaults = UserDefaults(suiteName: "lattice.recorder.delivery.\(UUID())")!
+            defaults = UserDefaults(suiteName: "io.github.sam32j.lattice.tests.recorder.delivery.\(UUID())")!
         }
         class func saveDestination(strings: Strings, fileExtension: String) -> URL {
             URL(fileURLWithPath: "/exports/recording.\(fileExtension)")

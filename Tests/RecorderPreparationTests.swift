@@ -20,12 +20,23 @@ enum RecorderPreparationTests {
     }
     struct Permissions {
         static let shared = Self()
-        enum Grant { case granted }
+        enum Grant { case granted, undetermined, denied, unknown }
         let microphone = Grant.granted
         let screenRecording = true
         let accessibility = true
         func requestScreenRecording() {}
         func requestAccessibility() {}
+        func requestMicrophone(_ completion: @escaping (Bool) -> Void) { completion(true) }
+    }
+    final class RecorderOverlayController {
+        static let shared = RecorderOverlayController()
+        var cameraEnabled = false
+        var cameraReady = true
+        var errorMessage: String?
+        var onFailure: ((String) -> Void)?
+        func ensureCameraReady() async -> Bool { true }
+        func stop() {}
+        func prepareRecording(anchorRect: CGRect, pixelSize: CGSize, immediate: Bool) {}
     }
     enum QuickToolHUD {
         static var messages = 0
@@ -148,21 +159,23 @@ enum RecorderPreparationTests {
         suite.expect(toggled.stopOrCancelActiveCapture() && toggledIndicator.hidden && !toggled.hasActiveCapture,
                      "the shared capture toggle cancels a waiting recording")
 
+        reset()
         let delayed = Service()
         delayed.record(region, audioOptions: RecorderSelectionAudioOptions())
-        suite.expect(delayed.countdownRequests == 1,
-                     "a confirmed selection starts countdown without a second waiting screen")
+        suite.expect(RecorderWriter.replies.count == 1 && delayed.isPreparingRecording,
+                     "a confirmed selection begins writer preparation without a second waiting screen")
         delayed.invalidatePendingStart()
         delayed.record(region, audioOptions: RecorderSelectionAudioOptions())
         delayed.record(region, audioOptions: RecorderSelectionAudioOptions())
-        suite.expect(delayed.countdownRequests == 2,
+        suite.expect(RecorderWriter.replies.count == 2,
                      "recording admission rejects duplicate Start requests")
 
+        reset()
         UserDefaults.immediate = true
         let immediate = Service()
         immediate.record(region, audioOptions: RecorderSelectionAudioOptions())
-        suite.expect(immediate.countdownRequests == 1 && immediate.hasActiveCapture,
-                     "immediate recording still enters countdown directly")
+        suite.expect(RecorderWriter.replies.count == 1 && immediate.hasActiveCapture,
+                     "immediate recording still enters preparation directly")
 
         reset()
         let accepted = Service()
