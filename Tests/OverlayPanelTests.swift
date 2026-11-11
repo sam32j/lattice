@@ -35,7 +35,6 @@ enum OverlayPanelTests {
             "Sources/Lattice/Services/QuickTools/QuickToolHUD.swift",
             "Sources/Lattice/Services/LatticeHub/LatticeHubPanel.swift",
             "Sources/Lattice/Services/QuickTools/CameraPreviewService.swift",
-            "Sources/Lattice/Services/QuickTools/RecentCaptureService.swift",
             "Sources/Lattice/Services/QuickTools/ScreenshotSelectionController.swift",
             "Sources/Lattice/Services/QuickTools/ScreenshotCapturePanel.swift",
             "Sources/Lattice/Services/QuickTools/ScreenshotQuickPreviewController.swift",

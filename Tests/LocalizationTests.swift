@@ -60,6 +60,8 @@ enum LocalizationTests {
                      && languages.count == AppLanguage.allCases.count,
                      "the base strings cover each app language exactly once")
         suite.expect(!factories.isEmpty, "feature localization factories were discovered")
+        suite.expect(languages.allSatisfy { !FeatureStrings.recentCapturesShortcutTitle($0.0).isEmpty },
+                     "recent captures shortcut title is translated in all languages")
         func diskPickerText(_ strings: Strings) -> [String] {
             [strings.diskMenuBarStyleLabel, strings.diskMenuBarUsedPercentage,
              strings.diskMenuBarAvailableSpace, strings.diskMenuBarUsedSpace]

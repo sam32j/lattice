@@ -117,7 +117,7 @@ enum LatticeHubContract {
             (.killProcess, .killProcess, nil, nil),
             (.wallpaper, .wallpaper, nil, nil),
             (.videoDownloader, .videoDownloader, nil, nil),
-            (.recentCaptures, .screenshot, nil, nil),
+            (.recentCaptures, .screenshot, "recentCaptures.showHistoryWindow", nil),
             (.deviceControls, .mixer, nil, nil),
             (.aiUsage, .notchAgents, "notch.openAgents", 0.1),
             (.watch, .notchWatch, "notch.openWatch", 0.1),
