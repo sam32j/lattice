@@ -65,7 +65,7 @@ enum RecorderFeatureTests {
         suite.expect(AppFeature.screenRecorder.energyProfile == .idle,
                "the recorder costs nothing between recordings")
         suite.expect(FeatureVisibilitySupport.features(for: .screenshot)
-                == [.screenshot, .screenOCR, .colorPicker]
+                == [.screenshot, .screenRecorder, .screenOCR, .colorPicker]
                 && FeatureVisibilitySupport.features(for: .screenRecorder) == [.screenRecorder]
                 && pageVisible(.screenRecorder, available: [.screenRecorder])
                 && pageVisible(.screenshot, available: [.screenOCR])
