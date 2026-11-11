@@ -1621,7 +1621,7 @@ enum UpdateFeatureTests {
             suite.expect(AppUpdateFeedSupport.releases(data: invalid, format: .visualStudioCode) == nil,
                          "incomplete VS Code metadata must not prove a current version")
         }
-        let extraApps = AppUpdatesService.additionalUpdateApplicationPaths([
+        let extraApps = AppUpdatesSupport.additionalUpdateApplicationPaths([
             NSHomeDirectory() + "/Work/Apps/Development/YaB Dev.app",
             NSHomeDirectory() + "/Library/Developer/Xcode/DerivedData/X/Build/Products/Debug/YaB Dev.app",
             "/Applications/Visual Studio Code.app",
