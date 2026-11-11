@@ -69,6 +69,31 @@ enum RecordingStashTests {
             suite.expect((try? Data(contentsOf: source)) == bytes,
                          "history preservation leaves the original take untouched")
 
+            // History is committed regardless of the user's Shelf preference.
+            let history = Service(root: root.appendingPathComponent("second-history"))
+            var historyURL: URL?
+            history.stashRecording(from: source) { historyURL = $0 }
+            wait { historyURL != nil }
+            suite.expect(historyURL != nil
+                         && history.store.loadIfNeeded()
+                         && history.store.entries.count == 1
+                         && history.store.persist()
+                         && historyURL.map { (try? Data(contentsOf: $0)) == bytes } == true,
+                         "every finished recording gets a history entry")
+
+            // Low-space stops use a hard link when the private take and cache
+            // are on the same volume; deleting the original still preserves it.
+            let lowSpaceSource = root.appendingPathComponent("low-space.mov")
+            try bytes.write(to: lowSpaceSource)
+            let lowSpace = Service(root: root.appendingPathComponent("low-space-history"))
+            var lowSpaceURL: URL?
+            lowSpace.stashRecording(from: lowSpaceSource,
+                                    preferHardLink: true) { lowSpaceURL = $0 }
+            wait { lowSpaceURL != nil }
+            try manager.removeItem(at: lowSpaceSource)
+            suite.expect(lowSpaceURL.map { (try? Data(contentsOf: $0)) == bytes } == true,
+                         "low-space preservation survives private take deletion")
+
             State.thumbnailStarted = nil
             let brokenRoot = root.appendingPathComponent("broken")
             try manager.createDirectory(at: brokenRoot, withIntermediateDirectories: true)

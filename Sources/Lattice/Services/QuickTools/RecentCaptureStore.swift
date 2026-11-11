@@ -22,7 +22,6 @@ struct RecentCaptureEntry: Codable, Equatable, Identifiable {
     let anchorHeight: Double?
     // Missing in older history indexes; set only after a failed cleanup.
     var deletionFailed: Bool? = nil
-
     var recordingURL: URL? {
         guard let recordingPath else { return nil }
         if recordingPath.hasPrefix("/") {
@@ -111,7 +110,8 @@ final class RecentCaptureStore {
 
     /// Called on the history queue, so cleanup cannot observe the copied movie
     /// until its index entry is committed. A failed commit leaves the source intact.
-    func importRecording(from sourceURL: URL, entry: RecentCaptureEntry) -> Bool {
+    func importRecording(from sourceURL: URL, entry: RecentCaptureEntry,
+                         preferHardLink: Bool = false) -> Bool {
         guard loadIfNeeded(), entry.kind == .recording,
               let path = entry.recordingPath, Self.isSafeRelativePath(path),
               Self.isRegularFile(sourceURL), let directoryURL else { return false }
@@ -123,7 +123,16 @@ final class RecentCaptureStore {
         var copied = false
         do {
             try prepareRoot(parent)
-            try manager.copyItem(at: sourceURL, to: destination)
+            if preferHardLink {
+                // A low-space stop must still keep its recording. Both
+                // directories are normally on the same APFS volume: a hard
+                // link preserves the immutable finished movie without needing
+                // room for another full-size copy. Fall back when unavailable.
+                do { try manager.linkItem(at: sourceURL, to: destination) }
+                catch { try manager.copyItem(at: sourceURL, to: destination) }
+            } else {
+                try manager.copyItem(at: sourceURL, to: destination)
+            }
             copied = true
             try manager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: destination.path)
             entries.append(entry)
