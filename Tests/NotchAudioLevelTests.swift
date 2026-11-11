@@ -140,7 +140,12 @@ enum NotchAudioLevelLifecycleContract {
         case notchLiveEqualizer
         var isAvailable: Bool { true }
     }
-    enum NotchSupport { static func isEnabled() -> Bool { true } }
+    enum NotchModule { case music }
+    enum NotchSupport {
+        static var musicVisible = true
+        static func isEnabled() -> Bool { true }
+        static func modules() -> [NotchModule] { musicVisible ? [.music] : [] }
+    }
     enum NotchAudioLevelSupport {
         typealias SilenceMemory = NotchAudioTestSilenceMemory
         static let isSupported = true
@@ -203,6 +208,7 @@ enum NotchAudioLevelLifecycleContract {
         defer {
             enable(false)
             NSWorkspace.shared.accessibilityDisplayShouldReduceMotion = false
+            NotchSupport.musicVisible = true
             music.playback = nil
             Reader.instances.removeAll()
             drain()
@@ -354,5 +360,16 @@ enum NotchAudioLevelLifecycleContract {
         drain()
         expect(Reader.instances.count == beforeAudiblePause + 1 && Reader.instances.last?.stopped == false,
                "restoring motion resumes the chosen live equalizer on the current player")
+        let playing = Reader.instances.last!
+        NotchSupport.musicVisible = false
+        service.syncWithPreferences()
+        drain()
+        expect(playing.stopped && service.levels == nil,
+               "hiding the Music module immediately stops the audio reader")
+        NotchSupport.musicVisible = true
+        service.syncWithPreferences()
+        drain()
+        expect(Reader.instances.last !== playing && Reader.instances.last?.stopped == false,
+               "restoring Music resumes visualization without changing preferences")
     }
 }

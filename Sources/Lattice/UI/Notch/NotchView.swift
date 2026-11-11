@@ -125,8 +125,15 @@ struct NotchView: View {
                 .padding(.horizontal, 18)
                 .padding(.top, service.geometry.safeContentTop)
         } else if let notice = service.notice ?? (service.peeking ? nil : service.departingNotice),
-                   notice.event != .track || service.compactActivity != .music {
-            if service.noticeExpanded, let content = notice.notification {
+                   !NotchMusicNoticeLayout.isHandledBySelectedMusicStrip(
+                       event: notice.event, selected: service.compactActivity) {
+            if notice.event == .track {
+                // A different live activity must not revive the legacy generic
+                // waveform/text banner. Show the same music-specific track notice
+                // used by the compact Now Playing strip.
+                NotchMusicNoticeView(service: service, notice: notice, displayGeometry: service.geometry)
+                    .transition(.opacity)
+            } else if service.noticeExpanded, let content = notice.notification {
                 NotchNotificationPreviewView(notice: notice, content: content, service: service)
                     .padding(.horizontal, NotchLayout.horizontalInset)
                     .padding(.top, service.geometry.safeContentTop)

@@ -1693,8 +1693,33 @@ final class NotchService: ObservableObject {
         if closesCommandBar { commandBarDidClose() }
     }
 
+    // A destructive confirmation opened from the Island owns keyboard focus
+    // until it resolves. Do not close the background Island during that modal.
+    private var islandConfirmationDepth = 0
+    func beginIslandConfirmation() {
+        if islandConfirmationDepth == 0 {
+            // Guard at NSWindow.canBecomeKey, not only in Island event monitors:
+            // touches, scroll and animated frame restoration can call makeKey().
+            panel?.blocksKeyDuringConfirmation = true
+            panel?.resignKey()
+        }
+        islandConfirmationDepth += 1
+    }
+    func endIslandConfirmation() {
+        guard islandConfirmationDepth > 0 else { return }
+        islandConfirmationDepth -= 1
+        guard islandConfirmationDepth == 0 else { return }
+        panel?.blocksKeyDuringConfirmation = false
+        if let panel, panel.isVisible, expanded {
+            // The alert's shared presenter tries to restore key before its
+            // caller's defer executes; restore only after the guard is lifted.
+            panel.acceptsKeyFocus = true
+            panel.makeKey()
+        }
+    }
+
     func collapse() {
-        guard !heldDrag else { return }
+        guard islandConfirmationDepth == 0, !heldDrag else { return }
         let closeCapture = detachCaptureIfClosingOnCollapse()
         let closesCommandBar = showingCommandBar
         hoverEmphasized = false
@@ -2121,9 +2146,8 @@ final class NotchService: ObservableObject {
         syncVisibleConsumers()
     }
 
-    /// Escape steps back one level: a detail returns to its page as the Back
-    /// button does, a page closes the layer it shows, and the island closes
-    /// once nothing lies behind.
+    /// Back-stack navigation for page/detail flows; the Island's Escape
+    /// shortcut now uses collapse() directly instead of this helper.
     private func stepBack() {
         // Edit mode ends only through the explicit Done control; an accidental
         // Escape or click-away must not discard an in-progress rearrangement.
@@ -3859,8 +3883,15 @@ final class NotchService: ObservableObject {
         let clicks: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
         if let token = NSEvent.addGlobalMonitorForEvents(matching: clicks.union(.keyDown), handler: { [weak self] event in
             guard let self else { return }
+            // A modal destructive confirmation is in front; it owns keyboard
+            // and pointer input until Cancel or Delete is chosen.
+            guard self.islandConfirmationDepth == 0 else { return }
             if event.type == .keyDown {
                 guard !self.pinned, self.expanded, !self.keepsWorkingSurface else { return }
+                // Never close both the island and another app's window on Cmd-W.
+                // Only the island's own local key handler may consume this shortcut.
+                let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+                if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "w" { return }
                 let shortcutModifiers: NSEvent.ModifierFlags = [.command, .control, .option]
                 guard !event.modifierFlags.intersection(shortcutModifiers).isEmpty else { return }
                 self.collapse()
@@ -3874,7 +3905,30 @@ final class NotchService: ObservableObject {
         }) { eventMonitors.append(token) }
         if let token = NSEvent.addLocalMonitorForEvents(matching: clicks.union(.keyDown), handler: { [weak self] event in
             guard let self else { return event }
+            guard self.islandConfirmationDepth == 0 else { return event }
             if event.type == .keyDown {
+                // Esc and Cmd-W dismiss the entire island, not just its current
+                // subpage. Consume the event so Cmd-W cannot close a different
+                // window after this nonactivating panel gives up key focus.
+                if event.window === self.panel {
+                    let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+                    if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "w" {
+                        self.collapse()
+                        return nil
+                    }
+                    if event.keyCode == 53, modifiers.isEmpty {
+                        // Let the input method cancel composition, or a focused
+                        // field/find bar cancel its own editing first.
+                        if let editor = self.panel?.firstResponder as? NSTextView {
+                            if editor.hasMarkedText() { return event }
+                            if editor.isFieldEditor,
+                               (editor.delegate as AnyObject?) is MixerPercentNativeTextField { return event }
+                        }
+                        if PlainTextEditor.findBarHasKeyboard(in: self.panel) { return event }
+                        self.collapse()
+                        return nil
+                    }
+                }
                 if event.window === self.panel, self.showingCommandBar { return event }
                 // Embedded capture previews own Space and Command-Y. The
                 // Island shortcut monitor must not collapse their parent
@@ -3916,10 +3970,6 @@ final class NotchService: ObservableObject {
             if event.type == .keyDown, event.window === self.panel, !self.showsKeyboardFocus {
                 self.showsKeyboardFocus = true
             }
-            // While an input method is composing, Esc belongs to it and
-            // drops the candidate; the island takes the next one.
-            if event.type == .keyDown, event.window === self.panel, event.keyCode == 53,
-               (self.panel?.firstResponder as? NSTextView)?.hasMarkedText() == true { return event }
             // The Command Bar inside the island reads its own keys, Escape included.
             if event.type == .keyDown, event.window === self.panel, self.showingCommandBar { return event }
             if event.type == .keyDown, event.window === self.panel {
@@ -3966,16 +4016,6 @@ final class NotchService: ObservableObject {
                     }
                 }
                 return result
-            }
-            if event.type == .keyDown, event.window === self.panel, event.keyCode == 53 {
-                // A level being typed in the mixer cancels on Escape by
-                // itself, and the scratchpad's find bar closes on it; the
-                // next one steps back.
-                if let editor = self.panel?.firstResponder as? NSTextView, editor.isFieldEditor,
-                   (editor.delegate as AnyObject?) is MixerPercentNativeTextField { return event }
-                if PlainTextEditor.findBarHasKeyboard(in: self.panel) { return event }
-                self.stepBack()
-                return nil
             }
             let click = clicks.contains(NSEvent.EventTypeMask(rawValue: 1 << event.type.rawValue))
             let islandWindow = self.ownsWindow(event.window)
@@ -4062,7 +4102,7 @@ final class NotchService: ObservableObject {
         }
         panel?.handleScroll = { [weak self] event in self?.handleScroll(event) ?? false }
         panel?.handleIndirectTouches = { [weak self] event, view in
-            guard let self else { return false }
+            guard let self, self.islandConfirmationDepth == 0 else { return false }
             guard self.selected == .music || self.selected == .captures else { return false }
             // A native capture drag takes priority over gesture navigation.
             guard !self.heldDrag else { return false }
@@ -4139,6 +4179,8 @@ final class NotchService: ObservableObject {
     }
 
     private func handleGesture(_ event: NSEvent) -> Bool {
+        // Gesture input must never make the Island key over its modal alert.
+        guard islandConfirmationDepth == 0 else { return false }
         guard running, !suspended, NotchGestureSupport.isEnabled(), let panel,
               !trackingMenu, !heldDrag,
               event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else {

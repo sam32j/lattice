@@ -11,12 +11,11 @@ struct NotchMusicNoticeView: View {
     var body: some View {
         let base = displayGeometry ?? service.geometry
         if base.floats {
-            Button { service.activateMusicStrip() } label: {
-                NotchCapsuleMusicStrip(service: service,
-                    size: NotchMusicNoticeLayout.capsuleSize(title: notice.title, artist: notice.detail, geometry: base),
-                    displayGeometry: base, interactive: true, trackNotice: notice)
-            }
-            .buttonStyle(.plain)
+            // The strip already contains interactive cover, title and playback
+            // buttons. Do not nest them in another Button.
+            NotchCapsuleMusicStrip(service: service,
+                size: NotchMusicNoticeLayout.capsuleSize(title: notice.title, artist: notice.detail, geometry: base),
+                displayGeometry: base, interactive: true, trackNotice: notice)
         } else {
             NotchMusicStrip(service: service, displayGeometry: NotchMusicNoticeLayout.geometry(base),
                             interactive: true, trackNotice: notice)

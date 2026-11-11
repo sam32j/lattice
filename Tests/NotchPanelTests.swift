@@ -23,6 +23,19 @@ enum NotchPanelTests {
         expect(NotchPanel.fullscreenLevel.rawValue > NSWindow.Level.normal.rawValue
                && NotchPanel.fullscreenLevel.rawValue < NSWindow.Level.mainMenu.rawValue,
                "the simulated full-screen cutout stays over app content but yields to the revealed menu bar")
+        // While a native confirmation is open, no touch/scroll/resize path
+        // may make the underlying non-activating Island key again.
+        panel.acceptsKeyFocus = true
+        expect(panel.canBecomeKey, "an expanded Island normally accepts key focus")
+        panel.blocksKeyDuringConfirmation = true
+        expect(!panel.canBecomeKey,
+               "a native confirmation prevents the Island panel from stealing key focus")
+        panel.acceptsKeyFocus = true // unrelated input path trying to re-enable focus
+        expect(!panel.canBecomeKey,
+               "touch or scroll cannot override the confirmation focus lease")
+        panel.blocksKeyDuringConfirmation = false
+        expect(panel.canBecomeKey,
+               "Island key eligibility is restored after the confirmation")
         sheetContracts(expect: expect)
         activeGlass(expect: expect)
     }
