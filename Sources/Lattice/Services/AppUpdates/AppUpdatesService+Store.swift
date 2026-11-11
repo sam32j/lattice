@@ -20,6 +20,7 @@ extension AppUpdatesService {
                                                             operatingSystemVersion: operatingSystemVersion),
                     available: AppUpdatesSupport.hasStoreCoverage(bundleIDs: candidates.map(\.bundleID),
                                                                  entries: merged),
+                    checkedPaths: Set(candidates.filter { merged[$0.bundleID] != nil }.map(\.path)),
                     uncheckedApps: candidates.filter { merged[$0.bundleID] == nil }))
             }
         }
