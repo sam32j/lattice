@@ -17,21 +17,11 @@ final class ScreenshotService: ObservableObject {
     @Published private(set) var lastCaptureShortcutRegistrationFailed = false
     @Published private(set) var clipboardShortcutRegistrationFailed = false
 
-    @Published private(set) var uploadShortcutRegistrationFailed = false
-    private let uploadHotkey = QuickToolHotkey(id: 61)
-    private var uploadingCaptureID: UUID?
-    private var latestCaptureID = UUID()
-    /// Names the latest capture itself. Turning the shortcut off renews
-    /// `latestCaptureID` but not this, so a later Discard still finds it.
+    /// Used for associating the latest preview and Shelf task with its capture.
     private var latestCaptureToken = UUID()
     /// Real history identity survives changes to shortcut/retention settings.
     /// The token above identifies a preview/Shelf task, not the history UUID.
     private var latestCaptureHistoryID: UUID?
-    /// Set once the latest capture went through an editor or was discarded:
-    /// the stored original is then no longer what the person kept. The store
-    /// keeps the same answer for the next launch.
-    private var latestCaptureWithheld = false
-    private var linkCopyRetry = ScreenshotLinkCopyRetry()
 
     private let lastCaptureHotkey = QuickToolHotkey(id: 22)
     private let fullScreenHotkey = QuickToolHotkey(id: 23)
@@ -39,6 +29,12 @@ final class ScreenshotService: ObservableObject {
     private var session: ScreenshotSelectionController?
     private var preview: ScreenshotQuickPreviewController?
     private var editors: [ScreenshotEditorController] = []
+    /// Only editors launched from a capture/preview return to a fresh preview.
+    private struct EditorReturnPreview {
+        let capture: ScreenshotSelectionController.Capture
+        let saved: SaveOutcome?
+    }
+    private var editorReturnPreviews: [ObjectIdentifier: EditorReturnPreview] = [:]
     private var directCaptureTask: Task<Void, Never>?
     private var autoCopyTask: Task<Void, Never>?
     private var autoCopyCaptureID: UUID?
@@ -107,9 +103,6 @@ final class ScreenshotService: ObservableObject {
         }
         fullScreenHotkey.onPress = { [weak self] in self?.captureFullScreen() }
         lastCaptureHotkey.onPress = { [weak self] in self?.openLastCapture() }
-        uploadHotkey.onPress = { [weak self] in
-            Task { @MainActor [weak self] in self?.uploadLastCapture() }
-        }
         clipboardHotkey.onPress = { [weak self] in self?.openClipboardImage() }
     }
 
@@ -118,11 +111,9 @@ final class ScreenshotService: ObservableObject {
             fullScreenShortcutRegistrationFailed = false
             lastCaptureShortcutRegistrationFailed = false
             clipboardShortcutRegistrationFailed = false
-            uploadShortcutRegistrationFailed = false
             fullScreenHotkey.unregister()
             lastCaptureHotkey.unregister()
             clipboardHotkey.unregister()
-            uploadHotkey.unregister()
             ScreenshotLastCaptureStore.clear()
             teardownSurfaces()
             return
@@ -155,21 +146,11 @@ final class ScreenshotService: ObservableObject {
             enabled: clipboardEnabled,
             shortcut: clipboardShortcut,
             storageKey: DefaultsKey.screenshotClipboardShortcut)
-        uploadShortcutRegistrationFailed = !uploadHotkey.sync(
-            enabled: ScreenshotSharingSupport.uploadShortcutEnabled(in: defaults),
-            shortcut: GlobalShortcut.saved(for: DefaultsKey.screenshotUploadShortcut,
-                                           fallback: .screenshotUploadDefault),
-            storageKey: DefaultsKey.screenshotUploadShortcut)
         syncLatestCapture(with: defaults)
     }
 
-    /// A capture no shortcut needs is not kept, and an upload still pending
-    /// when its shortcut or temporary links were turned off revokes its link
-    /// when it arrives instead of copying it.
+    /// Only Edit latest screenshot needs the persisted original capture.
     private func syncLatestCapture(with defaults: UserDefaults) {
-        if !ScreenshotSharingSupport.uploadShortcutEnabled(in: defaults) {
-            invalidateLatestCaptureUploads()
-        }
         if !ScreenshotSharingSupport.retainsLatestCapture(in: defaults) {
             ScreenshotLastCaptureStore.clear()
         }
@@ -179,7 +160,6 @@ final class ScreenshotService: ObservableObject {
         fullScreenHotkey.unregister()
         lastCaptureHotkey.unregister()
         clipboardHotkey.unregister()
-        uploadHotkey.unregister()
     }
 
     /// Hub-off means gone: open editors, pins and a selection in progress
@@ -198,9 +178,9 @@ final class ScreenshotService: ObservableObject {
         QuickToolHUD.dismissScrollingCapture()
         session?.cancel()
         session = nil
-        invalidateLatestCaptureUploads()
         preview?.close()
         preview = nil
+        editorReturnPreviews.removeAll()
         for editor in editors {
             editor.close()
         }
@@ -392,27 +372,15 @@ final class ScreenshotService: ObservableObject {
     /// Where a direct save landed, and which "%#" number it consumed — so a
     /// later Trash can remove the file and, if applicable, give exactly that
     /// number back.
-    private struct SaveOutcome {
+    struct SaveOutcome {
         let url: URL
-        let consumedNumber: Int?
     }
 
-    private struct AutomaticActionResult {
-        let performed: Set<ScreenshotQuickPreviewController.Action>
-        let saved: SaveOutcome?
-    }
-
-    /// A finished capture runs its configured after-capture action first, then
-    /// either stays quiet, shows a confirmation/recovery preview, or opens the
-    /// editor directly.
-    ///
-    /// The clipboard copy happens first and independently, so it also reaches
-    /// the captures that open straight in the editor, where no preview button
-    /// exists to reach for.
+    /// Apply independent after-capture actions. A preview is unconditional
+    /// unless the editor opens first; closing that editor opens a fresh preview.
     private func route(_ capture: ScreenshotSelectionController.Capture) {
         beginLatestCapture(capture)
         latestCaptureHistoryID = capture.id
-        // The island's companion blinks hard, as a flash, if it is there to see.
         NotchService.shared.reactMascot(.flash, patience: 1)
         preview?.close()
         RecentCaptureService.shared.recordScreenshot(capture)
@@ -427,30 +395,20 @@ final class ScreenshotService: ObservableObject {
         if defaults.bool(forKey: DefaultsKey.screenshotCopyToClipboard) {
             autoCopy(capture)
         }
-        let defaultAction = ScreenshotDefaultAction.current
-        if defaultAction == .edit {
-            // The editor decides what is kept. Its Add to Shelf puts the
-            // finished picture there, so the raw capture is not shelved too.
-            openEditor(with: capture)
-            return
+        let saved = defaults.bool(forKey: DefaultsKey.screenshotSaveAutomatically)
+            ? saveDirect(capture) : nil
+        autoShelve(capture, saved: saved?.url)
+        if defaults.bool(forKey: DefaultsKey.screenshotOpenEditorAfterCapture) {
+            openEditor(with: capture, reopenPreviewOnClose: true, previewSaved: saved)
+        } else {
+            presentPreview(capture,
+                           initialSaved: saved,
+                           completedActions: saved == nil ? [] : [.save],
+                           latestCapture: latestCaptureToken)
         }
-        let result = runDefaultAction(defaultAction, capture: capture)
-        autoShelve(capture, saved: result.saved?.url)
-        guard case .shown = ScreenshotSupport.quickPreviewPresentation(
-            defaultAction: defaultAction,
-            saved: result.saved != nil,
-            copied: result.performed.contains(.copy),
-            defaults: defaults)
-        else { return }
-        presentPreview(capture,
-                       defaultAction: defaultAction,
-                       initialSaved: result.saved,
-                       completedActions: result.performed,
-                       latestCapture: latestCaptureToken)
     }
 
-    /// Thrown away, the latest capture is no longer one the upload shortcut
-    /// may publish. A capture reopened from history makes no such claim.
+    /// Discard only affects the currently presented capture, not a history item.
     private func discardLatestCapture(_ latestCapture: UUID?) {
         guard let latestCapture, latestCapture == latestCaptureToken else { return }
         withholdLatestCapture()
@@ -467,12 +425,10 @@ final class ScreenshotService: ObservableObject {
         }
     }
 
-    /// The editor decides what is kept, and its Add to Shelf puts the
-    /// finished picture there, so the raw capture leaves the Shelf as it
-    /// does when captures open straight in the editor.
-    private func editFromPreview(_ capture: ScreenshotSelectionController.Capture, latestCapture: UUID?) {
-        unshelve(latestCapture)
-        openEditor(with: capture)
+    /// Editing does not undo the independent Add to File Cache choice.
+    /// The preview returns with a fresh close interval when the editor closes.
+    private func editFromPreview(_ capture: ScreenshotSelectionController.Capture, saved: SaveOutcome?) {
+        openEditor(with: capture, reopenPreviewOnClose: true, previewSaved: saved)
     }
 
     private func cancelAutoShelf() {
@@ -481,21 +437,14 @@ final class ScreenshotService: ObservableObject {
     }
 
     private func withholdLatestCapture() {
-        // Opening an editor or discarding also withdraws a shortcut upload
-        // already in flight. Its original must not be delivered after the
-        // person chose to edit or throw it away.
-        invalidateLatestCaptureUploads()
-        latestCaptureWithheld = true
+        // A discarded or edited capture must not be reopened as an unedited original.
         ScreenshotLastCaptureStore.withhold()
     }
 
-    /// A new capture becomes the latest one: a pending shortcut upload of the
-    /// one before loses its claim, and the new one is kept, untouched so far,
-    /// for the shortcuts that reopen or upload it.
+    /// Track the latest preview for discard/Shelf ownership and retain the raw
+    /// screenshot only when Edit latest screenshot is enabled.
     private func beginLatestCapture(_ capture: ScreenshotSelectionController.Capture) {
-        invalidateLatestCaptureUploads()
         latestCaptureToken = UUID()
-        latestCaptureWithheld = false
         if ScreenshotSharingSupport.retainsLatestCapture() {
             ScreenshotLastCaptureStore.save(capture)
         }
@@ -506,7 +455,6 @@ final class ScreenshotService: ObservableObject {
     func restorePreview(_ capture: ScreenshotSelectionController.Capture, inNotch: Bool? = nil) {
         preview?.close()
         presentPreview(capture,
-                       defaultAction: .none,
                        initialSaved: nil,
                        completedActions: [],
                        latestCapture: nil,
@@ -515,7 +463,6 @@ final class ScreenshotService: ObservableObject {
     }
 
     private func presentPreview(_ capture: ScreenshotSelectionController.Capture,
-                                defaultAction: ScreenshotDefaultAction,
                                 initialSaved: SaveOutcome?,
                                 completedActions: Set<ScreenshotQuickPreviewController.Action>,
                                 latestCapture: UUID?,
@@ -526,13 +473,12 @@ final class ScreenshotService: ObservableObject {
         let controller = ScreenshotQuickPreviewController(
             capture: presented,
             strings: strings,
-            defaultAction: defaultAction,
             completedActions: completedActions,
             action: { [weak self] action in
                 guard let self else { return [] }
                 switch action {
                 case .edit:
-                    self.editFromPreview(capture, latestCapture: latestCapture)
+                    self.editFromPreview(capture, saved: saved)
                     return [.edit]
                 case .pin:
                     ScreenshotPinController.shared.pin(image: presented.image, scale: capture.scale,
@@ -557,9 +503,6 @@ final class ScreenshotService: ObservableObject {
                     if let saved {
                         do {
                             try FileManager.default.trashItem(at: saved.url, resultingItemURL: nil)
-                            if let consumed = saved.consumedNumber {
-                                Self.rewindNumberSequence(toReuse: consumed)
-                            }
                         } catch {
                             NSSound.beep()
                             return []
@@ -591,9 +534,6 @@ final class ScreenshotService: ObservableObject {
                         try FileManager.default.trashItem(at: export.url, resultingItemURL: nil)
                     } catch { completion(false); return }
                     saved = nil
-                    if let consumed = export.consumedNumber {
-                        Self.rewindNumberSequence(toReuse: consumed)
-                    }
                 }
                 RecentCaptureService.shared.deleteScreenshot(id: capture.id) { [weak self] removed in
                     if removed { self?.deletePreviewSideEffects(latestCapture: matchingToken) }
@@ -650,36 +590,11 @@ final class ScreenshotService: ObservableObject {
         guard AppFeature.screenshot.isAvailable else { return }
         // A menu transform is a new draft, not permission to overwrite the
         // original file or repeat an automatic clipboard/save action.
-        presentPreview(capture, defaultAction: .none, initialSaved: nil,
+        presentPreview(capture, initialSaved: nil,
             completedActions: [], latestCapture: nil)
     }
 
-    private func runDefaultAction(_ defaultAction: ScreenshotDefaultAction,
-                                  capture: ScreenshotSelectionController.Capture)
-        -> AutomaticActionResult {
-        switch defaultAction {
-        case .none, .edit:
-            return AutomaticActionResult(performed: [], saved: nil)
-        case .copy:
-            return AutomaticActionResult(
-                performed: copyDirect(capture) ? [.copy] : [],
-                saved: nil)
-        case .save:
-            guard let outcome = saveDirect(capture) else {
-                return AutomaticActionResult(performed: [], saved: nil)
-            }
-            return AutomaticActionResult(performed: [.save], saved: outcome)
-        case .saveAndCopy:
-            guard let result = saveAndCopyDirect(capture) else {
-                return AutomaticActionResult(performed: [], saved: nil)
-            }
-            return AutomaticActionResult(
-                performed: result.copied ? [.save, .copy] : [.save],
-                saved: result.outcome)
-        }
-    }
-
-    func openEditor(with capture: ScreenshotSelectionController.Capture, above owner: NSWindow? = nil, originatingPin: ScreenshotPinWindow? = nil) {
+    func openEditor(with capture: ScreenshotSelectionController.Capture, above owner: NSWindow? = nil, originatingPin: ScreenshotPinWindow? = nil, reopenPreviewOnClose: Bool = false, previewSaved: SaveOutcome? = nil) {
         WindowActivationPolicy.retain()
         // Any editor may be showing the latest capture, and what it exports
         // is no longer the stored original, so the shortcut keeps that
@@ -688,70 +603,10 @@ final class ScreenshotService: ObservableObject {
         let editor = ScreenshotEditorController(capture: capture)
         editor.originatingPin = originatingPin
         editors.append(editor)
+        if reopenPreviewOnClose {
+            editorReturnPreviews[ObjectIdentifier(editor)] = EditorReturnPreview(capture: capture, saved: previewSaved)
+        }
         editor.show(above: owner)
-    }
-
-    @MainActor
-    private func uploadLastCapture() {
-        guard AppFeature.screenshot.isAvailable,
-              ScreenshotSharingSupport.uploadShortcutEnabled() else { return }
-        if let preview {
-            preview.shareLink()
-            return
-        }
-        guard editors.isEmpty, !latestCaptureWithheld, !ScreenshotLastCaptureStore.isWithheld else {
-            NSSound.beep()
-            return
-        }
-        guard uploadingCaptureID != latestCaptureID else { return }
-        if let record = linkCopyRetry.record(for: latestCaptureID,
-                                             availableRecords: ScreenshotShareService.shared.records) {
-            copyUploadedLink(record, captureID: latestCaptureID)
-            return
-        }
-        guard let capture = ScreenshotLastCaptureStore.load() else {
-            QuickToolHUD.show(icon: "camera.viewfinder", message: strings.lastCaptureMissing)
-            return
-        }
-        let captureID = latestCaptureID
-        uploadingCaptureID = captureID
-        QuickToolHUD.show(icon: "link", message: strings.sharingHUD)
-        shareDirect(capture, duration: .saved()) { [weak self] record in
-            if self?.uploadingCaptureID == captureID { self?.uploadingCaptureID = nil }
-            guard let record else { return }
-            guard let self,
-                  self.latestCaptureID == captureID else {
-                Task { @MainActor in
-                    try? await ScreenshotShareService.shared.delete(record)
-                }
-                return
-            }
-            self.copyUploadedLink(record, captureID: captureID)
-        }
-    }
-
-    /// A newer capture or turning the feature off ends the claim a pending
-    /// shortcut upload has on the latest capture: its link is revoked when
-    /// it arrives instead of being copied, and a failed copy is not retried.
-    private func invalidateLatestCaptureUploads() {
-        latestCaptureID = UUID()
-        linkCopyRetry.clear()
-    }
-
-    @MainActor
-    private func copyUploadedLink(_ record: ScreenshotShareRecord, captureID: UUID) {
-        let copied = ScreenshotSharingSupport.copyLink(
-            record, using: ScreenshotShareService.shared.copy,
-            dismiss: {})
-        if captureID == latestCaptureID {
-            if copied {
-                linkCopyRetry.clear()
-            } else {
-                linkCopyRetry.remember(record, for: captureID)
-            }
-        }
-        QuickToolHUD.show(icon: "link", message: copied
-            ? strings.sharedHUD : strings.linkCopyFailedHUD)
     }
 
     private func openLastCapture() {
@@ -847,6 +702,27 @@ final class ScreenshotService: ObservableObject {
         guard editors.contains(where: { $0 === editor }) else { return }
         editors.removeAll { $0 === editor }
         WindowActivationPolicy.release()
+        guard let awaiting = editorReturnPreviews.removeValue(forKey: ObjectIdentifier(editor)),
+              AppFeature.screenshot.isAvailable else { return }
+        // A final exported image is the one the user just kept. If the user
+        // discarded unexported edits, return to the unmodified capture.
+        let capture: ScreenshotSelectionController.Capture
+        if !editor.model.isDirty,
+           let export = editor.model.exportImage(withBackdrop: true, downscaleTo1x: false) {
+            capture = .init(id: awaiting.capture.id, image: export.image, scale: export.scale,
+                            anchorRect: awaiting.capture.anchorRect)
+        } else {
+            capture = awaiting.capture
+        }
+        // Defer until AppKit has removed the editor window from the key-window
+        // chain; the newly created preview starts its own full close interval.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.preview == nil else { return }
+            self.presentPreview(capture,
+                                initialSaved: awaiting.saved,
+                                completedActions: awaiting.saved == nil ? [] : [.save],
+                                latestCapture: nil)
+        }
     }
 
     /// Automatic copy stays quiet on success: the preview or the editor is
@@ -1008,19 +884,15 @@ final class ScreenshotService: ObservableObject {
         guard let export = flatten(capture),
               let data = ScreenshotRenderer.pngData(from: export.image, scale: export.scale)
         else { return nil }
-        let (url, consumedNumber) = Self.saveDestination(strings: strings)
         do {
-            try data.write(to: url, options: .atomic)
+            let url = try Self.saveImageData(data, at: capture.capturedAt)
             ScreenshotSupport.markAsScreenCapture(url)
             QuickToolHUD.show(icon: "camera.viewfinder",
                               message: String(format: strings.savedHUDFormat,
                                               url.deletingLastPathComponent().lastPathComponent))
-            return SaveOutcome(url: url, consumedNumber: consumedNumber)
+            return SaveOutcome(url: url)
         } catch {
-            if let consumedNumber {
-                Self.rewindNumberSequence(toReuse: consumedNumber)
-            }
-            NSSound.beep()
+            CaptureSaveLocation.presentSaveError(error)
             return nil
         }
     }
@@ -1033,15 +905,12 @@ final class ScreenshotService: ObservableObject {
         guard let export = flatten(capture),
               let data = ScreenshotRenderer.pngData(from: export.image, scale: export.scale)
         else { return nil }
-        let (url, consumedNumber) = Self.saveDestination(strings: strings)
+        let url: URL
         do {
-            try data.write(to: url, options: .atomic)
+            url = try Self.saveImageData(data, at: capture.capturedAt)
             ScreenshotSupport.markAsScreenCapture(url)
         } catch {
-            if let consumedNumber {
-                Self.rewindNumberSequence(toReuse: consumedNumber)
-            }
-            NSSound.beep()
+            CaptureSaveLocation.presentSaveError(error)
             return nil
         }
 
@@ -1051,7 +920,7 @@ final class ScreenshotService: ObservableObject {
         QuickToolHUD.show(icon: "camera.viewfinder",
                           message: String(format: format,
                                           url.deletingLastPathComponent().lastPathComponent))
-        return (SaveOutcome(url: url, consumedNumber: consumedNumber), copied)
+        return (SaveOutcome(url: url), copied)
     }
 
     /// Direct outputs go through the same pipeline as the editor so the 1x
@@ -1142,74 +1011,15 @@ final class ScreenshotService: ObservableObject {
 
     // MARK: - Save location
 
-    /// The configured folder when it still exists, otherwise the Desktop,
-    /// with a unique dated file name.
-    static func saveDestination(strings: ScreenshotFeatureStrings) -> (url: URL, consumedNumber: Int?) {
-        let manager = FileManager.default
-        var folder: URL?
-        let stored = UserDefaults.standard.string(forKey: DefaultsKey.screenshotSaveFolder) ?? ""
-        if !stored.isEmpty {
-            let expanded = (stored as NSString).expandingTildeInPath
-            var isDirectory: ObjCBool = false
-            if manager.fileExists(atPath: expanded, isDirectory: &isDirectory),
-               isDirectory.boolValue {
-                folder = URL(fileURLWithPath: expanded)
-            }
-        }
-        var destination = folder
-            ?? manager.urls(for: .desktopDirectory, in: .userDomainMask).first
-            ?? manager.homeDirectoryForCurrentUser
-        let subfolderPattern = UserDefaults.standard.string(forKey: DefaultsKey.screenshotSaveSubfolder) ?? ""
-        let subfolder = ScreenshotSupport.expandSaveSubfolder(subfolderPattern, date: Date())
-        if !subfolder.isEmpty {
-            let dated = destination.appendingPathComponent(subfolder, isDirectory: true)
-            // Only descend into the dated subfolder if we can actually create
-            // it; otherwise fall back to the base folder rather than losing
-            // the screenshot.
-            if (try? manager.createDirectory(at: dated, withIntermediateDirectories: true)) != nil {
-                destination = dated
-            }
-        }
-        let (name, consumedNumber) = Self.fileName(strings: strings)
-        let unique = ScreenshotSupport.uniqueFileName(name) { candidate in
-            manager.fileExists(atPath: destination.appendingPathComponent(candidate).path)
-        }
-        return (destination.appendingPathComponent(unique), consumedNumber)
-    }
-
-    /// The default localized "Screenshot yyyy-MM-dd at HH.mm.ss.png" name
-    /// when no pattern is set, otherwise the pattern with date tokens and
-    /// an optional "%#" number sequence expanded. Advances and persists the
-    /// number sequence when the pattern actually uses it.
-    private static func fileName(strings: ScreenshotFeatureStrings) -> (name: String, consumedNumber: Int?) {
-        let defaults = UserDefaults.standard
-        let pattern = (defaults.string(forKey: DefaultsKey.screenshotFileNamePattern) ?? "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !pattern.isEmpty else {
-            return (ScreenshotSupport.fileName(prefix: strings.fileNamePrefix, date: Date()), nil)
-        }
-
-        if ScreenshotSupport.fileNamePatternUsesNumber(pattern) {
-            let number = defaults.integer(forKey: DefaultsKey.screenshotFileNumberNext)
-            let expanded = ScreenshotSupport.expandFileNamePattern(pattern, date: Date(), number: number)
-            defaults.set(number + 1, forKey: DefaultsKey.screenshotFileNumberNext)
-            return (expanded + ".png", number)
-        } else {
-            let expanded = ScreenshotSupport.expandFileNamePattern(pattern, date: Date(), number: 0)
-            return (expanded + ".png", nil)
+    /// Every screenshot output uses the same template and exclusive-create
+    /// algorithm, whether the user clicks Save in a preview, editor or pin.
+    static func saveImageData(_ data: Data, at date: Date = Date()) throws -> URL {
+        try CaptureSaveLocation.withFolder { folder in
+            try CaptureSaveNaming.saveData(data, in: folder, date: date,
+                                           media: .screenshot, ext: "png")
         }
     }
 
-    /// Gives a consumed "%#" number back after its save failed or was
-    /// deleted — but only while nothing else advanced the sequence since,
-    /// so a rewind can never undo another capture's number.
-    static func rewindNumberSequence(toReuse consumed: Int) {
-        let defaults = UserDefaults.standard
-        guard defaults.integer(forKey: DefaultsKey.screenshotFileNumberNext) == consumed + 1 else {
-            return
-        }
-        defaults.set(consumed, forKey: DefaultsKey.screenshotFileNumberNext)
-    }
 }
 
 /// One atomic image-plus-ID cache record keeps the shortcut useful across

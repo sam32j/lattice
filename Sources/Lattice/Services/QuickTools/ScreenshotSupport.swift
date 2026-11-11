@@ -164,8 +164,9 @@ enum ScreenshotSupport {
                                                     standaloneScreenshot: Bool,
                                                     requiresDraggedRegion: Bool,
                                                     scrollingCaptureEnabled: Bool) -> Bool {
-        let isScreenshot = standaloneScreenshot || selectedTool == .screenshot
-        return isScreenshot && !requiresDraggedRegion && !scrollingCaptureEnabled
+        let canCaptureFullDisplay = standaloneScreenshot || selectedTool == .screenshot
+            || selectedTool == .recording
+        return canCaptureFullDisplay && !requiresDraggedRegion && !scrollingCaptureEnabled
     }
 
     static func fullScreenCaptureControlIsVisible(isAvailable: Bool,
@@ -317,48 +318,10 @@ enum ScreenshotSupport {
         return kept
     }
 
-    static func automaticActionSucceeded(_ action: ScreenshotDefaultAction,
-                                         saved: Bool,
-                                         copied: Bool) -> Bool {
-        switch action {
-        case .none, .edit: return false
-        case .save: return saved
-        case .saveAndCopy: return saved && copied
-        case .copy: return copied
-        }
-    }
-
-    static func shouldShowQuickPreview(defaultAction: ScreenshotDefaultAction,
-                                       saved: Bool,
-                                       copied: Bool,
-                                       confirmationEnabled: Bool) -> Bool {
-        switch defaultAction {
-        case .none: return true
-        case .edit: return false
-        case .save, .saveAndCopy, .copy:
-            return confirmationEnabled
-                || !automaticActionSucceeded(defaultAction, saved: saved, copied: copied)
-        }
-    }
-
-    /// Whether a finished capture shows a preview after its automatic action.
-    /// Its lifetime is now controlled solely by CapturePreviewClosePolicy.
-    enum QuickPreviewPresentation: Equatable {
-        case hidden
-        case shown
-    }
-
-    /// Decide only whether to show a preview. Its focus and lifetime come
-    /// from the shared image/video settings, not the retired per-action timer.
-    static func quickPreviewPresentation(defaultAction: ScreenshotDefaultAction,
-                                         saved: Bool,
-                                         copied: Bool,
-                                         defaults: UserDefaults) -> QuickPreviewPresentation {
-        guard shouldShowQuickPreview(
-            defaultAction: defaultAction, saved: saved, copied: copied,
-            confirmationEnabled: defaults.bool(forKey: DefaultsKey.screenshotPreviewEnabled))
-        else { return .hidden }
-        return .shown
+    /// A completed screenshot always enters Quick Preview unless the editor
+    /// was requested. Returning from the editor starts a new preview lifetime.
+    static func shouldShowQuickPreview(openEditorAfterCapture: Bool) -> Bool {
+        !openEditorAfterCapture
     }
 
     /// Captures go to the shelf on their own only while the shelf is
@@ -2122,27 +2085,17 @@ enum ScreenshotSupport {
         return min(max(zoom * factor, captureLoupeMinZoom), captureLoupeMaxZoom)
     }
 
-    /// Step mode advances by exactly one drawable pixel-grid level. A fixed
-    /// percentage cannot promise that: at the wide end it can skip two odd
-    /// sample sizes, while at the narrow end it can round back to the same
-    /// size and appear to do nothing.
+    /// Option+scroll moves between the same four levels shown in Settings.
+    /// The direction is always one adjacent preset, never a fractional jump.
     static func captureLoupeSteppedZoom(_ zoom: CGFloat,
                                         adjustedBy scrollDelta: CGFloat) -> CGFloat {
+        let levels = captureLoupeDefaultZooms.map { CGFloat($0) }
         let clamped = min(max(zoom, captureLoupeMinZoom), captureLoupeMaxZoom)
         guard scrollDelta.isFinite, scrollDelta != 0 else { return clamped }
-
-        let currentSide = captureLoupeSampleSide(zoom: clamped)
-        let widestSide = captureLoupeSampleSide(zoom: captureLoupeMinZoom)
-        let targetSide = scrollDelta > 0
-            ? max(captureLoupeMinSampleSide, currentSide - 2)
-            : min(widestSide, currentSide + 2)
-        guard targetSide != currentSide else { return clamped }
-
-        // The widest level lies just below the numeric minimum when expressed
-        // as base / side, so it deliberately resolves to the public boundary.
-        if targetSide == widestSide { return captureLoupeMinZoom }
-        return min(max(captureLoupeBaseSampleSide / targetSide,
-                       captureLoupeMinZoom), captureLoupeMaxZoom)
+        if scrollDelta > 0 {
+            return levels.first(where: { $0 > clamped + 0.001 }) ?? levels[levels.count - 1]
+        }
+        return levels.last(where: { $0 < clamped - 0.001 }) ?? levels[0]
     }
 
     /// Sampled source pixels per side. Always an odd whole number, never
@@ -3035,8 +2988,8 @@ enum ScreenshotSupport {
 }
 
 /// The action to run automatically right after a capture, chosen in
-/// Settings. `.none` leaves the quick-preview HUD waiting for the user, as
-/// before this setting existed.
+/// Legacy persisted action, retained only to migrate older preferences into
+/// independent copy, save and editor toggles.
 enum ScreenshotDefaultAction: String, CaseIterable {
     case none = ""
     case save
@@ -3044,24 +2997,10 @@ enum ScreenshotDefaultAction: String, CaseIterable {
     case copy
     case edit
 
-    /// The persisted choice; an unknown raw value reads as `.none`.
-    static var current: ScreenshotDefaultAction {
-        let raw = UserDefaults.standard.string(forKey: DefaultsKey.screenshotDefaultAction) ?? ""
-        return ScreenshotDefaultAction(rawValue: raw) ?? .none
-    }
-
     /// Copy and Save and copy put every capture on the clipboard.
     var copiesToClipboard: Bool { self == .copy || self == .saveAndCopy }
 
-    /// The same choice without its clipboard half. Turning automatic copy
-    /// off in Settings applies this, so Save and copy keeps saving.
-    var withoutCopy: ScreenshotDefaultAction {
-        switch self {
-        case .copy: return .none
-        case .saveAndCopy: return .save
-        case .none, .save, .edit: return self
-        }
-    }
+
 }
 
 /// One lifetime rule for screenshot and recording previews on both surfaces.

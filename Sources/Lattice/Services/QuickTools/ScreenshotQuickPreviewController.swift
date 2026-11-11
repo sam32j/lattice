@@ -29,7 +29,6 @@ final class ScreenshotQuickPreviewController {
 
     private let capture: ScreenshotSelectionController.Capture
     private let strings: ScreenshotFeatureStrings
-    private let defaultAction: ScreenshotDefaultAction
     /// Runs one action and reports which sub-actions actually happened —
     /// save-and-copy can succeed by halves, and only the done halves gray
     /// their buttons out. Empty means the action failed entirely.
@@ -49,6 +48,7 @@ final class ScreenshotQuickPreviewController {
     private var previewDragInProgress = false
     private var systemSharing = false
     private var contextMenuOpen = false
+    private var quickLookOpen = false
     private let onClose: () -> Void
     private let model = ScreenshotQuickPreviewModel()
     private var panel: ScreenshotQuickPreviewPanel?
@@ -70,7 +70,6 @@ final class ScreenshotQuickPreviewController {
 
     init(capture: ScreenshotSelectionController.Capture,
          strings: ScreenshotFeatureStrings,
-         defaultAction: ScreenshotDefaultAction,
          completedActions: Set<Action>,
          action: @escaping (Action) -> Set<Action>,
          deleteCapture: @escaping (@escaping (Bool) -> Void) -> Void,
@@ -84,7 +83,6 @@ final class ScreenshotQuickPreviewController {
         self.capture = capture
         self.openedFromHistory = openedFromHistory
         self.strings = strings
-        self.defaultAction = defaultAction
         // Every preview, including one opened from history, follows the
         // shared preference for focus and lifetime.
         self.closePolicy = CapturePreviewClosePolicy.current()
@@ -339,9 +337,25 @@ final class ScreenshotQuickPreviewController {
     private func showQuickLook() {
         guard !closed else { return }
         dismissWork?.cancel()
-        if ScreenshotQuickLookController.shared.isVisible { ScreenshotQuickLookController.shared.close(); return }
-        if !ScreenshotQuickLookController.shared.show(image: capture.image, scale: capture.scale,
-            owner: panel ?? NotchService.shared.presentationWindow) { NSSound.beep() }
+        dismissWork = nil
+        if ScreenshotQuickLookController.shared.isVisible {
+            ScreenshotQuickLookController.shared.close()
+            return
+        }
+        quickLookOpen = true
+        let shown = ScreenshotQuickLookController.shared.show(
+            image: capture.image, scale: capture.scale,
+            owner: panel ?? NotchService.shared.presentationWindow,
+            onDismiss: { [weak self] in
+                guard let self else { return }
+                self.quickLookOpen = false
+                if !self.closed { self.scheduleAutoDismiss() }
+            })
+        if !shown {
+            quickLookOpen = false
+            NSSound.beep()
+            scheduleAutoDismiss()
+        }
     }
 
     private func fileForMenu() -> URL? {
@@ -585,7 +599,7 @@ final class ScreenshotQuickPreviewController {
     }
 
     private func scheduleAutoDismiss() {
-        guard !closed, !deletingCapture,
+        guard !closed, !quickLookOpen, !deletingCapture,
               !pointerInside, !previewDragInProgress, !contextMenuOpen, !systemSharing, !model.sharing,
               let dismissDuration = closePolicy.timeout
         else { return }
@@ -600,7 +614,7 @@ final class ScreenshotQuickPreviewController {
         focusLossObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didResignKeyNotification, object: window, queue: .main
         ) { [weak self] _ in
-            guard let self, !self.closed,
+            guard let self, !self.closed, !self.quickLookOpen,
                   !self.systemSharing, !self.contextMenuOpen,
                   !self.model.sharing, !self.deletingCapture else { return }
             self.close()

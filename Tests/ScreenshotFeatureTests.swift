@@ -99,71 +99,38 @@ enum ScreenshotFeatureTests {
         suite.expect(successfulCopy && linkEvents == [copyRecord.url.absoluteString, "dismiss"],
                      "a successful link copy dismisses the preview only after copying the URL")
 
-        let retryCaptureID = UUID()
-        var copyRetry = ScreenshotLinkCopyRetry()
-        copyRetry.remember(copyRecord, for: retryCaptureID)
-        suite.expect(copyRetry.record(for: retryCaptureID, availableRecords: [copyRecord]) == copyRecord,
-                     "a clipboard failure offers the same uploaded link for retry")
-        suite.expect(copyRetry.record(for: UUID(), availableRecords: [copyRecord]) == nil,
-                     "a new screenshot does not retry the previous screenshot's link")
-        suite.expect(copyRetry.record(for: retryCaptureID, availableRecords: []) == nil,
-                     "a revoked link cannot be copied by the upload shortcut")
-        suite.expect(copyRetry.record(for: retryCaptureID, availableRecords: [copyRecord],
-                                      now: copyRecord.expiresAt) == nil,
-                     "an expired link cannot be copied by the upload shortcut")
-        copyRetry.clear()
-        suite.expect(copyRetry.record(for: retryCaptureID, availableRecords: [copyRecord]) == nil,
-                     "successful copying clears the pending retry")
-
-        let uploadDefaultsName = "io.github.sam32j.lattice.tests.screenshot-upload.\(UUID().uuidString)"
+        let uploadDefaultsName = "io.github.sam32j.lattice.tests.screenshot-share.\(UUID().uuidString)"
         let uploadDefaults = UserDefaults(suiteName: uploadDefaultsName)!
         defer { uploadDefaults.removePersistentDomain(forName: uploadDefaultsName) }
         suite.expect(ScreenshotShareDuration.saved(in: uploadDefaults) == .oneHour,
-                     "an unset upload expiry defaults to one hour")
+                     "an unset Quick Link expiry defaults to one hour")
         for duration in ScreenshotShareDuration.allCases {
             uploadDefaults.set(duration.rawValue, forKey: DefaultsKey.screenshotUploadDuration)
             suite.expect(ScreenshotShareDuration.saved(in: uploadDefaults) == duration,
-                         "the upload shortcut uses each supported saved expiry")
+                         "Quick Links use each supported saved expiry")
             let url = ScreenshotSharingSupport.uploadURL(
                 endpoint: ScreenshotSharingSupport.productionEndpoint,
                 duration: .saved(in: uploadDefaults))!
             suite.expect(URLComponents(url: url, resolvingAgainstBaseURL: false)?
                 .queryItems?.first?.value == String(duration.rawValue),
-                         "the saved shortcut expiry reaches the upload request")
+                         "the saved Quick Link expiry reaches the upload request")
         }
         uploadDefaults.set(-1, forKey: DefaultsKey.screenshotUploadDuration)
         suite.expect(ScreenshotShareDuration.saved(in: uploadDefaults) == .oneHour,
                      "invalid restored expiry falls back to one hour")
         for editEnabled in [false, true] {
-            for uploadEnabled in [false, true] {
-                for sharingEnabled in [false, true] {
-                    uploadDefaults.set(editEnabled, forKey: DefaultsKey.screenshotLastCaptureShortcutEnabled)
-                    uploadDefaults.set(uploadEnabled, forKey: DefaultsKey.screenshotUploadShortcutEnabled)
-                    uploadDefaults.set(sharingEnabled, forKey: DefaultsKey.screenshotSharingEnabled)
-                    let canUpload = uploadEnabled && sharingEnabled
-                    suite.expect(ScreenshotSharingSupport.uploadShortcutEnabled(in: uploadDefaults) == canUpload,
-                                 "uploads require both the shortcut and sharing to be enabled")
-                    suite.expect(ScreenshotSharingSupport.retainsLatestCapture(in: uploadDefaults)
-                        == (editEnabled || canUpload),
-                                 "either active latest-capture shortcut retains the screenshot")
-                    let roles = GlobalShortcutRole.activeRoles(
-                        isOn: { uploadDefaults.bool(forKey: $0) },
-                        isAvailable: { $0 == .screenshot })
-                    suite.expect(roles.contains(.screenshotUpload) == canUpload,
-                                 "shortcut conflict detection follows upload availability")
-                }
+            for sharingEnabled in [false, true] {
+                uploadDefaults.set(editEnabled, forKey: DefaultsKey.screenshotLastCaptureShortcutEnabled)
+                uploadDefaults.set(sharingEnabled, forKey: DefaultsKey.screenshotSharingEnabled)
+                suite.expect(ScreenshotSharingSupport.retainsLatestCapture(in: uploadDefaults) == editEnabled,
+                             "only Edit latest screenshot retains the original; sharing does not")
             }
         }
-        suite.expect(!GlobalShortcutRole.activeRoles(isOn: { _ in true },
-                                                     isAvailable: { _ in false })
-            .contains(.screenshotUpload), "unavailable screenshots disable the upload shortcut")
         let uploadBackupKeys = SettingsBackupSupport.exportKeys()
-        suite.expect([DefaultsKey.screenshotUploadShortcutEnabled,
-                      DefaultsKey.screenshotUploadShortcut,
-                      DefaultsKey.screenshotUploadDuration].allSatisfy(uploadBackupKeys.contains),
-                     "upload shortcut and expiry settings travel in backups")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.screenshotUploadShortcutEnabled]
-            as? Bool == false, "uploading by shortcut is opt-in")
+        suite.expect(uploadBackupKeys.contains(DefaultsKey.screenshotUploadDuration),
+                     "Quick Link expiry settings travel in backups")
+        suite.expect(!GlobalShortcutRole.allCases.map(\.storageKey).contains("screenshotUploadShortcut"),
+                     "the old upload hotkey is no longer a registered shortcut role")
 
         let ownScreenshotWindows: Set<CGWindowID> = [11, 12, 13]
         let protectedScreenshotWindows: Set<CGWindowID> = [12, 99]
@@ -908,10 +875,9 @@ enum ScreenshotFeatureTests {
         suite.expect(ScreenshotDefaultAction.allCases.filter(\.copiesToClipboard)
                 == [.saveAndCopy, .copy],
                "only Copy and Save and copy put the capture on the clipboard")
-        suite.expect(ScreenshotDefaultAction.allCases.map(\.withoutCopy)
-                == [.none, .save, .save, .none, .edit]
-                && ScreenshotDefaultAction.allCases.allSatisfy { !$0.withoutCopy.copiesToClipboard },
-               "turning automatic copy off drops only the copy half of the after-capture action")
+        suite.expect(Defaults.registeredDefaults[DefaultsKey.screenshotSaveAutomatically] as? Bool == false
+                && Defaults.registeredDefaults[DefaultsKey.screenshotOpenEditorAfterCapture] as? Bool == false,
+               "new after-capture actions default off independently of legacy picker choices")
         let closeDefaultsDomain = "io.github.sam32j.lattice.tests.capture-close-policy.\(UUID().uuidString)"
         let closeDefaults = UserDefaults(suiteName: closeDefaultsDomain)!
         defer { closeDefaults.removePersistentDomain(forName: closeDefaultsDomain) }
@@ -938,74 +904,19 @@ enum ScreenshotFeatureTests {
                           forKey: DefaultsKey.capturePreviewCloseAfter)
         suite.expect(CapturePreviewClosePolicy.current(in: closeDefaults).timeout == nil,
                "until-close previews have no timer")
-        suite.expect(ScreenshotSupport.shouldShowQuickPreview(defaultAction: .none,
-                                                              saved: false,
-                                                              copied: false,
-                                                              confirmationEnabled: false)
-                && !ScreenshotSupport.shouldShowQuickPreview(defaultAction: .edit,
-                                                              saved: false,
-                                                              copied: false,
-                                                              confirmationEnabled: true)
-                && ScreenshotSupport.shouldShowQuickPreview(defaultAction: .copy,
-                                                             saved: false,
-                                                             copied: true,
-                                                             confirmationEnabled: true)
-                && !ScreenshotSupport.shouldShowQuickPreview(defaultAction: .copy,
-                                                              saved: false,
-                                                              copied: true,
-                                                              confirmationEnabled: false)
-                && ScreenshotSupport.shouldShowQuickPreview(defaultAction: .copy,
-                                                             saved: false,
-                                                             copied: false,
-                                                             confirmationEnabled: false)
-                && !ScreenshotSupport.shouldShowQuickPreview(defaultAction: .save,
-                                                              saved: true,
-                                                              copied: false,
-                                                              confirmationEnabled: false)
-                && ScreenshotSupport.shouldShowQuickPreview(defaultAction: .saveAndCopy,
-                                                             saved: true,
-                                                             copied: false,
-                                                             confirmationEnabled: false)
-                && ScreenshotSupport.shouldShowQuickPreview(defaultAction: .saveAndCopy,
-                                                             saved: true,
-                                                             copied: true,
-                                                             confirmationEnabled: true)
-                && !ScreenshotSupport.shouldShowQuickPreview(defaultAction: .saveAndCopy,
-                                                              saved: true,
-                                                              copied: true,
-                                                              confirmationEnabled: false),
-               "automatic actions honor confirmation preferences while failed or partial actions still expose recovery controls")
-        // The decision route makes after the action ran, read from settings.
-        let routeDefaultsDomain = "io.github.sam32j.lattice.tests.screenshot-preview-route.\(UUID().uuidString)"
-        let routeDefaults = UserDefaults(suiteName: routeDefaultsDomain)!
-        defer { routeDefaults.removePersistentDomain(forName: routeDefaultsDomain) }
-        func routePreview(_ action: ScreenshotDefaultAction, saved: Bool = false,
-                          copied: Bool = false) -> ScreenshotSupport.QuickPreviewPresentation {
-            ScreenshotSupport.quickPreviewPresentation(defaultAction: action, saved: saved,
-                                                       copied: copied, defaults: routeDefaults)
-        }
-        routeDefaults.set(true, forKey: DefaultsKey.screenshotPreviewEnabled)
-        suite.expect(routePreview(.save, saved: true) == .shown
-                && routePreview(.copy, copied: true) == .shown
-                && routePreview(.none) == .shown && routePreview(.edit) == .hidden,
-               "preview routing depends on action success, not a discarded duration setting")
-        routeDefaults.set(false, forKey: DefaultsKey.screenshotPreviewEnabled)
-        suite.expect(routePreview(.save, saved: true) == .hidden
-                && routePreview(.saveAndCopy, saved: true, copied: true) == .hidden
-                && routePreview(.save) == .shown
-                && routePreview(.saveAndCopy, saved: true) == .shown
-                && routePreview(.copy) == .shown,
-               "failed and partial actions still expose recovery when confirmation is off")
+        suite.expect(ScreenshotSupport.shouldShowQuickPreview(openEditorAfterCapture: false)
+                && !ScreenshotSupport.shouldShowQuickPreview(openEditorAfterCapture: true),
+               "every screenshot opens Quick Preview unless the editor opens first")
         let screenshotRouteBody = ((try? String(
             contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenshotService.swift",
             encoding: .utf8)) ?? "")
             .components(separatedBy: "    private func route(_ capture:").dropFirst().first?
             .components(separatedBy: "\n    }\n").first ?? ""
-        suite.expect(screenshotRouteBody.contains("guard case .shown = ScreenshotSupport.quickPreviewPresentation(")
-                && screenshotRouteBody.contains("defaults: defaults)\n        else { return }\n        presentPreview(capture,")
-                && screenshotRouteBody.components(separatedBy: "presentPreview(").count == 2
-                && !screenshotRouteBody.contains("dismissInterval:"),
-               "route selects a preview without forwarding obsolete dismissal intervals")
+        suite.expect(screenshotRouteBody.contains("DefaultsKey.screenshotOpenEditorAfterCapture")
+                && screenshotRouteBody.contains("DefaultsKey.screenshotSaveAutomatically")
+                && screenshotRouteBody.contains("presentPreview(capture,")
+                && !screenshotRouteBody.contains("quickPreviewPresentation("),
+               "independent after-capture actions always end in preview or editor")
 
         // A gesture that ends with more than one release, like a drag made
         // with three fingers, delivers events after the capture is over.
@@ -1097,10 +1008,8 @@ enum ScreenshotFeatureTests {
                 && panelRecentCapturesSource.contains("formattedCaptureTime")
                 && panelRecentCapturesSource.contains("islandCard"),
                "recent captures in dynamic island do not track seconds and use redesigned cards")
-        suite.expect(panelRecentCapturesSource.contains("NotchIslandAlert.run(alert, above: NotchService.shared.presentationWindow)")
-                && panelRecentCapturesSource.contains("alert.addButton(withTitle: \"Delete Captures\").hasDestructiveAction = true")
-                && panelRecentCapturesSource.contains("RecentCaptureService.shared.clearAndDeleteCaptureFiles")
-                && panelRecentCapturesSource.contains("Recordings saved elsewhere will be moved to Trash"),
+        suite.expect(panelRecentCapturesSource.contains("NotchIslandAlert.confirmDestructive(")
+                && panelRecentCapturesSource.contains("RecentCaptureService.shared.clearAndDeleteCaptureFiles"),
                "island Clear History confirms above the Island before deleting stored captures and history")
         suite.expect(recentCaptureServiceSource.contains("func clearAndDeleteCaptureFiles(")
                 && recentCaptureServiceSource.contains("self.manager.trashItem(at: file, resultingItemURL: nil)")
@@ -1206,7 +1115,7 @@ enum ScreenshotFeatureTests {
             standaloneScreenshot: false,
             requiresDraggedRegion: false,
             scrollingCaptureEnabled: false)
-                && !ScreenshotSupport.fullScreenCaptureControlIsAvailable(
+                && ScreenshotSupport.fullScreenCaptureControlIsAvailable(
                     selectedTool: .recording,
                     standaloneScreenshot: false,
                     requiresDraggedRegion: false,
@@ -1221,7 +1130,13 @@ enum ScreenshotFeatureTests {
                     standaloneScreenshot: false,
                     requiresDraggedRegion: false,
                     scrollingCaptureEnabled: false),
-               "the unified chooser offers full screen only for screenshots")
+               "the unified chooser offers full screen for screenshots and recordings, not OCR or color")
+        suite.expect(!ScreenshotSupport.fullScreenCaptureControlIsAvailable(
+            selectedTool: .recording,
+            standaloneScreenshot: false,
+            requiresDraggedRegion: true,
+            scrollingCaptureEnabled: false),
+            "recorders explicitly requiring a dragged region do not expose full-screen")
         suite.expect(!ScreenshotSupport.fullScreenCaptureControlIsAvailable(
             selectedTool: .screenshot,
             standaloneScreenshot: false,
@@ -1352,12 +1267,11 @@ enum ScreenshotFeatureTests {
         let routeStatements = serviceBody("    private func route(_ capture:")
             .components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
-        suite.expect(serviceBody("    private func teardownSurfaces() {").contains("invalidateLatestCaptureUploads()")
-                && routeStatements.dropFirst().first == "beginLatestCapture(capture)",
-               "turning screenshots off invalidates pending shortcut uploads, and every capture starts as the latest one")
-        suite.expect(serviceBody("    func syncWithPreferences() {")
-                    .contains("enabled: ScreenshotSharingSupport.uploadShortcutEnabled(in: defaults),"),
-               "the upload shortcut is registered only while it and temporary links are both on")
+        suite.expect(routeStatements.dropFirst().first == "beginLatestCapture(capture)",
+                     "every screenshot begins as the latest capture for preview and edit retention")
+        suite.expect(!serviceBody("    func syncWithPreferences() {").contains("uploadHotkey.sync(")
+                     && !screenshotServiceCode.contains("uploadLastCapture()"),
+                     "removed upload shortcut has no registration or action")
         suite.expect(serviceBody("    private func route(_ capture:").contains("latestCapture: latestCaptureToken)")
                 && serviceBody("    func restorePreview(").contains("latestCapture: nil")
                 && screenshotServiceCode.contains("self.discardLatestCapture(latestCapture)\n                    return [.discard]"),
@@ -3277,21 +3191,19 @@ enum ScreenshotFeatureTests {
             scrollingDelta: 0, lineDelta: -1, fixedPointDelta: 0), -1,
                     "ordinary line-based mouse-wheel notches remain available to the magnifier")
         var steppedLoupeZoom = ScreenshotSupport.captureLoupeMinZoom
-        var steppedLoupeSides: [CGFloat] = []
-        for _ in 0..<12 {
+        let steppedLevels = [0.5, 1.0, 2.0, 4.0].map { CGFloat($0) }
+        for level in steppedLevels.dropFirst() {
             steppedLoupeZoom = ScreenshotSupport.captureLoupeSteppedZoom(
                 steppedLoupeZoom, adjustedBy: 0.25)
-            steppedLoupeSides.append(
-                ScreenshotSupport.captureLoupeSampleSide(zoom: steppedLoupeZoom))
+            suite.expectClose(steppedLoupeZoom, level,
+                   "Option+scroll advances one of the four named preset zoom levels")
         }
-        suite.expect(steppedLoupeSides == [25, 23, 21, 19, 17, 15, 13, 11, 9, 7, 5, 3],
-               "every stepped wheel notch changes one visible level across the whole zoom range")
-        for _ in 0..<12 {
+        for level in steppedLevels.dropLast().reversed() {
             steppedLoupeZoom = ScreenshotSupport.captureLoupeSteppedZoom(
                 steppedLoupeZoom, adjustedBy: -0.25)
+            suite.expectClose(steppedLoupeZoom, level,
+                   "Option+scroll reverses exactly one preset level")
         }
-        suite.expectClose(steppedLoupeZoom, ScreenshotSupport.captureLoupeMinZoom,
-                    "all stepped magnifier levels are reversible without dead notches")
         var plainFastZoom = ScreenshotSupport.captureLoupeMinZoom
         var plainFastNotches = 0
         while plainFastZoom < ScreenshotSupport.captureLoupeMaxZoom, plainFastNotches < 20 {
@@ -3386,13 +3298,11 @@ enum ScreenshotFeatureTests {
                "screenshot preview placement preserves the existing automatic behavior by default")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.screenshotPreviewTakesFocus] as? Bool == true,
                "the screenshot preview takes the keyboard as it appears by default, so its shortcuts work at once; leaving it is the opt-out")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.screenshotPreviewEnabled] as? Bool == true
-                && Defaults.registeredDefaults[DefaultsKey.capturePreviewCloseAfter] as? String
+        suite.expect(Defaults.registeredDefaults[DefaultsKey.capturePreviewCloseAfter] as? String
                     == CapturePreviewClosePolicy.fiveSeconds.rawValue,
-               "screenshot confirmation remains on and uses the shared five-second close default")
-        suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.screenshotPreviewEnabled)
-                && SettingsBackupSupport.exportKeys().contains(DefaultsKey.capturePreviewCloseAfter),
-               "screenshot confirmation and shared preview lifetime travel in settings backups")
+               "screenshot previews always open and use the shared five-second close default")
+        suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.capturePreviewCloseAfter),
+               "the shared preview lifetime travels in settings backups")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.screenshotAddToShelf] as? Bool == false
                 && SettingsBackupSupport.exportKeys().contains(DefaultsKey.screenshotAddToShelf),
                "adding captures to the shelf ships off and travels in settings backups")

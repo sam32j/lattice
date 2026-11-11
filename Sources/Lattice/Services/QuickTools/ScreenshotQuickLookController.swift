@@ -17,6 +17,7 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
     private var previewPanel: QLPreviewPanel?
     private var originalLevel: NSWindow.Level?
     private var isTemporaryURL = false
+    private var onDismiss: (() -> Void)?
     var presentationWindow: NSWindow? { previewPanel }
     var isVisible: Bool { previewPanel?.isVisible == true }
     var protectedWindowIDs: Set<CGWindowID> {
@@ -24,7 +25,8 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
         return [CGWindowID(previewPanel.windowNumber)]
     }
 
-    @discardableResult func show(image: CGImage, scale: CGFloat, owner: NSWindow?) -> Bool {
+    @discardableResult func show(image: CGImage, scale: CGFloat, owner: NSWindow?,
+                                 onDismiss: (() -> Void)? = nil) -> Bool {
         close()
         let bitmap = NSBitmapImageRep(cgImage: image)
         bitmap.size = NSSize(width: CGFloat(image.width) / max(1, scale),
@@ -35,15 +37,18 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
             guard let data = bitmap.representation(using: .png, properties: [:]) else { return false }
             try data.write(to: url, options: .withoutOverwriting)
         } catch { return false }
-        return present(url: url, temporary: true, owner: owner)
+        return present(url: url, temporary: true, owner: owner, onDismiss: onDismiss)
     }
 
-    @discardableResult func show(url: URL, owner: NSWindow? = nil) -> Bool {
+    @discardableResult func show(url: URL, owner: NSWindow? = nil,
+                                 onDismiss: (() -> Void)? = nil) -> Bool {
         close()
-        return present(url: url, temporary: false, owner: owner)
+        return present(url: url, temporary: false, owner: owner, onDismiss: onDismiss)
     }
 
-    private func present(url: URL, temporary: Bool, owner: NSWindow?) -> Bool {
+    private func present(url: URL, temporary: Bool, owner: NSWindow?,
+                         onDismiss: (() -> Void)?) -> Bool {
+        self.onDismiss = onDismiss
         previewURL = url
         isTemporaryURL = temporary
         self.owner = owner
@@ -134,6 +139,9 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
     override func cancelOperation(_ sender: Any?) { close() }
 
     func close() {
+        // Clear this before invoking it; a dismissal callback may open another preview.
+        let completion = onDismiss
+        onDismiss = nil
         let returnFocus = previewPanel?.isKeyWindow == true
         for notification in [NSWindow.didBecomeKeyNotification, NSWindow.didBecomeMainNotification] {
             NotificationCenter.default.removeObserver(self, name: notification, object: nil)
@@ -167,5 +175,6 @@ final class ScreenshotQuickLookController: NSResponder, QLPreviewPanelDataSource
         isTemporaryURL = false
         if returnFocus, owner?.isVisible == true { owner?.makeKey() }
         owner = nil
+        completion?()
     }
 }
