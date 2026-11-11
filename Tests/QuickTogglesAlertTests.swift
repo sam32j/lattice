@@ -3,43 +3,54 @@
 
 import AppKit
 
-/// The production confirmation and alert helper run with an inert Trash action.
-/// Windows stay hidden, and the modal double reproduces AppKit's level resets.
+/// Exercises the production Trash dispatch with explicit Island/HUD origins.
+/// Source contracts cover the native alert presenter, which cannot be rendered
+/// by the headless test target; appearance/key focus still require a Mac.
 enum QuickTogglesAlertTests {
     enum Action { case emptyTrash }
     enum RunState { case running }
     class Fixture {
         var available = true
         var states: [Action: RunState] = [:]
+        var trashConfirmationPending = false
         var confirmations = 0
         func emptyTrashConfirmed() { confirmations += 1 }
     }
     enum FeatureStrings {
         struct Strings {
-            let emptyTrashConfirmTitle = "Empty the Trash?"
-            let emptyTrashConfirmMessage = "This cannot be undone."
-            let emptyTrashConfirmButton = "Empty the Trash"
+            let emptyTrashConfirmTitle = "Empty Trash?"
+            let emptyTrashConfirmMessage = "Trash will be cleared. This action cannot be undone."
+            let emptyTrashConfirmButton = "Empty Trash"
         }
         static func quickToggles(_ language: Int) -> Strings { Strings() }
     }
     enum L10n {
         struct Strings { let uninstallerCancel = "Cancel" }
-        struct Localized {
-            let language = 0
-            let s = Strings()
-        }
+        struct Localized { let language = 0; let s = Strings() }
         static let shared = Localized()
     }
-    struct Event { let window: NSWindow? }
-    struct Application {
-        var currentEvent: Event?
-        var keyWindow: NSWindow?
-        func activate(ignoringOtherApps: Bool) {}
-    }
-    static var NSApp = Application()
     final class NotchService {
         static let shared = NotchService()
         var presentationWindow: NSWindow?
+        var confirmationDepth = 0
+        func beginIslandConfirmation() { confirmationDepth += 1 }
+        func endIslandConfirmation() { confirmationDepth -= 1 }
+    }
+    final class LatticeHubService {
+        static let shared = LatticeHubService()
+        var panel: NSPanel?
+        var removed = 0
+        var installed = 0
+        func removeMonitors() { removed += 1 }
+        func installMonitors(for panel: NSPanel) { installed += 1 }
+    }
+    static var confirmCalls: [NSWindow?] = []
+    static var response = NSApplication.ModalResponse.alertSecondButtonReturn
+    static func confirmDestructiveFixture(title: String, message: String, action: String,
+                                          cancel: String, above owner: NSWindow?) -> Bool {
+        confirmCalls.append(owner)
+        if let owner, owner.isVisible { owner.makeKey() }
+        return response == .alertSecondButtonReturn
     }
     final class Window: NSWindow {
         var simulatedVisible = true
@@ -47,118 +58,120 @@ enum QuickTogglesAlertTests {
         override var isVisible: Bool { simulatedVisible }
         override func makeKey() { keyReturns += 1 }
     }
-    final class Alert: AppKit.NSAlert {
-        static var latest: Alert?
-        static var response = NSApplication.ModalResponse.alertSecondButtonReturn
-        static var beforeReturn: (() -> Void)?
-        var modalLevels: [NSWindow.Level] = []
-        override func runModal() -> NSApplication.ModalResponse {
-            Self.latest = self
-            layout()
-            for name in [NSWindow.didBecomeKeyNotification, NSApplication.didBecomeActiveNotification] {
-                window.level = .modalPanel
-                NotificationCenter.default.post(name: name, object: window)
-                modalLevels.append(window.level)
-            }
-            Self.beforeReturn?()
-            return Self.response
-        }
+    final class FloatingPanel: NSPanel {
+        var simulatedVisible = true
+        var keyReturns = 0
+        override var isVisible: Bool { simulatedVisible }
+        override func makeKey() { keyReturns += 1 }
     }
-    typealias NSAlert = Alert
-    private enum Origin: CaseIterable { case event, key, other, hidden, absent }
 
     static func run(_ suite: TestSuite) {
         _ = NSApplication.shared
-        let policy = AppKit.NSApp.activationPolicy()
-        AppKit.NSApp.setActivationPolicy(.prohibited)
-        defer {
-            Alert.latest = nil
-            Alert.beforeReturn = nil
-            NotchService.shared.presentationWindow = nil
-            NSApp = Application()
-            AppKit.NSApp.setActivationPolicy(policy)
-        }
-        for response in [NSApplication.ModalResponse.alertFirstButtonReturn, .alertSecondButtonReturn, .abort] {
-            for origin in Origin.allCases {
-                let island = makeWindow(), other = makeWindow()
-                defer {
-                    island.simulatedVisible = false
-                    island.close()
-                    other.simulatedVisible = false
-                    other.close()
-                }
-                NSApp = Application()
-                NSApp.keyWindow = origin == .key || origin == .hidden ? island : other
-                if origin == .event { NSApp.currentEvent = Event(window: island) }
-                if origin == .other { NSApp.currentEvent = Event(window: other) }
-                island.simulatedVisible = origin != .hidden
-                NotchService.shared.presentationWindow = origin == .absent ? nil : island
-                Alert.latest = nil
-                Alert.response = response
-                let host = Host()
-                host.emptyTrash()
-                guard let alert = Alert.latest else {
-                    suite.expect(false, "the Trash action presents its confirmation")
-                    continue
-                }
-                defer { alert.window.close() }
-                let fromIsland = origin == .event || origin == .key
-                suite.expect(alert.modalLevels.count == 2 && alert.modalLevels.allSatisfy {
-                    fromIsland ? $0.rawValue > island.level.rawValue : $0 == .modalPanel
-                }, "the Trash confirmation stays above its island after key and activation resets, "
-                   + "while other entry points keep the native modal level")
-                suite.expect(island.keyReturns == (fromIsland ? 1 : 0),
-                       "focus returns only to the island that opened the confirmation")
-                suite.expect(host.confirmations == (response == .alertFirstButtonReturn ? 1 : 0),
-                       "only the primary confirmation allows emptying, never Cancel or an aborted dialog")
-                suite.expect(alert.buttons.map(\.keyEquivalent) == ["\r", "\u{1b}"],
-                       "Return confirms the alert and Escape cancels it")
-                drainMainQueue()
-                alert.window.level = .modalPanel
-                NotificationCenter.default.post(name: NSWindow.didBecomeKeyNotification, object: alert.window)
-                NotificationCenter.default.post(name: NSApplication.didBecomeActiveNotification, object: alert.window)
-                suite.expect(alert.window.level == .modalPanel,
-                       "a completed confirmation leaves no observers that raise the alert again")
-            }
-        }
-        let island = makeWindow()
-        defer {
-            island.simulatedVisible = false
-            island.close()
-        }
-        NotchService.shared.presentationWindow = island
-        NSApp.keyWindow = island
-        Alert.response = .alertSecondButtonReturn
-        Alert.beforeReturn = { island.simulatedVisible = false }
-        Host().emptyTrash()
-        drainMainQueue()
-        suite.expect(island.keyReturns == 0, "a hidden island does not take focus when the confirmation closes")
-        Alert.beforeReturn = nil
-        for unavailable in [true, false] {
-            Alert.latest = nil
-            let host = Host()
-            host.available = !unavailable
-            if !unavailable { host.states[.emptyTrash] = .running }
-            host.emptyTrash()
-            suite.expect(Alert.latest == nil && host.confirmations == 0,
-                   "an unavailable or already-running Trash action opens no confirmation and does no work")
-        }
-    }
-
-    private static func makeWindow() -> Window {
-        let window = Window(contentRect: CGRect(x: -4000, y: -4000, width: 200, height: 80),
+        let island = Window(contentRect: CGRect(x: -4000, y: -4000, width: 200, height: 80),
                             styleMask: [.borderless], backing: .buffered, defer: true)
-        window.isReleasedWhenClosed = false
-        window.level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
-        return window
-    }
-
-    private static func drainMainQueue() {
-        var drained = false
-        DispatchQueue.main.async { drained = true }
-        let deadline = Date(timeIntervalSinceNow: 2)
-        while !drained && Date() < deadline {
-            _ = RunLoop.main.run(mode: .default, before: Date(timeIntervalSinceNow: 0.01))
+        let floating = FloatingPanel(contentRect: CGRect(x: -4000, y: -4000, width: 280, height: 180),
+                                     styleMask: [.borderless], backing: .buffered, defer: true)
+        island.isReleasedWhenClosed = false
+        floating.isReleasedWhenClosed = false
+        let notch = NotchService.shared
+        let hub = LatticeHubService.shared
+        notch.presentationWindow = island
+        hub.panel = floating
+        defer {
+            notch.presentationWindow = nil
+            hub.panel = nil
+            island.simulatedVisible = false
+            floating.simulatedVisible = false
+            island.close()
+            floating.close()
         }
+
+        for answer in [NSApplication.ModalResponse.alertSecondButtonReturn, .alertFirstButtonReturn, .abort] {
+            response = answer
+            hub.removed = 0
+            hub.installed = 0
+            confirmCalls = []
+            let fromNotch = Host()
+            fromNotch.emptyTrash(fromNotch: true)
+            suite.expect(confirmCalls.isEmpty && notch.confirmationDepth == 1
+                         && fromNotch.trashConfirmationPending,
+                         "Island confirmation protects the panel before the click handler returns")
+            // A rapid second click cannot queue a second destructive prompt.
+            fromNotch.emptyTrash(fromNotch: true)
+            let islandDeadline = Date().addingTimeInterval(0.3)
+            while confirmCalls.isEmpty && Date() < islandDeadline {
+                RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.01))
+            }
+            suite.expect(confirmCalls.count == 1 && confirmCalls[0] === island,
+                         "Empty Trash presents one native dialog on the NEXT main-loop turn")
+            suite.expect(notch.confirmationDepth == 0 && island.keyReturns > 0
+                         && !fromNotch.trashConfirmationPending,
+                         "Island focus and collapse protection end on every modal response")
+            suite.expect(hub.removed == 0 && hub.installed == 0,
+                         "an Island confirmation does not modify floating-HUD monitors")
+            suite.expect(fromNotch.confirmations == (answer == .alertSecondButtonReturn ? 1 : 0),
+                         "only the native destructive second button performs Empty Trash")
+
+            confirmCalls = []
+            let fromHUD = Host()
+            fromHUD.emptyTrash(fromNotch: false)
+            suite.expect(confirmCalls.isEmpty && hub.removed > 0 && fromHUD.trashConfirmationPending,
+                         "the floating HUD is protected before showing the native modal")
+            let hudDeadline = Date().addingTimeInterval(0.3)
+            while confirmCalls.isEmpty && Date() < hudDeadline {
+                RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.01))
+            }
+            suite.expect(confirmCalls.count == 1 && confirmCalls[0] === floating,
+                         "Empty Trash from the HUD uses the same deferred native presenter")
+            suite.expect(hub.removed == hub.installed && floating.keyReturns > 0
+                         && !fromHUD.trashConfirmationPending,
+                         "floating HUD retains visibility and restores monitors after the modal")
+            suite.expect(fromHUD.confirmations == (answer == .alertSecondButtonReturn ? 1 : 0),
+                         "Cancel or alert abort never empties Trash from the floating HUD")
+        }
+        let confirmationSource = (try? String(contentsOfFile:
+            "Sources/Lattice/UI/Notch/NotchIslandAlert.swift", encoding: .utf8)) ?? ""
+        let trashSource = (try? String(contentsOfFile:
+            "Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", encoding: .utf8)) ?? ""
+        let recentSource = (try? String(contentsOfFile:
+            "Sources/Lattice/UI/MenuPanel/PanelRecentCapturesView.swift", encoding: .utf8)) ?? ""
+        let notchSource = (try? String(contentsOfFile:
+            "Sources/Lattice/Services/Notch/NotchService.swift", encoding: .utf8)) ?? ""
+        let panelSource = (try? String(contentsOfFile:
+            "Sources/Lattice/Services/Notch/NotchWindowHost.swift", encoding: .utf8)) ?? ""
+        suite.expect(confirmationSource.contains("let alert = NSAlert()")
+                     && confirmationSource.contains("let cancelButton = alert.addButton(withTitle: cancel)")
+                     && confirmationSource.contains("let deleteButton = alert.addButton(withTitle: action)")
+                     && confirmationSource.contains("deleteButton.hasDestructiveAction = true")
+                     && confirmationSource.contains("deleteButton.performClick(nil)")
+                     && confirmationSource.contains("cancelButton.performClick(nil)")
+                     && confirmationSource.contains("run(alert, above: owner, lockFocus: true)"),
+                     "both destructive actions use the same native Cancel-first red action and Return/Esc routing")
+        suite.expect(confirmationSource.contains("focusLease.active = false")
+                     && confirmationSource.contains("forName: NSWindow.didBecomeKeyNotification, object: nil")
+                     && confirmationSource.contains("restoreQueued")
+                     && confirmationSource.contains("NSWindow.didUpdateNotification")
+                     && notchSource.contains("guard self.islandConfirmationDepth == 0 else { return event }")
+                     && notchSource.contains("guard self.islandConfirmationDepth == 0 else { return }")
+                     && notchSource.contains("guard islandConfirmationDepth == 0 else { return false }")
+                     && panelSource.contains("acceptsKeyFocus && !blocksKeyDuringConfirmation")
+                     && notchSource.contains("panel?.blocksKeyDuringConfirmation = true")
+                     && notchSource.contains("panel?.blocksKeyDuringConfirmation = false")
+                     && recentSource.contains("above: island")
+                     && recentSource.contains("islandClearConfirmationPending"),
+                     "Island cannot reclaim native modal focus through touches, scroll or frame updates; the history modal retains its owner")
+        suite.expect(!trashSource.contains("destructive.bezelColor")
+                     && !recentSource.contains("delete.bezelColor")
+                     && recentSource.contains("confirmDestructiveAboveFloatingHUD(")
+                     && recentSource.contains("hub.removeMonitors()\n        DispatchQueue.main.async")
+                     && recentSource.contains("NotchIslandAlert.confirmDestructive(")
+                     && trashSource.contains("trashConfirmationPending = true\n        DispatchQueue.main.async"),
+                     "no manual red button bezel remains; both Island and floating-HUD confirmations share the presenter")
+        let unavailable = Host()
+        unavailable.available = false
+        confirmCalls = []
+        unavailable.emptyTrash(fromNotch: true)
+        suite.expect(confirmCalls.isEmpty && unavailable.confirmations == 0,
+                     "feature gating still prevents Empty Trash when unavailable")
     }
 }

@@ -12,7 +12,7 @@ enum HubControlActionTests {
             set { states[.emptyTrash] = newValue ? .needsPermission : nil }
         }
         func state(for action: QuickToggleAction) -> RunState? { denied ? .needsPermission : nil }
-        func emptyTrash() { events.append("confirmTrash") }
+        func emptyTrash(fromNotch: Bool = false) { events.append(fromNotch ? "confirmTrash.island" : "confirmTrash.hub") }
         func toggleDarkMode() {}
         func toggleHiddenFiles() {}
         func toggleDesktopIcons() {}
@@ -57,12 +57,16 @@ enum HubControlActionTests {
     static func run(_ suite: TestSuite) {
         defer { QuickTogglesService.shared.denied = false; events = [] }
         events = []
-        Action.emptyTrash.run { events.append("dismiss") }
-        suite.expect(events == ["confirmTrash"],
+        Action.emptyTrash.run(onDismiss: { events.append("dismiss") })
+        suite.expect(events == ["confirmTrash.hub"],
                      "Trash confirmation keeps its Hub visible so cancellation and errors remain visible")
         events = []
+        Action.emptyTrash.run(onDismiss: { events.append("dismiss") }, fromNotch: true)
+        suite.expect(events == ["confirmTrash.island"],
+                     "the Island control explicitly routes its own confirmation")
+        events = []
         QuickTogglesService.shared.denied = true
-        Action.emptyTrash.run { events.append("dismiss") }
+        Action.emptyTrash.run(onDismiss: { events.append("dismiss") })
         suite.expect(events == ["settings"] && !QuickTogglesService.shared.denied,
                      "denied Trash consent opens permission settings and allows a later retry")
         cameraControls(suite)
@@ -84,21 +88,21 @@ enum HubControlActionTests {
                                                               .lockScreen, .displayOff, .screenSaver],
                      "the second row follows the requested order while preserving primary toggles")
         events = []
-        Action.cameraPreview.run { events.append("dismiss") }
+        Action.cameraPreview.run(onDismiss: { events.append("dismiss") })
         suite.expect(events == ["dismiss"] && DispatchQueue.main.jobs.count == 1,
                      "a floating camera opens only after the Hub dismisses")
         DispatchQueue.main.drain()
         suite.expect(events == ["dismiss", "camera.show"], "the camera quick control opens the floating preview")
         events = []
-        Action.cameraPreview.run { events.append("dismiss") }
+        Action.cameraPreview.run(onDismiss: { events.append("dismiss") })
         suite.expect(events == ["camera.hide"] && !camera.isVisible, "a second activation hides the floating preview")
         camera.routesToNotch = true
         events = []
-        Action.cameraPreview.run { events.append("dismiss") }
+        Action.cameraPreview.run(onDismiss: { events.append("dismiss") })
         suite.expect(events == ["camera.notch", "dismiss"] && DispatchQueue.main.jobs.isEmpty,
                      "camera routing transfers to the island without a delayed reopen")
         events = []
-        Action.cameraPreview.run { events.append("dismiss") }
+        Action.cameraPreview.run(onDismiss: { events.append("dismiss") })
         suite.expect(events == ["camera.hide"] && !camera.isEmbeddedPresented,
                      "the quick control can stop an embedded preview")
     }

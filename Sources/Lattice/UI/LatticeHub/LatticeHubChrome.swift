@@ -165,7 +165,9 @@ extension LatticeHubView {
     /// This matches the capture Trash control in the Island header.
     var floatingClearCapturesButton: some View {
         Button {
-            confirmingClearCaptures = true
+            // A SwiftUI confirmationDialog attached to a non-activating HUD
+            // panel can dismiss its host before the dialog becomes visible.
+            RecentCapturesView.confirmClearAboveFloatingHUD()
         } label: {
             Image(systemName: "trash")
                 .font(.system(size: 13, weight: .semibold))
