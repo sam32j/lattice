@@ -1497,6 +1497,9 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     private var scrollMonitor: Any?
     private var pointerMonitor: Any?
     private var doneSaveInFlight = false
+    /// The last file the editor actually exported. Done only persists editable
+    /// history, and must not be mistaken for an external Save operation.
+    private(set) var lastSavedExportURL: URL?
 
     var protectedWindowIDs: Set<CGWindowID> {
         guard let window, window.isVisible, window.windowNumber > 0 else { return [] }
@@ -1841,6 +1844,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         do {
             let url = try ScreenshotService.saveImageData(data, at: capture.capturedAt)
             ScreenshotSupport.markAsScreenCapture(url)
+            lastSavedExportURL = url
             model.markExported()
             QuickToolHUD.show(icon: "camera.viewfinder",
                               message: String(format: strings.savedHUDFormat,
@@ -1864,6 +1868,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         else { return }
         do {
             try data.write(to: url, options: .atomic)
+            lastSavedExportURL = url
             model.markExported()
             self.window?.close()
         } catch {
