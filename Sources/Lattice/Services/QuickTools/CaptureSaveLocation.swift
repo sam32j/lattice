@@ -54,7 +54,7 @@ enum CaptureSaveLocation {
             defer { if scoped { resolved.stopAccessingSecurityScopedResource() } }
             if isWritable(resolved) { return try work(resolved) }
         }
-        folder = chooseFolder()
+        folder = try chooseFolderForSave()
         guard let folder else { throw Failure.notSelected }
         let scoped = folder.startAccessingSecurityScopedResource()
         defer { if scoped { folder.stopAccessingSecurityScopedResource() } }
@@ -80,19 +80,30 @@ enum CaptureSaveLocation {
     }
 
     static func chooseFolder() -> URL? {
-        if Thread.isMainThread { return presentPicker() }
-        return DispatchQueue.main.sync { presentPicker() }
+        // UI callers can still opt into cancellation-as-nil. A failed
+        // bookmark write, unlike cancellation, must show a native error.
+        do { return try chooseFolderForSave() }
+        catch Failure.notSelected { return nil }
+        catch {
+            presentSaveError(error)
+            return nil
+        }
     }
 
-    private static func presentPicker() -> URL? {
+    static func chooseFolderForSave() throws -> URL {
+        if Thread.isMainThread { return try presentPicker() }
+        return try DispatchQueue.main.sync { try presentPicker() }
+    }
+
+    private static func presentPicker() throws -> URL {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
         panel.directoryURL = resolvedFolder() ?? defaultFolder
-        guard panel.runModal() == .OK, let chosen = panel.url else { return nil }
-        do { try store(chosen) } catch { return nil }
+        guard panel.runModal() == .OK, let chosen = panel.url else { throw Failure.notSelected }
+        try store(chosen)
         return chosen
     }
 }

@@ -93,7 +93,7 @@ struct CaptureSettings: View {
                                         .fixedSize()
                                 }
                             }
-                            if !islandEnabled || presentationDestination == CapturePresentationRouting.Preference.floatingWindow.rawValue {
+                            if !islandEnabled || presentationDestination != CapturePresentationRouting.Preference.dynamicIsland.rawValue {
                                 SettingsControlRow(title: screenshotStrings.previewPositionLabel) {
                                     CapturePreviewPositionPicker()
                                         .labelsHidden()
@@ -129,12 +129,14 @@ struct CaptureSettings: View {
                             }
                         }
                         }
-                        sharingCard
                     }
                     // Fade in the space *below* the master cards. A top-edge
                     // move transition painted these sections over Recording.
                     .transition(.opacity)
                     .clipped()
+                }
+                if screenshotEnabled || recorderEnabled || activeCreatedLinksCount > 0 {
+                    sharingCard
                 }
             }
             .frame(maxWidth: 760)
