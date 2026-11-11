@@ -211,46 +211,20 @@ enum ScreenshotShareCompletionTests {
 
     typealias ScreenshotQuickPreviewController = Controller
 
-    @MainActor class UploadState {
-        let defaultsName = "vorss.tests.screenshot-shortcut.\(UUID().uuidString)"
+    /// Exercise the production last-capture retention and discard methods.
+    @MainActor class LatestState {
+        let defaultsName = "vorss.tests.screenshot-last-capture.\(UUID().uuidString)"
         let defaults: UserDefaults
-        let strings = ScreenshotFeatureStrings.enUS
-        var uploadingCaptureID: UUID?
-        var latestCaptureID = UUID()
         var latestCaptureToken = UUID()
-        var latestCaptureWithheld = false
-        var linkCopyRetry = ScreenshotLinkCopyRetry()
-        var editors: [ScreenshotEditorController] = []
-        var preview: ScreenshotQuickPreviewController?
-        var completion: (@MainActor (ScreenshotShareRecord?) -> Void)?
-        var uploads = 0
-        var uploadedCaptures: [Int] = []
         var autoCopyTask: Task<Void, Never>?
 
         init() {
             defaults = UserDefaults(suiteName: defaultsName)!
-            defaults.set(true, forKey: DefaultsKey.screenshotUploadShortcutEnabled)
-            defaults.set(true, forKey: DefaultsKey.screenshotSharingEnabled)
             ScreenshotLastCaptureStore.stored = 1
             ScreenshotLastCaptureStore.isWithheld = false
         }
         deinit {
             UserDefaults(suiteName: defaultsName)?.removePersistentDomain(forName: defaultsName)
-        }
-        func shareDirect(_ capture: Int, duration: ScreenshotShareDuration,
-                         completion: @escaping @MainActor (ScreenshotShareRecord?) -> Void) {
-            uploads += 1
-            uploadedCaptures.append(capture)
-            self.completion = completion
-        }
-        func showPreview(capture: Int = 1) -> ScreenshotQuickPreviewController {
-            let controller = ScreenshotQuickPreviewController()
-            controller.shareHandler = { [weak self] duration, completion in
-                self?.shareDirect(capture, duration: duration, completion: completion)
-            }
-            controller.onClose = { [weak self] in self?.preview = nil }
-            preview = controller
-            return controller
         }
     }
 
@@ -277,7 +251,7 @@ enum ScreenshotShareCompletionTests {
         suite.expect(encoded.flatMap(ScreenshotLatestCaptureRecord.decode) == snapshot,
                      "one atomic cache blob restores screenshot bytes and identity together")
         suite.expect(ScreenshotLatestCaptureRecord.decode(png) == nil,
-                     "an identity-less legacy PNG is never accepted for Last Screenshot uploads")
+                     "an identity-less PNG is not a valid latest-capture record")
         var finished = false
         Task { @MainActor in
             await checks(suite)
@@ -287,7 +261,7 @@ enum ScreenshotShareCompletionTests {
         while !finished && Date() < deadline {
             RunLoop.main.run(until: Date().addingTimeInterval(0.005))
         }
-        suite.expect(finished, "screenshot upload completion tests finish")
+        suite.expect(finished, "screenshot sharing completion tests finish")
     }
 
     @MainActor static func checks(_ suite: TestSuite) async {
@@ -449,252 +423,35 @@ enum ScreenshotShareCompletionTests {
                      && failedCopy.showingLink && failedCopy.dismissWork != nil,
                      "clipboard failure retains the existing link and copy controls in the preview")
 
-        for scenario in ["open", "closed", "released", "replaced", "standalone", "standalone replaced",
-                         "history opened", "owner released", "feature off", "links off",
-                         "editor opened", "editor closed", "capture discarded"] {
-            service.revoked = []
-            service.copies = []
-            service.clipboard = "new capture"
-            var uploader: Uploader? = Uploader()
-            var preview: ScreenshotQuickPreviewController? = ["standalone", "standalone replaced", "history opened",
-                                                                  "feature off", "links off", "editor opened",
-                                                                  "editor closed", "capture discarded"].contains(scenario)
-                ? nil : uploader!.showPreview()
-            uploader!.uploadLastCapture()
-            uploader!.uploadLastCapture()
-            suite.expect(uploader!.uploads == 1, "pending shortcut upload ignores duplicate presses")
-            let completion = uploader!.completion
-            if ["closed", "released", "replaced"].contains(scenario) { preview?.close() }
-            if scenario == "released" { preview = nil }
-            if scenario == "replaced" {
-                uploader!.beginLatestCapture(2)
-                _ = uploader!.showPreview()
-            }
-            if scenario == "standalone replaced" {
-                uploader!.beginLatestCapture(2)
-                _ = uploader!.showPreview()
-            }
-            if scenario == "history opened" { _ = uploader!.showPreview(capture: 2) }
-            if ["editor opened", "editor closed"].contains(scenario) {
-                uploader!.openEditor(with: 1)
-                if scenario == "editor closed" { uploader!.editorDidClose(uploader!.editors[0]) }
-            }
-            if scenario == "capture discarded" {
-                uploader!.discardLatestCapture(uploader!.latestCaptureToken)
-            }
-            if scenario == "feature off" { uploader!.invalidateLatestCaptureUploads() }
-            if scenario == "links off" {
-                uploader!.defaults.set(false, forKey: DefaultsKey.screenshotSharingEnabled)
-                uploader!.syncLatestCapture(with: uploader!.defaults)
-            }
-            if scenario == "owner released" { preview = nil; uploader = nil }
-            completion?(record)
-            for _ in 0..<20 { await Task.yield() }
-            if ["open", "standalone", "history opened"].contains(scenario) {
-                suite.expect(service.copies == [record.url] && service.revoked.isEmpty,
-                             "\(scenario) shortcut upload delivers its link")
-                if scenario == "open" {
-                    suite.expect(preview?.closed == true, "successful shortcut copy closes its preview")
-                }
-            } else {
-                suite.expect(service.copies.isEmpty && service.clipboard == "new capture"
-                             && service.revoked == [record],
-                             "\(scenario) shortcut upload should revoke and preserve clipboard; "
-                             + "copies=\(service.copies.count), revoked=\(service.revoked.count), "
-                             + "clipboard=\(service.clipboard)")
-            }
-            if scenario == "history opened" {
-                suite.expect(uploader?.preview?.closed == false, "standalone upload leaves a later history preview open")
-            }
-            if let uploader {
-                suite.expect(uploader.uploadingCaptureID == nil, "completion clears pending shortcut upload")
-            }
-        }
-        service.revoked = []
-        service.copies = []
-        service.records = [record]
-        service.copySucceeds = false
-        let retry = Uploader()
-        let retryPreview = retry.showPreview()
-        retry.uploadLastCapture()
-        retry.completion?(record)
-        suite.expect(!retryPreview.closed, "failed shortcut copy keeps its preview open")
-        service.copySucceeds = true
-        retry.uploadLastCapture()
-        for _ in 0..<20 { await Task.yield() }
-        suite.expect(retry.uploads == 1 && service.copies == [record.url, record.url]
-                     && retryPreview.closed, "shortcut retries a failed copy without another upload")
-        service.copies = []
-        service.copySucceeds = false
-        let teardownRetry = Uploader()
-        teardownRetry.uploadLastCapture()
-        teardownRetry.completion?(record)
-        teardownRetry.invalidateLatestCaptureUploads()
-        service.copySucceeds = true
-        teardownRetry.uploadLastCapture()
-        suite.expect(teardownRetry.uploads == 2 && service.copies == [record.url],
-                     "feature teardown drops a pending copy retry instead of copying the old link")
-        service.copies = []
-        service.copySucceeds = false
-        let standaloneRetry = Uploader()
-        standaloneRetry.uploadLastCapture()
-        standaloneRetry.completion?(record)
-        service.copySucceeds = true
-        standaloneRetry.uploadLastCapture()
-        suite.expect(standaloneRetry.uploads == 1 && service.copies == [record.url, record.url],
-                     "standalone shortcut retries copying its existing link without uploading again")
-        for duration in [3.0, 12.0] {
-            DispatchQueue.main = NotchScreenRefreshContract.Scheduler()
-            let history = Uploader()
-            let historyPreview = history.showPreview(capture: 2)
-            historyPreview.autoDismissDuration = duration
-            historyPreview.scheduleAutoDismiss()
-            history.uploadLastCapture()
-            DispatchQueue.main.advance(duration + 1)
-            suite.expect(!historyPreview.closed && historyPreview.model.sharing,
-                         "shortcut upload keeps preview open past its dismissal deadline")
-            suite.expect(history.uploadedCaptures == [2], "shortcut uploads the visible history capture")
-            history.completion?(record)
-            suite.expect(historyPreview.closed, "history upload copies and closes its own preview")
-        }
-        DispatchQueue.main = NotchScreenRefreshContract.Scheduler()
-        let deleting = Uploader()
-        let deletingPreview = deleting.showPreview()
-        deletingPreview.model.sharedRecord = record
-        deletingPreview.model.deletingShare = true
-        service.copies = []
-        deleting.uploadLastCapture()
-        for _ in 0..<20 { await Task.yield() }
-        suite.expect(service.copies.isEmpty && deleting.uploads == 0,
-                     "shortcut cannot copy or upload while the preview deletes its link")
-        service.records = []
-        let failedUpload = Uploader()
-        failedUpload.uploadLastCapture()
-        failedUpload.completion?(nil)
-        suite.expect(failedUpload.uploadingCaptureID == nil, "failed upload clears pending shortcut state")
-
-        service.records = [record]
-        service.copies = []
-        let editing = Uploader()
-        editing.openEditor(with: 1)
-        editing.openEditor(with: 2)
-        suite.expect(editing.editors.allSatisfy { $0.shown }, "editors are tracked when shown")
-        NSSound.beeps = 0
-        editing.linkCopyRetry.remember(record, for: editing.latestCaptureID)
-        editing.uploadLastCapture()
-        suite.expect(editing.uploads == 0 && service.copies.isEmpty,
-                     "shortcut never uploads or copies the stored original while its editor is open")
-
-        suite.expect(NSSound.beeps == 1, "blocked cached-link press beeps")
-        editing.linkCopyRetry.clear()
-        editing.uploadLastCapture()
-        suite.expect(editing.uploads == 0 && NSSound.beeps == 2,
-                     "clipboard or history editor blocks the raw upload with feedback")
-        let firstEditor = editing.editors[0]
-        editing.editorDidClose(firstEditor)
-        editing.editorDidClose(firstEditor)
-        suite.expect(editing.editors.count == 1, "duplicate close preserves the remaining editor")
-        editing.beginLatestCapture(3)
-        editing.uploadLastCapture()
-        suite.expect(editing.uploads == 0 && NSSound.beeps == 3,
-                     "remaining editor blocks upload even after a newer capture")
-        editing.editorDidClose(editing.editors[0])
-        editing.uploadLastCapture()
-        suite.expect(editing.uploads == 1 && editing.uploadedCaptures == [3] && NSSound.beeps == 3,
-                     "a capture taken after those editors opened uploads once the last one closes")
-
-        // What an editor exported is no longer the stored original, so that
-        // original stays back after the editor closes, and so does a
-        // discarded capture, until a newer capture arrives.
-        let edited = Uploader()
-        edited.beginLatestCapture(4)
-        edited.openEditor(with: 4)
-        edited.editorDidClose(edited.editors[0])
-        NSSound.beeps = 0
-        edited.uploadLastCapture()
-        suite.expect(edited.uploads == 0 && NSSound.beeps == 1,
-                     "a capture that went through an editor is not published as its stored original after the editor closes")
-        edited.beginLatestCapture(5)
-        edited.uploadLastCapture()
-        suite.expect(edited.uploads == 1 && edited.uploadedCaptures == [5],
-                     "a newer capture can be uploaded again")
-        let discarded = Uploader()
-        discarded.beginLatestCapture(6)
-        discarded.discardLatestCapture(UUID())
-        discarded.discardLatestCapture(nil)
-        discarded.uploadLastCapture()
-        suite.expect(discarded.uploads == 1,
-                     "discarding an older capture or one reopened from history leaves the latest one shareable")
-        let discardedLatest = Uploader()
-        discardedLatest.beginLatestCapture(7)
-        discardedLatest.discardLatestCapture(discardedLatest.latestCaptureToken)
-        NSSound.beeps = 0
-        discardedLatest.uploadLastCapture()
-        suite.expect(discardedLatest.uploads == 0 && NSSound.beeps == 1,
-                     "a discarded latest capture is not published")
-        suite.expect(ScreenshotLastCaptureStore.isWithheld,
-                     "a discarded latest capture stays withheld in the store for the next launch")
-        // Turning the shortcut off renews the upload claim, not the capture's
-        // identity, so the preview's later Discard still holds it back.
-        let switchedOff = Uploader()
-        switchedOff.beginLatestCapture(12)
-        let shown = switchedOff.latestCaptureToken
-        switchedOff.invalidateLatestCaptureUploads()
-        switchedOff.discardLatestCapture(shown)
-        NSSound.beeps = 0
-        switchedOff.uploadLastCapture()
-        suite.expect(switchedOff.uploads == 0 && NSSound.beeps == 1,
-                     "a capture discarded after the shortcut was switched off is not published once it is back on")
-        // A relaunch starts with nothing in memory; what the store kept back
-        // is still not published, and a newer capture lifts it.
-        let relaunched = Uploader()
-        ScreenshotLastCaptureStore.stored = 13
-        ScreenshotLastCaptureStore.withhold()
-        NSSound.beeps = 0
-        relaunched.uploadLastCapture()
-        suite.expect(relaunched.uploads == 0 && NSSound.beeps == 1,
-                     "a capture withheld before a relaunch is not published after it")
-        relaunched.beginLatestCapture(14)
-        relaunched.uploadLastCapture()
-        suite.expect(relaunched.uploads == 1 && relaunched.uploadedCaptures == [14],
-                     "a capture taken after the relaunch uploads")
-
-        // The capture is kept for whichever shortcut uses it, and only then.
-        let retention = Uploader()
+        let retention = LatestCapture()
         ScreenshotLastCaptureStore.stored = nil
         retention.beginLatestCapture(8)
         retention.syncLatestCapture(with: retention.defaults)
-        suite.expect(ScreenshotLastCaptureStore.stored == 8,
-                     "the upload shortcut alone keeps the latest capture for itself")
-        retention.defaults.set(false, forKey: DefaultsKey.screenshotUploadShortcutEnabled)
-        retention.syncLatestCapture(with: retention.defaults)
-        retention.beginLatestCapture(9)
         suite.expect(ScreenshotLastCaptureStore.stored == nil,
-                     "with neither shortcut on the latest capture is cleared and no longer kept")
+                     "without Edit latest screenshot, the original is not retained")
         retention.defaults.set(true, forKey: DefaultsKey.screenshotLastCaptureShortcutEnabled)
-        retention.beginLatestCapture(10)
+        retention.beginLatestCapture(9)
         retention.syncLatestCapture(with: retention.defaults)
-        suite.expect(ScreenshotLastCaptureStore.stored == 10,
-                     "edit latest screenshot alone still keeps the latest capture")
-
-        let stale = Uploader()
-        stale.uploadLastCapture()
-        stale.beginLatestCapture(11)
-        stale.uploadLastCapture()
-        suite.expect(stale.uploads == 2 && stale.uploadedCaptures == [1, 11],
-                     "a press for a newer capture starts its own upload while an older one is still pending")
-        ScreenshotLastCaptureStore.stored = 1
-
-        let editingWithHistory = Uploader()
-        editingWithHistory.openEditor(with: 1)
-        _ = editingWithHistory.showPreview(capture: 2)
-        editingWithHistory.uploadLastCapture()
-        suite.expect(editingWithHistory.uploadedCaptures == [2],
-                     "an open history preview still uploads its own visible capture")
+        suite.expect(ScreenshotLastCaptureStore.stored == 9,
+                     "Edit latest screenshot retains the original")
+        let token = retention.latestCaptureToken
+        retention.discardLatestCapture(UUID())
+        suite.expect(!ScreenshotLastCaptureStore.isWithheld,
+                     "discarding another capture does not withhold the latest")
+        retention.discardLatestCapture(token)
+        suite.expect(ScreenshotLastCaptureStore.isWithheld,
+                     "discarding the latest preview withholds its raw original")
+        retention.beginLatestCapture(10)
+        suite.expect(!ScreenshotLastCaptureStore.isWithheld && ScreenshotLastCaptureStore.stored == 10,
+                     "the next capture restores normal Edit latest behavior")
+        retention.defaults.set(false, forKey: DefaultsKey.screenshotLastCaptureShortcutEnabled)
+        retention.syncLatestCapture(with: retention.defaults)
+        suite.expect(ScreenshotLastCaptureStore.stored == nil,
+                     "switching Edit latest screenshot off clears the cached original")
 
         // A preview's Copy text waits for the after-capture copy, so the
         // capture lands first and the text, when there is any, replaces it.
-        let copying = Uploader()
+        let copying = LatestCapture()
         var recognitions = 0
         copying.afterAutoCopy { recognitions += 1 }
         suite.expect(recognitions == 1, "with no after-capture copy pending, Copy text starts at once")

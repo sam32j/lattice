@@ -1838,9 +1838,8 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         guard let export = model.exportImage(),
               let data = ScreenshotRenderer.pngData(from: export.image, scale: export.scale)
         else { return }
-        let (url, consumedNumber) = ScreenshotService.saveDestination(strings: strings)
         do {
-            try data.write(to: url, options: .atomic)
+            let url = try ScreenshotService.saveImageData(data, at: capture.capturedAt)
             ScreenshotSupport.markAsScreenCapture(url)
             model.markExported()
             QuickToolHUD.show(icon: "camera.viewfinder",
@@ -1848,10 +1847,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
                                               url.deletingLastPathComponent().lastPathComponent))
             window?.close()
         } catch {
-            if let consumedNumber {
-                ScreenshotService.rewindNumberSequence(toReuse: consumedNumber)
-            }
-            NSSound.beep()
+            CaptureSaveLocation.presentSaveError(error)
         }
     }
 

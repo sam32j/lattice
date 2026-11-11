@@ -35,8 +35,8 @@ struct ScreenshotShareRecord: Codable, Equatable, Identifiable {
     }
 }
 
-/// The image and source identity share one atomic on-disk write. An
-/// identity-less legacy PNG is deliberately not eligible for shortcut upload.
+/// The image and source identity share one atomic on-disk write.
+/// Keep the identity with the bytes when reopening the latest screenshot.
 struct ScreenshotLatestCaptureRecord: Codable, Equatable {
     let id: UUID
     let png: Data
@@ -65,25 +65,6 @@ enum ScreenshotCaptureOwnership {
     }
 }
 
-/// Keeps clipboard retries tied to the capture that produced the link.
-struct ScreenshotLinkCopyRetry {
-    private var pending: (captureID: UUID, record: ScreenshotShareRecord)?
-
-    mutating func remember(_ record: ScreenshotShareRecord, for captureID: UUID) {
-        pending = (captureID, record)
-    }
-
-    mutating func clear() { pending = nil }
-
-    func record(for captureID: UUID, availableRecords: [ScreenshotShareRecord],
-                now: Date = Date()) -> ScreenshotShareRecord? {
-        guard let pending, pending.captureID == captureID,
-              pending.record.expiresAt > now,
-              availableRecords.contains(pending.record) else { return nil }
-        return pending.record
-    }
-}
-
 struct ScreenshotShareResponse: Decodable {
     let id: String
     let viewPath: String
@@ -92,14 +73,8 @@ struct ScreenshotShareResponse: Decodable {
 }
 
 enum ScreenshotSharingSupport {
-    static func uploadShortcutEnabled(in defaults: UserDefaults = .standard) -> Bool {
-        defaults.bool(forKey: DefaultsKey.screenshotUploadShortcutEnabled)
-            && defaults.bool(forKey: DefaultsKey.screenshotSharingEnabled)
-    }
-
     static func retainsLatestCapture(in defaults: UserDefaults = .standard) -> Bool {
         defaults.bool(forKey: DefaultsKey.screenshotLastCaptureShortcutEnabled)
-            || uploadShortcutEnabled(in: defaults)
     }
 
     @discardableResult
