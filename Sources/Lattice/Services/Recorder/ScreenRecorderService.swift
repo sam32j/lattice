@@ -751,58 +751,82 @@ final class ScreenRecorderService: ObservableObject {
     }
 
     private func finishDelivery(_ take: RecorderTakeStore.Take, cachedURL: URL?, reason: String?) {
-        defer { pendingDeliveryTakeIDs.remove(take.id) }
-        let defaults = UserDefaults.standard
-        let saves = defaults.object(forKey: DefaultsKey.recorderSaveAutomatically) as? Bool ?? false
-        let opensEditor = defaults.object(forKey: DefaultsKey.recorderOpenEditor) as? Bool ?? true
-        // Explicitly copy the finished recording into Shelf's own durable
-        // store only when requested. The asynchronous copy never blocks the
-        // editor, preview or the Recent Captures history operation.
-        if defaults.bool(forKey: DefaultsKey.recorderAddToFileCache),
-           AppFeature.shelf.isAvailable,
-           defaults.bool(forKey: DefaultsKey.shelfEnabled) {
-            ShelfService.shared.shelveRecordingCopy(from: cachedURL ?? take.videoURL)
+        // A movie may be gigabytes, or the selected destination may be a slow
+        // network volume. Keep the finished take owned until the asynchronous
+        // copy has finished, without stalling the Island or the editor.
+        let saves = UserDefaults.standard.object(forKey: DefaultsKey.recorderSaveAutomatically) as? Bool ?? false
+        guard saves else {
+            finishPresentation(take, cachedURL: cachedURL, savedURL: nil, reason: reason)
+            return
         }
-        var savedURL: URL?
-        if saves {
-            do {
-                // Copy, not move: preview, history and the editor may still
-                // need the original untouched take afterwards.
-                let destination = try CaptureSaveLocation.withFolder { folder in
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let saved: Result<URL, Error> = Result {
+                try CaptureSaveLocation.withFolder { folder in
                     try CaptureSaveNaming.copyFile(from: take.videoURL, in: folder,
                                                    date: take.startedAt, media: .recording, ext: "mov")
                 }
-                savedURL = destination
-                let folder = destination.deletingLastPathComponent().lastPathComponent
-                QuickToolHUD.show(icon: "record.circle",
-                                  message: reason ?? String(format: strings.savedHUDFormat, folder))
-            } catch {
-                CaptureSaveLocation.presentSaveError(error)
+            }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if case .failure(let error) = saved {
+                    CaptureSaveLocation.presentSaveError(error)
+                }
+                self.finishPresentation(take, cachedURL: cachedURL,
+                                        savedURL: try? saved.get(), reason: reason)
             }
         }
+    }
 
-        // The private history copy is the preview's primary source. Deleting
-        // the preview should delete the recording, not a separate export.
-        let usableURL = cachedURL ?? savedURL ?? take.videoURL
-        if cachedURL == nil && savedURL == nil && reason == nil {
+    private func finishPresentation(_ take: RecorderTakeStore.Take,
+                                    cachedURL: URL?, savedURL: URL?, reason: String?) {
+        defer { pendingDeliveryTakeIDs.remove(take.id) }
+        let defaults = UserDefaults.standard
+        let opensEditor = defaults.object(forKey: DefaultsKey.recorderOpenEditor) as? Bool ?? true
+        let stableURL = cachedURL ?? savedURL
+
+        // File Cache is separate from Recent Captures. Give Shelf a durable
+        // source before deleting the private take; its copy runs on its own
+        // worker instead of blocking the Shelf persistence queue.
+        if defaults.bool(forKey: DefaultsKey.recorderAddToFileCache),
+           AppFeature.shelf.isAvailable,
+           defaults.bool(forKey: DefaultsKey.shelfEnabled) {
+            ShelfService.shared.shelveRecordingCopy(from: stableURL ?? take.videoURL)
+        }
+        // A low-space stop is important regardless of the auto-save setting.
+        if let reason {
+            QuickToolHUD.show(icon: "record.circle", message: reason)
+        } else if let savedURL {
+            let folder = savedURL.deletingLastPathComponent().lastPathComponent
+            QuickToolHUD.show(icon: "record.circle",
+                              message: String(format: strings.savedHUDFormat, folder))
+        } else if stableURL == nil {
             QuickToolHUD.show(icon: "record.circle", message: strings.exportFailed)
         }
+
         if defaults.bool(forKey: DefaultsKey.recorderCopyAfterRecording) {
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
-            if pasteboard.writeObjects([usableURL as NSURL]) {
-                pasteboard.declareLatticeSource()
+            // An editor owns and deletes its *private* take on close. Never
+            // promise a clipboard file URL that the editor can invalidate.
+            if let stableURL {
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                if pasteboard.writeObjects([stableURL as NSURL]) {
+                    pasteboard.declareLatticeSource()
+                } else {
+                    NSSound.beep()
+                    QuickToolHUD.show(icon: "doc.on.doc", message: strings.exportFailed)
+                }
             } else {
                 NSSound.beep()
             }
         }
 
-        if opensEditor, openEditor(with: take, preservedRecordingURL: cachedURL ?? savedURL) {
-            return
+        if opensEditor, openEditor(with: take, preservedRecordingURL: stableURL) {
+            return  // The editor retains the master until its window closes.
         }
-        // Always provide an actionable quick preview when auto-edit is off,
-        // even when all three storage/clipboard actions are disabled.
-        RecorderQuickPreviewController.shared.show(url: usableURL)
+        // The history file is the preview's primary source when present.
+        // Keep the private master only when no durable copy was produced.
+        RecorderQuickPreviewController.shared.show(url: stableURL ?? take.videoURL)
+        if stableURL != nil { RecorderTakeStore.shared.delete(take) }
     }
 
     /// A suggested location only. Editor exports claim a unique file before

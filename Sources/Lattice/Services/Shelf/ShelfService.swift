@@ -262,6 +262,7 @@ final class ShelfService: ObservableObject {
     /// Writes coalesce per mutation cycle already; the JSON encode itself
     /// also stays off the main thread (a full shelf of large texts is real
     /// work), serialized so blobs land in mutation order.
+    private static let recordingCopyQueue = DispatchQueue(label: "io.github.sam32j.lattice.shelf-recording-copy", qos: .utility)
     private static let persistQueue = DispatchQueue(label: "io.github.sam32j.lattice.shelf-persist",
                                                     qos: .utility)
 
@@ -1660,7 +1661,7 @@ final class ShelfService: ObservableObject {
         guard AppFeature.shelf.isAvailable,
               UserDefaults.standard.bool(forKey: DefaultsKey.shelfEnabled) else { return }
         let store = Self.storeDirectory ?? tempDir
-        Self.persistQueue.async { [weak self] in
+        Self.recordingCopyQueue.async { [weak self] in
             guard let copied = ShelfPersistenceSupport.copyGeneratedFile(
                 from: sourceURL, named: sourceURL.lastPathComponent, in: store) else { return }
             DispatchQueue.main.async { [weak self] in

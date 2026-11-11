@@ -289,8 +289,11 @@ final class RecorderQuickPreviewController {
             QuickToolHUD.show(icon: "square.and.arrow.down",
                               message: String(format: strings.savedHUDFormat, folder))
             completeQuickAction()
+        } catch CaptureSaveLocation.Failure.notSelected {
+            scheduleAutoDismiss()
         } catch {
-            performSaveAs()
+            CaptureSaveLocation.presentSaveError(error)
+            scheduleAutoDismiss()
         }
     }
 
@@ -434,8 +437,13 @@ final class RecorderQuickPreviewController {
 
     private func copyQuickLink() {
         Task { @MainActor [weak self] in
-            guard let self, !self.closed, let source = self.url,
-                  let record = QuickLinkMediaIndex.shared.latestRecording(for: source) else { return }
+            guard let self, !self.closed, let source = self.url else { return }
+            guard let record = QuickLinkMediaIndex.shared.latestRecording(for: source) else {
+                self.model.sharedRecord = nil
+                NSSound.beep()
+                self.scheduleAutoDismiss()
+                return
+            }
             self.model.sharedRecord = record
             self.dismissWork?.cancel()
             self.dismissWork = nil
