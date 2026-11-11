@@ -19,6 +19,7 @@ enum ScreenshotOCRControlTests {
         static let shared = Self()
         struct Strings { let qrResultTitle = "QR code" }
         let s = Strings()
+        let language = AppLanguage.enUS
     }
     struct ShelfSharePickerAnchor: View {
         final class Anchor {}
@@ -80,7 +81,7 @@ enum ScreenshotOCRControlTests {
                     dragActivityChanged: { _ in },
                     share: { _ in }, systemShare: {},
                     shareAnchor: ShelfSharePickerAnchor.Anchor(), copySharedLink: {},
-                    deleteSharedLink: {}, showQR: {}, copyText: { presses += 1 },
+                    showQR: {}, copyText: { presses += 1 },
                     dismiss: {}, expand: {}, hoverChanged: { _ in }, showsDismissButton: true,
                     embedded: embedded)
                 let host = NSHostingView(rootView: (embedded ? view.toolbar : view)

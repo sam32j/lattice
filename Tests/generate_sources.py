@@ -333,6 +333,7 @@ def main():
               .replace("SuperKeyService.shared.source", ".capsLock")
               .replace("NotchSupport.hasNotchedDisplay", "true")
               .replace("NotchSupport.hasDisplayWithoutNotch", "false")
+              .replace("CaptureSettings.title(for: language)", "\"Screen Captures\"")
               .replace("$0.hubTitle(s, hub: FeatureStrings.hub(language))", "$0.rawValue")
           + declaration("Sources/Lattice/UI/Settings/SettingsUtilitiesDirectory.swift", "    static func utilityPages(")
           + declaration(directory, "    static func sidebarSections(")
@@ -368,7 +369,7 @@ def main():
                     for prefix in ["    private func beginRecording(", "    private func pendingStartIsAuthorized(",
                                    "    private func invalidatePendingStart()", "    var hasActiveCapture:",
                                    "    func stopOrCancelActiveCapture()", "    func prepareForSelection()",
-                                   "    func record(_ region:",
+                                   "    func record(_ region:", "    private func prepareToRecord(",
                                    "    func stop(reason:"])
           + "}\n}\n")
     write("SwitcherFullscreenScope.swift", "import AppKit\nimport ApplicationServices\nimport CoreGraphics\n"
@@ -1854,8 +1855,9 @@ def main():
     protocol = next(line for line in panel_layout.splitlines() if line.startswith("protocol PanelOrderItem:"))
     write("LatticeHubBodies.swift", "import AppKit\nimport Foundation\nimport SwiftUI\nimport Carbon.HIToolbox\n" + protocol + "\n\nextension LatticeHubContract {\n"
           + declaration(item_file, "enum LatticeHubItem:")
+          + "final class RecentCaptureService {\nstatic let shared = RecentCaptureService()\nfunc showHistoryWindow(origin: CapturePresentationRouting.Origin = .floatingWindow) { events.append(\"recentCaptures.showHistoryWindow\") }\n}\n"
           + "final class Launcher {\nvar isEditing = false\nvar activeUtility: LatticeHubItem?\nvar recentUtility: LatticeHubItem? { nil }\nvar isPinned = false\nvar isVisible = false\n"
-          + "var hubIslandPage = 0\n"
+          + "var hubIslandPage = 0\nvar opensUtilityDirectly = false\n"
           + "var stayAwakeOptionsPresented = false\nvar editingOptionsItem: LatticeHubItem?\nvar selectedIndex: Int?\nvar keyboardIndex: Int?\nvar navigationToken = UUID()\nvar lastKeyboardActionTimestamp: TimeInterval = 0\nvar presentationID = UUID()\nvar typeaheadBuffer = \"\"\nvar typeaheadTimestamp: TimeInterval = 0\nstatic let typeaheadCooldown: TimeInterval = 0.8\n"
           + "var candidates: [LatticeHubItem] = LatticeHubItem.allCases\n"
           + "var visibleItems: [LatticeHubItem] { candidates.filter { $0.isAvailable(in: ReviewDefaults.current) } }\n"
@@ -1952,7 +1954,15 @@ def main():
                     ["    enum Outcome:", "    static func outcome(", "    private static func recognizedLines("])
           + "}\n}\n")
     write("ScreenshotOCRControl.swift", "import AppKit\nimport SwiftUI\n"
-          + "private final class NotchService { static let shared = NotchService(); func capturePreviewDragChanged(_ dragging: Bool) {} }\n"
+          + "class NotchService { static let shared = NotchService(); func capturePreviewDragChanged(_ dragging: Bool) {} }\n"
+          + "struct CaptureDeleteConfirmationButton: View {\n"
+          + "    enum Presentation { case floating, island, history }\n"
+          + "    let presentation: Presentation\n"
+          + "    let title: String\n"
+          + "    let action: () -> Void\n"
+          + "    var body: some View { Button(title, action: action) }\n"
+          + "}\n"
+          + "struct FloatingCapturePreviewDragBorder: View { var body: some View { EmptyView() } }\n"
           + declaration(preview, "@objc final class ScreenshotQuickPreviewMenuHelper:")
           + declaration(preview, "private struct ScreenshotIslandDragSurface:").replace("private struct", "struct", 1)
           + declaration("Sources/Lattice/UI/SharedUI.swift", "struct HUDBackdrop:")
@@ -1988,8 +1998,8 @@ def main():
     write("ScreenshotShareCompletion.swift", "import Foundation\n"
           + "extension ScreenshotShareCompletionTests {\nfinal class Controller: State {\n"
           + "".join(declaration(preview, prefix).replace("private func", "func", 1)
-                    for prefix in ["    func shareLink()", "    private func performShare(",
-                                   "    private func copySharedLink()", "    private func scheduleAutoDismiss(",
+                    for prefix in ["    private func performShare(",
+                                   "    private func copySharedLink()",
                                    "    private func copyText()"])
           + "}\nfinal class Editor: EditorState {\n"
           + declaration("Sources/Lattice/Services/QuickTools/ScreenshotEditorController.swift",
@@ -2012,7 +2022,6 @@ def main():
           + "extension ScreenshotAutoShelfTests {\n@MainActor final class Service: State {\n"
           + "".join(declaration(screenshot_service, prefix).replace("private func", "func", 1)
                     for prefix in ["    private func autoShelve(", "    private func unshelve(",
-                                   "    private func editFromPreview(",
                                    "    private func cancelAutoShelf()"])
           + "}\n}\n")
     write("ScreenshotPreviewHover.swift", "import Foundation\n"
@@ -2589,7 +2598,7 @@ def main():
           + "}\n}\n")
 
     factories = []
-    pattern = r"static\s+func\s+(\w+)\s*\(\s*_\s+\w+:\s*AppLanguage\s*\)\s*->"
+    pattern = r"static\s+func\s+(\w+)\s*\(\s*_\s+\w+:\s*AppLanguage\s*\)\s*->\s*(?!String\b)\w+"
     for path in sorted((ROOT / "Sources/Lattice/Core").glob("*Strings.swift")):
         source = path.read_text()
         if "extension FeatureStrings" in source or "enum FeatureStrings" in source:
