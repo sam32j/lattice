@@ -112,7 +112,6 @@ extension SettingsDirectory {
                                                        FeatureStrings.screenshot(language).fullScreenShortcutTitle,
                                                        FeatureStrings.screenshot(language).editLastCapture,
                                                        FeatureStrings.screenshot(language).editClipboardImage,
-                                                       FeatureStrings.screenshot(language).uploadLastCapture,
                                                        FeatureStrings.recentCaptures(language).title,
                                                        s.colorPickerName,
                                                        s.ocrName]),

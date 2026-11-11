@@ -95,6 +95,7 @@ struct MetricsTests {
                 ScreenshotTextDraftTests.run(suite)
                 FeatureAvailabilityTransitionTests.run(suite)
                 CaptureRetentionTests.run(suite)
+                CaptureSaveNamingTests.run(suite)
                 ScreenshotTextEditorTests.run(suite)
                 ScreenTextCompletionTests.run(suite)
                 ScreenshotOCRControlTests.run(suite)

@@ -49,12 +49,6 @@ extension ScreenshotSettings {
                                              enabledKey: DefaultsKey.screenshotClipboardShortcutEnabled) {
                     ScreenshotService.shared.syncWithPreferences()
                 }
-                CompactShortcutPreferenceRow(title: strings.uploadLastCapture,
-                                             role: .screenshotUpload,
-                                             enabledKey: DefaultsKey.screenshotUploadShortcutEnabled) {
-                    ScreenshotService.shared.syncWithPreferences()
-                }
-                .disabled(!sharingEnabled)
                 CompactShortcutPreferenceRow(title: FeatureStrings.recentCapturesShortcutTitle(l10n.language),
                                              role: .recentCaptures,
                                              enabledKey: DefaultsKey.recentCapturesShortcutEnabled) {

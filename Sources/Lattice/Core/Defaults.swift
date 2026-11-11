@@ -567,12 +567,19 @@ enum DefaultsKey {
     static let screenshotClipboardShortcutEnabled = "screenshotClipboardShortcutEnabled"
     static let screenshotClipboardShortcut = "screenshotClipboardShortcut"
     static let screenshotFreeze = "screenshotFreeze"
+    // Unified screenshot/recording save configuration. The bookmark is local to this Mac.
+    static let captureSaveLocationBookmark = "captureSaveLocationBookmark"
+    static let captureSaveSubfolderTemplate = "captureSaveSubfolderTemplate"
+    static let captureSaveFileNameTemplate = "captureSaveFileNameTemplate"
     static let screenshotSaveFolder = "screenshotSaveFolder"
     static let screenshotSaveSubfolder = "screenshotSaveSubfolder"
     static let screenshotFileNamePattern = "screenshotFileNamePattern"
     static let screenshotFileNumberStart = "screenshotFileNumberStart"
     static let screenshotFileNumberNext = "screenshotFileNumberNext"
-    static let screenshotDefaultAction = "screenshotDefaultAction"
+    static let screenshotDefaultAction = "screenshotDefaultAction" // legacy migration
+    static let screenshotSaveAutomatically = "screenshotSaveAutomatically"
+    static let screenshotOpenEditorAfterCapture = "screenshotOpenEditorAfterCapture"
+    static let screenshotAfterCaptureMigrated = "screenshotAfterCaptureMigrated"
     static let screenshotIncludePointer = "screenshotIncludePointer"
     static let screenshotShowLastRegion = "screenshotShowLastRegion"
     static let screenshotLoupeStartsOn = "screenshotLoupeStartsOn"
@@ -605,10 +612,7 @@ enum DefaultsKey {
     static let capturePresentationDestination = "capturePresentationDestination"
     static let screenshotPreviewTakesFocus = "screenshotPreviewTakesFocus"
     static let capturePreviewCloseAfter = "capturePreviewCloseAfter"
-    static let screenshotUploadShortcutEnabled = "screenshotUploadShortcutEnabled"
-    static let screenshotUploadShortcut = "screenshotUploadShortcut"
     static let screenshotUploadDuration = "screenshotUploadDuration"
-    static let screenshotPreviewEnabled = "screenshotPreviewEnabled"
     static let screenshotSharingEnabled = "screenshotSharingEnabled"
     static let screenshotPlayShutterSound = "screenshotPlayShutterSound"
     // Developer-only endpoint for an isolated test tunnel. The official app
@@ -622,8 +626,14 @@ enum DefaultsKey {
     static let recentRecordingLimit = "recentRecordingLimit"
     static let recorderPlaySound = "recorderPlaySound"
     static let recorderImmediateStartAfterSelection = "recorderImmediateStartAfterSelection"
+    static let recorderDefaultCamera = "recorderDefaultCamera"
+    static let recorderDefaultKeyboardEvents = "recorderDefaultKeyboardEvents"
+    static let recorderCopyAfterRecording = "recorderCopyAfterRecording"
+    static let recorderSaveAutomatically = "recorderSaveAutomatically"
+    static let recorderAddToFileCache = "recorderAddToFileCache"
     static let recorderQuality = "recorderQuality"
     static let recorderFrameRate = "recorderFrameRate"
+    static let recorderExportFrameRate = "recorderExportFrameRate"
     static let recorderSystemAudio = "recorderSystemAudio"
     static let recorderMicrophone = "recorderMicrophone"
     // Machine state, never exported: whether this Mac's audio system has let
@@ -1502,11 +1512,20 @@ enum Defaults {
         DefaultsKey.recentRecordingLimit: 0,
         DefaultsKey.recorderPlaySound: true,
         DefaultsKey.recorderImmediateStartAfterSelection: true,
+        DefaultsKey.recorderDefaultCamera: false,
+        DefaultsKey.recorderDefaultKeyboardEvents: false,
+        DefaultsKey.recorderCopyAfterRecording: false,
+        DefaultsKey.recorderSaveAutomatically: false,
+        DefaultsKey.recorderAddToFileCache: true,
         DefaultsKey.recorderQuality: RecorderSupport.Quality.balanced.rawValue,
         DefaultsKey.recorderFrameRate: 60,
+        DefaultsKey.recorderExportFrameRate: 60,
         DefaultsKey.recorderSystemAudio: true,
         DefaultsKey.recorderMicrophone: false,
         DefaultsKey.recorderSaveFolder: "",
+        DefaultsKey.captureSaveLocationBookmark: Data(),
+        DefaultsKey.captureSaveSubfolderTemplate: "",
+        DefaultsKey.captureSaveFileNameTemplate: CaptureSaveNaming.defaultTemplate,
         DefaultsKey.recorderOpenEditor: true,
         DefaultsKey.recorderAutomaticZoom: true,
         DefaultsKey.recorderGIFSize: RecorderSupport.GIFSize.medium.rawValue,
@@ -1537,7 +1556,8 @@ enum Defaults {
         DefaultsKey.screenshotFileNamePattern: "",
         DefaultsKey.screenshotFileNumberStart: 1,
         DefaultsKey.screenshotFileNumberNext: 1,
-        DefaultsKey.screenshotDefaultAction: "",
+        DefaultsKey.screenshotSaveAutomatically: false,
+        DefaultsKey.screenshotOpenEditorAfterCapture: false,
         DefaultsKey.screenshotIncludePointer: false,
         DefaultsKey.screenshotShowLastRegion: true,
         DefaultsKey.screenshotLoupeStartsOn: false,
@@ -1568,13 +1588,9 @@ enum Defaults {
         DefaultsKey.screenshotAddToShelf: false,
         DefaultsKey.screenshotPreviewPosition: ScreenshotSupport.QuickPreviewPosition.automatic.rawValue,
         DefaultsKey.capturePresentationDestination: CapturePresentationRouting.Preference.automatic.rawValue,
-        DefaultsKey.screenshotPinRoundedCorners: true,
         DefaultsKey.screenshotPreviewTakesFocus: true,
         DefaultsKey.capturePreviewCloseAfter: CapturePreviewClosePolicy.fiveSeconds.rawValue,
-        DefaultsKey.screenshotUploadShortcutEnabled: false,
-        DefaultsKey.screenshotUploadShortcut: GlobalShortcut.screenshotUploadDefault.storageValue,
         DefaultsKey.screenshotUploadDuration: ScreenshotShareDuration.oneHour.rawValue,
-        DefaultsKey.screenshotPreviewEnabled: true,
         DefaultsKey.screenshotSharingEnabled: true,
         DefaultsKey.screenshotPlayShutterSound: true,
         DefaultsKey.windowLayoutShortcutsEnabled: false,
@@ -1657,6 +1673,7 @@ enum Defaults {
         migrateLegacySwitcherWindowShortcut(in: defaults)
         migrateLegacyKeyboardDebounceWindow(in: defaults)
         migrateScreenshotOpenEditorDirectly(in: defaults)
+        migrateScreenshotAfterCapture(in: defaults)
         migrateUnifiedScreenCaptureShortcut(in: defaults)
         migrateRestoredScreenCaptureShortcuts(in: defaults)
         migrateOrphanedCaptureShortcut(in: defaults)
@@ -1921,6 +1938,24 @@ enum Defaults {
         guard action.isEmpty else { return }
         defaults.set(ScreenshotDefaultAction.edit.rawValue,
                      forKey: DefaultsKey.screenshotDefaultAction)
+    }
+
+    /// Upgrade the former mutually exclusive default-action picker to
+    /// independent after-capture actions, once per preferences domain.
+    static func migrateScreenshotAfterCapture(in defaults: UserDefaults) {
+        guard !defaults.bool(forKey: DefaultsKey.screenshotAfterCaptureMigrated) else { return }
+        let legacy = ScreenshotDefaultAction(rawValue:
+            defaults.string(forKey: DefaultsKey.screenshotDefaultAction) ?? "") ?? .none
+        if legacy == .save || legacy == .saveAndCopy {
+            defaults.set(true, forKey: DefaultsKey.screenshotSaveAutomatically)
+        }
+        if legacy.copiesToClipboard {
+            defaults.set(true, forKey: DefaultsKey.screenshotCopyToClipboard)
+        }
+        if legacy == .edit {
+            defaults.set(true, forKey: DefaultsKey.screenshotOpenEditorAfterCapture)
+        }
+        defaults.set(true, forKey: DefaultsKey.screenshotAfterCaptureMigrated)
     }
 
     /// The four screen tools now share the screenshot shortcut. Preserve the
