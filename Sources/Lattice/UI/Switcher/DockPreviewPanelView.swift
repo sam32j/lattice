@@ -345,6 +345,10 @@ private struct DockPreviewPanelContent: View {
               let selected = windows.first(where: { $0.windowID == windowID }) else { return }
         // Hover only highlights. Recentering each card that crosses the pointer
         // during a scroll feeds another jump into the gesture.
+        guard NSApp.activationPolicy() != .prohibited else {
+            proxy.scrollTo(selected.id, anchor: .center)
+            return
+        }
         withAnimation(.easeOut(duration: 0.15)) {
             proxy.scrollTo(selected.id, anchor: .center)
         }
