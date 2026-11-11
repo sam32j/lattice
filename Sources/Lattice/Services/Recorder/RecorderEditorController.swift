@@ -1582,7 +1582,8 @@ final class RecorderEditorController: NSObject, NSWindowDelegate {
         panel.allowsMultipleSelection = false
         panel.beginSheetModal(for: window) { response in
             guard response == .OK, let url = panel.url else { return }
-            try? CaptureSaveLocation.store(url)
+            do { try CaptureSaveLocation.store(url) }
+            catch { CaptureSaveLocation.presentSaveError(error) }
         }
     }
 
