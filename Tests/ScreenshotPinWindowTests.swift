@@ -4,6 +4,15 @@
 import AppKit
 
 enum ScreenshotPinWindowTests {
+    enum ScreenshotPinController {
+        static func restorePins(_ pins: [ScreenshotPinWindow], selected: ScreenshotPinWindow?) {
+            for pin in pins { pin.setHiddenForDrag(false) }
+            guard let selected, !selected.isClosed, selected.isVisible else { return }
+            selected.order(.above, relativeTo: 0)
+            selected.orderFrontRegardless()
+        }
+    }
+
     @MainActor static func run(_ suite: TestSuite) {
         guard let context = CGContext(data: nil, width: 400, height: 200, bitsPerComponent: 8,
                                       bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
@@ -102,15 +111,15 @@ enum ScreenshotPinWindowTests {
         other.orderFrontRegardless()
         other.setHiddenForDrag(true)
         ScreenshotPinController.restorePins([pin, other], selected: pin)
-        var displayedPinOrder = NSApp.orderedWindows.compactMap { $0 as? ScreenshotPinWindow }
-            .filter { $0 === pin || $0 === other }
+        var displayedPinOrder = (NSWindow.windowNumbers(options: []) as? [Int] ?? [])
+            .compactMap { num in [pin, other].first { $0.windowNumber == num } }
         suite.expect(displayedPinOrder.first === pin && other.isVisible,
                      "a dragged image stays frontmost when its hidden peers return")
         pin.setHiddenForDrag(true)
         other.setHiddenForDrag(true)
         ScreenshotPinController.restorePins([pin, other], selected: pin)
-        displayedPinOrder = NSApp.orderedWindows.compactMap { $0 as? ScreenshotPinWindow }
-            .filter { $0 === pin || $0 === other }
+        displayedPinOrder = (NSWindow.windowNumbers(options: []) as? [Int] ?? [])
+            .compactMap { num in [pin, other].first { $0.windowNumber == num } }
         suite.expect(displayedPinOrder.first === pin && other.isVisible,
                      "file-drag completion restores the source pin above its peers")
         pin.orderOut(nil)

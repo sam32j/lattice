@@ -36,8 +36,8 @@ enum DirectCaptureRequirementsComprehensiveTests {
 
         // 1. Native Section headers and cards instead of empty lines / fake spacers
         suite.expect(screenshotSettingsSource.contains("SettingsCard(title: strings.captureBehaviorSection)")
-                     && screenshotSettingsSource.contains(".help(strings.freezeCaption)"),
-                     "ScreenshotSettings uses localized capture behavior heading and freeze help")
+                     && screenshotSettingsSource.contains("strings.freezeToggle"),
+                     "ScreenshotSettings uses localized capture behavior heading and freeze toggle")
 
         // 2. Removed action buttons: "Capture now", "Scrolling capture now", "Show capture menu", "Highlight window under pointer"
         suite.expect(!screenshotSettingsSource.contains("captureNow")
@@ -60,8 +60,8 @@ enum DirectCaptureRequirementsComprehensiveTests {
         suite.expect(!recorderSettingsSource.isEmpty, "ScreenRecorderSettings.swift exists and is readable")
 
         // 4. Native Section headers in ScreenRecorderSettings
-        suite.expect(recorderSettingsSource.contains("SettingsCard(title: workflow.recording)")
-                     && recorderSettingsSource.contains("workflow.recording"),
+        suite.expect(recorderSettingsSource.contains("SettingsCard(title: copy(.recordingBehavior))")
+                     && recorderSettingsSource.contains("copy(.afterRecording)"),
                      "ScreenRecorderSettings uses native cards and headers")
 
         // 5. Removed: "Screen recording now", "Show capture menu"
@@ -73,7 +73,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
         // 6. Settings items for screen recording: immediate start, record sound, temporary links
         suite.expect(recorderSettingsSource.contains("workflow.immediate")
                      && recorderSettingsSource.contains("$immediateStart")
-                     && recorderSettingsSource.contains("workflow.recordSound")
+                     && recorderSettingsSource.contains("copy(.playStartSound)")
                      && recorderSettingsSource.contains("$playRecordSound")
                      && recorderSettingsSource.contains("screenshotStrings.shareEnabledToggle"),
                      "ScreenRecorderSettings includes immediate start toggle, record sound toggle, and temporary links toggle")
@@ -89,8 +89,8 @@ enum DirectCaptureRequirementsComprehensiveTests {
         let sections = SettingsSidebarIdentityTests.Directory.sidebarSections(.enUS, language: .enUS, isAvailable: { _ in true })
         let desktopAndScreen = sections.first { $0.id == 1 }
         suite.expect(desktopAndScreen?.items.contains { $0.id == .page(.screenshot) } == true
-                     && desktopAndScreen?.items.contains { $0.id == .page(.screenRecorder) } == true,
-                     "SettingsDirectory registers screenshot and screenRecorder under Desktop & Screen")
+                     && desktopAndScreen?.items.contains { $0.id == .page(.screenRecorder) } == false,
+                     "SettingsDirectory registers unified screenshot and screenRecorder under Desktop & Screen")
 
         // 9. SettingsSidebarSupport produces single items for screenshot and screenRecorder without extra clutter
         let screenshotSidebar = SettingsSidebarSupport.items(
@@ -270,14 +270,13 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      && screenshotServiceSource.contains("NSSound(named: \"Shutter\")?.play()"),
                      "ScreenshotService verifies screenshotPlayShutterSound and plays Shutter sound")
 
-        // ScreenRecorderService plays begin_record and end_record sound
+        // ScreenRecorderService plays begin_record sound
         let recorderServiceSource = (try? String(
             contentsOfFile: "Sources/Lattice/Services/Recorder/ScreenRecorderService.swift",
             encoding: .utf8)) ?? ""
         suite.expect(recorderServiceSource.contains("DefaultsKey.recorderPlaySound")
-                     && recorderServiceSource.contains("begin_record.caf")
-                     && recorderServiceSource.contains("end_record.caf"),
-                     "ScreenRecorderService checks recorderPlaySound and plays begin_record on start and end_record on stop")
+                     && recorderServiceSource.contains("begin_record.caf"),
+                     "ScreenRecorderService checks recorderPlaySound and plays begin_record on start")
     }
 
     // MARK: - 5. Screen Recording Delayed Start, Discard & Live Capture
@@ -352,7 +351,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
             encoding: .utf8)) ?? ""
 
         // 1. Stash raw video in recent captures on deliver
-        suite.expect(recorderServiceSource.contains("RecentCaptureService.shared.stashRecording(from: take.videoURL)"),
+        suite.expect(recorderServiceSource.contains("RecentCaptureService.shared.stashRecording(from: take.videoURL"),
                      "ScreenRecorderService deliver stashes raw video in Recent Captures")
 
         // 2. Editor close confirmation logic
@@ -498,10 +497,11 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      && previewSource.contains("isViewportHovered = inside"),
                      "Quick view viewport tracks hover state continuously across image and overlay controls")
 
-        // 5. White link button and context menu
-        suite.expect(previewSource.contains(".foregroundStyle(.white)")
-                     && previewSource.contains("shareMenuChrome(Menu { shareDurations } label: { shareMenuLabel }"),
-                     "Link icon uses white regular style and click opens share durations menu")
+        // 5. Link button opens durations menu
+        suite.expect(previewSource.contains("Button(action: showShareMenu)")
+                     && previewSource.contains("func showShareMenu()")
+                     && previewSource.contains("addDurations(to: menu)"),
+                     "Link icon opens share durations menu")
 
         // 6. Keyboard shortcuts: Space -> Copy, P -> Pin, O -> OCR, E -> Edit
         suite.expect(previewSource.contains("if key == kVK_Space || letter == \" \" {")

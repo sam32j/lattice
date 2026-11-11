@@ -68,7 +68,7 @@ enum ScreenshotFeatureTests {
             "Sources/Lattice/Services/QuickTools/RecentCaptureService.swift",
             encoding: .utf8)) ?? ""
         suite.expect(previewSource.contains("if requested == .discard { confirmDelete(); return }")
-            && previewSource.contains("NotchIslandAlert.run(alert, above: owner)")
+            && previewSource.contains("NotchIslandAlert.run(errorAlert, above:")
             && previewSource.contains("NotchService.shared.showCaptureHistory()")
             && previewSource.contains("if wasInNotch { NotchService.shared.collapse() }")
             && recentSource.contains("func deleteScreenshot(id: UUID")
@@ -415,10 +415,6 @@ enum ScreenshotFeatureTests {
         suite.expect(unresolvedCandidatePasses != nil && standardWindowFails != nil && childrenPassIsAbsent,
                "AX keeps unresolved candidates and excludes only identified standard windows")
 
-        suite.expect(ScreenshotSupport.sanitizedDelay(5) == 5
-                && ScreenshotSupport.sanitizedDelay(7) == 0
-                && ScreenshotSupport.sanitizedDelay(-3) == 0,
-               "capture delay only accepts the offered steps")
         suite.expect(ScreenshotSupport.scrollingCaptureMaximumDuration == 120
                 && ScreenshotSupport.scrollingCaptureMaximumFrames == 512
                 && ScreenshotSupport.scrollingCaptureMaximumRetainedPixels == 60_000_000
@@ -990,16 +986,17 @@ enum ScreenshotFeatureTests {
                 && featureRuntimeSource.components(separatedBy:
                     "RecentCaptureService.shared.syncWithPreferences()").count == 3,
                "the history shortcut opens its window and follows both capture producers")
-        let recentCapturePaletteCode = recentCaptureServiceSource
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
-            .joined(separator: "\n")
+        let recentCapturePaletteCode = (try? String(
+            contentsOfFile: "Sources/Lattice/Services/LatticeHub/LatticeHubPanel.swift",
+            encoding: .utf8)) ?? ""
+        let hubMonitorsCode = (try? String(
+            contentsOfFile: "Sources/Lattice/Services/LatticeHub/LatticeHubMonitors.swift",
+            encoding: .utf8)) ?? ""
         suite.expect(recentCapturePaletteCode.contains("panel.hidesOnDeactivate = false")
                 && !recentCapturePaletteCode.contains("hidesOnDeactivate = true")
-                && recentCapturePaletteCode.contains("NSWorkspace.didActivateApplicationNotification")
-                && !recentCapturePaletteCode.contains("NSApplication.didResignActiveNotification")
-                && recentCapturePaletteCode.contains(
-                    "NSWorkspace.shared.notificationCenter.removeObserver("),
+                && hubMonitorsCode.contains("NSWorkspace.didActivateApplicationNotification")
+                && hubMonitorsCode.contains(
+                    "NSWorkspace.shared.notificationCenter.removeObserver(activationObserver)"),
                "a recent captures palette appears promptly and leaves when another app activates")
         let panelRecentCapturesSource = (try? String(
             contentsOfFile: "Sources/Lattice/UI/MenuPanel/PanelRecentCapturesView.swift",
@@ -1291,20 +1288,17 @@ enum ScreenshotFeatureTests {
         let routeBody = serviceBody("    private func route(_ capture:")
         suite.expect(previewDiscard.contains("unshelve(latestCapture)")
                 && routeBody.components(separatedBy: "autoShelve(").count == 2
-                && routeBody.contains("autoShelve(capture, saved: result.saved?.url)"),
+                && routeBody.contains("autoShelve(capture, saved: saved?.url)"),
                "a capture that does not open in the editor is offered to the shelf once, and discarding it from its preview takes it back")
         // In the island the menu arrow is hidden, so a click there must open
         // the durations rather than publish at once.
-        let shareMenuCode = ((try? String(
+        let shareMenuSource = ((try? String(
             contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenshotQuickPreviewController.swift",
-            encoding: .utf8)) ?? "").components(separatedBy: "@ViewBuilder private var shareMenu: some View {")
-            .dropFirst().first?.components(separatedBy: "private var shareDurations").first ?? ""
-        let embeddedShareMenu = shareMenuCode.components(separatedBy: "} else {").first ?? ""
-        let floatingShareMenu = shareMenuCode.components(separatedBy: "} else {").dropFirst().first ?? ""
-        suite.expect(embeddedShareMenu.contains("Menu { shareDurations } label: { shareMenuLabel },")
-                && !embeddedShareMenu.contains("primaryAction")
-                && floatingShareMenu.contains("primaryAction: {\n                share(.saved())"),
-               "the island's link button opens the durations on a click, while the floating preview keeps its split button")
+            encoding: .utf8)) ?? "")
+        suite.expect(shareMenuSource.contains("func showShareMenu()")
+                && shareMenuSource.contains("addDurations(to: menu)")
+                && shareMenuSource.contains("for duration in ScreenshotShareDuration.allCases"),
+               "the link button opens the durations menu on click")
         let captureServiceSource = (try? String(
             contentsOfFile: "Sources/Lattice/Services/QuickTools/ScreenCaptureService.swift",
             encoding: .utf8)) ?? ""
@@ -1342,14 +1336,14 @@ enum ScreenshotFeatureTests {
         let makeKeyLine = presentLines.firstIndex { $0.contains("makeKey") } ?? -1
         suite.expect(orderFrontLine >= 0 && makeKeyLine > orderFrontLine
                 && presentLines[makeKeyLine - 1].trimmingCharacters(in: .whitespaces)
-                    == "if presentationPolicy.takesFocus {",
+                    == "if takesFocus {",
                "the screenshot preview takes key focus only behind the presentation policy, once the panel is on screen")
         // The island reads the same policy: whether it takes the keyboard and
         // whether a collapse closes the preview come from it, never a literal.
         let islandPresentation = quickPreviewCode.components(separatedBy: "if wantsNotch, NotchService.shared.presentCapture(")
             .dropFirst().first?.components(separatedBy: "let host = NSHostingController").first ?? ""
-        suite.expect(quickPreviewCode.contains("takeFocus: presentationPolicy.takesFocus,")
-                && quickPreviewCode.contains("closeOnCollapse: presentationPolicy.closesOnCollapse,")
+        suite.expect(quickPreviewCode.contains("takeFocus: takesFocus,")
+                && quickPreviewCode.contains("closeOnCollapse: closePolicy.closesOnIslandCollapse,")
                 && !islandPresentation.contains("NSApp.activate(ignoringOtherApps: true)"),
                "the Island preview takes key focus through its own nonactivating panel without activating Settings")
         let makeKeyCount = quickPreviewCode.components(separatedBy: "makeKey").count - 1

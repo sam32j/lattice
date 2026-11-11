@@ -52,7 +52,19 @@ enum ScreenshotShareCompletionTests {
     }
 
     struct PreviewCapture {
+        let id = UUID()
         let image: Int
+    }
+
+    final class QuickLinkMediaIndex {
+        static let shared = QuickLinkMediaIndex()
+        var screenshotRecords: [UUID: ScreenshotShareRecord] = [:]
+        func rememberScreenshot(_ id: UUID, record: ScreenshotShareRecord) {
+            screenshotRecords[id] = record
+        }
+        func latestScreenshot(for id: UUID) -> ScreenshotShareRecord? {
+            screenshotRecords[id]
+        }
     }
 
     final class ScreenTextService {
@@ -137,6 +149,9 @@ enum ScreenshotShareCompletionTests {
             shareHandler?(duration, completion)
         }
         func close() { closed = true; onClose() }
+        func scheduleAutoDismiss() {
+            dismissWork = DispatchWorkItem {}
+        }
         @MainActor func copyLinkAndClose(_ record: ScreenshotShareRecord) -> Bool {
             copies.append(record)
             let copied = copySucceeds && ScreenshotShareService.shared.copy(record.url)

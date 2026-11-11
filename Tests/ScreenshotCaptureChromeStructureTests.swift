@@ -1,4 +1,6 @@
+import AppKit
 import Foundation
+import SwiftUI
 
 enum ScreenshotCaptureChromeStructureTests {
     static func run(_ suite: TestSuite) {

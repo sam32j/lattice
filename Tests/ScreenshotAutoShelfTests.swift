@@ -178,19 +178,17 @@ enum ScreenshotAutoShelfTests {
         service.latestCaptureToken = UUID()
         service.autoShelve(20, saved: nil)
         await service.settle()
-        let edited = service.autoShelvedItem?.item
-        service.editFromPreview(20, latestCapture: service.latestCaptureToken)
-        suite.expect(edited != nil && shelf.removed.last == edited && service.autoShelvedItem == nil
-                && service.editorCaptures == [20],
-                     "editing a capture from its preview takes the raw capture off the shelf before the editor opens")
+        let shelved = service.autoShelvedItem?.item
+        service.unshelve(service.latestCaptureToken)
+        suite.expect(shelved != nil && shelf.removed.last == shelved && service.autoShelvedItem == nil,
+                     "unshelving a capture takes the raw capture off the shelf")
         service.latestCaptureToken = UUID()
         service.autoShelve(21, saved: nil)
-        let editedWhileWriting = service.autoShelfTasks[service.latestCaptureToken]
-        service.editFromPreview(21, latestCapture: service.latestCaptureToken)
-        await editedWhileWriting?.value
-        suite.expect(!shelf.generated.contains(Data([21])) && service.autoShelvedItem == nil
-                && service.editorCaptures == [20, 21],
-                     "a capture edited while its copy is still being written never reaches the shelf")
+        let writingTask = service.autoShelfTasks[service.latestCaptureToken]
+        service.unshelve(service.latestCaptureToken)
+        await writingTask?.value
+        suite.expect(!shelf.generated.contains(Data([21])) && service.autoShelvedItem == nil,
+                     "a capture unshelved while its copy is still being written never reaches the shelf")
 
         service.latestCaptureToken = UUID()
         service.autoShelve(6, saved: nil)

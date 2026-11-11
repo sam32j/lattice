@@ -36,7 +36,7 @@ enum HistoryPreviewContinuityTests {
         static let shared = Service()
         final class Service {
             var shown = 0
-            func restorePreview(_ capture: Int) { shown += 1 }
+            func restorePreview(_ capture: Int, inNotch: Bool = false) { shown += 1 }
         }
     }
     enum RecorderQuickPreviewController {
@@ -50,6 +50,21 @@ enum HistoryPreviewContinuityTests {
         var hasFiles = true
         func hasManagedCaptureFiles(for id: UUID) -> Bool { hasFiles }
     }
+    final class NotchService {
+        static let shared = NotchService()
+        var expanded = false
+        var selected: NotchModule? = nil
+        func collapse() {}
+    }
+    final class LatticeHubService {
+        static let shared = LatticeHubService()
+        var isVisible = false
+        func hide() {}
+    }
+    enum CapturePresentationRouting {
+        enum Origin { case dynamicIsland, floatingWindow, external }
+        static func opensInIsland(origin: Origin) -> Bool { origin == .dynamicIsland }
+    }
     class State {
         let queue = DispatchQueue.Queue()
         var store = Store()
@@ -58,7 +73,7 @@ enum HistoryPreviewContinuityTests {
         var removals = 0
         func loadScreenshot(_ entry: RecentCaptureEntry) -> Int? { screenshotLoads ? 1 : nil }
         func hideHistoryWindow() {}
-        func showHistoryWindow() { historyReopens += 1 }
+        func showHistoryWindow(origin: CapturePresentationRouting.Origin = .floatingWindow) { historyReopens += 1 }
         func remove(_ entry: RecentCaptureEntry) { removals += 1 }
         func thumbnail(for entry: RecentCaptureEntry) -> NSImage? { nil }
     }
