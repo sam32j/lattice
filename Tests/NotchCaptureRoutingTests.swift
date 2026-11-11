@@ -9,12 +9,12 @@ enum NotchCaptureRoutingTests {
         defaults.set(true, forKey: DefaultsKey.notchEnabled)
         defaults.set(true, forKey: AppFeature.screenshot.availabilityKey)
         defaults.set(true, forKey: DefaultsKey.screenshotEnabled)
-        defaults.set("", forKey: DefaultsKey.notchHiddenModules)
-        for previews in [false, true] {
-            defaults.set(previews, forKey: DefaultsKey.notchCapture)
-            suite.expect(NotchSupport.routesCapturePreviews(in: defaults) == previews,
+        for hidden in [true, false] {
+            defaults.set(hidden ? "captures" : "", forKey: DefaultsKey.notchHiddenModules)
+            suite.expect(NotchSupport.routesCapturePreviews(in: defaults) == !hidden,
                          "capture previews retain their own destination")
         }
+        defaults.set("", forKey: DefaultsKey.notchHiddenModules)
         defaults.set(false, forKey: AppFeature.screenshot.availabilityKey)
         defaults.set(true, forKey: AppFeature.screenRecorder.availabilityKey)
         suite.expect(NotchSupport.routesCapturePreviews(in: defaults),

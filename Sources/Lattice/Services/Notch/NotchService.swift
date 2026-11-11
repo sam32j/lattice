@@ -3911,6 +3911,7 @@ final class NotchService: ObservableObject {
                 // subpage. Consume the event so Cmd-W cannot close a different
                 // window after this nonactivating panel gives up key focus.
                 if event.window === self.panel {
+                    if self.showingCommandBar { return event }
                     let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
                     if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "w" {
                         self.collapse()
@@ -3929,7 +3930,6 @@ final class NotchService: ObservableObject {
                         return nil
                     }
                 }
-                if event.window === self.panel, self.showingCommandBar { return event }
                 // Embedded capture previews own Space and Command-Y. The
                 // Island shortcut monitor must not collapse their parent
                 // panel before the preview's key handler runs.
