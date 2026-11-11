@@ -23,7 +23,7 @@ extension AppUpdateStrings {
         openAppStore: "App Storeを開く",
         appStoreBadge: "App Store",
         storeHint: "このアップデートを適用するApp Storeを開きます",
-        frequencyLabel: "バックグラウンドで確認",
+        frequencyLabel: "アップデートを自動的に確認",
         frequencyOff: "オフ",
         frequencyDaily: "毎日",
         frequencyWeekly: "毎週",

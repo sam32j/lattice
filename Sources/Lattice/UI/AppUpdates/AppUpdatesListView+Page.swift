@@ -57,6 +57,9 @@ extension AppUpdatesListView {
             .padding(18)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        // Match the General page's menu-bar-icon accordion: the space below
+        // the disclosure row grows or contracts with the same 0.18s curve.
+        .settingsExpansionAnimation(value: showsNotifyRow)
         .sheet(isPresented: $showingALS) {
             alsSheet
         }

@@ -66,9 +66,15 @@ extension AppUpdatesService {
                 ? AppUpdatesSupport.appStoreCandidates(
                     apps: apps, coveredPaths: Set(packageResult.items.compactMap(\.bundlePath)))
                 : []
+            // Homebrew receipts can become stale when VS Code updates itself.
+            // Check its stable publisher feed even when a cask is installed;
+            // prefer a real Homebrew upgrade row if both sources find one.
+            let stableCodePaths = Set(apps.filter { $0.bundleID == "com.microsoft.VSCode" }.map(\.path))
+            let excludedFromOnline = includeHomebrewApps
+                ? coveredPaths.subtracting(stableCodePaths) : Set<String>()
             let onlineCandidates = includeOnlineCatalog
-                && packageResult.onlineCoverageAvailable
-                ? AppUpdatesSupport.onlineCatalogCandidates(apps: apps, coveredPaths: coveredPaths)
+                ? AppUpdatesSupport.onlineCatalogCandidates(apps: apps,
+                    coveredPaths: excludedFromOnline)
                 : []
 
             let activeApps = apps.filter { app in
@@ -102,12 +108,7 @@ extension AppUpdatesService {
             let group = DispatchGroup()
             var storeResult = SourceResult(items: [], available: true)
             var feedResult = SourceResult(items: [], available: true)
-            var onlineResult = SourceResult(
-                items: [],
-                available: !includeOnlineCatalog || packageResult.onlineCoverageAvailable,
-                uncheckedApps: includeOnlineCatalog && !packageResult.onlineCoverageAvailable
-                    ? AppUpdatesSupport.onlineCatalogCandidates(apps: apps, coveredPaths: coveredPaths)
-                    : [])
+            var onlineResult = SourceResult(items: [], available: true)
 
             group.enter()
             self.storeFindings(for: storeCandidates,
@@ -124,7 +125,7 @@ extension AppUpdatesService {
                 }
                 group.leave()
             }
-            if includeOnlineCatalog, onlineResult.available {
+            if includeOnlineCatalog {
                 group.enter()
                 self.publisherFindings(for: onlineCandidates,
                                        operatingSystemVersion: operatingSystemVersion, cancellation: cancellation) { [weak self] result in
@@ -161,18 +162,33 @@ extension AppUpdatesService {
                 DispatchQueue.main.async {
                     guard generation == self.scanGeneration, !cancellation.isCancelled else { return }
                     self.checkCancellation = nil
+                    // Finding a .app does not imply that we found a reliable
+                    // version source. Include unmatched bundles (such as
+                    // publisher-specific dev channels) in the incomplete
+                    // coverage list instead of silently calling them current.
+                    let verifiedPaths = (includeHomebrewApps && packageResult.available
+                        ? coveredPaths : Set<String>())
+                        .union(storeResult.answeredPaths)
+                        .union(resolvedFeed.answeredPaths)
+                        .union(onlineResult.answeredPaths)
+                    let unverifiedApps = activeApps.filter { !verifiedPaths.contains($0.path) }
+                    let packageUpdatePaths = Set(packageResult.items.compactMap(\.bundlePath))
                     self.finishCheck(items: AppUpdatesSupport.merged(packageResult.items,
                                                                      storeResult.items,
-                                                                     resolvedFeed.items,
+                                                                     resolvedFeed.items.filter {
+                                                                         !packageUpdatePaths.contains($0.bundlePath ?? "")
+                                                                     },
                                                                      onlineResult.items.filter {
                                                                          !resolvedFeed.checkedPaths.contains($0.bundlePath ?? "")
+                                                                             && !packageUpdatePaths.contains($0.bundlePath ?? "")
                                                                      }),
                                      packageManagerAvailable: packageResult.available,
                                      onlineCatalogAvailable: onlineResult.available && resolvedFeed.available,
                                      appStoreAvailable: storeResult.available,
                                      uncheckedAppNames: AppUpdatesSupport.uncheckedAppNames(
-                                        storeResult.uncheckedApps + resolvedFeed.uncheckedApps + onlineResult.uncheckedApps,
-                                        checkedPaths: resolvedFeed.checkedPaths),
+                                        unverifiedApps + storeResult.uncheckedApps
+                                            + resolvedFeed.uncheckedApps + onlineResult.uncheckedApps,
+                                        checkedPaths: verifiedPaths),
                                      uncomparableAppNames: onlineResult.uncomparableAppNames(coveredBy: resolvedFeed),
                                      automatic: automatic)
                 }

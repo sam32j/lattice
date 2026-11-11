@@ -5,14 +5,22 @@ import CoreServices
 extension AppUpdatesService {
     // MARK: - Scanning the Applications folders
 
-    /// Reads the normal Applications folders plus shallow app results from
-    /// Spotlight in the user's home, all off the main thread.
+    /// Reads the standard Applications folders and indexed user-installed
+    /// bundles, including nested and external install folders, off the main
+    /// thread. Build outputs, embedded helpers and system apps are excluded.
     static func scanInstalledApps(includePublisherFeeds: Bool, cancellation: AppUpdateCheckCancellation? = nil) -> [AppUpdatesSupport.InstalledApp] {
-        InstalledApps.applicationScanPaths(
+        let spotlight = cancellation?.isCancelled == true ? [] : spotlightApplicationPaths(cancellation: cancellation)
+        let normal = InstalledApps.applicationScanPaths(
             folderPaths: folderApplicationPaths(cancellation: cancellation),
-            spotlightPaths: cancellation?.isCancelled == true ? [] : spotlightApplicationPaths(cancellation: cancellation),
+            spotlightPaths: spotlight,
             homeDirectory: NSHomeDirectory()
-        ).compactMap { path in
+        )
+        // The generic app picker intentionally caps home Spotlight results at
+        // three components. Update checks must also see apps in user-managed
+        // install folders (and external Applications folders), without treating
+        // Xcode build outputs, caches, or nested helper bundles as installed.
+        let paths = Array(Set(normal + additionalUpdateApplicationPaths(spotlight))).sorted()
+        return paths.compactMap { path in
             guard cancellation?.isCancelled != true else { return nil }
             return scannedApp(at: URL(fileURLWithPath: path), includePublisherFeeds: includePublisherFeeds)
         }
@@ -42,11 +50,37 @@ extension AppUpdatesService {
     static func spotlightApplicationPaths(cancellation: AppUpdateCheckCancellation? = nil) -> [String] {
         let command = HomebrewCommand(
             executable: "/usr/bin/mdfind",
-            arguments: ["-onlyin", NSHomeDirectory(),
-                        "kMDItemContentType == 'com.apple.application-bundle'"])
+            arguments: ["kMDItemContentType == 'com.apple.application-bundle'"])
         let result = runCommand(command, cancellation: cancellation)
         guard result.status == 0 else { return [] }
         return result.output.split(separator: "\n").map(String.init)
+    }
+
+    /// Broader than the generic app picker, but deliberately excludes
+    /// non-installed build products and embedded helpers. Spotlight may return
+    /// paths on other mounted disks; don't treat a bundle inside another .app
+    /// as an independently installed app.
+    static func additionalUpdateApplicationPaths(_ paths: [String]) -> [String] {
+        let home = URL(fileURLWithPath: NSHomeDirectory()).standardizedFileURL.path
+        let excludedDirectories: Set<String> = [
+            "deriveddata", ".build", "build", "node_modules", "pods", "carthage",
+            ".git", ".swiftpm", "caches", "temporaryitems", "tmp", "temp",
+            "intermediates.noindex", "products", "archiveintermediates"
+        ]
+        return paths.filter { path in
+            let url = URL(fileURLWithPath: path).resolvingSymlinksInPath().standardizedFileURL
+            guard url.pathExtension.lowercased() == "app",
+                  !InstalledApps.isSystemApplication(at: url) else { return false }
+            let directories = url.pathComponents.dropLast().map { $0.lowercased() }
+            guard !directories.contains(where: { $0.hasSuffix(".app") }),
+                  !directories.contains(where: excludedDirectories.contains),
+                  !url.path.hasPrefix("/private/"),
+                  !url.path.hasPrefix("/usr/"),
+                  !url.path.hasPrefix("/Library/") else { return false }
+            if url.path.hasPrefix(home + "/"),
+               directories.contains("library") { return false }
+            return true
+        }
     }
 
     static func scannedApp(at url: URL, includePublisherFeeds: Bool) -> AppUpdatesSupport.InstalledApp? {
@@ -76,7 +110,15 @@ extension AppUpdatesService {
             let configurationSize = (try? configurationURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize
             let configuration = configurationSize.map { $0 <= 64 * 1_024 } == true
                 ? (try? String(contentsOf: configurationURL, encoding: .utf8)) : nil
-            updateFeed = AppUpdateFeedSupport.feed(info: plist, configuration: configuration)
+            if bundleID == "com.microsoft.VSCode" {
+                // VS Code stable uses Microsoft's JSON version endpoint rather
+                // than an appcast or electron-updater YAML file. Do not apply
+                // stable releases to Insiders, OSS forks, or dev channels.
+                let url = URL(string: "https://update.code.visualstudio.com/api/update/darwin-universal/stable/latest")!
+                updateFeed = AppUpdateFeedSupport.Feed(url: url, format: .visualStudioCode)
+            } else {
+                updateFeed = AppUpdateFeedSupport.feed(info: plist, configuration: configuration)
+            }
         }
         // Positron keeps its own release beside its code, not in its bundle.
         let productURL = url.appendingPathComponent("Contents/Resources/app/product.json")

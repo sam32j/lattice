@@ -23,7 +23,7 @@ extension AppUpdateStrings {
         openAppStore: "Відкрити App Store",
         appStoreBadge: "App Store",
         storeHint: "Відкриває App Store, де встановлюється це оновлення",
-        frequencyLabel: "Перевіряти у фоновому режимі",
+        frequencyLabel: "Автоматично перевіряти оновлення",
         frequencyOff: "Вимкнено",
         frequencyDaily: "Щодня",
         frequencyWeekly: "Щотижня",
