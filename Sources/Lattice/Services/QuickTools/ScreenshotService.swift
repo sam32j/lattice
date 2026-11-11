@@ -378,6 +378,9 @@ final class ScreenshotService: ObservableObject {
         /// Explicit Save and Save As files belong to the user, even when their
         /// saved URL is shown in the returned preview.
         var automaticExports: [URL] = []
+        /// Whether url represents the image currently shown in the preview.
+        /// An older automatic export still participates in deletion cleanup.
+        var representsCurrentCapture = true
 
         func taggedAsAutomatic() -> SaveOutcome {
             SaveOutcome(url: url, automaticExports: [url])
@@ -567,7 +570,7 @@ final class ScreenshotService: ObservableObject {
                 return Self.temporaryExportFile(image: export.image, scale: export.scale,
                                                 strings: self.strings)
             },
-            savedFile: { saved?.url },
+            savedFile: { saved?.representsCurrentCapture == true ? saved?.url : nil },
             saveToDefault: { [weak self] in
                 guard let self, let outcome = self.saveDirect(presented) else { return nil }
                 saved = outcome.keepingAutomaticExports(from: saved)
@@ -747,6 +750,10 @@ final class ScreenshotService: ObservableObject {
             saved = SaveOutcome(url: exported, automaticExports: automatic)
         } else {
             saved = awaiting.saved
+            // Done writes editable history, not a replacement for the old
+            // automatic export. Keep its URL for cleanup but don't present it
+            // as the edited screenshot's saved file.
+            if editor.didPersistImageChanges { saved?.representsCurrentCapture = false }
         }
         // Defer until AppKit has removed the editor window from the key-window
         // chain; the newly created preview starts its own full close interval.
@@ -754,7 +761,7 @@ final class ScreenshotService: ObservableObject {
             guard let self, self.preview == nil else { return }
             self.presentPreview(capture,
                                 initialSaved: saved,
-                                completedActions: saved == nil ? [] : [.save],
+                                completedActions: saved?.representsCurrentCapture == true ? [.save] : [],
                                 latestCapture: nil)
         }
     }

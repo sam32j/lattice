@@ -86,9 +86,14 @@ enum NotchCaptureKeyboardTests {
         func check(_ label: String, accepts: Bool) {
             for (key, flags, action) in commands {
                 preview.actions = []
+                let previousDeletes = preview.keyboardDeleteRequests
                 let event = Event(window: panel, keyCode: UInt16(key), modifierFlags: flags)
                 let forwarded = Event.handler?(event) != nil
-                suite.expect(forwarded == !accepts && preview.actions == (accepts ? [action] : []), label)
+                let isDelete = action == .discard
+                suite.expect(forwarded == !accepts
+                             && preview.actions == (accepts && !isDelete ? [action] : [])
+                             && preview.keyboardDeleteRequests == previousDeletes + (accepts && isDelete ? 1 : 0),
+                             label)
             }
             let wasClosed = preview.closed
             preview.actions = []

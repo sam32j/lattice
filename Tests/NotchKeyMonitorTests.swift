@@ -105,6 +105,8 @@ enum NotchKeyMonitorTests {
         var windowHost: Host? = Host()
         var modules = NotchModule.allCases
         var selected = NotchModule.controls
+        var pageLayers: [NotchModule: () -> Void] = [:]
+        var detailHasPage = false
         var pinned = false
         var expanded = true
         var peeking = false
@@ -243,6 +245,23 @@ enum NotchKeyMonitorTests {
         actions = []
         suite.expect(NSEvent.handler?(escape) == nil && actions == ["collapse"],
                      "without the bar, Escape steps back through the island again")
+        service.selected = .hub
+        LatticeHubService.shared.isEditing = true
+        actions = []
+        suite.expect(NSEvent.handler?(escape) == nil && actions.isEmpty,
+                     "Escape preserves an active Hub rearrangement")
+        LatticeHubService.shared.isEditing = false
+        service.selected = .controls
+        service.pageLayers[.controls] = { actions.append("layer") }
+        actions = []
+        suite.expect(NSEvent.handler?(escape) == nil && actions == ["layer"],
+                     "Escape dismisses a nested page layer before collapsing the Island")
+        service.pageLayers.removeAll()
+        service.detailHasPage = true
+        actions = []
+        suite.expect(NSEvent.handler?(escape) == nil && actions == ["stepBack"],
+                     "Escape steps back from detail pages before collapsing")
+        service.detailHasPage = false
         // With no settings button in the island, Command-Comma opens its page.
         actions = []
         let commandComma = NSEvent(window: service.panel, keyCode: 43, modifierFlags: .command,
