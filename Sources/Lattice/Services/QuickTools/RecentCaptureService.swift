@@ -247,7 +247,8 @@ final class RecentCaptureService: ObservableObject {
         }
     }
 
-    func stashRecording(from sourceURL: URL, completion: @escaping (URL?) -> Void) {
+    func stashRecording(from sourceURL: URL, preferHardLink: Bool = false,
+                        completion: @escaping (URL?) -> Void) {
         let id = UUID()
         let createdAt = Date()
         let day = Self.dayFormatter.string(from: createdAt)
@@ -255,7 +256,7 @@ final class RecentCaptureService: ObservableObject {
         let relativePath = "\(day)/\(id.uuidString).\(ext)"
         let thumbnailName = "\(id.uuidString)-thumbnail.png"
         let generation = currentClearGeneration()
-        let entry = RecentCaptureEntry(
+        let committedEntry = RecentCaptureEntry(
             id: id, kind: .recording, createdAt: createdAt,
             screenshotName: nil, recordingPath: relativePath, thumbnailName: nil, scale: nil,
             anchorX: nil, anchorY: nil, anchorWidth: nil, anchorHeight: nil)
@@ -263,7 +264,8 @@ final class RecentCaptureService: ObservableObject {
         queue.async { [weak self] in
             guard let self, self.currentClearGeneration() == generation,
                   let root = self.capturesRoot,
-                  self.store.importRecording(from: sourceURL, entry: entry) else {
+                  self.store.importRecording(from: sourceURL, entry: committedEntry,
+                                             preferHardLink: preferHardLink) else {
                 DispatchQueue.main.async { completion(nil) }
                 return
             }
@@ -779,6 +781,8 @@ final class RecentCaptureService: ObservableObject {
     }
 
     private func publish() {
+        // The history carousel/list always shows every retained capture.
+        // File Cache is a separate Shelf feature and never filters history.
         let value = store.entries
         DispatchQueue.main.async { [weak self] in
             self?.entries = value

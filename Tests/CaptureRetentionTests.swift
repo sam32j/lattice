@@ -32,10 +32,10 @@ enum CaptureRetentionTests {
                      "screenshot age cleanup does not expire recording originals")
         suite.expect(service.store.entries.filter { $0.kind == .screenshot }.count == 1,
                      "screenshot age cleanup still expires old screenshots")
-        let recent = (0..<12).map { entry(.recording, Double($0)) }
+        let recent = (0..<24).map { entry(.recording, Double($0)) }
         let screenshot = entry(.screenshot, 2)
         service.store.entries = recent.reversed() + [screenshot]
-        for (limit, expected) in [(5, 5), (10, 10), (0, 12), (-1, 12)] {
+        for (limit, expected) in [(5, 5), (10, 10), (20, 20), (0, 24), (-1, 24)] {
             defaults.set(limit, forKey: DefaultsKey.recentRecordingLimit)
             service.store.entries = recent.reversed() + [screenshot]
             service.pruneMissingEntries()
@@ -45,6 +45,16 @@ enum CaptureRetentionTests {
             suite.expect(service.store.entries.contains(screenshot),
                          "recording limit \(limit) does not consume screenshot slots")
         }
+        // Recent Captures stays independent of File Cache: no visibility
+        // toggle and no per-entry cache flag can hide a retained recording.
+        let visible = RecentCaptureRetention.entries(
+            recent + [screenshot], screenshotCutoff: nil, recordingLimit: 5)
+        suite.expect(visible.filter { $0.kind == .recording }.count == 5
+                     && visible.contains(screenshot),
+                     "the history retention limit applies to recordings only")
+        suite.expect(RecentCaptureRetention.entries(
+            recent, screenshotCutoff: nil, recordingLimit: 0).count == 24,
+            "all recordings are visible with unlimited retention")
         for language in AppLanguage.allCases {
             let labels = CaptureWorkflowStrings.localized(language)
             suite.expect(labels.selectedWindows(1).contains("1") && labels.selectedWindows(12).contains("12"),

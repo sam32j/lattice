@@ -5,6 +5,18 @@ import Foundation
 
 enum RecentCaptureStoreTests {
     static func run(_ suite: TestSuite) {
+        let hudChrome = (try? String(contentsOfFile: "Sources/Lattice/UI/LatticeHub/LatticeHubChrome.swift",
+                                     encoding: .utf8)) ?? ""
+        let recentPanel = (try? String(contentsOfFile: "Sources/Lattice/UI/MenuPanel/PanelRecentCapturesView.swift",
+                                       encoding: .utf8)) ?? ""
+        suite.expect(hudChrome.contains("RecentCapturesView.confirmClearAboveFloatingHUD()")
+                     && recentPanel.contains("hub.removeMonitors()")
+                     && recentPanel.contains("hub.installMonitors(for: panel)")
+                     && recentPanel.contains("NotchIslandAlert.run(alert, above: panel)"),
+                     "floating-HUD clear runs a native confirmation with dismissal monitors suspended")
+        suite.expect(CaptureInterfaceStrings.localized(.enUS).deleteRecentWarning ==
+                     "This will delete all the screenshots and recordings from history. This action cannot be undone.",
+                     "the capture deletion dialog warns about irreversibility")
         let manager = FileManager.default
         let root = manager.temporaryDirectory
             .appendingPathComponent("RecentCaptureStoreTests-\(UUID().uuidString)", isDirectory: true)
