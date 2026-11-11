@@ -664,7 +664,7 @@ struct SwitcherView: View {
         let index = switcher.selectedIndex
         guard switcher.windows.indices.contains(index) else { return }
         let id = switcher.windows[index].id
-        guard animated, !instantSelection, #available(macOS 26, *) else {
+        guard animated, !instantSelection, NSApp.activationPolicy() != .prohibited, #available(macOS 26, *) else {
             proxy.scrollTo(id, anchor: .center)
             return
         }
