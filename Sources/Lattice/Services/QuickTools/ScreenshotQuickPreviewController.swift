@@ -464,30 +464,40 @@ final class ScreenshotQuickPreviewController {
         }
     }
 
-    /// Keyboard deletion must request confirmation before changing saved files.
+    /// Use the same focus-taking, collapse-blocking modal as Clear All.
+    /// Moving the pointer outside the Island must not dismiss the question.
     private func confirmDeleteFromKeyboard() {
         guard !closed, !deletingCapture, !keyboardDeletePending else { return }
+        let notch = NotchService.shared
+        let locksIsland = shownInNotch
+        let owner = locksIsland ? notch.presentationWindow : panel
+        guard let owner, owner.isVisible else { return }
         keyboardDeletePending = true
-        // The keyboard has no access to the SwiftUI button's armed state.
-        // Require a real confirmation rather than silently deleting on one
-        // Delete keypress; keep the preview open after cancellation.
         dismissWork?.cancel()
         dismissWork = nil
-        contextMenuOpen = true // Suspend focus-loss dismissal while modal.
+        contextMenuOpen = true // Block floating-preview focus loss/dismissal.
+        // Clear All acquires this guard *before* deferring the native modal.
+        // It also blocks Island hover/click handlers and key reclamation.
+        if locksIsland { notch.beginIslandConfirmation() }
         DispatchQueue.main.async { [weak self] in
-            guard let self, !self.closed else { return }
-            defer {
-                self.keyboardDeletePending = false
-                self.contextMenuOpen = false
+            guard let self, !self.closed, owner.isVisible else {
+                self?.keyboardDeletePending = false
+                self?.contextMenuOpen = false
+                if locksIsland { notch.endIslandConfirmation() }
+                return
             }
             let copy = CaptureInterfaceStrings.localized(L10n.shared.language)
-            let owner = self.shownInNotch ? NotchService.shared.presentationWindow : self.panel
             let approved = NotchIslandAlert.confirmDestructive(
                 title: copy.confirmDelete,
                 message: copy.deleteCaptures,
                 action: copy.delete,
                 cancel: FeatureStrings.screenshot(L10n.shared.language).cancel,
                 above: owner)
+            self.keyboardDeletePending = false
+            self.contextMenuOpen = false
+            // Release before deletion: a synchronous completion may navigate
+            // back to history or collapse the Island.
+            if locksIsland { notch.endIslandConfirmation() }
             if approved { self.confirmDelete() }
             else { self.scheduleAutoDismiss() }
         }

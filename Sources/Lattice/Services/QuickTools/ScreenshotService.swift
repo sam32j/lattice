@@ -374,12 +374,21 @@ final class ScreenshotService: ObservableObject {
     /// number back.
     struct SaveOutcome {
         let url: URL
-        /// A previous automatic export belongs to this capture as well.
-        /// Keep it distinct from the latest editor export when discarding.
-        var earlierExports: [URL] = []
+        /// Only automatic exports are owned by the capture lifecycle.
+        /// Explicit Save and Save As files belong to the user, even when their
+        /// saved URL is shown in the returned preview.
+        var automaticExports: [URL] = []
 
-        func moveToTrash() throws {
-            for export in Set([url] + earlierExports) where FileManager.default.fileExists(atPath: export.path) {
+        func taggedAsAutomatic() -> SaveOutcome {
+            SaveOutcome(url: url, automaticExports: [url])
+        }
+
+        func keepingAutomaticExports(from previous: SaveOutcome?) -> SaveOutcome {
+            SaveOutcome(url: url, automaticExports: previous?.automaticExports ?? automaticExports)
+        }
+
+        func trashAutomaticExports() throws {
+            for export in Set(automaticExports) where FileManager.default.fileExists(atPath: export.path) {
                 try FileManager.default.trashItem(at: export, resultingItemURL: nil)
             }
         }
@@ -405,7 +414,7 @@ final class ScreenshotService: ObservableObject {
             autoCopy(capture)
         }
         let saved = defaults.bool(forKey: DefaultsKey.screenshotSaveAutomatically)
-            ? saveDirect(capture) : nil
+            ? saveDirect(capture)?.taggedAsAutomatic() : nil
         autoShelve(capture, saved: saved?.url)
         if defaults.bool(forKey: DefaultsKey.screenshotOpenEditorAfterCapture) {
             openEditor(with: capture, reopenPreviewOnClose: true, previewSaved: saved)
@@ -497,21 +506,18 @@ final class ScreenshotService: ObservableObject {
                     return self.copyDirect(presented) ? [.copy] : []
                 case .save:
                     guard let outcome = self.saveDirect(presented) else { return [] }
-                    saved = outcome
+                    saved = outcome.keepingAutomaticExports(from: saved)
                     return [.save]
                 case .saveAndCopy:
                     guard let result = self.saveAndCopyDirect(presented) else { return [] }
-                    saved = result.outcome
+                    saved = result.outcome.keepingAutomaticExports(from: saved)
                     return result.copied ? [.save, .copy] : [.save]
                 case .discard:
-                    // If this capture was already written to disk — whether
-                    // by the default action or a manual Save — Trash should
-                    // undo that rather than leave an orphaned file behind.
-                    // Into the actual Trash: the person may be discarding a
-                    // file the HUD just announced as saved.
+                    // Deleting this capture removes its automatic export only;
+                    // explicitly saved editor/preview files remain on disk.
                     if let saved {
                         do {
-                            try saved.moveToTrash()
+                            try saved.trashAutomaticExports()
                         } catch {
                             NSSound.beep()
                             return []
@@ -540,7 +546,7 @@ final class ScreenshotService: ObservableObject {
                 // available for retry; the sequence number is still occupied.
                 if let export = saved {
                     do {
-                        try export.moveToTrash()
+                        try export.trashAutomaticExports()
                     } catch { completion(false); return }
                     saved = nil
                 }
@@ -564,7 +570,7 @@ final class ScreenshotService: ObservableObject {
             savedFile: { saved?.url },
             saveToDefault: { [weak self] in
                 guard let self, let outcome = self.saveDirect(presented) else { return nil }
-                saved = outcome
+                saved = outcome.keepingAutomaticExports(from: saved)
                 return outcome.url
             },
             openedFromHistory: openedFromHistory,
@@ -728,12 +734,17 @@ final class ScreenshotService: ObservableObject {
         } else {
             capture = awaiting.capture
         }
-        // Save and Save As in the editor may have exported a *different* file
-        // from the automatic pre-editor save. The returned preview must show
-        // the actual final export and not create a redundant second save.
+        // Editor exports are user-owned, but the returned preview still needs
+        // the actual editor save URL to keep Save/Reveal state accurate.
+        // Only automatic exports remain eligible for capture deletion.
         let saved: SaveOutcome?
         if let exported = editor.lastSavedExportURL {
-            saved = SaveOutcome(url: exported, earlierExports: awaiting.saved.map { [$0.url] } ?? [])
+            // Save As may explicitly overwrite the old automatic export. In
+            // that case the manual save takes ownership of that same path.
+            let automatic = awaiting.saved?.automaticExports.filter {
+                $0.standardizedFileURL != exported.standardizedFileURL
+            } ?? []
+            saved = SaveOutcome(url: exported, automaticExports: automatic)
         } else {
             saved = awaiting.saved
         }
