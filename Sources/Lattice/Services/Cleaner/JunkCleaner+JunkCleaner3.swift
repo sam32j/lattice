@@ -36,8 +36,9 @@ extension JunkCleaner {
                                                  "com.apple.screencapture" as CFString) as? String
         var paths = [CleanerSupport.screenshotFolder(location: location, home: home)]
         if AppFeature.screenshot.isAvailable {
-            let stored = UserDefaults.standard.string(forKey: DefaultsKey.screenshotSaveFolder) ?? ""
-            paths.append(stored.isEmpty ? home + "/Desktop" : (stored as NSString).expandingTildeInPath)
+            if let folder = CaptureSaveLocation.resolvedFolder() {
+                paths.append(folder.path)
+            }
         }
         var seen = Set<String>()
         return paths
