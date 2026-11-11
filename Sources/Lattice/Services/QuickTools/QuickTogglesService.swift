@@ -31,11 +31,8 @@ final class QuickTogglesService: ObservableObject {
     }
 
     @Published private(set) var states: [QuickToggleAction: RunState] = [:]
-    /// Only advances after a synchronous, successful appearance switch.
-    /// Never reset to zero, so both directions rotate clockwise.
-    @Published private(set) var darkModeRotation: Double = 0
-
     private let workQueue = DispatchQueue(label: "io.github.sam32j.lattice.quick-toggles", qos: .userInitiated)
+    private var trashConfirmationPending = false
 
     private init() {}
 
@@ -82,7 +79,6 @@ final class QuickTogglesService: ObservableObject {
             return
         }
         theme.set(!theme.get())
-        darkModeRotation += 180
         finishRun(.darkMode, state: nil)
     }
 
@@ -91,20 +87,50 @@ final class QuickTogglesService: ObservableObject {
     /// Asks first (emptying is permanent), then tells the Finder to empty
     /// the Trash. Runs on the main thread up to the confirmation; the Apple
     /// Event goes to the work queue.
-    func emptyTrash() {
-        guard QuickToggleAction.emptyTrash.feature.isAvailable, states[.emptyTrash] != .running else { return }
+    func emptyTrash(fromNotch: Bool = false) {
+        guard QuickToggleAction.emptyTrash.feature.isAvailable,
+              states[.emptyTrash] != .running, !trashConfirmationPending else { return }
         let strings = FeatureStrings.quickToggles(L10n.shared.language)
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = strings.emptyTrashConfirmTitle
-        alert.informativeText = strings.emptyTrashConfirmMessage
-        alert.addButton(withTitle: strings.emptyTrashConfirmButton)
-        alert.addButton(withTitle: L10n.shared.s.uninstallerCancel)
-        let island = NotchService.shared.presentationWindow
-        let fromIsland = island?.isVisible == true
-            && (NSApp.currentEvent?.window === island || NSApp.keyWindow === island)
-        guard NotchIslandAlert.run(alert, above: fromIsland ? island : nil) == .alertFirstButtonReturn else { return }
-        emptyTrashConfirmed()
+        let title = strings.emptyTrashConfirmTitle
+        let message = strings.emptyTrashConfirmMessage
+        let action = strings.emptyTrashConfirmButton
+        let cancel = L10n.shared.s.uninstallerCancel
+
+        let notch = NotchService.shared
+        let hub = LatticeHubService.shared
+        let owner: NSWindow?
+        if fromNotch {
+            guard let island = notch.presentationWindow, island.isVisible else { return }
+            owner = island
+            // Protect the Island before leaving the SwiftUI click handler.
+            notch.beginIslandConfirmation()
+        } else if let panel = hub.panel, panel.isVisible {
+            owner = panel
+            hub.removeMonitors()
+        } else {
+            owner = nil
+        }
+
+        // Recent Captures already does this: do NOT start NSAlert.runModal()
+        // inside the source button's mouse event. The in-flight click can
+        // interfere with AppKit's guarded red destructive button and focus.
+        trashConfirmationPending = true
+        DispatchQueue.main.async { [weak self] in
+            defer {
+                self?.trashConfirmationPending = false
+                if fromNotch {
+                    notch.endIslandConfirmation()
+                } else if let panel = owner as? NSPanel, panel.isVisible {
+                    hub.installMonitors(for: panel)
+                    panel.makeKey()
+                }
+            }
+            guard let self, owner?.isVisible != false else { return }
+            guard NotchIslandAlert.confirmDestructive(
+                title: title, message: message, action: action,
+                cancel: cancel, above: owner) else { return }
+            self.emptyTrashConfirmed()
+        }
     }
 
     /// The variant for surfaces that already asked in their own words (the

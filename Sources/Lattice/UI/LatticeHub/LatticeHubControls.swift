@@ -94,7 +94,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         }
     }
 
-    func run(onDismiss: @escaping () -> Void) {
+    func run(onDismiss: @escaping () -> Void, fromNotch: Bool = false) {
         let toggles = QuickTogglesService.shared
         if let action = QuickToggleAction(rawValue: rawValue),
            toggles.state(for: action) == .needsPermission {
@@ -121,7 +121,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
             brightness.setKeyboardLightEnabled(!(brightness.keyboardLightEnabled ?? false))
         case .hiddenFiles: toggles.toggleHiddenFiles()
         case .desktopIcons: toggles.toggleDesktopIcons()
-        case .emptyTrash: toggles.emptyTrash()
+        case .emptyTrash: toggles.emptyTrash(fromNotch: fromNotch)
         case .ejectDisks: toggles.ejectAllDisks()
         case .lockScreen: onDismiss(); toggles.lockScreen()
         case .displayOff: onDismiss(); toggles.turnDisplayOff()
@@ -155,24 +155,25 @@ struct HubControlButton: View {
     var iconSize: CGFloat = 13
     var isEditing: Bool = false
     var actionRawValue: String? = nil
-    var darkModeRotation: Double = 0
+    var darkModeIsDark = false
     var onHide: (() -> Void)? = nil
     let action: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovered = false
 
-    /// Microphone slash animates its stroke, Dark Mode spins only clockwise,
-    /// and Finder visibility toggles replace symbols. Other icons stay static.
+    /// Microphone slash animates its stroke and Finder visibility toggles
+    /// replace symbols. Dark Mode changes orientation without animating.
     @ViewBuilder private var controlSymbol: some View {
         if actionRawValue == HubControlAction.micMute.rawValue {
             AnimatedMicMuteSymbol(muted: MicMuteService.shared.isMuted, fontSize: iconSize)
         } else if actionRawValue == HubControlAction.darkMode.rawValue {
             Image(systemName: icon)
                 .font(.system(size: iconSize, weight: .semibold))
-                .rotationEffect(.degrees(darkModeRotation))
-                .animation(reduceMotion ? nil : .easeInOut(duration: 0.38),
-                           value: darkModeRotation)
+                .rotationEffect(.degrees(darkModeIsDark ? 180 : 0))
+                // Suppress both this view's and an ancestor's implicit
+                // animation; the icon snaps to the new system appearance.
+                .transaction { $0.disablesAnimations = true }
         } else if actionRawValue == HubControlAction.hiddenFiles.rawValue
                     || actionRawValue == HubControlAction.desktopIcons.rawValue {
             Image(systemName: icon)
@@ -288,13 +289,14 @@ struct HubQuickControls: View {
                                      iconSize: isNotch ? 11 : 13,
                                      isEditing: isEditing,
                                      actionRawValue: action.rawValue,
-                                     darkModeRotation: action == .darkMode ? toggles.darkModeRotation : 0,
+                                     darkModeIsDark: action == .darkMode
+                                        && (toggles.systemAppearanceIsDark ?? (colorScheme == .dark)),
                                      onHide: {
                                          withAnimation(.easeInOut(duration: 0.22)) {
                                              launcher.setControlHidden(action, true)
                                          }
                                      }) {
-                        action.run(onDismiss: onDismiss)
+                        action.run(onDismiss: onDismiss, fromNotch: isNotch)
                     }
                     .disabled(!isEditing && state == .running)
                 }

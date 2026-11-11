@@ -11,7 +11,6 @@ struct LatticeHubView: View {
     @ObservedObject var l10n = L10n.shared
     @ObservedObject var launcher = LatticeHubService.shared
     @ObservedObject var captureHistory = RecentCaptureService.shared
-    @State var confirmingClearCaptures = false
     @ObservedObject var features = FeatureRuntime.shared
     @ObservedObject var recorder = ScreenRecorderService.shared
     @ObservedObject var appUpdates = AppUpdatesService.shared
@@ -229,18 +228,6 @@ struct LatticeHubView: View {
         .onChange(of: DeviceControlsNavigationState.shared.contentHeight) { _, _ in refreshIslandLayout() }
         .onChange(of: SystemNavigationState.shared.selectedMetric) { _, _ in refreshIslandLayout() }
         .onDisappear { dragSession.cancel() }
-        .confirmationDialog("Delete recent captures?",
-                            isPresented: $confirmingClearCaptures,
-                            titleVisibility: .visible) {
-            Button("Delete Captures", role: .destructive) {
-                captureHistory.clearAndDeleteCaptureFiles { result in
-                    RecentCapturesView.reportDeletionResult(result, aboveIsland: false)
-                }
-            }
-            Button(l10n.s.uninstallerCancel, role: .cancel) {}
-        } message: {
-            Text(RecentCapturesView.deletionWarning)
-        }
     }
 
     @ViewBuilder

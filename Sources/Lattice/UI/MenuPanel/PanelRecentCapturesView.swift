@@ -57,7 +57,7 @@ struct RecentCapturesView: View {
         .confirmationDialog(CaptureInterfaceStrings.localized(L10n.shared.language).deleteRecentTitle,
                             isPresented: $confirmingClear,
                             titleVisibility: .visible) {
-            Button(CaptureInterfaceStrings.localized(L10n.shared.language).deleteCaptures, role: .destructive) {
+            Button(CaptureInterfaceStrings.localized(L10n.shared.language).deleteAll, role: .destructive) {
                 history.clearAndDeleteCaptureFiles { result in
                     Self.reportDeletionResult(result, aboveIsland: false)
                 }
@@ -114,19 +114,95 @@ struct RecentCapturesView: View {
         .padding(.horizontal, 4)
     }
 
-    /// Confirm deletion of the on-disk captures as well as the history index.
-    static func confirmClearAboveIsland() {
+    /// The floating Hub is a borderless non-activating NSPanel. Presenting a
+    /// SwiftUI sheet from it fails on some macOS versions and its window-focus
+    /// monitors can then dismiss the Hub while the presentation is pending.
+    /// Run a standalone native alert with those monitors temporarily removed.
+    static func confirmClearAboveFloatingHUD() {
+        // Match the Island's early collapse protection: protect the floating
+        // panel before deferring presentation to the next SwiftUI run loop.
+        let hub = LatticeHubService.shared
+        guard let panel = hub.panel, panel.isVisible else { return }
+        hub.removeMonitors()
         DispatchQueue.main.async {
-            let l10n = L10n.shared
+            defer {
+                if panel.isVisible {
+                    hub.installMonitors(for: panel)
+                    panel.makeKey()
+                }
+            }
             guard !RecentCaptureService.shared.entries.isEmpty else { return }
-            let alert = NSAlert()
-            alert.messageText = CaptureInterfaceStrings.localized(L10n.shared.language).deleteRecentTitle
-            alert.informativeText = deletionWarning
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: CaptureInterfaceStrings.localized(L10n.shared.language).deleteCaptures).hasDestructiveAction = true
-            alert.addButton(withTitle: l10n.s.uninstallerCancel).keyEquivalent = "\u{1b}"
-            guard NotchIslandAlert.run(alert, above: NotchService.shared.presentationWindow)
-                == .alertFirstButtonReturn else { return }
+            let strings = CaptureInterfaceStrings.localized(L10n.shared.language)
+            guard confirmDestructiveAboveFloatingHUD(panel,
+                title: strings.deleteRecentTitle, message: deletionWarning,
+                action: strings.deleteAll, cancel: L10n.shared.s.uninstallerCancel
+            ) else { return }
+            RecentCaptureService.shared.clearAndDeleteCaptureFiles { result in
+                guard !result.succeeded else { return }
+                DispatchQueue.main.async {
+                    let failure = NSAlert()
+                    failure.alertStyle = .warning
+                    failure.messageText = CaptureInterfaceStrings.localized(L10n.shared.language).deleteRecentFailureTitle
+                    failure.informativeText = CaptureInterfaceStrings.localized(L10n.shared.language).deleteRecentFailureBody
+                    failure.addButton(withTitle: "OK")
+                    _ = runAboveFloatingHUD(failure)
+                }
+            }
+        }
+    }
+
+    /// Uses the same native destructive presenter as the Island and Trash.
+    /// The caller holds the floating Hub's dismissal monitors until return.
+    private static func confirmDestructiveAboveFloatingHUD(
+        _ panel: NSPanel, title: String, message: String, action: String, cancel: String
+    ) -> Bool {
+        NotchIslandAlert.confirmDestructive(
+            title: title, message: message, action: action,
+            cancel: cancel, above: panel)
+    }
+
+    /// Suspend the Hub's outside-click and focus-loss monitors for the entire
+    /// modal lifetime, then reinstall them only if the Hub remains visible.
+    /// This also restores normal menu-bar reopening after Cancel or Delete.
+    private static func runAboveFloatingHUD(_ alert: NSAlert) -> NSApplication.ModalResponse? {
+        let hub = LatticeHubService.shared
+        guard let panel = hub.panel, panel.isVisible else { return nil }
+        hub.removeMonitors()
+        defer {
+            if panel.isVisible {
+                hub.installMonitors(for: panel)
+                panel.makeKey()
+            }
+        }
+        return NotchIslandAlert.run(alert, above: panel)
+    }
+
+    /// Confirm deletion of the on-disk captures as well as the history index.
+    private static var islandClearConfirmationPending = false
+
+    static func confirmClearAboveIsland() {
+        // Keep the same visible owner for the entire modal. Re-reading the
+        // presentation window after deferral could lose the owner and its
+        // focus protection. Also prevent a second queued native modal.
+        let notch = NotchService.shared
+        guard !islandClearConfirmationPending,
+              let island = notch.presentationWindow, island.isVisible else { return }
+        islandClearConfirmationPending = true
+        notch.beginIslandConfirmation()
+        DispatchQueue.main.async {
+            defer {
+                islandClearConfirmationPending = false
+                notch.endIslandConfirmation()
+            }
+            let l10n = L10n.shared
+            guard island.isVisible, !RecentCaptureService.shared.entries.isEmpty else { return }
+            let strings = CaptureInterfaceStrings.localized(l10n.language)
+            guard NotchIslandAlert.confirmDestructive(
+                title: strings.deleteRecentTitle,
+                message: deletionWarning,
+                action: strings.deleteAll,
+                cancel: l10n.s.uninstallerCancel,
+                above: island) else { return }
             RecentCaptureService.shared.clearAndDeleteCaptureFiles { result in
                 reportDeletionResult(result, aboveIsland: true)
             }
@@ -220,19 +296,10 @@ struct RecentCapturesView: View {
             )
 
             HStack(spacing: 4) {
-                VStack(alignment: .leading, spacing: 2) {
-                    if entry.kind == .recording, let name = entry.recordingURL?.lastPathComponent {
-                        Text(name)
-                            .font(.system(size: 9.5, weight: .medium))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-                    Text(Self.formattedCaptureTime(entry.createdAt))
-                        .font(.system(size: 9))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+                Text(Self.formattedCaptureTime(entry.createdAt))
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
                 Spacer(minLength: 0)
 
                 RecentCaptureTrashButton(
@@ -264,13 +331,6 @@ struct RecentCapturesView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(entry.kind == .screenshot ? text.screenshot : text.recording)
                     .font(.system(size: 11.5, weight: .semibold))
-                if entry.kind == .recording, let name = entry.recordingURL?.lastPathComponent {
-                    Text(name)
-                        .font(.system(size: 9.5))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
                 Text(Self.formattedCaptureTime(entry.createdAt))
                     .font(.system(size: 9.5))
                     .foregroundStyle(.tertiary)
