@@ -740,7 +740,7 @@ final class ScreenshotService: ObservableObject {
         // Editor exports are user-owned, but the returned preview still needs
         // the actual editor save URL to keep Save/Reveal state accurate.
         // Only automatic exports remain eligible for capture deletion.
-        let saved: SaveOutcome?
+        var saved: SaveOutcome?
         if let exported = editor.lastSavedExportURL {
             // Save As may explicitly overwrite the old automatic export. In
             // that case the manual save takes ownership of that same path.
