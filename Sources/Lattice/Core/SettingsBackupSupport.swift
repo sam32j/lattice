@@ -128,6 +128,7 @@ enum SettingsBackupSupport {
         DefaultsKey.notchDownloadsFolderBookmark,
         DefaultsKey.wallpaperOwnBookmarks,
         DefaultsKey.wallpaperExcludedOwnPaths,
+        DefaultsKey.captureSaveLocationBookmark,
         DefaultsKey.recorderSaveFolder,
         DefaultsKey.screenshotSaveFolder,
         DefaultsKey.musicBlockReplacementPath,

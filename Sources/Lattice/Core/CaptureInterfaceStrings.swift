@@ -37,6 +37,7 @@ struct CaptureInterfaceStrings {
     let privacy2: String
     let privacy3: String
     let deleteCaptures: String
+    let deleteAll: String
     let deleteRecentTitle: String
     let deleteRecentWarning: String
     let deleteRecentFailureTitle: String
@@ -79,8 +80,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "Network providers and the sharing service process your public IP address for abuse prevention. Uploaded media and link metadata are deleted when the link expires or you delete it. The service does not keep additional backups.",
                 privacy3: "Anyone with a Quick Link can view, download, save, or redistribute the media. Active links may be accessed by the service operator for abuse moderation. Share only with people you trust.",
                 deleteCaptures: "Delete Captures",
+                deleteAll: "Delete All",
                 deleteRecentTitle: "Delete recent captures?",
-                deleteRecentWarning: "This deletes screenshots, editable copies, cached previews and recordings stored in Recent Captures. Recordings saved elsewhere are moved to Trash. Separately exported screenshots are unaffected.",
+                deleteRecentWarning: "This will delete all the screenshots and recordings from history. This action cannot be undone.",
                 deleteRecentFailureTitle: "Some recent captures could not be deleted",
                 deleteRecentFailureBody: "Some files or history entries could not be removed. Check permissions and try again.",
                 quickLook: "Quick Look"
@@ -119,8 +121,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "Os provedores de rede e o serviço de compartilhamento processam seu IP público para prevenir abusos. A mídia e os metadados dos links são excluídos quando expiram ou você os exclui. O serviço não mantém backups adicionais.",
                 privacy3: "Qualquer pessoa com um Link Rápido pode ver, baixar, salvar ou redistribuir a mídia. O operador do serviço pode acessar links ativos para moderar abusos. Compartilhe apenas com pessoas de confiança.",
                 deleteCaptures: "Excluir capturas",
+                deleteAll: "Excluir tudo",
                 deleteRecentTitle: "Excluir capturas recentes?",
-                deleteRecentWarning: "Isso exclui capturas, cópias editáveis, prévias em cache e gravações nas Capturas recentes. Gravações salvas em outro local vão para a Lixeira. Capturas exportadas separadamente não são afetadas.",
+                deleteRecentWarning: "Isso excluirá todas as capturas de tela e gravações do histórico. Esta ação não pode ser desfeita.",
                 deleteRecentFailureTitle: "Algumas capturas não puderam ser excluídas",
                 deleteRecentFailureBody: "Alguns arquivos ou itens do histórico não foram removidos. Verifique as permissões e tente novamente.",
                 quickLook: "Visualização rápida"
@@ -159,8 +162,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "Ağ sağlayıcıları ve paylaşım hizmeti kötüye kullanımı önlemek için genel IP adresinizi işler. Medya ve bağlantı meta verileri süre dolduğunda veya siz sildiğinizde kaldırılır. Hizmet ek yedek tutmaz.",
                 privacy3: "Hızlı Bağlantıya sahip herkes medyayı görüntüleyebilir, indirebilir, kaydedebilir veya yeniden dağıtabilir. Hizmet işletmecisi kötüye kullanım denetimi için etkin bağlantılara erişebilir. Yalnızca güvendiğiniz kişilerle paylaşın.",
                 deleteCaptures: "Yakalamaları sil",
+                deleteAll: "Tümünü sil",
                 deleteRecentTitle: "Son yakalamalar silinsin mi?",
-                deleteRecentWarning: "Bu işlem son yakalamalardaki ekran görüntülerini, düzenlenebilir kopyaları, önbellek önizlemelerini ve kayıtları siler. Başka yere kaydedilen kayıtlar Çöp Sepeti’ne taşınır. Ayrı dışa aktarılan görüntüler etkilenmez.",
+                deleteRecentWarning: "Bu işlem, geçmişteki tüm ekran görüntülerini ve kayıtları siler. Bu işlem geri alınamaz.",
                 deleteRecentFailureTitle: "Bazı yakalamalar silinemedi",
                 deleteRecentFailureBody: "Bazı dosyalar veya geçmiş öğeleri kaldırılamadı. İzinleri kontrol edip tekrar deneyin.",
                 quickLook: "Hızlı Bakış"
@@ -199,8 +203,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "Сетевые провайдеры и сервис обмена обрабатывают ваш публичный IP-адрес для предотвращения злоупотреблений. Медиа и метаданные удаляются по истечении срока ссылки или при удалении вами. Дополнительные резервные копии не хранятся.",
                 privacy3: "Любой, у кого есть быстрая ссылка, может просматривать, загружать, сохранять и распространять медиа. Оператор сервиса может просматривать активные ссылки для борьбы со злоупотреблениями. Делитесь только с доверенными людьми.",
                 deleteCaptures: "Удалить снимки",
+                deleteAll: "Удалить всё",
                 deleteRecentTitle: "Удалить недавние снимки?",
-                deleteRecentWarning: "Будут удалены снимки, редактируемые копии, кэшированные предпросмотры и записи из раздела недавних снимков. Записи, сохранённые в другом месте, перемещаются в Корзину. Отдельно экспортированные снимки не затрагиваются.",
+                deleteRecentWarning: "Все снимки экрана и записи будут удалены из истории. Это действие нельзя отменить.",
                 deleteRecentFailureTitle: "Некоторые снимки не удалены",
                 deleteRecentFailureBody: "Не удалось удалить некоторые файлы или записи истории. Проверьте права доступа и повторите попытку.",
                 quickLook: "Быстрый просмотр"
@@ -239,8 +244,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "Los proveedores de red y el servicio para compartir procesan tu IP pública para prevenir abusos. Los medios y metadatos se eliminan al caducar el enlace o al borrarlo. El servicio no conserva copias de seguridad adicionales.",
                 privacy3: "Cualquiera con un Enlace Rápido puede ver, descargar, guardar o redistribuir los medios. El operador del servicio puede acceder a enlaces activos para moderar abusos. Comparte solo con personas de confianza.",
                 deleteCaptures: "Eliminar capturas",
+                deleteAll: "Eliminar todo",
                 deleteRecentTitle: "¿Eliminar las capturas recientes?",
-                deleteRecentWarning: "Se eliminan capturas, copias editables, vistas previas y grabaciones guardadas en Capturas recientes. Las grabaciones guardadas en otro lugar se trasladan a la Papelera. Las capturas exportadas por separado no se ven afectadas.",
+                deleteRecentWarning: "Se eliminarán todas las capturas de pantalla y grabaciones del historial. Esta acción no se puede deshacer.",
                 deleteRecentFailureTitle: "No se pudieron eliminar algunas capturas",
                 deleteRecentFailureBody: "No se pudieron quitar algunos archivos o elementos del historial. Comprueba los permisos e inténtalo de nuevo.",
                 quickLook: "Vista rápida"
@@ -279,8 +285,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "Sieťoví poskytovatelia a služba zdieľania spracúvajú verejnú IP adresu kvôli prevencii zneužitia. Médiá a metadáta sa odstránia po vypršaní odkazu alebo po jeho zmazaní. Služba neuchováva ďalšie zálohy.",
                 privacy3: "Každý s rýchlym odkazom môže médiá zobraziť, stiahnuť, uložiť alebo ďalej šíriť. Prevádzkovateľ môže pristupovať k aktívnym odkazom kvôli moderovaniu zneužitia. Zdieľajte len s dôveryhodnými osobami.",
                 deleteCaptures: "Odstrániť záznamy",
+                deleteAll: "Odstrániť všetko",
                 deleteRecentTitle: "Odstrániť nedávne záznamy?",
-                deleteRecentWarning: "Odstránia sa snímky, upraviteľné kópie, náhľady v pamäti a nahrávky z Nedávnych záznamov. Nahrávky uložené inde sa presunú do Koša. Samostatne exportované snímky zostanú zachované.",
+                deleteRecentWarning: "Týmto sa z histórie odstránia všetky snímky obrazovky a nahrávky. Túto akciu nemožno vrátiť späť.",
                 deleteRecentFailureTitle: "Niektoré záznamy sa nepodarilo odstrániť",
                 deleteRecentFailureBody: "Niektoré súbory alebo položky histórie nebolo možné odstrániť. Skontrolujte oprávnenia a skúste znova.",
                 quickLook: "Rýchly náhľad"
@@ -319,8 +326,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "Netzwerkanbieter und der Freigabedienst verarbeiten Ihre öffentliche IP-Adresse zum Schutz vor Missbrauch. Medien und Link-Metadaten werden beim Ablauf oder Löschen entfernt. Der Dienst hält keine zusätzlichen Sicherungen vor.",
                 privacy3: "Jeder mit einem Schnelllink kann Medien ansehen, herunterladen, speichern oder weitergeben. Der Betreiber kann aktive Links zur Missbrauchskontrolle einsehen. Teilen Sie nur mit vertrauenswürdigen Personen.",
                 deleteCaptures: "Aufnahmen löschen",
+                deleteAll: "Alle löschen",
                 deleteRecentTitle: "Letzte Aufnahmen löschen?",
-                deleteRecentWarning: "Dabei werden Screenshots, bearbeitbare Kopien, Vorschauen und Aufnahmen aus „Letzte Aufnahmen“ gelöscht. Anderswo gespeicherte Aufnahmen werden in den Papierkorb verschoben. Separat exportierte Screenshots bleiben erhalten.",
+                deleteRecentWarning: "Alle Screenshots und Aufnahmen werden aus dem Verlauf gelöscht. Dies kann nicht rückgängig gemacht werden.",
                 deleteRecentFailureTitle: "Einige Aufnahmen konnten nicht gelöscht werden",
                 deleteRecentFailureBody: "Einige Dateien oder Verlaufseinträge konnten nicht entfernt werden. Berechtigungen prüfen und erneut versuchen.",
                 quickLook: "Übersicht"
@@ -359,8 +367,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "Les fournisseurs réseau et le service de partage traitent votre IP publique pour prévenir les abus. Les médias et métadonnées sont supprimés à l’expiration du lien ou lorsque vous le supprimez. Le service ne conserve pas de sauvegardes supplémentaires.",
                 privacy3: "Toute personne disposant d’un Lien rapide peut consulter, télécharger, enregistrer ou redistribuer les médias. L’opérateur peut accéder aux liens actifs pour modérer les abus. Ne partagez qu’avec des personnes de confiance.",
                 deleteCaptures: "Supprimer les captures",
+                deleteAll: "Tout supprimer",
                 deleteRecentTitle: "Supprimer les captures récentes ?",
-                deleteRecentWarning: "Cela supprime les captures, copies modifiables, aperçus en cache et enregistrements de Captures récentes. Les enregistrements stockés ailleurs vont dans la corbeille. Les captures exportées séparément ne sont pas affectées.",
+                deleteRecentWarning: "Toutes les captures d’écran et tous les enregistrements seront supprimés de l’historique. Cette action est irréversible.",
                 deleteRecentFailureTitle: "Impossible de supprimer certaines captures",
                 deleteRecentFailureBody: "Certains fichiers ou éléments de l’historique n’ont pas pu être supprimés. Vérifiez les autorisations et réessayez.",
                 quickLook: "Coup d’œil"
@@ -399,8 +408,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "I provider di rete e il servizio di condivisione elaborano l’IP pubblico per prevenire abusi. Media e metadati vengono eliminati alla scadenza o quando cancelli il link. Il servizio non conserva ulteriori backup.",
                 privacy3: "Chiunque abbia un Link rapido può visualizzare, scaricare, salvare o ridistribuire i media. L’operatore può accedere ai link attivi per moderare gli abusi. Condividi solo con persone fidate.",
                 deleteCaptures: "Elimina acquisizioni",
+                deleteAll: "Elimina tutto",
                 deleteRecentTitle: "Eliminare le acquisizioni recenti?",
-                deleteRecentWarning: "Vengono eliminate acquisizioni, copie modificabili, anteprime in cache e registrazioni delle Acquisizioni recenti. Le registrazioni salvate altrove vanno nel Cestino. Gli screenshot esportati separatamente non cambiano.",
+                deleteRecentWarning: "Tutti gli screenshot e le registrazioni verranno eliminati dalla cronologia. Questa azione non può essere annullata.",
                 deleteRecentFailureTitle: "Impossibile eliminare alcune acquisizioni",
                 deleteRecentFailureBody: "Alcuni file o elementi della cronologia non sono stati rimossi. Verifica i permessi e riprova.",
                 quickLook: "Visualizzazione rapida"
@@ -439,8 +449,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "ネットワーク事業者と共有サービスは不正利用防止のため公開IPアドレスを処理します。メディアとリンク情報は期限切れ時または削除時に消去されます。追加のバックアップは保持されません。",
                 privacy3: "クイックリンクを知っている人は誰でもメディアの閲覧、ダウンロード、保存、再配布ができます。サービス運営者は不正利用の調査のため有効なリンクにアクセスする場合があります。信頼できる相手だけに共有してください。",
                 deleteCaptures: "キャプチャを削除",
+                deleteAll: "すべて削除",
                 deleteRecentTitle: "最近のキャプチャを削除しますか？",
-                deleteRecentWarning: "最近のキャプチャに保存された画像、編集可能なコピー、キャッシュしたプレビュー、録画を削除します。別の場所の録画はゴミ箱へ移動します。別途書き出した画像には影響しません。",
+                deleteRecentWarning: "履歴からすべてのスクリーンショットと録画を削除します。この操作は取り消せません。",
                 deleteRecentFailureTitle: "一部のキャプチャを削除できませんでした",
                 deleteRecentFailureBody: "一部のファイルや履歴項目を削除できませんでした。アクセス権を確認して再試行してください。",
                 quickLook: "クイックルック"
@@ -479,8 +490,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "네트워크 제공업체와 공유 서비스는 악용 방지를 위해 공개 IP 주소를 처리합니다. 미디어와 링크 메타데이터는 만료되거나 삭제하면 제거됩니다. 추가 백업은 보관하지 않습니다.",
                 privacy3: "빠른 링크가 있는 사람은 누구나 미디어를 보고 다운로드하고 저장하거나 재배포할 수 있습니다. 서비스 운영자는 악용 방지를 위해 활성 링크에 접근할 수 있습니다. 신뢰하는 사람에게만 공유하세요.",
                 deleteCaptures: "캡처 삭제",
+                deleteAll: "모두 삭제",
                 deleteRecentTitle: "최근 캡처를 삭제할까요?",
-                deleteRecentWarning: "최근 캡처에 저장된 스크린샷, 편집 가능한 사본, 캐시된 미리보기와 녹화를 삭제합니다. 다른 곳에 저장된 녹화는 휴지통으로 이동합니다. 별도로 내보낸 스크린샷은 영향을 받지 않습니다.",
+                deleteRecentWarning: "기록에서 모든 스크린샷과 녹화를 삭제합니다. 이 작업은 취소할 수 없습니다.",
                 deleteRecentFailureTitle: "일부 캡처를 삭제하지 못했습니다",
                 deleteRecentFailureBody: "일부 파일 또는 기록 항목을 제거하지 못했습니다. 권한을 확인하고 다시 시도하세요.",
                 quickLook: "훑어보기"
@@ -519,8 +531,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "网络提供商及共享服务会处理您的公网 IP 地址以防滥用。媒体和链接元数据会在过期或您删除链接时被清除，服务不保留其他备份。",
                 privacy3: "持有快捷链接的任何人都可以查看、下载、保存或转发媒体。服务运营者可能为防止滥用而访问有效链接。请只与可信的人分享。",
                 deleteCaptures: "删除捕获",
+                deleteAll: "全部删除",
                 deleteRecentTitle: "删除最近捕获？",
-                deleteRecentWarning: "这会删除最近捕获中保存的截图、可编辑副本、缓存预览和录屏。保存在其他位置的录屏会移至废纸篓。单独导出的截图不受影响。",
+                deleteRecentWarning: "这将从历史记录中删除所有截图和录屏。此操作无法撤销。",
                 deleteRecentFailureTitle: "部分捕获无法删除",
                 deleteRecentFailureBody: "无法删除部分文件或历史记录，请检查权限后重试。",
                 quickLook: "快速查看"
@@ -559,8 +572,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "網路供應商及分享服務會處理您的公開 IP 位址以防濫用。媒體及連結中繼資料會在到期或刪除連結時清除，服務不保留其他備份。",
                 privacy3: "持有快速連結的任何人都可檢視、下載、儲存或轉傳媒體。服務營運者可能為防止濫用而存取有效連結。請只分享給可信任的人。",
                 deleteCaptures: "刪除擷取",
+                deleteAll: "全部刪除",
                 deleteRecentTitle: "刪除最近擷取？",
-                deleteRecentWarning: "這會刪除最近擷取中的截圖、可編輯副本、快取預覽及錄影。儲存在其他位置的錄影會移至垃圾桶。另行匯出的截圖不受影響。",
+                deleteRecentWarning: "這將從歷史記錄中刪除所有截圖與錄影。此操作無法復原。",
                 deleteRecentFailureTitle: "部分擷取無法刪除",
                 deleteRecentFailureBody: "無法移除部分檔案或歷史項目，請檢查權限後再試。",
                 quickLook: "快速查看"
@@ -599,8 +613,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "網絡供應商及分享服務會處理你的公開 IP 位址以防濫用。媒體及連結中繼資料會在到期或刪除連結時清除，服務不保留其他備份。",
                 privacy3: "持有快速連結的任何人都可檢視、下載、儲存或轉傳媒體。服務營運者可能為防止濫用而存取有效連結。請只分享給可信任的人。",
                 deleteCaptures: "刪除擷取",
+                deleteAll: "全部刪除",
                 deleteRecentTitle: "刪除最近擷取？",
-                deleteRecentWarning: "這會刪除最近擷取中的截圖、可編輯副本、快取預覽及錄影。儲存在其他位置的錄影會移至垃圾桶。另行匯出的截圖不受影響。",
+                deleteRecentWarning: "這將從歷史記錄中刪除所有截圖與錄影。此操作無法復原。",
                 deleteRecentFailureTitle: "部分擷取無法刪除",
                 deleteRecentFailureBody: "部分檔案或歷史項目未能移除，請檢查權限後重試。",
                 quickLook: "快速檢視"
@@ -639,8 +654,9 @@ struct CaptureInterfaceStrings {
                 privacy2: "Мережеві провайдери й сервіс обміну обробляють публічну IP-адресу для запобігання зловживанням. Медіа та метадані видаляються після завершення дії посилання або коли ви його видаляєте. Додаткові резервні копії не зберігаються.",
                 privacy3: "Кожен зі швидким посиланням може переглядати, завантажувати, зберігати та поширювати медіа. Оператор сервісу може мати доступ до активних посилань для боротьби зі зловживаннями. Діліться лише з довіреними людьми.",
                 deleteCaptures: "Видалити знімки",
+                deleteAll: "Видалити все",
                 deleteRecentTitle: "Видалити нещодавні знімки?",
-                deleteRecentWarning: "Буде видалено знімки, редаговані копії, кешовані перегляди й записи з Нещодавніх знімків. Записи, збережені деінде, переміщуються в Смітник. Окремо експортовані знімки не постраждають.",
+                deleteRecentWarning: "Це видалить усі знімки екрана та записи з історії. Цю дію не можна скасувати.",
                 deleteRecentFailureTitle: "Деякі знімки не вдалося видалити",
                 deleteRecentFailureBody: "Не вдалося видалити деякі файли чи записи історії. Перевірте дозволи та спробуйте ще раз.",
                 quickLook: "Швидкий перегляд"

@@ -15,8 +15,6 @@ struct CaptureSettings: View {
 
     @AppStorage(DefaultsKey.screenshotEnabled) private var screenshotEnabled = true
     @AppStorage(DefaultsKey.screenRecorderEnabled) private var recorderEnabled = true
-    @AppStorage(DefaultsKey.screenshotSaveFolder) private var screenshotFolder = ""
-    @AppStorage(DefaultsKey.recorderSaveFolder) private var recorderFolder = ""
     @AppStorage(DefaultsKey.screenshotPreviewTakesFocus) private var previewTakesFocus = true
     @AppStorage(DefaultsKey.capturePreviewCloseAfter) private var previewCloseAfter = CapturePreviewClosePolicy.fiveSeconds.rawValue
     @AppStorage(DefaultsKey.capturePresentationDestination) private var presentationDestination = "automatic"
@@ -83,63 +81,68 @@ struct CaptureSettings: View {
                 screenshotCard
                     .settingsSectionAnchor(.screenshot, cornerRadius: 16)
                 recordingCard
-                SettingsCard(title: workflow.destination) {
-                    folderRow
-                }
-                SettingsCard(title: copy.previewRecent) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        if islandEnabled {
-                            SettingsControlRow(title: copy.openAt) {
-                                CapturePresentationPicker()
-                                    .labelsHidden()
-                                    .fixedSize()
-                            }
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                        }
-                        if !islandEnabled || presentationDestination == CapturePresentationRouting.Preference.floatingWindow.rawValue {
-                            SettingsControlRow(title: screenshotStrings.previewPositionLabel) {
-                                CapturePreviewPositionPicker()
-                                    .labelsHidden()
-                                    .fixedSize()
-                            }
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                        }
-                        SettingsToggleRow(title: screenshotStrings.previewFocusToggle,
-                                          isOn: $previewTakesFocus)
-                            .onChange(of: previewTakesFocus) { _, takesFocus in
-                                if !takesFocus && previewCloseAfter == CapturePreviewClosePolicy.focusLost.rawValue {
-                                    previewCloseAfter = CapturePreviewClosePolicy.fiveSeconds.rawValue
+                if screenshotEnabled || recorderEnabled {
+                    VStack(alignment: .leading, spacing: 20) {
+                        CaptureSaveSettingsCard()
+                        SettingsCard(title: copy.previewRecent) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            if islandEnabled {
+                                SettingsControlRow(title: copy.openAt) {
+                                    CapturePresentationPicker()
+                                        .labelsHidden()
+                                        .fixedSize()
                                 }
                             }
-                        SettingsControlRow(title: copy.closeAfter) {
-                            Picker(copy.closeAfter, selection: $previewCloseAfter) {
-                                if previewTakesFocus {
-                                    Text(copy.focusLost).tag(CapturePreviewClosePolicy.focusLost.rawValue)
+                            if !islandEnabled || presentationDestination == CapturePresentationRouting.Preference.floatingWindow.rawValue {
+                                SettingsControlRow(title: screenshotStrings.previewPositionLabel) {
+                                    CapturePreviewPositionPicker()
+                                        .labelsHidden()
+                                        .fixedSize()
                                 }
-                                Text(copy.fiveSeconds).tag(CapturePreviewClosePolicy.fiveSeconds.rawValue)
-                                Text(copy.fifteenSeconds).tag(CapturePreviewClosePolicy.fifteenSeconds.rawValue)
-                                Text(copy.untilClose).tag(CapturePreviewClosePolicy.untilClose.rawValue)
                             }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                            .fixedSize()
+                            SettingsToggleRow(title: screenshotStrings.previewFocusToggle,
+                                              isOn: $previewTakesFocus)
+                                .onChange(of: previewTakesFocus) { _, takesFocus in
+                                    if !takesFocus && previewCloseAfter == CapturePreviewClosePolicy.focusLost.rawValue {
+                                        previewCloseAfter = CapturePreviewClosePolicy.fiveSeconds.rawValue
+                                    }
+                                }
+                            SettingsControlRow(title: copy.closeAfter) {
+                                Picker(copy.closeAfter, selection: $previewCloseAfter) {
+                                    if previewTakesFocus {
+                                        Text(copy.focusLost).tag(CapturePreviewClosePolicy.focusLost.rawValue)
+                                    }
+                                    Text(copy.fiveSeconds).tag(CapturePreviewClosePolicy.fiveSeconds.rawValue)
+                                    Text(copy.fifteenSeconds).tag(CapturePreviewClosePolicy.fifteenSeconds.rawValue)
+                                    Text(copy.untilClose).tag(CapturePreviewClosePolicy.untilClose.rawValue)
+                                }
+                                .labelsHidden()
+                                .pickerStyle(.menu)
+                                .fixedSize()
+                            }
+                            CompactShortcutPreferenceRow(
+                                title: FeatureStrings.recentCapturesShortcutTitle(l10n.language),
+                                role: .recentCaptures,
+                                enabledKey: DefaultsKey.recentCapturesShortcutEnabled
+                            ) {
+                                RecentCaptureService.shared.syncWithPreferences()
+                            }
                         }
-                        CompactShortcutPreferenceRow(
-                            title: FeatureStrings.recentCapturesShortcutTitle(l10n.language),
-                            role: .recentCaptures,
-                            enabledKey: DefaultsKey.recentCapturesShortcutEnabled
-                        ) {
-                            RecentCaptureService.shared.syncWithPreferences()
                         }
+                        sharingCard
                     }
+                    // Fade in the space *below* the master cards. A top-edge
+                    // move transition painted these sections over Recording.
+                    .transition(.opacity)
+                    .clipped()
                 }
-                sharingCard
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
             .padding(22)
         }
-        .settingsExpansionAnimation(value: [linksBinding.wrappedValue, islandEnabled,
+        .settingsExpansionAnimation(value: [screenshotEnabled, recorderEnabled,
+                                           linksBinding.wrappedValue, islandEnabled,
                                            presentationDestination == CapturePresentationRouting.Preference.floatingWindow.rawValue])
     }
 
@@ -159,18 +162,26 @@ struct CaptureSettings: View {
                 .toggleStyle(.switch)
                 .help(l10n.s.screenshotEnable)
         }) {
-            VStack(alignment: .leading, spacing: 12) {
-                CompactShortcutPreferenceRow(
-                    title: screenshotStrings.pageTitle,
-                    role: .screenshot,
-                    enabledKey: DefaultsKey.screenshotShortcutEnabled
-                ) {
-                    ScreenCaptureService.shared.syncWithPreferences()
-                    ScreenshotService.shared.syncWithPreferences()
+            if screenshotEnabled {
+                VStack(alignment: .leading, spacing: 12) {
+                    CompactShortcutPreferenceRow(
+                        title: screenshotStrings.pageTitle,
+                        role: .screenshot,
+                        enabledKey: DefaultsKey.screenshotShortcutEnabled
+                    ) {
+                        ScreenCaptureService.shared.syncWithPreferences()
+                        ScreenshotService.shared.syncWithPreferences()
+                    }
+                    CompactShortcutPreferenceRow(
+                        title: CaptureOptionsStrings.text(.screenshotFullScreen, l10n.language),
+                        role: .screenshotFullScreen,
+                        enabledKey: DefaultsKey.screenshotFullScreenShortcutEnabled
+                    ) {
+                        ScreenshotService.shared.syncWithPreferences()
+                    }
+                    optionRow(copy.screenshotOptions,
+                              destination: FeatureSettingsDestination(.captureScreenshotOptions))
                 }
-                .disabled(!screenshotEnabled)
-                optionRow(copy.screenshotOptions, detail: workflow.selection,
-                          destination: FeatureSettingsDestination(.captureScreenshotOptions))
             }
         }
     }
@@ -190,32 +201,30 @@ struct CaptureSettings: View {
                 .toggleStyle(.switch)
                 .help(l10n.s.screenRecorderEnable)
         }) {
-            VStack(alignment: .leading, spacing: 12) {
-                CompactShortcutPreferenceRow(
-                    title: recorderStrings.pageTitle,
-                    role: .screenRecorder,
-                    enabledKey: DefaultsKey.recorderShortcutEnabled
-                ) {
-                    ScreenCaptureService.shared.syncWithPreferences()
-                    ScreenRecorderService.shared.syncWithPreferences()
+            if recorderEnabled {
+                VStack(alignment: .leading, spacing: 12) {
+                    CompactShortcutPreferenceRow(
+                        title: recorderStrings.pageTitle,
+                        role: .screenRecorder,
+                        enabledKey: DefaultsKey.recorderShortcutEnabled
+                    ) {
+                        ScreenCaptureService.shared.syncWithPreferences()
+                        ScreenRecorderService.shared.syncWithPreferences()
+                    }
+                    optionRow(copy.recordingOptions,
+                              destination: FeatureSettingsDestination(.screenRecorder))
                 }
-                .disabled(!recorderEnabled)
-                optionRow(copy.recordingOptions, detail: workflow.audioEditor,
-                          destination: FeatureSettingsDestination(.screenRecorder))
             }
         }
     }
 
-    private func optionRow(_ title: String, detail: String,
+    private func optionRow(_ title: String,
                            destination: FeatureSettingsDestination) -> some View {
         Button {
             router.request(destination)
         } label: {
             HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title).foregroundStyle(.primary)
-                    Text(detail).font(.caption).foregroundStyle(.secondary)
-                }
+                Text(title).foregroundStyle(.primary)
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -224,60 +233,6 @@ struct CaptureSettings: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityHint(title)
-    }
-
-    private var folderRow: some View {
-        SettingsControlRow(title: copy.saveTo) {
-            Button(action: chooseFolder) {
-                HStack(spacing: 7) {
-                    Image(systemName: "folder")
-                        .font(.system(size: 13))
-                    Text(folderDisplayPath)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 10)
-                .frame(width: 140, height: 32)
-                .background(Color.primary.opacity(0.07),
-                            in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .help(folderFullPath)
-            .accessibilityLabel(copy.chooseSaveFolder + ": " + folderDisplayPath)
-        }
-    }
-
-    private var folderFullPath: String {
-        let configured = screenshotFolder
-        return configured.isEmpty
-            ? (FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first?.path
-               ?? FileManager.default.homeDirectoryForCurrentUser.path)
-            : (configured as NSString).expandingTildeInPath
-    }
-
-    private var folderDisplayPath: String {
-        let path = folderFullPath
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        if path == home { return "~" }
-        if path.hasPrefix(home + "/") { return "~" + String(path.dropFirst(home.count)) }
-        return path
-    }
-
-    private func chooseFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.canCreateDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.directoryURL = URL(fileURLWithPath: folderFullPath, isDirectory: true)
-        if panel.runModal() == .OK, let url = panel.url {
-            screenshotFolder = url.path
-            recorderFolder = url.path
-        }
     }
 
     private var linksBinding: Binding<Bool> {
@@ -287,6 +242,43 @@ struct CaptureSettings: View {
             screenshotLinksEnabled = enabled
             recordingLinksEnabled = enabled
             ScreenshotService.shared.syncWithPreferences()
+        }
+    }
+
+    private var activeCreatedLinksCount: Int {
+        let now = Date()
+        return screenshotSharing.records.filter { $0.expiresAt > now }.count
+            + recordingSharing.records.filter { $0.expiresAt > now }.count
+    }
+
+    private var createdLinksRow: some View {
+        let count = activeCreatedLinksCount
+        return HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 8) {
+                    Text(copy.createdLinks)
+                        .font(.body)
+                    HStack(spacing: 5) {
+                        Circle()
+                            .fill(count > 0 ? Color.green : Color.gray)
+                            .frame(width: 7, height: 7)
+                            .accessibilityHidden(true)
+                        Text(CaptureOptionsStrings.activeLinksLabel(count, l10n.language))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                }
+                Text(copy.manageHelp)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 12)
+            Button(copy.manage) { showingQuickLinks = true }
+                .font(.system(size: 14, weight: .semibold))
+                .controlSize(.regular)
         }
     }
 
@@ -310,17 +302,9 @@ struct CaptureSettings: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                if linksBinding.wrappedValue {
-                    SettingsControlRow(
-                        title: copy.createdLinks,
-                        caption: copy.manageHelp
-                    ) {
-                        Button(copy.manage) { showingQuickLinks = true }
-                            .font(.system(size: 14, weight: .semibold))
-                            .controlSize(.regular)
-                    }
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                }
+                // Previously the management row disappeared when link creation
+                // was disabled, even though earlier links remained active.
+                createdLinksRow
             }
         }
     }

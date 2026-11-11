@@ -6,19 +6,19 @@ import SwiftUI
 /// and where the file lands.
 struct ScreenRecorderSettings: View {
     @ObservedObject var l10n = L10n.shared
-    @ObservedObject private var permissions = Permissions.shared
     @ObservedObject private var sharing = RecordingShareService.shared
     @AppStorage(DefaultsKey.screenRecorderEnabled) var screenRecorderEnabled = true
     @AppStorage(DefaultsKey.recorderQuality) private var qualityRaw =
         RecorderSupport.Quality.balanced.rawValue
-    @AppStorage(DefaultsKey.recorderFrameRate) private var frameRate = 60
-    @AppStorage(DefaultsKey.recorderSystemAudio) private var systemAudio = true
-    @AppStorage(DefaultsKey.recorderMicrophone) private var microphone = false
-    @AppStorage(DefaultsKey.recorderSaveFolder) private var saveFolder = ""
+    @AppStorage(DefaultsKey.recorderExportFrameRate) private var exportFrameRate = 60
     @AppStorage(DefaultsKey.recorderImmediateStartAfterSelection) private var immediateStart = true
     @AppStorage(DefaultsKey.recorderPlaySound) private var playRecordSound = true
+    @AppStorage(DefaultsKey.recorderCopyAfterRecording) private var copyAfterRecording = false
+    @AppStorage(DefaultsKey.recorderSaveAutomatically) private var saveAutomatically = false
+    @AppStorage(DefaultsKey.recorderAddToFileCache) private var addToFileCache = true
+    @AppStorage(DefaultsKey.shelfEnabled) private var shelfEnabled = false
+    @AppStorage(AppFeature.shelf.availabilityKey) private var shelfAvailable = false
     @AppStorage(DefaultsKey.recorderOpenEditor) private var opensEditor = true
-    @AppStorage(DefaultsKey.recorderAutomaticZoom) private var automaticZoom = true
     @AppStorage(DefaultsKey.recorderGIFSize) private var gifSizeRaw =
         RecorderSupport.GIFSize.medium.rawValue
     @AppStorage(DefaultsKey.recorderGIFFrameRate) private var gifFrameRate = 12
@@ -26,7 +26,7 @@ struct ScreenRecorderSettings: View {
     @AppStorage(DefaultsKey.recentRecordingLimit) private var recentRecordingLimit = 0
     @State private var showingSharedLinks = false
     @State private var showingSharePrivacy = false
-    @State private var gifExpanded = false
+    @State private var showingRecordingDefaults = false
 
     var strings: RecorderFeatureStrings {
         FeatureStrings.recorder(l10n.language)
@@ -42,13 +42,17 @@ struct ScreenRecorderSettings: View {
 
     private var workflow: CaptureWorkflowStrings { .localized(l10n.language) }
 
+    private func copy(_ key: CaptureOptionsStrings.Key) -> String {
+        CaptureOptionsStrings.text(key, l10n.language)
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Group {
                     recordingCard
                         .settingsSectionAnchor(.screenRecorder, cornerRadius: 16)
-                    audioEditorCard
+                    afterRecordingCard
                     exportCard
                 }
                 .disabled(!screenRecorderInstalled)
@@ -58,69 +62,33 @@ struct ScreenRecorderSettings: View {
             .frame(maxWidth: .infinity)
             .padding(22)
         }
-        .settingsExpansionAnimation(value: [gifExpanded])
+        .sheet(isPresented: $showingRecordingDefaults) {
+            RecorderDefaultBehaviorSheet()
+        }
+        .onChange(of: recentRecordingLimit) { _, _ in
+            RecentCaptureService.shared.reload()
+        }
     }
 
     // MARK: - Master Header & Shortcuts Card
 
 
-    // MARK: - Recording
+    // MARK: - Recording behavior
 
     private var recordingCard: some View {
-        SettingsCard(title: workflow.recording) {
+        SettingsCard(title: copy(.recordingBehavior)) {
             VStack(alignment: .leading, spacing: 14) {
-                SettingsToggleRow(title: workflow.immediate,
-                                  isOn: $immediateStart)
+                SettingsToggleRow(title: copy(.playStartSound), isOn: $playRecordSound)
+                SettingsToggleRow(title: workflow.immediate, isOn: $immediateStart)
 
-                SettingsToggleRow(title: workflow.recordSound,
-                                  isOn: $playRecordSound)
-            }
-        }
-    }
-
-    // MARK: - Audio & Editor
-
-    private var audioEditorCard: some View {
-        SettingsCard(title: workflow.audioEditor) {
-            VStack(alignment: .leading, spacing: 14) {
-                SettingsToggleRow(title: strings.openEditorToggle,
-                                  caption: strings.openEditorCaption,
-                                  isOn: $opensEditor)
-
-                SettingsToggleRow(title: strings.automaticZoomToggle,
-                                  caption: strings.automaticZoomCaption,
-                                  isOn: $automaticZoom)
-
-                SettingsToggleRow(title: strings.systemAudioToggle,
-                                  caption: strings.systemAudioCaption,
-                                  isOn: $systemAudio)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    PermissionGatedSettingsRow(title: strings.microphoneToggle,
-                                      caption: strings.microphoneCaption,
-                                      isOn: $microphone, requiring: [.microphone])
-                        .onChange(of: microphone) { _, enabled in
-                            if enabled, permissions.microphone == .undetermined {
-                                permissions.requestMicrophone()
-                            }
-                        }
-                }
-            }
-        }
-    }
-
-    // MARK: - Export & Destination
-
-    private var exportCard: some View {
-        SettingsCard(title: workflow.export) {
-            VStack(alignment: .leading, spacing: 14) {
-                SettingsControlRow(title: workflow.recentRecordings) {
-                    Picker(workflow.recentRecordings, selection: $recentRecordingLimit) {
+                SettingsControlRow(title: copy(.keepRecordings)) {
+                    Picker(copy(.keepRecordings), selection: $recentRecordingLimit) {
+                        Text(workflow.unlimited).tag(0)
                         Text("5").tag(5)
                         Text("10").tag(10)
-                        Text(workflow.unlimited).tag(0)
+                        Text("20").tag(20)
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.menu)
                     .labelsHidden()
                     .fixedSize()
                     .onChange(of: recentRecordingLimit) { _, _ in
@@ -128,52 +96,84 @@ struct ScreenRecorderSettings: View {
                     }
                 }
 
-                SettingsControlRow(title: strings.qualityLabel,
-                                   caption: strings.qualityCaption) {
-                    Picker(strings.qualityLabel, selection: $qualityRaw) {
-                        Text(strings.qualitySmall).tag(RecorderSupport.Quality.small.rawValue)
-                        Text(strings.qualityBalanced).tag(RecorderSupport.Quality.balanced.rawValue)
-                        Text(strings.qualityHigh).tag(RecorderSupport.Quality.high.rawValue)
+                SettingsControlRow(title: copy(.defaultRecordingBehavior)) {
+                    Button(CaptureInterfaceStrings.localized(l10n.language).manage) { showingRecordingDefaults = true }
+                        .font(.system(size: 14, weight: .semibold))
+                        .controlSize(.regular)
+                }
+            }
+        }
+    }
+
+    // MARK: - After recording
+
+    private var afterRecordingCard: some View {
+        SettingsCard(title: copy(.afterRecording)) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsToggleRow(title: copy(.copyRecording), isOn: $copyAfterRecording)
+                SettingsToggleRow(title: copy(.saveRecording), isOn: $saveAutomatically)
+                SettingsToggleRow(title: copy(.addToFileCache), isOn: addToShelfBinding)
+                    .disabled(!shelfIsOn)
+                SettingsToggleRow(title: copy(.openEditorWithRecording), isOn: $opensEditor)
+            }
+        }
+    }
+
+    private var shelfIsOn: Bool { shelfEnabled && shelfAvailable }
+
+    private var addToShelfBinding: Binding<Bool> {
+        Binding(get: { addToFileCache && shelfIsOn }, set: { addToFileCache = $0 })
+    }
+
+    // MARK: - Video export & format
+
+    private var exportCard: some View {
+        SettingsCard(title: copy(.videoExportFormat)) {
+            VStack(alignment: .leading, spacing: 14) {
+                SettingsControlRow(title: copy(.exportQuality)) {
+                    Picker(copy(.exportQuality), selection: $qualityRaw) {
+                        Text(copy(.low)).tag(RecorderSupport.Quality.small.rawValue)
+                        Text(copy(.medium)).tag(RecorderSupport.Quality.balanced.rawValue)
+                        Text(copy(.raw)).tag(RecorderSupport.Quality.high.rawValue)
                     }
+                    .pickerStyle(.menu)
                     .labelsHidden()
                     .fixedSize()
                 }
 
-                SettingsControlRow(title: strings.frameRateLabel) {
-                    Picker(strings.frameRateLabel, selection: $frameRate) {
-                        ForEach(RecorderSupport.frameRates, id: \.self) { rate in
-                            Text(String(format: strings.frameRateFormat, rate)).tag(rate)
-                        }
+                SettingsControlRow(title: copy(.exportFrameRate)) {
+                    Picker(copy(.exportFrameRate), selection: $exportFrameRate) {
+                        Text(String(format: strings.frameRateFormat, 30)).tag(30)
+                        Text(String(format: strings.frameRateFormat, 60)).tag(60)
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.menu)
                     .labelsHidden()
                     .fixedSize()
                 }
 
-                DisclosureGroup("GIF Export", isExpanded: $gifExpanded) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        SettingsControlRow(title: strings.gifSizeLabel) {
-                            Picker(strings.gifSizeLabel, selection: $gifSizeRaw) {
-                                Text(strings.gifSizeSmall).tag(RecorderSupport.GIFSize.small.rawValue)
-                                Text(strings.gifSizeMedium).tag(RecorderSupport.GIFSize.medium.rawValue)
-                                Text(strings.gifSizeLarge).tag(RecorderSupport.GIFSize.large.rawValue)
-                            }
-                            .pickerStyle(.segmented)
-                            .labelsHidden()
-                            .fixedSize()
-                        }
-                        SettingsControlRow(title: strings.gifFrameRateLabel) {
-                            Picker(strings.gifFrameRateLabel, selection: $gifFrameRate) {
-                                ForEach(RecorderSupport.gifFrameRates, id: \.self) { rate in
-                                    Text(String(format: strings.frameRateFormat, rate)).tag(rate)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .labelsHidden()
-                            .fixedSize()
-                        }
+                Divider()
+                Text(copy(.gifExportFormat)).font(.headline)
+
+                SettingsControlRow(title: copy(.gifQuality)) {
+                    Picker(copy(.gifQuality), selection: $gifSizeRaw) {
+                        Text(copy(.low)).tag(RecorderSupport.GIFSize.small.rawValue)
+                        Text(copy(.standard)).tag(RecorderSupport.GIFSize.medium.rawValue)
+                        Text(copy(.best)).tag(RecorderSupport.GIFSize.large.rawValue)
                     }
-                    .padding(.top, 8)
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .fixedSize()
+                }
+
+                SettingsControlRow(title: copy(.gifFrameRate)) {
+                    Picker(copy(.gifFrameRate), selection: $gifFrameRate) {
+                        Text(String(format: strings.frameRateFormat, 8)).tag(8)
+                        Text(String(format: strings.frameRateFormat, 12)).tag(12)
+                        Text(String(format: strings.frameRateFormat, 15)).tag(15)
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .fixedSize()
                 }
             }
         }
@@ -220,56 +220,7 @@ struct ScreenRecorderSettings: View {
         }
     }
 
-    // MARK: - Folder Row
 
-    private var folderRow: some View {
-        SettingsControlRow(title: strings.folderLabel) {
-            HStack(spacing: 8) {
-                Text(currentFolderName)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                if !saveFolder.isEmpty {
-                    Button {
-                        saveFolder = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.tertiary)
-                    }
-                    .buttonStyle(.borderless)
-                    .screenshotSafeHelp(l10n.s.shortcutReset)
-                }
-                Button(strings.folderChoose) {
-                    chooseFolder()
-                }
-                .controlSize(.small)
-            }
-        }
-    }
-
-    private var currentFolderName: String {
-        let manager = FileManager.default
-        if !saveFolder.isEmpty {
-            let expanded = (saveFolder as NSString).expandingTildeInPath
-            var isDirectory: ObjCBool = false
-            if manager.fileExists(atPath: expanded, isDirectory: &isDirectory), isDirectory.boolValue {
-                return manager.displayName(atPath: expanded)
-            }
-        }
-        let desktop = manager.urls(for: .desktopDirectory, in: .userDomainMask).first
-        return desktop.map { manager.displayName(atPath: $0.path) } ?? "Desktop"
-    }
-
-    private func chooseFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.canCreateDirectories = true
-        panel.allowsMultipleSelection = false
-        if panel.runModal() == .OK, let url = panel.url {
-            saveFolder = url.path
-        }
-    }
 }
 
 private struct RecorderSharePrivacyView: View {
@@ -424,5 +375,89 @@ struct RecorderSharedLinksView: View {
             }
             deletingID = nil
         }
+    }
+}
+
+/// These are the initial values for each new recording. The selection toolbar
+/// may still change camera, keys and sound for just that recording.
+private struct RecorderDefaultBehaviorSheet: View {
+    @ObservedObject private var l10n = L10n.shared
+
+    private func copy(_ key: CaptureOptionsStrings.Key) -> String {
+        CaptureOptionsStrings.text(key, l10n.language)
+    }
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var permissions = Permissions.shared
+    @AppStorage(DefaultsKey.recorderSystemAudio) private var systemAudio = true
+    @AppStorage(DefaultsKey.recorderMicrophone) private var microphone = false
+    @AppStorage(DefaultsKey.recorderDefaultCamera) private var camera = false
+    @AppStorage(DefaultsKey.recorderDefaultKeyboardEvents) private var keyboardEvents = false
+    @AppStorage(DefaultsKey.recorderAutomaticZoom) private var automaticZoom = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Text(copy(.defaultRecordingBehavior))
+                    .font(.headline)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 4)
+                Button(FeatureStrings.screenshot(l10n.language).done) { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+                    .fixedSize()
+            }
+            Divider()
+
+            behaviorRow(copy(.recordSystemSound), symbol: "speaker.wave.2.fill") {
+                Toggle(copy(.recordSystemSound), isOn: $systemAudio)
+                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+            }
+            behaviorRow(copy(.recordMicrophone), symbol: "mic.fill") {
+                PermissionGatedToggle(copy(.recordMicrophone), isOn: $microphone,
+                                      requiring: [.microphone])
+                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                    .onChange(of: microphone) { _, enabled in
+                        if enabled, permissions.microphone == .undetermined {
+                            permissions.requestMicrophone()
+                        }
+                    }
+            }
+            behaviorRow(copy(.recordCamera), symbol: "video.fill") {
+                Toggle(copy(.recordCamera), isOn: $camera)
+                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+            }
+            behaviorRow(copy(.recordKeyboardEvents), symbol: "keyboard") {
+                Toggle(copy(.recordKeyboardEvents), isOn: $keyboardEvents)
+                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+            }
+            behaviorRow(copy(.addZoomAutomatically), symbol: "plus.magnifyingglass") {
+                Toggle(copy(.addZoomAutomatically), isOn: $automaticZoom)
+                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+            }
+        }
+        .padding(16)
+        .frame(width: 420)
+    }
+
+    /// Match the application's primary accent-colored icon tiles while
+    /// leaving enough room for two-line labels in the compact sheet.
+    private func behaviorRow<Control: View>(
+        _ title: String, symbol: String,
+        @ViewBuilder control: () -> Control
+    ) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 30, height: 30)
+                .background(Color.accentColor,
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .accessibilityHidden(true)
+            Text(title)
+                .font(.system(size: 13))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            control()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

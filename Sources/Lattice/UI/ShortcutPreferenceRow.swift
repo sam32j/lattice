@@ -60,9 +60,7 @@ struct ShortcutPreferenceRow: View {
             VStack(alignment: .trailing, spacing: 4) {
                 CompactShortcutRecorder(
                     role: role,
-                    enabledKey: role == .screenshotUpload
-                        ? DefaultsKey.screenshotUploadShortcutEnabled
-                        : role.requiredEnableKeys.last ?? "",
+                    enabledKey: role.requiredEnableKeys.last ?? "",
                     includeInactiveConflicts: includeInactiveConflicts,
                     additionalConflict: additionalConflict,
                     onChange: onChange)

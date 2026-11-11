@@ -130,9 +130,9 @@ struct GeneralSettings: View {
                         Text(SettingsOwnershipStrings.text(.dynamicIsland, l10n.language))
                             .tag(LauncherShortcutTarget.automatic.rawValue)
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.menu)
                     .labelsHidden()
-                    .fixedSize()
+                    .frame(width: 140, alignment: .trailing)
                 }
             }
         }

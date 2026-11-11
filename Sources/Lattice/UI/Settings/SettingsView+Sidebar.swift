@@ -78,9 +78,9 @@ extension SettingsView {
         case .notchCompanion, .notchMascot:
             return FeatureStrings.notchMascot(l10n.language).title
         case .captureScreenshotOptions:
-            return l10n.language == .enUS ? "Screenshot Options" : FeatureStrings.screenshot(l10n.language).pageTitle
+            return CaptureInterfaceStrings.localized(l10n.language).screenshotOptions
         case .screenRecorder:
-            return l10n.language == .enUS ? "Recording Options" : FeatureStrings.recorder(l10n.language).pageTitle
+            return CaptureInterfaceStrings.localized(l10n.language).recordingOptions
         default:
             return sidebarItems.first { $0.id == selectedSidebarItem }?.title ?? l10n.s.settingsTitle
         }

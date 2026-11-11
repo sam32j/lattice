@@ -188,6 +188,8 @@ enum SettingsFeatureTests {
                 && backupKeys.contains(DefaultsKey.screenshotPreviewTakesFocus)
                 && backupKeys.contains(DefaultsKey.screenshotLoupeRememberZoom)
                 && backupKeys.contains(DefaultsKey.screenshotLoupeDefaultZoom)
+                && backupKeys.contains(DefaultsKey.screenshotSaveAutomatically)
+                && backupKeys.contains(DefaultsKey.screenshotOpenEditorAfterCapture)
                 && backupKeys.contains(DefaultsKey.capturePreviewCloseAfter)
                 && backupKeys.contains(DefaultsKey.capturePresentationDestination),
                "screenshot preferences travel with the settings backup")

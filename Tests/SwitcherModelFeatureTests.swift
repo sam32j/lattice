@@ -228,6 +228,16 @@ enum SwitcherModelFeatureTests {
             suite.expect(migrationDefaults.string(forKey: DefaultsKey.screenshotDefaultAction)
                    == ScreenshotDefaultAction.save.rawValue,
                    "direct-to-editor migration never overrides a newer picker choice")
+            migrationDefaults.set(ScreenshotDefaultAction.saveAndCopy.rawValue,
+                                  forKey: DefaultsKey.screenshotDefaultAction)
+            Defaults.migrateScreenshotAfterCapture(in: migrationDefaults)
+            suite.expect(migrationDefaults.bool(forKey: DefaultsKey.screenshotSaveAutomatically)
+                    && migrationDefaults.bool(forKey: DefaultsKey.screenshotCopyToClipboard),
+                   "legacy Save and Copy migrates to independent after-capture toggles")
+            migrationDefaults.set(false, forKey: DefaultsKey.screenshotSaveAutomatically)
+            Defaults.migrateScreenshotAfterCapture(in: migrationDefaults)
+            suite.expect(!migrationDefaults.bool(forKey: DefaultsKey.screenshotSaveAutomatically),
+                   "migration never overrides a later user choice")
             migrationDefaults.removeObject(forKey: DefaultsKey.screenshotOpenEditorDirectly)
             migrationDefaults.removeObject(forKey: DefaultsKey.screenshotDefaultAction)
             Defaults.migrateScreenshotOpenEditorDirectly(in: migrationDefaults)
@@ -2782,8 +2792,9 @@ enum SwitcherModelFeatureTests {
 
         suite.expect(registeredDefaults[DefaultsKey.screenshotOpenEditorDirectly] as? Bool == false,
                "capture keeps showing the preview unless the user opts into the editor")
-        suite.expect(registeredDefaults[DefaultsKey.screenshotDefaultAction] as? String == "",
-               "captures keep asking what to do until an after-capture action is chosen")
+        suite.expect(registeredDefaults[DefaultsKey.screenshotSaveAutomatically] as? Bool == false
+                && registeredDefaults[DefaultsKey.screenshotOpenEditorAfterCapture] as? Bool == false,
+               "capture saves and editor opening are independent opt-in choices")
         suite.expect(registeredDefaults[DefaultsKey.screenshotSaveSubfolder] as? String == ""
                 && registeredDefaults[DefaultsKey.screenshotFileNamePattern] as? String == "",
                "subfolder and file name patterns arrive empty, keeping the stock naming")
