@@ -23,7 +23,7 @@ extension AppUpdateStrings {
         openAppStore: "打开 App Store",
         appStoreBadge: "App Store",
         storeHint: "打开 App Store，在那里安装此更新",
-        frequencyLabel: "在后台检查",
+        frequencyLabel: "自动检查更新",
         frequencyOff: "关闭",
         frequencyDaily: "每天",
         frequencyWeekly: "每周",

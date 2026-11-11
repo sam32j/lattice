@@ -23,7 +23,7 @@ extension AppUpdateStrings {
         openAppStore: "App Store 열기",
         appStoreBadge: "App Store",
         storeHint: "이 업데이트를 설치하는 App Store를 엽니다",
-        frequencyLabel: "백그라운드에서 확인",
+        frequencyLabel: "업데이트 자동 확인",
         frequencyOff: "끔",
         frequencyDaily: "매일",
         frequencyWeekly: "매주",

@@ -15,6 +15,11 @@ struct AppUpdatesListView: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @AppStorage(DefaultsKey.appUpdatesCheckFrequency)
     var frequencyRaw = AppUpdatesSupport.CheckFrequency.off.rawValue
+    // A picker menu does not inherently animate the @AppStorage change like
+    // General's toggle does. Seed an explicit disclosure state from the same
+    // preference so the first render never flashes the wrong row.
+    @State var showsNotifyRow = AppUpdatesSupport.CheckFrequency.sanitized(
+        UserDefaults.standard.string(forKey: DefaultsKey.appUpdatesCheckFrequency)) != .off
     @AppStorage(DefaultsKey.appUpdatesNotify) var notify = true
     @AppStorage(DefaultsKey.appUpdatesIncludeHomebrewApps) var includeHomebrewApps = true
     @AppStorage(DefaultsKey.appUpdatesIncludeAppStore)
@@ -81,7 +86,8 @@ struct AppUpdatesListView: View {
     var coverageIncomplete: Bool {
         updates.hasCheckedThisSession
             && !updates.isChecking
-            && (storeCoverageIncomplete || (includeOnlineCatalog && !updates.onlineCatalogAvailable))
+            && (storeCoverageIncomplete || (includeOnlineCatalog && !updates.onlineCatalogAvailable)
+                || !updates.uncheckedAppNames.isEmpty)
     }
     var versionsUncompared: Bool {
         updates.hasCheckedThisSession

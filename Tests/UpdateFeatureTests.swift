@@ -1603,6 +1603,34 @@ enum UpdateFeatureTests {
                 && !AppUpdateFeedSupport.feedIsAbsent(statusCode: 503)
                && !AppUpdateFeedSupport.feedIsAbsent(statusCode: nil),
                "only missing publisher responses can use catalog coverage")
+        let vsCode = AppUpdatesSupport.InstalledApp(name: "Visual Studio Code",
+            bundleID: "com.microsoft.VSCode", path: "/Applications/Visual Studio Code.app",
+            version: "1.140.0", isFromAppStore: false)
+        let vsCodeMetadata = Data(#"{"productVersion":"1.145.2","url":"https://update.code.visualstudio.com/1.145.2/darwin-universal/stable"}"#.utf8)
+        let vsCodeReleases = AppUpdateFeedSupport.releases(data: vsCodeMetadata, format: .visualStudioCode)
+        suite.expect(vsCodeReleases?.first?.version == "1.145.2" && vsCodeReleases?.count == 1,
+                     "VS Code stable releases decode Microsoft's productVersion JSON")
+        suite.expect(vsCodeReleases.flatMap { AppUpdateFeedSupport.update(app: vsCode,
+                    releases: $0, format: .visualStudioCode,
+                    operatingSystemVersion: "15.0", kernelVersion: "24.0.0",
+                    architecture: "arm64") }?.latestVersion == "1.145.2",
+                     "VS Code stable releases are compared with the installed version")
+        for invalid in [Data(#"{"productVersion":"1.145.2"}"#.utf8),
+                        Data(#"{"productVersion":"1.145.2","url":"file:///tmp/update"}"#.utf8),
+                        Data("broken json".utf8)] {
+            suite.expect(AppUpdateFeedSupport.releases(data: invalid, format: .visualStudioCode) == nil,
+                         "incomplete VS Code metadata must not prove a current version")
+        }
+        let extraApps = AppUpdatesService.additionalUpdateApplicationPaths([
+            NSHomeDirectory() + "/Work/Apps/Development/YaB Dev.app",
+            NSHomeDirectory() + "/Library/Developer/Xcode/DerivedData/X/Build/Products/Debug/YaB Dev.app",
+            "/Applications/Visual Studio Code.app",
+            "/Applications/Other.app/Contents/Helpers/Other Helper.app"
+        ])
+        suite.expect(extraApps.contains(NSHomeDirectory() + "/Work/Apps/Development/YaB Dev.app")
+                     && extraApps.contains("/Applications/Visual Studio Code.app")
+                     && extraApps.count == 2,
+                     "update scans include user-installed development channels, not build products or bundled helpers")
         let packagedFeed = AppUpdateFeedSupport.feed(info: [:], configuration:
             "provider: generic\nurl: 'https://updates.example.com/stable'\n")
         suite.expect(packagedFeed?.url.absoluteString == "https://updates.example.com/stable/latest-mac.yml",

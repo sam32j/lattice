@@ -6,7 +6,7 @@ import Foundation
 /// Reads update metadata only. Installation stays with the app that owns
 /// the feed, including its signature, license and rollout checks.
 enum AppUpdateFeedSupport {
-    enum Format: Hashable { case appcast, manifest }
+    enum Format: Hashable { case appcast, manifest, visualStudioCode }
     enum LoadResult {
         case data(Data), absent, failed
     }
@@ -116,6 +116,18 @@ enum AppUpdateFeedSupport {
             parser.delegate = delegate
             guard parser.parse(), delegate.isFeed, !delegate.releases.isEmpty else { return nil }
             return delegate.releases
+        case .visualStudioCode:
+            // Microsoft's update endpoint provides a productVersion for the
+            // stable channel. The return URL must be an HTTPS download URL;
+            // a malformed or empty response is not evidence that VS Code is
+            // up to date.
+            guard let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let version = payload["productVersion"] as? String,
+                  !version.isEmpty,
+                  let link = payload["url"] as? String,
+                  publicURL(link) != nil else { return nil }
+            return [Release(version: version, displayVersion: version,
+                            hasDownload: true)]
         case .manifest:
             guard let text = String(data: data, encoding: .utf8),
                   let fields = scalars(text), let version = fields["version"],

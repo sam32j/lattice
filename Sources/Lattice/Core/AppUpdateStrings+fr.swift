@@ -23,7 +23,7 @@ extension AppUpdateStrings {
         openAppStore: "Ouvrir l’App Store",
         appStoreBadge: "App Store",
         storeHint: "Ouvre l’App Store, où cette mise à jour s’installe",
-        frequencyLabel: "Vérifier en arrière-plan",
+        frequencyLabel: "Rechercher automatiquement les mises à jour",
         frequencyOff: "Désactivé",
         frequencyDaily: "Chaque jour",
         frequencyWeekly: "Chaque semaine",
