@@ -3914,6 +3914,7 @@ final class NotchService: ObservableObject {
                     if self.showingCommandBar { return event }
                     let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
                     if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "w" {
+                        if self.handleScratchpadKey(event) { return nil }
                         self.collapse()
                         return nil
                     }
@@ -3926,6 +3927,17 @@ final class NotchService: ObservableObject {
                                (editor.delegate as AnyObject?) is MixerPercentNativeTextField { return event }
                         }
                         if PlainTextEditor.findBarHasKeyboard(in: self.panel) { return event }
+                        // Do not discard an in-progress Hub rearrangement.
+                        // Dismiss a modal page layer before the entire Island.
+                        if self.selected == .hub && LatticeHubService.shared.isEditing { return nil }
+                        if let closeLayer = self.pageLayers[self.selected] {
+                            closeLayer()
+                            return nil
+                        }
+                        if self.detailHasPage {
+                            self.stepBack()
+                            return nil
+                        }
                         self.collapse()
                         return nil
                     }
