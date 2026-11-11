@@ -374,6 +374,15 @@ final class ScreenshotService: ObservableObject {
     /// number back.
     struct SaveOutcome {
         let url: URL
+        /// A previous automatic export belongs to this capture as well.
+        /// Keep it distinct from the latest editor export when discarding.
+        var earlierExports: [URL] = []
+
+        func moveToTrash() throws {
+            for export in Set([url] + earlierExports) where FileManager.default.fileExists(atPath: export.path) {
+                try FileManager.default.trashItem(at: export, resultingItemURL: nil)
+            }
+        }
     }
 
     /// Apply independent after-capture actions. A preview is unconditional
@@ -502,7 +511,7 @@ final class ScreenshotService: ObservableObject {
                     // file the HUD just announced as saved.
                     if let saved {
                         do {
-                            try FileManager.default.trashItem(at: saved.url, resultingItemURL: nil)
+                            try saved.moveToTrash()
                         } catch {
                             NSSound.beep()
                             return []
@@ -531,7 +540,7 @@ final class ScreenshotService: ObservableObject {
                 // available for retry; the sequence number is still occupied.
                 if let export = saved {
                     do {
-                        try FileManager.default.trashItem(at: export.url, resultingItemURL: nil)
+                        try export.moveToTrash()
                     } catch { completion(false); return }
                     saved = nil
                 }
@@ -704,23 +713,37 @@ final class ScreenshotService: ObservableObject {
         WindowActivationPolicy.release()
         guard let awaiting = editorReturnPreviews.removeValue(forKey: ObjectIdentifier(editor)),
               AppFeature.screenshot.isAvailable else { return }
-        // A final exported image is the one the user just kept. If the user
-        // discarded unexported edits, return to the unmodified capture.
+        // The editor saves canonical source pixels plus editable annotations.
+        // Flattened pixels are for display only; Edit must reopen the original
+        // annotation objects rather than painting a flattened PNG again.
         let capture: ScreenshotSelectionController.Capture
         if !editor.model.isDirty,
            let export = editor.model.exportImage(withBackdrop: true, downscaleTo1x: false) {
-            capture = .init(id: awaiting.capture.id, image: export.image, scale: export.scale,
-                            anchorRect: awaiting.capture.anchorRect)
+            capture = .init(id: awaiting.capture.id, image: editor.model.baseImage,
+                            scale: editor.model.scale,
+                            anchorRect: awaiting.capture.anchorRect,
+                            annotations: editor.model.annotations,
+                            renderedImage: export.image,
+                            capturedAt: awaiting.capture.capturedAt)
         } else {
             capture = awaiting.capture
+        }
+        // Save and Save As in the editor may have exported a *different* file
+        // from the automatic pre-editor save. The returned preview must show
+        // the actual final export and not create a redundant second save.
+        let saved: SaveOutcome?
+        if let exported = editor.lastSavedExportURL {
+            saved = SaveOutcome(url: exported, earlierExports: awaiting.saved.map { [$0.url] } ?? [])
+        } else {
+            saved = awaiting.saved
         }
         // Defer until AppKit has removed the editor window from the key-window
         // chain; the newly created preview starts its own full close interval.
         DispatchQueue.main.async { [weak self] in
             guard let self, self.preview == nil else { return }
             self.presentPreview(capture,
-                                initialSaved: awaiting.saved,
-                                completedActions: awaiting.saved == nil ? [] : [.save],
+                                initialSaved: saved,
+                                completedActions: saved == nil ? [] : [.save],
                                 latestCapture: nil)
         }
     }

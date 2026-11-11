@@ -45,6 +45,7 @@ final class ScreenshotQuickPreviewController {
     private let shareAnchor = ShelfSharePickerAnchor.Anchor()
     private let sharePresenter = ShelfSharePresenter()
     private var deletingCapture = false
+    private var keyboardDeletePending = false
     private var previewDragInProgress = false
     private var systemSharing = false
     private var contextMenuOpen = false
@@ -463,7 +464,36 @@ final class ScreenshotQuickPreviewController {
         }
     }
 
-    /// Called only after the inline red checkmark is confirmed.
+    /// Keyboard deletion must request confirmation before changing saved files.
+    private func confirmDeleteFromKeyboard() {
+        guard !closed, !deletingCapture, !keyboardDeletePending else { return }
+        keyboardDeletePending = true
+        // The keyboard has no access to the SwiftUI button's armed state.
+        // Require a real confirmation rather than silently deleting on one
+        // Delete keypress; keep the preview open after cancellation.
+        dismissWork?.cancel()
+        dismissWork = nil
+        contextMenuOpen = true // Suspend focus-loss dismissal while modal.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.closed else { return }
+            defer {
+                self.keyboardDeletePending = false
+                self.contextMenuOpen = false
+            }
+            let copy = CaptureInterfaceStrings.localized(L10n.shared.language)
+            let owner = self.shownInNotch ? NotchService.shared.presentationWindow : self.panel
+            let approved = NotchIslandAlert.confirmDestructive(
+                title: copy.confirmDelete,
+                message: copy.deleteCaptures,
+                action: copy.delete,
+                cancel: FeatureStrings.screenshot(L10n.shared.language).cancel,
+                above: owner)
+            if approved { self.confirmDelete() }
+            else { self.scheduleAutoDismiss() }
+        }
+    }
+
+    /// Called after an explicit delete confirmation, inline or from the keyboard.
     private func confirmDelete() {
         guard !closed, !deletingCapture else { return }
         dismissWork?.cancel()
@@ -538,8 +568,13 @@ final class ScreenshotQuickPreviewController {
 
     private func copySharedLink() {
         Task { @MainActor [weak self] in
-            guard let self, !self.closed,
-                  let record = QuickLinkMediaIndex.shared.latestScreenshot(for: self.capture.id) else { return }
+            guard let self, !self.closed else { return }
+            guard let record = QuickLinkMediaIndex.shared.latestScreenshot(for: self.capture.id) else {
+                self.model.sharedRecord = nil
+                NSSound.beep()
+                self.scheduleAutoDismiss()
+                return
+            }
             self.model.sharedRecord = record
             self.dismissWork?.cancel()
             self.dismissWork = nil
@@ -663,7 +698,7 @@ final class ScreenshotQuickPreviewController {
                     MainActor.assumeIsolated { self.performMenu(.printImage) }
                     return nil
                 case kVK_Delete, kVK_ForwardDelete:
-                    self.perform(.discard)
+                    self.confirmDeleteFromKeyboard()
                     return nil
                 default:
                     return event
@@ -691,7 +726,7 @@ final class ScreenshotQuickPreviewController {
             }
             switch key {
             case kVK_Delete, kVK_ForwardDelete:
-                self.perform(.discard)
+                self.confirmDeleteFromKeyboard()
                 return nil
             case kVK_Escape:
                 // Escape only dismisses. Before the after-capture actions it
