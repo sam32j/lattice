@@ -235,7 +235,8 @@ enum SettingsBackup {
             isDeveloperBuild: AppInfo.isDeveloperBuild)
     }
 
-    /// A normal app launch overlays only the declared keys, before migrations.
+    /// A normal app launch overlays the declared keys after migrating local
+    /// settings, so a migration cannot copy a declaration into an omitted key.
     /// The plist is owned by the user or their dotfiles manager.
     static func applyConfigFileAtLaunch(arguments: [String] = CommandLine.arguments,
                                         bundleID: String? = Bundle.main.bundleIdentifier,
@@ -249,12 +250,17 @@ enum SettingsBackup {
         guard !settings.isEmpty else { return [] }
         let availability = AppFeature.availabilityDefaults
         let managedFeatures = Set(settings.keys.filter { availability[$0] != nil })
-        let local = defaults.dictionaryRepresentation()
-        let current = SettingsBackupSupport.payload(appVersion: AppInfo.version) { local[$0] }
-        let portable = current[SettingsBackupSupport.settingsKey] as? [String: Any] ?? [:]
+        var comparisonKeys = Set(settings.keys)
+        if settings[DefaultsKey.appVolumes] != nil { comparisonKeys.insert(DefaultsKey.appVolumesArePositions) }
+        if settings[DefaultsKey.mediaImageWatermarkKind] != nil { comparisonKeys.insert(DefaultsKey.mediaImageWatermarkText) }
+        let local = comparisonKeys.reduce(into: [String: Any]()) { $0[$1] = defaults.object(forKey: $1) }
+        let portable = SettingsBackupSupport.portableSettings(local)
         if settings.contains(where: { portable[$0.key] as? NSObject != $0.value as? NSObject }) {
             apply(settings: SettingsBackupSupport.keepingLocalMediaLogos(settings, local: local),
                   replacingMissing: false, in: defaults)
+            if settings[DefaultsKey.appVolumes] != nil {
+                Defaults.migrateAppVolumesToPositions(in: defaults)
+            }
         }
         return managedFeatures
     }

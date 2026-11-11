@@ -27,8 +27,8 @@ if CommandLine.arguments.contains("--settings-presentation-preview") {
 #endif
 
 SuperKeyMappingGuard.runIfRequestedAndExit()
-_ = SettingsBackup.applyConfigFileAtLaunch()
 Defaults.register()
+_ = SettingsBackup.applyConfigFileAtLaunch()
 NotchControlItem.keyboardLightIsSupported = { BrightnessService.keyboardLightIsSupported }
 MouseAccelerationGuard.runIfRequestedAndExit()
 MouseAccelerationService.recoverPendingAtLaunch()

@@ -104,7 +104,6 @@ enum SettingsFileTests {
             try old.write(to: target, options: .atomic)
             defaults.set(true, forKey: DefaultsKey.appVolumesArePositions)
             _ = launch()
-            Defaults.migrateAppVolumesToPositions(in: defaults)
             let position = defaults.dictionary(forKey: DefaultsKey.appVolumes)?["fixture.app"] as? Double
             suite.expect(position == MixerRoutingSupport.volume(forGain: 0.25)
                          && defaults.data(forKey: DefaultsKey.textSnippets) == snippets,
@@ -115,7 +114,36 @@ enum SettingsFileTests {
             _ = launch()
             suite.expect(defaults.string(forKey: DefaultsKey.appearance) == "light"
                          && defaults.data(forKey: DefaultsKey.textSnippets) == snippets,
-                         "wrong types and a damaged snippet library cannot replace local settings at launch")
+                         "wrong types cannot replace local libraries")
+
+            let localPresets = try JSONEncoder().encode([RecorderEditPreset(name: "Work", document: RecorderEditDocument())])
+            defaults.set(localPresets, forKey: DefaultsKey.recorderEditorPresets)
+            let malformedPresets: [Any] = ["broken", Data("broken".utf8)]
+            for invalidPresets in malformedPresets {
+                try plist([DefaultsKey.recorderEditorPresets: invalidPresets]).write(to: target, options: .atomic)
+                _ = launch()
+                suite.expect(defaults.data(forKey: DefaultsKey.recorderEditorPresets) == localPresets,
+                             "invalid recorder presets in a settings file preserve the saved collection")
+            }
+
+            for oldVertical in [false, true] {
+                defaults.set(oldVertical, forKey: DefaultsKey.scrollInverterEnabled)
+                // Lattice registers the horizontal key, so set this Mac's value directly.
+                defaults.set(oldVertical, forKey: DefaultsKey.scrollInverterHorizontalEnabled)
+                try plist([DefaultsKey.scrollInverterEnabled: !oldVertical]).write(to: target, options: .atomic)
+                _ = launch()
+                suite.expect(defaults.bool(forKey: DefaultsKey.scrollInverterEnabled) == !oldVertical
+                             && defaults.bool(forKey: DefaultsKey.scrollInverterHorizontalEnabled) == oldVertical,
+                             "a vertical-only declaration preserves this Mac's horizontal direction")
+            }
+
+            try plist([DefaultsKey.switcherShowWindowlessFinder: false,
+                       DefaultsKey.screenshotOpenEditorDirectly: true]).write(to: target, options: .atomic)
+            _ = launch()
+            suite.expect(defaults.string(forKey: DefaultsKey.switcherWindowlessApps) ==
+                            SwitcherWindowlessApps.migrated(showsWindowlessFinder: false).rawValue
+                         && defaults.string(forKey: DefaultsKey.screenshotDefaultAction) == ScreenshotDefaultAction.edit.rawValue,
+                         "a settings file using the former Finder and capture options configures the current pickers")
 
             try exerciseExternalEdits(of: target, defaults: defaults, launch: { _ = launch() }, suite: suite)
             try partial.write(to: target, options: .atomic)
