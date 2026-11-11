@@ -948,4 +948,31 @@ enum AppUpdatesSupport {
         let due = lastCheck.addingTimeInterval(frequency.interval)
         return due <= now ? now.addingTimeInterval(catchUpDelay) : due
     }
+
+    /// User-installed apps outside /Applications, excluding temporary/cache folders,
+    /// non-installed build products and embedded helpers. Spotlight may return
+    /// paths on other mounted disks; don't treat a bundle inside another .app
+    /// as an independently installed app.
+    static func additionalUpdateApplicationPaths(_ paths: [String]) -> [String] {
+        let home = URL(fileURLWithPath: NSHomeDirectory()).standardizedFileURL.path
+        let excludedDirectories: Set<String> = [
+            "deriveddata", ".build", "build", "node_modules", "pods", "carthage",
+            ".git", ".swiftpm", "caches", "temporaryitems", "tmp", "temp",
+            "intermediates.noindex", "products", "archiveintermediates"
+        ]
+        return paths.filter { path in
+            let url = URL(fileURLWithPath: path).resolvingSymlinksInPath().standardizedFileURL
+            guard url.pathExtension.lowercased() == "app",
+                  !InstalledApps.isSystemApplication(at: url) else { return false }
+            let directories = url.pathComponents.dropLast().map { $0.lowercased() }
+            guard !directories.contains(where: { $0.hasSuffix(".app") }),
+                  !directories.contains(where: excludedDirectories.contains),
+                  !url.path.hasPrefix("/private/"),
+                  !url.path.hasPrefix("/usr/"),
+                  !url.path.hasPrefix("/Library/") else { return false }
+            if url.path.hasPrefix(home + "/"),
+               directories.contains("library") { return false }
+            return true
+        }
+    }
 }
