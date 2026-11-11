@@ -303,6 +303,7 @@ if (( TEST )); then
         Sources/Lattice/Core/QuitProtectionStrings.swift
         Sources/Lattice/Core/LiquidGlassSupport.swift
         Sources/Lattice/Core/ShortcutConflictAlert.swift
+        Sources/Lattice/Services/QuickTools/CaptureSaveNaming.swift
         Sources/Lattice/Core/Defaults.swift
         Sources/Lattice/Core/LauncherShortcutTarget.swift
         Sources/Lattice/Core/PermanentInputMigration.swift
@@ -680,7 +681,6 @@ if (( TEST )); then
         Sources/Lattice/Services/QuickTools/ScreenshotPinChrome.swift
         Sources/Lattice/Services/QuickTools/ScreenshotPinFilePromise.swift
         Sources/Lattice/Services/QuickTools/ScreenshotPinDragView.swift
-        Sources/Lattice/Core/ScreenshotPinPreferences.swift
         Sources/Lattice/Core/ScreenshotPinStrings.swift
         Sources/Lattice/UI/Settings/MonitorToken.swift
         Sources/Lattice/Services/QuickTools/ScreenshotRenderer.swift

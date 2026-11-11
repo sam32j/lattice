@@ -285,8 +285,9 @@ def main():
           + "}\n}\n")
     write("RecorderDelivery.swift", "import Foundation\nextension RecorderDeliveryTests {\nfinal class Service: State {\n"
           + "".join(declaration(recorder, prefix).replace("private func", "func", 1)
-                .replace("UserDefaults.standard.bool(forKey: DefaultsKey.recorderOpenEditor)", "opensEditor")
-              for prefix in ["    private func deliver(", "    private func sweepTakes()"])
+                .replace("let defaults = UserDefaults.standard", "let defaults = self.defaults")
+              for prefix in ["    private func deliver(", "    private func finishDelivery(",
+                             "    private func sweepTakes()"])
           + "}\n}\n")
     shortcut = "Sources/Lattice/UI/CompactShortcutRecorder.swift"
     write("BindingRecorderEvents.swift", "import AppKit\nimport Carbon.HIToolbox\nextension BindingRecorderEventTests {\nfinal class Recorder: State {\n"
@@ -1203,8 +1204,9 @@ def main():
     write("NotchPanel.swift", "import AppKit\n"
           + declaration("Sources/Lattice/Services/Notch/NotchWindowHost.swift", "final class NotchPanel:"))
     write("QuickTogglesAlert.swift", "import AppKit\nextension QuickTogglesAlertTests {\nfinal class Host: Fixture {\n"
-          + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    func emptyTrash()")
+          + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    func emptyTrash(fromNotch:")
               .replace("QuickToggleAction.emptyTrash.feature.isAvailable", "available")
+              .replace("NotchIslandAlert.confirmDestructive(", "QuickTogglesAlertTests.confirmDestructiveFixture(")
           + "}\n}\n")
     write("OverlayPanelDeclaration.swift", "import AppKit\n"
           + declaration("Sources/Lattice/UI/OverlayPanel.swift", "class OverlayPanel:"))
@@ -1998,14 +2000,11 @@ def main():
           + "}\n}\n")
     screenshot_service = "Sources/Lattice/Services/QuickTools/ScreenshotService.swift"
     write("ScreenshotShortcutCompletion.swift", "import Foundation\n"
-          + "extension ScreenshotShareCompletionTests {\n@MainActor final class Uploader: UploadState {\n"
+          + "extension ScreenshotShareCompletionTests {\n@MainActor final class LatestCapture: LatestState {\n"
           + "".join(declaration(screenshot_service, prefix).replace("private func", "func", 1)
-                    .replace("uploadShortcutEnabled()", "uploadShortcutEnabled(in: defaults)")
                     .replace("retainsLatestCapture()", "retainsLatestCapture(in: defaults)")
-                    for prefix in ["    private func uploadLastCapture()", "    private func copyUploadedLink(",
-                                   "    func openEditor(with", "    func editorDidClose(",
-                                   "    private func invalidateLatestCaptureUploads()",
-                                   "    private func beginLatestCapture(", "    private func discardLatestCapture(",
+                    for prefix in ["    private func beginLatestCapture(",
+                                   "    private func discardLatestCapture(",
                                    "    private func withholdLatestCapture()", "    private func syncLatestCapture(",
                                    "    func afterAutoCopy("])
           + "}\n}\n")
