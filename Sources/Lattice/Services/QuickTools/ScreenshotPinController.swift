@@ -15,7 +15,6 @@ final class ScreenshotPinController {
     private var gestureFinished = false
     private var hoverTimer: Timer?
     private weak var hoverFocusPin: ScreenshotPinWindow?
-    private var preferenceObserver: NSObjectProtocol?
     private var dragObservers: [NSObjectProtocol] = []
     private init() {
         ScreenshotPinWindow.onResetGestureState = { [weak self] in
@@ -44,6 +43,18 @@ final class ScreenshotPinController {
         for pin in pins where pin !== except {
             pin.setHiddenForDrag(hidden)
         }
+    }
+
+    /// Showing temporarily hidden peers orders each one to the front. Restore
+    /// the selected pin last, otherwise dragging sends it behind every peer.
+    static func restorePins(_ pins: [ScreenshotPinWindow], selected: ScreenshotPinWindow?) {
+        for pin in pins { pin.setHiddenForDrag(false) }
+        guard let selected, !selected.isClosed, selected.isVisible else { return }
+        selected.orderFrontRegardless()
+    }
+
+    private func restorePinsAfterDrag(selected: ScreenshotPinWindow?) {
+        Self.restorePins(pins, selected: selected)
     }
 
     func findPin(for captureID: UUID) -> ScreenshotPinWindow? {
@@ -93,16 +104,10 @@ final class ScreenshotPinController {
             timer.tolerance = 0.02
             RunLoop.main.add(timer, forMode: .common)
             hoverTimer = timer
-            preferenceObserver = NotificationCenter.default.addObserver(
-                forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
-                    self?.pins.forEach { $0.refreshAppearance() }
-                }
         } else if pins.isEmpty {
             hoverFocusPin = nil
             hoverTimer?.invalidate()
             hoverTimer = nil
-            if let preferenceObserver { NotificationCenter.default.removeObserver(preferenceObserver) }
-            preferenceObserver = nil
         }
         if !pins.isEmpty && dragObservers.isEmpty {
             let center = NotificationCenter.default
@@ -110,14 +115,14 @@ final class ScreenshotPinController {
                 center.addObserver(forName: .screenshotPinDragDidBegin, object: nil, queue: .main) { [weak self] _ in
                     self?.setPinsHiddenForDrag(true)
                 },
-                center.addObserver(forName: .screenshotPinDragDidEnd, object: nil, queue: .main) { [weak self] _ in
-                    self?.setPinsHiddenForDrag(false)
+                center.addObserver(forName: .screenshotPinDragDidEnd, object: nil, queue: .main) { [weak self] note in
+                    self?.restorePinsAfterDrag(selected: note.object as? ScreenshotPinWindow)
                 },
                 center.addObserver(forName: .screenshotPinWindowDragDidBegin, object: nil, queue: .main) { [weak self] note in
                     self?.setPinsHiddenForDrag(true, except: note.object as? ScreenshotPinWindow)
                 },
-                center.addObserver(forName: .screenshotPinWindowDragDidEnd, object: nil, queue: .main) { [weak self] _ in
-                    self?.setPinsHiddenForDrag(false)
+                center.addObserver(forName: .screenshotPinWindowDragDidEnd, object: nil, queue: .main) { [weak self] note in
+                    self?.restorePinsAfterDrag(selected: note.object as? ScreenshotPinWindow)
                 }
             ]
         } else if pins.isEmpty && !dragObservers.isEmpty {
@@ -238,15 +243,13 @@ final class ScreenshotPinController {
             NSSound.beep()
             return
         }
-        let (url, number) = ScreenshotService.saveDestination(strings: strings)
         do {
-            try data.write(to: url, options: .withoutOverwriting)
+            let url = try ScreenshotService.saveImageData(data)
             ScreenshotSupport.markAsScreenCapture(url)
             QuickToolHUD.show(icon: "camera.viewfinder", message: String(format: strings.savedHUDFormat,
                 url.deletingLastPathComponent().lastPathComponent))
         } catch {
-            if let number { ScreenshotService.rewindNumberSequence(toReuse: number) }
-            QuickToolHUD.show(icon: "exclamationmark.triangle", message: error.localizedDescription)
+            CaptureSaveLocation.presentSaveError(error)
         }
     }
 }

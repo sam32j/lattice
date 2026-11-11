@@ -93,6 +93,7 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
     override func mouseDown(with event: NSEvent) {
         guard let pin, !pin.isClosed else { return }
         guard event.clickCount < 2 else { return }
+        pin.orderFrontRegardless()
         if !pin.isKeyWindow || !NSApp.isActive {
             NSApp.activate(ignoringOtherApps: true)
             pin.makeKeyAndOrderFront(nil)

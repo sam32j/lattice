@@ -43,7 +43,10 @@ final class ScreenshotPinDragView: NSVisualEffectView, NSDraggingSource {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func hitTest(_ point: NSPoint) -> NSView? { bounds.contains(point) ? self : nil }
     override func resetCursorRects() { addCursorRect(bounds, cursor: .openHand) }
-    override func mouseDown(with event: NSEvent) { mouseDownEvent = event }
+    override func mouseDown(with event: NSEvent) {
+        pin?.orderFrontRegardless()
+        mouseDownEvent = event
+    }
 
     override func mouseDragged(with event: NSEvent) {
         guard let initial = mouseDownEvent, let pin, !pin.isClosed else { return }

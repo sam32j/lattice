@@ -11,7 +11,6 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     var captureID: UUID
     var baseImage: CGImage?
     var annotations: [ScreenshotSupport.Annotation] = []
-    private let preferences: UserDefaults
     private(set) var chosenOpacity: CGFloat = 1
     private(set) var isPositionLocked = false
     private(set) var isHovered = false
@@ -52,13 +51,12 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         invalidateCursorRects(for: surface)
     }
 
-    init(image: CGImage, scale: CGFloat, preferences: UserDefaults = .standard, captureID: UUID = UUID(), baseImage: CGImage? = nil, annotations: [ScreenshotSupport.Annotation] = []) {
+    init(image: CGImage, scale: CGFloat, preferences _: UserDefaults = .standard, captureID: UUID = UUID(), baseImage: CGImage? = nil, annotations: [ScreenshotSupport.Annotation] = []) {
         self.image = image
         self.captureID = captureID
         self.baseImage = baseImage
         self.annotations = annotations
         captureScale = scale.isFinite && scale > 0 ? scale : 1
-        self.preferences = preferences
         let pointer = NSEvent.mouseLocation
         let screen = (NSScreen.screens.first { NSMouseInRect(pointer, $0.frame, false) }
                       ?? NSScreen.main ?? NSScreen.screens.first)?.visibleFrame
@@ -116,6 +114,11 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     }
 
     override func sendEvent(_ event: NSEvent) {
+        if event.type == .leftMouseDown && !ignoresMouseEvents {
+            // The key window and z-order are independent for nonactivating
+            // panels: a click must raise this pin over every other pin.
+            orderFrontRegardless()
+        }
         if event.type == .gesture {
             surface.handleGestureEvent(event)
         }
@@ -142,8 +145,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     }
 
     func refreshAppearance() {
-        let rounded = preferences.object(forKey: DefaultsKey.screenshotPinRoundedCorners) as? Bool ?? true
-        surface.layer?.cornerRadius = rounded ? 10 : 0
+        surface.layer?.cornerRadius = 10
         invalidateShadow()
     }
 
