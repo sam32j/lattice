@@ -172,7 +172,7 @@ extension AppUpdatesService {
                         .union(resolvedFeed.answeredPaths)
                         .union(onlineResult.answeredPaths)
                     let unverifiedApps = activeApps.filter { !verifiedPaths.contains($0.path) }
-                    let packageUpdatePaths = Set(packageResult.items.compactMap(\.bundlePath))
+                    let packageUpdatePaths = Set(visiblePackageItems.compactMap(\.bundlePath))
                     self.finishCheck(items: AppUpdatesSupport.merged(packageResult.items,
                                                                      storeResult.items,
                                                                      resolvedFeed.items.filter {
