@@ -2,6 +2,74 @@
 
 ## [3.4.1-d.2] - 2026-10-17
 
+## [3.4.2-d.7] - 2026-11-12
+
+### Added
+- **Screenshot**: Support independent after-capture actions and retire upload shortcut
+- **Recorder**: Integrate unified save export and independent after-recording actions
+- **Capture**: Introduce unified save location bookmarks and naming templates
+- **Capture**: Support full-screen action in recording mode and refine guide overlay
+- **Captures**: Expand recording retention limits and optimize low-space stashing
+- **Hub**: Unify native destructive confirmation dialogs for trash and history
+- **Shelf**: Copy finished recordings into dedicated file cache items
+- **Updates**: Support VS Code feed, custom app scanning, and update settings
+- **Island**: Refine capture overlay lifecycle and activity state
+- **Island**: Synchronize microphone indicator transitions
+- **Hub**: Animate live microphone and system quick toggles
+- **Hub**: Integrate capture access into shared chrome
+- **Hub**: Refine floating and Island hub content presentation
+- **Hub**: Route recent captures through the Hub service
+- **Hub**: Update Hub item destinations and presentation behavior
+- **Quick Link**: Index and restore media-specific share links
+- **Captures**: Integrate recent captures list carousel and deletion
+- **Captures**: Manage recent screenshot and recording history
+- **Recorder**: Refine video preview toolbar and trash affordances
+- **Recorder**: Consolidate video quick preview lifecycle and deletion
+- **Recorder**: Refine start and recent-recording workflow
+- **Screenshot**: Update preview interactions and close lifecycle
+- **Screenshot**: Streamline preview routing and deletion ownership
+- **Capture**: Honor presentation preference for preview placement
+- **Capture**: Add combined screen captures settings and translations
+- **Settings**: Integrate capture destinations in settings directory
+
+### Changed
+- **Updates**: Move additional application path filter to AppUpdatesSupport
+- **Settings**: Overhaul capture preferences with independent options and unified save card
+- **Screenshot Pin**: Streamline pin window layering and preferences
+- **Island Settings**: Synchronize notch behavior and settings bindings
+- **Island Settings**: Streamline notch settings and module options
+- **Island**: Share capture entry-point routing
+- **Hub**: Align embedded capture utility navigation
+- **Hud**: Update quick tool HUD routing and feedback
+- **Capture**: Remove legacy capture delay from unified service
+- **Screenshot**: Simplify active selection and capture interactions
+- **Screenshot**: Share preview policy and retire per-action timeout
+- **Preferences**: Retire legacy capture and preview defaults
+- **Recorder**: Simplify recording options and activation
+- **Screenshot**: Simplify screenshot options and activation
+- **Settings**: Align feature availability and destination ownership
+- **Settings**: Route capture settings through native navigation
+- **Capture**: Remove unused local variables
+
+### Fixed
+- **Capture**: Allow updating edited screenshot save state
+- **Capture**: Correct edited save state and repair CI test fixtures
+- **Capture**: Lock deletion confirmation and preserve manual exports
+- **Island**: Preserve nested navigation and localize capture controls
+- **Settings**: Restore capture controls and report path failures
+- **Cleaner**: Recognize unified capture naming patterns
+- **Recorder**: Ensure durable delivery and nonblocking file operations
+- **Capture**: Preserve editor state and confirm destructive actions
+- **Updates**: Correct verification and feed update detection
+- **Notch**: Update key monitoring precedence and align island test fixtures
+- **Switcher**: Disable animated scroll reveals in prohibited activation policy
+- **Island**: Manage confirmation focus lease and preserve visualizer state
+- **Video Downloader**: Refine profile status chip and path popover
+- **Settings**: Preserve sidebar identity and selection navigation
+- **Tests**: Remove invalid FileManager Sendable conformance
+- **Island**: Constrain header controls to content bounds
+- **Screenshot**: Correct preview focus and dismissal behavior
+
 ## [3.4.2-d.6] - 2026-11-09
 
 ### Added
