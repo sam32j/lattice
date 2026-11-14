@@ -29,7 +29,9 @@ final class NetworkAddressService: ObservableObject {
         isLoadingPublicIP = true
         lastPublicIPFetch = now
 
-        let url = URL(string: "https://api64.ipify.org")!
+        // The IPv4-only endpoint: a dual-stack lookup reports an IPv6 address
+        // whenever the connection has one, and the monitor shows IPv4.
+        let url = URL(string: "https://api.ipify.org")!
         var request = URLRequest(url: url)
         request.timeoutInterval = 5
         URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
@@ -38,9 +40,8 @@ final class NetworkAddressService: ObservableObject {
                 guard let data,
                       let ip = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
                       !ip.isEmpty, (response as? HTTPURLResponse)?.statusCode == 200 else { return }
-                let isIPv4 = ip.range(of: #"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"#, options: .regularExpression) != nil
-                let isIPv6 = ip.contains(":") && ip.range(of: #"^[0-9a-fA-F:]+$"#, options: .regularExpression) != nil
-                guard isIPv4 || isIPv6 else { return }
+                guard ip.range(of: #"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"#, options: .regularExpression) != nil
+                else { return }
                 self?.publicIP = ip
             }
         }.resume()
