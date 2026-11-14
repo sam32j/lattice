@@ -6,7 +6,7 @@ enum PermissionRowAction { case request, settings, settingsRequired }
 
 enum PermissionPortalRequest: Equatable {
     case permission(SettingsPermission)
-    case systemAudio, notifications, finderAutomation, terminalAutomation, systemEventsAutomation
+    case systemAudio, notifications, finderAutomation, systemEventsAutomation
 }
 
 enum PermissionRowActionPolicy {
@@ -21,7 +21,6 @@ enum PermissionRowActionPolicy {
         case .audioCapture: return .systemAudio
         case .notifications: return .notifications
         case .automationFinder: return .finderAutomation
-        case .automationTerminal: return .terminalAutomation
         case .automationSystemEvents: return .systemEventsAutomation
         case .filesAndFolders, .automationPlayback, .appManagement, .fullDiskAccess: return nil
         }

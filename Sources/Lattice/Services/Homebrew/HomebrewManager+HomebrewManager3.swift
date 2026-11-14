@@ -191,11 +191,4 @@ extension HomebrewManager {
     func appendLog(_ text: String) {
         log.append(text)
     }
-
-    func appleScriptString(_ value: String) -> String {
-        let escaped = value
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-        return "\"\(escaped)\""
-    }
 }

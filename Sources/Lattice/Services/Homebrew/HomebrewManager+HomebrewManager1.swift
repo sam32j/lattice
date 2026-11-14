@@ -264,8 +264,8 @@ extension HomebrewManager {
     func openHomebrewInstaller() {
         guard AppFeature.homebrew.isAvailable else { return }
         errorMessage = nil
-        if openTerminal(command: HomebrewCommandBuilder.installerCommand) {
-            didOpenInstaller = true
+        openTerminal(command: HomebrewCommandBuilder.installerCommand) { [weak self] in
+            self?.didOpenInstaller = true
         }
     }
 
@@ -275,8 +275,8 @@ extension HomebrewManager {
         self.brewPath = brewPath
         errorMessage = nil
         let command = HomebrewCommandBuilder.shellConfigCommand(brewPath: brewPath)
-        if openTerminal(command: command) {
-            didOpenShellConfig = true
+        openTerminal(command: command) { [weak self] in
+            self?.didOpenShellConfig = true
         }
     }
 

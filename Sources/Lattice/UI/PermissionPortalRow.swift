@@ -115,13 +115,12 @@ struct PermissionPortalRow: View {
         case .notifications:
             requesting = true
             Notifier.requestPermission { _ in self.finishRequest() }
-        case .finderAutomation, .terminalAutomation, .systemEventsAutomation:
+        case .finderAutomation, .systemEventsAutomation:
             attemptedManualRequest = true
             requesting = true
             let target: Permissions.AutomationTarget
             switch route {
             case .finderAutomation: target = .finder
-            case .terminalAutomation: target = .terminal
             default: target = .systemEvents
             }
             Permissions.requestAutomation(target) { _ in self.finishRequest() }
@@ -144,7 +143,7 @@ struct PermissionPortalRow: View {
             else { Permissions.shared.requestFullDiskAccess() }
         case .filesAndFolders: Permissions.shared.openFilesAndFoldersSettings()
         case .notifications: Permissions.shared.openNotificationSettings()
-        case .automationFinder, .automationTerminal, .automationSystemEvents, .automationPlayback: Permissions.shared.openAutomationSettings()
+        case .automationFinder, .automationSystemEvents, .automationPlayback: Permissions.shared.openAutomationSettings()
         case .audioCapture: Permissions.shared.openAudioCaptureSettings()
         case .microphone: Permissions.shared.openMicrophoneSettings()
         case .calendar: Permissions.shared.openCalendarSettings()
