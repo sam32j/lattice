@@ -545,8 +545,14 @@ def main():
                     for prefix in ["    static func raiseWindowOnHiddenSpace(",
                                    "    private static func stageSourceBehindTargetIfNeeded("])
           + "}\nextension SwitcherActivationTests.Bridge {\n"
+          + "".join(declaration("Sources/Lattice/Services/Switcher/SpaceWindowBridge.swift", prefix)
+                    .replace("private static", "static", 1) for prefix in [
+                        "    static func frontWindow(", "    static func focusWithoutRaise(",
+                        "    private static func makeKeyWithoutRaise("])
           + declaration("Sources/Lattice/Services/Switcher/SpaceWindowBridge.swift",
-                        "    static func frontWindow(") + "}\n")
+                        "    private static func postFocusRecord(")
+          .replace("private static", "@discardableResult static", 1)
+          + "}\n")
     write("NowPlayingOpen.swift", "import AppKit\n"
           + "extension NowPlayingOpenContract.Application {\n"
           + declaration("Sources/Lattice/Services/RadialMenu/RadialNowPlayingService.swift",
