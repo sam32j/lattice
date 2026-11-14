@@ -1,9 +1,16 @@
 name: Sync
 
 on:
-  schedule:
-    - cron: '23 */6 * * *'
+  # Paused while upstream syncs move from rebase to merge; restore after the
+  # first merge-based sync has landed:
+  # schedule:
+  #   - cron: '23 */6 * * *'
   workflow_dispatch:
+    inputs:
+      upstream_tag:
+        description: Stable upstream tag to merge, such as v3.4.3. Empty uses the latest release.
+        required: false
+        default: ''
 
 permissions: {}
 concurrency:
@@ -17,6 +24,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      issues: write
     outputs:
       commit: ${{ steps.sync.outputs.commit }}
       ready: ${{ steps.sync.outputs.ready }}
@@ -29,14 +37,16 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
         with:
           bun-version: '1.4.2'
-      - name: Sync tracking main and rebase personal patches
+      - name: Sync tracking main and merge upstream into personal patches
         id: sync
         env:
           GH_TOKEN: ${{ secrets.LATTICE_SYNC_TOKEN || github.token }}
+          REQUESTED_TAG: ${{ inputs.upstream_tag }}
         run: |
           set -euo pipefail
           gh auth setup-git
-          TAG="$(gh api repos/vorssaint/vorssaint-utils/releases/latest --jq '.tag_name')"
+          TAG="${REQUESTED_TAG:-$(gh api repos/vorssaint/vorssaint-utils/releases/latest --jq '.tag_name')}"
+          echo "upstream_tag=$TAG" >> "$GITHUB_OUTPUT"
           bun Tools/sync-downstream.ts \
             --fork https://github.com/sam32j/lattice.git \
             --upstream https://github.com/vorssaint/vorssaint-utils.git \
@@ -48,6 +58,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           LATTICE_TAG: ${{ steps.sync.outputs.tag }}
         run: bun Tools/lattice-release-pending.ts
+      - name: Ask for a manual merge when upstream conflicts
+        if: failure() && steps.sync.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.sync.outputs.upstream_tag }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="Upstream $TAG needs a manual merge"
+          body="The Sync workflow could not merge upstream $TAG into lattice/main without help. Both branches are unchanged. See $RUN_URL for the conflicting files, then merge the tag by hand on a sync branch."
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "Still conflicting: $RUN_URL"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi
       - name: Record sync result
         env:
           READY: ${{ steps.sync.outputs.ready }}
