@@ -336,6 +336,7 @@ if (( TEST )); then
         Sources/Lattice/Services/Notch/NotchTimerCache.swift
         Sources/Lattice/UI/Notch/NotchIslandAlert.swift
         Sources/Lattice/Services/Notch/NotchAccessorySupport.swift
+        Sources/Lattice/Services/Notch/NotchAccessoryConnectionMonitor.swift
         Sources/Lattice/Services/QuickTools/CameraPreviewSupport.swift
         Sources/Lattice/Core/NotchMusicExtrasStrings.swift
         Sources/Lattice/Core/NotchClipboardSizeStrings.swift
