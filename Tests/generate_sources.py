@@ -717,6 +717,14 @@ def main():
           + declaration("Sources/Lattice/UI/Settings/RadialMenuSettings.swift",
                         "    private func deleteProfile(").replace("private ", "", 1)
           + "}\n}\n")
+    write("RadialFilePicker.swift", "import Foundation\n"
+          + "extension RadialFilePickerTests {\nstruct Editor {\n"
+          + "let state: ItemState\nvar item: RadialMenuItem {\n"
+          + "get { state.item }\nnonmutating set { state.item = newValue }\n}\n"
+          + "".join(declaration("Sources/Lattice/UI/Settings/RadialItemEditor.swift", prefix)
+                    .replace("private func", "func", 1) for prefix in [
+                        "    func choose(applications:", "    func applyChosen("])
+          + "}\n}\n")
     fan_control = "Sources/Lattice/Services/FanControl/FanControlService.swift"
     write("FanControlResume.swift", "import Foundation\n"
           + "extension FanControlResumeContract {\nfinal class Service: Fixture {\n"
