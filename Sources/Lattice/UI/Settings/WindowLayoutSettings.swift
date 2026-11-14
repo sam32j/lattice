@@ -21,6 +21,7 @@ struct WindowLayoutSettings: View {
     @AppStorage(DefaultsKey.windowGestureRaiseWindow) var gestureRaiseWindow = false
     @AppStorage(DefaultsKey.windowLayoutWindowGap) var windowGap = 0
     @AppStorage(DefaultsKey.windowLayoutScreenGap) var screenGap = 0
+    @AppStorage(DefaultsKey.windowReserveStageManagerSpace) var reserveStageManagerSpace = false
     @AppStorage(DefaultsKey.windowLayoutMarginPercent) var marginPercent = WindowLayoutMargin.defaultPercent
     @AppStorage(DefaultsKey.windowLayoutSideRepeatCyclesThirds) var sideRepeatCyclesThirds = false
     @AppStorage(DefaultsKey.spacesOrderEnabled) var spacesOrderEnabled = false
@@ -31,6 +32,10 @@ struct WindowLayoutSettings: View {
     @State var conflictAlert: ShortcutConflictAlert?
     var text: WindowLayoutFeatureStrings {
         FeatureStrings.windowLayout(l10n.language)
+    }
+
+    var stageManagerText: WindowStageManagerStrings {
+        WindowStageManagerStrings.localized(l10n.language)
     }
 
     var windowLayoutInstalled: Bool {
@@ -56,7 +61,7 @@ struct WindowLayoutSettings: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             refreshSystemTilingState()
         }
-        .settingsExpansionAnimation(value: [systemTilingEnabled, edgeSnapEnabled, permissions.accessibility, maximizeEnabled, gestureEnabled, windowLayoutInstalled, autoQuitEnabled])
+        .settingsExpansionAnimation(value: [systemTilingEnabled, edgeSnapEnabled, permissions.accessibility, maximizeEnabled, gestureEnabled, windowLayoutInstalled, autoQuitEnabled, reserveStageManagerSpace])
     }
 
     var windowsAndSpaces: some View {
@@ -74,6 +79,15 @@ struct WindowLayoutSettings: View {
                     }
                 }
                 .settingsSectionAnchor(.windowMaximizer, cornerRadius: 16)
+                Divider()
+            }
+            if windowLayoutInstalled || maximizeEnabled {
+                // Maximize and snapping share the same usable frame, so one
+                // row covers both instead of repeating it per feature.
+                SettingsRow(symbol: "sidebar.left", title: stageManagerText.title,
+                            caption: stageManagerText.caption) {
+                    Toggle(stageManagerText.title, isOn: $reserveStageManagerSpace).labelsHidden()
+                }
                 Divider()
             }
             moveAndResizeDragging

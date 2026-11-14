@@ -754,6 +754,8 @@ if (( TEST )); then
         Sources/Lattice/Services/Metrics/TemperatureSensorSelector.swift
         Sources/Lattice/Services/Metrics/SustainedAlertGate.swift
         Sources/Lattice/Services/WindowLayout/WindowLayoutSupport.swift
+        Sources/Lattice/Services/WindowLayout/WindowStageManagerSupport.swift
+        Sources/Lattice/Core/WindowStageManagerStrings.swift
         Sources/Lattice/Services/WindowLayout/WindowGestureApplySession.swift
         Sources/Lattice/Services/WindowLayout/WindowGestureSupport.swift
         Sources/Lattice/Core/WindowDirectionalStrings.swift
