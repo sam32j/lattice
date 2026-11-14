@@ -656,6 +656,7 @@ if (( TEST )); then
         Sources/Lattice/Services/SpotlightNamesSupport.swift
         Sources/Lattice/Services/QuickTools/MicMuteSupport.swift
         Sources/Lattice/Services/QuickTools/QuickTogglesSupport.swift
+        Sources/Lattice/Services/QuickTools/QuitAppsSupport.swift
         Sources/Lattice/Services/QuickTools/ScreenshotCapturePolicy.swift
         Sources/Lattice/Services/QuickTools/CapturePresentationPolicy.swift
         Sources/Lattice/Services/QuickTools/ScreenshotDialogGeometry.swift
