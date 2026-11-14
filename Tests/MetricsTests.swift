@@ -122,6 +122,7 @@ struct MetricsTests {
             }),
             ("command-bar", {
                 CommandBarFeatureTests.run(suite)
+                QuitAppsSupportTests.run(suite)
                 CommandBarSelectionTests.run(suite)
             }),
             ("transient-paste", { TransientPasteTests.run(suite) }),

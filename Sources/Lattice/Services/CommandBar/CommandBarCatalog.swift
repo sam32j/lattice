@@ -659,6 +659,7 @@ enum CommandBarCatalog {
                 trouble: automationDenied ? .needsPermission : nil,
                 confirmationPrompt: togglesText.emptyTrashConfirmTitle,
                 run: { _ in QuickTogglesService.shared.emptyTrashConfirmed() }))
+            entries += quitAppsEntries(togglesText: togglesText, bar: bar, subtitle: togglesArea)
         }
 
         if AppFeature.urlCleaner.isAvailable {
@@ -1776,6 +1777,52 @@ enum CommandBarCatalog {
 
     /// The pause every surface gives a non-activating panel to leave the
     /// screen before the action captures, presents or resolves focus.
+    /// Normal quit requests for every regular app, or every one but the front
+    /// app, in place of upstream's separate Quit apps window. The confirmation
+    /// names the apps, so nothing quits that the person did not see listed;
+    /// Finder, Phone and Lattice always keep running.
+    static func quitAppsEntries(togglesText: QuickToggleFeatureStrings,
+                                bar: CommandBarFeatureStrings,
+                                subtitle: String) -> [CommandBarEntry] {
+        let running = runningQuitCandidates()
+        let front = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        let choices: [(id: String, title: String, keeping: Int32?, icon: String)] = [
+            ("action.quitAllApps", togglesText.quitAllTitle, nil, "xmark.circle"),
+            ("action.quitOtherApps", togglesText.quitOthersTitle, front, "xmark.square"),
+        ]
+        return choices.compactMap { choice in
+            let targets = QuitAppsSupport.batchQuitTargets(running, keepingPID: choice.keeping)
+            guard !targets.isEmpty,
+                  // Without a front app to keep, the second choice is the first.
+                  choice.keeping != nil || choice.id == "action.quitAllApps" else { return nil }
+            let names = ListFormatter.localizedString(byJoining: targets.map(\.name))
+            return CommandBarEntry(
+                id: choice.id,
+                title: choice.title,
+                subtitle: subtitle,
+                icon: .symbol(choice.icon),
+                confirmationPrompt: String(format: bar.quitConfirmFormat, names),
+                run: { _ in
+                    // Read again: apps may have opened or quit while confirming.
+                    let keeping = choice.keeping == nil
+                        ? nil : NSWorkspace.shared.frontmostApplication?.processIdentifier
+                    for target in QuitAppsSupport.batchQuitTargets(runningQuitCandidates(), keepingPID: keeping) {
+                        NSRunningApplication(processIdentifier: target.pid)?.terminate()
+                    }
+                })
+        }
+    }
+
+    private static func runningQuitCandidates() -> [QuitAppsCandidate] {
+        NSWorkspace.shared.runningApplications.map { app in
+            QuitAppsCandidate(pid: app.processIdentifier,
+                              name: app.localizedName ?? app.bundleIdentifier ?? "",
+                              bundleIdentifier: app.bundleIdentifier,
+                              activationPolicyRawValue: app.activationPolicy.rawValue,
+                              isTerminated: app.isTerminated)
+        }
+    }
+
     private static func afterBeat(_ delay: TimeInterval = 0.15, _ work: @escaping () -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
