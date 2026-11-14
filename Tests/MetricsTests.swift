@@ -21,6 +21,7 @@ struct MetricsTests {
             ("metrics", {
                 BluetoothPermissionLifecycleTests.run(suite)
                 MetricsFeatureTests.run(suite)
+                DiskCapacityTests.run(suite)
                 MenuBarBatteryWarningTests.run(suite)
                 ProcessNameContract.run(suite)
                 SystemMonitorCPUTests.run(suite)
