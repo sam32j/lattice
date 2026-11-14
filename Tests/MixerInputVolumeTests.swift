@@ -73,6 +73,10 @@ enum MixerInputVolumeContract {
         static let micMuteDefault = GlobalShortcut()
         static func saved(for key: String, fallback: GlobalShortcut) -> GlobalShortcut { fallback }
     }
+    enum NSSound {
+        static var beeps = 0
+        static func beep() { beeps += 1 }
+    }
     enum QuickToolHUD {
         static var messages: [String] = []
         static func show(icon: String, message: String) { messages.append(message) }
@@ -81,9 +85,11 @@ enum MixerInputVolumeContract {
         static let shared = NotchService()
         var showsMicrophone = false
         var microphone: [Bool] = []
-        func showMicrophone(muted: Bool) -> Bool {
+        var unchangedNotices = 0
+        func showMicrophone(muted: Bool, unchanged: Bool = false) -> Bool {
             guard showsMicrophone else { return false }
             microphone.append(muted)
+            if unchanged { unchangedNotices += 1 }
             return true
         }
         var retractions = 0
@@ -736,6 +742,77 @@ enum MixerInputVolumeContract {
         m = manager()
         check(m.inputVolume == nil, "channel discovery failure does not guess channel addresses")
         m.stop()
+        HAL.reset()
+        HAL.levels[HAL.key(10)] = 0.5
+        HAL.readOnly.insert(HAL.key(10))
+        HAL.running = [10]
+        NotchService.shared.showsMicrophone = true
+        NotchService.shared.microphone = []
+        NotchService.shared.reactions = []
+        NotchService.shared.retractions = 0
+        NotchService.shared.unchangedNotices = 0
+        NSSound.beeps = 0
+        QuickToolHUD.messages = []
+        MicMuteService.shared.setMuted(true)
+        DispatchQueue.drain()
+        check(QuickToolHUD.messages.isEmpty
+                && NotchService.shared.microphone == [false]
+                && NotchService.shared.unchangedNotices == 1
+                && NotchService.shared.reactions.isEmpty
+                && NSSound.beeps == 1,
+              "a wholly refused mute shows the microphone still on with the alert sound, without a sentence")
+        check(!MicMuteService.shared.isMuted
+                && !UserDefaults.standard.bool(forKey: DefaultsKey.micMuteActive)
+                && !MicMuteService.shared.hasOutstandingClaims
+                && MicMuteService.shared.inputVolumeAdjustmentLifetime != nil
+                && HAL.levels[HAL.key(10)] == 0.5,
+              "a wholly refused mute keeps its state off and the original gain unclaimed")
+        HAL.reset()
+        HAL.mute[10] = 0
+        MicMuteService.shared.setMuted(true)
+        DispatchQueue.drain()
+        HAL.writeFails.insert(HAL.key(10, 0, kAudioDevicePropertyMute))
+        NotchService.shared.microphone = []
+        NotchService.shared.reactions = []
+        NotchService.shared.retractions = 0
+        NotchService.shared.unchangedNotices = 0
+        NSSound.beeps = 0
+        QuickToolHUD.messages = []
+        MicMuteService.shared.setMuted(false)
+        DispatchQueue.drain()
+        check(QuickToolHUD.messages.isEmpty
+                && NotchService.shared.microphone == [true]
+                && NotchService.shared.unchangedNotices == 1
+                && NotchService.shared.reactions.isEmpty
+                && NSSound.beeps == 1,
+              "a wholly refused unmute shows the microphone still muted instead of announcing that mute is off")
+        check(MicMuteService.shared.isMuted && MicMuteService.shared.hasOutstandingClaims
+                && UserDefaults.standard.bool(forKey: DefaultsKey.micMuteActive)
+                && MicMuteService.shared.inputVolumeAdjustmentLifetime == nil
+                && HAL.mute[10] == 1,
+              "a wholly refused unmute preserves the state and claim for retry")
+        HAL.writeFails = []
+        MicMuteService.shared.setMuted(false)
+        DispatchQueue.drain()
+        check(!MicMuteService.shared.isMuted && !MicMuteService.shared.hasOutstandingClaims
+                && HAL.mute[10] == 0,
+              "retrying a refused unmute releases the device still owned by the app")
+        HAL.reset()
+        HAL.mute[10] = 0
+        MicMuteService.shared.setMuted(true)
+        DispatchQueue.drain()
+        HAL.mute[10] = 0
+        HAL.running = [10]
+        HAL.writeFails.insert(HAL.key(10, 0, kAudioDevicePropertyMute))
+        NotchService.shared.microphone = []
+        NotchService.shared.retractions = 0
+        QuickToolHUD.messages = []
+        MicMuteService.shared.syncWithPreferences()
+        DispatchQueue.drain()
+        check(QuickToolHUD.messages.isEmpty && NotchService.shared.microphone.isEmpty
+                && NotchService.shared.retractions == 0,
+              "a failed background reapply stays silent instead of repeating the warning")
+        NotchService.shared.showsMicrophone = false
         HAL.reset()
         HAL.devices = [10, 20]
         HAL.levels[HAL.key(10)] = 0.5
