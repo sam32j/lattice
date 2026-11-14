@@ -73,7 +73,6 @@ struct DeviceControlsSlider: View {
                 .accessibilityHidden(true)
             }
         }
-        .help(readout)
         .accessibilityLabel(title)
         .accessibilityValue(readout)
     }
