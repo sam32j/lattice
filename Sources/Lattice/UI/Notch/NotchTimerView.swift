@@ -161,33 +161,38 @@ struct NotchTimerView: View {
     
     private var mainRow: some View {
         HStack(spacing: 8) {
-            if hasSession && service.session.completed &&
-                (service.session.mode == .timer || service.session.cycleFinished) {
+            HStack(spacing: 8) {
+                if hasSession && service.session.completed &&
+                    (service.session.mode == .timer || service.session.cycleFinished) {
 
-                let pomodoroDone = service.session.cycleFinished
+                    let pomodoroDone = service.session.cycleFinished
 
-                roundButton(
-                    symbol: pomodoroDone ? "checkmark" : "stop.fill",
-                    title: pomodoroDone ? ui.done : ui.stop,
-                    color: pomodoroDone ? .green : .red,
-                    action: stopTimer
-                )
-                .frame(width: 52, height: 52)
-
-            } else {
-                leadingControl
-                    .frame(width: 52, height: 52)
-
-                if hasSession {
                     roundButton(
-                        symbol: "stop.fill",
-                        title: ui.stop,
-                        color: .red,
+                        symbol: pomodoroDone ? "checkmark" : "stop.fill",
+                        title: pomodoroDone ? ui.done : ui.stop,
+                        color: pomodoroDone ? .green : .red,
                         action: stopTimer
                     )
                     .frame(width: 52, height: 52)
+
+                } else {
+                    leadingControl
+                        .frame(width: 52, height: 52)
+
+                    if hasSession {
+                        roundButton(
+                            symbol: "stop.fill",
+                            title: ui.stop,
+                            color: .red,
+                            action: stopTimer
+                        )
+                        .frame(width: 52, height: 52)
+                    }
                 }
             }
+            // The start, pause and stop controls sit a little in from the edge
+            // together, in every mode.
+            .padding(.leading, 5)
 
             Spacer(minLength: 4)
 
