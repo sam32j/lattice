@@ -17,6 +17,15 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 
 MUTATIONS = [
+    ("call audio protection is absent by default", "mixer",
+     "Sources/Lattice/Services/Audio/MixerRoutingSupport.swift",
+     "        if !allowCallAppVolume, needsScreenSharingProtection(bundleIdentifier: bundleIdentifier) {\n"
+     "            return true\n        }\n", "",
+     "com.hnc.Discord cannot be tapped by saved gain or routing while protected"),
+    ("call audio protection accepts an old engine build", "mixer",
+     "Sources/Lattice/Services/Audio/AppVolumeMixer.swift",
+     "        builds.invalidate(app.id)\n", "",
+     "com.hnc.Discord rejects late reads and builds without cancelling another app's build"),
     ("Lattice named as the secure input lead", "repository",
      "Sources/Lattice/Core/SecureInputSupport.swift",
      "                guard app.pid != ownPid else { return .unknown }\n", "",
