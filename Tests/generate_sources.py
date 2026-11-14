@@ -77,6 +77,23 @@ def availability_declaration(path, prefix):
 def main():
     EMITTED.clear()
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    slider_area = "Sources/Lattice/UI/SliderScrollArea.swift"
+    slider_control = "Sources/Lattice/UI/Notch/NotchLevelSlider.swift"
+    wheel_route = "Sources/Lattice/Services/HorizontalWheelScrolling.swift"
+    brightness = "Sources/Lattice/Services/Display/BrightnessService.swift"
+    write("SliderScrollRouting.swift", "import AppKit\n"
+          + declaration(slider_area, "protocol SliderScrollTarget:")
+          + declaration(slider_area, "extension SliderScroll {")
+          + declaration(slider_control, "private final class NotchLevelControl:")
+              .replace("private final class NotchLevelControl", "final class NotchLevelControl", 1)
+          + "extension SliderScrollRoutingTests {\nenum Route {\n"
+          + declaration(wheel_route, "    static func sidewaysStrip(")
+          + declaration(wheel_route, "    private static func scrolls(")
+          + "}\nfinal class Light: LightState {\n"
+          + declaration(brightness, "    func keyboardLightDragChanged(")
+          + declaration(brightness, "    private func finishKeyboardLightDrag(")
+          + declaration(brightness, "    func setKeyboardLightLevel(")
+          + "}\n}\n")
     write("HubControlAction.swift", "import Foundation\nextension HubControlActionTests {\n"
           + "enum Action: String {\n"
           + "case micMute, keepAwake, darkMode, keyboardLight, hiddenFiles, desktopIcons\n"
