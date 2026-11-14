@@ -329,6 +329,7 @@ if (( TEST )); then
         Sources/Lattice/Services/Notch/NotchSizePreferences.swift
         Sources/Lattice/Services/Notch/NotchToolRailLayout.swift
         Sources/Lattice/Services/Notch/NotchTimerSupport.swift
+        Sources/Lattice/Services/Notch/NotchAppFullscreen.swift
         Sources/Lattice/Services/Notch/NotchPomodoroDecoding.swift
         Sources/Lattice/Services/Notch/NotchTimerAlert.swift
         Sources/Lattice/Services/Notch/NotchTimerToneData.swift
