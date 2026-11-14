@@ -129,7 +129,8 @@ extension NotchSettings {
     }
 
     var configuration: [String] {
-        [String(enabled), String(calendarEnabled), String(calendarCountdown), String(calendarTimeLeft),
+        [String(enabled), String(calendarEnabled), String(calendarCountdown), String(calendarCountdownLead),
+         String(calendarTimeLeft),
          String(notificationsEnabled), String(dismissNativeNotifications), String(gesturesEnabled),
          String(lyricsEnabled), String(lyricsOnline), String(queueEnabled), String(liveEqualizer),
          String(showPlayingMusic), String(includeOtherPlayers), idle, hiddenControls, controlOrder, size,
