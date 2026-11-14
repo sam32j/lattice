@@ -488,8 +488,9 @@ final class NotchService: ObservableObject {
     }
 
     /// Full screen keeps a clickable black cutout until the user opens it.
+    /// Only live activity hides there: an indicator still shows as a notice.
     var fullscreenCompact: Bool {
-        hiddenInFullscreen && !expanded && !peeking
+        hiddenInFullscreen && !expanded && !peeking && notice == nil
     }
 
     /// A simulated cutout covers no camera, so in full screen it stays out
@@ -1219,16 +1220,26 @@ final class NotchService: ObservableObject {
     }
 
     var presentationWindow: NSPanel? { panel }
-    /// User actions can open the island even when automatic full-screen feedback is hidden.
+    /// User actions can open the island even while full screen hides live activity.
     var acceptsUserInteraction: Bool {
         running && !suspended && panel != nil
             && windowHost?.isConcealedForMissionControl != true
     }
+    /// Automatic presentations beyond indicators, such as capture previews
+    /// and the companion, stay away while full screen hides live activity.
     var acceptsSystemFeedback: Bool {
         acceptsUserInteraction && !hiddenInFullscreen
     }
     var showsSystemFeedback: Bool {
         acceptsSystemFeedback && (!hiddenUntilHover || NotchSupport.hiddenShowsActivity())
+    }
+    /// Indicators (volume, brightness, microphone, battery and the other
+    /// notices) are passive, so full screen never silences them.
+    var acceptsIndicators: Bool {
+        acceptsUserInteraction
+    }
+    var showsIndicators: Bool {
+        acceptsIndicators && (!hiddenUntilHover || NotchSupport.hiddenShowsActivity())
     }
 
     var protectedWindowIDs: Set<CGWindowID> {
@@ -2418,7 +2429,7 @@ final class NotchService: ObservableObject {
 
     @discardableResult
     func show(_ incoming: NotchNotice) -> Bool {
-        guard showsSystemFeedback, NotchSupport.routes(incoming.event),
+        guard showsIndicators, NotchSupport.routes(incoming.event),
               NotchSupport.shouldReplace(notice?.event, with: incoming.event, held: noticeExpanded) else { return false }
         noticeWork?.cancel(); noticeWork = nil
         var incoming = incoming
@@ -3472,7 +3483,7 @@ final class NotchService: ObservableObject {
     /// Only the copies ask which displays are in full screen, and only when
     /// the island hides there; the island asks for its own display.
     private func updateFullscreenDisplays() {
-        guard showsOnAllDisplays, UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen)
+        guard showsOnAllDisplays, !UserDefaults.standard.bool(forKey: DefaultsKey.notchShowActivityInFullscreen)
         else { fullscreenDisplays = []; return }
         let covered = NotchAppFullscreen.coveredDisplays()
         guard let topology = SpaceWindowBridge.topology() else { fullscreenDisplays = covered; return }
@@ -3792,7 +3803,7 @@ final class NotchService: ObservableObject {
     private func updateFullscreenVisibility(displayID: CGDirectDisplayID) {
         // A game's own full screen leaves the desktop Space in place, so the
         // frontmost app's windows are read when the Space is not full screen.
-        let hidden = UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen)
+        let hidden = !UserDefaults.standard.bool(forKey: DefaultsKey.notchShowActivityInFullscreen)
             && (SpaceWindowBridge.topology()?.isFullscreen(on: displayID, separateSpaces: NSScreen.screensHaveSeparateSpaces) == true
                 || NotchAppFullscreen.coveredDisplays().contains(displayID))
         guard hidden != hiddenInFullscreen else { return }
@@ -3802,23 +3813,21 @@ final class NotchService: ObservableObject {
             hoverEmphasized = false
             heldDrag = false
             dragPlaceholder = false
-            noticeWork?.cancel(); noticeWork = nil
+            // An indicator showing as full screen begins stays to its end.
             endDeparture()
-            notice = nil
             noticeExpanded = false
             collapse()
         }
-        // Space changes do not run a full preference sync. Restore volume
-        // and brightness key routing when the island becomes eligible for
-        // feedback again, and hand the keys back while it is away.
+        // Space changes do not run a full preference sync. Re-sync volume and
+        // brightness key routing with the island's new state.
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
         if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
     }
 
     private func fullscreenEnvironmentDidChange() {
-        // Only the opt-in option depends on Spaces and the active app.
+        // Only hiding live activity in full screen depends on Spaces and the active app.
         guard running, !suspended,
-              hiddenInFullscreen || UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen)
+              hiddenInFullscreen || !UserDefaults.standard.bool(forKey: DefaultsKey.notchShowActivityInFullscreen)
         else { return }
         let wasHidden = hiddenInFullscreen
         updateScreen()
@@ -3836,7 +3845,7 @@ final class NotchService: ObservableObject {
     /// frontmost, with no Space or app change to announce it. A light poll
     /// follows that only while the island hides in full screen.
     private func syncAppFullscreenMonitoring() {
-        guard running, !suspended, UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen) else {
+        guard running, !suspended, !UserDefaults.standard.bool(forKey: DefaultsKey.notchShowActivityInFullscreen) else {
             stopAppFullscreenMonitoring()
             return
         }

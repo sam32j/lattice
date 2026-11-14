@@ -137,7 +137,7 @@ extension NotchSettings {
          String(timerEnabled), String(timerSoundEnabled), String(hideTimerCountdown),
          String(cameraEnabled), String(accessoriesEnabled), String(hapticFeedback),
          String(shelfWindow), String(dragReveal),
-         String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(hideInFullscreen), String(coversMenus),
+         String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(showActivityInFullscreen), String(coversMenus),
          display, silhouette, String(hover), hidden, order, String(volume), String(inputSource),
          String(brightness), String(keyboardLight),
          String(microphone), String(battery), String(clipboard), String(clipboardWindow), String(snippetsWindow), clipboardCardSize,

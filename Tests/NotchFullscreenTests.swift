@@ -13,7 +13,7 @@ enum NotchFullscreenTests {
             var preciseVolume = false
             func bool(forKey key: String) -> Bool {
                 switch key {
-                case DefaultsKey.notchHideInFullscreen: return enabled
+                case DefaultsKey.notchShowActivityInFullscreen: return !enabled
                 case DefaultsKey.preciseVolumeRollerEnabled: return preciseVolume
                 default: return false
                 }
@@ -117,11 +117,13 @@ enum NotchFullscreenTests {
         let brightnessSyncs = BrightnessService.shared.syncs
         service.updateFullscreenVisibility(displayID: 2)
         suite.expect(service.hiddenInFullscreen && service.collapses == 1 && service.cancellations == 0
-                     && !service.heldDrag && !service.dragPlaceholder && service.notice == nil
-                     && !service.hoverEmphasized && hover.isCancelled && notice.isCancelled && service.departures == 1,
-                     "entering fullscreen clears hover emphasis, pending reveals, banners, departing notices and drags")
+                     && !service.heldDrag && !service.dragPlaceholder
+                     && !service.hoverEmphasized && hover.isCancelled && service.departures == 1,
+                     "entering fullscreen clears hover emphasis, pending reveals, departing notices and drags")
+        suite.expect(service.notice == true && !notice.isCancelled,
+                     "an indicator showing as fullscreen begins stays until it ends on its own")
         suite.expect(BrightnessService.shared.syncs == brightnessSyncs + 1,
-                     "entering fullscreen hands the brightness keys back to the system")
+                     "entering fullscreen re-syncs brightness key routing")
         service.updateFullscreenVisibility(displayID: 2)
         suite.expect(service.collapses == 1 && BrightnessService.shared.syncs == brightnessSyncs + 1,
                      "unchanged fullscreen state does not repeat dismissal or key routing")
@@ -153,9 +155,26 @@ enum NotchFullscreenTests {
         idle.fullscreenEnvironmentDidChange()
         suite.expect(idle.screenUpdates == 0 && idle.consumerSyncs == 0 && idle.refreshes == 0,
                      "with the option off, app and Space changes do no fullscreen work")
-        suite.expect(Defaults.registeredDefaults[DefaultsKey.notchHideInFullscreen] as? Bool == false
-                     && SettingsBackupSupport.exportKeys().contains(DefaultsKey.notchHideInFullscreen),
-                     "fullscreen hiding is opt-in and included in settings backup")
+        suite.expect(Defaults.registeredDefaults[DefaultsKey.notchShowActivityInFullscreen] as? Bool == false
+                     && SettingsBackupSupport.exportKeys().contains(DefaultsKey.notchShowActivityInFullscreen)
+                     && !SettingsBackupSupport.exportKeys().contains(DefaultsKey.notchHideInFullscreen),
+                     "live activity in fullscreen is opt-in and included in settings backup")
+        let migrationSuite = "io.github.sam32j.lattice.tests.fullscreen-activity"
+        if let defaults = Foundation.UserDefaults(suiteName: migrationSuite) {
+            defer { defaults.removePersistentDomain(forName: migrationSuite) }
+            for (hid, shows) in [(true, false), (false, true)] {
+                defaults.removePersistentDomain(forName: migrationSuite)
+                defaults.set(hid, forKey: DefaultsKey.notchHideInFullscreen)
+                Defaults.migrateFullscreenActivityVisibility(in: defaults)
+                suite.expect(defaults.object(forKey: DefaultsKey.notchShowActivityInFullscreen) as? Bool == shows
+                             && defaults.object(forKey: DefaultsKey.notchHideInFullscreen) == nil,
+                             "a choice made with the old hide switch keeps its meaning (hid: \(hid))")
+            }
+            defaults.removePersistentDomain(forName: migrationSuite)
+            Defaults.migrateFullscreenActivityVisibility(in: defaults)
+            suite.expect(defaults.object(forKey: DefaultsKey.notchShowActivityInFullscreen) == nil,
+                         "an untouched setup takes the new default of hiding live activity in fullscreen")
+        }
         appFullscreenChecks(topology, suite)
         appFullscreenWindowChecks(suite)
         volumeLifecycleChecks(topology, suite)
@@ -227,16 +246,16 @@ enum NotchFullscreenTests {
             service.screenUpdate = { [weak service] in service?.updateFullscreenVisibility(displayID: displayID) }
             service.updateScreen()
             volume.syncWithPreferences()
-            suite.expect(service.hiddenInFullscreen && volume.running == preciseVolume,
-                         "fullscreen startup keeps the tap only when the precise volume roller needs it")
+            suite.expect(service.hiddenInFullscreen && service.acceptsIndicators && volume.running,
+                         "fullscreen startup keeps the volume tap, so volume indicators still show")
             displayID = 1
             service.fullscreenEnvironmentDidChange()
-            suite.expect(!service.hiddenInFullscreen && service.acceptsSystemFeedback && volume.running,
+            suite.expect(!service.hiddenInFullscreen && service.acceptsIndicators && volume.running,
                          "returning to the desktop restores the volume tap without a preference change")
             displayID = 2
             service.fullscreenEnvironmentDidChange()
-            suite.expect(service.hiddenInFullscreen && volume.running == preciseVolume,
-                         "entering fullscreen releases the notch tap but preserves the precise volume roller")
+            suite.expect(service.hiddenInFullscreen && volume.running,
+                         "entering fullscreen keeps the volume tap for indicators")
         }
     }
 }

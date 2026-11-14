@@ -808,7 +808,8 @@ enum DefaultsKey {
     static let notchOpenOnHover = "notchOpenOnHover"
     static let notchShortcutEnabled = "notchShortcutEnabled"
     static let notchShortcut = "notchShortcut"
-    static let notchHideInFullscreen = "notchHideInFullscreen"
+    static let notchShowActivityInFullscreen = "notchShowActivityInFullscreen"
+    static let notchHideInFullscreen = "notchHideInFullscreen" // replaced by notchShowActivityInFullscreen, kept so the migration can read it
     static let notchHideUntilHover = "notchHideUntilHover"
     static let notchHiddenShowsActivity = "notchHiddenShowsActivity"
     static let notchCoversMenus = "notchCoversMenus"
@@ -1228,7 +1229,7 @@ enum Defaults {
         DefaultsKey.notchOpenOnHover: false,
         DefaultsKey.notchShortcutEnabled: false,
         DefaultsKey.notchShortcut: GlobalShortcut.notchDefault.storageValue,
-        DefaultsKey.notchHideInFullscreen: false,
+        DefaultsKey.notchShowActivityInFullscreen: false,
         DefaultsKey.notchHideUntilHover: false,
         DefaultsKey.notchHiddenShowsActivity: false,
         DefaultsKey.notchCoversMenus: true,
@@ -1673,6 +1674,7 @@ enum Defaults {
         migrateCleaningModeShortcut(in: defaults)
         migratePageOwnedControls(in: defaults)
         migrateAudioControls(in: defaults)
+        migrateFullscreenActivityVisibility(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         defaults.register(defaults: ["NSInitialToolTipDelay": 300])
@@ -1947,6 +1949,18 @@ enum Defaults {
         guard action.isEmpty else { return }
         defaults.set(ScreenshotDefaultAction.edit.rawValue,
                      forKey: DefaultsKey.screenshotDefaultAction)
+    }
+
+    /// "Hide live activity in full screen" became "Show live activity in full
+    /// screen", off by default, and no longer hides indicators. A choice made
+    /// with the old switch keeps its meaning; an untouched one takes the new
+    /// default.
+    static func migrateFullscreenActivityVisibility(in defaults: UserDefaults) {
+        guard let hid = defaults.object(forKey: DefaultsKey.notchHideInFullscreen) as? Bool else { return }
+        if defaults.object(forKey: DefaultsKey.notchShowActivityInFullscreen) == nil {
+            defaults.set(!hid, forKey: DefaultsKey.notchShowActivityInFullscreen)
+        }
+        defaults.removeObject(forKey: DefaultsKey.notchHideInFullscreen)
     }
 
     /// Upgrade the former mutually exclusive default-action picker to

@@ -106,9 +106,9 @@ extension NotchSettings {
                           caption: liveActivityStrings.onlyShowActivityWhenRoomHint,
                           isOn: Binding(get: { !coversMenus }, set: { coversMenus = !$0 }))
                 switchRow("arrow.up.left.and.arrow.down.right",
-                          liveActivityStrings.hideActivityInFullscreen,
-                          caption: liveActivityStrings.hideActivityInFullscreenHint,
-                          isOn: $hideInFullscreen)
+                          liveActivityStrings.showActivityInFullscreen,
+                          caption: liveActivityStrings.showActivityInFullscreenHint,
+                          isOn: $showActivityInFullscreen)
                 switchRow("lock.display",
                           liveActivityStrings.showActivityOnLockScreen,
                           isOn: $lockScreen)
