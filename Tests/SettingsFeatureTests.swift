@@ -41,18 +41,18 @@ enum SettingsFeatureTests {
             renamePattern: MediaImageRenamePattern("{name}-{index}"))
         // MARK: Settings backup
 
-        suite.expect(SettingsBackupSupport.command(in: ["Vorssaint", "--export-settings", "out.plist"])
+        suite.expect(SettingsBackupSupport.command(in: ["Lattice", "--export-settings", "out.plist"])
                 == .export(path: "out.plist")
-                && SettingsBackupSupport.command(in: ["Vorssaint", "--import-settings", "./-in.plist"])
+                && SettingsBackupSupport.command(in: ["Lattice", "--import-settings", "./-in.plist"])
                 == .import(path: "./-in.plist"),
                "the backup flags take the file that follows them")
-        suite.expect(SettingsBackupSupport.command(in: ["Vorssaint", "--import-settings"])
+        suite.expect(SettingsBackupSupport.command(in: ["Lattice", "--import-settings"])
                 == .missingFile(flag: "--import-settings")
-                && SettingsBackupSupport.command(in: ["Vorssaint", "--export-settings", "--selftest"])
+                && SettingsBackupSupport.command(in: ["Lattice", "--export-settings", "--selftest"])
                 == .missingFile(flag: "--export-settings"),
                "a backup flag without a file is reported rather than treated as one")
-        suite.expect(SettingsBackupSupport.command(in: ["Vorssaint"]) == nil
-                && SettingsBackupSupport.command(in: ["Vorssaint", "--selftest"]) == nil,
+        suite.expect(SettingsBackupSupport.command(in: ["Lattice"]) == nil
+                && SettingsBackupSupport.command(in: ["Lattice", "--selftest"]) == nil,
                "a normal launch is not a backup command")
 
         for flags in [
@@ -60,16 +60,16 @@ enum SettingsFeatureTests {
             ["--export-settings", "--import-settings", "backup.plist"],
             ["--export-settings", "one.plist", "--export-settings", "two.plist"],
         ] {
-            suite.expect(SettingsBackupSupport.command(in: ["Vorssaint"] + flags) == .conflictingFlags,
+            suite.expect(SettingsBackupSupport.command(in: ["Lattice"] + flags) == .conflictingFlags,
                          "conflicting or repeated backup flags cannot choose an operation")
         }
         for arguments in [
-            ["Vorssaint", "--export-settings", "--uninstall"],
-            ["Vorssaint", "--export-settings", "--mouse-acceleration-cleanup"],
-            ["Vorssaint", "--export-settings", "--super-key-mapping-cleanup", "capsLock"],
-            ["Vorssaint", "--selftest", "--import-settings"],
-            ["Vorssaint", "--import-settings", "--export-settings", "backup.plist"],
-            ["Vorssaint", "--export-settings", "backup.plist"],
+            ["Lattice", "--export-settings", "--uninstall"],
+            ["Lattice", "--export-settings", "--mouse-acceleration-cleanup"],
+            ["Lattice", "--export-settings", "--super-key-mapping-cleanup", "capsLock"],
+            ["Lattice", "--selftest", "--import-settings"],
+            ["Lattice", "--import-settings", "--export-settings", "backup.plist"],
+            ["Lattice", "--export-settings", "backup.plist"],
         ] {
             CommandDispatchHost.CommandLine.arguments = arguments
             CommandDispatchHost.SettingsBackup.commands = []
@@ -78,7 +78,7 @@ enum SettingsFeatureTests {
                          == [SettingsBackupSupport.command(in: arguments)!],
                          "the production entry point dispatches backup mode before other modes")
         }
-        CommandDispatchHost.CommandLine.arguments = ["Vorssaint", "--super-key-mapping-cleanup", "capsLock"]
+        CommandDispatchHost.CommandLine.arguments = ["Lattice", "--super-key-mapping-cleanup", "capsLock"]
         CommandDispatchHost.SettingsBackup.commands = []
         CommandDispatchHost.run()
         suite.expect(CommandDispatchHost.SettingsBackup.commands.isEmpty,
