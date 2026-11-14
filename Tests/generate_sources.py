@@ -527,12 +527,23 @@ def main():
               .replace("UserDefaults.standard", "defaults")
           + "}\n")
     activator = "Sources/Lattice/Services/Switcher/WindowActivator.swift"
+    resolver = "Sources/Lattice/Services/Switcher/AXWindowResolver.swift"
+    write("AXWindowResolver.swift", "import ApplicationServices\nimport CoreGraphics\nimport Foundation\n"
+          + "extension AXWindowResolverTests.Resolver {\n"
+          + "".join(declaration(resolver, prefix).replace("private static", "static", 1)
+                    for prefix in ["    static func windowID(", "    static func element(",
+                                   "    private static func resolveRemoteElement("])
+          + "}\n")
     write("SwitcherActivationBodies.swift", "import AppKit\nimport ApplicationServices\n"
           + "extension SwitcherActivationTests.Activator {\n"
           + "".join(declaration(activator, prefix).replace("private static", "static", 1)
                     for prefix in ["    private static func activateApp(",
                                    "    private static func activateAppCooperatively(",
                                    "    private static func activateSource("])
+          + "}\nextension SwitcherActivationTests.HiddenSpaceActivator {\n"
+          + "".join(declaration(activator, prefix).replace("private static", "static", 1)
+                    for prefix in ["    static func raiseWindowOnHiddenSpace(",
+                                   "    private static func stageSourceBehindTargetIfNeeded("])
           + "}\nextension SwitcherActivationTests.Bridge {\n"
           + declaration("Sources/Lattice/Services/Switcher/SpaceWindowBridge.swift",
                         "    static func frontWindow(") + "}\n")
