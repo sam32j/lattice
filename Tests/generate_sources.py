@@ -1433,6 +1433,11 @@ def main():
           + declaration("Sources/Lattice/Services/Audio/PreciseVolumeRollerService.swift", "    func syncWithPreferences()")
           + "}\n}\n")
     write("NotchNotice.swift", "import AppKit\n" + declaration(notch, "struct NotchNotice:"))
+    agent_view = "Sources/Lattice/UI/Notch/NotchAgentsView.swift"
+    write("NotchAgentLimitReading.swift", "import SwiftUI\nextension NotchAgentLimitReadingTests {\n"
+          + declaration(agent_view, "private struct NotchAgentLimitReading:").replace("private struct", "struct", 1)
+          + declaration(agent_view, "private struct NotchAgentInlineLabel:")
+          + "}\n")
     recorder = "Sources/Lattice/Services/Recorder/RecorderEditorController.swift"
     write("RecorderZoomAiming.swift", "import Foundation\nimport Combine\n"
           + "extension RecorderZoomAimingTests {\nfinal class Model: State {\n"
