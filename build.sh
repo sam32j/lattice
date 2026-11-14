@@ -357,6 +357,7 @@ if (( TEST )); then
         Sources/Lattice/Core/NotchGestureStrings.swift
         Sources/Lattice/Core/NotchAgentStrings.swift
         Sources/Lattice/Core/CodexAccountStrings.swift
+        Sources/Lattice/Core/ClaudeAccountStrings.swift
         Sources/Lattice/Services/Notch/NotchAgentSupport.swift
         Sources/Lattice/Core/NotchLockScreenStrings.swift
         Sources/Lattice/Services/Notch/NotchLockScreenSupport.swift
@@ -386,6 +387,7 @@ if (( TEST )); then
         Sources/Lattice/Services/AgentUsage/AgentClaudeAppUsage.swift
         Sources/Lattice/Services/AgentUsage/AgentCLIConversation.swift
         Sources/Lattice/Services/AgentUsage/AgentClaudeServer.swift
+        Sources/Lattice/Services/AgentUsage/ClaudeAccountProfile.swift
         Sources/Lattice/Services/AgentUsage/AgentCodexServer.swift
         Sources/Lattice/Services/AgentUsage/CodexAccountLimits.swift
         Sources/Lattice/Services/AgentUsage/CodexProfileLimitsService.swift
