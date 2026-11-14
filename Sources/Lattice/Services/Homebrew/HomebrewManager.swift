@@ -47,9 +47,7 @@ final class HomebrewManager: ObservableObject {
     var popularityLoads: Set<HomebrewPackageKind> = []
     var activeProcess: Process?
     var cancelRequested = false
-    var installedCaskRecords: [HomebrewCaskRecord] = []
-    var installedCaskRecordsFetchedAt: Date?
-    var ownershipLoads: [String: [(HomebrewPackage?) -> Void]] = [:]
+    var ownershipLoads: [String: [(Result<HomebrewPackage?, HomebrewOwnershipError>) -> Void]] = [:]
     var completedOperationCleanup: DispatchWorkItem?
     lazy var analyticsSession: URLSession = {
         let configuration = URLSessionConfiguration.ephemeral

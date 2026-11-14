@@ -18,7 +18,7 @@ extension AppUninstaller {
 
     func removeSelected() {
         guard AppFeature.uninstaller.isAvailable else { return }
-        guard phase == .results, !isRemoving else { return }
+        guard canRemoveSelected, selectedHomebrewPackage == nil else { return }
         let chosen = items.filter(\.include)
         guard !chosen.isEmpty else { return }
         phase = .removing
@@ -176,7 +176,7 @@ extension AppUninstaller {
     /// this flow never tries to remove the same bundle twice.
     func removeSelectedWithHomebrew(confirmation: HomebrewRemovalConfirmation) {
         guard AppFeature.uninstaller.isAvailable else { return }
-        guard phase == .results, !isRemoving,
+        guard canRemoveSelected,
               target?.url == confirmation.targetURL,
               selectedHomebrewPackage?.id == confirmation.package.id,
               Set(items.filter(\.include).map(\.id)) == confirmation.selectedIDs else {

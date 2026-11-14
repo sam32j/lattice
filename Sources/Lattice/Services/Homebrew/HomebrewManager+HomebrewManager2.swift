@@ -118,9 +118,9 @@ extension HomebrewManager {
         }
     }
 
-    func finishOwnershipLoad(path: String, package: HomebrewPackage?) {
+    func finishOwnershipLoad(path: String, result: Result<HomebrewPackage?, HomebrewOwnershipError>) {
         let completions = ownershipLoads.removeValue(forKey: path) ?? []
-        completions.forEach { $0(package) }
+        completions.forEach { $0(result) }
     }
 
     func standardCommand(for action: HomebrewOperation.Action,

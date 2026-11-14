@@ -23,7 +23,7 @@ extension AppUpdatesService {
         let installedOutput = Self.runCommand(HomebrewCommandBuilder.installed(brewPath: brewPath),
                                               environment: HomebrewEnvironment.forBrew, cancellation: cancellation)
         let records = installedOutput.status == 0
-            ? HomebrewParser.parseInstalledCaskRecords(installedOutput.output)
+            ? (try? HomebrewParser.parseInstalledCaskRecords(installedOutput.output)) ?? []
             : []
         let coveredPaths = Set(records.compactMap {
             AppUpdatesSupport.packageBundle(for: $0, apps: apps)?.path
