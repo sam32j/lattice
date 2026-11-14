@@ -1033,6 +1033,8 @@ enum FeatureCatalogTests {
                 && FanControlConfiguration.decodeResume("not json") == nil,
                "only a valid manual speed or curve is ever kept or brought back after a restart")
         FanControlResumeContract.run(suite)
+        FanControlRecoveryContract.run(suite)
+        FanControlHardwareContract.run(suite)
         let addedPoints = FanControlPolicy.addingCurvePoint(to: defaultCurve.points)
         suite.expect(FanControlPolicy.nextCurvePoint(for: defaultCurve.points) == FanControlCurvePoint(temperature: 60, coolingLevel: 50)
                 && addedPoints == [
