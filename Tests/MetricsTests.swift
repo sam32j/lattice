@@ -254,7 +254,10 @@ struct MetricsTests {
                 KeepAwakeLidSleepTests.run { suite.expect($0, $1) }
                 KeepAwakeTimerHandoffTests.run { suite.expect($0, $1) }
             }),
-            ("wallpaper", { WallpaperContract.run(suite) }),
+            ("wallpaper", {
+                WallpaperContract.run(suite)
+                WallpaperThumbnailTests.run(suite)
+            }),
             ("emoji", { CommandBarEmojiContract.run(suite) }),
             ("capture-requirements", { DirectCaptureRequirementsComprehensiveTests.run(suite) }),
         ]

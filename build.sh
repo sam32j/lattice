@@ -453,6 +453,7 @@ if (( TEST )); then
         Sources/Lattice/Core/CameraPreviewStrings.swift
         Sources/Lattice/Core/WallpaperStrings.swift
         Sources/Lattice/Services/Wallpaper/WallpaperSupport.swift
+        Sources/Lattice/UI/MenuPanel/WallpaperThumbnailView.swift
         Sources/Lattice/Core/ScratchpadStrings.swift
         Sources/Lattice/Core/CommandBarStrings.swift
         Sources/Lattice/Core/FeedbackStrings.swift
