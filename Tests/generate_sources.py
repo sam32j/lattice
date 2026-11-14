@@ -354,7 +354,7 @@ def main():
               .replace("SuperKeyService.shared.source", ".capsLock")
               .replace("BrightnessService.keyboardLightIsSupported", "false")
               .replace("        let hub = FeatureStrings.hub(language)\n", "")
-              .replace("feature.hubTitle(s, hub: hub)", "feature.rawValue")
+              .replace("feature.hubTitle(s, hub: hub, language: language)", "feature.rawValue")
           + "}\n}\n")
     annotation_editor = "Sources/Lattice/UI/Screenshot/ScreenshotInlineTextEditor.swift"
     write("ScreenshotTextEditor.swift", "import AppKit\nimport SwiftUI\nextension ScreenshotTextEditorTests {\n"
@@ -900,6 +900,21 @@ def main():
           + "extension ClipboardFeatureTests.URLCleanerHost {\n"
           + "".join(declaration(cleaner, prefix).replace("private static", "static", 1) for prefix in [
               "    private static func pollPasteboard(", "    private static func writeToPasteboard("])
+          + "}\n")
+    write("CommandBarFeatureNames.swift", "import Foundation\nextension AppFeature {\n"
+          + declaration("Sources/Lattice/UI/FeaturePresentation.swift", "    func hubTitle(")
+          + "}\n")
+    write("CommandBarCatalogBuild.swift", "import Foundation\n"
+          + "extension CommandBarFeatureTests.CatalogBuildHost {\n"
+          + declaration("Sources/Lattice/Services/CommandBar/CommandBarCatalog.swift",
+                        "    static func build(")
+          + "}\n")
+    write("CommandBarCatalogSearch.swift", "import AppKit\n"
+          + declaration("Sources/Lattice/Services/CommandBar/CommandBarCatalog.swift",
+                        "struct CommandBarEntry:")
+          + "enum CommandBarCatalogSearch {\n"
+          + declaration("Sources/Lattice/Services/CommandBar/CommandBarCatalog.swift",
+                        "    static func includingEnglishNames(")
           + "}\n")
     write("CommandBarCopyAnswer.swift", "import Foundation\n"
           + "extension CommandBarFeatureTests.CopyAnswerHost {\n"
