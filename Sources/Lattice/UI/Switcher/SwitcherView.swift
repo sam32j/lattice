@@ -25,10 +25,9 @@ private struct SwitcherIconRowSurface: View {
     var contrast: HUDBackdrop.Contrast = .standard
 
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @AppStorage(DefaultsKey.liquidGlassEnabled) private var liquidGlassEnabled = false
 
     var body: some View {
-        if HUDBackdrop.drawsLiquidGlass(enabled: liquidGlassEnabled, reduceTransparency: reduceTransparency) {
+        if HUDBackdrop.drawsLiquidGlass(reduceTransparency: reduceTransparency) {
             // The backdrop draws its own edge.
             HUDBackdrop(cornerRadius: cornerRadius, contrast: contrast)
         } else {
