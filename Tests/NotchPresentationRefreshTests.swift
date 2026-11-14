@@ -89,8 +89,12 @@ enum NotchPresentationRefreshContract {
         static let shared = SelfValue()
         struct SelfValue { let language = 0 }
     }
+    /// The relocation-aware hide releases a held music pose on the panel's
+    /// content; the fixture records nothing about it.
+    final class ContentView { func releaseEqualizerPose() {} }
     final class Panel {
         var isVisible = true
+        var contentView: ContentView? = ContentView()
         var alphaValue: CGFloat = 1
         var ignoresMouseEvents = false, acceptsKeyFocus = true, acceptsMouseMovedEvents = false
         var attachedSheet: Bool?
@@ -118,6 +122,8 @@ enum NotchPresentationRefreshContract {
         var desktopReadings = 0
         var mouseEventsBeforeHide: Bool?
         var hidesWhenSettled = false
+        var relocationHidden = false
+        var restoresKeyAfterRelocation = false
         var restoringFromMissionControl = false
         var fadeCompletion: (() -> Void)?
         func fadeMissionControl(to alpha: CGFloat, completion: (() -> Void)? = nil) {
@@ -299,6 +305,7 @@ enum NotchPresentationRefreshContract {
         func syncHiddenHoverMonitoring() {}
         func schedulePointerFollow() {}
         func syncMirrors() {}
+        var mirrorHeldForArrival: CGDirectDisplayID?
         func finishMusicDeparture() {
             musicDepartureWork?.cancel(); musicDepartureWork = nil
             departingMusic = nil
