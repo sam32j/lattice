@@ -571,7 +571,7 @@ struct NotchTimerView: View {
             .accessibilityValue(display(option, current))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: NotchLayout.timerSettingsFieldsHeight)
+        .frame(height: NotchLayout.timerSettingsFieldsHeight, alignment: .top)
         .padding(.horizontal, 2)
     }
 

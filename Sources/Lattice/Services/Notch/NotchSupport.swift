@@ -386,9 +386,11 @@ enum NotchLayout {
     static let timerRulerHeight: CGFloat = 87
     static let timerMinimumRulerHeight: CGFloat = 87
 
-    // Pomodoro's collapsible settings.
-    static let timerSettingsHeaderHeight: CGFloat = 39
-    static let timerSettingsFieldsHeight: CGFloat = 60
+    // Pomodoro's collapsible settings, sized to their content so the island's
+    // own bottom padding is the only space below them, as under the ruler.
+    // The fields are a caption line, 4pt and a 28pt menu.
+    static let timerSettingsHeaderHeight: CGFloat = 32
+    static let timerSettingsFieldsHeight: CGFloat = 44
     static let timerSettingsRowHeight: CGFloat =
         timerSettingsHeaderHeight + timerSettingsFieldsHeight
 
