@@ -21,6 +21,7 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchAccessoriesEnabled) var accessoriesEnabled = true
     @AppStorage(DefaultsKey.notchCalendarEnabled) var calendarEnabled = true
     @AppStorage(DefaultsKey.notchCalendarCountdown) var calendarCountdown = false
+    @AppStorage(DefaultsKey.notchCalendarCountdownLead) var calendarCountdownLead = NotchCalendarSupport.defaultCountdownLeadMinutes
     @AppStorage(DefaultsKey.notchCalendarTimeLeft) var calendarTimeLeft = false
     @AppStorage(DefaultsKey.notchCalendarWeekNumbers) var calendarWeekNumbers = false
     @AppStorage(DefaultsKey.notchAgentsEnabled) var agentsEnabled = false
