@@ -389,7 +389,8 @@ struct DeviceControlsMainView: View {
             get: { mixer.systemOutputVolume ?? 0 },
             set: {
                 NotchService.shared.noteOwnLevelAdjustment(.volume)
-                mixer.setCurrentOutputVolume($0)
+                // Shares the key queue, so a drag supersedes an older volume key.
+                mixer.requestOutputAdjustment(volume: $0)
             }
         )
     }
