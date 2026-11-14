@@ -550,6 +550,7 @@ if (( TEST )); then
         Sources/Lattice/Core/ReleaseChangeAliases.swift
         Sources/Lattice/Core/WhatsNewStrings.swift
         Sources/Lattice/Core/URLCleaning.swift
+        Sources/Lattice/Services/URLCleanerLinkMetadata.swift
         Sources/Lattice/Services/GeneralPasteboardAccess.swift
         Sources/Lattice/Services/Clipboard/ClipboardHistoryWrite.swift
         Sources/Lattice/Services/Audio/AirPlayRouteManager.swift
