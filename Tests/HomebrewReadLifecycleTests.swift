@@ -13,8 +13,6 @@ enum HomebrewReadLifecycleTests {
         var brewPath: String? = "/fixture/brew"
         var installed: [HomebrewPackage] = [], searchResults: [HomebrewPackage] = []
         var selectedPackage: HomebrewPackage?
-        var installedCaskRecords: [HomebrewCaskRecord] = []
-        var installedCaskRecordsFetchedAt: Date?
         var outdatedGeneration = 0
         var outdatedPackagesByID: [String: HomebrewPackageUpdate] = [:]
         var isLoadingInstalled = false, isLoadingOutdated = false
@@ -29,7 +27,7 @@ enum HomebrewReadLifecycleTests {
         var terminalFallbackCommand: String?, log = ""
         var popularityCache: [HomebrewPackageKind: Int] = [:]
         var popularityLoads: Set<HomebrewPackageKind> = []
-        var ownershipLoads: [String: [(HomebrewPackage?) -> Void]] = [:]
+        var ownershipLoads: [String: [(Result<HomebrewPackage?, HomebrewOwnershipError>) -> Void]] = [:]
         var commands: [(FeatureWorkCancellation, (Int32, String) -> Void)] = []
         func detectBrewPath() -> String? { brewPath }
         func updateShellConfigStatus(brewPath: String) {}

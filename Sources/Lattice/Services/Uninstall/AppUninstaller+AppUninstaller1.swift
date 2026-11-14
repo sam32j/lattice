@@ -29,8 +29,13 @@ extension AppUninstaller {
         phase == .removing || isRemovingWithHomebrew
     }
 
+    var canRemoveSelected: Bool {
+        phase == .results && !isRemoving && !homebrewCheckFailed
+            && items.contains(where: \.include)
+    }
+
     var homebrewRemovalConfirmation: HomebrewRemovalConfirmation? {
-        guard phase == .results, !isRemoving,
+        guard canRemoveSelected,
               let package = selectedHomebrewPackage, let target else { return nil }
         return HomebrewRemovalConfirmation(package: package, targetURL: target.url,
                                            selectedIDs: Set(items.filter(\.include).map(\.id)))
@@ -64,6 +69,7 @@ extension AppUninstaller {
         targetFileIdentity = selectedIdentity
         targetInfoIdentity = selectedInfoIdentity
         homebrewPackage = nil
+        homebrewCheckFailed = false
         homebrewRemovalSize = 0
         homebrewRemovedApplication = false
         homebrewRemovalObservation?.cancel()
@@ -114,7 +120,7 @@ extension AppUninstaller {
                     self.reset()
                     return
                 }
-                HomebrewManager.shared.packageManagingApplication(at: selectedURL) { [weak self] package in
+                HomebrewManager.shared.packageManagingApplication(at: selectedURL) { [weak self] result in
                     // Drop the result if the user picked a different app (or reset)
                     // while this scan was running — never show A's files under B.
                     guard let self, !cancellation.isCancelled,
@@ -126,7 +132,14 @@ extension AppUninstaller {
                         return
                     }
                     self.items = found
-                    self.homebrewPackage = package
+                    switch result {
+                    case let .success(package):
+                        self.homebrewPackage = package
+                        self.homebrewCheckFailed = false
+                    case .failure:
+                        self.homebrewPackage = nil
+                        self.homebrewCheckFailed = true
+                    }
                     self.allowedRemovalPaths = Set(found.map { $0.url.standardizedFileURL.path })
                     self.scanCancellation = nil
                     self.phase = .results
@@ -140,6 +153,11 @@ extension AppUninstaller {
         guard !isRemoving else { return }
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
         items[index].include = include
+    }
+
+    func retryHomebrewCheck() {
+        guard phase == .results, homebrewCheckFailed, let target else { return }
+        select(appURL: target.url)
     }
 
     /// Drops the refusal note, for an uninstaller view that opens or closes.
@@ -156,6 +174,7 @@ extension AppUninstaller {
         targetFileIdentity = nil
         targetInfoIdentity = nil
         homebrewPackage = nil
+        homebrewCheckFailed = false
         homebrewRemovalSize = 0
         homebrewRemovedApplication = false
         homebrewRemovalObservation?.cancel()

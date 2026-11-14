@@ -60,6 +60,7 @@ final class AppUninstaller: ObservableObject {
     @Published var phase: Phase = .empty
     @Published var target: Target?
     @Published var homebrewPackage: HomebrewPackage?
+    @Published var homebrewCheckFailed = false
     /// The app the last selection turned down, so the empty state can say
     /// why instead of springing back in silence (#1582). An accepted
     /// selection or a reset clears it.

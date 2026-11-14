@@ -35,9 +35,7 @@ extension HomebrewManager {
         if !AppFeature.uninstaller.isAvailable {
             let pending = ownershipLoads.values.flatMap { $0 }
             ownershipLoads = [:]
-            installedCaskRecords = []
-            installedCaskRecordsFetchedAt = nil
-            pending.forEach { $0(nil) }
+            pending.forEach { $0(.failure(.unavailable)) }
         }
     }
 
