@@ -93,6 +93,7 @@ enum NotchHoverTests {
         var hiddenInFullscreen = false
         var fullscreenCompact: Bool { hiddenInFullscreen && !expanded && !peeking }
         var showsSystemFeedback = true, routesNotices = true
+        var showsIndicators: Bool { showsSystemFeedback }
         /// Hidden until hover and set to show activity, as Settings has it.
         var hiddenShowsActivity = false
         var running = true, suspended = false, inside = false, hoverEmphasized = false

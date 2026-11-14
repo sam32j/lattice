@@ -12,8 +12,8 @@ struct NotchLiveActivitySettingsStrings {
     let showInScreenshots: String
     let onlyShowActivityWhenRoom: String
     let onlyShowActivityWhenRoomHint: String
-    let hideActivityInFullscreen: String
-    let hideActivityInFullscreenHint: String
+    let showActivityInFullscreen: String
+    let showActivityInFullscreenHint: String
     let showActivityOnLockScreen: String
 }
 
@@ -30,8 +30,8 @@ extension FeatureStrings {
                 showInScreenshots: "Show Dynamic Island in screenshots",
                 onlyShowActivityWhenRoom: "Only show live activity when space allows",
                 onlyShowActivityWhenRoomHint: "If there isn’t enough space in the menu bar, live activity is hidden.",
-                hideActivityInFullscreen: "Hide live activity in full screen",
-                hideActivityInFullscreenHint: "Live activity stays hidden while an app is full screen.",
+                showActivityInFullscreen: "Show live activity in full screen",
+                showActivityInFullscreenHint: "Indicators still appear in full screen.",
                 showActivityOnLockScreen: "Show live activity on lock screen")
         case .ptBR:
             return NotchLiveActivitySettingsStrings(
@@ -43,8 +43,8 @@ extension FeatureStrings {
                 showInScreenshots: "Mostrar o Dynamic Island em capturas de tela",
                 onlyShowActivityWhenRoom: "Mostrar atividade ao vivo apenas quando o espaço permitir",
                 onlyShowActivityWhenRoomHint: "Se não houver espaço suficiente na barra de menus, a atividade ao vivo será ocultada.",
-                hideActivityInFullscreen: "Ocultar atividade ao vivo em tela cheia",
-                hideActivityInFullscreenHint: "A atividade ao vivo permanece oculta enquanto um app estiver em tela cheia.",
+                showActivityInFullscreen: "Mostrar atividade ao vivo em tela cheia",
+                showActivityInFullscreenHint: "Os indicadores continuam aparecendo em tela cheia.",
                 showActivityOnLockScreen: "Mostrar atividade ao vivo na tela bloqueada")
         case .es:
             return NotchLiveActivitySettingsStrings(
@@ -56,8 +56,8 @@ extension FeatureStrings {
                 showInScreenshots: "Mostrar Dynamic Island en capturas de pantalla",
                 onlyShowActivityWhenRoom: "Mostrar actividad en vivo solo cuando el espacio lo permita",
                 onlyShowActivityWhenRoomHint: "Si no hay suficiente espacio en la barra de menús, la actividad en vivo se ocultará.",
-                hideActivityInFullscreen: "Ocultar actividad en vivo en pantalla completa",
-                hideActivityInFullscreenHint: "La actividad en vivo permanece oculta mientras una app está en pantalla completa.",
+                showActivityInFullscreen: "Mostrar actividad en vivo en pantalla completa",
+                showActivityInFullscreenHint: "Los indicadores siguen apareciendo en pantalla completa.",
                 showActivityOnLockScreen: "Mostrar actividad en vivo en la pantalla de bloqueo")
         case .sk:
             return NotchLiveActivitySettingsStrings(
@@ -69,8 +69,8 @@ extension FeatureStrings {
                 showInScreenshots: "Zobraziť Dynamic Island na snímkach obrazovky",
                 onlyShowActivityWhenRoom: "Zobrazovať živú aktivitu, len ak to priestor dovoľuje",
                 onlyShowActivityWhenRoomHint: "Ak v lište nie je dostatok miesta, živá aktivita sa skryje.",
-                hideActivityInFullscreen: "Skryť živú aktivitu na celej obrazovke",
-                hideActivityInFullscreenHint: "Živá aktivita zostáva skrytá, kým je aplikácia na celej obrazovke.",
+                showActivityInFullscreen: "Zobraziť živú aktivitu na celej obrazovke",
+                showActivityInFullscreenHint: "Indikátory sa na celej obrazovke zobrazujú aj naďalej.",
                 showActivityOnLockScreen: "Zobraziť živú aktivitu na zamknutej obrazovke")
         case .de:
             return NotchLiveActivitySettingsStrings(
@@ -82,8 +82,8 @@ extension FeatureStrings {
                 showInScreenshots: "Dynamic Island in Screenshots anzeigen",
                 onlyShowActivityWhenRoom: "Live-Aktivitäten nur bei ausreichendem Platz anzeigen",
                 onlyShowActivityWhenRoomHint: "Wenn in der Menüleiste nicht genügend Platz ist, wird die Live-Aktivität ausgeblendet.",
-                hideActivityInFullscreen: "Live-Aktivität im Vollbildmodus ausblenden",
-                hideActivityInFullscreenHint: "Live-Aktivitäten bleiben ausgeblendet, während eine App im Vollbildmodus ist.",
+                showActivityInFullscreen: "Live-Aktivität im Vollbildmodus anzeigen",
+                showActivityInFullscreenHint: "Indikatoren erscheinen auch im Vollbildmodus.",
                 showActivityOnLockScreen: "Live-Aktivität auf dem Sperrbildschirm anzeigen")
         case .fr:
             return NotchLiveActivitySettingsStrings(
@@ -95,8 +95,8 @@ extension FeatureStrings {
                 showInScreenshots: "Afficher le Dynamic Island dans les captures d’écran",
                 onlyShowActivityWhenRoom: "Afficher l’activité en direct uniquement si l’espace le permet",
                 onlyShowActivityWhenRoomHint: "S’il n’y a pas assez d’espace dans la barre des menus, l’activité en direct est masquée.",
-                hideActivityInFullscreen: "Masquer l’activité en direct en plein écran",
-                hideActivityInFullscreenHint: "L’activité en direct reste masquée lorsqu’une app est en plein écran.",
+                showActivityInFullscreen: "Afficher l’activité en direct en plein écran",
+                showActivityInFullscreenHint: "Les indicateurs restent affichés en plein écran.",
                 showActivityOnLockScreen: "Afficher l’activité en direct sur l’écran verrouillé")
         case .it:
             return NotchLiveActivitySettingsStrings(
@@ -108,8 +108,8 @@ extension FeatureStrings {
                 showInScreenshots: "Mostra Dynamic Island nelle istantanee dello schermo",
                 onlyShowActivityWhenRoom: "Mostra attività dal vivo solo se lo spazio lo consente",
                 onlyShowActivityWhenRoomHint: "Se non c’è abbastanza spazio nella barra dei menu, l’attività dal vivo viene nascosta.",
-                hideActivityInFullscreen: "Nascondi attività dal vivo a schermo intero",
-                hideActivityInFullscreenHint: "L’attività dal vivo rimane nascosta quando un’app è a schermo intero.",
+                showActivityInFullscreen: "Mostra attività dal vivo a schermo intero",
+                showActivityInFullscreenHint: "Gli indicatori restano visibili a schermo intero.",
                 showActivityOnLockScreen: "Mostra attività dal vivo sulla schermata di blocco")
         case .ru:
             return NotchLiveActivitySettingsStrings(
@@ -121,8 +121,8 @@ extension FeatureStrings {
                 showInScreenshots: "Показывать Dynamic Island на снимках экрана",
                 onlyShowActivityWhenRoom: "Показывать эфир активности, только если позволяет место",
                 onlyShowActivityWhenRoomHint: "Если в строке меню недостаточно места, эфир активности будет скрыт.",
-                hideActivityInFullscreen: "Скрывать эфир активности в полноэкранном режиме",
-                hideActivityInFullscreenHint: "Эфир активности остаётся скрытым, пока приложение работает на весь экран.",
+                showActivityInFullscreen: "Показывать эфир активности в полноэкранном режиме",
+                showActivityInFullscreenHint: "Индикаторы по-прежнему видны в полноэкранном режиме.",
                 showActivityOnLockScreen: "Показывать эфир активности на экране блокировки")
         case .tr:
             return NotchLiveActivitySettingsStrings(
@@ -134,8 +134,8 @@ extension FeatureStrings {
                 showInScreenshots: "Dynamic Island’ı ekran görüntülerinde göster",
                 onlyShowActivityWhenRoom: "Canlı etkinliği yalnızca alan izin verdiğinde göster",
                 onlyShowActivityWhenRoomHint: "Menü çubuğunda yeterli alan yoksa canlı etkinlik gizlenir.",
-                hideActivityInFullscreen: "Tam ekranda canlı etkinliği gizle",
-                hideActivityInFullscreenHint: "Bir uygulama tam ekrandayken canlı etkinlik gizli kalır.",
+                showActivityInFullscreen: "Tam ekranda canlı etkinliği göster",
+                showActivityInFullscreenHint: "Göstergeler tam ekranda da görünür.",
                 showActivityOnLockScreen: "Canlı etkinliği kilit ekranında göster")
         case .ja:
             return NotchLiveActivitySettingsStrings(
@@ -147,8 +147,8 @@ extension FeatureStrings {
                 showInScreenshots: "スクリーンショットにDynamic Islandを表示",
                 onlyShowActivityWhenRoom: "スペースに余裕がある場合のみライブアクティビティを表示",
                 onlyShowActivityWhenRoomHint: "メニューバーに十分なスペースがない場合、ライブアクティビティは非表示になります。",
-                hideActivityInFullscreen: "フルスクリーン時にライブアクティビティを非表示",
-                hideActivityInFullscreenHint: "アプリがフルスクリーン表示中はライブアクティビティを非表示にします。",
+                showActivityInFullscreen: "フルスクリーン時にライブアクティビティを表示",
+                showActivityInFullscreenHint: "インジケータはフルスクリーン時も表示されます。",
                 showActivityOnLockScreen: "ロック画面にライブアクティビティを表示")
         case .ko:
             return NotchLiveActivitySettingsStrings(
@@ -160,8 +160,8 @@ extension FeatureStrings {
                 showInScreenshots: "스크린샷에 Dynamic Island 표시",
                 onlyShowActivityWhenRoom: "공간이 허용될 때만 실시간 활동 표시",
                 onlyShowActivityWhenRoomHint: "메뉴 막대에 공간이 충분하지 않으면 실시간 활동이 숨겨집니다.",
-                hideActivityInFullscreen: "전체 화면에서 실시간 활동 가리기",
-                hideActivityInFullscreenHint: "앱이 전체 화면일 때 실시간 활동이 가려집니다.",
+                showActivityInFullscreen: "전체 화면에서 실시간 활동 표시",
+                showActivityInFullscreenHint: "표시기는 전체 화면에서도 나타납니다.",
                 showActivityOnLockScreen: "잠금 화면에 실시간 활동 표시")
         case .zhHans:
             return NotchLiveActivitySettingsStrings(
@@ -173,8 +173,8 @@ extension FeatureStrings {
                 showInScreenshots: "在屏幕截图中显示灵动岛",
                 onlyShowActivityWhenRoom: "仅在空间允许时显示实时活动",
                 onlyShowActivityWhenRoomHint: "如果菜单栏空间不足，实时活动将被隐藏。",
-                hideActivityInFullscreen: "全屏时隐藏实时活动",
-                hideActivityInFullscreenHint: "App处于全屏状态时，实时活动保持隐藏。",
+                showActivityInFullscreen: "全屏时显示实时活动",
+                showActivityInFullscreenHint: "指示器在全屏时仍会显示。",
                 showActivityOnLockScreen: "在锁定屏幕上显示实时活动")
         case .zhTW:
             return NotchLiveActivitySettingsStrings(
@@ -186,8 +186,8 @@ extension FeatureStrings {
                 showInScreenshots: "在螢幕截圖中顯示動態島",
                 onlyShowActivityWhenRoom: "僅在空間允許時顯示即時動態",
                 onlyShowActivityWhenRoomHint: "若選單列空間不足，即時動態將會隱藏。",
-                hideActivityInFullscreen: "全螢幕時隱藏即時動態",
-                hideActivityInFullscreenHint: "App處於全螢幕狀態時，即時動態保持隱藏。",
+                showActivityInFullscreen: "全螢幕時顯示即時動態",
+                showActivityInFullscreenHint: "指示器在全螢幕時仍會顯示。",
                 showActivityOnLockScreen: "在鎖定畫面上顯示即時動態")
         case .zhHK:
             return NotchLiveActivitySettingsStrings(
@@ -199,8 +199,8 @@ extension FeatureStrings {
                 showInScreenshots: "在螢幕截圖中顯示動態島",
                 onlyShowActivityWhenRoom: "僅在空間允許時顯示即時動態",
                 onlyShowActivityWhenRoomHint: "若選單列空間不足，即時動態將會隱藏。",
-                hideActivityInFullscreen: "全螢幕時隱藏即時動態",
-                hideActivityInFullscreenHint: "App處於全螢幕狀態時，即時動態保持隱藏。",
+                showActivityInFullscreen: "全螢幕時顯示即時動態",
+                showActivityInFullscreenHint: "指示器在全螢幕時仍會顯示。",
                 showActivityOnLockScreen: "在鎖定畫面上顯示即時動態")
         case .uk:
             return NotchLiveActivitySettingsStrings(
@@ -212,8 +212,8 @@ extension FeatureStrings {
                 showInScreenshots: "Показувати Dynamic Island на знімках екрана",
                 onlyShowActivityWhenRoom: "Показувати інтерактивні трансляції, лише якщо дозволяє місце",
                 onlyShowActivityWhenRoomHint: "Якщо в рядку меню недостатньо місця, інтерактивні трансляції будуть приховані.",
-                hideActivityInFullscreen: "Ховати інтерактивні трансляції на весь екран",
-                hideActivityInFullscreenHint: "Інтерактивні трансляції залишаються прихованими, доки програма на весь екран.",
+                showActivityInFullscreen: "Показувати інтерактивні трансляції на весь екран",
+                showActivityInFullscreenHint: "Індикатори й надалі видно на весь екран.",
                 showActivityOnLockScreen: "Показувати інтерактивні трансляції на замкненому екрані")
         }
     }

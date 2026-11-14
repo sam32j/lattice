@@ -1200,7 +1200,7 @@ final class BrightnessService: ObservableObject {
         // when full screen hides it.
         let wantsBrightnessFeedback = BrightnessSupport.islandReplacesNativeFeedback(
             islandRoutes: NotchSupport.routes(.brightness),
-            islandShowsNotices: NotchService.shared.acceptsSystemFeedback
+            islandShowsNotices: NotchService.shared.acceptsIndicators
                 && !NotchSupport.hidesNoticesUntilHover(in: defaults))
         let wantsKeyboardLight = NotchSupport.routes(.keyboardLight) && keyboardLightBridge != nil
         if !wantsKeyboardLight || !SessionActivity.shared.isActive {
@@ -1703,7 +1703,7 @@ final class BrightnessService: ObservableObject {
         // whether it shows notices right now.
         let wantsBrightnessFeedback = BrightnessSupport.islandReplacesNativeFeedback(
             islandRoutes: NotchSupport.routes(.brightness),
-            islandShowsNotices: NotchService.shared.showsSystemFeedback)
+            islandShowsNotices: NotchService.shared.showsIndicators)
         let displayID: CGDirectDisplayID
         if followsPointer {
             let pointer = NSEvent.mouseLocation

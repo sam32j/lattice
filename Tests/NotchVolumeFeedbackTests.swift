@@ -40,12 +40,12 @@ enum NotchVolumeFeedbackTests {
         var ownLevelAdjustmentUntil: [NotchEvent: TimeInterval] = [:]
         var lastVolumeRide: TimeInterval = -.infinity
         var expanded = false
-        var showsSystemFeedback = true
+        var showsIndicators = true
         var notice: NotchNotice?
         var presented: [NotchNotice] = []
         @discardableResult
         func show(_ incoming: NotchNotice) -> Bool {
-            guard showsSystemFeedback,
+            guard showsIndicators,
                   NotchSupport.shouldReplace(notice?.event, with: incoming.event) else { return false }
             notice = incoming
             presented.append(incoming)
@@ -218,7 +218,7 @@ enum NotchVolumeFeedbackTests {
         service.expanded = true
         suite.expect(service.showVolume(0.2) && service.notice?.level == 0.2,
                "a level set outside the open island supplies its header feedback")
-        service.showsSystemFeedback = false
+        service.showsIndicators = false
         suite.expect(!service.showVolume(0.9) && service.notice?.level == 0.2,
                "an island that cannot show volume leaves the confirmation to the caller")
         service.subscriptions.removeAll()

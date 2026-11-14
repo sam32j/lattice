@@ -30,6 +30,8 @@ enum NotchVolumeRoutingTests {
         static let shared = NotchService()
         let acceptsSystemFeedback = true
         let showsSystemFeedback = true
+        let acceptsIndicators = true
+        let showsIndicators = true
         var shownLevels: [Double] = []
         func showCurrentVolume() {
             let mixer = AppVolumeMixer.shared

@@ -1471,6 +1471,7 @@ def main():
           + "final class Service: State {\n"
           + declaration(notch, "    var acceptsUserInteraction: Bool {")
           + declaration(notch, "    var acceptsSystemFeedback: Bool {")
+          + declaration(notch, "    var acceptsIndicators: Bool {")
           + declaration(notch, "    private func updateFullscreenVisibility(").replace("private func", "func", 1)
           + declaration(notch, "    private func fullscreenEnvironmentDidChange()").replace("private func", "func", 1)
           + "}\nfinal class PreciseVolumeRollerService: VolumeState {\n"
@@ -1700,7 +1701,7 @@ def main():
           .replace("NotchSupport.coversMenus()", "coversMenus")
           .replace("NotchSupport.showsInCaptures()", "showsInCaptures")
           .replace("UserDefaults.standard.bool(forKey: DefaultsKey.notchOutlineEnabled)", "outlineEnabled")
-          .replace("UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen)", "hidesInFullscreen")
+          .replace("!UserDefaults.standard.bool(forKey: DefaultsKey.notchShowActivityInFullscreen)", "hidesInFullscreen")
           .replace("FeatureStrings.notch(L10n.shared.language).open", "openTitle")
           + "}\n}\n")
     # Scroll events now flow through handleGesture; handleSectionScroll was removed.
@@ -1750,6 +1751,9 @@ def main():
           + declaration(notch, "    var acceptsUserInteraction:")
           + declaration(notch, "    var acceptsSystemFeedback:")
           + declaration(notch, "    var showsSystemFeedback:")
+              .replace("NotchSupport.hiddenShowsActivity()", "hiddenShowsActivity")
+          + declaration(notch, "    var acceptsIndicators:")
+          + declaration(notch, "    var showsIndicators:")
               .replace("NotchSupport.hiddenShowsActivity()", "hiddenShowsActivity")
           + declaration(notch, "    private func canHostMascotVisit(").replace("private func", "func", 1)
           + declaration(notch, "    var usesGlassSurface:")

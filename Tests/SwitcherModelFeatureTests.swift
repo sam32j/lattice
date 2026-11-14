@@ -2445,7 +2445,7 @@ enum SwitcherModelFeatureTests {
             islandDefaults.set(true, forKey: DefaultsKey.notchHidesMenuBarIcon)
             suite.expect(MenuBarSpacingSupport.islandHidesStatusIcon(in: islandDefaults),
                    "a running island takes the icon's place when asked")
-            islandDefaults.set(true, forKey: DefaultsKey.notchHideInFullscreen)
+            islandDefaults.set(false, forKey: DefaultsKey.notchShowActivityInFullscreen)
             suite.expect(!MenuBarSpacingSupport.islandHidesStatusIcon(
                 in: islandDefaults, hiddenInFullscreen: true),
                    "the menu bar icon returns while the island is hidden in fullscreen")
