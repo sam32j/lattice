@@ -3854,7 +3854,7 @@ enum PointerInputFeatureTests {
         suite.expect(!QuitProtectionSupport.opensNativeSwitcher(keyCode: 48, flags: .maskCommand, entries: [
                     LiveSystemShortcut(id: 1, shortcut: commandTab, enabled: false),
                 ]),
-               "⌘Tab with the system row off, as the App Switcher's take-over leaves it, opens Vorssaint's switcher only")
+               "⌘Tab with the system row off, as the App Switcher's take-over leaves it, opens Lattice's switcher only")
         suite.expect(QuitProtectionSupport.opensNativeSwitcher(keyCode: 50, flags: .maskCommand, entries: [
                     LiveSystemShortcut(id: 1, shortcut: GlobalShortcut(keyCode: 50, modifiers: [.command]),
                                        enabled: true),

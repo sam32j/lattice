@@ -12,7 +12,7 @@ enum SettingsBackupSupport {
     static let settingsKey = "settings"
     static let formatVersion = 1
 
-    /// `Vorssaint --export-settings FILE` and `Vorssaint --import-settings FILE`
+    /// `Lattice --export-settings FILE` and `Lattice --import-settings FILE`
     /// write and apply the same file as the buttons in Advanced settings.
     enum Command: Equatable {
         case export(path: String)

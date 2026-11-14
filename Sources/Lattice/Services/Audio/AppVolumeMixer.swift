@@ -3153,7 +3153,7 @@ private final class MixerTapConfiguration {
     var canRender: Bool { rendering.value != 0 }
     var requiresRebuild: Bool { invalidated.value != 0 }
 
-    private let queue = DispatchQueue(label: "com.vorssaint.utils.mixer.format", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "io.github.sam32j.lattice.mixer.format", qos: .userInitiated)
     private let lock = NSLock()
     private var pending = false
     private var immediatePending = false

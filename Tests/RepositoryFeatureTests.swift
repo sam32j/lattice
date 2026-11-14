@@ -912,7 +912,7 @@ enum RepositoryFeatureTests {
         // their own shell, leaving nothing behind (issue #598).
         do {
             let folder = FileManager.default.temporaryDirectory
-                .appendingPathComponent("vorssaint-terminal-script-\(UUID().uuidString)")
+                .appendingPathComponent("lattice-terminal-script-\(UUID().uuidString)")
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: folder) }
             // A stand-in login shell that writes down the arguments it was given.
