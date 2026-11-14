@@ -50,6 +50,7 @@ struct MetricsTests {
             ("media", { MediaFeatureTests.run(suite) }),
             ("video-downloader", { VideoDownloaderTests.run(suite) }),
             ("mixer", {
+                MixerRenderContinuityTests.run(suite)
                 MixerNativeDragTests.run(suite)
                 MixerOutputAdjustmentContract.run(suite)
                 MixerLevelCompensationContract.run(suite)
