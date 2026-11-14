@@ -175,6 +175,19 @@ def main():
                                    "    static func prepareForRequest("])
           + "}\n")
     recorder = "Sources/Lattice/Services/Recorder/ScreenRecorderService.swift"
+    recent_view = "Sources/Lattice/UI/MenuPanel/PanelRecentCapturesView.swift"
+    write("RecentCaptureClearConfirmation.swift", "import AppKit\n"
+          + "extension RecentCaptureClearConfirmationTests {\nenum Host {\n"
+          + "static var islandClearConfirmationPending = false\n"
+          + "static var deletionWarning: String { \"warning\" }\n"
+          + "static func reportDeletionResult(_ result: RecentCaptureService.CaptureDeletionResult, aboveIsland: Bool) {}\n"
+          + "static func runAboveFloatingHUD(_ alert: NSAlert) -> NSApplication.ModalResponse? { nil }\n"
+          + "static func confirmDestructiveAboveFloatingHUD(_ panel: NSPanel, title: String, message: String,"
+          + " action: String, cancel: String) -> Bool {\n"
+          + "NotchIslandAlert.confirmDestructive(title: title, message: message, action: action, cancel: cancel, above: panel)\n}\n"
+          + declaration(recent_view, "    static func confirmClearAboveFloatingHUD()")
+          + declaration(recent_view, "    static func confirmClearAboveIsland()")
+          + "}\n}\n")
     write("CaptureTimestamp.swift", "import Foundation\nextension CaptureTimestampTests {\nenum Formatter {\n"
           + declaration("Sources/Lattice/UI/MenuPanel/PanelRecentCapturesView.swift",
                         "    static func formattedCaptureTime(")

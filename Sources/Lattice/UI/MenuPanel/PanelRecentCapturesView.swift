@@ -131,7 +131,9 @@ struct RecentCapturesView: View {
                     panel.makeKey()
                 }
             }
-            guard !RecentCaptureService.shared.entries.isEmpty else { return }
+            // The Hub can close between the click and this turn. A pending
+            // confirmation then goes with it instead of appearing on its own.
+            guard panel.isVisible, !RecentCaptureService.shared.entries.isEmpty else { return }
             let strings = CaptureInterfaceStrings.localized(L10n.shared.language)
             guard confirmDestructiveAboveFloatingHUD(panel,
                 title: strings.deleteRecentTitle, message: deletionWarning,
