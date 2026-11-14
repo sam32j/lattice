@@ -157,6 +157,7 @@ struct MetricsTests {
                 RadialProfileSyncTests.run(suite)
                 SettingsFeatureTests.run(suite)
                 SettingsSearchKeyboardTests.run(suite)
+                RadialFilePickerTests.run(suite)
                 SettingsWindowTests.run { suite.expect($0, $1) }
                 PermissionDetailsSheetTests.run { suite.expect($0, $1) }
                 NotchSettingsChoiceTests.run(suite)
