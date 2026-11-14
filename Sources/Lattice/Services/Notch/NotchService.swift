@@ -2537,14 +2537,17 @@ final class NotchService: ObservableObject {
     /// on one side of the camera, what happened on the other. False leaves
     /// the confirmation to its own panel.
     @discardableResult
-    func showMicrophone(muted: Bool) -> Bool {
+    /// `unchanged` reports a press that could not change any microphone: the
+    /// state that still holds, marked with a crossed badge.
+    func showMicrophone(muted: Bool, unchanged: Bool = false) -> Bool {
         // Only the closed island draws this notice. While it is open or busy
         // the floating confirmation keeps the job.
         guard noticeCanPresent else { return false }
         let text = L10n.shared.s
+        let symbol = unchanged ? "mic.badge.xmark" : muted ? "mic.slash.fill" : "mic.fill"
         return show(NotchNotice(event: .microphone, title: "",
                                 detail: muted ? text.micMutedHUD : text.micUnmutedHUD,
-                                symbol: muted ? "mic.slash.fill" : "mic.fill", mascot: muted ? .hush : .perk))
+                                symbol: symbol, mascot: unchanged ? nil : muted ? .hush : .perk))
     }
 
     /// A partial result is confirmed by the floating panel alone, so the
