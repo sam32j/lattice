@@ -77,6 +77,14 @@ def availability_declaration(path, prefix):
 def main():
     EMITTED.clear()
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    write("SettingsCommandDispatch.swift", "import Foundation\n"
+          + "extension SettingsFeatureTests.CommandDispatchHost {\nstatic func run() {\n"
+          # Both app entry points are named main.swift. Keep diagnostics in
+          # this generated file to avoid ambiguous #fileID source locations.
+          + "\n".join(line for line in declaration(
+              "Sources/Lattice/main.swift", "if let command = SettingsBackupSupport.command(")
+              .splitlines() if not line.startswith("#sourceLocation")) + "\n"
+          + "}\n}\n")
     slider_area = "Sources/Lattice/UI/SliderScrollArea.swift"
     slider_control = "Sources/Lattice/UI/Notch/NotchLevelSlider.swift"
     wheel_route = "Sources/Lattice/Services/HorizontalWheelScrolling.swift"
@@ -140,8 +148,10 @@ def main():
               .replace("Self.setPowered(", "setPowered(")
           + "}\n}\n")
     write("MouseShortcutBackup.swift", "import Foundation\nextension MouseShortcutBackupTests {\nfinal class Backup {\n"
-          + declaration("Sources/Lattice/Services/SettingsBackup.swift", "    static func applyAndRelaunch(")
-              .replace("UserDefaults.standard", "ReviewDefaults.current!") + "}\n}\n")
+          + "".join(declaration("Sources/Lattice/Services/SettingsBackup.swift", prefix)
+                    .replace("UserDefaults.standard", "ReviewDefaults.current!")
+                    for prefix in ["    static func applyAndRelaunch(", "    static func apply(settings:"])
+          + "}\n}\n")
     write("CleaningModePreferences.swift", "import Foundation\nextension CleaningModePreferencesTests {\nfinal class Service: State {\n"
           + declaration("Sources/Lattice/Services/CleaningMode/CleaningModeManager.swift", "    func syncWithPreferences()")
               .replace("AppFeature.cleaningMode.isAvailable", "AppFeature.cleaningMode.isAvailable(in: defaults)")
