@@ -1118,6 +1118,17 @@ def main():
         level_watch = level_watch.replace("AudioObject" + operation + "(", "HAL." + operation + "(")
     write("MixerLevelCompensation.swift", "import CoreAudio\nimport Foundation\n"
           + "extension MixerLevelCompensationContract {\n" + level_watch + "}\n")
+    configuration = declaration(mixer, "private final class MixerTapConfiguration {").replace("private ", "")
+    for operation in ("AddPropertyListener", "RemovePropertyListener"):
+        configuration = configuration.replace("AudioObject" + operation + "(", "HAL." + operation + "(")
+    write("MixerTapConfiguration.swift", "import CoreAudio\nimport Foundation\n"
+          + "extension MixerTapConfigurationTests {\n" + configuration + "}\n"
+          + "extension MixerTapConfigurationTests.Recovery {\n"
+          + declaration(mixer, "    private func retryInvalidatedEngine(for id:")
+            .replace("private func", "func", 1)
+          + declaration(mixer, "    private func configurationRepairDelay(for id:")
+            .replace("private func", "func", 1)
+          + "}\n")
     write("NotchAudioRing.swift", "import CoreAudio\nimport Foundation\n"
           + "extension NotchAudioRingContract {\n"
           + declaration("Sources/Lattice/Services/Notch/NotchAudioLevelService.swift",

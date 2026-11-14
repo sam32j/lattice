@@ -55,6 +55,7 @@ struct MetricsTests {
                 MixerNativeDragTests.run(suite)
                 MixerOutputAdjustmentContract.run(suite)
                 MixerLevelCompensationContract.run(suite)
+                MixerTapConfigurationTests.run(suite)
                 SoundOutputSwitchContract.run(suite)
                 MixerUniversalRoutingContract.run(suite)
                 AirPlayRingBufferContract.run(suite)
