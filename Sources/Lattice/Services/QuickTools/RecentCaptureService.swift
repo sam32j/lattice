@@ -632,7 +632,7 @@ final class RecentCaptureService: ObservableObject {
         return provider
     }
 
-    enum HistoryAction { case copy, save, pin, edit }
+    enum HistoryAction { case copy, save, pin, edit, copyText }
 
     /// Runs a quick action on a stored capture from the list itself, without
     /// opening a preview first.
@@ -652,6 +652,10 @@ final class RecentCaptureService: ObservableObject {
                     case .save: mapped = .save
                     case .pin: mapped = .pin
                     case .edit: mapped = .edit
+                    case .copyText:
+                        guard AppFeature.screenOCR.isAvailable else { return }
+                        ScreenTextService.shared.copyText(from: capture.image)
+                        return
                     }
                     ScreenshotService.shared.performHistoryAction(mapped, on: capture)
                 }
@@ -668,7 +672,64 @@ final class RecentCaptureService: ObservableObject {
             case .edit:
                 if LatticeHubService.shared.isVisible { LatticeHubService.shared.hide() }
                 RecordingFileActions.edit(url)
-            case .pin: break
+            case .pin, .copyText: break
+            }
+        }
+    }
+
+    /// Opens a stored capture in the system's Quick Look, over the floating
+    /// Hub, which stays open meanwhile.
+    func quickLook(_ entry: RecentCaptureEntry) {
+        let hub = LatticeHubService.shared
+        let owner = hub.isVisible ? hub.panel : nil
+        func present(_ show: (@escaping () -> Void) -> Bool) {
+            // Quick Look takes focus; the Hub must not read that as leaving.
+            if owner != nil { hub.removeMonitors() }
+            let shown = show {
+                if let owner, owner.isVisible { hub.installMonitors(for: owner) }
+            }
+            if !shown {
+                if let owner, owner.isVisible { hub.installMonitors(for: owner) }
+                NSSound.beep()
+            }
+        }
+        switch entry.kind {
+        case .screenshot:
+            queue.async { [weak self] in
+                let capture = self?.loadScreenshot(entry)?.presentationCapture
+                DispatchQueue.main.async {
+                    guard let capture else { NSSound.beep(); return }
+                    present { done in
+                        ScreenshotQuickLookController.shared.show(image: capture.image, scale: capture.scale,
+                                                                  owner: owner, onDismiss: done)
+                    }
+                }
+            }
+        case .recording:
+            guard let url = entry.recordingURL, RecentCaptureStore.isRegularFile(url) else {
+                remove(entry)
+                NSSound.beep()
+                return
+            }
+            present { done in ScreenshotQuickLookController.shared.show(url: url, owner: owner, onDismiss: done) }
+        }
+    }
+
+    /// A file to hand to the share sheet: the recording itself, or the
+    /// screenshot as it would be saved, written to a temporary file.
+    func shareFile(for entry: RecentCaptureEntry, completion: @escaping (URL?) -> Void) {
+        switch entry.kind {
+        case .recording:
+            let url = entry.recordingURL.flatMap { RecentCaptureStore.isRegularFile($0) ? $0 : nil }
+            completion(url)
+        case .screenshot:
+            let strings = FeatureStrings.screenshot(L10n.shared.language)
+            queue.async { [weak self] in
+                let capture = self?.loadScreenshot(entry)?.presentationCapture
+                let url = capture.flatMap {
+                    ScreenshotService.temporaryExportFile(image: $0.image, scale: $0.scale, strings: strings)
+                }
+                DispatchQueue.main.async { completion(url) }
             }
         }
     }

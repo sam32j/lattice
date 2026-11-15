@@ -321,57 +321,9 @@ struct RecentCapturesView: View {
     }
 
     private func previewRow(_ entry: RecentCaptureEntry) -> some View {
-        let screenshot = FeatureStrings.screenshot(l10n.language)
-        let recorder = FeatureStrings.recorder(l10n.language)
-        let isScreenshot = entry.kind == .screenshot
-        return VStack(alignment: .leading, spacing: 8) {
-            GeometryReader { proxy in
-                RecentCapturePreviewThumbnail(
-                    entry: entry,
-                    history: history,
-                    onOpen: { history.open(entry) },
-                    width: proxy.size.width,
-                    height: Self.previewRowImageHeight,
-                    cornerRadius: 9,
-                    showsKindBadge: false,
-                    text: text,
-                    enablesImageDrag: true
-                )
-            }
-            .frame(height: Self.previewRowImageHeight)
-            HStack(spacing: 2) {
-                RecentCaptureActionButton(symbol: "doc.on.doc",
-                                          title: isScreenshot ? screenshot.copyButton : recorder.copyButton) {
-                    history.perform(.copy, on: entry)
-                }
-                RecentCaptureActionButton(symbol: "square.and.arrow.down",
-                                          title: isScreenshot ? screenshot.saveButton : recorder.saveButton) {
-                    history.perform(.save, on: entry)
-                }
-                if isScreenshot {
-                    RecentCaptureActionButton(symbol: "mappin", title: screenshot.pinButton) {
-                        history.perform(.pin, on: entry)
-                    }
-                }
-                RecentCaptureActionButton(symbol: "pencil", title: screenshot.editButton) {
-                    history.perform(.edit, on: entry)
-                }
-                Spacer(minLength: 6)
-                Text(Self.formattedCaptureTime(entry.createdAt))
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-                RecentCaptureTrashButton(
-                    action: { history.remove(entry) },
-                    helpText: text.remove
-                )
-            }
-        }
-        .panelCard()
+        RecentCaptureIslandRow(entry: entry, history: history, text: text,
+                               time: Self.formattedCaptureTime(entry.createdAt))
     }
-
-    /// About three previews fit the floating Hub's history at once.
-    private static let previewRowImageHeight: CGFloat = 112
 
     private func row(_ entry: RecentCaptureEntry) -> some View {
         HStack(spacing: 10) {
@@ -402,27 +354,156 @@ struct RecentCapturesView: View {
     }
 }
 
-/// An icon action on a history preview row, sized like the island
-/// preview's 28-point targets.
-private struct RecentCaptureActionButton: View {
-    let symbol: String
-    let title: String
-    let action: () -> Void
-    @State private var hovered = false
+/// One capture in the floating Hub's history, laid out like the Dynamic
+/// Island's quick preview: the image fills the card and the island's control
+/// strip floats over it. Hovering the image shows a Quick Look badge without
+/// touching the strip; a click opens the capture in Quick Look. Nothing here
+/// opens a floating preview.
+private struct RecentCaptureIslandRow: View {
+    let entry: RecentCaptureEntry
+    @ObservedObject var history: RecentCaptureService
+    let text: RecentCaptureStrings
+    let time: String
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var featureRuntime = FeatureRuntime.shared
+    @State private var imageHovered = false
+    @State private var lastOpened: TimeInterval = 0
+    private let shareAnchor = ShelfSharePickerAnchor.Anchor()
+
+    static let imageHeight: CGFloat = 150
+    private var isScreenshot: Bool { entry.kind == .screenshot }
+    private var screenshot: ScreenshotFeatureStrings { FeatureStrings.screenshot(l10n.language) }
+    private var recorder: RecorderFeatureStrings { FeatureStrings.recorder(l10n.language) }
 
     var body: some View {
+        artwork
+            .frame(maxWidth: .infinity)
+            .frame(height: Self.imageHeight)
+            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.8)
+                    .allowsHitTesting(false)
+            }
+            .overlay { hoverBadge }
+            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .onHover { imageHovered = $0 }
+            .onTapGesture(perform: openQuickLook)
+            .onDrag { history.dragItemProvider(for: entry) ?? NSItemProvider() }
+            .overlay(alignment: .topTrailing) { toolbar.padding(6) }
+            .overlay(alignment: .bottomLeading) {
+                Text(time)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(.black.opacity(0.45), in: Capsule())
+                    .padding(6)
+                    .allowsHitTesting(false)
+            }
+            .help(CaptureInterfaceStrings.localized(l10n.language).quickLook)
+    }
+
+    @ViewBuilder private var artwork: some View {
+        ZStack {
+            Color.black.opacity(0.13)
+            if let image = history.thumbnail(for: entry) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFill()
+            } else {
+                Image(systemName: isScreenshot ? "photo" : "film")
+                    .font(.system(size: 30, weight: .medium))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    /// Drawn above the image and below the strip; it never takes clicks.
+    @ViewBuilder private var hoverBadge: some View {
+        if imageHovered {
+            ZStack {
+                Color.black.opacity(0.22)
+                Image(systemName: isScreenshot ? "eye.fill" : "play.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(HUDBackdrop(cornerRadius: 22, contrast: .standard))
+            }
+            .transition(.opacity.animation(.easeOut(duration: 0.12)))
+            .allowsHitTesting(false)
+        }
+    }
+
+    private var toolbar: some View {
+        HStack(spacing: 3) {
+            tool("doc.on.doc", isScreenshot ? screenshot.copyButton : recorder.copyButton) {
+                history.perform(.copy, on: entry)
+            }
+            tool("square.and.arrow.down", isScreenshot ? screenshot.saveButton : recorder.saveButton) {
+                history.perform(.save, on: entry)
+            }
+            if isScreenshot {
+                tool("mappin", screenshot.pinButton) { history.perform(.pin, on: entry) }
+                if featureRuntime.isAvailable(.screenOCR) {
+                    tool("text.viewfinder", screenshot.copyTextButton) { history.perform(.copyText, on: entry) }
+                }
+            }
+            separator
+            tool("square.and.arrow.up", screenshot.shareButton, action: share)
+                .background(ShelfSharePickerAnchor(anchor: shareAnchor))
+            separator
+            tool(isScreenshot ? "pencil" : "scissors", screenshot.editButton) { history.perform(.edit, on: entry) }
+            CaptureDeleteConfirmationButton(presentation: .island, title: text.remove) {
+                history.remove(entry)
+            }
+        }
+        .fixedSize(horizontal: true, vertical: true)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 3)
+        .background(HUDBackdrop(cornerRadius: 12, contrast: .standard))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.7)
+                .allowsHitTesting(false)
+        }
+        .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
+    }
+
+    private var separator: some View {
+        Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1, height: 16).padding(.horizontal, 2)
+    }
+
+    private func tool(_ symbol: String, _ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 14, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
                 .frame(width: 28, height: 28)
-                .background(Color.primary.opacity(hovered ? 0.1 : 0),
-                            in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .onHover { hovered = $0 }
+        .buttonStyle(NotchButtonStyle(cornerRadius: 8))
+        .controlSize(.small)
+        .focusable(false)
         .help(title)
         .accessibilityLabel(title)
+    }
+
+    /// A second click of a double click lands while Quick Look opens; it is
+    /// ignored rather than closing and reopening the preview.
+    private func openQuickLook() {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastOpened > NSEvent.doubleClickInterval else { return }
+        lastOpened = now
+        history.quickLook(entry)
+    }
+
+    private func share() {
+        let anchor = shareAnchor
+        history.shareFile(for: entry) { url in
+            guard let url, anchor.present([url]) else { NSSound.beep(); return }
+        }
     }
 }
 
