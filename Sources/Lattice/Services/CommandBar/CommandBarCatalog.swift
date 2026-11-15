@@ -1802,11 +1802,13 @@ enum CommandBarCatalog {
                 subtitle: subtitle,
                 icon: .symbol(choice.icon),
                 confirmationPrompt: String(format: bar.quitConfirmFormat, names),
-                run: { _ in
-                    // Read again: apps may have opened or quit while confirming.
-                    let keeping = choice.keeping == nil
-                        ? nil : NSWorkspace.shared.frontmostApplication?.processIdentifier
-                    for target in QuitAppsSupport.batchQuitTargets(runningQuitCandidates(), keepingPID: keeping) {
+                run: { [confirmed = Set(targets.map(\.pid))] _ in
+                    // Only the apps the confirmation listed: one that opened
+                    // meanwhile, or a front app that changed, is left alone.
+                    // Each is checked again, so one that quit is skipped.
+                    let still = QuitAppsSupport.batchQuitTargets(
+                        runningQuitCandidates().filter { confirmed.contains($0.pid) }, keepingPID: nil)
+                    for target in still {
                         NSRunningApplication(processIdentifier: target.pid)?.terminate()
                     }
                 })
