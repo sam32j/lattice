@@ -141,7 +141,8 @@ enum ScreenshotPinGestureTests {
         view.magnify(with: pinch)
         suite.expectClose(window.frame.width, 300, "pinching out zooms the pin", tol: 0.6)
         suite.expectClose(window.frame.height, 150, "pinching preserves the image's proportions", tol: 0.6)
-        suite.expectClose(window.frame.minX, initial.minX - 25, "pinch anchors the point under the pointer", tol: 0.6)
+        suite.expectClose(window.frame.midX, initial.midX, "pinch grows the pin around its center horizontally", tol: 0.6)
+        suite.expectClose(window.frame.midY, initial.midY, "pinch grows the pin around its center vertically", tol: 0.6)
         suite.expectClose(window.alphaValue, 0.75, "pinching leaves opacity unchanged")
 
         window.setFrame(initial, display: false)
@@ -247,7 +248,10 @@ enum ScreenshotPinGestureTests {
         wheel.scroll = 1
         wheel.point.x = .nan
         view.scrollWheel(with: wheel)
-        suite.expect(window.frame == initial, "an invalid pointer position cannot corrupt the window frame")
+        suite.expect(window.frame.minX.isFinite && window.frame.width.isFinite
+                     && abs(window.frame.midX - initial.midX) < 0.6 && abs(window.frame.midY - initial.midY) < 0.6,
+                     "wheel zoom ignores the pointer position, even an invalid one, and stays centered")
+        window.setFrame(initial, display: false)
         wheel.point = CGPoint(x: 50, y: 25)
 
         let corner = CGRect(x: limits.maxX - 210, y: limits.maxY - 110, width: 200, height: 100)
