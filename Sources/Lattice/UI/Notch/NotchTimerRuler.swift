@@ -89,6 +89,9 @@
 
      final class Coordinator: NSObject {
          var parent: NotchTimerRuler
+         /// A fast scroll counts through many minutes in a moment; one tick
+         /// per minute there would blur into a buzz.
+         private var lastFeedback: TimeInterval = 0
 
          init(_ parent: NotchTimerRuler) {
              self.parent = parent
@@ -101,8 +104,10 @@
 
              parent.minutes = sender.integerValue
 
+             let now = ProcessInfo.processInfo.systemUptime
              if (sender as? NotchTimerRulerControl)?
-                 .feedbackOnChange == true {
+                 .feedbackOnChange == true, now - lastFeedback >= 0.04 {
+                 lastFeedback = now
                  NotchService.shared.provideHapticFeedback()
              }
          }
@@ -123,6 +128,17 @@
      private var scrollValue: Double?
      private var lastScrollTimestamp: TimeInterval?
 
+     /// Where the ruler is drawn, between whole minutes while it glides.
+     /// A fast scroll moves the target many minutes per packet; the drawn
+     /// position eases there frame by frame and reports every minute it
+     /// passes, so the ticks slide and the clock counts instead of jumping.
+     private var presentedValue: Double?
+     private var glideTarget = 0.0
+     private var glideTimer: Timer?
+     private var lastGlideFrame: TimeInterval = 0
+     /// Time constant of the glide: short enough to keep up with the finger.
+     private static let glideTimeConstant = 0.06
+
      private var showsKeyboardFocus = false
 
      override var isFlipped: Bool { true }
@@ -142,6 +158,7 @@
 
          guard integerValue != bounded else { return }
 
+         stopGlide()
          integerValue = bounded
 
          // A change from SwiftUI is authoritative.
@@ -158,6 +175,8 @@
          guard isEnabled else { return }
 
          window?.makeFirstResponder(self)
+         // Grabbing the ruler stops a glide where it is.
+         stopGlide()
 
          showsKeyboardFocus = false
          needsDisplay = true
@@ -220,7 +239,8 @@
                  NotchTimerRulerScale.moving(
                      doubleValue,
                      by: -Double(offset)
-                 )
+                 ),
+                 smoothly: true
              )
          }
 
@@ -263,8 +283,11 @@
                  : NotchTimerRulerScale.spacing
          )
 
+         // A new wheel run continues from where a glide is heading, so
+         // successive clicks add up instead of restarting from the lagging
+         // drawn minute.
          let value = NotchTimerRulerScale.moving(
-             scrollValue ?? doubleValue,
+             scrollValue ?? (glideTimer != nil ? glideTarget : doubleValue),
              by: points
          )
 
@@ -274,7 +297,7 @@
                            max(Double(minuteRange.lowerBound), value))
          scrollValue = clamped
 
-         select(clamped)
+         select(clamped, smoothly: true)
 
          if !event.hasPreciseScrollingDeltas
              || event.phase.contains(.ended)
@@ -297,6 +320,7 @@
 
          scrollValue = nil
          lastScrollTimestamp = nil
+         stopGlide()
 
          showsKeyboardFocus = true
          needsDisplay = true
@@ -328,6 +352,7 @@
          }
 
          scrollValue = nil
+         stopGlide()
          select(number.doubleValue)
      }
 
@@ -335,6 +360,7 @@
          guard isEnabled else { return false }
 
          scrollValue = nil
+         stopGlide()
          select(doubleValue + 1)
          return true
      }
@@ -343,11 +369,55 @@
          guard isEnabled else { return false }
 
          scrollValue = nil
+         stopGlide()
          select(doubleValue - 1)
          return true
      }
 
      // MARK: - Selection
+
+     private func select(_ value: Double, smoothly: Bool) {
+         guard isEnabled, value.isFinite else { return }
+         guard smoothly, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
+             stopGlide()
+             select(value)
+             return
+         }
+         glideTarget = min(Double(minuteRange.upperBound), max(Double(minuteRange.lowerBound), value))
+         if presentedValue == nil { presentedValue = Double(integerValue) }
+         guard glideTimer == nil else { return }
+         lastGlideFrame = ProcessInfo.processInfo.systemUptime
+         let timer = Timer(timeInterval: 1.0 / 120.0, repeats: true) { [weak self] _ in self?.advanceGlide() }
+         RunLoop.main.add(timer, forMode: .common)
+         glideTimer = timer
+     }
+
+     private func advanceGlide() {
+         guard let current = presentedValue, window != nil else { stopGlide(); return }
+         let now = ProcessInfo.processInfo.systemUptime
+         let elapsed = max(0, now - lastGlideFrame)
+         lastGlideFrame = now
+         let remaining = glideTarget - current
+         var next = current + remaining * (1 - exp(-elapsed / Self.glideTimeConstant))
+         let settled = abs(glideTarget - next) < 0.01
+         if settled { next = glideTarget }
+         presentedValue = next
+         // Each whole minute the glide passes reaches the clock in order.
+         select(next)
+         needsDisplay = true
+         if settled { stopGlide() }
+     }
+
+     private func stopGlide() {
+         glideTimer?.invalidate()
+         glideTimer = nil
+         presentedValue = nil
+     }
+
+     override func viewDidMoveToWindow() {
+         super.viewDidMoveToWindow()
+         if window == nil { stopGlide() }
+     }
 
      private func select(_ value: Double) {
          guard isEnabled, value.isFinite else { return }
@@ -385,7 +455,8 @@
 
          let edgeFade = max(1, bounds.width * 0.12)
 
-         let selected = integerValue
+         let position = presentedValue ?? Double(integerValue)
+         let selected = Int(position.rounded())
          let center = bounds.midX
 
          let minimum = minuteRange.lowerBound
@@ -407,10 +478,7 @@
 
          for minute in first...last {
              let x = center + CGFloat(
-                 NotchTimerRulerScale.offset(
-                     of: minute,
-                     selected: selected
-                 )
+                 (Double(minute) - position) * NotchTimerRulerScale.spacing
              )
 
              guard x >= bounds.minX - 16,
