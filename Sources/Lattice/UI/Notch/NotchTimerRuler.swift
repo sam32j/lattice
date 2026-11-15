@@ -74,6 +74,10 @@
              context.environment.colorSchemeContrast == .increased
 
          control.isEnabled = context.environment.isEnabled
+         // Switching between the timer and Pomodoro focus rebinds the ruler;
+         // a glide for one must never write into the other, even when both
+         // happen to hold the same minute.
+         control.adoptSelectionScope("\(label)|\(range.lowerBound)-\(range.upperBound)")
          control.synchronize(minutes: minutes)
 
          control.setAccessibilityLabel(label)
@@ -149,6 +153,18 @@
      }
 
      // MARK: - Synchronization
+
+     private var selectionScope: String?
+
+     /// A new scope ends whatever the ruler was doing for the previous one.
+     func adoptSelectionScope(_ scope: String) {
+         defer { selectionScope = scope }
+         guard let selectionScope, selectionScope != scope else { return }
+         stopGlide()
+         drag = nil
+         scrollValue = nil
+         lastScrollTimestamp = nil
+     }
 
      func synchronize(minutes: Int) {
          let bounded = min(
