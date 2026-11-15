@@ -34,6 +34,10 @@ extension SliderScroll {
 struct SliderScrollArea: NSViewRepresentable {
     @Binding var value: Double
     let range: ClosedRange<Double>
+    /// A control with coarse steps, such as an on/off level, moves at least
+    /// one step per wheel notch; a smaller notch would round back to where
+    /// it was. Trackpad gestures keep accumulating finely.
+    var step: Double = 0
 
     func makeNSView(context: Context) -> AreaView { AreaView() }
 
@@ -58,7 +62,9 @@ struct SliderScrollArea: NSViewRepresentable {
             switch scroll.handle(event, current: area.value, range: area.range) {
             case .pass: SliderScroll.pass(event, from: self)
             case .hold: break
-            case .move(let value): area.value = value
+            case .move(let value):
+                area.value = SliderScroll.wheelValue(value, from: area.value, step: area.step,
+                                                     precise: event.hasPreciseScrollingDeltas, range: area.range)
             }
         }
     }

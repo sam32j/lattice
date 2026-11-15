@@ -97,8 +97,10 @@ enum RepositoryFeatureTests {
         static var written: [String] = []
         static var writtenSources: [String?] = []
         static var writtenRemote: [Bool] = []
+        static var writtenMarkers: [[String]] = []
         static func writeToPasteboard(_ urlString: String, source: String? = nil, remote: Bool = false,
-                                     linkMetadata: Data? = nil) -> Int {
+                                     linkMetadata: Data? = nil, markers: [String] = []) -> Int {
+            writtenMarkers.append(markers)
             written.append(urlString)
             writtenSources.append(source)
             writtenRemote.append(remote)

@@ -247,7 +247,8 @@ final class URLCleanerService: ObservableObject {
         // not credit the cleaned link to the app in front.
         let rewrittenChangeCount = writeToPasteboard(cleaned.url, source: source,
                                                      remote: types.contains("com.apple.is-remote-clipboard"),
-                                                     linkMetadata: linkMetadata)
+                                                     linkMetadata: linkMetadata,
+                                                     markers: Self.carriedMarkers(in: types))
         return PollResult(changeCount: rewrittenChangeCount, cleaned: cleaned)
     }
 
@@ -261,7 +262,7 @@ final class URLCleanerService: ObservableObject {
 
     @discardableResult
     private static func writeToPasteboard(_ urlString: String, source: String? = nil, remote: Bool = false,
-                                         linkMetadata: Data? = nil) -> Int {
+                                         linkMetadata: Data? = nil, markers: [String] = []) -> Int {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(urlString, forType: .string)
@@ -269,7 +270,17 @@ final class URLCleanerService: ObservableObject {
         if let linkMetadata { pasteboard.setData(linkMetadata, forType: URLCleanerLinkMetadata.pasteboardType) }
         if let source { pasteboard.setString(source, forType: .source) }
         if remote { pasteboard.setData(Data(), forType: .remoteClipboard) }
+        for marker in markers { pasteboard.setData(Data(), forType: .init(marker)) }
         return pasteboard.changeCount
+    }
+
+    /// Marks that tell clipboard history to skip a copy (transient,
+    /// auto-generated or concealed) survive the cleaned rewrite.
+    static func carriedMarkers(in types: [String]) -> [String] {
+        types.filter {
+            ClipboardHistorySensitiveText.transientPasteboardTypes.contains($0)
+                || $0 == ClipboardHistorySensitiveText.concealedPasteboardType
+        }
     }
 
     private func cancelPoll() {

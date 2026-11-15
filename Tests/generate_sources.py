@@ -850,6 +850,7 @@ def main():
           + "extension RepositoryFeatureTests.URLCleanerPollHost {\n"
           + declaration("Sources/Lattice/Services/URLCleanerService.swift",
                         "    private static func pollPasteboard(").replace("private static", "static", 1)
+          + declaration("Sources/Lattice/Services/URLCleanerService.swift", "    static func carriedMarkers(")
           + "}\n")
     write("ProcessName.swift", "import Foundation\n"
           + "extension ProcessNameContract {\nfinal class Lookup: Fixture {\n"
@@ -949,7 +950,8 @@ def main():
     write("URLCleanerRewrite.swift", "import AppKit\n"
           + "extension ClipboardFeatureTests.URLCleanerHost {\n"
           + "".join(declaration(cleaner, prefix).replace("private static", "static", 1) for prefix in [
-              "    private static func pollPasteboard(", "    private static func writeToPasteboard("])
+              "    private static func pollPasteboard(", "    private static func writeToPasteboard(",
+              "    static func carriedMarkers("])
           + "}\n")
     write("CommandBarFeatureNames.swift", "import Foundation\nextension AppFeature {\n"
           + declaration("Sources/Lattice/UI/FeaturePresentation.swift", "    func hubTitle(")

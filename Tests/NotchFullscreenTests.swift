@@ -57,6 +57,8 @@ enum NotchFullscreenTests {
     }
     class State {
         var running = true, suspended = false, hiddenInFullscreen = false
+        var coverageSnapshot: Set<CGDirectDisplayID>?
+        var appFullscreenDisplays: Set<CGDirectDisplayID> = []
         var hoverEmphasized = false
         var panel: Bool? = true
         var windowHost: Host? = Host()

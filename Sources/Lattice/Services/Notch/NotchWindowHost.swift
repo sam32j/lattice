@@ -503,6 +503,8 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         let generation = animationGeneration
         if hidesWhenSettled {
             hidesWhenSettled = false
+            // A settled hide outranks a pending arrival from a display move.
+            if relocationHidden { cancelRelocation() }
             panel.orderOut(nil)
             concealedForFrameChange = false
             restoresKeyAfterFrameChange = false
