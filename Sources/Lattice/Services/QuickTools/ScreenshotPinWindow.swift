@@ -100,6 +100,14 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         }
     }
 
+    /// The topmost visible pin under `point`, click-through or not.
+    func isTopPin(at point: CGPoint) -> Bool {
+        let top = NSApp.orderedWindows.lazy.compactMap { $0 as? ScreenshotPinWindow }.first {
+            $0.isVisible && !$0.isHiddenForDrag && !$0.isClosed && $0.frame.contains(point)
+        }
+        return top.map { $0 === self } ?? true
+    }
+
     /// The topmost pin under `point`, in on-screen order, is the only one a
     /// pointer gesture may act on.
     func isFrontmostPin(at point: CGPoint) -> Bool {
@@ -158,7 +166,9 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
 
     func updateHover(at point: CGPoint) {
         guard !isClosed else { return }
-        let hovered = frame.contains(point)
+        // Only the pin on top at the pointer shows its controls; a pin
+        // covered there keeps them hidden.
+        let hovered = frame.contains(point) && isTopPin(at: point)
         if hovered != isHovered {
             isHovered = hovered
             updateImageOpacity()
