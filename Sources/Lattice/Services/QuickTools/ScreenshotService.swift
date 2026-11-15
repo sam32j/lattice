@@ -453,6 +453,9 @@ final class ScreenshotService: ObservableObject {
     func performHistoryAction(_ action: ScreenshotQuickPreviewController.Action,
                               on capture: ScreenshotSelectionController.Capture,
                               onEditorClose: (() -> Void)? = nil) -> Bool {
+        // The capture loaded off the main thread; screenshots may have been
+        // turned off meanwhile, and their surfaces torn down.
+        guard AppFeature.screenshot.isAvailable else { return false }
         let presented = capture.presentationCapture
         switch action {
         case .copy: return copyDirect(presented)
@@ -738,6 +741,22 @@ final class ScreenshotService: ObservableObject {
             return image
         }
         return NSImage(pasteboard: pasteboard)
+    }
+
+    /// Save Changes kept the edits without closing: the preview that returns
+    /// when the editor closes shows them, even if later edits are discarded.
+    func editorDidSaveChanges(_ editor: ScreenshotEditorController) {
+        let key = ObjectIdentifier(editor)
+        guard let awaiting = editorReturnPreviews[key],
+              let export = editor.model.exportImage(withBackdrop: true, downscaleTo1x: false) else { return }
+        let capture = ScreenshotSelectionController.Capture(
+            id: awaiting.capture.id, image: editor.model.baseImage,
+            scale: editor.model.scale,
+            anchorRect: awaiting.capture.anchorRect,
+            annotations: editor.model.annotations,
+            renderedImage: export.image,
+            capturedAt: awaiting.capture.capturedAt)
+        editorReturnPreviews[key] = EditorReturnPreview(capture: capture, saved: awaiting.saved)
     }
 
     func editorDidClose(_ editor: ScreenshotEditorController) {

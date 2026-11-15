@@ -1948,7 +1948,11 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             pin?.showPin(orderFront: closing)
             if self.model.isDirty { self.didPersistImageChanges = true }
             self.model.markExported()
-            if closing { self.window?.close() }
+            if closing {
+                self.window?.close()
+            } else {
+                ScreenshotService.shared.editorDidSaveChanges(self)
+            }
         }
     }
 
