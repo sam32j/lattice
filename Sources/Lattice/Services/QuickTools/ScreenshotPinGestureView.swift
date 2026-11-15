@@ -117,9 +117,23 @@ class ScreenshotPinGestureView: NSView {
     /// only a move that did not come from zooming takes a new one. `point`
     /// is accepted for older callers and ignored.
     func zoom(by factor: CGFloat, at point: CGPoint? = nil) {
-        guard !isPositionLocked, let window, factor.isFinite, factor > 0, factor != 1 else { return }
+        guard factor.isFinite, factor > 0, factor != 1, let baseWidth = prepareZoom() else { return }
+        setZoomTarget(width: baseWidth * factor)
+    }
+
+    /// An absolute size, such as a fixed Zoom menu choice. It is measured
+    /// against nothing in flight, so a glide toward another size cannot skew it.
+    func zoom(toWidth width: CGFloat) {
+        guard width.isFinite, width > 0, prepareZoom() != nil else { return }
+        setZoomTarget(width: width)
+    }
+
+    /// The logical width zoom builds on, after taking a new center when the
+    /// pin was moved by anything but zooming.
+    private func prepareZoom() -> CGFloat? {
+        guard !isPositionLocked, let window else { return nil }
         let frame = window.frame
-        guard frame.width > 0, frame.height > 0 else { return }
+        guard frame.width > 0, frame.height > 0 else { return nil }
         if lastZoomFrame != frame || zoomCenter == nil {
             // First zoom, or the pin was dragged or nudged since the last one.
             stopZoomGlide()
@@ -127,11 +141,15 @@ class ScreenshotPinGestureView: NSView {
             logicalZoomWidth = frame.width
             lastZoomFrame = frame
         }
-        guard let geometry = zoomGeometry(for: window) else { return }
-        let baseWidth = logicalZoomWidth > 0 ? logicalZoomWidth : frame.width
+        return logicalZoomWidth > 0 ? logicalZoomWidth : frame.width
+    }
+
+    private func setZoomTarget(width requested: CGFloat) {
+        guard let window, let geometry = zoomGeometry(for: window) else { return }
+        let frame = window.frame
         // A very elongated image may not fit both its minimum and the display;
         // keep it reachable on screen in that case.
-        let target = min(max(baseWidth * factor, min(geometry.minimumWidth, geometry.maximumWidth)),
+        let target = min(max(requested, min(geometry.minimumWidth, geometry.maximumWidth)),
                          geometry.maximumWidth)
         logicalZoomWidth = target
         guard glidesZoom else {
@@ -158,8 +176,9 @@ class ScreenshotPinGestureView: NSView {
     private static let zoomGlideTimeConstant: TimeInterval = 0.05
 
     private func advanceZoomGlide() {
-        guard let window, window.frame == lastZoomFrame || lastZoomFrame == nil else {
-            // Something else moved or resized the pin; it owns the frame now.
+        guard let window, !isPositionLocked, window.frame == lastZoomFrame || lastZoomFrame == nil else {
+            // Something else moved or resized the pin, or it was locked; it
+            // owns the frame now.
             stopZoomGlide()
             return
         }
@@ -180,6 +199,9 @@ class ScreenshotPinGestureView: NSView {
         zoomGlideTimer?.invalidate()
         zoomGlideTimer = nil
     }
+
+    // The run loop retains a repeating timer; every release path stops it.
+    deinit { zoomGlideTimer?.invalidate() }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()

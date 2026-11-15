@@ -200,8 +200,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
 
     func setZoom(_ multiplier: CGFloat) {
         guard multiplier.isFinite, multiplier > 0, !NSEvent.modifierFlags.contains(.option) else { return }
-        surface.zoom(by: multiplier / zoomMultiplier,
-                     at: CGPoint(x: frame.width / 2, y: frame.height / 2))
+        surface.zoom(toWidth: CGFloat(image.width) / captureScale * multiplier)
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
