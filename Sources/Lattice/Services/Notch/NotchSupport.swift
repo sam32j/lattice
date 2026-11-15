@@ -388,8 +388,9 @@ enum NotchLayout {
 
     // Pomodoro's collapsible settings, sized to their content so the island's
     // own bottom padding is the only space below them, as under the ruler.
-    // The fields are a caption line, 4pt and a 28pt menu.
-    static let timerSettingsHeaderHeight: CGFloat = 32
+    // The header is one line of text; the fields are a caption line, 4pt
+    // and a 28pt menu.
+    static let timerSettingsHeaderHeight: CGFloat = 22
     static let timerSettingsFieldsHeight: CGFloat = 44
     static let timerSettingsRowHeight: CGFloat =
         timerSettingsHeaderHeight + timerSettingsFieldsHeight
@@ -762,9 +763,11 @@ enum NotchLayout {
             return 0
         }
 
+        // Collapsed until first opened, as the timer view's own storage
+        // defaults, so a fresh setup reserves no room for hidden fields.
         let expanded = UserDefaults.standard.object(
             forKey: timerSettingsExpandedDefaultsKey
-        ) as? Bool ?? true
+        ) as? Bool ?? false
 
         let fields = expanded
             ? timerSettingsFieldsHeight
