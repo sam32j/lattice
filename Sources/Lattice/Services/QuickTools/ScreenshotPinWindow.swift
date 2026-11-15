@@ -100,10 +100,19 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         }
     }
 
+    /// Visible pins front to back, as the window server stacks them.
+    /// `NSApp.orderedWindows` leaves panels out, so it never sees pins.
+    static func pinsFrontToBack() -> [ScreenshotPinWindow] {
+        let pins = NSApp.windows.compactMap { $0 as? ScreenshotPinWindow }.filter(\.isVisible)
+        let order = (NSWindow.windowNumbers(options: []) ?? []).map(\.intValue)
+        let rank = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        return pins.sorted { (rank[$0.windowNumber] ?? .max) < (rank[$1.windowNumber] ?? .max) }
+    }
+
     /// The topmost visible pin under `point`, click-through or not.
     func isTopPin(at point: CGPoint) -> Bool {
-        let top = NSApp.orderedWindows.lazy.compactMap { $0 as? ScreenshotPinWindow }.first {
-            $0.isVisible && !$0.isHiddenForDrag && !$0.isClosed && $0.frame.contains(point)
+        let top = Self.pinsFrontToBack().first {
+            !$0.isHiddenForDrag && !$0.isClosed && $0.frame.contains(point)
         }
         return top.map { $0 === self } ?? true
     }
@@ -111,8 +120,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     /// The topmost pin under `point`, in on-screen order, is the only one a
     /// pointer gesture may act on.
     func isFrontmostPin(at point: CGPoint) -> Bool {
-        let pins = NSApp.orderedWindows.filter { $0 is ScreenshotPinWindow && $0.isVisible }
-        return Self.hoverTarget(at: point, windows: pins).map { $0 === self } ?? true
+        Self.hoverTarget(at: point, windows: Self.pinsFrontToBack()).map { $0 === self } ?? true
     }
 
     static func hoverTarget(at point: CGPoint, windows: [NSWindow]) -> ScreenshotPinWindow? {
