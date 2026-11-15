@@ -56,7 +56,7 @@ final class ScreenshotQuickPreviewController {
     private var keyMonitor: Any?
     private var dismissWork: DispatchWorkItem?
     private let closePolicy: CapturePreviewClosePolicy
-    private var focusLossObserver: NSObjectProtocol?
+    private var focusLoss: PreviewFocusLoss?
     private var closed = false
     private let presentationID = UUID()
     private var shownInNotch = false
@@ -294,10 +294,7 @@ final class ScreenshotQuickPreviewController {
     func close() {
         guard !closed else { return }
         closed = true
-        if let focusLossObserver {
-            NotificationCenter.default.removeObserver(focusLossObserver)
-            self.focusLossObserver = nil
-        }
+        focusLoss = nil
         NotchService.shared.cancelDeferredCapturePresentation(id: presentationID)
         dismissWork?.cancel()
         dismissWork = nil
@@ -655,15 +652,12 @@ final class ScreenshotQuickPreviewController {
     }
 
     private func observeFocusLoss(of window: NSWindow) {
-        guard focusLossObserver == nil else { return }
-        focusLossObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didResignKeyNotification, object: window, queue: .main
-        ) { [weak self] _ in
-            guard let self, !self.closed, !self.quickLookOpen,
-                  !self.systemSharing, !self.contextMenuOpen,
-                  !self.model.sharing, !self.deletingCapture else { return }
-            self.close()
-        }
+        guard focusLoss == nil else { return }
+        focusLoss = PreviewFocusLoss(window: window, ignoresLoss: { [weak self] in
+            guard let self else { return true }
+            return self.closed || self.quickLookOpen || self.systemSharing || self.contextMenuOpen
+                || self.model.sharing || self.deletingCapture
+        }, onLoss: { [weak self] in self?.close() })
     }
 
     private func setContextMenuOpen(_ open: Bool) {

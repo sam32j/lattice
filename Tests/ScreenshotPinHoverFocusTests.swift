@@ -18,6 +18,7 @@ enum ScreenshotPinHoverFocusTests {
     }
     static var stack: [ScreenshotPinWindow] = []
     class State {
+        static var grantsHoverFocus = false
         var pins: [ScreenshotPinWindow] = []
         weak var hoverFocusPin: ScreenshotPinWindow?
     }

@@ -5,6 +5,8 @@ import AppKit
 
 /// Owns pins and lifetime-bound monitoring, while each pin owns its presentation.
 final class ScreenshotPinController {
+    /// True only while a pin takes focus because the pointer entered it.
+    static var grantsHoverFocus = false
     static let shared = ScreenshotPinController()
     private var pins: [ScreenshotPinWindow] = []
     private var escapeMonitor: Any?
@@ -140,7 +142,12 @@ final class ScreenshotPinController {
         hoverFocusPin = target
         // Entering a pin grants focus once. A stationary pointer must not
         // keep taking focus back from an editor opened over the same pin.
-        if let target, !target.isKeyWindow { target.makeKey() }
+        if let target, !target.isKeyWindow {
+            // Focus given by passing over a pin, not chosen by the person.
+            Self.grantsHoverFocus = true
+            defer { Self.grantsHoverFocus = false }
+            target.makeKey()
+        }
     }
 
     private func refreshGestureMonitor() {

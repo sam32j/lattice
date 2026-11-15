@@ -15,7 +15,7 @@ final class RecorderQuickPreviewController {
     private var keyMonitor: Any?
     private var dismissWork: DispatchWorkItem?
     private var closePolicy = CapturePreviewClosePolicy.fiveSeconds
-    private var focusLossObserver: NSObjectProtocol?
+    private var focusLoss: PreviewFocusLoss?
     /// A history-opened preview is navigation, not a transient capture confirmation.
     private var openedFromHistory = false
     private var quickLinkTask: Task<Void, Never>?
@@ -142,10 +142,7 @@ final class RecorderQuickPreviewController {
     func close() {
         guard !closed else { return }
         closed = true
-        if let focusLossObserver {
-            NotificationCenter.default.removeObserver(focusLossObserver)
-            self.focusLossObserver = nil
-        }
+        focusLoss = nil
         dismissWork?.cancel()
         dismissWork = nil
         quickLinkTask?.cancel()
@@ -182,14 +179,11 @@ final class RecorderQuickPreviewController {
     }
 
     private func observeFocusLoss(of window: NSWindow) {
-        guard focusLossObserver == nil else { return }
-        focusLossObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didResignKeyNotification, object: window, queue: .main
-        ) { [weak self] _ in
-            guard let self, !self.closed, !self.quickLookOpen, !self.systemSharing,
-                  !self.menuOpen, !self.model.sharing else { return }
-            self.close()
-        }
+        guard focusLoss == nil else { return }
+        focusLoss = PreviewFocusLoss(window: window, ignoresLoss: { [weak self] in
+            guard let self else { return true }
+            return self.closed || self.quickLookOpen || self.systemSharing || self.menuOpen || self.model.sharing
+        }, onLoss: { [weak self] in self?.close() })
     }
 
     private func menuChanged(_ open: Bool) {
