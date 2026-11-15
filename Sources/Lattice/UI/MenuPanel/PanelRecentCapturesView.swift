@@ -22,6 +22,7 @@ struct RecentCapturesView: View {
     @ObservedObject private var history = RecentCaptureService.shared
     @Environment(\.notchPresentation) private var inNotch
     @State private var confirmingClear = false
+    static var floatingMinimumHeight: CGFloat { RecentCaptureIslandRow.threePreviewHeight }
 
     var onClose: (() -> Void)?
     var showHeader: Bool = true
@@ -368,9 +369,12 @@ private struct RecentCaptureIslandRow: View {
     @ObservedObject private var featureRuntime = FeatureRuntime.shared
     @State private var imageHovered = false
     @State private var lastOpened: TimeInterval = 0
+    @State private var rowWidth: CGFloat = 388
     private let shareAnchor = ShelfSharePickerAnchor.Anchor()
 
     static let imageHeight: CGFloat = 150
+    /// Three previews and the gaps between them.
+    static let threePreviewHeight: CGFloat = imageHeight * 3 + 10 * 2
     private var isScreenshot: Bool { entry.kind == .screenshot }
     private var screenshot: ScreenshotFeatureStrings { FeatureStrings.screenshot(l10n.language) }
     private var recorder: RecorderFeatureStrings { FeatureStrings.recorder(l10n.language) }
@@ -388,10 +392,16 @@ private struct RecentCaptureIslandRow: View {
             .overlay { hoverBadge }
             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             .onHover { imageHovered = $0 }
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { rowWidth = $0 }
             .onTapGesture(perform: openQuickLook)
-            .onDrag { history.dragItemProvider(for: entry) ?? NSItemProvider() }
+            // The dragged image is the artwork alone, never the hover HUD.
+            .onDrag { history.dragItemProvider(for: entry) ?? NSItemProvider() } preview: {
+                artwork
+                    .frame(width: rowWidth, height: Self.imageHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            }
             .overlay(alignment: .topTrailing) { toolbar.padding(6) }
-            .overlay(alignment: .bottomLeading) {
+            .overlay(alignment: .topLeading) {
                 Text(time)
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(.white.opacity(0.9))

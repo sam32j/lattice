@@ -26,6 +26,10 @@ struct LatticeHubHostedUtility: View {
             return 172
         case .deviceControls:
             return DeviceControlsNavigationState.shared.contentHeight
+        case .recentCaptures:
+            // Same height as All Tools, so opening it never resizes the
+            // panel, but always room for three 150pt previews.
+            return max(RecentCapturesView.floatingMinimumHeight, launcher.floatingRootPageHeight)
         default:
             return 470
         }
