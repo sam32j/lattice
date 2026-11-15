@@ -695,6 +695,14 @@ final class RecentCaptureService: ObservableObject {
         }
         switch entry.kind {
         case .screenshot:
+            // The stored rendered PNG already carries any edits: Quick Look
+            // opens it at once, with nothing decoded or re-encoded first.
+            if let name = entry.screenshotName, Self.isSafeRelativePath(name),
+               let rendered = capturesRoot?.appendingPathComponent(name),
+               RecentCaptureStore.isRegularFile(rendered) {
+                present { done in ScreenshotQuickLookController.shared.show(url: rendered, owner: owner, onDismiss: done) }
+                return
+            }
             queue.async { [weak self] in
                 let capture = self?.loadScreenshot(entry)?.presentationCapture
                 DispatchQueue.main.async {
