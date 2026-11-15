@@ -8,6 +8,12 @@ class ScreenshotPinGestureView: NSView {
     private var lastZoomFrame: CGRect?
     private var zoomCenter: CGPoint?
     private var logicalZoomWidth: CGFloat = 0
+    /// The width relative zoom builds on. Past a size limit it runs a little
+    /// beyond the limit, so the small reversals a trackpad pinch reports
+    /// while held there are absorbed instead of nudging the pin off the
+    /// limit and back.
+    private var requestedZoomWidth: CGFloat = 0
+    private static let limitSlack: CGFloat = 0.04
     var isPositionLocked: Bool { false }
     var pinOpacity: CGFloat {
         get { window?.alphaValue ?? 1 }
@@ -118,14 +124,14 @@ class ScreenshotPinGestureView: NSView {
     /// is accepted for older callers and ignored.
     func zoom(by factor: CGFloat, at point: CGPoint? = nil) {
         guard factor.isFinite, factor > 0, factor != 1, let baseWidth = prepareZoom() else { return }
-        setZoomTarget(width: baseWidth * factor)
+        setZoomTarget(width: baseWidth * factor, relative: true)
     }
 
     /// An absolute size, such as a fixed Zoom menu choice. It is measured
     /// against nothing in flight, so a glide toward another size cannot skew it.
     func zoom(toWidth width: CGFloat) {
         guard width.isFinite, width > 0, prepareZoom() != nil else { return }
-        setZoomTarget(width: width)
+        setZoomTarget(width: width, relative: false)
     }
 
     /// The logical width zoom builds on, after taking a new center when the
@@ -139,18 +145,25 @@ class ScreenshotPinGestureView: NSView {
             stopZoomGlide()
             zoomCenter = CGPoint(x: frame.midX, y: frame.midY)
             logicalZoomWidth = frame.width
+            requestedZoomWidth = frame.width
             lastZoomFrame = frame
         }
-        return logicalZoomWidth > 0 ? logicalZoomWidth : frame.width
+        return requestedZoomWidth > 0 ? requestedZoomWidth : frame.width
     }
 
-    private func setZoomTarget(width requested: CGFloat) {
+    private func setZoomTarget(width requested: CGFloat, relative: Bool) {
         guard let window, let geometry = zoomGeometry(for: window) else { return }
         let frame = window.frame
         // A very elongated image may not fit both its minimum and the display;
         // keep it reachable on screen in that case.
-        let target = min(max(requested, min(geometry.minimumWidth, geometry.maximumWidth)),
-                         geometry.maximumWidth)
+        let lower = min(geometry.minimumWidth, geometry.maximumWidth)
+        let upper = geometry.maximumWidth
+        let target = min(max(requested, lower), upper)
+        requestedZoomWidth = relative
+            ? min(max(requested, lower / (1 + Self.limitSlack)), upper * (1 + Self.limitSlack))
+            : target
+        // Held at a limit, nothing changes until the request comes back inside.
+        guard target != logicalZoomWidth || zoomGlideTimer != nil || frame.width != target else { return }
         logicalZoomWidth = target
         guard glidesZoom else {
             applyZoom(width: target, in: window)
