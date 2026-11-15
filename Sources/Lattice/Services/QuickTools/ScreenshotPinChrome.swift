@@ -312,4 +312,17 @@ private final class PinControlPanel: OverlayPanel {
         hidesOnDeactivate = false
     }
     override var canBecomeKey: Bool { false }
+
+    /// Controls sit over the image, so scrolling or pinching on one zooms
+    /// the pin exactly as it would on the image beside it.
+    override func sendEvent(_ event: NSEvent) {
+        if let surface = parent?.contentView as? ScreenshotPinGestureView {
+            switch event.type {
+            case .scrollWheel: surface.scrollWheel(with: event); return
+            case .magnify: surface.magnify(with: event); return
+            default: break
+            }
+        }
+        super.sendEvent(event)
+    }
 }
