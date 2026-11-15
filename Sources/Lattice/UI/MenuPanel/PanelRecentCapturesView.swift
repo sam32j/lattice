@@ -396,7 +396,10 @@ private struct RecentCaptureIslandRow: View {
                     .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.8)
                     .allowsHitTesting(false)
             }
-            .overlay { hoverBadge }
+            .overlay {
+                hoverBadge
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            }
             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             .onHover { imageHovered = $0 }
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { rowWidth = $0 }
