@@ -6,22 +6,38 @@ import SwiftUI
 
 /// Kill Process, embedded as a Settings page: a live, searchable list of
 /// every running process with kill, force-kill, kill-all, kill-tree, and
-/// restart actions.
+/// restart actions. Its Apps view narrows the list to regular apps, quits
+/// them gracefully, and quits all or all but the front app, sparing the
+/// person's Keep Running list.
 struct KillProcessView: View {
     var inlineOptions = false
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var service = KillProcessService.shared
     @Environment(\.controlActiveState) private var controlActiveState
+    @AppStorage(DefaultsKey.killProcessOpensInApps) private var opensInApps = true
     @State private var showsOptions = false
     @State private var refreshTimer: Timer?
     @State private var pendingAction: PendingAction?
+    @State private var showsApps = true
+    @State private var choseScope = false
+    @State private var keepRunning: Set<String> = []
+    @State private var frontPID: Int32?
 
     private var strings: KillProcessFeatureStrings { FeatureStrings.killProcess(l10n.language) }
+    private var appStrings: KillProcessAppStrings { FeatureStrings.killProcessApps(l10n.language) }
 
     private enum PendingAction {
         case kill(KillProcessEntry, force: Bool)
         case killAll(name: String, force: Bool)
         case killTree(KillProcessEntry, force: Bool)
+        case quit(KillProcessEntry)
+        case quitBatch(pids: Set<Int32>, names: [String])
+    }
+
+    /// A process row that is a regular app, with what the quit rules read.
+    private struct AppRow {
+        let entry: KillProcessEntry
+        let bundleIdentifier: String?
     }
 
     var body: some View {
@@ -31,11 +47,24 @@ struct KillProcessView: View {
             columnHeader
             Divider()
             list
+            if showsApps {
+                Divider()
+                quitBar
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
+            if !choseScope {
+                choseScope = true
+                showsApps = opensInApps
+            }
+            keepRunning = QuitAppsSupport.keepRunning()
+            frontPID = QuitAppsActions.frontAppPID()
             service.refresh(force: true)
             updateTimer(for: controlActiveState)
+        }
+        .onChange(of: service.entries) { _, _ in
+            frontPID = QuitAppsActions.frontAppPID()
         }
         .onDisappear { stopTimer() }
         .onChange(of: controlActiveState) { _, newValue in
@@ -59,8 +88,17 @@ struct KillProcessView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 16) {
+                Picker("", selection: $showsApps) {
+                    Text(appStrings.scopeApps).tag(true)
+                    Text(appStrings.scopeProcesses).tag(false)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
                 Spacer()
-                Text(String(format: strings.processCountFormat, service.filteredEntries.count))
+                Text(showsApps
+                     ? String(format: appStrings.appCountFormat, appRows.count)
+                     : String(format: strings.processCountFormat, service.filteredEntries.count))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Button {
@@ -101,7 +139,8 @@ struct KillProcessView: View {
                 .frame(width: 72, alignment: .trailing)
             columnHeaderButton(strings.columnPID, column: .pid)
                 .frame(width: 56, alignment: .trailing)
-            Spacer().frame(width: 98)
+            // The Apps view's rows add the 22pt Keep Running pin and its gap.
+            Spacer().frame(width: showsApps ? 130 : 98)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
@@ -128,7 +167,9 @@ struct KillProcessView: View {
 
     @ViewBuilder
     private var list: some View {
-        if service.filteredEntries.isEmpty {
+        if showsApps {
+            appList
+        } else if service.filteredEntries.isEmpty {
             // A transient ps hiccup no longer clears `entries` (KillProcessService
             // keeps the last good snapshot), so an empty list here means either
             // the very first load hasn't landed yet, or a search genuinely
@@ -220,6 +261,171 @@ struct KillProcessView: View {
         .padding(.vertical, 2)
     }
 
+    // MARK: Apps view
+
+    private var appRows: [AppRow] {
+        let apps = Dictionary(NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .regular && !$0.isTerminated }
+            .map { ($0.processIdentifier, $0.bundleIdentifier) },
+            uniquingKeysWith: { first, _ in first })
+        return service.filteredEntries.compactMap { entry in
+            apps.index(forKey: entry.pid).map { AppRow(entry: entry, bundleIdentifier: apps.values[$0]) }
+        }
+    }
+
+    @ViewBuilder
+    private var appList: some View {
+        let rows = appRows
+        if rows.isEmpty {
+            if service.hasLoadedOnce {
+                VStack {
+                    Spacer()
+                    Text(appStrings.emptyApps).foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                loadingState
+            }
+        } else {
+            List(rows, id: \.entry.id) { row in appRow(row) }
+                .listStyle(.inset)
+        }
+    }
+
+    private func isKept(_ bundleIdentifier: String?) -> Bool {
+        guard let bundleIdentifier else { return false }
+        return QuitAppsSupport.isAlwaysKept(bundleIdentifier) || keepRunning.contains(bundleIdentifier)
+    }
+
+    private func appRow(_ row: AppRow) -> some View {
+        let entry = row.entry
+        let alwaysKept = QuitAppsSupport.isAlwaysKept(row.bundleIdentifier)
+        let kept = isKept(row.bundleIdentifier)
+        return HStack(spacing: 10) {
+            Image(nsImage: ResponsibleProcess.icon(for: entry.pid))
+                .resizable().frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 5) {
+                    Text(entry.name).font(.system(size: 12.5)).lineLimit(1).truncationMode(.middle)
+                    if entry.pid == frontPID { badge(appStrings.frontBadge, tint: .accentColor) }
+                    if kept { badge(appStrings.keptBadge, tint: .secondary) }
+                }
+                Text(entry.path)
+                    .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    .lineLimit(1).truncationMode(.head)
+            }
+            Spacer()
+            Text(String(format: "%.1f%%", locale: MetricFormat.locale, entry.cpuPercent))
+                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                .frame(width: 52, alignment: .trailing)
+            Text(MetricFormat.bytes(UInt64(max(0, entry.memoryBytes))))
+                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                .frame(width: 72, alignment: .trailing)
+            Text(String(entry.pid))
+                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                .frame(width: 56, alignment: .trailing)
+            keepRunningControl(bundleIdentifier: row.bundleIdentifier, alwaysKept: alwaysKept, kept: kept)
+                .frame(width: 22)
+            Button(appStrings.quitButton) {
+                pendingAction = .quit(entry)
+            }
+            .frame(minWidth: 44)
+            .disabled(entry.isProtected)
+            Menu {
+                Button(appStrings.forceQuitButton) { pendingAction = .kill(entry, force: true) }
+                    .disabled(entry.isProtected)
+                if service.canRestart(entry) {
+                    Button(strings.restartButton) { service.restart(entry) }
+                }
+                Divider()
+                Button(strings.copyPID) { copy(String(entry.pid)) }
+                Button(strings.copyPath) { copy(entry.path) }
+            } label: {
+                Image(systemName: "ellipsis")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .frame(minWidth: 44)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .padding(.vertical, 2)
+    }
+
+    private func badge(_ title: String, tint: Color) -> some View {
+        Text(title)
+            .font(.system(size: 9.5, weight: .semibold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(Capsule().fill(tint.opacity(0.14)))
+    }
+
+    @ViewBuilder
+    private func keepRunningControl(bundleIdentifier: String?, alwaysKept: Bool, kept: Bool) -> some View {
+        if alwaysKept {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(.tertiary)
+                .help(appStrings.alwaysKept)
+                .accessibilityLabel(appStrings.alwaysKept)
+        } else if let bundleIdentifier {
+            let title = kept ? appStrings.stopKeepingRunning : appStrings.keepRunning
+            Button {
+                QuitAppsSupport.setKeepRunning(!kept, bundleIdentifier: bundleIdentifier)
+                keepRunning = QuitAppsSupport.keepRunning()
+            } label: {
+                Image(systemName: kept ? "pin.fill" : "pin")
+                    .font(.system(size: 11))
+                    .foregroundStyle(kept ? Color.accentColor : Color.secondary)
+                    .frame(width: 22, height: 22)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .help(title)
+            .accessibilityLabel(title)
+        }
+    }
+
+    /// Apps a batch quit would ask to quit right now, across every running
+    /// app rather than only those the search shows.
+    private func batchTargets(keepingFront: Bool) -> [QuitAppsCandidate] {
+        QuitAppsSupport.batchQuitTargets(
+            QuitAppsActions.runningCandidates(),
+            exceptions: QuitAppsSupport.batchExceptions(keepRunning: keepRunning),
+            keepingPID: keepingFront ? frontPID : nil)
+    }
+
+    private var keptRunningCount: Int {
+        NSWorkspace.shared.runningApplications.filter {
+            $0.activationPolicy == .regular && !$0.isTerminated && isKept($0.bundleIdentifier)
+        }.count
+    }
+
+    private var quitBar: some View {
+        let others = frontPID == nil ? [] : batchTargets(keepingFront: true)
+        let all = batchTargets(keepingFront: false)
+        return HStack(spacing: 10) {
+            Text(String(format: appStrings.keptCountFormat, keptRunningCount))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button(appStrings.quitOthers) {
+                pendingAction = .quitBatch(pids: Set(others.map(\.pid)), names: others.map(\.name))
+            }
+            .disabled(others.isEmpty)
+            Button(appStrings.quitAll) {
+                pendingAction = .quitBatch(pids: Set(all.map(\.pid)), names: all.map(\.name))
+            }
+            .disabled(all.isEmpty)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+
     // MARK: Confirmation
 
     private var alertTitle: String {
@@ -231,6 +437,10 @@ struct KillProcessView: View {
             return String(format: strings.confirmKillAllFormat, name)
         case let .killTree(entry, _):
             return String(format: strings.confirmKillTreeFormat, entry.name)
+        case let .quit(entry):
+            return String(format: appStrings.confirmQuitFormat, entry.name)
+        case let .quitBatch(pids, _):
+            return String(format: appStrings.confirmBatchFormat, pids.count)
         }
     }
 
@@ -239,6 +449,10 @@ struct KillProcessView: View {
         case let .kill(entry, _): return entry.path
         case let .killTree(entry, _): return entry.path
         case .killAll: return ""
+        case .quit: return appStrings.confirmQuitMessage
+        case let .quitBatch(_, names):
+            // Exactly the apps that will be asked to quit.
+            return ListFormatter.localizedString(byJoining: names)
         }
     }
 
@@ -247,6 +461,8 @@ struct KillProcessView: View {
         case let .kill(_, force): return force ? strings.forceKillButton : strings.killButton
         case .killAll: return strings.killButton
         case .killTree: return strings.killTreeButton
+        case .quit: return appStrings.quitButton
+        case .quitBatch: return appStrings.quitAll
         }
     }
 
@@ -255,7 +471,20 @@ struct KillProcessView: View {
         case let .kill(entry, force): service.kill(entry, force: force)
         case let .killAll(name, force): service.killAll(named: name, force: force)
         case let .killTree(entry, force): service.killTree(entry, force: force)
+        case let .quit(entry):
+            NSRunningApplication(processIdentifier: entry.pid)?.terminate()
+            refreshSoon()
+        case let .quitBatch(pids, _):
+            // Only the apps the confirmation listed, each checked again.
+            QuitAppsActions.quit(confirmed: pids,
+                                 exceptions: QuitAppsSupport.batchExceptions(keepRunning: keepRunning))
+            refreshSoon()
         }
+    }
+
+    /// Apps quit on their own schedule; look again once they have had a moment.
+    private func refreshSoon() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { service.refresh(force: true) }
     }
 
     // MARK: Helpers

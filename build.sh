@@ -544,6 +544,7 @@ if (( TEST )); then
         Sources/Lattice/Core/Localizations/Strings+*.swift
         Sources/Lattice/Core/FeatureStrings.swift
         Sources/Lattice/Core/KillProcessStrings.swift
+        Sources/Lattice/Core/KillProcessAppStrings.swift
         Sources/Lattice/Core/PortManagerStrings.swift
         Sources/Lattice/Core/ReleaseNotes.swift
         Sources/Lattice/Core/ReleaseDigest.swift
