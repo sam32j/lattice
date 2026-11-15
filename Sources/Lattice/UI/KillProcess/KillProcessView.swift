@@ -11,6 +11,10 @@ import SwiftUI
 /// person's Keep Running list.
 struct KillProcessView: View {
     var inlineOptions = false
+    /// The floating Hub and the Dynamic Island are narrow: the PID column
+    /// moves into the row's menu, columns and buttons tighten, and the list
+    /// sits on the surface's own glass.
+    var compact = false
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var service = KillProcessService.shared
     @Environment(\.controlActiveState) private var controlActiveState
@@ -32,6 +36,19 @@ struct KillProcessView: View {
         case killTree(KillProcessEntry, force: Bool)
         case quit(KillProcessEntry)
         case quitBatch(pids: Set<Int32>, names: [String])
+    }
+
+    // Column and button widths, shared by the header and every row so each
+    // label sits over its column.
+    private var spacing: CGFloat { compact ? 8 : 10 }
+    private var iconSize: CGFloat { compact ? 20 : 22 }
+    private var cpuWidth: CGFloat { compact ? 44 : 52 }
+    private var memoryWidth: CGFloat { compact ? 60 : 72 }
+    private var actionWidth: CGFloat { compact ? 40 : 44 }
+    private var menuWidth: CGFloat { compact ? 26 : 44 }
+    private var pinWidth: CGFloat { compact ? 20 : 22 }
+    private var trailingWidth: CGFloat {
+        actionWidth + spacing + menuWidth + (showsApps ? pinWidth + spacing : 0)
     }
 
     /// A process row that is a regular app, with what the quit rules read.
@@ -87,13 +104,14 @@ struct KillProcessView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 16) {
+            HStack(spacing: compact ? 10 : 16) {
                 Picker("", selection: $showsApps) {
                     Text(appStrings.scopeApps).tag(true)
                     Text(appStrings.scopeProcesses).tag(false)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .controlSize(compact ? .small : .regular)
                 .fixedSize()
                 Spacer()
                 Text(showsApps
@@ -111,7 +129,7 @@ struct KillProcessView: View {
                 if inlineOptions { KillProcessOptionsButton(presented: $showsOptions) }
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: spacing) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
                 TextField(strings.searchPlaceholder, text: $service.query)
                     .textFieldStyle(.plain)
@@ -120,7 +138,7 @@ struct KillProcessView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(compact ? 12 : 16)
     }
 
     // MARK: Column header
@@ -129,20 +147,22 @@ struct KillProcessView: View {
     /// column: the leading `22`pt gap matches the row icon, and the trailing
     /// `98`pt gap matches the Kill + "..." button cluster.
     private var columnHeader: some View {
-        HStack(spacing: 10) {
-            Spacer().frame(width: 22)
+        HStack(spacing: spacing) {
+            Spacer().frame(width: iconSize)
             columnHeaderButton(strings.columnProcess, column: .name)
                 .frame(maxWidth: .infinity, alignment: .leading)
             columnHeaderButton(strings.columnCPU, column: .cpu)
-                .frame(width: 52, alignment: .trailing)
+                .frame(width: cpuWidth, alignment: .trailing)
             columnHeaderButton(strings.columnMemory, column: .memory)
-                .frame(width: 72, alignment: .trailing)
-            columnHeaderButton(strings.columnPID, column: .pid)
-                .frame(width: 56, alignment: .trailing)
-            // The Apps view's rows add the 22pt Keep Running pin and its gap.
-            Spacer().frame(width: showsApps ? 130 : 98)
+                .frame(width: memoryWidth, alignment: .trailing)
+            if !compact {
+                columnHeaderButton(strings.columnPID, column: .pid)
+                    .frame(width: 56, alignment: .trailing)
+            }
+            // The Apps view's rows add the Keep Running pin and its gap.
+            Spacer().frame(width: trailingWidth)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, compact ? 12 : 16)
         .padding(.vertical, 6)
     }
 
@@ -180,8 +200,17 @@ struct KillProcessView: View {
                 loadingState
             }
         } else {
-            List(service.filteredEntries) { entry in row(entry) }
-                .listStyle(.inset)
+            listSurface(List(service.filteredEntries) { entry in row(entry) })
+        }
+    }
+
+    /// Settings keeps the inset list; the Hub and island show their glass.
+    @ViewBuilder
+    private func listSurface<Content: View>(_ list: List<Never, Content>) -> some View {
+        if compact {
+            list.listStyle(.plain).scrollContentBackground(.hidden)
+        } else {
+            list.listStyle(.inset)
         }
     }
 
@@ -204,9 +233,9 @@ struct KillProcessView: View {
     }
 
     private func row(_ entry: KillProcessEntry) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: spacing) {
             Image(nsImage: ResponsibleProcess.icon(for: entry.pid))
-                .resizable().frame(width: 22, height: 22)
+                .resizable().frame(width: iconSize, height: iconSize)
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
                     Text(entry.name).font(.system(size: 12.5)).lineLimit(1).truncationMode(.middle)
@@ -220,21 +249,14 @@ struct KillProcessView: View {
                     .lineLimit(1).truncationMode(.head)
             }
             Spacer()
-            Text(String(format: "%.1f%%", locale: MetricFormat.locale, entry.cpuPercent))
-                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-                .frame(width: 52, alignment: .trailing)
-            Text(MetricFormat.bytes(UInt64(max(0, entry.memoryBytes))))
-                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-                .frame(width: 72, alignment: .trailing)
-            Text(String(entry.pid))
-                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-                .frame(width: 56, alignment: .trailing)
+            metrics(entry)
             Button(strings.killButton) {
                 pendingAction = .kill(entry, force: false)
             }
-            .frame(minWidth: 44)
+            .frame(minWidth: actionWidth)
             .disabled(entry.isProtected)
             Menu {
+                if compact { Text(String(format: strings.pidLabelFormat, entry.pid)) }
                 Button(strings.forceKillButton) { pendingAction = .kill(entry, force: true) }
                     .disabled(entry.isProtected)
                 Button(String(format: strings.killAllFormat, entry.name)) {
@@ -254,7 +276,7 @@ struct KillProcessView: View {
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
-            .frame(minWidth: 44)
+            .frame(width: menuWidth)
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
@@ -288,8 +310,7 @@ struct KillProcessView: View {
                 loadingState
             }
         } else {
-            List(rows, id: \.entry.id) { row in appRow(row) }
-                .listStyle(.inset)
+            listSurface(List(rows, id: \.entry.id) { row in appRow(row) })
         }
     }
 
@@ -302,9 +323,9 @@ struct KillProcessView: View {
         let entry = row.entry
         let alwaysKept = QuitAppsSupport.isAlwaysKept(row.bundleIdentifier)
         let kept = isKept(row.bundleIdentifier)
-        return HStack(spacing: 10) {
+        return HStack(spacing: spacing) {
             Image(nsImage: ResponsibleProcess.icon(for: entry.pid))
-                .resizable().frame(width: 22, height: 22)
+                .resizable().frame(width: iconSize, height: iconSize)
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 5) {
                     Text(entry.name).font(.system(size: 12.5)).lineLimit(1).truncationMode(.middle)
@@ -316,23 +337,16 @@ struct KillProcessView: View {
                     .lineLimit(1).truncationMode(.head)
             }
             Spacer()
-            Text(String(format: "%.1f%%", locale: MetricFormat.locale, entry.cpuPercent))
-                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-                .frame(width: 52, alignment: .trailing)
-            Text(MetricFormat.bytes(UInt64(max(0, entry.memoryBytes))))
-                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-                .frame(width: 72, alignment: .trailing)
-            Text(String(entry.pid))
-                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-                .frame(width: 56, alignment: .trailing)
+            metrics(entry)
             keepRunningControl(bundleIdentifier: row.bundleIdentifier, alwaysKept: alwaysKept, kept: kept)
-                .frame(width: 22)
+                .frame(width: pinWidth)
             Button(appStrings.quitButton) {
                 pendingAction = .quit(entry)
             }
-            .frame(minWidth: 44)
+            .frame(minWidth: actionWidth)
             .disabled(entry.isProtected)
             Menu {
+                if compact { Text(String(format: strings.pidLabelFormat, entry.pid)) }
                 Button(appStrings.forceQuitButton) { pendingAction = .kill(entry, force: true) }
                     .disabled(entry.isProtected)
                 if service.canRestart(entry) {
@@ -346,11 +360,29 @@ struct KillProcessView: View {
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
-            .frame(minWidth: 44)
+            .frame(width: menuWidth)
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
         .padding(.vertical, 2)
+    }
+
+    /// CPU and memory, plus PID outside compact mode, where the row's menu
+    /// shows it instead.
+    @ViewBuilder
+    private func metrics(_ entry: KillProcessEntry) -> some View {
+        Text(String(format: "%.1f%%", locale: MetricFormat.locale, entry.cpuPercent))
+            .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+            .frame(width: cpuWidth, alignment: .trailing)
+        Text(MetricFormat.bytes(UInt64(max(0, entry.memoryBytes))))
+            .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+            .lineLimit(1).minimumScaleFactor(0.85)
+            .frame(width: memoryWidth, alignment: .trailing)
+        if !compact {
+            Text(String(entry.pid))
+                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                .frame(width: 56, alignment: .trailing)
+        }
     }
 
     private func badge(_ title: String, tint: Color) -> some View {
@@ -422,8 +454,8 @@ struct KillProcessView: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, compact ? 12 : 16)
+        .padding(.vertical, compact ? 8 : 10)
     }
 
     // MARK: Confirmation
