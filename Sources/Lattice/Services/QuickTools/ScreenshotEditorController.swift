@@ -1530,6 +1530,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         host.sizingOptions = [.minSize]
         let window = ScreenshotEditorWindow(contentViewController: host)
         window.level = ScreenshotWindowLayering.editorLevel(above: owner)
+        observeActivation(of: window, owner: owner)
         // One continuous surface: the canvas fills the window and the
         // controls float over it, so the editor reads as a single object.
         window.title = strings.editorTitle
@@ -1561,6 +1562,23 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             self.model.recognizeText()
             self.model.recognizeQRCodes()
         }
+    }
+
+    private var activationObservers: [NSObjectProtocol] = []
+
+    /// The editor clears pins only while Lattice is in front. In another app
+    /// it is an ordinary window and falls behind that app's windows.
+    private func observeActivation(of window: NSWindow, owner: NSWindow?) {
+        let center = NotificationCenter.default
+        let raised = ScreenshotWindowLayering.editorLevel(above: owner)
+        activationObservers = [
+            center.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak window] _ in
+                window?.level = .normal
+            },
+            center.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak window] _ in
+                window?.level = raised
+            }
+        ]
     }
 
     func endInlineTextEditing() {
@@ -1991,6 +2009,8 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
         }
+        activationObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        activationObservers.removeAll()
         window?.delegate = nil
         window = nil
         ScreenshotService.shared.editorDidClose(self)
