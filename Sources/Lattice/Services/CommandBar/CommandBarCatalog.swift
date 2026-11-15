@@ -1784,14 +1784,17 @@ enum CommandBarCatalog {
     static func quitAppsEntries(togglesText: QuickToggleFeatureStrings,
                                 bar: CommandBarFeatureStrings,
                                 subtitle: String) -> [CommandBarEntry] {
-        let running = runningQuitCandidates()
+        let running = QuitAppsActions.runningCandidates()
         let front = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        // The Keep Running list from Kill Process's Apps view applies here too.
+        let exceptions = QuitAppsSupport.batchExceptions(keepRunning: QuitAppsSupport.keepRunning())
         let choices: [(id: String, title: String, keeping: Int32?, icon: String)] = [
             ("action.quitAllApps", togglesText.quitAllTitle, nil, "xmark.circle"),
             ("action.quitOtherApps", togglesText.quitOthersTitle, front, "xmark.square"),
         ]
         return choices.compactMap { choice in
-            let targets = QuitAppsSupport.batchQuitTargets(running, keepingPID: choice.keeping)
+            let targets = QuitAppsSupport.batchQuitTargets(running, exceptions: exceptions,
+                                                           keepingPID: choice.keeping)
             guard !targets.isEmpty,
                   // Without a front app to keep, the second choice is the first.
                   choice.keeping != nil || choice.id == "action.quitAllApps" else { return nil }
@@ -1806,22 +1809,8 @@ enum CommandBarCatalog {
                     // Only the apps the confirmation listed: one that opened
                     // meanwhile, or a front app that changed, is left alone.
                     // Each is checked again, so one that quit is skipped.
-                    let still = QuitAppsSupport.batchQuitTargets(
-                        runningQuitCandidates().filter { confirmed.contains($0.pid) }, keepingPID: nil)
-                    for target in still {
-                        NSRunningApplication(processIdentifier: target.pid)?.terminate()
-                    }
+                    QuitAppsActions.quit(confirmed: confirmed, exceptions: exceptions)
                 })
-        }
-    }
-
-    private static func runningQuitCandidates() -> [QuitAppsCandidate] {
-        NSWorkspace.shared.runningApplications.map { app in
-            QuitAppsCandidate(pid: app.processIdentifier,
-                              name: app.localizedName ?? app.bundleIdentifier ?? "",
-                              bundleIdentifier: app.bundleIdentifier,
-                              activationPolicyRawValue: app.activationPolicy.rawValue,
-                              isTerminated: app.isTerminated)
         }
     }
 

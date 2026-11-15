@@ -2,6 +2,8 @@
 // Copyright (C) 2026 Vorssaint
 // Copyright (C) 2026 Samuel Ji
 
+import Foundation
+
 /// Which running apps a batch quit asks to quit. Adopted from upstream's Quit
 /// apps window (v3.4.3), whose targeting rules Lattice serves from the Command
 /// Bar instead of a separate panel. Kept free of AppKit for the unit harness.
@@ -20,6 +22,32 @@ enum QuitAppsSupport {
     /// Auto Quit's locked pair, Finder and Phone, always keeps running.
     static var keptBundleIdentifiers: Set<String> {
         Set(Defaults.mandatoryAutoQuitExceptionBundleIDs)
+    }
+
+    /// Apps that can never be batch-quit, whatever the Keep Running list says.
+    static func isAlwaysKept(_ bundleIdentifier: String?) -> Bool {
+        guard let bundleIdentifier else { return false }
+        return keptBundleIdentifiers.contains(bundleIdentifier)
+            || latticeBundleIdentifiers.contains(bundleIdentifier)
+    }
+
+    /// The person's Keep Running list: apps Quit All and Quit Others spare.
+    /// Separate from Auto Quit's exceptions, which mean "never quit on close".
+    static func keepRunning(in defaults: UserDefaults = .standard) -> Set<String> {
+        Set(defaults.stringArray(forKey: DefaultsKey.quitAppsKeepRunning) ?? [])
+    }
+
+    static func setKeepRunning(_ keep: Bool, bundleIdentifier: String,
+                               in defaults: UserDefaults = .standard) {
+        guard !bundleIdentifier.isEmpty, !isAlwaysKept(bundleIdentifier) else { return }
+        var list = keepRunning(in: defaults)
+        if keep { list.insert(bundleIdentifier) } else { list.remove(bundleIdentifier) }
+        defaults.set(list.sorted(), forKey: DefaultsKey.quitAppsKeepRunning)
+    }
+
+    /// Everything a batch quit leaves running: the locked pair plus the list.
+    static func batchExceptions(keepRunning: Set<String>) -> Set<String> {
+        keptBundleIdentifiers.union(keepRunning)
     }
 
     /// Whether a running app should receive a soft quit. Only regular GUI apps

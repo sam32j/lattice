@@ -23,5 +23,25 @@ enum QuitAppsSupportTests {
                      "quit others also keeps the front app")
         suite.expect(QuitAppsSupport.batchQuitTargets(running, exceptions: [], keepingPID: nil).map(\.pid) == [1, 2, 3, 4],
                      "Lattice never quits itself even without kept apps")
+
+        // Kill Process's Keep Running list.
+        let defaults = UserDefaults(suiteName: "io.github.sam32j.lattice.tests.quit-apps")!
+        defaults.removePersistentDomain(forName: "io.github.sam32j.lattice.tests.quit-apps")
+        defer { defaults.removePersistentDomain(forName: "io.github.sam32j.lattice.tests.quit-apps") }
+        QuitAppsSupport.setKeepRunning(true, bundleIdentifier: "com.apple.mail", in: defaults)
+        QuitAppsSupport.setKeepRunning(true, bundleIdentifier: "com.apple.finder", in: defaults)
+        let kept = QuitAppsSupport.keepRunning(in: defaults)
+        suite.expect(kept == ["com.apple.mail"],
+                     "Keep Running stores chosen apps but never the always-kept pair")
+        suite.expect(QuitAppsSupport.batchQuitTargets(
+            running, exceptions: QuitAppsSupport.batchExceptions(keepRunning: kept), keepingPID: nil).map(\.pid) == [1],
+                     "Quit All spares apps on the Keep Running list")
+        QuitAppsSupport.setKeepRunning(false, bundleIdentifier: "com.apple.mail", in: defaults)
+        suite.expect(QuitAppsSupport.keepRunning(in: defaults).isEmpty,
+                     "an app can be taken off the Keep Running list")
+        suite.expect(QuitAppsSupport.isAlwaysKept("com.apple.mobilephone")
+                     && QuitAppsSupport.isAlwaysKept(DownstreamIdentity.bundleID)
+                     && !QuitAppsSupport.isAlwaysKept("com.apple.Safari"),
+                     "Finder, Phone and Lattice are always kept; other apps are not")
     }
 }
