@@ -1108,7 +1108,11 @@ fileprivate final class SwitcherPendingWindowClose {
               NSWorkspace.shared.frontmostApplication?.processIdentifier == foregroundPID else { return false }
         // Native selection of another window in the same app does not change
         // our activation generation or send an app activation notification.
-        return WindowActivator.focusedWindowID(for: foregroundPID) == foregroundWindowID
+        let focused = WindowActivator.focusedWindowID(for: foregroundPID)
+        // The lookup can wait; another app activated meanwhile wins.
+        guard !focusWasSuperseded, !appWasReactivated, WindowActivator.isCurrentActivation(generation),
+              NSWorkspace.shared.frontmostApplication?.processIdentifier == foregroundPID else { return false }
+        return focused == foregroundWindowID
     }
 }
 
