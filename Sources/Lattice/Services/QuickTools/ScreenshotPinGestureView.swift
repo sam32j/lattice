@@ -24,9 +24,12 @@ class ScreenshotPinGestureView: NSView {
     /// share screen space, so a wheel, pinch or touch AppKit hands to a pin
     /// lower in the stack must not zoom it too.
     var ownsPointer: Bool { true }
+    /// A trackpad scroll stays with the pin it began on until the fingers
+    /// lift, even after the pin shrinks out from under the pointer.
+    func ownsScroll(_ event: NSEvent) -> Bool { ownsPointer }
 
     override func scrollWheel(with event: NSEvent) {
-        guard let window, !window.ignoresMouseEvents, event.momentumPhase.isEmpty, ownsPointer else { return }
+        guard let window, !window.ignoresMouseEvents, event.momentumPhase.isEmpty, ownsScroll(event) else { return }
         var delta = event.scrollingDeltaY
         if !event.hasPreciseScrollingDeltas, let native = event.cgEvent {
             delta = ScreenshotSupport.captureLoupeWheelDelta(

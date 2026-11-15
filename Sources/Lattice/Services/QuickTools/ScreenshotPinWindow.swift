@@ -131,6 +131,10 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
 
     func resetGestureTracking() { surface.resetGestureTracking() }
 
+    /// The pin a trackpad scroll began on; it keeps the gesture until lift.
+    static weak var scrollLatchedPin: ScreenshotPinWindow?
+    func forwardScroll(_ event: NSEvent) { surface.scrollWheel(with: event) }
+
     func handleGestureEvent(_ event: NSEvent, screenLocation: CGPoint = NSEvent.mouseLocation) {
         guard !isClosed, !isPositionLocked, !ignoresMouseEvents else { return }
         surface.handleGestureEvent(event, at: convertPoint(fromScreen: screenLocation))

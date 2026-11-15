@@ -17,6 +17,10 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
         !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion && !NotchSupport.isTestHarness
     }
     override var ownsPointer: Bool { pin?.isFrontmostPin(at: NSEvent.mouseLocation) ?? true }
+    override func ownsScroll(_ event: NSEvent) -> Bool {
+        if !event.phase.isEmpty, let latched = ScreenshotPinWindow.scrollLatchedPin { return latched === pin }
+        return ownsPointer
+    }
 
     init(image: CGImage, pin: ScreenshotPinWindow) {
         self.pin = pin
