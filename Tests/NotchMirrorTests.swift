@@ -83,6 +83,7 @@ enum NotchMirrorContract {
         var displayID: CGDirectDisplayID? = 1
         var mirrors: [CGDirectDisplayID: NotchMirror] = [:]
         var fullscreenDisplays: Set<CGDirectDisplayID> = []
+        var coverageSnapshot: Set<CGDirectDisplayID>?
         var compactActivity: NotchCompactActivity?
         var compactCompanion: NotchCompactActivity?
         var idleContent = NotchIdleContent.none

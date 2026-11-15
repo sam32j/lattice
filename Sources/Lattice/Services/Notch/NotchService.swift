@@ -326,6 +326,9 @@ final class NotchService: ObservableObject {
     private var menuSpaceTimer: Timer?
     private var appFullscreenTimer: Timer?
     private var appFullscreenDisplays: Set<CGDirectDisplayID> = []
+    /// One reading of app-covered displays for a whole reevaluation, so the
+    /// island, its copies and the poll's cache never act on different reads.
+    private var coverageSnapshot: Set<CGDirectDisplayID>?
     private var menuSpaceReading = false
     private var menuSpaceGeneration = 0
     private var menuBarMeasurements = NotchMenuBarMeasurements()
@@ -3462,7 +3465,7 @@ final class NotchService: ObservableObject {
     private func updateFullscreenDisplays() {
         guard showsOnAllDisplays, UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen)
         else { fullscreenDisplays = []; return }
-        let covered = NotchAppFullscreen.coveredDisplays()
+        let covered = coverageSnapshot ?? NotchAppFullscreen.coveredDisplays()
         guard let topology = SpaceWindowBridge.topology() else { fullscreenDisplays = covered; return }
         let separate = NSScreen.screensHaveSeparateSpaces
         fullscreenDisplays = Set(NSScreen.screens.map(\.notchDisplayID).filter {
@@ -3782,7 +3785,7 @@ final class NotchService: ObservableObject {
         // frontmost app's windows are read when the Space is not full screen.
         let hidden = UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen)
             && (SpaceWindowBridge.topology()?.isFullscreen(on: displayID, separateSpaces: NSScreen.screensHaveSeparateSpaces) == true
-                || NotchAppFullscreen.coveredDisplays().contains(displayID))
+                || (coverageSnapshot ?? NotchAppFullscreen.coveredDisplays()).contains(displayID))
         guard hidden != hiddenInFullscreen else { return }
         hiddenInFullscreen = hidden
         if hidden {
@@ -3808,6 +3811,11 @@ final class NotchService: ObservableObject {
         guard running, !suspended,
               hiddenInFullscreen || UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen)
         else { return }
+        let ownsSnapshot = coverageSnapshot == nil
+        if ownsSnapshot { coverageSnapshot = NotchAppFullscreen.coveredDisplays() }
+        defer { if ownsSnapshot { coverageSnapshot = nil } }
+        // The poll compares against what was applied, not a later read.
+        if let coverageSnapshot { appFullscreenDisplays = coverageSnapshot }
         let wasHidden = hiddenInFullscreen
         updateScreen()
         // Each copy follows full screen on its own display.
@@ -3847,7 +3855,8 @@ final class NotchService: ObservableObject {
     private func readAppFullscreen() {
         let covered = NotchAppFullscreen.coveredDisplays()
         guard covered != appFullscreenDisplays else { return }
-        appFullscreenDisplays = covered
+        coverageSnapshot = covered
+        defer { coverageSnapshot = nil }
         fullscreenEnvironmentDidChange()
     }
 
