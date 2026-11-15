@@ -17,6 +17,9 @@ struct ScreenshotEditorView: View {
     @State private var dragInFlight = false
     @State private var drag = ScreenshotSupport.EditorDrag()
     @State private var dragCanvasArea: CGSize?
+    /// Room the floating controls take on each side of the canvas; the fit
+    /// keeps the capture clear of them, scrolling may pass beneath them.
+    @State private var canvasReserve = EdgeInsets(top: 0, leading: 53, bottom: 48, trailing: 50)
     @State private var appeared = false
     @State private var backdropPopoverShown = false
     @StateObject private var watermarkTool = ScreenshotWatermarkToolAnchor.Presenter()
@@ -81,9 +84,6 @@ struct ScreenshotEditorView: View {
         return cursor
     }
 
-    private var recentCapturesTitle: String {
-        FeatureStrings.recentCaptures(l10n.language).title
-    }
 
     var body: some View {
         // Real rows and columns, not overlays: the canvas scrolls in its own
@@ -94,51 +94,66 @@ struct ScreenshotEditorView: View {
                 topBand
                     .padding(.top, 10)
                     .padding(.horizontal, 12)
-                HStack(spacing: 0) {
-                    ScrollView(.vertical) {
-                        VStack(spacing: 0) {
-                            Spacer(minLength: 0)
-                            toolRail
-                            Spacer(minLength: 0)
-                        }
-                        .frame(minHeight: max(0, sideBarAvailableHeight))
-                    }
-                    .scrollIndicators(.never)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .compositingGroup()
-                    .shadow(color: .black.opacity(colorScheme == .light ? 0.08 : 0.22), radius: 10, y: 3)
-                    .padding(.leading, 10)
+                    .padding(.bottom, 4)
+                // The capture runs to the window's sides and bottom; the
+                // controls float over it on soft, blurred edges. Only the top
+                // band crops it.
+                ZStack {
                     canvasArea
-                    ScrollView(.vertical) {
-                        VStack(spacing: 0) {
+                    edgeFades
+                    VStack(spacing: 0) {
+                        HStack(spacing: 0) {
+                            ScrollView(.vertical) {
+                                VStack(spacing: 0) {
+                                    Spacer(minLength: 0)
+                                    toolRail
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(minHeight: max(0, sideBarAvailableHeight))
+                            }
+                            .scrollIndicators(.never)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .compositingGroup()
+                            .shadow(color: .black.opacity(colorScheme == .light ? 0.08 : 0.22), radius: 10, y: 3)
+                            .padding(.leading, 10)
+                            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+                                if abs(canvasReserve.leading - width) > 0.5 { canvasReserve.leading = width }
+                            }
                             Spacer(minLength: 0)
-                            contextualBar
-                                .disabled(model.selectedIDs.count > 1)
-                            Spacer(minLength: 0)
+                            ScrollView(.vertical) {
+                                VStack(spacing: 0) {
+                                    Spacer(minLength: 0)
+                                    contextualBar
+                                        .disabled(model.selectedIDs.count > 1)
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(minHeight: max(0, sideBarAvailableHeight))
+                            }
+                            .scrollIndicators(.never)
+                            .fixedSize(horizontal: true, vertical: false)
+                            // Keep a slim, constant rail so changing tools cannot refit the image.
+                            .frame(width: 40)
+                            .compositingGroup()
+                            .shadow(color: .black.opacity(colorScheme == .light ? 0.08 : 0.22), radius: 10, y: 3)
+                            .background(
+                                GeometryReader { geo in
+                                    Color.clear.preference(key: SideBarAvailableHeightKey.self, value: geo.size.height)
+                                }
+                            )
+                            .onPreferenceChange(SideBarAvailableHeightKey.self) { height in
+                                sideBarAvailableHeight = height
+                            }
+                            .padding(.trailing, 10)
                         }
-                        .frame(minHeight: max(0, sideBarAvailableHeight))
+                        bottomRow
+                            .padding(.horizontal, 12)
+                            .padding(.top, 6)
+                            .padding(.bottom, 10)
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                                if abs(canvasReserve.bottom - height) > 0.5 { canvasReserve.bottom = height }
+                            }
                     }
-                    .scrollIndicators(.never)
-                    .fixedSize(horizontal: true, vertical: false)
-                    // Keep a slim, constant rail so changing tools cannot refit the image.
-                    .frame(width: 40)
-                    .compositingGroup()
-                    .shadow(color: .black.opacity(colorScheme == .light ? 0.08 : 0.22), radius: 10, y: 3)
-                    .background(
-                        GeometryReader { geo in
-                            Color.clear.preference(key: SideBarAvailableHeightKey.self, value: geo.size.height)
-                        }
-                    )
-                    .onPreferenceChange(SideBarAvailableHeightKey.self) { height in
-                        sideBarAvailableHeight = height
-                    }
-                    .padding(.trailing, 10)
                 }
-                .padding(.top, 4)
-                bottomRow
-                    .padding(.horizontal, 12)
-                    .padding(.top, 6)
-                    .padding(.bottom, 10)
             }
         }
         .ignoresSafeArea()
@@ -163,8 +178,8 @@ struct ScreenshotEditorView: View {
         }
     }
 
-    /// The window's crown: the brand centered like the menu bar panel, the
-    /// actions on the right, the trash for a capture not worth keeping.
+    /// The window's crown: the brand centered like the menu bar panel and
+    /// the actions on the right.
     private var topBand: some View {
         ZStack {
             BrandMark(width: 28, tint: Color.primary.opacity(0.85))
@@ -242,8 +257,10 @@ struct ScreenshotEditorView: View {
         if let override = model.zoomOverride {
             zoom = override
         } else {
-            let width = max(available.width - Self.canvasMargin * 2, 80)
-            let height = max(available.height - Self.canvasMargin * 2, 80)
+            let width = max(available.width - canvasReserve.leading - canvasReserve.trailing
+                            - Self.canvasMargin * 2, 80)
+            let height = max(available.height - canvasReserve.top - canvasReserve.bottom
+                             - Self.canvasMargin * 2, 80)
             let fit = min(width / max(contentPixelSize.width, 1),
                           height / max(contentPixelSize.height, 1))
             // Small captures grow to a practical editing size. This affects
@@ -256,10 +273,47 @@ struct ScreenshotEditorView: View {
     }
 
     private func canvasInsets(available: CGSize, canvas: CGSize) -> EdgeInsets {
-        EdgeInsets(top: max((available.height - canvas.height) / 2, Self.canvasMargin),
-                   leading: max((available.width - canvas.width) / 2, Self.canvasMargin),
-                   bottom: max((available.height - canvas.height) / 2, Self.canvasMargin),
-                   trailing: max((available.width - canvas.width) / 2, Self.canvasMargin))
+        // Centered in the region between the controls, with the scroll
+        // margin measured from the controls rather than the window edge.
+        let reserve = canvasReserve
+        let innerWidth = available.width - reserve.leading - reserve.trailing
+        let innerHeight = available.height - reserve.top - reserve.bottom
+        let horizontal = max((innerWidth - canvas.width) / 2, Self.canvasMargin)
+        let vertical = max((innerHeight - canvas.height) / 2, Self.canvasMargin)
+        return EdgeInsets(top: reserve.top + vertical, leading: reserve.leading + horizontal,
+                          bottom: reserve.bottom + vertical, trailing: reserve.trailing + horizontal)
+    }
+
+    /// Blurred bands under the side rails and the bottom row that fade into
+    /// the canvas, so a capture passing beneath reads as receding.
+    private var edgeFades: some View {
+        let reserve = canvasReserve
+        func band(_ edge: Edge, length: CGFloat) -> some View {
+            let start: UnitPoint, end: UnitPoint
+            switch edge {
+            case .leading: (start, end) = (.leading, .trailing)
+            case .trailing: (start, end) = (.trailing, .leading)
+            case .bottom: (start, end) = (.bottom, .top)
+            case .top: (start, end) = (.top, .bottom)
+            }
+            return Rectangle()
+                .fill(.regularMaterial)
+                .mask(LinearGradient(stops: [.init(color: .black, location: 0),
+                                             .init(color: .black, location: 0.45),
+                                             .init(color: .clear, location: 1)],
+                                     startPoint: start, endPoint: end))
+                .frame(width: edge == .bottom ? nil : length,
+                       height: edge == .bottom ? length : nil)
+        }
+        return ZStack {
+            band(.leading, length: reserve.leading + 22)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            band(.trailing, length: reserve.trailing + 22)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+            band(.bottom, length: reserve.bottom + 18)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        }
+        .allowsHitTesting(false)
     }
 
     private func canvas(zoom: CGFloat, canvasSize: CGSize, available: CGSize) -> some View {
@@ -803,34 +857,6 @@ struct ScreenshotEditorView: View {
     private var actionCluster: some View {
         HStack(spacing: 4) {
             Button {
-                RecentCaptureService.shared.showHistoryWindow()
-            } label: {
-                Image(systemName: "clock.arrow.circlepath")
-                    .frame(width: 24, height: 24)
-            }
-            .buttonStyle(.borderless)
-            .screenshotIconHover()
-            .focusable(false)
-            .screenshotSafeHelp(recentCapturesTitle)
-            .accessibilityLabel(recentCapturesTitle)
-
-            Divider().frame(height: 16).padding(.horizontal, 3)
-
-            Button {
-                controller.discardAndClose()
-            } label: {
-                Image(systemName: "trash")
-                    .frame(width: 24, height: 24)
-            }
-            .buttonStyle(.borderless)
-            .screenshotIconHover()
-            .focusable(false)
-            .screenshotSafeHelp(strings.discardConfirm)
-            .accessibilityLabel(strings.discardConfirm)
-
-            Divider().frame(height: 16).padding(.horizontal, 3)
-
-            Button {
                 commitEditingTextIfNeeded()
                 model.undo()
             } label: {
@@ -938,7 +964,7 @@ struct ScreenshotEditorView: View {
                 controller.done()
             }
             .buttonStyle(.borderedProminent)
-            .screenshotSafeHelp("⌘S / ⏎")
+            .screenshotSafeHelp("⏎")
         }
         .foregroundStyle(Color.primary)
         .padding(.horizontal, 9)
@@ -1118,6 +1144,32 @@ struct ScreenshotEditorView: View {
             zoomChip
         }
         .frame(height: 32)
+        .overlay {
+            if model.isDirty {
+                saveChangesPill
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+            }
+        }
+        .animation(.easeOut(duration: 0.16), value: model.isDirty)
+    }
+
+    /// Shown while there are edits not yet kept; keeps them without closing.
+    private var saveChangesPill: some View {
+        Button {
+            commitEditingTextIfNeeded()
+            controller.saveChanges()
+        } label: {
+            Label(refinementStrings.saveChanges, systemImage: "checkmark")
+                .font(.system(size: 12, weight: .semibold))
+                .padding(.horizontal, 14)
+                .frame(height: 28)
+                .background(Capsule().fill(Color.accentColor))
+                .foregroundStyle(.white)
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .screenshotSafeHelp(refinementStrings.saveChanges + "  (⌘S)")
     }
 
     @ViewBuilder
