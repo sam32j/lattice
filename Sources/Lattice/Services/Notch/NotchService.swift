@@ -1236,6 +1236,14 @@ final class NotchService: ObservableObject {
     var showsSystemFeedback: Bool {
         acceptsSystemFeedback && (!hiddenUntilHover || NotchSupport.hiddenShowsActivity())
     }
+    /// A capture preview is not live activity: when "Open preview and recent
+    /// captures at" names the Dynamic Island explicitly, it opens there even
+    /// while full screen hides live activity. Auto keeps the floating fallback.
+    var acceptsCapturePresentation: Bool {
+        acceptsSystemFeedback
+            || (acceptsUserInteraction && CapturePresentationRouting.preference() == .dynamicIsland)
+    }
+
     /// Indicators (volume, brightness, microphone, battery and the other
     /// notices) are passive, so full screen never silences them.
     var acceptsIndicators: Bool {
@@ -2638,7 +2646,7 @@ final class NotchService: ObservableObject {
                         takeFocus: Bool, closeOnCollapse: Bool,
                         fallback: @escaping () -> Void,
                         close: @escaping () -> Void, hover: @escaping (Bool) -> Void) -> Bool {
-        guard acceptsSystemFeedback, NotchSupport.routesCapturePreviews() else { return false }
+        guard acceptsCapturePresentation, NotchSupport.routesCapturePreviews() else { return false }
         let keepOpen = expanded && pinned
         let replacesPage = expanded && selected == .captures && captureID != id
         if captureID != id {
@@ -2682,7 +2690,7 @@ final class NotchService: ObservableObject {
     }
 
     func isCaptureVisible(id: UUID) -> Bool {
-        acceptsSystemFeedback && expanded && selected == .captures
+        acceptsCapturePresentation && expanded && selected == .captures
             && !showingSections && !showingCommandBar && selectedMetric == nil
             && captureID == id && captureContent != nil
     }

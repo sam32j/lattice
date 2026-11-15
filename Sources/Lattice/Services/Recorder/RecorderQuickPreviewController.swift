@@ -53,7 +53,7 @@ final class RecorderQuickPreviewController {
         }
 
         let wantsNotch = inNotch && NotchSupport.routesCapturePreviews()
-            && NotchService.shared.acceptsSystemFeedback
+            && NotchService.shared.acceptsCapturePresentation
 
         let content = RecorderQuickPreviewView(
             url: url,

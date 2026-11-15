@@ -108,7 +108,7 @@ final class ScreenshotQuickPreviewController {
                self?.show(inNotch: true)
            }) { return }
         let wantsNotch = inNotch && NotchSupport.routesCapturePreviews()
-            && NotchService.shared.acceptsSystemFeedback
+            && NotchService.shared.acceptsCapturePresentation
         let takesFocus = UserDefaults.standard.bool(forKey: DefaultsKey.screenshotPreviewTakesFocus)
         let content = ScreenshotQuickPreviewView(
             image: Self.thumbnail(for: capture.image),

@@ -1752,6 +1752,7 @@ def main():
           + declaration(notch, "    private var hiddenAtRestInFullscreen:").replace("private var", "var", 1)
           + declaration(notch, "    var acceptsUserInteraction:")
           + declaration(notch, "    var acceptsSystemFeedback:")
+          + declaration(notch, "    var acceptsCapturePresentation:")
           + declaration(notch, "    var showsSystemFeedback:")
               .replace("NotchSupport.hiddenShowsActivity()", "hiddenShowsActivity")
           + declaration(notch, "    var acceptsIndicators:")
@@ -2351,7 +2352,7 @@ def main():
           + "}\n}\n")
     write("NotchCaptureKeyboard.swift", "import Foundation\nimport CoreGraphics\nimport Carbon.HIToolbox\n\nextension NotchCaptureKeyboardContract {\n"
           + "final class NotchService {\nstatic var shared = NotchService()\n"
-          + "var presentationWindow: NSPanel? = NSPanel()\nvar acceptsSystemFeedback = true\n"
+          + "var presentationWindow: NSPanel? = NSPanel()\nvar acceptsSystemFeedback = true\nvar acceptsCapturePresentation = true\n"
           + "var expanded = true\nvar selected = NotchModule.captures\n"
           + "var showingSections = false\nvar showingCommandBar = false\nvar selectedMetric: Int?\n"
           + "var captureID: UUID?\nvar captureContent: Bool? = true\n"
