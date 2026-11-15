@@ -155,7 +155,7 @@ extension LatticeHubService {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            guard let self, !self.isPinned, self.panel?.isVisible == true else { return }
+            guard let self, !self.isPinned, !self.inRestoreGrace, self.panel?.isVisible == true else { return }
             self.hide()
         }
         resignKeyObserver = NotificationCenter.default.addObserver(
@@ -166,7 +166,7 @@ extension LatticeHubService {
             guard let self, let panel, !self.isPinned, panel.isVisible else { return }
             if self.stayAwakeOptionsPresented { return }
             DispatchQueue.main.async { [weak self, weak panel] in
-                guard let self, let panel, !self.isPinned, panel.isVisible else { return }
+                guard let self, let panel, !self.isPinned, !self.inRestoreGrace, panel.isVisible else { return }
                 if self.stayAwakeOptionsPresented { return }
                 if !panel.isKeyWindow && (NSApp.keyWindow == nil || NSApp.keyWindow !== panel) {
                     self.hide()
@@ -178,7 +178,7 @@ extension LatticeHubService {
             object: nil,
             queue: .main
         ) { [weak self, weak panel] notification in
-            guard let self, let panel, !self.isPinned, panel.isVisible else { return }
+            guard let self, let panel, !self.isPinned, !self.inRestoreGrace, panel.isVisible else { return }
             if self.stayAwakeOptionsPresented { return }
             if let window = notification.object as? NSWindow, window !== panel {
                 self.hide()
@@ -216,7 +216,7 @@ extension LatticeHubService {
                   app.processIdentifier != ProcessInfo.processInfo.processIdentifier
             else { return }
             self.previousApp = app
-            if !self.isPinned, self.panel?.isVisible == true {
+            if !self.isPinned, !self.inRestoreGrace, self.panel?.isVisible == true {
                 self.hide()
             }
         }

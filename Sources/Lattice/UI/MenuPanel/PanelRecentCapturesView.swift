@@ -277,15 +277,26 @@ struct RecentCapturesView: View {
             }
             .frame(width: notchSize.width, height: notchSize.height)
         } else {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: fillsAvailableSpace ? 10 : 7) {
-                    ForEach(visibleEntries) { entry in
-                        // The floating Hub has the room to show each capture
-                        // as a preview with its actions, with no extra step.
-                        if fillsAvailableSpace { previewRow(entry) } else { row(entry) }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: fillsAvailableSpace ? 10 : 7) {
+                        ForEach(visibleEntries) { entry in
+                            // The floating Hub has the room to show each capture
+                            // as a preview with its actions, with no extra step.
+                            Group {
+                                if fillsAvailableSpace { previewRow(entry) } else { row(entry) }
+                            }
+                            .id(entry.id)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
                 }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .onAppear {
+                    // Back from editing a capture: open where that capture is.
+                    guard fillsAvailableSpace, let id = history.revealEntryID else { return }
+                    history.revealEntryID = nil
+                    DispatchQueue.main.async { proxy.scrollTo(id, anchor: .center) }
+                }
             }
             .scrollBounceBehavior(.basedOnSize)
             .frame(maxWidth: .infinity,
@@ -410,6 +421,8 @@ private struct RecentCaptureIslandRow: View {
                     .frame(width: rowWidth, height: Self.imageHeight)
                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
+            // On the image only: the toolbar above it shows each tool's own tip.
+            .help(CaptureInterfaceStrings.localized(l10n.language).quickLook)
             .overlay(alignment: .topTrailing) { toolbar.padding(6) }
             .overlay(alignment: .topLeading) {
                 Text(time)
@@ -421,7 +434,6 @@ private struct RecentCaptureIslandRow: View {
                     .padding(6)
                     .allowsHitTesting(false)
             }
-            .help(CaptureInterfaceStrings.localized(l10n.language).quickLook)
     }
 
     @ViewBuilder private var artwork: some View {

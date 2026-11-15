@@ -80,13 +80,18 @@ extension LatticeHubService {
 
     /// Hides the floating Hub for an editor opened from Recent Captures and
     /// returns how to bring it back where it was once that editor closes.
-    func hideForEditor() -> (() -> Void)? {
+    func hideForEditor(revealing entryID: UUID? = nil) -> (() -> Void)? {
         guard isVisible, let panel else { return nil }
         let topLeft = CGPoint(x: panel.frame.minX, y: panel.frame.maxY)
         hide()
         return { [weak self] in
             guard let self, !self.isVisible, LatticeHubItem.recentCaptures.isAvailable() else { return }
+            // However the editor closed (Done, Esc, Command-W), the app's
+            // activation and key window settle afterwards; none of that may
+            // dismiss the Hub that was just brought back.
+            self.restoreGraceUntil = ProcessInfo.processInfo.systemUptime + 0.8
             RecentCaptureService.shared.reload()
+            RecentCaptureService.shared.revealEntryID = entryID
             self.show(forceFloating: true, initialUtility: .recentCaptures)
             self.panel?.setFrameTopLeftPoint(topLeft)
         }

@@ -92,6 +92,10 @@ final class LatticeHubService: ObservableObject {
     var resignActiveObserver: NSObjectProtocol?
     var resignKeyObserver: NSObjectProtocol?
     var otherKeyObserver: NSObjectProtocol?
+    /// Until this uptime, a Hub brought back after an editor ignores the
+    /// activation and focus changes that closing the editor sets off.
+    var restoreGraceUntil: TimeInterval = 0
+    var inRestoreGrace: Bool { ProcessInfo.processInfo.systemUptime < restoreGraceUntil }
     var spaceChangeObserver: NSObjectProtocol?
     var screenChangeObserver: NSObjectProtocol?
     var missionControlTimer: Timer?

@@ -13,6 +13,8 @@ final class RecentCaptureService: ObservableObject {
     static let shared = RecentCaptureService()
 
     @Published private(set) var entries: [RecentCaptureEntry] = []
+    /// The capture a reopened list scrolls to, such as the one just edited.
+    var revealEntryID: UUID?
     @Published private(set) var shortcutRegistrationFailed = false
 
     private let manager = FileManager.default
@@ -646,7 +648,8 @@ final class RecentCaptureService: ObservableObject {
                     guard let capture else { NSSound.beep(); return }
                     // The editor opens over the desktop, not behind the Hub,
                     // and the Hub comes back where it was when it closes.
-                    let restoreHub = action == .edit ? LatticeHubService.shared.hideForEditor() : nil
+                    let restoreHub = action == .edit
+                        ? LatticeHubService.shared.hideForEditor(revealing: entry.id) : nil
                     let mapped: ScreenshotQuickPreviewController.Action
                     switch action {
                     case .copy: mapped = .copy
@@ -671,7 +674,7 @@ final class RecentCaptureService: ObservableObject {
             case .copy: RecordingFileActions.copy(url)
             case .save: RecordingFileActions.save(url)
             case .edit:
-                RecordingFileActions.edit(url, onEditorClose: LatticeHubService.shared.hideForEditor())
+                RecordingFileActions.edit(url, onEditorClose: LatticeHubService.shared.hideForEditor(revealing: entry.id))
             case .pin, .copyText: break
             }
         }
