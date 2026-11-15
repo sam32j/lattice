@@ -79,6 +79,10 @@ enum ScreenshotPinChromeTests {
         suite.expect(ScreenshotPinChrome.isCompact(small.frame.size) && smallControls.count == 1
                      && smallControls.first?.frame.size == ScreenshotPinDragView.compactSize,
                      "a compact pin shows only a scaled-down drag grip on hover")
+        small.setFrame(CGRect(x: -20000, y: -20000, width: 50, height: 40), display: false)
+        suite.expect(!ScreenshotPinChrome.fitsGrip(small.frame.size)
+                     && (small.childWindows ?? []).allSatisfy(\.ignoresMouseEvents),
+                     "a pin too narrow for the grip hides it too")
         small.setFrame(CGRect(x: -20000, y: -20000, width: 400, height: 260), display: false)
         suite.expect((small.childWindows ?? []).filter { !$0.ignoresMouseEvents }.count == 3,
                      "growing the pin back brings its controls back")
