@@ -249,7 +249,14 @@ struct RecentCapturesView: View {
 
     @ViewBuilder
     private var content: some View {
-        if visibleEntries.isEmpty {
+        if visibleEntries.isEmpty, fillsAvailableSpace {
+            // The floating Hub is the container: no card inside it.
+            Text(text.empty)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if visibleEntries.isEmpty {
             Text(text.empty)
                 .font(.system(size: 10.5))
                 .foregroundStyle(.tertiary)
@@ -415,8 +422,10 @@ private struct RecentCaptureIslandRow: View {
     }
 
     @ViewBuilder private var artwork: some View {
-        ZStack {
-            Color.black.opacity(0.13)
+        // The row's size comes from its frame, never from the image: a
+        // filled wide, short capture would otherwise widen the row past the
+        // panel and push the toolbar out of view.
+        Color.black.opacity(0.13).overlay {
             if let image = history.thumbnail(for: entry) {
                 Image(nsImage: image)
                     .resizable()
