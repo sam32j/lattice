@@ -606,6 +606,11 @@ final class RecentCaptureService: ObservableObject {
     }
 
     func dragItemProvider(for entry: RecentCaptureEntry) -> NSItemProvider? {
+        // A recording drags as its file.
+        if entry.kind == .recording {
+            guard let url = entry.recordingURL, RecentCaptureStore.isRegularFile(url) else { return nil }
+            return NSItemProvider(contentsOf: url)
+        }
         guard let name = entry.screenshotName, Self.isSafeRelativePath(name),
               entry.kind == .screenshot, let root = capturesRoot else { return nil }
         let rendered = root.appendingPathComponent(name)
@@ -680,12 +685,28 @@ final class RecentCaptureService: ObservableObject {
         }
     }
 
+    /// Whether the rendered PNG shows the latest edit: there is no editable
+    /// document, or the PNG was written no earlier than it.
+    static func renderedMirrorIsCurrent(_ rendered: URL) -> Bool {
+        let document = RecentCaptureEditableImage.documentURL(for: rendered)
+        let manager = FileManager.default
+        guard manager.fileExists(atPath: document.path) else { return true }
+        func modified(_ url: URL) -> Date? {
+            (try? manager.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
+        }
+        guard let mirror = modified(rendered), let authority = modified(document) else { return false }
+        return mirror >= authority
+    }
+
     /// Opens a stored capture in the system's Quick Look, over the floating
     /// Hub, which stays open meanwhile.
     func quickLook(_ entry: RecentCaptureEntry) {
         let hub = LatticeHubService.shared
         let owner = hub.isVisible ? hub.panel : nil
         func present(_ show: (@escaping () -> Void) -> Bool) {
+            // Close an open preview first: its dismissal puts the Hub's monitors
+            // back, and they would then read the new preview as leaving.
+            if ScreenshotQuickLookController.shared.isVisible { ScreenshotQuickLookController.shared.close() }
             // Quick Look takes focus; the Hub must not read that as leaving.
             if owner != nil { hub.removeMonitors() }
             let shown = show {
@@ -698,11 +719,14 @@ final class RecentCaptureService: ObservableObject {
         }
         switch entry.kind {
         case .screenshot:
-            // The stored rendered PNG already carries any edits: Quick Look
-            // opens it at once, with nothing decoded or re-encoded first.
+            // The stored rendered PNG carries the edits when it is current:
+            // Quick Look then opens it at once, with nothing decoded or
+            // re-encoded first. The editable document is the authority, so a
+            // mirror older than it goes through the render path instead.
             if let name = entry.screenshotName, Self.isSafeRelativePath(name),
                let rendered = capturesRoot?.appendingPathComponent(name),
-               RecentCaptureStore.isRegularFile(rendered) {
+               RecentCaptureStore.isRegularFile(rendered),
+               Self.renderedMirrorIsCurrent(rendered) {
                 present { done in ScreenshotQuickLookController.shared.show(url: rendered, owner: owner, onDismiss: done) }
                 return
             }
