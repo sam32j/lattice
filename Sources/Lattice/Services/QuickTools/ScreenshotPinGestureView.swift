@@ -122,33 +122,107 @@ class ScreenshotPinGestureView: NSView {
         guard frame.width > 0, frame.height > 0 else { return }
         if lastZoomFrame != frame || zoomCenter == nil {
             // First zoom, or the pin was dragged or nudged since the last one.
+            stopZoomGlide()
             zoomCenter = CGPoint(x: frame.midX, y: frame.midY)
             logicalZoomWidth = frame.width
+            lastZoomFrame = frame
         }
-        guard let center = zoomCenter, center.x.isFinite, center.y.isFinite else { return }
+        guard let geometry = zoomGeometry(for: window) else { return }
         let baseWidth = logicalZoomWidth > 0 ? logicalZoomWidth : frame.width
-        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(center) }) ?? window.screen
-        else { return }
+        // A very elongated image may not fit both its minimum and the display;
+        // keep it reachable on screen in that case.
+        let target = min(max(baseWidth * factor, min(geometry.minimumWidth, geometry.maximumWidth)),
+                         geometry.maximumWidth)
+        logicalZoomWidth = target
+        guard glidesZoom else {
+            applyZoom(width: target, in: window)
+            return
+        }
+        // Each packet moves the target; the drawn size eases toward it frame by
+        // frame, so a wheel notch or a burst of pinch packets reads as one
+        // continuous resize rather than a series of jumps.
+        if zoomGlideTimer == nil {
+            presentedZoomWidth = frame.width
+            lastZoomGlideFrame = ProcessInfo.processInfo.systemUptime
+            let timer = Timer(timeInterval: 1.0 / 120.0, repeats: true) { [weak self] _ in self?.advanceZoomGlide() }
+            RunLoop.main.add(timer, forMode: .common)
+            zoomGlideTimer = timer
+        }
+    }
+
+    /// Production pins glide; the unit harness checks each packet directly.
+    var glidesZoom: Bool { false }
+    private var zoomGlideTimer: Timer?
+    private var presentedZoomWidth: CGFloat = 0
+    private var lastZoomGlideFrame: TimeInterval = 0
+    private static let zoomGlideTimeConstant: TimeInterval = 0.05
+
+    private func advanceZoomGlide() {
+        guard let window, window.frame == lastZoomFrame || lastZoomFrame == nil else {
+            // Something else moved or resized the pin; it owns the frame now.
+            stopZoomGlide()
+            return
+        }
+        let now = ProcessInfo.processInfo.systemUptime
+        let elapsed = max(0, now - lastZoomGlideFrame)
+        lastZoomGlideFrame = now
+        let target = logicalZoomWidth
+        var next = presentedZoomWidth + (target - presentedZoomWidth)
+            * CGFloat(1 - exp(-elapsed / Self.zoomGlideTimeConstant))
+        let settled = abs(target - next) < 0.25
+        if settled { next = target }
+        presentedZoomWidth = next
+        applyZoom(width: next, in: window)
+        if settled { stopZoomGlide() }
+    }
+
+    private func stopZoomGlide() {
+        zoomGlideTimer?.invalidate()
+        zoomGlideTimer = nil
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window == nil { stopZoomGlide() }
+    }
+
+    private func zoomGeometry(for window: NSWindow)
+        -> (limits: CGRect, ratio: CGFloat, minimumWidth: CGFloat, maximumWidth: CGFloat)? {
+        guard let center = zoomCenter, center.x.isFinite, center.y.isFinite,
+              let screen = NSScreen.screens.first(where: { $0.frame.contains(center) }) ?? window.screen
+        else { return nil }
         let limits = screen.visibleFrame
         let aspect = window.contentAspectRatio
-        guard aspect.width > 0, aspect.height > 0 else { return }
+        guard aspect.width > 0, aspect.height > 0 else { return nil }
         // Bounds in terms of the logical width; the height always follows
         // the image ratio so small packets cannot accumulate skew.
         let ratio = aspect.height / aspect.width
         let minimumWidth = max(window.minSize.width, window.minSize.height / ratio)
         let maximumWidth = min(limits.width, limits.height / ratio)
-        guard maximumWidth > 0 else { return }
-        // A very elongated image may not fit both its minimum and the display;
-        // keep it reachable on screen in that case.
-        let width = min(max(baseWidth * factor, min(minimumWidth, maximumWidth)), maximumWidth)
-        let height = min(limits.height, width * ratio)
-        // Centered on the kept center; only a pin that would leave the
-        // screen is held inside it, without changing the kept center.
-        let next = CGRect(x: min(max(center.x - width / 2, limits.minX), limits.maxX - width),
-                          y: min(max(center.y - height / 2, limits.minY), limits.maxY - height),
-                          width: width, height: height)
+        guard maximumWidth > 0 else { return nil }
+        return (limits, ratio, minimumWidth, maximumWidth)
+    }
+
+    /// Lays the pin out at `width` around the kept center on whole pixels:
+    /// the center sits on a pixel and each side grows by the same whole
+    /// number of pixels, so neither edge takes the rounding alone and the
+    /// image cannot wobble from side to side as it scales.
+    private func applyZoom(width rawWidth: CGFloat, in window: NSWindow) {
+        guard let center = zoomCenter, let geometry = zoomGeometry(for: window) else { return }
+        let frame = window.frame
+        let scale = max(1, window.backingScaleFactor)
+        func pixels(_ value: CGFloat) -> CGFloat { (value * scale).rounded() / scale }
+        func halfPixels(_ value: CGFloat) -> CGFloat { (value * scale / 2).rounded() / scale }
+        let halfWidth = halfPixels(min(rawWidth, geometry.limits.width))
+        let halfHeight = halfPixels(min(geometry.limits.height, rawWidth * geometry.ratio))
+        let cx = pixels(center.x), cy = pixels(center.y)
+        let limits = geometry.limits
+        // Only a pin that would leave the screen is held inside it, without
+        // changing the kept center.
+        let next = CGRect(x: min(max(cx - halfWidth, limits.minX), limits.maxX - halfWidth * 2),
+                          y: min(max(cy - halfHeight, limits.minY), limits.maxY - halfHeight * 2),
+                          width: halfWidth * 2, height: halfHeight * 2)
         if next != frame { window.setFrame(next, display: true) }
-        logicalZoomWidth = width
         lastZoomFrame = window.frame
         if window.frame != frame { didZoom() }
     }
