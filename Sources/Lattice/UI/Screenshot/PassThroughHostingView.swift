@@ -45,6 +45,16 @@ final class PassThroughHostingView<Content: View>: NSHostingView<Content> {
         isFlipped ? local : NSPoint(x: local.x, y: bounds.maxY - local.y)
     }
 
+    /// The visible controls in the superview's coordinates, nil before the
+    /// guide has measured them.
+    var visibleControlsFrame: CGRect? {
+        guard let interactiveRegions else { return nil }
+        let regions = interactiveRegions.filter { !$0.isEmpty }
+        guard let first = regions.first else { return nil }
+        let union = regions.dropFirst().reduce(first) { $0.union($1) }
+        return convert(appKitRect(from: union), to: superview)
+    }
+
     private func appKitRect(from swiftUIRect: CGRect) -> CGRect {
         guard !isFlipped else { return swiftUIRect }
         return CGRect(x: swiftUIRect.minX,

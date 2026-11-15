@@ -1423,6 +1423,7 @@ private final class ScreenshotOverlayView: NSView {
         fullScreenHost.selectionIsInProgress = isSelecting
         guideModel.onInteractiveRegionsChanged = { [weak self] regions in
             self?.guideHost.interactiveRegions = regions
+            self?.refreshChromeContrast()
         }
         guideHost.interactiveRegions = guideModel.interactiveRegions
         guideModel.onHoverChanged = { [weak self] isHovered in
@@ -1501,7 +1502,10 @@ private final class ScreenshotOverlayView: NSView {
 
     private func refreshChromeContrast() {
         if guideModel.isAreaDragging != isDragging { guideModel.isAreaDragging = isDragging }
-        let guideOverlap = CapturePresentationPolicy.overlaps(chrome: guideHost.frame, selection: selection)
+        // The visible toolbar, not the wider strip its host reserves, so a
+        // selection beside it at the same height leaves it opaque.
+        let guideOverlap = CapturePresentationPolicy.overlaps(
+            chrome: guideHost.visibleControlsFrame ?? guideHost.frame, selection: selection)
         if guideModel.overlapsSelection != guideOverlap { guideModel.overlapsSelection = guideOverlap }
     }
 
