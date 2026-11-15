@@ -162,13 +162,16 @@ private final class NotchAccessoryBluetoothSource: NSObject, NotchAccessoryConne
 
     @objc private func deviceDisconnected(_ notification: IOBluetoothUserNotification, device: IOBluetoothDevice) {
         perform { [weak self] in
-            guard let self, !self.isCancelled(), !device.isConnected() else { return }
-            guard !self.isCancelled(), let id = device.addressString,
+            // The notification identity proves this disconnect happened, even
+            // if the device is back by the time it is handled: the state must
+            // still move, or the queued reconnect is never announced.
+            guard let self, !self.isCancelled(), let id = device.addressString,
                   self.disconnectNotifications[id] === notification else { return }
             self.connectionState.disconnected(id)
             let name = device.name
             self.disconnectNotifications.removeValue(forKey: id)?.unregister()
-            guard !self.isCancelled() else { return }
+            // Already reconnected: its own queued notice announces it.
+            guard !self.isCancelled(), !device.isConnected() else { return }
             self.onEvent?(.disconnected(name: name))
         }
     }
