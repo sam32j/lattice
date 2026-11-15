@@ -9,6 +9,10 @@ enum ScreenshotPinGestureTests {
     final class LockableView: ScreenshotPinGestureView {
         override var isPositionLocked: Bool { true }
     }
+    /// A pin lower in a stack, under another pin at the pointer.
+    final class CoveredView: ScreenshotPinGestureView {
+        override var ownsPointer: Bool { false }
+    }
     final class Gesture: NSEvent {
         var scroll: CGFloat = 0
         var pinch: CGFloat = 0
@@ -95,6 +99,24 @@ enum ScreenshotPinGestureTests {
         view.magnify(with: legacyPinch)
         suite.expect(window.frame.width > afterEnd.width,
                      "phase-less magnify events can start a new pinch after a completed gesture")
+        let covered = NSPanel(contentRect: initialRect,
+                              styleMask: [.borderless, .nonactivatingPanel, .resizable],
+                              backing: .buffered, defer: true)
+        covered.isReleasedWhenClosed = false
+        covered.contentAspectRatio = CGSize(width: 2, height: 1)
+        covered.minSize = CGSize(width: 90, height: 60)
+        let coveredView = CoveredView(frame: .zero)
+        covered.contentView = coveredView
+        let coveredFrame = covered.frame
+        let coveredWheel = Gesture()
+        coveredWheel.scroll = 4
+        coveredView.scrollWheel(with: coveredWheel)
+        let coveredPinch = Gesture()
+        coveredPinch.pinch = 0.2
+        coveredView.magnify(with: coveredPinch)
+        suite.expect(covered.frame == coveredFrame,
+                     "a pin under another pin at the pointer ignores the wheel and pinch meant for the top one")
+        covered.close()
         view.applyPinch(by: 1, at: .zero, source: .magnify, phase: .began)
         window.setFrame(initial, display: false)
 
