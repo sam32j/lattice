@@ -35,6 +35,8 @@ final class ScreenshotService: ObservableObject {
         let saved: SaveOutcome?
     }
     private var editorReturnPreviews: [ObjectIdentifier: EditorReturnPreview] = [:]
+    /// Run once an editor closes, such as bringing back the Hub it came from.
+    private var editorCloseActions: [ObjectIdentifier: () -> Void] = [:]
     private var directCaptureTask: Task<Void, Never>?
     private var autoCopyTask: Task<Void, Never>?
     private var autoCopyCaptureID: UUID?
@@ -449,7 +451,8 @@ final class ScreenshotService: ObservableObject {
     /// A quick action on a history screenshot, outside any live preview.
     @discardableResult
     func performHistoryAction(_ action: ScreenshotQuickPreviewController.Action,
-                              on capture: ScreenshotSelectionController.Capture) -> Bool {
+                              on capture: ScreenshotSelectionController.Capture,
+                              onEditorClose: (() -> Void)? = nil) -> Bool {
         let presented = capture.presentationCapture
         switch action {
         case .copy: return copyDirect(presented)
@@ -459,7 +462,7 @@ final class ScreenshotService: ObservableObject {
                 baseImage: capture.image, annotations: capture.annotations, captureID: capture.id)
             return true
         case .edit:
-            openEditor(with: capture)
+            openEditor(with: capture, onClose: onEditorClose)
             return true
         case .saveAndCopy, .discard:
             return false
@@ -632,7 +635,7 @@ final class ScreenshotService: ObservableObject {
             completedActions: [], latestCapture: nil)
     }
 
-    func openEditor(with capture: ScreenshotSelectionController.Capture, above owner: NSWindow? = nil, originatingPin: ScreenshotPinWindow? = nil, reopenPreviewOnClose: Bool = false, previewSaved: SaveOutcome? = nil) {
+    func openEditor(with capture: ScreenshotSelectionController.Capture, above owner: NSWindow? = nil, originatingPin: ScreenshotPinWindow? = nil, reopenPreviewOnClose: Bool = false, previewSaved: SaveOutcome? = nil, onClose: (() -> Void)? = nil) {
         WindowActivationPolicy.retain()
         // Any editor may be showing the latest capture, and what it exports
         // is no longer the stored original, so the shortcut keeps that
@@ -641,6 +644,7 @@ final class ScreenshotService: ObservableObject {
         let editor = ScreenshotEditorController(capture: capture)
         editor.originatingPin = originatingPin
         editors.append(editor)
+        if let onClose { editorCloseActions[ObjectIdentifier(editor)] = onClose }
         if reopenPreviewOnClose {
             editorReturnPreviews[ObjectIdentifier(editor)] = EditorReturnPreview(capture: capture, saved: previewSaved)
         }
@@ -740,6 +744,9 @@ final class ScreenshotService: ObservableObject {
         guard editors.contains(where: { $0 === editor }) else { return }
         editors.removeAll { $0 === editor }
         WindowActivationPolicy.release()
+        if let onClose = editorCloseActions.removeValue(forKey: ObjectIdentifier(editor)) {
+            DispatchQueue.main.async(execute: onClose)
+        }
         guard let awaiting = editorReturnPreviews.removeValue(forKey: ObjectIdentifier(editor)),
               AppFeature.screenshot.isAvailable else { return }
         // The editor saves canonical source pixels plus editable annotations.

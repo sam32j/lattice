@@ -644,8 +644,9 @@ final class RecentCaptureService: ObservableObject {
                 let capture = self.loadScreenshot(entry)
                 DispatchQueue.main.async {
                     guard let capture else { NSSound.beep(); return }
-                    // The editor opens over the desktop, not behind the Hub.
-                    if action == .edit, LatticeHubService.shared.isVisible { LatticeHubService.shared.hide() }
+                    // The editor opens over the desktop, not behind the Hub,
+                    // and the Hub comes back where it was when it closes.
+                    let restoreHub = action == .edit ? LatticeHubService.shared.hideForEditor() : nil
                     let mapped: ScreenshotQuickPreviewController.Action
                     switch action {
                     case .copy: mapped = .copy
@@ -657,7 +658,7 @@ final class RecentCaptureService: ObservableObject {
                         ScreenTextService.shared.copyText(from: capture.image)
                         return
                     }
-                    ScreenshotService.shared.performHistoryAction(mapped, on: capture)
+                    ScreenshotService.shared.performHistoryAction(mapped, on: capture, onEditorClose: restoreHub)
                 }
             }
         case .recording:
@@ -670,8 +671,7 @@ final class RecentCaptureService: ObservableObject {
             case .copy: RecordingFileActions.copy(url)
             case .save: RecordingFileActions.save(url)
             case .edit:
-                if LatticeHubService.shared.isVisible { LatticeHubService.shared.hide() }
-                RecordingFileActions.edit(url)
+                RecordingFileActions.edit(url, onEditorClose: LatticeHubService.shared.hideForEditor())
             case .pin, .copyText: break
             }
         }

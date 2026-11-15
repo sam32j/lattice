@@ -544,16 +544,17 @@ enum RecordingFileActions {
 
     /// Mirrors the recording preview's own edit path (kept there for its
     /// lifecycle tests).
-    static func edit(_ url: URL) {
-        guard AppFeature.screenRecorder.isAvailable else { return }
+    static func edit(_ url: URL, onEditorClose: (() -> Void)? = nil) {
+        guard AppFeature.screenRecorder.isAvailable else { onEditorClose?(); return }
         Task { @MainActor in
             let take = await Task.detached(priority: .userInitiated) {
                 RecorderTakeStore.shared.importVideo(at: url)
             }.value
-            guard let take else { NSSound.beep(); return }
+            guard let take else { NSSound.beep(); onEditorClose?(); return }
             MediaEditorFileSupport.presentIfEnabled(AppFeature.screenRecorder.isAvailable, present: {
-                ScreenRecorderService.shared.openEditor(with: take, preservedRecordingURL: url)
-            }, discard: { RecorderTakeStore.shared.delete(take) })
+                ScreenRecorderService.shared.openEditor(with: take, preservedRecordingURL: url,
+                                                        onClose: onEditorClose)
+            }, discard: { RecorderTakeStore.shared.delete(take); onEditorClose?() })
         }
     }
 }

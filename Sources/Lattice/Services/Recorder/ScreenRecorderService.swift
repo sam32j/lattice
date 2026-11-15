@@ -285,6 +285,7 @@ final class ScreenRecorderService: ObservableObject {
     private var pendingDeliveryTakeIDs = Set<UUID>()
     private var indicator: RecorderIndicator?
     private var editors: [RecorderEditorController] = []
+    private var editorCloseActions: [ObjectIdentifier: () -> Void] = [:]
     private var mediaOwnedEditorIDs: Set<ObjectIdentifier> = []
     private var elapsedTimer: Timer?
     private var pendingStartGeneration = 0
@@ -335,11 +336,13 @@ final class ScreenRecorderService: ObservableObject {
     @discardableResult
     func openEditor(with take: RecorderTakeStore.Take,
                     owner: AppFeature = .screenRecorder,
-                    preservedRecordingURL: URL? = nil) -> Bool {
+                    preservedRecordingURL: URL? = nil,
+                    onClose: (() -> Void)? = nil) -> Bool {
         guard owner.isAvailable else { return false }
         WindowActivationPolicy.retain()
         let editor = RecorderEditorController(take: take, preservedRecordingURL: preservedRecordingURL)
         editors.append(editor)
+        if let onClose { editorCloseActions[ObjectIdentifier(editor)] = onClose }
         if owner == .mediaTools { mediaOwnedEditorIDs.insert(ObjectIdentifier(editor)) }
         editor.show()
         return true
@@ -350,6 +353,9 @@ final class ScreenRecorderService: ObservableObject {
         editors.removeAll { $0 === editor }
         mediaOwnedEditorIDs.remove(ObjectIdentifier(editor))
         WindowActivationPolicy.release()
+        if let onClose = editorCloseActions.removeValue(forKey: ObjectIdentifier(editor)) {
+            DispatchQueue.main.async(execute: onClose)
+        }
     }
 
     func closeEditors(ownedBy owner: AppFeature) {

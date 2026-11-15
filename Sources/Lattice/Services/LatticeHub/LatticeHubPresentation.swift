@@ -78,6 +78,20 @@ extension LatticeHubService {
         show(forceFloating: true, initialUtility: .recentCaptures)
     }
 
+    /// Hides the floating Hub for an editor opened from Recent Captures and
+    /// returns how to bring it back where it was once that editor closes.
+    func hideForEditor() -> (() -> Void)? {
+        guard isVisible, let panel else { return nil }
+        let topLeft = CGPoint(x: panel.frame.minX, y: panel.frame.maxY)
+        hide()
+        return { [weak self] in
+            guard let self, !self.isVisible, LatticeHubItem.recentCaptures.isAvailable() else { return }
+            RecentCaptureService.shared.reload()
+            self.show(forceFloating: true, initialUtility: .recentCaptures)
+            self.panel?.setFrameTopLeftPoint(topLeft)
+        }
+    }
+
     private func shouldRouteToIsland() -> Bool {
         guard NotchSupport.routesQuickPanel(),
               LauncherShortcutTarget.selected(in: .standard) == .automatic else {
