@@ -38,12 +38,20 @@ struct SliderScrollArea: NSViewRepresentable {
     /// one step per wheel notch; a smaller notch would round back to where
     /// it was. Trackpad gestures keep accumulating finely.
     var step: Double = 0
+    /// Told when a wheel or trackpad change begins and ends, as a native
+    /// slider drag would be, so a control can keep what it held before.
+    var onEditingChanged: ((Bool) -> Void)? = nil
 
     func makeNSView(context: Context) -> AreaView { AreaView() }
 
     func updateNSView(_ view: AreaView, context: Context) {
         view.area = self
         view.isEnabled = context.environment.isEnabled
+        if !view.isEnabled { view.endEditing() }
+    }
+
+    static func dismantleNSView(_ view: AreaView, coordinator: ()) {
+        view.endEditing()
     }
 
     final class AreaView: NSView, SliderScrollTarget {
@@ -51,6 +59,21 @@ struct SliderScrollArea: NSViewRepresentable {
         var isEnabled = true
         var acceptsSliderScroll: Bool { isEnabled && area != nil }
         private var scroll = SliderScroll()
+        private var editing = false
+
+        /// Balanced: every begin gets one end, including on removal.
+        func endEditing() { setEditing(false) }
+
+        private func setEditing(_ on: Bool) {
+            guard editing != on else { return }
+            editing = on
+            area?.onEditingChanged?(on)
+        }
+
+        override func viewWillMove(toWindow newWindow: NSWindow?) {
+            super.viewWillMove(toWindow: newWindow)
+            if newWindow == nil { endEditing() }
+        }
 
         override func hitTest(_ point: NSPoint) -> NSView? {
             guard NSApp.currentEvent?.type == .scrollWheel else { return nil }
@@ -58,13 +81,24 @@ struct SliderScrollArea: NSViewRepresentable {
         }
 
         override func scrollWheel(with event: NSEvent) {
-            guard let area, isEnabled else { return SliderScroll.pass(event, from: self) }
+            guard let area, isEnabled else {
+                endEditing()
+                return SliderScroll.pass(event, from: self)
+            }
+            let finishes = event.phase.contains(.ended) || event.phase.contains(.cancelled)
             switch scroll.handle(event, current: area.value, range: area.range) {
-            case .pass: SliderScroll.pass(event, from: self)
-            case .hold: break
+            case .pass:
+                endEditing()
+                SliderScroll.pass(event, from: self)
+            case .hold:
+                if finishes { endEditing() }
             case .move(let value):
+                // A wheel notch is a whole edit; a trackpad gesture stays one
+                // edit from its first change to its lift.
+                setEditing(true)
                 area.value = SliderScroll.wheelValue(value, from: area.value, step: area.step,
                                                      precise: event.hasPreciseScrollingDeltas, range: area.range)
+                if !event.hasPreciseScrollingDeltas || finishes { endEditing() }
             }
         }
     }

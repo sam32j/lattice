@@ -477,7 +477,9 @@ enum WindowActivator {
         guard pendingWindowClose === pending else { return false }
         let requestGeneration = windowCloseGeneration
         pendingWindowClose = nil
-        if pending.usesSpaceHop {
+        // A newer activation already cancelled this hop when it superseded
+        // it; cancelling now would stop that activation's own hop.
+        if pending.usesSpaceHop, pending.activationIsCurrent {
             SpaceHop.cancelPending()
         }
         pending.finish(success: success)
@@ -968,6 +970,7 @@ fileprivate final class SwitcherPendingWindowClose {
     private var closeResultDeadline: DispatchTime?
     private var windowWasClosed = false
     private var generation: UInt64
+    fileprivate var activationIsCurrent: Bool { WindowActivator.isCurrentActivation(generation) }
     private let foregroundPID: pid_t?
     private let foregroundWindowID: CGWindowID?
     private var focusWasSuperseded = false
