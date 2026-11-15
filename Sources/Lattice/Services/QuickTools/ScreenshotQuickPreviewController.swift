@@ -65,9 +65,15 @@ final class ScreenshotQuickPreviewController {
     private let openedFromHistory: Bool
 
     var protectedWindowIDs: Set<CGWindowID> {
-        guard let panel, panel.isVisible, panel.windowNumber > 0 else { return [] }
-        return [CGWindowID(panel.windowNumber)]
+        // A preview fading out is still on screen; a capture taken during the
+        // fade must leave it out too.
+        Set([panel, fadingPanel].compactMap { window in
+            guard let window, window.isVisible, window.windowNumber > 0 else { return nil }
+            return CGWindowID(window.windowNumber)
+        })
     }
+    /// The closed preview's panel until its fade finishes and orders it out.
+    private var fadingPanel: NSPanel?
 
     init(capture: ScreenshotSelectionController.Capture,
          strings: ScreenshotFeatureStrings,
@@ -302,7 +308,10 @@ final class ScreenshotQuickPreviewController {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
         }
-        if let panel { FloatingPreviewTransition.dismiss(panel) }
+        if let panel {
+            fadingPanel = panel
+            FloatingPreviewTransition.dismiss(panel)
+        }
         panel = nil
         if shownInNotch {
             shownInNotch = false
