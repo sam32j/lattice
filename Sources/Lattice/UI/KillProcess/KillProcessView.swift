@@ -83,6 +83,12 @@ struct KillProcessView: View {
         .onChange(of: service.entries) { _, _ in
             frontPID = QuitAppsActions.frontAppPID()
         }
+        // The Hub and Settings each show this view; a pin changed in one must
+        // reach the other's batch quits.
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+            let current = QuitAppsSupport.keepRunning()
+            if current != keepRunning { keepRunning = current }
+        }
         .onDisappear { stopTimer() }
         .onChange(of: controlActiveState) { _, newValue in
             updateTimer(for: newValue)
@@ -444,11 +450,17 @@ struct KillProcessView: View {
                 .foregroundStyle(.secondary)
             Spacer()
             Button(appStrings.quitOthers) {
-                pendingAction = .quitBatch(pids: Set(others.map(\.pid)), names: others.map(\.name))
+                // Who is in front now, not when the list last refreshed.
+                frontPID = QuitAppsActions.frontAppPID()
+                let targets = frontPID == nil ? [] : batchTargets(keepingFront: true)
+                guard !targets.isEmpty else { return }
+                pendingAction = .quitBatch(pids: Set(targets.map(\.pid)), names: targets.map(\.name))
             }
             .disabled(others.isEmpty)
             Button(appStrings.quitAll) {
-                pendingAction = .quitBatch(pids: Set(all.map(\.pid)), names: all.map(\.name))
+                let targets = batchTargets(keepingFront: false)
+                guard !targets.isEmpty else { return }
+                pendingAction = .quitBatch(pids: Set(targets.map(\.pid)), names: targets.map(\.name))
             }
             .disabled(all.isEmpty)
         }
