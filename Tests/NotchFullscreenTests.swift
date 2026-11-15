@@ -58,6 +58,8 @@ enum NotchFullscreenTests {
     class State {
         var running = true, suspended = false, hiddenInFullscreen = false
         var coverageSnapshot: Set<CGDirectDisplayID>?
+        var dismissalRestarts = 0
+        func restartNoticeDismissalIfHeld() { dismissalRestarts += 1 }
         var appFullscreenDisplays: Set<CGDirectDisplayID> = []
         var hoverEmphasized = false
         var panel: Bool? = true

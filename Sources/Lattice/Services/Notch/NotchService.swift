@@ -2022,6 +2022,12 @@ final class NotchService: ObservableObject {
         }
     }
 
+    /// A held banner lost its timer; once nothing holds it, it gets its time.
+    private func restartNoticeDismissalIfHeld() {
+        guard let notice, noticeWork == nil else { return }
+        scheduleNoticeDismissal(after: notice.event.duration)
+    }
+
     private func scheduleNoticeDismissal(after duration: TimeInterval) {
         noticeWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.dismissNotice() }
@@ -3820,6 +3826,7 @@ final class NotchService: ObservableObject {
             endDeparture()
             noticeExpanded = false
             collapse()
+            restartNoticeDismissalIfHeld()
         }
         // Space changes do not run a full preference sync. Re-sync volume and
         // brightness key routing with the island's new state.
