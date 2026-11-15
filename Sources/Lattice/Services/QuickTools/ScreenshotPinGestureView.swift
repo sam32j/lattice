@@ -6,6 +6,7 @@ import AppKit
 /// Native gestures shared by pinned screenshot content and its window tests.
 class ScreenshotPinGestureView: NSView {
     private var lastZoomFrame: CGRect?
+    private var zoomCenter: CGPoint?
     private var logicalZoomWidth: CGFloat = 0
     var isPositionLocked: Bool { false }
     var pinOpacity: CGFloat {
@@ -36,7 +37,7 @@ class ScreenshotPinGestureView: NSView {
             return
         }
         let factor = event.hasPreciseScrollingDeltas ? 1 + preciseDelta * 0.014 : (delta > 0 ? 1.03 : 1 / 1.03)
-        zoom(by: factor, at: zoomCenter)
+        zoom(by: factor)
     }
 
     private let pinchTracker = ScreenshotPinPinchTracker()
@@ -106,56 +107,45 @@ class ScreenshotPinGestureView: NSView {
             if isEnding { pinchSource.finish(source) }
         }
         guard !isEnding, factor.isFinite, factor > 0, factor != 1, pinchSource.accepts(source) else { return }
-        zoom(by: factor, at: zoomCenter)
+        zoom(by: factor)
     }
 
-    /// Wheel and pinch grow and shrink the pin around its own center, so it
-    /// stays put instead of drifting with the pointer.
-    private var zoomCenter: CGPoint? {
-        guard let window else { return nil }
-        return CGPoint(x: window.frame.width / 2, y: window.frame.height / 2)
-    }
-
+    /// Zoom keeps the pin's center where it is, so a pin never moved by hand
+    /// sits at the same place at every scale and zooming back to 1x returns
+    /// it to exactly where it was. The center is kept exactly, not re-read
+    /// from AppKit's whole-point frames, so rounding cannot walk it away;
+    /// only a move that did not come from zooming takes a new one. `point`
+    /// is accepted for older callers and ignored.
     func zoom(by factor: CGFloat, at point: CGPoint? = nil) {
         guard !isPositionLocked, let window, factor.isFinite, factor > 0, factor != 1 else { return }
-        let windowPoint: CGPoint
-        let anchor: CGPoint
-        if let p = point {
-            guard p.x.isFinite, p.y.isFinite else { return }
-            windowPoint = p
-            anchor = window.convertPoint(toScreen: p)
-        } else {
-            anchor = NSEvent.mouseLocation
-            guard anchor.x.isFinite, anchor.y.isFinite else { return }
-            windowPoint = window.convertPoint(fromScreen: anchor)
-        }
-        guard anchor.x.isFinite, anchor.y.isFinite,
-              windowPoint.x.isFinite, windowPoint.y.isFinite else { return }
         let frame = window.frame
-        // AppKit rounds window frames to whole points. Keep the requested
-        // width between packets so a gentle pinch neither disappears nor
-        // becomes a whole-point jump for every tiny trackpad increment.
-        let baseWidth = lastZoomFrame == frame ? logicalZoomWidth : frame.width
-        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(anchor) }) ?? window.screen,
-              frame.width > 0, frame.height > 0 else { return }
+        guard frame.width > 0, frame.height > 0 else { return }
+        if lastZoomFrame != frame || zoomCenter == nil {
+            // First zoom, or the pin was dragged or nudged since the last one.
+            zoomCenter = CGPoint(x: frame.midX, y: frame.midY)
+            logicalZoomWidth = frame.width
+        }
+        guard let center = zoomCenter, center.x.isFinite, center.y.isFinite else { return }
+        let baseWidth = logicalZoomWidth > 0 ? logicalZoomWidth : frame.width
+        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(center) }) ?? window.screen
+        else { return }
         let limits = screen.visibleFrame
         let aspect = window.contentAspectRatio
         guard aspect.width > 0, aspect.height > 0 else { return }
-        // NSWindow rounds each new frame independently. Always derive the
-        // height from the image ratio so small packets cannot accumulate skew.
-        let imageHeight = frame.width * aspect.height / aspect.width
-        let minimum = max(window.minSize.width / frame.width, window.minSize.height / imageHeight)
-        let maximum = min(limits.width / frame.width, limits.height / imageHeight)
-        guard maximum > 0 else { return }
+        // Bounds in terms of the logical width; the height always follows
+        // the image ratio so small packets cannot accumulate skew.
+        let ratio = aspect.height / aspect.width
+        let minimumWidth = max(window.minSize.width, window.minSize.height / ratio)
+        let maximumWidth = min(limits.width, limits.height / ratio)
+        guard maximumWidth > 0 else { return }
         // A very elongated image may not fit both its minimum and the display;
         // keep it reachable on screen in that case.
-        let scale = min(max(baseWidth / frame.width * factor, minimum), maximum)
-        // Floating-point multiplication can exceed the fitted edge by a tiny
-        // fraction; AppKit rounds that out to an extra point off screen.
-        let width = min(limits.width, frame.width * scale)
-        let height = min(limits.height, imageHeight * scale)
-        let next = CGRect(x: min(max(anchor.x - windowPoint.x * scale, limits.minX), limits.maxX - width),
-                          y: min(max(anchor.y - (windowPoint.y / frame.height) * height, limits.minY), limits.maxY - height),
+        let width = min(max(baseWidth * factor, min(minimumWidth, maximumWidth)), maximumWidth)
+        let height = min(limits.height, width * ratio)
+        // Centered on the kept center; only a pin that would leave the
+        // screen is held inside it, without changing the kept center.
+        let next = CGRect(x: min(max(center.x - width / 2, limits.minX), limits.maxX - width),
+                          y: min(max(center.y - height / 2, limits.minY), limits.maxY - height),
                           width: width, height: height)
         if next != frame { window.setFrame(next, display: true) }
         logicalZoomWidth = width
