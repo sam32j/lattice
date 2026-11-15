@@ -36,7 +36,8 @@ enum WindowStageManagerSupport {
                               dockPosition: String?,
                               rightToLeft: Bool = false,
                               stripFrames: @autoclosure () -> [CGRect]) -> CGRect {
-        guard enabled, stageManagerEnabled, autoHide == false,
+        // An absent AutoHide is macOS's default: the recent-apps strip shows.
+        guard enabled, stageManagerEnabled, autoHide != true,
               visibleFrame.width > 80, visibleFrame.height > 0 else { return visibleFrame }
         let onRight = dockPosition == "left" || (dockPosition != "right" && rightToLeft)
         let candidates = stripFrames().filter { frame in

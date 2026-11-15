@@ -12,15 +12,20 @@ enum WindowStageManagerTests {
         var reads = 0
         func frames() -> [CGRect] { reads += 1; return [strip] }
         for (enabled, active, hidden): (Bool, Bool, Bool?) in [
-            (false, true, false), (true, false, false), (true, true, true), (true, true, nil)
+            (false, true, false), (true, false, false), (true, true, true)
         ] {
             let unchanged = WindowStageManagerSupport.adjustedFrame(
                 visibleFrame: visible, screenFrame: screen, enabled: enabled,
                 stageManagerEnabled: active, autoHide: hidden, dockPosition: nil,
                 stripFrames: frames())
             suite.expect(unchanged == visible && reads == 0,
-                         "Stage Manager off, hidden or unknown preserves the frame without reading windows")
+                         "Stage Manager off or its strip hidden preserves the frame without reading windows")
         }
+        suite.expect(WindowStageManagerSupport.adjustedFrame(
+                        visibleFrame: visible, screenFrame: screen, enabled: true,
+                        stageManagerEnabled: true, autoHide: nil, dockPosition: nil,
+                        stripFrames: [strip]).minX > visible.minX,
+                     "an unset AutoHide is macOS's default: the recent-apps strip shows and is reserved")
         func adjusted(_ rects: [CGRect], dock: String? = nil, rtl: Bool = false,
                       screenFrame: CGRect = CGRect(x: 0, y: 0, width: 1440, height: 900),
                       visibleFrame: CGRect = CGRect(x: 0, y: 48, width: 1440, height: 827)) -> CGRect {
