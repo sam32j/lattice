@@ -19,7 +19,7 @@ struct ScreenshotEditorView: View {
     @State private var dragCanvasArea: CGSize?
     /// Room the floating controls take on each side of the canvas; the fit
     /// keeps the capture clear of them, scrolling may pass beneath them.
-    @State private var canvasReserve = EdgeInsets(top: 0, leading: 53, bottom: 48, trailing: 50)
+    @State private var canvasReserve = EdgeInsets(top: 52, leading: 53, bottom: 48, trailing: 50)
     @State private var appeared = false
     @State private var backdropPopoverShown = false
     @StateObject private var watermarkTool = ScreenshotWatermarkToolAnchor.Presenter()
@@ -86,21 +86,24 @@ struct ScreenshotEditorView: View {
 
 
     var body: some View {
-        // Real rows and columns, not overlays: the canvas scrolls in its own
-        // region, so zoomed content can never slide under the controls.
+        // The canvas fills the window; the fit keeps the capture clear of the
+        // controls, and zoomed content scrolls beneath them.
         ZStack {
             artboard
+            // The capture runs to every edge of the window. The controls float
+            // over it on their own frosted backgrounds; only a short fade at
+            // the window's edge softens where the image meets the frame.
+            canvasArea
+                .mask(edgeMask)
             VStack(spacing: 0) {
                 topBand
                     .padding(.top, 10)
                     .padding(.horizontal, 12)
                     .padding(.bottom, 4)
-                // The capture runs to the window's sides and bottom; the
-                // controls float over it on soft, blurred edges. Only the top
-                // band crops it.
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        if abs(canvasReserve.top - height) > 0.5 { canvasReserve.top = height }
+                    }
                 ZStack {
-                    canvasArea
-                    edgeFades
                     VStack(spacing: 0) {
                         HStack(spacing: 0) {
                             ScrollView(.vertical) {
@@ -284,36 +287,23 @@ struct ScreenshotEditorView: View {
                           bottom: reserve.bottom + vertical, trailing: reserve.trailing + horizontal)
     }
 
-    /// Blurred bands under the side rails and the bottom row that fade into
-    /// the canvas, so a capture passing beneath reads as receding.
-    private var edgeFades: some View {
-        let reserve = canvasReserve
-        func band(_ edge: Edge, length: CGFloat) -> some View {
-            let start: UnitPoint, end: UnitPoint
-            switch edge {
-            case .leading: (start, end) = (.leading, .trailing)
-            case .trailing: (start, end) = (.trailing, .leading)
-            case .bottom: (start, end) = (.bottom, .top)
-            case .top: (start, end) = (.top, .bottom)
-            }
-            return Rectangle()
-                .fill(.regularMaterial)
-                .mask(LinearGradient(stops: [.init(color: .black, location: 0),
-                                             .init(color: .black, location: 0.45),
+    /// Opaque everywhere but a short fade at the window's edges.
+    private var edgeMask: some View {
+        GeometryReader { proxy in
+            let fade: CGFloat = 14
+            let w = max(proxy.size.width, 1), h = max(proxy.size.height, 1)
+            LinearGradient(stops: [.init(color: .clear, location: 0),
+                                   .init(color: .black, location: min(0.5, fade / w)),
+                                   .init(color: .black, location: max(0.5, 1 - fade / w)),
+                                   .init(color: .clear, location: 1)],
+                           startPoint: .leading, endPoint: .trailing)
+                .mask(LinearGradient(stops: [.init(color: .clear, location: 0),
+                                             .init(color: .black, location: min(0.5, fade / h)),
+                                             .init(color: .black, location: max(0.5, 1 - fade / h)),
                                              .init(color: .clear, location: 1)],
-                                     startPoint: start, endPoint: end))
-                .frame(width: edge == .bottom ? nil : length,
-                       height: edge == .bottom ? length : nil)
+                                     startPoint: .top, endPoint: .bottom))
         }
-        return ZStack {
-            band(.leading, length: reserve.leading + 22)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            band(.trailing, length: reserve.trailing + 22)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-            band(.bottom, length: reserve.bottom + 18)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-        }
-        .allowsHitTesting(false)
+        .ignoresSafeArea()
     }
 
     private func canvas(zoom: CGFloat, canvasSize: CGSize, available: CGSize) -> some View {
