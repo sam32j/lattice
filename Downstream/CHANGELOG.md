@@ -2,6 +2,133 @@
 
 ## [3.4.2-d.7] - 2026-11-12
 
+## [3.4.3-d.1] - 2026-11-15
+
+### Added
+- **Kill Process**: An Apps view that quits apps gracefully
+- **Quit Apps**: A Keep Running list that batch quits spare
+- **Editor**: Command-S keeps edits without closing; full-bleed canvas
+- **Hub**: Bring the floating Hub back after editing from Recent Captures
+- **Pins**: Compact chrome for small pins
+- **Hub**: Lay out recent captures like the island quick preview
+- **Hub**: Show recent captures as previews with their actions
+- **Capture**: Animate the floating preview in and out
+- **Notch**: Keep indicators in full screen and make live activity opt-in there
+- **Command Bar**: Add Quit All Apps actions
+- **Agents**: Add Claude account selection
+- **Clipboard**: Add optional source app icons to list view
+- **Notch**: Let the event countdown start earlier or later
+- **Command Bar**: Convert days, weeks and fixed-length years
+- **Settings**: Support safe command-line backups
+- **Homebrew**: Use the default terminal for commands
+- **Sliders**: Adjust island and Device Controls levels with the wheel and trackpad
+- **Window Layout**: Reserve space for Stage Manager
+- **Switcher**: Adopt liquid glass icon row and allow ten columns
+
+### Changed
+- **Memory**: Reduce retained clipboard thumbnail cache
+
+### Fixed
+- **Release**: Leave merged upstream commits out of the changelog
+- **Kill Process**: Fresh front app and shared Keep Running list
+- **Hub**: Restore after editing only when allowed and on a display
+- **Editor**: Returned preview keeps saved changes; stale history actions stop
+- **Captures**: Authoritative Quick Look, steady Hub, recording drags
+- **Screenshot**: Keep a fading preview out of new captures
+- **Kill Process**: Fit the floating Hub and the Dynamic Island
+- **Island**: Plain, larger empty state for Recent Captures
+- **Hub**: Reliably restore Recent Captures after editing, at the edited item
+- **Hub**: The floating Hub no longer lets the pointer through
+- **Pins**: No twitch while scrolling at the minimum or maximum size
+- **Pins**: Keep zooming after the pin shrinks out from under the pointer
+- **Editor**: Discard dialog asks about unsaved changes
+- **Editor**: Canvas reaches every window edge
+- **Editor**: Stay an ordinary window while another app is in front
+- **Hub**: Round the hover dim on capture previews
+- **Hub**: Fit wide captures and drop the empty-state card
+- **Pins**: Keep a trackpad scroll on its pin until the fingers lift
+- **Pins**: Small-pin readouts beside the pin, grip only when it fits
+- **Pins**: Zoom when scrolling over pin controls
+- **Pins**: Stop pinch jitter at the size limits
+- **Hub**: Keep the floating Hub height when opening Recent Captures
+- **Captures**: Open Quick Look on the stored screenshot file
+- **Capture**: Open previews in the island in full screen when it is chosen explicitly
+- **Capture**: Offer only date tokens for subfolders
+- **Capture**: Keep a focused preview open when the pointer passes over a pin
+- **Capture**: Dim the selection toolbar only where the selection covers it
+- **Timer**: End a ruler glide when the ruler switches between timer and Pomodoro
+- **Pins**: Absolute zoom choices, lock-aware and leak-free glide
+- **Notch**: Give a held banner its time again when full screen begins
+- **Command Bar**: Quit only the apps the confirmation listed
+- **App Updates**: Report an unreadable Homebrew cask inventory
+- **Agents**: Reread a repaired Claude profile and publish a rejected account check
+- **Sliders**: Report wheel and trackpad edits like a drag
+- **Switcher**: Leave a newer activation's Space hop running when an old close finishes
+- **Sliders**: Move coarse-step controls a whole step per wheel notch
+- **Window Layout**: Reserve Stage Manager space when AutoHide is unset
+- **Switcher**: Recheck the foreground app after the focused-window lookup
+- **Notch**: One coverage reading per full-screen check, and a settled hide outranks an arrival
+- **Notch**: Apply a queued Bluetooth disconnect before its reconnect
+- **Url Cleaner**: Keep skip markers when rewriting a cleaned link
+- **Mixer**: Protect call apps by their resolved identity and free rejected taps off the build queue
+- **Pins**: Steady, smooth zoom
+- **Pins**: Keep the center fixed at every zoom level
+- **Pins**: Find the top pin from the window server's stacking order
+- **Pins**: Zoom around the pin's center
+- **Pins**: Show controls only on the top pin under the pointer
+- **Timer**: Glide the ruler and count the clock through fast scrolls
+- **Pins**: Only the top pin under the pointer zooms
+- **Timer**: Fit the Focus & Breaks header to its line
+- **Timer**: Inset the start, pause and stop controls by 5pt
+- **Timer**: Trim the extra space under Pomodoro's Focus & Breaks
+- **Monitor**: Report the public IPv4 address again
+- **Device Controls**: Show one level tooltip, above the knob
+- **Display**: Keep manually disabled displays off after wake
+- **Network**: Stop counting mirrored feth peers twice
+- **Url Cleaner**: Preserve Safari link previews when cleaning
+- **Uninstaller**: Stop removal when Homebrew verification fails
+- **Clipboard**: Support control navigation in the dynamic island
+- **Super Key**: Make hotkeys independent of startup order
+- **Shelf**: Offer only a copy for files stored inside packages
+- **Agents**: Say whether a limit reading is left or used
+- **Media**: Keep a zero image watermark margin
+- **Quit Protection**: Follow the live macOS switcher shortcut
+- **Url Cleaner**: Keep the port and login out of a pasted site key
+- **Radial Menu**: Attach the action editor's file picker to the editor
+- **Agents**: Illustrate limits in the settings preview
+- **Mic Mute**: Report a refused mute without extra copy
+- **Device Controls**: Route the output slider through the volume key queue
+- **Switcher**: Follow Lattice's always-on Liquid Glass in the icon row
+- **Display**: Preserve Mission Control thumbnails with extra brightness
+- **Command Bar**: Find English commands in every locale
+- **Notch**: Keep a level's width steady as its reading gains a digit
+- **Snippets**: List snippets alphabetically in settings and the library
+- **Wallpaper**: Constrain thumbnails to their grid cells
+- **Notch**: Apply each volume key on coarse USB outputs
+- **Notch**: Keep the island steady when the pointer changes displays
+- **Audio**: Preserve multichannel gain and rebuild changed tap formats
+- **Switcher**: Resolve hidden-Space titles, close outcomes and search readability
+- **Auto Quit**: Ignore confirmed stale off-screen window surfaces
+- **Mouse**: Preserve window order when focusing without raise
+- **Switcher**: Raise fullscreen and hidden-Space windows directly
+- **Disks**: Use fresh capacity readings for low-space alerts
+- **Fan Control**: Recover safely from partial hardware failures
+- **Monitor**: Select measured CPU regions on 14-core M4 Max
+- **Monitor**: Map the alternate M1 CPU sensor layout
+- **Monitor**: Read desktop DC-In rail as adapter input
+- **Notch**: Isolate Bluetooth accessory monitoring
+- **Mixer**: Keep lookahead in time through capture gaps
+- **Recorder**: Prevent noise from 16-bit USB microphones
+- **Mixer**: Protect Discord and Teams screen-share audio
+- **Command Bar**: Keep tiny unit conversions from reading as zero
+- **Clipboard**: Skip marked temporary pastes
+- **Mixer**: Identify headphones from Core Audio stream types
+- **Command Bar**: Convert kilometres, millilitres and fl oz
+- **Notch**: Hide in a game's own full screen as in a full-screen Space
+- **Monitor**: Keep pinned GPU, temperature and fan readings on the chosen interval
+- **Command Bar**: Keep the smallest integer from crashing date answers
+- **Cleaner**: Stop reading log file names as app identifiers
+
 ### Added
 - **Screenshot**: Support independent after-capture actions and retire upload shortcut
 - **Recorder**: Integrate unified save export and independent after-recording actions
