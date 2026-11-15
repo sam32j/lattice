@@ -149,6 +149,14 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         if event.type == .gesture, isFrontmostPin(at: NSEvent.mouseLocation) {
             surface.handleGestureEvent(event)
         }
+        // A scroll AppKit keeps sending here after the pin shrank out from
+        // under the pointer hit-tests to nothing and would be dropped; the
+        // image takes every scroll its window receives, as the controls'
+        // panels already hand theirs over.
+        if event.type == .scrollWheel {
+            surface.scrollWheel(with: event)
+            return
+        }
         super.sendEvent(event)
     }
 
