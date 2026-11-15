@@ -49,7 +49,7 @@ struct CaptureSaveSettingsCard: View {
 
                 saveTemplateRow(title: strings.organize, text: $subfolders,
                                 placeholder: strings.optional, insertion: folderInsertion,
-                                allowsCounter: false)
+                                allowsCounter: false, datesOnly: true)
                 if CaptureSaveNaming.counterCount(subfolders) > 0 {
                     validation(strings.subfolderCounter)
                 }
@@ -114,7 +114,7 @@ struct CaptureSaveSettingsCard: View {
 
     private func saveTemplateRow(title: String, text: Binding<String>, placeholder: String,
                                  insertion: CaptureSaveTokenInsertion,
-                                 allowsCounter: Bool) -> some View {
+                                 allowsCounter: Bool, datesOnly: Bool = false) -> some View {
         SettingsControlRow(title: title) {
             HStack(spacing: 0) {
                 CaptureSaveNativeTextField(text: text, placeholder: placeholder, insertion: insertion)
@@ -123,7 +123,7 @@ struct CaptureSaveSettingsCard: View {
                     .frame(height: 20)
                     .padding(.leading, 10)
 
-                insertMenu(insertion: insertion, allowsCounter: allowsCounter)
+                insertMenu(insertion: insertion, allowsCounter: allowsCounter, datesOnly: datesOnly)
                     .frame(width: 24, height: 24)
                     .padding(.trailing, 3)
             }
@@ -141,8 +141,9 @@ struct CaptureSaveSettingsCard: View {
         }
     }
 
+    /// Subfolders group captures by date, so their menu offers only dates.
     private func insertMenu(insertion: CaptureSaveTokenInsertion,
-                            allowsCounter: Bool) -> some View {
+                            allowsCounter: Bool, datesOnly: Bool) -> some View {
         Menu {
             Section(strings.date) {
                 token(.year, strings.year, "2026", insertion: insertion)
@@ -151,15 +152,17 @@ struct CaptureSaveSettingsCard: View {
                 token(.monthName, strings.monthName, "November", insertion: insertion)
                 token(.day, strings.day, "10", insertion: insertion)
             }
-            Section(strings.time) {
-                token(.hour, strings.hour, "00", insertion: insertion)
-                token(.minute, strings.minute, "36", insertion: insertion)
-                token(.second, strings.second, "31", insertion: insertion)
+            if !datesOnly {
+                Section(strings.time) {
+                    token(.hour, strings.hour, "00", insertion: insertion)
+                    token(.minute, strings.minute, "36", insertion: insertion)
+                    token(.second, strings.second, "31", insertion: insertion)
+                }
+                token(.media, strings.media, "screenshot", insertion: insertion)
+                if allowsCounter { token(.counter, strings.counter, "1", insertion: insertion) }
+                token(.uuid, strings.uuid, "9b2f6c1e-…", insertion: insertion)
+                token(.shortID, strings.shortID, "7c3e9a1f", insertion: insertion)
             }
-            token(.media, strings.media, "screenshot", insertion: insertion)
-            if allowsCounter { token(.counter, strings.counter, "1", insertion: insertion) }
-            token(.uuid, strings.uuid, "9b2f6c1e-…", insertion: insertion)
-            token(.shortID, strings.shortID, "7c3e9a1f", insertion: insertion)
         } label: {
             Image(systemName: "plus.circle")
                 .font(.system(size: 14, weight: .regular))
