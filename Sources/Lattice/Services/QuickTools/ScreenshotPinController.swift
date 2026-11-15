@@ -134,9 +134,7 @@ final class ScreenshotPinController {
 
     private func updateHover(at point: CGPoint) {
         pins.forEach { $0.updateHover(at: point) }
-        let windows = NSApp.orderedWindows.filter { window in
-            window.isVisible && pins.contains { $0 === window }
-        }
+        let windows = ScreenshotPinWindow.pinsFrontToBack().filter { pin in pins.contains { $0 === pin } }
         let target = ScreenshotPinWindow.hoverTarget(at: point, windows: windows)
         guard target !== hoverFocusPin else { return }
         hoverFocusPin = target
@@ -180,8 +178,8 @@ final class ScreenshotPinController {
         if activeGesturePin == nil || time - lastGestureTime > 0.25
             || gestureFinished || sequenceBegan {
             activeGesturePin?.resetGestureTracking()
-            var windows = NSApp.orderedWindows.filter { window in
-                window.isVisible && pins.contains { $0 === window }
+            var windows: [NSWindow] = ScreenshotPinWindow.pinsFrontToBack().filter { pin in
+                pins.contains { $0 === pin }
             }
             if windows.isEmpty {
                 windows = pins.filter(\.isVisible).reversed()
