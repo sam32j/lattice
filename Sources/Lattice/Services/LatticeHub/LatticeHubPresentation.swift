@@ -85,7 +85,8 @@ extension LatticeHubService {
         let topLeft = CGPoint(x: panel.frame.minX, y: panel.frame.maxY)
         hide()
         return { [weak self] in
-            guard let self, !self.isVisible, LatticeHubItem.recentCaptures.isAvailable() else { return }
+            guard let self, !self.isVisible, AppFeature.quickLauncher.isAvailable,
+                  LatticeHubItem.recentCaptures.isAvailable() else { return }
             // However the editor closed (Done, Esc, Command-W), the app's
             // activation and key window settle afterwards; none of that may
             // dismiss the Hub that was just brought back.
@@ -93,7 +94,10 @@ extension LatticeHubService {
             RecentCaptureService.shared.reload()
             RecentCaptureService.shared.revealEntryID = entryID
             self.show(forceFloating: true, initialUtility: .recentCaptures)
-            self.panel?.setFrameTopLeftPoint(topLeft)
+            // Only where a display still is; otherwise keep show()'s placement.
+            if NSScreen.screens.contains(where: { $0.visibleFrame.insetBy(dx: -1, dy: -1).contains(topLeft) }) {
+                self.panel?.setFrameTopLeftPoint(topLeft)
+            }
         }
     }
 
