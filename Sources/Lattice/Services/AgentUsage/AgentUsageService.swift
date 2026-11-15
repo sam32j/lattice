@@ -727,8 +727,11 @@ final class AgentUsageService: ObservableObject {
         guard enabled.contains(.claude) else { return }
         let url = readerClaudeProfile.profileURL(home: home)
         let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
-        guard modified != claudeProfileModified || !readerClaudeProfile.isAvailable(home: home) else { return }
-        claudeProfileModified = modified
+        let available = readerClaudeProfile.isAvailable(home: home)
+        guard modified != claudeProfileModified || !available else { return }
+        // A profile refused for its permissions is read again once they are
+        // repaired, even if its contents never change.
+        claudeProfileModified = available ? modified : nil
         let reading = readerClaudeProfile.read(home: home)
         if reading.identity != claudeIdentity {
             claudeAccountLimits = nil
@@ -828,7 +831,12 @@ final class AgentUsageService: ObservableObject {
                     self.queue.async {
                         guard self.readerSession == session, self.enabled.contains(.claude) else { return }
                         self.readClaudePlan()
-                        guard self.readerClaudeProfile == profile, self.claudeIdentity == summary.identity else { return }
+                        guard self.readerClaudeProfile == profile, self.claudeIdentity == summary.identity else {
+                            // readClaudePlan may already have moved to another
+                            // account; publish so the snapshot follows it.
+                            self.schedulePublish()
+                            return
+                        }
                         self.claudeAccountLimits = summary.limits
                         self.readClaudeApp(now: Date())
                         self.checkLimits()
