@@ -249,8 +249,8 @@ struct RecentCapturesView: View {
 
     @ViewBuilder
     private var content: some View {
-        if visibleEntries.isEmpty, fillsAvailableSpace {
-            // The floating Hub is the container: no card inside it.
+        if visibleEntries.isEmpty, fillsAvailableSpace || notchSize != nil {
+            // The floating Hub or the island is the container: no card inside it.
             Text(text.empty)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(.secondary)
