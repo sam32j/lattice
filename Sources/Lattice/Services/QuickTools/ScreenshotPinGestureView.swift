@@ -36,7 +36,7 @@ class ScreenshotPinGestureView: NSView {
             return
         }
         let factor = event.hasPreciseScrollingDeltas ? 1 + preciseDelta * 0.014 : (delta > 0 ? 1.03 : 1 / 1.03)
-        zoom(by: factor, at: event.locationInWindow)
+        zoom(by: factor, at: zoomCenter)
     }
 
     private let pinchTracker = ScreenshotPinPinchTracker()
@@ -106,7 +106,14 @@ class ScreenshotPinGestureView: NSView {
             if isEnding { pinchSource.finish(source) }
         }
         guard !isEnding, factor.isFinite, factor > 0, factor != 1, pinchSource.accepts(source) else { return }
-        zoom(by: factor, at: point)
+        zoom(by: factor, at: zoomCenter)
+    }
+
+    /// Wheel and pinch grow and shrink the pin around its own center, so it
+    /// stays put instead of drifting with the pointer.
+    private var zoomCenter: CGPoint? {
+        guard let window else { return nil }
+        return CGPoint(x: window.frame.width / 2, y: window.frame.height / 2)
     }
 
     func zoom(by factor: CGFloat, at point: CGPoint? = nil) {
