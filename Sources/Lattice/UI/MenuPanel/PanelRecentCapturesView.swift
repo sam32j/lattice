@@ -270,9 +270,11 @@ struct RecentCapturesView: View {
             .frame(width: notchSize.width, height: notchSize.height)
         } else {
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 7) {
+                LazyVStack(alignment: .leading, spacing: fillsAvailableSpace ? 10 : 7) {
                     ForEach(visibleEntries) { entry in
-                        row(entry)
+                        // The floating Hub has the room to show each capture
+                        // as a preview with its actions, with no extra step.
+                        if fillsAvailableSpace { previewRow(entry) } else { row(entry) }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -318,6 +320,59 @@ struct RecentCapturesView: View {
         .modifier(NotchControlSurface(cornerRadius: 12))
     }
 
+    private func previewRow(_ entry: RecentCaptureEntry) -> some View {
+        let screenshot = FeatureStrings.screenshot(l10n.language)
+        let recorder = FeatureStrings.recorder(l10n.language)
+        let isScreenshot = entry.kind == .screenshot
+        return VStack(alignment: .leading, spacing: 8) {
+            GeometryReader { proxy in
+                RecentCapturePreviewThumbnail(
+                    entry: entry,
+                    history: history,
+                    onOpen: { history.open(entry) },
+                    width: proxy.size.width,
+                    height: Self.previewRowImageHeight,
+                    cornerRadius: 9,
+                    showsKindBadge: false,
+                    text: text,
+                    enablesImageDrag: true
+                )
+            }
+            .frame(height: Self.previewRowImageHeight)
+            HStack(spacing: 2) {
+                RecentCaptureActionButton(symbol: "doc.on.doc",
+                                          title: isScreenshot ? screenshot.copyButton : recorder.copyButton) {
+                    history.perform(.copy, on: entry)
+                }
+                RecentCaptureActionButton(symbol: "square.and.arrow.down",
+                                          title: isScreenshot ? screenshot.saveButton : recorder.saveButton) {
+                    history.perform(.save, on: entry)
+                }
+                if isScreenshot {
+                    RecentCaptureActionButton(symbol: "mappin", title: screenshot.pinButton) {
+                        history.perform(.pin, on: entry)
+                    }
+                }
+                RecentCaptureActionButton(symbol: "pencil", title: screenshot.editButton) {
+                    history.perform(.edit, on: entry)
+                }
+                Spacer(minLength: 6)
+                Text(Self.formattedCaptureTime(entry.createdAt))
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                RecentCaptureTrashButton(
+                    action: { history.remove(entry) },
+                    helpText: text.remove
+                )
+            }
+        }
+        .panelCard()
+    }
+
+    /// About three previews fit the floating Hub's history at once.
+    private static let previewRowImageHeight: CGFloat = 112
+
     private func row(_ entry: RecentCaptureEntry) -> some View {
         HStack(spacing: 10) {
             RecentCapturePreviewThumbnail(
@@ -344,6 +399,30 @@ struct RecentCapturesView: View {
             )
         }
         .panelCard()
+    }
+}
+
+/// An icon action on a history preview row, sized like the island
+/// preview's 28-point targets.
+private struct RecentCaptureActionButton: View {
+    let symbol: String
+    let title: String
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .medium))
+                .frame(width: 28, height: 28)
+                .background(Color.primary.opacity(hovered ? 0.1 : 0),
+                            in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .help(title)
+        .accessibilityLabel(title)
     }
 }
 

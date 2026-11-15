@@ -632,6 +632,47 @@ final class RecentCaptureService: ObservableObject {
         return provider
     }
 
+    enum HistoryAction { case copy, save, pin, edit }
+
+    /// Runs a quick action on a stored capture from the list itself, without
+    /// opening a preview first.
+    func perform(_ action: HistoryAction, on entry: RecentCaptureEntry) {
+        switch entry.kind {
+        case .screenshot:
+            queue.async { [weak self] in
+                guard let self else { return }
+                let capture = self.loadScreenshot(entry)
+                DispatchQueue.main.async {
+                    guard let capture else { NSSound.beep(); return }
+                    // The editor opens over the desktop, not behind the Hub.
+                    if action == .edit, LatticeHubService.shared.isVisible { LatticeHubService.shared.hide() }
+                    let mapped: ScreenshotQuickPreviewController.Action
+                    switch action {
+                    case .copy: mapped = .copy
+                    case .save: mapped = .save
+                    case .pin: mapped = .pin
+                    case .edit: mapped = .edit
+                    }
+                    ScreenshotService.shared.performHistoryAction(mapped, on: capture)
+                }
+            }
+        case .recording:
+            guard let url = entry.recordingURL, RecentCaptureStore.isRegularFile(url) else {
+                remove(entry)
+                NSSound.beep()
+                return
+            }
+            switch action {
+            case .copy: RecordingFileActions.copy(url)
+            case .save: RecordingFileActions.save(url)
+            case .edit:
+                if LatticeHubService.shared.isVisible { LatticeHubService.shared.hide() }
+                RecordingFileActions.edit(url)
+            case .pin: break
+            }
+        }
+    }
+
     func open(_ entry: RecentCaptureEntry, inNotch: Bool = false) {
         let destinationIsland = CapturePresentationRouting.opensInIsland(
             origin: inNotch ? .dynamicIsland : .floatingWindow)

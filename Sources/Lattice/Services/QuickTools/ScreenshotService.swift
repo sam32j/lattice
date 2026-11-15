@@ -446,6 +446,26 @@ final class ScreenshotService: ObservableObject {
         }
     }
 
+    /// A quick action on a history screenshot, outside any live preview.
+    @discardableResult
+    func performHistoryAction(_ action: ScreenshotQuickPreviewController.Action,
+                              on capture: ScreenshotSelectionController.Capture) -> Bool {
+        let presented = capture.presentationCapture
+        switch action {
+        case .copy: return copyDirect(presented)
+        case .save: return saveDirect(presented) != nil
+        case .pin:
+            ScreenshotPinController.shared.pin(image: presented.image, scale: capture.scale,
+                baseImage: capture.image, annotations: capture.annotations, captureID: capture.id)
+            return true
+        case .edit:
+            openEditor(with: capture)
+            return true
+        case .saveAndCopy, .discard:
+            return false
+        }
+    }
+
     /// Editing does not undo the independent Add to File Cache choice.
     /// The preview returns with a fresh close interval when the editor closes.
     private func editFromPreview(_ capture: ScreenshotSelectionController.Capture, saved: SaveOutcome?) {
