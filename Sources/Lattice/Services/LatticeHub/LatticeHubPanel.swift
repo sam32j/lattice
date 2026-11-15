@@ -110,6 +110,9 @@ extension LatticeHubService {
         panel.level = .floating
         panel.backgroundColor = .clear
         panel.isOpaque = false
+        // Explicitly false, not the default: a clear window otherwise lets the
+        // pointer through its transparent pixels to whatever is beneath.
+        panel.ignoresMouseEvents = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         let host = NSHostingController(rootView: LatticeHubView())
         host.sizingOptions = [.intrinsicContentSize]
