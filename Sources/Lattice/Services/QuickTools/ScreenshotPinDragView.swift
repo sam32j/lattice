@@ -8,6 +8,10 @@ final class ScreenshotPinDragView: NSVisualEffectView, NSDraggingSource {
     private weak var pin: ScreenshotPinWindow?
     private var mouseDownEvent: NSEvent?
     private var keptAtStart = false
+    private let icon = NSImageView(frame: CGRect(x: 42, y: 5, width: 16, height: 16))
+    private var grips: [NSView] = []
+    static let regularSize = CGSize(width: 100, height: 26)
+    static let compactSize = CGSize(width: 40, height: 14)
 
     init(pin: ScreenshotPinWindow) {
         self.pin = pin
@@ -19,7 +23,6 @@ final class ScreenshotPinDragView: NSVisualEffectView, NSDraggingSource {
         wantsLayer = true
         layer?.cornerRadius = 13
         layer?.masksToBounds = true
-        let icon = NSImageView(frame: CGRect(x: 42, y: 5, width: 16, height: 16))
         icon.image = NSImage(systemSymbolName: "doc", accessibilityDescription: nil)
         icon.contentTintColor = .white
         addSubview(icon)
@@ -29,6 +32,7 @@ final class ScreenshotPinDragView: NSVisualEffectView, NSDraggingSource {
             grip.layer?.cornerRadius = 1
             grip.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.65).cgColor
             addSubview(grip)
+            grips.append(grip)
         }
         let title = ScreenshotPinStrings.localized(L10n.shared.language).drag
         toolTip = title
@@ -39,6 +43,23 @@ final class ScreenshotPinDragView: NSVisualEffectView, NSDraggingSource {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { nil }
+
+    /// A pin too small for its controls keeps only a small grip.
+    func setCompact(_ compact: Bool) {
+        let size = compact ? Self.compactSize : Self.regularSize
+        setFrameSize(size)
+        layer?.cornerRadius = size.height / 2
+        icon.isHidden = compact
+        if compact {
+            grips[0].frame = CGRect(x: 12, y: 6, width: 16, height: 2)
+            grips[1].isHidden = true
+        } else {
+            grips[0].frame = CGRect(x: 17, y: 12, width: 17, height: 2)
+            grips[1].frame = CGRect(x: 66, y: 12, width: 17, height: 2)
+            grips[1].isHidden = false
+        }
+        window?.invalidateCursorRects(for: self)
+    }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func hitTest(_ point: NSPoint) -> NSView? { bounds.contains(point) ? self : nil }

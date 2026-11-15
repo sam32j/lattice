@@ -189,15 +189,23 @@ enum AppManagementFeatureTests {
                                                    engaged: false, disengagedTicks: 1) == 1.10,
                "grace never lifts a factor that had no boost to protect")
         suite.expect(ExtraBrightnessSupport.canReuseSpaceWindows(
-                   sameDisplay: true, overlayOnActiveSpace: true, triggerOnActiveSpace: true),
+                   sameDisplay: true, inOwnSpace: false, overlayOnActiveSpace: true, triggerOnActiveSpace: true),
                "fullscreen handoff keeps the live overlay pair when both windows followed")
         suite.expect(!ExtraBrightnessSupport.canReuseSpaceWindows(
-                   sameDisplay: false, overlayOnActiveSpace: true, triggerOnActiveSpace: true)
+                   sameDisplay: false, inOwnSpace: false, overlayOnActiveSpace: true, triggerOnActiveSpace: true)
                && !ExtraBrightnessSupport.canReuseSpaceWindows(
-                   sameDisplay: true, overlayOnActiveSpace: false, triggerOnActiveSpace: true)
+                   sameDisplay: true, inOwnSpace: false, overlayOnActiveSpace: false, triggerOnActiveSpace: true)
                && !ExtraBrightnessSupport.canReuseSpaceWindows(
-                   sameDisplay: true, overlayOnActiveSpace: true, triggerOnActiveSpace: false),
+                   sameDisplay: true, inOwnSpace: false, overlayOnActiveSpace: true, triggerOnActiveSpace: false),
                "display changes and incomplete Space handoffs still rebuild the overlay pair")
+        // AppKit never reports windows of the overlay's own Space as on the
+        // active Space; rebuilding on that blinked the boost on every switch.
+        suite.expect(ExtraBrightnessSupport.canReuseSpaceWindows(
+                   sameDisplay: true, inOwnSpace: true, overlayOnActiveSpace: false, triggerOnActiveSpace: false),
+               "the overlay's own Space keeps the live windows across desktop switches")
+        suite.expect(!ExtraBrightnessSupport.canReuseSpaceWindows(
+                   sameDisplay: false, inOwnSpace: true, overlayOnActiveSpace: false, triggerOnActiveSpace: false),
+               "a different display still rebuilds the overlay in its own Space")
         for ebScreen in [CGRect(x: 0, y: 0, width: 1512, height: 982),
                          CGRect(x: 0, y: 0, width: 1728, height: 1117),
                          CGRect(x: -1800, y: 140, width: 1800, height: 1169)] {
@@ -214,9 +222,7 @@ enum AppManagementFeatureTests {
                    "the extra brightness overlay windows tile \(ebScreen) on whole points")
             // AppKit reports a window above the main menu whose frame contains
             // the screen's safe area (the screen below the camera housing) as a
-            // full screen window, which left only the wallpaper in Mission
-            // Control's desktop thumbnails (#3292). A generous 64 pt housing
-            // covers every notch.
+            // full screen window. A generous 64 pt housing covers every notch.
             let ebSafeArea = CGRect(x: ebScreen.minX, y: ebScreen.minY,
                                     width: ebScreen.width, height: ebScreen.height - 64)
             suite.expect(!ebFrames.contains { $0.contains(ebSafeArea) },
@@ -857,6 +863,8 @@ enum AppManagementFeatureTests {
         let appUninstallerSource = TestSourceModules.read("Sources/Lattice/Services/Uninstall/AppUninstaller.swift")
         let removeSelectedBody = sourceBody(of: appUninstallerSource, from: "func removeSelected()",
                                             to: "func removeSelectedWithHomebrew(")
+        suite.expect(removeSelectedBody.contains("guard canRemoveSelected, selectedHomebrewPackage == nil else { return }"),
+               "ordinary removal enforces the tested verification gate and cannot bypass a managed package")
         suite.expect(removeSelectedBody.contains("let knownApplications = mayClaimSharedData"),
                "a removal builds the known-application roster only when it may claim shared data")
         let finishHomebrewBody = sourceBody(of: appUninstallerSource,
@@ -921,6 +929,13 @@ enum AppManagementFeatureTests {
                && CleanerSupport.bundleIDCandidate(fromEntryName: "com.v2.editor")
                 == "com.v2.editor",
                "version directories never become deletion ownership evidence")
+        suite.expect(CleanerSupport.bundleIDCandidate(fromEntryName: "MCXTools.log") == nil
+               && CleanerSupport.bundleIDCandidate(fromEntryName: "LKDC-setup.log") == nil
+               && CleanerSupport.bundleIDCandidate(fromEntryName: "install.LOG") == nil,
+               "a plain log file name is never read as an uninstalled app's identifier")
+        suite.expect(CleanerSupport.bundleIDCandidate(fromEntryName: "com.vendor.editor.log")
+                == "com.vendor.editor",
+               "a log named after its app still unwraps to that app")
         let supportRoot = URL(fileURLWithPath: "/Users/tester/Library/Application Support")
         suite.expect(CleanerSupport.isDirectChild(
                    supportRoot.appendingPathComponent("com.vendor.editor"), of: supportRoot)
@@ -1379,14 +1394,16 @@ enum AppManagementFeatureTests {
         let minimizedBody = ((try? String(
             contentsOfFile: "Sources/Lattice/Services/Switcher/SpaceWindowBridge.swift",
             encoding: .utf8)) ?? "")
-            .components(separatedBy: "static func isMinimized(_ windowID: CGWindowID) -> Bool {\n")
+            .components(separatedBy: "static func isMinimized(_ windowID: CGWindowID) -> Bool? {\n")
             .dropFirst().first?
             .components(separatedBy: "\n    }\n").first?
             .components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
         suite.expect(minimizedBody == [
-            "guard #available(macOS 26.0, *), let tags = windowTags(of: [windowID])?[windowID] else { return false }",
+            "guard #available(macOS 26.0, *), let windows = windowTags(of: [windowID]) else { return nil }",
+            "guard let tags = windows[windowID] else { return false }",
+            "guard tags != 0 else { return nil }",
             "return SpaceHopSupport.isMinimized(windowTags: tags)"],
-               "the bridge reads a minimized window through the tested filter, only from macOS 26")
+               "the bridge preserves unknown minimized states and reads available tags through the tested filter")
         suite.expect(AutoQuitSupport.shouldQuitAfterWindowCheck(hadWindows: true,
                                                           appIsTerminated: false,
                                                           appIsExcepted: false,
@@ -1436,25 +1453,26 @@ enum AppManagementFeatureTests {
                                                            hasUserFacingWindow: true),
                "AutoQuit keeps apps with user-facing windows running")
         suite.expect(AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [4],
-                                                            visibleSpaces: [3],
-                                                            hasTitle: true),
+                                                            visibleSpaces: [3]),
                "a window parked on another Space keeps its app running")
         suite.expect(!AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [3],
-                                                             visibleSpaces: [3],
-                                                             hasTitle: true),
+                                                             visibleSpaces: [3]),
                "a window the app hid on the Space in front does not keep it running")
-        suite.expect(AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [],
-                                                            visibleSpaces: [3],
-                                                            hasTitle: true),
-               "a window with no Space answer falls back to the title rule")
         suite.expect(!AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [],
-                                                             visibleSpaces: nil,
-                                                             hasTitle: false),
-               "an untitled off-screen window never keeps an app running")
+                                                             visibleSpaces: [3])
+                && !AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [],
+                                                                 visibleSpaces: nil),
+               "a confirmed surface without a Space lets its app quit even when topology is unavailable (#2696)")
+        suite.expect(AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: nil,
+                                                                visibleSpaces: [3])
+                && AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: nil,
+                                                                visibleSpaces: nil),
+               "a failed window Space query never proves that an off-screen window was closed")
         suite.expect(AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [3],
-                                                            visibleSpaces: nil,
-                                                            hasTitle: true),
-               "without Spaces to compare, the old cautious rule stands")
+                                                            visibleSpaces: nil)
+                && AutoQuitSupport.offscreenWindowKeepsAppAlive(windowSpaces: [3],
+                                                                visibleSpaces: []),
+               "an assigned window keeps its app running when visible Spaces are unknown")
 
         func windowRole(layer: Int = 0,
                         alpha: Double = 1,
@@ -1534,6 +1552,7 @@ enum AppManagementFeatureTests {
                              beforeQuit: Bool = true,
                              drawingForApp: Set<pid_t> = [],
                              minimizedWindows: Set<CGWindowID> = [],
+                             unknownMinimizedWindows: Set<CGWindowID> = [],
                              windowSpaces: [CGWindowID: [UInt64]] = [:],
                              visibleSpaces: Set<UInt64>? = [3])
             -> (keepsApp: Bool, drawLookups: [pid_t], spaceLookups: Int) {
@@ -1544,9 +1563,9 @@ enum AppManagementFeatureTests {
                 pid: appPID,
                 countsEverythingShown: beforeQuit,
                 processDrawsForApp: { drawLookups.append($0); return drawingForApp.contains($0) },
-                windowIsMinimized: { minimizedWindows.contains($0) },
+                windowIsMinimized: { unknownMinimizedWindows.contains($0) ? nil : minimizedWindows.contains($0) },
                 visibleSpaces: { spaceLookups += 1; return visibleSpaces },
-                windowSpaces: { windowSpaces[$0] ?? [] })
+                windowSpaces: { windowSpaces[$0] })
             return (keepsApp, drawLookups, spaceLookups)
         }
         let ownWindowCheck = windowListCheck([listedWindow()])
@@ -1577,6 +1596,37 @@ enum AppManagementFeatureTests {
                "another app's normal window on another Space never keeps this app running")
         suite.expect(windowListCheck([listedWindow(id: 7, isOnScreen: false)], windowSpaces: [7: [4]]).keepsApp,
                "the app's own window on another Space keeps it running")
+        // Mail and Xcode can retain normal-sized off-screen surfaces after
+        // their last window closes (#2696). A successful empty Space answer
+        // must not be confused with an unanswered query or depend on a title.
+        for title in ["Document", ""] {
+            let residuals = [(420.0, 632.0), (1018.0, 600.0), (800.0, 800.0), (500.0, 500.0)]
+                .enumerated().map { index, size in
+                    listedWindow(id: CGWindowID(index + 10), width: size.0, height: size.1,
+                                 isOnScreen: false, title: title)
+                }
+            let noSpaces: [CGWindowID: [UInt64]] = [10: [], 11: [], 12: [], 13: []]
+            suite.expect(!windowListCheck(residuals, windowSpaces: noSpaces).keepsApp
+                    && !windowListCheck(residuals, windowSpaces: noSpaces, visibleSpaces: nil).keepsApp,
+                   "closed surfaces with no Space do not keep their app running, title: '\(title)' (#2696)")
+            suite.expect(windowListCheck(residuals, windowSpaces: [10: [], 11: [], 12: []]).keepsApp,
+                   "one failed Space query among confirmed leftovers keeps the app running, title: '\(title)'")
+            suite.expect(windowListCheck(residuals, windowSpaces: [10: [], 11: [], 12: [], 13: [4]]).keepsApp,
+                   "one real window on another Space among leftovers keeps the app running, title: '\(title)'")
+            suite.expect(windowListCheck(residuals, minimizedWindows: [13], windowSpaces: noSpaces).keepsApp,
+                   "a minimized window keeps the app running even with an empty Space answer, title: '\(title)'")
+            suite.expect(windowListCheck(residuals, unknownMinimizedWindows: [13], windowSpaces: noSpaces).keepsApp,
+                   "an unknown minimized state prevents discarding a surface with no Space, title: '\(title)'")
+        }
+        var windowWithoutTitle = listedWindow(id: 7, isOnScreen: false)
+        windowWithoutTitle.removeValue(forKey: kCGWindowName as String)
+        suite.expect(windowListCheck([windowWithoutTitle]).keepsApp
+                && windowListCheck([windowWithoutTitle], windowSpaces: [7: [4]]).keepsApp
+                && windowListCheck([windowWithoutTitle], windowSpaces: [7: [4]], visibleSpaces: nil).keepsApp,
+               "unavailable window titles never turn an unknown or parked window into a closed one")
+        suite.expect(windowListCheck([windowWithoutTitle], unknownMinimizedWindows: [7],
+                                     windowSpaces: [7: [3]]).keepsApp,
+               "unavailable minimized tags protect a window on the current Space when AX cannot see it")
         let hiddenWindowsCheck = windowListCheck([
             listedWindow(id: 7, isOnScreen: false),
             listedWindow(id: 8, isOnScreen: false),
@@ -1720,7 +1770,7 @@ enum AppManagementFeatureTests {
             "processDrawsForApp: { Self.process($0, drawsFor: pid) },",
             "windowIsMinimized: { SpaceWindowBridge.isMinimized($0) },",
             "visibleSpaces: { SpaceWindowBridge.topology()?.visibleSpaces },",
-            "windowSpaces: { SpaceWindowBridge.spaces(of: $0) })",
+            "windowSpaces: { SpaceWindowBridge.resolvedSpaces(of: $0) })",
             "guard ResponsibleProcess.owner(of: processID) == appPID else { return false }",
             "return NSRunningApplication(processIdentifier: processID)?.activationPolicy != .regular",
         ]

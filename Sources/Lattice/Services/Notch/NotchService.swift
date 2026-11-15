@@ -41,14 +41,16 @@ struct NotchNotice: Equatable {
                                     trailing: max(minimumWings.trailing, fitted.trailing))
         }
         let font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium)
-        var leading = ((level == nil ? title : detail) as NSString).size(withAttributes: [.font: font]).width
+        func measured(_ text: String) -> CGFloat { (text as NSString).size(withAttributes: [.font: font]).width }
+        var leading = measured(level == nil ? title : detail)
         if event == .keyboardLight {
             leading = max(leading, Self.keyboardLightMaxReadoutWidth(font: font, detail: detail))
         }
-        // A level's wings are as wide as its mark and its reading; the meter
-        // takes the same width on the other side.
+        // A level's wings are as wide as its mark and its widest reading, so
+        // the island holds still as the value gains or loses a digit; the
+        // meter takes the same width on the other side.
         if level != nil, event != .accessory {
-            let wing = ceil(Self.levelInset + 18 + 8 + leading)
+            let wing = ceil(Self.levelInset + 18 + 8 + max(leading, measured("100%")))
             return NotchNoticeWings(leading: wing, trailing: wing)
         }
         // Long accessory names still use bounded truncation.
@@ -322,12 +324,23 @@ final class NotchService: ObservableObject {
     private var ownInputSourceID: String?
     private var notchNeedsMonitor = false
     private var menuSpaceTimer: Timer?
+    private var appFullscreenTimer: Timer?
+    private var appFullscreenDisplays: Set<CGDirectDisplayID> = []
+    /// One reading of app-covered displays for a whole reevaluation, so the
+    /// island, its copies and the poll's cache never act on different reads.
+    private var coverageSnapshot: Set<CGDirectDisplayID>?
     private var menuSpaceReading = false
     private var menuSpaceGeneration = 0
     private var menuBarMeasurements = NotchMenuBarMeasurements()
     private var screenRefreshWork: DispatchWorkItem?
     private var preferenceSyncWork: DispatchWorkItem?
     private let menuSpaceQueue = DispatchQueue(label: "io.github.sam32j.lattice.notch-menu-space", qos: .utility)
+    /// Set while the live window is on its way to another display, so the copy
+    /// there stays up until that window has been drawn for it and ordered in.
+    private var mirrorHeldForArrival: CGDirectDisplayID?
+    /// Bumped on every move, so a reveal queued for the display just left does
+    /// not order the window in after a newer move, or after the island stops.
+    private var relocationTicket = 0
     /// The display the island is on. The pointer choice keeps it there until
     /// the island rests, so a preference sync never moves an open island.
     private var displayID: CGDirectDisplayID?
@@ -478,8 +491,9 @@ final class NotchService: ObservableObject {
     }
 
     /// Full screen keeps a clickable black cutout until the user opens it.
+    /// Only live activity hides there: an indicator still shows as a notice.
     var fullscreenCompact: Bool {
-        hiddenInFullscreen && !expanded && !peeking
+        hiddenInFullscreen && !expanded && !peeking && notice == nil
     }
 
     /// A simulated cutout covers no camera, so in full screen it stays out
@@ -561,7 +575,7 @@ final class NotchService: ObservableObject {
               countdown.ongoing ? NotchCalendarSupport.showsTimeLeft()
                 : NotchCalendarSupport.showsCountdown(chosen: calendar.isChosen(countdown.event))
         else { return false }
-        return countdown.isShown(at: Date())
+        return countdown.isShown(at: Date(), leadTime: calendar.countdownLeadTime)
     }
 
     var hasKeepAwakeActivity: Bool {
@@ -769,9 +783,9 @@ final class NotchService: ObservableObject {
         let title = trimmed.isEmpty ? FeatureStrings.notchCalendar(language).untitled : trimmed
         let titleSide = NotchCalendarSupport.stripDotWidth + NotchCalendarSupport.stripTitleSpacing
             + width(title, .systemFont(ofSize: 11, weight: .semibold))
-        // The widest clock the hour can show, so the island keeps its size
+        // The widest clock the selected lead can show, so the island keeps its size
         // while the minutes count down.
-        let clockSide = width("00:00", .monospacedDigitSystemFont(ofSize: 13, weight: .medium))
+        let clockSide = width(calendarClockShape, .monospacedDigitSystemFont(ofSize: 13, weight: .medium))
             + NotchCalendarSupport.stripClockSpacing
             + width(NotchCalendarSupport.timeText(countdown, locale: language.formattingLocale()),
                     .monospacedDigitSystemFont(ofSize: 11, weight: .medium))
@@ -817,11 +831,15 @@ final class NotchService: ObservableObject {
         }
     }
 
-    /// An event's dot and the widest clock its hour can show, so the island
+    private var calendarClockShape: String {
+        NotchCalendarSupport.countdownShape(leadTime: NotchCalendarService.shared.countdownLeadTime)
+    }
+
+    /// An event's dot and the widest clock its selected lead can show, so the island
     /// keeps its size while the minutes count down.
     private var calendarClockWidth: CGFloat {
         NotchCalendarSupport.stripDotWidth + NotchCalendarSupport.stripClockSpacing
-            + ("00:00" as NSString).size(withAttributes: [
+            + (calendarClockShape as NSString).size(withAttributes: [
                 .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .medium)
             ]).width.rounded(.up)
     }
@@ -984,11 +1002,15 @@ final class NotchService: ObservableObject {
         let enabled = NotchAgentSupport.providers()
         // Added Codex accounts have cards before, or without, any log.
         let accounts = NotchAgentSupport.showsCodexAccounts() ? CodexProfileLimitsService.shared.states.map(\.id) : []
+        let claudeProfile = AgentUsageService.shared.claudeProfile
+        let claudeAccount = claudeProfile.isDefault ? nil : claudeProfile.id
         guard usage.loaded || !accounts.isEmpty else { return nil }
-        let providers = enabled.filter { usage.seen.contains($0) || ($0 == .codex && !accounts.isEmpty) }
+        let providers = enabled.filter { usage.seen.contains($0) || ($0 == .codex && !accounts.isEmpty)
+            || ($0 == .claude && claudeAccount != nil) }
         guard !providers.isEmpty else { return 0 }
         return NotchAgentSupport.contentHeight(NotchAgentSupport.rows(
-            NotchAgentSupport.tiles(cards: NotchAgentSupport.cards(), providers: providers, codexAccounts: accounts),
+            NotchAgentSupport.tiles(cards: NotchAgentSupport.cards(), providers: providers, codexAccounts: accounts,
+                                    claudeAccount: claudeAccount),
             width: width))
     }
 
@@ -1167,7 +1189,8 @@ final class NotchService: ObservableObject {
             return layout.timerSurface(reading: NotchTimerSupport.compactText(for: timer.session, at: timer.now,
                                                                               locale: Locale(identifier: language.rawValue)),
                                        companion: companion, workingAgents: working,
-                                       downloadPercent: download?.fraction != nil, geometry: geometry, language: language)
+                                       downloadPercent: download?.fraction != nil, geometry: geometry, language: language,
+                                       calendarLeadTime: NotchCalendarService.shared.countdownLeadTime)
         case .downloads:
             return layout.downloadSurface(name: download?.name ?? FeatureStrings.notchFiles(language).downloadsTitle,
                                           hasProgress: download?.fraction != nil, geometry: geometry, language: language)
@@ -1181,11 +1204,11 @@ final class NotchService: ObservableObject {
             if let companion {
                 return layout.calendarPairSurface(companion: companion, workingAgents: working,
                                                   downloadPercent: download?.fraction != nil, geometry: geometry,
-                                                  language: language)
+                                                  language: language, calendarLeadTime: NotchCalendarService.shared.countdownLeadTime)
             }
             return layout.calendarSurface(title: layout.calendarTitle(countdown, language: language),
                                           time: NotchCalendarSupport.timeText(countdown, locale: language.formattingLocale()),
-                                          geometry: geometry)
+                                          geometry: geometry, calendarLeadTime: NotchCalendarService.shared.countdownLeadTime)
         case .watch:
             let watch = NotchWatchService.shared
             return layout.watchSurface(reading: watch.headline, thumbnail: watch.showsThumbnail, geometry: geometry)
@@ -1200,16 +1223,34 @@ final class NotchService: ObservableObject {
     }
 
     var presentationWindow: NSPanel? { panel }
-    /// User actions can open the island even when automatic full-screen feedback is hidden.
+    /// User actions can open the island even while full screen hides live activity.
     var acceptsUserInteraction: Bool {
         running && !suspended && panel != nil
             && windowHost?.isConcealedForMissionControl != true
     }
+    /// Automatic presentations beyond indicators, such as capture previews
+    /// and the companion, stay away while full screen hides live activity.
     var acceptsSystemFeedback: Bool {
         acceptsUserInteraction && !hiddenInFullscreen
     }
     var showsSystemFeedback: Bool {
         acceptsSystemFeedback && (!hiddenUntilHover || NotchSupport.hiddenShowsActivity())
+    }
+    /// A capture preview is not live activity: when "Open preview and recent
+    /// captures at" names the Dynamic Island explicitly, it opens there even
+    /// while full screen hides live activity. Auto keeps the floating fallback.
+    var acceptsCapturePresentation: Bool {
+        acceptsSystemFeedback
+            || (acceptsUserInteraction && CapturePresentationRouting.preference() == .dynamicIsland)
+    }
+
+    /// Indicators (volume, brightness, microphone, battery and the other
+    /// notices) are passive, so full screen never silences them.
+    var acceptsIndicators: Bool {
+        acceptsUserInteraction
+    }
+    var showsIndicators: Bool {
+        acceptsIndicators && (!hiddenUntilHover || NotchSupport.hiddenShowsActivity())
     }
 
     var protectedWindowIDs: Set<CGWindowID> {
@@ -1280,6 +1321,7 @@ final class NotchService: ObservableObject {
         showsOnAllDisplays = displayPreference == .all
         updateFullscreenDisplays()
         updateScreen()
+        syncAppFullscreenMonitoring()
         syncPointerFollowing()
         syncGestures()
         NotchTimerService.shared.syncWithPreferences()
@@ -1408,7 +1450,9 @@ final class NotchService: ObservableObject {
     }
 
     private func tearDownPresentation() {
+        cancelRelocation()
         screenRefreshWork?.cancel(); screenRefreshWork = nil
+        stopAppFullscreenMonitoring()
         nextMascotVisitWork?.cancel(); nextMascotVisitWork = nil
         mascotVisitWork?.cancel(); mascotVisitWork = nil
         mascotStepBackWork?.cancel(); mascotStepBackWork = nil
@@ -1986,6 +2030,12 @@ final class NotchService: ObservableObject {
         }
     }
 
+    /// A held banner lost its timer; once nothing holds it, it gets its time.
+    private func restartNoticeDismissalIfHeld() {
+        guard let notice, noticeWork == nil else { return }
+        scheduleNoticeDismissal(after: notice.event.duration)
+    }
+
     private func scheduleNoticeDismissal(after duration: TimeInterval) {
         noticeWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.dismissNotice() }
@@ -2396,7 +2446,7 @@ final class NotchService: ObservableObject {
 
     @discardableResult
     func show(_ incoming: NotchNotice) -> Bool {
-        guard showsSystemFeedback, NotchSupport.routes(incoming.event),
+        guard showsIndicators, NotchSupport.routes(incoming.event),
               NotchSupport.shouldReplace(notice?.event, with: incoming.event, held: noticeExpanded) else { return false }
         noticeWork?.cancel(); noticeWork = nil
         var incoming = incoming
@@ -2524,14 +2574,17 @@ final class NotchService: ObservableObject {
     /// on one side of the camera, what happened on the other. False leaves
     /// the confirmation to its own panel.
     @discardableResult
-    func showMicrophone(muted: Bool) -> Bool {
+    /// `unchanged` reports a press that could not change any microphone: the
+    /// state that still holds, marked with a crossed badge.
+    func showMicrophone(muted: Bool, unchanged: Bool = false) -> Bool {
         // Only the closed island draws this notice. While it is open or busy
         // the floating confirmation keeps the job.
         guard noticeCanPresent else { return false }
         let text = L10n.shared.s
+        let symbol = unchanged ? "mic.badge.xmark" : muted ? "mic.slash.fill" : "mic.fill"
         return show(NotchNotice(event: .microphone, title: "",
                                 detail: muted ? text.micMutedHUD : text.micUnmutedHUD,
-                                symbol: muted ? "mic.slash.fill" : "mic.fill", mascot: muted ? .hush : .perk))
+                                symbol: symbol, mascot: unchanged ? nil : muted ? .hush : .perk))
     }
 
     /// A partial result is confirmed by the floating panel alone, so the
@@ -2593,7 +2646,7 @@ final class NotchService: ObservableObject {
                         takeFocus: Bool, closeOnCollapse: Bool,
                         fallback: @escaping () -> Void,
                         close: @escaping () -> Void, hover: @escaping (Bool) -> Void) -> Bool {
-        guard acceptsSystemFeedback, NotchSupport.routesCapturePreviews() else { return false }
+        guard acceptsCapturePresentation, NotchSupport.routesCapturePreviews() else { return false }
         let keepOpen = expanded && pinned
         let replacesPage = expanded && selected == .captures && captureID != id
         if captureID != id {
@@ -2637,7 +2690,7 @@ final class NotchService: ObservableObject {
     }
 
     func isCaptureVisible(id: UUID) -> Bool {
-        acceptsSystemFeedback && expanded && selected == .captures
+        acceptsCapturePresentation && expanded && selected == .captures
             && !showingSections && !showingCommandBar && selectedMetric == nil
             && captureID == id && captureContent != nil
     }
@@ -2921,7 +2974,10 @@ final class NotchService: ObservableObject {
                     else { self.collapse() }
                 }
             })
-        if panel?.isVisible != true { panel?.orderFrontRegardless() }
+        // A move between displays brings the window back on the next turn, once
+        // what it shows has been drawn for the display it landed on. Ordering
+        // it in here would flash the shape it had on the display it left.
+        if panel?.isVisible != true, mirrorHeldForArrival == nil { panel?.orderFrontRegardless() }
         let music = NotchMusicService.shared
         rememberPresentedMusic(playback: music.playback, artwork: music.artwork, tint: music.artworkTint)
         if contentTransition == .depart {
@@ -3017,12 +3073,110 @@ final class NotchService: ObservableObject {
     }
 
     private func move(to screen: NSScreen) {
-        displayID = screen.notchDisplayID
+        guard let host = windowHost else { return }
+        let destination = screen.notchDisplayID
+        // On screen now: a copy has to be underneath before this window leaves,
+        // or the display it leaves blinks empty, and the window server would
+        // stretch it across to the display the pointer entered.
+        let reveal = host.canRelocateOnScreen()
+        relocationTicket += 1
+        let ticket = relocationTicket
+        let origin = displayID
+        displayID = destination
+        mirrorHeldForArrival = reveal ? destination : nil
+        if reveal {
+            // Keep the copy on the display being entered until this window is
+            // drawn for it. The copy on the display being left goes underneath.
+            syncMirrors()
+            guard relocationTicket == ticket, windowHost === host else { return }
+            // Only the copy that was covered. The one on the display being
+            // entered is already drawing its wave; laying it out again flickers it.
+            if let origin { holdMusicWave(on: origin) }
+            _ = host.orderOutForRelocation()
+        } else {
+            releaseMusicWave()
+        }
+        guard relocationTicket == ticket, windowHost === host else { return }
         updateScreen()
+        guard relocationTicket == ticket, windowHost === host else { return }
+        // Preferences or a disconnected display may choose a different screen.
+        if reveal { mirrorHeldForArrival = displayID }
         // The menu space measured so far belongs to the display it left.
         invalidateMenuSpace()
         syncVisibleConsumers()
         refreshPresentation(animated: false)
+        guard reveal, relocationTicket == ticket, windowHost === host else { return }
+        let arrival = displayID
+        // SwiftUI draws the new display's shape at the end of this turn, while
+        // the window is still out. It comes back on the next one, over the copy.
+        let work = DispatchWorkItem { [weak self, weak host] in
+            guard let self, let host, self.relocationTicket == ticket, self.windowHost === host else { return }
+            guard self.running, !self.suspended else {
+                self.cancelRelocation()
+                host.hide(animated: false)
+                host.cancelRelocation()
+                self.syncMirrors()
+                return
+            }
+            // A screen can disappear before its debounced notification runs.
+            // Settle on the currently selected screen, or let teardown cancel us.
+            let missing = !NSScreen.screens.contains { $0.notchDisplayID == self.displayID }
+            if missing {
+                self.updateScreen()
+                guard self.relocationTicket == ticket, self.windowHost === host else { return }
+                self.invalidateMenuSpace()
+                self.syncVisibleConsumers()
+            }
+            if missing || self.displayID != arrival {
+                self.mirrorHeldForArrival = self.displayID
+                self.refreshPresentation(animated: false)
+                guard self.relocationTicket == ticket, self.windowHost === host else { return }
+            }
+            // Take the bars already on that display, then cover them. Hiding
+            // the copy while it still holds its wave keeps those bars from
+            // falling to dots on the way out.
+            self.matchMusicWave()
+            guard self.relocationTicket == ticket, self.windowHost === host else { return }
+            host.orderFrontForRelocation()
+            guard self.relocationTicket == ticket, self.windowHost === host else { return }
+            self.mirrorHeldForArrival = nil
+            self.keepMusicWave()
+            self.syncMirrors()
+            guard self.relocationTicket == ticket, self.windowHost === host else { return }
+            self.releaseMusicWave()
+            self.syncScreenEdgeClicks()
+        }
+        DispatchQueue.main.async(execute: work)
+    }
+
+    private func cancelRelocation() {
+        relocationTicket += 1
+        mirrorHeldForArrival = nil
+        releaseMusicWave()
+    }
+
+    /// The copy on `id` draws the wave before it is uncovered. A newer move
+    /// takes the hold over; this one lets it go.
+    private func holdMusicWave(on id: CGDirectDisplayID) {
+        guard let mirror = mirrors[id], mirror.model.shown else { return }
+        mirror.host.holdWave()
+    }
+
+    /// The window that is about to cover this display repeats the bars the
+    /// copy there is already showing.
+    private func matchMusicWave() {
+        guard let id = displayID, let mirror = mirrors[id], mirror.model.shown else { return }
+        windowHost?.matchWave(from: mirror.host.panel.contentView)
+    }
+
+    /// The copy about to leave this display keeps its bars through the hide.
+    private func keepMusicWave() {
+        guard let id = displayID, let mirror = mirrors[id] else { return }
+        mirror.host.keepWave()
+    }
+
+    private func releaseMusicWave() {
+        for mirror in mirrors.values { mirror.host.releaseWave() }
     }
 
     /// A new song's title shows in the capsule for a few seconds, then the
@@ -3254,11 +3408,16 @@ final class NotchService: ObservableObject {
         for screen in screens {
             let id = screen.notchDisplayID
             var base: NotchGeometry?
-            if id != displayID, !hidesAtRest, !fullscreenDisplays.contains(id) {
+            if id != displayID || id == mirrorHeldForArrival, !hidesAtRest, !fullscreenDisplays.contains(id) {
                 var geometry = baseGeometry(for: screen)
                 geometry.compactSideRoom = mirrorSideRoom(on: screen, geometry: geometry)
                 // A simulated island needs the menus' room at rest, as the island does.
-                if geometry.isNotched || geometry.compactSideRoom != nil { base = geometry }
+                if geometry.isNotched || geometry.compactSideRoom != nil {
+                    // Keep the arriving copy only while it may still show.
+                    // Fullscreen and hide-until-hover must also hide a held copy.
+                    if id == mirrorHeldForArrival { continue }
+                    base = geometry
+                }
             }
             guard let base else {
                 if let mirror = mirrors[id], mirror.model.shown {
@@ -3287,7 +3446,15 @@ final class NotchService: ObservableObject {
             mirror.host.setActivationArea(CGRect(origin: .zero, size: size),
                                           title: FeatureStrings.notch(L10n.shared.language).open,
                                           willPress: {}, activate: { [weak self] in self?.bringIsland(to: id) })
-            if !mirror.host.panel.isVisible { mirror.host.panel.orderFrontRegardless() }
+            guard !mirror.host.panel.isVisible else { continue }
+            // Under the window that is about to leave, so that display keeps
+            // an island when the window goes. In front, the copy would cover
+            // it and the two would blink as they traded.
+            if mirrorHeldForArrival != nil, let live = windowHost?.panel, live.isVisible, live.windowNumber > 0 {
+                mirror.host.panel.order(.below, relativeTo: live.windowNumber)
+            } else {
+                mirror.host.panel.orderFrontRegardless()
+            }
         }
     }
 
@@ -3333,11 +3500,13 @@ final class NotchService: ObservableObject {
     /// Only the copies ask which displays are in full screen, and only when
     /// the island hides there; the island asks for its own display.
     private func updateFullscreenDisplays() {
-        guard showsOnAllDisplays, UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen),
-              let topology = SpaceWindowBridge.topology() else { fullscreenDisplays = []; return }
+        guard showsOnAllDisplays, !UserDefaults.standard.bool(forKey: DefaultsKey.notchShowActivityInFullscreen)
+        else { fullscreenDisplays = []; return }
+        let covered = coverageSnapshot ?? NotchAppFullscreen.coveredDisplays()
+        guard let topology = SpaceWindowBridge.topology() else { fullscreenDisplays = covered; return }
         let separate = NSScreen.screensHaveSeparateSpaces
         fullscreenDisplays = Set(NSScreen.screens.map(\.notchDisplayID).filter {
-            topology.isFullscreen(on: $0, separateSpaces: separate)
+            topology.isFullscreen(on: $0, separateSpaces: separate) || covered.contains($0)
         })
     }
 
@@ -3649,8 +3818,11 @@ final class NotchService: ObservableObject {
     }
 
     private func updateFullscreenVisibility(displayID: CGDirectDisplayID) {
-        let hidden = UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen)
-            && SpaceWindowBridge.topology()?.isFullscreen(on: displayID, separateSpaces: NSScreen.screensHaveSeparateSpaces) == true
+        // A game's own full screen leaves the desktop Space in place, so the
+        // frontmost app's windows are read when the Space is not full screen.
+        let hidden = !UserDefaults.standard.bool(forKey: DefaultsKey.notchShowActivityInFullscreen)
+            && (SpaceWindowBridge.topology()?.isFullscreen(on: displayID, separateSpaces: NSScreen.screensHaveSeparateSpaces) == true
+                || (coverageSnapshot ?? NotchAppFullscreen.coveredDisplays()).contains(displayID))
         guard hidden != hiddenInFullscreen else { return }
         hiddenInFullscreen = hidden
         if hidden {
@@ -3658,24 +3830,28 @@ final class NotchService: ObservableObject {
             hoverEmphasized = false
             heldDrag = false
             dragPlaceholder = false
-            noticeWork?.cancel(); noticeWork = nil
+            // An indicator showing as full screen begins stays to its end.
             endDeparture()
-            notice = nil
             noticeExpanded = false
             collapse()
+            restartNoticeDismissalIfHeld()
         }
-        // Space changes do not run a full preference sync. Restore volume
-        // and brightness key routing when the island becomes eligible for
-        // feedback again, and hand the keys back while it is away.
+        // Space changes do not run a full preference sync. Re-sync volume and
+        // brightness key routing with the island's new state.
         if AppFeature.mixer.isAvailable { PreciseVolumeRollerService.shared.syncWithPreferences() }
         if AppFeature.brightness.isAvailable || NotchControlItem.keyboardLightIsSupported() { BrightnessService.shared.syncWithPreferences() }
     }
 
     private func fullscreenEnvironmentDidChange() {
-        // Only the opt-in option depends on Spaces and the active app.
+        // Only hiding live activity in full screen depends on Spaces and the active app.
         guard running, !suspended,
-              hiddenInFullscreen || UserDefaults.standard.bool(forKey: DefaultsKey.notchHideInFullscreen)
+              hiddenInFullscreen || !UserDefaults.standard.bool(forKey: DefaultsKey.notchShowActivityInFullscreen)
         else { return }
+        let ownsSnapshot = coverageSnapshot == nil
+        if ownsSnapshot { coverageSnapshot = NotchAppFullscreen.coveredDisplays() }
+        defer { if ownsSnapshot { coverageSnapshot = nil } }
+        // The poll compares against what was applied, not a later read.
+        if let coverageSnapshot { appFullscreenDisplays = coverageSnapshot }
         let wasHidden = hiddenInFullscreen
         updateScreen()
         // Each copy follows full screen on its own display.
@@ -3686,6 +3862,38 @@ final class NotchService: ObservableObject {
         guard hiddenInFullscreen != wasHidden else { return }
         syncVisibleConsumers()
         refreshPresentation(animated: false)
+    }
+
+    /// A game can enter or leave its own full screen while it stays
+    /// frontmost, with no Space or app change to announce it. A light poll
+    /// follows that only while the island hides in full screen.
+    private func syncAppFullscreenMonitoring() {
+        guard running, !suspended, !UserDefaults.standard.bool(forKey: DefaultsKey.notchShowActivityInFullscreen) else {
+            stopAppFullscreenMonitoring()
+            return
+        }
+        appFullscreenDisplays = NotchAppFullscreen.coveredDisplays()
+        guard appFullscreenTimer == nil else { return }
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in self?.readAppFullscreen() }
+        timer.tolerance = 0.3
+        appFullscreenTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    private func stopAppFullscreenMonitoring() {
+        appFullscreenTimer?.invalidate()
+        appFullscreenTimer = nil
+        appFullscreenDisplays = []
+    }
+
+    /// Only a change reevaluates the island, so a steady game costs one
+    /// window list read per second.
+    private func readAppFullscreen() {
+        let covered = NotchAppFullscreen.coveredDisplays()
+        guard covered != appFullscreenDisplays else { return }
+        coverageSnapshot = covered
+        defer { coverageSnapshot = nil }
+        fullscreenEnvironmentDidChange()
     }
 
     private func installObservers() {
@@ -4524,7 +4732,6 @@ final class NotchService: ObservableObject {
     private func showAgentEvent(_ event: AgentUsageEvent) {
         let text = FeatureStrings.notchAgents(L10n.shared.language)
         let locale = L10n.shared.language.formattingLocale()
-        let remaining = NotchAgentSupport.limitDisplay() == .remaining
         func window(_ window: AgentLimitWindow) -> String {
             switch window.kind {
             case .session: return text.session
@@ -4542,9 +4749,9 @@ final class NotchService: ObservableObject {
             // After the notice, the companion cheers the finished task.
             reactMascot(.celebrate)
         case .limitWarning(let provider, let limit):
-            let share = AgentFormat.percent(remaining ? limit.remainingFraction : limit.usedFraction)
             show(NotchNotice(event: .agents, title: "\(provider.displayName) · \(window(limit))",
-                             detail: remaining ? text.left(share) : text.usedShare(share),
+                             detail: NotchAgentSupport.limitShare(limit, display: NotchAgentSupport.limitDisplay(),
+                                                                  text: text),
                              symbol: "exclamationmark.triangle.fill", agent: provider))
         case .limitReset(let provider, let limit):
             // Work can go on: the companion is glad of it.

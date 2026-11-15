@@ -313,6 +313,9 @@ struct LatticeHubView: View {
         switch page {
         case .root:
             rootContent
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                    launcher.setFloatingRootPageHeight(height)
+                }
         case .utility(let utility):
             if utility.isAvailable() {
                 LatticeHubHostedUtility(item: utility, notchSize: nil) { launcher.closeUtility() }

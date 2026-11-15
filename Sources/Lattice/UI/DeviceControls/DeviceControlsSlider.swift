@@ -21,17 +21,21 @@ struct DeviceControlsSlider: View {
 
     private var showTooltip: Bool { tracking || hovering }
 
+    private var steppedValue: Binding<Double> {
+        Binding(
+            get: { value },
+            set: { raw in
+                let next = step > 0
+                    ? range.lowerBound + ((raw - range.lowerBound) / step).rounded() * step
+                    : raw
+                value = min(max(next, range.lowerBound), range.upperBound)
+            }
+        )
+    }
+
     var body: some View {
         Slider(
-            value: Binding(
-                get: { value },
-                set: { raw in
-                    let next = step > 0
-                        ? range.lowerBound + ((raw - range.lowerBound) / step).rounded() * step
-                        : raw
-                    value = min(max(next, range.lowerBound), range.upperBound)
-                }
-            ),
+            value: steppedValue,
             in: range,
             onEditingChanged: { editing in
                 tracking = editing
@@ -45,6 +49,9 @@ struct DeviceControlsSlider: View {
             hovering = isHovered
         }
         .frame(height: 22)
+        // The wheel and a two-finger swipe adjust the level, as on the island's sliders.
+        .overlay(SliderScrollArea(value: steppedValue, range: range, step: step,
+                                  onEditingChanged: onEditingChanged))
         .overlay {
             if showTooltip {
                 GeometryReader { geometry in
@@ -67,7 +74,6 @@ struct DeviceControlsSlider: View {
                 .accessibilityHidden(true)
             }
         }
-        .help(readout)
         .accessibilityLabel(title)
         .accessibilityValue(readout)
     }

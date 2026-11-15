@@ -21,6 +21,7 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchAccessoriesEnabled) var accessoriesEnabled = true
     @AppStorage(DefaultsKey.notchCalendarEnabled) var calendarEnabled = true
     @AppStorage(DefaultsKey.notchCalendarCountdown) var calendarCountdown = false
+    @AppStorage(DefaultsKey.notchCalendarCountdownLead) var calendarCountdownLead = NotchCalendarSupport.defaultCountdownLeadMinutes
     @AppStorage(DefaultsKey.notchCalendarTimeLeft) var calendarTimeLeft = false
     @AppStorage(DefaultsKey.notchCalendarWeekNumbers) var calendarWeekNumbers = false
     @AppStorage(DefaultsKey.notchAgentsEnabled) var agentsEnabled = false
@@ -41,7 +42,7 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.notchSilhouette) var silhouette = NotchSilhouette.capsule.rawValue
     @AppStorage(DefaultsKey.notchOpenOnHover) var hover = false
     @AppStorage(DefaultsKey.notchShortcutEnabled) var shortcutEnabled = false
-    @AppStorage(DefaultsKey.notchHideInFullscreen) var hideInFullscreen = false
+    @AppStorage(DefaultsKey.notchShowActivityInFullscreen) var showActivityInFullscreen = false
     @AppStorage(DefaultsKey.notchHideUntilHover) var hideUntilHover = false
     @AppStorage(DefaultsKey.notchHiddenShowsActivity) var hiddenShowsActivity = false
     @AppStorage(DefaultsKey.notchCoversMenus) var coversMenus = true

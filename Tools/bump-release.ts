@@ -31,8 +31,17 @@ try {
   }
   if (!baseRef) throw new Error("Could not determine base reference for changelog");
 
-  // 2. Fetch commits since baseline
-  const rawLog = git("log", `${baseRef}..HEAD`, "--pretty=format:%H%x01%s%x01%b%x02");
+  // 2. Fetch commits since baseline. A sync merges the upstream release into
+  // Lattice's history; its commits are upstream's changelog, not Lattice's,
+  // and include changes Lattice chose not to port, so they are left out.
+  const range = [`${baseRef}..HEAD`];
+  if (/^[0-9a-f]{40}$/.test(meta.upstreamCommit ?? "")) {
+    try {
+      git("cat-file", "-e", `${meta.upstreamCommit}^{commit}`);
+      range.push(`^${meta.upstreamCommit}`);
+    } catch {}
+  }
+  const rawLog = git("log", ...range, "--pretty=format:%H%x01%s%x01%b%x02");
   if (!rawLog) {
     console.log(`No new commits found since ${baseRef}`);
     process.exit(0);

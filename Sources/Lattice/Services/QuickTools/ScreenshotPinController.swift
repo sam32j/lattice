@@ -5,11 +5,15 @@ import AppKit
 
 /// Owns pins and lifetime-bound monitoring, while each pin owns its presentation.
 final class ScreenshotPinController {
+    /// True only while a pin takes focus because the pointer entered it.
+    static var grantsHoverFocus = false
     static let shared = ScreenshotPinController()
     private var pins: [ScreenshotPinWindow] = []
     private var escapeMonitor: Any?
     private var gestureMonitor: Any?
     private var localGestureMonitor: Any?
+    private var scrollMonitor: Any?
+    private var localScrollMonitor: Any?
     private weak var activeGesturePin: ScreenshotPinWindow?
     private var lastGestureTime: TimeInterval = 0
     private var gestureFinished = false
@@ -134,15 +138,18 @@ final class ScreenshotPinController {
 
     private func updateHover(at point: CGPoint) {
         pins.forEach { $0.updateHover(at: point) }
-        let windows = NSApp.orderedWindows.filter { window in
-            window.isVisible && pins.contains { $0 === window }
-        }
+        let windows = ScreenshotPinWindow.pinsFrontToBack().filter { pin in pins.contains { $0 === pin } }
         let target = ScreenshotPinWindow.hoverTarget(at: point, windows: windows)
         guard target !== hoverFocusPin else { return }
         hoverFocusPin = target
         // Entering a pin grants focus once. A stationary pointer must not
         // keep taking focus back from an editor opened over the same pin.
-        if let target, !target.isKeyWindow { target.makeKey() }
+        if let target, !target.isKeyWindow {
+            // Focus given by passing over a pin, not chosen by the person.
+            Self.grantsHoverFocus = true
+            defer { Self.grantsHoverFocus = false }
+            target.makeKey()
+        }
     }
 
     private func refreshGestureMonitor() {
@@ -156,7 +163,21 @@ final class ScreenshotPinController {
                 NSEvent.removeMonitor(monitor)
                 localGestureMonitor = nil
             }
+            for monitor in [scrollMonitor, localScrollMonitor].compactMap({ $0 }) { NSEvent.removeMonitor(monitor) }
+            scrollMonitor = nil
+            localScrollMonitor = nil
+            ScreenshotPinWindow.scrollLatchedPin = nil
             return
+        }
+        if scrollMonitor == nil {
+            scrollMonitor = NSEvent.addGlobalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+                self?.routeScroll(event, local: false)
+            }
+        }
+        if localScrollMonitor == nil {
+            localScrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+                self?.routeScroll(event, local: true) == true ? nil : event
+            }
         }
         if gestureMonitor == nil {
             gestureMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.gesture, .magnify]) { [weak self] event in
@@ -180,8 +201,8 @@ final class ScreenshotPinController {
         if activeGesturePin == nil || time - lastGestureTime > 0.25
             || gestureFinished || sequenceBegan {
             activeGesturePin?.resetGestureTracking()
-            var windows = NSApp.orderedWindows.filter { window in
-                window.isVisible && pins.contains { $0 === window }
+            var windows: [NSWindow] = ScreenshotPinWindow.pinsFrontToBack().filter { pin in
+                pins.contains { $0 === pin }
             }
             if windows.isEmpty {
                 windows = pins.filter(\.isVisible).reversed()
@@ -203,6 +224,27 @@ final class ScreenshotPinController {
                 $0.phase == .ended || $0.phase == .cancelled
             }) { gestureFinished = true }
         return true
+    }
+
+    /// A trackpad scroll that began on a pin keeps zooming that pin until the
+    /// fingers lift, wherever the pointer goes, as a pinch already does.
+    @discardableResult private func routeScroll(_ event: NSEvent, local: Bool) -> Bool {
+        let phase = event.phase
+        guard event.momentumPhase.isEmpty, !phase.isEmpty else { return false }
+        if phase.contains(.began) || phase.contains(.mayBegin) {
+            let windows = ScreenshotPinWindow.pinsFrontToBack().filter { pin in pins.contains { $0 === pin } }
+            ScreenshotPinWindow.scrollLatchedPin = ScreenshotPinWindow.gestureTarget(at: NSEvent.mouseLocation,
+                                                                                     windows: windows)
+        }
+        guard let pin = ScreenshotPinWindow.scrollLatchedPin, !pin.isClosed else { return false }
+        if phase.contains(.ended) || phase.contains(.cancelled) {
+            ScreenshotPinWindow.scrollLatchedPin = nil
+            return false
+        }
+        // Delivered to the pin or one of its controls: AppKit hands it over.
+        if local, let window = event.window, window === pin || window.parent === pin { return false }
+        pin.forwardScroll(event)
+        return local
     }
 
     func resetGestureState() {

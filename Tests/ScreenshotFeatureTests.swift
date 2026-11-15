@@ -1320,7 +1320,8 @@ enum ScreenshotFeatureTests {
         // so the presentation statements are what remains.
         let presentBody = quickPreviewCode.components(separatedBy: "let host = NSHostingController")
             .dropFirst().first?.components(separatedBy: "private func").first ?? ""
-        suite.expect(presentBody.contains("orderFrontRegardless()")
+        // FloatingPreviewTransition.present orders the panel in with orderFrontRegardless.
+        suite.expect(presentBody.contains("FloatingPreviewTransition.present(panel)")
                      && presentBody.contains("styleMask: [.borderless, .nonactivatingPanel]")
                      && !presentBody.contains("NSApp.activate(ignoringOtherApps: true)"),
                "the floating screenshot preview orders and keys only its own panel, not Settings")
@@ -1332,7 +1333,7 @@ enum ScreenshotFeatureTests {
         // policy guard must stay immediately above the hand-off so an
         // unconditional makeKey cannot slip past the behavior checks.
         let presentLines = presentBody.components(separatedBy: "\n")
-        let orderFrontLine = presentLines.firstIndex { $0.contains("orderFrontRegardless()") } ?? -1
+        let orderFrontLine = presentLines.firstIndex { $0.contains("FloatingPreviewTransition.present(panel)") } ?? -1
         let makeKeyLine = presentLines.firstIndex { $0.contains("makeKey") } ?? -1
         suite.expect(orderFrontLine >= 0 && makeKeyLine > orderFrontLine
                 && presentLines[makeKeyLine - 1].trimmingCharacters(in: .whitespaces)

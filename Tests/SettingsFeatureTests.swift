@@ -12,6 +12,16 @@ import ImageIO
 import VMStatisticsCompat
 
 enum SettingsFeatureTests {
+    enum CommandDispatchHost {
+        enum CommandLine { static var arguments: [String] = [] }
+        enum SettingsBackup {
+            static var commands: [SettingsBackupSupport.Command] = []
+            static func runCommandAndExit(_ command: SettingsBackupSupport.Command) {
+                commands.append(command)
+            }
+        }
+    }
+
     static func run(_ suite: TestSuite) {
         FinderRemovalTests.run(suite)
         SettingsPageOrderTests.run(suite)
@@ -31,7 +41,66 @@ enum SettingsFeatureTests {
             renamePattern: MediaImageRenamePattern("{name}-{index}"))
         // MARK: Settings backup
 
+        suite.expect(SettingsBackupSupport.command(in: ["Lattice", "--export-settings", "out.plist"])
+                == .export(path: "out.plist")
+                && SettingsBackupSupport.command(in: ["Lattice", "--import-settings", "./-in.plist"])
+                == .import(path: "./-in.plist"),
+               "the backup flags take the file that follows them")
+        suite.expect(SettingsBackupSupport.command(in: ["Lattice", "--import-settings"])
+                == .missingFile(flag: "--import-settings")
+                && SettingsBackupSupport.command(in: ["Lattice", "--export-settings", "--selftest"])
+                == .missingFile(flag: "--export-settings"),
+               "a backup flag without a file is reported rather than treated as one")
+        suite.expect(SettingsBackupSupport.command(in: ["Lattice"]) == nil
+                && SettingsBackupSupport.command(in: ["Lattice", "--selftest"]) == nil,
+               "a normal launch is not a backup command")
+
+        for flags in [
+            ["--import-settings", "--export-settings", "backup.plist"],
+            ["--export-settings", "--import-settings", "backup.plist"],
+            ["--export-settings", "one.plist", "--export-settings", "two.plist"],
+        ] {
+            suite.expect(SettingsBackupSupport.command(in: ["Lattice"] + flags) == .conflictingFlags,
+                         "conflicting or repeated backup flags cannot choose an operation")
+        }
+        for arguments in [
+            ["Lattice", "--export-settings", "--uninstall"],
+            ["Lattice", "--export-settings", "--mouse-acceleration-cleanup"],
+            ["Lattice", "--export-settings", "--super-key-mapping-cleanup", "capsLock"],
+            ["Lattice", "--selftest", "--import-settings"],
+            ["Lattice", "--import-settings", "--export-settings", "backup.plist"],
+            ["Lattice", "--export-settings", "backup.plist"],
+        ] {
+            CommandDispatchHost.CommandLine.arguments = arguments
+            CommandDispatchHost.SettingsBackup.commands = []
+            CommandDispatchHost.run()
+            suite.expect(CommandDispatchHost.SettingsBackup.commands
+                         == [SettingsBackupSupport.command(in: arguments)!],
+                         "the production entry point dispatches backup mode before other modes")
+        }
+        CommandDispatchHost.CommandLine.arguments = ["Lattice", "--super-key-mapping-cleanup", "capsLock"]
+        CommandDispatchHost.SettingsBackup.commands = []
+        CommandDispatchHost.run()
+        suite.expect(CommandDispatchHost.SettingsBackup.commands.isEmpty,
+                     "a real cleanup invocation remains on its normal startup path")
+        let startup = (try? String(contentsOfFile: "Sources/Lattice/main.swift", encoding: .utf8)) ?? ""
+        let backupDispatch = startup.range(of: "if let command = SettingsBackupSupport.command(")
+        suite.expect(backupDispatch != nil && ["SuperKeyMappingGuard.", "Defaults.register()",
+                     "MouseAccelerationGuard.", "MouseAccelerationService.", "SelfTest.", "Uninstaller."]
+            .allSatisfy { name in
+                guard let handler = startup.range(of: name), let backupDispatch else { return false }
+                return backupDispatch.lowerBound < handler.lowerBound
+            }, "backup dispatch precedes every startup handler with side effects")
+
         let backupKeys = SettingsBackupSupport.exportKeys()
+        for reserved in [false, true] {
+            let backup = SettingsBackupSupport.payload(appVersion: "test") { key in
+                key == DefaultsKey.windowReserveStageManagerSpace ? reserved : nil
+            }
+            suite.expect(SettingsBackupSupport.sanitizedSettings(from: backup)?[
+                DefaultsKey.windowReserveStageManagerSpace] as? Bool == reserved,
+                "Stage Manager reservation survives a settings backup round trip")
+        }
         let marginBackup = SettingsBackupSupport.payload(appVersion: "test") { key in
             key == DefaultsKey.windowLayoutMarginPercent ? 12.0 : nil
         }
@@ -235,6 +304,16 @@ enum SettingsFeatureTests {
                "the apps each mouse feature leaves alone travel with the settings backup")
         suite.expect(backupKeys.contains(DefaultsKey.clipboardHistoryIgnoredApps),
                "the apps the clipboard history skips travel with the settings backup")
+        suite.expect(backupKeys.contains(DefaultsKey.clipboardHistoryShowSourceAppIcons),
+               "the clipboard list source app icons preference travels with the settings backup")
+        for value in [false, true] {
+            let backup = SettingsBackupSupport.payload(appVersion: "test") { key in
+                key == DefaultsKey.clipboardHistoryShowSourceAppIcons ? value : nil
+            }
+            suite.expect(SettingsBackupSupport.sanitizedSettings(from: backup)?[
+                DefaultsKey.clipboardHistoryShowSourceAppIcons] as? Bool == value,
+                "the list source app icons choice survives a settings backup round trip: \(value)")
+        }
         suite.expect(backupKeys.contains(DefaultsKey.clipboardHistoryLayout),
                "the clipboard history layout travels with the settings backup")
         suite.expect(!backupKeys.contains(DefaultsKey.clipboardHistoryWindowWidth)

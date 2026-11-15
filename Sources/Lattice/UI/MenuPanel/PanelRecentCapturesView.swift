@@ -22,6 +22,7 @@ struct RecentCapturesView: View {
     @ObservedObject private var history = RecentCaptureService.shared
     @Environment(\.notchPresentation) private var inNotch
     @State private var confirmingClear = false
+    static var floatingMinimumHeight: CGFloat { RecentCaptureIslandRow.threePreviewHeight }
 
     var onClose: (() -> Void)?
     var showHeader: Bool = true
@@ -131,7 +132,9 @@ struct RecentCapturesView: View {
                     panel.makeKey()
                 }
             }
-            guard !RecentCaptureService.shared.entries.isEmpty else { return }
+            // The Hub can close between the click and this turn. A pending
+            // confirmation then goes with it instead of appearing on its own.
+            guard panel.isVisible, !RecentCaptureService.shared.entries.isEmpty else { return }
             let strings = CaptureInterfaceStrings.localized(L10n.shared.language)
             guard confirmDestructiveAboveFloatingHUD(panel,
                 title: strings.deleteRecentTitle, message: deletionWarning,
@@ -246,7 +249,14 @@ struct RecentCapturesView: View {
 
     @ViewBuilder
     private var content: some View {
-        if visibleEntries.isEmpty {
+        if visibleEntries.isEmpty, fillsAvailableSpace || notchSize != nil {
+            // The floating Hub or the island is the container: no card inside it.
+            Text(text.empty)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if visibleEntries.isEmpty {
             Text(text.empty)
                 .font(.system(size: 10.5))
                 .foregroundStyle(.tertiary)
@@ -267,13 +277,26 @@ struct RecentCapturesView: View {
             }
             .frame(width: notchSize.width, height: notchSize.height)
         } else {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 7) {
-                    ForEach(visibleEntries) { entry in
-                        row(entry)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: fillsAvailableSpace ? 10 : 7) {
+                        ForEach(visibleEntries) { entry in
+                            // The floating Hub has the room to show each capture
+                            // as a preview with its actions, with no extra step.
+                            Group {
+                                if fillsAvailableSpace { previewRow(entry) } else { row(entry) }
+                            }
+                            .id(entry.id)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
                 }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .onAppear {
+                    // Back from editing a capture: open where that capture is.
+                    guard fillsAvailableSpace, let id = history.revealEntryID else { return }
+                    history.revealEntryID = nil
+                    DispatchQueue.main.async { proxy.scrollTo(id, anchor: .center) }
+                }
             }
             .scrollBounceBehavior(.basedOnSize)
             .frame(maxWidth: .infinity,
@@ -316,6 +339,11 @@ struct RecentCapturesView: View {
         .modifier(NotchControlSurface(cornerRadius: 12))
     }
 
+    private func previewRow(_ entry: RecentCaptureEntry) -> some View {
+        RecentCaptureIslandRow(entry: entry, history: history, text: text,
+                               time: Self.formattedCaptureTime(entry.createdAt))
+    }
+
     private func row(_ entry: RecentCaptureEntry) -> some View {
         HStack(spacing: 10) {
             RecentCapturePreviewThumbnail(
@@ -342,6 +370,174 @@ struct RecentCapturesView: View {
             )
         }
         .panelCard()
+    }
+}
+
+/// One capture in the floating Hub's history, laid out like the Dynamic
+/// Island's quick preview: the image fills the card and the island's control
+/// strip floats over it. Hovering the image shows a Quick Look badge without
+/// touching the strip; a click opens the capture in Quick Look. Nothing here
+/// opens a floating preview.
+private struct RecentCaptureIslandRow: View {
+    let entry: RecentCaptureEntry
+    @ObservedObject var history: RecentCaptureService
+    let text: RecentCaptureStrings
+    let time: String
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var featureRuntime = FeatureRuntime.shared
+    @State private var imageHovered = false
+    @State private var lastOpened: TimeInterval = 0
+    @State private var rowWidth: CGFloat = 388
+    private let shareAnchor = ShelfSharePickerAnchor.Anchor()
+
+    static let imageHeight: CGFloat = 150
+    /// Three previews and the gaps between them.
+    static let threePreviewHeight: CGFloat = imageHeight * 3 + 10 * 2
+    private var isScreenshot: Bool { entry.kind == .screenshot }
+    private var screenshot: ScreenshotFeatureStrings { FeatureStrings.screenshot(l10n.language) }
+    private var recorder: RecorderFeatureStrings { FeatureStrings.recorder(l10n.language) }
+
+    var body: some View {
+        artwork
+            .frame(maxWidth: .infinity)
+            .frame(height: Self.imageHeight)
+            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.8)
+                    .allowsHitTesting(false)
+            }
+            .overlay {
+                hoverBadge
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .onHover { imageHovered = $0 }
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { rowWidth = $0 }
+            .onTapGesture(perform: openQuickLook)
+            // The dragged image is the artwork alone, never the hover HUD.
+            .onDrag { history.dragItemProvider(for: entry) ?? NSItemProvider() } preview: {
+                artwork
+                    .frame(width: rowWidth, height: Self.imageHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            }
+            // On the image only: the toolbar above it shows each tool's own tip.
+            .help(CaptureInterfaceStrings.localized(l10n.language).quickLook)
+            .overlay(alignment: .topTrailing) { toolbar.padding(6) }
+            .overlay(alignment: .topLeading) {
+                Text(time)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(.black.opacity(0.45), in: Capsule())
+                    .padding(6)
+                    .allowsHitTesting(false)
+            }
+    }
+
+    @ViewBuilder private var artwork: some View {
+        // The row's size comes from its frame, never from the image: a
+        // filled wide, short capture would otherwise widen the row past the
+        // panel and push the toolbar out of view.
+        Color.black.opacity(0.13).overlay {
+            if let image = history.thumbnail(for: entry) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFill()
+            } else {
+                Image(systemName: isScreenshot ? "photo" : "film")
+                    .font(.system(size: 30, weight: .medium))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    /// Drawn above the image and below the strip; it never takes clicks.
+    @ViewBuilder private var hoverBadge: some View {
+        if imageHovered {
+            ZStack {
+                Color.black.opacity(0.22)
+                Image(systemName: isScreenshot ? "eye.fill" : "play.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(HUDBackdrop(cornerRadius: 22, contrast: .standard))
+            }
+            .transition(.opacity.animation(.easeOut(duration: 0.12)))
+            .allowsHitTesting(false)
+        }
+    }
+
+    private var toolbar: some View {
+        HStack(spacing: 3) {
+            tool("doc.on.doc", isScreenshot ? screenshot.copyButton : recorder.copyButton) {
+                history.perform(.copy, on: entry)
+            }
+            tool("square.and.arrow.down", isScreenshot ? screenshot.saveButton : recorder.saveButton) {
+                history.perform(.save, on: entry)
+            }
+            if isScreenshot {
+                tool("mappin", screenshot.pinButton) { history.perform(.pin, on: entry) }
+                if featureRuntime.isAvailable(.screenOCR) {
+                    tool("text.viewfinder", screenshot.copyTextButton) { history.perform(.copyText, on: entry) }
+                }
+            }
+            separator
+            tool("square.and.arrow.up", screenshot.shareButton, action: share)
+                .background(ShelfSharePickerAnchor(anchor: shareAnchor))
+            separator
+            tool(isScreenshot ? "pencil" : "scissors", screenshot.editButton) { history.perform(.edit, on: entry) }
+            CaptureDeleteConfirmationButton(presentation: .island, title: text.remove) {
+                history.remove(entry)
+            }
+        }
+        .fixedSize(horizontal: true, vertical: true)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 3)
+        .background(HUDBackdrop(cornerRadius: 12, contrast: .standard))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.7)
+                .allowsHitTesting(false)
+        }
+        .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
+    }
+
+    private var separator: some View {
+        Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1, height: 16).padding(.horizontal, 2)
+    }
+
+    private func tool(_ symbol: String, _ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .medium))
+                .symbolRenderingMode(.hierarchical)
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(NotchButtonStyle(cornerRadius: 8))
+        .controlSize(.small)
+        .focusable(false)
+        .help(title)
+        .accessibilityLabel(title)
+    }
+
+    /// A second click of a double click lands while Quick Look opens; it is
+    /// ignored rather than closing and reopening the preview.
+    private func openQuickLook() {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastOpened > NSEvent.doubleClickInterval else { return }
+        lastOpened = now
+        history.quickLook(entry)
+    }
+
+    private func share() {
+        let anchor = shareAnchor
+        history.shareFile(for: entry) { url in
+            guard let url, anchor.present([url]) else { NSSound.beep(); return }
+        }
     }
 }
 

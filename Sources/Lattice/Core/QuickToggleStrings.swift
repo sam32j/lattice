@@ -30,6 +30,8 @@ struct QuickToggleFeatureStrings {
     let displayOffCaption: String
     let screenSaverTitle: String
     let screenSaverCaption: String
+    let quitAllTitle: String
+    let quitOthersTitle: String
     let actionFailed: String
 }
 
@@ -80,6 +82,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "The Mac keeps running with the display off.",
         screenSaverTitle: "Start Screensaver",
         screenSaverCaption: "Starts right away, on every display.",
+        quitAllTitle: "Quit All Apps",
+        quitOthersTitle: "Quit All Apps Except Front",
         actionFailed: "Could not complete."
     )
 
@@ -107,6 +111,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "O Mac continua funcionando com a tela apagada.",
         screenSaverTitle: "Iniciar Protetor de Tela",
         screenSaverCaption: "Começa na hora, em todas as telas.",
+        quitAllTitle: "Encerrar todos os apps",
+        quitOthersTitle: "Encerrar todos os apps exceto o da frente",
         actionFailed: "Não foi possível concluir."
     )
 
@@ -134,6 +140,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "Mac ekran kapalıyken çalışmaya devam eder.",
         screenSaverTitle: "Ekran Koruyucuyu Başlat",
         screenSaverCaption: "Hemen, tüm ekranlarda başlar.",
+        quitAllTitle: "Tüm uygulamaları kapat",
+        quitOthersTitle: "Öndeki dışında tüm uygulamaları kapat",
         actionFailed: "Tamamlanamadı."
     )
 
@@ -161,6 +169,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "Mac продолжает работать с выключенным экраном.",
         screenSaverTitle: "Запустить заставку",
         screenSaverCaption: "Запускается сразу на всех экранах.",
+        quitAllTitle: "Закрыть все приложения",
+        quitOthersTitle: "Закрыть все приложения, кроме активного",
         actionFailed: "Не удалось выполнить."
     )
 
@@ -188,6 +198,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "El Mac sigue funcionando con la pantalla apagada.",
         screenSaverTitle: "Iniciar salvapantallas",
         screenSaverCaption: "Empieza al momento, en todas las pantallas.",
+        quitAllTitle: "Salir de todas las apps",
+        quitOthersTitle: "Salir de todas las apps excepto la del frente",
         actionFailed: "No se pudo completar."
     )
 
@@ -215,6 +227,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "Mac beží ďalej aj s vypnutou obrazovkou.",
         screenSaverTitle: "Spustiť šetrič obrazovky",
         screenSaverCaption: "Spustí sa hneď, na všetkých displejoch.",
+        quitAllTitle: "Ukončiť všetky aplikácie",
+        quitOthersTitle: "Ukončiť všetky aplikácie okrem tej vpredu",
         actionFailed: "Nepodarilo sa dokončiť."
     )
 
@@ -242,6 +256,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "Der Mac läuft mit ausgeschaltetem Bildschirm weiter.",
         screenSaverTitle: "Bildschirmschoner starten",
         screenSaverCaption: "Startet sofort, auf allen Bildschirmen.",
+        quitAllTitle: "Alle Apps beenden",
+        quitOthersTitle: "Alle Apps außer der vorderen beenden",
         actionFailed: "Konnte nicht abgeschlossen werden."
     )
 
@@ -269,6 +285,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "Le Mac continue de fonctionner écran éteint.",
         screenSaverTitle: "Lancer l’économiseur d’écran",
         screenSaverCaption: "Démarre aussitôt, sur tous les écrans.",
+        quitAllTitle: "Quitter toutes les apps",
+        quitOthersTitle: "Quitter toutes les apps sauf celle au premier plan",
         actionFailed: "Impossible de terminer."
     )
 
@@ -296,6 +314,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "Il Mac continua a funzionare con lo schermo spento.",
         screenSaverTitle: "Avvia salvaschermo",
         screenSaverCaption: "Parte subito, su tutti gli schermi.",
+        quitAllTitle: "Esci da tutte le app",
+        quitOthersTitle: "Esci da tutte le app tranne quella in primo piano",
         actionFailed: "Impossibile completare."
     )
 
@@ -323,6 +343,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "画面を消しても Mac は動き続けます。",
         screenSaverTitle: "スクリーンセーバを開始",
         screenSaverCaption: "すべてのディスプレイですぐに始まります。",
+        quitAllTitle: "すべてのアプリを終了",
+        quitOthersTitle: "最前面以外のすべてのアプリを終了",
         actionFailed: "完了できませんでした。"
     )
 
@@ -350,6 +372,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "화면이 꺼져도 Mac은 계속 작동합니다.",
         screenSaverTitle: "화면 보호기 시작",
         screenSaverCaption: "모든 디스플레이에서 바로 시작됩니다.",
+        quitAllTitle: "모든 앱 종료",
+        quitOthersTitle: "맨 앞의 앱을 제외하고 모든 앱 종료",
         actionFailed: "완료할 수 없습니다."
     )
 
@@ -377,6 +401,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "显示器关闭后 Mac 继续运行。",
         screenSaverTitle: "启动屏幕保护程序",
         screenSaverCaption: "在所有显示器上立即启动。",
+        quitAllTitle: "退出所有应用",
+        quitOthersTitle: "退出最前面应用以外的所有应用",
         actionFailed: "无法完成。"
     )
 
@@ -404,6 +430,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "螢幕關閉後 Mac 仍繼續運作。",
         screenSaverTitle: "啟動螢幕保護程式",
         screenSaverCaption: "在所有顯示器上立即啟動。",
+        quitAllTitle: "結束所有 App",
+        quitOthersTitle: "結束最前方 App 以外的所有 App",
         actionFailed: "無法完成。"
     )
 
@@ -431,6 +459,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "螢幕關閉後 Mac 仍繼續運作。",
         screenSaverTitle: "啟動螢幕保護程式",
         screenSaverCaption: "在所有顯示器上立即啟動。",
+        quitAllTitle: "結束所有 App",
+        quitOthersTitle: "結束最前方 App 以外的所有 App",
         actionFailed: "無法完成。"
     )
     static let uk = QuickToggleFeatureStrings(
@@ -457,6 +487,8 @@ extension QuickToggleFeatureStrings {
         displayOffCaption: "Mac продовжує працювати з вимкненим екраном.",
         screenSaverTitle: "Запустити зберігач екрана",
         screenSaverCaption: "Запускається одразу, на кожному дисплеї.",
+        quitAllTitle: "Закрити всі програми",
+        quitOthersTitle: "Закрити всі програми, крім активної",
         actionFailed: "Не вдалося завершити."
     )
 }

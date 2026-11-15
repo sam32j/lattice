@@ -21,6 +21,7 @@ struct MetricsTests {
             ("metrics", {
                 BluetoothPermissionLifecycleTests.run(suite)
                 MetricsFeatureTests.run(suite)
+                DiskCapacityTests.run(suite)
                 MenuBarBatteryWarningTests.run(suite)
                 ProcessNameContract.run(suite)
                 SystemMonitorCPUTests.run(suite)
@@ -50,9 +51,11 @@ struct MetricsTests {
             ("media", { MediaFeatureTests.run(suite) }),
             ("video-downloader", { VideoDownloaderTests.run(suite) }),
             ("mixer", {
+                MixerRenderContinuityTests.run(suite)
                 MixerNativeDragTests.run(suite)
                 MixerOutputAdjustmentContract.run(suite)
                 MixerLevelCompensationContract.run(suite)
+                MixerTapConfigurationTests.run(suite)
                 SoundOutputSwitchContract.run(suite)
                 MixerUniversalRoutingContract.run(suite)
                 AirPlayRingBufferContract.run(suite)
@@ -119,6 +122,7 @@ struct MetricsTests {
             }),
             ("command-bar", {
                 CommandBarFeatureTests.run(suite)
+                QuitAppsSupportTests.run(suite)
                 CommandBarSelectionTests.run(suite)
             }),
             ("transient-paste", { TransientPasteTests.run(suite) }),
@@ -154,6 +158,7 @@ struct MetricsTests {
                 RadialProfileSyncTests.run(suite)
                 SettingsFeatureTests.run(suite)
                 SettingsSearchKeyboardTests.run(suite)
+                RadialFilePickerTests.run(suite)
                 SettingsWindowTests.run { suite.expect($0, $1) }
                 PermissionDetailsSheetTests.run { suite.expect($0, $1) }
                 NotchSettingsChoiceTests.run(suite)
@@ -165,7 +170,10 @@ struct MetricsTests {
                 BrightnessKeyRoutingTests.run(suite)
             }),
             ("software-dimming", { SoftwareDimmingRouteTests.run { suite.expect($0, $1) } }),
-            ("capture", { ScreenshotSelectionRefreshContract.run(suite) }),
+            ("capture", {
+                ScreenshotSelectionRefreshContract.run(suite)
+                RecentCaptureClearConfirmationTests.run(suite)
+            }),
             ("keyboard", {
                 KeyCaptureBridgeTests.run { suite.expect($0, $1) }
                 KeyboardFeatureTests.run(suite)
@@ -216,6 +224,7 @@ struct MetricsTests {
                 CleanerLayoutTests.run(suite)
             }),
             ("uninstaller", {
+                HomebrewOwnershipTests.run(suite)
                 UninstallerFlowTests.run(suite)
                 UninstallerCommandBarCleanupTests.run(suite)
                 SelfUninstallContract.run(suite)
@@ -235,8 +244,12 @@ struct MetricsTests {
             }),
             ("spaces-order", { SpacesOrderTests.run(suite) }),
             ("switcher", {
+                AXWindowResolverTests.run(suite)
+                SwitcherSearchLayoutTests.run(suite)
                 SwitcherScrollContract.run(suite)
                 SwitcherActivationTests.run(suite)
+                AXHiddenSpaceLookupTests.run(suite)
+                SwitcherWindowCloseTests.run(suite)
                 WindowServerCaptureContract.run(suite)
             }),
             ("keep-awake", {
@@ -247,7 +260,10 @@ struct MetricsTests {
                 KeepAwakeLidSleepTests.run { suite.expect($0, $1) }
                 KeepAwakeTimerHandoffTests.run { suite.expect($0, $1) }
             }),
-            ("wallpaper", { WallpaperContract.run(suite) }),
+            ("wallpaper", {
+                WallpaperContract.run(suite)
+                WallpaperThumbnailTests.run(suite)
+            }),
             ("emoji", { CommandBarEmojiContract.run(suite) }),
             ("capture-requirements", { DirectCaptureRequirementsComprehensiveTests.run(suite) }),
         ]

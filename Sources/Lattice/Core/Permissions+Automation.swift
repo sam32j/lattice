@@ -5,7 +5,6 @@ import Foundation
 extension Permissions {
     enum AutomationTarget: String, CaseIterable {
         case finder = "com.apple.finder"
-        case terminal = "com.apple.Terminal"
         case systemEvents = "com.apple.systemevents"
     }
 

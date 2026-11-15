@@ -2,13 +2,13 @@ import Foundation
 
 enum PermissionPortalRefreshTests {
     class State {
-        let visiblePermissions: [AppPermission] = [.automationFinder, .automationTerminal, .automationSystemEvents]
+        let visiblePermissions: [AppPermission] = [.automationFinder, .automationSystemEvents]
         var automation: [Permissions.AutomationTarget: Permissions.AutomationStatus] = [:]
         var automationRefreshID: UUID?
         var isVisible = true
     }
     enum Permissions {
-        enum AutomationTarget: CaseIterable { case finder, terminal, systemEvents }
+        enum AutomationTarget: CaseIterable { case finder, systemEvents }
         enum AutomationStatus { case granted, undetermined }
         static var reading = AutomationStatus.undetermined
         static func automationStatus(for target: AutomationTarget) -> AutomationStatus { reading }
@@ -36,7 +36,7 @@ enum PermissionPortalRefreshTests {
         suite.expect(portal.automation[.finder] == .granted,
                      "the completed consent refresh updates the displayed Automation status")
         DispatchQueue.main.run()
-        suite.expect(portal.automation[.finder] == .granted && portal.automation[.terminal] == .granted && portal.automation[.systemEvents] == .granted,
+        suite.expect(portal.automation[.finder] == .granted && portal.automation[.systemEvents] == .granted,
                      "an older passive check cannot replace a newer Automation grant")
         portal.isVisible = false
         portal.refreshAutomation()

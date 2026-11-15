@@ -46,6 +46,14 @@ final class LatticeHubService: ObservableObject {
     // *animating* window frame, or the two systems feed back into each other.
     @Published private(set) var floatingPanelHeightBudget: CGFloat = .greatestFiniteMagnitude
     let panelResizer = HubPanelResizer()
+    // The All Tools page's laid-out height, so a page that should match it
+    // (Recent Captures) opens without the panel changing size.
+    @Published private(set) var floatingRootPageHeight: CGFloat = 0
+
+    func setFloatingRootPageHeight(_ height: CGFloat) {
+        guard height.isFinite, height > 0, abs(floatingRootPageHeight - height) > 0.5 else { return }
+        floatingRootPageHeight = height
+    }
 
     func setFloatingPanelHeightBudget(_ height: CGFloat) {
         guard height.isFinite, height >= 100,
@@ -84,6 +92,10 @@ final class LatticeHubService: ObservableObject {
     var resignActiveObserver: NSObjectProtocol?
     var resignKeyObserver: NSObjectProtocol?
     var otherKeyObserver: NSObjectProtocol?
+    /// Until this uptime, a Hub brought back after an editor ignores the
+    /// activation and focus changes that closing the editor sets off.
+    var restoreGraceUntil: TimeInterval = 0
+    var inRestoreGrace: Bool { ProcessInfo.processInfo.systemUptime < restoreGraceUntil }
     var spaceChangeObserver: NSObjectProtocol?
     var screenChangeObserver: NSObjectProtocol?
     var missionControlTimer: Timer?

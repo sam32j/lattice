@@ -135,6 +135,7 @@ enum DefaultsKey {
     static let appVolumes = "appVolumes"                  // [bundle id: 0...2]
     static let appVolumesArePositions = "appVolumesArePositions" // appVolumes hold slider positions, not gains; travels with them so an older backup converts on restore
     static let appOutputDevices = "appOutputDevices"      // [bundle id: audio device UID]
+    static let mixerCallAppVolumeEnabled = "mixerCallAppVolumeEnabled" // bundle ids explicitly allowed to process call audio despite screen-sharing echo
     static let mixerUniversalOutputDevice = "mixerUniversalOutputDevice" // retired: all-apps output saved by 3.4.1 betas
     static let mixerShowFinder = "mixerShowFinder"
     static let mixerAppArrangement = "mixerAppArrangement"
@@ -264,6 +265,8 @@ enum DefaultsKey {
     static let killProcessGroupRelated = "killProcessGroupRelated"
     static let killProcessSortBy = "killProcessSortBy" // cpu | memory | name | pid
     static let killProcessSortAscending = "killProcessSortAscending"
+    static let killProcessOpensInApps = "killProcessOpensInApps" // Kill Process opens on its Apps view
+    static let quitAppsKeepRunning = "quitAppsKeepRunning" // [bundle id] spared by Quit All / Quit Others
     static let homebrewGroupDependencies = "homebrewGroupDependencies"
     static let appUpdatesCheckFrequency = "appUpdatesCheckFrequency"  // off | daily | weekly
     static let appUpdatesIncludeHomebrewApps = "appUpdatesIncludeHomebrewApps"
@@ -403,6 +406,7 @@ enum DefaultsKey {
     static let windowLayoutHiddenActions = "windowLayoutHiddenActions" // comma-separated action ids hidden from the grid
     static let windowLayoutWindowGap = "windowLayoutWindowGap" // px between adjacent snapped windows
     static let windowLayoutScreenGap = "windowLayoutScreenGap" // px between a snapped window and the visible frame edge
+    static let windowReserveStageManagerSpace = "windowReserveStageManagerSpace"
     static let windowLayoutMarginPercent = "windowLayoutMarginPercent" // per-edge percentage for margin maximize
     static let windowLayoutSideRepeatCyclesThirds = "windowLayoutSideRepeatCyclesThirds" // repeated Left/Right cycles half, 2/3, 1/3 on the same display
     static let windowLayoutIgnoredApps = "windowLayoutIgnoredApps" // apps that temporarily disable window layout while focused
@@ -462,6 +466,7 @@ enum DefaultsKey {
     static let clipboardHistoryIncludeImagesFiles = "clipboardHistoryIncludeImagesFiles" // capture copied images and files too
     static let clipboardHistoryIgnoredApps = "clipboardHistoryIgnoredApps" // apps whose copies are never saved
     static let clipboardHistoryQuickPreview = "clipboardHistoryQuickPreview"
+    static let clipboardHistoryShowSourceAppIcons = "clipboardHistoryShowSourceAppIcons" // source app icons beside list entries
     static let clipboardHistoryLayout = "clipboardHistoryLayout" // cards | list, how the history window shows entries
     static let clipboardHistoryWindowWidth = "clipboardHistoryWindowWidth" // the list window's chosen size
     static let clipboardHistoryWindowHeight = "clipboardHistoryWindowHeight"
@@ -767,6 +772,7 @@ enum DefaultsKey {
     static let notchWatchCondition = "notchWatchCondition"
     static let notchCalendarEnabled = "notchCalendarEnabled"
     static let notchCalendarCountdown = "notchCalendarCountdown"
+    static let notchCalendarCountdownLead = "notchCalendarCountdownLead" // minutes before a start, chosen events included
     static let notchCalendarTimeLeft = "notchCalendarTimeLeft" // the event under way counts down to its end
     static let notchCalendarWeekNumbers = "notchCalendarWeekNumbers" // the month grid numbers its weeks
     static let notchCalendarExcluded = "notchCalendarExcluded" // [EKCalendar.calendarIdentifier] left out of the island
@@ -775,6 +781,7 @@ enum DefaultsKey {
     // AI agents: what the island reads from Claude Code, Codex, OpenCode and GitHub Copilot, and shows.
     static let notchAgentsEnabled = "notchAgentsEnabled"
     static let notchAgentsClaude = "notchAgentsClaude"
+    static let notchAgentsClaudeProfile = "notchAgentsClaudeProfile"
     static let notchAgentsCodex = "notchAgentsCodex"
     static let notchAgentsCodexProfiles = "notchAgentsCodexProfiles"
     static let notchAgentsOpenCode = "notchAgentsOpenCode"
@@ -803,7 +810,8 @@ enum DefaultsKey {
     static let notchOpenOnHover = "notchOpenOnHover"
     static let notchShortcutEnabled = "notchShortcutEnabled"
     static let notchShortcut = "notchShortcut"
-    static let notchHideInFullscreen = "notchHideInFullscreen"
+    static let notchShowActivityInFullscreen = "notchShowActivityInFullscreen"
+    static let notchHideInFullscreen = "notchHideInFullscreen" // replaced by notchShowActivityInFullscreen, kept so the migration can read it
     static let notchHideUntilHover = "notchHideUntilHover"
     static let notchHiddenShowsActivity = "notchHiddenShowsActivity"
     static let notchCoversMenus = "notchCoversMenus"
@@ -1181,11 +1189,13 @@ enum Defaults {
         DefaultsKey.notchAccessoriesEnabled: true,
         DefaultsKey.notchCalendarEnabled: true,
         DefaultsKey.notchCalendarCountdown: false,
+        DefaultsKey.notchCalendarCountdownLead: NotchCalendarSupport.defaultCountdownLeadMinutes,
         DefaultsKey.notchCalendarTimeLeft: false,
         DefaultsKey.notchCalendarWeekNumbers: false,
         DefaultsKey.notchCalendarExcluded: [String](),
         DefaultsKey.notchAgentsEnabled: false,
         DefaultsKey.notchAgentsClaude: true,
+        DefaultsKey.notchAgentsClaudeProfile: "",
         DefaultsKey.notchAgentsCodex: true,
         DefaultsKey.notchAgentsCodexProfiles: "",
         DefaultsKey.notchAgentsOpenCode: true,
@@ -1221,7 +1231,7 @@ enum Defaults {
         DefaultsKey.notchOpenOnHover: false,
         DefaultsKey.notchShortcutEnabled: false,
         DefaultsKey.notchShortcut: GlobalShortcut.notchDefault.storageValue,
-        DefaultsKey.notchHideInFullscreen: false,
+        DefaultsKey.notchShowActivityInFullscreen: false,
         DefaultsKey.notchHideUntilHover: false,
         DefaultsKey.notchHiddenShowsActivity: false,
         DefaultsKey.notchCoversMenus: true,
@@ -1282,6 +1292,8 @@ enum Defaults {
         DefaultsKey.killProcessGroupRelated: true,
         DefaultsKey.killProcessSortBy: "cpu",
         DefaultsKey.killProcessSortAscending: false,
+        DefaultsKey.killProcessOpensInApps: true,
+        DefaultsKey.quitAppsKeepRunning: [String](),
         DefaultsKey.homebrewGroupDependencies: true,
         // The list itself costs nothing until it is opened; only the
         // background check keeps a timer, so it starts off.
@@ -1325,6 +1337,7 @@ enum Defaults {
         DefaultsKey.windowLayoutHiddenActions: "",
         DefaultsKey.windowLayoutWindowGap: 0,
         DefaultsKey.windowLayoutScreenGap: 0,
+        DefaultsKey.windowReserveStageManagerSpace: false,
         DefaultsKey.windowLayoutMarginPercent: 5.0,
         DefaultsKey.windowLayoutSideRepeatCyclesThirds: false,
         DefaultsKey.menuBarMetricOrder: defaultMenuBarMetricOrder.joined(separator: ","),
@@ -1446,6 +1459,7 @@ enum Defaults {
         DefaultsKey.clipboardHistoryIgnoredApps: [String](),
         DefaultsKey.windowLayoutIgnoredApps: [String](),
         DefaultsKey.clipboardHistoryQuickPreview: false,
+        DefaultsKey.clipboardHistoryShowSourceAppIcons: false,
         DefaultsKey.clipboardHistoryLayout: ClipboardHistoryLayout.list.rawValue,
         DefaultsKey.clipboardHistoryWindowWidth: 0.0,
         DefaultsKey.clipboardHistoryWindowHeight: 0.0,
@@ -1664,6 +1678,7 @@ enum Defaults {
         migrateCleaningModeShortcut(in: defaults)
         migratePageOwnedControls(in: defaults)
         migrateAudioControls(in: defaults)
+        migrateFullscreenActivityVisibility(in: defaults)
         defaults.register(defaults: registeredDefaults)
         defaults.register(defaults: AppFeature.availabilityDefaults)
         defaults.register(defaults: ["NSInitialToolTipDelay": 300])
@@ -1938,6 +1953,18 @@ enum Defaults {
         guard action.isEmpty else { return }
         defaults.set(ScreenshotDefaultAction.edit.rawValue,
                      forKey: DefaultsKey.screenshotDefaultAction)
+    }
+
+    /// "Hide live activity in full screen" became "Show live activity in full
+    /// screen", off by default, and no longer hides indicators. A choice made
+    /// with the old switch keeps its meaning; an untouched one takes the new
+    /// default.
+    static func migrateFullscreenActivityVisibility(in defaults: UserDefaults) {
+        guard let hid = defaults.object(forKey: DefaultsKey.notchHideInFullscreen) as? Bool else { return }
+        if defaults.object(forKey: DefaultsKey.notchShowActivityInFullscreen) == nil {
+            defaults.set(!hid, forKey: DefaultsKey.notchShowActivityInFullscreen)
+        }
+        defaults.removeObject(forKey: DefaultsKey.notchHideInFullscreen)
     }
 
     /// Upgrade the former mutually exclusive default-action picker to

@@ -13,10 +13,24 @@ final class ScreenshotPinChrome {
     private let feedback = ScreenshotPinFeedbackView(frame: CGRect(x: 0, y: 0, width: 76, height: 28))
     private let lockButton = PinControlButton()
     private let cursorButton = PinControlButton()
+    private let dragView: ScreenshotPinDragView
     private var attached = false
+    private var controlsVisible = false
+    /// Too small for the corner buttons: only a small grip shows on hover,
+    /// the rest stays in the context menu, and readouts follow the cursor.
+    private(set) var isCompact = false
+
+    static func isCompact(_ size: CGSize) -> Bool { size.width < 160 || size.height < 100 }
+    /// Narrower or shorter than this, even the small grip would overhang.
+    static func fitsGrip(_ size: CGSize) -> Bool {
+        size.width >= ScreenshotPinDragView.compactSize.width + 16
+            && size.height >= ScreenshotPinDragView.compactSize.height + 8
+    }
+    private static let feedbackSize = CGSize(width: 76, height: 28)
 
     init(pin: ScreenshotPinWindow) {
         self.pin = pin
+        dragView = ScreenshotPinDragView(pin: pin)
         let close = PinControlButton()
         configure(close, symbol: "xmark", label: L10n.shared.s.menuClose, action: #selector(closePin))
         closePanel.contentView?.addSubview(circle(close, x: 8))
@@ -25,7 +39,7 @@ final class ScreenshotPinChrome {
         modePanel.contentView?.addSubview(circle(lockButton, x: 8))
         modePanel.contentView?.addSubview(circle(cursorButton, x: 42))
         feedbackPanel.contentView = feedback
-        dragPanel.contentView = ScreenshotPinDragView(pin: pin)
+        dragPanel.contentView = dragView
         feedbackPanel.ignoresMouseEvents = true
         refreshButtons()
     }
@@ -45,20 +59,55 @@ final class ScreenshotPinChrome {
 
     func layout() {
         guard let pin else { return }
+        let compact = Self.isCompact(pin.frame.size)
+        if compact != isCompact {
+            isCompact = compact
+            dragView.setCompact(compact)
+            let size = compact ? ScreenshotPinDragView.compactSize : ScreenshotPinDragView.regularSize
+            dragPanel.setContentSize(size)
+            dragView.frame = CGRect(origin: .zero, size: size)
+            setControlsVisible(controlsVisible)
+        }
         closePanel.setFrameOrigin(CGPoint(x: pin.frame.minX, y: pin.frame.maxY - 46))
         modePanel.setFrameOrigin(CGPoint(x: pin.frame.maxX - 80, y: pin.frame.maxY - 46))
-        dragPanel.setFrameOrigin(CGPoint(x: pin.frame.midX - 50, y: pin.frame.minY + 8))
-        feedbackPanel.setFrameOrigin(CGPoint(x: pin.frame.midX - 38, y: pin.frame.midY - 14))
-    }
-
-    func setControlsVisible(_ visible: Bool) {
-        for panel in [closePanel, modePanel, dragPanel] {
-            panel.alphaValue = visible ? 1 : 0
-            panel.ignoresMouseEvents = !visible
+        let drag = dragPanel.frame.size
+        dragPanel.setFrameOrigin(CGPoint(x: pin.frame.midX - drag.width / 2,
+                                         y: pin.frame.minY + (compact ? 4 : 8)))
+        if compact {
+            placeFeedbackOutside(pin)
+        } else {
+            feedbackPanel.setFrameOrigin(CGPoint(x: pin.frame.midX - 38, y: pin.frame.midY - 14))
+        }
+        if dragPanel.ignoresMouseEvents == Self.fitsGrip(pin.frame.size), controlsVisible {
+            setControlsVisible(controlsVisible)
         }
     }
 
-    func showFeedback(_ text: String) { feedback.show(text) }
+    /// A compact pin's readout sits 5pt below it, or above it when the
+    /// screen has no room below.
+    private func placeFeedbackOutside(_ pin: ScreenshotPinWindow) {
+        let size = Self.feedbackSize
+        let visible = (pin.screen ?? NSScreen.main)?.visibleFrame ?? pin.frame.insetBy(dx: -1000, dy: -1000)
+        var origin = CGPoint(x: pin.frame.midX - size.width / 2, y: pin.frame.minY - 5 - size.height)
+        if origin.y < visible.minY { origin.y = pin.frame.maxY + 5 }
+        origin.x = min(max(origin.x, visible.minX), visible.maxX - size.width)
+        feedbackPanel.setFrameOrigin(origin)
+    }
+
+    func setControlsVisible(_ visible: Bool) {
+        controlsVisible = visible
+        for panel in [closePanel, modePanel, dragPanel] {
+            let fits = pin.map { Self.fitsGrip($0.frame.size) } ?? true
+            let shown = visible && (!isCompact || (panel === dragPanel && fits))
+            panel.alphaValue = shown ? 1 : 0
+            panel.ignoresMouseEvents = !shown
+        }
+    }
+
+    func showFeedback(_ text: String) {
+        if isCompact, let pin { placeFeedbackOutside(pin) }
+        feedback.show(text)
+    }
 
     func refreshButtons() {
         guard let pin else { return }
@@ -282,4 +331,17 @@ private final class PinControlPanel: OverlayPanel {
         hidesOnDeactivate = false
     }
     override var canBecomeKey: Bool { false }
+
+    /// Controls sit over the image, so scrolling or pinching on one zooms
+    /// the pin exactly as it would on the image beside it.
+    override func sendEvent(_ event: NSEvent) {
+        if let surface = parent?.contentView as? ScreenshotPinGestureView {
+            switch event.type {
+            case .scrollWheel: surface.scrollWheel(with: event); return
+            case .magnify: surface.magnify(with: event); return
+            default: break
+            }
+        }
+        super.sendEvent(event)
+    }
 }

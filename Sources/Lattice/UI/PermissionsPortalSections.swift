@@ -75,7 +75,6 @@ struct PermissionsPortalSections: View {
         case .bluetooth: return BluetoothAuthorizationPolicy.canRequest(bluetooth.authorization)
         case .notifications: return permissions.notifications == .undetermined
         case .automationFinder: return automation[.finder] == .undetermined
-        case .automationTerminal: return automation[.terminal] == .undetermined
         case .automationSystemEvents: return automation[.systemEvents] == .undetermined
         case .microphone: return permissions.microphone == .undetermined
         case .calendar: return permissions.calendarAccess == .notDetermined || permissions.calendarAccess == .writeOnly
@@ -104,7 +103,6 @@ struct PermissionsPortalSections: View {
         let targets = Permissions.AutomationTarget.allCases.filter { target in
             switch target {
             case .finder: return visiblePermissions.contains(.automationFinder)
-            case .terminal: return visiblePermissions.contains(.automationTerminal)
             case .systemEvents: return visiblePermissions.contains(.automationSystemEvents)
             }
         }
@@ -131,7 +129,6 @@ struct PermissionsPortalSections: View {
             case .unknown: return .unknown
             }
         case .automationFinder: return automationStatus(.finder)
-        case .automationTerminal: return automationStatus(.terminal)
         case .automationSystemEvents: return automationStatus(.systemEvents)
         case .automationPlayback: return .unknown
         case .audioCapture:

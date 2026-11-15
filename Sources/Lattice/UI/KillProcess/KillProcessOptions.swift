@@ -4,10 +4,16 @@ struct KillProcessOptions: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var service = KillProcessService.shared
     @AppStorage(DefaultsKey.killProcessCommandBarEnabled) private var commandBarEnabled = true
+    @AppStorage(DefaultsKey.killProcessOpensInApps) private var opensInApps = true
     private var strings: KillProcessFeatureStrings { FeatureStrings.killProcess(l10n.language) }
+    private var appStrings: KillProcessAppStrings { FeatureStrings.killProcessApps(l10n.language) }
 
     var body: some View {
         Form {
+            Section {
+                Toggle(appStrings.opensInAppsToggle, isOn: $opensInApps)
+                Text(appStrings.opensInAppsCaption).font(.caption).foregroundStyle(.secondary)
+            }
             Section {
                 Toggle(strings.groupToggle, isOn: Binding(
                     get: { service.groupRelated }, set: { service.setGroupRelated($0) }))

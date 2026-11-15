@@ -51,9 +51,39 @@ test("sync preserves personal content, advances tracking main and records a stab
   expect(metadata.baseCommit).toBe(git(f.upstream, "rev-parse", "main"));
 });
 
-test("a rebase conflict changes neither remote branch", () => {
+test("sync merges upstream without rewriting published personal history", () => {
+  const f = fixture(); f.advance(); const result = f.run();
+  expect(result.exitCode).toBe(0);
+  const next = git(f.fork, "rev-parse", "lattice/main");
+  expect(git(f.fork, "merge-base", "--is-ancestor", f.before, next)).toBe("");
+  expect(git(f.fork, "merge-base", "--is-ancestor", git(f.upstream, "rev-parse", "v1.1.0"), next)).toBe("");
+  expect(git(f.fork, "for-each-ref", "refs/heads/downstream-backups")).toBe("");
+});
+
+test("upstream files added under a directory Lattice renamed land in the renamed directory", () => {
+  const f = fixture();
+  mkdirSync(join(f.upstream, "Sources/Upstream"), { recursive: true });
+  writeFileSync(join(f.upstream, "Sources/Upstream/one"), "one\n");
+  git(f.upstream, "add", "."); git(f.upstream, "commit", "-m", "add sources"); git(f.upstream, "tag", "v1.0.1");
+  // Adopt v1.0.1 as the recorded base, then rename the directory downstream.
+  git(f.personal, "fetch", f.upstream, "refs/tags/v1.0.1:refs/tags/v1.0.1");
+  git(f.personal, "merge", "--no-edit", "v1.0.1");
+  const path = join(f.personal, "Downstream/release.json");
+  const metadata = JSON.parse(readFileSync(path, "utf8"));
+  metadata.upstreamTag = "v1.0.1"; metadata.upstreamCommit = metadata.baseCommit = git(f.upstream, "rev-parse", "v1.0.1");
+  writeFileSync(path, JSON.stringify(metadata)); git(f.personal, "add", ".");
+  git(f.personal, "mv", "Sources/Upstream", "Sources/Lattice");
+  git(f.personal, "commit", "-m", "rename sources"); git(f.personal, "push", "origin", "HEAD");
+  writeFileSync(join(f.upstream, "Sources/Upstream/two"), "two\n");
+  git(f.upstream, "add", "."); git(f.upstream, "commit", "-m", "add another"); git(f.upstream, "tag", "v1.1.0");
+  const result = f.run("v1.1.0");
+  expect(result.stderr.toString()).toBe(""); expect(result.exitCode).toBe(0);
+  expect(git(f.fork, "show", "lattice/main:Sources/Lattice/two")).toBe("two");
+});
+
+test("a merge conflict changes neither remote branch", () => {
   const f = fixture(); f.advance(true); const result = f.run();
-  expect(result.exitCode).toBe(1); expect(result.stderr.toString()).toContain("Rebase stopped");
+  expect(result.exitCode).toBe(1); expect(result.stderr.toString()).toContain("Merge stopped");
   expect(git(f.fork, "rev-parse", "main")).toBe(f.base);
   expect(git(f.fork, "rev-parse", "lattice/main")).toBe(f.before);
 });

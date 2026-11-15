@@ -34,14 +34,14 @@ enum ScreenshotEditorKeyTests {
     class State {
         let model = Model()
         var window: Window? = Window()
-        var discarded = 0
         func copySelectedText() {}
         func copyToClipboard() {}
         func save() {}
         func saveAs() {}
         func done() {}
+        var keptChanges = 0
+        func saveChanges() { keptChanges += 1 }
         func pin() {}
-        func discardAndClose() { discarded += 1 }
     }
     static func run(_ suite: TestSuite) {
         for command in [false, true] {
@@ -55,13 +55,20 @@ enum ScreenshotEditorKeyTests {
                 context: nil, characters: "\u{7f}", charactersIgnoringModifiers: "\u{7f}",
                 isARepeat: false, keyCode: UInt16(kVK_Delete))!
             suite.expect(controller.handleKey(event) && controller.model.annotations.isEmpty
-                         && controller.discarded == 0 && controller.window?.closeRequests == 0,
+                         && controller.window?.closeRequests == 0,
                          "Delete and Command-Delete remove selected objects without closing the editor")
             if command {
                 _ = controller.handleKey(event)
-                suite.expect(controller.discarded == 1,
-                             "Command-Delete without an object selection retains the existing discard action")
+                suite.expect(controller.window?.closeRequests == 1,
+                             "Command-Delete without an object selection asks to close, with the discard confirmation")
             }
         }
+        let controller = Controller()
+        let save = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [.command], timestamp: 0,
+            windowNumber: 0, context: nil, characters: "s", charactersIgnoringModifiers: "s",
+            isARepeat: false, keyCode: UInt16(kVK_ANSI_S))!
+        suite.expect(controller.handleKey(save) && controller.keptChanges == 1
+                     && controller.window?.closeRequests == 0,
+                     "Command-S keeps the edits without closing the editor")
     }
 }

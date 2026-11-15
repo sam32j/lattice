@@ -22,9 +22,22 @@ extension AppUpdatesService {
         }
         let installedOutput = Self.runCommand(HomebrewCommandBuilder.installed(brewPath: brewPath),
                                               environment: HomebrewEnvironment.forBrew, cancellation: cancellation)
-        let records = installedOutput.status == 0
-            ? HomebrewParser.parseInstalledCaskRecords(installedOutput.output)
-            : []
+        // A cask inventory that cannot be read must not quietly drop every
+        // Homebrew app from the check: the check reports it as failed.
+        var inventoryError: Error?
+        var records: [HomebrewCaskRecord] = []
+        if installedOutput.status == 0 {
+            do { records = try HomebrewParser.parseInstalledCaskRecords(installedOutput.output) }
+            catch { inventoryError = error }
+        }
+        if let inventoryError {
+            let message = inventoryError.localizedDescription
+            DispatchQueue.main.async { [weak self] in
+                guard cancellation?.isCancelled != true else { return }
+                self?.lastError = message
+            }
+            return PackageResult(items: [], coveredPaths: [], available: false, onlineCoverageAvailable: false)
+        }
         let coveredPaths = Set(records.compactMap {
             AppUpdatesSupport.packageBundle(for: $0, apps: apps)?.path
         })

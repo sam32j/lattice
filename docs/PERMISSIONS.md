@@ -20,7 +20,7 @@ System audio is an exception: macOS does not expose an equivalent reliable prefl
 | Files & Folders | Selected download-folder monitoring, file tools, saving captures and Cleaner’s old-screenshot review. |
 | Notifications | Alerts from Stay Awake, Activity Monitor, Cleaner, app updates and other notification features you enable. |
 | Full Disk Access | More complete Cleaner and app-uninstaller scans. |
-| Automation | Finder operations, Homebrew’s Terminal handoff and supported player-specific playback controls. |
+| Automation | Finder operations and supported player-specific playback controls. |
 | App Management | Installing, replacing or removing other apps through Homebrew, App Updates or DMG Installer. |
 | Administrator authorization | Optional closed-lid setup and privileged hardware operations such as fan control. This is separate from macOS privacy grants. |
 
@@ -58,7 +58,7 @@ Cleaner and the app uninstaller can scan more locations with Full Disk Access. W
 
 ## Automation and App Management
 
-Automation is granted separately for each target app. Finder file operations, Homebrew’s Terminal handoff and player-specific playback commands can require it. A denied player grant does not stop ordinary playback in that player. An explicit permission action does not replay a previously blocked command.
+Automation is granted separately for each target app. Finder file operations and player-specific playback commands can require it. Homebrew opens install and setup commands in your default terminal without Automation. A denied player grant does not stop ordinary playback in that player. An explicit permission action does not replay a previously blocked command.
 
 App Management protects installed application bundles. Installing or replacing an app can trigger a request. Lattice cannot reliably determine this permission’s status beforehand; it is not the same as Accessibility or administrator authorization.
 

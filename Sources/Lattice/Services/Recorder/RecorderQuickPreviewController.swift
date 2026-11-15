@@ -15,7 +15,7 @@ final class RecorderQuickPreviewController {
     private var keyMonitor: Any?
     private var dismissWork: DispatchWorkItem?
     private var closePolicy = CapturePreviewClosePolicy.fiveSeconds
-    private var focusLossObserver: NSObjectProtocol?
+    private var focusLoss: PreviewFocusLoss?
     /// A history-opened preview is navigation, not a transient capture confirmation.
     private var openedFromHistory = false
     private var quickLinkTask: Task<Void, Never>?
@@ -53,7 +53,7 @@ final class RecorderQuickPreviewController {
         }
 
         let wantsNotch = inNotch && NotchSupport.routesCapturePreviews()
-            && NotchService.shared.acceptsSystemFeedback
+            && NotchService.shared.acceptsCapturePresentation
 
         let content = RecorderQuickPreviewView(
             url: url,
@@ -131,7 +131,7 @@ final class RecorderQuickPreviewController {
         previewPanel.setFrame(frame, display: false)
         self.panel = previewPanel
         installKeyMonitor(for: previewPanel)
-        previewPanel.orderFrontRegardless()
+        FloatingPreviewTransition.present(previewPanel)
         if UserDefaults.standard.bool(forKey: DefaultsKey.screenshotPreviewTakesFocus) {
             previewPanel.makeKey()
         }
@@ -142,10 +142,7 @@ final class RecorderQuickPreviewController {
     func close() {
         guard !closed else { return }
         closed = true
-        if let focusLossObserver {
-            NotificationCenter.default.removeObserver(focusLossObserver)
-            self.focusLossObserver = nil
-        }
+        focusLoss = nil
         dismissWork?.cancel()
         dismissWork = nil
         quickLinkTask?.cancel()
@@ -159,7 +156,7 @@ final class RecorderQuickPreviewController {
             NotchService.shared.removeCapture(id: presentationID)
             shownInNotch = false
         }
-        panel?.orderOut(nil)
+        if let panel { FloatingPreviewTransition.dismiss(panel) }
         panel = nil
         url = nil
         model.close()
@@ -182,14 +179,11 @@ final class RecorderQuickPreviewController {
     }
 
     private func observeFocusLoss(of window: NSWindow) {
-        guard focusLossObserver == nil else { return }
-        focusLossObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didResignKeyNotification, object: window, queue: .main
-        ) { [weak self] _ in
-            guard let self, !self.closed, !self.quickLookOpen, !self.systemSharing,
-                  !self.menuOpen, !self.model.sharing else { return }
-            self.close()
-        }
+        guard focusLoss == nil else { return }
+        focusLoss = PreviewFocusLoss(window: window, ignoresLoss: { [weak self] in
+            guard let self else { return true }
+            return self.closed || self.quickLookOpen || self.systemSharing || self.menuOpen || self.model.sharing
+        }, onLoss: { [weak self] in self?.close() })
     }
 
     private func menuChanged(_ open: Bool) {
@@ -263,38 +257,13 @@ final class RecorderQuickPreviewController {
     }
 
     private func performCopy() {
-        guard let url else { return }
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        guard pasteboard.writeObjects([url as NSURL]) else {
-            NSSound.beep()
-            return
-        }
-        pasteboard.declareLatticeSource()
-        QuickToolHUD.show(icon: "doc.on.doc", message: FeatureStrings.recorder(L10n.shared.language).copiedHUD)
+        guard let url, RecordingFileActions.copy(url) else { return }
         completeQuickAction()
     }
 
     private func performDownload() {
         guard let url else { return }
-        let strings = FeatureStrings.recorder(L10n.shared.language)
-        let ext = url.pathExtension.isEmpty ? "mov" : url.pathExtension
-        do {
-            let destination = try CaptureSaveLocation.withFolder { folder in
-                try CaptureSaveNaming.copyFile(from: url, in: folder,
-                                               date: (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date(),
-                                               media: .recording, ext: ext)
-            }
-            let folder = destination.deletingLastPathComponent().lastPathComponent
-            QuickToolHUD.show(icon: "square.and.arrow.down",
-                              message: String(format: strings.savedHUDFormat, folder))
-            completeQuickAction()
-        } catch CaptureSaveLocation.Failure.notSelected {
-            scheduleAutoDismiss()
-        } catch {
-            CaptureSaveLocation.presentSaveError(error)
-            scheduleAutoDismiss()
-        }
+        if RecordingFileActions.save(url) { completeQuickAction() } else { scheduleAutoDismiss() }
     }
 
     private func performSaveAs() {
@@ -531,5 +500,61 @@ final class RecorderQuickPreviewController {
     private func revealInFinder() {
         guard let url else { return }
         NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+}
+
+/// Copy, save and edit for a recording file, shared by the recording preview
+/// and the recent captures list.
+enum RecordingFileActions {
+    @discardableResult
+    static func copy(_ url: URL) -> Bool {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        guard pasteboard.writeObjects([url as NSURL]) else {
+            NSSound.beep()
+            return false
+        }
+        pasteboard.declareLatticeSource()
+        QuickToolHUD.show(icon: "doc.on.doc", message: FeatureStrings.recorder(L10n.shared.language).copiedHUD)
+        return true
+    }
+
+    /// Saves a copy into the capture folder; false when nothing was saved.
+    @discardableResult
+    static func save(_ url: URL) -> Bool {
+        let strings = FeatureStrings.recorder(L10n.shared.language)
+        let ext = url.pathExtension.isEmpty ? "mov" : url.pathExtension
+        do {
+            let destination = try CaptureSaveLocation.withFolder { folder in
+                try CaptureSaveNaming.copyFile(from: url, in: folder,
+                                               date: (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date(),
+                                               media: .recording, ext: ext)
+            }
+            let folder = destination.deletingLastPathComponent().lastPathComponent
+            QuickToolHUD.show(icon: "square.and.arrow.down",
+                              message: String(format: strings.savedHUDFormat, folder))
+            return true
+        } catch CaptureSaveLocation.Failure.notSelected {
+            return false
+        } catch {
+            CaptureSaveLocation.presentSaveError(error)
+            return false
+        }
+    }
+
+    /// Mirrors the recording preview's own edit path (kept there for its
+    /// lifecycle tests).
+    static func edit(_ url: URL, onEditorClose: (() -> Void)? = nil) {
+        guard AppFeature.screenRecorder.isAvailable else { onEditorClose?(); return }
+        Task { @MainActor in
+            let take = await Task.detached(priority: .userInitiated) {
+                RecorderTakeStore.shared.importVideo(at: url)
+            }.value
+            guard let take else { NSSound.beep(); onEditorClose?(); return }
+            MediaEditorFileSupport.presentIfEnabled(AppFeature.screenRecorder.isAvailable, present: {
+                ScreenRecorderService.shared.openEditor(with: take, preservedRecordingURL: url,
+                                                        onClose: onEditorClose)
+            }, discard: { RecorderTakeStore.shared.delete(take); onEditorClose?() })
+        }
     }
 }

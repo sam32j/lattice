@@ -3,6 +3,12 @@
 
 import AppKit
 
+// Select backup mode before cleanup and diagnostic arguments can act. Invalid
+// backup commands must leave files, input mappings and recovery journals alone.
+if let command = SettingsBackupSupport.command(in: CommandLine.arguments) {
+    SettingsBackup.runCommandAndExit(command)
+}
+
 #if LATTICE_DEVELOPMENT
 if CommandLine.arguments.contains("--hub-editor-test") { HubEditingProbe.runAndExit() }
 if CommandLine.arguments.contains("--hub-presentation-test") { HubPresentationProbe.runAndExit() }

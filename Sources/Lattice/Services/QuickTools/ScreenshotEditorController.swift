@@ -1530,6 +1530,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         host.sizingOptions = [.minSize]
         let window = ScreenshotEditorWindow(contentViewController: host)
         window.level = ScreenshotWindowLayering.editorLevel(above: owner)
+        observeActivation(of: window, owner: owner)
         // One continuous surface: the canvas fills the window and the
         // controls float over it, so the editor reads as a single object.
         window.title = strings.editorTitle
@@ -1563,6 +1564,23 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         }
     }
 
+    private var activationObservers: [NSObjectProtocol] = []
+
+    /// The editor clears pins only while Lattice is in front. In another app
+    /// it is an ordinary window and falls behind that app's windows.
+    private func observeActivation(of window: NSWindow, owner: NSWindow?) {
+        let center = NotificationCenter.default
+        let raised = ScreenshotWindowLayering.editorLevel(above: owner)
+        activationObservers = [
+            center.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak window] _ in
+                window?.level = .normal
+            },
+            center.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak window] _ in
+                window?.level = raised
+            }
+        ]
+    }
+
     func endInlineTextEditing() {
         ScreenshotAnnotationTextEditor.endEditing(in: window)
     }
@@ -1571,10 +1589,6 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         window?.close()
     }
 
-    /// Closes without the discard confirmation used by the titlebar button.
-    func discardAndClose() {
-        window?.close()
-    }
 
     // MARK: Keyboard
 
@@ -1656,7 +1670,8 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
                 }
                 return true
             case kVK_ANSI_S:
-                if flags.contains(.shift) { save() } else { done() }
+                // ⌘S keeps the edits and the editor open; Done closes.
+                if flags.contains(.shift) { save() } else { saveChanges() }
                 return true
             case kVK_ANSI_Z:
                 if flags.contains(.shift) { model.redo() } else { model.undo() }
@@ -1664,7 +1679,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             case kVK_ANSI_P: pin(); return true
             case kVK_Delete, kVK_ForwardDelete:
                 if model.annotations.contains(where: { model.selectedIDs.contains($0.id) }) { model.deleteSelected() }
-                else { discardAndClose() }
+                else { window?.performClose(nil) }
                 return true
             case kVK_ANSI_0: model.zoomOverride = nil; return true
             case kVK_ANSI_1: model.zoomOverride = 1 / model.scale; return true
@@ -1894,7 +1909,12 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         window?.close()
     }
 
-    func done() {
+    func done() { persistEdits(closing: true) }
+
+    /// Keeps the edits in the capture's history and leaves the editor open.
+    func saveChanges() { persistEdits(closing: false) }
+
+    private func persistEdits(closing: Bool) {
         guard !doneSaveInFlight else { return }
         if window?.firstResponder is NSText || model.editingTextID != nil {
             model.editingTextID = nil
@@ -1925,10 +1945,14 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
                   self.model.annotationShadowsEnabled == shadows else { return }
             let pin = self.originatingPin ?? ScreenshotPinController.shared.findPin(for: self.capture.id)
             pin?.updateImage(export.image, baseImage: original, annotations: annotations)
-            pin?.showPin(orderFront: true)
-            self.didPersistImageChanges = self.model.isDirty
+            pin?.showPin(orderFront: closing)
+            if self.model.isDirty { self.didPersistImageChanges = true }
             self.model.markExported()
-            self.window?.close()
+            if closing {
+                self.window?.close()
+            } else {
+                ScreenshotService.shared.editorDidSaveChanges(self)
+            }
         }
     }
 
@@ -1989,6 +2013,8 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
         }
+        activationObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        activationObservers.removeAll()
         window?.delegate = nil
         window = nil
         ScreenshotService.shared.editorDidClose(self)

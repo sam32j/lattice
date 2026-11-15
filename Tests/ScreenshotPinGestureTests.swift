@@ -9,6 +9,10 @@ enum ScreenshotPinGestureTests {
     final class LockableView: ScreenshotPinGestureView {
         override var isPositionLocked: Bool { true }
     }
+    /// A pin lower in a stack, under another pin at the pointer.
+    final class CoveredView: ScreenshotPinGestureView {
+        override var ownsPointer: Bool { false }
+    }
     final class Gesture: NSEvent {
         var scroll: CGFloat = 0
         var pinch: CGFloat = 0
@@ -95,6 +99,24 @@ enum ScreenshotPinGestureTests {
         view.magnify(with: legacyPinch)
         suite.expect(window.frame.width > afterEnd.width,
                      "phase-less magnify events can start a new pinch after a completed gesture")
+        let covered = NSPanel(contentRect: initialRect,
+                              styleMask: [.borderless, .nonactivatingPanel, .resizable],
+                              backing: .buffered, defer: true)
+        covered.isReleasedWhenClosed = false
+        covered.contentAspectRatio = CGSize(width: 2, height: 1)
+        covered.minSize = CGSize(width: 90, height: 60)
+        let coveredView = CoveredView(frame: .zero)
+        covered.contentView = coveredView
+        let coveredFrame = covered.frame
+        let coveredWheel = Gesture()
+        coveredWheel.scroll = 4
+        coveredView.scrollWheel(with: coveredWheel)
+        let coveredPinch = Gesture()
+        coveredPinch.pinch = 0.2
+        coveredView.magnify(with: coveredPinch)
+        suite.expect(covered.frame == coveredFrame,
+                     "a pin under another pin at the pointer ignores the wheel and pinch meant for the top one")
+        covered.close()
         view.applyPinch(by: 1, at: .zero, source: .magnify, phase: .began)
         window.setFrame(initial, display: false)
 
@@ -119,7 +141,8 @@ enum ScreenshotPinGestureTests {
         view.magnify(with: pinch)
         suite.expectClose(window.frame.width, 300, "pinching out zooms the pin", tol: 0.6)
         suite.expectClose(window.frame.height, 150, "pinching preserves the image's proportions", tol: 0.6)
-        suite.expectClose(window.frame.minX, initial.minX - 25, "pinch anchors the point under the pointer", tol: 0.6)
+        suite.expectClose(window.frame.midX, initial.midX, "pinch grows the pin around its center horizontally", tol: 0.6)
+        suite.expectClose(window.frame.midY, initial.midY, "pinch grows the pin around its center vertically", tol: 0.6)
         suite.expectClose(window.alphaValue, 0.75, "pinching leaves opacity unchanged")
 
         window.setFrame(initial, display: false)
@@ -225,8 +248,39 @@ enum ScreenshotPinGestureTests {
         wheel.scroll = 1
         wheel.point.x = .nan
         view.scrollWheel(with: wheel)
-        suite.expect(window.frame == initial, "an invalid pointer position cannot corrupt the window frame")
+        suite.expect(window.frame.minX.isFinite && window.frame.width.isFinite
+                     && abs(window.frame.midX - initial.midX) < 0.6 && abs(window.frame.midY - initial.midY) < 0.6,
+                     "wheel zoom ignores the pointer position, even an invalid one, and stays centered")
+        window.setFrame(initial, display: false)
         wheel.point = CGPoint(x: 50, y: 25)
+
+        // The center of a pin never moved by hand stays put through any zoom:
+        // shrinking past the minimum and zooming back returns the same frame.
+        let placed = CGRect(x: limits.midX - 100.5, y: limits.midY - 50.5, width: 201, height: 100.5)
+        window.setFrame(placed, display: false)
+        let start = window.frame
+        var drift: CGFloat = 0
+        for _ in 0..<60 {
+            view.zoom(by: 1 / 1.03)
+            drift = max(drift, abs(window.frame.midX - start.midX), abs(window.frame.midY - start.midY))
+        }
+        let smallest = window.frame
+        for _ in 0..<20 { view.zoom(by: 1 / 1.03) }
+        suite.expect(window.frame == smallest, "scrolling further at the smallest size leaves the pin in place")
+        for _ in 0..<60 {
+            view.zoom(by: 1.03)
+            drift = max(drift, abs(window.frame.midX - start.midX), abs(window.frame.midY - start.midY))
+        }
+        suite.expect(drift <= 0.5, "zooming keeps the pin's center within rounding of where it was")
+        var back = 0
+        while window.frame.width < start.width - 0.5, back < 200 { view.zoom(by: 1.001); back += 1 }
+        suite.expect(abs(window.frame.midX - start.midX) <= 0.5 && abs(window.frame.midY - start.midY) <= 0.5,
+                     "back at its original size, the pin is back where it was")
+        window.setFrame(placed.offsetBy(dx: -40, dy: 20), display: false)
+        let moved = window.frame
+        view.zoom(by: 1.2)
+        suite.expect(abs(window.frame.midX - moved.midX) <= 0.5 && abs(window.frame.midY - moved.midY) <= 0.5,
+                     "after a move, zoom keeps the new center")
 
         let corner = CGRect(x: limits.maxX - 210, y: limits.maxY - 110, width: 200, height: 100)
         window.setFrame(corner, display: false)

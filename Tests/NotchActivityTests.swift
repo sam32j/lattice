@@ -19,6 +19,7 @@ enum NotchActivityTests {
         compactDownloadContracts(suite)
         keepAwakeContracts(suite)
         accessoryContracts(suite)
+        NotchAccessoryConnectionTests.run(suite)
         PeripheralBatteryLifecycleTests.run(suite)
         NotchTimerCacheTests.run(suite)
         gateContracts(suite)

@@ -59,7 +59,7 @@ enum BrightnessKeyRoutingTests {
     }
     final class NotchService {
         static let shared = NotchService()
-        var showsSystemFeedback = false
+        var showsIndicators = false
     }
     final class SessionActivity {
         static let shared = SessionActivity()
@@ -124,7 +124,7 @@ enum BrightnessKeyRoutingTests {
         for mediaKey in [true, false] {
             func service() -> Service {
                 NSScreen.current = 1
-                NotchService.shared.showsSystemFeedback = false
+                NotchService.shared.showsIndicators = false
                 Service.forwardedSteps = 0
                 return Service()
             }
@@ -171,12 +171,12 @@ enum BrightnessKeyRoutingTests {
 
             let visibility = service()
             suite.expect(!press(visibility), "\(kind): a native press begins with island feedback hidden")
-            NotchService.shared.showsSystemFeedback = true
+            NotchService.shared.showsIndicators = true
             visibility.islandReplacesNativeOSD = true
             suite.expect(!press(visibility, repeated: true) && !press(visibility, down: false),
                          "\(kind): showing replacement feedback cannot take a native held key")
             suite.expect(press(visibility), "\(kind): fresh presses can use replacement feedback")
-            NotchService.shared.showsSystemFeedback = false
+            NotchService.shared.showsIndicators = false
             visibility.islandReplacesNativeOSD = false
             suite.expect(press(visibility, repeated: true) && press(visibility, down: false),
                          "\(kind): hiding replacement feedback cannot leak a handled key")

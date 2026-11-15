@@ -56,7 +56,7 @@ final class ScreenshotQuickPreviewController {
     private var keyMonitor: Any?
     private var dismissWork: DispatchWorkItem?
     private let closePolicy: CapturePreviewClosePolicy
-    private var focusLossObserver: NSObjectProtocol?
+    private var focusLoss: PreviewFocusLoss?
     private var closed = false
     private let presentationID = UUID()
     private var shownInNotch = false
@@ -65,9 +65,15 @@ final class ScreenshotQuickPreviewController {
     private let openedFromHistory: Bool
 
     var protectedWindowIDs: Set<CGWindowID> {
-        guard let panel, panel.isVisible, panel.windowNumber > 0 else { return [] }
-        return [CGWindowID(panel.windowNumber)]
+        // A preview fading out is still on screen; a capture taken during the
+        // fade must leave it out too.
+        Set([panel, fadingPanel].compactMap { window in
+            guard let window, window.isVisible, window.windowNumber > 0 else { return nil }
+            return CGWindowID(window.windowNumber)
+        })
     }
+    /// The closed preview's panel until its fade finishes and orders it out.
+    private var fadingPanel: NSPanel?
 
     init(capture: ScreenshotSelectionController.Capture,
          strings: ScreenshotFeatureStrings,
@@ -108,7 +114,7 @@ final class ScreenshotQuickPreviewController {
                self?.show(inNotch: true)
            }) { return }
         let wantsNotch = inNotch && NotchSupport.routesCapturePreviews()
-            && NotchService.shared.acceptsSystemFeedback
+            && NotchService.shared.acceptsCapturePresentation
         let takesFocus = UserDefaults.standard.bool(forKey: DefaultsKey.screenshotPreviewTakesFocus)
         let content = ScreenshotQuickPreviewView(
             image: Self.thumbnail(for: capture.image),
@@ -208,7 +214,7 @@ final class ScreenshotQuickPreviewController {
         panel.setFrame(frame, display: false)
         self.panel = panel
         installKeyMonitor(for: panel)
-        panel.orderFrontRegardless()
+        FloatingPreviewTransition.present(panel)
         if takesFocus {
             // Nonactivating panels can accept shortcuts without bringing
             // Lattice's other windows (especially Settings) to the front.
@@ -294,10 +300,7 @@ final class ScreenshotQuickPreviewController {
     func close() {
         guard !closed else { return }
         closed = true
-        if let focusLossObserver {
-            NotificationCenter.default.removeObserver(focusLossObserver)
-            self.focusLossObserver = nil
-        }
+        focusLoss = nil
         NotchService.shared.cancelDeferredCapturePresentation(id: presentationID)
         dismissWork?.cancel()
         dismissWork = nil
@@ -305,7 +308,10 @@ final class ScreenshotQuickPreviewController {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
         }
-        panel?.orderOut(nil)
+        if let panel {
+            fadingPanel = panel
+            FloatingPreviewTransition.dismiss(panel)
+        }
         panel = nil
         if shownInNotch {
             shownInNotch = false
@@ -655,15 +661,12 @@ final class ScreenshotQuickPreviewController {
     }
 
     private func observeFocusLoss(of window: NSWindow) {
-        guard focusLossObserver == nil else { return }
-        focusLossObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didResignKeyNotification, object: window, queue: .main
-        ) { [weak self] _ in
-            guard let self, !self.closed, !self.quickLookOpen,
-                  !self.systemSharing, !self.contextMenuOpen,
-                  !self.model.sharing, !self.deletingCapture else { return }
-            self.close()
-        }
+        guard focusLoss == nil else { return }
+        focusLoss = PreviewFocusLoss(window: window, ignoresLoss: { [weak self] in
+            guard let self else { return true }
+            return self.closed || self.quickLookOpen || self.systemSharing || self.contextMenuOpen
+                || self.model.sharing || self.deletingCapture
+        }, onLoss: { [weak self] in self?.close() })
     }
 
     private func setContextMenuOpen(_ open: Bool) {

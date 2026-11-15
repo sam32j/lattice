@@ -60,7 +60,7 @@ enum SettingsDirectory {
                         if feature == .clipboardHistory {
                             return FeatureStrings.clipboard(language).title
                         }
-                        return feature.hubTitle(s, hub: hub)
+                        return feature.hubTitle(s, hub: hub, language: language)
                     }
                 if pageItem.page == .energy, pageItem.keywordFeatures.contains(where: { $0 == .brightness }),
                    AppFeature.extraBrightness.isHardwareSupported,
@@ -113,7 +113,7 @@ enum SettingsDirectory {
             }
         let hub = FeatureStrings.hub(language)
         let featureItems = SettingsSearchSupport.featureItems(language: language) { feature in
-            feature.hubTitle(s, hub: hub)
+            feature.hubTitle(s, hub: hub, language: language)
         }
         var items = SettingsSearchSupport.combinedItems(pageItems: pageItems,
                                                         featureItems: featureItems)

@@ -129,14 +129,15 @@ extension NotchSettings {
     }
 
     var configuration: [String] {
-        [String(enabled), String(calendarEnabled), String(calendarCountdown), String(calendarTimeLeft),
+        [String(enabled), String(calendarEnabled), String(calendarCountdown), String(calendarCountdownLead),
+         String(calendarTimeLeft),
          String(notificationsEnabled), String(dismissNativeNotifications), String(gesturesEnabled),
          String(lyricsEnabled), String(lyricsOnline), String(queueEnabled), String(liveEqualizer),
          String(showPlayingMusic), String(includeOtherPlayers), idle, hiddenControls, controlOrder, size,
          String(timerEnabled), String(timerSoundEnabled), String(hideTimerCountdown),
          String(cameraEnabled), String(accessoriesEnabled), String(hapticFeedback),
          String(shelfWindow), String(dragReveal),
-         String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(hideInFullscreen), String(coversMenus),
+         String(hoverExpand), String(hideUntilHover), String(hiddenShowsActivity), String(showActivityInFullscreen), String(coversMenus),
          display, silhouette, String(hover), hidden, order, String(volume), String(inputSource),
          String(brightness), String(keyboardLight),
          String(microphone), String(battery), String(clipboard), String(clipboardWindow), String(snippetsWindow), clipboardCardSize,

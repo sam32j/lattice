@@ -100,6 +100,29 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         }
     }
 
+    /// Visible pins front to back, as the window server stacks them.
+    /// `NSApp.orderedWindows` leaves panels out, so it never sees pins.
+    static func pinsFrontToBack() -> [ScreenshotPinWindow] {
+        let pins = NSApp.windows.compactMap { $0 as? ScreenshotPinWindow }.filter(\.isVisible)
+        let order = (NSWindow.windowNumbers(options: []) ?? []).map(\.intValue)
+        let rank = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        return pins.sorted { (rank[$0.windowNumber] ?? .max) < (rank[$1.windowNumber] ?? .max) }
+    }
+
+    /// The topmost visible pin under `point`, click-through or not.
+    func isTopPin(at point: CGPoint) -> Bool {
+        let top = Self.pinsFrontToBack().first {
+            !$0.isHiddenForDrag && !$0.isClosed && $0.frame.contains(point)
+        }
+        return top.map { $0 === self } ?? true
+    }
+
+    /// The topmost pin under `point`, in on-screen order, is the only one a
+    /// pointer gesture may act on.
+    func isFrontmostPin(at point: CGPoint) -> Bool {
+        Self.hoverTarget(at: point, windows: Self.pinsFrontToBack()).map { $0 === self } ?? true
+    }
+
     static func hoverTarget(at point: CGPoint, windows: [NSWindow]) -> ScreenshotPinWindow? {
         windows.lazy.compactMap { $0 as? ScreenshotPinWindow }.first {
             !$0.isHiddenForDrag && !$0.isClosed && !$0.ignoresMouseEvents && $0.frame.contains(point)
@@ -107,6 +130,10 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     }
 
     func resetGestureTracking() { surface.resetGestureTracking() }
+
+    /// The pin a trackpad scroll began on; it keeps the gesture until lift.
+    static weak var scrollLatchedPin: ScreenshotPinWindow?
+    func forwardScroll(_ event: NSEvent) { surface.scrollWheel(with: event) }
 
     func handleGestureEvent(_ event: NSEvent, screenLocation: CGPoint = NSEvent.mouseLocation) {
         guard !isClosed, !isPositionLocked, !ignoresMouseEvents else { return }
@@ -119,8 +146,16 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
             // panels: a click must raise this pin over every other pin.
             orderFrontRegardless()
         }
-        if event.type == .gesture {
+        if event.type == .gesture, isFrontmostPin(at: NSEvent.mouseLocation) {
             surface.handleGestureEvent(event)
+        }
+        // A scroll AppKit keeps sending here after the pin shrank out from
+        // under the pointer hit-tests to nothing and would be dropped; the
+        // image takes every scroll its window receives, as the controls'
+        // panels already hand theirs over.
+        if event.type == .scrollWheel {
+            surface.scrollWheel(with: event)
+            return
         }
         super.sendEvent(event)
     }
@@ -151,7 +186,9 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
 
     func updateHover(at point: CGPoint) {
         guard !isClosed else { return }
-        let hovered = frame.contains(point)
+        // Only the pin on top at the pointer shows its controls; a pin
+        // covered there keeps them hidden.
+        let hovered = frame.contains(point) && isTopPin(at: point)
         if hovered != isHovered {
             isHovered = hovered
             updateImageOpacity()
@@ -175,8 +212,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
 
     func setZoom(_ multiplier: CGFloat) {
         guard multiplier.isFinite, multiplier > 0, !NSEvent.modifierFlags.contains(.option) else { return }
-        surface.zoom(by: multiplier / zoomMultiplier,
-                     at: CGPoint(x: frame.width / 2, y: frame.height / 2))
+        surface.zoom(toWidth: CGFloat(image.width) / captureScale * multiplier)
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {

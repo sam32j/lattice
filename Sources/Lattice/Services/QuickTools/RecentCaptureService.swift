@@ -13,6 +13,8 @@ final class RecentCaptureService: ObservableObject {
     static let shared = RecentCaptureService()
 
     @Published private(set) var entries: [RecentCaptureEntry] = []
+    /// The capture a reopened list scrolls to, such as the one just edited.
+    var revealEntryID: UUID?
     @Published private(set) var shortcutRegistrationFailed = false
 
     private let manager = FileManager.default
@@ -604,6 +606,11 @@ final class RecentCaptureService: ObservableObject {
     }
 
     func dragItemProvider(for entry: RecentCaptureEntry) -> NSItemProvider? {
+        // A recording drags as its file.
+        if entry.kind == .recording {
+            guard let url = entry.recordingURL, RecentCaptureStore.isRegularFile(url) else { return nil }
+            return NSItemProvider(contentsOf: url)
+        }
         guard let name = entry.screenshotName, Self.isSafeRelativePath(name),
               entry.kind == .screenshot, let root = capturesRoot else { return nil }
         let rendered = root.appendingPathComponent(name)
@@ -630,6 +637,136 @@ final class RecentCaptureService: ObservableObject {
             return nil
         }
         return provider
+    }
+
+    enum HistoryAction { case copy, save, pin, edit, copyText }
+
+    /// Runs a quick action on a stored capture from the list itself, without
+    /// opening a preview first.
+    func perform(_ action: HistoryAction, on entry: RecentCaptureEntry) {
+        switch entry.kind {
+        case .screenshot:
+            queue.async { [weak self] in
+                guard let self else { return }
+                let capture = self.loadScreenshot(entry)
+                DispatchQueue.main.async {
+                    guard let capture else { NSSound.beep(); return }
+                    // The editor opens over the desktop, not behind the Hub,
+                    // and the Hub comes back where it was when it closes.
+                    let restoreHub = action == .edit
+                        ? LatticeHubService.shared.hideForEditor(revealing: entry.id) : nil
+                    let mapped: ScreenshotQuickPreviewController.Action
+                    switch action {
+                    case .copy: mapped = .copy
+                    case .save: mapped = .save
+                    case .pin: mapped = .pin
+                    case .edit: mapped = .edit
+                    case .copyText:
+                        guard AppFeature.screenOCR.isAvailable else { return }
+                        ScreenTextService.shared.copyText(from: capture.image)
+                        return
+                    }
+                    ScreenshotService.shared.performHistoryAction(mapped, on: capture, onEditorClose: restoreHub)
+                }
+            }
+        case .recording:
+            guard let url = entry.recordingURL, RecentCaptureStore.isRegularFile(url) else {
+                remove(entry)
+                NSSound.beep()
+                return
+            }
+            switch action {
+            case .copy: RecordingFileActions.copy(url)
+            case .save: RecordingFileActions.save(url)
+            case .edit:
+                RecordingFileActions.edit(url, onEditorClose: LatticeHubService.shared.hideForEditor(revealing: entry.id))
+            case .pin, .copyText: break
+            }
+        }
+    }
+
+    /// Whether the rendered PNG shows the latest edit: there is no editable
+    /// document, or the PNG was written no earlier than it.
+    static func renderedMirrorIsCurrent(_ rendered: URL) -> Bool {
+        let document = RecentCaptureEditableImage.documentURL(for: rendered)
+        let manager = FileManager.default
+        guard manager.fileExists(atPath: document.path) else { return true }
+        func modified(_ url: URL) -> Date? {
+            (try? manager.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
+        }
+        guard let mirror = modified(rendered), let authority = modified(document) else { return false }
+        return mirror >= authority
+    }
+
+    /// Opens a stored capture in the system's Quick Look, over the floating
+    /// Hub, which stays open meanwhile.
+    func quickLook(_ entry: RecentCaptureEntry) {
+        let hub = LatticeHubService.shared
+        let owner = hub.isVisible ? hub.panel : nil
+        func present(_ show: (@escaping () -> Void) -> Bool) {
+            // Close an open preview first: its dismissal puts the Hub's monitors
+            // back, and they would then read the new preview as leaving.
+            if ScreenshotQuickLookController.shared.isVisible { ScreenshotQuickLookController.shared.close() }
+            // Quick Look takes focus; the Hub must not read that as leaving.
+            if owner != nil { hub.removeMonitors() }
+            let shown = show {
+                if let owner, owner.isVisible { hub.installMonitors(for: owner) }
+            }
+            if !shown {
+                if let owner, owner.isVisible { hub.installMonitors(for: owner) }
+                NSSound.beep()
+            }
+        }
+        switch entry.kind {
+        case .screenshot:
+            // The stored rendered PNG carries the edits when it is current:
+            // Quick Look then opens it at once, with nothing decoded or
+            // re-encoded first. The editable document is the authority, so a
+            // mirror older than it goes through the render path instead.
+            if let name = entry.screenshotName, Self.isSafeRelativePath(name),
+               let rendered = capturesRoot?.appendingPathComponent(name),
+               RecentCaptureStore.isRegularFile(rendered),
+               Self.renderedMirrorIsCurrent(rendered) {
+                present { done in ScreenshotQuickLookController.shared.show(url: rendered, owner: owner, onDismiss: done) }
+                return
+            }
+            queue.async { [weak self] in
+                let capture = self?.loadScreenshot(entry)?.presentationCapture
+                DispatchQueue.main.async {
+                    guard let capture else { NSSound.beep(); return }
+                    present { done in
+                        ScreenshotQuickLookController.shared.show(image: capture.image, scale: capture.scale,
+                                                                  owner: owner, onDismiss: done)
+                    }
+                }
+            }
+        case .recording:
+            guard let url = entry.recordingURL, RecentCaptureStore.isRegularFile(url) else {
+                remove(entry)
+                NSSound.beep()
+                return
+            }
+            present { done in ScreenshotQuickLookController.shared.show(url: url, owner: owner, onDismiss: done) }
+        }
+    }
+
+    /// A file to hand to the share sheet: the recording itself, or the
+    /// screenshot as it would be saved, written to a temporary file.
+    func shareFile(for entry: RecentCaptureEntry, completion: @escaping (URL?) -> Void) {
+        switch entry.kind {
+        case .recording:
+            let url = entry.recordingURL.flatMap { RecentCaptureStore.isRegularFile($0) ? $0 : nil }
+            completion(url)
+        case .screenshot:
+            let strings = FeatureStrings.screenshot(L10n.shared.language)
+            queue.async { [weak self] in
+                let capture = self?.loadScreenshot(entry)?.presentationCapture
+                let url = capture.flatMap {
+                    ScreenshotService.temporaryExportFile(image: $0.image, scale: $0.scale, strings: strings)
+                }
+                DispatchQueue.main.async { completion(url) }
+            }
+        }
     }
 
     func open(_ entry: RecentCaptureEntry, inNotch: Bool = false) {

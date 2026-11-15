@@ -25,8 +25,6 @@ extension HomebrewManager {
             isLoadingInstalled = false
             self.brewPath = nil
             installed = []
-            installedCaskRecords = []
-            installedCaskRecordsFetchedAt = nil
             searchResults = []
             selectedPackage = nil
             clearOutdatedRead(owner: owner)
@@ -63,8 +61,6 @@ extension HomebrewManager {
                     self.installed = try HomebrewParser.parseInfoCommandOutput(output).map(self.packageEnriched)
                     self.searchResults = HomebrewSearchResults.reconciled(self.searchResults,
                                                                          installed: self.installed)
-                    self.installedCaskRecords = HomebrewParser.parseInstalledCaskRecords(output)
-                    self.installedCaskRecordsFetchedAt = Date()
                     self.didOpenInstaller = false
                     if let selected = self.selectedPackage {
                         self.selectedPackage = self.packageEnriched(self.installed.first { $0.id == selected.id } ?? selected)
@@ -165,47 +161,39 @@ extension HomebrewManager {
         perform(.uninstall, package: package, owner: owner)
     }
 
-    /// Looks up whether Homebrew owns this exact app bundle. The cached
-    /// installed catalog is reused when fresh; otherwise one read-only command
-    /// answers every concurrent request for the same path.
+    /// Removal needs a fresh inventory: an app may have just been installed
+    /// outside Lattice. Concurrent requests for the same path share one read.
+    /// A failed read must never be mistaken for an unmanaged app.
     func packageManagingApplication(at url: URL,
-                                    completion: @escaping (HomebrewPackage?) -> Void) {
+                                    completion: @escaping (Result<HomebrewPackage?, HomebrewOwnershipError>) -> Void) {
         guard let cancellation = readWork.begin(owner: .uninstaller, isAvailable: { $0.isAvailable }) else {
-            completion(nil)
+            completion(.failure(.unavailable))
             return
         }
         let path = url.standardizedFileURL.path
-        if let fetchedAt = installedCaskRecordsFetchedAt,
-           Date().timeIntervalSince(fetchedAt) < 60 {
-            completion(HomebrewOwnershipSupport.packageManagingApplication(
-                atPath: path,
-                installed: installedCaskRecords
-            ))
-            return
-        }
         if ownershipLoads[path] != nil {
             ownershipLoads[path]?.append(completion)
             return
         }
         ownershipLoads[path] = [completion]
         guard let brewPath = brewPath ?? detectBrewPath() else {
-            finishOwnershipLoad(path: path, package: nil)
+            finishOwnershipLoad(path: path, result: .success(nil))
             return
         }
         self.brewPath = brewPath
         run(HomebrewCommandBuilder.installed(brewPath: brewPath), cancellation: cancellation) { [weak self] status, output in
             DispatchQueue.main.async {
                 guard let self, !cancellation.isCancelled else { return }
-                let records = status == 0 ? HomebrewParser.parseInstalledCaskRecords(output) : []
-                if status == 0 {
-                    self.installedCaskRecords = records
-                    self.installedCaskRecordsFetchedAt = Date()
+                guard status == 0,
+                      let records = try? HomebrewParser.parseInstalledCaskRecords(output) else {
+                    self.finishOwnershipLoad(path: path, result: .failure(.unavailable))
+                    return
                 }
-                let package = HomebrewOwnershipSupport.packageManagingApplication(
+                let result = HomebrewOwnershipSupport.packageManagingApplication(
                     atPath: path,
                     installed: records
                 )
-                self.finishOwnershipLoad(path: path, package: package)
+                self.finishOwnershipLoad(path: path, result: result)
             }
         }
     }
@@ -264,8 +252,8 @@ extension HomebrewManager {
     func openHomebrewInstaller() {
         guard AppFeature.homebrew.isAvailable else { return }
         errorMessage = nil
-        if openTerminal(command: HomebrewCommandBuilder.installerCommand) {
-            didOpenInstaller = true
+        openTerminal(command: HomebrewCommandBuilder.installerCommand) { [weak self] in
+            self?.didOpenInstaller = true
         }
     }
 
@@ -275,8 +263,8 @@ extension HomebrewManager {
         self.brewPath = brewPath
         errorMessage = nil
         let command = HomebrewCommandBuilder.shellConfigCommand(brewPath: brewPath)
-        if openTerminal(command: command) {
-            didOpenShellConfig = true
+        openTerminal(command: command) { [weak self] in
+            self?.didOpenShellConfig = true
         }
     }
 

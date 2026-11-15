@@ -329,12 +329,14 @@ if (( TEST )); then
         Sources/Lattice/Services/Notch/NotchSizePreferences.swift
         Sources/Lattice/Services/Notch/NotchToolRailLayout.swift
         Sources/Lattice/Services/Notch/NotchTimerSupport.swift
+        Sources/Lattice/Services/Notch/NotchAppFullscreen.swift
         Sources/Lattice/Services/Notch/NotchPomodoroDecoding.swift
         Sources/Lattice/Services/Notch/NotchTimerAlert.swift
         Sources/Lattice/Services/Notch/NotchTimerToneData.swift
         Sources/Lattice/Services/Notch/NotchTimerCache.swift
         Sources/Lattice/UI/Notch/NotchIslandAlert.swift
         Sources/Lattice/Services/Notch/NotchAccessorySupport.swift
+        Sources/Lattice/Services/Notch/NotchAccessoryConnectionMonitor.swift
         Sources/Lattice/Services/QuickTools/CameraPreviewSupport.swift
         Sources/Lattice/Core/NotchMusicExtrasStrings.swift
         Sources/Lattice/Core/NotchClipboardSizeStrings.swift
@@ -355,6 +357,7 @@ if (( TEST )); then
         Sources/Lattice/Core/NotchGestureStrings.swift
         Sources/Lattice/Core/NotchAgentStrings.swift
         Sources/Lattice/Core/CodexAccountStrings.swift
+        Sources/Lattice/Core/ClaudeAccountStrings.swift
         Sources/Lattice/Services/Notch/NotchAgentSupport.swift
         Sources/Lattice/Core/NotchLockScreenStrings.swift
         Sources/Lattice/Services/Notch/NotchLockScreenSupport.swift
@@ -384,6 +387,7 @@ if (( TEST )); then
         Sources/Lattice/Services/AgentUsage/AgentClaudeAppUsage.swift
         Sources/Lattice/Services/AgentUsage/AgentCLIConversation.swift
         Sources/Lattice/Services/AgentUsage/AgentClaudeServer.swift
+        Sources/Lattice/Services/AgentUsage/ClaudeAccountProfile.swift
         Sources/Lattice/Services/AgentUsage/AgentCodexServer.swift
         Sources/Lattice/Services/AgentUsage/CodexAccountLimits.swift
         Sources/Lattice/Services/AgentUsage/CodexProfileLimitsService.swift
@@ -432,6 +436,7 @@ if (( TEST )); then
         Sources/Lattice/Core/SettingsOwnershipStrings.swift
         Sources/Lattice/Core/FeatureEnergyProfile.swift
         Sources/Lattice/Core/FeatureHubStrings.swift
+        Sources/Lattice/Core/MixerScreenSharingStrings.swift
         Sources/Lattice/Core/ShortcutSettingsStrings.swift
         Sources/Lattice/Core/SettingsBackupSupport.swift
         Sources/Lattice/Core/SettingsBackupSupport+MouseExceptions.swift
@@ -450,6 +455,7 @@ if (( TEST )); then
         Sources/Lattice/Core/CameraPreviewStrings.swift
         Sources/Lattice/Core/WallpaperStrings.swift
         Sources/Lattice/Services/Wallpaper/WallpaperSupport.swift
+        Sources/Lattice/UI/MenuPanel/WallpaperThumbnailView.swift
         Sources/Lattice/Core/ScratchpadStrings.swift
         Sources/Lattice/Core/CommandBarStrings.swift
         Sources/Lattice/Core/FeedbackStrings.swift
@@ -538,12 +544,14 @@ if (( TEST )); then
         Sources/Lattice/Core/Localizations/Strings+*.swift
         Sources/Lattice/Core/FeatureStrings.swift
         Sources/Lattice/Core/KillProcessStrings.swift
+        Sources/Lattice/Core/KillProcessAppStrings.swift
         Sources/Lattice/Core/PortManagerStrings.swift
         Sources/Lattice/Core/ReleaseNotes.swift
         Sources/Lattice/Core/ReleaseDigest.swift
         Sources/Lattice/Core/ReleaseChangeAliases.swift
         Sources/Lattice/Core/WhatsNewStrings.swift
         Sources/Lattice/Core/URLCleaning.swift
+        Sources/Lattice/Services/URLCleanerLinkMetadata.swift
         Sources/Lattice/Services/GeneralPasteboardAccess.swift
         Sources/Lattice/Services/Clipboard/ClipboardHistoryWrite.swift
         Sources/Lattice/Services/Audio/AirPlayRouteManager.swift
@@ -649,6 +657,7 @@ if (( TEST )); then
         Sources/Lattice/Services/SpotlightNamesSupport.swift
         Sources/Lattice/Services/QuickTools/MicMuteSupport.swift
         Sources/Lattice/Services/QuickTools/QuickTogglesSupport.swift
+        Sources/Lattice/Services/QuickTools/QuitAppsSupport.swift
         Sources/Lattice/Services/QuickTools/ScreenshotCapturePolicy.swift
         Sources/Lattice/Services/QuickTools/CapturePresentationPolicy.swift
         Sources/Lattice/Services/QuickTools/ScreenshotDialogGeometry.swift
@@ -751,6 +760,8 @@ if (( TEST )); then
         Sources/Lattice/Services/Metrics/TemperatureSensorSelector.swift
         Sources/Lattice/Services/Metrics/SustainedAlertGate.swift
         Sources/Lattice/Services/WindowLayout/WindowLayoutSupport.swift
+        Sources/Lattice/Services/WindowLayout/WindowStageManagerSupport.swift
+        Sources/Lattice/Core/WindowStageManagerStrings.swift
         Sources/Lattice/Services/WindowLayout/WindowGestureApplySession.swift
         Sources/Lattice/Services/WindowLayout/WindowGestureSupport.swift
         Sources/Lattice/Core/WindowDirectionalStrings.swift

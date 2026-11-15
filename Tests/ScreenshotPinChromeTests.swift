@@ -68,6 +68,25 @@ enum ScreenshotPinChromeTests {
         suite.expect(pin.isClosed && (pin.childWindows ?? []).isEmpty,
                      "the visible close button detaches and hides every child surface")
 
+        // A pin too small for its controls keeps only a small grip.
+        let small = ScreenshotPinWindow(image: image, scale: 2)
+        small.setFrameOrigin(CGPoint(x: -20000, y: -20000))
+        small.showPin(orderFront: false)
+        defer { small.closePin() }
+        small.setFrame(CGRect(x: -20000, y: -20000, width: 150, height: 95), display: false)
+        small.updateHover(at: CGPoint(x: small.frame.midX, y: small.frame.midY))
+        let smallControls = (small.childWindows ?? []).filter { !$0.ignoresMouseEvents }
+        suite.expect(ScreenshotPinChrome.isCompact(small.frame.size) && smallControls.count == 1
+                     && smallControls.first?.frame.size == ScreenshotPinDragView.compactSize,
+                     "a compact pin shows only a scaled-down drag grip on hover")
+        small.setFrame(CGRect(x: -20000, y: -20000, width: 50, height: 40), display: false)
+        suite.expect(!ScreenshotPinChrome.fitsGrip(small.frame.size)
+                     && (small.childWindows ?? []).allSatisfy(\.ignoresMouseEvents),
+                     "a pin too narrow for the grip hides it too")
+        small.setFrame(CGRect(x: -20000, y: -20000, width: 400, height: 260), display: false)
+        suite.expect((small.childWindows ?? []).filter { !$0.ignoresMouseEvents }.count == 3,
+                     "growing the pin back brings its controls back")
+
         // Test temporary drag hide
         let pin2 = ScreenshotPinWindow(image: image, scale: 2)
         pin2.setFrameOrigin(CGPoint(x: -20000, y: -20000))

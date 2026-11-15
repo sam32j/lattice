@@ -93,6 +93,15 @@ enum ScreenshotPinWindowTests {
         suite.expectClose(pin.frame.midX, center.x, "foreign-window pinch coordinates do not move the horizontal anchor", tol: 1)
         suite.expectClose(pin.frame.midY, center.y, "foreign-window pinch coordinates do not move the vertical anchor", tol: 1)
 
+        let outside = ScreenshotPinGestureTests.Gesture()
+        outside.nativeType = .scrollWheel
+        outside.scroll = 1
+        outside.point = CGPoint(x: 9000, y: 9000)
+        let beforeOutside = pin.frame.width
+        pin.sendEvent(outside)
+        suite.expect(pin.frame.width > beforeOutside,
+                     "a scroll the pin window receives zooms it even with the pointer outside the image")
+
         let other = ScreenshotPinWindow(image: image, scale: 2)
         defer { other.closePin() }
         let oldFrame = other.frame

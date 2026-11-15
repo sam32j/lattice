@@ -1,30 +1,37 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
 
+import AppKit
 import Combine
 import Darwin
 import Foundation
 
 extension HomebrewManager {
 
-    @discardableResult
-    func openTerminal(command: String, owner: AppFeature = .homebrew) -> Bool {
-        guard owner.isAvailable else { return false }
-        let source = """
-        tell application "Terminal"
-            activate
-            do script \(appleScriptString(command))
-        end tell
-        """
-        // In-process Apple Events (see AppleScriptRunner): the Terminal Automation
-        // consent is attributed to this app and re-requested if it was lost,
-        // instead of a fragile osascript subprocess. Same permission as before.
-        let result = AppleScriptRunner.run(source)
-        if !result.ok {
-            errorMessage = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
-            return false
+    /// Opens the command in the person's own terminal (see
+    /// `HomebrewTerminalScript`), with no Automation consent involved;
+    /// `opened` runs on the main thread once macOS has handed it over.
+    func openTerminal(command: String, owner: AppFeature = .homebrew, opened: (() -> Void)? = nil) {
+        guard owner.isAvailable else { return }
+        let script: URL
+        do {
+            script = try HomebrewTerminalScript.write(command: command)
+        } catch {
+            errorMessage = error.localizedDescription
+            return
         }
-        return true
+        NSWorkspace.shared.open(script, configuration: NSWorkspace.OpenConfiguration()) { [weak self] _, error in
+            DispatchQueue.main.async {
+                guard let error else {
+                    opened?()
+                    return
+                }
+                // Nothing ran the script, so nothing deleted it; a file that is
+                // already gone needs no report.
+                try? FileManager.default.removeItem(at: script)
+                self?.errorMessage = error.localizedDescription
+            }
+        }
     }
 
     func perform(_ action: HomebrewOperation.Action,
@@ -111,9 +118,9 @@ extension HomebrewManager {
         }
     }
 
-    func finishOwnershipLoad(path: String, package: HomebrewPackage?) {
+    func finishOwnershipLoad(path: String, result: Result<HomebrewPackage?, HomebrewOwnershipError>) {
         let completions = ownershipLoads.removeValue(forKey: path) ?? []
-        completions.forEach { $0(package) }
+        completions.forEach { $0(result) }
     }
 
     func standardCommand(for action: HomebrewOperation.Action,

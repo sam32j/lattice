@@ -13,10 +13,12 @@ enum ScreenshotPinHoverFocusTests {
     class PinState: NSWindow {
         var isHiddenForDrag = false, isClosed = false, ignoresMouseEvents = false
         func updateHover(at point: CGPoint) {}
+        /// The window server's front-to-back stack of pins.
+        class func pinsFrontToBack() -> [ScreenshotPinWindow] { ScreenshotPinHoverFocusTests.stack }
     }
-    final class Application { var orderedWindows: [NSWindow] = [] }
-    static let NSApp = Application()
+    static var stack: [ScreenshotPinWindow] = []
     class State {
+        static var grantsHoverFocus = false
         var pins: [ScreenshotPinWindow] = []
         weak var hoverFocusPin: ScreenshotPinWindow?
     }
@@ -24,8 +26,8 @@ enum ScreenshotPinHoverFocusTests {
         let front = ScreenshotPinWindow(), back = ScreenshotPinWindow()
         let controller = Controller()
         controller.pins = [front, back]
-        NSApp.orderedWindows = [front, back]
-        defer { NSApp.orderedWindows = [] }
+        stack = [front, back]
+        defer { stack = [] }
         let point = CGPoint(x: 50, y: 50)
         controller.updateHover(at: point)
         suite.expect(front.keyRequests == 1 && back.keyRequests == 0,

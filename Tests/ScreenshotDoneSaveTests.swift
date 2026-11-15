@@ -49,6 +49,13 @@ enum ScreenshotDoneSaveTests {
         }
     }
     enum NSSound { static func beep() {} }
+    enum ScreenshotService {
+        static let shared = Bridge()
+        final class Bridge {
+            var savedChanges = 0
+            func editorDidSaveChanges(_ editor: State) { savedChanges += 1 }
+        }
+    }
     enum RecentCaptureService {
         static let shared = Store()
         final class Store {
@@ -89,6 +96,12 @@ enum ScreenshotDoneSaveTests {
         suite.expect(failed.window?.closed == true && failed.model.markedClean
                      && failed.didPersistImageChanges,
                      "a successful retry tracks a persisted edit for the returned preview")
+        let kept = Controller()
+        kept.saveChanges()
+        RecentCaptureService.shared.completion?(true)
+        suite.expect(kept.window?.closed == false && kept.model.markedClean
+                     && ScreenshotService.shared.savedChanges == 1,
+                     "Save Changes keeps the editor open and updates the preview it returns to")
         let changed = Controller()
         changed.done()
         changed.model.annotations.append(.init(tool: .text, text: "A later edit"))

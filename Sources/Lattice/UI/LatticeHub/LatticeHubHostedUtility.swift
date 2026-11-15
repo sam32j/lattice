@@ -26,6 +26,10 @@ struct LatticeHubHostedUtility: View {
             return 172
         case .deviceControls:
             return DeviceControlsNavigationState.shared.contentHeight
+        case .recentCaptures:
+            // Same height as All Tools, so opening it never resizes the
+            // panel, but always room for three 150pt previews.
+            return max(RecentCapturesView.floatingMinimumHeight, launcher.floatingRootPageHeight)
         default:
             return 470
         }
@@ -40,6 +44,11 @@ struct LatticeHubHostedUtility: View {
                 .frame(height: viewportHeight, alignment: .top)
         } else if item == .deviceControls {
             DeviceControlsHubView(onClose: onClose)
+                .frame(height: viewportHeight)
+        } else if item == .killProcess {
+            // Its list scrolls itself; inside another scroll view it would
+            // collapse to no height.
+            KillProcessView(inlineOptions: true, compact: true)
                 .frame(height: viewportHeight)
         } else if item == .system {
             LatticeHubSystemUtility(notchSize: notchSize)
@@ -63,8 +72,6 @@ struct LatticeHubHostedUtility: View {
                         PanelAppUpdatesView(showHeader: false, onClose: onClose)
                     case .portManager:
                         PanelPortManagerView(showHeader: false, onClose: onClose)
-                    case .killProcess:
-                        KillProcessView(inlineOptions: true)
                     case .wallpaper:
                         WallpaperSection(collapsible: false, showHeader: false, onClose: onClose)
                     case .videoDownloader:

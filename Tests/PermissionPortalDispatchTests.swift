@@ -26,7 +26,7 @@ enum PermissionPortalDispatchTests {
     }
     final class Permissions {
         static let shared = Permissions()
-        enum AutomationTarget: String { case finder, terminal, systemEvents }
+        enum AutomationTarget: String { case finder, systemEvents }
         func requestAccessibility(offerSettingsRecovery: Bool = true) { events.append("native:accessibility") }
         func requestScreenRecording(offerSettingsRecovery: Bool = true) { events.append("native:screenRecording") }
         func openAccessibilitySettings() { events.append("accessibility-settings") }
@@ -112,7 +112,6 @@ enum PermissionPortalDispatchTests {
             (.accessibility, "native:accessibility"), (.screenRecording, "native:screenRecording"),
             (.microphone, "native:microphone"), (.audioCapture, "audio"),
             (.notifications, "notifications"), (.automationFinder, "automation:finder"),
-            (.automationTerminal, "automation:terminal"),
             (.automationSystemEvents, "automation:systemEvents") ] {
             events = []; replies = []
             let row = Row(permission)

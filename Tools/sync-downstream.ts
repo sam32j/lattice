@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Samuel Ji
-// Run with bun. All rebasing happens in a disposable clone, never the caller's checkout.
+// Run with bun. All merging happens in a disposable clone, never the caller's checkout.
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync, appendFileSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -56,36 +56,22 @@ try {
       throw new Error("Stable release does not match recorded provenance");
     ready = true;
   } else if (ancestor(metadata.baseCommit, release)) {
+    // Merge, never rebase: personal history stays published as it is, and each
+    // upstream change is resolved once instead of once per personal commit.
+    // Directory renames carry new upstream files into Lattice's own source tree.
     try {
-      git(cwd, "rebase", "--rebase-merges", "--reapply-cherry-picks", "--empty=keep",
-        "--onto", release, metadata.baseCommit);
+      git(cwd, "-c", "merge.directoryRenames=true", "-c", "merge.renameLimit=0",
+        "merge", "--no-ff", "--no-edit", "-X", "find-renames=30%",
+        "-m", `chore(downstream): merge upstream ${tag}`, `refs/tags/upstream/${tag}`);
     } catch {
-      let resolved = false;
-      if (latticeReadme !== undefined) {
-        while (true) {
-          const unmerged = git(cwd, "diff", "--name-only", "--diff-filter=U").split("\n").filter(Boolean);
-          if (unmerged.length === 0) {
-            resolved = true;
-            break;
-          }
-          if (unmerged.length === 1 && unmerged[0] === "README.md") {
-            writeFileSync(join(cwd, "README.md"), latticeReadme);
-            git(cwd, "add", "README.md");
-            try {
-              git(cwd, "rebase", "--continue");
-              resolved = true;
-              break;
-            } catch {
-              continue;
-            }
-          } else {
-            break;
-          }
-        }
-      }
-      if (!resolved) {
-        const conflicts = git(cwd, "diff", "--name-only", "--diff-filter=U");
-        throw new Error(`Rebase stopped; remote branches untouched. Resolve conflicts manually:\n${conflicts}`);
+      const unmerged = git(cwd, "diff", "--name-only", "--diff-filter=U").split("\n").filter(Boolean);
+      if (latticeReadme !== undefined && unmerged.length === 1 && unmerged[0] === "README.md") {
+        writeFileSync(join(cwd, "README.md"), latticeReadme);
+        git(cwd, "add", "README.md");
+        git(cwd, "commit", "--no-edit");
+      } else {
+        try { git(cwd, "merge", "--abort"); } catch {}
+        throw new Error(`Merge stopped; remote branches untouched. Resolve conflicts manually:\n${unmerged.join("\n")}`);
       }
     }
     metadata.baseCommit = release; metadata.upstreamCommit = release;
@@ -98,13 +84,11 @@ try {
   } else if (!ancestor(release, metadata.baseCommit)) {
     throw new Error("Stable release and recorded upstream base diverged; manual review required");
   }
+  // A merge only adds commits; refuse anything that would rewrite personal history.
+  if (!ancestor(oldPersonal, nextPersonal)) throw new Error("Sync would rewrite personal history; refusing to push");
   const refs = [`${nextMain}:refs/heads/main`, `${nextPersonal}:refs/heads/${personal}`];
   const leases = [`--force-with-lease=refs/heads/main:${oldMain}`,
     `--force-with-lease=refs/heads/${personal}:${oldPersonal}`];
-  if (nextPersonal !== oldPersonal) {
-    const backup = `refs/heads/downstream-backups/${oldPersonal}`;
-    refs.push(`${oldPersonal}:${backup}`); leases.push(`--force-with-lease=${backup}:`);
-  }
   git(cwd, "push", "--atomic", ...leases, "origin", ...refs);
   const output = { commit: nextPersonal, ready, tag: `${tag}-d.${metadata.revision}`,
     changed: oldPersonal !== nextPersonal, held: ready ? "" : "Stable release predates preserved upstream snapshot" };
