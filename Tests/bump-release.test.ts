@@ -98,3 +98,27 @@ test("bump-release parses commit body bullet points as nested sub-bullets", () =
   expect(changelog).toContain("  - Instant dual text and QR extraction");
   expect(changelog).not.toContain("Co-authored-by");
 });
+
+test("bump-release leaves commits merged in from upstream out of the changelog", () => {
+  const f = fixture();
+  const start = git(f.root, "rev-parse", "HEAD");
+  git(f.root, "checkout", "-q", "-b", "upstream", start);
+  writeFileSync(join(f.root, "upstream.txt"), "upstream");
+  git(f.root, "add", ".");
+  git(f.root, "commit", "-m", "feat(pinch-zoom): add an upstream-only feature");
+  const upstream = git(f.root, "rev-parse", "HEAD");
+  git(f.root, "checkout", "-q", "lattice/main");
+  git(f.root, "merge", "--no-ff", "-m", "chore(downstream): merge upstream", "upstream");
+  const meta = JSON.parse(readFileSync(join(f.root, "Downstream/release.json"), "utf8"));
+  meta.upstreamCommit = upstream;
+  writeFileSync(join(f.root, "Downstream/release.json"), JSON.stringify(meta, null, 2) + "\n");
+  writeFileSync(join(f.root, "own.txt"), "lattice");
+  git(f.root, "add", ".");
+  git(f.root, "commit", "-m", "fix(hub): keep a Lattice fix");
+
+  const result = f.run();
+  expect(result.exitCode).toBe(0);
+  const changelog = readFileSync(join(f.root, "Downstream/CHANGELOG.md"), "utf8");
+  expect(changelog).toContain("- **Hub**: Keep a Lattice fix");
+  expect(changelog).not.toContain("upstream-only feature");
+});
