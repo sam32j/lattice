@@ -131,7 +131,7 @@ final class RecorderQuickPreviewController {
         previewPanel.setFrame(frame, display: false)
         self.panel = previewPanel
         installKeyMonitor(for: previewPanel)
-        previewPanel.orderFrontRegardless()
+        FloatingPreviewTransition.present(previewPanel)
         if UserDefaults.standard.bool(forKey: DefaultsKey.screenshotPreviewTakesFocus) {
             previewPanel.makeKey()
         }
@@ -156,7 +156,7 @@ final class RecorderQuickPreviewController {
             NotchService.shared.removeCapture(id: presentationID)
             shownInNotch = false
         }
-        panel?.orderOut(nil)
+        if let panel { FloatingPreviewTransition.dismiss(panel) }
         panel = nil
         url = nil
         model.close()

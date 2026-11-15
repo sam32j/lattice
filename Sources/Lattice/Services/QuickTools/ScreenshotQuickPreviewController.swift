@@ -208,7 +208,7 @@ final class ScreenshotQuickPreviewController {
         panel.setFrame(frame, display: false)
         self.panel = panel
         installKeyMonitor(for: panel)
-        panel.orderFrontRegardless()
+        FloatingPreviewTransition.present(panel)
         if takesFocus {
             // Nonactivating panels can accept shortcuts without bringing
             // Lattice's other windows (especially Settings) to the front.
@@ -302,7 +302,7 @@ final class ScreenshotQuickPreviewController {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
         }
-        panel?.orderOut(nil)
+        if let panel { FloatingPreviewTransition.dismiss(panel) }
         panel = nil
         if shownInNotch {
             shownInNotch = false
