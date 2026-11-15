@@ -100,6 +100,13 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         }
     }
 
+    /// The topmost pin under `point`, in on-screen order, is the only one a
+    /// pointer gesture may act on.
+    func isFrontmostPin(at point: CGPoint) -> Bool {
+        let pins = NSApp.orderedWindows.filter { $0 is ScreenshotPinWindow && $0.isVisible }
+        return Self.hoverTarget(at: point, windows: pins).map { $0 === self } ?? true
+    }
+
     static func hoverTarget(at point: CGPoint, windows: [NSWindow]) -> ScreenshotPinWindow? {
         windows.lazy.compactMap { $0 as? ScreenshotPinWindow }.first {
             !$0.isHiddenForDrag && !$0.isClosed && !$0.ignoresMouseEvents && $0.frame.contains(point)
@@ -119,7 +126,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
             // panels: a click must raise this pin over every other pin.
             orderFrontRegardless()
         }
-        if event.type == .gesture {
+        if event.type == .gesture, isFrontmostPin(at: NSEvent.mouseLocation) {
             surface.handleGestureEvent(event)
         }
         super.sendEvent(event)

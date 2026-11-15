@@ -13,6 +13,7 @@ final class ScreenshotPinContentView: ScreenshotPinGestureView {
         set { pin?.setOpacity(newValue) }
     }
     override func didZoom() { pin?.reportZoom() }
+    override var ownsPointer: Bool { pin?.isFrontmostPin(at: NSEvent.mouseLocation) ?? true }
 
     init(image: CGImage, pin: ScreenshotPinWindow) {
         self.pin = pin

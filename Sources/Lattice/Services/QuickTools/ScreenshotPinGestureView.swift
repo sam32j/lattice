@@ -13,9 +13,13 @@ class ScreenshotPinGestureView: NSView {
         set { window?.alphaValue = newValue }
     }
     func didZoom() {}
+    /// Whether this view's pin is the one under the pointer. Overlapping pins
+    /// share screen space, so a wheel, pinch or touch AppKit hands to a pin
+    /// lower in the stack must not zoom it too.
+    var ownsPointer: Bool { true }
 
     override func scrollWheel(with event: NSEvent) {
-        guard let window, !window.ignoresMouseEvents, event.momentumPhase.isEmpty else { return }
+        guard let window, !window.ignoresMouseEvents, event.momentumPhase.isEmpty, ownsPointer else { return }
         var delta = event.scrollingDeltaY
         if !event.hasPreciseScrollingDeltas, let native = event.cgEvent {
             delta = ScreenshotSupport.captureLoupeWheelDelta(
@@ -70,12 +74,13 @@ class ScreenshotPinGestureView: NSView {
         }
     }
 
-    override func touchesBegan(with event: NSEvent) { handleGestureEvent(event) }
-    override func touchesMoved(with event: NSEvent) { handleGestureEvent(event) }
+    override func touchesBegan(with event: NSEvent) { if ownsPointer { handleGestureEvent(event) } }
+    override func touchesMoved(with event: NSEvent) { if ownsPointer { handleGestureEvent(event) } }
     override func touchesEnded(with event: NSEvent) { pinchTracker.reset(); pinchSource.finish(.touches) }
     override func touchesCancelled(with event: NSEvent) { pinchTracker.reset(); pinchSource.finish(.touches) }
 
     override func magnify(with event: NSEvent) {
+        guard ownsPointer else { return }
         applyMagnify(event, at: event.locationInWindow)
     }
 
