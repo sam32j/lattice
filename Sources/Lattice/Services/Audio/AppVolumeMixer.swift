@@ -1733,14 +1733,19 @@ final class AppVolumeMixer: ObservableObject {
             guard let app = ResponsibleProcess.regularAppOwner(of: pid) else { continue }
             let owner = app.processIdentifier
             let name = ResponsibleProcess.displayName(pid: owner, fallback: app.localizedName ?? "pid \(owner)")
+            // One resolved identity decides both the call-app protection and
+            // the row, so an app whose bundle id only the HAL knows cannot be
+            // tapped without its opt-in.
+            let bundleIdentifier = bundleHints[owner] ?? app.bundleIdentifier
+                ?? (pid == owner ? Self.processBundleIdentifier(of: object) : nil)
             // Bypassed apps still get a row — hiding them read
             // as a bug (issue #177) — but they are never tapped: volume
             // pinned at unity, no saved routing, so appNeedsEngine is always
             // false for them.
-            if MixerRoutingSupport.bypassesProcessTap(bundleIdentifier: app.bundleIdentifier,
+            if MixerRoutingSupport.bypassesProcessTap(bundleIdentifier: bundleIdentifier,
                                                       name: name,
                                                       allowCallAppVolume: request.callAppVolumeEnabled.contains(
-                                                        app.bundleIdentifier?.lowercased() ?? "")) {
+                                                        bundleIdentifier?.lowercased() ?? "")) {
                 bypassed.insert(owner)
             }
 
@@ -1754,8 +1759,7 @@ final class AppVolumeMixer: ObservableObject {
                 // which is the app itself whenever it plays its own sound.
                 // For a helper that plays on an app's behalf the owner found
                 // above is the app, and its bundle id is the one that counts.
-                bundleHints[owner] = app.bundleIdentifier
-                    ?? (pid == owner ? Self.processBundleIdentifier(of: object) : nil)
+                bundleHints[owner] = bundleIdentifier
             }
         }
 
@@ -3542,7 +3546,9 @@ private final class TapGainEngine: GainEngine {
         guard AppVolumeMixer.read(tap, kAudioTapPropertyFormat, &asbd),
               let format = MixerTapFormat(asbd),
               source == nil || format == source?.format else {
-            AudioHardwareDestroyProcessTap(tap)
+            // Destruction can block on a tap the HAL is reconfiguring; off the
+            // build queue it cannot hold up later engine builds.
+            Self.teardownQueue.addOperation { AudioHardwareDestroyProcessTap(tap) }
             return nil
         }
         return Capture(id: tap, description: description, format: format, source: source)
