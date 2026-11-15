@@ -59,6 +59,12 @@ enum NotchSliderEditingTests {
                "only a level slider on screen, not dragged and without reduced motion eases; a page that opens starts at its level")
 
         let range = 0.0...1.0
+        suite.expect(SliderScroll.wheelValue(0.05, from: 0, step: 1, precise: false, range: 0...1) == 1
+                     && SliderScroll.wheelValue(0.95, from: 1, step: 1, precise: false, range: 0...1) == 0,
+                     "a wheel notch on an on/off level moves a whole step instead of rounding back")
+        suite.expect(SliderScroll.wheelValue(0.05, from: 0, step: 1, precise: true, range: 0...1) == 0.05
+                     && SliderScroll.wheelValue(0.55, from: 0.5, step: 0.01, precise: false, range: 0...1) == 0.55,
+                     "trackpad gestures and fine steps keep their proposed level")
         var wheel = SliderScroll()
         suite.expect(wheel.handle(.none, dx: 0, dy: 1, precise: false, inverted: false,
                                   timestamp: 0, current: 0.5, range: range) == .move(0.55)

@@ -75,6 +75,14 @@ struct SliderScroll {
         return precise ? amount * pointStep : (amount > 0 ? wheelStep : -wheelStep)
     }
 
+    /// A wheel notch on a control with coarse steps moves a whole step.
+    static func wheelValue(_ proposed: Double, from current: Double, step: Double,
+                           precise: Bool, range: ClosedRange<Double>) -> Double {
+        let delta = proposed - current
+        guard !precise, step > 0, delta != 0, abs(delta) < step else { return proposed }
+        return min(range.upperBound, max(range.lowerBound, current + (delta > 0 ? step : -step)))
+    }
+
     mutating func handle(_ phase: Phase, dx: Double, dy: Double, precise: Bool, inverted: Bool,
                          timestamp: Double, current: Double, range: ClosedRange<Double>) -> Outcome {
         switch phase {

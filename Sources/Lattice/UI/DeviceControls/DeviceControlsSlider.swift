@@ -50,7 +50,7 @@ struct DeviceControlsSlider: View {
         }
         .frame(height: 22)
         // The wheel and a two-finger swipe adjust the level, as on the island's sliders.
-        .overlay(SliderScrollArea(value: steppedValue, range: range))
+        .overlay(SliderScrollArea(value: steppedValue, range: range, step: step))
         .overlay {
             if showTooltip {
                 GeometryReader { geometry in
