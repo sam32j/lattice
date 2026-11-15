@@ -149,6 +149,7 @@ class ScreenshotPinGestureView: NSView {
             zoomCenter = CGPoint(x: frame.midX, y: frame.midY)
             logicalZoomWidth = frame.width
             requestedZoomWidth = frame.width
+            presentedZoomWidth = frame.width
             lastZoomFrame = frame
         }
         return requestedZoomWidth > 0 ? requestedZoomWidth : frame.width
@@ -165,8 +166,10 @@ class ScreenshotPinGestureView: NSView {
         requestedZoomWidth = relative
             ? min(max(requested, lower / (1 + Self.limitSlack)), upper * (1 + Self.limitSlack))
             : target
-        // Held at a limit, nothing changes until the request comes back inside.
-        guard target != logicalZoomWidth || zoomGlideTimer != nil || frame.width != target else { return }
+        // Held at a limit, or asked for the size it already has: nothing to
+        // do. Restarting the glide from the whole-pixel frame here would
+        // nudge the pin a pixel off its exact size and back on every packet.
+        guard target != logicalZoomWidth || zoomGlideTimer != nil else { return }
         logicalZoomWidth = target
         guard glidesZoom else {
             applyZoom(width: target, in: window)
@@ -176,7 +179,8 @@ class ScreenshotPinGestureView: NSView {
         // frame, so a wheel notch or a burst of pinch packets reads as one
         // continuous resize rather than a series of jumps.
         if zoomGlideTimer == nil {
-            presentedZoomWidth = frame.width
+            // Continue from the exact width last laid out, not its rounded frame.
+            if presentedZoomWidth <= 0 || lastZoomFrame != frame { presentedZoomWidth = frame.width }
             lastZoomGlideFrame = ProcessInfo.processInfo.systemUptime
             let timer = Timer(timeInterval: 1.0 / 120.0, repeats: true) { [weak self] _ in self?.advanceZoomGlide() }
             RunLoop.main.add(timer, forMode: .common)
