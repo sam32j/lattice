@@ -495,6 +495,7 @@ if (( TEST )); then
         Sources/Lattice/Services/QuickTools/ScratchpadSupport.swift
         Sources/Lattice/Services/QuickTools/ScratchpadStore.swift
         Sources/Lattice/Services/KillProcess/KillProcessSupport.swift
+        Sources/Lattice/Services/KillProcess/KillProcessCatalog.swift
         Sources/Lattice/Services/Recorder/RecorderSupport.swift
         Sources/Lattice/Services/Recorder/RecorderSampleTiming.swift
         Sources/Lattice/Services/Recorder/RecorderWriter.swift
@@ -544,7 +545,7 @@ if (( TEST )); then
         Sources/Lattice/Core/Localizations/Strings+*.swift
         Sources/Lattice/Core/FeatureStrings.swift
         Sources/Lattice/Core/KillProcessStrings.swift
-        Sources/Lattice/Core/KillProcessAppStrings.swift
+        Sources/Lattice/Core/KillProcessListStrings.swift
         Sources/Lattice/Core/ReleaseNotes.swift
         Sources/Lattice/Core/ReleaseDigest.swift
         Sources/Lattice/Core/ReleaseChangeAliases.swift
