@@ -1,557 +1,303 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
+// Copyright (C) 2026 Samuel Ji
 
 import AppKit
 import SwiftUI
 
-/// Kill Process, embedded as a Settings page: a live, searchable list of
-/// every running process with kill, force-kill, kill-all, kill-tree, and
-/// restart actions. Its Apps view narrows the list to regular apps, quits
-/// them gracefully, and quits all or all but the front app, sparing the
-/// person's Keep Running list.
+/// Where the Kill Process list is shown. Only the header and frame differ.
+enum KillProcessSurface {
+    case settings, hud, island
+
+    var scopeKey: String {
+        switch self {
+        case .settings: return DefaultsKey.killProcessScopeSettings
+        case .hud: return DefaultsKey.killProcessScopeHUD
+        case .island: return DefaultsKey.killProcessScopeIsland
+        }
+    }
+
+    var isCompact: Bool { self != .settings }
+}
+
+/// Kill Process: running apps, background apps and macOS processes in
+/// sections, with helpers nested under the app that owns them. One list,
+/// hosted by the Settings page, the floating HUD and the expanded island.
 struct KillProcessView: View {
-    var inlineOptions = false
-    /// The floating Hub and the Dynamic Island are narrow: the PID column
-    /// moves into the row's menu, columns and buttons tighten, and the list
-    /// sits on the surface's own glass.
-    var compact = false
+    let surface: KillProcessSurface
+
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var service = KillProcessService.shared
+    @ObservedObject private var activity = KillProcessActivity.shared
     @Environment(\.controlActiveState) private var controlActiveState
-    @AppStorage(DefaultsKey.killProcessOpensInApps) private var opensInApps = true
-    @State private var showsOptions = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage private var scopeRaw: String
+    @State private var query = ""
+    /// Open rows, per section, so a row's ports and its helpers open apart.
+    @State private var expanded: Set<String> = []
+    @State private var confirmation: KillProcessConfirmation?
+    @State private var frontPID: pid_t?
     @State private var refreshTimer: Timer?
-    @State private var pendingAction: PendingAction?
-    @State private var showsApps = true
-    @State private var choseScope = false
-    @State private var keepRunning: Set<String> = []
-    @State private var frontPID: Int32?
+    @State private var hoveredPID: pid_t?
+    /// The row order last shown, held while the pointer rests on a row so a
+    /// live refresh never moves the row under it.
+    @State private var displayOrder: [pid_t] = []
+    @FocusState private var searchFocused: Bool
 
-    private var strings: KillProcessFeatureStrings { FeatureStrings.killProcess(l10n.language) }
-    private var appStrings: KillProcessAppStrings { FeatureStrings.killProcessApps(l10n.language) }
-
-    private enum PendingAction {
-        case kill(KillProcessEntry, force: Bool)
-        case killAll(name: String, force: Bool)
-        case killTree(KillProcessEntry, force: Bool)
-        case quit(KillProcessEntry)
-        case quitBatch(pids: Set<Int32>, names: [String])
+    /// `expandedPIDs` opens those rows' helpers, and `expandedPortPIDs` their
+    /// ports, from the start.
+    init(surface: KillProcessSurface, expandedPIDs: Set<pid_t> = [], expandedPortPIDs: Set<pid_t> = []) {
+        self.surface = surface
+        _scopeRaw = AppStorage(wrappedValue: KillProcessScope.everything.rawValue, surface.scopeKey)
+        _expanded = State(initialValue: Set(expandedPIDs.map { Self.expansionKey(.apps, $0) }
+            + expandedPortPIDs.map { Self.expansionKey(.ports, $0) }))
     }
 
-    // Column and button widths, shared by the header and every row so each
-    // label sits over its column.
-    private var spacing: CGFloat { compact ? 8 : 10 }
-    private var iconSize: CGFloat { compact ? 20 : 22 }
-    private var cpuWidth: CGFloat { compact ? 44 : 52 }
-    private var memoryWidth: CGFloat { compact ? 60 : 72 }
-    private var actionWidth: CGFloat { compact ? 40 : 44 }
-    private var menuWidth: CGFloat { compact ? 26 : 44 }
-    private var pinWidth: CGFloat { compact ? 20 : 22 }
-    private var trailingWidth: CGFloat {
-        actionWidth + spacing + menuWidth + (showsApps ? pinWidth + spacing : 0)
+    private var strings: KillProcessListStrings { FeatureStrings.killProcessList(l10n.language) }
+    private var scope: KillProcessScope { KillProcessScope(rawValue: scopeRaw) ?? .everything }
+    private var compact: Bool { surface.isCompact }
+
+    private var items: [KillProcessItem] {
+        let visible = activity.visibleItems(service.items)
+        guard !displayOrder.isEmpty else { return visible }
+        let rank = Dictionary(displayOrder.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        return visible.enumerated().sorted { lhs, rhs in
+            let left = rank[lhs.element.pid] ?? Int.max, right = rank[rhs.element.pid] ?? Int.max
+            return left == right ? lhs.offset < rhs.offset : left < right
+        }.map(\.element)
     }
 
-    /// A process row that is a regular app, with what the quit rules read.
-    private struct AppRow {
-        let entry: KillProcessEntry
-        let bundleIdentifier: String?
+    private var sections: [KillProcessSection] {
+        KillProcessCatalog.sections(items, scope: scope, query: surface == .island ? "" : query,
+                                    frontPID: frontPID, isKept: activity.isKept)
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            header
-            Divider()
-            columnHeader
-            Divider()
-            list
-            if showsApps {
-                Divider()
-                quitBar
+            if surface == .hud { KillProcessHUDHeader() }
+            ScrollView(.vertical) {
+                // Rows are direct children of the lazy stack, so only the rows
+                // on screen are built, however long Background or System get.
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    if surface != .island { searchField }
+                    content
+                }
+                .padding(.horizontal, compact ? 10 : 18)
+                .padding(.top, compact ? 8 : 14)
+                .padding(.bottom, compact ? 8 : 14)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            if let toast = activity.toast {
+                KillProcessToastView(toast: toast, compact: compact)
+                    .padding(.horizontal, compact ? 10 : 18)
+                    .padding(.bottom, 6)
+                    .transition(reduceMotion ? .identity : .opacity)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            if !choseScope {
-                choseScope = true
-                showsApps = opensInApps
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .alert(confirmationTitle, isPresented: Binding(
+            get: { confirmation != nil }, set: { if !$0 { confirmation = nil } }),
+               presenting: confirmation) { pending in
+            Button(strings.cancel, role: .cancel) {}
+            Button(String(format: strings.confirmButtonFormat, pending.targets.count), role: .destructive) {
+                activity.quitOthers(pending.targets)
             }
-            keepRunning = QuitAppsSupport.keepRunning()
+        } message: { pending in
+            Text(ListFormatter.localizedString(byJoining: pending.targets.map(\.name)))
+        }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: activity.toast)
+        .onAppear {
             frontPID = QuitAppsActions.frontAppPID()
             service.refresh(force: true)
-            updateTimer(for: controlActiveState)
-        }
-        .onChange(of: service.entries) { _, _ in
-            frontPID = QuitAppsActions.frontAppPID()
-        }
-        // The Hub and Settings each show this view; a pin changed in one must
-        // reach the other's batch quits.
-        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
-            let current = QuitAppsSupport.keepRunning()
-            if current != keepRunning { keepRunning = current }
+            updateTimer()
         }
         .onDisappear { stopTimer() }
-        .onChange(of: controlActiveState) { _, newValue in
-            updateTimer(for: newValue)
+        // Coming back to Lattice, or into one of its panels, shows the current
+        // list at once instead of waiting for the next tick.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
+            .merge(with: NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification))) { _ in
+            frontPID = QuitAppsActions.frontAppPID()
+            service.refresh(force: true)
         }
-        .alert(alertTitle,
-               isPresented: Binding(get: { pendingAction != nil }, set: { if !$0 { pendingAction = nil } }),
-               presenting: pendingAction) { action in
-            Button(l10n.s.uninstallerCancel, role: .cancel) {}
-            Button(confirmButtonTitle(action), role: .destructive) {
-                perform(action)
-                pendingAction = nil
+        .onChange(of: controlActiveState) { _, _ in updateTimer() }
+        .onChange(of: service.items) { _, newItems in
+            frontPID = QuitAppsActions.frontAppPID()
+            activity.reconcile(with: newItems)
+            if hoveredPID == nil { displayOrder = [] }
+        }
+        .onChange(of: hoveredPID) { _, pid in
+            displayOrder = pid == nil ? [] : items.map(\.pid)
+        }
+        .onChange(of: scopeRaw) { _, _ in confirmation = nil }
+        .onChange(of: query) { _, _ in confirmation = nil }
+    }
+
+    // MARK: Search
+
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField(strings.searchPlaceholder(scope), text: $query)
+                .textFieldStyle(.plain)
+                .focused($searchFocused)
+                .onKeyPress(.escape) {
+                    // The first Escape clears the search; the next one reaches
+                    // the HUD or the island, which close.
+                    guard !query.isEmpty else { return .ignored }
+                    query = ""
+                    return .handled
+                }
+            if service.isRefreshing && !service.hasLoadedOnce {
+                ProgressView().controlSize(.small)
             }
-        } message: { action in
-            Text(alertMessage(for: action))
+            Rectangle()
+                .fill(Color.primary.opacity(0.18))
+                .frame(width: 1, height: compact ? 12 : 14)
+                .accessibilityHidden(true)
+            KillProcessScopeMenu(surface: surface)
+                .font(.system(size: compact ? 10.5 : 11.5))
+        }
+        .font(.system(size: compact ? 12 : 13))
+        .padding(.horizontal, 10)
+        .padding(.vertical, compact ? 6 : 8)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+        .padding(.bottom, compact ? 10 : 14)
+    }
+
+    // MARK: Content
+
+    @ViewBuilder
+    private var content: some View {
+        let sections = sections
+        if !service.hasLoadedOnce && service.items.isEmpty {
+            ProgressView().controlSize(.small)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+        } else if sections.isEmpty {
+            let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            Text(trimmed.isEmpty || surface == .island
+                 ? strings.emptyScope
+                 : String(format: strings.emptySearchFormat, trimmed))
+                .font(.system(size: compact ? 11.5 : 12.5))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+        } else {
+            ForEach(Array(sections.enumerated()), id: \.element.scope) { position, section in
+                sectionHeader(section)
+                    .padding(.top, position == 0 ? 0 : (compact ? 12 : 18))
+                    .padding(.bottom, 6)
+                // Ids are unique across sections: a process listed in both Apps
+                // and Ports must never share a lazily reused row.
+                ForEach(section.items.enumerated().map { KillProcessRowSlot(scope: section.scope, index: $0.offset, item: $0.element) }) { slot in
+                    let index = slot.index, item = slot.item
+                    rowCell(item, scope: section.scope, index: index, count: section.items.count,
+                            expandedByQuery: section.expandedByQuery.contains(item.pid))
+                }
+            }
         }
     }
 
-    // MARK: Header
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: compact ? 10 : 16) {
-                Picker("", selection: $showsApps) {
-                    Text(appStrings.scopeApps).tag(true)
-                    Text(appStrings.scopeProcesses).tag(false)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .controlSize(compact ? .small : .regular)
-                .fixedSize()
-                Spacer()
-                Text(showsApps
-                     ? String(format: appStrings.appCountFormat, appRows.count)
-                     : String(format: strings.processCountFormat, service.filteredEntries.count))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Button {
-                    service.refresh(force: true)
-                } label: {
-                    Image(systemName: "arrow.clockwise").foregroundStyle(.secondary)
+    private func sectionHeader(_ section: KillProcessSection) -> some View {
+        let targets = KillProcessCatalog.quitOthersTargets(section, isKept: activity.isKept)
+            .filter { !activity.isRecentlyQuit($0.pid) }
+        return HStack(alignment: .firstTextBaseline, spacing: 6) {
+            (Text(strings.scopeName(section.scope)).fontWeight(.semibold).foregroundColor(.primary)
+             + Text(" • " + String(format: strings.sectionRunningFormat, section.items.count))
+                .foregroundColor(.secondary))
+                .font(.system(size: compact ? 11.5 : 12.5))
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 8)
+            if !targets.isEmpty {
+                Button(strings.quitOthers) {
+                    confirmation = KillProcessConfirmation(scope: section.scope, targets: targets)
                 }
                 .buttonStyle(.plain)
-                .help(strings.refreshTooltip)
-                if inlineOptions { KillProcessOptionsButton(presented: $showsOptions) }
-            }
-
-            HStack(spacing: spacing) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField(strings.searchPlaceholder, text: $service.query)
-                    .textFieldStyle(.plain)
-                if service.isRefreshing {
-                    ProgressView().controlSize(.small)
-                }
+                .font(.system(size: compact ? 11 : 12))
+                .foregroundStyle(.primary)
+                .contentShape(Rectangle())
             }
         }
-        .padding(compact ? 12 : 16)
+        .padding(.horizontal, 2)
     }
 
-    // MARK: Column header
+    /// One row in its section's grouped container: the first and last rows
+    /// round the container's corners, the others draw a hairline above.
+    private static func expansionKey(_ scope: KillProcessScope, _ pid: pid_t) -> String { "\(scope.rawValue)-\(pid)" }
 
-    /// Mirrors `row(_:)`'s HStack widths exactly, so each label sits over its
-    /// column: the leading `22`pt gap matches the row icon, and the trailing
-    /// `98`pt gap matches the Kill + "..." button cluster.
-    private var columnHeader: some View {
-        HStack(spacing: spacing) {
-            Spacer().frame(width: iconSize)
-            columnHeaderButton(strings.columnProcess, column: .name)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            columnHeaderButton(strings.columnCPU, column: .cpu)
-                .frame(width: cpuWidth, alignment: .trailing)
-            columnHeaderButton(strings.columnMemory, column: .memory)
-                .frame(width: memoryWidth, alignment: .trailing)
-            if !compact {
-                columnHeaderButton(strings.columnPID, column: .pid)
-                    .frame(width: 56, alignment: .trailing)
-            }
-            // The Apps view's rows add the Keep Running pin and its gap.
-            Spacer().frame(width: trailingWidth)
+    private func rowCell(_ item: KillProcessItem, scope: KillProcessScope, index: Int, count: Int,
+                         expandedByQuery: Bool) -> some View {
+        let key = Self.expansionKey(scope, item.pid)
+        let radius: CGFloat = 12
+        let top = index == 0 ? radius : 0, bottom = index == count - 1 ? radius : 0
+        let notResponding = activity.notResponding.contains(item.pid)
+        let helperPIDs = Set(item.helpers.map(\.pid))
+        let portPIDs = Set(item.ports.map(\.pid))
+        return VStack(spacing: 0) {
+            if index > 0 { Divider().padding(.leading, rowDividerInset) }
+            KillProcessRow(
+                item: item,
+                surface: surface,
+                strings: strings,
+                chip: KillProcessCatalog.chip(for: item, frontPID: frontPID,
+                                              isKept: activity.isKept(item.bundleIdentifier),
+                                              isNotResponding: notResponding),
+                primary: scope == .ports
+                    ? KillProcessCatalog.portPrimaryAction(for: item, ownPID: ProcessInfo.processInfo.processIdentifier)
+                    : KillProcessCatalog.primaryAction(for: item, isNotResponding: notResponding),
+                progress: scope == .ports
+                    ? (portPIDs.isDisjoint(with: activity.inProgress.keys) ? nil : .stop)
+                    : activity.inProgress[item.pid],
+                menu: KillProcessCatalog.menu(for: item, in: scope),
+                isKept: activity.isKept(item.bundleIdentifier),
+                isAlwaysKept: activity.isAlwaysKept(item.bundleIdentifier),
+                helpersExpanded: expanded.contains(key) || expandedByQuery,
+                helpersInProgress: (scope == .ports ? portPIDs : helperPIDs).intersection(activity.inProgress.keys),
+                isRecentlyQuit: activity.isRecentlyQuit(item.pid),
+                ports: scope == .ports ? item.ports : nil,
+                onToggleHelpers: { toggleExpansion(key) })
+                .equatable()
         }
-        .padding(.horizontal, compact ? 12 : 16)
-        .padding(.vertical, 6)
-    }
-
-    private func columnHeaderButton(_ title: String, column: KillProcessService.SortBy) -> some View {
-        Button {
-            service.toggleSort(column)
-        } label: {
-            HStack(spacing: 3) {
-                Text(title)
-                if service.sortBy == column {
-                    Image(systemName: service.sortAscending ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 8, weight: .bold))
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .font(.system(size: 10.5, weight: .semibold))
-        .foregroundStyle(.secondary)
-    }
-
-    // MARK: List
-
-    @ViewBuilder
-    private var list: some View {
-        if showsApps {
-            appList
-        } else if service.filteredEntries.isEmpty {
-            // A transient ps hiccup no longer clears `entries` (KillProcessService
-            // keeps the last good snapshot), so an empty list here means either
-            // the very first load hasn't landed yet, or a search genuinely
-            // matched nothing - two different messages, not one.
-            if service.hasLoadedOnce {
-                emptyState
-            } else {
-                loadingState
-            }
-        } else {
-            listSurface(List(service.filteredEntries) { entry in row(entry) })
+        .background(UnevenRoundedRectangle(topLeadingRadius: top, bottomLeadingRadius: bottom,
+                                           bottomTrailingRadius: bottom, topTrailingRadius: top,
+                                           style: .continuous)
+            .fill(Color.primary.opacity(compact ? 0.05 : 0.04)))
+        .onHover { inside in
+            if inside { hoveredPID = item.pid } else if hoveredPID == item.pid { hoveredPID = nil }
         }
     }
 
-    /// Settings keeps the inset list; the Hub and island show their glass.
-    @ViewBuilder
-    private func listSurface<Content: View>(_ list: List<Never, Content>) -> some View {
-        if compact {
-            list.listStyle(.plain).scrollContentBackground(.hidden)
-        } else {
-            list.listStyle(.inset)
+    private var rowDividerInset: CGFloat {
+        KillProcessRowMetrics(compact: compact).dividerInset
+    }
+
+    private func toggleExpansion(_ key: String) {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+            if expanded.contains(key) { expanded.remove(key) } else { expanded.insert(key) }
         }
     }
 
-    private var emptyState: some View {
-        VStack {
-            Spacer()
-            Text(strings.emptyStateTitle).foregroundStyle(.secondary)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    private var confirmationTitle: String {
+        guard let confirmation else { return "" }
+        let count = confirmation.targets.count
+        return strings.count(count, one: strings.confirmAppsOne, other: strings.confirmAppsOther)
     }
 
-    private var loadingState: some View {
-        VStack {
-            Spacer()
-            ProgressView().controlSize(.small)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
+    // MARK: Live refresh
 
-    private func row(_ entry: KillProcessEntry) -> some View {
-        HStack(spacing: spacing) {
-            Image(nsImage: ResponsibleProcess.icon(for: entry.pid))
-                .resizable().frame(width: iconSize, height: iconSize)
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 4) {
-                    Text(entry.name).font(.system(size: 12.5)).lineLimit(1).truncationMode(.middle)
-                    if entry.groupedCount > 1 {
-                        Text(String(format: strings.processCountFormat, entry.groupedCount))
-                            .font(.system(size: 10)).foregroundStyle(.tertiary)
-                    }
-                }
-                Text(entry.path)
-                    .font(.system(size: 10.5)).foregroundStyle(.tertiary)
-                    .lineLimit(1).truncationMode(.head)
-            }
-            Spacer()
-            metrics(entry)
-            Button(strings.killButton) {
-                pendingAction = .kill(entry, force: false)
-            }
-            .frame(minWidth: actionWidth)
-            .disabled(entry.isProtected)
-            Menu {
-                if compact { Text(String(format: strings.pidLabelFormat, entry.pid)) }
-                Button(strings.forceKillButton) { pendingAction = .kill(entry, force: true) }
-                    .disabled(entry.isProtected)
-                Button(String(format: strings.killAllFormat, entry.name)) {
-                    pendingAction = .killAll(name: entry.name, force: false)
-                }
-                .disabled(entry.isProtected)
-                Button(strings.killTreeButton) { pendingAction = .killTree(entry, force: false) }
-                    .disabled(entry.isProtected)
-                if service.canRestart(entry) {
-                    Button(strings.restartButton) { service.restart(entry) }
-                }
-                Divider()
-                Button(strings.copyPID) { copy(String(entry.pid)) }
-                Button(strings.copyPath) { copy(entry.path) }
-            } label: {
-                Image(systemName: "ellipsis")
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .frame(width: menuWidth)
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .padding(.vertical, 2)
-    }
-
-    // MARK: Apps view
-
-    private var appRows: [AppRow] {
-        let apps = Dictionary(NSWorkspace.shared.runningApplications
-            .filter { $0.activationPolicy == .regular && !$0.isTerminated }
-            .map { ($0.processIdentifier, $0.bundleIdentifier) },
-            uniquingKeysWith: { first, _ in first })
-        return service.filteredEntries.compactMap { entry in
-            apps.index(forKey: entry.pid).map { AppRow(entry: entry, bundleIdentifier: apps.values[$0]) }
-        }
-    }
-
-    @ViewBuilder
-    private var appList: some View {
-        let rows = appRows
-        if rows.isEmpty {
-            if service.hasLoadedOnce {
-                VStack {
-                    Spacer()
-                    Text(appStrings.emptyApps).foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                loadingState
-            }
-        } else {
-            listSurface(List(rows, id: \.entry.id) { row in appRow(row) })
-        }
-    }
-
-    private func isKept(_ bundleIdentifier: String?) -> Bool {
-        guard let bundleIdentifier else { return false }
-        return QuitAppsSupport.isAlwaysKept(bundleIdentifier) || keepRunning.contains(bundleIdentifier)
-    }
-
-    private func appRow(_ row: AppRow) -> some View {
-        let entry = row.entry
-        let alwaysKept = QuitAppsSupport.isAlwaysKept(row.bundleIdentifier)
-        let kept = isKept(row.bundleIdentifier)
-        return HStack(spacing: spacing) {
-            Image(nsImage: ResponsibleProcess.icon(for: entry.pid))
-                .resizable().frame(width: iconSize, height: iconSize)
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 5) {
-                    Text(entry.name).font(.system(size: 12.5)).lineLimit(1).truncationMode(.middle)
-                    if entry.pid == frontPID { badge(appStrings.frontBadge, tint: .accentColor) }
-                    if kept { badge(appStrings.keptBadge, tint: .secondary) }
-                }
-                Text(entry.path)
-                    .font(.system(size: 10.5)).foregroundStyle(.tertiary)
-                    .lineLimit(1).truncationMode(.head)
-            }
-            Spacer()
-            metrics(entry)
-            keepRunningControl(bundleIdentifier: row.bundleIdentifier, alwaysKept: alwaysKept, kept: kept)
-                .frame(width: pinWidth)
-            Button(appStrings.quitButton) {
-                pendingAction = .quit(entry)
-            }
-            .frame(minWidth: actionWidth)
-            .disabled(entry.isProtected)
-            Menu {
-                if compact { Text(String(format: strings.pidLabelFormat, entry.pid)) }
-                Button(appStrings.forceQuitButton) { pendingAction = .kill(entry, force: true) }
-                    .disabled(entry.isProtected)
-                if service.canRestart(entry) {
-                    Button(strings.restartButton) { service.restart(entry) }
-                }
-                Divider()
-                Button(strings.copyPID) { copy(String(entry.pid)) }
-                Button(strings.copyPath) { copy(entry.path) }
-            } label: {
-                Image(systemName: "ellipsis")
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .frame(width: menuWidth)
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .padding(.vertical, 2)
-    }
-
-    /// CPU and memory, plus PID outside compact mode, where the row's menu
-    /// shows it instead.
-    @ViewBuilder
-    private func metrics(_ entry: KillProcessEntry) -> some View {
-        Text(String(format: "%.1f%%", locale: MetricFormat.locale, entry.cpuPercent))
-            .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-            .frame(width: cpuWidth, alignment: .trailing)
-        Text(MetricFormat.bytes(UInt64(max(0, entry.memoryBytes))))
-            .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-            .lineLimit(1).minimumScaleFactor(0.85)
-            .frame(width: memoryWidth, alignment: .trailing)
-        if !compact {
-            Text(String(entry.pid))
-                .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-                .frame(width: 56, alignment: .trailing)
-        }
-    }
-
-    private func badge(_ title: String, tint: Color) -> some View {
-        Text(title)
-            .font(.system(size: 9.5, weight: .semibold))
-            .foregroundStyle(tint)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1)
-            .background(Capsule().fill(tint.opacity(0.14)))
-    }
-
-    @ViewBuilder
-    private func keepRunningControl(bundleIdentifier: String?, alwaysKept: Bool, kept: Bool) -> some View {
-        if alwaysKept {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 11))
-                .foregroundStyle(.tertiary)
-                .help(appStrings.alwaysKept)
-                .accessibilityLabel(appStrings.alwaysKept)
-        } else if let bundleIdentifier {
-            let title = kept ? appStrings.stopKeepingRunning : appStrings.keepRunning
-            Button {
-                QuitAppsSupport.setKeepRunning(!kept, bundleIdentifier: bundleIdentifier)
-                keepRunning = QuitAppsSupport.keepRunning()
-            } label: {
-                Image(systemName: kept ? "pin.fill" : "pin")
-                    .font(.system(size: 11))
-                    .foregroundStyle(kept ? Color.accentColor : Color.secondary)
-                    .frame(width: 22, height: 22)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.borderless)
-            .help(title)
-            .accessibilityLabel(title)
-        }
-    }
-
-    /// Apps a batch quit would ask to quit right now, across every running
-    /// app rather than only those the search shows.
-    private func batchTargets(keepingFront: Bool) -> [QuitAppsCandidate] {
-        QuitAppsSupport.batchQuitTargets(
-            QuitAppsActions.runningCandidates(),
-            exceptions: QuitAppsSupport.batchExceptions(keepRunning: keepRunning),
-            keepingPID: keepingFront ? frontPID : nil)
-    }
-
-    private var keptRunningCount: Int {
-        NSWorkspace.shared.runningApplications.filter {
-            $0.activationPolicy == .regular && !$0.isTerminated && isKept($0.bundleIdentifier)
-        }.count
-    }
-
-    private var quitBar: some View {
-        let others = frontPID == nil ? [] : batchTargets(keepingFront: true)
-        let all = batchTargets(keepingFront: false)
-        return HStack(spacing: 10) {
-            Text(String(format: appStrings.keptCountFormat, keptRunningCount))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Button(appStrings.quitOthers) {
-                // Who is in front now, not when the list last refreshed.
-                frontPID = QuitAppsActions.frontAppPID()
-                let targets = frontPID == nil ? [] : batchTargets(keepingFront: true)
-                guard !targets.isEmpty else { return }
-                pendingAction = .quitBatch(pids: Set(targets.map(\.pid)), names: targets.map(\.name))
-            }
-            .disabled(others.isEmpty)
-            Button(appStrings.quitAll) {
-                let targets = batchTargets(keepingFront: false)
-                guard !targets.isEmpty else { return }
-                pendingAction = .quitBatch(pids: Set(targets.map(\.pid)), names: targets.map(\.name))
-            }
-            .disabled(all.isEmpty)
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .padding(.horizontal, compact ? 12 : 16)
-        .padding(.vertical, compact ? 8 : 10)
-    }
-
-    // MARK: Confirmation
-
-    private var alertTitle: String {
-        guard let pendingAction else { return "" }
-        switch pendingAction {
-        case let .kill(entry, force):
-            return String(format: force ? strings.confirmForceKillFormat : strings.confirmKillFormat, entry.name)
-        case let .killAll(name, _):
-            return String(format: strings.confirmKillAllFormat, name)
-        case let .killTree(entry, _):
-            return String(format: strings.confirmKillTreeFormat, entry.name)
-        case let .quit(entry):
-            return String(format: appStrings.confirmQuitFormat, entry.name)
-        case let .quitBatch(pids, _):
-            return String(format: appStrings.confirmBatchFormat, pids.count)
-        }
-    }
-
-    private func alertMessage(for action: PendingAction) -> String {
-        switch action {
-        case let .kill(entry, _): return entry.path
-        case let .killTree(entry, _): return entry.path
-        case .killAll: return ""
-        case .quit: return appStrings.confirmQuitMessage
-        case let .quitBatch(_, names):
-            // Exactly the apps that will be asked to quit.
-            return ListFormatter.localizedString(byJoining: names)
-        }
-    }
-
-    private func confirmButtonTitle(_ action: PendingAction) -> String {
-        switch action {
-        case let .kill(_, force): return force ? strings.forceKillButton : strings.killButton
-        case .killAll: return strings.killButton
-        case .killTree: return strings.killTreeButton
-        case .quit: return appStrings.quitButton
-        case .quitBatch: return appStrings.quitAll
-        }
-    }
-
-    private func perform(_ action: PendingAction) {
-        switch action {
-        case let .kill(entry, force): service.kill(entry, force: force)
-        case let .killAll(name, force): service.killAll(named: name, force: force)
-        case let .killTree(entry, force): service.killTree(entry, force: force)
-        case let .quit(entry):
-            NSRunningApplication(processIdentifier: entry.pid)?.terminate()
-            refreshSoon()
-        case let .quitBatch(pids, _):
-            // Only the apps the confirmation listed, each checked again.
-            QuitAppsActions.quit(confirmed: pids,
-                                 exceptions: QuitAppsSupport.batchExceptions(keepRunning: keepRunning))
-            refreshSoon()
-        }
-    }
-
-    /// Apps quit on their own schedule; look again once they have had a moment.
-    private func refreshSoon() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { service.refresh(force: true) }
-    }
-
-    // MARK: Helpers
-
-    private func copy(_ value: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.declareLatticeSource()
-        NSPasteboard.general.setString(value, forType: .string)
-    }
-
-    /// Ticks only while this page is open AND its window is key, so the
-    /// CPU/memory columns read live without polling `ps` in the background -
-    /// neither while some other Settings page is showing, nor while this one
-    /// is open but not the focused window.
-    /// The interval matches the service's own freshness cache exactly, so
-    /// every tick does real work instead of a third of them being no-ops.
-    private func updateTimer(for state: ControlActiveState) {
-        guard state != .inactive else {
+    /// Ticks only while the list is showing. In Settings it also waits for
+    /// the window to be active, so a background Settings window never polls.
+    private func updateTimer() {
+        guard surface != .settings || controlActiveState != .inactive else {
             stopTimer()
             return
         }
         guard refreshTimer == nil else { return }
-        service.refresh()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
             service.refresh()
         }
@@ -561,4 +307,71 @@ struct KillProcessView: View {
         refreshTimer?.invalidate()
         refreshTimer = nil
     }
+}
+
+/// The scope button: the current scope's name and a chevron, opening a menu
+/// of Apps, Background and System with their counts, then Everything.
+struct KillProcessScopeMenu: View {
+    let surface: KillProcessSurface
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var service = KillProcessService.shared
+    @ObservedObject private var activity = KillProcessActivity.shared
+    @AppStorage private var scopeRaw: String
+
+    init(surface: KillProcessSurface) {
+        self.surface = surface
+        _scopeRaw = AppStorage(wrappedValue: KillProcessScope.everything.rawValue, surface.scopeKey)
+    }
+
+    private var strings: KillProcessListStrings { FeatureStrings.killProcessList(l10n.language) }
+    private var scope: KillProcessScope { KillProcessScope(rawValue: scopeRaw) ?? .everything }
+
+    var body: some View {
+        let items = activity.visibleItems(service.items)
+        Menu {
+            Picker(strings.scopeLabel, selection: $scopeRaw) {
+                Text(strings.scopeName(.everything))
+                    .badge(KillProcessCatalog.count(items, in: .everything))
+                    .tag(KillProcessScope.everything.rawValue)
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+            Divider()
+            Picker(strings.scopeLabel, selection: $scopeRaw) {
+                ForEach(KillProcessScope.sectionScopes) { option in
+                    Text(strings.scopeName(option))
+                        .badge(KillProcessCatalog.count(items, in: option))
+                        .tag(option.rawValue)
+                }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+        } label: {
+            // One text run, so the menu label keeps the chevron after the name.
+            (Text(strings.scopeName(scope) + " ")
+             + Text(Image(systemName: "chevron.down")).font(.system(size: 8, weight: .bold)))
+            .foregroundStyle(surface == .island ? Color.white.opacity(0.6) : Color.secondary)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .controlSize(.small)
+        .accessibilityLabel(strings.scopeLabel)
+        .accessibilityValue(strings.scopeName(scope))
+    }
+}
+
+/// An inline Quit Others confirmation waiting under its section's header.
+struct KillProcessConfirmation: Equatable {
+    let scope: KillProcessScope
+    let targets: [KillProcessItem]
+}
+
+/// One row's place in the list. Its id joins the section and the PID, so a
+/// process shown in both Apps and Ports gets two distinct rows.
+private struct KillProcessRowSlot: Identifiable {
+    let scope: KillProcessScope
+    let index: Int
+    let item: KillProcessItem
+    var id: String { "\(scope.rawValue)-\(item.pid)" }
 }
