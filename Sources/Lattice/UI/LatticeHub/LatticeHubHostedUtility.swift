@@ -48,7 +48,7 @@ struct LatticeHubHostedUtility: View {
         } else if item == .killProcess {
             // Its list scrolls itself; inside another scroll view it would
             // collapse to no height.
-            KillProcessView(inlineOptions: true, compact: true)
+            KillProcessView(surface: notchSize == nil ? .hud : .island)
                 .frame(height: viewportHeight)
         } else if item == .system {
             LatticeHubSystemUtility(notchSize: notchSize)
