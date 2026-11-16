@@ -22,7 +22,7 @@ struct LatticeSymbol: View {
     var body: some View {
         if name == Self.bluetoothSymbol {
             Image(systemName: "square")
-                .hidden()
+                .opacity(0)
                 .overlay { BluetoothGlyph() }
                 .accessibilityHidden(true)
         } else {
@@ -35,13 +35,9 @@ struct LatticeSymbol: View {
 /// right, crossed by the two diagonals. Drawn in the current foreground style.
 struct BluetoothGlyph: View {
     var body: some View {
-        GeometryReader { proxy in
-            let side = min(proxy.size.width, proxy.size.height)
-            BluetoothRune()
-                .stroke(style: StrokeStyle(lineWidth: max(1, side * 0.11), lineCap: .round, lineJoin: .round))
-                .frame(width: side, height: side)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
+        BluetoothRune()
+            .stroke(.foreground, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+            .aspectRatio(1, contentMode: .fit)
     }
 }
 
