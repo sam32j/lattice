@@ -29,8 +29,22 @@ final class QuickTogglesService: ObservableObject {
     @Published private(set) var states: [QuickToggleAction: RunState] = [:]
     private let workQueue = DispatchQueue(label: "io.github.sam32j.lattice.quick-toggles", qos: .userInitiated)
     private var trashConfirmationPending = false
+    private let darkModeHotkey = QuickToolHotkey(id: 26)
 
-    private init() {}
+    private init() {
+        syncWithPreferences()
+        DesktopCurtainService.shared.syncWithPreferences()
+    }
+
+    func syncWithPreferences() {
+        let defaults = UserDefaults.standard
+        let enabled = defaults.bool(forKey: DefaultsKey.darkModeShortcutEnabled)
+        let shortcut = GlobalShortcut.saved(for: DefaultsKey.darkModeShortcut, fallback: .darkModeDefault)
+        darkModeHotkey.onPress = { [weak self] in
+            self?.toggleDarkMode()
+        }
+        darkModeHotkey.sync(enabled: enabled, shortcut: shortcut, storageKey: DefaultsKey.darkModeShortcut)
+    }
 
     func state(for action: QuickToggleAction) -> RunState? {
         states[action]
