@@ -61,7 +61,7 @@ enum KillProcessRenderingProbe {
         SettingsRefactorProbe.render("settings-background", view: AnyView(KillProcessView(surface: .settings)),
             size: CGSize(width: 540, height: 600), output: output, failures: &failures)
         defaults.set(KillProcessScope.ports.rawValue, forKey: DefaultsKey.killProcessScopeHUD)
-        let portRows = service.items.filter { !$0.ports.isEmpty }.prefix(1).map(\.pid)
+        let portRows = service.items.filter { !$0.ports.isEmpty }.map(\.pid)
         SettingsRefactorProbe.render("hud-ports", view: AnyView(
             KillProcessView(surface: .hud, expandedPIDs: [], expandedPortPIDs: Set(portRows)).padding(16)
                 .background { HUDBackdrop(cornerRadius: 22, contrast: .standard) }),

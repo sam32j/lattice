@@ -209,6 +209,41 @@ enum KillProcessCatalogTests {
                                          processName: "node", startedAt: nil)
         suite.expect(KillProcessCatalog.stoppablePorts([unverified, port(4001, pid: 131)], ownPID: own).map(\.port) == [4001],
                      "a port whose process is not verified cannot be stopped")
+        // Port services.
+        typealias Services = KillProcessPortServices
+        suite.expect(Services.service(processName: "ControlCenter", port: 5000, arguments: nil) == .airPlayAudio
+                     && Services.service(processName: "ControlCenter", port: 7000, arguments: nil) == .airPlayReceiver
+                     && Services.service(processName: "ControlCenter", port: 7100, arguments: nil) == nil,
+                     "Control Center's fixed AirPlay ports are named; its other ports are not")
+        suite.expect([55031, 65402, 65403].allSatisfy {
+                         Services.service(processName: "rapportd", port: $0, arguments: nil) == .continuity },
+                     "every rapportd port reads Continuity, with no guess about which one is Companion Link")
+        suite.expect(Services.service(processName: "sshd", port: 22, arguments: nil) == .remoteLogin
+                     && Services.service(processName: "launchd", port: 5900, arguments: nil) == .screenSharing
+                     && Services.service(processName: "smbd", port: 445, arguments: nil) == .fileSharing,
+                     "macOS sharing services are named by their well-known ports")
+        suite.expect(Services.service(processName: "node", port: 8080,
+                                      arguments: ["node", "/Users/me/app/node_modules/.bin/vite"]) == .tool("vite")
+                     && Services.service(processName: "node", port: 3000, arguments: ["node", "server.js"]) == .tool("server")
+                     && Services.service(processName: "python3", port: 8000,
+                                         arguments: ["python3", "-m", "http.server", "8000"]) == .tool("http.server")
+                     && Services.service(processName: "node", port: 4000,
+                                         arguments: ["node", "--inspect", "/p/node_modules/next/dist/bin/index.js"]) == .tool("next"),
+                     "a runtime's dev server is named after the tool or script it runs")
+        suite.expect(Services.service(processName: "Raycast Backend", port: 7265, arguments: nil) == nil
+                     && Services.service(processName: "node", port: 9000, arguments: nil) == nil,
+                     "an app's own process, or a runtime whose command line can't be read, gets no label")
+        let labeled = KillProcessCatalog.items(from: probes, ownPID: own, currentUID: me, ports: [
+            KillProcessPort(port: 5000, protocolName: "TCP", address: "*:5000", pid: 131, processName: "node",
+                            startedAt: 1, service: .airPlayAudio)])
+        suite.expect(KillProcessCatalog.sections(labeled, scope: .ports, query: "airplay").flatMap { $0.items.map(\.pid) } == [131, 131]
+                     && KillProcessCatalog.sections(labeled, scope: .ports, query: "airplay-audio", language: .de)
+                         .flatMap { $0.items.map(\.pid) } == [131, 131],
+                     "search finds a process by what its ports are for, in English and the app's language")
+        suite.expect(KillProcessListStrings.enUS.serviceName(.tool("vite")) == "vite"
+                     && FeatureStrings.killProcessList(.de).serviceName(.screenSharing) == "Bildschirmfreigabe",
+                     "service names are localized; tool names stay as they are")
+
         suite.expect(KillProcessPortSupport.listensOnAllInterfaces("*:3000")
                      && !KillProcessPortSupport.listensOnAllInterfaces("127.0.0.1:3000"),
                      "a wildcard bind is marked as open to the network")

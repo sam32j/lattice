@@ -371,6 +371,12 @@ struct KillProcessPortRow: View {
     @State private var isHovering = false
 
     private var helper: KillProcessItem? { owner.helpers.first { $0.pid == port.pid } }
+    /// What the port is for when Lattice can tell; otherwise the process
+    /// holding it, when that is not the row's own.
+    private var label: String {
+        if let service = port.service { return strings.serviceName(service) }
+        return port.pid == owner.pid ? "" : (helper?.name ?? port.processName)
+    }
     /// Any port can be stopped on its own, except one Lattice holds or whose
     /// process could not be verified.
     private var canStop: Bool {
@@ -400,14 +406,16 @@ struct KillProcessPortRow: View {
             Spacer(minLength: 6)
             KillProcessSubrowTrailing(compact: compact, strings: strings, canStop: canStop,
                                       stopping: stopping, isHovering: isHovering) {
-                // The process holding the port, when it is not the row's own.
-                Text(port.pid == owner.pid ? "" : (helper?.name ?? port.processName))
+                Text(label)
                     .font(.system(size: compact ? 9.5 : 10.5))
                     .foregroundStyle(.tertiary)
                     .truncationMode(.tail)
             } action: {
                 KillProcessActivity.shared.stopPorts([port], of: owner)
             }
+            // What the port is for matters more than its full address, which
+            // shortens first.
+            .layoutPriority(1)
         }
         .padding(.leading, 10)
         .padding(.vertical, compact ? 2 : 3)

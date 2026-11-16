@@ -167,10 +167,39 @@ extension KillProcessService {
         return KillProcessPortSupport.parseLsof(result.output).map { entry in
             let startedAt = identities[entry.pid] ?? nil
             let stable = startedAt != nil && startedAt == currentStartTime(pid: entry.pid)
+            // A command line is read only for a generic runtime, once per process.
+            let arguments = KillProcessPortServices.isRuntime(entry.processName)
+                ? commandLine(pid: entry.pid) : nil
             return KillProcessPort(port: entry.port, protocolName: entry.protocolName, address: entry.address,
                                    pid: entry.pid, processName: entry.processName,
-                                   startedAt: stable ? startedAt : nil)
+                                   startedAt: stable ? startedAt : nil,
+                                   service: KillProcessPortServices.service(processName: entry.processName,
+                                                                           port: entry.port, arguments: arguments))
         }
+    }
+
+    /// A process's arguments, from `KERN_PROCARGS2`: the argument count, the
+    /// executable path, padding, then each argument NUL-terminated. Only the
+    /// user's own processes are readable, which is all the Ports section acts on.
+    static func commandLine(pid: pid_t) -> [String]? {
+        var mib: [Int32] = [CTL_KERN, KERN_PROCARGS2, pid]
+        var size = 0
+        guard sysctl(&mib, 3, nil, &size, nil, 0) == 0, size > MemoryLayout<Int32>.size else { return nil }
+        var buffer = [UInt8](repeating: 0, count: size)
+        guard sysctl(&mib, 3, &buffer, &size, nil, 0) == 0 else { return nil }
+        let count = buffer.withUnsafeBytes { Int($0.load(as: Int32.self)) }
+        var cursor = MemoryLayout<Int32>.size
+        // Skip the executable path and the padding after it.
+        while cursor < size, buffer[cursor] != 0 { cursor += 1 }
+        while cursor < size, buffer[cursor] == 0 { cursor += 1 }
+        var arguments: [String] = []
+        while cursor < size, arguments.count < count {
+            let start = cursor
+            while cursor < size, buffer[cursor] != 0 { cursor += 1 }
+            arguments.append(String(decoding: buffer[start..<cursor], as: UTF8.self))
+            cursor += 1
+        }
+        return arguments.isEmpty ? nil : arguments
     }
 
     /// Lines look like "  437     1    88  12.5  20480 /System/Library/.../WindowServer".

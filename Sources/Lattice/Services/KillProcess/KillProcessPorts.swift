@@ -12,6 +12,8 @@ struct KillProcessPort: Identifiable, Equatable {
     let pid: Int32
     let processName: String
     let startedAt: UInt64?
+    /// What the port is for, when Lattice can tell. See `KillProcessPortServices`.
+    var service: KillProcessPortService? = nil
     var id: String { "\(protocolName)-\(port)-\(pid)-\(address)" }
 }
 
