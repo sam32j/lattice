@@ -8,7 +8,7 @@ import Foundation
 /// below and the unit tests can reason about pages without pulling UI in.
 enum SettingsPage: Hashable {
     case general, features, energy, monitor, cameraPreview, diskImageInstaller, launcherGrid
-    case mouse, keyboard, switcher, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, portManager, notch, notchMascot, notchWidget(NotchModule), notchCompanion
+    case mouse, keyboard, switcher, dock, wallpaper, cleaner, uninstaller, urlCleaner, homebrew, appUpdates, media, clipboard, windowLayout, shelf, audioInput, audioOutput, scratchpad, textSnippets, screenshot, screenRecorder, radialMenu, commandBar, killProcess, notch, notchMascot, notchWidget(NotchModule), notchCompanion
     case shortcuts, dataPermissions, about, videoDownloader
     case captureScreenshotOptions
 }
@@ -204,7 +204,6 @@ extension AppFeature {
         case .cleaner: return FeatureSettingsDestination(.cleaner)
         case .uninstaller: return FeatureSettingsDestination(.uninstaller)
         case .killProcess: return FeatureSettingsDestination(.killProcess)
-        case .portManager: return FeatureSettingsDestination(.portManager)
         case .homebrew: return FeatureSettingsDestination(.homebrew)
         case .appUpdates: return FeatureSettingsDestination(.appUpdates)
         case .screenshot:
@@ -261,7 +260,6 @@ enum FeatureVisibilitySupport {
         case .appUpdates: return [.appUpdates]
         case .uninstaller: return [.uninstaller]
         case .killProcess: return [.killProcess]
-        case .portManager: return [.portManager]
         case .textSnippets: return [.textSnippets]
         case .notch, .notchCompanion: return [.notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories, .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch, .notchMascot]
         case .notchMascot: return [.notchMascot]

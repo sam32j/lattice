@@ -29,7 +29,6 @@ extension SettingsView {
                                   accessory: { AnyView(KillProcessRefreshButton()) }) {
                 KillProcessView(surface: .settings)
             }
-        case .portManager: FeatureActivationPage(feature: .portManager) { PortManagerView() }
         case .urlCleaner: URLCleanerSettings()
         case .cleaner: FeatureActivationPage(feature: .cleaner) { CleanerView() }
         case .homebrew: FeatureActivationPage(feature: .homebrew) { HomebrewSettings() }
