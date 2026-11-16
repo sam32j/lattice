@@ -2145,13 +2145,13 @@ final class CommandBarService: ObservableObject {
             })
             actions.append(RowAction(id: "killAllProcess",
                                      title: String(format: killStrings.killAllFormat, process.name),
-                                     symbolName: "xmark.octagon",
+                                     symbolName: "waveform.path.ecg",
                                      isDestructive: true) { [weak self] in
                 self?.confirmKillAllProcesses(process)
             })
             actions.append(RowAction(id: "killProcessTree",
                                      title: killStrings.killTreeButton,
-                                     symbolName: "xmark.octagon",
+                                     symbolName: "waveform.path.ecg",
                                      isDestructive: true) { [weak self] in
                 self?.confirmKillProcessTree(process)
             })
