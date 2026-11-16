@@ -1291,6 +1291,8 @@ enum Defaults {
         DefaultsKey.keyboardDebounceKeyWindows: "",
         DefaultsKey.cleaningModeShortcutEnabled: false,
         DefaultsKey.cleaningModeShortcut: GlobalShortcut.cleaningModeDefault.storageValue,
+        DefaultsKey.darkModeShortcutEnabled: false,
+        DefaultsKey.darkModeShortcut: GlobalShortcut.darkModeDefault.storageValue,
         DefaultsKey.uninstallerCommandBarEnabled: false,
         DefaultsKey.killProcessSortBy: "cpu",
         DefaultsKey.killProcessSortAscending: false,
