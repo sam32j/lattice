@@ -150,7 +150,6 @@ struct MetricsTests {
                 UtilitySettingsTests.run { suite.expect($0, $1) }
                 UtilitiesFeatureTests.run(suite)
                 QuickTogglesAlertTests.run(suite)
-                PortManagerRefreshTests.run(suite)
             }),
             ("settings", {
                 NotchModuleSettingsTests.run(suite)

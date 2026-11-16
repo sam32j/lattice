@@ -111,7 +111,7 @@ enum ReleaseDigestTests {
     ## [Unreleased]
 
     ### Added
-    - Port Manager lists listening ports.
+    - Video Downloader saves videos.
 
     ## [3.4.2] - 2026-10-20
 
@@ -170,7 +170,7 @@ enum ReleaseDigestTests {
         suite.expect(digest.changes.map(\.isAppWide) == [false, true, false, true, false, false],
                      "an entry that also changes the menu bar panel concerns everyone")
         let preview = ReleaseDigest.make(from: "3.4.2", to: "3.4.2", changelog: changelog, includeUnreleased: true)
-        suite.expect(preview.versions == ["Unreleased"] && preview.changes.first?.features == [.portManager],
+        suite.expect(preview.versions == ["Unreleased"] && preview.changes.first?.features == [.videoDownloader],
                      "the Developer preview reads the unreleased notes")
         suite.expect(ReleaseDigest.make(from: nil, to: "3.4.2", changelog: changelog).changes.isEmpty,
                      "an unknown previous version covers nothing")
@@ -252,9 +252,9 @@ enum ReleaseDigestTests {
                      "the frozen list names only real features")
         suite.expect(WhatsNewInfo.newFeatures(known: WhatsNewInfo.knownFeaturesValue, isSupported: { _ in true }).isEmpty,
                      "a recorded list of every feature leaves nothing new")
-        let known = AppFeature.allCases.filter { $0 != .portManager && $0 != .fanControl }.map(\.rawValue)
+        let known = AppFeature.allCases.filter { $0 != .videoDownloader && $0 != .fanControl }.map(\.rawValue)
             .joined(separator: ",")
-        suite.expect(WhatsNewInfo.newFeatures(known: known, isSupported: { $0 != .fanControl }) == [.portManager],
+        suite.expect(WhatsNewInfo.newFeatures(known: known, isSupported: { $0 != .fanControl }) == [.videoDownloader],
                      "features missing from the record are new unless this Mac cannot run them")
         let untracked = AppFeature.allCases.filter { !WhatsNewInfo.featuresBeforeTracking.contains($0.rawValue) }
         suite.expect(WhatsNewInfo.newFeatures(known: nil, isSupported: { _ in true }) == untracked,
@@ -283,7 +283,7 @@ enum ReleaseDigestTests {
         let general = change("general", .fixed, [])
         let gpu = change("gpu", .fixed, [.monitorGPU])
         let fans = change("fans", .fixed, [.fanControl])
-        let ports = change("ports", .new, [.portManager, .switcher])
+        let ports = change("ports", .new, [.videoDownloader, .switcher])
         let installer = change("installer", .fixed, [.diskImageInstaller])
         var panel = change("panel", .changed, [.keepAwake])
         panel.alsoAppWide = true
@@ -291,9 +291,9 @@ enum ReleaseDigestTests {
                                    changes: [switcher, lyrics, island, general, gpu, fans, ports, installer, panel])
         let installed: Set<AppFeature> = [.switcher, .notch, .notchLyrics, .monitorGPU, .diskImageInstaller]
         let sections = WhatsNewSupport.sections(
-            digest: digest, newFeatures: [.portManager], sidebarItems: items,
+            digest: digest, newFeatures: [.videoDownloader], sidebarItems: items,
             isAvailable: { installed.contains($0) }, title: { $0.rawValue }, generalTitle: "General")
-        suite.expect(sections.newFeatures.map(\.id) == [.newFeature(.portManager)]
+        suite.expect(sections.newFeatures.map(\.id) == [.newFeature(.videoDownloader)]
                         && sections.newFeatures.first?.changes == [ports],
                      "new features come first with the entries that name them")
         suite.expect(sections.yourFeatures.map(\.id) == [.settings(.page(.notch)), .settings(.page(.monitor)),

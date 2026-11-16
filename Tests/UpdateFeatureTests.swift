@@ -379,7 +379,6 @@ enum UpdateFeatureTests {
 
         let settingsFeatureTitles: [AppFeature: String] = [
             .homebrew: "Homebrew",
-            .portManager: "Port Manager",
             .cameraPreview: "Camera Preview",
             .screenRecorder: "Screen Recorder",
             .micMute: "Mic Mute",
@@ -690,14 +689,14 @@ enum UpdateFeatureTests {
             id: .page(.audioOutput), destination: FeatureSettingsDestination(.audioOutput),
             title: "Audio Output", icon: "speaker.wave.2",
             keywords: ["Port Manager", "Open port automatically", "Mixer Volume"],
-            keywordFeatures: [.portManager, .portManager, .mixer])
+            keywordFeatures: [.homebrew, .homebrew, .mixer])
         let availabilityHub = SettingsSearchItem(
             id: .page(.features), destination: FeatureSettingsDestination(.features),
             title: "Features", icon: "square.grid.2x2",
             keywords: ["Port Manager", "mixer"],
-            keywordFeatures: [.portManager, .mixer])
+            keywordFeatures: [.homebrew, .mixer])
         let availabilityFeatures = featureSearchItems.filter {
-            $0.id == .feature(.portManager) || $0.id == .feature(.mixer)
+            $0.id == .feature(.homebrew) || $0.id == .feature(.mixer)
         }
         let availabilityItems = [availabilityHub, availabilityPage] + availabilityFeatures
         let onlyMixerAvailable: (AppFeature) -> Bool = { $0 == .mixer }
@@ -711,7 +710,7 @@ enum UpdateFeatureTests {
         suite.expect(unavailableCameraGroups.count == 1
                 && unavailableCameraGroups[0].id == .audioOutput
                 && unavailableCameraGroups[0].suggestions.map(\.title) == ["Port Manager", "Open port automatically"]
-                && groupedUnavailableCameraRoute?.destination == FeatureSettingsDestination(.portManager)
+                && groupedUnavailableCameraRoute?.destination == FeatureSettingsDestination(.homebrew)
                 && groupedUnavailableCameraRoute?.targetFeature == nil,
                "an off utility keyword opens its owning activation page")
         suite.expect(SettingsSearchSupport.groupedMatchingItems(
@@ -726,7 +725,7 @@ enum UpdateFeatureTests {
         }
         suite.expect(availableCameraSetting?.title == "Open port automatically"
                 && availableCameraSettingRoute?.destination
-                    == FeatureSettingsDestination(.portManager)
+                    == FeatureSettingsDestination(.homebrew)
                 && availableCameraSettingRoute?.targetFeature == nil,
                "a feature-owned setting keyword opens its exact anchored section")
         let availableMixerGroups = SettingsSearchSupport.groupedMatchingItems(

@@ -111,7 +111,6 @@ enum LatticeHubContract {
             (.uninstaller, .uninstaller, nil, nil),
             (.cleaner, .cleaner, nil, nil),
             (.appUpdates, .appUpdates, nil, nil),
-            (.portManager, .portManager, nil, nil),
             (.shelf, .shelf, "shelf.summon", 0.15),
             (.textSnippets, .textSnippets, "snippets.show", 0.15),
             (.killProcess, .killProcess, nil, nil),
