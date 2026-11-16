@@ -162,23 +162,17 @@ extension AppUpdatesListView {
             Button {
                 updates.check()
             } label: {
+                // The arrow turns while checking. Both labels size the
+                // button, so it keeps one width and the arrow never shifts.
                 HStack(spacing: 5) {
-                    if updates.isChecking {
-                        if reduceMotion {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(.system(size: 11))
-                        } else {
-                            ProgressView()
-                                .controlSize(.small)
-                        }
-                        Text(text.checking)
-                            .font(.system(size: 12, weight: .medium))
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 11))
-                        Text(text.checkNow)
-                            .font(.system(size: 12, weight: .medium))
+                    RefreshArrow(isSpinning: updates.isChecking)
+                        .font(.system(size: 11))
+                    ZStack(alignment: .leading) {
+                        Text(text.checkNow).hidden()
+                        Text(text.checking + "…").hidden()
+                        Text(updates.isChecking ? text.checking + "…" : text.checkNow)
                     }
+                    .font(.system(size: 12, weight: .medium))
                 }
                 .foregroundStyle(updates.isChecking || !AppFeature.appUpdates.isAvailable || allSourcesOff ? Color.secondary.opacity(0.6) : Color.primary.opacity(0.85))
             }
