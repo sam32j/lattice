@@ -5,6 +5,7 @@
 ## [3.4.3-d.1] - 2026-11-15
 
 ### Added
+- **Branding**: Adopt new Lattice app icon across app bundle, dialogs, About page, and README
 - **Kill Process**: An Apps view that quits apps gracefully
 - **Quit Apps**: A Keep Running list that batch quits spare
 - **Editor**: Command-S keeps edits without closing; full-bleed canvas

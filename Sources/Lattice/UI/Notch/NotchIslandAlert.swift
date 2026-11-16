@@ -112,6 +112,7 @@ extension NotchIslandAlert {
 
         let alert = NSAlert()
         alert.alertStyle = .warning
+        alert.icon = AppInfo.icon
         alert.messageText = title
         alert.informativeText = message
 

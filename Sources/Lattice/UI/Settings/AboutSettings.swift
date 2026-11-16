@@ -6,6 +6,7 @@ import SwiftUI
 // MARK: - About
 
 struct AboutSettings: View {
+    @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var l10n = L10n.shared
     @State private var showingReleaseNotes = false
 
@@ -28,7 +29,7 @@ struct AboutSettings: View {
 
     private var aboutContent: some View {
         VStack(spacing: 14) {
-            Image(nsImage: NSApplication.shared.applicationIconImage)
+            Image(nsImage: AppInfo.icon(isDark: colorScheme == .dark))
                 .resizable().scaledToFit().frame(width: 76, height: 76)
             VStack(spacing: 3) {
                 Text(AppInfo.name)

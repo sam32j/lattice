@@ -938,7 +938,11 @@ enum BlackHoleGlyph {
             image.addRepresentation(rep)
         }
         guard !image.representations.isEmpty else { return nil }
-        image.isTemplate = true
+        #if LATTICE_DEVELOPMENT
+        image.isTemplate = false
+        #else
+        image.isTemplate = !(Bundle.main.bundleIdentifier ?? "").hasSuffix(".dev")
+        #endif
         return image
     }()
 

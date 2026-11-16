@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="docs/assets/readme/lattice-icon.png" width="128" alt="Lattice logo">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/lattice-icon-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/readme/lattice-icon.png">
+    <img src="docs/assets/readme/lattice-icon.png" width="128" alt="Lattice logo">
+  </picture>
 </p>
 
 <h1 align="center">Lattice</h1>

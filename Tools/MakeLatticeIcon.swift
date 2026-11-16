@@ -2,7 +2,6 @@
 // Copyright (C) 2026 Samuel Ji
 // The app icon comes from Resources/Brand/Lattice.icon. Its compiled fallback
 // supports older macOS and builds without Xcode's adaptive-icon compiler.
-// Keep the independent menu-bar template and brand glyph unchanged.
 import AppKit
 
 var directory = "build"
@@ -18,6 +17,23 @@ let fallback = project.appendingPathComponent("Resources/Brand/Lattice.icns")
 guard NSImage(contentsOf: fallback) != nil else { fatalError("Cannot load app icon fallback: \(fallback.path)") }
 try Data(contentsOf: fallback).write(to: output.appendingPathComponent("AppIcon.icns"))
 
+let darkFallback = project.appendingPathComponent("Resources/Brand/Lattice-Dark.icns")
+if FileManager.default.fileExists(atPath: darkFallback.path),
+   let darkData = try? Data(contentsOf: darkFallback),
+   NSImage(data: darkData) != nil {
+    try darkData.write(to: output.appendingPathComponent("AppIcon-Dark.icns"))
+}
+
+let svgFilename = isDev ? "MenuBarIcon-Dev.svg" : "MenuBarIcon.svg"
+let projectSvgURL = project.appendingPathComponent("Resources/Brand/\(svgFilename)")
+let svgURL = FileManager.default.fileExists(atPath: projectSvgURL.path)
+    ? projectSvgURL
+    : URL(fileURLWithPath: "Resources/Brand/\(svgFilename)")
+
+guard let svgImage = NSImage(contentsOf: svgURL) else {
+    fatalError("Cannot load menu bar icon SVG from \(svgURL.path)")
+}
+
 func renderGlyph(width: Int, height: Int, mark: Bool = false) -> Data {
     guard let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
@@ -27,28 +43,21 @@ func renderGlyph(width: Int, height: Int, mark: Bool = false) -> Data {
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = context
     let w = CGFloat(width), h = CGFloat(height)
-    let size = mark ? min(w, h) * 0.85 : h * 0.625
+    let size: CGFloat = mark ? min(w, h) * 0.85 : h * 0.80
     let x = (w - size) / 2, y = (h - size) / 2
-    let path = NSBezierPath(); path.lineWidth = size * 0.095; path.lineCapStyle = .round
-    for step in 0...2 {
-        let offset = CGFloat(step) * size / 2
-        path.move(to: NSPoint(x: x + offset, y: y)); path.line(to: NSPoint(x: x + offset, y: y + size))
-        path.move(to: NSPoint(x: x, y: y + offset)); path.line(to: NSPoint(x: x + size, y: y + offset))
-    }
-    if isDev && mark {
-        NSColor(calibratedRed: 1.0, green: 0.62, blue: 0.11, alpha: 1).setStroke()
-    } else if mark {
-        NSColor(calibratedRed: 0.25, green: 0.88, blue: 0.80, alpha: 1).setStroke()
+    let targetRect = NSRect(x: x, y: y, width: size, height: size)
+
+    svgImage.draw(in: targetRect, from: .zero, operation: .sourceOver, fraction: 1.0)
+
+    let tintColor: NSColor
+    if isDev {
+        tintColor = NSColor(calibratedRed: 0.204, green: 0.780, blue: 0.349, alpha: 1.0)
     } else {
-        NSColor.black.setStroke()
+        tintColor = .white
     }
-    path.stroke()
-    if !mark && isDev {
-        let dotR = min(w, h) * 0.12
-        let dotRect = CGRect(x: w * 0.78, y: h * 0.66, width: dotR * 2, height: dotR * 2)
-        NSColor.black.setFill()
-        NSBezierPath(ovalIn: dotRect).fill()
-    }
+    tintColor.setFill()
+    NSRect(x: 0, y: 0, width: w, height: h).fill(using: .sourceIn)
+
     NSGraphicsContext.restoreGraphicsState()
     guard let data = bitmap.representation(using: .png, properties: [:]) else { fatalError("Cannot encode brand glyph") }
     return data
