@@ -175,7 +175,7 @@ extension NotchSettings {
                                          available: true, isOn: $battery)
                     }
                     Divider()
-                    IndicatorListRow(symbol: "headphones", title: FeatureStrings.notchActivities(l10n.language).accessories,
+                    IndicatorListRow(symbol: LatticeSymbol.bluetoothSymbol, title: FeatureStrings.notchActivities(l10n.language).accessories,
                                      available: true, isOn: accessoryBinding)
                     Divider()
                     IndicatorListRow(symbol: NotchControlItem.keepAwake.symbol, title: l10n.s.keepAwakeTitle,
@@ -236,7 +236,7 @@ private struct IndicatorListRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: symbol)
+            LatticeSymbol(symbol)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(available && isOn ? Color.accentColor : Color.secondary)
                 .frame(width: 24, height: 24)
