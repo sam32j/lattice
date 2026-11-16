@@ -109,6 +109,24 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         return pins.sorted { (rank[$0.windowNumber] ?? .max) < (rank[$1.windowNumber] ?? .max) }
     }
 
+    /// Whether another Lattice window, such as the editor or a capture
+    /// preview, lies over this pin at `point`. Pins compare only among
+    /// themselves elsewhere; this keeps a pin under the editor from taking
+    /// its hover, focus or gestures. A pin's own control panels don't count.
+    func isCovered(at point: CGPoint) -> Bool {
+        let order = (NSWindow.windowNumbers(options: []) ?? []).map(\.intValue)
+        guard let own = order.firstIndex(of: windowNumber) else { return false }
+        let above = Set(order.prefix(own))
+        guard !above.isEmpty else { return false }
+        let mine = Set((childWindows ?? []).map(\.windowNumber))
+        return NSApp.windows.contains { window in
+            above.contains(window.windowNumber) && !mine.contains(window.windowNumber)
+                && !(window is ScreenshotPinWindow) && !(window.parent is ScreenshotPinWindow)
+                && window.isVisible && !window.ignoresMouseEvents && window.alphaValue > 0
+                && window.frame.contains(point)
+        }
+    }
+
     /// The topmost visible pin under `point`, click-through or not.
     func isTopPin(at point: CGPoint) -> Bool {
         let top = Self.pinsFrontToBack().first {
@@ -120,7 +138,8 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
     /// The topmost pin under `point`, in on-screen order, is the only one a
     /// pointer gesture may act on.
     func isFrontmostPin(at point: CGPoint) -> Bool {
-        Self.hoverTarget(at: point, windows: Self.pinsFrontToBack()).map { $0 === self } ?? true
+        guard !isCovered(at: point) else { return false }
+        return Self.hoverTarget(at: point, windows: Self.pinsFrontToBack()).map { $0 === self } ?? true
     }
 
     static func hoverTarget(at point: CGPoint, windows: [NSWindow]) -> ScreenshotPinWindow? {
@@ -188,7 +207,7 @@ final class ScreenshotPinWindow: OverlayPanel, NSWindowDelegate {
         guard !isClosed else { return }
         // Only the pin on top at the pointer shows its controls; a pin
         // covered there keeps them hidden.
-        let hovered = frame.contains(point) && isTopPin(at: point)
+        let hovered = frame.contains(point) && isTopPin(at: point) && !isCovered(at: point)
         if hovered != isHovered {
             isHovered = hovered
             updateImageOpacity()

@@ -140,11 +140,17 @@ final class ScreenshotPinController {
         pins.forEach { $0.updateHover(at: point) }
         let windows = ScreenshotPinWindow.pinsFrontToBack().filter { pin in pins.contains { $0 === pin } }
         let target = ScreenshotPinWindow.hoverTarget(at: point, windows: windows)
+            .flatMap { $0.isCovered(at: point) ? nil : $0 }
         guard target !== hoverFocusPin else { return }
         hoverFocusPin = target
         // Entering a pin grants focus once. A stationary pointer must not
-        // keep taking focus back from an editor opened over the same pin.
-        if let target, !target.isKeyWindow {
+        // keep taking focus back from an editor opened over the same pin,
+        // and passing over a pin never takes it from another Lattice window
+        // that has it, such as a capture preview or the editor.
+        let keyWindow = NSApp.keyWindow
+        let anotherWindowHasFocus = keyWindow != nil && !(keyWindow is ScreenshotPinWindow)
+            && !(keyWindow?.parent is ScreenshotPinWindow)
+        if let target, !target.isKeyWindow, !anotherWindowHasFocus {
             // Focus given by passing over a pin, not chosen by the person.
             Self.grantsHoverFocus = true
             defer { Self.grantsHoverFocus = false }
@@ -208,6 +214,7 @@ final class ScreenshotPinController {
                 windows = pins.filter(\.isVisible).reversed()
             }
             activeGesturePin = ScreenshotPinWindow.gestureTarget(at: location, windows: windows)
+                .flatMap { $0.isCovered(at: location) ? nil : $0 }
             activeGesturePin?.resetGestureTracking()
             gestureFinished = false
         }
@@ -233,8 +240,9 @@ final class ScreenshotPinController {
         guard event.momentumPhase.isEmpty, !phase.isEmpty else { return false }
         if phase.contains(.began) || phase.contains(.mayBegin) {
             let windows = ScreenshotPinWindow.pinsFrontToBack().filter { pin in pins.contains { $0 === pin } }
-            ScreenshotPinWindow.scrollLatchedPin = ScreenshotPinWindow.gestureTarget(at: NSEvent.mouseLocation,
-                                                                                     windows: windows)
+            let location = NSEvent.mouseLocation
+            ScreenshotPinWindow.scrollLatchedPin = ScreenshotPinWindow.gestureTarget(at: location, windows: windows)
+                .flatMap { $0.isCovered(at: location) ? nil : $0 }
         }
         guard let pin = ScreenshotPinWindow.scrollLatchedPin, !pin.isClosed else { return false }
         if phase.contains(.ended) || phase.contains(.cancelled) {
