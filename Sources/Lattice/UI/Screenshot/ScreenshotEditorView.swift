@@ -93,6 +93,15 @@ struct ScreenshotEditorView: View {
             // The capture runs to every edge of the window. The controls float
             // over it on their own frosted backgrounds; only a short fade at
             // the window's edge softens where the image meets the frame.
+            if colorScheme == .light {
+                // In light mode the fade would reveal the pale artboard as a
+                // white rim. Fading into a blurred copy of the capture keeps
+                // the soft edge in the image's own colors.
+                canvasArea
+                    .blur(radius: 18, opaque: true)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
             canvasArea
                 .mask(edgeMask)
             VStack(spacing: 0) {
@@ -894,7 +903,7 @@ struct ScreenshotEditorView: View {
             .buttonStyle(.borderless)
             .screenshotIconHover()
             .focusable(false)
-            .screenshotSafeHelp(strings.pinButton + "  (⌘P)")
+            .screenshotSafeHelp(strings.pinButton + "  (P)")
             .accessibilityLabel(strings.pinButton)
 
             Divider().frame(height: 16).padding(.horizontal, 3)

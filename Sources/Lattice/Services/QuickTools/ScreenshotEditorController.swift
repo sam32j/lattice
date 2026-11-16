@@ -1676,7 +1676,6 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             case kVK_ANSI_Z:
                 if flags.contains(.shift) { model.redo() } else { model.undo() }
                 return true
-            case kVK_ANSI_P: pin(); return true
             case kVK_Delete, kVK_ForwardDelete:
                 if model.annotations.contains(where: { model.selectedIDs.contains($0.id) }) { model.deleteSelected() }
                 else { window?.performClose(nil) }
@@ -1720,6 +1719,9 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             return true
         case kVK_ANSI_S:
             saveAs()
+            return true
+        case kVK_ANSI_P:
+            pin()
             return true
         default:
             return false
@@ -1956,9 +1958,12 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         }
     }
 
-    /// Pinning snapshots the current export and leaves the editor open.
+    /// Pins the current export and closes the editor. Unsaved edits are saved
+    /// to the capture's history first, the same way Done saves them.
     func pin() {
-        guard let export = model.exportImage(withBackdrop: false, downscaleTo1x: false) else { return }
+        guard !doneSaveInFlight,
+              let export = model.exportImage(withBackdrop: false, downscaleTo1x: false) else { return }
+        let hasUnsavedEdits = model.isDirty
         let pinned = ScreenshotPinController.shared.pin(
             image: export.image,
             scale: export.scale,
@@ -1969,7 +1974,13 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         if originatingPin == nil {
             originatingPin = pinned
         }
-        model.markExported()
+        if hasUnsavedEdits {
+            // Saves, refreshes the new pin, then closes.
+            persistEdits(closing: true)
+        } else {
+            model.markExported()
+            window?.close()
+        }
     }
 
     /// Copies the words selected on the canvas as plain text.
