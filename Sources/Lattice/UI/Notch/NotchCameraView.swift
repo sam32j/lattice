@@ -13,9 +13,9 @@ struct NotchCameraView: View {
     var body: some View {
         Group {
             if service.isEmbeddedPresented {
-                // The preview takes the whole page; its camera picker and stop
-                // button sit in the island's top row, clear of the image.
-                CameraPreviewView(size: NotchLayout.cameraPreviewSize(in: size), showsCameraMenu: false)
+                // The preview takes the whole page; its camera picker overlays
+                // the preview viewport just as the floating window does.
+                CameraPreviewView(size: NotchLayout.cameraPreviewSize(in: size), showsCameraMenu: true, showsCloseButton: false)
             } else {
                 HStack(spacing: 16) {
                     Image(systemName: "person.crop.square.badge.camera").font(.system(size: 30, weight: .light))

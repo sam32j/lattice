@@ -24,6 +24,7 @@ enum NotchCompactTests {
     struct CameraPreviewView: View {
         let size: CGSize
         let showsCameraMenu: Bool
+        var showsCloseButton: Bool = false
         var body: some View {
             Color.black.frame(width: size.width, height: size.height)
                 .onAppear { CameraPreviewService.shared.previewMenu = showsCameraMenu }
@@ -279,8 +280,8 @@ enum NotchCompactTests {
         settle(host)
         suite.expect(service.isEmbeddedPresented && service.stops == 0,
                      "starting the embedded camera does not dismiss it when the start card disappears")
-        suite.expect(service.previewMenu == false,
-                     "the island's preview leaves its camera picker and stop button to the top row, clear of the image")
+        suite.expect(service.previewMenu == true,
+                     "the island's preview overlays its camera selector on the image just as the floating window does")
         // The top row's stop button, as a pill in a full row and a glyph
         // beside the camera.
         var band = NotchBand()

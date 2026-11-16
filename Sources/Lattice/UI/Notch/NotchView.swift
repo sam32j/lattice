@@ -608,8 +608,8 @@ struct NotchView: View {
         case .snippets:
             size.height = max(size.height, 160)
         case .camera:
-            // Keep permission and error messages reachable.
-            size.height = max(size.height, 144)
+            // Inherit root HUB island dimension so preview size is bigger.
+            break
         case .music:
             size.height = max(size.height, NotchLayout.musicPlayerHeight(band: service.expandedGeometry.musicBandHeight,
                                                                          playing: music.playback != nil))
@@ -713,7 +713,6 @@ struct NotchView: View {
             case .timer: NotchTimerView(size: pageSize)
             case .camera:
                 NotchCameraView(size: pageSize)
-                    .notchBand(leading: { NotchCameraChooser() }, trailing: { NotchCameraStopButton() })
             case .notifications:
                 NotchNotificationsView(size: pageSize)
                     .notchBand(trailing: { NotchClearNotificationsButton() })

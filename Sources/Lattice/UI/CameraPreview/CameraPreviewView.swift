@@ -9,9 +9,8 @@ import SwiftUI
 /// anywhere else or switching to the meeting app closes it.
 struct CameraPreviewView: View {
     var size = CGSize(width: 320, height: 240)
-    /// The picker over the image on hover. The island turns it off: its top
-    /// row holds the picker and the stop button, clear of the image.
     var showsCameraMenu = true
+    var showsCloseButton = true
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var service = CameraPreviewService.shared
     @State private var hovering = false
@@ -26,6 +25,7 @@ struct CameraPreviewView: View {
             content
         }
         .frame(width: size.width, height: size.height)
+        .overlay(alignment: .topLeading) { closeButton }
         .overlay(alignment: .bottom) { controls }
         .animation(.easeInOut(duration: 0.15), value: hovering)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -37,6 +37,33 @@ struct CameraPreviewView: View {
         // buttons) must draw for a dark background in either system look.
         .environment(\.colorScheme, .dark)
         .onHover { hovering = $0 }
+    }
+
+    @ViewBuilder
+    private var closeButton: some View {
+        if showsCloseButton && hovering {
+            Button {
+                service.hide()
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(Color.black.opacity(0.72))
+                        .frame(width: 26, height: 26)
+                        .overlay(
+                            Circle()
+                                .strokeBorder(Color.white.opacity(0.35), lineWidth: 0.75)
+                        )
+                        .shadow(color: .black.opacity(0.5), radius: 3, x: 0, y: 1)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .buttonStyle(.plain)
+            .padding([.top, .leading], 10)
+            .transition(.opacity)
+            .accessibilityLabel(l10n.s.uninstallerCancel)
+        }
     }
 
     @ViewBuilder
