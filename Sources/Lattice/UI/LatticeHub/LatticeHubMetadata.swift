@@ -39,7 +39,7 @@ extension LatticeHubView {
         case .videoDownloader: return "square.and.arrow.down.on.square"
         case .shelf: return "tray.full"
         case .textSnippets: return "text.append"
-        case .killProcess: return "xmark.octagon"
+        case .killProcess: return "waveform.path.ecg"
         case .wallpaper: return "rectangle.inset.filled.and.cursorarrow"
         case .deviceControls: return "slider.horizontal.3"
         case .aiUsage: return "apple.intelligence"

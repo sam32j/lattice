@@ -50,7 +50,7 @@ extension FeatureStrings {
 
 extension KillProcessFeatureStrings {
     static let enUS = KillProcessFeatureStrings(
-        pageTitle: "Kill Process",
+        pageTitle: "Process Manager",
         browseSubtitle: "Browse & Kill",
         hubDescription: "Search running processes and force quit, restart, or kill process trees",
         searchPlaceholder: "Filter by name",
@@ -70,7 +70,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let ptBR = KillProcessFeatureStrings(
-        pageTitle: "Encerrar Processo",
+        pageTitle: "Gerenciador de Processos",
         browseSubtitle: "Ver e Encerrar",
         hubDescription: "Pesquise processos em execução e force o encerramento, reinicie ou encerre árvores de processos",
         searchPlaceholder: "Filtrar por nome",
@@ -90,7 +90,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let tr = KillProcessFeatureStrings(
-        pageTitle: "İşlemi Sonlandır",
+        pageTitle: "İşlem Yöneticisi",
         browseSubtitle: "Görüntüle ve Sonlandır",
         hubDescription: "Çalışan işlemleri arayın; zorla kapatın, yeniden başlatın veya işlem ağaçlarını sonlandırın",
         searchPlaceholder: "Ada göre filtrele",
@@ -110,7 +110,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let ru = KillProcessFeatureStrings(
-        pageTitle: "Завершить процесс",
+        pageTitle: "Диспетчер процессов",
         browseSubtitle: "Просмотр и завершение",
         hubDescription: "Поиск запущенных процессов, принудительное завершение, перезапуск или завершение дерева процессов",
         searchPlaceholder: "Фильтр по имени",
@@ -130,7 +130,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let es = KillProcessFeatureStrings(
-        pageTitle: "Finalizar Proceso",
+        pageTitle: "Gestor de procesos",
         browseSubtitle: "Ver y Finalizar",
         hubDescription: "Busca procesos en ejecución y fuerza su cierre, reinícialos o finaliza árboles de procesos",
         searchPlaceholder: "Filtrar por nombre",
@@ -150,7 +150,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let sk = KillProcessFeatureStrings(
-        pageTitle: "Ukončiť proces",
+        pageTitle: "Správca procesov",
         browseSubtitle: "Prehľadávať a ukončiť",
         hubDescription: "Hľadajte bežiace procesy a vynútene ich ukončite, reštartujte alebo ukončite celé stromy procesov",
         searchPlaceholder: "Filtrovať podľa názvu",
@@ -170,7 +170,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let de = KillProcessFeatureStrings(
-        pageTitle: "Prozess beenden",
+        pageTitle: "Prozessverwaltung",
         browseSubtitle: "Anzeigen & Beenden",
         hubDescription: "Laufende Prozesse durchsuchen, erzwungen beenden, neu starten oder Prozessbäume beenden",
         searchPlaceholder: "Nach Namen filtern",
@@ -190,7 +190,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let fr = KillProcessFeatureStrings(
-        pageTitle: "Forcer à quitter",
+        pageTitle: "Gestionnaire de processus",
         browseSubtitle: "Parcourir et arrêter",
         hubDescription: "Recherchez les processus en cours et forcez-les à quitter, redémarrez-les ou arrêtez leurs arborescences",
         searchPlaceholder: "Filtrer par nom",
@@ -210,7 +210,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let it = KillProcessFeatureStrings(
-        pageTitle: "Termina Processo",
+        pageTitle: "Gestione processi",
         browseSubtitle: "Sfoglia e Termina",
         hubDescription: "Cerca i processi in esecuzione e forzane l’uscita, riavviali o termina intere alberature di processi",
         searchPlaceholder: "Filtra per nome",
@@ -230,7 +230,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let ja = KillProcessFeatureStrings(
-        pageTitle: "プロセスを強制終了",
+        pageTitle: "プロセスマネージャ",
         browseSubtitle: "表示して終了",
         hubDescription: "実行中のプロセスを検索し、強制終了、再起動、プロセスツリーの終了ができます",
         searchPlaceholder: "名前で絞り込む",
@@ -250,7 +250,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let ko = KillProcessFeatureStrings(
-        pageTitle: "프로세스 종료",
+        pageTitle: "프로세스 관리자",
         browseSubtitle: "보기 및 종료",
         hubDescription: "실행 중인 프로세스를 검색하고 강제 종료, 재시작 또는 프로세스 트리 종료를 수행합니다",
         searchPlaceholder: "이름으로 필터링",
@@ -270,7 +270,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let zhHans = KillProcessFeatureStrings(
-        pageTitle: "结束进程",
+        pageTitle: "进程管理器",
         browseSubtitle: "浏览并结束",
         hubDescription: "搜索正在运行的进程，强制退出、重新启动或结束整个进程树",
         searchPlaceholder: "按名称筛选",
@@ -290,7 +290,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let zhTW = KillProcessFeatureStrings(
-        pageTitle: "結束處理程序",
+        pageTitle: "程序管理器",
         browseSubtitle: "瀏覽並結束",
         hubDescription: "搜尋正在執行的處理程序，強制結束、重新啟動或結束整個處理程序樹",
         searchPlaceholder: "依名稱篩選",
@@ -310,7 +310,7 @@ extension KillProcessFeatureStrings {
     )
 
     static let zhHK = KillProcessFeatureStrings(
-        pageTitle: "結束處理程序",
+        pageTitle: "程序管理器",
         browseSubtitle: "瀏覽並結束",
         hubDescription: "搜尋正在執行的處理程序，強制結束、重新啟動或結束整個處理程序樹",
         searchPlaceholder: "依名稱篩選",
@@ -329,7 +329,7 @@ extension KillProcessFeatureStrings {
         adminPromptFormat: "Lattice 需要管理員權限才能結束「%@」。"
     )
     static let uk = KillProcessFeatureStrings(
-        pageTitle: "Завершити процес",
+        pageTitle: "Диспетчер процесів",
         browseSubtitle: "Огляд та завершення",
         hubDescription: "Шукайте запущені процеси та примусово завершуйте, перезапускайте або вбивайте дерева процесів",
         searchPlaceholder: "Фільтр за ім’ям",
