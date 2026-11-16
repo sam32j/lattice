@@ -140,7 +140,13 @@ extension LatticeHubView {
     }
 
     var updateButton: some View {
-        Button(action: service.showUpdate) {
+        Button {
+            // The island's own action only runs while the island is open, so
+            // the HUD steps aside and opens the same dialog as Settings itself.
+            guard case .available = UpdateService.shared.state else { return }
+            launcher.hide()
+            appDelegate()?.showUpdatePreview()
+        } label: {
             Image(systemName: "arrow.down.circle.fill")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Color.blue)
