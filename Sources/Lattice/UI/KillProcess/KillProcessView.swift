@@ -69,7 +69,7 @@ struct KillProcessView: View {
 
     private var sections: [KillProcessSection] {
         KillProcessCatalog.sections(items, scope: scope, query: surface == .island ? "" : query,
-                                    frontPID: frontPID, isKept: activity.isKept)
+                                    frontPID: frontPID, isKept: activity.isKept, language: l10n.language)
     }
 
     var body: some View {

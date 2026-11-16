@@ -746,6 +746,7 @@ if (( TEST )); then
         Sources/Lattice/Services/DetachedProcess.swift
         Sources/Lattice/Services/ShellSupport.swift
         Sources/Lattice/Services/KillProcess/KillProcessPorts.swift
+        Sources/Lattice/Services/KillProcess/KillProcessPortServices.swift
         Sources/Lattice/Services/Metrics/NetworkProcessSupport.swift
         Sources/Lattice/Services/Metrics/NetworkSampler.swift
         Sources/Lattice/Services/Metrics/NetworkAddressService.swift

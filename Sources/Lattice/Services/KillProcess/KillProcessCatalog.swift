@@ -280,15 +280,21 @@ enum KillProcessCatalog {
 
     // MARK: Sections and search
 
-    /// Names match anywhere; numbers match from the start, so typing a PID
-    /// or port narrows the list as each digit arrives. A leading colon
-    /// searches ports only.
-    static func matches(_ item: KillProcessItem, needle: String) -> Bool {
+    /// Names and port services match anywhere; numbers match from the start,
+    /// so typing a PID or port narrows the list as each digit arrives. A
+    /// leading colon searches ports only. Services match in English and in
+    /// `language`.
+    static func matches(_ item: KillProcessItem, needle: String, language: AppLanguage = .enUS) -> Bool {
         if needle.hasPrefix(":") {
             let port = String(needle.dropFirst())
             return !port.isEmpty && item.ports.contains { String($0.port).hasPrefix(port) }
         }
         if item.name.lowercased().contains(needle) { return true }
+        let strings = [KillProcessListStrings.enUS, FeatureStrings.killProcessList(language)]
+        if item.ports.contains(where: { port in
+            guard let service = port.service else { return false }
+            return strings.contains { $0.serviceName(service).lowercased().contains(needle) }
+        }) { return true }
         guard needle.allSatisfy(\.isASCIIDigit) else { return false }
         return String(item.pid).hasPrefix(needle) || item.ports.contains { String($0.port).hasPrefix(needle) }
     }
@@ -304,15 +310,16 @@ enum KillProcessCatalog {
     /// sections stay sorted by CPU.
     static func sections(_ items: [KillProcessItem], scope: KillProcessScope, query: String,
                          frontPID: pid_t? = nil,
-                         isKept: (String?) -> Bool = { _ in false }) -> [KillProcessSection] {
+                         isKept: (String?) -> Bool = { _ in false },
+                         language: AppLanguage = .enUS) -> [KillProcessSection] {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let scopes = needle.isEmpty && scope != .everything ? [scope] : KillProcessScope.sectionScopes
         return scopes.compactMap { sectionScope in
             var expanded: Set<pid_t> = []
             let rows = items.filter { belongs($0, to: sectionScope) }.compactMap { item -> KillProcessItem? in
                 guard !needle.isEmpty else { return item }
-                if matches(item, needle: needle) { return item }
-                if item.helpers.contains(where: { matches($0, needle: needle) }) {
+                if matches(item, needle: needle, language: language) { return item }
+                if item.helpers.contains(where: { matches($0, needle: needle, language: language) }) {
                     expanded.insert(item.pid)
                     return item
                 }
