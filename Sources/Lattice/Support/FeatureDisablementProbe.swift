@@ -50,19 +50,16 @@ enum FeatureDisablementProbe {
     private static func processMutation(failures: inout [String]) {
         let runtime = FeatureRuntime.shared
         runtime.setPageEnabled(.killProcess, true)
-        runtime.setPageEnabled(.portManager, true)
         let processes = KillProcessService.shared
-        processes.beginProtectedAction(.portManager) // State only; no process action.
+        processes.beginProtectedAction(.killProcess) // State only; no process action.
         runtime.setPageEnabled(.killProcess, false)
-        runtime.setPageEnabled(.portManager, false)
-        if !AppFeature.killProcess.isAvailable || !AppFeature.portManager.isAvailable {
+        if !AppFeature.killProcess.isAvailable {
             failures.append("Disable interrupted a protected process action or its owner.")
         }
-        processes.endProtectedAction(.portManager)
+        processes.endProtectedAction(.killProcess)
         RunLoop.main.run(until: Date().addingTimeInterval(0.02))
-        runtime.setPageEnabled(.portManager, false)
         runtime.setPageEnabled(.killProcess, false)
-        if AppFeature.killProcess.isAvailable || AppFeature.portManager.isAvailable {
+        if AppFeature.killProcess.isAvailable {
             failures.append("Process owners could not disable after the protected action finished.")
         }
     }

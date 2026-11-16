@@ -88,7 +88,7 @@ extension AppFeature {
              .connectedDevices:
             return true
         case .focusFollowsMouse, .scrollHorizontal, .linearScroll, .diskImageInstaller, .audioPriority,
-             .wallpaper, .killProcess, .portManager, .videoDownloader, .fanControl, .notchMascot, .spacesOrder:
+             .wallpaper, .killProcess, .videoDownloader, .fanControl, .notchMascot, .spacesOrder:
             return false
         }
     }

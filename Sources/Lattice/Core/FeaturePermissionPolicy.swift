@@ -62,7 +62,7 @@ extension AppFeature {
              .soundOutputSwitcher, .audioPriority,
              .extraBrightness, .bluetoothSleep, .colorPicker, .micMute, .mediaTools,
              .scratchpad, .wallpaper, .monitorGPU, .monitorNetwork, .connectedDevices, .fanControl, .killProcess,
-             .portManager, .videoDownloader:
+             .videoDownloader:
             return []
         case .quickLauncher:
             return [.automationSystemEvents]

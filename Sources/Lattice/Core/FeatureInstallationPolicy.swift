@@ -6,7 +6,7 @@ extension AppFeature {
     /// Owners migrated from the retired Features destination. Keep existing keys.
     static let migratedPageFeatures: Set<AppFeature> = [
         .keepAwake, .mediaTools, .cleaner, .uninstaller, .homebrew,
-        .appUpdates, .radialMenu, .commandBar, .killProcess, .portManager
+        .appUpdates, .radialMenu, .commandBar, .killProcess
     ]
 
     /// Always-reachable Settings pages do not require off rows in the app menu.
