@@ -26,7 +26,7 @@ enum PageCommandDiscoveryTests {
         State.defaults = defaults
         defer { defaults.removePersistentDomain(forName: domain); State.defaults = nil; Directory.items = [] }
         let owners: [AppFeature] = [.keepAwake, .mediaTools, .cleaner, .uninstaller, .homebrew,
-                                   .appUpdates, .radialMenu, .commandBar, .killProcess, .portManager]
+                                   .appUpdates, .radialMenu, .commandBar, .killProcess]
         for feature in owners { defaults.set(false, forKey: feature.availabilityKey) }
         defaults.set(false, forKey: DefaultsKey.radialMenuEnabled)
         Directory.items = owners.map { feature in
@@ -37,8 +37,8 @@ enum PageCommandDiscoveryTests {
         Directory.items.append(SettingsSearchItem(id: .page(.features), destination: .init(.features),
                                                   title: "Features", icon: "square.grid.2x2"))
         let entries = Catalog.settingsEntries(.enUS, language: .enUS, bar: FeatureStrings.commandBar(.enUS))
-        suite.expect(entries.count == 10 && !entries.contains { $0.id == "settings.features" },
-                     "Command Bar discovers all ten disabled owning pages and excludes Features")
+        suite.expect(entries.count == 9 && !entries.contains { $0.id == "settings.features" },
+                     "Command Bar discovers all nine disabled owning pages and excludes Features")
         for (entry, feature) in zip(entries, owners) {
             entry.run(nil)
             suite.expect(State.visited == feature.settingsDestination,

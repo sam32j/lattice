@@ -16,7 +16,7 @@ enum FeaturePageOwnershipTests {
         defer { defaults.removePersistentDomain(forName: name) }
         let remaining: [AppFeature] = [
             .keepAwake, .mediaTools, .cleaner, .uninstaller, .homebrew,
-            .appUpdates, .radialMenu, .commandBar, .killProcess, .portManager
+            .appUpdates, .radialMenu, .commandBar, .killProcess
         ]
         for feature in remaining {
             defaults.set(false, forKey: feature.availabilityKey)
