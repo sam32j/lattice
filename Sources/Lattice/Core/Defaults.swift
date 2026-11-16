@@ -260,6 +260,9 @@ enum DefaultsKey {
     static let cleaningModeEnabled = "cleaningModeEnabled"
     static let cleaningModeShortcut = "cleaningModeShortcut"
     static let cleaningModeShortcutEnabled = "cleaningModeShortcutEnabled"
+    static let darkModeShortcut = "darkModeShortcut"
+    static let darkModeShortcutEnabled = "darkModeShortcutEnabled"
+    static let desktopCurtainActive = "desktopCurtainActive"
     static let uninstallerCommandBarEnabled = "uninstallerCommandBarEnabled"
     static let killProcessSortBy = "killProcessSortBy" // cpu | memory | name | pid
     static let killProcessSortAscending = "killProcessSortAscending"

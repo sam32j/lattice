@@ -55,11 +55,24 @@ final class QuickTogglesService: ObservableObject {
     }
 
     var desktopIconsShown: Bool {
+        if DesktopCurtainService.shared.isCurtainActive {
+            return false
+        }
+        let finderShown = finderFlag(QuickTogglesSupport.createDesktopKey, default: true)
+        if !finderShown { return false }
         if let wmVal = CFPreferencesCopyAppValue(QuickTogglesSupport.standardHideDesktopIconsKey as CFString,
                                                  QuickTogglesSupport.windowManagerDomain as CFString) {
-            return !QuickTogglesSupport.finderFlag(wmVal, default: false)
+            if QuickTogglesSupport.finderFlag(wmVal, default: false) {
+                return false
+            }
         }
-        return finderFlag(QuickTogglesSupport.createDesktopKey, default: true)
+        if let wmHide = CFPreferencesCopyAppValue(QuickTogglesSupport.hideDesktopKey as CFString,
+                                                  QuickTogglesSupport.windowManagerDomain as CFString) {
+            if QuickTogglesSupport.finderFlag(wmHide, default: false) {
+                return false
+            }
+        }
+        return true
     }
 
     // MARK: - Appearance (issue #205)
@@ -182,14 +195,15 @@ final class QuickTogglesService: ObservableObject {
         }
     }
 
-    /// Toggles desktop icons visibility. On modern macOS (Sonoma, Sequoia, etc.),
-    /// desktop icons are drawn by WindowManager and toggled via StandardHideDesktopIcons.
-    /// Restarting Dock applies the change immediately without quitting Finder, stealing focus,
-    /// or entering an asynchronous waiting/warning state.
+    /// Toggles desktop icons visibility using an instant wallpaper backdrop curtain
+    /// immediately above Finder's desktop icon layer. Zero Finder restart, zero Dock
+    /// restart, zero open windows lost, and zero latency.
     func toggleDesktopIcons() {
-        guard QuickToggleAction.desktopIcons.feature.isAvailable else { return }
+        guard QuickToggleAction.desktopIcons.isAvailable else { return }
         let targetShown = !desktopIconsShown
         let hideIcons = !targetShown
+
+        DesktopCurtainService.shared.setHidden(hideIcons)
 
         CFPreferencesSetAppValue(QuickTogglesSupport.createDesktopKey as CFString,
                                  targetShown as CFBoolean,
@@ -204,10 +218,6 @@ final class QuickTogglesService: ObservableObject {
                                  QuickTogglesSupport.windowManagerDomain as CFString)
         CFPreferencesAppSynchronize(QuickTogglesSupport.windowManagerDomain as CFString)
         objectWillChange.send()
-
-        workQueue.async {
-            _ = Shell.run("/usr/bin/killall", ["Dock"])
-        }
     }
 
     // MARK: - Disks
