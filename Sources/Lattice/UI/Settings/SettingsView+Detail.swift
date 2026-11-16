@@ -26,8 +26,8 @@ extension SettingsView {
         case .uninstaller: FeatureActivationPage(feature: .uninstaller) { UninstallerView() }
         case .killProcess:
             FeatureActivationPage(feature: .killProcess,
-                                  options: { AnyView(KillProcessOptions().frame(width: 330)) }) {
-                KillProcessView()
+                                  accessory: { AnyView(KillProcessRefreshButton()) }) {
+                KillProcessView(surface: .settings)
             }
         case .portManager: FeatureActivationPage(feature: .portManager) { PortManagerView() }
         case .urlCleaner: URLCleanerSettings()
