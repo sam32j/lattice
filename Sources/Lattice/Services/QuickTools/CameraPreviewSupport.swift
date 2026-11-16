@@ -15,7 +15,6 @@ final class CameraPreviewRequest: @unchecked Sendable {
 enum NotchCameraSupport {
     static func isEnabled(in defaults: UserDefaults = .standard) -> Bool {
         NotchSupport.isEnabled(in: defaults) && AppFeature.cameraPreview.isAvailable(in: defaults)
-            && defaults.bool(forKey: DefaultsKey.notchCameraEnabled)
             && NotchSupport.modules(in: defaults).contains(.camera)
     }
 

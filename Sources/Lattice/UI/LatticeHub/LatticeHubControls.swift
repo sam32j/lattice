@@ -108,7 +108,7 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
             if camera.isVisible || camera.isEmbeddedPresented {
                 camera.hide()
             } else {
-                let embedded = camera.showInNotchIfEnabled()
+                let embedded = (fromNotch || LauncherShortcutTarget.selected() != .floatingWindow) && camera.showInNotchIfEnabled()
                 onDismiss()
                 if !embedded {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { camera.show() }

@@ -888,13 +888,16 @@ final class NotchService: ObservableObject {
 
     var expandedSize: CGSize {
         let musicExtras = NotchLyricsSupport.isEnabled() || NotchQueueSupport.isEnabled()
-        let isHubPage = selected == .hub || selected == .controls || selected == .mixer
+        let isHubPage = selected == .hub || selected == .controls || selected == .mixer || selected == .camera
         let launcher = LatticeHubService.shared
         let isEditing = isHubPage && launcher.editingPresentation.isPresented && launcher.activeUtility == nil
         let isRecentCapturesUtility = isHubPage && launcher.activeUtility == .recentCaptures
         let utilityHeight = isHubPage ? hubUtilityContentHeight(for: launcher.activeUtility) : nil
         let controlsHeight: CGFloat? = isHubPage && launcher.activeUtility == nil ? launcher.notchControlsHeight : nil
         let optionsHeight: CGFloat = isEditing && (launcher.editingOptionsItem ?? launcher.editingPresentation.outgoingOptions) != nil ? launcher.editingPresentation.optionsHeight + 6 : 0
+        if selected == .camera {
+            return hubRootSize(in: expandedGeometry)
+        }
         return pageSize(in: expandedGeometry, module: selected,
                         detail: selectedMetric != nil,
                         detailHeight: selectedMetric == .fan ? fanDetailHeight : nil,
@@ -914,6 +917,26 @@ final class NotchService: ObservableObject {
                             ? systemWidgetHeight(for: SystemMonitor.shared.snapshot) : nil)
     }
 
+    func hubRootSize(in geometry: NotchGeometry) -> CGSize {
+        let launcher = LatticeHubService.shared
+        let widgetsHeight = modules.contains { [.music, .calendar, .timer].contains($0) } ? NotchLayout.hubWidgetTileHeight : nil
+        return pageSize(in: geometry, module: .hub,
+                        detail: false,
+                        detailHeight: nil,
+                        musicExtraHeight: 0,
+                        fileMediaHeight: nil,
+                        toolCount: launcher.visibleItems.count,
+                        capturePreviewHeight: nil,
+                        toolsControlsHeight: launcher.notchControlsHeight,
+                        hubRecentCaptures: false,
+                        hubIsEditing: false,
+                        hubAvailableCount: 0,
+                        hubOptionsHeight: 0,
+                        hubActiveUtilityHeight: nil,
+                        hubWidgetsHeight: widgetsHeight,
+                        systemHeight: nil)
+    }
+
     private func systemWidgetHeight(for snapshot: SystemSnapshot) -> CGFloat? {
         guard !showingSections, selectedMetric != .fan else { return nil }
         if selectedMetric != nil || ([.hub, .controls, .mixer].contains(selected)
@@ -926,7 +949,10 @@ final class NotchService: ObservableObject {
     /// The open island as Settings previews a section: at rest, with no
     /// detail, app panel, capture or media editor in front of the page.
     func previewSize(for module: NotchModule, systemHeight: CGFloat? = nil) -> CGSize {
-        pageSize(in: previewGeometry(for: module), module: module, detail: false, detailHeight: nil, musicExtraHeight: 0,
+        if module == .camera {
+            return hubRootSize(in: previewGeometry(for: .camera))
+        }
+        return pageSize(in: previewGeometry(for: module), module: module, detail: false, detailHeight: nil, musicExtraHeight: 0,
                  fileMediaHeight: nil, toolCount: LatticeHubService.shared.visibleItems.count, capturePreviewHeight: nil,
                  toolsControlsHeight: module == .hub ? LatticeHubService.shared.notchControlsHeight : nil,
                  hubWidgetsHeight: module == .hub && modules.contains { [.music, .calendar, .timer].contains($0) } ? NotchLayout.hubWidgetTileHeight : nil,
