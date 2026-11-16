@@ -35,7 +35,6 @@ extension LatticeHubView {
         case .cleaner: return "sparkle"
         case .scratchpad: return "note.text"
         case .appUpdates: return "app.badge.checkmark"
-        case .portManager: return "network"
         case .videoDownloader: return "square.and.arrow.down.on.square"
         case .shelf: return "tray.full"
         case .textSnippets: return "text.append"
