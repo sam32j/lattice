@@ -186,6 +186,11 @@ struct LatticeHubView: View {
                         if launcher.activeUtility == .system {
                             islandActivityMonitorButton
                         }
+                        if launcher.activeUtility == .killProcess {
+                            // No search field in the island: the band holds the scope.
+                            KillProcessScopeMenu(surface: .island)
+                                .font(.system(size: 11, weight: .semibold))
+                        }
                         islandPinButton
                     }
                 } else {
