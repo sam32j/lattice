@@ -159,7 +159,7 @@ extension AppFeature {
         case .keepAwake: return "bolt.fill"
         case .brightness: return "display.2"
         case .extraBrightness: return "sun.max.fill"
-        case .bluetoothSleep: return "wave.3.right.circle"
+        case .bluetoothSleep: return "dot.radiowaves.left.and.right" // drawn as the Bluetooth rune
         case .quickLauncher: return "square.grid.2x2"
         case .colorPicker: return "eyedropper"
         case .screenOCR: return "text.viewfinder"
@@ -175,7 +175,7 @@ extension AppFeature {
         case .wallpaper: return "rectangle.inset.filled.and.cursorarrow"
         case .notchGestures: return "hand.draw"
         case .notchTimer: return "timer"
-        case .notchAccessories: return "battery.25percent"
+        case .notchAccessories: return "dot.radiowaves.left.and.right" // drawn as the Bluetooth rune
         case .notchLyrics: return "quote.bubble"
         case .notchQueue: return "list.bullet"
         case .notchLiveEqualizer: return "waveform"
