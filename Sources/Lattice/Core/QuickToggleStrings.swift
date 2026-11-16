@@ -59,7 +59,7 @@ extension FeatureStrings {
 
 extension QuickToggleFeatureStrings {
     static let enUS = QuickToggleFeatureStrings(
-        pageTitle: "Quick Toggles",
+        pageTitle: "Quick Controls",
         darkModeToDark: "Switch to Dark Mode",
         darkModeToLight: "Switch to Light Mode",
         darkModeCaption: "Changes the appearance of the whole system.",
@@ -88,7 +88,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let ptBR = QuickToggleFeatureStrings(
-        pageTitle: "Ações rápidas",
+        pageTitle: "Controles rápidos",
         darkModeToDark: "Ativar o modo escuro",
         darkModeToLight: "Ativar o modo claro",
         darkModeCaption: "Muda a aparência do sistema inteiro.",
@@ -117,7 +117,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let tr = QuickToggleFeatureStrings(
-        pageTitle: "Hızlı eylemler",
+        pageTitle: "Hızlı Denetimler",
         darkModeToDark: "Karanlık moda geç",
         darkModeToLight: "Açık moda geç",
         darkModeCaption: "Tüm sistemin görünümünü değiştirir.",
@@ -146,7 +146,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let ru = QuickToggleFeatureStrings(
-        pageTitle: "Быстрые действия",
+        pageTitle: "Быстрые элементы управления",
         darkModeToDark: "Включить тёмный режим",
         darkModeToLight: "Включить светлый режим",
         darkModeCaption: "Меняет оформление всей системы.",
@@ -175,7 +175,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let es = QuickToggleFeatureStrings(
-        pageTitle: "Acciones rápidas",
+        pageTitle: "Controles rápidos",
         darkModeToDark: "Cambiar al modo oscuro",
         darkModeToLight: "Cambiar al modo claro",
         darkModeCaption: "Cambia la apariencia de todo el sistema.",
@@ -204,7 +204,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let sk = QuickToggleFeatureStrings(
-        pageTitle: "Rýchle prepínače",
+        pageTitle: "Rýchle ovládacie prvky",
         darkModeToDark: "Prepnúť na tmavý režim",
         darkModeToLight: "Prepnúť na svetlý režim",
         darkModeCaption: "Zmení vzhľad celého systému.",
@@ -233,7 +233,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let de = QuickToggleFeatureStrings(
-        pageTitle: "Schnellaktionen",
+        pageTitle: "Schnellsteuerungen",
         darkModeToDark: "Zum Dunkelmodus wechseln",
         darkModeToLight: "Zum Hellmodus wechseln",
         darkModeCaption: "Ändert das Erscheinungsbild des ganzen Systems.",
@@ -262,7 +262,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let fr = QuickToggleFeatureStrings(
-        pageTitle: "Actions rapides",
+        pageTitle: "Commandes rapides",
         darkModeToDark: "Passer en mode sombre",
         darkModeToLight: "Passer en mode clair",
         darkModeCaption: "Change l’apparence de tout le système.",
@@ -291,7 +291,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let it = QuickToggleFeatureStrings(
-        pageTitle: "Azioni rapide",
+        pageTitle: "Controlli rapidi",
         darkModeToDark: "Passa alla modalità scura",
         darkModeToLight: "Passa alla modalità chiara",
         darkModeCaption: "Cambia l’aspetto di tutto il sistema.",
@@ -320,7 +320,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let ja = QuickToggleFeatureStrings(
-        pageTitle: "クイックアクション",
+        pageTitle: "クイックコントロール",
         darkModeToDark: "ダークモードに切り替える",
         darkModeToLight: "ライトモードに切り替える",
         darkModeCaption: "システム全体の外観を変えます。",
@@ -349,7 +349,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let ko = QuickToggleFeatureStrings(
-        pageTitle: "빠른 동작",
+        pageTitle: "빠른 제어",
         darkModeToDark: "다크 모드로 전환",
         darkModeToLight: "라이트 모드로 전환",
         darkModeCaption: "시스템 전체의 화면 모드를 바꿉니다.",
@@ -378,7 +378,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let zhHans = QuickToggleFeatureStrings(
-        pageTitle: "快捷操作",
+        pageTitle: "快捷控制",
         darkModeToDark: "切换到深色模式",
         darkModeToLight: "切换到浅色模式",
         darkModeCaption: "更改整个系统的外观。",
@@ -407,7 +407,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let zhTW = QuickToggleFeatureStrings(
-        pageTitle: "快速動作",
+        pageTitle: "快捷控制",
         darkModeToDark: "切換到深色模式",
         darkModeToLight: "切換到淺色模式",
         darkModeCaption: "更改整個系統的外觀。",
@@ -436,7 +436,7 @@ extension QuickToggleFeatureStrings {
     )
 
     static let zhHK = QuickToggleFeatureStrings(
-        pageTitle: "快速動作",
+        pageTitle: "快捷控制",
         darkModeToDark: "切換至深色模式",
         darkModeToLight: "切換至淺色模式",
         darkModeCaption: "更改整個系統的外觀。",
@@ -464,7 +464,7 @@ extension QuickToggleFeatureStrings {
         actionFailed: "無法完成。"
     )
     static let uk = QuickToggleFeatureStrings(
-        pageTitle: "Швидкі перемикачі",
+        pageTitle: "Швидкі елементи керування",
         darkModeToDark: "Перемикнути на темний режим",
         darkModeToLight: "Перемикнути на світлий режим",
         darkModeCaption: "Змінює вигляд усієї системи.",

@@ -44,6 +44,7 @@ struct DedicatedUtilitySettings: View {
                     PermissionGatedToggle(SettingsOwnershipStrings.enable(title, l10n.language),
                         isOn: $enabled, requiring: requirements)
                         .labelsHidden()
+                        .toggleStyle(.switch)
                         .onChange(of: enabled) { _, _ in
                             FeatureRuntime.shared.sync([feature])
                             FeatureRuntime.shared.finishAvailabilityChange()
@@ -51,7 +52,7 @@ struct DedicatedUtilitySettings: View {
                 }
                 if childrenEnabled {
                     if let shortcut {
-                        ShortcutPreferenceRow(role: shortcut, label: UtilitySettingsCopy.open(title, l10n.language)) {
+                        ShortcutPreferenceRow(role: shortcut, label: feature == .cameraPreview ? FeatureStrings.cameraPreview(l10n.language).openWithShortcut : UtilitySettingsCopy.open(title, l10n.language)) {
                             FeatureRuntime.shared.sync([feature])
                         }
                         .padding(.leading, settingsRowTextInset)
@@ -71,7 +72,7 @@ struct DedicatedUtilitySettings: View {
 
     private var destination: IslandDestination? {
         switch feature {
-        case .cameraPreview: return .cameraPreview
+        case .cameraPreview: return nil
         default: return nil
         }
     }

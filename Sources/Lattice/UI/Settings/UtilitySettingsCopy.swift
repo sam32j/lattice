@@ -22,7 +22,7 @@ enum UtilitySettingsCopy {
 
     static func openWithShortcut(_ name: String, _ language: AppLanguage) -> String {
         switch language {
-        case .enUS: return "Open \(name) with Shortcut"
+        case .enUS: return "Open \(name) with shortcut"
         case .ptBR: return "Abrir \(name) com atalho"
         case .es: return "Abrir \(name) con atajo"
         case .de: return "\(name) mit Kurzbefehl öffnen"

@@ -846,7 +846,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
             return FeatureStrings.recentCaptures(L10n.shared.language).title
         case .screenshotClipboard:
             return FeatureStrings.screenshot(L10n.shared.language).editClipboardImage
-        case .cameraPreview: return FeatureStrings.cameraPreview(L10n.shared.language).pageTitle
+        case .cameraPreview: return FeatureStrings.cameraPreview(L10n.shared.language).openWithShortcut
         case .radialMenu: return FeatureStrings.radialMenu(L10n.shared.language).pageTitle
         case .scratchpad: return FeatureStrings.scratchpad(L10n.shared.language).pageTitle
         case .snippetLibrary: return FeatureStrings.snippets(L10n.shared.language).libraryTitle

@@ -2067,7 +2067,7 @@ enum FeatureCatalogTests {
                "every feature anchor belongs to its destination page")
         suite.expect(Set(AppFeature.allCases.compactMap(\.settingsDestination.sectionAnchor))
                 == Set(SettingsSectionAnchor.allCases).subtracting([
-                    .keyboardBrightnessShortcuts, .audioOutputPriority, .quickLauncher, .cameraPreview,
+                    .keyboardBrightnessShortcuts, .audioOutputPriority, .quickLauncher,
                 ])
                 && SettingsSectionAnchor.keyboardBrightnessShortcuts.page == .keyboard,
                "feature anchors and standalone Settings anchors reach their pages")

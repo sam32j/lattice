@@ -4,108 +4,132 @@
 import SwiftUI
 
 /// The list of drives excluded from "Eject all disks".
-/// Sits quietly as a single row when empty, shows a count badge,
-/// and lets the user quickly pick connected drives or add custom volume names.
+/// Presents an Application Listing Panel (ALP) style row with an "Edit…" button,
+/// opening a dedicated sheet with saved exclusions and auto-discovered mounted disks.
 struct DiskExclusionsList: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var protection = DiskProtectionService.shared
-    @State private var isExpanded: Bool
-    @State private var customDraft = ""
-    @State private var showingCustomField = false
+    @State private var showingSheet = false
 
     private var strings: DiskExclusionStrings {
         FeatureStrings.diskExclusions(l10n.language)
     }
 
-    init() {
-        _isExpanded = State(initialValue: !(UserDefaults.standard.stringArray(forKey: DefaultsKey.diskEjectExcludedVolumes) ?? []).isEmpty)
+    var body: some View {
+        SettingsControlRow(title: strings.listTitle) {
+            Button(SettingsAppListStrings.text(l10n.language).edit) {
+                showingSheet = true
+            }
+        }
+        .sheet(isPresented: $showingSheet) {
+            exclusionsSheet
+        }
     }
 
-    var body: some View {
-        DisclosureGroup(isExpanded: $isExpanded) {
-            ForEach(protection.excludedVolumes, id: \.self) { name in
-                HStack(spacing: 8) {
-                    Image(systemName: "externaldrive")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 16)
-                    Text(name)
-                        .font(.system(size: 12))
-                        .lineLimit(1)
-                    Spacer()
-                    Button {
-                        protection.removeExcludedVolume(name)
-                    } label: {
-                        Image(systemName: "minus.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(strings.removeButton)
-                }
-            }
-
-            if showingCustomField {
-                HStack(spacing: 8) {
-                    TextField(strings.customPlaceholder, text: $customDraft)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit(addCustom)
-                    Button(strings.addButton) {
-                        addCustom()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(customDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    Button(l10n.s.uninstallerCancel) {
-                        customDraft = ""
-                        showingCustomField = false
-                    }
-                    .buttonStyle(.plain)
-                    .controlSize(.small)
-                }
+    private var exclusionsSheet: some View {
+        let candidates = mountedCandidateDrives
+        return AppListSheet(
+            caption: strings.caption,
+            title: strings.sheetTitle,
+            centersContent: protection.excludedVolumes.isEmpty && candidates.isEmpty,
+            onDone: { showingSheet = false }
+        ) {
+            if protection.excludedVolumes.isEmpty && candidates.isEmpty {
+                ContentUnavailableView(strings.emptyTitle, systemImage: "externaldrive.badge.xmark")
             } else {
-                let candidateDrives = mountedCandidateDrives
-                if !candidateDrives.isEmpty {
-                    Menu {
-                        ForEach(candidateDrives, id: \.self) { drive in
-                            Button(drive) {
-                                protection.addExcludedVolume(drive)
+                VStack(alignment: .leading, spacing: 18) {
+                    // Saved excluded section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(strings.savedSection)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
+
+                        if protection.excludedVolumes.isEmpty {
+                            Text(strings.noSavedDisks)
+                                .font(.callout)
+                                .foregroundStyle(.tertiary)
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 4)
+                        } else {
+                            VStack(spacing: 6) {
+                                ForEach(protection.excludedVolumes, id: \.self) { name in
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "externaldrive.fill")
+                                            .font(.system(size: 13))
+                                            .foregroundStyle(.secondary)
+                                            .frame(width: 20)
+                                        Text(name)
+                                            .font(.system(size: 13))
+                                            .lineLimit(1)
+                                        Spacer()
+                                        Button {
+                                            protection.removeExcludedVolume(name)
+                                        } label: {
+                                            Image(systemName: "minus.circle.fill")
+                                                .font(.system(size: 15))
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .accessibilityLabel("\(strings.removeButton): \(name)")
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 7)
+                                    .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+                                }
                             }
                         }
-                        Divider()
-                        Button(strings.otherDrive) {
-                            showingCustomField = true
-                        }
-                    } label: {
-                        Label(strings.addButton, systemImage: "plus")
                     }
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                } else {
-                    Button {
-                        showingCustomField = true
-                    } label: {
-                        Label(strings.addButton, systemImage: "plus")
-                    }
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
 
-            Text(strings.caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            HStack {
-                Text(strings.listTitle)
-                Spacer()
-                if !protection.excludedVolumes.isEmpty {
-                    Text("\(protection.excludedVolumes.count)")
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
+                    Divider()
+
+                    // Discovered connected disks section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(strings.discoverySection)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
+
+                        if candidates.isEmpty {
+                            Text(strings.noDiscoveredDisks)
+                                .font(.callout)
+                                .foregroundStyle(.tertiary)
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 4)
+                        } else {
+                            VStack(spacing: 6) {
+                                ForEach(candidates, id: \.self) { drive in
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "externaldrive")
+                                            .font(.system(size: 13))
+                                            .foregroundStyle(.secondary)
+                                            .frame(width: 20)
+                                        Text(drive)
+                                            .font(.system(size: 13))
+                                            .lineLimit(1)
+                                        Spacer()
+                                        Button {
+                                            protection.addExcludedVolume(drive)
+                                        } label: {
+                                            Image(systemName: "plus.circle.fill")
+                                                .font(.system(size: 15))
+                                                .foregroundStyle(Color.accentColor)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .accessibilityLabel("\(strings.addButton): \(drive)")
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 7)
+                                    .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+                                }
+                            }
+                        }
+                    }
                 }
+                .padding(16)
             }
+        } footer: {
+            EmptyView()
         }
     }
 
@@ -135,9 +159,6 @@ struct DiskExclusionsList: View {
             guard isOfferable else { continue }
             let name = values.volumeLocalizedName ?? values.volumeName ?? url.lastPathComponent
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            // The same exclusion test the eject paths use: an entry the user
-            // typed as a volume UUID or a mount path excludes the drive just as
-            // much as its name, so the picker must not offer it again.
             let alreadyExcluded = QuickTogglesSupport.isExcluded(
                 volumeName: trimmed,
                 volumeUUID: values.volumeUUIDString,
@@ -148,13 +169,5 @@ struct DiskExclusionsList: View {
             }
         }
         return results.sorted()
-    }
-
-    private func addCustom() {
-        let trimmed = customDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        protection.addExcludedVolume(trimmed)
-        customDraft = ""
-        showingCustomField = false
     }
 }
