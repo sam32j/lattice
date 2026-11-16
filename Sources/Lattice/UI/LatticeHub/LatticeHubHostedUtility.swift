@@ -70,8 +70,6 @@ struct LatticeHubHostedUtility: View {
                         PanelWindowLayoutView(showHeader: false, onClose: onClose)
                     case .appUpdates:
                         PanelAppUpdatesView(showHeader: false, onClose: onClose)
-                    case .portManager:
-                        PanelPortManagerView(showHeader: false, onClose: onClose)
                     case .wallpaper:
                         WallpaperSection(collapsible: false, showHeader: false, onClose: onClose)
                     case .videoDownloader:

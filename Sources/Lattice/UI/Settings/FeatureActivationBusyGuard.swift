@@ -14,7 +14,7 @@ struct FeatureActivationBusyGuard<Content: View>: View {
         case .uninstaller:
             ObservedActivationControl(service: AppUninstaller.shared,
                 isBusy: { $0.isRemoving }, content: content)
-        case .killProcess, .portManager:
+        case .killProcess:
             ObservedActivationControl(service: KillProcessService.shared,
                 isBusy: { $0.hasProtectedAction(for: feature) }, content: content)
         case .homebrew, .appUpdates:

@@ -7,7 +7,7 @@ enum FeatureMutationGuard {
         switch feature {
         case .cleaner: return JunkCleaner.shared.phase == .cleaning
         case .uninstaller: return AppUninstaller.shared.isRemoving
-        case .killProcess, .portManager:
+        case .killProcess:
             return KillProcessService.shared.hasProtectedAction(for: feature)
         case .homebrew, .appUpdates:
             let brew = HomebrewManager.shared

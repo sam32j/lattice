@@ -133,7 +133,6 @@ enum ReleaseChangeAliases {
             "recorder", "recording editor", "gif export", "gif exports"]
         case .wallpaper: return [.exact("Wallpaper"), "wallpaper gallery", "wallpapers"]
         case .killProcess: return ["kill process", "force kill", "process tree"]
-        case .portManager: return ["port manager"]
         case .videoDownloader: return ["video downloader", "video download", "download video"]
         case .notch: return ["dynamic island", "island", "islands", "notch", "volume keys", "volume key",
             "mute key", "volume feedback", "volume indicator", "volume notice", "new track indicator",

@@ -21,7 +21,7 @@ enum AppFeature: String, CaseIterable {
     // Tools
     case quickLauncher, colorPicker, screenOCR, cleaningMode, mediaTools,
          cleaner, uninstaller, homebrew, appUpdates, screenshot, cameraPreview, radialMenu, scratchpad,
-         commandBar, screenRecorder, wallpaper, killProcess, portManager, videoDownloader
+         commandBar, screenRecorder, wallpaper, killProcess, videoDownloader
     // Dynamic Island, then its extensions
     case notch, notchCalendar, notchNotifications, notchGestures, notchTimer, notchAccessories, notchLyrics,
          notchQueue, notchLiveEqualizer, notchDownloads, notchAgents, notchWatch, notchMascot
@@ -108,7 +108,7 @@ extension AppFeature {
             return .energyDisplay
         case .quickLauncher, .colorPicker, .screenOCR, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .radialMenu,
-             .commandBar, .screenRecorder, .killProcess, .portManager, .videoDownloader:
+             .commandBar, .screenRecorder, .killProcess, .videoDownloader:
             return .tools
         case .notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories,
              .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch,
@@ -189,7 +189,6 @@ extension AppFeature {
         case .radialMenu: return "circle.grid.cross"
         case .scratchpad: return "note.text"
         case .commandBar: return "command"
-        case .portManager: return "network"
         case .killProcess: return "waveform.path.ecg"
         case .videoDownloader: return "square.and.arrow.down.on.square"
         case .monitorCPU: return "cpu"
