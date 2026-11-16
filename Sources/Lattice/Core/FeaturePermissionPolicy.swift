@@ -196,7 +196,7 @@ extension AppPermission {
         case .calendar: return "calendar"
         case .camera: return "camera"
         case .appManagement: return "app.badge"
-        case .bluetooth: return "antenna.radiowaves.left.and.right"
+        case .bluetooth: return "dot.radiowaves.left.and.right" // drawn as the Bluetooth rune
         }
     }
 }

@@ -496,6 +496,7 @@ if (( TEST )); then
         Sources/Lattice/Services/QuickTools/ScratchpadStore.swift
         Sources/Lattice/Services/KillProcess/KillProcessSupport.swift
         Sources/Lattice/Services/KillProcess/KillProcessCatalog.swift
+        Sources/Lattice/UI/LatticeSymbol.swift
         Sources/Lattice/Services/Recorder/RecorderSupport.swift
         Sources/Lattice/Services/Recorder/RecorderSampleTiming.swift
         Sources/Lattice/Services/Recorder/RecorderWriter.swift
