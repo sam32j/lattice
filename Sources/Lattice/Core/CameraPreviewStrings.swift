@@ -13,6 +13,7 @@ struct CameraPreviewFeatureStrings {
     let noCameraMessage: String
     let permName: String
     let permExplain: String
+    let openWithShortcut: String
 }
 
 extension FeatureStrings {
@@ -46,7 +47,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "Camera access for Lattice is turned off in System Settings.",
         noCameraMessage: "No camera detected",
         permName: "Camera",
-        permExplain: "Shows your camera only in the preview window, so you can check how you look before a call. Nothing is recorded or leaves your Mac."
+        permExplain: "Shows your camera only in the preview window, so you can check how you look before a call. Nothing is recorded or leaves your Mac.",
+        openWithShortcut: "Open Camera Preview with shortcut"
     )
 
     static let ptBR = CameraPreviewFeatureStrings(
@@ -57,7 +59,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "O acesso à câmera para o Lattice está desativado nos Ajustes do Sistema.",
         noCameraMessage: "Nenhuma câmera detectada",
         permName: "Câmera",
-        permExplain: "Mostra a sua câmera somente na janela de prévia, para você conferir como está antes de uma chamada. Nada é gravado nem sai do seu Mac."
+        permExplain: "Mostra a sua câmera somente na janela de prévia, para você conferir como está antes de uma chamada. Nada é gravado nem sai do seu Mac.",
+        openWithShortcut: "Abrir o Prévia da Câmera com atalho"
     )
 
     static let tr = CameraPreviewFeatureStrings(
@@ -68,7 +71,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "Lattice için kamera erişimi Sistem Ayarları’nda kapalı.",
         noCameraMessage: "Kamera bulunamadı",
         permName: "Kamera",
-        permExplain: "Kameranızı yalnızca önizleme penceresinde gösterir; böylece aramadan önce nasıl göründüğünüzü kontrol edebilirsiniz. Hiçbir şey kaydedilmez ve Mac’inizden çıkmaz."
+        permExplain: "Kameranızı yalnızca önizleme penceresinde gösterir; böylece aramadan önce nasıl göründüğünüzü kontrol edebilirsiniz. Hiçbir şey kaydedilmez ve Mac’inizden çıkmaz.",
+        openWithShortcut: "Kamera Önizlemesi’ni kestirmeyle aç"
     )
 
     static let ru = CameraPreviewFeatureStrings(
@@ -79,7 +83,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "Доступ к камере для Lattice отключен в Системных настройках.",
         noCameraMessage: "Камера не обнаружена",
         permName: "Камера",
-        permExplain: "Показывает изображение с камеры только в окне предпросмотра, чтобы вы могли проверить, как выглядите перед звонком. Ничего не записывается и не покидает ваш Mac."
+        permExplain: "Показывает изображение с камеры только в окне предпросмотра, чтобы вы могли проверить, как выглядите перед звонком. Ничего не записывается и не покидает ваш Mac.",
+        openWithShortcut: "Открыть предпросмотр камеры сочетанием клавиш"
     )
 
     static let es = CameraPreviewFeatureStrings(
@@ -90,7 +95,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "El acceso a la cámara para Lattice está desactivado en Ajustes del Sistema.",
         noCameraMessage: "No se detectó ninguna cámara",
         permName: "Cámara",
-        permExplain: "Muestra tu cámara solo en la ventana de vista previa, para que compruebes cómo te ves antes de una llamada. No se graba nada y nada sale de tu Mac."
+        permExplain: "Muestra tu cámara solo en la ventana de vista previa, para que compruebes cómo te ves antes de una llamada. No se graba nada y nada sale de tu Mac.",
+        openWithShortcut: "Abrir Vista previa de la cámara con atajo"
     )
 
     static let sk = CameraPreviewFeatureStrings(
@@ -101,7 +107,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "Prístup ku kamere pre Lattice je v Systémových nastaveniach vypnutý.",
         noCameraMessage: "Kamera nebola zistená",
         permName: "Kamera",
-        permExplain: "Zobrazuje vašu kameru iba v okne náhľadu, aby ste si pred hovorom mohli skontrolovať, ako vyzeráte. Nič sa nenahráva ani neopúšťa váš Mac."
+        permExplain: "Zobrazuje vašu kameru iba v okne náhľadu, aby ste si pred hovorom mohli skontrolovať, ako vyzeráte. Nič sa nenahráva ani neopúšťa váš Mac.",
+        openWithShortcut: "Otvoriť Náhľad kamery skratkou"
     )
 
     static let de = CameraPreviewFeatureStrings(
@@ -112,7 +119,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "Der Kamerazugriff für Lattice ist in den Systemeinstellungen deaktiviert.",
         noCameraMessage: "Keine Kamera gefunden",
         permName: "Kamera",
-        permExplain: "Zeigt deine Kamera nur im Vorschaufenster, damit du vor einem Anruf prüfen kannst, wie du aussiehst. Nichts wird aufgezeichnet und nichts verlässt deinen Mac."
+        permExplain: "Zeigt deine Kamera nur im Vorschaufenster, damit du vor einem Anruf prüfen kannst, wie du aussiehst. Nichts wird aufgezeichnet und nichts verlässt deinen Mac.",
+        openWithShortcut: "Kameravorschau mit Kurzbefehl öffnen"
     )
 
     static let fr = CameraPreviewFeatureStrings(
@@ -123,7 +131,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "L’accès à la caméra pour Lattice est désactivé dans Réglages Système.",
         noCameraMessage: "Aucune caméra détectée",
         permName: "Caméra",
-        permExplain: "Affiche votre caméra uniquement dans la fenêtre d’aperçu, pour vérifier votre apparence avant un appel. Rien n’est enregistré et rien ne quitte votre Mac."
+        permExplain: "Affiche votre caméra uniquement dans la fenêtre d’aperçu, pour vérifier votre apparence avant un appel. Rien n’est enregistré et rien ne quitte votre Mac.",
+        openWithShortcut: "Ouvrir l’Aperçu de la caméra avec un raccourci"
     )
 
     static let it = CameraPreviewFeatureStrings(
@@ -134,7 +143,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "L’accesso alla fotocamera per Lattice è disattivato in Impostazioni di Sistema.",
         noCameraMessage: "Nessuna fotocamera rilevata",
         permName: "Fotocamera",
-        permExplain: "Mostra la tua fotocamera solo nella finestra di anteprima, così controlli il tuo aspetto prima di una chiamata. Nulla viene registrato e nulla lascia il tuo Mac."
+        permExplain: "Mostra la tua fotocamera solo nella finestra di anteprima, così controlli il tuo aspetto prima di una chiamata. Nulla viene registrato e nulla lascia il tuo Mac.",
+        openWithShortcut: "Apri Anteprima della fotocamera con abbreviazione"
     )
 
     static let ja = CameraPreviewFeatureStrings(
@@ -145,7 +155,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "システム設定でLatticeのカメラへのアクセスがオフになっています。",
         noCameraMessage: "カメラが見つかりません",
         permName: "カメラ",
-        permExplain: "プレビューウインドウにのみカメラを表示し、通話前に写り方を確認できます。録画されることはなく、Macの外に出ることもありません。"
+        permExplain: "プレビューウインドウにのみカメラを表示し、通話前に写り方を確認できます。録画されることはなく、Macの外に出ることもありません。",
+        openWithShortcut: "ショートカットでカメラプレビューを開く"
     )
 
     static let ko = CameraPreviewFeatureStrings(
@@ -156,7 +167,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "시스템 설정에서 Lattice의 카메라 접근이 꺼져 있습니다.",
         noCameraMessage: "카메라를 찾을 수 없습니다",
         permName: "카메라",
-        permExplain: "미리보기 윈도우에만 카메라를 표시하여 통화 전에 모습을 확인할 수 있습니다. 아무것도 녹화되지 않으며 Mac 밖으로 나가지 않습니다."
+        permExplain: "미리보기 윈도우에만 카메라를 표시하여 통화 전에 모습을 확인할 수 있습니다. 아무것도 녹화되지 않으며 Mac 밖으로 나가지 않습니다.",
+        openWithShortcut: "단축키로 카메라 미리보기 열기"
     )
 
     static let zhHans = CameraPreviewFeatureStrings(
@@ -167,7 +179,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "Lattice 的相机访问权限已在系统设置中关闭。",
         noCameraMessage: "未检测到相机",
         permName: "相机",
-        permExplain: "仅在预览窗口中显示相机画面，方便你在通话前查看自己的状态。不会录制任何内容，也不会离开你的 Mac。"
+        permExplain: "仅在预览窗口中显示相机画面，方便你在通话前查看自己的状态。不会录制任何内容，也不会离开你的 Mac。",
+        openWithShortcut: "使用快捷键打开相机预览"
     )
 
     static let zhTW = CameraPreviewFeatureStrings(
@@ -178,7 +191,8 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "Lattice 的相機取用權限已在系統設定中關閉。",
         noCameraMessage: "未偵測到相機",
         permName: "相機",
-        permExplain: "只在預覽視窗中顯示相機畫面，讓你在通話前確認自己的狀態。不會錄製任何內容，也不會離開你的 Mac。"
+        permExplain: "只在預覽視窗中顯示相機畫面，讓你在通話前確認自己的狀態。不會錄製任何內容，也不會離開你的 Mac。",
+        openWithShortcut: "使用快捷鍵開啟相機預覽"
     )
 
     static let zhHK = CameraPreviewFeatureStrings(
@@ -189,8 +203,10 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "Lattice 的相機取用權限已在系統設定中關閉。",
         noCameraMessage: "未偵測到相機",
         permName: "相機",
-        permExplain: "只在預覽視窗中顯示相機畫面，讓你在通話前確認自己的狀態。不會錄製任何內容，也不會離開你的 Mac。"
+        permExplain: "只在預覽視窗中顯示相機畫面，讓你在通話前確認自己的狀態。不會錄製任何內容，也不會離開你的 Mac。",
+        openWithShortcut: "使用快捷鍵開啟相機預覽"
     )
+
     static let uk = CameraPreviewFeatureStrings(
         pageTitle: "Попередній перегляд камери",
         hubDescription: "Відкриває плаваюче дзеркало з вашою камерою",
@@ -199,6 +215,7 @@ extension CameraPreviewFeatureStrings {
         deniedMessage: "Доступ до камери для Lattice вимкнено в Системних параметрах.",
         noCameraMessage: "Камеру не виявлено",
         permName: "Камера",
-        permExplain: "Показує вашу камеру лише у вікні попереднього перегляду, щоб ви могли перевірити, як виглядаєте перед дзвінком. Нічого не записується та не залишає ваш Mac."
+        permExplain: "Показує вашу камеру лише у вікні попереднього перегляду, щоб ви могли перевірити, як виглядаєте перед дзвінком. Нічого не записується та не залишає ваш Mac.",
+        openWithShortcut: "Відкрити попередній перегляд камери комбінацією клавіш"
     )
 }

@@ -135,8 +135,6 @@ struct CommandBarSettings: View {
                     .foregroundStyle(.secondary)
             }
 
-            CommandBarEjectSettings()
-
             Section {
                 ForEach(CommandBarSource.allCases) { source in
                     Toggle(isOn: binding(for: source)) {

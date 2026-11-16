@@ -41,7 +41,6 @@ extension SettingsDirectory {
                                       keywords: ["PDF", "GIF", "PNG", "JPEG", "convert", "resize", "watermark",
                                                  "rename", "profile", "fit", "fill", "crop",
                                                  s.mediaStartConvertPDF, s.ocrName]),
-                SettingsDirectoryItem(page: .cameraPreview, title: FeatureStrings.cameraPreview(language).pageTitle, icon: "person.crop.square.badge.camera"),
                 SettingsDirectoryItem(page: .diskImageInstaller, title: SettingsOwnershipStrings.text(.dmgInstaller, language), icon: "externaldrive.badge.plus"),
                 SettingsDirectoryItem(page: .shelf, title: SettingsOwnershipStrings.text(.fileCache, language), icon: "tray.full",
                                       keywords: [s.shelfEnable, s.shelfDropZoneToggle, s.shelfEdgeToggle,

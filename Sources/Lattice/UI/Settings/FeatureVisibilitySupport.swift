@@ -77,8 +77,7 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
         case .dock, .dockClick: return .dock
         case .autoQuit: return .windowLayout
         case .clipboardHistory, .pastePlain: return .clipboard
-        case .quickLauncher: return .general
-        case .cameraPreview: return .cameraPreview
+        case .quickLauncher, .cameraPreview: return .general
         case .screenshot:
             return .screenshot
         case .screenRecorder:
@@ -209,7 +208,7 @@ extension AppFeature {
         case .screenshot:
             return FeatureSettingsDestination(.screenshot, sectionAnchor: .screenshot)
         case .cameraPreview:
-            return FeatureSettingsDestination(.cameraPreview)
+            return FeatureSettingsDestination(.general, sectionAnchor: .cameraPreview)
         case .videoDownloader:
             return FeatureSettingsDestination(.videoDownloader)
         case .wallpaper:
