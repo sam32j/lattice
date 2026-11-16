@@ -1461,13 +1461,10 @@ enum RepositoryFeatureTests {
         // An unpinned borderless Menu claims the free width of its row on
         // macOS 15 and starves whatever shares that row (issue #569), so the
         // rule is checked for every borderless menu in the app rather than for
-        // the one this fix touches. Kill Process is the one deliberate
-        // exception: its row controls take a shared minimum width so the Kill
-        // button and the menu beside it line up down the list.
-        let borderlessMenuException = "KillProcess/KillProcessView"
+        // the one this fix touches.
         var unpinnedBorderlessMenus: [String] = []
         let uiFiles = allUIFiles.filter { !$0.contains(" 2") }
-        for path in uiFiles where !path.contains(borderlessMenuException) {
+        for path in uiFiles {
             let file = String(path.dropFirst(uiPrefix.count))
             let lines = repository.lines(at: path)
             for (index, line) in lines.enumerated()
