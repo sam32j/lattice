@@ -28,7 +28,13 @@ struct SettingsStatusDot: View {
 
 struct StatusTooltip: NSViewRepresentable {
     let message: String
-    func makeNSView(context: Context) -> HoverHintView { HoverHintView() }
+    /// A click shows the hint at once, and a second click hides it.
+    var opensOnClick = false
+    /// For panels that show while another app is active, such as the HUD.
+    var showsInInactiveApp = false
+    func makeNSView(context: Context) -> HoverHintView {
+        HoverHintView(opensOnClick: opensOnClick, showsInInactiveApp: showsInInactiveApp)
+    }
     func updateNSView(_ view: HoverHintView, context: Context) {
         view.message = message
         view.toolTip = nil
@@ -44,8 +50,16 @@ final class HoverHintView: NSView {
                        backing: .buffered, defer: true)
     private var pending: Timer?
     private var deactivateObserver: NSObjectProtocol?
+    private let opensOnClick: Bool
+    private let showsInInactiveApp: Bool
 
-    override init(frame frameRect: NSRect) {
+    convenience override init(frame frameRect: NSRect) {
+        self.init(frame: frameRect, opensOnClick: false, showsInInactiveApp: false)
+    }
+
+    init(frame frameRect: NSRect = .zero, opensOnClick: Bool, showsInInactiveApp: Bool) {
+        self.opensOnClick = opensOnClick
+        self.showsInInactiveApp = showsInInactiveApp
         super.init(frame: frameRect)
         hint.isReleasedWhenClosed = false
         hint.level = .popUpMenu
@@ -53,8 +67,9 @@ final class HoverHintView: NSView {
         hint.isOpaque = false
         hint.backgroundColor = .clear
         hint.ignoresMouseEvents = true
-        hint.hidesOnDeactivate = true
+        hint.hidesOnDeactivate = !showsInInactiveApp
         hint.collectionBehavior = [.transient, .ignoresCycle, .fullScreenAuxiliary]
+        guard !showsInInactiveApp else { return }
         deactivateObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didResignActiveNotification, object: nil, queue: .main
         ) { [weak self] _ in self?.dismissHint() }
@@ -73,33 +88,37 @@ final class HoverHintView: NSView {
         // hovered synthesizes exits and makes the information hint flash closed.
         guard trackingAreas.isEmpty else { return }
         addTrackingArea(NSTrackingArea(rect: .zero,
-            options: [.mouseEnteredAndExited, .activeInActiveApp, .inVisibleRect],
+            options: [.mouseEnteredAndExited, showsInInactiveApp ? .activeAlways : .activeInActiveApp, .inVisibleRect],
             owner: self, userInfo: nil))
     }
 
     override func mouseEntered(with event: NSEvent) {
         pending?.invalidate()
-        guard let anchorWindow = window else { return }
-        let timer = Timer(timeInterval: 1, repeats: false) { [weak self, weak anchorWindow] _ in
-            guard let self, let anchorWindow, self.window === anchorWindow,
-                  anchorWindow.isVisible, !anchorWindow.isMiniaturized,
-                  !self.message.isEmpty, !self.bounds.isEmpty else { return }
-            let anchor = anchorWindow.convertToScreen(self.convert(self.bounds, to: nil))
-            let screen = anchorWindow.screen?.visibleFrame ?? anchorWindow.frame
-            let host = NSHostingView(rootView:
-                Text(self.message).font(.callout).padding(10)
-                    .frame(width: 280, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8)))
-            let size = host.fittingSize
-            host.sizingOptions = []
-            self.hint.contentView = host
-            self.hint.setFrame(Self.hintFrame(size: size, anchor: anchor, visibleFrame: screen), display: false)
-            anchorWindow.addChildWindow(self.hint, ordered: .above)
-            self.hint.orderFrontRegardless()
-        }
+        guard window != nil else { return }
+        let timer = Timer(timeInterval: 1, repeats: false) { [weak self] _ in self?.showHint() }
         pending = timer
         RunLoop.main.add(timer, forMode: .common)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        guard opensOnClick else { return super.mouseDown(with: event) }
+        if hint.isVisible { dismissHint() } else { showHint() }
+    }
+
+    private func showHint() {
+        pending?.invalidate()
+        pending = nil
+        guard let anchorWindow = window, anchorWindow.isVisible, !anchorWindow.isMiniaturized,
+              !message.isEmpty, !bounds.isEmpty else { return }
+        let anchor = anchorWindow.convertToScreen(convert(bounds, to: nil))
+        let screen = anchorWindow.screen?.visibleFrame ?? anchorWindow.frame
+        let host = NSHostingView(rootView: Bubble(message: message))
+        let size = host.fittingSize
+        host.sizingOptions = []
+        hint.contentView = host
+        hint.setFrame(Self.hintFrame(size: size, anchor: anchor, visibleFrame: screen), display: false)
+        anchorWindow.addChildWindow(hint, ordered: .above)
+        hint.orderFrontRegardless()
     }
 
     override func mouseExited(with event: NSEvent) { dismissHint() }
@@ -124,4 +143,26 @@ final class HoverHintView: NSView {
         hint.parent?.removeChildWindow(hint)
         hint.orderOut(nil)
     }
+
+    /// The hint's bubble: Liquid Glass on macOS 26, the regular material before.
+    private struct Bubble: View {
+        let message: String
+        @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+        var body: some View {
+            let text = Text(message).font(.callout).padding(10)
+                .frame(width: 280, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+#if compiler(>=6.2)
+            if #available(macOS 26.0, *), !reduceTransparency {
+                text.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            } else {
+                text.background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+            }
+#else
+            text.background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+#endif
+        }
+    }
 }
+
