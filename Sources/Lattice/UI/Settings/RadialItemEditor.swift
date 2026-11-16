@@ -27,7 +27,7 @@ struct RadialItemEditor: View {
     }
 
     var availableQuickToggles: [RadialMenuQuickToggle] {
-        RadialMenuQuickToggle.allCases.filter { $0.feature.isAvailable }
+        RadialMenuQuickToggle.allCases.filter { $0.isAvailable }
     }
 
     var urlIsInvalid: Bool {

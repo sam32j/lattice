@@ -1424,7 +1424,7 @@ def main():
           + declaration("Sources/Lattice/Services/Notch/NotchWindowHost.swift", "final class NotchPanel:"))
     write("QuickTogglesAlert.swift", "import AppKit\nextension QuickTogglesAlertTests {\nfinal class Host: Fixture {\n"
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    func emptyTrash(fromNotch:")
-              .replace("QuickToggleAction.emptyTrash.feature.isAvailable", "available")
+              .replace("QuickToggleAction.emptyTrash.isAvailable", "available")
               .replace("NotchIslandAlert.confirmDestructive(", "QuickTogglesAlertTests.confirmDestructiveFixture(")
           + "}\n}\n")
     write("OverlayPanelDeclaration.swift", "import AppKit\n"

@@ -15,12 +15,11 @@ enum HubControlAction: String, CaseIterable, Identifiable, PanelOrderItem {
         case .micMute: return AppFeature.micMute.isAvailable
         case .keepAwake: return AppFeature.keepAwake.isAvailable
         case .cameraPreview: return AppFeature.cameraPreview.isAvailable
-        case .darkMode, .displayOff: return AppFeature.brightness.isAvailable
         case .keyboardLight:
-            return AppFeature.brightness.isAvailable && BrightnessService.shared.keyboardLightEnabled != nil
-        case .hiddenFiles, .desktopIcons, .emptyTrash, .ejectDisks, .lockScreen, .screenSaver:
-            return AppFeature.commandBar.isAvailable
-        case .cleaningMode:
+            return BrightnessService.keyboardLightIsSupported && BrightnessService.shared.keyboardLightEnabled != nil
+        case .cleaningMode, .darkMode, .displayOff, .screenSaver, .lockScreen:
+            return true
+        case .hiddenFiles, .desktopIcons, .emptyTrash, .ejectDisks:
             return true
         }
     }
