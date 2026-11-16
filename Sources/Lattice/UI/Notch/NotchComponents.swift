@@ -1126,6 +1126,7 @@ extension NSAlert {
     static func confirmAboveIsland(_ title: String, message: String, action: String,
                                    destructive: Bool, cancel: String) -> Bool {
         let alert = NSAlert()
+        alert.icon = AppInfo.icon
         alert.messageText = title
         alert.informativeText = message
         alert.addButton(withTitle: action).hasDestructiveAction = destructive

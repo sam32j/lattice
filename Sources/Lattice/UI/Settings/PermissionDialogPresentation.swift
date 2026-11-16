@@ -9,6 +9,9 @@ enum PermissionDialogPresentation {
     @discardableResult
     static func run(_ alert: NSAlert, over parent: NSWindow?,
                     runModal: (() -> NSApplication.ModalResponse)? = nil) -> NSApplication.ModalResponse {
+        if alert.icon == nil || alert.icon == NSImage(named: NSImage.applicationIconName) {
+            alert.icon = AppInfo.icon
+        }
         alert.layout()
         return run(alert.window, over: parent, runModal: runModal ?? alert.runModal)
     }
