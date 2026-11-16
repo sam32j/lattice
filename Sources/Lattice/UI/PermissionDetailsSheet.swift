@@ -12,7 +12,6 @@ struct PermissionDetailsSheet: View {
     }
 
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var l10n = L10n.shared
     let title: String
     let explanation: String
     let items: [Item]
@@ -51,9 +50,13 @@ struct PermissionDetailsSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
-                Text(title).font(.title2.bold())
-                Text(explanation)
-                    .foregroundStyle(.secondary)
+                // Title and explanation read as one block, not two items.
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title).font(.title2.bold())
+                    Text(explanation)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Divider()
                 VStack(alignment: .leading, spacing: 10) {
                     Text(usedByHeader)
@@ -75,7 +78,7 @@ struct PermissionDetailsSheet: View {
                             VStack(spacing: 6) {
                                 ForEach(items) { item in
                                     HStack(spacing: 10) {
-                                        Image(systemName: item.symbolName ?? "app.fill")
+                                        LatticeSymbol(item.symbolName ?? "app.fill")
                                             .font(.system(size: 13, weight: .medium))
                                             .foregroundStyle(.tint)
                                             .frame(width: 24, height: 24)
@@ -99,21 +102,24 @@ struct PermissionDetailsSheet: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(24)
-            Divider()
-            HStack {
-                if let onOpenSystemSettings {
-                    Button(hub.openSystemSettings, action: onOpenSystemSettings)
-                        .buttonStyle(.link)
-                        .accessibilityIdentifier("permission.open-system-settings")
-                }
-                Spacer()
-                Button(l10n.s.doneButton) { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                    .buttonStyle(.borderedProminent)
+            // A popover closes on a click outside or Escape; it needs no Done.
+            if let onOpenSystemSettings {
+                Button(hub.openSystemSettings, action: onOpenSystemSettings)
+                    .buttonStyle(.link)
+                    .accessibilityIdentifier("permission.open-system-settings")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
             }
-            .padding(16)
         }
         .frame(width: 460)
+        // No Done button: Escape still closes it where it shows as a sheet.
+        .background {
+            Button("", action: { dismiss() })
+                .keyboardShortcut(.cancelAction)
+                .hidden()
+                .accessibilityHidden(true)
+        }
     }
 
     private var usedByHeader: String {
