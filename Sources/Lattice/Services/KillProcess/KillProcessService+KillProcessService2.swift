@@ -14,13 +14,23 @@ extension KillProcessService {
     /// a fixed delay), then relaunches it - the same sequence
     /// `CommandBarService.restart` uses for its own restart row.
     func restart(_ entry: KillProcessEntry) {
-        guard let cancellation = readWork.begin(owner: .killProcess, isAvailable: { $0.isAvailable }) else { return }
-        guard !entry.isProtected,
-              let url = entry.bundleURL,
-              let target = Self.target(for: entry) else { return }
-        cancelPendingRestart()
-        pendingRestartPID = entry.pid
+        guard !entry.isProtected, let url = entry.bundleURL, let startedAt = entry.startedAt else { return }
+        restart(pid: entry.pid, startedAt: startedAt, bundleURL: url)
+    }
+
+    /// The same restart for a Kill Process row. `completion` reports on the
+    /// main thread whether the app came back.
+    func restart(pid: pid_t, startedAt: UInt64, bundleURL url: URL, completion: ((Bool) -> Void)? = nil) {
+        guard let cancellation = readWork.begin(owner: .killProcess, isAvailable: { $0.isAvailable }),
+              !Self.isProtected(pid: pid) else {
+            completion?(false)
+            return
+        }
+        let target = KillTarget(pid: pid, startedAt: startedAt)
+        cancelPendingRestart(relaunched: false)
+        pendingRestartPID = pid
         pendingRestartURL = url
+        pendingRestartCompletion = completion
         restartObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didTerminateApplicationNotification,
             object: nil, queue: .main
@@ -36,36 +46,45 @@ extension KillProcessService {
             let result = Self.attemptDirectKill(target: target, force: false)
             switch result {
             case .failed, .needsAdmin, .stale:
-                DispatchQueue.main.async { if !cancellation.isCancelled { self?.cancelPendingRestart() } }
+                DispatchQueue.main.async { if !cancellation.isCancelled { self?.cancelPendingRestart(relaunched: false) } }
             case .killed, .alreadyGone:
                 break
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
-            guard !cancellation.isCancelled, self?.pendingRestartPID == entry.pid else { return }
-            self?.cancelPendingRestart()
+            guard !cancellation.isCancelled, self?.pendingRestartPID == pid else { return }
+            self?.cancelPendingRestart(relaunched: false)
         }
     }
 
     func completeRestart(cancellation: FeatureWorkCancellation) {
         guard !cancellation.isCancelled, AppFeature.killProcess.isAvailable, let url = pendingRestartURL else {
-            cancelPendingRestart()
+            cancelPendingRestart(relaunched: false)
             return
         }
+        let completion = pendingRestartCompletion
+        pendingRestartCompletion = nil
         cancelPendingRestart()
-        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { [weak self] _, _ in
-            guard !cancellation.isCancelled else { return }
-            self?.refresh(force: true)
+        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { [weak self] app, error in
+            DispatchQueue.main.async {
+                guard !cancellation.isCancelled else { return }
+                completion?(app != nil && error == nil)
+                self?.refresh(force: true)
+            }
         }
     }
 
-    func cancelPendingRestart() {
+    /// Drops a pending restart. A caller still waiting hears it did not come back.
+    func cancelPendingRestart(relaunched: Bool? = nil) {
         if let restartObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(restartObserver)
         }
         restartObserver = nil
         pendingRestartPID = nil
         pendingRestartURL = nil
+        let completion = pendingRestartCompletion
+        pendingRestartCompletion = nil
+        if let relaunched { completion?(relaunched) }
     }
 
     // MARK: - Protected Processes
@@ -101,7 +120,8 @@ extension KillProcessService {
         if let expectedPath, expectedPath.contains("/") {
             var pathBuffer = [CChar](repeating: 0, count: Int(MAXPATHLEN) * 4)
             guard proc_pidpath(pid, &pathBuffer, UInt32(pathBuffer.count)) > 0,
-                  String(cString: pathBuffer) == expectedPath else { return nil }
+                  KillProcessSupport.pathsMatch(reported: expectedPath,
+                                                kernel: String(cString: pathBuffer)) else { return nil }
         }
         return info.pbi_start_tvsec &* 1_000_000 &+ info.pbi_start_tvusec
     }
@@ -118,26 +138,54 @@ extension KillProcessService {
     /// Nil on a failed or clearly-wrong snapshot (a timed-out or non-zero
     /// `ps`, or zero rows parsed - never legitimately true on a running Mac),
     /// so a transient hiccup can be told apart from an actually-empty list.
-    static func snapshot(grouped: Bool, cancellation: FeatureWorkCancellation) -> [KillProcessEntry]? {
-        let result = FeatureReadProcess.run("/bin/ps", ["-eo", "pid,ppid,pcpu,rss,comm"], cancellation: cancellation)
+    static func snapshot(cancellation: FeatureWorkCancellation) -> (entries: [KillProcessEntry], items: [KillProcessItem])? {
+        let result = FeatureReadProcess.run("/bin/ps", ["-eo", "pid,ppid,uid,pcpu,rss,comm"], cancellation: cancellation)
         guard !cancellation.isCancelled, result.status == 0 else { return nil }
-        let rows = parsePS(result.output)
-        guard !rows.isEmpty else { return nil }
-        return (grouped ? groupedByApp(rows) : rows).sorted { $0.cpuPercent > $1.cpuPercent }
+        let parsed = parsePS(result.output)
+        guard !parsed.isEmpty else { return nil }
+        let rows = parsed.map(\.entry)
+        // The Command Bar lists each app once, with its helpers folded in.
+        let entries = groupedByApp(rows).sorted { $0.cpuPercent > $1.cpuPercent }
+        let items = KillProcessCatalog.items(from: parsed.map(\.probe),
+                                             ownPID: ProcessInfo.processInfo.processIdentifier,
+                                             currentUID: getuid(),
+                                             ports: listeningPorts(probes: parsed.map(\.probe),
+                                                                   cancellation: cancellation))
+        return (entries, items)
     }
 
-    /// Lines look like "  437     1  12.5  20480 /System/Library/.../WindowServer".
-    static func parsePS(_ output: String) -> [KillProcessEntry] {
-        var rows: [KillProcessEntry] = []
+    /// Every listening TCP socket. A port may only be acted on when its
+    /// process is the same one `ps` just listed; a new or reused PID stays
+    /// visible without actions until the next refresh confirms it.
+    static func listeningPorts(probes: [KillProcessProbe], cancellation: FeatureWorkCancellation) -> [KillProcessPort] {
+        guard !cancellation.isCancelled else { return [] }
+        let result = FeatureReadProcess.run("/usr/sbin/lsof", ["-nP", "+c0", "-iTCP", "-sTCP:LISTEN", "-F", "pcnPT"],
+                                            cancellation: cancellation)
+        // lsof exits 1 when nothing listens; only a timeout (negative) fails.
+        guard !cancellation.isCancelled, result.status >= 0 else { return [] }
+        let identities = Dictionary(probes.map { ($0.pid, $0.startedAt) }, uniquingKeysWith: { first, _ in first })
+        return KillProcessPortSupport.parseLsof(result.output).map { entry in
+            let startedAt = identities[entry.pid] ?? nil
+            let stable = startedAt != nil && startedAt == currentStartTime(pid: entry.pid)
+            return KillProcessPort(port: entry.port, protocolName: entry.protocolName, address: entry.address,
+                                   pid: entry.pid, processName: entry.processName,
+                                   startedAt: stable ? startedAt : nil)
+        }
+    }
+
+    /// Lines look like "  437     1    88  12.5  20480 /System/Library/.../WindowServer".
+    static func parsePS(_ output: String) -> [(entry: KillProcessEntry, probe: KillProcessProbe)] {
+        var rows: [(entry: KillProcessEntry, probe: KillProcessProbe)] = []
         for line in output.split(separator: "\n").dropFirst() {
-            let columns = line.split(separator: " ", maxSplits: 4, omittingEmptySubsequences: true)
-            guard columns.count == 5,
+            let columns = line.split(separator: " ", maxSplits: 5, omittingEmptySubsequences: true)
+            guard columns.count == 6,
                   let pid = pid_t(columns[0]), pid > 0,
                   let ppid = pid_t(columns[1]),
-                  let cpu = Double(columns[2])
+                  let uid = uid_t(columns[2]),
+                  let cpu = Double(columns[3])
             else { continue }
-            let rss = Double(columns[3]) ?? 0
-            let commandPath = String(columns[4]).trimmingCharacters(in: .whitespaces)
+            let rss = Double(columns[4]) ?? 0
+            let commandPath = String(columns[5]).trimmingCharacters(in: .whitespaces)
             let shortName = commandPath.contains("/")
                 ? (commandPath as NSString).lastPathComponent : commandPath
             let running = NSRunningApplication(processIdentifier: pid)
@@ -146,10 +194,11 @@ extension KillProcessService {
                                              expectedPath: commandPath)
             let isProt = isProtected(pid: pid, name: shortName, path: commandPath)
                 || startedAt == nil
-            rows.append(KillProcessEntry(
+            let name = ResponsibleProcess.displayName(pid: pid, fallback: shortName)
+            let entry = KillProcessEntry(
                 pid: pid,
                 ppid: ppid,
-                name: ResponsibleProcess.displayName(pid: pid, fallback: shortName),
+                name: name,
                 path: commandPath,
                 cpuPercent: cpu,
                 memoryBytes: rss * 1024,
@@ -157,7 +206,26 @@ extension KillProcessService {
                 bundleURL: running?.bundleURL,
                 groupedCount: 1,
                 isProtected: isProt,
-                startedAt: startedAt))
+                startedAt: startedAt)
+            let bundlePath = running?.bundleURL.map(\.path).flatMap { $0.hasSuffix(".app") ? $0 : nil }
+            let probe = KillProcessProbe(
+                pid: pid,
+                ppid: ppid,
+                uid: uid,
+                name: name,
+                path: commandPath,
+                cpuPercent: cpu,
+                memoryBytes: rss * 1024,
+                startedAt: startedAt,
+                bundleIdentifier: running?.bundleIdentifier,
+                bundlePath: bundlePath,
+                activationPolicy: running.map { $0.activationPolicy.rawValue },
+                responsiblePID: ResponsibleProcess.owner(of: pid),
+                // Lattice is its own kind; only the session's vital processes
+                // are protected here.
+                isProtected: pid != ProcessInfo.processInfo.processIdentifier
+                    && isProtected(pid: pid, name: shortName, path: commandPath))
+            rows.append((entry, probe))
         }
         return rows
     }

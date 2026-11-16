@@ -56,12 +56,6 @@ extension KillProcessService {
         UserDefaults.standard.set(sortAscending, forKey: DefaultsKey.killProcessSortAscending)
     }
 
-    func setGroupRelated(_ value: Bool) {
-        groupRelated = value
-        UserDefaults.standard.set(value, forKey: DefaultsKey.killProcessGroupRelated)
-        refresh(force: true)
-    }
-
     /// Refreshes the process list off the main thread and republishes on the
     /// main thread. `force` bypasses the freshness cache, so a kill's
     /// reconciling refresh and an explicit tap of the refresh button always
@@ -89,9 +83,8 @@ extension KillProcessService {
         }
 
         isRefreshing = true
-        let grouped = groupRelated
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let rows = Self.snapshot(grouped: grouped, cancellation: cancellation)
+            let snapshot = Self.snapshot(cancellation: cancellation)
             DispatchQueue.main.async {
                 guard let self, !cancellation.isCancelled else {
                     completion?()
@@ -100,8 +93,9 @@ extension KillProcessService {
                 // A failed or empty `ps` call (transient - a timeout under
                 // load, a hiccup) must never wipe a list that was already
                 // showing good data; only a genuine snapshot replaces it.
-                if let rows {
-                    self.entries = rows
+                if let snapshot {
+                    self.entries = snapshot.entries
+                    self.items = snapshot.items
                     self.hasLoadedOnce = true
                 }
                 self.isRefreshing = false
