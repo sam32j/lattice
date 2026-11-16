@@ -14,9 +14,12 @@ struct AppListSheet<Content: View, Footer: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(title ?? SettingsAppListStrings.text(l10n.language).disabledApps).font(.title2.weight(.semibold))
-            Text(punctuatedCaption).font(.callout).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            // Title and caption read as one block, not two items.
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title ?? SettingsAppListStrings.text(l10n.language).disabledApps).font(.title2.weight(.semibold))
+                Text(punctuatedCaption).font(.callout).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             GeometryReader { proxy in
                 ScrollView {
                     content()
