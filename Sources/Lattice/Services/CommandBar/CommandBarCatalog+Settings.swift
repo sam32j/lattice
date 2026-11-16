@@ -38,7 +38,8 @@ extension CommandBarCatalog {
                 id: id,
                 title: item.title,
                 subtitle: s.settingsTitle,
-                keywords: item.keywords.joined(separator: " "),
+                keywords: item.shownKeywords(isSettingOn: { UserDefaults.standard.bool(forKey: $0) })
+                    .joined(separator: " "),
                 icon: .symbol(item.icon),
                 run: { _ in
                     let routed = SettingsSearchSupport.route(for: item)

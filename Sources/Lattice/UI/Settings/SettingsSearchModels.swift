@@ -20,11 +20,27 @@ struct SettingsSearchItem: Identifiable {
     /// Optional feature owner for each keyword. This is parallel to
     /// `keywords`; absent entries are page-level settings.
     var keywordFeatures: [AppFeature?] = []
+    /// Parallel to `keywords`: the Boolean preference that must be on for
+    /// the row to be on screen. `nil` rows are shown whenever the page is.
+    var keywordRequirements: [String?] = []
     /// The hub feature this result represents, when it corresponds to exactly
     /// one `AppFeature` — including a dedicated page result such as Homebrew,
     /// whose `id` stays `.page(...)` for identity stability. `nil` for a
     /// purely generic page (Features itself, General, ...).
     var feature: AppFeature?
+    /// Search aliases that match the containing page, but do not produce separate child suggestion rows.
+    var aliases: [String] = []
+
+    /// Whether the keyword at `index` names a row currently on screen.
+    func keywordIsShown(at index: Int, isSettingOn: (String) -> Bool) -> Bool {
+        guard keywordRequirements.indices.contains(index),
+              let requirement = keywordRequirements[index] else { return true }
+        return isSettingOn(requirement)
+    }
+
+    func shownKeywords(isSettingOn: (String) -> Bool) -> [String] {
+        keywords.indices.filter { keywordIsShown(at: $0, isSettingOn: isSettingOn) }.map { keywords[$0] }
+    }
 }
 
 /// One selectable row inside a grouped Settings search result. A page-level
@@ -54,10 +70,19 @@ struct SettingsSearchGroup: Identifiable {
     let parentMatches: Bool
     let suggestions: [SettingsSearchSuggestion]
 
+    /// The page the group opens. A feature with its own sidebar row (see
+    /// `SettingsSearchSupport.standaloneSearchGroupFeatures`) heads a group of
+    /// its own on that same page, so views key rows by `pageItem.id`.
     var id: SettingsPage { pageItem.destination.page }
 
     var parentSuggestion: SettingsSearchSuggestion {
-        SettingsSearchSuggestion(id: .page(id), title: pageItem.title,
-                                 icon: pageItem.icon, item: pageItem)
+        let suggestionID: SettingsSearchSuggestion.ID
+        if case .page(let page) = pageItem.id {
+            suggestionID = .page(page)
+        } else {
+            suggestionID = .item(pageItem.destination.page, pageItem.id)
+        }
+        return SettingsSearchSuggestion(id: suggestionID, title: pageItem.title,
+                                        icon: pageItem.icon, item: pageItem)
     }
 }

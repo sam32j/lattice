@@ -50,11 +50,13 @@ extension SettingsSearchSupport {
     }
 
     static func matchRank(foldedQuery: String,
-                                   title: String,
-                                   keywords: [String]) -> MatchRank? {
+                          title: String,
+                          keywords: [String],
+                          aliases: [String] = []) -> MatchRank? {
         let foldedTitle = fold(title)
         if foldedTitle == foldedQuery { return .exactTitle }
         if foldedTitle.contains(foldedQuery) { return .title }
+        if aliases.contains(where: { fold($0).contains(foldedQuery) }) { return .title }
         if keywords.contains(where: { fold($0).contains(foldedQuery) }) { return .keyword }
         return nil
     }
