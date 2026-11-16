@@ -41,7 +41,7 @@ struct EnergyDisplaySettings: View {
                 }
                 .padding(.leading, settingsRowTextInset)
             }
-            SettingsCard(symbol: "display.2", title: strings.enable, headerAccessory: {
+            SettingsCard(symbol: "display.2", title: strings.enable, headerSpacing: 0, headerAccessory: {
                 Toggle(strings.enable, isOn: $brightnessEnabled)
                     .labelsHidden()
                     .toggleStyle(.switch)
@@ -53,9 +53,9 @@ struct EnergyDisplaySettings: View {
                         FeatureRuntime.shared.finishAvailabilityChange()
                     }
             }) {
-                if brightnessEnabled {
-                    displayControlsSection
-                }
+                displayControlsSection
+                    .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
+                    .settingsCollapsible(isExpanded: brightnessEnabled)
             }
             .settingsSectionAnchor(.brightness, cornerRadius: 16)
         }

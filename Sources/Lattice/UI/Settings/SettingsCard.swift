@@ -10,24 +10,34 @@ struct SettingsCard<Content: View>: View {
     let symbol: String?
     let title: String?
     let headerAccessory: AnyView?
+    /// Gap between the heading and the content. A card whose content
+    /// collapses with `settingsCollapsible` passes 0 and pads the content
+    /// itself, so the gap folds away with it.
+    let headerSpacing: CGFloat
     let content: Content
 
     init(symbol: String? = nil, title: String? = nil, @ViewBuilder content: () -> Content) {
         self.symbol = symbol
         self.title = title
         self.headerAccessory = nil
+        self.headerSpacing = Self.defaultHeaderSpacing
         self.content = content()
     }
 
-    init<Accessory: View>(symbol: String? = nil, title: String, @ViewBuilder headerAccessory: () -> Accessory, @ViewBuilder content: () -> Content) {
+    init<Accessory: View>(symbol: String? = nil, title: String,
+                          headerSpacing: CGFloat = SettingsCard.defaultHeaderSpacing,
+                          @ViewBuilder headerAccessory: () -> Accessory, @ViewBuilder content: () -> Content) {
         self.symbol = symbol
         self.title = title
         self.headerAccessory = AnyView(headerAccessory())
+        self.headerSpacing = headerSpacing
         self.content = content()
     }
 
+    static var defaultHeaderSpacing: CGFloat { 13 }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
+        VStack(alignment: .leading, spacing: headerSpacing) {
             if let title {
                 HStack(alignment: .center, spacing: 10) {
                     if let symbol {
