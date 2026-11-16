@@ -771,8 +771,7 @@ enum CommandBarCatalog {
             icon: .symbol("face.smiling"),
             keepsBarOpen: true,
             run: { _ in CommandBarService.shared.setCategory(.emoji) }))
-        if AppFeature.killProcess.isAvailable,
-           UserDefaults.standard.bool(forKey: DefaultsKey.killProcessCommandBarEnabled) {
+        if AppFeature.killProcess.isAvailable {
             let killStrings = FeatureStrings.killProcess(language)
             entries.append(CommandBarEntry(
                 id: CommandBarPreferences.killProcessBrowserRowID,
