@@ -9,6 +9,7 @@ struct DisplaySettings: View {
     var focus: SettingsSectionAnchor?
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
+    @AppStorage(DefaultsKey.brightnessControlEnabled) private var brightnessControlEnabled = false
     @AppStorage(DefaultsKey.bluetoothSleepEnabled) private var bluetoothSleepEnabled = false
     @AppStorage(DefaultsKey.bluetoothSleepRestoreOnWake) private var bluetoothSleepRestoreOnWake = true
 
@@ -39,7 +40,9 @@ struct DisplaySettings: View {
             refreshVisibleServices()
         }
         .onChange(of: focus) { _, _ in refreshVisibleServices() }
-        .settingsExpansionAnimation(value: bluetoothSleepEnabled)
+        // The display card's accordion and the cards below it move in one
+        // transaction, so nothing under it jumps ahead of the expansion.
+        .settingsExpansionAnimation(value: [brightnessControlEnabled, bluetoothSleepEnabled])
     }
 
     private func refreshVisibleServices() {
