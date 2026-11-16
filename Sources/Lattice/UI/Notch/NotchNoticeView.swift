@@ -109,7 +109,7 @@ struct NotchNoticeView: View {
                             .foregroundStyle(tint)
                             .frame(width: 18)
                     } else {
-                        Image(systemName: notice.symbol)
+                        LatticeSymbol(notice.symbol)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(tint)
                     }
@@ -189,7 +189,7 @@ struct NotchExpandedLevelView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: notice.symbol)
+            LatticeSymbol(notice.symbol)
                 .frame(width: 18)
             NotchMeter(value: notice.level ?? 0, height: 5, tint: .white)
                 .frame(maxWidth: 96)

@@ -93,7 +93,7 @@ extension SettingsView {
             Section {
                 ForEach(section.items) { item in
                     HStack(spacing: 9) {
-                        Image(systemName: item.icon)
+                        LatticeSymbol(item.icon)
                             .foregroundStyle(selectedID == item.id
                                 ? AnyShapeStyle(.primary) : AnyShapeStyle(.tint))
                             .frame(width: 18)

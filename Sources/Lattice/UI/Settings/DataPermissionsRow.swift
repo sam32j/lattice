@@ -22,7 +22,7 @@ struct DataPermissionsRow: View {
     var body: some View {
         let palette = DataPermissionsPalette(scheme)
         HStack(alignment: .center, spacing: 12) {
-            Image(systemName: symbol)
+            LatticeSymbol(symbol)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(palette.foreground(tone))
                 .frame(width: 30, height: 30)
