@@ -483,7 +483,7 @@ final class RadialMenuService: ObservableObject {
             var item = item
             if let tool = item.tool, !tool.isRunnable() { return nil }
             if item.kind == .quickToggle,
-               let action = item.quickToggle, !action.feature.isAvailable { return nil }
+               let action = item.quickToggle, !action.isAvailable { return nil }
             if item.kind == .windowLayout, !AppFeature.windowLayout.isAvailable { return nil }
             if item.kind == .submenu {
                 item.children = availableItems(item.children)
@@ -799,7 +799,7 @@ final class RadialMenuService: ObservableObject {
     }
 
     private func run(_ action: RadialMenuQuickToggle) {
-        guard action.feature.isAvailable else { return }
+        guard action.isAvailable else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             let toggles = QuickTogglesService.shared
             switch action {

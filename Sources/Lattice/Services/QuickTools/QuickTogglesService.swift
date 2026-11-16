@@ -4,16 +4,12 @@
 import AppKit
 
 /// Actions dispatched by the quick-toggle service; Hub controls share these IDs.
-enum QuickToggleAction: String {
+enum QuickToggleAction: String, CaseIterable {
     case darkMode, emptyTrash, ejectDisks, hiddenFiles, desktopIcons,
          lockScreen, displayOff, screenSaver
 
-    var feature: AppFeature {
-        switch self {
-        case .darkMode, .displayOff: return .brightness
-        case .emptyTrash, .ejectDisks, .hiddenFiles, .desktopIcons, .lockScreen, .screenSaver:
-            return .commandBar
-        }
+    var isAvailable: Bool {
+        true
     }
 }
 
@@ -73,7 +69,7 @@ final class QuickTogglesService: ObservableObject {
     /// no Automation consent involved. The symbol is resolved lazily and
     /// guarded; without it the row reports the failure instead of crashing.
     func toggleDarkMode() {
-        guard QuickToggleAction.darkMode.feature.isAvailable, beginRun(.darkMode) else { return }
+        guard QuickToggleAction.darkMode.isAvailable, beginRun(.darkMode) else { return }
         guard let theme = Self.appearanceTheme else {
             finishRun(.darkMode, state: .failed)
             return
@@ -88,7 +84,7 @@ final class QuickTogglesService: ObservableObject {
     /// the Trash. Runs on the main thread up to the confirmation; the Apple
     /// Event goes to the work queue.
     func emptyTrash(fromNotch: Bool = false) {
-        guard QuickToggleAction.emptyTrash.feature.isAvailable,
+        guard QuickToggleAction.emptyTrash.isAvailable,
               states[.emptyTrash] != .running, !trashConfirmationPending else { return }
         let strings = FeatureStrings.quickToggles(L10n.shared.language)
         let title = strings.emptyTrashConfirmTitle
@@ -147,7 +143,7 @@ final class QuickTogglesService: ObservableObject {
     /// and posting Command+Shift+Period directly to Finder while refreshing open windows,
     /// without killing Finder, stealing focus, or opening tabs/windows.
     func toggleHiddenFiles() {
-        guard QuickToggleAction.hiddenFiles.feature.isAvailable else { return }
+        guard QuickToggleAction.hiddenFiles.isAvailable else { return }
         let targetShown = !hiddenFilesShown
         CFPreferencesSetAppValue(QuickTogglesSupport.showAllFilesKey as CFString,
                                  targetShown as CFBoolean,
@@ -220,7 +216,7 @@ final class QuickTogglesService: ObservableObject {
     /// monitor's "Eject all". Enumerated fresh on each click, so the action
     /// never keeps a disk list alive.
     func ejectAllDisks() {
-        guard QuickToggleAction.ejectDisks.feature.isAvailable, beginRun(.ejectDisks) else { return }
+        guard QuickToggleAction.ejectDisks.isAvailable, beginRun(.ejectDisks) else { return }
         workQueue.async {
             let volumes = Self.ejectableVolumeURLs()
             guard !volumes.isEmpty else {
@@ -249,7 +245,7 @@ final class QuickTogglesService: ObservableObject {
     /// resolved lazily and guarded; when it is unavailable the screen saver
     /// path stands in (with a password required, it locks too).
     func lockScreen() {
-        guard QuickToggleAction.lockScreen.feature.isAvailable else { return }
+        guard QuickToggleAction.lockScreen.isAvailable else { return }
         if let lock = Self.lockScreenFunction {
             _ = lock()
         } else {
@@ -258,7 +254,7 @@ final class QuickTogglesService: ObservableObject {
     }
 
     func turnDisplayOff() {
-        guard QuickToggleAction.displayOff.feature.isAvailable, beginRun(.displayOff) else { return }
+        guard QuickToggleAction.displayOff.isAvailable, beginRun(.displayOff) else { return }
         workQueue.async {
             let result = Shell.run("/usr/bin/pmset", ["displaysleepnow"])
             self.finishRun(.displayOff, state: result.status == 0 ? nil : .failed)
@@ -266,7 +262,7 @@ final class QuickTogglesService: ObservableObject {
     }
 
     func startScreenSaver() {
-        guard QuickToggleAction.screenSaver.feature.isAvailable else { return }
+        guard QuickToggleAction.screenSaver.isAvailable else { return }
         let url = URL(fileURLWithPath: "/System/Library/CoreServices/ScreenSaverEngine.app")
         NSWorkspace.shared.openApplication(at: url,
                                            configuration: NSWorkspace.OpenConfiguration())
@@ -277,7 +273,7 @@ final class QuickTogglesService: ObservableObject {
     private func runAppleScript(_ action: QuickToggleAction,
                                 target: Permissions.AutomationTarget,
                                 source: String) {
-        guard action.feature.isAvailable, beginRun(action) else { return }
+        guard action.isAvailable, beginRun(action) else { return }
         workQueue.async {
             // Denied consent never re-prompts by itself: surface the grant
             // button instead of a silent failure. Undetermined runs straight
