@@ -17,7 +17,6 @@ struct ScreenshotEditorView: View {
     @State private var dragInFlight = false
     @State private var drag = ScreenshotSupport.EditorDrag()
     @State private var dragCanvasArea: CGSize?
-    @State private var canvasOrigin: CGPoint = .zero
     /// Room the floating controls take on each side of the canvas; the fit
     /// keeps the capture clear of them, scrolling may pass beneath them.
     @State private var canvasReserve = EdgeInsets(top: 52, leading: 53, bottom: 48, trailing: 50)
@@ -91,11 +90,11 @@ struct ScreenshotEditorView: View {
         // controls, and zoomed content scrolls beneath them.
         ZStack {
             artboard
-            // The capture runs to every edge of the window and the controls
-            // float over it. Near the edges a blurred copy of the capture lies
-            // on top, so it softens there in its own colors: nothing turns
-            // transparent, so no pale or dark rim shows in either appearance.
+            // The capture runs to every edge of the window. The controls float
+            // over it on their own frosted backgrounds; only a short fade at
+            // the window's edge softens where the image meets the frame.
             canvasArea
+                .mask(edgeMask)
             VStack(spacing: 0) {
                 topBand
                     .padding(.top, 10)
@@ -228,23 +227,12 @@ struct ScreenshotEditorView: View {
             let zoom = zoomFactor(available: available)
             let canvasSize = CGSize(width: contentPixelSize.width * zoom,
                                     height: contentPixelSize.height * zoom)
-            ZStack(alignment: .topLeading) {
-                ScrollView([.horizontal, .vertical]) {
-                    canvas(zoom: zoom, canvasSize: canvasSize, available: available)
-                        .frame(width: canvasSize.width, height: canvasSize.height)
-                        .background(GeometryReader { geometry in
-                            Color.clear.preference(key: CanvasOriginKey.self,
-                                                   value: geometry.frame(in: .named(Self.canvasSpace)).origin)
-                        })
-                        .padding(canvasInsets(available: available, canvas: canvasSize))
-                }
-                .scrollIndicators(.never)
-                edgeBlur(zoom: zoom, canvasSize: canvasSize, available: available)
+            ScrollView([.horizontal, .vertical]) {
+                canvas(zoom: zoom, canvasSize: canvasSize, available: available)
+                    .frame(width: canvasSize.width, height: canvasSize.height)
+                    .padding(canvasInsets(available: available, canvas: canvasSize))
             }
-            .coordinateSpace(name: Self.canvasSpace)
-            .onPreferenceChange(CanvasOriginKey.self) { origin in
-                if origin != canvasOrigin { canvasOrigin = origin }
-            }
+            .scrollIndicators(.never)
             .frame(width: available.width, height: available.height, alignment: .topLeading)
             // Trackpad pinch, anchored at the zoom the gesture started from.
             .simultaneousGesture(
@@ -299,69 +287,36 @@ struct ScreenshotEditorView: View {
                           bottom: reserve.bottom + vertical, trailing: reserve.trailing + horizontal)
     }
 
+    /// Opaque everywhere but a soft fade at the window's edges.
+    private var edgeMask: some View {
+        GeometryReader { proxy in
+            // A long, eased fall-off: the image dissolves into the stage
+            // instead of ending on a thin bright or dark band.
+            let fade: CGFloat = 44
+            let w = max(proxy.size.width, 1), h = max(proxy.size.height, 1)
+            LinearGradient(stops: Self.fadeStops(length: fade, total: w),
+                           startPoint: .leading, endPoint: .trailing)
+                .mask(LinearGradient(stops: Self.fadeStops(length: fade, total: h),
+                                     startPoint: .top, endPoint: .bottom))
+        }
+        .ignoresSafeArea()
+    }
+
+    /// Opacity rising from 0 at an edge to 1 at `length` along a smoothstep
+    /// curve, mirrored at the far edge.
+    private static func fadeStops(length: CGFloat, total: CGFloat) -> [Gradient.Stop] {
+        let span = min(0.5, length / total)
+        let steps = 8
+        let rising = (0...steps).map { index -> Gradient.Stop in
+            let t = CGFloat(index) / CGFloat(steps)
+            let eased = t * t * (3 - 2 * t)
+            return .init(color: Color.black.opacity(eased), location: span * t)
+        }
+        let falling = rising.reversed().map { Gradient.Stop(color: $0.color, location: 1 - $0.location) }
+        return rising + falling
+    }
+
     private func canvas(zoom: CGFloat, canvasSize: CGSize, available: CGSize) -> some View {
-        canvasArt(zoom: zoom)
-            .onAppear {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                    appeared = true
-                }
-            }
-            .overlay {
-                canvasInput(zoom: zoom, available: available)
-            }
-            .overlay(alignment: .topLeading) {
-                textEditorOverlay(zoom: zoom)
-            }
-            .overlay(alignment: .topLeading) {
-                cropLoupeOverlay(zoom: zoom, canvasSize: canvasSize)
-            }
-    }
-
-    private static let canvasSpace = "editorCanvasArea"
-
-    /// Where the capture sits in the canvas area as it scrolls, for the edge blur.
-    private struct CanvasOriginKey: PreferenceKey {
-        static var defaultValue: CGPoint = .zero
-        static func reduce(value: inout CGPoint, nextValue: () -> CGPoint) { value = nextValue() }
-    }
-
-    /// A blurred copy of the capture, drawn at exactly the capture's place and
-    /// shown only in bands along the window's edges and beneath the controls.
-    /// It covers the sharp capture rather than fading it out, so where there
-    /// is no capture there is nothing to tint the empty stage.
-    private func edgeBlur(zoom: CGFloat, canvasSize: CGSize, available: CGSize) -> some View {
-        let reserve = canvasReserve
-        let band = { (length: CGFloat, total: CGFloat) in min(0.5, length / max(total, 1)) }
-        let left = band(reserve.leading + 20, available.width)
-        let right = band(reserve.trailing + 20, available.width)
-        let top = band(reserve.top + 16, available.height)
-        let bottom = band(reserve.bottom + 16, available.height)
-        return canvasArt(zoom: zoom)
-            .frame(width: canvasSize.width, height: canvasSize.height)
-            .offset(x: canvasOrigin.x, y: canvasOrigin.y)
-            .frame(width: available.width, height: available.height, alignment: .topLeading)
-            .blur(radius: 14)
-            .mask {
-                ZStack {
-                    LinearGradient(stops: [.init(color: .black, location: 0),
-                                           .init(color: .clear, location: left),
-                                           .init(color: .clear, location: 1 - right),
-                                           .init(color: .black, location: 1)],
-                                   startPoint: .leading, endPoint: .trailing)
-                    LinearGradient(stops: [.init(color: .black, location: 0),
-                                           .init(color: .clear, location: top),
-                                           .init(color: .clear, location: 1 - bottom),
-                                           .init(color: .black, location: 1)],
-                                   startPoint: .top, endPoint: .bottom)
-                }
-            }
-            .clipped()
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-    }
-
-    /// The capture as drawn: backdrop, image and annotations, with its frame.
-    private func canvasArt(zoom: CGFloat) -> some View {
         let outerRadius = model.showsBackdrop
             ? 6
             : max(4, model.cardCornerPixels * zoom)
@@ -389,6 +344,20 @@ struct ScreenshotEditorView: View {
         .shadow(color: .black.opacity(colorScheme == .light ? 0.06 : 0.18), radius: 3, y: 1)
         .scaleEffect(appeared ? 1 : 0.965)
         .opacity(appeared ? 1 : 0)
+        .onAppear {
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                appeared = true
+            }
+        }
+        .overlay {
+            canvasInput(zoom: zoom, available: available)
+        }
+        .overlay(alignment: .topLeading) {
+            textEditorOverlay(zoom: zoom)
+        }
+        .overlay(alignment: .topLeading) {
+            cropLoupeOverlay(zoom: zoom, canvasSize: canvasSize)
+        }
     }
 
     private func updateCanvasCursor(at point: CGPoint, zoom: CGFloat, dragging: Bool = false) {
