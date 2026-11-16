@@ -113,10 +113,10 @@ enum SettingsSearchSupport {
     /// "Metrics", "moni" finds "Monitor". A blank query matches everything.
     /// Keywords let a page match by what lives inside it ("lid" finds
     /// Energy, "Launcher Grid" finds Quick tools), not just by its name.
-    static func matches(query: String, title: String, keywords: [String] = []) -> Bool {
+    static func matches(query: String, title: String, keywords: [String] = [], aliases: [String] = []) -> Bool {
         let foldedQuery = fold(query)
         guard !foldedQuery.isEmpty else { return true }
-        return matchRank(foldedQuery: foldedQuery, title: title, keywords: keywords) != nil
+        return matchRank(foldedQuery: foldedQuery, title: title, keywords: keywords, aliases: aliases) != nil
     }
 
     /// Filters and ranks one query in a single stable pass: exact normalized
@@ -132,7 +132,8 @@ enum SettingsSearchSupport {
         for item in items {
             switch matchRank(foldedQuery: foldedQuery,
                              title: item.title,
-                             keywords: item.keywords) {
+                             keywords: item.keywords,
+                             aliases: item.aliases) {
             case .exactTitle: exactTitleMatches.append(item)
             case .title: titleMatches.append(item)
             case .keyword: keywordMatches.append(item)
@@ -147,7 +148,8 @@ enum SettingsSearchSupport {
     /// result, and generated feature rows retain their anchored destinations.
     static func groupedMatchingItems(query: String,
                                      items: [SettingsSearchItem],
-                                     isAvailable: (AppFeature) -> Bool = { $0.isAvailable })
+                                     isAvailable: (AppFeature) -> Bool = { $0.isAvailable },
+                                     isSettingOn: (String) -> Bool = { UserDefaults.standard.bool(forKey: $0) })
         -> [SettingsSearchGroup] {
         let foldedQuery = fold(query)
         guard !foldedQuery.isEmpty else { return [] }
@@ -163,6 +165,7 @@ enum SettingsSearchSupport {
                 var fallbackItem = item
                 fallbackItem.keywords = []
                 fallbackItem.keywordFeatures = []
+                fallbackItem.keywordRequirements = []
                 return fallbackItem
             }
             guard FeatureVisibilitySupport.isPageVisible(
@@ -178,27 +181,57 @@ enum SettingsSearchSupport {
             return (page, item)
         }
         let pageItems = Dictionary(uniqueKeysWithValues: pagePairs)
-        var builders: [SettingsPage: SearchGroupBuilder] = [:]
-        var pageOrder: [SettingsPage] = []
+        // A feature with its own sidebar row heads its own group, so a
+        // Bluetooth match never reads as part of Displays.
+        let featureHeaders: [AppFeature: SettingsSearchItem] = Dictionary(
+            navigableItems.compactMap { item -> (AppFeature, SettingsSearchItem)? in
+                guard case .feature(let feature) = item.id,
+                      standaloneSearchGroupFeatures.contains(feature) else { return nil }
+                return (feature, item)
+            },
+            uniquingKeysWith: { first, _ in first })
+        var builders: [SettingsSearchItem.ID: SearchGroupBuilder] = [:]
+        var groupOrder: [SettingsSearchItem.ID] = []
+
+        func groupKey(page: SettingsPage, feature: AppFeature?) -> SettingsSearchItem.ID? {
+            let header: SettingsSearchItem
+            if let feature, let featureHeader = featureHeaders[feature] {
+                header = featureHeader
+            } else if let pageItem = pageItems[page] {
+                header = pageItem
+            } else {
+                return nil
+            }
+            if builders[header.id] == nil {
+                builders[header.id] = SearchGroupBuilder(pageItem: header)
+                groupOrder.append(header.id)
+            }
+            return header.id
+        }
 
         for item in matchingItems(query: query, items: navigableItems) {
             let page = route(for: item, isAvailable: isAvailable).destination.page
-            guard let pageItem = pageItems[page] else { continue }
-            if builders[page] == nil {
-                builders[page] = SearchGroupBuilder(pageItem: pageItem)
-                pageOrder.append(page)
-            }
-            guard var builder = builders[page] else { continue }
+            guard pageItems[page] != nil else { continue }
 
             if case .page(let itemPage) = item.id, itemPage == page {
-                if matchRank(foldedQuery: foldedQuery, title: item.title, keywords: []) != nil {
-                    builder.parentMatches = true
+                if matchRank(foldedQuery: foldedQuery, title: item.title, keywords: [], aliases: item.aliases) != nil,
+                   let key = groupKey(page: page, feature: nil) {
+                    builders[key]?.parentMatches = true
                 }
                 for (index, keyword) in item.keywords.enumerated()
-                    where fold(keyword).contains(foldedQuery) {
+                    where fold(keyword).contains(foldedQuery)
+                        && item.keywordIsShown(at: index, isSettingOn: isSettingOn) {
                     let keywordFeature = item.keywordFeatures.indices.contains(index)
                         ? item.keywordFeatures[index] : nil
                     if let keywordFeature, !hasSettingsControl(keywordFeature, isAvailable: isAvailable) { continue }
+                    guard let key = groupKey(page: page, feature: keywordFeature),
+                          var builder = builders[key] else { continue }
+                    let foldedKeyword = fold(keyword)
+                    if fold(builder.pageItem.title).contains(foldedKeyword) {
+                        builder.parentMatches = true
+                        builders[key] = builder
+                        continue
+                    }
                     let suggestionItem = keywordFeature.map { feature in
                         SettingsSearchItem(id: .feature(feature),
                                            destination: feature == .audioPriority && page == .audioOutput
@@ -207,35 +240,46 @@ enum SettingsSearchSupport {
                                            title: keyword,
                                            icon: feature.symbolName,
                                            feature: feature)
-                    } ?? pageItem
+                    } ?? builder.pageItem
                     appendSuggestion(
                         SettingsSearchSuggestion(id: .keyword(page, index),
                                                  title: keyword,
-                                                 icon: pageItem.icon,
+                                                 icon: suggestionItem.icon,
                                                  item: suggestionItem,
                                                  featureHubTarget: page == .features
                                                     ? keywordFeature : nil),
                         to: &builder)
+                    builders[key] = builder
                 }
             } else {
-                appendSuggestion(
-                    SettingsSearchSuggestion(id: .item(page, item.id),
-                                             title: item.title,
-                                             icon: item.icon,
-                                             item: item),
-                    to: &builder)
+                guard let key = groupKey(page: page, feature: item.feature),
+                      var builder = builders[key] else { continue }
+                if key == item.id {
+                    builder.parentMatches = true
+                } else {
+                    appendSuggestion(
+                        SettingsSearchSuggestion(id: .item(page, item.id),
+                                                 title: item.title,
+                                                 icon: item.icon,
+                                                 item: item),
+                        to: &builder)
+                }
+                builders[key] = builder
             }
-            builders[page] = builder
         }
 
-        return pageOrder.compactMap { page in
-            guard let builder = builders[page],
+        return groupOrder.compactMap { key in
+            guard let builder = builders[key],
                   builder.parentMatches || !builder.suggestions.isEmpty else { return nil }
             return SettingsSearchGroup(pageItem: builder.pageItem,
                                        parentMatches: builder.parentMatches,
                                        suggestions: builder.suggestions)
         }
     }
+
+    /// Features that sit on a shared page but own a sidebar row of their own.
+    /// Search heads their matches with that row instead of the page.
+    static let standaloneSearchGroupFeatures: Set<AppFeature> = [.bluetoothSleep]
 
     struct SearchGroupBuilder {
         let pageItem: SettingsSearchItem

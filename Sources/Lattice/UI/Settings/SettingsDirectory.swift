@@ -15,18 +15,35 @@ struct SettingsDirectoryItem: Identifiable {
     /// setting belongs to the page itself and remains searchable whenever the
     /// page is visible.
     var keywordFeatures: [AppFeature?] = []
+    /// Parallel to `keywords`: the Boolean preference a follow-up row is
+    /// shown under, so search only offers rows that are on screen.
+    var keywordRequirements: [String?] = []
+    /// Search aliases that match the containing page, but do not produce separate child suggestion rows.
+    var aliases: [String] = []
     var id: SettingsPage { page }
 
+    /// `followupKeywords` are rows that only appear while the preference in
+    /// `shownWhen` is on, like the options under Enable Display Control.
     init(page: SettingsPage, title: String, icon: String,
          keywords: [String] = [],
-         featureKeywords: [(feature: AppFeature, titles: [String])] = []) {
+         aliases: [String] = [],
+         featureKeywords: [(feature: AppFeature, titles: [String])] = [],
+         followupKeywords: [(feature: AppFeature, shownWhen: String, titles: [String])] = []) {
         self.page = page
         self.title = title
         self.icon = icon
-        self.keywords = keywords + featureKeywords.flatMap(\.titles)
+        self.keywords = keywords + featureKeywords.flatMap(\.titles) + followupKeywords.flatMap(\.titles)
+        self.aliases = aliases
         keywordFeatures = Array(repeating: nil, count: keywords.count)
             + featureKeywords.flatMap { entry in
                 Array(repeating: Optional(entry.feature), count: entry.titles.count)
+            }
+            + followupKeywords.flatMap { entry in
+                Array(repeating: Optional(entry.feature), count: entry.titles.count)
+            }
+        keywordRequirements = Array(repeating: nil, count: keywords.count + featureKeywords.flatMap(\.titles).count)
+            + followupKeywords.flatMap { entry in
+                Array(repeating: Optional(entry.shownWhen), count: entry.titles.count)
             }
     }
 }
@@ -109,7 +126,9 @@ enum SettingsDirectory {
                                    title: item.title,
                                    icon: item.icon,
                                    keywords: item.keywords,
-                                   keywordFeatures: item.keywordFeatures)
+                                   keywordFeatures: item.keywordFeatures,
+                                   keywordRequirements: item.keywordRequirements,
+                                   aliases: item.aliases)
             }
         let hub = FeatureStrings.hub(language)
         let featureItems = SettingsSearchSupport.featureItems(language: language) { feature in
