@@ -25,11 +25,9 @@ extension AppUpdatesListView {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
 
-                // Match General -> Show menu bar icon: insert/remove ordinary
-                // rows and let the page-level settingsExpansionAnimation grow
-                // the card and move the following sections together. Avoid an
-                // opacity transition on a clipped subview (it appears to jump).
-                if showsNotifyRow {
+                // The page's settingsExpansionAnimation, keyed on the same
+                // condition, grows the card and moves the sections below.
+                VStack(alignment: .leading, spacing: 0) {
                     preferenceDivider
                     HStack(alignment: .center) {
                         Text(text.notifyToggle)
@@ -45,6 +43,7 @@ extension AppUpdatesListView {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                 }
+                .settingsCollapsible(isExpanded: showsNotifyRow)
 
                 preferenceDivider
 
@@ -85,19 +84,7 @@ extension AppUpdatesListView {
     /// Native settings picker instead of a custom segmented control. The
     /// frequency has always supported all three modes at the service level.
     var schedulePicker: some View {
-        // A menu Picker does not initiate an animated state transaction the
-        // way General's switch does. Animate the value change at the source,
-        // so the notify row and everything below it participate in the same
-        // settings accordion layout pass.
-        Picker(text.frequencyLabel, selection: Binding(
-            get: { frequencyRaw },
-            set: { newValue in
-                withAnimation(reduceMotion ? nil : .settingsExpansion) {
-                    showsNotifyRow = AppUpdatesSupport.CheckFrequency.sanitized(newValue) != .off
-                    frequencyRaw = newValue
-                }
-            }
-        )) {
+        Picker(text.frequencyLabel, selection: $frequencyRaw) {
             Text(text.frequencyOff).tag(AppUpdatesSupport.CheckFrequency.off.rawValue)
             Text(text.frequencyDaily).tag(AppUpdatesSupport.CheckFrequency.daily.rawValue)
             Text(text.frequencyWeekly).tag(AppUpdatesSupport.CheckFrequency.weekly.rawValue)
@@ -108,15 +95,6 @@ extension AppUpdatesListView {
         .disabled(isScheduleControlDisabled)
         .opacity(isScheduleControlDisabled ? 0.45 : 1.0)
         .onChange(of: frequencyRaw) { _, value in
-            // Also animate frequency changes originating in the other Lattice
-            // window. Do not override the Picker's in-flight animation if the
-            // disclosure was already updated by its setter.
-            let expanded = AppUpdatesSupport.CheckFrequency.sanitized(value) != .off
-            if showsNotifyRow != expanded {
-                withAnimation(reduceMotion ? nil : .settingsExpansion) {
-                    showsNotifyRow = expanded
-                }
-            }
             updates.syncWithPreferences()
             if AppUpdatesSupport.CheckFrequency.sanitized(value) != .off, notify {
                 Notifier.requestPermission()
