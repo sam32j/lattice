@@ -15,7 +15,7 @@ struct MenuBarIconPickerRow: View {
 
     var body: some View {
         let name = Defaults.sanitizedMenuBarIconSymbol(savedName)
-        SettingsControlRow(title: text.menuBarIconTitle, caption: text.menuBarIconCaption) {
+        SettingsControlRow(title: text.menuBarIconTitle) {
             Button {
                 showingPicker = true
             } label: {
