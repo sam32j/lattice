@@ -300,7 +300,7 @@ struct NotchView: View {
         let wraps = geometry.pageTop == .wrapsCamera
         return page
             .frame(width: service.contentSize.width, height: service.contentSize.height, alignment: .top)
-            .clipShape(NotchPageClip(top: geometry.pageTopInset))
+            .clipShape(NotchPageClip(top: geometry.pageTopInset, bottomOverflow: service.pageClipOverflow))
             // With no title on screen, VoiceOver still names the page.
             .accessibilityElement(children: .contain)
             .accessibilityLabel(pageName)
@@ -1012,11 +1012,14 @@ extension NotchModule: PanelOrderItem {
 private struct NotchPageClip: Shape {
     /// From the top of the page to the top of the island.
     let top: CGFloat
+    /// Room past the page's bottom while it shrinks with the island; see
+    /// `NotchService.pageClipOverflow`.
+    var bottomOverflow: CGFloat = 0
 
     func path(in rect: CGRect) -> Path {
         Path(CGRect(x: rect.minX - NotchLayout.horizontalInset, y: rect.minY - top,
                     width: rect.width + NotchLayout.horizontalInset * 2,
-                    height: rect.height + top + NotchLayout.bottomInset))
+                    height: rect.height + top + NotchLayout.bottomInset + bottomOverflow))
     }
 }
 

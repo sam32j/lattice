@@ -139,6 +139,23 @@ final class NotchService: ObservableObject {
         screen: CGRect(x: 0, y: 0, width: 1440, height: 900), safeAreaTop: 0, cameraWidth: 0)
     @Published private(set) var expanded = false { didSet { if oldValue != expanded { musicSwipe.cancel() } } }
     @Published private(set) var showsKeyboardFocus = false
+    /// Extra room below the page's clip while a page shrinks with the island.
+    /// The page takes its final size as the outline starts to spring, so
+    /// without this its rows would be cut at that size while the outline,
+    /// which masks the island anyway, was still closing over them.
+    @Published private(set) var pageClipOverflow: CGFloat = 0
+    private var pageClipOverflowGeneration = 0
+
+    func allowPageClipOverflow(_ amount: CGFloat, for duration: TimeInterval) {
+        guard amount > 0 else { return }
+        pageClipOverflowGeneration += 1
+        let generation = pageClipOverflowGeneration
+        if pageClipOverflow < amount { pageClipOverflow = amount }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            guard let self, self.pageClipOverflowGeneration == generation else { return }
+            self.pageClipOverflow = 0
+        }
+    }
     /// True when macOS refused the island's own shortcut, so Settings can say so.
     @Published private(set) var shortcutRegistrationFailed = false
     private let hotkey = QuickToolHotkey(id: 81)
