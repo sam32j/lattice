@@ -109,7 +109,7 @@ extension MouseButtonFeatureStrings {
         sideWheelLeftName: "Side wheel left",
         sideWheelRightName: "Side wheel right",
         spacesEnableLabel: "Mouse navigation gesture",
-        spacesEnableCaption: "Hold mouse button to navigate",
+        spacesEnableCaption: "Hold mouse button to navigate.",
         spacesPickButton: "Choose a button",
         spacesShortcutsOffNote: "This gesture can’t switch Spaces. The required keyboard shortcuts are off. Open System Settings > Keyboard > Keyboard Shortcuts > Mission Control and enable “Move left a space” and “Move right a space”.",
         spacesCaptureWaiting: "Now press an extra button.",
