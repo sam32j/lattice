@@ -69,20 +69,20 @@ struct CaptureInterfaceStrings {
 
     static func disableLinksBody(_ language: AppLanguage) -> String {
         switch language {
-        case .enUS: "Disable Quick Links will deactivate all the links you created."
-        case .ptBR: "Desativar os links rápidos desativará todos os links que você criou."
-        case .tr: "Hızlı Bağlantıları devre dışı bırakmak, oluşturduğunuz tüm bağlantıları devre dışı bırakacaktır."
-        case .ru: "Отключение быстрых ссылок деактивирует все созданные вами ссылки."
-        case .es: "Desactivar los enlaces rápidos desactivará todos los enlaces que hayas creado."
-        case .sk: "Vypnutie rýchlych odkazov deaktivuje všetky odkazy, ktoré ste vytvorili."
-        case .de: "Wenn du Quick Links deaktivierst, werden alle von dir erstellten Links deaktiviert."
-        case .fr: "La désactivation des liens rapides désactivera tous les liens que vous avez créés."
-        case .it: "La disattivazione dei link rapidi disattiverà tutti i link che hai creato."
-        case .ja: "クイックリンクを無効にすると、作成したすべてのリンクが無効になります。"
-        case .ko: "빠른 링크를 비활성화하면 생성한 모든 링크가 비활성화됩니다."
-        case .zhHans: "停用快捷链接将停用您创建的所有链接。"
-        case .zhTW, .zhHK: "停用快速連結將會停用您建立的所有連結。"
-        case .uk: "Вимкнення швидких посилань деактивує всі створені вами посилання."
+        case .enUS: "This will deactivate all the links you created."
+        case .ptBR: "Isso desativará todos os links que você criou."
+        case .tr: "Bu, oluşturduğunuz tüm bağlantıları devre dışı bırakır."
+        case .ru: "Это деактивирует все созданные вами ссылки."
+        case .es: "Esto desactivará todos los enlaces que hayas creado."
+        case .sk: "Týmto sa deaktivujú všetky odkazy, ktoré ste vytvorili."
+        case .de: "Dadurch werden alle von dir erstellten Links deaktiviert."
+        case .fr: "Cela désactivera tous les liens que vous avez créés."
+        case .it: "Questo disattiverà tutti i link che hai creato."
+        case .ja: "作成したすべてのリンクが無効になります。"
+        case .ko: "생성한 모든 링크가 비활성화됩니다."
+        case .zhHans: "这将停用您创建的所有链接。"
+        case .zhTW, .zhHK: "這將會停用您建立的所有連結。"
+        case .uk: "Це деактивує всі створені вами посилання."
         }
     }
 
