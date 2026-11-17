@@ -97,7 +97,7 @@ struct CaptureSettings: View {
                 if screenshotEnabled || recorderEnabled {
                     VStack(alignment: .leading, spacing: 20) {
                         CaptureSaveSettingsCard()
-                        SettingsCard(title: copy.previewRecent) {
+                        SettingsCard(symbol: "photo.stack", title: copy.previewRecent) {
                         VStack(alignment: .leading, spacing: 14) {
                             if islandEnabled {
                                 SettingsControlRow(title: copy.openAt) {
@@ -143,6 +143,7 @@ struct CaptureSettings: View {
                                 RecentCaptureService.shared.syncWithPreferences()
                             }
                         }
+                        .padding(.leading, settingsRowTextInset)
                         }
                     }
                     // Fade in the space *below* the master cards. A top-edge
@@ -164,7 +165,7 @@ struct CaptureSettings: View {
     }
 
     private var screenshotCard: some View {
-        SettingsCard(title: screenshotStrings.pageTitle, headerAccessory: {
+        SettingsCard(symbol: "camera.viewfinder", title: screenshotStrings.pageTitle, headerAccessory: {
             PermissionGatedToggle(l10n.s.screenshotEnable, isOn: Binding(
                 get: { features.isAvailable(.screenshot) },
                 set: { enabled in
@@ -199,12 +200,13 @@ struct CaptureSettings: View {
                     optionRow(copy.screenshotOptions,
                               destination: FeatureSettingsDestination(.captureScreenshotOptions))
                 }
+                .padding(.leading, settingsRowTextInset)
             }
         }
     }
 
     private var recordingCard: some View {
-        SettingsCard(title: recorderStrings.pageTitle, headerAccessory: {
+        SettingsCard(symbol: "record.circle", title: recorderStrings.pageTitle, headerAccessory: {
             PermissionGatedToggle(l10n.s.screenRecorderEnable, isOn: Binding(
                 get: { features.isAvailable(.screenRecorder) },
                 set: { enabled in
@@ -231,6 +233,7 @@ struct CaptureSettings: View {
                     optionRow(copy.recordingOptions,
                               destination: FeatureSettingsDestination(.screenRecorder))
                 }
+                .padding(.leading, settingsRowTextInset)
             }
         }
     }
@@ -327,7 +330,7 @@ struct CaptureSettings: View {
     }
 
     private var sharingCard: some View {
-        SettingsCard(title: screenshotStrings.shareSectionTitle, headerAccessory: {
+        SettingsCard(symbol: "link", title: screenshotStrings.shareSectionTitle, headerAccessory: {
             Button {
                 showingSharePrivacy = true
             } label: {
@@ -354,6 +357,7 @@ struct CaptureSettings: View {
                     .padding(.top, 12)
                     .settingsCollapsible(isExpanded: isQuickLinksEnabled)
             }
+            .padding(.leading, settingsRowTextInset)
         }
     }
 }
