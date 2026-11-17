@@ -38,6 +38,7 @@ struct MouseSettings: View {
     @AppStorage(DefaultsKey.mouseSpacesGestureEnabled) var spacesEnabled = false
     @AppStorage(DefaultsKey.middleClickEnabled) var middleClickEnabled = false
     @AppStorage(DefaultsKey.middleClickTapFingers) var middleClickTapFingers = 0
+    @AppStorage(DefaultsKey.middleClickClickFingers) var middleClickClickFingers = 3
     @AppStorage(DefaultsKey.mouseClickDebounceEnabled) var mouseClickDebounceEnabled = false
     @AppStorage(DefaultsKey.mouseClickDebounceWindowMs) var mouseClickDebounceWindow =
         Defaults.defaultMouseClickDebounceWindowMs

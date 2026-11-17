@@ -1631,53 +1631,58 @@ enum PointerInputFeatureTests {
                    && Defaults.sanitizedMiddleClickTapFingers(2) == 0
                    && Defaults.sanitizedMiddleClickTapFingers(-1) == 0,
                "any other tap finger count means off")
-        suite.expect(MiddleClickSupport.availableTapSelection(3, systemDragEnabled: true) == 0
-                     && MiddleClickSupport.availableTapSelection(3, systemDragEnabled: false) == 3
-                     && MiddleClickSupport.availableTapSelection(4, systemDragEnabled: true) == 4,
+        suite.expect(MiddleClickSupport.availableTapSelection(3, systemOwnsThreeFingerTap: true) == 0
+                     && MiddleClickSupport.availableTapSelection(3, systemOwnsThreeFingerTap: false) == 3
+                     && MiddleClickSupport.availableTapSelection(4, systemOwnsThreeFingerTap: true) == 4,
                      "trackpad picker always presents a supported selection without rewriting saved preferences")
+        suite.expect(MiddleClickSupport.systemOwnsThreeFingerTap(threeFingerDrag: true, lookUpTapGesture: 0)
+                     && MiddleClickSupport.systemOwnsThreeFingerTap(threeFingerDrag: false, lookUpTapGesture: 2)
+                     && !MiddleClickSupport.systemOwnsThreeFingerTap(threeFingerDrag: false, lookUpTapGesture: 1)
+                     && !MiddleClickSupport.systemOwnsThreeFingerTap(threeFingerDrag: false, lookUpTapGesture: 0),
+                     "three-finger drag or Look Up on a three-finger tap takes the tap; Look Up on force click does not")
         suite.expect(MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                 exceededFingerCount: false, buttonPressedDuring: false,
-                                                positionUnavailable: false, systemDragGestureEnabled: false,
+                                                positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                 tapFingers: 3),
                "a quick still three-finger tap fires")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3, secondsSinceLastKeyDown: 0.1),
                "stray trackpad contact while typing never fires a middle click")
         suite.expect(MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                 exceededFingerCount: false, buttonPressedDuring: false,
-                                                positionUnavailable: false, systemDragGestureEnabled: false,
+                                                positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                 tapFingers: 3, secondsSinceLastKeyDown: 1.0),
                "tap to middle click resumes after keyboard activity settles")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.2, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3),
                "a swipe never fires the tap")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.8, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3),
                "resting fingers never fire the tap")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: true,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3),
                "a physical click during the touch belongs to the press path")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: true, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3),
                "extra fingers cancel the tap")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: true, systemDragGestureEnabled: false,
+                                                 positionUnavailable: true, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3),
                "unreadable touch positions stand the tap down")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: true,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: true,
                                                  tapFingers: 3),
                "three-finger tap stands down while the system drag gesture owns it")
         suite.expect(MiddleClickSupport.radialMenuTapFingers(radialMenuWantsTap: true, middleClickTapFingers: 0) == 4
@@ -1736,12 +1741,12 @@ enum PointerInputFeatureTests {
                "a button saved on two wheels stays on the first, the only one it ever opened")
         suite.expect(MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                 exceededFingerCount: false, buttonPressedDuring: false,
-                                                positionUnavailable: false, systemDragGestureEnabled: true,
+                                                positionUnavailable: false, systemOwnsThreeFingerTap: true,
                                                 tapFingers: 4),
                "four-finger tap stays available alongside the system drag gesture")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.2,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 4),
                "a pinch or spread never fires the tap even with a still centroid")
 

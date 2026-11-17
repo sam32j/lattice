@@ -21,9 +21,12 @@ final class MiddleClickService: ObservableObject {
     static let shared = MiddleClickService()
 
     @Published private(set) var isRunning = false
-    /// The system's own three-finger drag gesture (Accessibility) is enabled:
-    /// it owns three-finger touches and synthesizes clicks from unpressed
-    /// contact, so the press moves to four fingers and Settings shows why.
+    /// macOS answers a three-finger tap itself (three-finger drag, or Look Up
+    /// on a three-finger tap), so the three-finger tap is unavailable and
+    /// Settings says why. Presses are unaffected.
+    @Published private(set) var systemOwnsThreeFingerTap = false
+    /// The system's three-finger drag is on: it synthesizes clicks from
+    /// unpressed contact, so the press moves to four fingers (issue #2061).
     @Published private(set) var systemDragGestureConflict = false
     /// Middle click started but MultitouchSupport gave it no touch device, so
     /// no contact can ever arrive. A pause or session switch clears it.
@@ -35,8 +38,8 @@ final class MiddleClickService: ObservableObject {
     /// on the pointer thread while the main thread arms and tears the feature
     /// down.
     private let tapStateLock = NSLock()
-    /// Guards the cached system gesture setting, read on the tap callback and
-    /// written on the main thread.
+    /// Guards the cached system gesture settings, read on the touch callback
+    /// and written on the main thread.
     private let dragLock = NSLock()
     private var dragGestureRefreshScheduled = false
     /// Retains the MTDeviceRefs while listening; the framework hands out
@@ -63,8 +66,8 @@ final class MiddleClickService: ObservableObject {
     private var middleButtonHeldSince: TimeInterval = 0
     /// When the last transformed click finished, for the bounce guard.
     private var lastTransformEnd: TimeInterval?
-    /// Cached three-finger drag system setting; re-read at most every 2 s,
-    /// always on the main thread, never from the event path.
+    /// When the system three-finger gestures were last read; re-read at most
+    /// every 2 s, always on the main thread, never from the touch path.
     private var dragGestureCache: (enabled: Bool, readAt: TimeInterval) = (false, -10)
 
     /// Contact state shared between the multitouch callback thread and the
@@ -79,11 +82,12 @@ final class MiddleClickService: ObservableObject {
     // starts when the chosen finger count lands, collects movement, and is
     // judged when every finger lifts.
     private var tapFingers = 0
+    private var clickFingers = 3
     private var radialMenuTapFingers = 0
     /// The finger count the current candidate started with: the larger count
     /// takes over when both taps are on and a fourth finger lands.
     private var tapCandidateFingers = 0
-    private var tapDragConflict = false
+    private var tapSystemConflict = false
     private var tapStartUptime: TimeInterval?
     private var tapStartPosition: (x: Float, y: Float)?
     private var tapStartSpread: Float?
@@ -107,6 +111,8 @@ final class MiddleClickService: ObservableObject {
             && defaults.bool(forKey: DefaultsKey.middleClickEnabled)
         let tap = enabled ? Defaults.sanitizedMiddleClickTapFingers(
             defaults.integer(forKey: DefaultsKey.middleClickTapFingers)) : 0
+        let click = Defaults.sanitizedMiddleClickClickFingers(
+            defaults.integer(forKey: DefaultsKey.middleClickClickFingers))
         let radialMenuTap = MiddleClickSupport.radialMenuTapFingers(
             radialMenuWantsTap: AppFeature.radialMenu.isAvailable
                 && defaults.bool(forKey: DefaultsKey.radialMenuEnabled)
@@ -116,6 +122,7 @@ final class MiddleClickService: ObservableObject {
         tapStateLock.withLock { middleClickOn = enabled }
         stateLock.lock()
         tapFingers = tap
+        clickFingers = click
         radialMenuTapFingers = radialMenuTap
         resetTapCandidateLocked()
         stateLock.unlock()
@@ -131,25 +138,28 @@ final class MiddleClickService: ObservableObject {
         }
     }
 
-    /// Re-reads the conflicting system gesture; Settings calls this when the
-    /// Mouse tab appears so the warning reflects reality.
+    /// Re-reads the system's three-finger gestures; Settings calls this when
+    /// the Mouse tab appears so the note reflects reality.
     func refreshDragGestureConflict() {
-        let enabled = Self.systemThreeFingerDragEnabled()
+        let drag = Self.trackpadBool("TrackpadThreeFingerDrag")
+        let tapOwned = MiddleClickSupport.systemOwnsThreeFingerTap(
+            threeFingerDrag: drag,
+            lookUpTapGesture: Self.trackpadInt("TrackpadThreeFingerTapGesture"))
         dragLock.lock()
-        dragGestureCache = (enabled, ProcessInfo.processInfo.systemUptime)
+        dragGestureCache = (drag, ProcessInfo.processInfo.systemUptime)
         dragGestureRefreshScheduled = false
         dragLock.unlock()
-        if systemDragGestureConflict != enabled {
-            systemDragGestureConflict = enabled
-        }
+        if systemDragGestureConflict != drag { systemDragGestureConflict = drag }
+        if systemOwnsThreeFingerTap != tapOwned { systemOwnsThreeFingerTap = tapOwned }
         stateLock.lock()
-        tapDragConflict = enabled
+        tapSystemConflict = tapOwned
         stateLock.unlock()
     }
 
     /// Answers from the cache: reading a system preference and publishing the
-    /// conflict belong on the main thread, never in the path of a click. A
-    /// stale answer refreshes behind the press and applies to the next one.
+    /// conflict belong on the main thread, never in the path of a click or a
+    /// touch. A stale answer refreshes behind it and applies to the next one.
+    @discardableResult
     private func dragGestureEnabled(now: TimeInterval) -> Bool {
         dragLock.lock()
         let cache = dragGestureCache
@@ -162,10 +172,21 @@ final class MiddleClickService: ObservableObject {
         return cache.enabled
     }
 
-    private static func systemThreeFingerDragEnabled() -> Bool {
-        boolPreference("TrackpadThreeFingerDrag", domain: "com.apple.AppleMultitouchTrackpad")
-            || boolPreference("TrackpadThreeFingerDrag",
-                              domain: "com.apple.driver.AppleBluetoothMultitouch.trackpad")
+    /// Built-in and Bluetooth trackpads keep their settings in separate
+    /// domains; either one turning a gesture on counts.
+    private static let trackpadDomains = ["com.apple.AppleMultitouchTrackpad",
+                                          "com.apple.driver.AppleBluetoothMultitouch.trackpad"]
+
+    private static func trackpadBool(_ key: String) -> Bool {
+        trackpadDomains.contains { boolPreference(key, domain: $0) }
+    }
+
+    private static func trackpadInt(_ key: String) -> Int {
+        trackpadDomains.map { intPreference(key, domain: $0) }.max() ?? 0
+    }
+
+    private static func intPreference(_ key: String, domain: String) -> Int {
+        (CFPreferencesCopyAppValue(key as CFString, domain as CFString) as? NSNumber)?.intValue ?? 0
     }
 
     private static func boolPreference(_ key: String, domain: String) -> Bool {
@@ -401,7 +422,7 @@ final class MiddleClickService: ObservableObject {
                                                          exceededFingerCount: tapExceededCount,
                                                          buttonPressedDuring: tapSawButton,
                                                          positionUnavailable: tapPositionUnavailable,
-                                                         systemDragGestureEnabled: tapDragConflict,
+                                                         systemOwnsThreeFingerTap: tapSystemConflict,
                                                          tapFingers: tapCandidateFingers,
                                                          secondsSinceLastKeyDown: secondsSinceLastKeyDown)
             return fires ? tapCandidateFingers : nil
@@ -413,6 +434,8 @@ final class MiddleClickService: ObservableObject {
         if count == tapFingers || count == radialMenuTapFingers {
             if tapStartUptime == nil || count > tapCandidateFingers {
                 guard !tapExceededCount else { return nil }
+                // Keeps Look Up's and drag's hold on the tap current.
+                if count == 3 { dragGestureEnabled(now: now) }
                 tapCandidateFingers = count
                 tapStartUptime = now
                 tapStartPosition = geometry?.center
@@ -558,6 +581,7 @@ final class MiddleClickService: ObservableObject {
             let count = fingerCount
             let age = now - lastFrameUptime
             let settledFor = now - fingerCountSince
+            let pressFingers = clickFingers
             stateLock.unlock()
             let sinceLastTransformEnd = tapStateLock.withLock { lastTransformEnd }
             let action = MiddleClickSupport.actionForClick(
@@ -565,7 +589,8 @@ final class MiddleClickService: ObservableObject {
                 frameAge: age,
                 settledFor: settledFor,
                 sinceLastTransformEnd: sinceLastTransformEnd.map { now - $0 },
-                systemDragGestureEnabled: dragGestureEnabled(now: now)
+                systemDragGestureEnabled: dragGestureEnabled(now: now),
+                clickFingers: pressFingers
             )
             switch action {
             case .passThrough:

@@ -122,6 +122,7 @@ enum DefaultsKey {
     static let spacesOrderRestore = "spacesOrderRestore" // local recovery; never backed up: "absent" or "on", the mru-spaces state to put back, or "off" when there was nothing to put back
     static let spacesOrderRestartPending = "spacesOrderRestartPending" // local recovery; never backed up: "<Dock pid> <fixed|rearranging> <absent|on|off>…", the Dock process that owes the restart reading a written mru-spaces, what it runs and the values written under it
     static let middleClickEnabled = "middleClickEnabled"  // three-finger PHYSICAL click on the trackpad acts as a middle click
+    static let middleClickClickFingers = "middleClickClickFingers"  // 3 (default) or 4: how many fingers press the trackpad to middle-click
     static let middleClickTapFingers = "middleClickTapFingers"  // 0 = off (default); 3 or 4 = a light tap with that many fingers also middle-clicks (issue #161)
     static let previewSize = "previewSize"                // dock preview thumbnail size (once shared with the app switcher)
     static let switcherPreviewSize = "switcherPreviewSize" // app switcher thumbnail size
@@ -1050,6 +1051,7 @@ enum Defaults {
         DefaultsKey.spacesOrderEnabled: false,
         DefaultsKey.middleClickEnabled: false,
         DefaultsKey.middleClickTapFingers: 0,
+        DefaultsKey.middleClickClickFingers: 3,
         DefaultsKey.previewSize: "normal",
         DefaultsKey.switcherPreviewSize: "normal",
         DefaultsKey.autoCheckUpdates: true,
@@ -2167,6 +2169,10 @@ enum Defaults {
     /// else means the option is off.
     static func sanitizedMiddleClickTapFingers(_ raw: Int) -> Int {
         raw == 3 || raw == 4 ? raw : 0
+    }
+
+    static func sanitizedMiddleClickClickFingers(_ raw: Int) -> Int {
+        raw == 4 ? 4 : 3
     }
 
     static func sanitizedKeyboardDebounceWindow(_ milliseconds: Int) -> Int {
