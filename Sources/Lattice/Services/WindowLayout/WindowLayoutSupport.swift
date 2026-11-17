@@ -41,6 +41,7 @@ enum WindowLayoutShortcutConflict: Equatable {
 
 enum WindowLayoutAction: String, CaseIterable, Identifiable {
     case leftHalf, rightHalf, topHalf, bottomHalf, centerHalf
+    case centerColumn, centerRow, centerRowTwoThirds
     case leftThird, centerThird, rightThird, leftTwoThirds, rightTwoThirds, centerTwoThirds
     case topThird, middleThird, bottomThird, topTwoThirds, bottomTwoThirds
     case topQuarter, upperMiddleQuarter, lowerMiddleQuarter, bottomQuarter
@@ -55,6 +56,7 @@ enum WindowLayoutAction: String, CaseIterable, Identifiable {
 
     static let shortcutActions: [WindowLayoutAction] = [
         .leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerHalf,
+        .centerColumn, .centerRow,
         .leftThird, .centerThird, .rightThird, .leftTwoThirds, .rightTwoThirds, .centerTwoThirds,
         .topThird, .middleThird, .bottomThird, .topTwoThirds, .bottomTwoThirds,
         .topQuarter, .upperMiddleQuarter, .lowerMiddleQuarter, .bottomQuarter,
@@ -126,6 +128,9 @@ enum WindowLayoutAction: String, CaseIterable, Identifiable {
         case .leftMiddleQuarter: return 68
         case .rightMiddleQuarter: return 69
         case .rightQuarter: return 70
+        case .centerColumn: return 71
+        case .centerRow: return 72
+        case .centerRowTwoThirds: return 73
         }
     }
 
@@ -140,6 +145,9 @@ enum WindowLayoutAction: String, CaseIterable, Identifiable {
         case .rightHalf: return DefaultsKey.windowLayoutShortcutRight
         case .topHalf: return DefaultsKey.windowLayoutShortcutTop
         case .bottomHalf: return DefaultsKey.windowLayoutShortcutBottom
+        case .centerColumn: return DefaultsKey.windowLayoutShortcutCenterColumn
+        case .centerRow: return DefaultsKey.windowLayoutShortcutCenterRow
+        case .centerRowTwoThirds: return "windowLayoutShortcutCenterRowTwoThirds"
         case .centerHalf: return DefaultsKey.windowLayoutShortcutCenterHalf
         case .topLeft: return DefaultsKey.windowLayoutShortcutTopLeft
         case .topRight: return DefaultsKey.windowLayoutShortcutTopRight
@@ -207,7 +215,8 @@ enum WindowLayoutAction: String, CaseIterable, Identifiable {
                 .topThird, .middleThird, .bottomThird, .topTwoThirds, .bottomTwoThirds,
                 .topQuarter, .upperMiddleQuarter, .lowerMiddleQuarter, .bottomQuarter,
                 .leftQuarter, .leftMiddleQuarter, .rightMiddleQuarter, .rightQuarter,
-                .marginMaximize, .fullScreen, .previousDisplay, .centerHalf, .centerTwoThirds:
+                .marginMaximize, .fullScreen, .previousDisplay, .centerHalf, .centerTwoThirds,
+                .centerColumn, .centerRow, .centerRowTwoThirds:
             // New actions must never claim a system-wide combination unasked.
             return nil
         }
@@ -255,6 +264,9 @@ enum WindowLayoutAction: String, CaseIterable, Identifiable {
         case .rightHalf: return text.rightHalf
         case .topHalf: return text.topHalf
         case .bottomHalf: return text.bottomHalf
+        case .centerColumn: return text.centerColumn
+        case .centerRow: return text.centerRow
+        case .centerRowTwoThirds: return text.centerRow + " 2/3"
         case .centerHalf: return text.centerHalf
         case .topLeft: return text.topLeft
         case .topRight: return text.topRight
@@ -304,7 +316,8 @@ enum WindowLayoutAction: String, CaseIterable, Identifiable {
         case .rightThird: return "rectangle.rightthird.inset.filled"
         case .topHalf: return "rectangle.tophalf.filled"
         case .bottomHalf: return "rectangle.bottomhalf.filled"
-        case .centerHalf, .centerThird: return "rectangle.center.inset.filled"
+        case .centerColumn, .centerHalf, .centerThird: return "rectangle.center.inset.filled"
+        case .centerRow, .centerRowTwoThirds: return "rectangle.portrait.center.inset.filled"
         case .leftTwoThirds: return "rectangle.leadinghalf.filled"
         case .rightTwoThirds: return "rectangle.trailinghalf.filled"
         case .leftQuarter: return "rectangle.portrait.leftthird.inset.filled"
@@ -391,38 +404,57 @@ enum WindowLayoutGeometry {
                                 visibleFrame _: CGRect,
                                 previousAction: WindowLayoutAction? = nil,
                                 sideRepeatCyclesThirds: Bool = false) -> WindowLayoutAction {
-        if action == .topHalf, previousAction == .topHalf {
-            return .maximize
-        }
-        if sideRepeatCyclesThirds, let next = sideCycleAction(for: action, previousAction: previousAction) {
+        if sideRepeatCyclesThirds, let next = splitCycleAction(for: action, previousAction: previousAction) {
             return next
+        }
+        if action == .topHalf, previousAction == .topHalf, !sideRepeatCyclesThirds {
+            return .maximize
         }
         return action
     }
 
-    /// The window size cycle for a repeated side action: half, then
-    /// two thirds, then one third, then back to the half. Only sizes reached
-    /// from the same side count, so a left after a right third starts over.
-    static func sideCycleAction(for action: WindowLayoutAction,
-                                previousAction: WindowLayoutAction?) -> WindowLayoutAction? {
+    static func isSplitAction(_ action: WindowLayoutAction) -> Bool {
+        switch action {
+        case .leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerColumn, .centerRow, .centerHalf:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// The window size cycle for a repeated split action: half, then
+    /// two thirds, then one third, then back to the half.
+    static func splitCycleAction(for action: WindowLayoutAction,
+                                 previousAction: WindowLayoutAction?) -> WindowLayoutAction? {
         let cycle: [WindowLayoutAction]
         switch action {
         case .leftHalf: cycle = [.leftHalf, .leftTwoThirds, .leftThird]
         case .rightHalf: cycle = [.rightHalf, .rightTwoThirds, .rightThird]
+        case .topHalf: cycle = [.topHalf, .topTwoThirds, .topThird]
+        case .bottomHalf: cycle = [.bottomHalf, .bottomTwoThirds, .bottomThird]
+        case .centerColumn, .centerHalf: cycle = [.centerColumn, .centerTwoThirds, .centerThird]
+        case .centerRow: cycle = [.centerRow, .centerRowTwoThirds, .middleThird]
         default: return nil
         }
         guard let previousAction, let index = cycle.firstIndex(of: previousAction) else { return nil }
         return cycle[(index + 1) % cycle.count]
     }
 
-    /// The key a placement records for the size cycle: only a left or right
-    /// half pressed while the cycle is on. Every other placement records none,
-    /// so a two thirds shortcut or a pointer snap is never read back for the
-    /// cycle and the next side press starts again at the half.
+    static func sideCycleAction(for action: WindowLayoutAction,
+                                previousAction: WindowLayoutAction?) -> WindowLayoutAction? {
+        splitCycleAction(for: action, previousAction: previousAction)
+    }
+
+    /// The key a placement records for the size cycle.
+    static func splitCyclePress(for action: WindowLayoutAction,
+                                cyclesThirds: Bool = true) -> WindowLayoutAction? {
+        guard cyclesThirds, isSplitAction(action) else { return nil }
+        return action
+    }
+
     static func sideCyclePress(for action: WindowLayoutAction,
                                cyclesThirds: Bool) -> WindowLayoutAction? {
-        guard cyclesThirds, action == .leftHalf || action == .rightHalf else { return nil }
-        return action
+        splitCyclePress(for: action, cyclesThirds: cyclesThirds)
     }
 
     /// Whether the previous placement was asked for with the same side key,
@@ -714,9 +746,15 @@ enum WindowLayoutGeometry {
         case .bottomHalf:
             return CGRect(x: visibleFrame.minX, y: visibleFrame.minY,
                           width: visibleFrame.width, height: halfHeight).integral
-        case .centerHalf:
+        case .centerColumn, .centerHalf:
             return CGRect(x: visibleFrame.midX - halfWidth / 2, y: visibleFrame.minY,
                           width: halfWidth, height: visibleFrame.height).integral
+        case .centerRow:
+            return CGRect(x: visibleFrame.minX, y: visibleFrame.midY - halfHeight / 2,
+                          width: visibleFrame.width, height: halfHeight).integral
+        case .centerRowTwoThirds:
+            return CGRect(x: visibleFrame.minX, y: visibleFrame.midY - twoThirdsHeight / 2,
+                          width: visibleFrame.width, height: twoThirdsHeight).integral
         case .leftThird:
             return CGRect(x: visibleFrame.minX, y: visibleFrame.minY,
                           width: thirdWidth, height: visibleFrame.height).integral
@@ -855,10 +893,10 @@ enum WindowLayoutGeometry {
         case .leftThird, .leftTwoThirds, .leftQuarter, .leftMiddleQuarter:
             origin.x = targetRect.minX
             origin.y = targetRect.minY
-        case .centerThird, .centerHalf, .centerTwoThirds:
+        case .centerThird, .centerHalf, .centerTwoThirds, .centerColumn:
             origin.x = targetRect.midX - size.width / 2
             origin.y = targetRect.minY
-        case .middleThird:
+        case .middleThird, .centerRow, .centerRowTwoThirds:
             origin.x = targetRect.minX
             origin.y = targetRect.midY - size.height / 2
         case .rightThird, .rightTwoThirds, .rightMiddleQuarter, .rightQuarter:
@@ -949,11 +987,11 @@ enum WindowLayoutGeometry {
             return abs(actualRect.minX - targetRect.minX) <= anchorTolerance
                 && fullHeight
                 && overlap > 0.45
-        case .centerThird, .centerHalf, .centerTwoThirds:
+        case .centerThird, .centerHalf, .centerTwoThirds, .centerColumn:
             return abs(actualRect.midX - targetRect.midX) <= anchorTolerance
                 && fullHeight
                 && overlap > 0.45
-        case .middleThird:
+        case .middleThird, .centerRow, .centerRowTwoThirds:
             return abs(actualRect.midY - targetRect.midY) <= anchorTolerance
                 && fullWidth
                 && overlap > 0.45

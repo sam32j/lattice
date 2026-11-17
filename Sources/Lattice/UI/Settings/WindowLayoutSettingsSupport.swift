@@ -62,9 +62,10 @@ extension WindowLayoutSettings {
         WindowLayoutService.shared.syncWithPreferences()
     }
 
-    static let halfActions: [WindowLayoutAction] = [
-        .leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerHalf,
+    static let splitActions: [WindowLayoutAction] = [
+        .leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerColumn, .centerRow,
     ]
+    static let halfActions: [WindowLayoutAction] = splitActions
     static let thirdActions: [WindowLayoutAction] = [
         .leftThird, .centerThird, .rightThird, .leftTwoThirds, .rightTwoThirds, .centerTwoThirds,
         .topThird, .middleThird, .bottomThird, .topTwoThirds, .bottomTwoThirds,
@@ -75,13 +76,19 @@ extension WindowLayoutSettings {
     static let quarterColumnActions: [WindowLayoutAction] = [
         .leftQuarter, .leftMiddleQuarter, .rightMiddleQuarter, .rightQuarter,
     ]
-    static let sixthActions: [WindowLayoutAction] = [
-        .topLeftSixth, .topCenterSixth, .topRightSixth,
-        .bottomLeftSixth, .bottomCenterSixth, .bottomRightSixth,
-    ]
     static let cornerActions: [WindowLayoutAction] = [
         .topLeft, .topRight, .bottomLeft, .bottomRight,
     ]
+    static let quarterActions: [WindowLayoutAction] = [
+        .topLeft, .topRight, .bottomLeft, .bottomRight,
+        .leftQuarter, .leftMiddleQuarter, .rightMiddleQuarter, .rightQuarter,
+        .topQuarter, .upperMiddleQuarter, .lowerMiddleQuarter, .bottomQuarter,
+    ]
+    static let gridActions: [WindowLayoutAction] = [
+        .topLeftSixth, .topCenterSixth, .topRightSixth,
+        .bottomLeftSixth, .bottomCenterSixth, .bottomRightSixth,
+    ]
+    static let sixthActions: [WindowLayoutAction] = gridActions
 
     /// The placement families, grouped so the form body stays within the
     /// ten-view ViewBuilder limit.
@@ -89,24 +96,19 @@ extension WindowLayoutSettings {
     var placementSections: some View {
         Divider()
         VStack(alignment: .leading, spacing: 13) {
-            Text(text.halves).font(.headline)
-            Toggle(isOn: $sideRepeatCyclesThirds) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(text.sideRepeatCycle)
-                    Text(text.sideRepeatCycleCaption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+            HStack {
+                Text(text.halves).font(.headline)
+                Spacer()
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.secondary)
+                    .help(text.repeatCycleTooltip)
             }
-            ForEach(Self.halfActions) { action in
+            ForEach(Self.splitActions) { action in
                 actionRow(action)
             }
         }
-        actionSection(text.thirds, Self.thirdActions)
-        actionSection(text.quarterRows, Self.quarterRowActions)
-        actionSection(text.quarterColumns, Self.quarterColumnActions)
-        actionSection(text.sixths, Self.sixthActions)
-        actionSection(text.corners, Self.cornerActions)
+        actionSection(text.quarters, Self.quarterActions)
+        actionSection(text.sixths, Self.gridActions)
     }
 
     /// One section per placement family. Building the rows from an array keeps

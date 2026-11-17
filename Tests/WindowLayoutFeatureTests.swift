@@ -1467,8 +1467,16 @@ enum WindowLayoutFeatureTests {
                                                     current: currentWindow,
                                                     visibleFrame: visibleFrame,
                                                     previousAction: .topHalf,
-                                                    sideRepeatCyclesThirds: true) == .maximize,
-               "window layout top twice still maximizes while the side cycle is on")
+                                                    sideRepeatCyclesThirds: true) == .topTwoThirds,
+               "window layout top twice cycles to top two thirds")
+        suite.expect(WindowLayoutGeometry.splitCycleAction(for: .centerColumn, previousAction: .centerColumn) == .centerTwoThirds
+                && WindowLayoutGeometry.splitCycleAction(for: .centerColumn, previousAction: .centerTwoThirds) == .centerThird
+                && WindowLayoutGeometry.splitCycleAction(for: .centerColumn, previousAction: .centerThird) == .centerColumn,
+               "window layout center column cycles half, two thirds, third")
+        suite.expect(WindowLayoutGeometry.splitCycleAction(for: .centerRow, previousAction: .centerRow) == .centerRowTwoThirds
+                && WindowLayoutGeometry.splitCycleAction(for: .centerRow, previousAction: .centerRowTwoThirds) == .middleThird
+                && WindowLayoutGeometry.splitCycleAction(for: .centerRow, previousAction: .middleThird) == .centerRow,
+               "window layout center row cycles half, two thirds, third")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.windowLayoutSideRepeatCyclesThirds] as? Bool == false,
                "window layout side repeat cycling stays off by default")
         let sideRepeatSettingsSource = ["WindowLayoutSettings.swift", "WindowLayoutSettingsSupport.swift"]
@@ -1477,10 +1485,8 @@ enum WindowLayoutFeatureTests {
         let sideRepeatSettingsCode = sideRepeatSettingsSource.components(separatedBy: "\n")
             .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
             .joined(separator: "\n")
-        suite.expect(sideRepeatSettingsCode.contains("DefaultsKey.windowLayoutSideRepeatCyclesThirds")
-                && sideRepeatSettingsCode.contains("text.sideRepeatCycle")
-                && sideRepeatSettingsCode.contains("text.sideRepeatCycleCaption"),
-               "window layout settings expose the side repeat cycle toggle with its caption")
+        suite.expect(sideRepeatSettingsCode.contains("text.repeatCycleTooltip"),
+               "window layout settings expose the repeat cycle tooltip on the Splits header")
         let sideRepeatServiceSource = (try? String(
             contentsOfFile: "Sources/Lattice/Services/WindowLayout/WindowLayoutService.swift",
             encoding: .utf8)) ?? ""
@@ -1543,10 +1549,13 @@ enum WindowLayoutFeatureTests {
                "window layout settled frame refresh tolerates a clamped half that only drifted within tolerance")
         suite.expect(WindowLayoutGeometry.sideCyclePress(for: .leftHalf, cyclesThirds: true) == .leftHalf
                 && WindowLayoutGeometry.sideCyclePress(for: .rightHalf, cyclesThirds: true) == .rightHalf
+                && WindowLayoutGeometry.sideCyclePress(for: .topHalf, cyclesThirds: true) == .topHalf
+                && WindowLayoutGeometry.sideCyclePress(for: .bottomHalf, cyclesThirds: true) == .bottomHalf
+                && WindowLayoutGeometry.sideCyclePress(for: .centerColumn, cyclesThirds: true) == .centerColumn
+                && WindowLayoutGeometry.sideCyclePress(for: .centerRow, cyclesThirds: true) == .centerRow
                 && WindowLayoutGeometry.sideCyclePress(for: .leftHalf, cyclesThirds: false) == nil
-                && WindowLayoutGeometry.sideCyclePress(for: .leftTwoThirds, cyclesThirds: true) == nil
-                && WindowLayoutGeometry.sideCyclePress(for: .topHalf, cyclesThirds: true) == nil,
-               "window layout records a side key for the cycle only for left or right halves while the cycle is on")
+                && WindowLayoutGeometry.sideCyclePress(for: .leftTwoThirds, cyclesThirds: true) == nil,
+               "window layout records a key for the cycle for split actions while the cycle is on")
         let pressedLeft = WindowLayoutSettledFrame(requested: settledHalf, actual: settledHalf, pressedAction: .leftHalf)
         suite.expect(WindowLayoutGeometry.sideCycleResumes(pressing: .leftHalf, settled: pressedLeft)
                 && WindowLayoutGeometry.sideCycleResumes(pressing: .rightHalf, settled: pressedLeft) == false

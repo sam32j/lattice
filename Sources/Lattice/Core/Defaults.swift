@@ -412,6 +412,9 @@ enum DefaultsKey {
     static let windowReserveStageManagerSpace = "windowReserveStageManagerSpace"
     static let windowLayoutMarginPercent = "windowLayoutMarginPercent" // per-edge percentage for margin maximize
     static let windowLayoutSideRepeatCyclesThirds = "windowLayoutSideRepeatCyclesThirds" // repeated Left/Right cycles half, 2/3, 1/3 on the same display
+    static let windowLayoutHoldToCycleDisplayEnabled = "windowLayoutHoldToCycleDisplayEnabled" // holding shortcut cycles across displays
+    static let windowLayoutHoldDelay = "windowLayoutHoldDelay" // "default" or "longer"
+    static let windowLayoutCycleSpeed = "windowLayoutCycleSpeed" // "slower", "default", or "faster"
     static let windowLayoutIgnoredApps = "windowLayoutIgnoredApps" // apps that temporarily disable window layout while focused
     static let panelCollapsedSections = "panelCollapsedSections"
     static let panelCollapsedResetVersion = "panelCollapsedResetVersion"
@@ -671,6 +674,8 @@ enum DefaultsKey {
     static let windowLayoutShortcutRight = "windowLayoutShortcutRight"
     static let windowLayoutShortcutTop = "windowLayoutShortcutTop"
     static let windowLayoutShortcutBottom = "windowLayoutShortcutBottom"
+    static let windowLayoutShortcutCenterColumn = "windowLayoutShortcutCenterColumn"
+    static let windowLayoutShortcutCenterRow = "windowLayoutShortcutCenterRow"
     static let windowLayoutShortcutCenterHalf = "windowLayoutShortcutCenterHalf"
     static let windowLayoutShortcutTopLeft = "windowLayoutShortcutTopLeft"
     static let windowLayoutShortcutTopRight = "windowLayoutShortcutTopRight"
@@ -1625,6 +1630,8 @@ enum Defaults {
         DefaultsKey.windowLayoutShortcutRight: GlobalShortcut.windowLayoutRightDefault.storageValue,
         DefaultsKey.windowLayoutShortcutTop: GlobalShortcut.windowLayoutTopDefault.storageValue,
         DefaultsKey.windowLayoutShortcutBottom: GlobalShortcut.windowLayoutBottomDefault.storageValue,
+        DefaultsKey.windowLayoutShortcutCenterColumn: WindowLayoutAction.clearedShortcutStorageValue,
+        DefaultsKey.windowLayoutShortcutCenterRow: WindowLayoutAction.clearedShortcutStorageValue,
         DefaultsKey.windowLayoutShortcutCenterHalf: WindowLayoutAction.clearedShortcutStorageValue,
         DefaultsKey.windowLayoutShortcutTopLeft: GlobalShortcut.windowLayoutTopLeftDefault.storageValue,
         DefaultsKey.windowLayoutShortcutTopRight: GlobalShortcut.windowLayoutTopRightDefault.storageValue,
@@ -1662,6 +1669,9 @@ enum Defaults {
         DefaultsKey.windowLayoutShortcutBottomCenterSixth: WindowLayoutAction.clearedShortcutStorageValue,
         DefaultsKey.windowLayoutShortcutBottomRightSixth: WindowLayoutAction.clearedShortcutStorageValue,
         DefaultsKey.windowLayoutShortcutFullScreen: WindowLayoutAction.clearedShortcutStorageValue,
+        DefaultsKey.windowLayoutHoldToCycleDisplayEnabled: false,
+        DefaultsKey.windowLayoutHoldDelay: "default",
+        DefaultsKey.windowLayoutCycleSpeed: "default",
     ]
 
     static func register() {

@@ -416,7 +416,7 @@ enum WindowEdgeSnapPlacementGroup: CaseIterable {
     var actions: [WindowLayoutAction] {
         switch self {
         case .halves:
-            return [.leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerHalf]
+            return [.leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerColumn, .centerRow, .centerHalf]
         case .thirds:
             return [.leftThird, .centerThird, .rightThird, .leftTwoThirds, .rightTwoThirds, .centerTwoThirds,
                     .topThird, .middleThird, .bottomThird, .topTwoThirds, .bottomTwoThirds]

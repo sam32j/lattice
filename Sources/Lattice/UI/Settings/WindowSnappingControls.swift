@@ -57,16 +57,28 @@ extension WindowLayoutSettings {
                 }
             }
 
+            if !service.failedShortcutActions.isEmpty {
+                Text(l10n.s.shortcutUnavailable)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+
+            placementSections
+
             Divider()
             VStack(alignment: .leading, spacing: 13) {
-                Text(text.shortcuts).font(.headline)
-                if !service.failedShortcutActions.isEmpty {
-                    Text(l10n.s.shortcutUnavailable)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
+                Text(text.other).font(.headline)
+                actionRow(.maximize)
+                actionRow(.marginMaximize)
+                // Always adjustable: the snapping panel's Maximize Margin
+                // button uses it with or without a keyboard shortcut.
+                marginSlider
+                    .disclosureIndent()
+                actionRow(.fullScreen)
+                actionRow(.center)
+                actionRow(.restore)
                 HStack {
-                    Text(WindowDirectionalStrings.localized(l10n.language).title)
+                    Label(WindowDirectionalStrings.localized(l10n.language).title, systemImage: "circle.circle")
                     Spacer()
                     CompactShortcutBindingRecorder(
                         recordingID: "window-layout-directional",
@@ -84,19 +96,53 @@ extension WindowLayoutSettings {
                         },
                         onReset: { saveDirectionalShortcut(.windowDirectionalDefault) },
                         onCapture: saveDirectionalShortcut)
-                    if service.directionalShortcutRegistrationFailed {
-                        Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
+                }
+                if service.directionalShortcutRegistrationFailed {
+                    Text(l10n.s.shortcutUnavailable)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
                 }
             }
 
-            // The pointer moves without Accessibility, so this sits outside
-            // the window shortcuts toggle and works before that grant.
+            Divider()
             VStack(alignment: .leading, spacing: 13) {
+                Text(text.moving).font(.headline)
+
+                Toggle(isOn: $holdToCycleDisplayEnabled.animation(reduceMotion ? nil : .settingsExpansion)) {
+                    Label(text.holdToCycleDisplay, systemImage: "inset.filled.rectangle.and.pointer.arrow")
+                }
+
+                if holdToCycleDisplayEnabled {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text(text.holdDelay)
+                            Spacer()
+                            Picker(text.holdDelay, selection: $holdDelay) {
+                                Text(text.holdDelayDefault).tag("default")
+                                Text(text.holdDelayLonger).tag("longer")
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                        }
+                        HStack {
+                            Text(text.cycleSpeed)
+                            Spacer()
+                            Picker(text.cycleSpeed, selection: $cycleSpeed) {
+                                Text(text.cycleSpeedSlower).tag("slower")
+                                Text(text.cycleSpeedDefault).tag("default")
+                                Text(text.cycleSpeedFaster).tag("faster")
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                        }
+                    }
+                    .disclosureIndent()
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+
                 ShortcutPreferenceRow(role: .pointerNextDisplay,
                                       label: PointerDisplayStrings.localized(l10n.language).title,
+                                      symbolName: "pointer.arrow.motionlines",
                                       additionalConflict: {
                                           service.shortcutConflictTitle($0)
                                       }) {
@@ -107,27 +153,7 @@ extension WindowLayoutSettings {
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
-            }
 
-            placementSections
-
-            Divider()
-            VStack(alignment: .leading, spacing: 13) {
-                Text(text.other).font(.headline)
-                actionRow(.maximize)
-                actionRow(.marginMaximize)
-                // Always adjustable: the snapping panel's Maximize Margin
-                // button uses it with or without a keyboard shortcut.
-                marginSlider
-                    .disclosureIndent()
-                actionRow(.fullScreen)
-                actionRow(.center)
-                actionRow(.restore)
-            }
-
-            Divider()
-            VStack(alignment: .leading, spacing: 13) {
-                Text(text.moving).font(.headline)
                 actionRow(.previousDisplay)
                 actionRow(.nextDisplay)
             }
