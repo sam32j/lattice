@@ -3056,21 +3056,16 @@ enum MusicLaunchBlockerContract {
         static var secondsSinceUserGesture: TimeInterval { Environment.gestureAge }
         var isEnabled: Bool { Environment.enabled && Environment.available }
         var isMonitoring = false
+        var monitoringFailed = false
         var observers: [NSObjectProtocol] = []
         var mediaKeyTap: Tap?
         var lastMediaKeyAt: TimeInterval?
         var lastMediaKeyCode: UInt16?
         var judgedLaunchPID: pid_t?
-        var replacementCalls = 0
-        var replacementPlays: [Bool] = []
         func installMediaKeyTap() {
             if mediaKeyTap == nil, Environment.createsTap { mediaKeyTap = Tap() }
         }
         func removeMediaKeyTap() { mediaKeyTap?.enabled = false; mediaKeyTap = nil }
-        func openReplacementIfConfigured(startingPlayback: Bool) {
-            replacementCalls += 1
-            replacementPlays.append(startingPlayback)
-        }
     }
 
     static func run(_ suite: TestSuite) {
@@ -3078,10 +3073,7 @@ enum MusicLaunchBlockerContract {
         defer { service.stop() }
         func reset() {
             service.stop()
-            service.replacementCalls = 0
-            service.replacementPlays = []
             Environment.enabled = true
-            Environment.playReplacement = true
             Environment.available = true
             Environment.trusted = true
             Environment.createsTap = true
@@ -3110,31 +3102,21 @@ enum MusicLaunchBlockerContract {
         Environment.trusted = true
         Environment.createsTap = false
         service.syncWithPreferences()
-        suite.expect(!service.isMonitoring && service.observers.isEmpty,
+        suite.expect(!service.isMonitoring && service.observers.isEmpty && service.monitoringFailed,
                      "a failed tap cannot leave a launch observer making unsupported decisions")
         Environment.createsTap = true
         service.syncWithPreferences()
         let installed = service.observers.count
         service.syncWithPreferences()
-        suite.expect(service.isMonitoring && service.mediaKeyTap != nil && installed == 2
+        suite.expect(service.isMonitoring && !service.monitoringFailed && service.mediaKeyTap != nil && installed == 2
                      && service.observers.count == installed,
                      "granting access starts one observer pair and repeated syncs do not duplicate it")
         let automatic = NSRunningApplication(2)
         key()
         launch(automatic)
         launch(automatic, did: true)
-        suite.expect(automatic.forceCalls == 1 && automatic.terminateCalls == 0 && service.replacementCalls == 1,
-                     "a detected key blocks one launch and its did-launch cannot repeat termination or replacement")
-        key(code: MusicLaunchSupport.nextTrackKeyCode)
-        launch(NSRunningApplication(50))
-        suite.expect(service.replacementPlays == [true, false],
-                     "only Play/Pause asks the replacement to play; the other media keys only open it")
-        Environment.playReplacement = false
-        key()
-        launch(NSRunningApplication(51))
-        suite.expect(service.replacementPlays == [true, false, false],
-                     "turning off replacement playback still opens it without sending play")
-        Environment.playReplacement = true
+        suite.expect(automatic.forceCalls == 1 && automatic.terminateCalls == 0,
+                     "a detected key blocks one launch and its did-launch cannot repeat termination")
         let second = NSRunningApplication(3)
         launch(second)
         suite.expect(second.forceCalls == 0 && service.lastMediaKeyAt == nil,
@@ -3217,13 +3199,13 @@ enum MusicLaunchBlockerContract {
         failed.forceSucceeds = false
         failed.terminateSucceeds = false
         launch(failed)
-        suite.expect(failed.forceCalls == 1 && failed.terminateCalls == 1 && service.replacementCalls == 0,
-                     "a failed termination does not open a competing replacement app")
+        suite.expect(failed.forceCalls == 1 && failed.terminateCalls == 1,
+                     "a failed force-termination falls back to normal termination")
         key()
         let fallback = NSRunningApplication(33, bundle: "com.apple.iTunes")
         fallback.forceSucceeds = false
         launch(fallback)
-        suite.expect(fallback.forceCalls == 1 && fallback.terminateCalls == 1 && service.replacementCalls == 1,
-                     "a successful normal termination still opens the configured replacement once")
+        suite.expect(fallback.forceCalls == 1 && fallback.terminateCalls == 1,
+                     "a successful normal termination stops the blocked app")
     }
 }
