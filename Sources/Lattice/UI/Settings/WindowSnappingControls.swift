@@ -110,7 +110,11 @@ extension WindowLayoutSettings {
 
                 VStack(alignment: .leading, spacing: 13) {
                     Toggle(isOn: $holdToCycleDisplayEnabled.animation(reduceMotion ? nil : .settingsExpansion)) {
-                        Label(text.holdToCycleDisplay, systemImage: "inset.filled.rectangle.and.pointer.arrow")
+                        HStack(spacing: 8) {
+                            Image(systemName: "inset.filled.rectangle.and.pointer.arrow")
+                                .frame(width: 18)
+                            Text(text.holdToCycleDisplay)
+                        }
                     }
 
                     if holdToCycleDisplayEnabled {
@@ -124,7 +128,7 @@ extension WindowLayoutSettings {
                             .labelsHidden()
                             .pickerStyle(.menu)
                         }
-                        .padding(.leading, settingsRowTextInset)
+                        .padding(.leading, 18 + 8)
                     }
                 }
                 .settingsExpansionAnimation(value: holdToCycleDisplayEnabled)
@@ -132,6 +136,7 @@ extension WindowLayoutSettings {
                 ShortcutPreferenceRow(role: .pointerNextDisplay,
                                       label: PointerDisplayStrings.localized(l10n.language).title,
                                       symbolName: "pointer.arrow.motionlines",
+                                      symbolColor: nil,
                                       additionalConflict: {
                                           service.shortcutConflictTitle($0)
                                       }) {

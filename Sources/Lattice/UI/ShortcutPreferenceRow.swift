@@ -12,6 +12,7 @@ struct ShortcutPreferenceRow: View {
     private let label: String?
     private let help: String?
     private let symbolName: String?
+    private let symbolColor: Color?
     private let contextLabel: String?
     private let statusText: String?
     private let statusIsActive: Bool
@@ -27,6 +28,7 @@ struct ShortcutPreferenceRow: View {
          label: String? = nil,
          help: String? = nil,
          symbolName: String? = nil,
+         symbolColor: Color? = Color.accentColor,
          contextLabel: String? = nil,
          statusText: String? = nil,
          statusIsActive: Bool = false,
@@ -40,6 +42,7 @@ struct ShortcutPreferenceRow: View {
         self.label = label
         self.help = help
         self.symbolName = symbolName
+        self.symbolColor = symbolColor
         self.contextLabel = contextLabel
         self.statusText = statusText
         self.statusIsActive = statusIsActive
@@ -57,6 +60,7 @@ struct ShortcutPreferenceRow: View {
             ShortcutRowLabel(title: label ?? role.title(l10n.s),
                              help: help,
                              symbolName: symbolName,
+                             symbolColor: symbolColor,
                              contextLabel: contextLabel,
                              statusText: statusText,
                              statusIsActive: statusIsActive)
@@ -95,16 +99,22 @@ struct ShortcutRowLabel: View {
     let title: String
     var help: String? = nil
     let symbolName: String?
+    var symbolColor: Color? = Color.accentColor
     let contextLabel: String?
     let statusText: String?
     let statusIsActive: Bool
 
     var body: some View {
-        HStack(alignment: .center, spacing: 7) {
+        HStack(alignment: .center, spacing: 8) {
             if let symbolName {
-                Image(systemName: symbolName)
-                    .foregroundStyle(Color.accentColor)
-                    .frame(width: 18)
+                if let symbolColor {
+                    Image(systemName: symbolName)
+                        .foregroundStyle(symbolColor)
+                        .frame(width: 18)
+                } else {
+                    Image(systemName: symbolName)
+                        .frame(width: 18)
+                }
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
