@@ -1606,7 +1606,7 @@ enum Defaults {
         DefaultsKey.screenshotPreviewPosition: ScreenshotSupport.QuickPreviewPosition.automatic.rawValue,
         DefaultsKey.capturePresentationDestination: CapturePresentationRouting.Preference.automatic.rawValue,
         DefaultsKey.screenshotPreviewTakesFocus: true,
-        DefaultsKey.capturePreviewCloseAfter: CapturePreviewClosePolicy.fiveSeconds.rawValue,
+        DefaultsKey.capturePreviewCloseAfter: CapturePreviewClosePolicy.focusLost.rawValue,
         DefaultsKey.screenshotUploadDuration: ScreenshotShareDuration.oneHour.rawValue,
         DefaultsKey.screenshotSharingEnabled: true,
         DefaultsKey.screenshotPlayShutterSound: true,

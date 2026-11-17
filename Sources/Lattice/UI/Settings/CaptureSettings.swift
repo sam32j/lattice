@@ -16,7 +16,7 @@ struct CaptureSettings: View {
     @AppStorage(DefaultsKey.screenshotEnabled) private var screenshotEnabled = true
     @AppStorage(DefaultsKey.screenRecorderEnabled) private var recorderEnabled = true
     @AppStorage(DefaultsKey.screenshotPreviewTakesFocus) private var previewTakesFocus = true
-    @AppStorage(DefaultsKey.capturePreviewCloseAfter) private var previewCloseAfter = CapturePreviewClosePolicy.fiveSeconds.rawValue
+    @AppStorage(DefaultsKey.capturePreviewCloseAfter) private var previewCloseAfter = CapturePreviewClosePolicy.focusLost.rawValue
     @AppStorage(DefaultsKey.capturePresentationDestination) private var presentationDestination = "automatic"
     @AppStorage(DefaultsKey.notchEnabled) private var islandEnabled = false
     @AppStorage(DefaultsKey.screenshotSharingEnabled) private var screenshotLinksEnabled = true
@@ -24,6 +24,7 @@ struct CaptureSettings: View {
 
     @State private var showingQuickLinks = false
     @State private var showingSharePrivacy = false
+    @State private var showingDisableLinksConfirm = false
 
     /// Sidebar title shared with the directory; keep it short at narrow widths.
     static func title(for language: AppLanguage) -> String {
@@ -73,6 +74,18 @@ struct CaptureSettings: View {
             }
             .sheet(isPresented: $showingQuickLinks) { CaptureQuickLinksManageView() }
             .sheet(isPresented: $showingSharePrivacy) { CaptureSharePrivacyView() }
+            .alert(copy.disableLinksTitle, isPresented: $showingDisableLinksConfirm) {
+                Button(copy.disableLinksConfirm, role: .destructive) {
+                    deactivateAllActiveLinksAndDisable()
+                }
+                Button(l10n.s.uninstallerCancel, role: .cancel) {}
+            } message: {
+                Text(copy.disableLinksBody)
+            }
+    }
+
+    private var showsFloatingPreviewPosition: Bool {
+        !islandEnabled || presentationDestination != CapturePresentationRouting.Preference.dynamicIsland.rawValue
     }
 
     private var overview: some View {
@@ -93,7 +106,7 @@ struct CaptureSettings: View {
                                         .fixedSize()
                                 }
                             }
-                            if !islandEnabled || presentationDestination != CapturePresentationRouting.Preference.dynamicIsland.rawValue {
+                            if showsFloatingPreviewPosition {
                                 SettingsControlRow(title: screenshotStrings.previewPositionLabel) {
                                     CapturePreviewPositionPicker()
                                         .labelsHidden()
@@ -105,6 +118,8 @@ struct CaptureSettings: View {
                                 .onChange(of: previewTakesFocus) { _, takesFocus in
                                     if !takesFocus && previewCloseAfter == CapturePreviewClosePolicy.focusLost.rawValue {
                                         previewCloseAfter = CapturePreviewClosePolicy.fiveSeconds.rawValue
+                                    } else if takesFocus && previewCloseAfter == CapturePreviewClosePolicy.fiveSeconds.rawValue {
+                                        previewCloseAfter = CapturePreviewClosePolicy.focusLost.rawValue
                                     }
                                 }
                             SettingsControlRow(title: copy.closeAfter) {
@@ -144,8 +159,8 @@ struct CaptureSettings: View {
             .padding(22)
         }
         .settingsExpansionAnimation(value: [screenshotEnabled, recorderEnabled,
-                                           linksBinding.wrappedValue, islandEnabled,
-                                           presentationDestination == CapturePresentationRouting.Preference.floatingWindow.rawValue])
+                                           isQuickLinksEnabled, islandEnabled,
+                                           showsFloatingPreviewPosition])
     }
 
     private var screenshotCard: some View {
@@ -237,14 +252,41 @@ struct CaptureSettings: View {
         .buttonStyle(.plain)
     }
 
+    private var isQuickLinksEnabled: Bool {
+        screenshotLinksEnabled && recordingLinksEnabled
+    }
+
     private var linksBinding: Binding<Bool> {
         Binding {
-            screenshotLinksEnabled && recordingLinksEnabled
+            isQuickLinksEnabled
         } set: { enabled in
-            screenshotLinksEnabled = enabled
-            recordingLinksEnabled = enabled
-            ScreenshotService.shared.syncWithPreferences()
+            if !enabled && activeCreatedLinksCount > 0 {
+                showingDisableLinksConfirm = true
+            } else {
+                applyQuickLinksEnabled(enabled)
+            }
         }
+    }
+
+    private func applyQuickLinksEnabled(_ enabled: Bool) {
+        screenshotLinksEnabled = enabled
+        recordingLinksEnabled = enabled
+        ScreenshotService.shared.syncWithPreferences()
+    }
+
+    private func deactivateAllActiveLinksAndDisable() {
+        let now = Date()
+        let activeScreenshots = screenshotSharing.records.filter { $0.expiresAt > now }
+        let activeRecordings = recordingSharing.records.filter { $0.expiresAt > now }
+        Task { @MainActor in
+            for record in activeScreenshots {
+                try? await screenshotSharing.delete(record)
+            }
+            for record in activeRecordings {
+                try? await recordingSharing.delete(record)
+            }
+        }
+        applyQuickLinksEnabled(false)
     }
 
     private var activeCreatedLinksCount: Int {
@@ -304,9 +346,8 @@ struct CaptureSettings: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                // Previously the management row disappeared when link creation
-                // was disabled, even though earlier links remained active.
                 createdLinksRow
+                    .settingsCollapsible(isExpanded: isQuickLinksEnabled)
             }
         }
     }

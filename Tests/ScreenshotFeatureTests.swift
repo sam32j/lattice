@@ -3294,8 +3294,8 @@ enum ScreenshotFeatureTests {
         suite.expect(Defaults.registeredDefaults[DefaultsKey.screenshotPreviewTakesFocus] as? Bool == true,
                "the screenshot preview takes the keyboard as it appears by default, so its shortcuts work at once; leaving it is the opt-out")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.capturePreviewCloseAfter] as? String
-                    == CapturePreviewClosePolicy.fiveSeconds.rawValue,
-               "screenshot previews always open and use the shared five-second close default")
+                    == CapturePreviewClosePolicy.focusLost.rawValue,
+               "screenshot previews always open and use the shared focus-change close default")
         suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.capturePreviewCloseAfter),
                "the shared preview lifetime travels in settings backups")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.screenshotAddToShelf] as? Bool == false

@@ -3024,7 +3024,8 @@ enum CapturePreviewClosePolicy: String {
 
     static func current(in defaults: UserDefaults = .standard) -> Self {
         let raw = defaults.string(forKey: DefaultsKey.capturePreviewCloseAfter) ?? ""
-        let mode = Self(rawValue: migratedRawValue(raw)) ?? .fiveSeconds
+        let defaultPolicy: Self = defaults.bool(forKey: DefaultsKey.screenshotPreviewTakesFocus) ? .focusLost : .fiveSeconds
+        let mode = Self(rawValue: migratedRawValue(raw)) ?? defaultPolicy
         if mode == .focusLost && !defaults.bool(forKey: DefaultsKey.screenshotPreviewTakesFocus) {
             return .fiveSeconds
         }
