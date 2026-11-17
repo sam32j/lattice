@@ -1005,11 +1005,20 @@ struct MixerSettingsAppRow: View {
         HStack(spacing: 8) {
             appIconView
 
-            Text(app.name)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(active ? Color.primary : Color.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
+            HStack(alignment: .top, spacing: 4) {
+                Text(app.name)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(active ? Color.primary : Color.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                if active && app.isPlaying {
+                    Circle()
+                        .fill(PanelMetricColor.green(for: colorScheme))
+                        .frame(width: 6, height: 6)
+                        .offset(y: 2)
+                }
+            }
 
             if !app.isBypassed {
                 outputDestinationMenu
@@ -1075,15 +1084,6 @@ struct MixerSettingsAppRow: View {
         Image(nsImage: ResponsibleProcess.icon(for: app.ownerPid, pointSize: Self.iconSize))
             .resizable()
             .frame(width: Self.iconSize, height: Self.iconSize)
-            .overlay(alignment: .bottomLeading) {
-                if app.isPlaying {
-                    Circle()
-                        .fill(PanelMetricColor.green(for: colorScheme))
-                        .frame(width: 7, height: 7)
-                        .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1))
-                        .offset(x: -1, y: 1)
-                }
-            }
             .overlay(alignment: .bottomTrailing) {
                 if isPinned || (isHovered && app.persistenceID != nil) {
                     pinBadge
@@ -1468,28 +1468,28 @@ private struct MixerRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            ZStack(alignment: .bottomTrailing) {
-                Image(nsImage: ResponsibleProcess.icon(for: app.ownerPid,
-                                                       pointSize: Self.iconPointSize))
-                    .resizable()
-                    .frame(width: Self.iconPointSize, height: Self.iconPointSize)
-                if app.isPlaying {
-                    Circle()
-                        .fill(PanelMetricColor.green(for: colorScheme))
-                        .frame(width: 8, height: 8)
-                        .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.2))
-                        .offset(x: -1, y: -1)
-                }
-            }
-            .help(arrangementStrings.arrange)
+            Image(nsImage: ResponsibleProcess.icon(for: app.ownerPid,
+                                                   pointSize: Self.iconPointSize))
+                .resizable()
+                .frame(width: Self.iconPointSize, height: Self.iconPointSize)
+                .help(arrangementStrings.arrange)
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
-                    Text(app.name)
-                        .font(.system(size: 11.5, weight: .medium))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .help(arrangementStrings.arrange)
+                    HStack(alignment: .top, spacing: 3) {
+                        Text(app.name)
+                            .font(.system(size: 11.5, weight: .medium))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .help(arrangementStrings.arrange)
+
+                        if app.isPlaying {
+                            Circle()
+                                .fill(PanelMetricColor.green(for: colorScheme))
+                                .frame(width: 5, height: 5)
+                                .offset(y: 2)
+                        }
+                    }
 
                     Spacer(minLength: 4)
 
