@@ -218,20 +218,6 @@ struct GridCoord: Hashable {
     }
 }
 
-struct NormalizedRect: Equatable {
-    let x: CGFloat      // 0.0 ... 1.0
-    let y: CGFloat      // 0.0 ... 1.0
-    let width: CGFloat  // 0.0 ... 1.0
-    let height: CGFloat // 0.0 ... 1.0
-
-    init(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat) {
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-    }
-}
-
 enum QuickAction: String, CaseIterable {
     case maximize
     case maximizeMargin

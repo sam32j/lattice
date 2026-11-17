@@ -4,6 +4,20 @@
 import CoreGraphics
 import Foundation
 
+struct NormalizedRect: Equatable {
+    let x: CGFloat      // 0.0 ... 1.0
+    let y: CGFloat      // 0.0 ... 1.0
+    let width: CGFloat  // 0.0 ... 1.0
+    let height: CGFloat // 0.0 ... 1.0
+
+    init(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat) {
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+    }
+}
+
 enum WindowLayoutTargetCapability: Equatable {
     case position
     case frame
@@ -552,6 +566,39 @@ enum WindowLayoutGeometry {
         let rect = ungappedRect(for: action, current: current, visibleFrame: frame,
                                marginPercent: marginPercent)
         return windowGapped(rect, for: action, in: frame, windowGap: windowGap)
+    }
+
+    static func rect(for normalizedRect: NormalizedRect,
+                     visibleFrame: CGRect,
+                     windowGap: CGFloat = WindowLayoutGaps.windowGap,
+                     screenGap: CGFloat = WindowLayoutGaps.screenGap) -> CGRect {
+        let frame = screenGapFrame(visibleFrame, screenGap: screenGap)
+        let raw = NSRect(
+            x: frame.minX + normalizedRect.x * frame.width,
+            y: frame.minY + (1.0 - normalizedRect.y - normalizedRect.height) * frame.height,
+            width: normalizedRect.width * frame.width,
+            height: normalizedRect.height * frame.height
+        )
+        guard windowGap > 0 else { return raw.integral }
+        let half = windowGap / 2
+        var result = raw
+        if result.minX - frame.minX > 1 {
+            result.origin.x += half
+            result.size.width -= half
+        }
+        if frame.maxX - result.maxX > 1 {
+            result.size.width -= half
+        }
+        if result.minY - frame.minY > 1 {
+            result.origin.y += half
+            result.size.height -= half
+        }
+        if frame.maxY - result.maxY > 1 {
+            result.size.height -= half
+        }
+        result.size.width = max(1, result.size.width)
+        result.size.height = max(1, result.size.height)
+        return result.integral
     }
 
     /// The visible frame pulled in by the screen gap on every side. The inset

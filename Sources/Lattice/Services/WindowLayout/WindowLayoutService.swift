@@ -404,12 +404,7 @@ final class WindowLayoutService: ObservableObject {
             return finish(.failure(.failed))
         }
         let visible = screen.windowLayoutVisibleFrame
-        let targetRect = NSRect(
-            x: visible.minX + normalizedRect.x * visible.width,
-            y: visible.minY + (1.0 - normalizedRect.y - normalizedRect.height) * visible.height,
-            width: normalizedRect.width * visible.width,
-            height: normalizedRect.height * visible.height
-        )
+        let targetRect = WindowLayoutGeometry.rect(for: normalizedRect, visibleFrame: visible)
         frameHistory.record(target.frame, for: target.key)
         let frame = axFrame(fromAppKit: targetRect)
         if setFrame(frame,
@@ -440,12 +435,7 @@ final class WindowLayoutService: ObservableObject {
             return
         }
         let visible = screen.windowLayoutVisibleFrame
-        let targetRect = NSRect(
-            x: visible.minX + normalizedRect.x * visible.width,
-            y: visible.minY + (1.0 - normalizedRect.y - normalizedRect.height) * visible.height,
-            width: normalizedRect.width * visible.width,
-            height: normalizedRect.height * visible.height
-        )
+        let targetRect = WindowLayoutGeometry.rect(for: normalizedRect, visibleFrame: visible)
         snapPreview.show(frame: targetRect, on: screen.frame, below: LatticeHubService.shared.panel)
     }
 
