@@ -28,13 +28,18 @@ enum AudioSettingsOwnershipTests {
     }
     struct OutputPage: View {
         let outputSwitcherEnabled = false
+        let volumeMixerEnabled = true
+        let lowerOnHeadphonesDisconnect = false
         typealias MixerSection = AudioSettingsOwnershipTests.MixerSection
         typealias MusicBlockingSettings = AudioSettingsOwnershipTests.MusicBlockingSettings
         typealias AudioOutputPriorityControls = AudioSettingsOwnershipTests.AudioOutputPriorityControls
         typealias SettingsCard<C: View> = AudioSettingsOwnershipTests.SettingsCard<C>
         let l10n = TextCatalog()
         let microphoneControlEnabled = true
-        struct PriorityStub { let inputPriorityEnabled = false }
+        struct PriorityStub {
+            let inputPriorityEnabled = false
+            let outputPriorityEnabled = false
+        }
         let priority = PriorityStub()
         var pageStrings: SettingsPageStrings { FeatureStrings.settingsPages(.enUS) }
         var soundOutputSwitcherCard: some View { Marker(name: "output-picker") }
