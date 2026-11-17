@@ -9,6 +9,7 @@ import SwiftUI
 struct SettingsCard<Content: View>: View {
     let symbol: String?
     let title: String?
+    let caption: String?
     let headerAccessory: AnyView?
     /// Gap between the heading and the content. A card whose content
     /// collapses with `settingsCollapsible` passes 0 and pads the content
@@ -16,19 +17,21 @@ struct SettingsCard<Content: View>: View {
     let headerSpacing: CGFloat
     let content: Content
 
-    init(symbol: String? = nil, title: String? = nil, @ViewBuilder content: () -> Content) {
+    init(symbol: String? = nil, title: String? = nil, caption: String? = nil, @ViewBuilder content: () -> Content) {
         self.symbol = symbol
         self.title = title
+        self.caption = caption
         self.headerAccessory = nil
         self.headerSpacing = Self.defaultHeaderSpacing
         self.content = content()
     }
 
-    init<Accessory: View>(symbol: String? = nil, title: String,
+    init<Accessory: View>(symbol: String? = nil, title: String, caption: String? = nil,
                           headerSpacing: CGFloat = SettingsCard.defaultHeaderSpacing,
                           @ViewBuilder headerAccessory: () -> Accessory, @ViewBuilder content: () -> Content) {
         self.symbol = symbol
         self.title = title
+        self.caption = caption
         self.headerAccessory = AnyView(headerAccessory())
         self.headerSpacing = headerSpacing
         self.content = content()
@@ -48,7 +51,15 @@ struct SettingsCard<Content: View>: View {
                             .background(Color.accentColor.opacity(0.12),
                                         in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                     }
-                    Text(title).font(.headline)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(.headline)
+                        if let caption {
+                            Text(caption)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                     if let headerAccessory {
                         Spacer()
                         headerAccessory
