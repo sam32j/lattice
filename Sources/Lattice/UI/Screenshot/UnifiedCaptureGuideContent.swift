@@ -28,6 +28,10 @@ struct UnifiedCaptureGuideContent: View {
 
     private var isMultiWindowMode: Bool { model.selectedWindowsCount > 0 }
 
+    private var offersModeSwitch: Bool {
+        options.availableTools.contains(.screenshot) && options.availableTools.contains(.recording)
+    }
+
     var body: some View {
         VStack(spacing: 8) {
             Spacer(minLength: 0)
@@ -48,11 +52,15 @@ struct UnifiedCaptureGuideContent: View {
                         isGuideHovered = hovering
                         updateHover()
                     }
-                modeSwitchHint
-                    .onHover { hovering in
-                        isModeHovered = hovering
-                        updateHover()
-                    }
+                // R switches between screenshot and recording, so with only
+                // one of them enabled there is nothing to switch to.
+                if offersModeSwitch {
+                    modeSwitchHint
+                        .onHover { hovering in
+                            isModeHovered = hovering
+                            updateHover()
+                        }
+                }
             }
             .captureGuideInteractiveRegion()
         }
