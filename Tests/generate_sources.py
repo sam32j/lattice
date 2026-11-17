@@ -1669,7 +1669,7 @@ def main():
               "    private func removeScreenEdgeClickMonitors("])
           + "}\n}\n")
     write("NotchScreenRefresh.swift", "import Foundation\n\nextension NotchScreenRefreshContract {\nfinal class Service: State {\n"
-          + declaration(notch, "    private func schedulePreferenceSync()").replace("private func", "func", 1)
+          + declaration(notch, "    func schedulePreferenceSync()")
           + declaration(notch, "    private func screenParametersDidChange()").replace("private func", "func", 1)
           + declaration(notch, "    private func invalidateMenuSpace(").replace("private func", "func", 1)
           + declaration(notch, "    private func applicationDidActivate()").replace("private func", "func", 1)
@@ -1917,9 +1917,9 @@ def main():
           + declaration(canvas, "    override func performDragOperation(").replace("override func", "func", 1)
           + "}\n}\n")
     write("ShortcutsExpansion.swift", "import SwiftUI\n\nextension FeatureCatalogTests {\n"
-          + "final class Expansion { var features: [FeatureGroup: Set<AppFeature>] = [:] }\n"
+          + "final class Expansion { var features: [String: Set<AppFeature>] = [:] }\n"
           + "struct ShortcutsPage {\nlet state: Expansion\n"
-          + "var expandedFeatures: [FeatureGroup: Set<AppFeature>] { get { state.features } nonmutating set { state.features = newValue } }\n"
+          + "var expandedFeatures: [String: Set<AppFeature>] { get { state.features } nonmutating set { state.features = newValue } }\n"
           + declaration("Sources/Lattice/UI/Settings/ShortcutsSettings.swift", "    private func expansionBinding(").replace("private func", "func", 1)
           + "}\n}\n")
     settings_card = "Sources/Lattice/UI/Settings/SettingsCard.swift"
