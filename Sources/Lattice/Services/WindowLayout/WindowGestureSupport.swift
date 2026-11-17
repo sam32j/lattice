@@ -800,7 +800,11 @@ enum WindowEdgeSnapSupport {
             let visible = screen.visibleFrame
             let visibleLeft = max(visible.minX, frame.minX)
             let visibleRight = min(visible.maxX, frame.maxX)
-            let visibleBottom = max(visible.minY, frame.minY)
+            // Stage Manager takes room at the sides only, so the left and
+            // right edges and the corners' widths follow the usable area,
+            // while heights stay measured on the whole screen as before:
+            // the Dock raising the bottom must not turn side drops into
+            // corner drops.
             let visibleTop = min(max(visible.maxY, frame.minY), frame.maxY)
 
             // Just past each edge, level with the pointer: another display
@@ -812,7 +816,7 @@ enum WindowEdgeSnapSupport {
                 && (settledAcross || !open(CGPoint(x: frame.maxX + 0.5, y: point.y)))
             let nearTop = point.y >= visibleTop - distance && point.y <= frame.maxY + distance
                 && (settledUpDown || !open(CGPoint(x: point.x, y: frame.maxY + 0.5)))
-            let nearBottom = (abs(point.y - frame.minY) <= distance || (point.y >= frame.minY - distance && point.y <= visibleBottom + distance))
+            let nearBottom = abs(point.y - frame.minY) <= distance
                 && (settledUpDown || !open(CGPoint(x: point.x, y: frame.minY - 0.5)))
             guard nearLeft || nearRight || nearTop || nearBottom else { continue }
 
@@ -836,17 +840,17 @@ enum WindowEdgeSnapSupport {
                     zone = .bottom
                 }
             } else if nearLeft {
-                if point.y >= visibleTop - verticalCorner {
+                if point.y >= frame.maxY - verticalCorner {
                     zone = .topLeft
-                } else if point.y <= visibleBottom + verticalCorner {
+                } else if point.y <= frame.minY + verticalCorner {
                     zone = .bottomLeft
                 } else {
                     zone = .left
                 }
             } else {
-                if point.y >= visibleTop - verticalCorner {
+                if point.y >= frame.maxY - verticalCorner {
                     zone = .topRight
-                } else if point.y <= visibleBottom + verticalCorner {
+                } else if point.y <= frame.minY + verticalCorner {
                     zone = .bottomRight
                 } else {
                     zone = .right
@@ -860,9 +864,8 @@ enum WindowEdgeSnapSupport {
                     / max(visibleRight - visibleLeft - 2 * horizontalCorner, 1)
                 along = min(max(raw, 0), 1)
             } else if zone.isVerticalEdge {
-                let raw = (visibleTop - verticalCorner - point.y)
-                    / max(visibleTop - visibleBottom - 2 * verticalCorner, 1)
-                along = min(max(raw, 0), 1)
+                along = (frame.maxY - verticalCorner - point.y)
+                    / max(frame.height - 2 * verticalCorner, 1)
             } else {
                 along = 0
             }
