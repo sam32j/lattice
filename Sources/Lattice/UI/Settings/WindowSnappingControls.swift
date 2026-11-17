@@ -9,32 +9,34 @@ extension WindowLayoutSettings {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 13) {
                 SettingsRow(symbol: "macwindow.and.cursorarrow", title: text.edgeSnapSection, caption: text.edgeSnapCaption) {
-                    HStack(spacing: 8) {
+                    PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .onChange(of: edgeSnapEnabled) { _, _ in
+                            WindowLayoutService.shared.syncWithPreferences()
+                        }
+                }
+                if edgeSnapEnabled {
+                    // Reset sits under the switch: its top level with the
+                    // zone picker's, its right edge with the switch's, at
+                    // the regular size of the page's other buttons.
+                    HStack(alignment: .top, spacing: 12) {
+                        WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
+                                                 zoneActionsStorage: $edgeSnapZoneActions,
+                                                 text: text,
+                                                 resetTitle: l10n.s.shortcutReset)
+                            .onChange(of: edgeSnapDisabledZones) { _, _ in
+                                WindowLayoutService.shared.syncWithPreferences()
+                            }
+                        Spacer(minLength: 0)
                         Button(l10n.s.shortcutReset) {
                             edgeSnapDisabledZones = ""
                             edgeSnapZoneActions = ""
                             WindowLayoutService.shared.syncWithPreferences()
                         }
-                        .controlSize(.small)
                         .disabled(isEdgeSnapReset)
-
-                        PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
-                            .labelsHidden()
-                            .toggleStyle(.switch)
-                            .onChange(of: edgeSnapEnabled) { _, _ in
-                                WindowLayoutService.shared.syncWithPreferences()
-                            }
                     }
-                }
-                if edgeSnapEnabled {
-                    WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
-                                             zoneActionsStorage: $edgeSnapZoneActions,
-                                             text: text,
-                                             resetTitle: l10n.s.shortcutReset)
-                        .padding(.leading, settingsRowTextInset)
-                        .onChange(of: edgeSnapDisabledZones) { _, _ in
-                            WindowLayoutService.shared.syncWithPreferences()
-                        }
+                    .padding(.leading, settingsRowTextInset)
                 }
                 if systemTilingEnabled {
                     VStack(alignment: .leading, spacing: 6) {
@@ -114,12 +116,10 @@ extension WindowLayoutSettings {
                 Text(text.other).font(.headline)
                 actionRow(.maximize)
                 actionRow(.marginMaximize)
+                // Always adjustable: the snapping panel's Maximize Margin
+                // button uses it with or without a keyboard shortcut.
                 marginSlider
                     .disclosureIndent()
-                    .disabled(WindowLayoutAction.resolvedShortcut(storedValue: marginShortcutRaw,
-                        defaultShortcut: WindowLayoutAction.marginMaximize.defaultShortcut) == nil)
-                    .opacity(WindowLayoutAction.resolvedShortcut(storedValue: marginShortcutRaw,
-                        defaultShortcut: WindowLayoutAction.marginMaximize.defaultShortcut) == nil ? 0.55 : 1)
                 actionRow(.fullScreen)
                 actionRow(.center)
                 actionRow(.restore)

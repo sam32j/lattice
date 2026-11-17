@@ -42,17 +42,15 @@ extension WindowLayoutSettings {
     }
 
     func gapPresetTitle(_ value: Int) -> String {
-        let name: String
         switch value {
         case 0: return text.gapNone
-        case 8: name = text.gapTiny
-        case 16: name = text.gapSmall
-        case 32: name = text.gapMedium
-        case 64: name = text.gapLarge
-        case 128: name = text.gapExtraLarge
+        case 8: return text.gapTiny
+        case 16: return text.gapSmall
+        case 32: return text.gapMedium
+        case 64: return text.gapLarge
+        case 128: return text.gapExtraLarge
         default: return "\(value) px"
         }
-        return "\(name) (\(value) px)"
     }
 
     var marginSlider: some View {
@@ -176,7 +174,7 @@ private struct WindowLayoutMarginSlider: View {
 
     var body: some View {
         HStack {
-            Label(title, systemImage: "rectangle.inset.filled")
+            Text(title)
             Spacer()
             SettingsValueSlider(title: title, value: $marginPercent,
                 range: WindowLayoutMargin.percentRange, step: 1, readout: "\(marginPixelValue) px", usesSystemAppearance: true)
