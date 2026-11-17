@@ -18,6 +18,42 @@ struct MixerOutputDevice: Identifiable, Equatable {
     let canBeDefaultSystemOutput: Bool
     let priorityTier: MixerRoutingSupport.PriorityTier
     fileprivate let audioObjectID: AudioObjectID
+    let transportType: UInt32
+
+    init(id: String,
+         uid: String,
+         name: String,
+         isDefault: Bool,
+         isHeadphones: Bool,
+         canBeDefaultOutput: Bool,
+         canBeDefaultSystemOutput: Bool,
+         priorityTier: MixerRoutingSupport.PriorityTier,
+         audioObjectID: AudioObjectID,
+         transportType: UInt32 = 0) {
+        self.id = id
+        self.uid = uid
+        self.name = name
+        self.isDefault = isDefault
+        self.isHeadphones = isHeadphones
+        self.canBeDefaultOutput = canBeDefaultOutput
+        self.canBeDefaultSystemOutput = canBeDefaultSystemOutput
+        self.priorityTier = priorityTier
+        self.audioObjectID = audioObjectID
+        self.transportType = transportType
+    }
+
+    var isBluetooth: Bool {
+        transportType == kAudioDeviceTransportTypeBluetooth
+            || transportType == kAudioDeviceTransportTypeBluetoothLE
+    }
+
+    var isBuiltIn: Bool {
+        (priorityTier == .builtIn || transportType == kAudioDeviceTransportTypeBuiltIn) && !isHeadphones
+    }
+
+    var isAirPlay: Bool {
+        MixerRoutingSupport.isAirPlaySentinel(uid) || transportType == kAudioDeviceTransportTypeAirPlay
+    }
 }
 
 /// One app in the mixer: every audio-producing process it is responsible for,
@@ -228,10 +264,48 @@ final class AppVolumeMixer: ObservableObject {
             return
         }
 
-        if listenerInstalled, processMonitoringEnabled != needs.processes {
-            stop()
+        if listenerInstalled {
+            if processMonitoringEnabled != needs.processes {
+                updateProcessMonitoring(enabled: needs.processes)
+            }
+        } else {
+            start()
         }
-        start()
+    }
+
+    /// Adjusts per-process monitoring without interrupting global hardware device observation.
+    /// This prevents device availability and priority lists from momentarily clearing.
+    private func updateProcessMonitoring(enabled: Bool) {
+        if enabled {
+            stopped = false
+            processMonitoringEnabled = true
+            publishHiddenApps()
+            if Self.isSupported {
+                installListener(selector: kAudioHardwarePropertyProcessObjectList)
+            }
+            if !airPlayActive {
+                AirPlayRouteManager.shared.activate { [weak self] in
+                    self?.refreshApps()
+                }
+                airPlayActive = true
+            }
+            refreshApps()
+        } else {
+            stopAll()
+            sessionVolumes.removeAll()
+            sessionRoutes.removeAll()
+            refresh.discardInFlight()
+            pruneRunningListeners(keeping: [])
+            removeListener(selector: kAudioHardwarePropertyProcessObjectList)
+            if airPlayActive {
+                AirPlayRouteManager.shared.deactivate()
+                airPlayActive = false
+            }
+            if !apps.isEmpty { apps = [] }
+            if !hiddenApps.isEmpty { hiddenApps = [] }
+            processMonitoringEnabled = false
+            clearPermissionIfNoActiveAdjustments()
+        }
     }
 
     /// Starts watching audio processes. Saved volumes re-apply as soon as the
@@ -366,6 +440,7 @@ final class AppVolumeMixer: ObservableObject {
     }
 
     private func installListener(selector: AudioObjectPropertySelector) {
+        guard !globalListeners.contains(selector) else { return }
         var address = AudioObjectPropertyAddress(mSelector: selector,
                                                  mScope: kAudioObjectPropertyScopeGlobal,
                                                  mElement: kAudioObjectPropertyElementMain)
@@ -374,6 +449,18 @@ final class AppVolumeMixer: ObservableObject {
                                              Self.listenerCallback,
                                              listenerClient) == noErr else { return }
         globalListeners.append(selector)
+    }
+
+    private func removeListener(selector: AudioObjectPropertySelector) {
+        guard let index = globalListeners.firstIndex(of: selector) else { return }
+        globalListeners.remove(at: index)
+        var address = AudioObjectPropertyAddress(mSelector: selector,
+                                                 mScope: kAudioObjectPropertyScopeGlobal,
+                                                 mElement: kAudioObjectPropertyElementMain)
+        AudioObjectRemovePropertyListener(AudioObjectID(kAudioObjectSystemObject),
+                                          &address,
+                                          Self.listenerCallback,
+                                          listenerClient)
     }
 
     private func removeGlobalListeners() {
@@ -1066,19 +1153,22 @@ final class AppVolumeMixer: ObservableObject {
         reconcileEngines(with: apps)
     }
 
-    func setOutputDeviceUID(_ uid: String?, for app: MixerApp) {
+    func setOutputDeviceUID(_ uid: String?, for app: MixerApp, anchorRect: NSRect? = nil) {
         guard !app.isBypassed else { return }
         if uid == MixerRoutingSupport.airPlaySpeakerChoiceID {
-            chooseAirPlaySpeaker(for: app)
+            chooseAirPlaySpeaker(for: app, anchorRect: anchorRect)
             return
         }
         engineRecovery.clear(app.id)
         let sanitized = Defaults.sanitizedAppOutputDeviceUID(uid)
+        let wasAlreadyAirPlay = app.selectedOutputDeviceUID.map(MixerRoutingSupport.isAirPlaySentinel) == true
         persistOutputDeviceUID(sanitized, for: app)
         refresh.discardInFlight()
-        if let sanitized, MixerRoutingSupport.isAirPlaySentinel(sanitized), !AirPlayRouteManager.shared.isConnected {
-            // After the menu that asked for it closes, so the list opens at the pointer.
-            DispatchQueue.main.async { AirPlayRouteManager.shared.presentPicker() }
+        if let sanitized, MixerRoutingSupport.isAirPlaySentinel(sanitized) {
+            if !AirPlayRouteManager.shared.isConnected || wasAlreadyAirPlay {
+                // After the menu that asked for it closes, so the list opens at the anchor/pointer.
+                DispatchQueue.main.async { AirPlayRouteManager.shared.presentPicker(anchorRect: anchorRect) }
+            }
         }
         if let index = apps.firstIndex(where: { $0.id == app.id }) {
             apps[index].selectedOutputDeviceUID = sanitized
@@ -1098,13 +1188,13 @@ final class AppVolumeMixer: ObservableObject {
 
     /// Choosing a speaker from an app's menu sends that app to AirPlay too,
     /// and opens the speaker list even while one is already picked.
-    private func chooseAirPlaySpeaker(for app: MixerApp) {
+    private func chooseAirPlaySpeaker(for app: MixerApp, anchorRect: NSRect? = nil) {
         let routed = app.selectedOutputDeviceUID.map(MixerRoutingSupport.isAirPlaySentinel) == true
         let connected = AirPlayRouteManager.shared.isConnected
         // Without a speaker, routing the app opens the list on its own.
-        if !routed { setOutputDeviceUID(AirPlayRouteManager.airPlaySentinelUID, for: app) }
+        if !routed { setOutputDeviceUID(AirPlayRouteManager.airPlaySentinelUID, for: app, anchorRect: anchorRect) }
         if routed || connected {
-            DispatchQueue.main.async { AirPlayRouteManager.shared.presentPicker() }
+            DispatchQueue.main.async { AirPlayRouteManager.shared.presentPicker(anchorRect: anchorRect) }
         }
     }
 
@@ -1169,13 +1259,7 @@ final class AppVolumeMixer: ObservableObject {
         // still reading the previous devices is thrown away; the one at the end
         // of this method replaces it.
         refresh.discardInFlight()
-        let savedOutputUIDs = savedOutputDeviceUIDs()
-        let preferences = MixerRoutingSupport.preferencesAfterUniversalOutputSwitch(
-            outputDeviceUIDs: savedOutputUIDs,
-            volumes: savedVolumes(),
-            switchSucceeded: true)
-        persistOutputDeviceUIDs(preferences.outputDeviceUIDs)
-        sessionRoutes.removeAll()
+        // Keep per-app output routes intact when switching system default output.
         // A second shortcut press can precede the HAL snapshot. Cycle from
         // the successful choice, while the per-app routes await that read.
         currentOutputDeviceUID = device.uid
@@ -2337,9 +2421,22 @@ final class AppVolumeMixer: ObservableObject {
     /// write from being reverted; everything else in a row stays as read.
     private func applyingCurrentVolumes(to rows: [MixerApp]) -> [MixerApp] {
         let saved = savedVolumes()
+        let savedOutputs = savedOutputDeviceUIDs()
         return rows.map { row in
             var row = row
             row.volume = row.isBypassed ? 1 : (storedVolume(for: row.identity, saved: saved) ?? 1)
+            if !row.isBypassed {
+                let route = storedRoute(for: row.identity, saved: savedOutputs)
+                if row.selectedOutputDeviceUID != route {
+                    row.selectedOutputDeviceUID = route
+                    if let defaultUID = currentOutputDeviceUID {
+                        row.effectiveOutputDeviceUID = MixerRoutingSupport.effectiveDeviceUID(
+                            selectedUID: route,
+                            availableUIDs: Set(outputDevices.map(\.uid)),
+                            defaultUID: defaultUID)
+                    }
+                }
+            }
             return row
         }
     }
@@ -2512,7 +2609,8 @@ final class AppVolumeMixer: ObservableObject {
                                              canBeDefaultSystemOutput: canBeDefaultSystemOutput,
                                              priorityTier: MixerRoutingSupport.PriorityTier(
                                                 transportType: transportType),
-                                             audioObjectID: deviceID))
+                                             audioObjectID: deviceID,
+                                             transportType: transportType))
         }
 
         // Always listed while the picker API exists, next to any AirPlay device
@@ -2534,7 +2632,8 @@ final class AppVolumeMixer: ObservableObject {
                                              canBeDefaultOutput: false,
                                              canBeDefaultSystemOutput: false,
                                              priorityTier: .hardware,
-                                             audioObjectID: 0))
+                                             audioObjectID: 0,
+                                             transportType: kAudioDeviceTransportTypeAirPlay))
         }
 
         return devices.sorted { lhs, rhs in
