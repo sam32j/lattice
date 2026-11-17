@@ -3,7 +3,6 @@ import SwiftUI
 extension WindowLayoutSettings {
     var snappingControls: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Divider()
             VStack(alignment: .leading, spacing: 13) {
                 SettingsRow(symbol: "macwindow.and.cursorarrow", title: text.edgeSnapSection, caption: text.edgeSnapCaption) {
                     PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
