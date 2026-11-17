@@ -148,6 +148,7 @@ enum DefaultsKey {
     static let soundOutputSwitcherEnabled = "soundOutputSwitcherEnabled"
     static let soundOutputSwitcherShortcut = "soundOutputSwitcherShortcut"
     static let soundOutputSwitcherDeviceUIDs = "soundOutputSwitcherDeviceUIDs"
+    static let soundOutputSwitcherSkippedUIDs = "soundOutputSwitcherSkippedUIDs"
     // Audio device priority: ordered output and microphone lists the feature
     // enforces automatically when its enable flags are on.
     static let audioPriorityOutputEnabled = "audioPriorityOutputEnabled"
