@@ -11,12 +11,15 @@ final class SoundOutputSwitcher: ObservableObject {
 
     @Published private(set) var registrationFailed = false
     @Published private(set) var lastSwitchFailed = false
+    @Published private(set) var skippedUIDs: Set<String> = []
 
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandler: EventHandlerRef?
     private var registeredShortcut: GlobalShortcut?
 
-    private init() {}
+    private init() {
+        skippedUIDs = Set(UserDefaults.standard.stringArray(forKey: DefaultsKey.soundOutputSwitcherSkippedUIDs) ?? [])
+    }
 
     func syncWithPreferences() {
         AppFeature.soundOutputSwitcher.isAvailable
@@ -29,10 +32,40 @@ final class SoundOutputSwitcher: ObservableObject {
         unregisterHotkey()
     }
 
+    func skippedDeviceUIDs() -> Set<String> {
+        skippedUIDs
+    }
+
+    func isSkipped(_ uid: String) -> Bool {
+        skippedUIDs.contains(uid)
+    }
+
+    func setSkipped(_ skipped: Bool, for uid: String) {
+        if skipped {
+            skippedUIDs.insert(uid)
+        } else {
+            skippedUIDs.remove(uid)
+        }
+        UserDefaults.standard.set(Array(skippedUIDs).sorted(), forKey: DefaultsKey.soundOutputSwitcherSkippedUIDs)
+    }
+
+    func toggleSkip(for uid: String) {
+        setSkipped(!isSkipped(uid), for: uid)
+    }
+
+    func cycleDeviceUIDs() -> [String] {
+        let priorityOrder = AudioPriorityService.shared.outputPriorityUIDs
+        let hardwareUIDs = AppVolumeMixer.shared.outputDevices.filter(\.canBeDefaultOutput).map(\.uid)
+        var ordered = priorityOrder
+        for uid in hardwareUIDs where !ordered.contains(uid) {
+            ordered.append(uid)
+        }
+        let skipped = skippedDeviceUIDs()
+        return ordered.filter { !skipped.contains($0) }
+    }
+
     func selectedDeviceUIDs() -> [String] {
-        Defaults.sanitizedSoundOutputSwitcherDeviceUIDs(
-            UserDefaults.standard.array(forKey: DefaultsKey.soundOutputSwitcherDeviceUIDs) ?? []
-        )
+        cycleDeviceUIDs()
     }
 
     func setSelectedDeviceUIDs(_ uids: [String]) {
@@ -47,7 +80,7 @@ final class SoundOutputSwitcher: ObservableObject {
 
     @discardableResult
     func switchToNextOutput() -> Bool {
-        let ok = AppVolumeMixer.shared.switchToNextSoundOutput(in: selectedDeviceUIDs())
+        let ok = AppVolumeMixer.shared.switchToNextSoundOutput(in: cycleDeviceUIDs())
         lastSwitchFailed = !ok
         return ok
     }

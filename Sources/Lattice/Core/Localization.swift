@@ -2722,7 +2722,7 @@ extension Strings {
         preciseVolumeRollerCaption: "Turns volume wheels and keys into smaller system volume steps.",
         preciseVolumeRollerTapFailed: "Could not listen for volume keys.",
         soundOutputSwitcherTitle: "Output switcher",
-        soundOutputSwitcherEnable: "Switch outputs with shortcut",
+        soundOutputSwitcherEnable: "Cycle through with shortcut",
         soundOutputSwitcherCaption: "Use the shortcut to cycle through output devices.",
         soundOutputSwitcherDevices: "Outputs in cycle",
         soundOutputSwitcherNoAvailableSelection: "Select at least one available output.",
