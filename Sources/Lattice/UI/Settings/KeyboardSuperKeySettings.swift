@@ -25,9 +25,9 @@ extension KeyboardSettings {
     }
 
     var superKeyCard: some View {
-        SettingsCard(title: text.pageTitle) {
+        SettingsCard(symbol: "command.circle", title: text.pageTitle) {
             VStack(alignment: .leading, spacing: 12) {
-                SettingsRow(symbol: "keyboard", title: InputSettingsStrings.text(.enableSuperKey, l10n.language), caption: text.enableCaption) {
+                SettingsControlRow(title: InputSettingsStrings.text(.enableSuperKey, l10n.language), caption: text.enableCaption) {
                     PermissionGatedToggle(InputSettingsStrings.text(.enableSuperKey, l10n.language), isOn: $superKeyEnabled)
                         .labelsHidden()
                         .onChange(of: superKeyEnabled) { _, _ in
@@ -37,43 +37,41 @@ extension KeyboardSettings {
                 }
 
                 if superKeyEnabled {
-                HStack(spacing: 6) {
-                    Text(InputSettingsStrings.text(.superKey, l10n.language))
-                    Spacer(minLength: 12)
-                    SettingsStatusDot(status: superKeyStatus)
-                    Picker(InputSettingsStrings.text(.superKey, l10n.language), selection: sourceBinding) {
-                        ForEach(SuperKeySource.allCases) { source in
-                            Text(text.sourceLabel(source)).tag(source)
+                    HStack(spacing: 6) {
+                        Text(InputSettingsStrings.text(.superKey, l10n.language))
+                        Spacer(minLength: 12)
+                        SettingsStatusDot(status: superKeyStatus)
+                        Picker(InputSettingsStrings.text(.superKey, l10n.language), selection: sourceBinding) {
+                            ForEach(SuperKeySource.allCases) { source in
+                                Text(text.sourceLabel(source)).tag(source)
+                            }
                         }
+                        .labelsHidden().pickerStyle(.menu)
+                        .fixedSize()
+                        .disabled(!superKeyEnabled)
                     }
-                    .labelsHidden().pickerStyle(.menu)
-                    .fixedSize()
-                    .disabled(!superKeyEnabled)
-                }
-                .padding(.leading, settingsRowTextInset)
 
-                diagram
+                    diagram
 
-                SettingsControlRow(title: text.soloSection) {
-                    Picker(text.soloSection, selection: soloBinding) {
-                        Text(text.soloNothing).tag(SuperKeySoloAction.none)
-                        Text(text.soloCapsLock).tag(SuperKeySoloAction.capsLock)
-                        Text(text.soloInputSource).tag(SuperKeySoloAction.inputSource)
-                        Text(text.soloEscape).tag(SuperKeySoloAction.escape)
+                    SettingsControlRow(title: text.soloSection) {
+                        Picker(text.soloSection, selection: soloBinding) {
+                            Text(text.soloNothing).tag(SuperKeySoloAction.none)
+                            Text(text.soloCapsLock).tag(SuperKeySoloAction.capsLock)
+                            Text(text.soloInputSource).tag(SuperKeySoloAction.inputSource)
+                            Text(text.soloEscape).tag(SuperKeySoloAction.escape)
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(width: 220, alignment: .trailing)
                     }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                    .frame(width: 220, alignment: .trailing)
-                }
-                .padding(.leading, settingsRowTextInset)
-                .help(text.soloCaption)
-                .disabled(superKeyOptionsDisabled)
-
-                MouseExceptionsList(scope: .superKey)
-                    .padding(.leading, settingsRowTextInset)
+                    .help(text.soloCaption)
                     .disabled(superKeyOptionsDisabled)
+
+                    MouseExceptionsList(scope: .superKey)
+                        .disabled(superKeyOptionsDisabled)
                 }
             }
+            .padding(.leading, settingsRowTextInset)
         }
     }
 
