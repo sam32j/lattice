@@ -142,12 +142,17 @@ struct WindowLayoutSettings: View {
                     WindowLayoutIgnoredAppsList()
                         .padding(.leading, settingsRowTextInset)
                     if windowLayoutInstalled {
+                        gapPicker(text.windowGap, selection: $windowGap)
+                            .padding(.leading, settingsRowTextInset)
+                        gapPicker(text.screenGap, selection: $screenGap)
+                            .padding(.leading, settingsRowTextInset)
                         SettingsRow(symbol: "sidebar.left", title: stageManagerText.title,
                                     caption: stageManagerText.caption) {
                             Toggle(stageManagerText.title, isOn: $reserveStageManagerSpace)
                                 .labelsHidden()
                                 .toggleStyle(.switch)
                         }
+                        Divider()
                         snappingControls
                     }
                 }

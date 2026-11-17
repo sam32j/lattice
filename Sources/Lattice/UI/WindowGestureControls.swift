@@ -10,52 +10,31 @@ struct WindowEdgeSnapZonePicker: View {
     @Binding var disabledZonesStorage: String
     @Binding var zoneActionsStorage: String
     let text: WindowLayoutFeatureStrings
-    let resetTitle: String
+    var resetTitle: String = ""
     var compact = false
 
     @ObservedObject private var l10n = L10n.shared
 
     var body: some View {
-        HStack(alignment: .top, spacing: compact ? 6 : 9) {
-            VStack(spacing: cellSpacing) {
-                zoneRow(left: .topLeft, center: .top, right: .topRight,
-                        height: compact ? 36 : 50)
-                zoneRow(left: .left, center: nil, right: .right,
-                        height: sideRowHeight)
-                zoneRow(left: .bottomLeft, center: .bottom, right: .bottomRight,
-                        height: compact ? 36 : 50)
-            }
-            .padding(compact ? 5 : 7)
-            .frame(width: compact ? 258 : 340)
-            .background(
-                RoundedRectangle(cornerRadius: compact ? 9 : 12, style: .continuous)
-                    .fill(Color.primary.opacity(0.025))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: compact ? 9 : 12, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.14))
-            )
-
-            Button {
-                disabledZonesStorage = ""
-                zoneActionsStorage = ""
-            } label: {
-                Image(systemName: "arrow.counterclockwise")
-                    .font(.system(size: compact ? 10 : 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: compact ? 20 : 24, height: compact ? 20 : 24)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(Color.primary.opacity(0.045))
-                    )
-            }
-            .buttonStyle(.plain)
-            .disabled(isStandard)
-            .opacity(isStandard ? 0.35 : 1)
-            .help(resetTitle)
-            .accessibilityLabel(resetTitle)
+        VStack(spacing: cellSpacing) {
+            zoneRow(left: .topLeft, center: .top, right: .topRight,
+                    height: compact ? 36 : 50)
+            zoneRow(left: .left, center: nil, right: .right,
+                    height: sideRowHeight)
+            zoneRow(left: .bottomLeft, center: .bottom, right: .bottomRight,
+                    height: compact ? 36 : 50)
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(compact ? 5 : 7)
+        .frame(width: compact ? 258 : 340)
+        .background(
+            RoundedRectangle(cornerRadius: compact ? 9 : 12, style: .continuous)
+                .fill(Color.primary.opacity(0.025))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: compact ? 9 : 12, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.14))
+        )
+        .frame(maxWidth: .infinity, alignment: .leading)
         .animation(.easeInOut(duration: 0.14), value: disabledZonesStorage)
         .animation(.easeInOut(duration: 0.14), value: zoneActionsStorage)
     }
@@ -115,7 +94,8 @@ struct WindowEdgeSnapZonePicker: View {
     /// along the top and bottom and stacked along the sides.
     private func zoneCell(_ zone: WindowEdgeSnapZone) -> some View {
         let isOn = !disabledZones.contains(zone)
-        let actions = layout.actions(for: zone)
+        let rawActions = layout.actions(for: zone)
+        let actions = !isOn ? [rawActions.first ?? zone.defaultAction] : rawActions
         let place = zoneName(zone)
         let areas = ForEach(actions.indices, id: \.self) { part in
             WindowEdgeSnapAreaButton(action: actions[part],
@@ -132,16 +112,6 @@ struct WindowEdgeSnapZonePicker: View {
                 VStack(spacing: partSpacing) { areas }
             } else {
                 HStack(spacing: partSpacing) { areas }
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            if !isOn {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: compact ? 7 : 9, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(compact ? 3 : 4)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
             }
         }
     }
@@ -166,7 +136,7 @@ struct WindowEdgeSnapZonePicker: View {
     private func menu(for zone: WindowEdgeSnapZone, part: Int) -> [WindowEdgeSnapMenuEntry] {
         let isOn = !disabledZones.contains(zone)
         let actions = layout.actions(for: zone)
-        let current = actions[part]
+        let current = actions.indices.contains(part) ? actions[part] : (actions.first ?? zone.defaultAction)
         // A split edge turns on and off as a whole, so the switch names the
         // edge rather than the area that opened the menu.
         let useTitle = zone.maximumParts > 1 ? text.edgeSnapUseEdge : text.edgeSnapUseCorner
@@ -188,8 +158,9 @@ struct WindowEdgeSnapZonePicker: View {
         }
         if zone.maximumParts > 1 {
             entries.append(.separator)
+            let currentCount = isOn ? actions.count : 1
             let counts = (1...zone.maximumParts).map { count in
-                WindowEdgeSnapMenuEntry.item("\(count)", checked: count == actions.count) {
+                WindowEdgeSnapMenuEntry.item("\(count)", checked: count == currentCount) {
                     split(zone, into: count)
                 }
             }
@@ -219,6 +190,11 @@ struct WindowEdgeSnapZonePicker: View {
             disabled.remove(zone)
         } else {
             disabled.insert(zone)
+            if zone.maximumParts > 1 {
+                var layout = layout
+                layout.setPartCount(1, for: zone)
+                zoneActionsStorage = layout.storageValue
+            }
         }
         disabledZonesStorage = WindowEdgeSnapZone.disabledZonesStorageValue(disabled)
     }
@@ -254,8 +230,14 @@ private struct WindowEdgeSnapAreaButton: View {
                     .strokeBorder(isOn
                         ? Color.accentColor.opacity(hovered ? 0.65 : 0.42)
                         : Color.primary.opacity(hovered ? 0.2 : 0.09))
-                WindowEdgeSnapPlacementGlyph(action: action, compact: compact)
-                    .foregroundStyle(isOn ? Color.accentColor : Color.secondary.opacity(0.45))
+                if isOn {
+                    WindowEdgeSnapPlacementGlyph(action: action, compact: compact)
+                        .foregroundStyle(Color.accentColor)
+                } else {
+                    Image(systemName: "slash.circle.fill")
+                        .font(.system(size: compact ? 12 : 16, weight: .medium))
+                        .foregroundStyle(Color.secondary.opacity(0.45))
+                }
             }
             .contentShape(shape)
         }
