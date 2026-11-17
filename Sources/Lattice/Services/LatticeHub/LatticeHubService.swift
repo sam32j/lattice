@@ -17,6 +17,14 @@ final class LatticeHubService: ObservableObject {
     @Published var stayAwakeOptionsPresented = false
     let editingPresentation = HubEditingPresentation()
     var editingChangedAt: TimeInterval = -.infinity
+    /// Until this uptime, hosted content animates its own height frame by
+    /// frame, so the panel follows each reported size instead of starting a
+    /// second, lagging resize animation toward it.
+    private(set) var contentDrivenResizeUntil: TimeInterval = -.infinity
+
+    func followContentDrivenResize(for duration: TimeInterval) {
+        contentDrivenResizeUntil = ProcessInfo.processInfo.systemUptime + duration
+    }
     @Published var isEditing = false {
         didSet {
             guard isEditing != oldValue else { return }
