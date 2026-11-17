@@ -19,7 +19,7 @@ extension MouseSettings {
                     SettingsControlRow(title: l10n.s.focusFollowsMouseDelay) {
                         Picker(l10n.s.focusFollowsMouseDelay, selection: focusFollowsMouseDelayPresetBinding) {
                             ForEach(FocusFollowsMouseSupport.DelayPreset.allCases, id: \.self) { preset in
-                                Text(preset.title).tag(preset)
+                                Text(preset.title(l10n.language)).tag(preset)
                             }
                         }
                         .labelsHidden().pickerStyle(.menu).fixedSize()
@@ -179,5 +179,14 @@ extension MouseSettings {
     /// using three fingers; the row's amber note says so.
     private func threeFingerOption(available: Bool) -> SettingsPopUpPicker<Int>.Option {
         .init(value: 3, title: l10n.s.middleClickTapThreeFingers, isEnabled: available)
+    }
+}
+
+extension FocusFollowsMouseSupport.DelayPreset {
+    /// Kept beside the picker: the support file is also built into the
+    /// tests, which do not carry the Settings strings.
+    func title(_ language: AppLanguage) -> String {
+        let names = InputSettingsStrings.hoverDelayNames(language)
+        return names[Self.allCases.firstIndex(of: self) ?? 0]
     }
 }

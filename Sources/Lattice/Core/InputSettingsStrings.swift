@@ -36,8 +36,41 @@ enum InputSettingsStrings {
     /// generic "Disable in these apps".
     static func focusFollowsMouseExceptionsTitle(_ language: AppLanguage) -> String {
         switch language {
+        case .enUS: return "Don’t focus on these apps"
         case .ptBR: return "Não focar nestes apps"
-        default: return "Don’t focus on these apps"
+        case .tr: return "Bu uygulamalara odaklanma"
+        case .ru: return "Не фокусировать эти приложения"
+        case .es: return "No enfocar estas apps"
+        case .sk: return "Nezameriavať tieto aplikácie"
+        case .de: return "Diese Apps nicht fokussieren"
+        case .fr: return "Ne pas activer ces apps"
+        case .it: return "Non attivare queste app"
+        case .ja: return "これらのAppにはフォーカスしない"
+        case .ko: return "이 앱들에는 포커스하지 않기"
+        case .zhHans: return "不聚焦这些 App"
+        case .zhTW, .zhHK: return "不聚焦這些 App"
+        case .uk: return "Не фокусувати ці програми"
+        }
+    }
+
+    /// Focus follows mouse's hover delays, shortest first: Instant, Default,
+    /// Longer, Longest.
+    static func hoverDelayNames(_ language: AppLanguage) -> [String] {
+        switch language {
+        case .enUS: return ["Instant", "Default", "Longer", "Longest"]
+        case .ptBR: return ["Instantâneo", "Padrão", "Mais longo", "O mais longo"]
+        case .tr: return ["Anında", "Varsayılan", "Daha uzun", "En uzun"]
+        case .ru: return ["Мгновенно", "По умолчанию", "Дольше", "Максимально"]
+        case .es: return ["Instantáneo", "Predeterminado", "Más largo", "El más largo"]
+        case .sk: return ["Okamžite", "Predvolené", "Dlhšie", "Najdlhšie"]
+        case .de: return ["Sofort", "Standard", "Länger", "Am längsten"]
+        case .fr: return ["Instantané", "Par défaut", "Plus long", "Le plus long"]
+        case .it: return ["Immediato", "Predefinito", "Più lungo", "Il più lungo"]
+        case .ja: return ["すぐに", "デフォルト", "長め", "最長"]
+        case .ko: return ["즉시", "기본", "길게", "가장 길게"]
+        case .zhHans: return ["立即", "默认", "较长", "最长"]
+        case .zhTW, .zhHK: return ["立即", "預設", "較長", "最長"]
+        case .uk: return ["Миттєво", "Типово", "Довше", "Найдовше"]
         }
     }
 
