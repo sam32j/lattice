@@ -15,6 +15,16 @@ struct EnergyDisplaySettings: View {
     @AppStorage(DefaultsKey.brightnessKeyStep)
     private var brightnessKeyStep = BrightnessSupport.KeyStep.standard.rawValue
     @AppStorage(DefaultsKey.brightnessKeyStepPaused) private var brightnessKeyStepPaused = false
+    /// The last displays seen while the feature was on. Turning it off stops
+    /// the service, which empties its list; the folding rows keep showing
+    /// these so the sliders leave with the card instead of vanishing first.
+    @State private var lastDisplays: [BrightnessDisplay] = []
+
+    /// Live while the service has them; otherwise the last ones it had, so
+    /// the rows fold away, or unroll, with the values they last showed.
+    private var shownDisplays: [BrightnessDisplay] {
+        brightnessEnabled && !brightness.displays.isEmpty ? brightness.displays : lastDisplays
+    }
 
     private var strings: BrightnessFeatureStrings {
         FeatureStrings.brightness(l10n.language)
@@ -48,9 +58,11 @@ struct EnergyDisplaySettings: View {
                     .controlSize(.regular)
                     .help(strings.enable)
                     .accessibilityLabel(strings.enable)
-                    .onChange(of: brightnessEnabled) { _, _ in
-                        BrightnessService.shared.syncWithPreferences()
-                        FeatureRuntime.shared.finishAvailabilityChange()
+                    .onChange(of: brightnessEnabled) { _, enabled in
+                        settingsApplyFeatureSwitch(enabled: enabled) {
+                            BrightnessService.shared.syncWithPreferences()
+                            FeatureRuntime.shared.finishAvailabilityChange()
+                        }
                     }
             }) {
                 displayControlsSection
@@ -59,6 +71,9 @@ struct EnergyDisplaySettings: View {
             }
             .settingsSectionAnchor(.brightness, cornerRadius: 16)
         }
+        .onChange(of: brightness.displays, initial: true) { _, displays in
+            if !displays.isEmpty { lastDisplays = displays }
+        }
         .settingsExpansionAnimation(value: [brightnessKeysEnabled,
             brightnessKeyStepBinding.wrappedValue != .standard, permissions.accessibility])
     }
@@ -66,7 +81,7 @@ struct EnergyDisplaySettings: View {
     @ViewBuilder
     private var displayControlsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if brightness.displays.isEmpty {
+            if shownDisplays.isEmpty {
                 // The service lists displays off the main thread just after
                 // the switch turns on. Name each screen meanwhile so the card
                 // opens at its final size instead of growing a second time.
@@ -78,9 +93,9 @@ struct EnergyDisplaySettings: View {
                         .padding(.leading, settingsRowTextInset)
                 }
             } else {
-                ForEach(brightness.displays) { display in displayRow(display) }
+                ForEach(shownDisplays) { display in displayRow(display) }
             }
-            if let failure = brightness.displayControlFailure {
+            if brightnessEnabled, let failure = brightness.displayControlFailure {
                 Text(displayControlFailureText(failure, strings: strings))
                     .font(.caption).foregroundStyle(.red)
                     .fixedSize(horizontal: false, vertical: true)
