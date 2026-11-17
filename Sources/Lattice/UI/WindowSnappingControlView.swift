@@ -141,17 +141,19 @@ enum SnapViewMode: String, CaseIterable {
     case layoutPresets
 
     var title: String {
+        let text = WindowSnappingStrings.current
         switch self {
-        case .customGrid: return "Custom Grid"
-        case .layoutPresets: return "Layout Presets"
+        case .customGrid: return text.customGrid
+        case .layoutPresets: return text.layoutPresets
         }
     }
 
     /// For the compact island band, where the full title does not fit.
     var shortTitle: String {
+        let text = WindowSnappingStrings.current
         switch self {
-        case .customGrid: return "Grid"
-        case .layoutPresets: return "Presets"
+        case .customGrid: return text.gridShort
+        case .layoutPresets: return text.presetsShort
         }
     }
 }
@@ -168,7 +170,7 @@ struct WindowSnappingModeMenu: View {
     var body: some View {
         let mode = navigation.mode
         Menu {
-            Picker("Mode", selection: Binding(
+            Picker(WindowSnappingStrings.current.modeLabel, selection: Binding(
                 get: { navigation.mode },
                 set: { navigation.select($0, animated: !reduceMotion) }
             )) {
@@ -188,7 +190,7 @@ struct WindowSnappingModeMenu: View {
         .menuIndicator(.hidden)
         .fixedSize()
         .controlSize(.small)
-        .accessibilityLabel("Snapping mode")
+        .accessibilityLabel(WindowSnappingStrings.current.modeLabel)
         .accessibilityValue(mode.title)
     }
 }
@@ -334,11 +336,12 @@ extension GridDivision {
     }
 
     var title: String {
+        let text = WindowSnappingStrings.current
         switch self {
-        case .halves: return "Split"
-        case .thirds: return "3-Way"
-        case .quarters: return "Quarters"
-        case .sixths: return "Grid"
+        case .halves: return text.split
+        case .thirds: return text.threeWay
+        case .quarters: return text.quarters
+        case .sixths: return text.grid
         }
     }
 
@@ -763,24 +766,35 @@ struct WindowSnappingControlView: View {
         }
     }
 
+    /// Labels are never truncated. Where a language's words are too wide
+    /// for the panel at the usual size, the row steps its type down instead
+    /// of overflowing.
     private var divisionAndAxisRow: some View {
+        ViewThatFits(in: .horizontal) {
+            divisionAndAxisRow(fontSize: 11.5)
+            divisionAndAxisRow(fontSize: 10.5)
+            divisionAndAxisRow(fontSize: 9.5)
+        }
+        .frame(height: 28)
+    }
+
+    private func divisionAndAxisRow(fontSize: CGFloat) -> some View {
         HStack(spacing: 8) {
-            divisionSelector
+            divisionSelector(fontSize: fontSize)
                 .overlay(
                     ScrollWheelPassthroughRepresentable(isInteractive: viewMode == .customGrid) { event in
                         handleScroll(event)
                     }
                 )
 
-            axisToggle
+            axisToggle(fontSize: fontSize)
         }
-        .frame(height: 28)
     }
 
-    private var divisionSelector: some View {
+    private func divisionSelector(fontSize: CGFloat) -> some View {
         HStack(spacing: 0) {
             ForEach(GridDivision.allCases, id: \.self) { div in
-                divisionButton(title: div.title, div: div)
+                divisionButton(title: div.title, div: div, fontSize: fontSize)
             }
         }
         .padding(2)
@@ -790,7 +804,7 @@ struct WindowSnappingControlView: View {
         )
     }
 
-    private func divisionButton(title: String, div: GridDivision) -> some View {
+    private func divisionButton(title: String, div: GridDivision, fontSize: CGFloat) -> some View {
         let isSelected = division == div
         return Button {
             withAnimation(.spring(response: 0.22, dampingFraction: 0.82)) {
@@ -800,7 +814,7 @@ struct WindowSnappingControlView: View {
             // Never truncated: each segment is at least its label plus a
             // little air, and segments share whatever room is left over.
             Text(title)
-                .font(.system(size: 11.5, weight: isSelected ? .semibold : .medium))
+                .font(.system(size: fontSize, weight: isSelected ? .semibold : .medium))
                 .foregroundStyle(isSelected ? Color.white : SnapTone.ink(0.6))
                 .lineLimit(1)
                 .fixedSize()
@@ -822,7 +836,7 @@ struct WindowSnappingControlView: View {
         .buttonStyle(.plain)
     }
 
-    private var axisToggle: some View {
+    private func axisToggle(fontSize: CGFloat) -> some View {
         let options = division.orientations
         // Quarters adds 2×2 on the left. Segments get a little narrower
         // rather than squeezing the division selector beside them.
@@ -830,11 +844,12 @@ struct WindowSnappingControlView: View {
 
         return HStack(spacing: 0) {
             ForEach(options, id: \.self) { orient in
-                axisButton(title: axisTitle(orient), orient: orient)
+                axisButton(title: axisTitle(orient), orient: orient, fontSize: fontSize)
+                    .frame(minWidth: segmentWidth)
             }
         }
         .padding(2)
-        .frame(width: segmentWidth * CGFloat(options.count) + 4)
+        .fixedSize(horizontal: true, vertical: false)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(SnapTone.ink(0.06))
@@ -844,12 +859,12 @@ struct WindowSnappingControlView: View {
     private func axisTitle(_ orient: GridOrientation) -> String {
         switch orient {
         case .square: return "2×2"
-        case .primary: return division == .sixths ? "3×2" : "Cols"
-        case .secondary: return division == .sixths ? "2×3" : "Rows"
+        case .primary: return division == .sixths ? "3×2" : WindowSnappingStrings.current.cols
+        case .secondary: return division == .sixths ? "2×3" : WindowSnappingStrings.current.rows
         }
     }
 
-    private func axisButton(title: String, orient: GridOrientation) -> some View {
+    private func axisButton(title: String, orient: GridOrientation, fontSize: CGFloat) -> some View {
         let isSelected = orientation == orient
         return Button {
             withAnimation(.spring(response: 0.22, dampingFraction: 0.82)) {
@@ -859,9 +874,13 @@ struct WindowSnappingControlView: View {
             }
         } label: {
             Text(title)
-                .font(.system(size: 11.5, weight: .medium))
+                .font(.system(size: fontSize, weight: .medium))
                 .foregroundStyle(isSelected ? SnapTone.ink(1) : SnapTone.ink(0.6))
                 .lineLimit(1)
+                // At least the segment's usual width, wider for a longer
+                // translation, never truncated.
+                .fixedSize()
+                .padding(.horizontal, 6)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
                 .background(
@@ -1185,9 +1204,9 @@ struct WindowSnappingControlView: View {
 
         let orientName: String
         switch orientation {
-        case .square: orientName = "2×2 Corners"
-        case .primary: orientName = div == .sixths ? "3×2" : "Columns"
-        case .secondary: orientName = div == .sixths ? "2×3" : "Rows"
+        case .square: orientName = WindowSnappingStrings.current.corners
+        case .primary: orientName = div == .sixths ? "3×2" : WindowSnappingStrings.current.columns
+        case .secondary: orientName = div == .sixths ? "2×3" : WindowSnappingStrings.current.rowsLong
         }
 
         toastText = "\(divName) · \(orientName)"
