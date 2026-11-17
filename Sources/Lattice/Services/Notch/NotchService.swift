@@ -1068,6 +1068,8 @@ final class NotchService: ObservableObject {
             return DeviceControlsNavigationState.shared.contentHeight
         case .system:
             return SystemNavigationState.shared.effectiveHeight
+        case .windowLayout:
+            return WindowSnappingNavigationState.shared.contentHeight
         default:
             return nil
         }
@@ -4638,6 +4640,24 @@ final class NotchService: ObservableObject {
                     !self.showingSections,
                     [.hub, .controls, .mixer].contains(self.selected),
                     LatticeHubService.shared.activeUtility == .deviceControls
+                else {
+                    return
+                }
+
+                self.refreshPresentation()
+            }
+            .store(in: &subscriptions)
+
+        WindowSnappingNavigationState.shared.$contentHeight
+            .removeDuplicates()
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self,
+                    self.expanded,
+                    !self.showingSections,
+                    [.hub, .controls].contains(self.selected),
+                    LatticeHubService.shared.activeUtility == .windowLayout
                 else {
                     return
                 }

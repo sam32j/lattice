@@ -52,6 +52,20 @@ struct LatticeHubHostedUtility: View {
                 .frame(height: viewportHeight)
         } else if item == .system {
             LatticeHubSystemUtility(notchSize: notchSize)
+        } else if item == .windowLayout {
+            if let notchSize {
+                // Pin the page to its top so it never re-centres while the
+                // island springs; the island's page clip bounds it.
+                WindowSnappingHubUtility(layoutWidth: notchSize.width, horizontalInset: 12,
+                                         verticalInset: 8, showsModeSwitcher: false,
+                                         drivesIslandHeight: true)
+                    .frame(height: notchSize.height, alignment: .top)
+            } else {
+                // Never scrolls: the grid and presets use the wheel, and the
+                // HUD follows the page's animated height frame by frame.
+                WindowSnappingHubUtility()
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         } else {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -66,8 +80,6 @@ struct LatticeHubHostedUtility: View {
                         PanelUninstallerView(showHeader: false, onClose: onClose)
                     case .cleaner:
                         PanelCleanerView(showHeader: false, onClose: onClose)
-                    case .windowLayout:
-                        PanelWindowLayoutView(showHeader: false, onClose: onClose)
                     case .appUpdates:
                         PanelAppUpdatesView(showHeader: false, onClose: onClose)
                     case .wallpaper:
@@ -80,6 +92,55 @@ struct LatticeHubHostedUtility: View {
                 }
             }
             .frame(height: viewportHeight)
+        }
+    }
+}
+
+private struct WindowSnappingHubUtility: View {
+    var layoutWidth: CGFloat = 376
+    var horizontalInset: CGFloat = 14
+    var verticalInset: CGFloat = 14
+    var showsModeSwitcher = true
+    var drivesIslandHeight = false
+
+    @ObservedObject private var service = WindowLayoutService.shared
+
+    var body: some View {
+        WindowSnappingControlView(
+            callbacks: WindowSnappingCallbacks(
+                onPreview: { rect, _ in
+                    service.showPreview(normalizedRect: rect)
+                },
+                onSnap: { rect, _ in
+                    service.hidePreview(immediately: true)
+                    service.apply(normalizedRect: rect)
+                },
+                onAction: { action in
+                    service.hidePreview(immediately: true)
+                    service.apply(action.layoutAction)
+                    service.refreshSnappingSessionSoon()
+                },
+                onLayoutTransition: { duration in
+                    LatticeHubService.shared.followContentDrivenResize(for: duration)
+                }
+            ),
+            // Cached for the session: computing it here asked the window
+            // server and the front app on every redraw of the island.
+            canRestore: service.snappingRestoreAvailable,
+            layoutWidth: layoutWidth,
+            horizontalInset: horizontalInset,
+            verticalInset: verticalInset,
+            showsModeSwitcher: showsModeSwitcher,
+            drivesIslandHeight: drivesIslandHeight
+        )
+        .frame(maxWidth: .infinity, alignment: .center)
+        .onAppear {
+            PanelInteractionState.shared.viewKeepsPopoverOpen = true
+            service.beginSnappingSession()
+        }
+        .onDisappear {
+            PanelInteractionState.shared.viewKeepsPopoverOpen = false
+            service.endSnappingSession()
         }
     }
 }
