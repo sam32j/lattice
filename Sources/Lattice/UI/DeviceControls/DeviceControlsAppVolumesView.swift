@@ -151,24 +151,25 @@ struct DeviceControlsAppVolumesView: View {
         return VStack(alignment: .leading, spacing: 6) {
             // Row 1 — Identity and output routing
             HStack(spacing: 8) {
-                Image(nsImage: ResponsibleProcess.icon(for: app.ownerPid, pointSize: 32))
-                    .resizable()
-                    .frame(width: 32, height: 32)
-
-                HStack(alignment: .top, spacing: 4) {
-                    Text(app.name)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(active ? Color.primary : Color.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                ZStack(alignment: .bottomTrailing) {
+                    Image(nsImage: ResponsibleProcess.icon(for: app.ownerPid, pointSize: 32))
+                        .resizable()
+                        .frame(width: 32, height: 32)
 
                     if active && app.isPlaying {
                         Circle()
                             .fill(PanelMetricColor.green(for: colorScheme))
-                            .frame(width: 6, height: 6)
-                            .offset(y: 2)
+                            .frame(width: 8, height: 8)
+                            .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.2))
+                            .offset(x: -1, y: -1)
                     }
                 }
+
+                Text(app.name)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(active ? Color.primary : Color.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
 
                 if app.persistenceID != nil {
                     MixerPinButton(

@@ -1009,7 +1009,6 @@ final class WindowLayoutService: ObservableObject {
 
     private var activeHeldAction: WindowLayoutAction?
     private var holdTimer: Timer?
-    private var holdRepeatTimer: Timer?
 
     func handleHotKeyDown(_ action: WindowLayoutAction) {
         guard activeHeldAction != action else { return }
@@ -1023,31 +1022,9 @@ final class WindowLayoutService: ObservableObject {
             let delayPref = UserDefaults.standard.string(forKey: DefaultsKey.windowLayoutHoldDelay) ?? "default"
             let initialDelay: TimeInterval = delayPref == "longer" ? 0.65 : 0.35
 
-            let speedPref = UserDefaults.standard.string(forKey: DefaultsKey.windowLayoutCycleSpeed) ?? "default"
-            let cycleInterval: TimeInterval
-            switch speedPref {
-            case "slower": cycleInterval = 0.50
-            case "faster": cycleInterval = 0.22
-            default: cycleInterval = 0.33
-            }
-
             holdTimer = Timer.scheduledTimer(withTimeInterval: initialDelay, repeats: false) { [weak self] _ in
                 guard let self, self.activeHeldAction == action else { return }
                 self.cycleToNextDisplay(for: action)
-                self.holdRepeatTimer = Timer.scheduledTimer(withTimeInterval: cycleInterval, repeats: true) { [weak self] _ in
-                    guard let self, self.activeHeldAction == action else { return }
-                    self.cycleToNextDisplay(for: action)
-                }
-            }
-        } else if WindowLayoutGeometry.isSplitAction(action) {
-            let cycleInterval: TimeInterval = 1.0 / 3.0
-            holdTimer = Timer.scheduledTimer(withTimeInterval: cycleInterval, repeats: false) { [weak self] _ in
-                guard let self, self.activeHeldAction == action else { return }
-                _ = self.apply(action)
-                self.holdRepeatTimer = Timer.scheduledTimer(withTimeInterval: cycleInterval, repeats: true) { [weak self] _ in
-                    guard let self, self.activeHeldAction == action else { return }
-                    _ = self.apply(action)
-                }
             }
         }
     }
@@ -1062,8 +1039,6 @@ final class WindowLayoutService: ObservableObject {
     private func stopHoldTimers() {
         holdTimer?.invalidate()
         holdTimer = nil
-        holdRepeatTimer?.invalidate()
-        holdRepeatTimer = nil
     }
 
     func cycleToNextDisplay(for action: WindowLayoutAction) {

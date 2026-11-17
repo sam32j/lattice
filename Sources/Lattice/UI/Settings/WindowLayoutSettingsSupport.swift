@@ -100,8 +100,13 @@ extension WindowLayoutSettings {
                 Text(text.halves).font(.headline)
                 Spacer()
                 Image(systemName: "info.circle")
+                    .font(.system(size: 13))
                     .foregroundStyle(.secondary)
-                    .help(text.repeatCycleTooltip)
+                    .frame(width: 21, height: 21)
+                    .contentShape(Rectangle())
+                    .overlay { StatusTooltip(message: text.repeatCycleTooltip, opensOnClick: true) }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(text.repeatCycleTooltip)
             }
             ForEach(Self.splitActions) { action in
                 actionRow(action)
