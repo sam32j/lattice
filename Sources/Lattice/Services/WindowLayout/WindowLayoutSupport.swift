@@ -1103,6 +1103,11 @@ struct WindowLayoutHistory {
         return nil
     }
 
+    func canPopPrevious(for window: WindowLayoutWindowKey, current: WindowLayoutFrame) -> Bool {
+        guard let frames = framesByWindow[window] else { return false }
+        return frames.contains { !$0.isClose(to: current, tolerance: 1) }
+    }
+
     mutating func discardLatest(for window: WindowLayoutWindowKey) {
         guard var frames = framesByWindow[window] else { return }
         frames.removeLast()
