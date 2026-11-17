@@ -37,7 +37,6 @@ struct AudioInputSettings: View {
                 .labelsHidden()
                 .toggleStyle(.switch)
                 .controlSize(.regular)
-                .help(l10n.s.microphoneControlEnable)
                 .accessibilityLabel(l10n.s.microphoneControlEnable)
                 .onChange(of: microphoneControlEnabled) { _, enabled in
                     settingsApplyFeatureSwitch(enabled: enabled) {
@@ -56,13 +55,6 @@ struct AudioInputSettings: View {
                                          sliderWidth: 140,
                                          showsUnavailableLabel: false,
                                          showsIcons: false)
-
-                HStack(alignment: .center) {
-                    Text(l10n.s.micMuteName)
-                        .font(.body)
-                    Spacer(minLength: 12)
-                    muteStateButton
-                }
 
                 VStack(alignment: .leading, spacing: 4) {
                     ShortcutPreferenceRow(role: .micMute, alignment: .center) {
@@ -83,37 +75,6 @@ struct AudioInputSettings: View {
         }
     }
 
-    @ViewBuilder
-    private var muteStateButton: some View {
-        if micMute.isMuted {
-            Button {
-                micMute.toggle()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "mic.slash")
-                    Text(SettingsOwnershipStrings.audioInput(l10n.language).muted)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.red)
-            .foregroundStyle(.white)
-            .frame(width: 140)
-        } else {
-            Button {
-                micMute.toggle()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "mic")
-                    Text(SettingsOwnershipStrings.audioInput(l10n.language).unmuted)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-            .frame(width: 140)
-        }
-    }
-
     private var inputPriorityCard: some View {
         SettingsCard(symbol: "line.horizontal.2.decrease.circle", title: l10n.s.manageAudioInputPriorityTitle, headerAccessory: {
             Toggle(l10n.s.audioPriorityInputEnable, isOn: Binding(
@@ -123,7 +84,6 @@ struct AudioInputSettings: View {
             .labelsHidden()
             .toggleStyle(.switch)
             .controlSize(.regular)
-            .help(l10n.s.audioPriorityInputEnable)
             .accessibilityLabel(l10n.s.audioPriorityInputEnable)
         }) {
             if priority.inputPriorityEnabled {
