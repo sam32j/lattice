@@ -414,7 +414,6 @@ enum DefaultsKey {
     static let windowLayoutSideRepeatCyclesThirds = "windowLayoutSideRepeatCyclesThirds" // repeated Left/Right cycles half, 2/3, 1/3 on the same display
     static let windowLayoutHoldToCycleDisplayEnabled = "windowLayoutHoldToCycleDisplayEnabled" // holding shortcut cycles across displays
     static let windowLayoutHoldDelay = "windowLayoutHoldDelay" // "default" or "longer"
-    static let windowLayoutCycleSpeed = "windowLayoutCycleSpeed" // "slower", "default", or "faster"
     static let windowLayoutIgnoredApps = "windowLayoutIgnoredApps" // apps that temporarily disable window layout while focused
     static let panelCollapsedSections = "panelCollapsedSections"
     static let panelCollapsedResetVersion = "panelCollapsedResetVersion"
@@ -1671,7 +1670,6 @@ enum Defaults {
         DefaultsKey.windowLayoutShortcutFullScreen: WindowLayoutAction.clearedShortcutStorageValue,
         DefaultsKey.windowLayoutHoldToCycleDisplayEnabled: false,
         DefaultsKey.windowLayoutHoldDelay: "default",
-        DefaultsKey.windowLayoutCycleSpeed: "default",
     ]
 
     static func register() {

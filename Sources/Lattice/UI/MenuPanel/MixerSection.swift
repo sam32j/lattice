@@ -991,20 +991,11 @@ struct MixerSettingsAppRow: View {
         HStack(spacing: 8) {
             appIconView
 
-            HStack(alignment: .top, spacing: 4) {
-                Text(app.name)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(active ? Color.primary : Color.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-
-                if active && app.isPlaying {
-                    Circle()
-                        .fill(PanelMetricColor.green(for: colorScheme))
-                        .frame(width: 6, height: 6)
-                        .offset(y: 2)
-                }
-            }
+            Text(app.name)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(active ? Color.primary : Color.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
 
             if !app.isBypassed {
                 outputDestinationMenu
@@ -1075,25 +1066,46 @@ struct MixerSettingsAppRow: View {
                     pinBadge
                         .offset(x: 3, y: 3)
                         .transition(.scale(scale: 0.6).combined(with: .opacity))
+                } else if active && app.isPlaying {
+                    greenDotBadge
+                        .offset(x: 3, y: 3)
+                        .transition(.scale(scale: 0.6).combined(with: .opacity))
                 }
             }
             .animation(.spring(response: 0.28, dampingFraction: 0.7), value: isPinned)
             .animation(.easeOut(duration: 0.15), value: isHovered)
+            .animation(.easeOut(duration: 0.15), value: app.isPlaying)
     }
 
-    /// Always a solid disc, so it reads as a badge in both states: orange
-    /// with a filled pin once pinned, neutral grey with an outline pin while
-    /// it only offers pinning on hover. The disc's colour and the glyph cross
-    /// over in place rather than swapping one badge for another.
+    /// Always a solid disc, so it reads as a badge in both states: green
+    /// when playing and pinned, orange when pinned and not playing, neutral grey
+    /// with an outline pin while it only offers pinning on hover.
     private var pinBadge: some View {
         Image(systemName: isPinned ? "pin.fill" : "pin")
             .font(.system(size: 8.5, weight: .bold))
             .foregroundStyle(.white)
             .contentTransition(.symbolEffect(.replace))
             .frame(width: 16, height: 16)
-            .background(Circle().fill(isPinned ? Color.orange : Color(nsColor: .systemGray)))
+            .background(Circle().fill(pinBadgeBackgroundColor))
             .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.5))
             .shadow(color: .black.opacity(0.18), radius: 1, y: 0.5)
+    }
+
+    private var pinBadgeBackgroundColor: Color {
+        if isPinned {
+            return (active && app.isPlaying) ? PanelMetricColor.green(for: colorScheme) : Color.orange
+        } else {
+            return Color(nsColor: .systemGray)
+        }
+    }
+
+    private var greenDotBadge: some View {
+        Circle()
+            .fill(PanelMetricColor.green(for: colorScheme))
+            .frame(width: 8, height: 8)
+            .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.5))
+            .shadow(color: .black.opacity(0.18), radius: 1, y: 0.5)
+            .frame(width: 16, height: 16)
     }
 
     @ViewBuilder
@@ -1454,28 +1466,28 @@ private struct MixerRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            Image(nsImage: ResponsibleProcess.icon(for: app.ownerPid,
-                                                   pointSize: Self.iconPointSize))
-                .resizable()
-                .frame(width: Self.iconPointSize, height: Self.iconPointSize)
-                .help(arrangementStrings.arrange)
+            ZStack(alignment: .bottomTrailing) {
+                Image(nsImage: ResponsibleProcess.icon(for: app.ownerPid,
+                                                       pointSize: Self.iconPointSize))
+                    .resizable()
+                    .frame(width: Self.iconPointSize, height: Self.iconPointSize)
+                if app.isPlaying {
+                    Circle()
+                        .fill(PanelMetricColor.green(for: colorScheme))
+                        .frame(width: 8, height: 8)
+                        .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.2))
+                        .offset(x: -1, y: -1)
+                }
+            }
+            .help(arrangementStrings.arrange)
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
-                    HStack(alignment: .top, spacing: 3) {
-                        Text(app.name)
-                            .font(.system(size: 11.5, weight: .medium))
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                            .help(arrangementStrings.arrange)
-
-                        if app.isPlaying {
-                            Circle()
-                                .fill(PanelMetricColor.green(for: colorScheme))
-                                .frame(width: 5, height: 5)
-                                .offset(y: 2)
-                        }
-                    }
+                    Text(app.name)
+                        .font(.system(size: 11.5, weight: .medium))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(arrangementStrings.arrange)
 
                     Spacer(minLength: 4)
 

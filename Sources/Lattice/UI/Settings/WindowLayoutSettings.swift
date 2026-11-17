@@ -27,7 +27,6 @@ struct WindowLayoutSettings: View {
     @AppStorage(DefaultsKey.windowLayoutSideRepeatCyclesThirds) var sideRepeatCyclesThirds = false
     @AppStorage(DefaultsKey.windowLayoutHoldToCycleDisplayEnabled) var holdToCycleDisplayEnabled = false
     @AppStorage(DefaultsKey.windowLayoutHoldDelay) var holdDelay = "default"
-    @AppStorage(DefaultsKey.windowLayoutCycleSpeed) var cycleSpeed = "default"
     @AppStorage(DefaultsKey.spacesOrderEnabled) var spacesOrderEnabled = false
     @AppStorage(DefaultsKey.autoQuitEnabled) var autoQuitEnabled = false
     @AppStorage(DefaultsKey.windowLayoutShortcutMarginMaximize) var marginShortcutRaw = WindowLayoutAction.marginMaximize.defaultShortcut?.storageValue ?? WindowLayoutAction.clearedShortcutStorageValue
