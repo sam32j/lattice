@@ -236,7 +236,14 @@ final class FeatureRuntime: ObservableObject {
         LatticeHubService.shared.refreshAvailability()
         revision += 1
         if AppFeature.commandBar.isAvailable { CommandBarService.shared.noteHubChange() }
-        if AppFeature.notch.isAvailable { NotchService.shared.syncWithPreferences() }
+        guard AppFeature.notch.isAvailable else { return }
+        // A running island catches up once the switch that caused this has
+        // settled; one that is not running yet starts now.
+        if NotchService.shared.running {
+            NotchService.shared.schedulePreferenceSync()
+        } else {
+            NotchService.shared.syncWithPreferences()
+        }
     }
 
 }
