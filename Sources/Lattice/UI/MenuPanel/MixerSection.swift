@@ -396,8 +396,10 @@ struct MixerSection: View {
                     .padding(.top, 4)
 
                     if showInactiveApps {
-                        ForEach(inactiveApps) { app in
-                            Divider().padding(.horizontal, 4)
+                        ForEach(Array(inactiveApps.enumerated()), id: \.element.id) { index, app in
+                            if index > 0 {
+                                Divider().padding(.horizontal, 4)
+                            }
                             MixerSettingsAppRow(
                                 app: app,
                                 isPinned: arrangement.isPinned(app.persistenceID),

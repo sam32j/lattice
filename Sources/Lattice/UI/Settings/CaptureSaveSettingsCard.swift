@@ -23,7 +23,7 @@ struct CaptureSaveSettingsCard: View {
     private var savesAutomatically: Bool { autoSaveScreenshot || autoSaveRecording }
 
     var body: some View {
-        SettingsCard(title: strings.save) {
+        SettingsCard(symbol: "folder", title: strings.save) {
             VStack(alignment: .leading, spacing: 14) {
                 SettingsControlRow(title: strings.location) {
                     Button(action: choose) {
@@ -80,6 +80,7 @@ struct CaptureSaveSettingsCard: View {
                     .accessibilityLabel(strings.savedAs + " " + savedFolder + savedName)
                     .padding(.top, 2)
             }
+            .padding(.leading, settingsRowTextInset)
             // Keep the fields editable and use the normal Settings text colors,
             // including when neither automatic-save toggle is enabled.
         }
