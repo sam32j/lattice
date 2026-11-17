@@ -1772,20 +1772,10 @@ private final class ScreenshotOverlayView: NSView {
     }
 
     func refreshFullScreenControlVisibility() {
-        if controller?.isWaitingForRecording == true { fullScreenHost.isHidden = true; return }
-        guard let panel else {
-            fullScreenHost.isHidden = true
-            resetFullScreenControlHover()
-            return
-        }
-        let global = controller?.currentPointerLocation ?? NSEvent.mouseLocation
-        let hidden = !ScreenshotSupport.fullScreenCaptureControlIsVisible(
-            isAvailable: controller?.offersFullScreenCapture ?? false,
-            pointerOnDisplay: NSMouseInRect(global, panel.screenFrame, false),
-            selectionInProgress: controller?.selectionInProgress ?? true,
-            capturePending: isCapturePending)
-        fullScreenHost.isHidden = hidden
-        if hidden { resetFullScreenControlHover() }
+        // The floating Full Screen button at the top of the display is
+        // retired; F in the bottom guide captures the full screen instead.
+        fullScreenHost.isHidden = true
+        resetFullScreenControlHover()
     }
 
     private func pointerIsOverFullScreenControl(_ point: CGPoint) -> Bool {
