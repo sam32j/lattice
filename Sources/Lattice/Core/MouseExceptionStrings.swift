@@ -66,7 +66,7 @@ extension MouseExceptionStrings {
         removeButton: "Remover",
         captionNavigation: "Nestes apps os botões laterais continuam fazendo o que eles já fazem.",
         captionButtonShortcuts: "Nestes apps seus botões extras ficam quietos e o clique chega no app.",
-        captionMiddleClick: "Nestes apps o clique de três dedos continua um clique normal.",
+        captionMiddleClick: "O gesto de clique do meio fica desativado nestes apps.",
         captionFocusFollowsMouse: "Nestes apps passar o mouse não muda o foco nem traz a janela para frente.",
         captionSuperKey: "Enquanto algum destes apps estiver aberto, mesmo em segundo plano, a Super Key pausa e a tecla escolhida funciona normalmente.",
         pausedSuperKey: "Pausada enquanto um app selecionado está aberto"
@@ -78,7 +78,7 @@ extension MouseExceptionStrings {
         removeButton: "Kaldır",
         captionNavigation: "Bu uygulamalarda yan düğmeler zaten yaptıkları işi yapmayı sürdürür.",
         captionButtonShortcuts: "Bu uygulamalarda ekstra düğmeleriniz sessiz kalır ve basma uygulamaya ulaşır.",
-        captionMiddleClick: "Bu uygulamalarda üç parmak tıklaması normal tıklama olarak kalır.",
+        captionMiddleClick: "Orta tıklama hareketi bu uygulamalarda devre dışı kalır.",
         captionFocusFollowsMouse: "Bu uygulamalarda imleci bekletmek odağı değiştirmez veya pencereyi öne getirmez.",
         captionSuperKey: "Bu uygulamalardan biri arka planda bile açıkken Super Key duraklatılır ve seçilen tuş normal çalışır.",
         pausedSuperKey: "Seçili bir uygulama açıkken duraklatıldı"
@@ -90,7 +90,7 @@ extension MouseExceptionStrings {
         removeButton: "Удалить",
         captionNavigation: "В этих приложениях боковые кнопки продолжают делать то, что уже делают.",
         captionButtonShortcuts: "В этих приложениях ваши дополнительные кнопки молчат, а нажатие доходит до приложения.",
-        captionMiddleClick: "В этих приложениях щелчок тремя пальцами остаётся обычным щелчком.",
+        captionMiddleClick: "Жест среднего щелчка будет отключён в этих приложениях.",
         captionFocusFollowsMouse: "В этих приложениях наведение не меняет фокус и не выводит окно на передний план.",
         captionSuperKey: "Пока любое из этих приложений открыто, даже в фоне, Super Key приостановлена, а выбранная клавиша работает как обычно.",
         pausedSuperKey: "Приостановлено, пока открыто выбранное приложение"
@@ -102,7 +102,7 @@ extension MouseExceptionStrings {
         removeButton: "Quitar",
         captionNavigation: "En estas apps los botones laterales siguen haciendo lo que ya hacen.",
         captionButtonShortcuts: "En estas apps tus botones extra se quedan callados y la pulsación llega a la app.",
-        captionMiddleClick: "En estas apps el clic con tres dedos sigue siendo un clic normal.",
+        captionMiddleClick: "El gesto de clic central se desactivará en estas apps.",
         captionFocusFollowsMouse: "En estas apps pasar el puntero no cambia el foco ni trae la ventana al frente.",
         captionSuperKey: "Mientras alguna de estas apps esté abierta, incluso en segundo plano, Super Key se pausa y la tecla elegida funciona normalmente.",
         pausedSuperKey: "En pausa mientras una app seleccionada esté abierta"
@@ -114,7 +114,7 @@ extension MouseExceptionStrings {
         removeButton: "Odstrániť",
         captionNavigation: "Bočné tlačidlá v týchto aplikáciách naďalej robia to, čo s nimi aplikácia už robí.",
         captionButtonShortcuts: "Vaše ďalšie tlačidlá myši v týchto aplikáciách mlčia a stlačenie namiesto toho dostane aplikácia.",
-        captionMiddleClick: "Kliknutie tromi prstami zostáva v týchto aplikáciách bežným kliknutím.",
+        captionMiddleClick: "Gesto stredného kliknutia bude v týchto aplikáciách vypnuté.",
         captionFocusFollowsMouse: "Prejdenie kurzorom nad oknom v týchto aplikáciách nemení fokus ani ho nezobrazí navrchu.",
         captionSuperKey: "Kým je otvorená ktorákoľvek z týchto aplikácií, aj na pozadí, Super kláves sa pozastaví a vybraný kláves funguje normálne.",
         pausedSuperKey: "Pozastavené, kým je otvorená vybraná aplikácia"
@@ -126,7 +126,7 @@ extension MouseExceptionStrings {
         removeButton: "Entfernen",
         captionNavigation: "In diesen Apps tun die Seitentasten weiter, was sie dort schon tun.",
         captionButtonShortcuts: "In diesen Apps bleiben deine Zusatztasten still und der Druck erreicht die App.",
-        captionMiddleClick: "In diesen Apps bleibt ein Klick mit drei Fingern ein normaler Klick.",
+        captionMiddleClick: "Die Mittelklick-Geste wird in diesen Apps deaktiviert.",
         captionFocusFollowsMouse: "In diesen Apps ändert ein Verweilen des Zeigers weder den Fokus noch die Fensterreihenfolge.",
         captionSuperKey: "Solange eine dieser Apps geöffnet ist, auch im Hintergrund, pausiert Super Key und die gewählte Taste funktioniert normal.",
         pausedSuperKey: "Pausiert, solange eine ausgewählte App geöffnet ist"
@@ -138,7 +138,7 @@ extension MouseExceptionStrings {
         removeButton: "Retirer",
         captionNavigation: "Dans ces apps les boutons latéraux continuent de faire ce qu’ils y font déjà.",
         captionButtonShortcuts: "Dans ces apps vos boutons supplémentaires se taisent et l’appui atteint l’app.",
-        captionMiddleClick: "Dans ces apps un clic à trois doigts reste un clic normal.",
+        captionMiddleClick: "Le geste de clic central sera désactivé dans ces apps.",
         captionFocusFollowsMouse: "Dans ces apps le survol ne change pas le focus et ne place pas la fenêtre au premier plan.",
         captionSuperKey: "Tant qu’une de ces apps est ouverte, même en arrière-plan, Super Key est en pause et la touche choisie fonctionne normalement.",
         pausedSuperKey: "En pause tant qu’une app sélectionnée est ouverte"
@@ -150,7 +150,7 @@ extension MouseExceptionStrings {
         removeButton: "Rimuovi",
         captionNavigation: "In queste app i pulsanti laterali continuano a fare quello che già fanno.",
         captionButtonShortcuts: "In queste app i tuoi pulsanti extra restano zitti e la pressione arriva all’app.",
-        captionMiddleClick: "In queste app un clic con tre dita resta un clic normale.",
+        captionMiddleClick: "Il gesto del clic centrale sarà disattivato in queste app.",
         captionFocusFollowsMouse: "In queste app il passaggio del puntatore non cambia il focus né porta avanti la finestra.",
         captionSuperKey: "Finché una di queste app è aperta, anche in background, Super Key è in pausa e il tasto scelto funziona normalmente.",
         pausedSuperKey: "In pausa mentre un’app selezionata è aperta"
@@ -162,7 +162,7 @@ extension MouseExceptionStrings {
         removeButton: "削除",
         captionNavigation: "これらのAppでは横のボタンが元々の働きを続けます。",
         captionButtonShortcuts: "これらのAppでは拡張ボタンが働かず、押した操作がAppに届きます。",
-        captionMiddleClick: "これらのAppでは3本指のクリックが普通のクリックのままです。",
+        captionMiddleClick: "これらのAppでは中クリックジェスチャが無効になります。",
         captionFocusFollowsMouse: "これらのAppではポインタを止めてもフォーカスやウインドウの前後関係は変わりません。",
         captionSuperKey: "これらのAppのいずれかが開いている間は、バックグラウンドでもSuper Keyが一時停止し、選択したキーは通常どおり動作します。",
         pausedSuperKey: "選択したAppが開いている間は一時停止中"
@@ -174,7 +174,7 @@ extension MouseExceptionStrings {
         removeButton: "제거",
         captionNavigation: "이 앱들에서는 측면 버튼이 원래 하던 일을 계속합니다.",
         captionButtonShortcuts: "이 앱들에서는 추가 버튼이 조용히 있고 누름이 앱에 전달됩니다.",
-        captionMiddleClick: "이 앱들에서는 세 손가락 클릭이 보통 클릭으로 남습니다.",
+        captionMiddleClick: "이 앱들에서는 가운데 클릭 제스처가 꺼집니다.",
         captionFocusFollowsMouse: "이 앱들에서는 포인터를 올려 두어도 포커스나 윈도우 순서가 바뀌지 않습니다.",
         captionSuperKey: "이 앱 중 하나라도 열려 있으면 백그라운드에서도 Super Key가 일시 정지되고 선택한 키가 정상적으로 작동합니다.",
         pausedSuperKey: "선택한 앱이 열려 있는 동안 일시 정지됨"
@@ -186,7 +186,7 @@ extension MouseExceptionStrings {
         removeButton: "移除",
         captionNavigation: "在这些 App 里侧键继续做它们本来做的事。",
         captionButtonShortcuts: "在这些 App 里额外按键保持安静，按下会传给 App。",
-        captionMiddleClick: "在这些 App 里三指点按仍是普通点按。",
+        captionMiddleClick: "中键点按手势将在这些 App 中停用。",
         captionFocusFollowsMouse: "在这些 App 里悬停不会改变焦点，也不会将窗口置于前方。",
         captionSuperKey: "这些 App 中任意一个打开时，即使在后台，超级键也会暂停，所选按键恢复正常功能。",
         pausedSuperKey: "所选 App 打开期间已暂停"
@@ -198,7 +198,7 @@ extension MouseExceptionStrings {
         removeButton: "移除",
         captionNavigation: "在這些 App 裡側鍵繼續做它們原本做的事。",
         captionButtonShortcuts: "在這些 App 裡額外按鍵保持安靜，按下會傳給 App。",
-        captionMiddleClick: "在這些 App 裡三指點按仍是普通點按。",
+        captionMiddleClick: "中鍵點按手勢將在這些 App 中停用。",
         captionFocusFollowsMouse: "在這些 App 裡停留指標不會改變焦點，也不會將視窗移到最前方。",
         captionSuperKey: "這些 App 中任一個開啟時，即使在背景執行，Super Key 也會暫停，所選按鍵恢復正常功能。",
         pausedSuperKey: "所選 App 開啟期間已暫停"
@@ -210,7 +210,7 @@ extension MouseExceptionStrings {
         removeButton: "移除",
         captionNavigation: "在這些 App 裡側鍵繼續做它們原本做的事。",
         captionButtonShortcuts: "在這些 App 裡額外按鍵保持安靜，按下會傳給 App。",
-        captionMiddleClick: "在這些 App 裡三指點按仍是普通點按。",
+        captionMiddleClick: "中鍵點按手勢將在這些 App 中停用。",
         captionFocusFollowsMouse: "在這些 App 裡停留指標不會改變焦點，也不會將視窗移到最前方。",
         captionSuperKey: "這些 App 中任何一個開啟時，即使在背景執行，Super Key 也會暫停，所選按鍵恢復正常功能。",
         pausedSuperKey: "所選 App 開啟期間已暫停"
@@ -221,7 +221,7 @@ extension MouseExceptionStrings {
         removeButton: "Видалити",
         captionNavigation: "Бокові кнопки продовжують робити те, що ці програми вже з ними роблять.",
         captionButtonShortcuts: "Ваші додаткові кнопки миші мовчать у цих програмах, а натискання доходить до них.",
-        captionMiddleClick: "Клац трьома пальцями залишається звичайним клацом у цих програмах.",
+        captionMiddleClick: "Жест середнього клацання буде вимкнено в цих програмах.",
         captionFocusFollowsMouse: "Наведення не змінює фокус та не піднімає вікно в цих програмах.",
         captionSuperKey: "Коли будь-яка з цих програм відкрита, навіть у фоновому режимі, Super Key призупиняється, і вибрана клавіша відновлює свою звичайну функцію.",
         pausedSuperKey: "Призупинено, поки відкрита вибрана програма"
