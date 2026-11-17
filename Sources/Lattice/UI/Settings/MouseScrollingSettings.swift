@@ -34,8 +34,6 @@ extension MouseSettings {
             if horizontalScrollEnabled {
                 modifierKeys.padding(.leading, settingsRowTextInset)
             }
-            MouseExceptionsList(scope: .scrollDirection)
-                .disabled(!scrollDirectionEnabled)
         }
     }
 

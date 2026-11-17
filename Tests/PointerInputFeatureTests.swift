@@ -772,24 +772,14 @@ enum PointerInputFeatureTests {
         let linearName = "io.github.sam32j.lattice.tests.linear-lines.\(UUID().uuidString)"
         let linearDefaults = UserDefaults(suiteName: linearName)!
         defer { linearDefaults.removePersistentDomain(forName: linearName) }
-        var exceptionChecks = 0
-        let excepted = { () -> Bool in exceptionChecks += 1; return true }
-        let allowed = { () -> Bool in exceptionChecks += 1; return false }
         linearDefaults.set(false, forKey: DefaultsKey.linearScrollEnabled)
-        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: true,
-                                                           isExcepted: excepted) == nil
-                        && exceptionChecks == 0,
-               "linear scrolling switched off never asks the exception list")
+        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: true) == nil,
+               "linear scrolling switched off caps nothing")
         linearDefaults.set(true, forKey: DefaultsKey.linearScrollEnabled)
         linearDefaults.set(5, forKey: DefaultsKey.linearScrollLines)
-        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: false,
-                                                           isExcepted: allowed) == nil,
+        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: false) == nil,
                "an uninstalled feature caps nothing even with its switch left on")
-        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: true,
-                                                           isExcepted: excepted) == nil,
-               "an app on linear scrolling's own list is left out of the cap")
-        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: true,
-                                                           isExcepted: allowed) == 5,
+        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: true) == 5,
                "both wheel taps read the same lines per notch while linear scrolling applies")
         var smoothEngine = SmoothScrollSupport.Engine()
         smoothEngine.add(vertical: 40, horizontal: 0)
@@ -2689,10 +2679,7 @@ enum PointerInputFeatureTests {
                "every feature's exception list registers empty, so they all start out working everywhere")
         suite.expect(Set(MouseExceptionScope.allCases.map(\.defaultsKey)).count == MouseExceptionScope.allCases.count,
                "each feature keeps its own list, never a key shared with another")
-        suite.expect(MouseExceptionScope.smoothScroll.feature == .smoothScroll
-                && MouseExceptionScope.linearScroll.feature == .linearScroll
-                && MouseExceptionScope.scrollDirection.feature == .scrollInverter
-                && MouseExceptionScope.focusFollowsMouse.feature == .focusFollowsMouse
+        suite.expect(MouseExceptionScope.focusFollowsMouse.feature == .focusFollowsMouse
                 && MouseExceptionScope.navigation.feature == .mouseNavigation
                 && MouseExceptionScope.buttonShortcuts.feature == .mouseButtonShortcuts
                 && MouseExceptionScope.middleClick.feature == .middleClick
@@ -3252,7 +3239,7 @@ enum PointerInputFeatureTests {
                 Thread {
                     for index in 0..<100 {
                         let point = CGPoint(x: -10_000 - index, y: -10_000)
-                        for scope in [MouseExceptionScope.middleClick, .scrollDirection] {
+                        for scope in [MouseExceptionScope.middleClick, .focusFollowsMouse] {
                             _ = exceptions.excludesPointerTarget(scope, at: point)
                         }
                     }
@@ -3313,7 +3300,6 @@ enum PointerInputFeatureTests {
                front.bundleIdentifier != nil,
                let frontPath = MouseAppExceptionSupport.executablePathIdentity(front.executableURL?.path) {
                 arguments[MouseExceptionScope.navigation.defaultsKey] = [frontPath]
-                arguments[MouseExceptionScope.smoothScroll.defaultsKey] = [frontPath]
                 arguments[MouseExceptionScope.middleClick.defaultsKey] = ["/opt/game/runtime/bin/java"]
                 defaults.setVolatileDomain(arguments, forName: UserDefaults.argumentDomain)
                 exceptions.reload()
@@ -3323,10 +3309,10 @@ enum PointerInputFeatureTests {
                        "an app listed by the path of its file is left alone although it reports a bundle identifier")
                 suite.expect(!exceptions.excludesActionTarget(.middleClick, at: offScreen),
                        "a listed path leaves alone only the program running that file")
-                exceptions.setSourceTracking(true, for: .smoothScroll)
-                suite.expect(exceptions.runningScopes.contains(.smoothScroll),
+                exceptions.setSourceTracking(true, for: .navigation)
+                suite.expect(exceptions.runningScopes.contains(.navigation),
                        "an app listed by the path of its file is found among the running apps")
-                exceptions.setSourceTracking(false, for: .smoothScroll)
+                exceptions.setSourceTracking(false, for: .navigation)
             }
         }
 
@@ -3369,7 +3355,7 @@ enum PointerInputFeatureTests {
                     identitiesForProcess: { identities[$0].map { [$0] } ?? [] })
                 let verdict = action
                     ? exceptions.excludesActionTarget(.buttonShortcuts, at: point)
-                    : exceptions.excludesPointerTarget(.smoothScroll, at: point)
+                    : exceptions.excludesPointerTarget(.navigation, at: point)
                 return (verdict, lookups)
             }
             suite.expect(excluded(["com.apple.dock"], [launchpad, app], hit: 40).verdict
@@ -3406,9 +3392,9 @@ enum PointerInputFeatureTests {
                 onScreenWindows: { [dock, app] },
                 receivingWindow: { $0 == point ? 44 : 41 },
                 identitiesForProcess: { identities[$0].map { [$0] } ?? [] })
-            let overDockOnMain = mainExceptions.excludesPointerTarget(.smoothScroll, at: point)
+            let overDockOnMain = mainExceptions.excludesPointerTarget(.navigation, at: point)
             suite.expect(overDockOnMain
-                    && !mainExceptions.excludesPointerTarget(.smoothScroll, at: CGPoint(x: 101, y: 100)),
+                    && !mainExceptions.excludesPointerTarget(.navigation, at: CGPoint(x: 101, y: 100)),
                    "the Dock's answer only holds at its spot, since the Dock takes less than its rectangle")
 
             /// Runs the queries on a thread of their own, as the pointer tap
@@ -3435,10 +3421,10 @@ enum PointerInputFeatureTests {
                 onScreenWindows: { [launchpad, app] },
                 receivingWindow: { _ in 40 },
                 identitiesForProcess: { identities[$0].map { [$0] } ?? [] })
-            let launchpadOnMain = overLaunchpad.excludesPointerTarget(.scrollDirection, at: point)
+            let launchpadOnMain = overLaunchpad.excludesPointerTarget(.focusFollowsMouse, at: point)
             launchpadClock.advance(by: MouseAppExceptionSupport.resolveLifetime)
             suite.expect(!launchpadOnMain && onPointerThread {
-                    [point, CGPoint(x: 150, y: 120)].map { overLaunchpad.excludesPointerTarget(.scrollDirection, at: $0) }
+                    [point, CGPoint(x: 150, y: 120)].map { overLaunchpad.excludesPointerTarget(.focusFollowsMouse, at: $0) }
                 } == [false, false],
                    "the pointer thread keeps serving Launchpad's aged answer anywhere inside it, at rest or moving")
             // Unlisted, only an unknown answer stands the feature down there.
@@ -3448,9 +3434,9 @@ enum PointerInputFeatureTests {
                 onScreenWindows: { [dock, app] },
                 receivingWindow: { $0 == point ? 44 : 41 },
                 identitiesForProcess: { identities[$0].map { [$0] } ?? [] })
-            let dockOnMain = overDock.excludesPointerTarget(.scrollDirection, at: point)
+            let dockOnMain = overDock.excludesPointerTarget(.focusFollowsMouse, at: point)
             suite.expect(!dockOnMain && onPointerThread {
-                    [overDock.excludesPointerTarget(.scrollDirection, at: CGPoint(x: 150, y: 120))]
+                    [overDock.excludesPointerTarget(.focusFollowsMouse, at: CGPoint(x: 150, y: 120))]
                 } == [true],
                    "off the Dock the pointer thread keeps hands off until main answers, never handing the app the Dock's answer")
         }

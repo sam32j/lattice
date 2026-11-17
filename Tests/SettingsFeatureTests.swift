@@ -501,11 +501,11 @@ enum SettingsFeatureTests {
         // The complement, so the filter cannot be mutated into dropping the
         // whole list and stay green.
         let bundleOnlyBackup = SettingsBackupSupport.payload(appVersion: "test") { key in
-            key == MouseExceptionScope.smoothScroll.defaultsKey
+            key == MouseExceptionScope.navigation.defaultsKey
                 ? ["com.apple.Safari", "com.apple.Terminal"] : nil
         }
         suite.expect((bundleOnlyBackup[SettingsBackupSupport.settingsKey] as? [String: Any])?[
-                    MouseExceptionScope.smoothScroll.defaultsKey] as? [String]
+                    MouseExceptionScope.navigation.defaultsKey] as? [String]
                     == ["com.apple.Safari", "com.apple.Terminal"],
                "an exception list of only bundle ids survives a backup unchanged")
         // Filtering the export is only half the job: applying a backup clears
@@ -632,7 +632,7 @@ enum SettingsFeatureTests {
                 DefaultsKey.dockPreviewBackgroundOpacity: true,
                 DefaultsKey.smoothScrollStep: 60,
                 DefaultsKey.scratchpadBackgroundOpacity: 0.5,
-                DefaultsKey.smoothScrollExceptions: [1],
+                DefaultsKey.focusFollowsMouseExceptions: [1],
                 DefaultsKey.autoQuitExceptions: ["com.example.editor"],
                 DefaultsKey.switcherAppRules: ["com.example.editor": 1],
                 DefaultsKey.mouseButtonShortcuts: ["4": "command:0"],
@@ -652,7 +652,7 @@ enum SettingsFeatureTests {
                 && bridgedSettings?[DefaultsKey.monitorInterval] == nil
                 && bridgedSettings?[DefaultsKey.dockPreviewBackgroundOpacity] == nil,
                "property-list numbers and booleans do not cross scalar setting types")
-        suite.expect(bridgedSettings?[DefaultsKey.smoothScrollExceptions] == nil
+        suite.expect(bridgedSettings?[DefaultsKey.focusFollowsMouseExceptions] == nil
                 && bridgedSettings?[DefaultsKey.switcherAppRules] == nil,
                "wrong collection element types are dropped on import")
         suite.expect(bridgedSettings?[DefaultsKey.smoothScrollStep] as? Int == 60

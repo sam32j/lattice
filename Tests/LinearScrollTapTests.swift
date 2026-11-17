@@ -107,15 +107,6 @@ enum LinearScrollTapTests {
                      "four quarter notches add up to one notch, and a quarter that moves no whole line is held back")
 
         configure()
-        let afterException = Inverter()
-        _ = deliver(wheel(line: 0, fixed: 0.25, point: 0), through: afterException)
-        Exceptions.shared.excepted = [.linearScroll]
-        _ = deliver(wheel(line: 1, fixed: 1, point: 10), through: afterException)
-        Exceptions.shared.excepted = []
-        suite.expect(deliver(wheel(line: 0, fixed: 0.25, point: 0), through: afterException) == nil,
-                     "a fractional notch does not carry through an excepted app")
-
-        configure()
         let afterOff = Inverter()
         _ = deliver(wheel(line: 0, fixed: 0.25, point: 0), through: afterOff)
         configure(linear: false)
@@ -123,12 +114,6 @@ enum LinearScrollTapTests {
         configure()
         suite.expect(deliver(wheel(line: 0, fixed: 0.25, point: 0), through: afterOff) == nil,
                      "a fractional notch does not carry through a disabled interval")
-
-        configure()
-        Exceptions.shared.excepted = [.linearScroll]
-        let excepted = deliver(wheel(line: 4, fixed: 4, point: 40))
-        suite.expect(excepted.map(verticalLine) == 4 && excepted.map(verticalFixed) == 4,
-                     "an app on linear scrolling's own list gets the wheel exactly as macOS sent it")
 
         configure(linear: false)
         let off = deliver(wheel(line: 4, fixed: 4, point: 40))
@@ -141,12 +126,6 @@ enum LinearScrollTapTests {
         let inverterRemoved = deliver(wheel(line: 4, fixed: 4, point: 40))
         suite.expect(flipped.map(verticalLine) == -3 && inverterRemoved.map(verticalLine) == 3,
                      "the capped notch is flipped only while the inverter is installed, not because linear scrolling keeps the tap up")
-
-        configure(invert: true)
-        Exceptions.shared.excepted = [.scrollDirection]
-        let directionExcepted = deliver(wheel(line: 4, fixed: 4, point: 40))
-        suite.expect(directionExcepted.map(verticalLine) == 3,
-                     "an app excepted from the direction change is still capped by linear scrolling")
 
         configure(sidewaysKey: .option)
         let sideways = deliver(wheel(line: 4, fixed: 4, point: 40, flags: .maskAlternate))
@@ -163,10 +142,6 @@ enum LinearScrollTapTests {
         suite.expect(controlSideways.map(verticalLine) == 0
                         && controlSideways?.getIntegerValueField(.scrollWheelEventDeltaAxis2) == 3,
                      "the explicit Control-to-horizontal shortcut still receives the fixed notch")
-        Exceptions.shared.excepted = [.scrollDirection]
-        let exceptedZoom = deliver(wheel(line: 4, fixed: 4, point: 40, flags: .maskControl))
-        suite.expect(exceptedZoom.map(verticalLine) == 4,
-                     "a direction exception also preserves Control-wheel zoom")
 
         configure()
         let continuous = deliver(wheel(continuous: true, line: 0, fixed: 4, point: 40))
@@ -204,9 +179,6 @@ enum LinearScrollTapTests {
         suite.expect(Inverter.directionApplied(to: notch) === notch,
                      "session taps read a remote screen's scroll as it came")
         HIDStage.shared.passes = true
-        Exceptions.shared.excepted = [.scrollDirection]
-        suite.expect(Inverter.directionApplied(to: notch) === notch,
-                     "session taps read the wheel unturned over an app excepted from Scroll Direction")
         configure(invert: false)
         suite.expect(Inverter.directionApplied(to: notch) === notch,
                      "session taps read the wheel unturned while Scroll Direction is off")

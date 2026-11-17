@@ -102,11 +102,9 @@ final class SmoothScrollService: ObservableObject {
             }
             installScreenObserver()
             installSleepObserver()
-            MouseAppExceptions.shared.setSourceTracking(true, for: .smoothScroll)
             isRunning = true
             return
         }
-        MouseAppExceptions.shared.setSourceTracking(true, for: .smoothScroll)
         guard let tap = InputEventTap.create(
             tap: ScrollWheelSupport.tapLocation,
             place: .headInsertEventTap,
@@ -119,7 +117,6 @@ final class SmoothScrollService: ObservableObject {
             },
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
-            MouseAppExceptions.shared.setSourceTracking(false, for: .smoothScroll)
             ScrollWheelHIDStage.shared.setWatching(false, for: .smoothScroll)
             isRunning = false
             // A create that fails during the session handoff gets one more look once the switch settles.
@@ -154,7 +151,6 @@ final class SmoothScrollService: ObservableObject {
         tapCreationRetryWork?.cancel()
         tapCreationRetryWork = nil
         tapCreationRetryUsed = false
-        MouseAppExceptions.shared.setSourceTracking(false, for: .smoothScroll)
         ScrollWheelHIDStage.shared.setWatching(false, for: .smoothScroll)
         removeScreenObserver()
         removeSleepObserver()
@@ -247,18 +243,6 @@ final class SmoothScrollService: ObservableObject {
             stopGlide()
             return Unmanaged.passUnretained(event)
         }
-        // Apps on this feature's exception list get their wheel raw: the
-        // glide would arrive as a much longer move inside apps that read the
-        // wheel themselves (issue #358).
-        let exceptions = MouseAppExceptions.shared
-        guard !exceptions.excludesPointerTarget(
-                .smoothScroll,
-                at: event.location,
-                sourceProcessID: sourceProcessID) else {
-            stopGlide()
-            return Unmanaged.passUnretained(event)
-        }
-
         guard let processID = pid_t(exactly: event.getIntegerValueField(.eventTargetUnixProcessID)),
               processID > 0,
               let windowNumber = NSEvent(cgEvent: event)?.windowNumber, windowNumber > 0,
@@ -269,17 +253,11 @@ final class SmoothScrollService: ObservableObject {
         // The head tap swallows the tick before the inverter's tail tap can
         // reach it, so when inverting is on the wheel's vertical flip is
         // applied here; the glide is marked so the inverter leaves it alone.
-        // The flip is the inverter's, so it follows the inverter's own
-        // exception list: an app excepted there must keep the system's
-        // direction even while its wheel glides. Linear scrolling can keep
+        // Linear scrolling can keep
         // the inverter's tap running with the direction features uninstalled
         // and their switches left on, so the flip itself comes from
         // ScrollDirectionPreferences, which reads each one's availability.
         let adjustDirectionHere = ScrollInverter.shared.isRunning
-            && !exceptions.excludesPointerTarget(
-                .scrollDirection,
-                at: event.location,
-                sourceProcessID: sourceProcessID)
         let defaults = UserDefaults.standard
         let direction = ScrollDirectionPreferences(defaults: defaults)
         let redirected: Bool
@@ -298,17 +276,10 @@ final class SmoothScrollService: ObservableObject {
         let invertVertical = adjustDirectionHere && direction.invertVertical ? -1.0 : 1.0
         let invertHorizontal = adjustDirectionHere && direction.invertHorizontal ? -1.0 : 1.0
         // Linear scrolling is applied here for the same reason the flip is:
-        // this tap swallows the tick before the wheel tap can see it. The cap
-        // follows linear scrolling's own exception list the same way.
+        // this tap swallows the tick before the wheel tap can see it.
         let linearLinesPerNotch = ScrollWheelSupport.linearLinesPerNotch(
             defaults: defaults,
-            isAvailable: AppFeature.linearScroll.isAvailable,
-            isExcepted: {
-                exceptions.excludesPointerTarget(
-                    .linearScroll,
-                    at: event.location,
-                    sourceProcessID: sourceProcessID)
-            })
+            isAvailable: AppFeature.linearScroll.isAvailable)
         let shiftPressed = event.flags.contains(.maskShift)
         let vertical: Double
         let horizontal: Double
