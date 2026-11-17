@@ -4,6 +4,7 @@
 import SwiftUI
 
 struct WindowLayoutSettings: View {
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @ObservedObject var l10n = L10n.shared
     @ObservedObject var permissions = Permissions.shared
     @ObservedObject var features = FeatureRuntime.shared
@@ -24,6 +25,9 @@ struct WindowLayoutSettings: View {
     @AppStorage(DefaultsKey.windowReserveStageManagerSpace) var reserveStageManagerSpace = false
     @AppStorage(DefaultsKey.windowLayoutMarginPercent) var marginPercent = WindowLayoutMargin.defaultPercent
     @AppStorage(DefaultsKey.windowLayoutSideRepeatCyclesThirds) var sideRepeatCyclesThirds = false
+    @AppStorage(DefaultsKey.windowLayoutHoldToCycleDisplayEnabled) var holdToCycleDisplayEnabled = false
+    @AppStorage(DefaultsKey.windowLayoutHoldDelay) var holdDelay = "default"
+    @AppStorage(DefaultsKey.windowLayoutCycleSpeed) var cycleSpeed = "default"
     @AppStorage(DefaultsKey.spacesOrderEnabled) var spacesOrderEnabled = false
     @AppStorage(DefaultsKey.autoQuitEnabled) var autoQuitEnabled = false
     @AppStorage(DefaultsKey.windowLayoutShortcutMarginMaximize) var marginShortcutRaw = WindowLayoutAction.marginMaximize.defaultShortcut?.storageValue ?? WindowLayoutAction.clearedShortcutStorageValue
@@ -61,7 +65,7 @@ struct WindowLayoutSettings: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             refreshSystemTilingState()
         }
-        .settingsExpansionAnimation(value: [systemTilingEnabled, edgeSnapEnabled, permissions.accessibility, maximizeEnabled, gestureEnabled, windowLayoutInstalled, autoQuitEnabled, reserveStageManagerSpace])
+        .settingsExpansionAnimation(value: [systemTilingEnabled, edgeSnapEnabled, permissions.accessibility, maximizeEnabled, gestureEnabled, windowLayoutInstalled, autoQuitEnabled, reserveStageManagerSpace, holdToCycleDisplayEnabled])
     }
 
     var windowsAndSpaces: some View {
