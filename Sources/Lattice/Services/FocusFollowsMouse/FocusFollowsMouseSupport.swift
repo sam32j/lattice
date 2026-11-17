@@ -17,15 +17,6 @@ enum FocusFollowsMouseSupport {
         case longer = 600
         case longest = 1_200
 
-        var title: String {
-            switch self {
-            case .instant: return "Instant"
-            case .standard: return "Default"
-            case .longer: return "Longer"
-            case .longest: return "Longest"
-            }
-        }
-
         /// A delay saved by the old slider shows as the closest preset.
         static func nearest(to milliseconds: Int) -> DelayPreset {
             allCases.min { abs($0.rawValue - milliseconds) < abs($1.rawValue - milliseconds) } ?? .standard
