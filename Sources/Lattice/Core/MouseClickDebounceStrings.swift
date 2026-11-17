@@ -35,8 +35,8 @@ extension FeatureStrings {
 
 extension MouseClickDebounceStrings {
     static let enUS = MouseClickDebounceStrings(
-        title: "Extra click filter",
-        caption: "Ignores rapid extra clicks from worn mouse buttons without slowing normal clicks.",
+        title: "Rapid click filter",
+        caption: "Ignores rapid extra clicks.",
         moreOptions: "More options",
         windowLabel: "Filter window",
         windowCaption: "A repeated click inside this interval is treated as an accidental duplicate."

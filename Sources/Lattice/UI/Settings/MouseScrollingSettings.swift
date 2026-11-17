@@ -14,7 +14,10 @@ extension MouseSettings {
                         if scrollDirectionEnabled { permissions.requestAccessibility() }
                     }
             }
-            SettingsRow(symbol: "arrow.left.arrow.right", title: l10n.s.invertHorizontalScroll) {
+            // The inverter only turns mouse-wheel events (ScrollWheelSupport.isMouseWheel);
+            // trackpad gestures pass through untouched, as the caption says.
+            SettingsRow(symbol: "arrow.left.arrow.right", title: l10n.s.invertHorizontalScroll,
+                        caption: l10n.s.scrollTrackpadNote) {
                 PermissionGatedToggle(l10n.s.invertHorizontalScroll, isOn: $invertHorizontal)
                     .labelsHidden()
                     .onChange(of: invertHorizontal) { _, _ in
