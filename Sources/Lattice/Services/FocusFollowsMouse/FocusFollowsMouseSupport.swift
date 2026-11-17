@@ -8,6 +8,30 @@ enum FocusFollowsMouseSupport {
     static let defaultDelayMilliseconds = 250
     static let delayRange = 100...3_000
 
+    /// The hover delays Settings offers. Instant is the shortest the
+    /// service accepts: brief enough to feel immediate, long enough that a
+    /// pointer crossing a window on its way somewhere does not focus it.
+    enum DelayPreset: Int, CaseIterable {
+        case instant = 100
+        case standard = 250
+        case longer = 600
+        case longest = 1_200
+
+        var title: String {
+            switch self {
+            case .instant: return "Instant"
+            case .standard: return "Default"
+            case .longer: return "Longer"
+            case .longest: return "Longest"
+            }
+        }
+
+        /// A delay saved by the old slider shows as the closest preset.
+        static func nearest(to milliseconds: Int) -> DelayPreset {
+            allCases.min { abs($0.rawValue - milliseconds) < abs($1.rawValue - milliseconds) } ?? .standard
+        }
+    }
+
     static func sanitizedDelay(_ milliseconds: Int) -> Int {
         min(max(milliseconds, delayRange.lowerBound), delayRange.upperBound)
     }

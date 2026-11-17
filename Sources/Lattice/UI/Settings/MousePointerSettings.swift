@@ -16,17 +16,20 @@ extension MouseSettings {
             }
             if focusFollowsMouseEnabled {
                 VStack(alignment: .leading, spacing: 10) {
-                    sliderRow(l10n.s.focusFollowsMouseDelay,
-                              value: focusFollowsMouseDelayBinding,
-                              range: Double(FocusFollowsMouseSupport.delayRange.lowerBound)
-                                  ... Double(FocusFollowsMouseSupport.delayRange.upperBound),
-                              step: 50,
-                              readout: "\(focusFollowsMouseDelay) ms")
+                    SettingsControlRow(title: l10n.s.focusFollowsMouseDelay) {
+                        Picker(l10n.s.focusFollowsMouseDelay, selection: focusFollowsMouseDelayPresetBinding) {
+                            ForEach(FocusFollowsMouseSupport.DelayPreset.allCases, id: \.self) { preset in
+                                Text(preset.title).tag(preset)
+                            }
+                        }
+                        .labelsHidden().pickerStyle(.menu).fixedSize()
+                    }
                     SettingsToggleRow(title: l10n.s.focusFollowsMouseRaise, isOn: $focusFollowsMouseRaise)
                     if !focusFollowsMouseRaise {
                         SettingsToggleRow(title: l10n.s.focusFollowsMouseWaitForStop, isOn: $focusFollowsMouseWaitForStop)
                     }
-                    MouseExceptionsList(scope: .focusFollowsMouse)
+                    MouseExceptionsList(scope: .focusFollowsMouse,
+                                        title: InputSettingsStrings.focusFollowsMouseExceptionsTitle(l10n.language))
                 }
                 .padding(.leading, settingsRowTextInset)
             }
