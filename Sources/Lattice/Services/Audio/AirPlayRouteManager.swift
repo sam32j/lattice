@@ -178,17 +178,23 @@ final class AirPlayRouteManager: NSObject, ObservableObject {
     /// arrive after another took its place.
     private var pickerGeneration = 0
 
-    /// Opens the system's speaker list at the pointer, where the choice that
+    /// Opens the system's speaker list at the anchor position or pointer, where the choice that
     /// asked for it was made: an app's output menu in the panel, Settings or
     /// the island. A transparent window anchors it there.
-    func presentPicker() {
+    func presentPicker(anchorRect: NSRect? = nil) {
         // Nothing to pick with, and no reason to create the anchor window.
         guard isAvailable else { return }
         closePickerWindow()
 
-        let mouseLoc = NSEvent.mouseLocation
+        let anchor: NSRect = {
+            if let rect = anchorRect, rect.width > 0, rect.height > 0 {
+                return NSRect(x: rect.midX - 10, y: rect.midY - 10, width: 20, height: 20)
+            }
+            let mouseLoc = NSEvent.mouseLocation
+            return NSRect(x: mouseLoc.x - 10, y: mouseLoc.y - 10, width: 20, height: 20)
+        }()
         let win = NSWindow(
-            contentRect: NSRect(x: mouseLoc.x - 10, y: mouseLoc.y - 10, width: 20, height: 20),
+            contentRect: anchor,
             styleMask: .borderless,
             backing: .buffered,
             defer: false
