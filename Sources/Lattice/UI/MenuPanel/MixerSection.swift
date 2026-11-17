@@ -1086,16 +1086,23 @@ struct MixerSettingsAppRow: View {
             .foregroundStyle(.white)
             .contentTransition(.symbolEffect(.replace))
             .frame(width: 16, height: 16)
-            .background(Circle().fill(pinBadgeBackgroundColor))
+            .background(pinBadgeBackground)
             .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.5))
             .shadow(color: .black.opacity(0.18), radius: 1, y: 0.5)
     }
 
-    private var pinBadgeBackgroundColor: Color {
+    @ViewBuilder
+    private var pinBadgeBackground: some View {
         if isPinned {
-            return (active && app.isPlaying) ? PanelMetricColor.green(for: colorScheme) : Color.orange
+            ZStack {
+                Circle().fill(Color.orange)
+                Circle()
+                    .fill(PanelMetricColor.green(for: colorScheme))
+                    .opacity(active && app.isPlaying ? 1 : 0)
+            }
+            .animation(.easeInOut(duration: 0.25), value: active && app.isPlaying)
         } else {
-            return Color(nsColor: .systemGray)
+            Circle().fill(Color(nsColor: .systemGray))
         }
     }
 
