@@ -790,17 +790,22 @@ enum WindowEdgeSnapSupport {
                   point.y <= frame.maxY + distance
             else { continue }
 
+            let visible = screen.visibleFrame
+            let visibleLeft = max(visible.minX, frame.minX)
+            let visibleRight = min(visible.maxX, frame.maxX)
+            let visibleBottom = max(visible.minY, frame.minY)
+            let visibleTop = min(max(visible.maxY, frame.minY), frame.maxY)
+
             // Just past each edge, level with the pointer: another display
             // there makes the edge a seam.
             let open = { (probe: CGPoint) in frames.contains { $0 != frame && $0.contains(probe) } }
-            let nearLeft = abs(point.x - frame.minX) <= distance
+            let nearLeft = (abs(point.x - frame.minX) <= distance || (point.x >= frame.minX - distance && point.x <= visibleLeft + distance))
                 && (settledAcross || !open(CGPoint(x: frame.minX - 0.5, y: point.y)))
-            let nearRight = abs(point.x - frame.maxX) <= distance
+            let nearRight = (abs(point.x - frame.maxX) <= distance || (point.x <= frame.maxX + distance && point.x >= visibleRight - distance))
                 && (settledAcross || !open(CGPoint(x: frame.maxX + 0.5, y: point.y)))
-            let visibleTop = min(max(screen.visibleFrame.maxY, frame.minY), frame.maxY)
             let nearTop = point.y >= visibleTop - distance && point.y <= frame.maxY + distance
                 && (settledUpDown || !open(CGPoint(x: point.x, y: frame.maxY + 0.5)))
-            let nearBottom = abs(point.y - frame.minY) <= distance
+            let nearBottom = (abs(point.y - frame.minY) <= distance || (point.y >= frame.minY - distance && point.y <= visibleBottom + distance))
                 && (settledUpDown || !open(CGPoint(x: point.x, y: frame.minY - 0.5)))
             guard nearLeft || nearRight || nearTop || nearBottom else { continue }
 
@@ -808,33 +813,33 @@ enum WindowEdgeSnapSupport {
             let verticalCorner = min(max(frame.height * 0.18, 80), 160)
             let zone: WindowEdgeSnapZone
             if nearTop {
-                if point.x <= frame.minX + horizontalCorner {
+                if point.x <= visibleLeft + horizontalCorner {
                     zone = .topLeft
-                } else if point.x >= frame.maxX - horizontalCorner {
+                } else if point.x >= visibleRight - horizontalCorner {
                     zone = .topRight
                 } else {
                     zone = .top
                 }
             } else if nearBottom {
-                if point.x <= frame.minX + horizontalCorner {
+                if point.x <= visibleLeft + horizontalCorner {
                     zone = .bottomLeft
-                } else if point.x >= frame.maxX - horizontalCorner {
+                } else if point.x >= visibleRight - horizontalCorner {
                     zone = .bottomRight
                 } else {
                     zone = .bottom
                 }
             } else if nearLeft {
-                if point.y >= frame.maxY - verticalCorner {
+                if point.y >= visibleTop - verticalCorner {
                     zone = .topLeft
-                } else if point.y <= frame.minY + verticalCorner {
+                } else if point.y <= visibleBottom + verticalCorner {
                     zone = .bottomLeft
                 } else {
                     zone = .left
                 }
             } else {
-                if point.y >= frame.maxY - verticalCorner {
+                if point.y >= visibleTop - verticalCorner {
                     zone = .topRight
-                } else if point.y <= frame.minY + verticalCorner {
+                } else if point.y <= visibleBottom + verticalCorner {
                     zone = .bottomRight
                 } else {
                     zone = .right
@@ -844,11 +849,13 @@ enum WindowEdgeSnapSupport {
 
             let along: CGFloat
             if zone.isHorizontalEdge {
-                along = (point.x - frame.minX - horizontalCorner)
-                    / max(frame.width - 2 * horizontalCorner, 1)
+                let raw = (point.x - visibleLeft - horizontalCorner)
+                    / max(visibleRight - visibleLeft - 2 * horizontalCorner, 1)
+                along = min(max(raw, 0), 1)
             } else if zone.isVerticalEdge {
-                along = (frame.maxY - verticalCorner - point.y)
-                    / max(frame.height - 2 * verticalCorner, 1)
+                let raw = (visibleTop - verticalCorner - point.y)
+                    / max(visibleTop - visibleBottom - 2 * verticalCorner, 1)
+                along = min(max(raw, 0), 1)
             } else {
                 along = 0
             }

@@ -12,14 +12,46 @@ enum WindowStageManagerSupport {
     private static var sampledAt: TimeInterval = -.infinity
     private static var sampledFrames: [CGRect] = []
 
+    static var isStageManagerGloballyEnabled: Bool {
+        if let val = CFPreferencesCopyAppValue("GloballyEnabled" as CFString, "com.apple.WindowManager" as CFString) {
+            if let num = val as? NSNumber {
+                return num.boolValue
+            } else if let b = val as? Bool {
+                return b
+            }
+        }
+        windowManagerDefaults?.synchronize()
+        return windowManagerDefaults?.bool(forKey: "GloballyEnabled") == true
+    }
+
+    static var isStageManagerAutoHide: Bool? {
+        if let val = CFPreferencesCopyAppValue("AutoHide" as CFString, "com.apple.WindowManager" as CFString) {
+            if let num = val as? NSNumber {
+                return num.boolValue
+            } else if let b = val as? Bool {
+                return b
+            }
+        }
+        windowManagerDefaults?.synchronize()
+        return windowManagerDefaults?.object(forKey: "AutoHide") as? Bool
+    }
+
+    static var dockOrientation: String? {
+        if let val = CFPreferencesCopyAppValue("orientation" as CFString, "com.apple.dock" as CFString) as? String {
+            return val
+        }
+        dockDefaults?.synchronize()
+        return dockDefaults?.string(forKey: "orientation")
+    }
+
     static func visibleFrame(for screen: NSScreen) -> CGRect {
         adjustedFrame(
             visibleFrame: screen.visibleFrame,
             screenFrame: screen.frame,
             enabled: UserDefaults.standard.bool(forKey: DefaultsKey.windowReserveStageManagerSpace),
-            stageManagerEnabled: windowManagerDefaults?.bool(forKey: "GloballyEnabled") == true,
-            autoHide: windowManagerDefaults?.object(forKey: "AutoHide") as? Bool,
-            dockPosition: dockDefaults?.string(forKey: "orientation"),
+            stageManagerEnabled: isStageManagerGloballyEnabled,
+            autoHide: isStageManagerAutoHide,
+            dockPosition: dockOrientation,
             rightToLeft: Locale.current.language.characterDirection == .rightToLeft,
             stripFrames: currentStripFrames())
     }
@@ -80,7 +112,7 @@ enum WindowStageManagerSupport {
         let now = ProcessInfo.processInfo.systemUptime
         if now - sampledAt >= 0.25 {
             sampledAt = now
-            let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
+            let windows = CGWindowListCopyWindowInfo([.optionAll],
                                                      kCGNullWindowID) as? [[String: Any]] ?? []
             sampledFrames = stripFrames(from: windows, screenTop: NSScreen.screens.first?.frame.maxY ?? 0)
         }
