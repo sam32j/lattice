@@ -9,6 +9,8 @@ import SwiftUI
 /// same view with a different scope.
 struct MouseExceptionsList: View {
     let scope: MouseExceptionScope
+    /// Overrides "Disable in these apps" for a list that names what it does.
+    var title: String? = nil
 
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var exceptions = MouseAppExceptions.shared
@@ -16,7 +18,7 @@ struct MouseExceptionsList: View {
     private var text: MouseExceptionStrings { FeatureStrings.mouseExceptions(l10n.language) }
 
     var body: some View {
-        AppBundleList(title: text.listTitle,
+        AppBundleList(title: title ?? text.listTitle,
                       caption: text.caption(for: scope),
                       addTitle: text.addButton,
                       removeLabel: text.removeButton,
@@ -24,6 +26,7 @@ struct MouseExceptionsList: View {
                       reachesEveryApp: true,
                       acceptsExecutables: true,
                       usesSheet: true,
+                      sheetTitle: title,
                       onAdd: { exceptions.add($0, to: scope) },
                       onRemove: { exceptions.remove($0, from: scope) })
     }

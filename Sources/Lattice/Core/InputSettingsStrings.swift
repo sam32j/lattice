@@ -1,6 +1,227 @@
 import Foundation
 
 enum InputSettingsStrings {
+    /// The middle-click gesture's follow-up rows.
+    struct MiddleClick {
+        let clickWith: String
+        let ignoredApps: String
+        let configure: String
+        /// Under a picker whose three-finger choice macOS is using.
+        let tapTaken: String
+        let clickTaken: String
+        /// One, a few (Russian, Ukrainian and Slovak only) and many apps.
+        let oneApp: String
+        var fewApps: String? = nil
+        let manyApps: String
+        var agreement: CountAgreement = .oneAndMany
+
+        func appCount(_ count: Int) -> String {
+            let format: String
+            switch agreement {
+            case .oneAndMany:
+                format = count == 1 ? oneApp : manyApps
+            case .byWholeNumber:
+                format = count == 1 ? oneApp : (2...4).contains(count) ? (fewApps ?? manyApps) : manyApps
+            case .byLastDigits:
+                if (11...14).contains(count % 100) { format = manyApps }
+                else if count % 10 == 1 { format = oneApp }
+                else if (2...4).contains(count % 10) { format = fewApps ?? manyApps }
+                else { format = manyApps }
+            }
+            return String(format: format, count)
+        }
+    }
+
+    /// Focus follows mouse's exception list names what it does, not the
+    /// generic "Disable in these apps".
+    static func focusFollowsMouseExceptionsTitle(_ language: AppLanguage) -> String {
+        switch language {
+        case .ptBR: return "Não focar nestes apps"
+        default: return "Don’t focus on these apps"
+        }
+    }
+
+    static func middleClick(_ language: AppLanguage) -> MiddleClick {
+        switch language {
+        case .enUS:
+            return MiddleClick(clickWith: "Click with", ignoredApps: "Ignored apps", configure: "Configure…",
+                               tapTaken: "3-finger tap is currently used by macOS.",
+                               clickTaken: "3-finger click is currently used by macOS three-finger drag.",
+                               oneApp: "%d app", manyApps: "%d apps")
+        case .ptBR:
+            return MiddleClick(clickWith: "Clicar com", ignoredApps: "Apps ignorados", configure: "Configurar…",
+                               tapTaken: "O toque com 3 dedos está em uso pelo macOS.",
+                               clickTaken: "O clique com 3 dedos está em uso pelo arrasto do macOS.",
+                               oneApp: "%d app", manyApps: "%d apps")
+        case .es:
+            return MiddleClick(clickWith: "Clic con", ignoredApps: "Apps ignoradas", configure: "Configurar…",
+                               tapTaken: "macOS está usando el toque con 3 dedos.",
+                               clickTaken: "El arrastre con tres dedos de macOS está usando el clic con 3 dedos.",
+                               oneApp: "%d app", manyApps: "%d apps")
+        case .de:
+            return MiddleClick(clickWith: "Klicken mit", ignoredApps: "Ignorierte Apps", configure: "Konfigurieren …",
+                               tapTaken: "Tippen mit 3 Fingern wird derzeit von macOS verwendet.",
+                               clickTaken: "Klicken mit 3 Fingern wird derzeit vom Dreifingerziehen in macOS verwendet.",
+                               oneApp: "%d App", manyApps: "%d Apps")
+        case .fr:
+            return MiddleClick(clickWith: "Cliquer avec", ignoredApps: "Apps ignorées", configure: "Configurer…",
+                               tapTaken: "Le toucher à 3 doigts est actuellement utilisé par macOS.",
+                               clickTaken: "Le clic à 3 doigts est actuellement utilisé par le glissement à trois doigts de macOS.",
+                               oneApp: "%d app", manyApps: "%d apps")
+        case .it:
+            return MiddleClick(clickWith: "Clic con", ignoredApps: "App ignorate", configure: "Configura…",
+                               tapTaken: "Il tocco con 3 dita è attualmente usato da macOS.",
+                               clickTaken: "Il clic con 3 dita è attualmente usato dal trascinamento con tre dita di macOS.",
+                               oneApp: "%d app", manyApps: "%d app")
+        case .ja:
+            return MiddleClick(clickWith: "クリックする指", ignoredApps: "無視するアプリ", configure: "設定…",
+                               tapTaken: "3本指のタップは現在macOSで使用されています。",
+                               clickTaken: "3本指のクリックは現在macOSの3本指ドラッグで使用されています。",
+                               oneApp: "%d個のアプリ", manyApps: "%d個のアプリ")
+        case .ko:
+            return MiddleClick(clickWith: "클릭 손가락 수", ignoredApps: "무시할 앱", configure: "구성…",
+                               tapTaken: "세 손가락 탭은 현재 macOS에서 사용 중입니다.",
+                               clickTaken: "세 손가락 클릭은 현재 macOS 세 손가락 드래그에서 사용 중입니다.",
+                               oneApp: "앱 %d개", manyApps: "앱 %d개")
+        case .zhHans:
+            return MiddleClick(clickWith: "点按手指数", ignoredApps: "忽略的 App", configure: "配置…",
+                               tapTaken: "三指轻点目前由 macOS 使用。",
+                               clickTaken: "三指点按目前由 macOS 三指拖移使用。",
+                               oneApp: "%d 个 App", manyApps: "%d 个 App")
+        case .zhTW:
+            return MiddleClick(clickWith: "按一下手指數", ignoredApps: "忽略的 App", configure: "設定…",
+                               tapTaken: "三指點一下目前由 macOS 使用。",
+                               clickTaken: "三指按一下目前由 macOS 三指拖移使用。",
+                               oneApp: "%d 個 App", manyApps: "%d 個 App")
+        case .zhHK:
+            return MiddleClick(clickWith: "點按手指數", ignoredApps: "忽略的 App", configure: "設定…",
+                               tapTaken: "三指輕點目前由 macOS 使用。",
+                               clickTaken: "三指點按目前由 macOS 三指拖移使用。",
+                               oneApp: "%d 個 App", manyApps: "%d 個 App")
+        case .ru:
+            return MiddleClick(clickWith: "Нажатие", ignoredApps: "Игнорируемые приложения", configure: "Настроить…",
+                               tapTaken: "Касание тремя пальцами сейчас использует macOS.",
+                               clickTaken: "Нажатие тремя пальцами сейчас использует перетягивание тремя пальцами в macOS.",
+                               oneApp: "%d приложение", fewApps: "%d приложения", manyApps: "%d приложений",
+                               agreement: .byLastDigits)
+        case .uk:
+            return MiddleClick(clickWith: "Натискання", ignoredApps: "Ігноровані програми", configure: "Налаштувати…",
+                               tapTaken: "Дотик трьома пальцями зараз використовує macOS.",
+                               clickTaken: "Натискання трьома пальцями зараз використовує перетягування трьома пальцями в macOS.",
+                               oneApp: "%d програма", fewApps: "%d програми", manyApps: "%d програм",
+                               agreement: .byLastDigits)
+        case .tr:
+            return MiddleClick(clickWith: "Tıklama", ignoredApps: "Yok sayılan uygulamalar", configure: "Yapılandır…",
+                               tapTaken: "3 parmakla dokunma şu anda macOS tarafından kullanılıyor.",
+                               clickTaken: "3 parmakla tıklama şu anda macOS’in üç parmakla sürükleme özelliği tarafından kullanılıyor.",
+                               oneApp: "%d uygulama", manyApps: "%d uygulama")
+        case .sk:
+            return MiddleClick(clickWith: "Kliknutie", ignoredApps: "Ignorované aplikácie", configure: "Konfigurovať…",
+                               tapTaken: "Ťuknutie tromi prstami momentálne používa macOS.",
+                               clickTaken: "Kliknutie tromi prstami momentálne používa ťahanie tromi prstami v macOS.",
+                               oneApp: "%d aplikácia", fewApps: "%d aplikácie", manyApps: "%d aplikácií",
+                               agreement: .byWholeNumber)
+        }
+    }
+
+    /// Preset names and captions for the smooth-scrolling pickers. The names
+    /// agree with each row's own label (speed, response, coast).
+    struct ScrollPresets {
+        let slow, normal, fast, faster: String
+        let snappy, balanced, silky: String
+        let none, short, medium, long: String
+        let responseCaption, coastCaption: String
+    }
+
+    static func scrollPresets(_ language: AppLanguage) -> ScrollPresets {
+        switch language {
+        case .enUS:
+            return ScrollPresets(slow: "Slow", normal: "Normal", fast: "Fast", faster: "Faster",
+                                 snappy: "Snappy", balanced: "Balanced", silky: "Silky",
+                                 none: "None", short: "Short", medium: "Medium", long: "Long",
+                                 responseCaption: "How quickly scrolling catches up with the wheel.",
+                                 coastCaption: "How far scrolling glides after the wheel stops.")
+        case .ptBR:
+            return ScrollPresets(slow: "Lenta", normal: "Normal", fast: "Rápida", faster: "Mais rápida",
+                                 snappy: "Ágil", balanced: "Equilibrada", silky: "Suave",
+                                 none: "Nenhuma", short: "Curta", medium: "Média", long: "Longa",
+                                 responseCaption: "A rapidez com que a rolagem acompanha a roda.",
+                                 coastCaption: "Quanto a rolagem desliza depois que a roda para.")
+        case .es:
+            return ScrollPresets(slow: "Lenta", normal: "Normal", fast: "Rápida", faster: "Muy rápida",
+                                 snappy: "Ágil", balanced: "Equilibrada", silky: "Suave",
+                                 none: "Ninguna", short: "Corta", medium: "Media", long: "Larga",
+                                 responseCaption: "La rapidez con que el desplazamiento sigue a la rueda.",
+                                 coastCaption: "Cuánto se desliza el contenido cuando la rueda se detiene.")
+        case .de:
+            return ScrollPresets(slow: "Langsam", normal: "Normal", fast: "Schnell", faster: "Sehr schnell",
+                                 snappy: "Direkt", balanced: "Ausgewogen", silky: "Weich",
+                                 none: "Keiner", short: "Kurz", medium: "Mittel", long: "Lang",
+                                 responseCaption: "Wie schnell das Scrollen dem Mausrad folgt.",
+                                 coastCaption: "Wie weit das Scrollen nachläuft, wenn das Mausrad stoppt.")
+        case .fr:
+            return ScrollPresets(slow: "Lente", normal: "Normale", fast: "Rapide", faster: "Très rapide",
+                                 snappy: "Vive", balanced: "Équilibrée", silky: "Douce",
+                                 none: "Aucune", short: "Courte", medium: "Moyenne", long: "Longue",
+                                 responseCaption: "La rapidité avec laquelle le défilement suit la molette.",
+                                 coastCaption: "La distance parcourue par le défilement après l’arrêt de la molette.")
+        case .it:
+            return ScrollPresets(slow: "Lenta", normal: "Normale", fast: "Veloce", faster: "Molto veloce",
+                                 snappy: "Scattante", balanced: "Bilanciata", silky: "Morbida",
+                                 none: "Nessuna", short: "Breve", medium: "Media", long: "Lunga",
+                                 responseCaption: "Quanto rapidamente lo scorrimento segue la rotellina.",
+                                 coastCaption: "Quanto continua lo scorrimento dopo che la rotellina si ferma.")
+        case .ja:
+            return ScrollPresets(slow: "遅い", normal: "標準", fast: "速い", faster: "より速い",
+                                 snappy: "機敏", balanced: "バランス", silky: "なめらか",
+                                 none: "なし", short: "短い", medium: "中", long: "長い",
+                                 responseCaption: "ホイールの動きにスクロールが追従する速さです。",
+                                 coastCaption: "ホイールを止めたあとにスクロールが続く距離です。")
+        case .ko:
+            return ScrollPresets(slow: "느리게", normal: "보통", fast: "빠르게", faster: "더 빠르게",
+                                 snappy: "민첩하게", balanced: "균형", silky: "부드럽게",
+                                 none: "없음", short: "짧게", medium: "중간", long: "길게",
+                                 responseCaption: "스크롤이 휠을 따라가는 속도입니다.",
+                                 coastCaption: "휠을 멈춘 뒤 스크롤이 이어지는 거리입니다.")
+        case .zhHans:
+            return ScrollPresets(slow: "慢", normal: "正常", fast: "快", faster: "更快",
+                                 snappy: "灵敏", balanced: "均衡", silky: "顺滑",
+                                 none: "无", short: "短", medium: "中", long: "长",
+                                 responseCaption: "滚动跟上滚轮的速度。",
+                                 coastCaption: "滚轮停止后滚动继续滑行的距离。")
+        case .zhTW, .zhHK:
+            return ScrollPresets(slow: "慢", normal: "正常", fast: "快", faster: "更快",
+                                 snappy: "靈敏", balanced: "均衡", silky: "順滑",
+                                 none: "無", short: "短", medium: "中", long: "長",
+                                 responseCaption: "捲動跟上滾輪的速度。",
+                                 coastCaption: "滾輪停止後捲動繼續滑行的距離。")
+        case .ru:
+            return ScrollPresets(slow: "Медленная", normal: "Обычная", fast: "Быстрая", faster: "Очень быстрая",
+                                 snappy: "Быстрый", balanced: "Сбалансированный", silky: "Плавный",
+                                 none: "Нет", short: "Короткая", medium: "Средняя", long: "Долгая",
+                                 responseCaption: "Как быстро прокрутка следует за колесом.",
+                                 coastCaption: "Как далеко прокрутка продолжается после остановки колеса.")
+        case .uk:
+            return ScrollPresets(slow: "Повільна", normal: "Звичайна", fast: "Швидка", faster: "Дуже швидка",
+                                 snappy: "Швидкий", balanced: "Збалансований", silky: "Плавний",
+                                 none: "Немає", short: "Коротка", medium: "Середня", long: "Довга",
+                                 responseCaption: "Як швидко прокрутка встигає за коліщатком.",
+                                 coastCaption: "Як далеко прокрутка триває після зупинки коліщатка.")
+        case .tr:
+            return ScrollPresets(slow: "Yavaş", normal: "Normal", fast: "Hızlı", faster: "Daha hızlı",
+                                 snappy: "Çevik", balanced: "Dengeli", silky: "Yumuşak",
+                                 none: "Yok", short: "Kısa", medium: "Orta", long: "Uzun",
+                                 responseCaption: "Kaydırmanın tekerleğe ne kadar hızlı yetiştiği.",
+                                 coastCaption: "Tekerlek durduktan sonra kaydırmanın ne kadar süzüldüğü.")
+        case .sk:
+            return ScrollPresets(slow: "Pomalá", normal: "Normálna", fast: "Rýchla", faster: "Veľmi rýchla",
+                                 snappy: "Svižná", balanced: "Vyvážená", silky: "Jemná",
+                                 none: "Žiadny", short: "Krátky", medium: "Stredný", long: "Dlhý",
+                                 responseCaption: "Ako rýchlo rolovanie nasleduje koliesko.",
+                                 coastCaption: "Ako ďaleko rolovanie pokračuje po zastavení kolieska.")
+        }
+    }
+
     static func trackpadDragConflict(_ language: AppLanguage) -> String {
         switch language {
         case .enUS: return "Three-finger drag is enabled in macOS. Use four fingers for middle-click."

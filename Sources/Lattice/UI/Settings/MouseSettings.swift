@@ -126,39 +126,11 @@ struct MouseSettings: View {
         scrollInversionEnabled || horizontalScrollEnabled
     }
 
-    var smoothScrollStepBinding: Binding<Double> {
+    var focusFollowsMouseDelayPresetBinding: Binding<FocusFollowsMouseSupport.DelayPreset> {
         Binding(
-            get: { Double(SmoothScrollSupport.sanitizedStep(smoothScrollStep)) },
-            set: { smoothScrollStep = Int($0) }
-        )
-    }
-
-    var smoothScrollResponseBinding: Binding<Double> {
-        Binding(
-            get: { Double(SmoothScrollSupport.sanitizedResponse(smoothScrollResponse)) },
-            set: { smoothScrollResponse = Int($0) }
-        )
-    }
-
-    var smoothScrollCoastBinding: Binding<Double> {
-        Binding(
-            get: { Double(SmoothScrollSupport.sanitizedCoast(smoothScrollCoast)) },
-            set: { smoothScrollCoast = Int($0) }
-        )
-    }
-
-    var linearScrollLinesBinding: Binding<Double> {
-        Binding(
-            get: { Double(ScrollWheelSupport.sanitizedLinesPerNotch(linearScrollLines)) },
-            set: { linearScrollLines = Int($0) }
-        )
-    }
-
-    var focusFollowsMouseDelayBinding: Binding<Double> {
-        Binding(
-            get: { Double(FocusFollowsMouseSupport.sanitizedDelay(focusFollowsMouseDelay)) },
+            get: { .nearest(to: FocusFollowsMouseSupport.sanitizedDelay(focusFollowsMouseDelay)) },
             set: {
-                focusFollowsMouseDelay = Int($0)
+                focusFollowsMouseDelay = $0.rawValue
                 FocusFollowsMouseService.shared.preferencesDidChange()
             }
         )
