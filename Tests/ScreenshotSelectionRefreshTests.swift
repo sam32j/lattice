@@ -402,17 +402,16 @@ enum ScreenshotSelectionRefreshContract {
         visibility.setSelectionInProgress(true)
         visibility.setSelectionInProgress(false)
         expect(visibility.panels.allSatisfy { $0.overlayView.guideVisibilityRefreshes == 2 }
-                && !visibility.panels[0].overlayView.fullScreenHost.isHidden
-                && visibility.panels[1].overlayView.fullScreenHost.isHidden,
-               "selection progress refreshes both on-screen chooser surfaces")
+                && visibility.panels.allSatisfy { $0.overlayView.fullScreenHost.isHidden },
+               "selection progress refreshes both on-screen chooser surfaces; the retired floating full-screen control stays hidden")
         let hover = Chooser(.screenshot)
         hover.currentPointerLocation = CGPoint(x: 50, y: 50)
         let hoverView = hover.panels[0].overlayView
         hoverView.fullScreenHost.frame = CGRect(x: 40, y: 40, width: 20, height: 20)
         hoverView.refreshFullScreenControlVisibility()
         hoverView.updatePointerHover(CGPoint(x: 50, y: 50))
-        expect(hoverView.hoveredWindow == nil,
-               "hovering the full-screen action suppresses the window capture highlight")
+        expect(hoverView.fullScreenHost.isHidden,
+               "the floating full-screen control never appears over the window capture highlight; F in the guide replaces it")
         hoverView.updatePointerHover(CGPoint(x: 20, y: 20))
         expect(hoverView.hoveredWindow?.windowID == 11,
                "window highlighting resumes immediately outside the full-screen action")
@@ -448,9 +447,8 @@ enum ScreenshotSelectionRefreshContract {
                 expect(c.acceptsCaptureInput, "successful refresh restores capture input")
                 expect(c.panels.allSatisfy { $0.overlayView.guideContentRefreshes > 0 },
                        "a ready source refreshes the full-screen strip hints after the capture gate clears")
-                expect(c.panels[0].overlayView.fullScreenHost.isHidden == (other != .screenshot)
-                        && c.panels[1].overlayView.fullScreenHost.isHidden,
-                       "a ready source restores the full-screen action only for screenshots on the pointer display")
+                expect(c.panels.allSatisfy { $0.overlayView.fullScreenHost.isHidden },
+                       "a ready source leaves the retired floating full-screen control hidden on every display")
                 expect(
                     c.panels.allSatisfy { $0.frozenImage != nil && !$0.frozenImage!.excluded.contains(11) },
                     "both displays use the selected tool visibility")
