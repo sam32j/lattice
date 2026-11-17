@@ -146,12 +146,12 @@ struct WindowLayoutSettings: View {
                             .padding(.leading, settingsRowTextInset)
                         gapPicker(text.screenGap, selection: $screenGap)
                             .padding(.leading, settingsRowTextInset)
-                        SettingsRow(symbol: "sidebar.left", title: stageManagerText.title,
-                                    caption: stageManagerText.caption) {
-                            Toggle(stageManagerText.title, isOn: $reserveStageManagerSpace)
-                                .labelsHidden()
-                                .toggleStyle(.switch)
-                        }
+                        // A child of the arrangement switch: no icon of its
+                        // own, its text aligned with the rows above.
+                        SettingsToggleRow(title: stageManagerText.title,
+                                          caption: stageManagerText.caption,
+                                          isOn: $reserveStageManagerSpace)
+                            .padding(.leading, settingsRowTextInset)
                         Divider()
                         snappingControls
                     }
