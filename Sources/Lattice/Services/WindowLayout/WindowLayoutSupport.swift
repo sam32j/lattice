@@ -341,7 +341,7 @@ enum WindowLayoutAction: String, CaseIterable, Identifiable {
 /// The configurable spacing around snapped windows (issue #1068). Values are
 /// in pixels, offering standard spacing presets (0 to 128 px).
 enum WindowLayoutGaps {
-    static let presets: [Int] = [0, 8, 16, 32, 64, 128]
+    static let presets: [Int] = [0, 8, 16, 32, 64]
 
     static var windowGap: CGFloat {
         CGFloat(UserDefaults.standard.integer(forKey: DefaultsKey.windowLayoutWindowGap))
