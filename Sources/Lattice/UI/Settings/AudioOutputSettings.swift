@@ -5,6 +5,8 @@ import SwiftUI
 
 /// Audio Output settings: consolidates Volume Mixer, Output Priority & Switcher, and Music App Blocker.
 struct AudioOutputSettings: View {
+    @AppStorage(DefaultsKey.volumeMixerEnabled) private var volumeMixerEnabled = true
+    @AppStorage(DefaultsKey.mixerLowerVolumeOnHeadphonesDisconnect) private var lowerOnHeadphonesDisconnect = false
     @AppStorage(DefaultsKey.soundOutputSwitcherEnabled) private var outputSwitcherEnabled = false
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var priority = AudioPriorityService.shared
@@ -25,28 +27,38 @@ struct AudioOutputSettings: View {
             .frame(maxWidth: .infinity)
             .padding(22)
         }
-        .settingsExpansionAnimation(value: outputSwitcherEnabled)
+        .settingsExpansionAnimation(value: [
+            volumeMixerEnabled,
+            priority.outputPriorityEnabled,
+            outputSwitcherEnabled,
+            lowerOnHeadphonesDisconnect
+        ])
     }
 
     private var outputPriorityAndSwitcherCard: some View {
-        SettingsCard(title: l10n.s.manageAudioOutputPriorityTitle, headerAccessory: {
-            Toggle(l10n.s.audioPriorityOutputEnable, isOn: Binding(
-                get: { priority.outputPriorityEnabled },
-                set: { priority.setOutputPriorityEnabled($0) }
-            ))
-            .labelsHidden()
-            .toggleStyle(.switch)
-            .controlSize(.regular)
-            .help(l10n.s.audioPriorityOutputEnable)
-            .accessibilityLabel(l10n.s.audioPriorityOutputEnable)
-        }) {
+        SettingsCard(
+            symbol: "line.horizontal.2.decrease.circle",
+            title: l10n.s.manageAudioOutputPriorityTitle,
+            headerSpacing: 0,
+            headerAccessory: {
+                Toggle(l10n.s.audioPriorityOutputEnable, isOn: Binding(
+                    get: { priority.outputPriorityEnabled },
+                    set: { priority.setOutputPriorityEnabled($0) }
+                ))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.regular)
+                .accessibilityLabel(l10n.s.audioPriorityOutputEnable)
+            }
+        ) {
             VStack(alignment: .leading, spacing: 14) {
                 AudioOutputPriorityControls(showsHeader: false)
                 Divider()
                 SoundOutputSwitcherControls()
             }
-            .disabled(!priority.outputPriorityEnabled)
-            .opacity(priority.outputPriorityEnabled ? 1 : 0.55)
+            .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
+            .settingsCollapsible(isExpanded: priority.outputPriorityEnabled)
         }
+        .settingsExpansionAnimation(value: priority.outputPriorityEnabled)
     }
 }
