@@ -4027,7 +4027,11 @@ final class NotchService: ObservableObject {
 
     /// AppStorage can notify during drawing. A preference import or a group
     /// of edits only needs one deferred pass over the final saved settings.
-    private func schedulePreferenceSync() {
+    /// A preference write answers after Settings has finished animating it.
+    /// Republishing the island redraws it and the hub inside it, which costs
+    /// a few frames; landing that on the frame a switch starts to slide froze
+    /// the knob part-way. A burst of writes still collapses into one sync.
+    func schedulePreferenceSync() {
         guard running, preferenceSyncWork == nil else { return }
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
@@ -4036,7 +4040,8 @@ final class NotchService: ObservableObject {
             self.syncWithPreferences()
         }
         preferenceSyncWork = work
-        DispatchQueue.main.async(execute: work)
+        // Past a settings switch's slide and the accordion it opens.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
     }
 
     private func applicationDidActivate() {
