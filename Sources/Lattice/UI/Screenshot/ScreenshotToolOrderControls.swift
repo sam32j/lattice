@@ -124,6 +124,10 @@ private struct ToolShortcutRecorder: View {
         shortcutsEnabled ? ScreenshotSupport.Tool.effectiveShortcut(for: tool, bindingsRaw: bindingsRaw) : nil
     }
 
+    private var isDefaultShortcut: Bool {
+        currentShortcut == tool.defaultShortcut
+    }
+
     private var workflow: CaptureWorkflowStrings {
         .localized(l10n.language)
     }
@@ -141,7 +145,7 @@ private struct ToolShortcutRecorder: View {
             shakeAttempts: shakeAttempts,
             onToggleRecording: toggleRecording,
             onClear: currentShortcut != nil ? clearShortcut : nil,
-            onReset: onReset)
+            onReset: isDefaultShortcut ? nil : onReset)
         .onDisappear {
             coordinator.stopRecording(tool: tool)
         }
