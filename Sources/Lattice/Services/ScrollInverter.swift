@@ -48,9 +48,6 @@ final class ScrollInverter: ObservableObject {
         guard direction.invertVertical || direction.invertHorizontal,
               ScrollWheelSupport.isMouseWheel(traits, secondsSinceLastGesturePhase: nil),
               ScrollWheelHIDStage.shared.passed(event),
-              !MouseAppExceptions.shared.excludesPointerTarget(
-                  .scrollDirection, at: event.location,
-                  sourceProcessID: event.getIntegerValueField(.eventSourceUnixProcessID)),
               let turned = event.copy() else { return event }
         ScrollWheelSupport.applyDirection(to: turned, isContinuous: traits.isContinuous,
                                           invertVertical: direction.invertVertical,
@@ -108,22 +105,12 @@ final class ScrollInverter: ObservableObject {
             && UserDefaults.standard.bool(forKey: DefaultsKey.linearScrollEnabled)
     }
 
-    /// Each list's source apps are tracked only while its feature is one the
-    /// tap is up for, so a list left behind by the other feature costs nothing.
-    private func setSourceTracking(_ running: Bool) {
-        let exceptions = MouseAppExceptions.shared
-        exceptions.setSourceTracking(running && ScrollDirectionPreferences().isEnabled, for: .scrollDirection)
-        exceptions.setSourceTracking(running && Self.linearScrollWanted, for: .linearScroll)
-    }
-
     private func start() {
         if let port = tapStateLock.withLock({ tap }) {
             InputEventTap.enable(tap: port, enable: true)
-            setSourceTracking(true)
             isRunning = true
             return
         }
-        setSourceTracking(true)
         guard let tap = InputEventTap.create(
             tap: .cghidEventTap,
             place: .tailAppendEventTap,
@@ -137,7 +124,6 @@ final class ScrollInverter: ObservableObject {
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
             ScrollWheelTarget.shared.setEnabled(false)
-            setSourceTracking(false)
             isRunning = false
             // A create that fails during the session handoff gets one more look once the switch settles.
             guard !tapCreationRetryUsed else { return }
@@ -172,7 +158,6 @@ final class ScrollInverter: ObservableObject {
         tapCreationRetryWork?.cancel()
         tapCreationRetryWork = nil
         tapCreationRetryUsed = false
-        setSourceTracking(false)
         let (port, source) = tapStateLock.withLock { () -> (CFMachPort?, CFRunLoopSource?) in
             let current = (tap, runLoopSource)
             tap = nil
@@ -242,11 +227,9 @@ final class ScrollInverter: ObservableObject {
         let defaults = UserDefaults.standard
         let direction = ScrollDirectionPreferences(defaults: defaults)
         let directionApplies = direction.isEnabled
-            && !MouseAppExceptions.shared.excludesPointerTarget(
-                .scrollDirection, at: event.location, sourceProcessID: sourceProcessID)
         // Control-wheel is native zoom. Only the explicit Control-to-horizontal
-        // shortcut turns it into scrolling; a direction exception or one of
-        // our own windows leaves it as zoom too.
+        // shortcut turns it into scrolling; one of our own windows leaves it
+        // as zoom too.
         let controlRedirects = directionApplies
             && direction.horizontalModifier == .control
             && event.flags.intersection([.maskShift, .maskAlternate, .maskControl, .maskCommand]) == .maskControl
@@ -255,13 +238,7 @@ final class ScrollInverter: ObservableObject {
         let nativeZoom = event.flags.contains(.maskControl) && !controlRedirects
         if let linesPerNotch = nativeZoom ? nil : ScrollWheelSupport.linearLinesPerNotch(
             defaults: defaults,
-            isAvailable: AppFeature.linearScroll.isAvailable,
-            isExcepted: {
-                MouseAppExceptions.shared.excludesPointerTarget(
-                    .linearScroll,
-                    at: event.location,
-                    sourceProcessID: sourceProcessID)
-            }) {
+            isAvailable: AppFeature.linearScroll.isAvailable) {
             // Capture both axes before any set: writing a line delta makes the
             // system rederive its point and fixed-point fields.
             let rawVertical = ScrollWheelAxisDelta(

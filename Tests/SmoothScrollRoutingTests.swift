@@ -227,11 +227,6 @@ enum SmoothScrollRoutingTests {
         synthetic.setIntegerValueField(.eventSourceUserData, value: ScrollWheelSupport.syntheticTag)
         suite.expect(tick(ignored, synthetic) === synthetic && ignored.engine.remainingVertical == 40,
                      "a replayed frame passes through without extending or cancelling the glide")
-        Exceptions.shared.scopes = [.smoothScroll]
-        let excepted = wheel(b)
-        suite.expect(tick(ignored, excepted) === excepted && !ignored.engine.isActive,
-                     "fresh input for an excepted app cancels the old tail and stays raw")
-        Exceptions.shared.scopes = []
         _ = tick(ignored, wheel())
         let zoom = wheel(flags: .maskControl)
         suite.expect(tick(ignored, zoom) === zoom && !ignored.engine.isActive,
@@ -269,13 +264,6 @@ enum SmoothScrollRoutingTests {
                 && posted.last?.event.flags.contains(.maskAlternate) == false
                 && posted.last!.event.getIntegerValueField(.scrollWheelEventPointDeltaAxis2) < 0,
                      "targeted frames retain horizontal redirection and consume its modifier once")
-        Exceptions.shared.scopes = [.scrollDirection]
-        let directionException = Service()
-        _ = tick(directionException, wheel(flags: .maskAlternate))
-        suite.expect(directionException.engine.remainingVertical == 40
-                && directionException.engine.remainingHorizontal == 0,
-                     "a direction exception leaves smoothing enabled without inversion or redirection")
-        Exceptions.shared.scopes = []
         defaults.set(false, forKey: DefaultsKey.scrollInverterEnabled)
         defaults.set(false, forKey: DefaultsKey.scrollInverterHorizontalEnabled)
         defaults.set(false, forKey: DefaultsKey.scrollHorizontalEnabled)

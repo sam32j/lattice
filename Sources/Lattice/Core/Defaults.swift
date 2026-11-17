@@ -73,9 +73,6 @@ enum DefaultsKey {
     static let superKeyMappingApplied = "superKeyMappingApplied"
     static let superKeyMappedSource = "superKeyMappedSource"
     // One list of bundle ids per mouse feature: apps it leaves alone (issue #358).
-    static let smoothScrollExceptions = "smoothScrollExceptions"
-    static let linearScrollExceptions = "linearScrollExceptions"
-    static let scrollInverterExceptions = "scrollInverterExceptions"
     static let mouseNavigationExceptions = "mouseNavigationExceptions"
     static let mouseButtonExceptions = "mouseButtonExceptions"
     static let middleClickExceptions = "middleClickExceptions"
@@ -1014,9 +1011,6 @@ enum Defaults {
         DefaultsKey.superKeySource: SuperKeySource.capsLock.rawValue,
         DefaultsKey.superKeyModifiers: SuperKeySupport.defaultModifierStorageValue,
         DefaultsKey.superKeySoloAction: SuperKeySoloAction.none.rawValue,
-        DefaultsKey.smoothScrollExceptions: [String](),
-        DefaultsKey.linearScrollExceptions: [String](),
-        DefaultsKey.scrollInverterExceptions: [String](),
         DefaultsKey.focusFollowsMouseExceptions: [String](),
         DefaultsKey.mouseNavigationExceptions: [String](),
         DefaultsKey.mouseButtonExceptions: [String](),
@@ -1675,6 +1669,7 @@ enum Defaults {
         migrateFanControlVisibility(in: defaults)
         migrateScrollInverterAxes(in: defaults)
         migrateLinearScrollAvailability(in: defaults)
+        migrateRemovedScrollExceptions(in: defaults)
         migrateBatteryTemperatureVisibility(in: defaults)
         migratePowerPeripheralsVisibility(in: defaults)
         migrateSwitcherPreviewSize(in: defaults)
@@ -1920,6 +1915,17 @@ enum Defaults {
               defaults.object(forKey: DefaultsKey.linearScrollEnabled) as? Bool == true
         else { return }
         defaults.set(true, forKey: AppFeature.linearScroll.availabilityKey)
+    }
+
+    /// Scroll direction, smooth scrolling and linear scrolling once had
+    /// per-app exception lists. They now apply in every app, so the lists
+    /// they left behind are dropped.
+    static func migrateRemovedScrollExceptions(in defaults: UserDefaults) {
+        // Also a window snapping height cache that briefly lived here.
+        for key in ["smoothScrollExceptions", "linearScrollExceptions", "scrollInverterExceptions",
+                    "windowSnappingContentHeights"] where defaults.object(forKey: key) != nil {
+            defaults.removeObject(forKey: key)
+        }
     }
 
     static func migrateFanControlVisibility(in defaults: UserDefaults) {
