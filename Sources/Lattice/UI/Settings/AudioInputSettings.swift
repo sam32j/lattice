@@ -32,7 +32,7 @@ struct AudioInputSettings: View {
     }
 
     private var microphoneCard: some View {
-        SettingsCard(symbol: "mic", title: l10n.s.microphoneControlEnable, headerAccessory: {
+        SettingsCard(symbol: "mic", title: l10n.s.microphoneControlEnable, headerSpacing: 0, headerAccessory: {
             Toggle(l10n.s.microphoneControlEnable, isOn: $microphoneControlEnabled)
                 .labelsHidden()
                 .toggleStyle(.switch)
@@ -40,41 +40,46 @@ struct AudioInputSettings: View {
                 .help(l10n.s.microphoneControlEnable)
                 .accessibilityLabel(l10n.s.microphoneControlEnable)
                 .onChange(of: microphoneControlEnabled) { _, enabled in
-                    FeatureRuntime.shared.setAvailable([.micMute], enabled)
-                    AudioInputDeviceManager.shared.syncWithPreferences()
-                    MicMuteService.shared.syncWithPreferences()
+                    settingsApplyFeatureSwitch(enabled: enabled) {
+                        let enabled = UserDefaults.standard.bool(forKey: DefaultsKey.microphoneLevelControlEnabled)
+                        FeatureRuntime.shared.setAvailable([.micMute], enabled)
+                        AudioInputDeviceManager.shared.syncWithPreferences()
+                        MicMuteService.shared.syncWithPreferences()
+                    }
                 }
         }) {
-            if microphoneControlEnabled {
-                VStack(alignment: .leading, spacing: 14) {
-                    AudioInputDeviceControls(title: l10n.s.mixerInputSourceLabel,
-                                             levelTitle: SettingsOwnershipStrings.audioInput(l10n.language).level,
-                                             sliderWidth: 140,
-                                             showsUnavailableLabel: false,
-                                             showsIcons: false)
+            // Stays laid out and unrolls as a clipped accordion; the rows are
+            // passive readouts, so keeping them while folded costs nothing.
+            VStack(alignment: .leading, spacing: 14) {
+                AudioInputDeviceControls(title: l10n.s.mixerInputSourceLabel,
+                                         levelTitle: SettingsOwnershipStrings.audioInput(l10n.language).level,
+                                         sliderWidth: 140,
+                                         showsUnavailableLabel: false,
+                                         showsIcons: false)
 
-                    HStack(alignment: .center) {
-                        Text(l10n.s.micMuteName)
-                            .font(.body)
-                        Spacer(minLength: 12)
-                        muteStateButton
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        ShortcutPreferenceRow(role: .micMute, alignment: .center) {
-                            MicMuteService.shared.syncWithPreferences()
-                        }
-                        if micShortcutEnabled, micMute.shortcutRegistrationFailed {
-                            Text(l10n.s.shortcutUnavailable)
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                        }
-                    }
-
-                    SettingsToggleRow(title: l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
+                HStack(alignment: .center) {
+                    Text(l10n.s.micMuteName)
+                        .font(.body)
+                    Spacer(minLength: 12)
+                    muteStateButton
                 }
-                .padding(.leading, settingsRowTextInset)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    ShortcutPreferenceRow(role: .micMute, alignment: .center) {
+                        MicMuteService.shared.syncWithPreferences()
+                    }
+                    if micShortcutEnabled, micMute.shortcutRegistrationFailed {
+                        Text(l10n.s.shortcutUnavailable)
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                }
+
+                SettingsToggleRow(title: l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
             }
+            .padding(.leading, settingsRowTextInset)
+            .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
+            .settingsCollapsible(isExpanded: microphoneControlEnabled)
         }
     }
 
