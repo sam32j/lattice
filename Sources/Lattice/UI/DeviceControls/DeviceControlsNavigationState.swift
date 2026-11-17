@@ -14,13 +14,13 @@ enum DeviceControlsAppVolumesLayout {
     static let emptyMessageHeight: CGFloat = 64
     static let emptyActiveHeight: CGFloat = 102
 
-    static func isActive(_ app: MixerApp) -> Bool {
-        MixerRoutingSupport.shouldShowApp(
-            isPlaying: app.isPlaying,
-            volume: app.volume,
-            selectedOutputDeviceUID: app.selectedOutputDeviceUID,
-            hideInactiveApps: true
-        )
+    static func isActive(_ app: MixerApp, arrangement: MixerAppArrangement? = nil) -> Bool {
+        if app.isPlaying { return true }
+        let arr = arrangement ?? MixerAppArrangement(rawValue: UserDefaults.standard.string(forKey: DefaultsKey.mixerAppArrangement) ?? "")
+        if arr.isPinned(app.persistenceID) { return true }
+        if !MixerRoutingSupport.isUnity(app.volume) { return true }
+        if app.selectedOutputDeviceUID != nil { return true }
+        return false
     }
 
     static func height(
@@ -64,13 +64,14 @@ final class DeviceControlsNavigationState: ObservableObject {
         didSet { updateContentHeight() }
     }
 
-    @Published private(set) var contentHeight: CGFloat = 430
+    @Published private(set) var contentHeight: CGFloat = 450
 
     @Published var showInactiveApps = false {
         didSet { updateContentHeight() }
     }
 
-    private var measuredMainHeight: CGFloat = 430
+    private(set) var measuredMainHeight: CGFloat = 450
+    private(set) var measuredAppVolumesHeight: CGFloat = 0
     private var latestApps: [MixerApp] = []
     private var subscriptions = Set<AnyCancellable>()
 
@@ -101,6 +102,18 @@ final class DeviceControlsNavigationState: ObservableObject {
         updateContentHeight()
     }
 
+    func updateMeasuredAppVolumesHeight(_ height: CGFloat) {
+        guard height.isFinite, height > 0 else { return }
+
+        let target = ceil(height)
+        guard abs(measuredAppVolumesHeight - target) > 1 else {
+            return
+        }
+
+        measuredAppVolumesHeight = target
+        updateContentHeight()
+    }
+
     private func updateContentHeight() {
         let target: CGFloat
 
@@ -109,10 +122,13 @@ final class DeviceControlsNavigationState: ObservableObject {
             target = measuredMainHeight
 
         case .appVolumes:
-            target = DeviceControlsAppVolumesLayout.height(
+            let calculated = DeviceControlsAppVolumesLayout.height(
                 apps: latestApps,
                 showInactive: showInactiveApps
-            )
+            ) + 10
+            let actual = measuredAppVolumesHeight > 0 ? measuredAppVolumesHeight : calculated
+            // Minimal height of the inherited height of the device control page and max height of 670 px
+            target = min(670, max(measuredMainHeight, actual))
         }
 
         guard abs(contentHeight - target) > 1 else { return }

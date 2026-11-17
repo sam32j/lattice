@@ -24,12 +24,7 @@ struct DeviceControlsAppVolumesView: View {
     }
 
     private func isActiveApp(_ app: MixerApp) -> Bool {
-        MixerRoutingSupport.shouldShowApp(
-            isPlaying: app.isPlaying,
-            volume: app.volume,
-            selectedOutputDeviceUID: app.selectedOutputDeviceUID,
-            hideInactiveApps: true
-        )
+        DeviceControlsAppVolumesLayout.isActive(app, arrangement: arrangement)
     }
 
     private var orderedApps: [MixerApp] {
@@ -103,7 +98,7 @@ struct DeviceControlsAppVolumesView: View {
             }
             .buttonStyle(.plain)
             .font(.system(size: 11.5))
-            .foregroundStyle(Color.accentColor)
+            .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 4)
         .frame(height: DeviceControlsAppVolumesLayout.headerHeight)
@@ -122,7 +117,7 @@ struct DeviceControlsAppVolumesView: View {
             }
             .buttonStyle(.plain)
             .font(.system(size: 11.5))
-            .foregroundStyle(Color.accentColor)
+            .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, 32)
@@ -269,12 +264,16 @@ struct DeviceControlsAppVolumesView: View {
         }
     }
 
+    private var availableOutputDevices: [MixerOutputDevice] {
+        mixer.outputDevices.filter { !MixerRoutingSupport.isAirPlaySentinel($0.uid) }
+    }
+
     private func outputPicker(for app: MixerApp) -> some View {
         Picker("Output", selection: outputSelectionBinding(for: app)) {
             Text(l10n.s.mixerOutputDefault)
                 .tag(MixerRoutingSupport.systemDefaultSelectionID)
 
-            ForEach(mixer.outputDevices) { device in
+            ForEach(availableOutputDevices) { device in
                 Text(device.name)
                     .tag(device.uid)
             }
@@ -283,7 +282,7 @@ struct DeviceControlsAppVolumesView: View {
                MixerRoutingSupport.needsUnavailableOutputRow(
                 selectedUID: selected,
                 isUnavailable: app.outputDeviceUnavailable,
-                listedUIDs: mixer.outputDevices.map(\.uid)
+                listedUIDs: availableOutputDevices.map(\.uid)
                ) {
                 Text(l10n.s.mixerOutputUnavailable)
                     .tag(selected)
