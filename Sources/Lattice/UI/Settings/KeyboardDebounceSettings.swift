@@ -4,10 +4,10 @@ extension KeyboardSettings {
     // MARK: - Keyboard Debounce Card
 
     var keyboardDebounceCard: some View {
-        SettingsCard(title: l10n.s.keyDebounceName) {
+        SettingsCard(symbol: "keyboard", title: l10n.s.keyDebounceName) {
             VStack(alignment: .leading, spacing: 12) {
-                SettingsRow(symbol: "keyboard", title: l10n.s.keyDebounceEnable,
-                            caption: l10n.s.keyDebounceCaption) {
+                SettingsControlRow(title: l10n.s.keyDebounceEnable,
+                                   caption: l10n.s.keyDebounceCaption) {
                     PermissionGatedToggle(l10n.s.keyDebounceEnable, isOn: $debounceEnabled)
                         .labelsHidden()
                         .onChange(of: debounceEnabled) { _, value in
@@ -22,7 +22,6 @@ extension KeyboardSettings {
                     SettingsControlRow(title: l10n.s.keyDebounceGlobalWindow) {
                         DebounceIntervalControl(value: globalWindowBinding)
                     }
-                    .padding(.leading, settingsRowTextInset)
                     .disabled(!debounceEnabled)
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -71,10 +70,10 @@ extension KeyboardSettings {
                             .disabled(!debounceEnabled || selectedKeyCode == nil)
                         }
                     }
-                    .padding(.leading, settingsRowTextInset)
                     .disabled(!debounceEnabled)
                 }
             }
+            .padding(.leading, settingsRowTextInset)
         }
     }
 

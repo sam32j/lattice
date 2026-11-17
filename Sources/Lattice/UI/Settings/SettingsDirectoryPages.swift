@@ -153,7 +153,8 @@ extension SettingsDirectory {
                                                  quitProtection.extraModifier,
                                                  s.keyDebounceName, s.keyDebounceEnable,
                                                  FeatureStrings.superKey(language).pageTitle,
-                                                 s.cleaningMenuItem]
+                                                 s.cleaningMenuItem,
+                                                 SettingsOrganizationStrings.text(.keyboardCleaningMode, language)]
                                                 + SuperKeySource.allCases.map {
                                                     FeatureStrings.superKey(language).sourceLabel($0)
                                                 },
@@ -161,7 +162,7 @@ extension SettingsDirectory {
                                         (.quitWindowProtection, [quitProtection.description, "⌘Q", "⌘W"]),
                                         (.keyboardDebounce, [s.keyDebounceName, s.keyDebounceEnable, "debounce"]),
                                         (.superKey, [FeatureStrings.superKey(language).pageTitle, "super key"]),
-                                        (.cleaningMode, [s.cleaningMenuItem]),
+                                        (.cleaningMode, [s.cleaningMenuItem, SettingsOrganizationStrings.text(.keyboardCleaningMode, language)]),
                                       ]),
                 SettingsDirectoryItem(page: .mouse, title: s.tabMouse, icon: "computermouse",
                                       featureKeywords: [

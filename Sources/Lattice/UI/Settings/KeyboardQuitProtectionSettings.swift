@@ -76,7 +76,7 @@ extension KeyboardSettings {
     // MARK: - Quit & Close Protection Card
 
     var quitProtectionCard: some View {
-        SettingsCard(title: quitStrings.name) {
+        SettingsCard(symbol: "escape", title: quitStrings.name) {
             VStack(alignment: .leading, spacing: 14) {
                 shortcutSection(shortcut: .quit, enabled: $quitEnabled, mode: $quitMode,
                                 holdDuration: $quitHoldDuration, doubleInterval: $quitDoubleInterval,
@@ -88,6 +88,7 @@ extension KeyboardSettings {
                                 holdDuration: $closeHoldDuration, doubleInterval: $closeDoubleInterval,
                                 extraModifier: $closeExtraModifier, scope: $closeScope, showFeedback: $closeShowFeedback)
             }
+            .padding(.leading, settingsRowTextInset)
         }
     }
 
@@ -105,7 +106,7 @@ extension KeyboardSettings {
         let currentModifier = QuitProtectionSupport.extraModifierFor(extraModifier.wrappedValue)
 
         VStack(alignment: .leading, spacing: 10) {
-            SettingsRow(symbol: "shield", title: shortcut.symbol, caption: quitStrings.enabledCaption) {
+            SettingsControlRow(title: shortcut.symbol, caption: quitStrings.enabledCaption) {
                 PermissionGatedToggle(quitStrings.enabled, isOn: enabled)
                     .labelsHidden()
                     .onChange(of: enabled.wrappedValue) { _, value in
@@ -198,7 +199,6 @@ extension KeyboardSettings {
                 exceptionsSection(for: shortcut, scope: currentScope, enabled: enabled.wrappedValue)
 
                 }
-                .padding(.leading, settingsRowTextInset)
             }
         }
     }
