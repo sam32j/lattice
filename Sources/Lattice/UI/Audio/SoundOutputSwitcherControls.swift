@@ -20,16 +20,10 @@ struct SoundOutputSwitcherControls: View {
                 outputSwitcher.syncWithPreferences()
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                if outputSwitcher.registrationFailed {
-                    inputMessage(l10n.s.shortcutUnavailable, systemImage: "keyboard.badge.ellipsis")
-                }
-                if outputSwitcher.lastSwitchFailed {
-                    inputMessage(l10n.s.soundOutputSwitcherNoAvailableSelection,
-                                 systemImage: "speaker.badge.exclamationmark")
-                }
+            if outputSwitcher.registrationFailed {
+                inputMessage(l10n.s.shortcutUnavailable, systemImage: "keyboard.badge.ellipsis")
+                    .settingsCollapsible(isExpanded: enabled)
             }
-            .settingsCollapsible(isExpanded: enabled)
         }
     }
 
