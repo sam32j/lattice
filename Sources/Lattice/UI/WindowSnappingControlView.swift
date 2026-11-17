@@ -228,14 +228,15 @@ enum QuickAction: String, CaseIterable {
     case restore
 
     var title: String {
+        let t = WindowSnappingPanelStrings.current
         switch self {
-        case .maximize: return "Maximize"
-        case .maximizeMargin: return "Maximize Margin"
-        case .fullScreen: return "Full Screen"
-        case .center: return "Center"
-        case .prevDisplay: return "Prev Display"
-        case .nextDisplay: return "Next Display"
-        case .restore: return "Restore Previous Size"
+        case .maximize: return t.maximize
+        case .maximizeMargin: return t.maximizeMargin
+        case .fullScreen: return t.fullScreen
+        case .center: return t.centerWindow
+        case .prevDisplay: return t.prevDisplay
+        case .nextDisplay: return t.nextDisplay
+        case .restore: return t.restore
         }
     }
 
@@ -352,43 +353,44 @@ private enum GridResolutionHelper {
     }
 
     static func zoneLabel(minCol: Int, maxCol: Int, minRow: Int, maxRow: Int, cols: Int, rows: Int) -> String {
+        let t = WindowSnappingPanelStrings.current
         let isFullCol = minCol == 0 && maxCol == cols - 1
         let isFullRow = minRow == 0 && maxRow == rows - 1
 
         if isFullCol && isFullRow {
-            return "Maximize"
+            return t.maximize
         }
 
         // Single row division (Cols orientation)
         if rows == 1 {
             if cols == 2 {
-                return minCol == 0 ? "Left Half" : "Right Half"
+                return minCol == 0 ? t.half(t.left) : t.half(t.right)
             } else if cols == 3 {
                 if minCol == maxCol {
-                    if minCol == 0 { return "Left 1/3" }
-                    if minCol == 1 { return "Center 1/3" }
-                    return "Right 1/3"
+                    if minCol == 0 { return t.part(t.left, "1/3") }
+                    if minCol == 1 { return t.part(t.center, "1/3") }
+                    return t.part(t.right, "1/3")
                 } else if minCol == 0 && maxCol == 1 {
-                    return "Left 2/3"
+                    return t.part(t.left, "2/3")
                 } else if minCol == 1 && maxCol == 2 {
-                    return "Right 2/3"
+                    return t.part(t.right, "2/3")
                 }
             } else if cols == 4 {
                 if minCol == maxCol {
-                    if minCol == 0 { return "Left 1/4" }
-                    if minCol == 1 { return "Center-Left 1/4" }
-                    if minCol == 2 { return "Center-Right 1/4" }
-                    return "Right 1/4"
+                    if minCol == 0 { return t.part(t.left, "1/4") }
+                    if minCol == 1 { return t.part(t.centerLeft, "1/4") }
+                    if minCol == 2 { return t.part(t.centerRight, "1/4") }
+                    return t.part(t.right, "1/4")
                 } else if minCol == 0 && maxCol == 1 {
-                    return "Left Half"
+                    return t.half(t.left)
                 } else if minCol == 1 && maxCol == 2 {
-                    return "Center Half"
+                    return t.half(t.center)
                 } else if minCol == 2 && maxCol == 3 {
-                    return "Right Half"
+                    return t.half(t.right)
                 } else if minCol == 0 && maxCol == 2 {
-                    return "Left 3/4"
+                    return t.part(t.left, "3/4")
                 } else if minCol == 1 && maxCol == 3 {
-                    return "Right 3/4"
+                    return t.part(t.right, "3/4")
                 }
             }
         }
@@ -396,39 +398,39 @@ private enum GridResolutionHelper {
         // Single column division (Rows orientation)
         if cols == 1 {
             if rows == 2 {
-                return minRow == 0 ? "Top Half" : "Bottom Half"
+                return minRow == 0 ? t.half(t.top) : t.half(t.bottom)
             } else if rows == 3 {
                 if minRow == maxRow {
-                    if minRow == 0 { return "Top 1/3" }
-                    if minRow == 1 { return "Middle 1/3" }
-                    return "Bottom 1/3"
+                    if minRow == 0 { return t.part(t.top, "1/3") }
+                    if minRow == 1 { return t.part(t.middle, "1/3") }
+                    return t.part(t.bottom, "1/3")
                 } else if minRow == 0 && maxRow == 1 {
-                    return "Top 2/3"
+                    return t.part(t.top, "2/3")
                 } else if minRow == 1 && maxRow == 2 {
-                    return "Bottom 2/3"
+                    return t.part(t.bottom, "2/3")
                 }
             } else if rows == 4 {
                 if minRow == maxRow {
-                    if minRow == 0 { return "Top 1/4" }
-                    if minRow == 1 { return "Upper-Center 1/4" }
-                    if minRow == 2 { return "Lower-Center 1/4" }
-                    return "Bottom 1/4"
+                    if minRow == 0 { return t.part(t.top, "1/4") }
+                    if minRow == 1 { return t.part(t.upperCenter, "1/4") }
+                    if minRow == 2 { return t.part(t.lowerCenter, "1/4") }
+                    return t.part(t.bottom, "1/4")
                 } else if minRow == 0 && maxRow == 1 {
-                    return "Top Half"
+                    return t.half(t.top)
                 } else if minRow == 1 && maxRow == 2 {
-                    return "Center Half"
+                    return t.half(t.center)
                 } else if minRow == 2 && maxRow == 3 {
-                    return "Bottom Half"
+                    return t.half(t.bottom)
                 }
             }
         }
 
         // Quarters 2×2
         if cols == 2 && rows == 2 {
-            if minRow == maxRow && isFullCol { return minRow == 0 ? "Top Half" : "Bottom Half" }
-            if minCol == maxCol && isFullRow { return minCol == 0 ? "Left Half" : "Right Half" }
+            if minRow == maxRow && isFullCol { return minRow == 0 ? t.half(t.top) : t.half(t.bottom) }
+            if minCol == maxCol && isFullRow { return minCol == 0 ? t.half(t.left) : t.half(t.right) }
             if minCol == maxCol && minRow == maxRow {
-                return "\(minRow == 0 ? "Top" : "Bottom") \(minCol == 0 ? "Left" : "Right")"
+                return t.corner(row: minRow == 0 ? t.top : t.bottom, col: minCol == 0 ? t.left : t.right)
             }
         }
 
@@ -436,20 +438,20 @@ private enum GridResolutionHelper {
         if cols == 3 && rows == 2 {
             if isFullRow {
                 if minCol == maxCol {
-                    return minCol == 0 ? "Left 1/3" : (minCol == 1 ? "Center 1/3" : "Right 1/3")
+                    return minCol == 0 ? t.part(t.left, "1/3") : (minCol == 1 ? t.part(t.center, "1/3") : t.part(t.right, "1/3"))
                 } else if minCol == 0 && maxCol == 1 {
-                    return "Left 2/3"
+                    return t.part(t.left, "2/3")
                 } else if minCol == 1 && maxCol == 2 {
-                    return "Right 2/3"
+                    return t.part(t.right, "2/3")
                 }
             }
             if isFullCol {
-                return minRow == 0 ? "Top Half" : "Bottom Half"
+                return minRow == 0 ? t.half(t.top) : t.half(t.bottom)
             }
             if minCol == maxCol && minRow == maxRow {
-                let colStr = minCol == 0 ? "Left" : (minCol == 1 ? "Center" : "Right")
-                let rowStr = minRow == 0 ? "Top" : "Bottom"
-                return "\(rowStr) \(colStr) 1/6"
+                let colStr = minCol == 0 ? t.left : (minCol == 1 ? t.center : t.right)
+                let rowStr = minRow == 0 ? t.top : t.bottom
+                return t.part(t.corner(row: rowStr, col: colStr), "1/6")
             }
         }
 
@@ -457,26 +459,26 @@ private enum GridResolutionHelper {
         if cols == 2 && rows == 3 {
             if isFullCol {
                 if minRow == maxRow {
-                    return minRow == 0 ? "Top 1/3" : (minRow == 1 ? "Middle 1/3" : "Bottom 1/3")
+                    return minRow == 0 ? t.part(t.top, "1/3") : (minRow == 1 ? t.part(t.middle, "1/3") : t.part(t.bottom, "1/3"))
                 } else if minRow == 0 && maxRow == 1 {
-                    return "Top 2/3"
+                    return t.part(t.top, "2/3")
                 } else if minRow == 1 && maxRow == 2 {
-                    return "Bottom 2/3"
+                    return t.part(t.bottom, "2/3")
                 }
             }
             if isFullRow {
-                return minCol == 0 ? "Left Half" : "Right Half"
+                return minCol == 0 ? t.half(t.left) : t.half(t.right)
             }
             if minCol == maxCol && minRow == maxRow {
-                let colStr = minCol == 0 ? "Left" : "Right"
-                let rowStr = minRow == 0 ? "Top" : (minRow == 1 ? "Middle" : "Bottom")
-                return "\(rowStr) \(colStr) 1/6"
+                let colStr = minCol == 0 ? t.left : t.right
+                let rowStr = minRow == 0 ? t.top : (minRow == 1 ? t.middle : t.bottom)
+                return t.part(t.corner(row: rowStr, col: colStr), "1/6")
             }
         }
 
         let widthFraction = "\(maxCol - minCol + 1)/\(cols)"
         let heightFraction = "\(maxRow - minRow + 1)/\(rows)"
-        return "Zone \(widthFraction) × \(heightFraction)"
+        return t.zone(widthFraction, heightFraction)
     }
 }
 
@@ -493,60 +495,64 @@ struct LayoutPresetModel: Identifiable {
     let name: String
     let panes: [PresetPane]
 
-    static let allPresets: [LayoutPresetModel] = [
-        LayoutPresetModel(
-            id: "50-50",
-            name: "50 / 50",
-            panes: [
-                PresetPane(id: "50-50-left", rect: NormalizedRect(x: 0, y: 0, width: 0.5, height: 1), label: "Left Half"),
-                PresetPane(id: "50-50-right", rect: NormalizedRect(x: 0.5, y: 0, width: 0.5, height: 1), label: "Right Half")
-            ]
-        ),
-        LayoutPresetModel(
-            id: "3-cols",
-            name: "3 Columns",
-            panes: [
-                PresetPane(id: "3-cols-left", rect: NormalizedRect(x: 0, y: 0, width: 1.0 / 3.0, height: 1), label: "Left 1/3"),
-                PresetPane(id: "3-cols-center", rect: NormalizedRect(x: 1.0 / 3.0, y: 0, width: 1.0 / 3.0, height: 1), label: "Center 1/3"),
-                PresetPane(id: "3-cols-right", rect: NormalizedRect(x: 2.0 / 3.0, y: 0, width: 1.0 / 3.0, height: 1), label: "Right 1/3")
-            ]
-        ),
-        LayoutPresetModel(
-            id: "70-30",
-            name: "70 / 30",
-            panes: [
-                PresetPane(id: "70-30-left", rect: NormalizedRect(x: 0, y: 0, width: 0.7, height: 1), label: "Primary Left"),
-                PresetPane(id: "70-30-right", rect: NormalizedRect(x: 0.7, y: 0, width: 0.3, height: 1), label: "Side Right")
-            ]
-        ),
-        LayoutPresetModel(
-            id: "30-70",
-            name: "30 / 70",
-            panes: [
-                PresetPane(id: "30-70-left", rect: NormalizedRect(x: 0, y: 0, width: 0.3, height: 1), label: "Side Left"),
-                PresetPane(id: "30-70-right", rect: NormalizedRect(x: 0.3, y: 0, width: 0.7, height: 1), label: "Primary Right")
-            ]
-        ),
-        LayoutPresetModel(
-            id: "2x2",
-            name: "2×2 Quarters",
-            panes: [
-                PresetPane(id: "2x2-tl", rect: NormalizedRect(x: 0, y: 0, width: 0.5, height: 0.5), label: "Top Left"),
-                PresetPane(id: "2x2-tr", rect: NormalizedRect(x: 0.5, y: 0, width: 0.5, height: 0.5), label: "Top Right"),
-                PresetPane(id: "2x2-bl", rect: NormalizedRect(x: 0, y: 0.5, width: 0.5, height: 0.5), label: "Bottom Left"),
-                PresetPane(id: "2x2-br", rect: NormalizedRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5), label: "Bottom Right")
-            ]
-        ),
-        LayoutPresetModel(
-            id: "main-stack",
-            name: "Main + Stack",
-            panes: [
-                PresetPane(id: "main-stack-main", rect: NormalizedRect(x: 0, y: 0, width: 2.0 / 3.0, height: 1), label: "Primary Left"),
-                PresetPane(id: "main-stack-top", rect: NormalizedRect(x: 2.0 / 3.0, y: 0, width: 1.0 / 3.0, height: 0.5), label: "Top Right Stack"),
-                PresetPane(id: "main-stack-bottom", rect: NormalizedRect(x: 2.0 / 3.0, y: 0.5, width: 1.0 / 3.0, height: 0.5), label: "Bottom Right Stack")
-            ]
-        ),
-    ]
+    /// Built on each read so names and pane labels follow the app language.
+    static var allPresets: [LayoutPresetModel] {
+        let t = WindowSnappingPanelStrings.current
+        return [
+            LayoutPresetModel(
+                id: "50-50",
+                name: "50 / 50",
+                panes: [
+                    PresetPane(id: "50-50-left", rect: NormalizedRect(x: 0, y: 0, width: 0.5, height: 1), label: t.half(t.left)),
+                    PresetPane(id: "50-50-right", rect: NormalizedRect(x: 0.5, y: 0, width: 0.5, height: 1), label: t.half(t.right))
+                ]
+            ),
+            LayoutPresetModel(
+                id: "3-cols",
+                name: t.threeColumns,
+                panes: [
+                    PresetPane(id: "3-cols-left", rect: NormalizedRect(x: 0, y: 0, width: 1.0 / 3.0, height: 1), label: t.part(t.left, "1/3")),
+                    PresetPane(id: "3-cols-center", rect: NormalizedRect(x: 1.0 / 3.0, y: 0, width: 1.0 / 3.0, height: 1), label: t.part(t.center, "1/3")),
+                    PresetPane(id: "3-cols-right", rect: NormalizedRect(x: 2.0 / 3.0, y: 0, width: 1.0 / 3.0, height: 1), label: t.part(t.right, "1/3"))
+                ]
+            ),
+            LayoutPresetModel(
+                id: "70-30",
+                name: "70 / 30",
+                panes: [
+                    PresetPane(id: "70-30-left", rect: NormalizedRect(x: 0, y: 0, width: 0.7, height: 1), label: t.primary(t.left)),
+                    PresetPane(id: "70-30-right", rect: NormalizedRect(x: 0.7, y: 0, width: 0.3, height: 1), label: t.side(t.right))
+                ]
+            ),
+            LayoutPresetModel(
+                id: "30-70",
+                name: "30 / 70",
+                panes: [
+                    PresetPane(id: "30-70-left", rect: NormalizedRect(x: 0, y: 0, width: 0.3, height: 1), label: t.side(t.left)),
+                    PresetPane(id: "30-70-right", rect: NormalizedRect(x: 0.3, y: 0, width: 0.7, height: 1), label: t.primary(t.right))
+                ]
+            ),
+            LayoutPresetModel(
+                id: "2x2",
+                name: t.quarters,
+                panes: [
+                    PresetPane(id: "2x2-tl", rect: NormalizedRect(x: 0, y: 0, width: 0.5, height: 0.5), label: t.corner(row: t.top, col: t.left)),
+                    PresetPane(id: "2x2-tr", rect: NormalizedRect(x: 0.5, y: 0, width: 0.5, height: 0.5), label: t.corner(row: t.top, col: t.right)),
+                    PresetPane(id: "2x2-bl", rect: NormalizedRect(x: 0, y: 0.5, width: 0.5, height: 0.5), label: t.corner(row: t.bottom, col: t.left)),
+                    PresetPane(id: "2x2-br", rect: NormalizedRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5), label: t.corner(row: t.bottom, col: t.right))
+                ]
+            ),
+            LayoutPresetModel(
+                id: "main-stack",
+                name: t.mainStack,
+                panes: [
+                    PresetPane(id: "main-stack-main", rect: NormalizedRect(x: 0, y: 0, width: 2.0 / 3.0, height: 1), label: t.primary(t.left)),
+                    PresetPane(id: "main-stack-top", rect: NormalizedRect(x: 2.0 / 3.0, y: 0, width: 1.0 / 3.0, height: 0.5), label: t.stack(t.corner(row: t.top, col: t.right))),
+                    PresetPane(id: "main-stack-bottom", rect: NormalizedRect(x: 2.0 / 3.0, y: 0.5, width: 1.0 / 3.0, height: 0.5), label: t.stack(t.corner(row: t.bottom, col: t.right)))
+                ]
+            ),
+        ]
+    }
 }
 
 // MARK: - Palette
@@ -590,7 +596,7 @@ struct WindowSnappingControlView: View {
     @State private var toastText: String? = nil
     @State private var toastTask: Task<Void, Never>? = nil
 
-    @State private var statusText: String = "Click to snap • Drag to span • Scroll to cycle"
+    @State private var statusText: String = WindowSnappingPanelStrings.current.gridHint
 
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -958,7 +964,7 @@ struct WindowSnappingControlView: View {
                             let rect = GridResolutionHelper.spanRect(anchor: coord, current: coord, cols: dims.cols, rows: dims.rows)
                             let label = GridResolutionHelper.zoneLabel(minCol: coord.col, maxCol: coord.col, minRow: coord.row, maxRow: coord.row, cols: dims.cols, rows: dims.rows)
                             callbacks.onPreview(rect, label)
-                            statusText = "\(label) — Click to snap"
+                            statusText = WindowSnappingPanelStrings.current.clickToSnap(label)
                         },
                         onMouseDown: { coord in
                             dragAnchor = coord
@@ -968,7 +974,7 @@ struct WindowSnappingControlView: View {
                             let rect = GridResolutionHelper.spanRect(anchor: coord, current: coord, cols: dims.cols, rows: dims.rows)
                             let label = GridResolutionHelper.zoneLabel(minCol: coord.col, maxCol: coord.col, minRow: coord.row, maxRow: coord.row, cols: dims.cols, rows: dims.rows)
                             callbacks.onPreview(rect, label)
-                            statusText = "\(label) — Release to snap"
+                            statusText = WindowSnappingPanelStrings.current.releaseToSnap(label)
                         },
                         onMouseDragged: { coord in
                             guard isDragging, let anchor = dragAnchor else { return }
@@ -984,7 +990,7 @@ struct WindowSnappingControlView: View {
                                 let maxR = max(anchor.row, coord.row)
                                 let label = GridResolutionHelper.zoneLabel(minCol: minC, maxCol: maxC, minRow: minR, maxRow: maxR, cols: dims.cols, rows: dims.rows)
                                 callbacks.onPreview(rect, label)
-                                statusText = "\(label) — Release to snap"
+                                statusText = WindowSnappingPanelStrings.current.releaseToSnap(label)
                             }
                         },
                         onMouseUp: { releaseCoord in
@@ -1009,13 +1015,13 @@ struct WindowSnappingControlView: View {
                                 minRow: releaseCoord.row, maxRow: releaseCoord.row,
                                 cols: dims.cols, rows: dims.rows
                             )
-                            statusText = "\(singleLabel) — Click to snap"
+                            statusText = WindowSnappingPanelStrings.current.clickToSnap(singleLabel)
                         },
                         onMouseExited: {
                             guard !isDragging else { return }
                             hoveredCoord = nil
                             callbacks.onPreview(nil, nil)
-                            statusText = "Click to snap • Drag to span • Scroll to cycle"
+                            statusText = WindowSnappingPanelStrings.current.gridHint
                         },
                         onScroll: { event in
                             handleScroll(event)
@@ -1092,62 +1098,63 @@ struct WindowSnappingControlView: View {
     }
 
     private func cellLabel(col: Int, row: Int, dims: (cols: Int, rows: Int)) -> String {
+        let t = WindowSnappingPanelStrings.current
         if dims.rows == 1 {
             switch dims.cols {
             case 2:
-                return col == 0 ? "Left 1/2" : "Right 1/2"
+                return col == 0 ? t.part(t.left, "1/2") : t.part(t.right, "1/2")
             case 3:
-                if col == 0 { return "Left 1/3" }
-                if col == 1 { return "Center 1/3" }
-                return "Right 1/3"
+                if col == 0 { return t.part(t.left, "1/3") }
+                if col == 1 { return t.part(t.center, "1/3") }
+                return t.part(t.right, "1/3")
             case 4:
-                if col == 0 { return "Left 1/4" }
-                if col == 1 { return "Col 2/4" }
-                if col == 2 { return "Col 3/4" }
-                return "Right 1/4"
+                if col == 0 { return t.part(t.left, "1/4") }
+                if col == 1 { return t.part(t.col, "2/4") }
+                if col == 2 { return t.part(t.col, "3/4") }
+                return t.part(t.right, "1/4")
             default:
-                return "Col \(col + 1)"
+                return "\(t.col) \(col + 1)"
             }
         }
         if dims.cols == 1 {
             switch dims.rows {
             case 2:
-                return row == 0 ? "Top 1/2" : "Bottom 1/2"
+                return row == 0 ? t.part(t.top, "1/2") : t.part(t.bottom, "1/2")
             case 3:
-                if row == 0 { return "Top 1/3" }
-                if row == 1 { return "Center 1/3" }
-                return "Bottom 1/3"
+                if row == 0 { return t.part(t.top, "1/3") }
+                if row == 1 { return t.part(t.center, "1/3") }
+                return t.part(t.bottom, "1/3")
             case 4:
-                if row == 0 { return "Top 1/4" }
-                if row == 1 { return "Row 2/4" }
-                if row == 2 { return "Row 3/4" }
-                return "Bottom 1/4"
+                if row == 0 { return t.part(t.top, "1/4") }
+                if row == 1 { return t.part(t.row, "2/4") }
+                if row == 2 { return t.part(t.row, "3/4") }
+                return t.part(t.bottom, "1/4")
             default:
-                return "Row \(row + 1)"
+                return "\(t.row) \(row + 1)"
             }
         }
         if dims.cols == 2 && dims.rows == 2 {
-            return "\(row == 0 ? "Top" : "Bottom") \(col == 0 ? "Left" : "Right")"
+            return t.corner(row: row == 0 ? t.top : t.bottom, col: col == 0 ? t.left : t.right)
         }
         if dims.cols == 3 && dims.rows == 2 {
-            let rowPrefix = row == 0 ? "Top" : "Bottom"
+            let rowPrefix = row == 0 ? t.top : t.bottom
             let colName: String
             switch col {
-            case 0: colName = "Left"
-            case 1: colName = "Center"
-            default: colName = "Right"
+            case 0: colName = t.left
+            case 1: colName = t.center
+            default: colName = t.right
             }
-            return "\(rowPrefix) \(colName)"
+            return t.corner(row: rowPrefix, col: colName)
         }
         if dims.cols == 2 && dims.rows == 3 {
             let rowName: String
             switch row {
-            case 0: rowName = "Top"
-            case 1: rowName = "Mid"
-            default: rowName = "Btm"
+            case 0: rowName = t.top
+            case 1: rowName = t.middleShort
+            default: rowName = t.bottomShort
             }
-            let colName = col == 0 ? "Left" : "Right"
-            return "\(rowName) \(colName)"
+            let colName = col == 0 ? t.left : t.right
+            return t.corner(row: rowName, col: colName)
         }
         return "\(col + 1),\(row + 1)"
     }
@@ -1217,7 +1224,7 @@ struct WindowSnappingControlView: View {
             let rect = GridResolutionHelper.spanRect(anchor: newCoord, current: newCoord, cols: dims.cols, rows: dims.rows)
             let label = GridResolutionHelper.zoneLabel(minCol: clampedCol, maxCol: clampedCol, minRow: clampedRow, maxRow: clampedRow, cols: dims.cols, rows: dims.rows)
             callbacks.onPreview(rect, label)
-            statusText = "\(label) — Click to snap"
+            statusText = WindowSnappingPanelStrings.current.clickToSnap(label)
         }
     }
 
@@ -1241,12 +1248,12 @@ struct WindowSnappingControlView: View {
                             if let pane {
                                 hoveredPaneId = pane.id
                                 callbacks.onPreview(pane.rect, pane.label)
-                                statusText = "\(pane.label) — Click to snap"
+                                statusText = WindowSnappingPanelStrings.current.clickToSnap(pane.label)
                             } else {
                                 if let currentId = hoveredPaneId, preset.panes.contains(where: { $0.id == currentId }) {
                                     hoveredPaneId = nil
                                     callbacks.onPreview(nil, nil)
-                                    statusText = "Hover any pane to preview • Click to snap"
+                                    statusText = WindowSnappingPanelStrings.current.presetsHint
                                 }
                             }
                         },
@@ -1308,7 +1315,7 @@ struct WindowSnappingControlView: View {
 
     private var quickActionsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("QUICK ACTIONS")
+            Text(WindowSnappingPanelStrings.current.quickActions)
                 .font(.system(size: 10.5, weight: .bold))
                 .tracking(0.63)
                 .foregroundStyle(SnapTone.ink(0.5))
@@ -1316,14 +1323,14 @@ struct WindowSnappingControlView: View {
             // Row 1
             HStack(spacing: 8) {
                 quickActionButton(
-                    title: "Maximize",
+                    title: QuickAction.maximize.title,
                     symbol: "viewfinder",
                     action: .maximize,
                     previewRect: NormalizedRect(x: 0, y: 0, width: 1, height: 1)
                 )
 
                 quickActionButton(
-                    title: "Maximize Margin",
+                    title: QuickAction.maximizeMargin.title,
                     symbol: "rectangle.inset.filled",
                     action: .maximizeMargin,
                     previewRect: NormalizedRect(x: 0.03, y: 0.04, width: 0.94, height: 0.92)
@@ -1333,14 +1340,14 @@ struct WindowSnappingControlView: View {
             // Row 2
             HStack(spacing: 8) {
                 quickActionButton(
-                    title: "Full Screen",
+                    title: QuickAction.fullScreen.title,
                     symbol: "square",
                     action: .fullScreen,
                     previewRect: nil
                 )
 
                 quickActionButton(
-                    title: "Center",
+                    title: QuickAction.center.title,
                     symbol: "scope",
                     action: .center,
                     previewRect: NormalizedRect(x: 0.175, y: 0.15, width: 0.65, height: 0.70)
@@ -1360,7 +1367,7 @@ struct WindowSnappingControlView: View {
                             Image(systemName: "display")
                                 .font(.system(size: 12, weight: .regular))
                         }
-                        Text("Prev Display")
+                        Text(QuickAction.prevDisplay.title)
                             .font(.system(size: 12.5, weight: .medium))
                     }
                     .foregroundStyle(SnapTone.ink(0.92))
@@ -1373,7 +1380,7 @@ struct WindowSnappingControlView: View {
                     callbacks.onAction(.nextDisplay)
                 } label: {
                     HStack(spacing: 6) {
-                        Text("Next Display")
+                        Text(QuickAction.nextDisplay.title)
                             .font(.system(size: 12.5, weight: .medium))
                         HStack(spacing: 3) {
                             Image(systemName: "display")
@@ -1395,7 +1402,7 @@ struct WindowSnappingControlView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.uturn.backward")
                         .font(.system(size: 11.5, weight: .medium))
-                    Text("Restore Previous Size")
+                    Text(QuickAction.restore.title)
                         .font(.system(size: 12.5, weight: .medium))
                 }
                 .foregroundStyle(canRestore ? SnapTone.ink(0.92) : SnapTone.ink(0.35))
@@ -1445,8 +1452,8 @@ struct WindowSnappingControlView: View {
         hoveredPaneId = nil
         callbacks.onPreview(nil, nil)
         statusText = viewMode == .customGrid
-            ? "Click to snap • Drag to span • Scroll to cycle"
-            : "Hover any pane to preview • Click to snap"
+            ? WindowSnappingPanelStrings.current.gridHint
+            : WindowSnappingPanelStrings.current.presetsHint
     }
 }
 
