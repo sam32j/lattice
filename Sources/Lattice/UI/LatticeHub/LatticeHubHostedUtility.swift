@@ -8,6 +8,7 @@ struct LatticeHubHostedUtility: View {
     let notchSize: CGSize?
     let onClose: () -> Void
     @ObservedObject private var launcher = LatticeHubService.shared
+    @ObservedObject private var deviceControlsNav = DeviceControlsNavigationState.shared
 
     private var viewportHeight: CGFloat {
         // Floating panels can be moved upward; only content taller than the
@@ -36,6 +37,12 @@ struct LatticeHubHostedUtility: View {
     }
 
     var body: some View {
+        utilityContent
+            .clipped()
+    }
+
+    @ViewBuilder
+    private var utilityContent: some View {
         if item == .recentCaptures {
             // Floating HUD history owns the whole viewport, not the
             // compact menu-panel list height. Island history stays horizontal.
@@ -43,8 +50,8 @@ struct LatticeHubHostedUtility: View {
                                fillsAvailableSpace: notchSize == nil)
                 .frame(height: viewportHeight, alignment: .top)
         } else if item == .deviceControls {
-            DeviceControlsHubView(onClose: onClose)
-                .frame(height: viewportHeight)
+            DeviceControlsHubView(onClose: onClose, notchSize: notchSize)
+                .frame(height: viewportHeight, alignment: .top)
         } else if item == .killProcess {
             // Its list scrolls itself; inside another scroll view it would
             // collapse to no height.
@@ -149,6 +156,7 @@ private struct LatticeHubSystemUtility: View {
     let notchSize: CGSize?
     @ObservedObject private var navigation = SystemNavigationState.shared
     @ObservedObject private var launcher = LatticeHubService.shared
+    @ObservedObject private var deviceControlsNav = DeviceControlsNavigationState.shared
     @State private var floatingDetailNaturalHeight: CGFloat = 470
 
     var body: some View {

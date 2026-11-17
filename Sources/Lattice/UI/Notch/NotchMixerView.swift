@@ -638,7 +638,7 @@ private struct NotchAppFader: View {
             if app.persistenceID != nil { Divider() }
             Picker(l10n.s.mixerOutputTooltip, selection: outputSelection) {
                 Text(l10n.s.mixerOutputDefault).tag(MixerRoutingSupport.systemDefaultSelectionID)
-                ForEach(mixer.outputDevices) { device in
+                ForEach(mixer.outputDevices.filter { !MixerRoutingSupport.isAirPlaySentinel($0.uid) }) { device in
                     Text(device.isDefault ? "\(device.name) (\(l10n.s.mixerOutputCurrent))" : device.name).tag(device.uid)
                 }
                 if let selected = app.selectedOutputDeviceUID,
@@ -646,10 +646,6 @@ private struct NotchAppFader: View {
                                                                  isUnavailable: app.outputDeviceUnavailable,
                                                                  listedUIDs: mixer.outputDevices.map(\.uid)) {
                     Text(l10n.s.mixerOutputUnavailable).tag(selected)
-                }
-                if mixer.outputDevices.contains(where: { MixerRoutingSupport.isAirPlaySentinel($0.uid) }) {
-                    Divider()
-                    Text(l10n.s.mixerAirPlayChooseSpeaker).tag(MixerRoutingSupport.airPlaySpeakerChoiceID)
                 }
             }
             .pickerStyle(.menu)

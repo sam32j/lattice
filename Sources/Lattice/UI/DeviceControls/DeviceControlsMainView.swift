@@ -16,12 +16,7 @@ struct DeviceControlsMainView: View {
 
     private var activeAppCount: Int {
         mixer.apps.filter {
-            MixerRoutingSupport.shouldShowApp(
-                isPlaying: $0.isPlaying,
-                volume: $0.volume,
-                selectedOutputDeviceUID: $0.selectedOutputDeviceUID,
-                hideInactiveApps: true
-            )
+            DeviceControlsAppVolumesLayout.isActive($0)
         }.count
     }
 
@@ -32,10 +27,12 @@ struct DeviceControlsMainView: View {
             audioInputSection
         }
         .onAppear {
-            brightness.refresh()
-            brightness.refreshKeyboardLight()
-            mixer.refreshApps()
-            inputManager.syncWithPreferences()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                brightness.refresh()
+                brightness.refreshKeyboardLight()
+                mixer.refreshApps()
+                inputManager.syncWithPreferences()
+            }
         }
     }
 
