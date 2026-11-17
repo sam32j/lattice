@@ -45,7 +45,7 @@ extension MouseSettings {
                 Toggle(l10n.s.mouseAccelerationName, isOn: $mouseAccelerationDisabled)
                     .labelsHidden()
                     .onChange(of: mouseAccelerationDisabled) { _, _ in
-                        MouseAccelerationService.shared.syncWithPreferences()
+                        settingsApplyAfterSwitch { MouseAccelerationService.shared.syncWithPreferences() }
                     }
             }
         }
