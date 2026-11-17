@@ -108,12 +108,12 @@ extension WindowLayoutSettings {
             VStack(alignment: .leading, spacing: 13) {
                 Text(text.moving).font(.headline)
 
-                Toggle(isOn: $holdToCycleDisplayEnabled.animation(reduceMotion ? nil : .settingsExpansion)) {
-                    Label(text.holdToCycleDisplay, systemImage: "inset.filled.rectangle.and.pointer.arrow")
-                }
+                VStack(alignment: .leading, spacing: 13) {
+                    Toggle(isOn: $holdToCycleDisplayEnabled.animation(reduceMotion ? nil : .settingsExpansion)) {
+                        Label(text.holdToCycleDisplay, systemImage: "inset.filled.rectangle.and.pointer.arrow")
+                    }
 
-                if holdToCycleDisplayEnabled {
-                    VStack(alignment: .leading, spacing: 10) {
+                    if holdToCycleDisplayEnabled {
                         HStack {
                             Text(text.holdDelay)
                             Spacer()
@@ -124,21 +124,10 @@ extension WindowLayoutSettings {
                             .labelsHidden()
                             .pickerStyle(.menu)
                         }
-                        HStack {
-                            Text(text.cycleSpeed)
-                            Spacer()
-                            Picker(text.cycleSpeed, selection: $cycleSpeed) {
-                                Text(text.cycleSpeedSlower).tag("slower")
-                                Text(text.cycleSpeedDefault).tag("default")
-                                Text(text.cycleSpeedFaster).tag("faster")
-                            }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                        }
+                        .padding(.leading, settingsRowTextInset)
                     }
-                    .disclosureIndent()
-                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
+                .settingsExpansionAnimation(value: holdToCycleDisplayEnabled)
 
                 ShortcutPreferenceRow(role: .pointerNextDisplay,
                                       label: PointerDisplayStrings.localized(l10n.language).title,
@@ -157,6 +146,7 @@ extension WindowLayoutSettings {
                 actionRow(.previousDisplay)
                 actionRow(.nextDisplay)
             }
+            .settingsExpansionAnimation(value: holdToCycleDisplayEnabled)
         }
     }
 }

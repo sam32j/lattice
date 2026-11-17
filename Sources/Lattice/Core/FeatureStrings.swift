@@ -1492,10 +1492,6 @@ struct WindowLayoutFeatureStrings {
     var holdDelay: String = "Hold delay"
     var holdDelayDefault: String = "Default"
     var holdDelayLonger: String = "Longer"
-    var cycleSpeed: String = "Cycling speed"
-    var cycleSpeedSlower: String = "Slower"
-    var cycleSpeedDefault: String = "Default"
-    var cycleSpeedFaster: String = "Faster"
 
     static let enUS = WindowLayoutFeatureStrings(
         title: "Window Management",
