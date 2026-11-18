@@ -857,11 +857,14 @@ def main():
                     .replace("private static var", "static var", 1)
                     .replace("private func", "func", 1) for prefix in [
                         "    static func recoverIfNeeded(", "    func syncWithPreferences(",
-                        "    func returnToSystem(", "    func resumePreferenceDidChange(",
+                        "    func returnToSystem(", "    func forgetResume(", "    func resumePreferenceDidChange(",
                         "    private static var resumableConfiguration:", "    private func resume(",
                         "    private static var helperAwaitsRegistration:",
                         "    private func rememberForResume(", "    private func stopIdleWorkIfPossible(",
-                        "    @objc private func workspaceDidWake("])
+                        "    @objc private func workspaceDidWake(", "    @objc private func workspaceWillSleep(",
+                        "    private func beginResume(", "    private func cancelResumeRetry(",
+                        "    private func resumeDidFail(", "    private func scheduleResumeRetry(",
+                        "    private func retryResume(", "    private func applyStatus(", "    private func apply(_ response:"])
           + "}\n}\n")
     visualizer_entry = declaration("Sources/Lattice/Services/Notch/NotchService.swift", "    func syncWithPreferences()")
     visualizer_entry = visualizer_entry.split("        preferenceSyncWork?.cancel()", 1)[0]
