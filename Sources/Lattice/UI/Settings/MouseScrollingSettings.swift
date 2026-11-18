@@ -5,8 +5,8 @@ extension MouseSettings {
 
     var scrollControls: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SettingsRow(symbol: "arrow.up.arrow.down", title: l10n.s.invertVerticalScroll,
-                        caption: l10n.s.scrollTrackpadNote) {
+            SettingsControlRow(title: l10n.s.invertVerticalScroll,
+                               caption: l10n.s.scrollTrackpadNote) {
                 PermissionGatedToggle(l10n.s.invertVerticalScroll, isOn: $invertVertical)
                     .labelsHidden()
                     .onChange(of: invertVertical) { _, _ in
@@ -14,10 +14,11 @@ extension MouseSettings {
                         if scrollDirectionEnabled { permissions.requestAccessibility() }
                     }
             }
+            Divider()
             // The inverter only turns mouse-wheel events (ScrollWheelSupport.isMouseWheel);
             // trackpad gestures pass through untouched, as the caption says.
-            SettingsRow(symbol: "arrow.left.arrow.right", title: l10n.s.invertHorizontalScroll,
-                        caption: l10n.s.scrollTrackpadNote) {
+            SettingsControlRow(title: l10n.s.invertHorizontalScroll,
+                               caption: l10n.s.scrollTrackpadNote) {
                 PermissionGatedToggle(l10n.s.invertHorizontalScroll, isOn: $invertHorizontal)
                     .labelsHidden()
                     .onChange(of: invertHorizontal) { _, _ in
@@ -25,8 +26,9 @@ extension MouseSettings {
                         if scrollDirectionEnabled { permissions.requestAccessibility() }
                     }
             }
-            SettingsRow(symbol: "arrow.left.and.right", title: l10n.s.scrollHorizontalName,
-                        caption: l10n.s.scrollHorizontalCaption) {
+            Divider()
+            SettingsControlRow(title: l10n.s.scrollHorizontalName,
+                               caption: l10n.s.scrollHorizontalCaption) {
                 PermissionGatedToggle(l10n.s.scrollHorizontalName, isOn: $horizontalScrollEnabled)
                     .labelsHidden()
                     .onChange(of: horizontalScrollEnabled) { _, _ in
@@ -35,7 +37,7 @@ extension MouseSettings {
                     }
             }
             if horizontalScrollEnabled {
-                modifierKeys.padding(.leading, settingsRowTextInset)
+                modifierKeys
             }
         }
     }
@@ -64,7 +66,7 @@ extension MouseSettings {
 
     var smoothScrollControls: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SettingsRow(symbol: "scroll", title: l10n.s.smoothScrollName, caption: l10n.s.smoothScrollCaption) {
+            SettingsControlRow(title: l10n.s.smoothScrollName, caption: l10n.s.smoothScrollCaption) {
                 PermissionGatedToggle(l10n.s.smoothScrollName, isOn: $smoothScrollEnabled)
                     .labelsHidden()
                     .onChange(of: smoothScrollEnabled) { _, enabled in
@@ -90,7 +92,6 @@ extension MouseSettings {
                               names: [presets.none, presets.short, presets.medium, presets.long],
                               sanitize: SmoothScrollSupport.sanitizedCoast)
                 }
-                .padding(.leading, settingsRowTextInset)
             }
         }
     }
@@ -117,8 +118,8 @@ extension MouseSettings {
 
     var linearScrollControls: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SettingsRow(symbol: AppFeature.linearScroll.symbolName, title: l10n.s.linearScrollName,
-                        caption: l10n.s.linearScrollCaption) {
+            SettingsControlRow(title: l10n.s.linearScrollName,
+                               caption: l10n.s.linearScrollCaption) {
                 PermissionGatedToggle(l10n.s.linearScrollName, isOn: $linearScrollEnabled)
                     .labelsHidden()
                     .onChange(of: linearScrollEnabled) { _, enabled in
@@ -141,14 +142,7 @@ extension MouseSettings {
                         }
                     }
                 }
-                .padding(.leading, settingsRowTextInset)
             }
         }
     }
-
-    func sliderRow(_ title: String, value: Binding<Double>, range: ClosedRange<Double>,
-                           step: Double, readout: String) -> some View {
-        SettingsSliderRow(title: title, value: value, range: range, step: step, readout: readout)
-    }
-
 }

@@ -90,7 +90,6 @@ struct EnergyDisplaySettings: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
-                        .padding(.leading, settingsRowTextInset)
                 }
             } else {
                 ForEach(shownDisplays) { display in displayRow(display) }
@@ -101,15 +100,7 @@ struct EnergyDisplaySettings: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Divider()
-            SettingsRow(symbol: "cursorarrow.rays", title: strings.keysToggle, caption: strings.keysCaption) {
-                PermissionGatedToggle(strings.keysToggle, isOn: $brightnessKeysEnabled)
-                    .labelsHidden()
-                    .onChange(of: brightnessKeysEnabled) { _, isOn in
-                        if isOn { Permissions.shared.requestAccessibility() }
-                        BrightnessService.shared.syncWithPreferences()
-                    }
-            }
-            SettingsRow(symbol: "sun.min", title: strings.keyStep, caption: strings.keyStepCaption) {
+            SettingsControlRow(title: strings.keyStep, caption: strings.keyStepCaption) {
                 PermissionGatedPicker(title: strings.keyStep, selection: brightnessKeyStepBinding,
                                       requiring: { $0 == .standard ? [] : [.accessibility] }) {
                     Text(strings.keyStepStandard).tag(BrightnessSupport.KeyStep.standard)
@@ -118,7 +109,16 @@ struct EnergyDisplaySettings: View {
                 }
                 .pickerStyle(.menu).labelsHidden()
             }
-            DisplayBrightnessShortcutControls(showsSettingsRow: true)
+            DisplayBrightnessShortcutControls(showsSettingsRow: false)
+            Divider()
+            SettingsControlRow(title: strings.keysToggle, caption: strings.keysCaption) {
+                PermissionGatedToggle(strings.keysToggle, isOn: $brightnessKeysEnabled)
+                    .labelsHidden()
+                    .onChange(of: brightnessKeysEnabled) { _, isOn in
+                        if isOn { Permissions.shared.requestAccessibility() }
+                        BrightnessService.shared.syncWithPreferences()
+                    }
+            }
             if brightnessKeysEnabled
                 || brightnessKeyStepBinding.wrappedValue != .standard,
                !permissions.accessibility {
@@ -126,6 +126,7 @@ struct EnergyDisplaySettings: View {
             }
             DisplayExtraBrightnessSettings()
         }
+        .padding(.leading, settingsRowTextInset)
     }
 
     /// A finer step answers the keys in place of the system, which takes the
@@ -167,7 +168,6 @@ struct EnergyDisplaySettings: View {
             }
             SoftwareDimmingButton(display: display)
         }
-        .padding(.leading, settingsRowTextInset)
     }
 
 }

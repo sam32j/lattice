@@ -63,7 +63,7 @@ extension SettingsPageStrings {
         audioInputTitle: "Вхід аудіо",
         audioInputDescription: "Швидкі клавіші вимкнення мікрофона та пріоритет пристроїв входу аудіо.",
         audioOutputTitle: "Вихід аудіо",
-        audioOutputDescription: "Мікшер гучності, перемикач виходу аудіо та блокувальник програми Музика."
+        audioOutputDescription: "Мікшер гучності та перемикач виходу аудіо."
     )
 
     static let enUS = SettingsPageStrings(
@@ -82,7 +82,7 @@ extension SettingsPageStrings {
         audioInputTitle: "Audio Input",
         audioInputDescription: "Microphone mute shortcuts and audio input device priority.",
         audioOutputTitle: "Audio Output",
-        audioOutputDescription: "Volume mixer, audio output switcher, and Music app blocker."
+        audioOutputDescription: "Volume mixer and audio output switcher."
     )
 
     static let ptBR = SettingsPageStrings(
@@ -101,7 +101,7 @@ extension SettingsPageStrings {
         audioInputTitle: "Entrada de áudio",
         audioInputDescription: "Atalhos para silenciar microfone e prioridade de dispositivos de entrada.",
         audioOutputTitle: "Saída de áudio",
-        audioOutputDescription: "Mixer de volume, alternador de saída e bloqueador do app Música."
+        audioOutputDescription: "Mixer de volume e alternador de saída."
     )
 
     static let tr = SettingsPageStrings(
@@ -120,7 +120,7 @@ extension SettingsPageStrings {
         audioInputTitle: "Ses Girişi",
         audioInputDescription: "Mikrofon ses kapatma kısayolları ve ses giriş aygıtı önceliği.",
         audioOutputTitle: "Ses Çıkışı",
-        audioOutputDescription: "Ses karıştırıcı, ses çıkış anahtarlayıcı ve Müzik uygulaması engelleyici."
+        audioOutputDescription: "Ses karıştırıcı ve ses çıkış anahtarlayıcı."
     )
 
     static let ru = SettingsPageStrings(
@@ -139,7 +139,7 @@ extension SettingsPageStrings {
         audioInputTitle: "Вход аудио",
         audioInputDescription: "Сочетания клавиш для отключения микрофона и приоритет устройств ввода.",
         audioOutputTitle: "Выход аудио",
-        audioOutputDescription: "Микшер громкости, переключатель выхода и блокировщик приложения Музыка."
+        audioOutputDescription: "Микшер громкости и переключатель выхода."
     )
 
     static let es = SettingsPageStrings(
@@ -158,7 +158,7 @@ extension SettingsPageStrings {
         audioInputTitle: "Entrada de audio",
         audioInputDescription: "Atajos para silenciar el micrófono y prioridad de dispositivos de entrada.",
         audioOutputTitle: "Salida de audio",
-        audioOutputDescription: "Mezclador de volumen, selector de salida y bloqueador de la app Música."
+        audioOutputDescription: "Mezclador de volumen y selector de salida."
     )
 
     static let sk = SettingsPageStrings(
@@ -177,7 +177,7 @@ extension SettingsPageStrings {
         audioInputTitle: "Zvukový vstup",
         audioInputDescription: "Skratky stlmenia mikrofónu a priorita vstupných zvukových zariadení.",
         audioOutputTitle: "Zvukový výstup",
-        audioOutputDescription: "Zmiešavač hlasitosti, prepínač výstupu a blokovač aplikácie Hudba."
+        audioOutputDescription: "Zmiešavač hlasitosti a prepínač výstupu."
     )
 
     static let de = SettingsPageStrings(
@@ -196,7 +196,7 @@ extension SettingsPageStrings {
         audioInputTitle: "Audioeingang",
         audioInputDescription: "Tastenkürzel zum Stummschalten des Mikrofons und Priorität von Audioeingabegeräten.",
         audioOutputTitle: "Audioausgang",
-        audioOutputDescription: "Lautstärkemixer, Audioausgabe-Umschalter und Musik-App-Blocker."
+        audioOutputDescription: "Lautstärkemixer und Audioausgabe-Umschalter."
     )
 
     static let fr = SettingsPageStrings(
@@ -215,7 +215,7 @@ extension SettingsPageStrings {
         audioInputTitle: "Entrée audio",
         audioInputDescription: "Raccourcis de coupure du micro et priorité des périphériques d’entrée audio.",
         audioOutputTitle: "Sortie audio",
-        audioOutputDescription: "Mélangeur de volume, sélecteur de sortie et bloqueur de l’application Musique."
+        audioOutputDescription: "Mélangeur de volume et sélecteur de sortie."
     )
 
     static let it = SettingsPageStrings(
@@ -234,7 +234,7 @@ extension SettingsPageStrings {
         audioInputTitle: "Ingresso audio",
         audioInputDescription: "Scorciatoie per disattivare il microfono e priorità dei dispositivi di ingresso audio.",
         audioOutputTitle: "Uscita audio",
-        audioOutputDescription: "Mixer del volume, selettore di uscita e blocco dell’app Musica."
+        audioOutputDescription: "Mixer del volume e selettore di uscita."
     )
 
     static let ja = SettingsPageStrings(
@@ -253,7 +253,7 @@ extension SettingsPageStrings {
         audioInputTitle: "オーディオ入力",
         audioInputDescription: "マイク消音ショートカットおよびオーディオ入力デバイスの優先順位。",
         audioOutputTitle: "オーディオ出力",
-        audioOutputDescription: "音量ミキサー、オーディオ出力スイッチャー、ミュージックアプリブロッカー。"
+        audioOutputDescription: "音量ミキサーとオーディオ出力スイッチャー。"
     )
 
     static let ko = SettingsPageStrings(
@@ -272,7 +272,7 @@ extension SettingsPageStrings {
         audioInputTitle: "오디오 입력",
         audioInputDescription: "마이크 음소거 단축키 및 오디오 입력 기기 우선순위.",
         audioOutputTitle: "오디오 출력",
-        audioOutputDescription: "볼륨 믹서, 오디오 출력 전환기 및 음악 앱 차단기."
+        audioOutputDescription: "볼륨 믹서 및 오디오 출력 전환기."
     )
 
     static let zhHans = SettingsPageStrings(
@@ -291,7 +291,7 @@ extension SettingsPageStrings {
         audioInputTitle: "音频输入",
         audioInputDescription: "麦克风静音快捷键和音频输入设备优先级。",
         audioOutputTitle: "音频输出",
-        audioOutputDescription: "音量混音器、音频输出切换器和音乐应用阻止程序。"
+        audioOutputDescription: "音量混音器和音频输出切换器。"
     )
 
     static let zhTW = SettingsPageStrings(
@@ -310,7 +310,7 @@ extension SettingsPageStrings {
         audioInputTitle: "音訊輸入",
         audioInputDescription: "麥克風靜音快捷鍵與音訊輸入裝置優先權。",
         audioOutputTitle: "音訊輸出",
-        audioOutputDescription: "音量混音器、音訊輸出切換器與音樂應用程式阻擋器。"
+        audioOutputDescription: "音量混音器與音訊輸出切換器。"
     )
 
     static let zhHK = SettingsPageStrings(
@@ -329,6 +329,6 @@ extension SettingsPageStrings {
         audioInputTitle: "音訊輸入",
         audioInputDescription: "麥克風靜音快捷鍵與音訊輸入裝置優先權。",
         audioOutputTitle: "音訊輸出",
-        audioOutputDescription: "音量混音器、音訊輸出切換器與音樂應用程式阻擋器。"
+        audioOutputDescription: "音量混音器與音訊輸出切換器。"
     )
 }

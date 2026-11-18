@@ -77,30 +77,39 @@ struct MouseSettings: View {
 
 
     var mouseScrollingCard: some View {
-        SettingsCard(title: InputSettingsStrings.text(.mouseScrolling, l10n.language)) {
-            scrollControls.settingsSectionAnchor(.scrollDirection, cornerRadius: 12)
-            Divider()
-            smoothScrollControls.settingsSectionAnchor(.smoothScroll, cornerRadius: 12)
-            Divider()
-            linearScrollControls.settingsSectionAnchor(.linearScroll, cornerRadius: 12)
-            Divider()
-            accelerationControls.settingsSectionAnchor(.mouseAcceleration, cornerRadius: 12)
+        SettingsCard(symbol: "pointer.arrow.motionlines", title: InputSettingsStrings.text(.mouseScrolling, l10n.language)) {
+            VStack(alignment: .leading, spacing: 13) {
+                scrollControls.settingsSectionAnchor(.scrollDirection, cornerRadius: 12)
+                Divider()
+                smoothScrollControls.settingsSectionAnchor(.smoothScroll, cornerRadius: 12)
+                Divider()
+                linearScrollControls.settingsSectionAnchor(.linearScroll, cornerRadius: 12)
+                Divider()
+                accelerationControls.settingsSectionAnchor(.mouseAcceleration, cornerRadius: 12)
+            }
+            .padding(.leading, settingsRowTextInset)
         }
     }
 
     var mouseClicksCard: some View {
-        SettingsCard(title: InputSettingsStrings.text(.mouseClicks, l10n.language)) {
-            focusFollowsMouseControls.settingsSectionAnchor(.focusFollowsMouse, cornerRadius: 12)
-            Divider()
-            clickFilterControls.settingsSectionAnchor(.mouseClickDebounce, cornerRadius: 12)
+        SettingsCard(symbol: "pointer.arrow.click.2", title: InputSettingsStrings.text(.mouseClicks, l10n.language)) {
+            VStack(alignment: .leading, spacing: 13) {
+                focusFollowsMouseControls.settingsSectionAnchor(.focusFollowsMouse, cornerRadius: 12)
+                Divider()
+                clickFilterControls.settingsSectionAnchor(.mouseClickDebounce, cornerRadius: 12)
+            }
+            .padding(.leading, settingsRowTextInset)
         }
     }
 
     var mouseButtonsCard: some View {
-        SettingsCard(title: InputSettingsStrings.text(.mouseButtons, l10n.language)) {
-            navigationControls.settingsSectionAnchor(.mouseNavigation, cornerRadius: 12)
-            Divider()
-            MouseButtonShortcutsSection()
+        SettingsCard(symbol: "button.vertical.left.press", title: InputSettingsStrings.text(.mouseButtons, l10n.language)) {
+            VStack(alignment: .leading, spacing: 13) {
+                navigationControls.settingsSectionAnchor(.mouseNavigation, cornerRadius: 12)
+                Divider()
+                MouseButtonShortcutsSection()
+            }
+            .padding(.leading, settingsRowTextInset)
         }
     }
 

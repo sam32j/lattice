@@ -73,24 +73,7 @@ enum QuitProtectionDoublePressPreset: Double, CaseIterable, Identifiable {
 }
 
 extension KeyboardSettings {
-    // MARK: - Quit & Close Protection Card
-
-    var quitProtectionCard: some View {
-        SettingsCard(symbol: "escape", title: quitStrings.name) {
-            VStack(alignment: .leading, spacing: 14) {
-                shortcutSection(shortcut: .quit, enabled: $quitEnabled, mode: $quitMode,
-                                holdDuration: $quitHoldDuration, doubleInterval: $quitDoubleInterval,
-                                extraModifier: $quitExtraModifier, scope: $quitScope, showFeedback: $quitShowFeedback)
-
-                Divider()
-
-                shortcutSection(shortcut: .close, enabled: $closeEnabled, mode: $closeMode,
-                                holdDuration: $closeHoldDuration, doubleInterval: $closeDoubleInterval,
-                                extraModifier: $closeExtraModifier, scope: $closeScope, showFeedback: $closeShowFeedback)
-            }
-            .padding(.leading, settingsRowTextInset)
-        }
-    }
+    // MARK: - Quit & Close Protection Controls
 
     @ViewBuilder
     func shortcutSection(shortcut: QuitProtectionShortcut,
@@ -104,9 +87,11 @@ extension KeyboardSettings {
         let currentMode = QuitProtectionSupport.modeFor(mode.wrappedValue)
         let currentScope = QuitProtectionSupport.scopeFor(scope.wrappedValue)
         let currentModifier = QuitProtectionSupport.extraModifierFor(extraModifier.wrappedValue)
+        let title = SettingsOrganizationStrings.text(shortcut == .quit ? .quitBehavior : .closeBehavior, l10n.language)
+        let caption = SettingsOrganizationStrings.text(shortcut == .quit ? .quitCaption : .closeCaption, l10n.language)
 
         VStack(alignment: .leading, spacing: 10) {
-            SettingsControlRow(title: shortcut.symbol, caption: quitStrings.enabledCaption) {
+            SettingsControlRow(title: title, caption: caption) {
                 PermissionGatedToggle(quitStrings.enabled, isOn: enabled)
                     .labelsHidden()
                     .onChange(of: enabled.wrappedValue) { _, value in

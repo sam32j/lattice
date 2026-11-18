@@ -289,7 +289,7 @@ enum UpdateFeatureTests {
                 && audioInputRows.first?.destination == FeatureSettingsDestination(.audioInput),
                "Audio Input produces a single page entrance on the sidebar")
 
-        let audioOutputFeatures: [AppFeature] = [.soundOutputSwitcher, .mixer, .musicBlock]
+        let audioOutputFeatures: [AppFeature] = [.soundOutputSwitcher, .mixer]
         let audioOutputRows = SettingsSidebarSupport.items(
             page: .audioOutput, title: "Audio Output", icon: "speaker.wave.2",
             preferredFeatures: audioOutputFeatures, includePage: true,

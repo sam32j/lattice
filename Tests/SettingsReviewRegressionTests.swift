@@ -108,9 +108,9 @@ enum SettingsReviewRegressionTests {
                 query: query, items: searchItems, isAvailable: { _ in true },
                 isSettingOn: { on.contains($0) }).flatMap { $0.suggestions.map(\.title) }
         }
-        suite.expect(!titles("key steps", on: []).contains(brightness.keyStep)
-                        && titles("key steps", on: [DefaultsKey.brightnessControlEnabled]).contains(brightness.keyStep),
-                     "Brightness key steps is searchable only while Enable Display Control shows it")
+        suite.expect(!titles("key step", on: []).contains(brightness.keyStep)
+                        && titles("key step", on: [DefaultsKey.brightnessControlEnabled]).contains(brightness.keyStep),
+                     "Brightness key step is searchable only while Display Control shows it")
         suite.expect(!titles("back on", on: []).contains(bluetooth.restoreToggle)
                         && titles("back on", on: [DefaultsKey.bluetoothSleepEnabled]).contains(bluetooth.restoreToggle),
                      "Turn Bluetooth back on is searchable only while its parent switch is on")
