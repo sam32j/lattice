@@ -2105,7 +2105,7 @@ enum FeatureCatalogTests {
                 == FeatureSettingsDestination(.keyboard, sectionAnchor: .cleaningMode),
                "cleaning mode lands on Keyboard cleaning mode section")
         suite.expect(AppFeature.musicBlock.settingsDestination
-                == FeatureSettingsDestination(.audioOutput, sectionAnchor: .musicBlocking)
+                == FeatureSettingsDestination(.keyboard, sectionAnchor: .musicBlocking)
                 && AppFeature.diskImageInstaller.settingsDestination
                 == FeatureSettingsDestination(.diskImageInstaller),
                "Music Blocking and DMG Installer use their owning settings pages")

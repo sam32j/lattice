@@ -52,9 +52,9 @@ enum SettingsFollowupStrings {
             "Lattice の優先表示先", "ショートカットで Lattice を開く",
             "Lattice が非表示になります", "Lattice はバックグラウンドで実行され続けます。キーボードショートカットを使用してツールにアクセスできます。", "Lattice を非表示にする", "すべてのツール"]
         case .ko: values = ["메뉴 막대 아이콘 표시", "액세서리 배터리",
-            "Bluetooth 액세서리의 배터리 잔량을 읽습니다. 모든 정보는 Mac에만 보관됩니다。",
+            "Bluetooth 액세서리의 배터리 잔량을 읽습니다. 모든 정보는 Mac에만 보관됩니다.",
             "Lattice 열기 우선 위치", "단축키로 Lattice 열기",
-            "Lattice가 숨겨집니다", "Lattice는 백그라운드에서 계속 실행됩니다. 키보드 단축키를 사용하여 도구에 계속 접근할 수 있습니다。", "Lattice 숨기기", "모든 도구"]
+            "Lattice가 숨겨집니다", "Lattice는 백그라운드에서 계속 실행됩니다. 키보드 단축키를 사용하여 도구에 계속 접근할 수 있습니다.", "Lattice 숨기기", "모든 도구"]
         case .zhHans: values = ["显示菜单栏图标", "配件电池",
             "读取蓝牙配件的电量。所有信息仅保存在你的 Mac 上。",
             "偏好 Lattice 打开于", "使用快捷键打开 Lattice",

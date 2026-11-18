@@ -20,7 +20,6 @@ struct CaptureSaveSettingsCard: View {
 
     private var strings: CaptureSaveStrings { .localized(l10n.language) }
     private var activeFolder: URL? { CaptureSaveLocation.resolvedFolder() }
-    private var savesAutomatically: Bool { autoSaveScreenshot || autoSaveRecording }
 
     var body: some View {
         SettingsCard(symbol: "folder", title: strings.save) {
@@ -131,7 +130,7 @@ struct CaptureSaveSettingsCard: View {
             // Use a compact native control height; the old 32-pt field
             // background made these two text inputs look disproportionately
             // tall compared with the rest of Capture Settings.
-            .frame(width: 280, height: 28)
+            .frame(width: 195, height: 28)
             .background(Color.primary.opacity(0.07),
                         in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             .overlay {

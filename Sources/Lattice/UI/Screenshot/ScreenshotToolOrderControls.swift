@@ -33,11 +33,6 @@ struct ScreenshotToolOrderControls: View {
                     .font(.headline)
             }
 
-            Text(strings.toolShortcutsCaption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
             VStack(spacing: 2) {
                 ForEach(orderedTools, id: \.self) { tool in
                     toolRow(tool)
