@@ -60,7 +60,7 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
 
     var page: SettingsPage {
         switch self {
-        case .mixer, .musicBlocking, .soundOutputSwitcher, .audioOutputPriority:
+        case .mixer, .soundOutputSwitcher, .audioOutputPriority:
             return .audioOutput
         case .audioPriority, .micMute:
             return .audioInput
@@ -69,7 +69,7 @@ enum SettingsSectionAnchor: String, CaseIterable, Hashable {
         case .scrollDirection, .focusFollowsMouse, .smoothScroll, .linearScroll, .mouseAcceleration, .mouseNavigation, .mouseButtonShortcuts,
              .middleClick, .mouseClickDebounce:
             return .mouse
-        case .quitProtection, .keyboardDebounce, .superKey, .cleaningMode, .keyboardBrightnessShortcuts:
+        case .quitProtection, .keyboardDebounce, .superKey, .cleaningMode, .keyboardBrightnessShortcuts, .musicBlocking:
             return .keyboard
         case .scratchpad:
             return .scratchpad
@@ -182,7 +182,7 @@ extension AppFeature {
         case .micMute:
             return FeatureSettingsDestination(.audioInput, sectionAnchor: .micMute)
         case .musicBlock:
-            return FeatureSettingsDestination(.audioOutput, sectionAnchor: .musicBlocking)
+            return FeatureSettingsDestination(.keyboard, sectionAnchor: .musicBlocking)
 
         case .keepAwake:
             return FeatureSettingsDestination(.energy, sectionAnchor: .keepAwake)

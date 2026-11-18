@@ -31,7 +31,7 @@ enum InputSettingsRenderingProbe {
             ("mouse-buttons-enabled", AnyView(MouseSettings().mouseButtonsCard), 820),
             ("trackpad-enabled", AnyView(MouseSettings().middleClickCard), 440),
             ("keyboard-super-key-enabled", AnyView(KeyboardSettings().superKeyCard), 470),
-            ("keyboard-quit-enabled", AnyView(KeyboardSettings().quitProtectionCard), 700),
+            ("keyboard-quit-enabled", AnyView(KeyboardSettings().keyboardDebounceCard), 700),
             ("keyboard-filter-enabled", AnyView(KeyboardSettings().keyboardDebounceCard), 600),
         ]
         for (name, view, height) in pages {
@@ -56,7 +56,7 @@ enum InputSettingsRenderingProbe {
         UserDefaults.standard.set(QuitProtectionScope.selectedOnly.rawValue, forKey: DefaultsKey.quitProtectionQuitScope)
         UserDefaults.standard.set(QuitProtectionScope.allExceptSelected.rawValue, forKey: DefaultsKey.quitProtectionCloseScope)
         SettingsRefactorProbe.render("keyboard-quit-als-scopes",
-            view: AnyView(KeyboardSettings().quitProtectionCard.padding(22).toggleStyle(.switch)),
+            view: AnyView(KeyboardSettings().keyboardDebounceCard.padding(22).toggleStyle(.switch)),
             size: CGSize(width: 760, height: 950), output: output, failures: &failures)
         for (name, enabledOnly, shortcut) in [("quit-allowlist-sheet", true, "⌘Q"), ("close-blocklist-sheet", false, "⌘W")] {
             let copy = QuitProtectionAppListStrings.text(enabledOnly: enabledOnly, shortcut: shortcut, language: .enUS)

@@ -4,74 +4,97 @@ extension KeyboardSettings {
     // MARK: - Keyboard Debounce Card
 
     var keyboardDebounceCard: some View {
-        SettingsCard(symbol: "keyboard", title: l10n.s.keyDebounceName) {
-            VStack(alignment: .leading, spacing: 12) {
-                SettingsControlRow(title: l10n.s.keyDebounceEnable,
-                                   caption: l10n.s.keyDebounceCaption) {
-                    PermissionGatedToggle(l10n.s.keyDebounceEnable, isOn: $debounceEnabled)
-                        .labelsHidden()
-                        .onChange(of: debounceEnabled) { _, value in
-                            debounce.syncWithPreferences()
-                            features.finishAvailabilityChange()
-                            guard value, !permissions.accessibility else { return }
-                            permissions.requestAccessibility()
-                        }
+        SettingsCard(symbol: "keyboard", title: SettingsOrganizationStrings.text(.keyboardInput, l10n.language)) {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 14) {
+                    shortcutSection(shortcut: .quit, enabled: $quitEnabled, mode: $quitMode,
+                                    holdDuration: $quitHoldDuration, doubleInterval: $quitDoubleInterval,
+                                    extraModifier: $quitExtraModifier, scope: $quitScope, showFeedback: $quitShowFeedback)
+
+                    Divider()
+
+                    shortcutSection(shortcut: .close, enabled: $closeEnabled, mode: $closeMode,
+                                    holdDuration: $closeHoldDuration, doubleInterval: $closeDoubleInterval,
+                                    extraModifier: $closeExtraModifier, scope: $closeScope, showFeedback: $closeShowFeedback)
                 }
+                .settingsSectionAnchor(.quitProtection, cornerRadius: 12)
 
-                if debounceEnabled {
-                    SettingsControlRow(title: l10n.s.keyDebounceGlobalWindow) {
-                        DebounceIntervalControl(value: globalWindowBinding)
+                Divider()
+
+                MusicBlockingSettings()
+                    .settingsSectionAnchor(.musicBlocking, cornerRadius: 12)
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 12) {
+                    SettingsControlRow(title: l10n.s.keyDebounceEnable,
+                                       caption: l10n.s.keyDebounceCaption) {
+                        PermissionGatedToggle(l10n.s.keyDebounceEnable, isOn: $debounceEnabled)
+                            .labelsHidden()
+                            .onChange(of: debounceEnabled) { _, value in
+                                debounce.syncWithPreferences()
+                                features.finishAvailabilityChange()
+                                guard value, !permissions.accessibility else { return }
+                                permissions.requestAccessibility()
+                            }
                     }
-                    .disabled(!debounceEnabled)
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(l10n.s.keyDebouncePerKeySection).font(.subheadline.weight(.semibold))
-                            .help(l10n.s.keyDebouncePerKeyCaption)
+                    if debounceEnabled {
+                        SettingsControlRow(title: l10n.s.keyDebounceGlobalWindow) {
+                            DebounceIntervalControl(value: globalWindowBinding)
+                        }
+                        .disabled(!debounceEnabled)
 
-                        if !keyWindows.isEmpty {
-                            ForEach(keyWindows) { row in
-                                HStack(spacing: 8) {
-                                    Text(KeyboardDebounceKeyCatalog.label(for: row.keyCode))
-                                        .font(.system(.body, design: .monospaced).weight(.semibold))
-                                        .frame(minWidth: 28, minHeight: 28)
-                                        .padding(.horizontal, 6)
-                                        .background(.background, in: RoundedRectangle(cornerRadius: 6))
-                                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.quaternary))
-                                    Spacer(minLength: 12)
-                                    DebounceIntervalControl(value: debounceBinding(for: row.keyCode))
-                                    Button(l10n.s.keyDebounceRemoveKey) {
-                                        removeWindow(for: row.keyCode)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(l10n.s.keyDebouncePerKeySection).font(.subheadline.weight(.semibold))
+                                .help(l10n.s.keyDebouncePerKeyCaption)
+
+                            if !keyWindows.isEmpty {
+                                ForEach(keyWindows) { row in
+                                    HStack(spacing: 8) {
+                                        Text(KeyboardDebounceKeyCatalog.label(for: row.keyCode))
+                                            .font(.system(.body, design: .monospaced).weight(.semibold))
+                                            .frame(minWidth: 28, minHeight: 28)
+                                            .padding(.horizontal, 6)
+                                            .background(.background, in: RoundedRectangle(cornerRadius: 6))
+                                            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.quaternary))
+                                        Spacer(minLength: 12)
+                                        DebounceIntervalControl(value: debounceBinding(for: row.keyCode))
+                                        Button(l10n.s.keyDebounceRemoveKey) {
+                                            removeWindow(for: row.keyCode)
+                                        }
+                                        .help(l10n.s.keyDebounceRemoveKey)
                                     }
-                                    .help(l10n.s.keyDebounceRemoveKey)
                                 }
+                            }
+
+                            HStack(spacing: 8) {
+                                Picker(l10n.s.keyDebounceKeyLabel, selection: $selectedKeyCode) {
+                                    Text(l10n.s.keyDebounceKeyLabel).tag(Int64?.none)
+                                    ForEach(KeyboardDebounceKeyCatalog.available(excluding: Set(keyWindows.map(\.keyCode)))) { key in
+                                        Text(key.label).tag(Optional(key.code))
+                                    }
+                                }
+                                .labelsHidden().pickerStyle(.menu)
+                                .fixedSize()
+                                .frame(width: 160, alignment: .leading)
+
+                                Spacer(minLength: 12)
+                                DebounceIntervalControl(value: $selectedWindow)
+
+                                Button(l10n.s.keyDebounceAddKey) {
+                                    if let selectedKeyCode {
+                                        setWindow(selectedWindow, for: selectedKeyCode)
+                                        self.selectedKeyCode = nil
+                                    }
+                                }
+                                .disabled(!debounceEnabled || selectedKeyCode == nil)
                             }
                         }
-
-                        HStack(spacing: 8) {
-                            Picker(l10n.s.keyDebounceKeyLabel, selection: $selectedKeyCode) {
-                                Text(l10n.s.keyDebounceKeyLabel).tag(Int64?.none)
-                                ForEach(KeyboardDebounceKeyCatalog.available(excluding: Set(keyWindows.map(\.keyCode)))) { key in
-                                    Text(key.label).tag(Optional(key.code))
-                                }
-                            }
-                            .labelsHidden().pickerStyle(.menu)
-                            .fixedSize()
-                            .frame(width: 160, alignment: .leading)
-
-                            Spacer(minLength: 12)
-                            DebounceIntervalControl(value: $selectedWindow)
-
-                            Button(l10n.s.keyDebounceAddKey) {
-                                if let selectedKeyCode {
-                                    setWindow(selectedWindow, for: selectedKeyCode)
-                                    self.selectedKeyCode = nil
-                                }
-                            }
-                            .disabled(!debounceEnabled || selectedKeyCode == nil)
-                        }
+                        .disabled(!debounceEnabled)
                     }
-                    .disabled(!debounceEnabled)
                 }
+                .settingsSectionAnchor(.keyboardDebounce, cornerRadius: 12)
             }
             .padding(.leading, settingsRowTextInset)
         }

@@ -24,6 +24,7 @@ struct KeyboardSettings: View {
     @ObservedObject var quitService = QuitProtectionService.shared
     @ObservedObject var debounce = KeyboardDebounceService.shared
     @ObservedObject var superKey = SuperKeyService.shared
+    @ObservedObject var musicBlocker = MusicLaunchBlocker.shared
 
     // MARK: - Quit & Close Protection State
     @AppStorage(DefaultsKey.quitProtectionQuitEnabled) var quitEnabled = false
@@ -42,6 +43,7 @@ struct KeyboardSettings: View {
     @AppStorage(DefaultsKey.quitProtectionCloseScope) var closeScope = QuitProtectionScope.all.rawValue
     @AppStorage(DefaultsKey.quitProtectionCloseShowFeedback) var closeShowFeedback = true
 
+    @AppStorage(DefaultsKey.musicBlockEnabled) var musicBlockEnabled = false
 
     // MARK: - Keyboard Debounce State
     @AppStorage(DefaultsKey.keyboardDebounceEnabled) var debounceEnabled = false
@@ -71,11 +73,8 @@ struct KeyboardSettings: View {
             VStack(alignment: .leading, spacing: 20) {
                 superKeyCard
                     .settingsSectionAnchor(.superKey, cornerRadius: 16)
-                quitProtectionCard
-                    .settingsSectionAnchor(.quitProtection, cornerRadius: 16)
 
                 keyboardDebounceCard
-                    .settingsSectionAnchor(.keyboardDebounce, cornerRadius: 16)
 
                 if BrightnessService.keyboardLightIsSupported {
                     KeyboardLightSettings()
@@ -85,7 +84,7 @@ struct KeyboardSettings: View {
                 CleaningModeSettings()
                     .settingsSectionAnchor(.cleaningMode, cornerRadius: 16)
 
-                if (quitEnabled || closeEnabled || debounceEnabled || superKeyEnabled || AppFeature.cleaningMode.isAvailable) && !permissions.accessibility {
+                if (quitEnabled || closeEnabled || debounceEnabled || superKeyEnabled || musicBlockEnabled || AppFeature.cleaningMode.isAvailable) && !permissions.accessibility {
                     SettingsCard(title: l10n.s.permissionRequired) {
                         PermissionRow(kind: .accessibility)
                     }
@@ -100,12 +99,13 @@ struct KeyboardSettings: View {
             quitService.syncWithPreferences()
             debounce.syncWithPreferences()
             superKey.syncWithPreferences()
+            musicBlocker.syncWithPreferences()
             CleaningModeManager.shared.syncWithPreferences()
             globalWindow = Defaults.sanitizedKeyboardDebounceWindow(globalWindow)
             selectedWindow = Defaults.sanitizedKeyboardDebounceWindow(selectedWindow)
         }
         .settingsExpansionAnimation(value: [quitEnabled, closeEnabled, debounceEnabled, superKeyEnabled,
-            permissions.accessibility])
+            musicBlockEnabled, musicBlocker.monitoringFailed, permissions.accessibility])
         .settingsExpansionAnimation(value: [quitMode, closeMode, quitScope, closeScope])
         .settingsExpansionAnimation(value: keyWindows.map(\.keyCode))
     }

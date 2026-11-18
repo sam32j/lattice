@@ -11,17 +11,12 @@ struct MusicBlockingSettings: View {
     @ObservedObject private var musicBlocker = MusicLaunchBlocker.shared
     @AppStorage(DefaultsKey.musicBlockEnabled) private var enabled = false
 
-    private var hasSubSettings: Bool {
-        enabled && (!permissions.accessibility || musicBlocker.monitoringFailed)
-    }
-
     var body: some View {
-        SettingsCard(
-            symbol: "play.slash",
-            title: l10n.s.musicBlockSection,
-            caption: l10n.s.musicBlockCaption,
-            headerSpacing: 0,
-            headerAccessory: {
+        VStack(alignment: .leading, spacing: 10) {
+            SettingsControlRow(
+                title: l10n.s.musicBlockSection,
+                caption: l10n.s.musicBlockCaption
+            ) {
                 PermissionGatedToggle(l10n.s.musicBlockTitle, isOn: $enabled)
                     .labelsHidden()
                     .toggleStyle(.switch)
@@ -30,25 +25,17 @@ struct MusicBlockingSettings: View {
                     .onChange(of: enabled) { _, enabled in
                         FeatureRuntime.shared.setAvailable([.musicBlock], enabled)
                         musicBlocker.syncWithPreferences()
+                        if enabled, !permissions.accessibility {
+                            permissions.requestAccessibility()
+                        }
                     }
             }
-        ) {
-            VStack(alignment: .leading, spacing: 10) {
-                if enabled {
-                    if !permissions.accessibility {
-                        PermissionRow(kind: .accessibility)
-                    } else if musicBlocker.monitoringFailed {
-                        Text(l10n.s.musicBlockUnavailable)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
+            if enabled, musicBlocker.monitoringFailed {
+                Text(l10n.s.musicBlockUnavailable)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.leading, settingsRowTextInset)
-            .padding(.top, hasSubSettings ? SettingsCard<EmptyView>.defaultHeaderSpacing : 0)
-            .settingsCollapsible(isExpanded: hasSubSettings)
         }
-        .settingsExpansionAnimation(value: [enabled, permissions.accessibility, musicBlocker.monitoringFailed])
     }
 }
