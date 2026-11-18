@@ -14,7 +14,7 @@ struct SoundOutputSwitcherControls: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             ShortcutPreferenceRow(role: .soundOutputSwitcher,
-                                  label: "Cycle through with shortcut",
+                                  label: l10n.s.soundOutputSwitcherEnable,
                                   help: l10n.s.soundOutputSwitcherCaption,
                                   additionalConflict: WindowLayoutService.shared.shortcutConflictTitle) {
                 outputSwitcher.syncWithPreferences()

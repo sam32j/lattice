@@ -5,6 +5,8 @@ import UniformTypeIdentifiers
 struct PriorityDeviceList: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var outputSwitcher = SoundOutputSwitcher.shared
+    @AppStorage(DefaultsKey.volumeMixerEnabled) private var volumeMixerEnabled = true
+    @AppStorage(DefaultsKey.microphoneLevelControlEnabled) private var microphoneControlEnabled = true
     let priorityUIDs: [String]
     let isAvailable: (String) -> Bool
     let displayName: (String) -> String?
@@ -105,15 +107,22 @@ struct PriorityDeviceList: View {
         .contentShape(Rectangle())
         .contextMenu {
             if canCycle {
-                Button(l10n.s.audioPrioritySetOutput) {
-                    _ = AppVolumeMixer.shared.setUniversalOutputDeviceUID(uid)
+                if volumeMixerEnabled {
+                    Button(l10n.s.audioPrioritySetOutput) {
+                        _ = AppVolumeMixer.shared.setUniversalOutputDeviceUID(uid)
+                    }
+                    .disabled(isCurrent || !available)
                 }
-                .disabled(isCurrent || !available)
 
                 Toggle(l10n.s.audioPrioritySkipCycling, isOn: Binding(
                     get: { isSkipped },
                     set: { _ in outputSwitcher.toggleSkip(for: uid) }
                 ))
+            } else if microphoneControlEnabled {
+                Button(l10n.s.audioPrioritySetInput) {
+                    AudioInputDeviceManager.shared.setCurrentInputDeviceUID(uid)
+                }
+                .disabled(isCurrent || !available)
             }
         }
         .opacity(draggingUID == uid ? 0.45 : 1)

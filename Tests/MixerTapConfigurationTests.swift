@@ -362,8 +362,18 @@ enum MixerTapConfigurationTests {
         HAL.reset()
         let counter = Counter()
         let watch = makeWatch(format: format, counter: counter)
+        HAL.duringRead = { key in
+            guard key.object == tap else { return }
+            HAL.duringRead = nil
+            // A non-suspending reconcile poll while the startup validation is
+            // blocked on the HAL must not leave rendering suspended when its
+            // own throttled pass later skips reading.
+            watch.refresh(immediately: false)
+        }
         watch.start()
         watch.queue.run()
+        suite.expect(watch.canRender && !watch.requiresRebuild && counter.value == 0,
+                     "a periodic refresh during startup validation does not leave the callback suspended")
         defer { finish(watch, suite) }
         HAL.duringRead = { key in
             guard key.object == tap else { return }
