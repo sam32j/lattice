@@ -32,15 +32,15 @@ struct DeviceControlsAppVolumesView: View {
     }
 
     private var activeApps: [MixerApp] {
-        orderedApps.filter { isActiveApp($0) }
+        orderedApps.filter { isActiveApp($0) || arrangement.isPinned($0.persistenceID) }
     }
 
     private var inactiveApps: [MixerApp] {
-        orderedApps.filter { !isActiveApp($0) }
+        orderedApps.filter { !isActiveApp($0) && !arrangement.isPinned($0.persistenceID) }
     }
 
     private var activeCount: Int {
-        activeApps.count
+        orderedApps.filter { isActiveApp($0) }.count
     }
 
     private var totalCount: Int {
@@ -65,13 +65,6 @@ struct DeviceControlsAppVolumesView: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 24)
-            } else if orderedApps.isEmpty {
-                Text(l10n.s.mixerEmpty)
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 24)
-                    .frame(height: DeviceControlsAppVolumesLayout.emptyMessageHeight)
             } else if displayedApps.isEmpty {
                 emptyActiveState
             } else {
@@ -106,22 +99,22 @@ struct DeviceControlsAppVolumesView: View {
 
     // MARK: - Empty Active State
 
-    private var emptyActiveState: some View {
-        VStack(spacing: 8) {
-            Text("No active apps")
-                .font(.system(size: 12.5, weight: .medium))
-                .foregroundStyle(.secondary)
+    private var emptyStateHeight: CGFloat {
+        max(
+            DeviceControlsAppVolumesLayout.emptyActiveHeight,
+            navigation.measuredMainHeight
+                - DeviceControlsAppVolumesLayout.headerHeight
+                - DeviceControlsAppVolumesLayout.sectionSpacing
+                - 10
+        )
+    }
 
-            Button("Show inactive apps") {
-                navigation.showInactiveApps = true
-            }
-            .buttonStyle(.plain)
-            .font(.system(size: 11.5))
+    private var emptyActiveState: some View {
+        Text("No app playing")
+            .font(.system(size: 15, weight: .medium))
             .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.vertical, 32)
-        .frame(height: DeviceControlsAppVolumesLayout.emptyActiveHeight)
+            .offset(y: -(DeviceControlsAppVolumesLayout.headerHeight + DeviceControlsAppVolumesLayout.sectionSpacing) / 2)
+            .frame(maxWidth: .infinity, minHeight: emptyStateHeight, alignment: .center)
     }
 
     // MARK: - Apps Grouped Container
@@ -134,54 +127,48 @@ struct DeviceControlsAppVolumesView: View {
                         .padding(.horizontal, 10)
                         .frame(height: DeviceControlsAppVolumesLayout.dividerHeight)
                 }
-                appRow(app)
-                    .frame(
-                        height: DeviceControlsAppVolumesLayout.rowHeight,
-                        alignment: .top
-                    )
+                DeviceControlsAppRow(
+                    app: app,
+                    active: isActiveApp(app),
+                    isPinned: arrangement.isPinned(app.persistenceID),
+                    onTogglePin: {
+                        updateArrangement { $0.togglePin(app.persistenceID ?? "") }
+                    }
+                )
+                .frame(
+                    height: DeviceControlsAppVolumesLayout.rowHeight,
+                    alignment: .top
+                )
             }
         }
         .panelCard(padded: false)
     }
+}
 
-    private func appRow(_ app: MixerApp) -> some View {
-        let active = isActiveApp(app)
-        let isPinned = arrangement.isPinned(app.persistenceID)
+private struct DeviceControlsAppRow: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var mixer = AppVolumeMixer.shared
+    let app: MixerApp
+    let active: Bool
+    let isPinned: Bool
+    let onTogglePin: () -> Void
 
-        return VStack(alignment: .leading, spacing: 6) {
+    @State private var isHovered = false
+
+    private static let iconSize: CGFloat = 30
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
             // Row 1 — Identity and output routing
             HStack(spacing: 8) {
-                ZStack(alignment: .bottomTrailing) {
-                    Image(nsImage: ResponsibleProcess.icon(for: app.ownerPid, pointSize: 32))
-                        .resizable()
-                        .frame(width: 32, height: 32)
-
-                    if active && app.isPlaying {
-                        Circle()
-                            .fill(PanelMetricColor.green(for: colorScheme))
-                            .frame(width: 8, height: 8)
-                            .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.2))
-                            .offset(x: -1, y: -1)
-                    }
-                }
+                appIconView
 
                 Text(app.name)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(active ? Color.primary : Color.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
-
-                if app.persistenceID != nil {
-                    MixerPinButton(
-                        isPinned: isPinned,
-                        pinTitle: FeatureStrings.mixer(l10n.language).pin,
-                        unpinTitle: FeatureStrings.mixer(l10n.language).unpin,
-                        appName: app.name,
-                        action: {
-                            updateArrangement { $0.togglePin(app.persistenceID ?? "") }
-                        }
-                    )
-                }
 
                 Spacer(minLength: 8)
 
@@ -192,7 +179,7 @@ struct DeviceControlsAppVolumesView: View {
 
             // Row 2 — Volume control
             HStack(spacing: 8) {
-                // Speaker icon: doubles as reset button (aligned with app icon, 32 pt width)
+                // Speaker icon: doubles as reset button (aligned with app icon)
                 Button {
                     if (app.volume * 100).rounded() == 100 {
                         mixer.toggleMute(app)
@@ -231,6 +218,80 @@ struct DeviceControlsAppVolumesView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .opacity(active ? 1.0 : 0.65)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+
+    @ViewBuilder
+    private var appIconView: some View {
+        if app.persistenceID != nil {
+            Button {
+                onTogglePin()
+            } label: {
+                iconContent
+            }
+            .buttonStyle(.plain)
+            .help(isPinned ? FeatureStrings.mixer(l10n.language).unpin : FeatureStrings.mixer(l10n.language).pin)
+        } else {
+            iconContent
+        }
+    }
+
+    private var iconContent: some View {
+        Image(nsImage: ResponsibleProcess.icon(for: app.ownerPid, pointSize: Self.iconSize))
+            .resizable()
+            .frame(width: Self.iconSize, height: Self.iconSize)
+            .overlay(alignment: .bottomTrailing) {
+                if isPinned || (isHovered && app.persistenceID != nil) {
+                    pinBadge
+                        .offset(x: 3, y: 3)
+                        .transition(.scale(scale: 0.6).combined(with: .opacity))
+                } else if active && app.isPlaying {
+                    greenDotBadge
+                        .offset(x: 3, y: 3)
+                        .transition(.scale(scale: 0.6).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.28, dampingFraction: 0.7), value: isPinned)
+            .animation(.easeOut(duration: 0.15), value: isHovered)
+            .animation(.easeOut(duration: 0.15), value: app.isPlaying)
+    }
+
+    private var pinBadge: some View {
+        Image(systemName: isPinned ? "pin.fill" : "pin")
+            .font(.system(size: 8.5, weight: .bold))
+            .foregroundStyle(.white)
+            .contentTransition(.symbolEffect(.replace))
+            .frame(width: 16, height: 16)
+            .background(pinBadgeBackground)
+            .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.5))
+            .shadow(color: .black.opacity(0.18), radius: 1, y: 0.5)
+    }
+
+    @ViewBuilder
+    private var pinBadgeBackground: some View {
+        if isPinned {
+            ZStack {
+                Circle().fill(Color.orange)
+                Circle()
+                    .fill(PanelMetricColor.green(for: colorScheme))
+                    .opacity(active && app.isPlaying ? 1 : 0)
+            }
+            .animation(.easeInOut(duration: 0.25), value: active && app.isPlaying)
+        } else {
+            Circle().fill(Color(nsColor: .systemGray))
+        }
+    }
+
+    private var greenDotBadge: some View {
+        Circle()
+            .fill(PanelMetricColor.green(for: colorScheme))
+            .frame(width: 8, height: 8)
+            .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.5))
+            .shadow(color: .black.opacity(0.18), radius: 1, y: 0.5)
+            .frame(width: 16, height: 16)
     }
 
     private func speakerIcon(for volume: Double) -> String {

@@ -3,7 +3,7 @@
 
 import SwiftUI
 
-/// Audio Output settings: consolidates Volume Mixer, Output Priority & Switcher, and Music App Blocker.
+/// Audio Output settings: consolidates Volume Mixer and Output Priority & Switcher.
 struct AudioOutputSettings: View {
     @AppStorage(DefaultsKey.volumeMixerEnabled) private var volumeMixerEnabled = true
     @AppStorage(DefaultsKey.mixerLowerVolumeOnHeadphonesDisconnect) private var lowerOnHeadphonesDisconnect = false
@@ -19,9 +19,6 @@ struct AudioOutputSettings: View {
 
                 outputPriorityAndSwitcherCard
                     .settingsSectionAnchor(.audioOutputPriority, cornerRadius: 16)
-
-                MusicBlockingSettings()
-                    .settingsSectionAnchor(.musicBlocking, cornerRadius: 16)
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)

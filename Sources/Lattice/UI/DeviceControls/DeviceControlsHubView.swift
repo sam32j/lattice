@@ -7,13 +7,14 @@ import SwiftUI
 /// Manages navigation between the main Device Controls overview and the App Volumes subpage.
 struct DeviceControlsHubView: View {
     @ObservedObject private var navigation = DeviceControlsNavigationState.shared
+    @AppStorage(DefaultsKey.volumeMixerEnabled) private var volumeMixerEnabled = true
     var onClose: () -> Void
     var notchSize: CGSize? = nil
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-                if navigation.currentSubpage == .appVolumes {
+                if navigation.currentSubpage == .appVolumes && volumeMixerEnabled {
                     DeviceControlsAppVolumesView()
                 } else {
                     DeviceControlsMainView()
@@ -23,7 +24,7 @@ struct DeviceControlsHubView: View {
             .padding(.top, 4)
             .padding(.bottom, 6)
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                if navigation.currentSubpage == .appVolumes {
+                if navigation.currentSubpage == .appVolumes && volumeMixerEnabled {
                     navigation.updateMeasuredAppVolumesHeight(height)
                 } else {
                     navigation.updateMeasuredMainHeight(height)
@@ -32,7 +33,15 @@ struct DeviceControlsHubView: View {
         }
         .frame(height: notchSize?.height ?? navigation.contentHeight, alignment: .top)
         .onAppear {
+            if !volumeMixerEnabled, navigation.currentSubpage == .appVolumes {
+                navigation.resetSubpage()
+            }
             NotchService.shared.noteDeviceControlsSuppression(active: true)
+        }
+        .onChange(of: volumeMixerEnabled) { _, enabled in
+            if !enabled, navigation.currentSubpage == .appVolumes {
+                navigation.resetSubpage()
+            }
         }
         .onDisappear {
             NotchService.shared.noteDeviceControlsSuppression(active: false)
