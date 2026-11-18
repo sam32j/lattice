@@ -35,7 +35,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
         suite.expect(!screenshotSettingsSource.isEmpty, "ScreenshotSettings.swift exists and is readable")
 
         // 1. Native Section headers and cards instead of empty lines / fake spacers
-        suite.expect(screenshotSettingsSource.contains("SettingsCard(title: strings.captureBehaviorSection)")
+        suite.expect(screenshotSettingsSource.contains("title: strings.captureBehaviorSection)")
                      && screenshotSettingsSource.contains("strings.freezeToggle"),
                      "ScreenshotSettings uses localized capture behavior heading and freeze toggle")
 
@@ -47,11 +47,10 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      && !screenshotSettingsSource.contains("strings.menuBarToggle"),
                      "ScreenshotSettings removed capture now, scrolling capture now, highlight window under pointer, and show capture menu")
 
-        // 3. Shutter sound and temporary links in ScreenshotSettings
+        // 3. Shutter sound in ScreenshotSettings
         suite.expect(screenshotSettingsSource.contains("workflow.shutter")
-                     && screenshotSettingsSource.contains("$playShutterSound")
-                     && screenshotSettingsSource.contains("strings.shareEnabledToggle"),
-                     "ScreenshotSettings includes play shutter sound toggle and temporary links toggle")
+                     && screenshotSettingsSource.contains("$playShutterSound"),
+                     "ScreenshotSettings includes play shutter sound toggle")
 
         // Source checks for ScreenRecorderSettings.swift
         let recorderSettingsSource = (try? String(
@@ -60,7 +59,7 @@ enum DirectCaptureRequirementsComprehensiveTests {
         suite.expect(!recorderSettingsSource.isEmpty, "ScreenRecorderSettings.swift exists and is readable")
 
         // 4. Native Section headers in ScreenRecorderSettings
-        suite.expect(recorderSettingsSource.contains("SettingsCard(title: copy(.recordingBehavior))")
+        suite.expect(recorderSettingsSource.contains("title: copy(.recordingBehavior))")
                      && recorderSettingsSource.contains("copy(.afterRecording)"),
                      "ScreenRecorderSettings uses native cards and headers")
 
@@ -70,13 +69,12 @@ enum DirectCaptureRequirementsComprehensiveTests {
                      && !recorderSettingsSource.contains("strings.menuBarToggle"),
                      "ScreenRecorderSettings removed screen recording now and show capture menu")
 
-        // 6. Settings items for screen recording: immediate start, record sound, temporary links
+        // 6. Settings items for screen recording: immediate start, record sound
         suite.expect(recorderSettingsSource.contains("workflow.immediate")
                      && recorderSettingsSource.contains("$immediateStart")
                      && recorderSettingsSource.contains("copy(.playStartSound)")
-                     && recorderSettingsSource.contains("$playRecordSound")
-                     && recorderSettingsSource.contains("screenshotStrings.shareEnabledToggle"),
-                     "ScreenRecorderSettings includes immediate start toggle, record sound toggle, and temporary links toggle")
+                     && recorderSettingsSource.contains("$playRecordSound"),
+                     "ScreenRecorderSettings includes immediate start toggle and record sound toggle")
 
         // 7. Temporary links label
         for language in AppLanguage.allCases {

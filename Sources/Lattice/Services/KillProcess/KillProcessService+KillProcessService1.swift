@@ -42,20 +42,6 @@ extension KillProcessService {
         }
     }
 
-    /// Column-header sorting: clicking the active column flips direction,
-    /// clicking a different one switches to it at that column's natural
-    /// default direction (highest-first for CPU/memory/PID, A-Z for name).
-    func toggleSort(_ value: SortBy) {
-        if sortBy == value {
-            sortAscending.toggle()
-        } else {
-            sortBy = value
-            sortAscending = value == .name
-        }
-        UserDefaults.standard.set(sortBy.rawValue, forKey: DefaultsKey.killProcessSortBy)
-        UserDefaults.standard.set(sortAscending, forKey: DefaultsKey.killProcessSortAscending)
-    }
-
     /// Refreshes the process list off the main thread and republishes on the
     /// main thread. `force` bypasses the freshness cache, so a kill's
     /// reconciling refresh and an explicit tap of the refresh button always

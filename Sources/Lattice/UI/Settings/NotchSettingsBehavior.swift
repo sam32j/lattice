@@ -134,20 +134,6 @@ extension NotchSettings {
         }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
     }
 
-    /// Each outline in a slice of menu bar, drawn as the island draws it.
-    func silhouetteChoice(_ item: NotchSilhouette, title: String) -> some View {
-        let selected = (NotchSilhouette(rawValue: silhouette) ?? .capsule) == item
-        return Button { silhouette = item.rawValue } label: {
-            VStack(spacing: 10) {
-                NotchSilhouetteSample(silhouette: item)
-                Text(title).font(.system(size: 11, weight: .medium)).lineLimit(2).multilineTextAlignment(.center)
-            }.frame(maxWidth: .infinity, minHeight: 68).padding(8)
-                .foregroundStyle(selected ? Color.accentColor : .primary)
-                .background(selected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
-                .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(selected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1) }
-        }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
-    }
-
     func showModule(_ module: NotchModule) {
         if module == .hub {
             router.request(FeatureSettingsDestination(.general))
@@ -155,8 +141,6 @@ extension NotchSettings {
             router.request(FeatureSettingsDestination(.notchWidget(module)))
         }
     }
-
-
 
     /// The one feature a page needs; Captures and System accept any of several.
     func moduleFeature(_ module: NotchModule) -> AppFeature? {
@@ -178,39 +162,12 @@ extension NotchSettings {
         }
     }
 
-    func pageReason(_ module: NotchModule, feature: AppFeature?) -> String {
-        if let feature, !feature.isAvailable { return feature.enableReason(l10n) }
-        return editor.showPage(module.title(l10n.language))
-    }
-
     /// Dedicated controls remain on Content even when uninstalled; other
     /// features lead to their installation row in Features.
     func pageAction(_ module: NotchModule, feature: AppFeature?) -> () -> Void {
         {
             if let feature, !feature.isAvailable, !feature.isManagedOnDedicatedPage { feature.showInFeatures() }
             else { showModule(module) }
-        }
-    }
-
-    var clipboardFeedbackReason: String {
-        let title = FeatureStrings.clipboard(l10n.language).title
-        if !AppFeature.clipboardHistory.isAvailable { return AppFeature.clipboardHistory.enableReason(l10n) }
-        if !clipboardHistoryEnabled { return editor.enableSetting(FeatureStrings.clipboard(l10n.language).enable) }
-        return editor.showPage(title)
-    }
-
-    func openClipboardFeedbackSetup() {
-        if !AppFeature.clipboardHistory.isAvailable { AppFeature.clipboardHistory.showInFeatures() }
-        else if !clipboardHistoryEnabled { router.request(AppFeature.clipboardHistory.settingsDestination) }
-        else { showModule(.clipboard) }
-    }
-
-    func toggleCard(_ title: String, symbol: String, value: Binding<Bool>, available: Bool, reason: String? = nil,
-                            reservesReason: Bool = false, unavailableAction: (() -> Void)? = nil) -> some View {
-        NotchEditorItem(symbol: symbol, title: title, included: value, available: available,
-                        unavailableReason: available ? nil : reason ?? text.disabled,
-                        unavailableAction: unavailableAction, reservesReason: reservesReason) {
-            value.wrappedValue.toggle()
         }
     }
 

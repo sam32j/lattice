@@ -105,32 +105,6 @@ extension MenuBarMetric {
     }
 }
 
-struct ActivityMonitorButton: View {
-    @ObservedObject private var l10n = L10n.shared
-    @State private var isHovered = false
-
-    var body: some View {
-        Button {
-            let fallback = URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app")
-            let url = NSWorkspace.shared
-                .urlForApplication(withBundleIdentifier: "com.apple.ActivityMonitor") ?? fallback
-            NSWorkspace.shared.open(url)
-        } label: {
-            Image(systemName: "arrow.up.forward.app")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.secondary)
-                .frame(width: 18, height: 18)
-                .background(Circle().fill(Color.primary.opacity(isHovered ? 0.1 : 0)))
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
-        .help(l10n.s.monitorOpenActivityMonitor)
-        .accessibilityLabel(l10n.s.monitorOpenActivityMonitor)
-        .animation(.easeOut(duration: 0.12), value: isHovered)
-    }
-}
-
 struct MetricDetailView: View {
     enum Presentation {
         case menuPanel, hubPanel, island
@@ -154,7 +128,6 @@ struct MetricDetailView: View {
     private var isDesktopEnergy: Bool { isWidgetEnergy && !PowerSampler.hasInternalBattery }
     private var processKind: BreakdownKind? { isWidgetEnergy ? .cpuPower : kind.processKind }
     @StateObject private var navigation: SystemNavigationState
-    @State private var speedSamples: [Double] = []
     @State private var processRows: [ProcessUsage] = []
     @State private var processRowsLoading = true
     @State private var lastProcessRefresh = Date.distantPast
@@ -1481,11 +1454,6 @@ private struct ProcessRowSkeleton: View {
             .map(MetricFormat.percent) ?? "-"
     }
 
-    private func sessionNetworkText(_ snapshot: SystemSnapshot) -> String {
-        guard let down = snapshot.netTotalDown, let up = snapshot.netTotalUp else { return "-" }
-        return "↓\(MetricFormat.bytes(down))  ↑\(MetricFormat.bytes(up))"
-    }
-
     private func adapterText(_ power: PowerReading?) -> String {
         guard let power else { return "-" }
         if power.externalConnected, let adapter = power.adapterWatts {
@@ -1506,15 +1474,6 @@ private struct ProcessRowSkeleton: View {
         if power.externalConnected { return l10n.s.powerPluggedIn }
         if power.hasBattery { return l10n.s.powerOnBattery }
         return l10n.s.powerUnavailable
-    }
-
-    private func powerStateText(_ state: BatteryPowerSupport.State) -> String {
-        switch state {
-        case .charging: return l10n.s.powerCharging
-        case .externalPower: return l10n.s.powerPluggedIn
-        case .onBattery: return l10n.s.powerOnBattery
-        case .unavailable: return l10n.s.powerUnavailable
-        }
     }
 
     private func mbps(_ value: Double) -> String {

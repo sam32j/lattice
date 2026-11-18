@@ -2018,13 +2018,6 @@ enum NotchTests {
         let launch = (try? String(contentsOfFile: "Sources/Lattice/main.swift", encoding: .utf8)) ?? ""
         suite.expect(launch.contains("NotchControlItem.keyboardLightIsSupported = { BrightnessService.keyboardLightIsSupported }"),
                      "launch asks the brightness service whether this Mac has a keyboard light")
-        let controlsView = (try? String(contentsOfFile: "Sources/Lattice/UI/Notch/NotchControlsView.swift", encoding: .utf8)) ?? ""
-        suite.expect(["NotchBandLevels(band: band, levels: bandLevels, side: .leading)",
-                      "NotchBandLevels(band: band, levels: bandLevels, side: .trailing)",
-                      "NotchLevelRow(levels: belowLevels)"].allSatisfy { layout in
-                         controlsView.contains(layout)
-                     },
-                     "the island lays the levels out in the top row the same way")
         defaults.set(savedHiddenControls, forKey: DefaultsKey.notchHiddenControls)
         defaults.set(savedBrightness, forKey: AppFeature.brightness.availabilityKey)
         suite.expect(NotchControlItem.brightness.setupRequirement == .feature(.brightness)

@@ -64,20 +64,6 @@ final class SoundOutputSwitcher: ObservableObject {
         return ordered.filter { !skipped.contains($0) }
     }
 
-    func selectedDeviceUIDs() -> [String] {
-        cycleDeviceUIDs()
-    }
-
-    func setSelectedDeviceUIDs(_ uids: [String]) {
-        let sanitized = Defaults.sanitizedSoundOutputSwitcherDeviceUIDs(uids)
-        if sanitized.isEmpty {
-            UserDefaults.standard.removeObject(forKey: DefaultsKey.soundOutputSwitcherDeviceUIDs)
-        } else {
-            UserDefaults.standard.set(sanitized, forKey: DefaultsKey.soundOutputSwitcherDeviceUIDs)
-        }
-        lastSwitchFailed = false
-    }
-
     @discardableResult
     func switchToNextOutput() -> Bool {
         let ok = AppVolumeMixer.shared.switchToNextSoundOutput(in: cycleDeviceUIDs())

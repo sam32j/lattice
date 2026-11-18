@@ -16,7 +16,6 @@ enum QuickTogglesSupport {
     static let hideDesktopKey = "HideDesktop"
 
     static let emptyTrashSource = "tell application \"Finder\" to empty trash"
-    static let quitFinderSource = "tell application \"Finder\" to quit"
 
     /// Apple Event consent errors: not permitted, or the prompt was dismissed.
     static let permissionErrorNumbers: Set<Int> = [-1743, -1744]

@@ -411,25 +411,6 @@ final class ScreenshotQuickPreviewController {
         }
     }
 
-    func shareLink() {
-        guard !closed else { return }
-        if model.sharedRecord != nil {
-            copySharedLink()
-        } else {
-            // Always require the user to choose an expiry for each new link.
-            let menu = NSMenu()
-            for duration in ScreenshotShareDuration.allCases {
-                let item = NSMenuItem(title: duration.title(strings),
-                                      action: #selector(ScreenshotQuickPreviewMenuHelper.handleDurationAction(_:)),
-                                      keyEquivalent: "")
-                item.target = ScreenshotQuickPreviewMenuHelper.shared
-                item.representedObject = { [weak self] in self?.performShare(duration) }
-                menu.addItem(item)
-            }
-            menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
-        }
-    }
-
     /// Anchor the native share picker to the actual window surface. The SwiftUI
     /// NSViewRepresentable behind the icon can have zero bounds in the Island's
     /// overlay toolbar, causing a picker with no usable presentation anchor.

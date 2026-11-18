@@ -51,47 +51,6 @@ struct SoftwareDimmingButton: View {
     }
 }
 
-/// Shared power affordance used by Settings.
-struct DisplayPowerButton: View {
-    @ObservedObject private var l10n = L10n.shared
-    @ObservedObject private var service = BrightnessService.shared
-    let display: BrightnessDisplay
-    var compact = false
-
-    private var strings: BrightnessFeatureStrings { FeatureStrings.brightness(l10n.language) }
-    private var pending: Bool { service.isDisplayPending(display.id) }
-    private var enabled: Bool { service.canToggleDisplay(display) }
-
-    private var label: String {
-        if !service.displaySwitchingAvailable { return strings.switchUnavailable }
-        if display.isActive, !enabled { return strings.lastDisplayCaption }
-        return display.isActive ? strings.turnOffDisplay : strings.turnOnDisplay
-    }
-
-    var body: some View {
-        Group {
-            if pending {
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(width: compact ? 16 : 20, height: 18)
-                    .accessibilityLabel(label)
-            } else {
-                Button {
-                    service.toggleDisplay(display)
-                } label: {
-                    Image(systemName: display.isActive ? "power" : "power.circle.fill")
-                        .font(.system(size: compact ? 10.5 : 12, weight: .semibold))
-                }
-                .buttonStyle(.plain)
-                .disabled(!enabled)
-                .foregroundStyle(display.isActive ? Color.secondary : Color.accentColor)
-                .help(label)
-                .accessibilityLabel(label)
-            }
-        }
-    }
-}
-
 func displayControlFailureText(_ failure: BrightnessService.DisplayControlFailure,
                                strings: BrightnessFeatureStrings) -> String {
     switch failure {
