@@ -899,12 +899,6 @@ final class StatusItemController {
         return item
     }
 
-    private func removeMicMuteStatusItem() {
-        guard let item = micMuteStatusItem else { return }
-        micMuteStatusItem = nil
-        NSStatusBar.system.removeStatusItem(item)
-    }
-
     @objc private func unmuteMicrophoneFromMenu() {
         MicMuteService.shared.setMuted(false)
     }
@@ -1047,41 +1041,6 @@ enum BlackHoleGlyph {
     static func attentionImage() -> NSImage? {
         guard let glyph = mark() else { return fallback(active: true) }
         return tintedImage(glyph, color: .systemBlue) ?? fallback(active: true)
-    }
-
-    /// The given state image with a red slashed microphone beside it, shown
-    /// while the mute indicator option is on and the mic is muted. The badge
-    /// is a real color, so the composite can't stay a template image; the
-    /// drawing handler runs against the destination appearance, which keeps a
-    /// template underlying glyph legible on both light and dark menu bars.
-    static func micMutedImage(over underlying: NSImage?) -> NSImage? {
-        guard let underlying else { return nil }
-        guard let badge = NSImage(systemSymbolName: "mic.slash.fill",
-                                  accessibilityDescription: nil)?
-            .withSymbolConfiguration(.init(pointSize: 12, weight: .semibold)) else { return nil }
-        let gap: CGFloat = 2
-        let badgeSize = badge.size
-        let height = max(underlying.size.height, badgeSize.height)
-        let size = NSSize(width: underlying.size.width + gap + badgeSize.width, height: height)
-        let composed = NSImage(size: size, flipped: false) { _ in
-            let glyphRect = NSRect(x: 0, y: (height - underlying.size.height) / 2,
-                                   width: underlying.size.width, height: underlying.size.height)
-            underlying.draw(in: glyphRect, from: .zero, operation: .sourceOver, fraction: 1)
-            if underlying.isTemplate {
-                // Template pixels carry no usable color of their own.
-                NSColor.labelColor.setFill()
-                glyphRect.fill(using: .sourceAtop)
-            }
-            let badgeRect = NSRect(x: underlying.size.width + gap,
-                                   y: (height - badgeSize.height) / 2,
-                                   width: badgeSize.width, height: badgeSize.height)
-            badge.draw(in: badgeRect, from: .zero, operation: .sourceOver, fraction: 1)
-            NSColor.systemRed.setFill()
-            badgeRect.fill(using: .sourceAtop)
-            return true
-        }
-        composed.isTemplate = false
-        return composed
     }
 
     static func micMutedStandaloneImage() -> NSImage? {

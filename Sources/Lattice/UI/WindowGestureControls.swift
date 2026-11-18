@@ -59,10 +59,6 @@ struct WindowEdgeSnapZonePicker: View {
         WindowEdgeSnapLayout(storageValue: zoneActionsStorage)
     }
 
-    private var isStandard: Bool {
-        disabledZones.isEmpty && layout == .standard
-    }
-
     private func zoneRow(left: WindowEdgeSnapZone,
                          center: WindowEdgeSnapZone?,
                          right: WindowEdgeSnapZone,

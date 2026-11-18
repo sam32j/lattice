@@ -65,20 +65,6 @@ extension WindowLayoutSettings {
     static let splitActions: [WindowLayoutAction] = [
         .leftHalf, .rightHalf, .topHalf, .bottomHalf, .centerColumn, .centerRow,
     ]
-    static let halfActions: [WindowLayoutAction] = splitActions
-    static let thirdActions: [WindowLayoutAction] = [
-        .leftThird, .centerThird, .rightThird, .leftTwoThirds, .rightTwoThirds, .centerTwoThirds,
-        .topThird, .middleThird, .bottomThird, .topTwoThirds, .bottomTwoThirds,
-    ]
-    static let quarterRowActions: [WindowLayoutAction] = [
-        .topQuarter, .upperMiddleQuarter, .lowerMiddleQuarter, .bottomQuarter,
-    ]
-    static let quarterColumnActions: [WindowLayoutAction] = [
-        .leftQuarter, .leftMiddleQuarter, .rightMiddleQuarter, .rightQuarter,
-    ]
-    static let cornerActions: [WindowLayoutAction] = [
-        .topLeft, .topRight, .bottomLeft, .bottomRight,
-    ]
     static let quarterActions: [WindowLayoutAction] = [
         .topLeft, .topRight, .bottomLeft, .bottomRight,
         .leftQuarter, .leftMiddleQuarter, .rightMiddleQuarter, .rightQuarter,
@@ -88,7 +74,6 @@ extension WindowLayoutSettings {
         .topLeftSixth, .topCenterSixth, .topRightSixth,
         .bottomLeftSixth, .bottomCenterSixth, .bottomRightSixth,
     ]
-    static let sixthActions: [WindowLayoutAction] = gridActions
 
     /// The placement families, grouped so the form body stays within the
     /// ten-view ViewBuilder limit.
@@ -148,25 +133,6 @@ extension WindowLayoutSettings {
 
     func symbol(for action: WindowLayoutAction) -> String {
         action.symbolName
-    }
-
-    var resultMessage: String? {
-        switch service.lastResult {
-        case .success(let restored): return restored ? text.restored : text.done
-        case .failure(.missingAccessibility): return text.missingPermission
-        case .failure(.noWindow): return text.noWindow
-        case .failure(.noRestore): return text.noRestore
-        case .failure(.failed): return text.failed
-        case nil: return nil
-        }
-    }
-
-    var resultColor: Color {
-        switch service.lastResult {
-        case .success: return .green
-        case .failure: return .orange
-        case nil: return .secondary
-        }
     }
 }
 

@@ -168,20 +168,10 @@ final class LatticeHubService: ObservableObject {
 
     var enabledCount: Int { enabledItems.count }
     var visibleCount: Int { visibleItems.count }
-    var hiddenCount: Int { hiddenItems.count }
 
     private var orderedItems: [LatticeHubItem] {
         PanelLayout.itemOrder(LatticeHubItem.self, key: DefaultsKey.quickLauncherItemOrder)
             .filter { $0.isAvailable() }
-    }
-
-    var itemOrderBinding: Binding<[LatticeHubItem]> {
-        Binding {
-            self.orderedItems
-        } set: { newValue in
-            PanelLayout.setItemOrder(newValue, key: DefaultsKey.quickLauncherItemOrder)
-            self.objectWillChange.send()
-        }
     }
 
     func setHidden(_ item: LatticeHubItem, _ hidden: Bool) {

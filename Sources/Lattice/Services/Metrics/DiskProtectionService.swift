@@ -60,10 +60,6 @@ final class DiskProtectionService: ObservableObject {
         states[disk.id]
     }
 
-    func ejectAll(_ disks: [DiskDeviceReading]) {
-        uniqueEjectableDisks(from: disks).forEach(eject)
-    }
-
     func eject(_ disk: DiskDeviceReading) {
         guard disk.canEject else { return }
         DispatchQueue.main.async {

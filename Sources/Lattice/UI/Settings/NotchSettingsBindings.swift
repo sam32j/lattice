@@ -146,10 +146,6 @@ extension NotchSettings {
          String(agentsEnabled), String(watchEnabled), String(keepAwakeActivity), String(shortcutEnabled)]
     }
 
-    var access: Binding<NotchQuickAccessConfiguration> {
-        Binding(get: { NotchQuickAccessConfiguration.stored() }, set: { accessData = $0.encoded })
-    }
-
     var orderedModules: [NotchModule] {
         let stored = order.split(separator: ",").compactMap { NotchModule(rawValue: String($0)) }
         var seen = Set<NotchModule>()

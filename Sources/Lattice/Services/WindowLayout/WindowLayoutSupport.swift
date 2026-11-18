@@ -440,11 +440,6 @@ enum WindowLayoutGeometry {
         return cycle[(index + 1) % cycle.count]
     }
 
-    static func sideCycleAction(for action: WindowLayoutAction,
-                                previousAction: WindowLayoutAction?) -> WindowLayoutAction? {
-        splitCycleAction(for: action, previousAction: previousAction)
-    }
-
     /// The key a placement records for the size cycle.
     static func splitCyclePress(for action: WindowLayoutAction,
                                 cyclesThirds: Bool = true) -> WindowLayoutAction? {

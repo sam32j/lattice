@@ -24,12 +24,10 @@ struct WindowLayoutSettings: View {
     @AppStorage(DefaultsKey.windowLayoutScreenGap) var screenGap = 0
     @AppStorage(DefaultsKey.windowReserveStageManagerSpace) var reserveStageManagerSpace = false
     @AppStorage(DefaultsKey.windowLayoutMarginPercent) var marginPercent = WindowLayoutMargin.defaultPercent
-    @AppStorage(DefaultsKey.windowLayoutSideRepeatCyclesThirds) var sideRepeatCyclesThirds = false
     @AppStorage(DefaultsKey.windowLayoutHoldToCycleDisplayEnabled) var holdToCycleDisplayEnabled = false
     @AppStorage(DefaultsKey.windowLayoutHoldDelay) var holdDelay = "default"
     @AppStorage(DefaultsKey.spacesOrderEnabled) var spacesOrderEnabled = false
     @AppStorage(DefaultsKey.autoQuitEnabled) var autoQuitEnabled = false
-    @AppStorage(DefaultsKey.windowLayoutShortcutMarginMaximize) var marginShortcutRaw = WindowLayoutAction.marginMaximize.defaultShortcut?.storageValue ?? WindowLayoutAction.clearedShortcutStorageValue
     @State var directionalError: String?
     @State var systemTilingEnabled = WindowEdgeSnapSupport.isSystemTilingEnabled
     @State var conflictAlert: ShortcutConflictAlert?

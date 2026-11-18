@@ -38,16 +38,6 @@ enum SettingsOwnershipRenderingProbe {
             IslandDestinationSettings(destination: .files)
             IslandDestinationSettings(destination: .scratchpad)
         }.padding(22)), height: 350, output: output, failures: &failures)
-        render("audio-pin-actions", AnyView(SettingsCard {
-            ForEach([false, true], id: \.self) { pinned in
-                HStack {
-                    Text(pinned ? "Pinned app" : "App")
-                    Spacer()
-                    MixerPinButton(isPinned: pinned, pinTitle: "Pin to top", unpinTitle: "Unpin",
-                                   appName: "App", action: {})
-                }
-            }
-        }.padding(22)), height: 220, output: output, failures: &failures)
         SettingsFollowupRenderingProbe.run(output: output, failures: &failures)
     }
 

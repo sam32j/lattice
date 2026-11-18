@@ -440,7 +440,7 @@ final class NotchBackdropPresentation: ObservableObject {
     }
 }
 
-struct NotchBackdropShape: Shape {
+private struct NotchBackdropShape: Shape {
     var contour: Path
     func path(in rect: CGRect) -> Path {
         let safeRect = CGRect(x: rect.minX.isFinite ? rect.minX : 0,
@@ -1012,41 +1012,6 @@ struct NotchBandMenuLabel: View {
         .padding(.horizontal, 7)
         .frame(height: 28)
         .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-    }
-}
-
-/// A chooser whose current choice reads in full: up to two centred lines, or
-/// one line cut in the middle, with the list as a native menu below it.
-struct NotchDeviceMenu: View {
-    let title: String
-    let current: String
-    var width: CGFloat = 100
-    var lines = 2
-    var alignment: TextAlignment = .center
-    let items: [NotchMenuItem]
-
-    var body: some View {
-        NotchMenuButton(title: title, items: items) {
-            Text("\(current) \(Image(systemName: "chevron.down"))")
-                .font(.system(size: 10, weight: .medium))
-                .lineLimit(lines)
-                .multilineTextAlignment(alignment)
-                .truncationMode(lines > 1 ? .tail : .middle)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: width, alignment: frameAlignment)
-                .padding(.horizontal, 4)
-                .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        }
-        .help(current)
-        .accessibilityValue(current)
-    }
-
-    private var frameAlignment: Alignment {
-        switch alignment {
-        case .leading: return .leading
-        case .center: return .center
-        case .trailing: return .trailing
-        }
     }
 }
 

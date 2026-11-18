@@ -773,12 +773,6 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         }
     }
 
-    func cancelMissionControlRestoration() {
-        missionControlRestorationSize = nil
-        missionControlRestorationGeometry = nil
-        missionControlRestorationUsesGlass = false
-    }
-
     private func restoreFromMissionControl() {
         concealedForMissionControl = false
         desktopReadings = 0

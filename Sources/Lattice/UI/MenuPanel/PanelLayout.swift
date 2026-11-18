@@ -20,25 +20,6 @@ enum PanelLayout {
     static func setItemOrder<Item: PanelOrderItem>(_ ids: [Item], key: String) {
         defaults.set(ids.map(\.rawValue).joined(separator: ","), forKey: key)
     }
-
-    static func resetItemOrder(key: String) {
-        defaults.removeObject(forKey: key)
-    }
-}
-
-enum PanelRowMetrics {
-    static let dragHandleWidth: CGFloat = 16
-}
-
-struct PanelDragHandle: View {
-    var body: some View {
-        Image(systemName: "line.3.horizontal")
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(.tertiary)
-            .frame(width: PanelRowMetrics.dragHandleWidth, height: 22)
-            .contentShape(Rectangle())
-            .help(L10n.shared.s.monitorOrderHint)
-    }
 }
 
 struct PanelReorderableItem<Item: PanelOrderItem, Content: View>: View {
@@ -92,8 +73,6 @@ private struct PanelItemDropDelegate<Item: PanelOrderItem>: DropDelegate {
         dragging = nil
         return true
     }
-
-    func dropExited(info: DropInfo) {}
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
         DropProposal(operation: .move)

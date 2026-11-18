@@ -376,55 +376,6 @@ final class SystemMonitor: ObservableObject {
         }
     }
 
-    /// The menu popover reports exactly which monitor sections are on screen.
-    /// This avoids paying for GPU, network or power reads while the panel is open
-    /// on another section.
-    func setMenuPanelNeeds(_ needs: SystemMonitorPanelNeeds) {
-        runOnMain { [weak self] in
-            guard let self else { return }
-            if needs == menuPanelNeeds {
-                if shouldRun {
-                    ensureTimer()
-                } else {
-                    stopTimerIfIdle()
-                }
-                return
-            }
-            let defaults = UserDefaults.standard
-            let previousNeeds = menuPanelNeeds
-            let neededGPUBefore = currentPlan(defaults: defaults).needGPUUsage
-            menuPanelNeeds = needs
-            let needsGPUAfter = currentPlan(defaults: defaults).needGPUUsage
-            if shouldRun {
-                ensureTimer()
-                let panelGPUBecameVisible = needs.system
-                    && !previousNeeds.system
-                    && defaults.bool(forKey: DefaultsKey.monitorSysGPU)
-                let suppressImmediateGPU = needsGPUAfter && (!neededGPUBefore || panelGPUBecameVisible)
-                refresh(suppressImmediateGPU: suppressImmediateGPU)
-                if suppressImmediateGPU {
-                    scheduleDeferredGPURefreshIfNeeded()
-                }
-            } else {
-                stopTimerIfIdle()
-            }
-        }
-    }
-
-    /// The menu popover animation can briefly raise compositor GPU usage. When
-    /// GPU is pinned to the menu bar, keep the previous value through that short
-    /// window instead of sampling the animation itself.
-    func suppressGPUReadsForTransientUI(duration: TimeInterval = 0.9) {
-        runOnMain { [weak self] in
-            guard let self else { return }
-            let until = ProcessInfo.processInfo.systemUptime + max(0.1, duration)
-            suppressGPUReadsUntil = max(suppressGPUReadsUntil, until)
-            if shouldSample(), currentPlan(defaults: .standard).needGPUUsage {
-                scheduleDeferredGPURefreshIfNeeded()
-            }
-        }
-    }
-
     /// Toggles continuous light sampling for the menu bar metrics.
     func setMenuBarActive(_ active: Bool) {
         runOnMain { [weak self] in
