@@ -157,24 +157,6 @@ jobs:
           NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
         run: ./Tools/notarize.sh dist/*.dmg
 
-      - name: Prepare release showcase media
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          mkdir -p dist/showcase
-          if [[ "$VERSION" == "3.1.4" ]]; then
-            ASSET="vorssaint-3.1.4-showcase-1.mp4"
-            SOURCE="ReleaseAssets/$ASSET"
-            TARGET="dist/showcase/$ASSET"
-            if [[ -f "$SOURCE" ]]; then
-              cp "$SOURCE" "$TARGET"
-            fi
-            if [[ ! -s "$TARGET" ]]; then
-              echo "Missing required showcase media: $TARGET" >&2
-              echo "The app expects https://github.com/vorssaint/vorssaint-utils/releases/download/v3.1.4/$ASSET" >&2
-              exit 1
-            fi
-          fi
-
       - name: Verify notarization
         run: |
           DMG=$(ls dist/*.dmg | head -1)
@@ -226,16 +208,10 @@ jobs:
           BUNDLE="$RUNNER_TEMP/release-bundle"
           mkdir -p "$BUNDLE"
           cp dist/*.dmg "$BUNDLE/"
-          if compgen -G "dist/showcase/*.mp4" > /dev/null; then
-            cp dist/showcase/*.mp4 "$BUNDLE/"
-          fi
           cp "$NOTES_FILE" "$BUNDLE/release-notes.md"
           (
             cd "$BUNDLE"
             shasum -a 256 ./*.dmg ./release-notes.md > SHA256SUMS
-            if compgen -G "*.mp4" > /dev/null; then
-              shasum -a 256 ./*.mp4 >> SHA256SUMS
-            fi
           )
 
       - name: Upload verified release artifact
