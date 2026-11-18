@@ -13,6 +13,9 @@ struct DeviceControlsMainView: View {
     @ObservedObject private var inputManager = AudioInputDeviceManager.shared
     @ObservedObject private var micMute = MicMuteService.shared
     @ObservedObject private var navigation = DeviceControlsNavigationState.shared
+    @AppStorage(DefaultsKey.brightnessControlEnabled) private var brightnessControlEnabled = false
+    @AppStorage(DefaultsKey.volumeMixerEnabled) private var volumeMixerEnabled = true
+    @AppStorage(DefaultsKey.microphoneLevelControlEnabled) private var microphoneControlEnabled = true
 
     private var activeAppCount: Int {
         mixer.apps.filter {
@@ -20,18 +23,44 @@ struct DeviceControlsMainView: View {
         }.count
     }
 
+    private var hasVisibleDisplayRows: Bool {
+        brightnessControlEnabled && !brightness.displays.isEmpty
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            brightnessSection
-            audioOutputSection
-            audioInputSection
+            if hasVisibleDisplayRows || brightness.keyboardLightEnabled != nil {
+                brightnessSection
+            }
+            if volumeMixerEnabled {
+                audioOutputSection
+            }
+            if microphoneControlEnabled {
+                audioInputSection
+            }
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                brightness.refresh()
+                if brightnessControlEnabled {
+                    brightness.refresh()
+                }
                 brightness.refreshKeyboardLight()
-                mixer.refreshApps()
-                inputManager.syncWithPreferences()
+                if volumeMixerEnabled {
+                    mixer.refreshApps()
+                }
+                if microphoneControlEnabled {
+                    inputManager.syncWithPreferences()
+                }
+            }
+        }
+        .onChange(of: brightnessControlEnabled) { _, enabled in
+            if enabled {
+                brightness.refresh()
+            }
+        }
+        .onChange(of: volumeMixerEnabled) { _, enabled in
+            if !enabled, navigation.currentSubpage == .appVolumes {
+                navigation.resetSubpage()
             }
         }
     }
@@ -51,19 +80,16 @@ struct DeviceControlsMainView: View {
             )
 
             VStack(alignment: .leading, spacing: 8) {
-                if brightness.displays.isEmpty {
-                    Text(FeatureStrings.brightness(l10n.language).noDisplays)
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(.secondary)
-                        .padding(.vertical, 2)
-                } else {
+                if hasVisibleDisplayRows {
                     ForEach(brightness.displays) { display in
                         displayRow(display)
                     }
                 }
 
                 if brightness.keyboardLightEnabled != nil {
-                    Divider()
+                    if hasVisibleDisplayRows {
+                        Divider()
+                    }
                     keyboardRow
                 }
             }

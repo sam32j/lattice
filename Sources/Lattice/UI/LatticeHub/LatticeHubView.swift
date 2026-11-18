@@ -20,6 +20,7 @@ struct LatticeHubView: View {
     @ObservedObject var notifications = NotchNotificationService.shared
     @ObservedObject var dnd = DoNotDisturbState.shared
     @ObservedObject var systemNav = SystemNavigationState.shared
+    @ObservedObject var deviceControlsNav = DeviceControlsNavigationState.shared
     @StateObject var dragSession = HubDragSession()
     @AppStorage(DefaultsKey.notchSize) private var islandSize = NotchSize.spacious.rawValue
 

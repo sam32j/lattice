@@ -184,7 +184,9 @@ final class AudioInputDeviceManager: ObservableObject {
     }
 
     func setInputVolume(_ volume: Double) {
-        guard listenerInstalled, volume.isFinite,
+        guard listenerInstalled,
+              UserDefaults.standard.bool(forKey: DefaultsKey.microphoneLevelControlEnabled),
+              volume.isFinite,
               let muteLifetime = MicMuteService.shared.inputVolumeAdjustmentLifetime,
               let uid = effectiveInputDeviceUID,
               let device = inputDevices.first(where: { $0.uid == uid }),
@@ -356,9 +358,11 @@ final class AudioInputDeviceManager: ObservableObject {
               request.mayApplyPreferred,
               let savedUID,
               let device = devices.first(where: { $0.uid == savedUID }) else {
-            let volume = resolution.effectiveUID
-                .flatMap { uid in devices.first(where: { $0.uid == uid }) }
-                .flatMap { inputVolume(for: $0.audioObjectID) }
+            let volume = request.preferredInputIsActive
+                ? resolution.effectiveUID
+                    .flatMap { uid in devices.first(where: { $0.uid == uid }) }
+                    .flatMap { inputVolume(for: $0.audioObjectID) }
+                : nil
             return RefreshSnapshot(savedUID: savedUID,
                                    currentUID: currentUID,
                                    devices: devices,
@@ -553,7 +557,8 @@ final class AudioInputDeviceManager: ObservableObject {
     }
 
     private func updateVolumeListeners(for deviceID: AudioObjectID?) {
-        guard volumeDeviceID != deviceID else { return }
+        let wantsVolume = UserDefaults.standard.bool(forKey: DefaultsKey.microphoneLevelControlEnabled)
+        guard volumeDeviceID != deviceID || (!wantsVolume && !volumeListenerAddresses.isEmpty) else { return }
         removeVolumeListeners(resetActivity: false)
         guard let deviceID else {
             if isInputActive { isInputActive = false }
@@ -563,13 +568,15 @@ final class AudioInputDeviceManager: ObservableObject {
         // The active device is also needed for explicit read-back when a
         // driver cannot install notifications.
         volumeDeviceID = deviceID
-        let addresses = Self.mainInputVolumeAddresses() + Self.channelInputVolumeAddresses(for: deviceID)
-        for var address in addresses where Self.isSettable(deviceID, &address) {
-            guard AudioObjectAddPropertyListener(deviceID,
-                                                 &address,
-                                                 Self.volumeListenerCallback,
-                                                 listenerClient) == noErr else { continue }
-            volumeListenerAddresses.append(address)
+        if wantsVolume {
+            let addresses = Self.mainInputVolumeAddresses() + Self.channelInputVolumeAddresses(for: deviceID)
+            for var address in addresses where Self.isSettable(deviceID, &address) {
+                guard AudioObjectAddPropertyListener(deviceID,
+                                                     &address,
+                                                     Self.volumeListenerCallback,
+                                                     listenerClient) == noErr else { continue }
+                volumeListenerAddresses.append(address)
+            }
         }
         var runningAddress = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
