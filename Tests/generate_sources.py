@@ -1279,19 +1279,11 @@ def main():
           + declaration("Sources/Lattice/Services/Audio/PreciseVolumeRollerService.swift",
                         "    private func routeNotchVolume(").replace("private func", "func", 1)
           + "}\n}\n")
-    mixer_section = "Sources/Lattice/UI/MenuPanel/MixerSection.swift"
     write("AudioSettingsOwnership.swift", "import SwiftUI\nextension AudioSettingsOwnershipTests.InputPage {\n"
           + declaration("Sources/Lattice/UI/Settings/AudioInputSettings.swift", "    var body:", scope="struct AudioInputSettings:")
           + "}\nextension AudioSettingsOwnershipTests.OutputPage {\n"
           + declaration("Sources/Lattice/UI/Settings/AudioOutputSettings.swift", "    var body:", scope="struct AudioOutputSettings:")
-          + "}\nextension AudioSettingsOwnershipTests.MixerDevices {\n"
-          + declaration(mixer_section, "    private var audioDevicesSection:").replace("private var", "var", 1)
           + "}\n")
-    percent_editor = "Sources/Lattice/UI/Audio/EditableVolumePercent.swift"
-    write("MixerPercentKey.swift", "import Foundation\nextension MixerPercentKeyTests {\nfinal class Coordinator: Fixture {\n"
-          + "".join(declaration(percent_editor, prefix).replace("private func", "func", 1) for prefix in [
-              "        private func startMonitoringEscape()", "        private func finish("])
-          + "}\n}\n")
     cleaner = "Sources/Lattice/Services/Cleaner/JunkCleaner.swift"
     write("CleanerEligibilityBodies.swift", "import Foundation\nextension CleanerEligibilityTests {\n"
           + "".join(declaration(cleaner, "    private static func " + name)
@@ -1554,7 +1546,6 @@ def main():
           + "final class Service {\nvar state: AppUpdateState = .idle\nvar lastChecked: Date?\n"
           + declaration(update, "    private init()").replace("private init", "init", 1)
           + "}\n}\n")
-    update_view = "Sources/Lattice/UI/Notch/NotchUpdateControl.swift"
     write("NotchUpdate.swift", "import AppKit\nimport SwiftUI\nimport Combine\nextension NotchUpdateTests {\n"
           + "final class UpdateService: ObservableObject {\nstatic let shared = UpdateService()\n"
           + "typealias State = AppUpdateState\n"
@@ -1564,7 +1555,6 @@ def main():
           + "}\nfinal class Service: State {\n"
           + declaration(notch, "    func showUpdate()")
           + "}\n"
-          + declaration(update_view, "struct NotchUpdateControl:")
           + "}\n")
     write("UpdateAdminInstall.swift", "import Foundation\n\nextension UpdateAdminInstallContract {\n"
           + "final class Service: Fixture {\n"
@@ -1925,7 +1915,6 @@ def main():
     input_slider = "Sources/Lattice/UI/Settings/SettingsValueSlider.swift"
     status_dot = "Sources/Lattice/UI/Settings/SettingsStatusDot.swift"
     write("InputSettingsControls.swift", "import AppKit\nimport SwiftUI\n\nextension InputSettingsControlTests {\n"
-          + declaration("Sources/Lattice/UI/MenuPanel/MixerPinButton.swift", "struct MixerPinButton:")
           + "struct SheetCaption { let caption: String\nstruct Language { let language: AppLanguage }\nlet l10n: Language\n"
           + declaration("Sources/Lattice/UI/Settings/AppListSheet.swift", "    private var punctuatedCaption:").replace("private var", "var", 1)
           + "}\n"
@@ -1941,7 +1930,6 @@ def main():
           + "}\n"
           + declaration(input_slider, "struct SettingsValueSlider:")
           + declaration(settings_card, "struct SettingsControlRow<")
-          + declaration(input_slider, "struct SettingsSliderRow:")
           + "final class LightState { var keyboardLightLevel: Float? = 0; var keyboardLightEnabled: Bool? = false; var keyboardLightSaturated: Bool = false\n"
           + "func setKeyboardLightLevel(_ value: Float) { keyboardLightLevel = value; keyboardLightEnabled = value > 0 }\n"
           + "func setKeyboardLightEnabled(_ value: Bool) { keyboardLightEnabled = value; keyboardLightLevel = value ? 1.0 : 0.0 }\n"

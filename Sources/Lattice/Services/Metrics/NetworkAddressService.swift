@@ -15,14 +15,6 @@ final class NetworkAddressService: ObservableObject {
     @Published private(set) var isLoadingPublicIP = false
     private var lastPublicIPFetch: TimeInterval = 0
 
-    func refreshLocalAddresses() {
-        let addresses = Self.readLocalAddresses()
-        guard addresses != localAddresses else { return }
-        localAddresses = addresses
-        publicIP = nil
-        lastPublicIPFetch = 0
-    }
-
     func refreshPublicIP(force: Bool = false) {
         let now = ProcessInfo.processInfo.systemUptime
         guard force || (publicIP == nil && !isLoadingPublicIP) || (now - lastPublicIPFetch > 300) else { return }

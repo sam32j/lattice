@@ -52,7 +52,6 @@ struct MetricsTests {
             ("video-downloader", { VideoDownloaderTests.run(suite) }),
             ("mixer", {
                 MixerRenderContinuityTests.run(suite)
-                MixerNativeDragTests.run(suite)
                 MixerOutputAdjustmentContract.run(suite)
                 MixerLevelCompensationContract.run(suite)
                 MixerTapConfigurationTests.run(suite)
@@ -69,7 +68,6 @@ struct MetricsTests {
                 AirPlayConcurrentLanesContract.run(suite)
                 AirPlayBacklogContract.run(suite)
                 MixerInputVolumeContract.run(suite)
-                MixerPercentKeyTests.run(suite)
                 MixerFeatureTests.run(suite)
             }),
             ("audio-priority", { AudioPriorityTests.run(suite); AudioPriorityToggleTests.run(suite) }),

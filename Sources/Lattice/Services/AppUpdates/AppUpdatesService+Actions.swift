@@ -6,14 +6,9 @@ extension AppUpdatesService {
     // MARK: - Acting on the list
 
     var selectedCount: Int { selection.count }
-    var selectableCount: Int { items.filter(\.isSelectable).count }
 
     func selectAll() {
         selection = Set(items.filter(\.isSelectable).map(\.id))
-    }
-
-    func selectNone() {
-        selection = []
     }
 
     func toggle(_ item: AppUpdatesSupport.Item) {
@@ -22,23 +17,6 @@ extension AppUpdatesService {
             selection.remove(item.id)
         } else {
             selection.insert(item.id)
-        }
-    }
-
-    /// Updates what the person ticked: the package manager installs its share
-    /// in one command, and the store apps hand off to the App Store, which is
-    /// as far as any app can go there.
-    func updateSelected() {
-        guard AppFeature.appUpdates.isAvailable else { return }
-        let tokens = AppUpdatesSupport.tokens(in: items, selection: selection)
-        if !tokens.isEmpty {
-            startUpgrade(tokens)
-        }
-        if let page = AppUpdatesSupport.singleStorePage(in: items, selection: selection),
-           let url = URL(string: page) {
-            handOff(url)
-        } else if AppUpdatesSupport.hasStoreSelection(in: items, selection: selection) {
-            openAppStoreUpdates()
         }
     }
 

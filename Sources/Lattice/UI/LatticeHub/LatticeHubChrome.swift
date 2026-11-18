@@ -218,15 +218,6 @@ extension LatticeHubView {
         .accessibilityLabel(l10n.s.doneButton)
     }
 
-    var editHint: some View {
-        Text(l10n.s.launcherEditHint)
-            .font(.system(size: 9.5))
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
     var closeButton: some View {
         Button { launcher.hide() } label: {
             Image(systemName: "xmark.circle.fill")
