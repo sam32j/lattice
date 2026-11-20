@@ -286,11 +286,9 @@ enum SettingsBackupSupport {
         return settings
     }
 
-    /// The lists of apps where Dock Preview and the switcher stop capturing
-    /// thumbnails. They take a program that is not an app by its path, too
-    /// (issue #3033).
-    static let thumbnailPauseListKeys = [DefaultsKey.windowPreviewExcludedApps,
-                                         DefaultsKey.switcherPreviewExcludedApps]
+    /// The list of apps Dock Preview leaves alone. It takes a program that is
+    /// not an app by its path, too (issue #3033).
+    static let thumbnailPauseListKeys = [DefaultsKey.windowPreviewExcludedApps]
 
     private static func portableThumbnailPauseLists(_ source: [String: Any]) -> [String: Any] {
         var settings = source
@@ -299,16 +297,6 @@ enum SettingsBackupSupport {
             settings[key] = apps.filter { !MouseAppExceptionSupport.isExecutablePathIdentity($0) }
         }
         return settings
-    }
-
-    /// The switcher's paused apps for a backup written before the switcher
-    /// kept its own list, which carries only Dock Preview's. The launch
-    /// migration copies that list only while the switcher's key is unset, and
-    /// putting this Mac's paths back sets it first, so a restore copies it.
-    /// Nil when the backup has the switcher's own list.
-    static func sharedSwitcherPauseList(in settings: [String: Any]) -> [String]? {
-        guard settings[DefaultsKey.switcherPreviewExcludedApps] == nil else { return nil }
-        return settings[DefaultsKey.windowPreviewExcludedApps] as? [String]
     }
 
     private static func portableMediaSettings(_ source: [String: Any]) -> [String: Any] {
