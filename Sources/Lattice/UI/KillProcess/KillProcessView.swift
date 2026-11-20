@@ -369,7 +369,10 @@ struct KillProcessScopeMenu: View {
             .labelsHidden()
         } label: {
             // One text run, so the menu label keeps the chevron after the name.
-            (Text(strings.scopeName(scope) + " ")
+            // The Island is narrow: All Processes reads just "All" on the button.
+            let name = surface == .island && scope == .everything
+                ? strings.scopeEverythingShort : strings.scopeName(scope)
+            (Text(name + " ")
              + Text(Image(systemName: "chevron.down")).font(.system(size: 8, weight: .bold)))
             .foregroundStyle(surface == .island ? Color.white.opacity(0.6) : Color.secondary)
         }
