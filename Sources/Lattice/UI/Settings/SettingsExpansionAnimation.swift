@@ -69,6 +69,9 @@ private struct SettingsCollapsible: ViewModifier {
             .clipped()
             .opacity(isExpanded ? 1 : 0)
             .allowsHitTesting(isExpanded)
+            // Folded rows stay laid out; disabling them keeps Tab and Space
+            // from reaching controls nobody can see.
+            .disabled(!isExpanded)
             .accessibilityHidden(!isExpanded)
     }
 }

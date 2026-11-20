@@ -38,7 +38,9 @@ extension CommandBarCatalog {
                 id: id,
                 title: item.title,
                 subtitle: s.settingsTitle,
-                keywords: item.shownKeywords(isSettingOn: { UserDefaults.standard.bool(forKey: $0) })
+                // Aliases match here as they do in Settings search.
+                keywords: (item.shownKeywords(isSettingOn: { UserDefaults.standard.bool(forKey: $0) })
+                    + item.aliases)
                     .joined(separator: " "),
                 icon: .symbol(item.icon),
                 run: { _ in

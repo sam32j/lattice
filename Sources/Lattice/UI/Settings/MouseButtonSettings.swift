@@ -46,7 +46,12 @@ struct MouseButtonShortcutsSection: View {
                 PermissionGatedToggle(text.enableLabel, isOn: $enabled)
                     .labelsHidden()
                     .onChange(of: enabled) { _, on in
-                        if !on { stopCapture() }
+                        if !on {
+                            stopCapture()
+                            // The rows stay mounted while folded; a recorder
+                            // left running would rebind a hidden row.
+                            CompactShortcutCoordinator.shared.stopRecordingAll()
+                        }
                         MouseButtonShortcutService.shared.syncWithPreferences()
                         if on, !permissions.accessibility {
                             permissions.requestAccessibility()

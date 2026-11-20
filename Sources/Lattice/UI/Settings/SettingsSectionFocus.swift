@@ -125,7 +125,9 @@ private struct SettingsSectionFocusModifier: ViewModifier {
             focusedAnchor = nil
             return
         }
-        if page == .general {
+        // General's other destinations sit at the top; Camera Preview is in
+        // the last card, so it scrolls like any other section.
+        if page == .general, anchor != .cameraPreview {
             focusedAnchor = anchor
             return
         }

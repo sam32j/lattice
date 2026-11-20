@@ -62,7 +62,9 @@ enum SettingsSidebarSupport {
               !items.contains(where: { $0.destination == destination }) else { return nil }
         switch destination.page {
         case .general:
-            return FeatureSettingsDestination(.general)
+            // General still renders Camera Preview's section; keep that visit
+            // anchored so it scrolls there. Other anchors fall back to the page.
+            return destination.sectionAnchor == .cameraPreview ? nil : FeatureSettingsDestination(.general)
         case .mouse, .keyboard, .audioInput, .audioOutput, .scratchpad:
             return items.contains { $0.id == .page(destination.page) }
                 ? nil : FeatureSettingsDestination(destination.page)
