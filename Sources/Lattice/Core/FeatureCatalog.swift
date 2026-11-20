@@ -21,7 +21,7 @@ enum AppFeature: String, CaseIterable {
     // Tools
     case quickLauncher, colorPicker, screenOCR, cleaningMode, mediaTools,
          cleaner, uninstaller, homebrew, appUpdates, screenshot, cameraPreview, radialMenu, scratchpad,
-         commandBar, screenRecorder, wallpaper, killProcess, portManager, videoDownloader
+         commandBar, screenRecorder, wallpaper, killProcess, videoDownloader
     // Dynamic Island, then its extensions
     case notch, notchCalendar, notchNotifications, notchGestures, notchTimer, notchAccessories, notchLyrics,
          notchQueue, notchLiveEqualizer, notchDownloads, notchAgents, notchWatch, notchMascot
@@ -108,7 +108,7 @@ extension AppFeature {
             return .energyDisplay
         case .quickLauncher, .colorPicker, .screenOCR, .mediaTools,
              .cleaner, .uninstaller, .homebrew, .appUpdates, .screenshot, .cameraPreview, .radialMenu,
-             .commandBar, .screenRecorder, .killProcess, .portManager, .videoDownloader:
+             .commandBar, .screenRecorder, .killProcess, .videoDownloader:
             return .tools
         case .notch, .notchCalendar, .notchNotifications, .notchGestures, .notchTimer, .notchAccessories,
              .notchLyrics, .notchQueue, .notchLiveEqualizer, .notchDownloads, .notchAgents, .notchWatch,
@@ -159,7 +159,7 @@ extension AppFeature {
         case .keepAwake: return "bolt.fill"
         case .brightness: return "display.2"
         case .extraBrightness: return "sun.max.fill"
-        case .bluetoothSleep: return "wave.3.right.circle"
+        case .bluetoothSleep: return "dot.radiowaves.left.and.right" // drawn as the Bluetooth rune
         case .quickLauncher: return "square.grid.2x2"
         case .colorPicker: return "eyedropper"
         case .screenOCR: return "text.viewfinder"
@@ -175,7 +175,7 @@ extension AppFeature {
         case .wallpaper: return "rectangle.inset.filled.and.cursorarrow"
         case .notchGestures: return "hand.draw"
         case .notchTimer: return "timer"
-        case .notchAccessories: return "battery.25percent"
+        case .notchAccessories: return "dot.radiowaves.left.and.right" // drawn as the Bluetooth rune
         case .notchLyrics: return "quote.bubble"
         case .notchQueue: return "list.bullet"
         case .notchLiveEqualizer: return "waveform"
@@ -189,8 +189,7 @@ extension AppFeature {
         case .radialMenu: return "circle.grid.cross"
         case .scratchpad: return "note.text"
         case .commandBar: return "command"
-        case .killProcess: return "xmark.octagon"
-        case .portManager: return "network"
+        case .killProcess: return "waveform.path.ecg"
         case .videoDownloader: return "square.and.arrow.down.on.square"
         case .monitorCPU: return "cpu"
         case .monitorGPU: return "rectangle.connected.to.line.below"

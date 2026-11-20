@@ -48,7 +48,7 @@ struct LatticeHubHostedUtility: View {
         } else if item == .killProcess {
             // Its list scrolls itself; inside another scroll view it would
             // collapse to no height.
-            KillProcessView(inlineOptions: true, compact: true)
+            KillProcessView(surface: notchSize == nil ? .hud : .island)
                 .frame(height: viewportHeight)
         } else if item == .system {
             LatticeHubSystemUtility(notchSize: notchSize)
@@ -70,8 +70,6 @@ struct LatticeHubHostedUtility: View {
                         PanelWindowLayoutView(showHeader: false, onClose: onClose)
                     case .appUpdates:
                         PanelAppUpdatesView(showHeader: false, onClose: onClose)
-                    case .portManager:
-                        PanelPortManagerView(showHeader: false, onClose: onClose)
                     case .wallpaper:
                         WallpaperSection(collapsible: false, showHeader: false, onClose: onClose)
                     case .videoDownloader:

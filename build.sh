@@ -495,6 +495,8 @@ if (( TEST )); then
         Sources/Lattice/Services/QuickTools/ScratchpadSupport.swift
         Sources/Lattice/Services/QuickTools/ScratchpadStore.swift
         Sources/Lattice/Services/KillProcess/KillProcessSupport.swift
+        Sources/Lattice/Services/KillProcess/KillProcessCatalog.swift
+        Sources/Lattice/UI/LatticeSymbol.swift
         Sources/Lattice/Services/Recorder/RecorderSupport.swift
         Sources/Lattice/Services/Recorder/RecorderSampleTiming.swift
         Sources/Lattice/Services/Recorder/RecorderWriter.swift
@@ -544,8 +546,7 @@ if (( TEST )); then
         Sources/Lattice/Core/Localizations/Strings+*.swift
         Sources/Lattice/Core/FeatureStrings.swift
         Sources/Lattice/Core/KillProcessStrings.swift
-        Sources/Lattice/Core/KillProcessAppStrings.swift
-        Sources/Lattice/Core/PortManagerStrings.swift
+        Sources/Lattice/Core/KillProcessListStrings.swift
         Sources/Lattice/Core/ReleaseNotes.swift
         Sources/Lattice/Core/ReleaseDigest.swift
         Sources/Lattice/Core/ReleaseChangeAliases.swift
@@ -744,7 +745,8 @@ if (( TEST )); then
         Sources/Lattice/Services/BoundedProcessRunner.swift
         Sources/Lattice/Services/DetachedProcess.swift
         Sources/Lattice/Services/ShellSupport.swift
-        Sources/Lattice/Services/PortManager/PortManagerSupport.swift
+        Sources/Lattice/Services/KillProcess/KillProcessPorts.swift
+        Sources/Lattice/Services/KillProcess/KillProcessPortServices.swift
         Sources/Lattice/Services/Metrics/NetworkProcessSupport.swift
         Sources/Lattice/Services/Metrics/NetworkSampler.swift
         Sources/Lattice/Services/Metrics/NetworkAddressService.swift

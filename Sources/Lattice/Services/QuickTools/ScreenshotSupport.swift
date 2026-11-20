@@ -1522,9 +1522,10 @@ enum ScreenshotSupport {
                         kVK_ANSI_0, kVK_ANSI_1, kVK_ANSI_Equal, kVK_ANSI_Minus,
                         kVK_Delete, kVK_ForwardDelete, kVK_ANSI_W, kVK_ANSI_Q].contains(key)
             }
+            // Plain P pins the capture, so no tool may take it.
             return !shortcut.modifiers.hasPrimaryModifier
                 && [kVK_Escape, kVK_Return, kVK_ANSI_KeypadEnter,
-                    kVK_Delete, kVK_ForwardDelete].contains(key)
+                    kVK_Delete, kVK_ForwardDelete, kVK_ANSI_P].contains(key)
         }
 
         static func shortcutTool(keyCode: Int64, modifiers: GlobalShortcutModifiers,

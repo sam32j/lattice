@@ -261,11 +261,12 @@ enum DefaultsKey {
     static let cleaningModeShortcut = "cleaningModeShortcut"
     static let cleaningModeShortcutEnabled = "cleaningModeShortcutEnabled"
     static let uninstallerCommandBarEnabled = "uninstallerCommandBarEnabled"
-    static let killProcessCommandBarEnabled = "killProcessCommandBarEnabled"
-    static let killProcessGroupRelated = "killProcessGroupRelated"
     static let killProcessSortBy = "killProcessSortBy" // cpu | memory | name | pid
     static let killProcessSortAscending = "killProcessSortAscending"
-    static let killProcessOpensInApps = "killProcessOpensInApps" // Kill Process opens on its Apps view
+    // Kill Process's scope (apps | background | system | everything), one per surface.
+    static let killProcessScopeSettings = "killProcessScopeSettings"
+    static let killProcessScopeHUD = "killProcessScopeHUD"
+    static let killProcessScopeIsland = "killProcessScopeIsland"
     static let quitAppsKeepRunning = "quitAppsKeepRunning" // [bundle id] spared by Quit All / Quit Others
     static let homebrewGroupDependencies = "homebrewGroupDependencies"
     static let appUpdatesCheckFrequency = "appUpdatesCheckFrequency"  // off | daily | weekly
@@ -1288,11 +1289,11 @@ enum Defaults {
         DefaultsKey.cleaningModeShortcutEnabled: false,
         DefaultsKey.cleaningModeShortcut: GlobalShortcut.cleaningModeDefault.storageValue,
         DefaultsKey.uninstallerCommandBarEnabled: false,
-        DefaultsKey.killProcessCommandBarEnabled: true,
-        DefaultsKey.killProcessGroupRelated: true,
         DefaultsKey.killProcessSortBy: "cpu",
         DefaultsKey.killProcessSortAscending: false,
-        DefaultsKey.killProcessOpensInApps: true,
+        DefaultsKey.killProcessScopeSettings: KillProcessScope.everything.rawValue,
+        DefaultsKey.killProcessScopeHUD: KillProcessScope.everything.rawValue,
+        DefaultsKey.killProcessScopeIsland: KillProcessScope.everything.rawValue,
         DefaultsKey.quitAppsKeepRunning: [String](),
         DefaultsKey.homebrewGroupDependencies: true,
         // The list itself costs nothing until it is opened; only the

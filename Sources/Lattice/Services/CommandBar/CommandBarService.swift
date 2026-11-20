@@ -2145,13 +2145,13 @@ final class CommandBarService: ObservableObject {
             })
             actions.append(RowAction(id: "killAllProcess",
                                      title: String(format: killStrings.killAllFormat, process.name),
-                                     symbolName: "xmark.octagon",
+                                     symbolName: "waveform.path.ecg",
                                      isDestructive: true) { [weak self] in
                 self?.confirmKillAllProcesses(process)
             })
             actions.append(RowAction(id: "killProcessTree",
                                      title: killStrings.killTreeButton,
-                                     symbolName: "xmark.octagon",
+                                     symbolName: "waveform.path.ecg",
                                      isDestructive: true) { [weak self] in
                 self?.confirmKillProcessTree(process)
             })
@@ -3150,8 +3150,7 @@ final class CommandBarService: ObservableObject {
     /// while the bar is open, same lifetime and guard shape as
     /// `loadSelection(for:)`.
     private func loadKillProcessEntries(for id: UUID) {
-        guard AppFeature.killProcess.isAvailable,
-              UserDefaults.standard.bool(forKey: DefaultsKey.killProcessCommandBarEnabled) else { return }
+        guard AppFeature.killProcess.isAvailable else { return }
         guard !killProcessEntriesLoading else { return }
         killProcessEntriesLoading = true
         KillProcessService.shared.refresh { [weak self] in

@@ -771,14 +771,13 @@ enum CommandBarCatalog {
             icon: .symbol("face.smiling"),
             keepsBarOpen: true,
             run: { _ in CommandBarService.shared.setCategory(.emoji) }))
-        if AppFeature.killProcess.isAvailable,
-           UserDefaults.standard.bool(forKey: DefaultsKey.killProcessCommandBarEnabled) {
+        if AppFeature.killProcess.isAvailable {
             let killStrings = FeatureStrings.killProcess(language)
             entries.append(CommandBarEntry(
                 id: CommandBarPreferences.killProcessBrowserRowID,
                 title: killStrings.pageTitle,
                 subtitle: killStrings.browseSubtitle,
-                icon: .symbol("xmark.octagon"),
+                icon: .symbol("waveform.path.ecg"),
                 keepsBarOpen: true,
                 run: { _ in
                     CommandBarService.shared.setCategory(.killProcess)
@@ -1061,7 +1060,7 @@ enum CommandBarCatalog {
                 title: process.name,
                 subtitle: String(format: killStrings.pidLabelFormat, process.pid),
                 keywords: process.path,
-                icon: process.bundleURL.map { .appIcon(path: $0.path) } ?? .symbol("xmark.octagon"),
+                icon: process.bundleURL.map { .appIcon(path: $0.path) } ?? .symbol("waveform.path.ecg"),
                 confirmationPrompt: String(format: killStrings.confirmKillFormat, process.name),
                 countsUsage: false,
                 run: { _ in

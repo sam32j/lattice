@@ -164,11 +164,9 @@ extension FeatureRuntime {
             if !AppFeature.cleaner.isAvailable, JunkCleaner.shared.phase != .cleaning { JunkCleaner.shared.reset() }
         },
         .homebrew: { HomebrewManager.shared.syncWithFeatures() },
+        // Turning Process Manager off also stops its port scans; the Ports
+        // section is part of it.
         .killProcess: { KillProcessService.shared.syncWithFeatures() },
-        .portManager: {
-            PortManagerService.shared.syncWithFeatures()
-            if !AppFeature.portManager.isAvailable { KillProcessService.shared.syncWithFeatures() }
-        },
         .uninstaller: {
             if !AppFeature.uninstaller.isAvailable {
                 AppUninstaller.shared.reset()

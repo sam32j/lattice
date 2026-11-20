@@ -50,6 +50,19 @@ enum KillProcessSupport {
         return result
     }
 
+    /// Whether the path `ps` reports and the kernel's `proc_pidpath` name the
+    /// same executable. macOS runs WebKit and other system code from a
+    /// cryptex, which the kernel reports under its Preboot mount while `ps`
+    /// shows the plain /System path.
+    static func pathsMatch(reported: String, kernel: String) -> Bool {
+        if reported == kernel { return true }
+        let cryptexRoots = ["/System/Volumes/Preboot/Cryptexes/OS", "/System/Volumes/Preboot/Cryptexes/App"]
+        for root in cryptexRoots where kernel.hasPrefix(root + "/") {
+            if String(kernel.dropFirst(root.count)) == reported { return true }
+        }
+        return false
+    }
+
     static func normalizedStartDescription(_ value: String) -> String? {
         let normalized = value.split(whereSeparator: \.isWhitespace).joined(separator: " ")
         guard !normalized.isEmpty,

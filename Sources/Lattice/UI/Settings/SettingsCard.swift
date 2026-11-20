@@ -31,7 +31,7 @@ struct SettingsCard<Content: View>: View {
             if let title {
                 HStack(alignment: .center, spacing: 10) {
                     if let symbol {
-                        Image(systemName: symbol)
+                        LatticeSymbol(symbol)
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(Color.accentColor)
                             .frame(width: 26, height: 26)
@@ -165,7 +165,7 @@ struct SettingsRow<Accessory: View>: View {
     @ViewBuilder
     private var iconTile: some View {
         if let symbol {
-            Image(systemName: symbol)
+            LatticeSymbol(symbol)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 26, height: 26)

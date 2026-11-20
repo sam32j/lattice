@@ -5,7 +5,7 @@ import SwiftUI
 /// Disabled real Settings pages only. No workspace service is activated.
 enum WorkspaceEmptyStateProbe {
     private static let features: [AppFeature] = [
-        .mediaTools, .cleaner, .uninstaller, .homebrew, .appUpdates, .killProcess, .portManager,
+        .mediaTools, .cleaner, .uninstaller, .homebrew, .appUpdates, .killProcess,
     ]
 
     static func run(output: URL, failures: inout [String]) {

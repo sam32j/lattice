@@ -7,6 +7,8 @@ import SwiftUI
 struct FeatureActivationPage<Content: View>: View {
     let feature: AppFeature
     var options: (() -> AnyView)? = nil
+    /// A page control shown before the options button, such as Refresh.
+    var accessory: (() -> AnyView)? = nil
     @State private var showingOptions = false
     @ViewBuilder var content: () -> Content
     @ObservedObject private var runtime = FeatureRuntime.shared
@@ -60,6 +62,9 @@ struct FeatureActivationPage<Content: View>: View {
 
     private var toolbarControl: some View {
         HStack(spacing: 6) {
+            if feature.isAvailable, let accessory {
+                accessory()
+            }
             if feature.isAvailable, let options {
                 Button { showingOptions.toggle() } label: {
                     Image(systemName: "slider.horizontal.3")

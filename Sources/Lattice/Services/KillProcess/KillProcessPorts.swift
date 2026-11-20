@@ -1,38 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
+// Copyright (C) 2026 Samuel Ji
 
 import Foundation
 
-struct PortManagerEntry: Identifiable, Equatable {
+/// One listening socket: what Process Manager's Ports section lists.
+struct KillProcessPort: Identifiable, Equatable {
     let port: Int
     let protocolName: String
     let address: String
     let pid: Int32
     let processName: String
     let startedAt: UInt64?
+    /// What the port is for, when Lattice can tell. See `KillProcessPortServices`.
+    var service: KillProcessPortService? = nil
     var id: String { "\(protocolName)-\(port)-\(pid)-\(address)" }
 }
 
-enum PortManagerSupport {
-    static func browserURL(for entry: PortManagerEntry) -> URL? {
-        guard entry.protocolName == "TCP", (1...65535).contains(entry.port),
-              let separator = entry.address.lastIndex(of: ":") else { return nil }
-        let host = String(entry.address[..<separator])
-        guard !host.isEmpty else { return nil }
-        var components = URLComponents()
-        components.scheme = "http"
-        // Wildcard binds are not destinations. Preserve the address family
-        // when it is known, and a specific bind when localhost cannot reach it.
-        switch host {
-        case "*": components.host = "localhost"
-        case "0.0.0.0": components.host = "127.0.0.1"
-        case "[::]", "::": components.host = "[::1]"
-        default: components.host = host
-        }
-        components.port = entry.port
-        return components.url
-    }
-
+/// Pure helpers for reading listening ports from `lsof`.
+enum KillProcessPortSupport {
     /// Whether an lsof endpoint such as `*:3000` or `127.0.0.1:3000` is bound
     /// to every interface rather than one specific address. A wildcard bind
     /// accepts connections from other machines on the network unless a
@@ -46,9 +32,19 @@ enum PortManagerSupport {
         return host == "*" || host == "0.0.0.0" || host == "::"
     }
 
-    static func parseLsof(_ text: String) -> [PortManagerEntry] {
+    /// The last known listeners still held by the process `ps` just listed,
+    /// for a scan whose `lsof` timed out.
+    static func carriedOver(_ ports: [KillProcessPort], probes: [KillProcessProbe]) -> [KillProcessPort] {
+        let identities = Dictionary(probes.map { ($0.pid, $0.startedAt) }, uniquingKeysWith: { first, _ in first })
+        return ports.filter { port in
+            guard let current = identities[port.pid] else { return false }
+            return port.startedAt == nil || port.startedAt == current
+        }
+    }
+
+    static func parseLsof(_ text: String) -> [KillProcessPort] {
         var name = "", pid: Int32 = 0, address = "", port = 0, proto = "TCP"
-        var rows: [PortManagerEntry] = []
+        var rows: [KillProcessPort] = []
         var seen = Set<String>()
         for line in text.split(separator: "\n").map(String.init) {
             guard let type = line.first else { continue }

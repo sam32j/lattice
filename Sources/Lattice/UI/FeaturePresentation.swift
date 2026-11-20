@@ -99,7 +99,6 @@ extension AppFeature {
         case .cleaner: return s.cleanerName
         case .uninstaller: return s.uninstallerName
         case .killProcess: return FeatureStrings.killProcess(language).pageTitle
-        case .portManager: return FeatureStrings.portManager(language).title
         case .videoDownloader: return FeatureStrings.videoDownloader(language).pageTitle
         case .homebrew: return s.homebrewName
         case .appUpdates: return FeatureStrings.appUpdates(language).pageTitle
@@ -181,7 +180,6 @@ extension AppFeature {
         case .cleaner: return hub.descCleaner
         case .uninstaller: return hub.descUninstaller
         case .killProcess: return FeatureStrings.killProcess(L10n.shared.language).hubDescription
-        case .portManager: return FeatureStrings.portManager(L10n.shared.language).hubDescription
         case .videoDownloader: return FeatureStrings.videoDownloader(L10n.shared.language).enableSubtitle
         case .homebrew: return hub.descHomebrew
         case .appUpdates: return FeatureStrings.appUpdates(L10n.shared.language).hubDescription

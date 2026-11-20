@@ -359,7 +359,7 @@ final class LatticeHubService: ObservableObject {
             // the Island tile stays in the Island. Explicit preference wins.
             RecentCaptureService.shared.showHistoryWindow(
                 origin: isVisible ? .floatingWindow : .dynamicIsland)
-        case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner, .appUpdates, .portManager,
+        case .windowLayout, .homebrew, .media, .urlCleaner, .uninstaller, .cleaner, .appUpdates,
              .killProcess, .wallpaper, .videoDownloader, .deviceControls, .system:
             if item == .system {
                 SystemNavigationState.shared.reset()

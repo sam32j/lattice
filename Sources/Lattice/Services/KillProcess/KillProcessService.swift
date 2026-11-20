@@ -30,10 +30,12 @@ final class KillProcessService: ObservableObject {
     }
 
     @Published var entries: [KillProcessEntry] = []
+    /// Every process classified for the Kill Process list: apps with their
+    /// helpers nested, background apps, macOS agents and system processes.
+    @Published var items: [KillProcessItem] = []
     @Published var query: String = ""
     @Published var sortBy: SortBy
     @Published var sortAscending: Bool
-    @Published var groupRelated: Bool
     @Published var isRefreshing = false
     /// True once a `ps` snapshot has completed successfully at least once, so
     /// the view can tell "still loading for the first time" apart from
@@ -50,10 +52,21 @@ final class KillProcessService: ObservableObject {
     var restartObserver: NSObjectProtocol?
     var pendingRestartPID: pid_t?
     var pendingRestartURL: URL?
+    var pendingRestartCompletion: ((Bool) -> Void)?
+    /// The restart that owns the pending state. A callback from an earlier
+    /// restart, or from an earlier try for the same PID, checks it first.
+    var pendingRestartRequest: UUID?
+    /// Scans are numbered as they start; one that finishes after a newer
+    /// scan already published is stale and dropped.
+    var refreshGeneration = 0
+    var publishedRefreshGeneration = 0
+    var refreshesInFlight = 0
+    /// The listening ports of the last published snapshot, kept for a scan
+    /// whose `lsof` times out.
+    var lastPorts: [KillProcessPort] = []
 
     init() {
         sortBy = SortBy(rawValue: UserDefaults.standard.string(forKey: DefaultsKey.killProcessSortBy) ?? "cpu") ?? .cpu
         sortAscending = UserDefaults.standard.bool(forKey: DefaultsKey.killProcessSortAscending)
-        groupRelated = UserDefaults.standard.bool(forKey: DefaultsKey.killProcessGroupRelated)
     }
 }

@@ -123,6 +123,7 @@ struct MetricsTests {
             ("command-bar", {
                 CommandBarFeatureTests.run(suite)
                 QuitAppsSupportTests.run(suite)
+                KillProcessCatalogTests.run(suite)
                 CommandBarSelectionTests.run(suite)
             }),
             ("transient-paste", { TransientPasteTests.run(suite) }),
@@ -150,7 +151,6 @@ struct MetricsTests {
                 UtilitySettingsTests.run { suite.expect($0, $1) }
                 UtilitiesFeatureTests.run(suite)
                 QuickTogglesAlertTests.run(suite)
-                PortManagerRefreshTests.run(suite)
             }),
             ("settings", {
                 NotchModuleSettingsTests.run(suite)

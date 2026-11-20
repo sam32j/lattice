@@ -287,23 +287,33 @@ struct ScreenshotEditorView: View {
                           bottom: reserve.bottom + vertical, trailing: reserve.trailing + horizontal)
     }
 
-    /// Opaque everywhere but a short fade at the window's edges.
+    /// Opaque everywhere but a soft fade at the window's edges.
     private var edgeMask: some View {
         GeometryReader { proxy in
-            let fade: CGFloat = 14
+            // A long, eased fall-off: the image dissolves into the stage
+            // instead of ending on a thin bright or dark band.
+            let fade: CGFloat = 44
             let w = max(proxy.size.width, 1), h = max(proxy.size.height, 1)
-            LinearGradient(stops: [.init(color: .clear, location: 0),
-                                   .init(color: .black, location: min(0.5, fade / w)),
-                                   .init(color: .black, location: max(0.5, 1 - fade / w)),
-                                   .init(color: .clear, location: 1)],
+            LinearGradient(stops: Self.fadeStops(length: fade, total: w),
                            startPoint: .leading, endPoint: .trailing)
-                .mask(LinearGradient(stops: [.init(color: .clear, location: 0),
-                                             .init(color: .black, location: min(0.5, fade / h)),
-                                             .init(color: .black, location: max(0.5, 1 - fade / h)),
-                                             .init(color: .clear, location: 1)],
+                .mask(LinearGradient(stops: Self.fadeStops(length: fade, total: h),
                                      startPoint: .top, endPoint: .bottom))
         }
         .ignoresSafeArea()
+    }
+
+    /// Opacity rising from 0 at an edge to 1 at `length` along a smoothstep
+    /// curve, mirrored at the far edge.
+    private static func fadeStops(length: CGFloat, total: CGFloat) -> [Gradient.Stop] {
+        let span = min(0.5, length / total)
+        let steps = 8
+        let rising = (0...steps).map { index -> Gradient.Stop in
+            let t = CGFloat(index) / CGFloat(steps)
+            let eased = t * t * (3 - 2 * t)
+            return .init(color: Color.black.opacity(eased), location: span * t)
+        }
+        let falling = rising.reversed().map { Gradient.Stop(color: $0.color, location: 1 - $0.location) }
+        return rising + falling
     }
 
     private func canvas(zoom: CGFloat, canvasSize: CGSize, available: CGSize) -> some View {
@@ -894,7 +904,7 @@ struct ScreenshotEditorView: View {
             .buttonStyle(.borderless)
             .screenshotIconHover()
             .focusable(false)
-            .screenshotSafeHelp(strings.pinButton + "  (⌘P)")
+            .screenshotSafeHelp(strings.pinButton + "  (P)")
             .accessibilityLabel(strings.pinButton)
 
             Divider().frame(height: 16).padding(.horizontal, 3)

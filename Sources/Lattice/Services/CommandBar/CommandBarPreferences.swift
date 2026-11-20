@@ -59,7 +59,7 @@ enum CommandBarSource: String, CaseIterable, Identifiable {
         case .selection: return "text.cursor"
         case .links: return "bookmark"
         case .files: return "doc.text.magnifyingglass"
-        case .killProcess: return "xmark.octagon"
+        case .killProcess: return "waveform.path.ecg"
         }
     }
 

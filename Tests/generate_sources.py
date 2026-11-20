@@ -839,13 +839,6 @@ def main():
           + "extension CommandBarTerminationContract {\nfinal class Host: Fixture {\n"
           + declaration("Sources/Lattice/App/AppDelegate.swift", "    func applicationShouldTerminate(")
           + "}\n}\n")
-    ports = "Sources/Lattice/Services/PortManager/PortManagerService.swift"
-    write("PortManagerRefresh.swift", "import Darwin\nimport Foundation\n"
-          + "extension PortManagerRefreshTests {\nfinal class Service: Fixture {\n"
-          + declaration(ports, "    func refresh(").replace("$0.isAvailable", "_ in available")
-          + declaration(ports, "    private static func snapshot(").replace("private static", "static", 1).replace("FeatureReadProcess.run(", "Shell.run(").replace(", cancellation: cancellation)", ")")
-          + declaration(ports, "    private static func startTimes(").replace("private static", "static", 1)
-          + "}\n}\n")
     write("URLCleanerPoll.swift", "import Foundation\n"
           + "extension RepositoryFeatureTests.URLCleanerPollHost {\n"
           + declaration("Sources/Lattice/Services/URLCleanerService.swift",

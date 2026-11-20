@@ -56,12 +56,6 @@ extension KillProcessService {
         UserDefaults.standard.set(sortAscending, forKey: DefaultsKey.killProcessSortAscending)
     }
 
-    func setGroupRelated(_ value: Bool) {
-        groupRelated = value
-        UserDefaults.standard.set(value, forKey: DefaultsKey.killProcessGroupRelated)
-        refresh(force: true)
-    }
-
     /// Refreshes the process list off the main thread and republishes on the
     /// main thread. `force` bypasses the freshness cache, so a kill's
     /// reconciling refresh and an explicit tap of the refresh button always
@@ -89,22 +83,34 @@ extension KillProcessService {
         }
 
         isRefreshing = true
-        let grouped = groupRelated
+        refreshGeneration += 1
+        refreshesInFlight += 1
+        let generation = refreshGeneration
+        let previousPorts = lastPorts
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let rows = Self.snapshot(grouped: grouped, cancellation: cancellation)
+            let snapshot = Self.snapshot(cancellation: cancellation, previousPorts: previousPorts)
             DispatchQueue.main.async {
-                guard let self, !cancellation.isCancelled else {
+                guard let self else {
+                    completion?()
+                    return
+                }
+                self.refreshesInFlight = max(0, self.refreshesInFlight - 1)
+                guard !cancellation.isCancelled else {
                     completion?()
                     return
                 }
                 // A failed or empty `ps` call (transient - a timeout under
                 // load, a hiccup) must never wipe a list that was already
                 // showing good data; only a genuine snapshot replaces it.
-                if let rows {
-                    self.entries = rows
+                // Nor may a scan that started before one already shown.
+                if let snapshot, generation > self.publishedRefreshGeneration {
+                    self.publishedRefreshGeneration = generation
+                    self.entries = snapshot.entries
+                    self.items = snapshot.items
+                    self.lastPorts = snapshot.ports
                     self.hasLoadedOnce = true
                 }
-                self.isRefreshing = false
+                if self.refreshesInFlight == 0 { self.isRefreshing = false }
                 self.cacheLock.lock()
                 self.lastRefresh = ProcessInfo.processInfo.systemUptime
                 self.cacheLock.unlock()

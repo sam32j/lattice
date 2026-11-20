@@ -62,7 +62,7 @@ extension AppFeature {
              .soundOutputSwitcher, .audioPriority,
              .extraBrightness, .bluetoothSleep, .colorPicker, .micMute, .mediaTools,
              .scratchpad, .wallpaper, .monitorGPU, .monitorNetwork, .connectedDevices, .fanControl, .killProcess,
-             .portManager, .videoDownloader:
+             .videoDownloader:
             return []
         case .quickLauncher:
             return [.automationSystemEvents]
@@ -196,7 +196,7 @@ extension AppPermission {
         case .calendar: return "calendar"
         case .camera: return "camera"
         case .appManagement: return "app.badge"
-        case .bluetooth: return "antenna.radiowaves.left.and.right"
+        case .bluetooth: return "dot.radiowaves.left.and.right" // drawn as the Bluetooth rune
         }
     }
 }
