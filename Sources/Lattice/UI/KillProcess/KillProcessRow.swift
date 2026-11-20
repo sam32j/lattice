@@ -253,15 +253,27 @@ struct KillProcessRow: View, Equatable {
                 case .forceQuit: return "bolt.fill"
                 }
             }()
+            // In Ports, Stop acts on the processes holding the ports, so it
+            // is gated on them, not on the app, and a change in who holds
+            // them asks again before anything is stopped.
+            let portTargets = ports.map(Self.stopTargets)
             KillProcessConfirmButton(title: title, symbol: symbol,
                                      confirmTitle: strings.confirm,
                                      controlSize: surface.isCompact ? .mini : .small,
                                      destructive: primary == .forceQuit,
-                                     isDisabled: progress != nil || item.startedAt == nil) {
+                                     isDisabled: progress != nil
+                                        || (portTargets.map(\.isEmpty) ?? (item.startedAt == nil)),
+                                     armingKey: portTargets ?? []) {
                 // In Ports, Stop ends the processes holding the ports, not the app.
                 if let ports { activity.stopPorts(ports, of: item) } else { activity.perform(primary, on: item) }
             }
         }
+    }
+
+    /// The verified processes a Ports row's Stop would end, as stable keys.
+    static func stopTargets(_ ports: [KillProcessPort]) -> [String] {
+        let stoppable = KillProcessCatalog.stoppablePorts(ports, ownPID: ProcessInfo.processInfo.processIdentifier)
+        return Set(stoppable.map { "\($0.pid):\($0.startedAt ?? 0)" }).sorted()
     }
 
     // MARK: More menu
@@ -422,6 +434,20 @@ struct KillProcessPortRow: View {
         .contentShape(Rectangle())
         .onHover { isHovering = $0 }
         .opacity(stopping ? 0.55 : 1)
+        .contextMenu {
+            if let url = KillProcessPortSupport.browserURL(for: port) {
+                Button(FeatureStrings.commandBar(L10n.shared.language).openInBrowser) {
+                    if !NSWorkspace.shared.open(url) { NSSound.beep() }
+                }
+            }
+        }
+        .accessibilityActions {
+            if let url = KillProcessPortSupport.browserURL(for: port) {
+                Button(FeatureStrings.commandBar(L10n.shared.language).openInBrowser) {
+                    if !NSWorkspace.shared.open(url) { NSSound.beep() }
+                }
+            }
+        }
     }
 }
 
@@ -440,6 +466,9 @@ struct KillProcessSubrowTrailing<Details: View>: View {
     let action: () -> Void
 
     @State private var armedAt: Date?
+    /// How long Confirm waits once the pointer is off the line: longer when
+    /// armed from the accessibility action, which has no pointer to wait on.
+    @State private var armedWindow = KillProcessConfirmButton.armedDuration
     @State private var generation = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -457,6 +486,20 @@ struct KillProcessSubrowTrailing<Details: View>: View {
                 .overlay(alignment: .trailing) { label.fixedSize() }
             details()
                 .lineLimit(1)
+        }
+        // Stop shows on hover; VoiceOver, Voice Control and keyboard users
+        // reach the same two steps as a named action on the line.
+        .accessibilityActions {
+            if canStop && !stopping {
+                Button(isArmed ? strings.confirm : strings.stop) {
+                    if isArmed {
+                        setArmed(false)
+                        action()
+                    } else {
+                        setArmed(true, window: Self.accessibleArmedDuration)
+                    }
+                }
+            }
         }
         .animation(reduceMotion ? nil : .snappy(duration: 0.2), value: isArmed)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: isHovering)
@@ -507,19 +550,22 @@ struct KillProcessSubrowTrailing<Details: View>: View {
         }
     }
 
-    private func setArmed(_ armed: Bool) {
+    static var accessibleArmedDuration: TimeInterval { 6 }
+
+    private func setArmed(_ armed: Bool, window: TimeInterval = KillProcessConfirmButton.armedDuration) {
         generation += 1
         armedAt = armed ? Date() : nil
+        armedWindow = window
         if armed {
             AccessibilityNotification.Announcement(strings.confirm).post()
-            scheduleCheck(after: KillProcessConfirmButton.armedDuration)
+            scheduleCheck(after: window)
         }
     }
 
     /// Settles back once the pointer is off the line and the gate has passed.
     private func resetWhenDue() {
         guard let armedAt, !isHovering else { return }
-        let remaining = KillProcessConfirmButton.armedDuration - Date().timeIntervalSince(armedAt)
+        let remaining = armedWindow - Date().timeIntervalSince(armedAt)
         if remaining <= 0 { setArmed(false) } else { scheduleCheck(after: remaining) }
     }
 
@@ -631,6 +677,9 @@ struct KillProcessConfirmButton: View {
     let controlSize: ControlSize
     let destructive: Bool
     let isDisabled: Bool
+    /// What the action would act on. When it changes while armed, the
+    /// button settles back and asks again.
+    var armingKey: [String] = []
     let action: () -> Void
 
     static let armedDuration: TimeInterval = 1
@@ -675,6 +724,7 @@ struct KillProcessConfirmButton: View {
             if !inside { resetWhenDue() }
         }
         .onChange(of: isDisabled) { _, disabled in if disabled { setArmed(false, animated: false) } }
+        .onChange(of: armingKey) { _, _ in setArmed(false, animated: false) }
         .accessibilityLabel(isArmed ? confirmTitle : title)
     }
 

@@ -39,9 +39,11 @@ struct KillProcessView: View {
     @State private var frontPID: pid_t?
     @State private var refreshTimer: Timer?
     @State private var hoveredPID: pid_t?
-    /// The row order last shown, held while the pointer rests on a row so a
-    /// live refresh never moves the row under it.
-    @State private var displayOrder: [pid_t] = []
+    /// Each section's row order last shown, held while the pointer rests on
+    /// a row so a live refresh never moves the row under it.
+    @State private var displayOrder: [KillProcessScope: [pid_t]] = [:]
+    /// Rows a search opened that the user closed again, for this query only.
+    @State private var collapsedForQuery: Set<String> = []
     @FocusState private var searchFocused: Bool
 
     /// `expandedPIDs` opens those rows' helpers, and `expandedPortPIDs` their
@@ -57,19 +59,25 @@ struct KillProcessView: View {
     private var scope: KillProcessScope { KillProcessScope(rawValue: scopeRaw) ?? .everything }
     private var compact: Bool { surface.isCompact }
 
-    private var items: [KillProcessItem] {
-        let visible = activity.visibleItems(service.items)
-        guard !displayOrder.isEmpty else { return visible }
-        let rank = Dictionary(displayOrder.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
-        return visible.enumerated().sorted { lhs, rhs in
-            let left = rank[lhs.element.pid] ?? Int.max, right = rank[rhs.element.pid] ?? Int.max
-            return left == right ? lhs.offset < rhs.offset : left < right
-        }.map(\.element)
-    }
+    private var items: [KillProcessItem] { activity.visibleItems(service.items) }
 
+    /// The catalog's sections, then, while the pointer rests on a row, each
+    /// section held in the order last shown. The hold goes on after the
+    /// section's own sort (Apps by name, Ports by port), or that sort would
+    /// move the row under the pointer anyway; new rows go last.
     private var sections: [KillProcessSection] {
-        KillProcessCatalog.sections(items, scope: scope, query: surface == .island ? "" : query,
-                                    frontPID: frontPID, isKept: activity.isKept, language: l10n.language)
+        let sorted = KillProcessCatalog.sections(items, scope: scope, query: surface == .island ? "" : query,
+                                                 frontPID: frontPID, isKept: activity.isKept, language: l10n.language)
+        guard !displayOrder.isEmpty else { return sorted }
+        return sorted.map { section in
+            guard let order = displayOrder[section.scope] else { return section }
+            let rank = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+            let held = section.items.enumerated().sorted { lhs, rhs in
+                let left = rank[lhs.element.pid] ?? Int.max, right = rank[rhs.element.pid] ?? Int.max
+                return left == right ? lhs.offset < rhs.offset : left < right
+            }.map(\.element)
+            return KillProcessSection(scope: section.scope, items: held, expandedByQuery: section.expandedByQuery)
+        }
     }
 
     var body: some View {
@@ -123,13 +131,18 @@ struct KillProcessView: View {
         .onChange(of: service.items) { _, newItems in
             frontPID = QuitAppsActions.frontAppPID()
             activity.reconcile(with: newItems)
-            if hoveredPID == nil { displayOrder = [] }
+            if hoveredPID == nil { displayOrder = [:] }
         }
         .onChange(of: hoveredPID) { _, pid in
-            displayOrder = pid == nil ? [] : items.map(\.pid)
+            displayOrder = pid == nil
+                ? [:]
+                : Dictionary(sections.map { ($0.scope, $0.items.map(\.pid)) }, uniquingKeysWith: { first, _ in first })
         }
         .onChange(of: scopeRaw) { _, _ in confirmation = nil }
-        .onChange(of: query) { _, _ in confirmation = nil }
+        .onChange(of: query) { _, _ in
+            confirmation = nil
+            collapsedForQuery = []
+        }
     }
 
     // MARK: Search
@@ -256,11 +269,11 @@ struct KillProcessView: View {
                 menu: KillProcessCatalog.menu(for: item, in: scope),
                 isKept: activity.isKept(item.bundleIdentifier),
                 isAlwaysKept: activity.isAlwaysKept(item.bundleIdentifier),
-                helpersExpanded: expanded.contains(key) || expandedByQuery,
+                helpersExpanded: expandedByQuery ? !collapsedForQuery.contains(key) : expanded.contains(key),
                 helpersInProgress: (scope == .ports ? portPIDs : helperPIDs).intersection(activity.inProgress.keys),
                 isRecentlyQuit: activity.isRecentlyQuit(item.pid),
                 ports: scope == .ports ? item.ports : nil,
-                onToggleHelpers: { toggleExpansion(key) })
+                onToggleHelpers: { toggleExpansion(key, openedBySearch: expandedByQuery) })
                 .equatable()
         }
         .background(UnevenRoundedRectangle(topLeadingRadius: top, bottomLeadingRadius: bottom,
@@ -276,9 +289,17 @@ struct KillProcessView: View {
         KillProcessRowMetrics(compact: compact).dividerInset
     }
 
-    private func toggleExpansion(_ key: String) {
+    /// A row a search opened closes and reopens for this query only; it
+    /// never becomes a manual expansion that outlasts the search.
+    private func toggleExpansion(_ key: String, openedBySearch: Bool) {
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
-            if expanded.contains(key) { expanded.remove(key) } else { expanded.insert(key) }
+            if openedBySearch {
+                if collapsedForQuery.contains(key) { collapsedForQuery.remove(key) } else { collapsedForQuery.insert(key) }
+            } else if expanded.contains(key) {
+                expanded.remove(key)
+            } else {
+                expanded.insert(key)
+            }
         }
     }
 
