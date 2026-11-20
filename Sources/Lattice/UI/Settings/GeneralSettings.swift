@@ -176,6 +176,8 @@ struct GeneralSettings: View {
                         FeatureRuntime.shared.finishAvailabilityChange()
                     }
             }
+            // Where Camera Preview links and search results land.
+            .settingsSectionAnchor(.cameraPreview)
             if cameraChildrenEnabled {
                 ShortcutPreferenceRow(role: .cameraPreview, label: FeatureStrings.cameraPreview(l10n.language).openWithShortcut) {
                     FeatureRuntime.shared.sync([.cameraPreview])
