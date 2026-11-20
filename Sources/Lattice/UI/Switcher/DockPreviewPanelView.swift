@@ -133,6 +133,9 @@ private struct DockPreviewPanelContent: View {
                                 }
                             )
                             .id(window.id)
+                            // A closed window's card fades where it was while
+                            // the others slide over it.
+                            .transition(.opacity.combined(with: .scale(scale: 0.92)))
                             .gesture(
                                 DragGesture(minimumDistance: DockPreviewSupport.dragLiftDistance,
                                             coordinateSpace: .global)
