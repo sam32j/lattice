@@ -18,10 +18,13 @@ guard NSImage(contentsOf: fallback) != nil else { fatalError("Cannot load app ic
 try Data(contentsOf: fallback).write(to: output.appendingPathComponent("AppIcon.icns"))
 
 let darkFallback = project.appendingPathComponent("Resources/Brand/Lattice-Dark.icns")
+// An earlier build's dark icon must not be packaged when this one has none.
+let darkOutput = output.appendingPathComponent("AppIcon-Dark.icns")
+try? FileManager.default.removeItem(at: darkOutput)
 if FileManager.default.fileExists(atPath: darkFallback.path),
    let darkData = try? Data(contentsOf: darkFallback),
    NSImage(data: darkData) != nil {
-    try darkData.write(to: output.appendingPathComponent("AppIcon-Dark.icns"))
+    try darkData.write(to: darkOutput)
 }
 
 let svgFilename = isDev ? "MenuBarIcon-Dev.svg" : "MenuBarIcon.svg"
