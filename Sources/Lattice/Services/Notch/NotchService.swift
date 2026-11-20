@@ -719,8 +719,17 @@ final class NotchService: ObservableObject {
 
     private var compactMusicIsVisible: Bool { compactActivityIsVisible && compactActivity == .music }
 
+    /// Between a track change and the new song's notice the island holds the
+    /// song back, but the strip is still the music's: a quick second swipe
+    /// there must not find the swipe switched off and blocked until lift.
+    private var musicLeadsAcrossTrackChange: Bool {
+        awaitsTrackNotice && !expanded && !peeking
+            && activitySelection.display(available: compactActivities,
+                                         pairs: { compactCompanions(of: $0).contains($1) }).primary == .music
+    }
+
     private var compactMusicSwipeIsVisible: Bool {
-        NotchMusicSwipeController.permitsCompact(stripVisible: compactMusicIsVisible, expanded: expanded, peeking: peeking,
+        musicLeadsAcrossTrackChange || NotchMusicSwipeController.permitsCompact(stripVisible: compactMusicIsVisible, expanded: expanded, peeking: peeking,
             trackNotice: notice?.event == .track, noticeExpanded: noticeExpanded, noticeCanPresent: noticeCanPresent)
     }
 
