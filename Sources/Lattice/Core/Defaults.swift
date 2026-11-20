@@ -78,7 +78,6 @@ enum DefaultsKey {
     static let middleClickExceptions = "middleClickExceptions"
     static let superKeyExceptions = "superKeyExceptions"
     static let switcherEnabled = "switcherEnabled"
-    static let switcherTakeOverSystemShortcuts = "switcherTakeOverSystemShortcuts"
     // Machine state, never exported: the system shortcuts this process owns,
     // so a launch after a crash can restore them. The switcher-only key is
     // what builds before the take-over was shared wrote; it is read once,
@@ -100,7 +99,6 @@ enum DefaultsKey {
     static let switcherShowFullscreenWindows = "switcherShowFullscreenWindows"
     static let switcherAppRules = "switcherAppRules" // [bundle id: SwitcherAppRule raw value]
     static let switcherCurrentSpaceOnly = "switcherCurrentSpaceOnly" // list only windows on the desktop the user is in (issue #337)
-    static let switcherSearchPinEnabled = "switcherSearchPinEnabled" // S pins the search field open, off by default so existing users typing S as a search letter see no change
     static let switcherShowShortcutHints = "switcherShowShortcutHints" // show the shortcut bar under the large-icon switcher
     static let switcherAppearanceDelay = "switcherAppearanceDelay" // milliseconds the shortcut must be held before the panel appears (SwitcherSupport.appearanceDelayMillisecondsRange)
     static let switcherInstantSelection = "switcherInstantSelection" // skip selection and reveal animations while browsing
@@ -490,7 +488,6 @@ enum DefaultsKey {
     static let clipboardAutoClearOnScreenLock = "clipboardAutoClearOnScreenLock"
 
     static let windowPreviewExcludedApps = "windowPreviewExcludedApps" // disable Dock Preview for these apps (once shared with the app switcher)
-    static let switcherPreviewExcludedApps = "switcherPreviewExcludedApps" // pause app switcher thumbnail capture while these apps are in front
     static let diskEjectExcludedVolumes = "diskEjectExcludedVolumes" // volume names/UUIDs excluded from Eject all disks
     // Quick tools: paste as plain text, color picker, screen OCR, mic mute.
     static let pastePlainEnabled = "pastePlainEnabled"
@@ -1025,7 +1022,6 @@ enum Defaults {
         DefaultsKey.middleClickExceptions: [String](),
         DefaultsKey.superKeyExceptions: [String](),
         DefaultsKey.switcherEnabled: true,
-        DefaultsKey.switcherTakeOverSystemShortcuts: false,
         DefaultsKey.switcherShortcut: "command:48",
         DefaultsKey.switcherWindowShortcut: GlobalShortcut.switcherWindowDefault.storageValue,
         DefaultsKey.switcherIconRowMode: false,
@@ -1038,7 +1034,6 @@ enum Defaults {
         DefaultsKey.switcherShowFullscreenWindows: true,
         DefaultsKey.switcherAppRules: [String: String](),
         DefaultsKey.switcherCurrentSpaceOnly: false,
-        DefaultsKey.switcherSearchPinEnabled: false,
         DefaultsKey.switcherShowShortcutHints: true,
         DefaultsKey.switcherAppearanceDelay: SwitcherSupport.defaultAppearanceDelayMilliseconds,
         DefaultsKey.switcherInstantSelection: false,
@@ -1482,7 +1477,6 @@ enum Defaults {
         DefaultsKey.clipboardAutoClearOnDisplaySleep: false,
         DefaultsKey.clipboardAutoClearOnScreenLock: false,
         DefaultsKey.windowPreviewExcludedApps: [String](),
-        DefaultsKey.switcherPreviewExcludedApps: [String](),
         DefaultsKey.diskEjectExcludedVolumes: [String](),
         DefaultsKey.pastePlainEnabled: false,
         DefaultsKey.pastePlainShortcut: GlobalShortcut.pastePlainDefault.storageValue,
@@ -1688,7 +1682,6 @@ enum Defaults {
         migrateBatteryTemperatureVisibility(in: defaults)
         migratePowerPeripheralsVisibility(in: defaults)
         migrateSwitcherPreviewSize(in: defaults)
-        migrateSwitcherPreviewExcludedApps(in: defaults)
         migrateNotchWatchAvailability(in: defaults)
         migratePermanentInputControls(in: defaults)
         migrateCleaningModeShortcut(in: defaults)
@@ -1840,17 +1833,6 @@ enum Defaults {
         guard defaults.object(forKey: DefaultsKey.switcherPreviewSize) == nil else { return }
         defaults.set(defaults.string(forKey: DefaultsKey.previewSize) ?? "normal",
                      forKey: DefaultsKey.switcherPreviewSize)
-    }
-
-    /// The app switcher used to share Dock Preview's paused apps. Copy the
-    /// list once, before defaults are registered, so both keep pausing in
-    /// the same apps after the upgrade. With no list saved yet, store an
-    /// empty one: an app paused in Dock Preview later would otherwise be
-    /// copied at the next launch.
-    static func migrateSwitcherPreviewExcludedApps(in defaults: UserDefaults) {
-        guard defaults.object(forKey: DefaultsKey.switcherPreviewExcludedApps) == nil else { return }
-        defaults.set(defaults.stringArray(forKey: DefaultsKey.windowPreviewExcludedApps) ?? [],
-                     forKey: DefaultsKey.switcherPreviewExcludedApps)
     }
 
     static func migrateBatteryTemperatureVisibility(in defaults: UserDefaults) {
