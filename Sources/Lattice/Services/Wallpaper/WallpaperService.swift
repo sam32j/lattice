@@ -3,6 +3,7 @@
 
 import AppKit
 import Combine
+import CryptoKit
 import ImageIO
 import UniformTypeIdentifiers
 
@@ -13,6 +14,8 @@ final class WallpaperService: ObservableObject {
     struct OwnSource: Identifiable, Equatable {
         let id: String
         let title: String
+        /// Where it lives, when the bookmark still resolves.
+        let path: String?
         let isFolder: Bool
         let isReachable: Bool
         let bookmark: Data
@@ -29,13 +32,17 @@ final class WallpaperService: ObservableObject {
     @Published private(set) var isDownloading = false
     // bumps when thumb generation changes so cell .task restarts
     @Published private(set) var thumbEpoch = 0
+    /// Apple pictures being downloaded, by entry ID: 0…1.
+    @Published private(set) var downloadProgress: [String: Double] = [:]
+    private var downloadObservations: [String: NSKeyValueObservation] = [:]
+    // the download the user last chose; only that one is set when it lands
+    private var pendingDownloadApply: String?
 
     private var ownBookmarks: [Data] = []
     // folder-child paths the user hid from the gallery (files stay on disk)
     private var excludedOwnPaths: Set<String> = []
     // file bookmark path → Data (built in rebuildOwnSources; gallery X match without FS)
     private var fileBookmarkByPath: [String: Data] = [:]
-    private var pathByFileBookmark: [Data: String] = [:]
     private var scopedURLs: [URL] = []
     private var openPanel: NSOpenPanel?
     // Apple catalog barely changes; keep after first scan to avoid tab hitch
@@ -54,22 +61,20 @@ final class WallpaperService: ObservableObject {
 
     var isAvailable: Bool { AppFeature.wallpaper.isAvailable }
 
-    // folders + unreachable + file bookmarks with no gallery cell (after catalog is ready)
-    var removableChipSources: [OwnSource] {
-        // while scanning, every file bookmark would look like an orphan
-        if isLoading {
-            return ownSources.filter { $0.isFolder || !$0.isReachable }
-        }
-        let ownIDs = Set(entries.lazy.filter { $0.source == .own }.map(\.id))
-        return ownSources.filter { source in
-            if source.isFolder || !source.isReachable { return true }
-            guard let path = pathByFileBookmark[source.bookmark] else { return true }
-            return !ownIDs.contains(path)
-        }
-    }
-
     var visibleEntries: [WallpaperSupport.Entry] {
         WallpaperSupport.filtered(entries, by: filter)
+    }
+
+    /// Imported pictures under the folder each came from.
+    var ownGroups: [WallpaperSupport.OwnGroup] {
+        let roots = ownSources.filter { $0.isFolder && $0.isReachable }.compactMap(\.path)
+        return WallpaperSupport.ownGroups(entries, folderRoots: roots)
+    }
+
+    /// Lists the imported sources without scanning them, for Settings.
+    func reloadSources() {
+        guard isAvailable else { return }
+        rebuildOwnSources()
     }
 
     var applyAllDisplays: Bool {
@@ -149,6 +154,27 @@ final class WallpaperService: ObservableObject {
         thumbEpoch &+= 1
     }
 
+    /// The aerial catalog's string tables for an app language, best first.
+    static func aerialLanguages(_ language: AppLanguage) -> [String] {
+        switch language {
+        case .enUS: return ["en"]
+        case .ptBR: return ["pt_BR"]
+        case .tr: return ["tr"]
+        case .ru: return ["ru"]
+        case .es: return ["es"]
+        case .sk: return ["sk"]
+        case .de: return ["de"]
+        case .fr: return ["fr"]
+        case .it: return ["it"]
+        case .ja: return ["ja"]
+        case .ko: return ["ko"]
+        case .uk: return ["uk"]
+        case .zhHans: return ["zh_CN"]
+        case .zhTW: return ["zh_TW"]
+        case .zhHK: return ["zh_HK", "zh_TW"]
+        }
+    }
+
     // scan off-main; publish catalog first, thumbs later
     func refresh(forceAppleRescan: Bool = false) {
         guard isAvailable else {
@@ -164,6 +190,7 @@ final class WallpaperService: ObservableObject {
         let roots = resolved.map(\.url)
         let excluded = excludedOwnPaths
         let appleCache = forceAppleRescan ? nil : cachedApple
+        let languages = Self.aerialLanguages(L10n.shared.language)
         let token = galleryLifecycle.invalidate()
         bumpThumbGeneration()
         if entries.isEmpty {
@@ -171,7 +198,11 @@ final class WallpaperService: ObservableObject {
         }
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let apple = appleCache ?? WallpaperSupport.enumerateAppleEntries()
+            let apple = appleCache ?? WallpaperSupport.enumerateAppleEntries(
+                aerialsRoot: WallpaperSupport.appleAerialsURL,
+                downloads: WallpaperSupport.Downloads(catalog: WallpaperSupport.desktopPictureCatalog(),
+                                                      folder: Self.downloadsFolder),
+                languages: languages)
             guard self?.galleryLifecycle.accepts(token) == true else { return }
 
             var imageURLs: [URL] = []
@@ -215,6 +246,25 @@ final class WallpaperService: ObservableObject {
     func apply(_ entry: WallpaperSupport.Entry) {
         guard isAvailable else { return }
         lastError = nil
+        if let remote = entry.remoteAsset,
+           !FileManager.default.fileExists(atPath: entry.imageURL.path) {
+            pendingDownloadApply = entry.id
+            download(entry, from: remote.url) { location, _ in
+                Self.installDownloadedPicture(zip: location, expectedSHA1: remote.sha1,
+                                              to: entry.imageURL)
+            }
+            return
+        }
+        if let video = entry.pendingVideo,
+           !FileManager.default.fileExists(atPath: video.destination.path) {
+            pendingDownloadApply = entry.id
+            download(entry, from: video.url) { location, response in
+                Self.installAerialVideo(location, response: response, source: video.url,
+                                        to: video.destination)
+            }
+            return
+        }
+        pendingDownloadApply = nil
         let url = entry.imageURL.standardizedFileURL
         let chosen = targetScreens()
         guard !chosen.isEmpty else {
@@ -227,6 +277,10 @@ final class WallpaperService: ObservableObject {
         setApplyGeneration(token)
         let applyAll = applyAllDisplays
         isApplying = true
+        if let assetID = entry.aerialAssetID {
+            applyAerial(assetID, path: url.path, token: token)
+            return
+        }
         Task { @MainActor [weak self] in
             guard let self else { return }
             defer {
@@ -275,6 +329,158 @@ final class WallpaperService: ObservableObject {
     }
 
     // iCloud Drive placeholder — pull the bytes before NSWorkspace / store write
+    // MARK: - Downloadable Apple pictures
+
+    /// Lattice's own copies of Apple pictures macOS has not downloaded.
+    static var downloadsFolder: URL {
+        let fallback = URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
+            .appendingPathComponent("Library/Application Support/io.github.sam32j.lattice",
+                                    isDirectory: true)
+        return (PrivateFileStore.containerURL ?? fallback)
+            .appendingPathComponent("Wallpapers", isDirectory: true)
+    }
+
+    // fetch one file with progress; install runs on the session's queue
+    private func download(_ entry: WallpaperSupport.Entry, from url: URL,
+                          install: @escaping (URL, HTTPURLResponse) -> Bool) {
+        guard downloadProgress[entry.id] == nil else { return }
+        downloadProgress[entry.id] = 0
+        let task = URLSession.shared.downloadTask(with: url) { [weak self] location, response, error in
+            var ok = false
+            if error == nil, let location, let http = response as? HTTPURLResponse, http.statusCode == 200 {
+                ok = install(location, http)
+            }
+            DispatchQueue.main.async {
+                self?.finishDownload(entry, ok: ok)
+            }
+        }
+        downloadObservations[entry.id] = task.progress.observe(\.fractionCompleted) { [weak self] progress, _ in
+            let fraction = progress.fractionCompleted
+            DispatchQueue.main.async {
+                guard let self, self.downloadProgress[entry.id] != nil else { return }
+                self.downloadProgress[entry.id] = min(max(fraction, 0), 1)
+            }
+        }
+        task.resume()
+    }
+
+    /// Puts a video where the system caches aerials, tagged as the system tags
+    /// its own downloads, so WallpaperAgent plays it instead of fetching again.
+    private static func installAerialVideo(_ location: URL, response: HTTPURLResponse,
+                                           source: URL, to destination: URL) -> Bool {
+        let manager = FileManager.default
+        try? manager.createDirectory(at: destination.deletingLastPathComponent(),
+                                     withIntermediateDirectories: true)
+        let staging = destination.deletingLastPathComponent()
+            .appendingPathComponent(".\(destination.lastPathComponent).lattice-download")
+        try? manager.removeItem(at: staging)
+        do {
+            try manager.moveItem(at: location, to: staging)
+        } catch {
+            return false
+        }
+        try? manager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: staging.path)
+        setExtendedAttribute("SourceURL", source.absoluteString, at: staging)
+        if let etag = response.value(forHTTPHeaderField: "ETag") {
+            setExtendedAttribute("LastETag", etag, at: staging)
+        }
+        guard !manager.fileExists(atPath: destination.path) else {
+            // the system finished its own copy meanwhile
+            try? manager.removeItem(at: staging)
+            return true
+        }
+        do {
+            try manager.moveItem(at: staging, to: destination)
+        } catch {
+            try? manager.removeItem(at: staging)
+            return false
+        }
+        return true
+    }
+
+    private static func setExtendedAttribute(_ name: String, _ value: String, at url: URL) {
+        let bytes = Array(value.utf8)
+        _ = url.withUnsafeFileSystemRepresentation { path in
+            bytes.withUnsafeBytes { buffer in
+                setxattr(path, name, buffer.baseAddress, buffer.count, 0, 0)
+            }
+        }
+    }
+
+    private func finishDownload(_ entry: WallpaperSupport.Entry, ok: Bool) {
+        downloadObservations[entry.id] = nil
+        downloadProgress[entry.id] = nil
+        guard isAvailable else { return }
+        guard ok else {
+            if pendingDownloadApply == entry.id {
+                lastError = FeatureStrings.wallpaper(L10n.shared.language).downloadFailed
+            }
+            return
+        }
+        var local = entry
+        local.remoteAsset = nil
+        local.pendingVideo = nil
+        if let index = entries.firstIndex(where: { $0.id == entry.id }) { entries[index] = local }
+        if let index = cachedApple?.firstIndex(where: { $0.id == entry.id }) { cachedApple?[index] = local }
+        if pendingDownloadApply == entry.id { apply(local) }
+    }
+
+    /// Unzips a catalog download and keeps its picture (AssetData/*.heic).
+    private static func installDownloadedPicture(zip: URL, expectedSHA1: Data?, to destination: URL) -> Bool {
+        let manager = FileManager.default
+        if let expectedSHA1 {
+            guard let data = try? Data(contentsOf: zip, options: .mappedIfSafe),
+                  Data(Insecure.SHA1.hash(data: data)) == expectedSHA1 else { return false }
+        }
+        let work = manager.temporaryDirectory
+            .appendingPathComponent("lattice-wallpaper-\(UUID().uuidString)", isDirectory: true)
+        defer { try? manager.removeItem(at: work) }
+        guard (try? manager.createDirectory(at: work, withIntermediateDirectories: true)) != nil,
+              Shell.run("/usr/bin/ditto", ["-x", "-k", zip.path, work.path], timeout: 60).status == 0
+        else { return false }
+        let assetData = work.appendingPathComponent("AssetData", isDirectory: true)
+        let found = (try? manager.contentsOfDirectory(at: assetData, includingPropertiesForKeys: [.fileSizeKey]))?
+            .filter { WallpaperSupport.isStillImageURL($0) }
+            .max { lhs, rhs in
+                let left = (try? lhs.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                let right = (try? rhs.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                return left < right
+            }
+        guard let found else { return false }
+        let folder = destination.deletingLastPathComponent()
+        _ = PrivateFileStore.createDirectory(at: folder)
+        if !manager.fileExists(atPath: folder.path) {
+            try? manager.createDirectory(at: folder, withIntermediateDirectories: true)
+        }
+        try? manager.removeItem(at: destination)
+        do {
+            try manager.moveItem(at: found, to: destination)
+        } catch {
+            return false
+        }
+        return true
+    }
+
+    // aerials only go through the store, on every Space and display
+    private func applyAerial(_ assetID: String, path: String, token: UUID) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { if self.applyToken == token { self.isApplying = false } }
+            let ok = await Task.detached(priority: .userInitiated) { [weak self] in
+                guard let self else { return false }
+                return WallpaperStore.setAerialOnAllSpaces(assetID) {
+                    self.currentApplyGeneration() == token
+                }
+            }.value
+            guard self.isAvailable, self.applyToken == token else { return }
+            if ok {
+                self.appliedPath = path
+            } else {
+                self.lastError = FeatureStrings.wallpaper(L10n.shared.language).applyFailed
+            }
+        }
+    }
+
     static func needsCloudDownload(_ url: URL) -> Bool {
         let keys: Set<URLResourceKey> = [
             .isUbiquitousItemKey,
@@ -519,7 +725,6 @@ final class WallpaperService: ObservableObject {
             }
         }
         var fileMap: [String: Data] = [:]
-        var pathMap: [Data: String] = [:]
         ownSources = ownBookmarks.enumerated().map { index, data in
             let id = bookmarkIdentity(data, index: index)
             let url = byData[data] ?? resolveBookmark(data)
@@ -530,10 +735,10 @@ final class WallpaperService: ObservableObject {
                 if exists && !isDir.boolValue {
                     let path = url.standardizedFileURL.path
                     fileMap[path] = data
-                    pathMap[data] = path
                 }
                 return OwnSource(id: id,
                                  title: url.lastPathComponent,
+                                 path: url.standardizedFileURL.path,
                                  isFolder: isFolder,
                                  isReachable: exists,
                                  bookmark: data)
@@ -541,12 +746,12 @@ final class WallpaperService: ObservableObject {
             // resolve failed (unmounted volume, stale bookmark) — still list so user can remove
             return OwnSource(id: id,
                              title: unavailable,
+                             path: nil,
                              isFolder: false,
                              isReachable: false,
                              bookmark: data)
         }
         fileBookmarkByPath = fileMap
-        pathByFileBookmark = pathMap
     }
 
     // stable ForEach id from bookmark bytes (index is fallback salt only)

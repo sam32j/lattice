@@ -66,6 +66,77 @@ enum WallpaperSupport {
         let previewURL: URL
         let title: String
         let source: Source
+        /// An Apple aerial, applied through the wallpaper store by its ID;
+        /// its image is only the catalog thumbnail.
+        var aerialAssetID: String? = nil
+        /// A dynamic picture macOS has not downloaded yet: where to fetch it.
+        /// Its image URL is where the download will be kept.
+        var remoteAsset: RemoteAsset? = nil
+        /// An aerial whose video is not in the system's cache yet.
+        var pendingVideo: RemoteVideo? = nil
+
+        var needsDownload: Bool { remoteAsset != nil || pendingVideo != nil }
+    }
+
+    /// An aerial video to fetch, and where the system keeps it.
+    struct RemoteVideo: Equatable {
+        let url: URL
+        let destination: URL
+    }
+
+    /// Only HTTPS addresses on Apple's domains are fetched.
+    static func isAppleDownloadURL(_ url: URL) -> Bool {
+        guard url.scheme == "https", let host = url.host?.lowercased() else { return false }
+        return ["apple.com", "cdn-apple.com"].contains { host == $0 || host.hasSuffix("." + $0) }
+    }
+
+    /// One desktop picture in the system's MobileAsset catalog.
+    struct RemoteAsset: Equatable {
+        let pictureID: String
+        let url: URL
+        /// SHA-1 of the zip, as the catalog measures it.
+        let sha1: Data?
+    }
+
+    /// Downloadable desktop pictures, and the folder their stills are kept in.
+    struct Downloads {
+        let catalog: [String: RemoteAsset]
+        let folder: URL
+    }
+
+    /// The system's own catalog of desktop pictures it downloads on demand.
+    static let desktopPictureCatalogURL = URL(fileURLWithPath:
+        "/System/Library/AssetsV2/com_apple_MobileAsset_DesktopPicture/com_apple_MobileAsset_DesktopPicture.xml")
+
+    /// Reads the catalog: each picture's zip on Apple's servers. Only HTTPS
+    /// addresses on Apple's domains are kept; the newest content version wins.
+    static func desktopPictureCatalog(at url: URL = desktopPictureCatalogURL,
+                                      fileManager: FileManager = .default) -> [String: RemoteAsset] {
+        guard let data = fileManager.contents(atPath: url.path),
+              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil)
+                as? [String: Any],
+              let assets = plist["Assets"] as? [[String: Any]]
+        else { return [:] }
+        var result: [String: (version: Int, asset: RemoteAsset)] = [:]
+        for asset in assets {
+            guard let id = asset["DesktopPictureID"] as? String, !id.isEmpty,
+                  let base = asset["__BaseURL"] as? String,
+                  let relative = asset["__RelativePath"] as? String,
+                  let remote = URL(string: base + relative),
+                  isAppleDownloadURL(remote)
+            else { continue }
+            let version = asset["_ContentVersion"] as? Int ?? 0
+            if let existing = result[id], existing.version >= version { continue }
+            result[id] = (version, RemoteAsset(pictureID: id, url: remote,
+                                               sha1: asset["_Measurement"] as? Data))
+        }
+        return result.mapValues(\.asset)
+    }
+
+    /// Where a downloaded picture's still is kept.
+    static func downloadedStillURL(pictureID: String, in folder: URL) -> URL {
+        let safe = pictureID.replacingOccurrences(of: "/", with: "-")
+        return folder.appendingPathComponent("\(safe).heic")
     }
 
     static let appleDesktopPicturesPath = "/System/Library/Desktop Pictures"
@@ -84,9 +155,24 @@ enum WallpaperSupport {
         url.deletingPathExtension().lastPathComponent
     }
 
-    // top-level stills + .madesktop → thumbnail HEIC
+    /// Where macOS keeps the aerial catalog: its manifest, names and thumbnails.
+    static var appleAerialsURL: URL {
+        URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
+            .appendingPathComponent("Library/Application Support/com.apple.wallpaper/aerials",
+                                    isDirectory: true)
+    }
+
+    /// Every Apple wallpaper the system has on disk, read at runtime: the
+    /// stills and dynamic HEICs at the top of Desktop Pictures, its
+    /// subfolders (Solid Colors), dynamic pictures whose full asset has been
+    /// downloaded, and, when given its root, the aerial catalog. A dynamic
+    /// picture still waiting for its download has only a thumbnail, so it
+    /// cannot be set and is left out.
     static func enumerateAppleEntries(
         at root: URL = appleDesktopPicturesURL,
+        aerialsRoot: URL? = nil,
+        downloads: Downloads? = nil,
+        languages: [String] = ["en"],
         fileManager: FileManager = .default
     ) -> [Entry] {
         guard let names = try? fileManager.contentsOfDirectory(atPath: root.path) else {
@@ -94,21 +180,112 @@ enum WallpaperSupport {
         }
         var entries: [Entry] = []
         var seen = Set<String>()
-        for name in names where !name.hasPrefix(".") {
+        func add(_ entry: Entry) {
+            guard seen.insert(entry.imageURL.standardizedFileURL.path).inserted else { return }
+            entries.append(entry)
+        }
+        for name in names.sorted() where !name.hasPrefix(".") {
             let url = root.appendingPathComponent(name)
-            guard let resolved = resolveAppleStill(at: url, root: root, fileManager: fileManager)
-            else { continue }
-            let key = resolved.imageURL.standardizedFileURL.path
-            guard seen.insert(key).inserted else { continue }
-            entries.append(resolved)
+            var isDir: ObjCBool = false
+            if fileManager.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue,
+               url.pathExtension.isEmpty {
+                let children = (try? fileManager.contentsOfDirectory(atPath: url.path)) ?? []
+                for child in children.sorted() where !child.hasPrefix(".") {
+                    let childURL = url.appendingPathComponent(child)
+                    if isStillImageURL(childURL) {
+                        add(Entry(id: childURL.standardizedFileURL.path, imageURL: childURL,
+                                  previewURL: childURL, title: title(for: childURL), source: .apple))
+                    }
+                }
+                continue
+            }
+            if let resolved = resolveAppleStill(at: url, root: root, downloads: downloads,
+                                                 fileManager: fileManager) {
+                add(resolved)
+            }
+        }
+        // Downloaded dynamic assets with no .madesktop beside them (Sonoma Horizon).
+        let assets = root.appendingPathComponent(".wallpapers", isDirectory: true)
+        for stem in ((try? fileManager.contentsOfDirectory(atPath: assets.path)) ?? []).sorted()
+        where !stem.hasPrefix(".") {
+            let folder = assets.appendingPathComponent(stem, isDirectory: true)
+            let image = folder.appendingPathComponent("\(stem).heic")
+            guard fileManager.fileExists(atPath: image.path) else { continue }
+            let candidates = [
+                folder.appendingPathComponent("\(stem) Thumbnail@2x.png"),
+                folder.appendingPathComponent("\(stem) Thumbnail.png"),
+                root.appendingPathComponent(".thumbnails/\(stem).heic"),
+            ]
+            let preview = candidates.first { fileManager.fileExists(atPath: $0.path) } ?? image
+            add(Entry(id: image.standardizedFileURL.path, imageURL: image, previewURL: preview,
+                      title: stem, source: .apple))
+        }
+        if let aerialsRoot {
+            for entry in aerialEntries(at: aerialsRoot, languages: languages, fileManager: fileManager) {
+                add(entry)
+            }
         }
         return entries.sorted {
             $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
         }
     }
 
+    /// The aerials in the system's catalog, named as System Settings names
+    /// them. WallpaperAgent fetches the video itself once one is chosen, so
+    /// each needs only its local thumbnail. Portrait variants are skipped,
+    /// and a variant named only for its appearance takes its label first
+    /// ("macOS Light").
+    static func aerialEntries(at root: URL,
+                              languages: [String] = ["en"],
+                              fileManager: FileManager = .default) -> [Entry] {
+        let manifest = root.appendingPathComponent("manifest", isDirectory: true)
+        guard let data = fileManager.contents(atPath: manifest.appendingPathComponent("entries.json").path),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let assets = json["assets"] as? [[String: Any]]
+        else { return [] }
+        let tablePath = manifest
+            .appendingPathComponent("TVIdleScreenStrings.bundle/Contents/Resources/Localizable.nocache.loctable")
+        let tables = fileManager.contents(atPath: tablePath.path)
+            .flatMap { try? PropertyListSerialization.propertyList(from: $0, format: nil) }
+            as? [String: [String: String]] ?? [:]
+        let table = languages.lazy.compactMap { tables[$0] }.first ?? tables["en"] ?? [:]
+        let english = tables["en"] ?? [:]
+        let thumbnails = root.appendingPathComponent("thumbnails", isDirectory: true)
+        let videos = root.appendingPathComponent("videos", isDirectory: true)
+
+        var entries: [Entry] = []
+        var titles = Set<String>()
+        for asset in assets.sorted(by: { ($0["preferredOrder"] as? Int ?? 0) < ($1["preferredOrder"] as? Int ?? 0) }) {
+            guard let id = asset["id"] as? String, !id.isEmpty else { continue }
+            let variant = asset["variant"] as? [String: Any]
+            if variant?["orientation"] as? String == "portrait" { continue }
+            let thumbnail = thumbnails.appendingPathComponent("\(id).png")
+            guard fileManager.fileExists(atPath: thumbnail.path) else { continue }
+            let key = asset["localizedNameKey"] as? String ?? ""
+            let label = asset["accessibilityLabel"] as? String
+            var name = table[key] ?? english[key] ?? label ?? id
+            if variant != nil, let label, !label.isEmpty, !name.localizedCaseInsensitiveContains(label) {
+                name = "\(label) \(name)"
+            }
+            guard titles.insert(name).inserted else { continue }
+            // the system caches each video as videos/<id>.mov
+            let video = videos.appendingPathComponent("\(id).mov")
+            var pending: RemoteVideo?
+            if !fileManager.fileExists(atPath: video.path),
+               let address = asset.first(where: { $0.key.hasPrefix("url-") })?.value as? String,
+               let remote = URL(string: address), isAppleDownloadURL(remote) {
+                pending = RemoteVideo(url: remote, destination: video)
+            }
+            entries.append(Entry(id: "aerial:\(id)", imageURL: thumbnail, previewURL: thumbnail,
+                                 title: name, source: .apple, aerialAssetID: id,
+                                 pendingVideo: pending))
+        }
+        return entries
+    }
+
     static func resolveAppleStill(at url: URL,
                                   root: URL = appleDesktopPicturesURL,
+                                  downloads: Downloads? = nil,
                                   fileManager: FileManager = .default) -> Entry? {
         if isStillImageURL(url), fileManager.fileExists(atPath: url.path) {
             return Entry(id: url.standardizedFileURL.path,
@@ -129,9 +306,22 @@ enum WallpaperSupport {
         let plistThumbnail = madesktopThumbnailPath(at: url).map { URL(fileURLWithPath: $0) }
 
         let imageURL: URL?
+        var remote: RemoteAsset?
         // full-size still only; .thumbnails / thumbnailPath are preview-sized
         if fileManager.fileExists(atPath: wallpaperAsset.path) {
             imageURL = wallpaperAsset
+        } else if let downloads {
+            // not downloaded by macOS: Lattice's own copy, or one to fetch
+            let pictureID = madesktopValue("mobileAssetID", at: url) ?? stem
+            let kept = downloadedStillURL(pictureID: pictureID, in: downloads.folder)
+            if fileManager.fileExists(atPath: kept.path) {
+                imageURL = kept
+            } else if let asset = downloads.catalog[pictureID] {
+                imageURL = kept
+                remote = asset
+            } else {
+                imageURL = nil
+            }
         } else {
             imageURL = nil
         }
@@ -141,14 +331,26 @@ enum WallpaperSupport {
             previewURL = plistThumbnail
         } else if fileManager.fileExists(atPath: thumbnail.path) {
             previewURL = thumbnail
-        } else {
+        } else if remote == nil {
             previewURL = imageURL
+        } else {
+            return nil
         }
         return Entry(id: url.standardizedFileURL.path,
                      imageURL: imageURL,
                      previewURL: previewURL,
                      title: stem,
-                     source: .apple)
+                     source: .apple,
+                     remoteAsset: remote)
+    }
+
+    static func madesktopValue(_ key: String, at url: URL) -> String? {
+        guard let data = try? Data(contentsOf: url),
+              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil)
+                as? [String: Any],
+              let value = plist[key] as? String, !value.isEmpty
+        else { return nil }
+        return value
     }
 
     static func madesktopThumbnailPath(at url: URL) -> String? {
@@ -226,6 +428,49 @@ enum WallpaperSupport {
         }
     }
 
+    /// Imported pictures that came from one folder.
+    struct OwnGroup: Equatable, Identifiable {
+        let path: String
+        let entries: [Entry]
+        var id: String { path }
+    }
+
+    /// Imported pictures under the folder they came from. A picture joins
+    /// its deepest imported folder, and one added on its own joins its
+    /// parent. Imported folders keep their import order; the rest follow.
+    static func ownGroups(_ entries: [Entry], folderRoots: [String]) -> [OwnGroup] {
+        let roots = folderRoots.map { URL(fileURLWithPath: $0).standardizedFileURL.path }
+        var rank: [String: Int] = [:]
+        for (index, root) in roots.enumerated() where rank[root] == nil {
+            rank[root] = index
+        }
+        var byPath: [String: [Entry]] = [:]
+        for entry in entries where entry.source == .own {
+            let path = entry.id
+            let root = roots
+                .filter { path.hasPrefix($0.hasSuffix("/") ? $0 : $0 + "/") }
+                .max { $0.count < $1.count }
+                ?? (path as NSString).deletingLastPathComponent
+            byPath[root, default: []].append(entry)
+        }
+        return byPath.keys.sorted { lhs, rhs in
+            let left = rank[lhs] ?? Int.max
+            let right = rank[rhs] ?? Int.max
+            if left != right { return left < right }
+            return lhs.localizedStandardCompare(rhs) == .orderedAscending
+        }
+        .map { OwnGroup(path: $0, entries: byPath[$0] ?? []) }
+    }
+
+    /// A path as Finder shows it, with the home folder as a tilde.
+    static func displayPath(_ path: String, home: String = NSHomeDirectory()) -> String {
+        guard !home.isEmpty else { return path }
+        if path == home { return "~" }
+        let prefix = home.hasSuffix("/") ? home : home + "/"
+        guard path.hasPrefix(prefix) else { return path }
+        return "~/" + path.dropFirst(prefix.count)
+    }
+
     static let pageSize = 24
 
     static func pageCount(itemCount: Int, pageSize: Int = pageSize) -> Int {
@@ -296,9 +541,32 @@ enum WallpaperSupport {
     static func patchStoreRoot(_ root: inout [String: Any],
                                imageURL: URL,
                                now: Date = Date()) -> Bool {
-        guard let configuration = imageFileConfigurationData(for: imageURL),
-              let options = fillScreenOptionValuesData()
-        else { return false }
+        guard let configuration = imageFileConfigurationData(for: imageURL) else { return false }
+        return patchStoreRoot(&root, provider: "com.apple.wallpaper.choice.image",
+                              configuration: configuration, now: now)
+    }
+
+    /// An aerial's choice names only its asset; the agent fetches the video.
+    static func aerialConfigurationData(assetID: String) -> Data? {
+        try? PropertyListSerialization.data(fromPropertyList: ["assetID": assetID],
+                                            format: .binary, options: 0)
+    }
+
+    @discardableResult
+    static func patchStoreRoot(_ root: inout [String: Any],
+                               aerialAssetID: String,
+                               now: Date = Date()) -> Bool {
+        guard let configuration = aerialConfigurationData(assetID: aerialAssetID) else { return false }
+        return patchStoreRoot(&root, provider: "com.apple.wallpaper.choice.aerials",
+                              configuration: configuration, now: now)
+    }
+
+    @discardableResult
+    static func patchStoreRoot(_ root: inout [String: Any],
+                               provider: String,
+                               configuration: Data,
+                               now: Date = Date()) -> Bool {
+        guard let options = fillScreenOptionValuesData() else { return false }
 
         // Sonoma+ store always has this container; inventing it rewrites unsupported shapes
         guard var allSpaces = root["AllSpacesAndDisplays"] as? [String: Any] else { return false }
@@ -306,7 +574,7 @@ enum WallpaperSupport {
         let slot: [String: Any] = [
             "Content": [
                 "Choices": [[
-                    "Provider": "com.apple.wallpaper.choice.image",
+                    "Provider": provider,
                     "Files": [] as [Any],
                     "Configuration": configuration,
                 ]],
