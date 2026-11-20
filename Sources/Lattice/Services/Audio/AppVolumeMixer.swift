@@ -331,6 +331,7 @@ final class AppVolumeMixer: ObservableObject {
     func start() {
         stopped = false
         processMonitoringEnabled = AppFeature.mixer.isAvailable
+            && UserDefaults.standard.bool(forKey: DefaultsKey.volumeMixerEnabled)
         if processMonitoringEnabled {
             // Created here, on the main thread, before any refresh reads the
             // AirPlay snapshot from the HAL queue.
@@ -379,6 +380,7 @@ final class AppVolumeMixer: ObservableObject {
     /// Tears every tap down so all apps return to untouched system output, and
     /// hands back the one system setting the mixer changes on its own.
     func stopAll() {
+        flushPersistedVolumes()
         stopped = true
         builds.invalidateAll()
         for engine in engines.values { engine.stop() }
@@ -2271,7 +2273,11 @@ final class AppVolumeMixer: ObservableObject {
 
     // MARK: - Persistence
 
+    private var pendingPersistedVolumes: [String: Double]?
+    private var persistVolumesWork: DispatchWorkItem?
+
     private func savedVolumes() -> [String: Double] {
+        if let pending = pendingPersistedVolumes { return pending }
         let raw = UserDefaults.standard.dictionary(forKey: DefaultsKey.appVolumes) ?? [:]
         var sanitized: [String: Double] = [:]
         for (id, value) in raw {
@@ -2404,6 +2410,20 @@ final class AppVolumeMixer: ObservableObject {
         } else {
             volumes[id] = volume
         }
+        pendingPersistedVolumes = volumes
+        persistVolumesWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.flushPersistedVolumes()
+        }
+        persistVolumesWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: work)
+    }
+
+    private func flushPersistedVolumes() {
+        persistVolumesWork?.cancel()
+        persistVolumesWork = nil
+        guard let volumes = pendingPersistedVolumes else { return }
+        pendingPersistedVolumes = nil
         UserDefaults.standard.set(volumes, forKey: DefaultsKey.appVolumes)
     }
 
