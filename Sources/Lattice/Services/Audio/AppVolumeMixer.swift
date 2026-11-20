@@ -652,13 +652,18 @@ final class AppVolumeMixer: ObservableObject {
     /// UI feedback is immediate; one HAL write runs at a time and a burst
     /// retains only its newest requested level. Device changes never inherit
     /// a write intended for the previous output.
-    func requestOutputAdjustment(volume: Double? = nil, muted: Bool? = nil,
+    /// `publishes: false` is for a slider that is being dragged: the level is
+    /// still written to the output, but `systemOutputVolume`/`systemOutputMuted`
+    /// are left alone so every view observing the mixer doesn't re-render on
+    /// each tick. The dragging row shows its own value and must make one
+    /// publishing request when the drag ends.
+    func requestOutputAdjustment(volume: Double? = nil, muted: Bool? = nil, publishes: Bool = true,
                                  completion: @escaping (Bool) -> Void = { _ in }) {
-        enqueueOutputAdjustment(volume: volume, muted: muted) { completion($0.handled) }
+        enqueueOutputAdjustment(volume: volume, muted: muted, publishes: publishes) { completion($0.handled) }
     }
 
     private func enqueueOutputAdjustment(volume: Double? = nil, muted: Bool? = nil,
-                                         step: OutputStep? = nil,
+                                         step: OutputStep? = nil, publishes: Bool = true,
                                          completion: @escaping (OutputKeyResult) -> Void) {
         guard let device = outputControlListenerDevice,
               volume?.isFinite != false,
@@ -681,7 +686,7 @@ final class AppVolumeMixer: ObservableObject {
         if let volume {
             let value = min(1, max(0, volume))
             adjustment.volume = value
-            if step == nil { systemOutputVolume = value }
+            if step == nil, publishes, systemOutputVolume != value { systemOutputVolume = value }
             // Many outputs still play faintly at a scalar of zero; macOS mutes
             // there, so do the same. A level the percent labels show as 0%
             // counts: a key steps from the level the output reports, so a
@@ -689,12 +694,12 @@ final class AppVolumeMixer: ObservableObject {
             if systemOutputMuted != nil, muted == nil {
                 let mutes = MixerRoutingSupport.mutesOutput(atVolume: value)
                 adjustment.muted = mutes
-                if step == nil { systemOutputMuted = mutes }
+                if step == nil, publishes, systemOutputMuted != mutes { systemOutputMuted = mutes }
             }
         }
         if let muted {
             adjustment.muted = muted
-            if step == nil { systemOutputMuted = muted }
+            if step == nil, publishes, systemOutputMuted != muted { systemOutputMuted = muted }
         }
         pendingOutputAdjustment = adjustment
         previous?.completion(.superseded)
