@@ -46,7 +46,9 @@ enum SettingsSidebarSupport {
             guard destination.page == page, destination.sectionAnchor != nil,
                   feature != .extraBrightness,
                   feature != .wallpaper,
-                  (feature == .brightness || feature == .bluetoothSleep || feature == .switcher || feature.isVisibleInSettings(isAvailable: isAvailable)) else { continue }
+                  // Bluetooth lives on the Display & Energy page; no row of its own.
+                  feature != .bluetoothSleep,
+                  (feature == .brightness || feature == .switcher || feature.isVisibleInSettings(isAvailable: isAvailable)) else { continue }
             rows.append(SettingsSidebarItem(id: .feature(feature),
                                             destination: destination,
                                             title: featureTitle(feature),
@@ -69,7 +71,9 @@ enum SettingsSidebarSupport {
             return items.contains { $0.id == .page(destination.page) }
                 ? nil : FeatureSettingsDestination(destination.page)
         case .energy:
-            if destination.sectionAnchor == .extraBrightness, items.contains(where: { $0.id == .feature(.brightness) }) { return nil }
+            // These scroll to their own card on the Display & Energy page.
+            if destination.sectionAnchor == .extraBrightness || destination.sectionAnchor == .bluetoothSleep,
+               items.contains(where: { $0.id == .feature(.brightness) }) { return nil }
             return items.first { $0.destination.page == destination.page }?.destination
         default:
             return nil
@@ -85,7 +89,12 @@ enum SettingsSidebarSupport {
            items.contains(where: { $0.id == .page(.screenshot) }) {
             return .page(.screenshot)
         }
-        if destination.page == .energy, destination.sectionAnchor == .extraBrightness,
+        if destination.page == .windowLayoutShortcuts,
+           items.contains(where: { $0.id == .page(.windowLayout) }) {
+            return .page(.windowLayout)
+        }
+        if destination.page == .energy,
+           destination.sectionAnchor == .extraBrightness || destination.sectionAnchor == .bluetoothSleep,
            items.contains(where: { $0.id == .feature(.brightness) }) { return .feature(.brightness) }
         if let preferredID,
            items.contains(where: { $0.id == preferredID && $0.destination == destination }) {
