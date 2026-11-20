@@ -16,7 +16,9 @@ enum SwitcherSearchLayoutTests {
         let showsHints: Bool
         @Published var windows = [1]
         @Published var searchQuery = ""
-        @Published var isSearchPinned = false
+        @Published var isSearchActivated = false
+        var sessionScope: SwitcherSessionScope = .allApps
+        func activateSearch() { isSearchActivated = true }
         var totalWindowCount = 987
         var grid = SwitcherGrid.empty
         var iconRowLayout = SwitcherIconRowLayout.empty
@@ -33,11 +35,15 @@ enum SwitcherSearchLayoutTests {
             recomputeLayouts(for: windows)
         }
 
+        /// Mirrors the switcher: a search sizes the panel for the whole session.
+        lazy var sessionCount = windows.count
+
         func recomputeLayouts(for items: [Int]) {
             recomputations += 1
             let screen = NSScreen(visibleFrame: CGRect(x: 0, y: 0, width: 1440, height: 900))
-            grid = .compute(count: max(1, items.count), on: screen, searchTopInset: searchTopInset)
-            iconRowLayout = .compute(appCount: items.count, selectedWindowCount: 1,
+            let sizing = searchQuery.isEmpty ? items.count : sessionCount
+            grid = .compute(count: max(1, sizing), on: screen, searchTopInset: searchTopInset)
+            iconRowLayout = .compute(appCount: sizing, selectedWindowCount: 1,
                                      screenVisibleFrame: screen.visibleFrame, showsShortcutHints: showsHints,
                                      tileWidth: usesWindowRow ? SwitcherIconRowLayout.windowTileWidth
                                          : SwitcherIconRowLayout.appTileWidth,
@@ -59,7 +65,7 @@ enum SwitcherSearchLayoutTests {
             case .grid: return grid.panelSize
             case .icons: return iconRowLayout.panelSize
             case .simpleApps: return iconRowLayout.simplePanelSize
-            case .simpleWindows: return iconRowLayout.simpleWindowPanelSize
+            case .simpleWindows: return iconRowLayout.simplePanelSize
             }
         }
     }
@@ -93,6 +99,16 @@ enum SwitcherSearchLayoutTests {
         var body: some View { Color.clear }
     }
 
+    struct SwitcherSearchCaret: View {
+        var body: some View { Color.clear.frame(width: 1.5, height: 14) }
+    }
+
+    struct SwitcherGlassBackdrop: View {
+        let cornerRadius: CGFloat
+        var contrast: HUDBackdrop.Contrast = .standard
+        var body: some View { Color.clear }
+    }
+
     struct SwitcherIconRowSurface: View {
         let cornerRadius: CGFloat
         let fill: Color
@@ -102,7 +118,7 @@ enum SwitcherSearchLayoutTests {
 
     struct Strings {
         var s: Self { self }
-        let switcherSearchPin = "Search windows"
+        let switcherSearchPlaceholder = "Search"
     }
 
     struct Host: View {
@@ -136,33 +152,29 @@ enum SwitcherSearchLayoutTests {
                         let name = "Switcher search \(mode), \(size), hints=\(hints)"
                         let model = Model(mode: mode, showsHints: hints)
                         let original = model.currentPanelSize
-                        suite.expect(original == model.contentSize && model.searchTopInset == 0,
-                                     "\(name): no search preserves the content's original size")
-                        checkLayout(suite, model: model, name: name, visible: false)
+                        // The simple row rests bare, like the system switcher;
+                        // the window layouts keep the field on screen.
+                        let restsBare = model.simpleModeEnabled
+                        suite.expect(restsBare ? model.searchTopInset == 0 && original == model.contentSize
+                                               : model.searchTopInset > 0
+                                                   && original.width == model.contentSize.width
+                                                   && original.height == model.contentSize.height + model.searchTopInset,
+                                     "\(name): the resting search field is reserved only outside the simple row")
+                        checkLayout(suite, model: model, name: name + " resting", visible: !restsBare)
                         model.search("spot")
-                        suite.expect(model.currentPanelSize.width == original.width
-                                     && model.currentPanelSize.height > original.height,
-                                     "\(name): typing reserves a header without changing content width")
+                        suite.expect(restsBare ? model.currentPanelSize.width == original.width
+                                                   && model.currentPanelSize.height > original.height
+                                               : model.currentPanelSize == original,
+                                     "\(name): typing shows the field without changing the panel width")
                         checkLayout(suite, model: model, name: name, visible: true)
-                        model.search("")
-                        suite.expect(model.currentPanelSize == original,
-                                     "\(name): clearing an unpinned query restores the original size")
-                        let before = (model.recomputations, model.resizes)
-                        model.pinSearch()
-                        suite.expect(model.isSearchPinned && model.recomputations == before.0 + 1
-                                     && model.resizes == before.1 + 1 && model.resizedTo == model.currentPanelSize
-                                     && model.currentPanelSize.height > original.height,
-                                     "\(name): pinning an empty query recomputes and resizes immediately")
-                        checkLayout(suite, model: model, name: name + " pinned", visible: true)
                         model.search(String(repeating: "long query ", count: 6))
                         checkLayout(suite, model: model, name: name + " long query", visible: true)
-                        let pinnedSize = model.currentPanelSize
                         model.search("")
-                        suite.expect(model.currentPanelSize == pinnedSize,
-                                     "\(name): clearing a pinned query keeps the search header")
+                        suite.expect(model.currentPanelSize == original,
+                                     "\(name): clearing the query returns the panel to rest")
                         model.search("missing", results: [])
-                        suite.expect(model.currentPanelSize.width == model.grid.panelSize.width,
-                                     "\(name): no results use the same grid width as the empty-state view")
+                        suite.expect(model.currentPanelSize.width == original.width,
+                                     "\(name): no results keep the panel's width and shape")
                         checkLayout(suite, model: model, name: name + " no results", visible: true)
                     }
                 }
@@ -216,18 +228,16 @@ enum SwitcherSearchLayoutTests {
     private static func checkScreenBudget(_ suite: TestSuite, size: String) {
         for height in stride(from: 650, through: 1050, by: 25) {
             let screen = NSScreen(visibleFrame: CGRect(x: 0, y: 0, width: 1440, height: CGFloat(height)))
-            let gridInset = SwitcherSearchLayout.topInset(query: "spot", isPinned: false,
-                                                          contentPadding: SwitcherGrid.padding)
+            let gridInset = SwitcherSearchLayout.topInset(contentPadding: SwitcherGrid.padding)
             let grid = SwitcherGrid.compute(count: 60, on: screen, maxColumns: 2, searchTopInset: gridInset)
             suite.expect(grid.panelSize.height + gridInset <= screen.visibleFrame.height * 0.85 + 0.5,
                          "Switcher \(size): search and grid rows share the \(height)-point screen budget")
-            let iconInset = SwitcherSearchLayout.topInset(query: "", isPinned: true,
-                                                          contentPadding: SwitcherIconRowLayout.padding)
+            let iconInset = SwitcherSearchLayout.topInset(contentPadding: SwitcherIconRowLayout.padding)
             let icons = SwitcherIconRowLayout.compute(appCount: 60, selectedWindowCount: 1,
                                                        screenVisibleFrame: screen.visibleFrame,
                                                        maxColumns: 2, searchTopInset: iconInset)
             suite.expect(icons.panelSize.height + iconInset <= screen.visibleFrame.height * 0.85 + 0.5,
-                         "Switcher \(size): pinned search and wrapped icons share the \(height)-point screen budget")
+                         "Switcher \(size): search and wrapped icons share the \(height)-point screen budget")
         }
     }
 }
