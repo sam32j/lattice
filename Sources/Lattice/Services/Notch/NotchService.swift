@@ -1873,7 +1873,14 @@ final class NotchService: ObservableObject {
     /// closing a window does.
     func resignPanelKey() {
         guard let panel else { return }
+        let wasKey = panel.isKeyWindow
         panel.resignKey()
+        // The island never activates Lattice, but while key it held the
+        // keyboard of the app in front; that app gets it back, text caret and all.
+        if wasKey, let front = NSWorkspace.shared.frontmostApplication,
+           front.processIdentifier != ProcessInfo.processInfo.processIdentifier {
+            front.activate()
+        }
         guard NSApp.keyWindow === panel,
               NSWorkspace.shared.frontmostApplication?.processIdentifier == ProcessInfo.processInfo.processIdentifier,
               let next = NSApp.orderedWindows.first(where: {
@@ -4398,8 +4405,10 @@ final class NotchService: ObservableObject {
             }
             // A native capture drag takes priority over gesture navigation.
             guard !self.heldDrag else { return false }
-            self.panel?.acceptsKeyFocus = true
-            if self.panel?.isKeyWindow != true { self.panel?.makeKey() }
+            if self.expanded {
+                self.panel?.acceptsKeyFocus = true
+                if self.panel?.isKeyWindow != true { self.panel?.makeKey() }
+            }
             let music = self.musicSwipe.handle(event, in: view, enabled: self.musicSwipeEnabled(event), expanded: self.expanded)
             return self.handleCaptureTouches(event, in: view) || music
         }
@@ -4493,7 +4502,8 @@ final class NotchService: ObservableObject {
             captureHistoryGestureProgress = 0
             return false
         }
-        if !panel.isKeyWindow { panel.makeKey() }
+        // Only the open island takes the keyboard for a gesture.
+        if expanded, !panel.isKeyWindow { panel.makeKey() }
         let fromTop = panel.frame.maxY - screenPoint.y
         let inHeader = NotchSupport.gestureIsOverHeader(expanded: expanded, peeking: peeking,
                                                        fromTop: fromTop, safeTop: expanded ? expandedGeometry.headerTopInset : geometry.safeContentTop,

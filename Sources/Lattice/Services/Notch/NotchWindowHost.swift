@@ -1097,6 +1097,10 @@ final class NotchPanel: NSPanel, NotchWaveHold {
     static let normalLevel = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
     static let fullscreenLevel = NSWindow.Level.floating
     var acceptsKeyFocus = false
+    /// Whether scrolling or touching the island may make it key. The closed
+    /// island never takes the keyboard: once key, the app being typed in lost
+    /// its text focus, and closing the island did not give it back.
+    var takesKeyForInput: () -> Bool = { true }
     /// The native confirmation owns key focus until it closes. Several Island
     /// input paths (including scroll/touch and frame restoration) call makeKey()
     /// independently of the event monitors, so enforce this at the window.
@@ -1158,8 +1162,10 @@ final class NotchPanel: NSPanel, NotchWaveHold {
             NSCursor.arrow.set()
         }
         if event.type == .scrollWheel {
-            acceptsKeyFocus = true
-            if !isKeyWindow { makeKey() }
+            if takesKeyForInput() {
+                acceptsKeyFocus = true
+                if !isKeyWindow { makeKey() }
+            }
             if handleScroll?(event) == true || HorizontalWheelScrolling.handle(event) { return }
         }
         super.sendEvent(event)
@@ -1205,11 +1211,11 @@ private final class NotchQuickAccessContainer: NSView {
     required init?(coder: NSCoder) { nil }
 
     override func touchesBegan(with event: NSEvent) {
-        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
+        if let panel = window as? NotchPanel, panel.takesKeyForInput(), !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesBegan(with: event) }
     }
     override func touchesMoved(with event: NSEvent) {
-        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
+        if let panel = window as? NotchPanel, panel.takesKeyForInput(), !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesMoved(with: event) }
     }
     override func touchesEnded(with event: NSEvent) {
@@ -2101,11 +2107,11 @@ private final class NotchHostingView: NSHostingView<AnyView> {
     }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func touchesBegan(with event: NSEvent) {
-        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
+        if let panel = window as? NotchPanel, panel.takesKeyForInput(), !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesBegan(with: event) }
     }
     override func touchesMoved(with event: NSEvent) {
-        if let panel = window as? NotchPanel, !panel.isKeyWindow { panel.makeKey() }
+        if let panel = window as? NotchPanel, panel.takesKeyForInput(), !panel.isKeyWindow { panel.makeKey() }
         if (window as? NotchPanel)?.handleIndirectTouches?(event, self) != true { super.touchesMoved(with: event) }
     }
     override func touchesEnded(with event: NSEvent) {
