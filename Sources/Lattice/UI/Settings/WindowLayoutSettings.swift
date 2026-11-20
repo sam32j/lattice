@@ -76,15 +76,6 @@ struct WindowLayoutSettings: View {
                     if maximizeEnabled {
                         WindowMaximizerExclusionsList()
                             .padding(.leading, settingsRowTextInset)
-                        // The green button fills the space beside Stage
-                        // Manager too. With arrangement on, the setting
-                        // lives in its card; without it, it shows here.
-                        if !windowLayoutInstalled {
-                            SettingsToggleRow(title: stageManagerText.title,
-                                              caption: stageManagerText.caption,
-                                              isOn: $reserveStageManagerSpace)
-                                .padding(.leading, settingsRowTextInset)
-                        }
                     }
                 }
                 .settingsSectionAnchor(.windowMaximizer, cornerRadius: 16)

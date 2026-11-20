@@ -1357,9 +1357,7 @@ struct WindowSnappingControlView: View {
                     title: QuickAction.center.title,
                     symbol: "scope",
                     action: .center,
-                    // Center keeps the window's own size, which the panel
-                    // does not know, so it shows no outline rather than a wrong one.
-                    previewRect: nil
+                    previewRect: NormalizedRect(x: 0.175, y: 0.15, width: 0.65, height: 0.70)
                 )
             }
 
