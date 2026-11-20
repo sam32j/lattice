@@ -772,24 +772,14 @@ enum PointerInputFeatureTests {
         let linearName = "io.github.sam32j.lattice.tests.linear-lines.\(UUID().uuidString)"
         let linearDefaults = UserDefaults(suiteName: linearName)!
         defer { linearDefaults.removePersistentDomain(forName: linearName) }
-        var exceptionChecks = 0
-        let excepted = { () -> Bool in exceptionChecks += 1; return true }
-        let allowed = { () -> Bool in exceptionChecks += 1; return false }
         linearDefaults.set(false, forKey: DefaultsKey.linearScrollEnabled)
-        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: true,
-                                                           isExcepted: excepted) == nil
-                        && exceptionChecks == 0,
-               "linear scrolling switched off never asks the exception list")
+        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: true) == nil,
+               "linear scrolling switched off caps nothing")
         linearDefaults.set(true, forKey: DefaultsKey.linearScrollEnabled)
         linearDefaults.set(5, forKey: DefaultsKey.linearScrollLines)
-        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: false,
-                                                           isExcepted: allowed) == nil,
+        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: false) == nil,
                "an uninstalled feature caps nothing even with its switch left on")
-        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: true,
-                                                           isExcepted: excepted) == nil,
-               "an app on linear scrolling's own list is left out of the cap")
-        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: true,
-                                                           isExcepted: allowed) == 5,
+        suite.expect(ScrollWheelSupport.linearLinesPerNotch(defaults: linearDefaults, isAvailable: true) == 5,
                "both wheel taps read the same lines per notch while linear scrolling applies")
         var smoothEngine = SmoothScrollSupport.Engine()
         smoothEngine.add(vertical: 40, horizontal: 0)
@@ -1641,53 +1631,58 @@ enum PointerInputFeatureTests {
                    && Defaults.sanitizedMiddleClickTapFingers(2) == 0
                    && Defaults.sanitizedMiddleClickTapFingers(-1) == 0,
                "any other tap finger count means off")
-        suite.expect(MiddleClickSupport.availableTapSelection(3, systemDragEnabled: true) == 0
-                     && MiddleClickSupport.availableTapSelection(3, systemDragEnabled: false) == 3
-                     && MiddleClickSupport.availableTapSelection(4, systemDragEnabled: true) == 4,
+        suite.expect(MiddleClickSupport.availableTapSelection(3, systemOwnsThreeFingerTap: true) == 0
+                     && MiddleClickSupport.availableTapSelection(3, systemOwnsThreeFingerTap: false) == 3
+                     && MiddleClickSupport.availableTapSelection(4, systemOwnsThreeFingerTap: true) == 4,
                      "trackpad picker always presents a supported selection without rewriting saved preferences")
+        suite.expect(MiddleClickSupport.systemOwnsThreeFingerTap(threeFingerDrag: true, lookUpTapGesture: 0)
+                     && MiddleClickSupport.systemOwnsThreeFingerTap(threeFingerDrag: false, lookUpTapGesture: 2)
+                     && !MiddleClickSupport.systemOwnsThreeFingerTap(threeFingerDrag: false, lookUpTapGesture: 1)
+                     && !MiddleClickSupport.systemOwnsThreeFingerTap(threeFingerDrag: false, lookUpTapGesture: 0),
+                     "three-finger drag or Look Up on a three-finger tap takes the tap; Look Up on force click does not")
         suite.expect(MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                 exceededFingerCount: false, buttonPressedDuring: false,
-                                                positionUnavailable: false, systemDragGestureEnabled: false,
+                                                positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                 tapFingers: 3),
                "a quick still three-finger tap fires")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3, secondsSinceLastKeyDown: 0.1),
                "stray trackpad contact while typing never fires a middle click")
         suite.expect(MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                 exceededFingerCount: false, buttonPressedDuring: false,
-                                                positionUnavailable: false, systemDragGestureEnabled: false,
+                                                positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                 tapFingers: 3, secondsSinceLastKeyDown: 1.0),
                "tap to middle click resumes after keyboard activity settles")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.2, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3),
                "a swipe never fires the tap")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.8, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3),
                "resting fingers never fire the tap")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: true,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3),
                "a physical click during the touch belongs to the press path")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: true, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3),
                "extra fingers cancel the tap")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: true, systemDragGestureEnabled: false,
+                                                 positionUnavailable: true, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 3),
                "unreadable touch positions stand the tap down")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: true,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: true,
                                                  tapFingers: 3),
                "three-finger tap stands down while the system drag gesture owns it")
         suite.expect(MiddleClickSupport.radialMenuTapFingers(radialMenuWantsTap: true, middleClickTapFingers: 0) == 4
@@ -1746,12 +1741,12 @@ enum PointerInputFeatureTests {
                "a button saved on two wheels stays on the first, the only one it ever opened")
         suite.expect(MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.01,
                                                 exceededFingerCount: false, buttonPressedDuring: false,
-                                                positionUnavailable: false, systemDragGestureEnabled: true,
+                                                positionUnavailable: false, systemOwnsThreeFingerTap: true,
                                                 tapFingers: 4),
                "four-finger tap stays available alongside the system drag gesture")
         suite.expect(!MiddleClickSupport.tapShouldFire(duration: 0.15, maxMovement: 0.01, maxSpreadChange: 0.2,
                                                  exceededFingerCount: false, buttonPressedDuring: false,
-                                                 positionUnavailable: false, systemDragGestureEnabled: false,
+                                                 positionUnavailable: false, systemOwnsThreeFingerTap: false,
                                                  tapFingers: 4),
                "a pinch or spread never fires the tap even with a still centroid")
 
@@ -2689,10 +2684,7 @@ enum PointerInputFeatureTests {
                "every feature's exception list registers empty, so they all start out working everywhere")
         suite.expect(Set(MouseExceptionScope.allCases.map(\.defaultsKey)).count == MouseExceptionScope.allCases.count,
                "each feature keeps its own list, never a key shared with another")
-        suite.expect(MouseExceptionScope.smoothScroll.feature == .smoothScroll
-                && MouseExceptionScope.linearScroll.feature == .linearScroll
-                && MouseExceptionScope.scrollDirection.feature == .scrollInverter
-                && MouseExceptionScope.focusFollowsMouse.feature == .focusFollowsMouse
+        suite.expect(MouseExceptionScope.focusFollowsMouse.feature == .focusFollowsMouse
                 && MouseExceptionScope.navigation.feature == .mouseNavigation
                 && MouseExceptionScope.buttonShortcuts.feature == .mouseButtonShortcuts
                 && MouseExceptionScope.middleClick.feature == .middleClick
@@ -3252,7 +3244,7 @@ enum PointerInputFeatureTests {
                 Thread {
                     for index in 0..<100 {
                         let point = CGPoint(x: -10_000 - index, y: -10_000)
-                        for scope in [MouseExceptionScope.middleClick, .scrollDirection] {
+                        for scope in [MouseExceptionScope.middleClick, .focusFollowsMouse] {
                             _ = exceptions.excludesPointerTarget(scope, at: point)
                         }
                     }
@@ -3313,7 +3305,6 @@ enum PointerInputFeatureTests {
                front.bundleIdentifier != nil,
                let frontPath = MouseAppExceptionSupport.executablePathIdentity(front.executableURL?.path) {
                 arguments[MouseExceptionScope.navigation.defaultsKey] = [frontPath]
-                arguments[MouseExceptionScope.smoothScroll.defaultsKey] = [frontPath]
                 arguments[MouseExceptionScope.middleClick.defaultsKey] = ["/opt/game/runtime/bin/java"]
                 defaults.setVolatileDomain(arguments, forName: UserDefaults.argumentDomain)
                 exceptions.reload()
@@ -3323,10 +3314,10 @@ enum PointerInputFeatureTests {
                        "an app listed by the path of its file is left alone although it reports a bundle identifier")
                 suite.expect(!exceptions.excludesActionTarget(.middleClick, at: offScreen),
                        "a listed path leaves alone only the program running that file")
-                exceptions.setSourceTracking(true, for: .smoothScroll)
-                suite.expect(exceptions.runningScopes.contains(.smoothScroll),
+                exceptions.setSourceTracking(true, for: .navigation)
+                suite.expect(exceptions.runningScopes.contains(.navigation),
                        "an app listed by the path of its file is found among the running apps")
-                exceptions.setSourceTracking(false, for: .smoothScroll)
+                exceptions.setSourceTracking(false, for: .navigation)
             }
         }
 
@@ -3369,7 +3360,7 @@ enum PointerInputFeatureTests {
                     identitiesForProcess: { identities[$0].map { [$0] } ?? [] })
                 let verdict = action
                     ? exceptions.excludesActionTarget(.buttonShortcuts, at: point)
-                    : exceptions.excludesPointerTarget(.smoothScroll, at: point)
+                    : exceptions.excludesPointerTarget(.navigation, at: point)
                 return (verdict, lookups)
             }
             suite.expect(excluded(["com.apple.dock"], [launchpad, app], hit: 40).verdict
@@ -3406,9 +3397,9 @@ enum PointerInputFeatureTests {
                 onScreenWindows: { [dock, app] },
                 receivingWindow: { $0 == point ? 44 : 41 },
                 identitiesForProcess: { identities[$0].map { [$0] } ?? [] })
-            let overDockOnMain = mainExceptions.excludesPointerTarget(.smoothScroll, at: point)
+            let overDockOnMain = mainExceptions.excludesPointerTarget(.navigation, at: point)
             suite.expect(overDockOnMain
-                    && !mainExceptions.excludesPointerTarget(.smoothScroll, at: CGPoint(x: 101, y: 100)),
+                    && !mainExceptions.excludesPointerTarget(.navigation, at: CGPoint(x: 101, y: 100)),
                    "the Dock's answer only holds at its spot, since the Dock takes less than its rectangle")
 
             /// Runs the queries on a thread of their own, as the pointer tap
@@ -3435,10 +3426,10 @@ enum PointerInputFeatureTests {
                 onScreenWindows: { [launchpad, app] },
                 receivingWindow: { _ in 40 },
                 identitiesForProcess: { identities[$0].map { [$0] } ?? [] })
-            let launchpadOnMain = overLaunchpad.excludesPointerTarget(.scrollDirection, at: point)
+            let launchpadOnMain = overLaunchpad.excludesPointerTarget(.focusFollowsMouse, at: point)
             launchpadClock.advance(by: MouseAppExceptionSupport.resolveLifetime)
             suite.expect(!launchpadOnMain && onPointerThread {
-                    [point, CGPoint(x: 150, y: 120)].map { overLaunchpad.excludesPointerTarget(.scrollDirection, at: $0) }
+                    [point, CGPoint(x: 150, y: 120)].map { overLaunchpad.excludesPointerTarget(.focusFollowsMouse, at: $0) }
                 } == [false, false],
                    "the pointer thread keeps serving Launchpad's aged answer anywhere inside it, at rest or moving")
             // Unlisted, only an unknown answer stands the feature down there.
@@ -3448,9 +3439,9 @@ enum PointerInputFeatureTests {
                 onScreenWindows: { [dock, app] },
                 receivingWindow: { $0 == point ? 44 : 41 },
                 identitiesForProcess: { identities[$0].map { [$0] } ?? [] })
-            let dockOnMain = overDock.excludesPointerTarget(.scrollDirection, at: point)
+            let dockOnMain = overDock.excludesPointerTarget(.focusFollowsMouse, at: point)
             suite.expect(!dockOnMain && onPointerThread {
-                    [overDock.excludesPointerTarget(.scrollDirection, at: CGPoint(x: 150, y: 120))]
+                    [overDock.excludesPointerTarget(.focusFollowsMouse, at: CGPoint(x: 150, y: 120))]
                 } == [true],
                    "off the Dock the pointer thread keeps hands off until main answers, never handing the app the Dock's answer")
         }

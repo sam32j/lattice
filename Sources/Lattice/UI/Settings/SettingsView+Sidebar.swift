@@ -111,7 +111,7 @@ extension SettingsView {
 
     @ViewBuilder
     func searchResultRows(_ searchResults: SearchResultsSnapshot) -> some View {
-        ForEach(searchResults.groups, id: \.parentSuggestion.id) { group in
+        ForEach(searchResults.groups, id: \.pageItem.id) { group in
             searchPageRow(group, searchResults: searchResults)
             ForEach(group.suggestions) { suggestion in
                 searchSuggestionRow(suggestion, searchResults: searchResults)
@@ -128,9 +128,15 @@ extension SettingsView {
             if let selectionIndex { activeSearchIndex = selectionIndex }
             requestSearchItem(suggestion)
         } label: {
-            Label(group.pageItem.title, systemImage: group.pageItem.icon)
-                .fontWeight(.semibold)
-                .searchResultRowStyle(isSelected: isSelected)
+            HStack(spacing: 9) {
+                LatticeSymbol(group.pageItem.icon)
+                    .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.tint))
+                    .frame(width: 18)
+                Text(group.pageItem.title)
+                    .fontWeight(.semibold)
+                Spacer()
+            }
+            .searchResultRowStyle(isSelected: isSelected)
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -145,9 +151,15 @@ extension SettingsView {
             if let selectionIndex { activeSearchIndex = selectionIndex }
             requestSearchItem(suggestion)
         } label: {
-            Label(suggestion.title, systemImage: suggestion.icon)
-                .searchResultRowStyle(isSelected: isSelected)
-                .padding(.leading, 18)
+            HStack(spacing: 9) {
+                LatticeSymbol(suggestion.icon)
+                    .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.tint))
+                    .frame(width: 18)
+                Text(suggestion.title)
+                Spacer()
+            }
+            .searchResultRowStyle(isSelected: isSelected)
+            .padding(.leading, 18)
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])

@@ -277,6 +277,20 @@ enum SmoothScrollSupport {
         return 1 + normalizedCoast * (fullCoastStretch - 1) * travelled * travelled
     }
 
+    /// The pickers' stops. Speed is a multiple of the default step (0.5×,
+    /// 1×, 1.5×, 2×); response and coast are points on their 0–100 scales.
+    /// The middle response is the shipped default and the first coast is
+    /// none, so nobody's scrolling changes until they pick something.
+    static let stepPresets = [defaultStep / 2, defaultStep, defaultStep * 3 / 2, defaultStep * 2]
+    static let responsePresets = [95, defaultResponse, 30]
+    static let coastPresets = [defaultCoast, 30, 60, 100]
+
+    /// The stop a saved value shows as: values from the old sliders land on
+    /// the nearest one, and keep working as saved until the picker changes.
+    static func nearestPreset(_ value: Int, in presets: [Int]) -> Int {
+        presets.min { abs($0 - value) < abs($1 - value) } ?? value
+    }
+
     static func sanitizedCoast(_ value: Int) -> Int {
         min(max(value, coastRange.lowerBound), coastRange.upperBound)
     }

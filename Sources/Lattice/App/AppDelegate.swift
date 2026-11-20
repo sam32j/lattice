@@ -12,6 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var isTerminating = false
     private var inputSourceRestorationPending = false
     private var cancellables = Set<AnyCancellable>()
+    private var appearanceObservation: NSKeyValueObservation?
+    private var themeChangeObserver: NSObjectProtocol?
     var settingsWindow: SettingsWindow?
     private var settingsKeepsAppRegular = false
     private var feedbackWindow: NSWindow?
@@ -19,8 +21,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     // MARK: - Lifecycle
 
+    func updateDockIcon() {
+        NSApp.applicationIconImage = AppInfo.icon
+        NSApp.dockTile.display()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        updateDockIcon()
+        appearanceObservation = NSApp.observe(\.effectiveAppearance, options: [.new]) { [weak self] _, _ in
+            DispatchQueue.main.async { self?.updateDockIcon() }
+        }
+        themeChangeObserver = DistributedNotificationCenter.default().addObserver(
+            forName: NSNotification.Name("AppleInterfaceThemeChangedNotification"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            CFPreferencesAppSynchronize(kCFPreferencesAnyApplication)
+            DispatchQueue.main.async { self?.updateDockIcon() }
+        }
         // Before any window exists, so nothing is ever built with the wrong
         // appearance and then repainted.
         AppAppearanceController.shared.apply()
@@ -106,6 +125,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         SystemShortcutTakeover.recoverIfNeeded(keeping: AppSwitcher.launchTakeoverIDs())
         HotkeyManager.shared.onActivate = { KeepAwakeManager.shared.toggle() }
         HotkeyManager.shared.syncWithPreferences()
+        QuickTogglesService.shared.syncWithPreferences()
 
         KeepAwakeManager.shared.recoverIfNeeded {
             KeepAwakeManager.shared.activateOnLaunchIfNeeded()

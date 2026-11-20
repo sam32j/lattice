@@ -179,8 +179,10 @@ extension LatticeHubService {
         // During opening/closing of Manage Tools, the accordion produces
         // intermediate heights already. Later discrete grid/tray edits still
         // deserve a smooth native resize rather than an abrupt jump.
-        let editingTransitionInFlight = ProcessInfo.processInfo.systemUptime - editingChangedAt < 0.28
-        let animate = !editingTransitionInFlight &&
+        let now = ProcessInfo.processInfo.systemUptime
+        let editingTransitionInFlight = now - editingChangedAt < 0.28
+        let contentDrivesResize = now < contentDrivenResizeUntil
+        let animate = !editingTransitionInFlight && !contentDrivesResize &&
             !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         panelResizer.resize(panel, to: size, maximumHeight: maximumHeight,
                             animated: animate)

@@ -94,5 +94,19 @@ enum WindowStageManagerTests {
                      "Restore and native full screen retain their existing pass-through geometry")
         suite.expect(Defaults.registeredDefaults[DefaultsKey.windowReserveStageManagerSpace] as? Bool == false,
                      "Stage Manager reservation is opt-in")
+
+        let screenSnap = WindowEdgeSnapScreen(frame: screen, visibleFrame: reserved)
+        let leftBoundaryTarget = WindowEdgeSnapSupport.target(at: CGPoint(x: 136, y: 400), screens: [screenSnap])
+        suite.expect(leftBoundaryTarget?.action == .leftHalf && leftBoundaryTarget?.visibleFrame == reserved,
+                     "drag to snap near the Stage Manager boundary targets the left edge of the available space")
+        let leftStripTarget = WindowEdgeSnapSupport.target(at: CGPoint(x: 2, y: 400), screens: [screenSnap])
+        suite.expect(leftStripTarget?.action == .leftHalf && leftStripTarget?.visibleFrame == reserved,
+                     "drag to snap inside the Stage Manager strip still targets the left edge of the available space")
+
+        let normLeft = NormalizedRect(x: 0, y: 0, width: 0.5, height: 1)
+        let gappedNormLeft = WindowLayoutGeometry.rect(for: normLeft, visibleFrame: reserved, windowGap: 16, screenGap: 8)
+        let expectedGappedLeft = WindowLayoutGeometry.rect(for: .leftHalf, current: screen, visibleFrame: reserved, windowGap: 16, screenGap: 8)
+        suite.expect(gappedNormLeft == expectedGappedLeft,
+                     "normalized rect geometry for left half matches action placement with window and screen gaps")
     }
 }

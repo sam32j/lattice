@@ -852,7 +852,7 @@ echo "▸ Generating app icon…"
 ICON_FLAGS=()
 (( DEV )) && ICON_FLAGS+=(--dev)
 swift Tools/MakeLatticeIcon.swift build "${ICON_FLAGS[@]}"
-xattr -c -r build/AppIcon.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png 2>/dev/null || true
+xattr -c -r build/AppIcon.icns build/AppIcon-Dark.icns build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png 2>/dev/null || true
 ACTOOL_BIN="$(xcrun --find actool 2>/dev/null || true)"
 ICON_TMP="$(mktemp -d)"
 ADAPTIVE_SKIP=""
@@ -949,6 +949,9 @@ FAN_HELPER_VERSION="$(
     "$STAGE/Contents/Info.plist"
 printf 'APPL????' > "$STAGE/Contents/PkgInfo"
 cp build/AppIcon.icns "$STAGE/Contents/Resources/AppIcon.icns"
+if [[ -f build/AppIcon-Dark.icns ]]; then
+    cp build/AppIcon-Dark.icns "$STAGE/Contents/Resources/AppIcon-Dark.icns"
+fi
 cp build/MenuBarIcon.png build/MenuBarIcon@2x.png build/BrandMark.png "$STAGE/Contents/Resources/"
 if [[ -f build/Assets.car ]]; then
     cp build/Assets.car "$STAGE/Contents/Resources/Assets.car"

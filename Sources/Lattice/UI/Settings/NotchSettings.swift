@@ -242,14 +242,10 @@ struct NotchSettings: View {
 
                         Divider()
 
-                        VStack(alignment: .leading, spacing: 20) {
-                            layoutPage
-                                .id("layout")
-                            sectionList
-                                .id("content")
-                        }
-                        .disabled(!enabled)
-                        .opacity(enabled ? 1.0 : 0.5)
+                        sectionList
+                            .id("content")
+                            .disabled(!enabled)
+                            .opacity(enabled ? 1.0 : 0.5)
 
                         activityPage
                         .id("activity")

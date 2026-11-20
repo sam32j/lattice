@@ -81,15 +81,6 @@ struct WindowLayoutSettings: View {
                 .settingsSectionAnchor(.windowMaximizer, cornerRadius: 16)
                 Divider()
             }
-            if windowLayoutInstalled || maximizeEnabled {
-                // Maximize and snapping share the same usable frame, so one
-                // row covers both instead of repeating it per feature.
-                SettingsRow(symbol: "sidebar.left", title: stageManagerText.title,
-                            caption: stageManagerText.caption) {
-                    Toggle(stageManagerText.title, isOn: $reserveStageManagerSpace).labelsHidden()
-                }
-                Divider()
-            }
             moveAndResizeDragging
             Divider()
             DockQuitOnCloseSettings()
@@ -136,7 +127,7 @@ struct WindowLayoutSettings: View {
 
     var snappingCard: some View {
         SettingsCard(title: text.gestureSection) {
-            SettingsRow(symbol: "rectangle.3.group", title: text.enable, caption: text.caption) {
+            SettingsRow(symbol: "rectangle.3.group", title: text.enable) {
                 PermissionGatedToggle(text.enable, isOn: Binding(
                     get: { windowLayoutInstalled },
                     set: { enabled in
@@ -150,7 +141,20 @@ struct WindowLayoutSettings: View {
                 VStack(alignment: .leading, spacing: 16) {
                     WindowLayoutIgnoredAppsList()
                         .padding(.leading, settingsRowTextInset)
-                    if windowLayoutInstalled { snappingControls }
+                    if windowLayoutInstalled {
+                        gapPicker(text.windowGap, selection: $windowGap)
+                            .padding(.leading, settingsRowTextInset)
+                        gapPicker(text.screenGap, selection: $screenGap)
+                            .padding(.leading, settingsRowTextInset)
+                        SettingsRow(symbol: "sidebar.left", title: stageManagerText.title,
+                                    caption: stageManagerText.caption) {
+                            Toggle(stageManagerText.title, isOn: $reserveStageManagerSpace)
+                                .labelsHidden()
+                                .toggleStyle(.switch)
+                        }
+                        Divider()
+                        snappingControls
+                    }
                 }
                 .toggleStyle(TrailingSwitchToggleStyle())
             }

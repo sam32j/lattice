@@ -13,9 +13,9 @@ struct NotchCameraView: View {
     var body: some View {
         Group {
             if service.isEmbeddedPresented {
-                // The preview takes the whole page; its camera picker and stop
-                // button sit in the island's top row, clear of the image.
-                CameraPreviewView(size: NotchLayout.cameraPreviewSize(in: size), showsCameraMenu: false)
+                // The preview takes the whole page; its camera picker overlays
+                // the preview viewport just as the floating window does.
+                CameraPreviewView(size: NotchLayout.cameraPreviewSize(in: size), showsCameraMenu: true, showsCloseButton: false)
             } else {
                 HStack(spacing: 16) {
                     Image(systemName: "person.crop.square.badge.camera").font(.system(size: 30, weight: .light))
@@ -60,25 +60,6 @@ struct NotchCameraChooser: View {
             }
             .help(current)
             .accessibilityValue(current)
-        }
-    }
-}
-
-/// Stops the mirror from the island's top row: a glyph beside the camera,
-/// where a word may not fit, and the word itself across a full row.
-struct NotchCameraStopButton: View {
-    @ObservedObject private var service = CameraPreviewService.shared
-    @ObservedObject private var l10n = L10n.shared
-    @Environment(\.notchBand) private var band
-
-    var body: some View {
-        if service.isEmbeddedPresented {
-            let title = FeatureStrings.notchActivities(l10n.language).stopCamera
-            if band.besideCamera {
-                NotchIconButton(symbol: "video.slash", title: title, action: service.hideEmbedded)
-            } else {
-                NotchPillButton(title: title, prominent: true, action: service.hideEmbedded)
-            }
         }
     }
 }

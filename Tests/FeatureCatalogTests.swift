@@ -1687,8 +1687,8 @@ enum FeatureCatalogTests {
                 && GlobalShortcutRole.keyboardBrightnessIncrease.group == .mouseKeyboard,
                "keyboard brightness stays owned by the brightness service but appears with keyboard controls")
         let shortcutsPage = ShortcutsPage(state: Expansion())
-        let displayBrightness = shortcutsPage.expansionBinding(for: .brightness, in: .energyDisplay)
-        let keyboardLight = shortcutsPage.expansionBinding(for: .brightness, in: .mouseKeyboard)
+        let displayBrightness = shortcutsPage.expansionBinding(for: .brightness, in: "energy")
+        let keyboardLight = shortcutsPage.expansionBinding(for: .brightness, in: "keyboard")
         displayBrightness.wrappedValue = true
         suite.expect(displayBrightness.wrappedValue && !keyboardLight.wrappedValue,
                "opening brightness in one shortcut group leaves its row in the other group closed")
@@ -2067,7 +2067,7 @@ enum FeatureCatalogTests {
                "every feature anchor belongs to its destination page")
         suite.expect(Set(AppFeature.allCases.compactMap(\.settingsDestination.sectionAnchor))
                 == Set(SettingsSectionAnchor.allCases).subtracting([
-                    .keyboardBrightnessShortcuts, .audioOutputPriority, .quickLauncher, .cameraPreview,
+                    .keyboardBrightnessShortcuts, .audioOutputPriority, .quickLauncher,
                 ])
                 && SettingsSectionAnchor.keyboardBrightnessShortcuts.page == .keyboard,
                "feature anchors and standalone Settings anchors reach their pages")

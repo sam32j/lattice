@@ -21,6 +21,7 @@ struct LatticeHubView: View {
     @ObservedObject var dnd = DoNotDisturbState.shared
     @ObservedObject var systemNav = SystemNavigationState.shared
     @StateObject var dragSession = HubDragSession()
+    @AppStorage(DefaultsKey.notchSize) private var islandSize = NotchSize.spacious.rawValue
 
     // Keep the common header outside the page switch. The two page bodies
     // overlap at their natural heights; neither is animated vertically.
@@ -189,6 +190,12 @@ struct LatticeHubView: View {
                         if launcher.activeUtility == .killProcess {
                             // No search field in the island: the band holds the scope.
                             KillProcessScopeMenu(surface: .island)
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        if launcher.activeUtility == .windowLayout {
+                            // The band holds the snapping mode, freeing the
+                            // page's full width for the grid and presets.
+                            WindowSnappingModeMenu(compact: islandSize == NotchSize.compact.rawValue)
                                 .font(.system(size: 11, weight: .semibold))
                         }
                         islandPinButton

@@ -274,11 +274,8 @@ enum RadialMenuQuickToggle: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var feature: AppFeature {
-        switch self {
-        case .darkMode, .displayOff: return .brightness
-        default: return .commandBar
-        }
+    var isAvailable: Bool {
+        true
     }
 
     var symbolName: String {

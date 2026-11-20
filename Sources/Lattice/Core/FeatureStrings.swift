@@ -216,10 +216,10 @@ extension ClipboardFeatureStrings {
 extension WindowLayoutFeatureStrings {
     static let ko = WindowLayoutFeatureStrings(
         title: "윈도우 관리",
-        enable: "윈도우 관리 활성화",
+        enable: "윈도우 배치 활성화",
         caption: "윈도우를 화면 구역에 배치하거나 트랙패드 또는 마우스로 이동하고 크기를 조절합니다.",
         showInPanel: "유틸리티 메뉴에 표시",
-        gestureSection: "윈도우 드래그",
+        gestureSection: "윈도우 배치",
         gestureEnable: "드래그로 윈도우 이동 및 크기 조절",
         gestureCaption: "트랙패드 또는 마우스에서 표시된 보조 키를 누른 채 윈도우 안의 아무 곳이나 드래그합니다.",
         gestureModifiers: "이동 키",
@@ -1487,10 +1487,10 @@ struct WindowLayoutFeatureStrings {
 
     static let enUS = WindowLayoutFeatureStrings(
         title: "Window Management",
-        enable: "Enable Window Snapping",
+        enable: "Enable Window Arrangement",
         caption: "Arrange windows into screen sections or move and resize them with a trackpad or mouse.",
         showInPanel: "Show control in utilities menu",
-        gestureSection: "Window Snapping",
+        gestureSection: "Window Arrangement",
         gestureEnable: "Drag Windows to Move and Resize",
         gestureCaption: "On a trackpad or mouse, hold the shown modifier keys and drag anywhere inside a window.",
         gestureModifiers: "Modifier keys to move",
@@ -1584,10 +1584,10 @@ struct WindowLayoutFeatureStrings {
 
     static let ptBR = WindowLayoutFeatureStrings(
         title: "Gerenciamento de Janelas",
-        enable: "Ativar Gerenciamento de Janelas",
+        enable: "Ativar Organização de Janelas",
         caption: "Organize janelas em áreas da tela ou mova e redimensione com o trackpad ou mouse.",
         showInPanel: "Mostrar no menu de utilitários",
-        gestureSection: "Arraste de janelas",
+        gestureSection: "Organização de janelas",
         gestureEnable: "Mover e redimensionar por arraste",
         gestureCaption: "No trackpad ou mouse, segure as teclas indicadas e arraste em qualquer ponto da janela.",
         gestureModifiers: "Teclas para mover",
@@ -1681,10 +1681,10 @@ struct WindowLayoutFeatureStrings {
 
     static let tr = WindowLayoutFeatureStrings(
         title: "Pencere Yönetimi",
-        enable: "Pencere Yönetimini Etkinleştir",
+        enable: "Pencere Düzenlemeyi Etkinleştir",
         caption: "Pencereleri ekran bölümlerine yerleştirin veya izleme dörtgeni ya da fareyle taşıyıp yeniden boyutlandırın.",
         showInPanel: "İzlenceler menüsünde göster",
-        gestureSection: "Pencere sürükleme",
+        gestureSection: "Pencere Düzenleme",
         gestureEnable: "Sürükleyerek taşı ve boyutlandır",
         gestureCaption: "İzleme dörtgeni veya farede gösterilen değiştirici tuşları basılı tutup pencerenin herhangi bir yerinden sürükleyin.",
         gestureModifiers: "Taşıma tuşları",
@@ -1778,10 +1778,10 @@ struct WindowLayoutFeatureStrings {
 
     static let ru = WindowLayoutFeatureStrings(
         title: "Управление окнами",
-        enable: "Включить управление окнами",
+        enable: "Включить расположение окон",
         caption: "Размещайте окна по областям экрана или перемещайте и меняйте их размер трекпадом или мышью.",
         showInPanel: "Показывать в меню утилит",
-        gestureSection: "Перетаскивание окон",
+        gestureSection: "Расположение окон",
         gestureEnable: "Перемещать и менять размер перетаскиванием",
         gestureCaption: "На трекпаде или мыши удерживайте показанные клавиши и тяните из любой точки окна.",
         gestureModifiers: "Клавиши для перемещения",
@@ -1875,10 +1875,10 @@ struct WindowLayoutFeatureStrings {
 
     static let es = WindowLayoutFeatureStrings(
         title: "Gestión de ventanas",
-        enable: "Activar gestión de ventanas",
+        enable: "Activar disposición de ventanas",
         caption: "Organiza ventanas en zonas de la pantalla o muévelas y cambia su tamaño con el trackpad o el ratón.",
         showInPanel: "Mostrar en el menú de utilidades",
-        gestureSection: "Arrastre de ventanas",
+        gestureSection: "Disposición de ventanas",
         gestureEnable: "Mover y cambiar tamaño al arrastrar",
         gestureCaption: "En el trackpad o el ratón, mantén las teclas indicadas y arrastra desde cualquier punto de una ventana.",
         gestureModifiers: "Teclas para mover",
@@ -1972,10 +1972,10 @@ struct WindowLayoutFeatureStrings {
 
     static let sk = WindowLayoutFeatureStrings(
         title: "Správa okien",
-        enable: "Povoliť správu okien",
+        enable: "Povoliť usporiadanie okien",
         caption: "Usporiadajte okná do oblastí obrazovky alebo ich presúvajte a meňte im veľkosť trackpadom či myšou.",
         showInPanel: "Zobraziť v menu utilít",
-        gestureSection: "Ťahanie okien",
+        gestureSection: "Usporiadanie okien",
         gestureEnable: "Presúvať a meniť veľkosť ťahaním",
         gestureCaption: "Na trackpade alebo myši podržte zobrazené klávesy a ťahajte kdekoľvek vnútri okna.",
         gestureModifiers: "Klávesy na presun",
@@ -2069,10 +2069,10 @@ struct WindowLayoutFeatureStrings {
 
     static let de = WindowLayoutFeatureStrings(
         title: "Fensterverwaltung",
-        enable: "Fensterverwaltung aktivieren",
+        enable: "Fensteranordnung aktivieren",
         caption: "Ordne Fenster in Bildschirmbereiche ein oder verschiebe und skaliere sie mit Trackpad oder Maus.",
         showInPanel: "Im Dienstprogramme-Menü anzeigen",
-        gestureSection: "Fenster ziehen",
+        gestureSection: "Fensteranordnung",
         gestureEnable: "Durch Ziehen verschieben und skalieren",
         gestureCaption: "Halte auf Trackpad oder Maus die angezeigten Sondertasten und ziehe an einer beliebigen Stelle im Fenster.",
         gestureModifiers: "Tasten zum Verschieben",
@@ -2166,10 +2166,10 @@ struct WindowLayoutFeatureStrings {
 
     static let fr = WindowLayoutFeatureStrings(
         title: "Gestion des fenêtres",
-        enable: "Activer la gestion des fenêtres",
+        enable: "Activer la disposition des fenêtres",
         caption: "Organisez les fenêtres dans des zones de l’écran ou déplacez-les et redimensionnez-les au trackpad ou à la souris.",
         showInPanel: "Afficher dans le menu des utilitaires",
-        gestureSection: "Glissement des fenêtres",
+        gestureSection: "Disposition des fenêtres",
         gestureEnable: "Déplacer et redimensionner par glissement",
         gestureCaption: "Au trackpad ou à la souris, maintenez les touches indiquées et faites glisser depuis n’importe quel point d’une fenêtre.",
         gestureModifiers: "Touches pour déplacer",
@@ -2263,10 +2263,10 @@ struct WindowLayoutFeatureStrings {
 
     static let it = WindowLayoutFeatureStrings(
         title: "Gestione finestre",
-        enable: "Abilita gestione finestre",
+        enable: "Abilita disposizione finestre",
         caption: "Disponi le finestre nelle aree dello schermo oppure spostale e ridimensionale con trackpad o mouse.",
         showInPanel: "Mostra nel menu delle utility",
-        gestureSection: "Trascinamento finestre",
+        gestureSection: "Disposizione finestre",
         gestureEnable: "Sposta e ridimensiona trascinando",
         gestureCaption: "Sul trackpad o con il mouse, tieni premuti i tasti indicati e trascina da qualsiasi punto della finestra.",
         gestureModifiers: "Tasti per spostare",
@@ -2360,10 +2360,10 @@ struct WindowLayoutFeatureStrings {
 
     static let ja = WindowLayoutFeatureStrings(
         title: "ウインドウ管理",
-        enable: "ウィンドウ管理を有効にする",
+        enable: "ウインドウ配置を有効にする",
         caption: "ウインドウを画面の領域に配置したり、トラックパッドやマウスで移動やサイズ変更ができます。",
         showInPanel: "ユーティリティメニューに表示",
-        gestureSection: "ウインドウのドラッグ",
+        gestureSection: "ウインドウ配置",
         gestureEnable: "ドラッグで移動とサイズ変更",
         gestureCaption: "トラックパッドまたはマウスで表示された修飾キーを押し、ウインドウ内の任意の場所からドラッグします。",
         gestureModifiers: "移動用キー",
@@ -2457,10 +2457,10 @@ struct WindowLayoutFeatureStrings {
 
     static let zhHans = WindowLayoutFeatureStrings(
         title: "窗口管理",
-        enable: "启用窗口管理",
+        enable: "启用窗口排列",
         caption: "将窗口排列到屏幕区域，或用触控板或鼠标移动和调整大小。",
         showInPanel: "在实用工具菜单中显示",
-        gestureSection: "窗口拖动",
+        gestureSection: "窗口排列",
         gestureEnable: "拖动窗口以移动和调整大小",
         gestureCaption: "在触控板或鼠标上按住显示的修饰键，从窗口内任意位置拖动。",
         gestureModifiers: "移动按键",
@@ -2554,10 +2554,10 @@ struct WindowLayoutFeatureStrings {
 
     static let zhTW = WindowLayoutFeatureStrings(
         title: "視窗管理",
-        enable: "啟用視窗管理",
+        enable: "啟用視窗排列",
         caption: "將視窗排列到螢幕區域，或用觸控板或滑鼠移動及調整大小。",
         showInPanel: "在工具程式選單中顯示",
-        gestureSection: "視窗拖移",
+        gestureSection: "視窗排列",
         gestureEnable: "拖移以移動及調整大小",
         gestureCaption: "在觸控板或滑鼠上按住顯示的輔助鍵，從視窗內任何位置拖移。",
         gestureModifiers: "移動按鍵",
@@ -2651,10 +2651,10 @@ struct WindowLayoutFeatureStrings {
 
     static let zhHK = WindowLayoutFeatureStrings(
         title: "視窗管理",
-        enable: "啟用視窗管理",
+        enable: "啟用視窗排列",
         caption: "將視窗排列到螢幕區域，或用觸控板或滑鼠移動及調整大小。",
         showInPanel: "在工具程式選單中顯示",
-        gestureSection: "視窗拖動",
+        gestureSection: "視窗排列",
         gestureEnable: "拖動以移動及調整大小",
         gestureCaption: "在觸控板或滑鼠上按住顯示的輔助鍵，從視窗內任何位置拖動。",
         gestureModifiers: "移動按鍵",
@@ -3318,10 +3318,10 @@ extension ClipboardFeatureStrings {
 extension WindowLayoutFeatureStrings {
     static let uk = WindowLayoutFeatureStrings(
         title: "Керування вікнами",
-        enable: "Увімкнути керування вікнами",
+        enable: "Увімкнути розташування вікон",
         caption: "Розставляйте вікна у розділи екрана або переміщуйте та змінюйте їхній розмір трекпедом або мишею.",
         showInPanel: "Показати в меню утиліт",
-        gestureSection: "Перетягування вікна",
+        gestureSection: "Розташування вікон",
         gestureEnable: "Переміщення та зміна розміру перетягуванням",
         gestureCaption: "На трекпеді або миші утримуйте показані клавіші-модифікатори та перетягуйте в будь-якому місці всередині вікна.",
         gestureModifiers: "Клавіші для переміщення",

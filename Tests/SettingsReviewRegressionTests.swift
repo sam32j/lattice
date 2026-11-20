@@ -54,8 +54,13 @@ enum SettingsReviewRegressionTests {
         let pageItems = pages.map {
             SettingsSearchItem(id: .page($0.page), destination: FeatureSettingsDestination($0.page),
                                title: $0.title, icon: $0.icon, keywords: $0.keywords,
-                               keywordFeatures: $0.keywordFeatures)
+                               keywordFeatures: $0.keywordFeatures,
+                               keywordRequirements: $0.keywordRequirements, aliases: $0.aliases)
         }
+        let featureItems = SettingsSearchSupport.featureItems(language: .enUS) { feature in
+            feature.hubTitle(.enUS, hub: FeatureStrings.hub(.enUS), language: .enUS)
+        }
+        let searchItems = SettingsSearchSupport.combinedItems(pageItems: pageItems, featureItems: featureItems)
         let awakeGroups = SettingsSearchSupport.groupedMatchingItems(
             query: Strings.enUS.keepAwakeTitle, items: pageItems, isAvailable: { _ in true })
         suite.expect(awakeGroups.contains { $0.id == .energy },
@@ -76,5 +81,40 @@ enum SettingsReviewRegressionTests {
             SettingsSearchSupport.route(for: $0, isAvailable: { _ in false }).destination
         } == AppFeature.dockPreview.settingsDestination,
         "an off dedicated feature remains searchable by its settings keywords")
+
+        let processGroups = SettingsSearchSupport.groupedMatchingItems(query: "Process", items: searchItems, isAvailable: { _ in true })
+        let processGroup = processGroups.first { $0.id == SettingsPage.killProcess }
+        suite.expect(processGroup != nil && (processGroup?.suggestions.isEmpty ?? false),
+                     "searching 'Process' matches Process Manager without redundant child suggestions")
+
+        let portGroups = SettingsSearchSupport.groupedMatchingItems(query: "Port", items: searchItems, isAvailable: { _ in true })
+        let portGroup = portGroups.first { $0.id == SettingsPage.killProcess }
+        let portTitles = portGroup?.suggestions.map { $0.title } ?? []
+        suite.expect(portGroup != nil && portTitles == [FeatureStrings.killProcessList(.enUS).scopePorts],
+                     "searching 'Port' matches Process Manager with single 'Ports' suggestion and no outdated indices")
+
+        let bluetoothGroups = SettingsSearchSupport.groupedMatchingItems(query: "Bluetooth", items: searchItems, isAvailable: { _ in true })
+        let bluetoothGroup = bluetoothGroups.first { $0.pageItem.id == .feature(.bluetoothSleep) }
+        let sleepRow = bluetoothGroup?.suggestions.first { $0.title == FeatureStrings.bluetoothSleep(.enUS).enable }
+        suite.expect(sleepRow != nil && bluetoothGroup?.pageItem.title == FeatureStrings.bluetoothSleep(.enUS).pageTitle,
+                     "searching 'Bluetooth' lists the sleep switch under Bluetooth Control")
+        suite.expect(!bluetoothGroups.contains { $0.pageItem.id == .page(.energy) },
+                     "searching 'Bluetooth' never files Bluetooth under Displays")
+
+        let brightness = FeatureStrings.brightness(.enUS)
+        let bluetooth = FeatureStrings.bluetoothSleep(.enUS)
+        func titles(_ query: String, on: Set<String>) -> [String] {
+            SettingsSearchSupport.groupedMatchingItems(
+                query: query, items: searchItems, isAvailable: { _ in true },
+                isSettingOn: { on.contains($0) }).flatMap { $0.suggestions.map(\.title) }
+        }
+        suite.expect(!titles("key steps", on: []).contains(brightness.keyStep)
+                        && titles("key steps", on: [DefaultsKey.brightnessControlEnabled]).contains(brightness.keyStep),
+                     "Brightness key steps is searchable only while Enable Display Control shows it")
+        suite.expect(!titles("back on", on: []).contains(bluetooth.restoreToggle)
+                        && titles("back on", on: [DefaultsKey.bluetoothSleepEnabled]).contains(bluetooth.restoreToggle),
+                     "Turn Bluetooth back on is searchable only while its parent switch is on")
+        suite.expect(sleepRow?.icon == "dot.radiowaves.left.and.right",
+                     "Bluetooth sleep keyword suggestion uses Bluetooth symbol, not display icon")
     }
 }

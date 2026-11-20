@@ -236,6 +236,9 @@ struct GlobalShortcut: Equatable, Hashable {
                                                       modifiers: [.control, .option, .command])
     static let cleaningModeDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_C),
                                                     modifiers: [.control, .option, .command, .shift])
+    // A for Appearance, on the same free control-option-command layer.
+    static let darkModeDefault = GlobalShortcut(keyCode: Int64(kVK_ANSI_A),
+                                                modifiers: [.control, .option, .command])
 
     static func saved(for key: String, fallback: GlobalShortcut,
                       in defaults: UserDefaults = .standard) -> GlobalShortcut {
@@ -727,6 +730,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     case keyboardBrightnessIncrease
     case pointerNextDisplay
     case notch
+    case darkMode
 
     var id: String { storageKey }
 
@@ -761,6 +765,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .keyboardBrightnessIncrease: return DefaultsKey.keyboardBrightnessIncreaseShortcut
         case .pointerNextDisplay: return DefaultsKey.pointerDisplayShortcut
         case .notch: return DefaultsKey.notchShortcut
+        case .darkMode: return DefaultsKey.darkModeShortcut
         }
     }
 
@@ -795,6 +800,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .keyboardBrightnessIncrease: return .keyboardBrightnessIncreaseDefault
         case .pointerNextDisplay: return .pointerNextDisplayDefault
         case .notch: return .notchDefault
+        case .darkMode: return .darkModeDefault
         }
     }
 
@@ -840,7 +846,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
             return FeatureStrings.recentCaptures(L10n.shared.language).title
         case .screenshotClipboard:
             return FeatureStrings.screenshot(L10n.shared.language).editClipboardImage
-        case .cameraPreview: return FeatureStrings.cameraPreview(L10n.shared.language).pageTitle
+        case .cameraPreview: return FeatureStrings.cameraPreview(L10n.shared.language).openWithShortcut
         case .radialMenu: return FeatureStrings.radialMenu(L10n.shared.language).pageTitle
         case .scratchpad: return FeatureStrings.scratchpad(L10n.shared.language).pageTitle
         case .snippetLibrary: return FeatureStrings.snippets(L10n.shared.language).libraryTitle
@@ -857,6 +863,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
             return FeatureStrings.brightness(L10n.shared.language).keyboardBrightnessIncrease
         case .pointerNextDisplay: return PointerDisplayStrings.localized(L10n.shared.language).title
         case .notch: return FeatureStrings.notch(L10n.shared.language).title
+        case .darkMode: return FeatureStrings.brightness(L10n.shared.language).toggleSystemAppearanceShortcut
         }
     }
 
@@ -915,6 +922,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
             return [DefaultsKey.keyboardBrightnessShortcutsEnabled]
         case .pointerNextDisplay: return [DefaultsKey.pointerDisplayEnabled]
         case .notch: return [DefaultsKey.notchEnabled, DefaultsKey.notchShortcutEnabled]
+        case .darkMode: return [DefaultsKey.darkModeShortcutEnabled]
         }
     }
 
@@ -947,6 +955,7 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
         case .keyboardBrightnessDecrease, .keyboardBrightnessIncrease: return .brightness
         case .pointerNextDisplay: return .windowLayout
         case .notch: return .notch
+        case .darkMode: return .brightness
         }
     }
 
@@ -982,12 +991,14 @@ enum GlobalShortcutRole: CaseIterable, Identifiable {
     var availabilityFeatures: [AppFeature] {
         switch self {
         case .recentCaptures: return [.screenshot, .screenRecorder]
+        case .darkMode: return [.brightness]
         default: return [feature]
         }
     }
 
     func isAvailable(using isAvailable: (AppFeature) -> Bool) -> Bool {
-        self != .screenOCR && self != .colorPicker
+        if self == .darkMode { return true }
+        return self != .screenOCR && self != .colorPicker
             && (isKeyboardBrightness ? BrightnessService.keyboardLightIsSupported
                 : availabilityFeatures.contains(where: isAvailable))
     }

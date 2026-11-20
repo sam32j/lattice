@@ -16,17 +16,20 @@ extension MouseSettings {
             }
             if focusFollowsMouseEnabled {
                 VStack(alignment: .leading, spacing: 10) {
-                    sliderRow(l10n.s.focusFollowsMouseDelay,
-                              value: focusFollowsMouseDelayBinding,
-                              range: Double(FocusFollowsMouseSupport.delayRange.lowerBound)
-                                  ... Double(FocusFollowsMouseSupport.delayRange.upperBound),
-                              step: 50,
-                              readout: "\(focusFollowsMouseDelay) ms")
+                    SettingsControlRow(title: l10n.s.focusFollowsMouseDelay) {
+                        Picker(l10n.s.focusFollowsMouseDelay, selection: focusFollowsMouseDelayPresetBinding) {
+                            ForEach(FocusFollowsMouseSupport.DelayPreset.allCases, id: \.self) { preset in
+                                Text(preset.title(l10n.language)).tag(preset)
+                            }
+                        }
+                        .labelsHidden().pickerStyle(.menu).fixedSize()
+                    }
                     SettingsToggleRow(title: l10n.s.focusFollowsMouseRaise, isOn: $focusFollowsMouseRaise)
                     if !focusFollowsMouseRaise {
                         SettingsToggleRow(title: l10n.s.focusFollowsMouseWaitForStop, isOn: $focusFollowsMouseWaitForStop)
                     }
-                    MouseExceptionsList(scope: .focusFollowsMouse)
+                    MouseExceptionsList(scope: .focusFollowsMouse,
+                                        title: InputSettingsStrings.focusFollowsMouseExceptionsTitle(l10n.language))
                 }
                 .padding(.leading, settingsRowTextInset)
             }
@@ -42,7 +45,7 @@ extension MouseSettings {
                 Toggle(l10n.s.mouseAccelerationName, isOn: $mouseAccelerationDisabled)
                     .labelsHidden()
                     .onChange(of: mouseAccelerationDisabled) { _, _ in
-                        MouseAccelerationService.shared.syncWithPreferences()
+                        settingsApplyAfterSwitch { MouseAccelerationService.shared.syncWithPreferences() }
                     }
             }
         }
@@ -98,7 +101,10 @@ extension MouseSettings {
     }
 
     var middleClickCard: some View {
-        SettingsCard(title: l10n.s.middleClickSection) {
+        let strings = InputSettingsStrings.middleClick(l10n.language)
+        let dragOwnsThree = middleClick.systemDragGestureConflict
+        let tapOwnsThree = middleClick.systemOwnsThreeFingerTap
+        return SettingsCard(title: l10n.s.middleClickSection) {
             SettingsRow(symbol: "hand.tap", title: l10n.s.middleClickEnable,
                         caption: l10n.s.middleClickEnableCaption) {
                 PermissionGatedToggle(l10n.s.middleClickEnable, isOn: $middleClickEnabled)
@@ -110,30 +116,31 @@ extension MouseSettings {
             }
             if middleClickEnabled {
                 VStack(alignment: .leading, spacing: 8) {
-                    SettingsControlRow(title: l10n.s.middleClickTapPicker) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "info.circle")
-                                .frame(width: 20, height: 20)
-                                .overlay { StatusTooltip(message: middleClick.systemDragGestureConflict
-                                    ? InputSettingsStrings.trackpadDragConflict(l10n.language)
-                                    : l10n.s.middleClickTapCaption) }
-                                .accessibilityLabel(middleClick.systemDragGestureConflict
-                                    ? InputSettingsStrings.trackpadDragConflict(l10n.language)
-                                    : l10n.s.middleClickTapCaption)
-                            Picker(l10n.s.middleClickTapPicker, selection: Binding(
-                                get: { MiddleClickSupport.availableTapSelection(middleClickTapFingers,
-                                    systemDragEnabled: middleClick.systemDragGestureConflict) },
-                                set: { middleClickTapFingers = $0 })) {
-                                Text(l10n.s.middleClickTapOff).tag(0)
-                                if !middleClick.systemDragGestureConflict {
-                                    Text(l10n.s.middleClickTapThreeFingers).tag(3)
-                                }
-                                Text(l10n.s.middleClickTapFourFingers).tag(4)
-                            }
-                            .labelsHidden().pickerStyle(.menu).fixedSize()
-                            .onChange(of: middleClickTapFingers) { _, _ in middleClick.syncWithPreferences() }
-                        }
-                        .frame(width: 220, alignment: .trailing)
+                    fingerPickerRow(title: strings.clickWith,
+                                    note: dragOwnsThree ? strings.clickTaken : nil) {
+                        SettingsPopUpPicker(title: strings.clickWith, options: [
+                            threeFingerOption(available: !dragOwnsThree),
+                            .init(value: 4, title: l10n.s.middleClickTapFourFingers),
+                        ], selection: Binding(
+                            get: { MiddleClickSupport.availableClickSelection(middleClickClickFingers,
+                                                                              systemDragEnabled: dragOwnsThree) },
+                            set: { middleClickClickFingers = $0 }))
+                        .fixedSize()
+                        .onChange(of: middleClickClickFingers) { _, _ in middleClick.syncWithPreferences() }
+                    }
+                    fingerPickerRow(title: l10n.s.middleClickTapPicker,
+                                    note: tapOwnsThree ? strings.tapTaken : nil) {
+                        SettingsPopUpPicker(title: l10n.s.middleClickTapPicker, options: [
+                            .init(value: 0, title: l10n.s.middleClickTapOff),
+                            threeFingerOption(available: !tapOwnsThree),
+                            .init(value: 4, title: l10n.s.middleClickTapFourFingers),
+                        ], selection: Binding(
+                            get: { MiddleClickSupport.availableTapSelection(middleClickTapFingers,
+                                                                            systemOwnsThreeFingerTap: tapOwnsThree) },
+                            set: { middleClickTapFingers = $0 }))
+                        .fixedSize()
+                        .help(l10n.s.middleClickTapCaption)
+                        .onChange(of: middleClickTapFingers) { _, _ in middleClick.syncWithPreferences() }
                     }
                     if middleClick.touchDeviceMissing {
                         Text(l10n.s.middleClickNoTrackpad)
@@ -141,11 +148,45 @@ extension MouseSettings {
                             .foregroundStyle(.orange)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    MouseExceptionsList(scope: .middleClick)
                 }
                 .padding(.leading, settingsRowTextInset)
-                MouseExceptionsList(scope: .middleClick)
-                    .padding(.leading, settingsRowTextInset)
             }
         }
+    }
+
+    /// A finger picker with, while macOS is using its three-finger choice, an
+    /// amber line under the title saying so. It belongs to the row, so the
+    /// rows keep their rhythm instead of being split by a note between them.
+    private func fingerPickerRow<Control: View>(title: String, note: String?,
+                                               @ViewBuilder picker: () -> Control) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                if let note {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 12)
+            picker()
+        }
+    }
+
+    /// Always listed so the menu keeps its shape, and greyed while macOS is
+    /// using three fingers; the row's amber note says so.
+    private func threeFingerOption(available: Bool) -> SettingsPopUpPicker<Int>.Option {
+        .init(value: 3, title: l10n.s.middleClickTapThreeFingers, isEnabled: available)
+    }
+}
+
+extension FocusFollowsMouseSupport.DelayPreset {
+    /// Kept beside the picker: the support file is also built into the
+    /// tests, which do not carry the Settings strings.
+    func title(_ language: AppLanguage) -> String {
+        let names = InputSettingsStrings.hoverDelayNames(language)
+        return names[Self.allCases.firstIndex(of: self) ?? 0]
     }
 }

@@ -9,9 +9,12 @@ struct GeneralSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var appearance = AppAppearanceController.shared
     @ObservedObject private var features = FeatureRuntime.shared
+    @ObservedObject private var permissions = Permissions.shared
+    @Environment(\.settingsPermissionAccess) private var access
     @AppStorage(DefaultsKey.notchHidesMenuBarIcon) private var hideMenuIcon = false
     @AppStorage(DefaultsKey.notchEnabled) private var islandEnabled = false
     @AppStorage(DefaultsKey.launcherShortcutTarget) private var preferredTarget = LauncherShortcutTarget.automatic.rawValue
+    @AppStorage(AppFeature.cameraPreview.availabilityKey) private var cameraPreviewEnabled = false
     @State private var dialogWindow = PermissionDialogWindowReference()
     // Seeded from the stored choice so the switch does not flash off while
     // the status read is still on its way.
@@ -23,6 +26,12 @@ struct GeneralSettings: View {
 
     private var text: GeneralSettingsStrings { FeatureStrings.generalSettings(l10n.language) }
     private var appearanceStrings: AppearanceStrings { FeatureStrings.appearance(l10n.language) }
+    private var cameraPreviewTitle: String { FeatureStrings.cameraPreview(l10n.language).pageTitle }
+    private var cameraRequirements: [SettingsPermission] { [.camera] }
+    private var cameraChildrenEnabled: Bool {
+        _ = permissions.camera
+        return cameraPreviewEnabled && cameraRequirements.allSatisfy(access.verify)
+    }
 
     var body: some View {
         ScrollView {
@@ -30,6 +39,7 @@ struct GeneralSettings: View {
                 basicsCard
                 appearanceCard
                 GeneralSoundSettings()
+                quickControlsCard
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
@@ -46,6 +56,7 @@ struct GeneralSettings: View {
         .settingsExpansionAnimation(value: hideMenuIcon)
         .settingsExpansionAnimation(value: islandEnabled && features.isAvailable(.notch))
         .settingsExpansionAnimation(value: preferredTarget)
+        .settingsExpansionAnimation(value: [cameraPreviewEnabled, cameraChildrenEnabled])
     }
 
     private var basicsCard: some View {
@@ -149,6 +160,39 @@ struct GeneralSettings: View {
                     }
                 }
             }
+        }
+    }
+
+    private var quickControlsCard: some View {
+        SettingsCard(title: FeatureStrings.quickToggles(l10n.language).pageTitle) {
+            SettingsRow(symbol: AppFeature.cameraPreview.symbolName,
+                        title: SettingsOwnershipStrings.enable(cameraPreviewTitle, l10n.language)) {
+                PermissionGatedToggle(SettingsOwnershipStrings.enable(cameraPreviewTitle, l10n.language),
+                    isOn: $cameraPreviewEnabled, requiring: cameraRequirements)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .onChange(of: cameraPreviewEnabled) { _, _ in
+                        FeatureRuntime.shared.sync([.cameraPreview])
+                        FeatureRuntime.shared.finishAvailabilityChange()
+                    }
+            }
+            // Where Camera Preview links and search results land.
+            .settingsSectionAnchor(.cameraPreview)
+            if cameraChildrenEnabled {
+                ShortcutPreferenceRow(role: .cameraPreview, label: FeatureStrings.cameraPreview(l10n.language).openWithShortcut) {
+                    FeatureRuntime.shared.sync([.cameraPreview])
+                }
+                .padding(.leading, settingsRowTextInset)
+            }
+
+            Divider()
+
+            SettingsRow(symbol: "eject",
+                        title: FeatureStrings.quickToggles(l10n.language).ejectTitle) {
+                EmptyView()
+            }
+            DiskExclusionsList()
+                .padding(.leading, settingsRowTextInset)
         }
     }
 
@@ -314,7 +358,7 @@ struct MenuBarGlyph: View {
         Group {
             if let image = BlackHoleGlyph.mark(symbolName: Defaults.sanitizedMenuBarIconSymbol(symbolName)) {
                 Image(nsImage: image)
-                    .renderingMode(.template)
+                    .renderingMode(AppInfo.isDeveloperBuild && symbolName.isEmpty ? .original : .template)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
             } else {

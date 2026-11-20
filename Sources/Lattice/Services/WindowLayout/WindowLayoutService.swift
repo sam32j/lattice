@@ -330,6 +330,119 @@ final class WindowLayoutService: ObservableObject {
                               sideRepeatCyclesThirds: sideRepeatCyclesThirds)
     }
 
+    var canRestore: Bool {
+        guard let target = focusedTarget(for: .restore) else { return false }
+        return frameHistory.canPopPrevious(for: target.key, current: target.frame)
+    }
+
+    // MARK: - Snapping panel session
+    //
+    // Resolving the target window walks the on-screen window list and asks
+    // apps over Accessibility, synchronously on the main thread, and a busy
+    // app can hold that up. The snapping panel used to do it on every hover
+    // and every redraw. It is now resolved once when the panel opens, again
+    // after each snap and when another app comes forward, and hovers only
+    // read the result.
+
+    /// Whether Restore Previous Size has something to restore for the window
+    /// the snapping panel is aimed at.
+    @Published private(set) var snappingRestoreAvailable = false
+    private var snappingScreenFrame: CGRect?
+    private var snappingSessionDepth = 0
+    private var snappingActivationObserver: NSObjectProtocol?
+    private let snapPreview = WindowSnapPreviewOverlay()
+
+    func beginSnappingSession() {
+        snappingSessionDepth += 1
+        if snappingActivationObserver == nil {
+            snappingActivationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+                forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+            ) { [weak self] _ in self?.refreshSnappingSession() }
+        }
+        refreshSnappingSession()
+    }
+
+    func endSnappingSession() {
+        snappingSessionDepth = max(0, snappingSessionDepth - 1)
+        guard snappingSessionDepth == 0 else { return }
+        if let snappingActivationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(snappingActivationObserver)
+        }
+        snappingActivationObserver = nil
+        snappingScreenFrame = nil
+        hidePreview(immediately: true)
+    }
+
+    func refreshSnappingSession() {
+        guard snappingSessionDepth > 0 else { return }
+        let target = focusedTarget(for: .maximize)
+        snappingScreenFrame = target.flatMap { bestScreen(for: $0.frame)?.frame }
+        let restorable = target.map { frameHistory.canPopPrevious(for: $0.key, current: $0.frame) } ?? false
+        if snappingRestoreAvailable != restorable { snappingRestoreAvailable = restorable }
+    }
+
+    /// After a snap, once the window has had a moment to take its frame.
+    func refreshSnappingSessionSoon() {
+        guard snappingSessionDepth > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            self?.refreshSnappingSession()
+        }
+    }
+
+    @discardableResult
+    func apply(normalizedRect: NormalizedRect) -> WindowLayoutResult {
+        defer { refreshSnappingSessionSoon() }
+        guard AXIsProcessTrusted() else {
+            return finish(.failure(.missingAccessibility))
+        }
+        guard let target = focusedTarget(for: .maximize) else {
+            return finish(.failure(.noWindow))
+        }
+        pruneWindowState(keeping: target.key)
+        let screens = NSScreen.screens
+        guard let screen = bestScreen(for: target.frame, screens: screens) else {
+            return finish(.failure(.failed))
+        }
+        let visible = screen.windowLayoutVisibleFrame
+        let targetRect = WindowLayoutGeometry.rect(for: normalizedRect, visibleFrame: visible)
+        frameHistory.record(target.frame, for: target.key)
+        let frame = axFrame(fromAppKit: targetRect)
+        if setFrame(frame,
+                    targetRect: targetRect,
+                    screenVisibleFrame: visible,
+                    action: WindowLayoutGeometry.anchorAction(for: normalizedRect),
+                    on: target.window,
+                    windowKey: target.key) {
+            lastActions.removeValue(forKey: target.key)
+            return finish(.success(restored: false))
+        }
+        frameHistory.discardLatest(for: target.key)
+        return finish(.failure(.failed))
+    }
+
+    func showPreview(normalizedRect: NormalizedRect?) {
+        guard let normalizedRect else {
+            snapPreview.hide(immediately: false)
+            return
+        }
+        // The window under control was resolved when the panel opened; the
+        // screen it is on is all a hover needs.
+        let screenFrame = snappingScreenFrame.flatMap { frame in
+            NSScreen.screens.first { $0.frame == frame }
+        } ?? NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
+        guard let screen = screenFrame else {
+            snapPreview.hide(immediately: false)
+            return
+        }
+        let visible = screen.windowLayoutVisibleFrame
+        let targetRect = WindowLayoutGeometry.rect(for: normalizedRect, visibleFrame: visible)
+        snapPreview.show(frame: targetRect, on: screen.frame, below: LatticeHubService.shared.panel)
+    }
+
+    func hidePreview(immediately: Bool = false) {
+        snapPreview.hide(immediately: immediately)
+    }
+
     /// Applies a pointer-selected snap target to one exact external window.
     /// Dock Preview resolves the target from the drop location; the frame still
     /// goes through the same settling and recovery path as every Window Layout
@@ -694,6 +807,8 @@ final class WindowLayoutService: ObservableObject {
     // republishes the result the panel feedback listens to.
     private func concludeSettle(_ context: SettleContext, success: Bool) {
         assistiveModeSuspensions.removeValue(forKey: context.windowID)?.resume()
+        // Restore's availability follows the settled frame, success or rollback.
+        defer { refreshSnappingSession() }
         if success {
             if let cyclePress = context.cyclePress {
                 settledFrames[context.windowKey] = WindowLayoutSettledFrame(requested: context.frame,
@@ -1508,6 +1623,7 @@ final class WindowLayoutService: ObservableObject {
                 event.location = WindowEdgeSnapSupport.locationAvoidingSystemTopDrag(
                     originalLocation,
                     screenFrames: drag.quartzScreenFrames,
+                    visibleFrames: drag.visibleScreenFrames,
                     enabledZones: drag.enabledZones
                 )
             }
@@ -1750,6 +1866,8 @@ final class WindowLayoutService: ObservableObject {
         let generation = edgeSnapSequenceGeneration
         // NSScreen is main-thread only, so the geometry is captured before leaving.
         let screenFrames = edgeSnapQuartzScreenFrames()
+        // Read with the Quartz frames, in one step, so both describe the same screens.
+        let visibleFrames = NSScreen.screens.map(\.visibleFrame)
         let zones = enabledEdgeSnapZones
         let protectsTop = WindowEdgeSnapSupport.isSystemTopWindowOverviewDragEnabled
         let onScreen = onScreenWindowIDs()
@@ -1769,6 +1887,7 @@ final class WindowLayoutService: ObservableObject {
                                                        pointerStart: pointerStart,
                                                        protectsSystemTopEdge: protectsTop,
                                                        quartzScreenFrames: screenFrames,
+                                                       visibleScreenFrames: visibleFrames,
                                                        enabledZones: zones,
                                                        lastSampleAt: 0,
                                                        mismatchCount: 0,
@@ -1818,6 +1937,7 @@ final class WindowLayoutService: ObservableObject {
                                   pointerStart: pointerStart,
                                   protectsSystemTopEdge: WindowEdgeSnapSupport.isSystemTopWindowOverviewDragEnabled,
                                   quartzScreenFrames: edgeSnapQuartzScreenFrames(),
+                                  visibleScreenFrames: NSScreen.screens.map(\.visibleFrame),
                                   enabledZones: enabledEdgeSnapZones,
                                   lastSampleAt: 0,
                                   mismatchCount: 0,
@@ -2015,15 +2135,29 @@ final class WindowLayoutService: ObservableObject {
             panel = makeEdgeSnapPreviewPanel()
             edgeSnapPreviewPanel = panel
         }
-        panel.setFrame(frame, display: true)
-        if !panel.isVisible {
+        if panel.isVisible {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.18
+                context.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 1.0, 0.36, 1.0)
+                panel.animator().setFrame(frame, display: true)
+                panel.animator().alphaValue = 1
+            }
+        } else {
+            panel.setFrame(frame, display: true)
             panel.alphaValue = 0
-            panel.orderFrontRegardless()
+            if let hubPanel = LatticeHubService.shared.panel, hubPanel.isVisible {
+                panel.order(.below, relativeTo: hubPanel.windowNumber)
+            } else {
+                panel.orderFrontRegardless()
+            }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.10
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                panel.animator().alphaValue = 1
+            }
         }
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.09
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().alphaValue = 1
+        if let hubPanel = LatticeHubService.shared.panel, hubPanel.isVisible {
+            panel.order(.below, relativeTo: hubPanel.windowNumber)
         }
     }
 
@@ -2058,7 +2192,7 @@ final class WindowLayoutService: ObservableObject {
         panel.ignoresMouseEvents = true
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
-        panel.level = .statusBar
+        panel.level = NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue - 1)
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary,
                                     .transient, .ignoresCycle]
         panel.animationBehavior = .none
@@ -3118,6 +3252,8 @@ private struct WindowEdgeSnapDrag {
     let pointerStart: CGPoint
     let protectsSystemTopEdge: Bool
     let quartzScreenFrames: [CGRect]
+    /// Each screen's usable area, in the same order; only its sides are read.
+    let visibleScreenFrames: [CGRect]
     let enabledZones: Set<WindowEdgeSnapZone>
     var lastSampleAt: TimeInterval
     var mismatchCount: Int

@@ -14,7 +14,10 @@ extension MouseSettings {
                         if scrollDirectionEnabled { permissions.requestAccessibility() }
                     }
             }
-            SettingsRow(symbol: "arrow.left.arrow.right", title: l10n.s.invertHorizontalScroll) {
+            // The inverter only turns mouse-wheel events (ScrollWheelSupport.isMouseWheel);
+            // trackpad gestures pass through untouched, as the caption says.
+            SettingsRow(symbol: "arrow.left.arrow.right", title: l10n.s.invertHorizontalScroll,
+                        caption: l10n.s.scrollTrackpadNote) {
                 PermissionGatedToggle(l10n.s.invertHorizontalScroll, isOn: $invertHorizontal)
                     .labelsHidden()
                     .onChange(of: invertHorizontal) { _, _ in
@@ -34,8 +37,6 @@ extension MouseSettings {
             if horizontalScrollEnabled {
                 modifierKeys.padding(.leading, settingsRowTextInset)
             }
-            MouseExceptionsList(scope: .scrollDirection)
-                .disabled(!scrollDirectionEnabled)
         }
     }
 
@@ -72,29 +73,43 @@ extension MouseSettings {
                     }
             }
             if smoothScrollEnabled {
+                let presets = InputSettingsStrings.scrollPresets(l10n.language)
                 VStack(alignment: .leading, spacing: 10) {
-                    sliderRow(l10n.s.smoothScrollStepLabel,
-                              value: smoothScrollStepBinding,
-                              range: Double(SmoothScrollSupport.stepRange.lowerBound)
-                                  ... Double(SmoothScrollSupport.stepRange.upperBound),
-                              step: 10,
-                              readout: "\(SmoothScrollSupport.sanitizedStep(smoothScrollStep))")
-                    sliderRow(l10n.s.smoothScrollResponseLabel,
-                                  value: smoothScrollResponseBinding,
-                                  range: Double(SmoothScrollSupport.responseRange.lowerBound)
-                                      ... Double(SmoothScrollSupport.responseRange.upperBound),
-                                  step: 5,
-                                  readout: "\(SmoothScrollSupport.sanitizedResponse(smoothScrollResponse))%")
-                    sliderRow(l10n.s.smoothScrollCoastLabel,
-                                  value: smoothScrollCoastBinding,
-                                  range: Double(SmoothScrollSupport.coastRange.lowerBound)
-                                      ... Double(SmoothScrollSupport.coastRange.upperBound),
-                                  step: 5,
-                                  readout: "\(SmoothScrollSupport.sanitizedCoast(smoothScrollCoast))%")
-                    MouseExceptionsList(scope: .smoothScroll)
+                    presetRow(l10n.s.smoothScrollStepLabel, value: $smoothScrollStep,
+                              stops: SmoothScrollSupport.stepPresets,
+                              names: [presets.slow, presets.normal, presets.fast, presets.faster],
+                              sanitize: SmoothScrollSupport.sanitizedStep)
+                    presetRow(l10n.s.smoothScrollResponseLabel, caption: presets.responseCaption,
+                              value: $smoothScrollResponse,
+                              stops: SmoothScrollSupport.responsePresets,
+                              names: [presets.snappy, presets.balanced, presets.silky],
+                              sanitize: SmoothScrollSupport.sanitizedResponse)
+                    presetRow(l10n.s.smoothScrollCoastLabel, caption: presets.coastCaption,
+                              value: $smoothScrollCoast,
+                              stops: SmoothScrollSupport.coastPresets,
+                              names: [presets.none, presets.short, presets.medium, presets.long],
+                              sanitize: SmoothScrollSupport.sanitizedCoast)
                 }
                 .padding(.leading, settingsRowTextInset)
             }
+        }
+    }
+
+    /// A named stop for each preference. A value saved by the old sliders
+    /// shows as its nearest stop and stays as saved until one is picked.
+    func presetRow(_ title: String, caption: String? = nil, value: Binding<Int>, stops: [Int],
+                   names: [String], sanitize: @escaping (Int) -> Int) -> some View {
+        SettingsControlRow(title: title, caption: caption) {
+            Picker(title, selection: Binding(
+                get: { SmoothScrollSupport.nearestPreset(sanitize(value.wrappedValue), in: stops) },
+                set: { value.wrappedValue = $0 })) {
+                ForEach(Array(zip(stops, names)), id: \.0) { stop, name in
+                    Text(name).tag(stop)
+                }
+            }
+            .labelsHidden().pickerStyle(.menu)
+            // One width for the three, so their edges line up.
+            .frame(width: 130, alignment: .trailing)
         }
     }
 
@@ -113,13 +128,18 @@ extension MouseSettings {
             }
             if linearScrollEnabled {
                 VStack(alignment: .leading, spacing: 10) {
-                    sliderRow(l10n.s.linearScrollLinesLabel,
-                              value: linearScrollLinesBinding,
-                              range: Double(ScrollWheelSupport.linesPerNotchRange.lowerBound)
-                                  ... Double(ScrollWheelSupport.linesPerNotchRange.upperBound),
-                              step: 1,
-                              readout: "\(ScrollWheelSupport.sanitizedLinesPerNotch(linearScrollLines))")
-                    MouseExceptionsList(scope: .linearScroll)
+                    Stepper(value: Binding(
+                                get: { ScrollWheelSupport.sanitizedLinesPerNotch(linearScrollLines) },
+                                set: { linearScrollLines = $0 }),
+                            in: ScrollWheelSupport.linesPerNotchRange, step: 1) {
+                        HStack {
+                            Text(l10n.s.linearScrollLinesLabel)
+                            Spacer()
+                            Text("\(ScrollWheelSupport.sanitizedLinesPerNotch(linearScrollLines))")
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                    }
                 }
                 .padding(.leading, settingsRowTextInset)
             }

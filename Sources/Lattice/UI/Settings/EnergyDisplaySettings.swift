@@ -15,12 +15,25 @@ struct EnergyDisplaySettings: View {
     @AppStorage(DefaultsKey.brightnessKeyStep)
     private var brightnessKeyStep = BrightnessSupport.KeyStep.standard.rawValue
     @AppStorage(DefaultsKey.brightnessKeyStepPaused) private var brightnessKeyStepPaused = false
+    /// The last displays seen while the feature was on. Turning it off stops
+    /// the service, which empties its list; the folding rows keep showing
+    /// these so the sliders leave with the card instead of vanishing first.
+    @State private var lastDisplays: [BrightnessDisplay] = []
+
+    /// Live while the service has them; otherwise the last ones it had, so
+    /// the rows fold away, or unroll, with the values they last showed.
+    private var shownDisplays: [BrightnessDisplay] {
+        brightnessEnabled && !brightness.displays.isEmpty ? brightness.displays : lastDisplays
+    }
+
+    private var strings: BrightnessFeatureStrings {
+        FeatureStrings.brightness(l10n.language)
+    }
 
     // MARK: - Displays
 
     var body: some View {
-        let strings = FeatureStrings.brightness(l10n.language)
-        return VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 20) {
             SettingsCard(title: SettingsOrganizationStrings.text(.appearance, l10n.language)) {
                 SettingsRow(symbol: "circle.lefthalf.filled", title: SettingsOrganizationStrings.text(.darkMode, l10n.language)) {
                     Toggle(SettingsOrganizationStrings.text(.darkMode, l10n.language),
@@ -33,68 +46,86 @@ struct EnergyDisplaySettings: View {
                     }))
                     .labelsHidden()
                 }
+                ShortcutPreferenceRow(role: .darkMode, label: strings.toggleSystemAppearanceShortcut) {
+                    QuickTogglesService.shared.syncWithPreferences()
+                }
+                .padding(.leading, settingsRowTextInset)
             }
-            SettingsCard(title: SettingsOrganizationStrings.text(.displayControls, l10n.language)) {
-                SettingsRow(symbol: "display.2", title: strings.enable, caption: strings.enableCaption) {
-                    Toggle(strings.enable, isOn: $brightnessEnabled)
-                        .labelsHidden()
-                        .onChange(of: brightnessEnabled) { _, _ in
+            SettingsCard(symbol: "display.2", title: strings.enable, headerSpacing: 0, headerAccessory: {
+                Toggle(strings.enable, isOn: $brightnessEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.regular)
+                    .help(strings.enable)
+                    .accessibilityLabel(strings.enable)
+                    .onChange(of: brightnessEnabled) { _, enabled in
+                        settingsApplyFeatureSwitch(enabled: enabled) {
                             BrightnessService.shared.syncWithPreferences()
                             FeatureRuntime.shared.finishAvailabilityChange()
                         }
-                }
-                Group {
-                    if !brightnessEnabled && brightness.displays.isEmpty {
-                        ForEach(NSScreen.screens, id: \.self) { display in
-                            SettingsControlRow(title: display.localizedName) {
-                                Text(SettingsContentStrings.status(enabled: false, language: l10n.language))
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(.leading, settingsRowTextInset)
-                        }
-                    } else if brightness.displays.isEmpty {
-                        Text(strings.noDisplays).font(.caption).foregroundStyle(.secondary)
-                    } else {
-                        ForEach(brightness.displays) { display in displayRow(display) }
                     }
-                    if let failure = brightness.displayControlFailure {
-                        Text(displayControlFailureText(failure, strings: strings))
-                            .font(.caption).foregroundStyle(.red)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Divider()
-                    SettingsRow(symbol: "cursorarrow.rays", title: strings.keysToggle, caption: strings.keysCaption) {
-                        PermissionGatedToggle(strings.keysToggle, isOn: $brightnessKeysEnabled.animation(reduceMotion ? nil : .settingsExpansion))
-                            .labelsHidden()
-                            .onChange(of: brightnessKeysEnabled) { _, isOn in
-                                if isOn { Permissions.shared.requestAccessibility() }
-                                BrightnessService.shared.syncWithPreferences()
-                            }
-                    }
-                    SettingsRow(symbol: "sun.min", title: strings.keyStep, caption: strings.keyStepCaption) {
-                        PermissionGatedPicker(title: strings.keyStep, selection: brightnessKeyStepBinding.animation(reduceMotion ? nil : .settingsExpansion),
-                                              requiring: { $0 == .standard ? [] : [.accessibility] }) {
-                            Text(strings.keyStepStandard).tag(BrightnessSupport.KeyStep.standard)
-                            Text(strings.keyStepHalf).tag(BrightnessSupport.KeyStep.half)
-                            Text(strings.keyStepQuarter).tag(BrightnessSupport.KeyStep.quarter)
-                        }
-                        .pickerStyle(.menu).labelsHidden()
-                    }
-                    DisplayBrightnessShortcutControls(showsSettingsRow: true)
-                    if brightnessKeysEnabled
-                        || brightnessKeyStepBinding.wrappedValue != .standard,
-                       !permissions.accessibility {
-                        PermissionRow(kind: .accessibility)
-                    }
-                    DisplayExtraBrightnessSettings()
-                }
-                .disabled(!brightnessEnabled || !AppFeature.brightness.isAvailable)
-                .opacity(brightnessEnabled && AppFeature.brightness.isAvailable ? 1 : 0.5)
+            }) {
+                displayControlsSection
+                    .padding(.top, SettingsCard<EmptyView>.defaultHeaderSpacing)
+                    .settingsCollapsible(isExpanded: brightnessEnabled)
             }
             .settingsSectionAnchor(.brightness, cornerRadius: 16)
         }
+        .onChange(of: brightness.displays, initial: true) { _, displays in
+            if !displays.isEmpty { lastDisplays = displays }
+        }
         .settingsExpansionAnimation(value: [brightnessKeysEnabled,
             brightnessKeyStepBinding.wrappedValue != .standard, permissions.accessibility])
+    }
+
+    @ViewBuilder
+    private var displayControlsSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if shownDisplays.isEmpty {
+                // The service lists displays off the main thread just after
+                // the switch turns on. Name each screen meanwhile so the card
+                // opens at its final size instead of growing a second time.
+                ForEach(NSScreen.screens, id: \.self) { screen in
+                    Text(screen.localizedName)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
+                        .padding(.leading, settingsRowTextInset)
+                }
+            } else {
+                ForEach(shownDisplays) { display in displayRow(display) }
+            }
+            if brightnessEnabled, let failure = brightness.displayControlFailure {
+                Text(displayControlFailureText(failure, strings: strings))
+                    .font(.caption).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Divider()
+            SettingsRow(symbol: "cursorarrow.rays", title: strings.keysToggle, caption: strings.keysCaption) {
+                PermissionGatedToggle(strings.keysToggle, isOn: $brightnessKeysEnabled)
+                    .labelsHidden()
+                    .onChange(of: brightnessKeysEnabled) { _, isOn in
+                        if isOn { Permissions.shared.requestAccessibility() }
+                        BrightnessService.shared.syncWithPreferences()
+                    }
+            }
+            SettingsRow(symbol: "sun.min", title: strings.keyStep, caption: strings.keyStepCaption) {
+                PermissionGatedPicker(title: strings.keyStep, selection: brightnessKeyStepBinding,
+                                      requiring: { $0 == .standard ? [] : [.accessibility] }) {
+                    Text(strings.keyStepStandard).tag(BrightnessSupport.KeyStep.standard)
+                    Text(strings.keyStepHalf).tag(BrightnessSupport.KeyStep.half)
+                    Text(strings.keyStepQuarter).tag(BrightnessSupport.KeyStep.quarter)
+                }
+                .pickerStyle(.menu).labelsHidden()
+            }
+            DisplayBrightnessShortcutControls(showsSettingsRow: true)
+            if brightnessKeysEnabled
+                || brightnessKeyStepBinding.wrappedValue != .standard,
+               !permissions.accessibility {
+                PermissionRow(kind: .accessibility)
+            }
+            DisplayExtraBrightnessSettings()
+        }
     }
 
     /// A finer step answers the keys in place of the system, which takes the

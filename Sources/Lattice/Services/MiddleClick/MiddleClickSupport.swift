@@ -35,13 +35,16 @@ enum MiddleClickSupport {
     /// and while the system's own three-finger drag gesture is enabled it
     /// owns three-finger touches: it synthesizes clicks from unpressed
     /// contact that are indistinguishable from real presses here, so the
-    /// press moves to four fingers, as the tap does (issue #2061).
+    /// press moves to four fingers (issue #2061). Look Up's three-finger tap
+    /// synthesizes no press, so it leaves the press alone.
+    /// `clickFingers` is the user's chosen count, 3 (default) or 4.
     static func actionForClick(fingerCount: Int,
                                frameAge: TimeInterval,
                                settledFor: TimeInterval,
                                sinceLastTransformEnd: TimeInterval?,
-                               systemDragGestureEnabled: Bool) -> MiddleClickClickAction {
-        let pressFingers = systemDragGestureEnabled ? 4 : 3
+                               systemDragGestureEnabled: Bool,
+                               clickFingers: Int = 3) -> MiddleClickClickAction {
+        let pressFingers = availableClickSelection(clickFingers, systemDragEnabled: systemDragGestureEnabled)
         guard fingerCount == pressFingers, frameAge >= 0, frameAge <= fingerFreshness else {
             return .passThrough
         }
@@ -51,6 +54,12 @@ enum MiddleClickSupport {
         }
         guard settledFor >= minimumSettle else { return .passThrough }
         return .transform
+    }
+
+    /// The press always has a finger count; three-finger drag owning three
+    /// fingers moves it to four rather than switching it off.
+    static func availableClickSelection(_ stored: Int, systemDragEnabled: Bool) -> Int {
+        stored == 4 || systemDragEnabled ? 4 : 3
     }
 
     // MARK: - Tap to middle click (issue #161, opt-in)
@@ -73,12 +82,18 @@ enum MiddleClickSupport {
     /// trackpad contact cannot move focus while the user is entering text.
     static let tapKeyboardIdle: TimeInterval = 0.5
 
-    /// Decides whether a finished touch was a deliberate tap. `tapFingers` is
-    /// the user's chosen count (3 or 4); with the system three-finger drag
-    /// gesture enabled a three-finger tap belongs to macOS, so only the
-    /// four-finger option stays available.
-    static func availableTapSelection(_ stored: Int, systemDragEnabled: Bool) -> Int {
-        stored == 3 && systemDragEnabled ? 0 : stored
+    /// The tap the Settings picker shows. A three-finger tap belongs to
+    /// macOS while it uses one (three-finger drag, or Look Up on a
+    /// three-finger tap), so a saved three reads as off until it is free.
+    static func availableTapSelection(_ stored: Int, systemOwnsThreeFingerTap: Bool) -> Int {
+        stored == 3 && systemOwnsThreeFingerTap ? 0 : stored
+    }
+
+    /// Whether macOS answers a three-finger tap itself: three-finger drag,
+    /// or Look Up & data detectors set to "Tap with Three Fingers" (stored
+    /// as 2; 0 is off and 1 is the force click).
+    static func systemOwnsThreeFingerTap(threeFingerDrag: Bool, lookUpTapGesture: Int) -> Bool {
+        threeFingerDrag || lookUpTapGesture == 2
     }
 
     static func tapShouldFire(duration: TimeInterval,
@@ -87,7 +102,7 @@ enum MiddleClickSupport {
                               exceededFingerCount: Bool,
                               buttonPressedDuring: Bool,
                               positionUnavailable: Bool,
-                              systemDragGestureEnabled: Bool,
+                              systemOwnsThreeFingerTap: Bool,
                               tapFingers: Int,
                               secondsSinceLastKeyDown: TimeInterval = .infinity) -> Bool {
         guard tapFingers == 3 || tapFingers == 4 else { return false }
@@ -96,7 +111,7 @@ enum MiddleClickSupport {
         guard duration > 0, duration <= tapMaxDuration else { return false }
         guard maxMovement <= tapMovementLimit else { return false }
         guard maxSpreadChange <= tapSpreadChangeLimit else { return false }
-        if tapFingers == 3, systemDragGestureEnabled { return false }
+        if tapFingers == 3, systemOwnsThreeFingerTap { return false }
         return true
     }
 

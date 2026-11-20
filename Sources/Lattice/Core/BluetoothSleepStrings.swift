@@ -42,7 +42,7 @@ extension BluetoothSleepStrings {
     static let enUS = BluetoothSleepStrings(
         pageTitle: "Bluetooth Control",
         hubDescription: "Switches Bluetooth off while the Mac sleeps, so headphones in a bag stop connecting to it.",
-        enable: "Turn Bluetooth off when the Mac sleeps",
+        enable: "Turn Bluetooth off when Mac sleeps",
         enableCaption: "Disconnects Bluetooth devices, including headphones, keyboards and mice, while your Mac sleeps.",
         restoreToggle: "Turn Bluetooth back on when the Mac wakes",
         restoreCaption: "Restores Bluetooth if Lattice turned it off during sleep. If Bluetooth was already off, it stays off.",

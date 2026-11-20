@@ -97,17 +97,24 @@ final class CameraPreviewService: ObservableObject {
         hide()
     }
 
-    func toggle() {
+    func toggle(fromNotch: Bool = false) {
         if isPresented {
             hide()
         } else {
-            show()
+            show(fromNotch: fromNotch)
         }
     }
 
-    func show() {
+    func show(fromNotch: Bool = false) {
         guard AppFeature.cameraPreview.isAvailable, SessionActivity.shared.isActive else { return }
-        if showInNotchIfEnabled() { return }
+        if fromNotch {
+            if showInNotchIfEnabled() { return }
+        } else {
+            let preferFloating = LauncherShortcutTarget.selected() == .floatingWindow
+            if !preferFloating && showInNotchIfEnabled() {
+                return
+            }
+        }
         guard !isVisible else { return }
         hideEmbedded()
         let panel = ensurePanel()

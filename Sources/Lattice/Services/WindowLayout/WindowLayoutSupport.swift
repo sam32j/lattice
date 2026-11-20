@@ -4,6 +4,20 @@
 import CoreGraphics
 import Foundation
 
+struct NormalizedRect: Equatable {
+    let x: CGFloat      // 0.0 ... 1.0
+    let y: CGFloat      // 0.0 ... 1.0
+    let width: CGFloat  // 0.0 ... 1.0
+    let height: CGFloat // 0.0 ... 1.0
+
+    init(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat) {
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+    }
+}
+
 enum WindowLayoutTargetCapability: Equatable {
     case position
     case frame
@@ -327,7 +341,7 @@ enum WindowLayoutAction: String, CaseIterable, Identifiable {
 /// The configurable spacing around snapped windows (issue #1068). Values are
 /// in pixels, offering standard spacing presets (0 to 128 px).
 enum WindowLayoutGaps {
-    static let presets: [Int] = [0, 8, 16, 32, 64, 128]
+    static let presets: [Int] = [0, 8, 16, 32, 64]
 
     static var windowGap: CGFloat {
         CGFloat(UserDefaults.standard.integer(forKey: DefaultsKey.windowLayoutWindowGap))
@@ -552,6 +566,78 @@ enum WindowLayoutGeometry {
         let rect = ungappedRect(for: action, current: current, visibleFrame: frame,
                                marginPercent: marginPercent)
         return windowGapped(rect, for: action, in: frame, windowGap: windowGap)
+    }
+
+    static func rect(for normalizedRect: NormalizedRect,
+                     visibleFrame: CGRect,
+                     windowGap: CGFloat = WindowLayoutGaps.windowGap,
+                     screenGap: CGFloat = WindowLayoutGaps.screenGap) -> CGRect {
+        let frame = screenGapFrame(visibleFrame, screenGap: screenGap)
+        let raw = NSRect(
+            x: frame.minX + normalizedRect.x * frame.width,
+            y: frame.minY + (1.0 - normalizedRect.y - normalizedRect.height) * frame.height,
+            width: normalizedRect.width * frame.width,
+            height: normalizedRect.height * frame.height
+        )
+        guard windowGap > 0 else { return raw.integral }
+        let half = windowGap / 2
+        // Half a gap comes off each side that meets another pane, never more
+        // than the pane has: a gap wider than a small pane shrinks it to one
+        // point inside its own bounds instead of pushing it out of the frame.
+        func insets(leading: Bool, trailing: Bool, span: CGFloat) -> (CGFloat, CGFloat) {
+            var lead: CGFloat = leading ? half : 0
+            var trail: CGFloat = trailing ? half : 0
+            let room = max(0, span - 1)
+            if lead + trail > room, lead + trail > 0 {
+                let scale = room / (lead + trail)
+                lead *= scale
+                trail *= scale
+            }
+            return (lead, trail)
+        }
+        let (left, right) = insets(leading: raw.minX - frame.minX > 1, trailing: frame.maxX - raw.maxX > 1,
+                                   span: raw.width)
+        let (bottom, top) = insets(leading: raw.minY - frame.minY > 1, trailing: frame.maxY - raw.maxY > 1,
+                                   span: raw.height)
+        var result = raw
+        result.origin.x += left
+        result.size.width = max(1, raw.width - left - right)
+        result.origin.y += bottom
+        result.size.height = max(1, raw.height - bottom - top)
+        return result.integral
+    }
+
+    /// The named action whose anchoring and acceptance fit a normalized
+    /// placement: it holds the edges the placement touches, so a window that
+    /// keeps a larger minimum size grows away from them and stays in the
+    /// usable frame, and acceptance checks those edges instead of overlap
+    /// alone. Only a placement covering the whole frame uses Maximize.
+    static func anchorAction(for normalizedRect: NormalizedRect) -> WindowLayoutAction {
+        let edge: CGFloat = 0.001
+        let left = normalizedRect.x <= edge
+        let right = normalizedRect.x + normalizedRect.width >= 1 - edge
+        let top = normalizedRect.y <= edge
+        let bottom = normalizedRect.y + normalizedRect.height >= 1 - edge
+        switch (left, right, top, bottom) {
+        case (true, true, true, true): return .maximize
+        case (true, false, true, true): return .leftHalf
+        case (false, true, true, true): return .rightHalf
+        case (false, false, true, true): return .centerHalf
+        case (true, true, true, false): return .topHalf
+        case (true, true, false, true): return .bottomHalf
+        case (true, true, false, false): return .middleThird
+        case (true, false, true, false): return .topLeft
+        case (false, true, true, false): return .topRight
+        case (false, false, true, false): return .topCenterSixth
+        case (true, false, false, true): return .bottomLeft
+        case (false, true, false, true): return .bottomRight
+        case (false, false, false, true): return .bottomCenterSixth
+        // A side cell clear of the top and bottom keeps its side, and its
+        // screen gap, when the window comes back wider than the cell.
+        case (true, false, false, false): return .leftThird
+        case (false, true, false, false): return .rightThird
+        default: return .center
+        }
     }
 
     /// The visible frame pulled in by the screen gap on every side. The inset
@@ -1101,6 +1187,11 @@ struct WindowLayoutHistory {
             }
         }
         return nil
+    }
+
+    func canPopPrevious(for window: WindowLayoutWindowKey, current: WindowLayoutFrame) -> Bool {
+        guard let frames = framesByWindow[window] else { return false }
+        return frames.contains { !$0.isClose(to: current, tolerance: 1) }
     }
 
     mutating func discardLatest(for window: WindowLayoutWindowKey) {

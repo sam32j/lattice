@@ -1,17 +1,30 @@
 import SwiftUI
 
 extension WindowLayoutSettings {
+    private var isEdgeSnapReset: Bool {
+        edgeSnapDisabledZones.isEmpty && (edgeSnapZoneActions.isEmpty || WindowEdgeSnapLayout(storageValue: edgeSnapZoneActions) == .standard)
+    }
+
     var snappingControls: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Divider()
             VStack(alignment: .leading, spacing: 13) {
                 SettingsRow(symbol: "macwindow.and.cursorarrow", title: text.edgeSnapSection, caption: text.edgeSnapCaption) {
-                    PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .onChange(of: edgeSnapEnabled) { _, _ in
+                    HStack(spacing: 8) {
+                        Button(l10n.s.shortcutReset) {
+                            edgeSnapDisabledZones = ""
+                            edgeSnapZoneActions = ""
                             WindowLayoutService.shared.syncWithPreferences()
                         }
+                        .controlSize(.small)
+                        .disabled(isEdgeSnapReset)
+
+                        PermissionGatedToggle(text.edgeSnapSection, isOn: $edgeSnapEnabled)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                            .onChange(of: edgeSnapEnabled) { _, _ in
+                                WindowLayoutService.shared.syncWithPreferences()
+                            }
+                    }
                 }
                 if edgeSnapEnabled {
                     WindowEdgeSnapZonePicker(disabledZonesStorage: $edgeSnapDisabledZones,
@@ -40,13 +53,6 @@ extension WindowLayoutSettings {
                     }
                     .padding(.leading, settingsRowTextInset)
                 }
-            }
-
-            Divider()
-            VStack(alignment: .leading, spacing: 13) {
-                Text(text.gapsSection).font(.headline)
-                gapPicker(text.windowGap, selection: $windowGap)
-                gapPicker(text.screenGap, selection: $screenGap)
             }
 
             Divider()

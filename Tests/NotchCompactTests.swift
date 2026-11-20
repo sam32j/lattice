@@ -24,6 +24,7 @@ enum NotchCompactTests {
     struct CameraPreviewView: View {
         let size: CGSize
         let showsCameraMenu: Bool
+        var showsCloseButton: Bool = false
         var body: some View {
             Color.black.frame(width: size.width, height: size.height)
                 .onAppear { CameraPreviewService.shared.previewMenu = showsCameraMenu }
@@ -279,29 +280,13 @@ enum NotchCompactTests {
         settle(host)
         suite.expect(service.isEmbeddedPresented && service.stops == 0,
                      "starting the embedded camera does not dismiss it when the start card disappears")
-        suite.expect(service.previewMenu == false,
-                     "the island's preview leaves its camera picker and stop button to the top row, clear of the image")
-        // The top row's stop button, as a pill in a full row and a glyph
-        // beside the camera.
-        var band = NotchBand()
-        let stopTitle = FeatureStrings.notchActivities(L10n.shared.language).stopCamera
-        for besideCamera in [false, true] {
-            band.besideCamera = besideCamera
-            buttonActions = [:]
-            let stop = NSHostingView(rootView: NotchCameraStopButton().environment(\.notchBand, band))
-            stop.layoutSubtreeIfNeeded()
-            suite.expect(buttonActions[stopTitle] != nil, "the top row offers Stop while the mirror runs, beside a camera: \(besideCamera)")
-        }
-        buttonActions[stopTitle]?()
-        settle(host)
-        service.showEmbedded()
-        settle(host)
-        suite.expect(service.isEmbeddedPresented && service.stops == 1,
-                     "stopping from the top row brings back the start card, and the camera starts again within the same page")
+        suite.expect(service.previewMenu == true,
+                     "the island's preview overlays its camera selector on the image just as the floating window does")
+        // The page has no Stop of its own: leaving it is what stops the camera.
         host.rootView = AnyView(EmptyView())
         settle(host)
-        suite.expect(!service.isEmbeddedPresented && service.stops == 2,
-                     "leaving the camera page still stops capture")
+        suite.expect(!service.isEmbeddedPresented && service.stops == 1,
+                     "leaving the camera page stops capture")
     }
     private static func rail(_ suite: TestSuite) {
         let state = RailState()

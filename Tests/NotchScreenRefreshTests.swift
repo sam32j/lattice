@@ -233,22 +233,25 @@ enum NotchScreenRefreshContract {
         for _ in 0..<100 { preferences.schedulePreferenceSync() }
         suite.expect(DispatchQueue.main.pending == 1 && preferences.preferenceSyncs == 0,
                      "a preference burst defers one island sync until drawing has finished")
-        DispatchQueue.main.advance(0)
+        DispatchQueue.main.advance(0.2)
+        suite.expect(preferences.preferenceSyncs == 0,
+                     "the island waits out a settings switch's slide before redrawing")
+        DispatchQueue.main.advance(0.1)
         suite.expect(preferences.preferenceSyncs == 1 && preferences.preferenceSyncWork == nil,
                      "the deferred sync consumes the entire preference burst once")
         preferences.schedulePreferenceSync()
-        DispatchQueue.main.advance(0)
+        DispatchQueue.main.advance(0.3)
         suite.expect(preferences.preferenceSyncs == 2, "later preference changes still synchronize the island")
         preferences.schedulePreferenceSync()
         preferences.running = false
-        DispatchQueue.main.advance(0)
+        DispatchQueue.main.advance(0.3)
         preferences.schedulePreferenceSync()
         suite.expect(preferences.preferenceSyncs == 2 && DispatchQueue.main.pending == 0,
                      "pending and later preference notifications cannot restart a stopped island")
         preferences.running = true
         preferences.suspended = true
         preferences.schedulePreferenceSync()
-        DispatchQueue.main.advance(0)
+        DispatchQueue.main.advance(0.3)
         suite.expect(preferences.preferenceSyncs == 3,
                      "suspended islands still apply preference changes that stop disabled services")
         let initialSize = service.geometry.compactMusicGeometry.compactActivitySize

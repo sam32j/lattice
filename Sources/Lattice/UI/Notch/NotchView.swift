@@ -300,7 +300,7 @@ struct NotchView: View {
         let wraps = geometry.pageTop == .wrapsCamera
         return page
             .frame(width: service.contentSize.width, height: service.contentSize.height, alignment: .top)
-            .clipShape(NotchPageClip(top: geometry.pageTopInset))
+            .clipShape(NotchPageClip(top: geometry.pageTopInset, bottomOverflow: service.pageClipOverflow))
             // With no title on screen, VoiceOver still names the page.
             .accessibilityElement(children: .contain)
             .accessibilityLabel(pageName)
@@ -608,8 +608,8 @@ struct NotchView: View {
         case .snippets:
             size.height = max(size.height, 160)
         case .camera:
-            // Keep permission and error messages reachable.
-            size.height = max(size.height, 144)
+            // Inherit root HUB island dimension so preview size is bigger.
+            break
         case .music:
             size.height = max(size.height, NotchLayout.musicPlayerHeight(band: service.expandedGeometry.musicBandHeight,
                                                                          playing: music.playback != nil))
@@ -713,7 +713,6 @@ struct NotchView: View {
             case .timer: NotchTimerView(size: pageSize)
             case .camera:
                 NotchCameraView(size: pageSize)
-                    .notchBand(leading: { NotchCameraChooser() }, trailing: { NotchCameraStopButton() })
             case .notifications:
                 NotchNotificationsView(size: pageSize)
                     .notchBand(trailing: { NotchClearNotificationsButton() })
@@ -1013,11 +1012,14 @@ extension NotchModule: PanelOrderItem {
 private struct NotchPageClip: Shape {
     /// From the top of the page to the top of the island.
     let top: CGFloat
+    /// Room past the page's bottom while it shrinks with the island; see
+    /// `NotchService.pageClipOverflow`.
+    var bottomOverflow: CGFloat = 0
 
     func path(in rect: CGRect) -> Path {
         Path(CGRect(x: rect.minX - NotchLayout.horizontalInset, y: rect.minY - top,
                     width: rect.width + NotchLayout.horizontalInset * 2,
-                    height: rect.height + top + NotchLayout.bottomInset))
+                    height: rect.height + top + NotchLayout.bottomInset + bottomOverflow))
     }
 }
 

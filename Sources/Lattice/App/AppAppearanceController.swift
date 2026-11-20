@@ -33,6 +33,7 @@ final class AppAppearanceController: ObservableObject {
     /// change from Settings.
     func apply() {
         NSApp.appearance = nsAppearance
+        appDelegate()?.updateDockIcon()
     }
 
     private var nsAppearance: NSAppearance? {

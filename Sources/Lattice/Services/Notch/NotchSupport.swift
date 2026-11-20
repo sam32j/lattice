@@ -2952,8 +2952,16 @@ struct NotchGeometry: Equatable {
                     contentHeight = 48
                 }
             // Lists and previews fill the chosen content budget.
-            case .mixer, .calendar, .clipboard, .captures, .files, .notifications, .downloads, .camera, .scratchpad, .watch, .snippets:
+            case .mixer, .calendar, .clipboard, .captures, .files, .notifications, .downloads, .scratchpad, .watch, .snippets:
                 contentHeight = budget
+            case .camera:
+                let count = toolCount ?? 8
+                let widgetsHeight = hubWidgetsHeight ?? 0
+                let computedHeight = hubContentHeight(toolCount: count,
+                    controlsHeight: toolsControlsHeight ?? 0, editing: false,
+                    optionsHeight: 0,
+                    widgetsHeight: widgetsHeight)
+                contentHeight = toolsControlsHeight != nil ? computedHeight : max(budget, computedHeight)
             }
         }
         let preferredHeight = headerTopInset + headerChromeHeight + contentHeight

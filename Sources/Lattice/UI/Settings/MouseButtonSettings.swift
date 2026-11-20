@@ -32,36 +32,49 @@ struct MouseButtonShortcutsSection: View {
     @State var recordError: String?
     @State var recordErrorButton: Int64?
     @State var spacesCapturing = false
+    // Measured heights of the Configure button and of the capture it opens,
+    // so their shared slot eases between them.
+    @State var configureButtonHeight: CGFloat?
+    @State var captureDetailsHeight: CGFloat?
     @State var spacesFeedback: String?
 
     var text: MouseButtonFeatureStrings { FeatureStrings.mouseButtons(l10n.language) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             SettingsRow(symbol: "computermouse.fill", title: text.enableLabel, caption: text.enableCaption) {
                 PermissionGatedToggle(text.enableLabel, isOn: $enabled)
                     .labelsHidden()
                     .onChange(of: enabled) { _, on in
-                        if !on { stopCapture() }
+                        if !on {
+                            stopCapture()
+                            // The rows stay mounted while folded; a recorder
+                            // left running would rebind a hidden row.
+                            CompactShortcutCoordinator.shared.stopRecordingAll()
+                        }
                         MouseButtonShortcutService.shared.syncWithPreferences()
                         if on, !permissions.accessibility {
                             permissions.requestAccessibility()
                         }
                     }
             }
-            if enabled {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(MouseButtonShortcutSupport.sortedButtons(mappings), id: \.self) { button in
-                        mappingRow(button, shortcut: mappings[button])
-                    }
-                    if let pendingButton {
-                        mappingRow(pendingButton, shortcut: nil)
-                    }
-                    captureRow.frame(maxWidth: .infinity, alignment: .trailing)
+            // Stays laid out and unrolls as a clipped accordion, so the rows
+            // slide out from under the switch instead of fading in over the
+            // rows below while they are still moving down.
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(MouseButtonShortcutSupport.sortedButtons(mappings), id: \.self) { button in
+                    mappingRow(button, shortcut: mappings[button])
                 }
-                .padding(.leading, settingsRowTextInset)
+                if let pendingButton {
+                    mappingRow(pendingButton, shortcut: nil)
+                }
+                captureRow.frame(maxWidth: .infinity, alignment: .trailing)
             }
+            .padding(.leading, settingsRowTextInset)
+            .padding(.top, 12)
+            .settingsCollapsible(isExpanded: enabled)
             Divider()
+                .padding(.vertical, 12)
             SettingsRow(symbol: "rectangle.3.group", title: text.spacesEnableLabel,
                         caption: text.spacesEnableCaption) {
                 if !spacesCommandsAreReachable {
@@ -86,24 +99,24 @@ struct MouseButtonShortcutsSection: View {
                         }
                     }
             }
-            if spacesEnabled {
-                VStack(alignment: .leading, spacing: 10) {
-                    spacesRow.frame(maxWidth: .infinity, alignment: .trailing)
-                    HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(text.spacesFollowsDragLabel)
-                            Text(text.spacesFollowsDragCaption)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer(minLength: 12)
-                        Toggle(text.spacesFollowsDragLabel, isOn: $spacesFollowsDrag)
-                            .labelsHidden()
+            VStack(alignment: .leading, spacing: 10) {
+                spacesRow.frame(maxWidth: .infinity, alignment: .trailing)
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(text.spacesFollowsDragLabel)
+                        Text(text.spacesFollowsDragCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
+                    Spacer(minLength: 12)
+                    Toggle(text.spacesFollowsDragLabel, isOn: $spacesFollowsDrag)
+                        .labelsHidden()
                 }
-                .padding(.leading, settingsRowTextInset)
             }
+            .padding(.leading, settingsRowTextInset)
+            .padding(.top, 12)
+            .settingsCollapsible(isExpanded: spacesEnabled)
         }
         .settingsSectionAnchor(.mouseButtonShortcuts, cornerRadius: 16)
         .onDisappear {

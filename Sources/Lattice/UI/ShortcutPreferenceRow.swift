@@ -10,6 +10,7 @@ struct ShortcutPreferenceRow: View {
     private let role: GlobalShortcutRole
     private let alignment: VerticalAlignment
     private let label: String?
+    private let help: String?
     private let symbolName: String?
     private let contextLabel: String?
     private let statusText: String?
@@ -24,6 +25,7 @@ struct ShortcutPreferenceRow: View {
     init(role: GlobalShortcutRole,
          alignment: VerticalAlignment = .center,
          label: String? = nil,
+         help: String? = nil,
          symbolName: String? = nil,
          contextLabel: String? = nil,
          statusText: String? = nil,
@@ -36,6 +38,7 @@ struct ShortcutPreferenceRow: View {
         self.role = role
         self.alignment = alignment
         self.label = label
+        self.help = help
         self.symbolName = symbolName
         self.contextLabel = contextLabel
         self.statusText = statusText
@@ -52,6 +55,7 @@ struct ShortcutPreferenceRow: View {
     var body: some View {
         HStack(alignment: alignment, spacing: 8) {
             ShortcutRowLabel(title: label ?? role.title(l10n.s),
+                             help: help,
                              symbolName: symbolName,
                              contextLabel: contextLabel,
                              statusText: statusText,
@@ -89,6 +93,7 @@ struct ShortcutPreferenceRow: View {
 
 struct ShortcutRowLabel: View {
     let title: String
+    var help: String? = nil
     let symbolName: String?
     let contextLabel: String?
     let statusText: String?
@@ -119,5 +124,6 @@ struct ShortcutRowLabel: View {
                 }
             }
         }
+        .help(help ?? "")
     }
 }

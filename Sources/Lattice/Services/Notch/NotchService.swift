@@ -139,6 +139,23 @@ final class NotchService: ObservableObject {
         screen: CGRect(x: 0, y: 0, width: 1440, height: 900), safeAreaTop: 0, cameraWidth: 0)
     @Published private(set) var expanded = false { didSet { if oldValue != expanded { musicSwipe.cancel() } } }
     @Published private(set) var showsKeyboardFocus = false
+    /// Extra room below the page's clip while a page shrinks with the island.
+    /// The page takes its final size as the outline starts to spring, so
+    /// without this its rows would be cut at that size while the outline,
+    /// which masks the island anyway, was still closing over them.
+    @Published private(set) var pageClipOverflow: CGFloat = 0
+    private var pageClipOverflowGeneration = 0
+
+    func allowPageClipOverflow(_ amount: CGFloat, for duration: TimeInterval) {
+        guard amount > 0 else { return }
+        pageClipOverflowGeneration += 1
+        let generation = pageClipOverflowGeneration
+        if pageClipOverflow < amount { pageClipOverflow = amount }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            guard let self, self.pageClipOverflowGeneration == generation else { return }
+            self.pageClipOverflow = 0
+        }
+    }
     /// True when macOS refused the island's own shortcut, so Settings can say so.
     @Published private(set) var shortcutRegistrationFailed = false
     private let hotkey = QuickToolHotkey(id: 81)
@@ -888,13 +905,16 @@ final class NotchService: ObservableObject {
 
     var expandedSize: CGSize {
         let musicExtras = NotchLyricsSupport.isEnabled() || NotchQueueSupport.isEnabled()
-        let isHubPage = selected == .hub || selected == .controls || selected == .mixer
+        let isHubPage = selected == .hub || selected == .controls || selected == .mixer || selected == .camera
         let launcher = LatticeHubService.shared
         let isEditing = isHubPage && launcher.editingPresentation.isPresented && launcher.activeUtility == nil
         let isRecentCapturesUtility = isHubPage && launcher.activeUtility == .recentCaptures
         let utilityHeight = isHubPage ? hubUtilityContentHeight(for: launcher.activeUtility) : nil
         let controlsHeight: CGFloat? = isHubPage && launcher.activeUtility == nil ? launcher.notchControlsHeight : nil
         let optionsHeight: CGFloat = isEditing && (launcher.editingOptionsItem ?? launcher.editingPresentation.outgoingOptions) != nil ? launcher.editingPresentation.optionsHeight + 6 : 0
+        if selected == .camera {
+            return hubRootSize(in: expandedGeometry)
+        }
         return pageSize(in: expandedGeometry, module: selected,
                         detail: selectedMetric != nil,
                         detailHeight: selectedMetric == .fan ? fanDetailHeight : nil,
@@ -914,6 +934,26 @@ final class NotchService: ObservableObject {
                             ? systemWidgetHeight(for: SystemMonitor.shared.snapshot) : nil)
     }
 
+    func hubRootSize(in geometry: NotchGeometry) -> CGSize {
+        let launcher = LatticeHubService.shared
+        let widgetsHeight = modules.contains { [.music, .calendar, .timer].contains($0) } ? NotchLayout.hubWidgetTileHeight : nil
+        return pageSize(in: geometry, module: .hub,
+                        detail: false,
+                        detailHeight: nil,
+                        musicExtraHeight: 0,
+                        fileMediaHeight: nil,
+                        toolCount: launcher.visibleItems.count,
+                        capturePreviewHeight: nil,
+                        toolsControlsHeight: launcher.notchControlsHeight,
+                        hubRecentCaptures: false,
+                        hubIsEditing: false,
+                        hubAvailableCount: 0,
+                        hubOptionsHeight: 0,
+                        hubActiveUtilityHeight: nil,
+                        hubWidgetsHeight: widgetsHeight,
+                        systemHeight: nil)
+    }
+
     private func systemWidgetHeight(for snapshot: SystemSnapshot) -> CGFloat? {
         guard !showingSections, selectedMetric != .fan else { return nil }
         if selectedMetric != nil || ([.hub, .controls, .mixer].contains(selected)
@@ -926,7 +966,10 @@ final class NotchService: ObservableObject {
     /// The open island as Settings previews a section: at rest, with no
     /// detail, app panel, capture or media editor in front of the page.
     func previewSize(for module: NotchModule, systemHeight: CGFloat? = nil) -> CGSize {
-        pageSize(in: previewGeometry(for: module), module: module, detail: false, detailHeight: nil, musicExtraHeight: 0,
+        if module == .camera {
+            return hubRootSize(in: previewGeometry(for: .camera))
+        }
+        return pageSize(in: previewGeometry(for: module), module: module, detail: false, detailHeight: nil, musicExtraHeight: 0,
                  fileMediaHeight: nil, toolCount: LatticeHubService.shared.visibleItems.count, capturePreviewHeight: nil,
                  toolsControlsHeight: module == .hub ? LatticeHubService.shared.notchControlsHeight : nil,
                  hubWidgetsHeight: module == .hub && modules.contains { [.music, .calendar, .timer].contains($0) } ? NotchLayout.hubWidgetTileHeight : nil,
@@ -1025,6 +1068,8 @@ final class NotchService: ObservableObject {
             return DeviceControlsNavigationState.shared.contentHeight
         case .system:
             return SystemNavigationState.shared.effectiveHeight
+        case .windowLayout:
+            return WindowSnappingNavigationState.shared.contentHeight
         default:
             return nil
         }
@@ -3984,7 +4029,11 @@ final class NotchService: ObservableObject {
 
     /// AppStorage can notify during drawing. A preference import or a group
     /// of edits only needs one deferred pass over the final saved settings.
-    private func schedulePreferenceSync() {
+    /// A preference write answers after Settings has finished animating it.
+    /// Republishing the island redraws it and the hub inside it, which costs
+    /// a few frames; landing that on the frame a switch starts to slide froze
+    /// the knob part-way. A burst of writes still collapses into one sync.
+    func schedulePreferenceSync() {
         guard running, preferenceSyncWork == nil else { return }
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
@@ -3993,7 +4042,8 @@ final class NotchService: ObservableObject {
             self.syncWithPreferences()
         }
         preferenceSyncWork = work
-        DispatchQueue.main.async(execute: work)
+        // Past a settings switch's slide and the accordion it opens.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
     }
 
     private func applicationDidActivate() {
@@ -4590,6 +4640,24 @@ final class NotchService: ObservableObject {
                     !self.showingSections,
                     [.hub, .controls, .mixer].contains(self.selected),
                     LatticeHubService.shared.activeUtility == .deviceControls
+                else {
+                    return
+                }
+
+                self.refreshPresentation()
+            }
+            .store(in: &subscriptions)
+
+        WindowSnappingNavigationState.shared.$contentHeight
+            .removeDuplicates()
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self,
+                    self.expanded,
+                    !self.showingSections,
+                    [.hub, .controls].contains(self.selected),
+                    LatticeHubService.shared.activeUtility == .windowLayout
                 else {
                     return
                 }

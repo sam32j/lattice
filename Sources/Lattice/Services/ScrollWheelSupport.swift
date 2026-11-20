@@ -262,13 +262,11 @@ extension ScrollWheelSupport {
     static let linesPerNotchRange = 1...10
     static let defaultLinesPerNotch = 3
 
-    /// Lines per notch while linear scrolling applies to this event, or nil
-    /// when it is off, uninstalled or the app under the pointer is on its own
-    /// exception list. Both wheel taps ask it the same way; the exception
-    /// list is only consulted while the feature is on.
-    static func linearLinesPerNotch(defaults: UserDefaults, isAvailable: Bool,
-                                    isExcepted: () -> Bool) -> Int? {
-        guard isAvailable, defaults.bool(forKey: DefaultsKey.linearScrollEnabled), !isExcepted() else {
+    /// Lines per notch while linear scrolling applies, or nil when it is off
+    /// or uninstalled. It applies in every app. Both wheel taps ask it the
+    /// same way.
+    static func linearLinesPerNotch(defaults: UserDefaults, isAvailable: Bool) -> Int? {
+        guard isAvailable, defaults.bool(forKey: DefaultsKey.linearScrollEnabled) else {
             return nil
         }
         return sanitizedLinesPerNotch(defaults.integer(forKey: DefaultsKey.linearScrollLines))

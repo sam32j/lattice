@@ -735,9 +735,6 @@ final class AppSwitcher: ObservableObject {
             let direction = ScrollDirectionPreferences(defaults: .standard)
             let directionApplies = direction.isEnabled
                 && ScrollWheelHIDStage.shared.passed(event)
-                && !MouseAppExceptions.shared.excludesPointerTarget(
-                    .scrollDirection, at: event.location,
-                    sourceProcessID: event.getIntegerValueField(.eventSourceUnixProcessID))
             let delta = scrollNavigation.selectionDelta(for: event, direction: directionApplies ? direction : nil)
             if delta != 0 {
                 // Moving the row must not select the card under a stationary pointer.

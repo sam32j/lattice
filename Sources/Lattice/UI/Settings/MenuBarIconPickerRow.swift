@@ -15,7 +15,7 @@ struct MenuBarIconPickerRow: View {
 
     var body: some View {
         let name = Defaults.sanitizedMenuBarIconSymbol(savedName)
-        SettingsControlRow(title: text.menuBarIconTitle, caption: text.menuBarIconCaption) {
+        SettingsControlRow(title: text.menuBarIconTitle) {
             Button {
                 showingPicker = true
             } label: {
@@ -60,7 +60,7 @@ struct MenuBarIconPickerRow: View {
         Group {
             if let mark = BlackHoleGlyph.mark(symbolName: "") {
                 Image(nsImage: mark)
-                    .renderingMode(.template)
+                    .renderingMode(AppInfo.isDeveloperBuild ? .original : .template)
                     .resizable()
                     .scaledToFit()
             } else {
@@ -145,7 +145,7 @@ struct MenuBarIconSearchPopover: View {
                 HStack(spacing: 8) {
                     if let mark = BlackHoleGlyph.mark(symbolName: "") {
                         Image(nsImage: mark)
-                            .renderingMode(.template)
+                            .renderingMode(AppInfo.isDeveloperBuild ? .original : .template)
                             .resizable()
                             .scaledToFit()
                             .frame(width: 16, height: 16)

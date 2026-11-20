@@ -73,9 +73,6 @@ enum DefaultsKey {
     static let superKeyMappingApplied = "superKeyMappingApplied"
     static let superKeyMappedSource = "superKeyMappedSource"
     // One list of bundle ids per mouse feature: apps it leaves alone (issue #358).
-    static let smoothScrollExceptions = "smoothScrollExceptions"
-    static let linearScrollExceptions = "linearScrollExceptions"
-    static let scrollInverterExceptions = "scrollInverterExceptions"
     static let mouseNavigationExceptions = "mouseNavigationExceptions"
     static let mouseButtonExceptions = "mouseButtonExceptions"
     static let middleClickExceptions = "middleClickExceptions"
@@ -125,6 +122,7 @@ enum DefaultsKey {
     static let spacesOrderRestore = "spacesOrderRestore" // local recovery; never backed up: "absent" or "on", the mru-spaces state to put back, or "off" when there was nothing to put back
     static let spacesOrderRestartPending = "spacesOrderRestartPending" // local recovery; never backed up: "<Dock pid> <fixed|rearranging> <absent|on|off>…", the Dock process that owes the restart reading a written mru-spaces, what it runs and the values written under it
     static let middleClickEnabled = "middleClickEnabled"  // three-finger PHYSICAL click on the trackpad acts as a middle click
+    static let middleClickClickFingers = "middleClickClickFingers"  // 3 (default) or 4: how many fingers press the trackpad to middle-click
     static let middleClickTapFingers = "middleClickTapFingers"  // 0 = off (default); 3 or 4 = a light tap with that many fingers also middle-clicks (issue #161)
     static let previewSize = "previewSize"                // dock preview thumbnail size (once shared with the app switcher)
     static let switcherPreviewSize = "switcherPreviewSize" // app switcher thumbnail size
@@ -260,6 +258,9 @@ enum DefaultsKey {
     static let cleaningModeEnabled = "cleaningModeEnabled"
     static let cleaningModeShortcut = "cleaningModeShortcut"
     static let cleaningModeShortcutEnabled = "cleaningModeShortcutEnabled"
+    static let darkModeShortcut = "darkModeShortcut"
+    static let darkModeShortcutEnabled = "darkModeShortcutEnabled"
+    static let desktopCurtainActive = "desktopCurtainActive"
     static let uninstallerCommandBarEnabled = "uninstallerCommandBarEnabled"
     static let killProcessSortBy = "killProcessSortBy" // cpu | memory | name | pid
     static let killProcessSortAscending = "killProcessSortAscending"
@@ -1011,9 +1012,6 @@ enum Defaults {
         DefaultsKey.superKeySource: SuperKeySource.capsLock.rawValue,
         DefaultsKey.superKeyModifiers: SuperKeySupport.defaultModifierStorageValue,
         DefaultsKey.superKeySoloAction: SuperKeySoloAction.none.rawValue,
-        DefaultsKey.smoothScrollExceptions: [String](),
-        DefaultsKey.linearScrollExceptions: [String](),
-        DefaultsKey.scrollInverterExceptions: [String](),
         DefaultsKey.focusFollowsMouseExceptions: [String](),
         DefaultsKey.mouseNavigationExceptions: [String](),
         DefaultsKey.mouseButtonExceptions: [String](),
@@ -1053,6 +1051,7 @@ enum Defaults {
         DefaultsKey.spacesOrderEnabled: false,
         DefaultsKey.middleClickEnabled: false,
         DefaultsKey.middleClickTapFingers: 0,
+        DefaultsKey.middleClickClickFingers: 3,
         DefaultsKey.previewSize: "normal",
         DefaultsKey.switcherPreviewSize: "normal",
         DefaultsKey.autoCheckUpdates: true,
@@ -1288,6 +1287,8 @@ enum Defaults {
         DefaultsKey.keyboardDebounceKeyWindows: "",
         DefaultsKey.cleaningModeShortcutEnabled: false,
         DefaultsKey.cleaningModeShortcut: GlobalShortcut.cleaningModeDefault.storageValue,
+        DefaultsKey.darkModeShortcutEnabled: false,
+        DefaultsKey.darkModeShortcut: GlobalShortcut.darkModeDefault.storageValue,
         DefaultsKey.uninstallerCommandBarEnabled: false,
         DefaultsKey.killProcessSortBy: "cpu",
         DefaultsKey.killProcessSortAscending: false,
@@ -1670,6 +1671,7 @@ enum Defaults {
         migrateFanControlVisibility(in: defaults)
         migrateScrollInverterAxes(in: defaults)
         migrateLinearScrollAvailability(in: defaults)
+        migrateRemovedScrollExceptions(in: defaults)
         migrateBatteryTemperatureVisibility(in: defaults)
         migratePowerPeripheralsVisibility(in: defaults)
         migrateSwitcherPreviewSize(in: defaults)
@@ -1917,6 +1919,17 @@ enum Defaults {
         defaults.set(true, forKey: AppFeature.linearScroll.availabilityKey)
     }
 
+    /// Scroll direction, smooth scrolling and linear scrolling once had
+    /// per-app exception lists. They now apply in every app, so the lists
+    /// they left behind are dropped.
+    static func migrateRemovedScrollExceptions(in defaults: UserDefaults) {
+        // Also a window snapping height cache that briefly lived here.
+        for key in ["smoothScrollExceptions", "linearScrollExceptions", "scrollInverterExceptions",
+                    "windowSnappingContentHeights"] where defaults.object(forKey: key) != nil {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
     static func migrateFanControlVisibility(in defaults: UserDefaults) {
         if let oldValue = defaults.object(forKey: DefaultsKey.monitorShowFanControlBeta) as? Bool {
             if defaults.object(forKey: DefaultsKey.panelShowFanControl) == nil {
@@ -2156,6 +2169,10 @@ enum Defaults {
     /// else means the option is off.
     static func sanitizedMiddleClickTapFingers(_ raw: Int) -> Int {
         raw == 3 || raw == 4 ? raw : 0
+    }
+
+    static func sanitizedMiddleClickClickFingers(_ raw: Int) -> Int {
+        raw == 4 ? 4 : 3
     }
 
     static func sanitizedKeyboardDebounceWindow(_ milliseconds: Int) -> Int {

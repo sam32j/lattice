@@ -11,8 +11,9 @@ struct ShortcutsSettings: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var features = FeatureRuntime.shared
     @ObservedObject private var superKey = SuperKeyService.shared
-    /// Keyed by group too: brightness has a row in two groups, and each opens on its own.
-    @State private var expandedFeatures: [FeatureGroup: Set<AppFeature>] = [:]
+    /// Keyed by page too: brightness has rows on two pages (Display and
+    /// Keyboard), and each opens on its own.
+    @State private var expandedFeatures: [String: Set<AppFeature>] = [:]
     @State private var showsAppShortcuts = false
     @AppStorage(DefaultsKey.radialMenuProfiles) private var radialMenuProfilesData: Data?
     @AppStorage(DefaultsKey.radialMenuEnabled) private var radialMenuEnabled = false
@@ -36,23 +37,77 @@ struct ShortcutsSettings: View {
         GlobalShortcutRole.captureRoles(in: availableRoles)
     }
 
-    private var visibleGroups: [FeatureGroup] {
-        FeatureGroup.allCases.filter { group in
-            availableRoles.contains { $0.group == group }
-                || (group == .windowsDock && AppFeature.windowLayout.isAvailable)
-                || (group == .tools && AppFeature.radialMenu.isAvailable)
+    /// The Settings sidebar's own sections, in its order, each with the
+    /// pages it lists. Shortcuts are grouped by the page that owns their
+    /// feature, so this page always reads like the sidebar beside it.
+    private var sidebarSections: [ShortcutSection] {
+        SettingsDirectory.sections(l10n.s, language: l10n.language).map { section in
+            ShortcutSection(title: section.title, pages: section.items.map(\.page))
+        }
+    }
+
+    /// Where a shortcut lives: its feature's Settings page. Keyboard
+    /// backlight keys sit with the keyboard settings, whatever feature
+    /// drives them.
+    private func page(for role: GlobalShortcutRole) -> SettingsPage {
+        role.isKeyboardBrightness ? .keyboard : page(for: role.feature)
+    }
+
+    private func page(for feature: AppFeature) -> SettingsPage {
+        GlobalShortcutRole.captureFeatures.contains(feature) ? .screenshot : feature.settingsDestination.page
+    }
+
+    /// The section listing `page`; a feature without a page of its own in
+    /// the sidebar joins the last section before Lattice's own.
+    private func section(for page: SettingsPage, in sections: [ShortcutSection]) -> ShortcutSection? {
+        sections.first { $0.pages.contains(page) } ?? sections.dropLast().last
+    }
+
+    /// One row group per feature and page, in sidebar page order and then
+    /// the catalog's order, under the section that lists the page.
+    private func entries(in sections: [ShortcutSection]) -> [(section: ShortcutSection, features: [ShortcutEntry])] {
+        var bySection: [ShortcutSection: [ShortcutEntry]] = [:]
+        func add(_ feature: AppFeature, page: SettingsPage) {
+            guard let target = section(for: page, in: sections) else { return }
+            let entry = ShortcutEntry(feature: feature, page: page)
+            if !(bySection[target]?.contains(entry) ?? false) { bySection[target, default: []].append(entry) }
+        }
+        for feature in AppFeature.allCases {
+            if feature == .screenshot {
+                if !captureRoles.isEmpty { add(feature, page: .screenshot) }
+                continue
+            }
+            if GlobalShortcutRole.captureFeatures.contains(feature) { continue }
+            if feature == .windowLayout || feature == .radialMenu {
+                if feature.isAvailable { add(feature, page: page(for: feature)) }
+                continue
+            }
+            for role in availableRoles where role.feature == feature {
+                add(feature, page: page(for: role))
+            }
+        }
+        return sections.compactMap { section in
+            guard let features = bySection[section], !features.isEmpty else { return nil }
+            let order = { (entry: ShortcutEntry) -> Int in
+                section.pages.firstIndex(of: entry.page) ?? section.pages.count
+            }
+            let sorted = features.enumerated().sorted { lhs, rhs in
+                (order(lhs.element), lhs.offset) < (order(rhs.element), rhs.offset)
+            }.map(\.element)
+            return (section, sorted)
         }
     }
 
     var body: some View {
+        let sections = sidebarSections
         Form {
-            ForEach(visibleGroups, id: \.self) { group in
-                Section(groupTitle(group)) {
-                    ForEach(featuresWithShortcuts(in: group), id: \.self) { feature in
-                        if feature == .screenshot {
-                            captureGroupRows
+            ForEach(entries(in: sections), id: \.section) { entry in
+                Section(entry.section.title) {
+                    ForEach(entry.features, id: \.self) { item in
+                        if item.feature == .screenshot {
+                            captureGroupRows(in: item.expansionKey)
                         } else {
-                            featureRows(feature, in: group)
+                            featureRows(item.feature, on: item.page, in: item.expansionKey)
                         }
                     }
                 }
@@ -78,34 +133,18 @@ struct ShortcutsSettings: View {
         }
     }
 
-    private func featuresWithShortcuts(in group: FeatureGroup) -> [AppFeature] {
-        AppFeature.allCases.filter { feature in
-            // The screenshot slot anchors the combined capture group; the
-            // other capture tools render inside it instead of on their own.
-            if feature == .screenshot { return group == .tools && !captureRoles.isEmpty }
-            if GlobalShortcutRole.captureFeatures.contains(feature) { return false }
-            if feature == .windowLayout {
-                return group == .windowsDock && feature.isAvailable
-            }
-            if feature == .radialMenu {
-                return group == .tools && feature.isAvailable
-            }
-            return availableRoles.contains { $0.feature == feature && $0.group == group }
-        }
-    }
-
     /// One group for every capture tool's shortcut. Rows keep each tool's own
     /// icon; the group carries the shared page's name and symbol.
     @ViewBuilder
-    private var captureGroupRows: some View {
+    private func captureGroupRows(in group: String) -> some View {
         let roles = captureRoles
         disclosureHeader(
             title: FeatureStrings.screenshot(l10n.language).screenCaptureTitle,
             symbolName: AppFeature.screenshot.symbolName,
             isActive: featureHasActiveShortcut(.screenshot, roles: roles),
             count: roles.count,
-            isExpanded: expansionBinding(for: .screenshot, in: .tools))
-        if expandedFeatures[.tools, default: []].contains(.screenshot) {
+            isExpanded: expansionBinding(for: .screenshot, in: group))
+        if expandedFeatures[group, default: []].contains(.screenshot) {
             ForEach(roles) { role in
                 roleRow(role, showsFeatureContext: false)
                     .disclosureIndent()
@@ -114,16 +153,16 @@ struct ShortcutsSettings: View {
     }
 
     @ViewBuilder
-    private var radialMenuGroupRows: some View {
+    private func radialMenuGroupRows(in group: String) -> some View {
         let profiles = radialProfiles
         disclosureHeader(
             title: FeatureStrings.radialMenu(l10n.language).pageTitle,
             symbolName: AppFeature.radialMenu.symbolName,
             isActive: radialMenuHasActiveShortcut(profiles: profiles),
             count: profiles.count,
-            isExpanded: expansionBinding(for: .radialMenu, in: .tools)
+            isExpanded: expansionBinding(for: .radialMenu, in: group)
         )
-        if expandedFeatures[.tools, default: []].contains(.radialMenu) {
+        if expandedFeatures[group, default: []].contains(.radialMenu) {
             ForEach(profiles) { profile in
                 CentralRadialMenuShortcutRow(
                     profile: profile,
@@ -139,13 +178,14 @@ struct ShortcutsSettings: View {
     }
 
     @ViewBuilder
-    private func featureRows(_ feature: AppFeature, in group: FeatureGroup) -> some View {
-        let roles = availableRoles.filter { $0.feature == feature && $0.group == group }
+    private func featureRows(_ feature: AppFeature, on featurePage: SettingsPage,
+                             in group: String) -> some View {
+        let roles = availableRoles.filter { $0.feature == feature && page(for: $0) == featurePage }
         let count = feature == .windowLayout
             ? WindowLayoutAction.shortcutActions.count + roles.count
             : (feature == .radialMenu ? radialProfiles.count : roles.count)
         if feature == .radialMenu {
-            radialMenuGroupRows
+            radialMenuGroupRows(in: group)
         } else if count > 1 {
             featureHeader(feature, roles: roles, count: count, in: group)
             if expandedFeatures[group, default: []].contains(feature) {
@@ -182,7 +222,7 @@ struct ShortcutsSettings: View {
     }
 
     private func featureHeader(_ feature: AppFeature, roles: [GlobalShortcutRole],
-                               count: Int, in group: FeatureGroup) -> some View {
+                               count: Int, in group: String) -> some View {
         disclosureHeader(
             title: featureTitle(feature, roles: roles),
             symbolName: featureSymbol(feature, roles: roles),
@@ -228,15 +268,17 @@ struct ShortcutsSettings: View {
 
     private func roleRow(_ role: GlobalShortcutRole,
                          showsFeatureContext: Bool = true) -> some View {
-        let title = role.title(l10n.s)
         let featureTitle = role.feature.hubTitle(l10n.s, hub: hub)
+        // Here the row names the feature; its own page keeps the longer
+        // "Open Camera Preview with shortcut".
+        let title = role == .cameraPreview ? featureTitle : role.title(l10n.s)
         let active = role.savedShortcut.isValid && role.requiredEnableKeys.allSatisfy {
             UserDefaults.standard.bool(forKey: $0)
         }
         return ShortcutPreferenceRow(
             role: role,
             label: title,
-            symbolName: role.isKeyboardBrightness ? "keyboard" : role.feature.symbolName,
+            symbolName: role == .darkMode ? "circle.lefthalf.filled" : (role.isKeyboardBrightness ? "keyboard" : role.feature.symbolName),
             contextLabel: showsFeatureContext && role != .snippetLibrary && title != featureTitle ? featureTitle : nil,
             statusText: active ? text.active : text.inactive,
             statusIsActive: active,
@@ -248,11 +290,14 @@ struct ShortcutsSettings: View {
             },
             onChange: {
                 FeatureRuntime.shared.sync(role.availabilityFeatures)
+                if role == .darkMode {
+                    QuickTogglesService.shared.syncWithPreferences()
+                }
             }
         )
     }
 
-    private func expansionBinding(for feature: AppFeature, in group: FeatureGroup) -> Binding<Bool> {
+    private func expansionBinding(for feature: AppFeature, in group: String) -> Binding<Bool> {
         Binding {
             expandedFeatures[group, default: []].contains(feature)
         } set: { expanded in
@@ -276,19 +321,21 @@ struct ShortcutsSettings: View {
                 && role.requiredEnableKeys.allSatisfy { UserDefaults.standard.bool(forKey: $0) }
         }
     }
+}
 
-    private func groupTitle(_ group: FeatureGroup) -> String {
-        switch group {
-        case .windowsDock: return hub.groupWindowsDock
-        case .mouseKeyboard: return hub.groupMouseKeyboard
-        case .clipboardFiles: return hub.groupClipboardFiles
-        case .sound: return hub.groupSound
-        case .energyDisplay: return hub.groupEnergyDisplay
-        case .tools: return hub.groupTools
-        case .dynamicIsland: return FeatureStrings.notch(l10n.language).title
-        case .monitor: return hub.groupMonitor
-        }
-    }
+/// A Settings sidebar section, as the Shortcuts page groups by it.
+private struct ShortcutSection: Hashable {
+    let title: String
+    let pages: [SettingsPage]
+}
+
+/// A feature's shortcuts as listed on one Settings page.
+private struct ShortcutEntry: Hashable {
+    let feature: AppFeature
+    let page: SettingsPage
+
+    /// Remembers which disclosures are open, per page.
+    var expansionKey: String { String(describing: page) }
 }
 
 /// The radial menu's shortcut row provides a synced keyboard shortcut setter
