@@ -70,6 +70,8 @@ final class DesktopCurtainService {
             window.orderOut(nil)
         }
         curtainWindows.removeAll()
+        // The wallpaper may change before the next session; it captures afresh.
+        cachedWallpapers.removeAll()
     }
 
     private func repositionCurtains() {
