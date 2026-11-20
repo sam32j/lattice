@@ -40,6 +40,15 @@ final class AudioInputDeviceManager: ObservableObject {
     private var volumeRefreshGeneration = 0
     private let volumeWriteLock = NSLock()
     private var volumeWriteLifetime = UUID()
+    private struct PendingInputVolumeWrite {
+        let deviceID: AudioObjectID
+        let uid: String
+        let volume: Double
+        let lifetime: UUID
+        let muteLifetime: UUID
+    }
+    private var pendingInputVolumeWrite: PendingInputVolumeWrite?
+    private var inputVolumeWriteInFlight = false
     private var applyingPreferred = false
     private var refreshPending = false
     private var lastListenerRefreshAt: CFAbsoluteTime = 0
@@ -195,23 +204,42 @@ final class AudioInputDeviceManager: ObservableObject {
         let lifetime = volumeWriteLock.withLock { volumeWriteLifetime }
         volumeRefreshGeneration &+= 1
         if inputVolume != clamped { inputVolume = clamped }
+        pendingInputVolumeWrite = PendingInputVolumeWrite(
+            deviceID: device.audioObjectID,
+            uid: uid,
+            volume: clamped,
+            lifetime: lifetime,
+            muteLifetime: muteLifetime
+        )
+        drainInputVolumeWrites()
+    }
+
+    private func drainInputVolumeWrites() {
+        guard !inputVolumeWriteInFlight, let write = pendingInputVolumeWrite else { return }
+        pendingInputVolumeWrite = nil
+        inputVolumeWriteInFlight = true
         halQueue.async { [weak self] in
             guard let self else { return }
             // Serialize with mute itself, including a mute requested while
             // this adjustment was waiting for the audio device.
-            MicMuteService.shared.withUnmutedInput(lifetime: muteLifetime) {
-                guard self.volumeWriteLock.withLock({ self.volumeWriteLifetime == lifetime }),
-                      Self.defaultInputDeviceUID() == uid else { return }
+            MicMuteService.shared.withUnmutedInput(lifetime: write.muteLifetime) {
+                guard self.volumeWriteLock.withLock({ self.volumeWriteLifetime == write.lifetime }),
+                      Self.defaultInputDeviceUID() == write.uid else { return }
                 var deviceUID: CFString = "" as CFString
-                guard Self.read(device.audioObjectID, kAudioDevicePropertyDeviceUID, &deviceUID),
-                      deviceUID as String == uid,
-                      self.volumeWriteLock.withLock({ self.volumeWriteLifetime == lifetime }) else { return }
-                _ = Self.setInputVolume(Float32(clamped), for: device.audioObjectID)
+                guard Self.read(write.deviceID, kAudioDevicePropertyDeviceUID, &deviceUID),
+                      deviceUID as String == write.uid,
+                      self.volumeWriteLock.withLock({ self.volumeWriteLifetime == write.lifetime }) else { return }
+                _ = Self.setInputVolume(Float32(write.volume), for: write.deviceID)
             }
             DispatchQueue.main.async {
-                guard self.volumeWriteLock.withLock({ self.volumeWriteLifetime == lifetime }) else { return }
+                self.inputVolumeWriteInFlight = false
+                if self.pendingInputVolumeWrite != nil {
+                    self.drainInputVolumeWrites()
+                    return
+                }
+                guard self.volumeWriteLock.withLock({ self.volumeWriteLifetime == write.lifetime }) else { return }
                 // Success may still mean a rounded or ignored adjustment.
-                self.scheduleVolumeRefresh(for: device.audioObjectID)
+                self.scheduleVolumeRefresh(for: write.deviceID)
             }
         }
     }
@@ -607,6 +635,7 @@ final class AudioInputDeviceManager: ObservableObject {
 
     private func removeVolumeListeners(resetActivity: Bool = true) {
         volumeWriteLock.withLock { volumeWriteLifetime = UUID() }
+        pendingInputVolumeWrite = nil
         volumeRefreshGeneration &+= 1
         if let runningAddress = runningListenerAddress, let deviceID = volumeDeviceID {
             var addr = runningAddress
