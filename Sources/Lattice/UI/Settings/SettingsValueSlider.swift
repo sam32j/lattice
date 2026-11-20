@@ -12,15 +12,37 @@ struct SettingsValueSlider: View {
     var usesSystemAppearance = false
     var onEditingChanged: (Bool) -> Void = { _ in }
     @State private var tracking = false
+    @State private var dragValue: Double?
+
+    private var displayedValue: Double { dragValue ?? value }
 
     var body: some View {
         Group {
             if usesSystemAppearance {
-                Slider(value: Binding(get: { value }, set: { raw in
-                    let next = step > 0 ? range.lowerBound + ((raw - range.lowerBound) / step).rounded() * step : raw
-                    value = min(max(next, range.lowerBound), range.upperBound)
-                }), in: range, onEditingChanged: { editing in
+                Slider(value: Binding(
+                    get: { dragValue ?? value },
+                    set: { raw in
+                        let clampedRaw = min(max(raw, range.lowerBound), range.upperBound)
+                        let next = step > 0
+                            ? min(max(range.lowerBound + ((clampedRaw - range.lowerBound) / step).rounded() * step, range.lowerBound), range.upperBound)
+                            : clampedRaw
+                        if tracking {
+                            dragValue = step > 0 ? next : clampedRaw
+                        }
+                        if abs(next - value) > 0.000_5 || (step > 0 && abs(next - value) > 0.000_01) {
+                            value = next
+                        }
+                    }
+                ), in: range, onEditingChanged: { editing in
                     tracking = editing
+                    if editing {
+                        dragValue = value
+                    } else {
+                        if let finalValue = dragValue, abs(finalValue - value) > 0.000_01 {
+                            value = finalValue
+                        }
+                        dragValue = nil
+                    }
                     onEditingChanged(editing)
                 })
                 .labelsHidden()
@@ -34,14 +56,14 @@ struct SettingsValueSlider: View {
             .overlay {
                 if tracking {
                     GeometryReader { geometry in
-                        let fraction = min(max((value - range.lowerBound) / (range.upperBound - range.lowerBound), 0), 1)
+                        let fraction = min(max((displayedValue - range.lowerBound) / (range.upperBound - range.lowerBound), 0), 1)
                         Text(readout)
                             .font(.caption.monospacedDigit())
                             .padding(.horizontal, 8).padding(.vertical, 4)
                             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
                             .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
                             .fixedSize()
-                            .position(x: 8 + fraction * max(geometry.size.width - 16, 0), y: -14)
+                            .position(x: 10 + fraction * max(geometry.size.width - 20, 0), y: -14)
                     }
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
@@ -80,7 +102,9 @@ private struct NativeSettingsSlider: NSViewRepresentable {
         context.coordinator.owner = self
         slider.minValue = range.lowerBound
         slider.maxValue = range.upperBound
-        slider.doubleValue = value
+        if !slider.isCurrentlyTracking {
+            slider.doubleValue = value
+        }
         slider.discreteStep = step
         slider.isEnabled = isEnabled
     }
@@ -96,8 +120,12 @@ private struct NativeSettingsSlider: NSViewRepresentable {
                 ? owner.range.lowerBound + ((raw - owner.range.lowerBound) / owner.step).rounded() * owner.step
                 : raw
             let value = min(max(snapped, owner.range.lowerBound), owner.range.upperBound)
-            slider.doubleValue = value
-            owner.value = value
+            if !((slider as? TrackingSettingsSlider)?.isCurrentlyTracking == true && owner.step == 0) {
+                slider.doubleValue = value
+            }
+            if abs(owner.value - value) > 0.000_01 || owner.step > 0 {
+                owner.value = value
+            }
         }
     }
 }
@@ -105,14 +133,19 @@ private struct NativeSettingsSlider: NSViewRepresentable {
 private final class TrackingSettingsSlider: NSSlider {
     var onTrackingChanged: ((Bool) -> Void)?
     var discreteStep = 0.0
+    private(set) var isCurrentlyTracking = false
 
     override func mouseDown(with event: NSEvent) {
         guard isEnabled, let trackingWindow = window, let cell = cell as? NSSliderCell else {
             super.mouseDown(with: event)
             return
         }
+        isCurrentlyTracking = true
         onTrackingChanged?(true)
-        defer { onTrackingChanged?(false) }
+        defer {
+            isCurrentlyTracking = false
+            onTrackingChanged?(false)
+        }
 
         // NSSliderCell's default tracking can cancel/reset or oscillate outside
         // its tracking area or window boundary. Own the gesture until mouse-up,
@@ -137,14 +170,21 @@ private final class TrackingSettingsSlider: NSSlider {
         func update(_ event: NSEvent) {
             let fraction = min(1, max(0, (point(event).x - offset - lower) / travel))
             doubleValue = minValue + fraction * (maxValue - minValue)
+            needsDisplay = true
             _ = sendAction(action, to: target)
         }
         if !knob.contains(start) { update(event) }
         while window === trackingWindow && trackingWindow.isVisible && isEnabled {
-            guard let next = NSApp.nextEvent(matching: [.leftMouseDragged, .leftMouseUp, .keyDown, .appKitDefined],
+            guard var next = NSApp.nextEvent(matching: [.leftMouseDragged, .leftMouseUp, .keyDown, .appKitDefined],
                 until: Date().addingTimeInterval(0.1), inMode: .eventTracking, dequeue: true) else { continue }
             guard window === trackingWindow && trackingWindow.isVisible && isEnabled else { break }
             if next.type == .appKitDefined || next.type == .keyDown { NSApp.sendEvent(next); continue }
+            if next.type == .leftMouseDragged {
+                while let newer = NSApp.nextEvent(matching: [.leftMouseDragged], until: .distantPast,
+                    inMode: .eventTracking, dequeue: true) {
+                    next = newer
+                }
+            }
             update(next)
             if next.type == .leftMouseUp { break }
         }
