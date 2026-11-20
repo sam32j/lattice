@@ -10,8 +10,6 @@ struct DiskExclusionsList: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var protection = DiskProtectionService.shared
     @State private var showingSheet = false
-    /// A disk typed by name, for one that is not connected right now.
-    @State private var customDraft = ""
 
     private var strings: DiskExclusionStrings {
         FeatureStrings.diskExclusions(l10n.language)
@@ -131,21 +129,8 @@ struct DiskExclusionsList: View {
                 .padding(16)
             }
         } footer: {
-            HStack(spacing: 8) {
-                TextField(strings.customPlaceholder, text: $customDraft)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit(addCustom)
-                Button(strings.addButton, action: addCustom)
-                    .disabled(customDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
+            EmptyView()
         }
-    }
-
-    private func addCustom() {
-        let trimmed = customDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        protection.addExcludedVolume(trimmed)
-        customDraft = ""
     }
 
     private var mountedCandidateDrives: [String] {
