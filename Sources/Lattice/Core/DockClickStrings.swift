@@ -17,7 +17,7 @@ enum DockClickCopy {
         switch language {
         case .enUS:
             return DockClickStrings(
-                title: "Dock Tile",
+                title: "Dock Tile Action",
                 body: "Click Dock tile to perform an action.",
                 off: "Off",
                 toggleWindows: "Toggle Windows",

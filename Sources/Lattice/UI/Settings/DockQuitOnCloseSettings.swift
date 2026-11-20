@@ -9,14 +9,13 @@ struct DockQuitOnCloseSettings: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
-            SettingsRow(symbol: "xmark.rectangle", title: l10n.s.autoQuitName,
-                        caption: l10n.s.autoQuitEnableCaption) {
+            SettingsControlRow(title: l10n.s.autoQuitName,
+                               caption: l10n.s.autoQuitEnableCaption) {
                 PermissionGatedToggle(l10n.s.autoQuitName, isOn: $enabled.animation(reduceMotion ? nil : .settingsExpansion)).labelsHidden()
                     .onChange(of: enabled) { _, _ in FeatureRuntime.shared.sync([.autoQuit]) }
             }
             if enabled {
                 DockQuitOnCloseExceptions()
-                    .padding(.leading, settingsRowTextInset)
             }
         }
         .settingsSectionAnchor(.autoQuit, cornerRadius: 16)
