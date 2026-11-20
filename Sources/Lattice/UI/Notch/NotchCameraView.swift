@@ -63,22 +63,3 @@ struct NotchCameraChooser: View {
         }
     }
 }
-
-/// Stops the mirror from the island's top row: a glyph beside the camera,
-/// where a word may not fit, and the word itself across a full row.
-struct NotchCameraStopButton: View {
-    @ObservedObject private var service = CameraPreviewService.shared
-    @ObservedObject private var l10n = L10n.shared
-    @Environment(\.notchBand) private var band
-
-    var body: some View {
-        if service.isEmbeddedPresented {
-            let title = FeatureStrings.notchActivities(l10n.language).stopCamera
-            if band.besideCamera {
-                NotchIconButton(symbol: "video.slash", title: title, action: service.hideEmbedded)
-            } else {
-                NotchPillButton(title: title, prominent: true, action: service.hideEmbedded)
-            }
-        }
-    }
-}
