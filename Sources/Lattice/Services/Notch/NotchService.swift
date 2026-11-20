@@ -625,7 +625,8 @@ final class NotchService: ObservableObject {
 
     var compactActivity: NotchCompactActivity? {
         // A new song waiting for its notice is not drawn yet.
-        activitySelection.current(available: awaitsTrackNotice ? compactActivities.filter { $0 != .music } : compactActivities)
+        activitySelection.display(available: awaitsTrackNotice ? compactActivities.filter { $0 != .music } : compactActivities,
+                                  pairs: { compactCompanions(of: $0).contains($1) }).primary
     }
 
     var compactActivities: [NotchCompactActivity] {
@@ -655,7 +656,8 @@ final class NotchService: ObservableObject {
     /// Hover-to-open only: in click-to-open mode the closed island shows no
     /// more than it does at rest, and its activities live in the right-click menu.
     var showsCompactActivityPicker: Bool {
-        (inside || activityPickerMenuOpen) && !hiddenInFullscreen && !hiddenUntilHover && !expanded && !peeking
+        UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover)
+            && (inside || activityPickerMenuOpen) && !hiddenInFullscreen && !hiddenUntilHover && !expanded && !peeking
             && !dragPlaceholder && notice == nil
             && compactActivities.count > 1
     }
@@ -701,6 +703,163 @@ final class NotchService: ObservableObject {
         refreshPresentation()
     }
 
+    // MARK: - Activity menu (click-to-open mode)
+
+    /// macOS gives right-clicks at the screen's top edge and over the camera
+    /// to the menu bar, above the island's own window, so they never reach it.
+    /// In click-to-open mode a session tap catches a right-click on the closed
+    /// island first, while an activity is live, and keeps it from the menu bar.
+    private var rightClickTap: CFMachPort?
+    private var rightClickTapSource: CFRunLoopSource?
+
+    private func syncRightClickTap() {
+        let wanted = running && !UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover) && AXIsProcessTrusted()
+        if wanted, rightClickTap == nil { startRightClickTap() }
+        else if !wanted { stopRightClickTap() }
+    }
+
+    private func startRightClickTap() {
+        let mask = CGEventMask(1 << CGEventType.rightMouseDown.rawValue) | CGEventMask(1 << CGEventType.rightMouseUp.rawValue)
+        guard let tap = InputEventTap.create(
+            tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap, eventsOfInterest: mask,
+            callback: { _, type, event, userInfo in
+                guard let userInfo else { return Unmanaged.passUnretained(event) }
+                let service = Unmanaged<NotchService>.fromOpaque(userInfo).takeUnretainedValue()
+                return service.handleRightClickTap(type: type, event: event)
+            },
+            userInfo: Unmanaged.passUnretained(self).toOpaque()) else { return }
+        rightClickTap = tap
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        rightClickTapSource = source
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        InputEventTap.enable(tap: tap, enable: true)
+    }
+
+    private func stopRightClickTap() {
+        if let rightClickTap { InputEventTap.enable(tap: rightClickTap, enable: false) }
+        if let rightClickTapSource { CFRunLoopRemoveSource(CFRunLoopGetMain(), rightClickTapSource, .commonModes) }
+        if let rightClickTap { CFMachPortInvalidate(rightClickTap) }
+        rightClickTap = nil
+        rightClickTapSource = nil
+    }
+
+    /// Marks the press the tap re-issues below the top row, so it passes.
+    private static let rightClickReissueMarker: Int64 = 0x4C_4E_4F_54
+
+    private func handleRightClickTap(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if let rightClickTap, AXIsProcessTrusted() { InputEventTap.enable(tap: rightClickTap, enable: true) }
+            return Unmanaged.passUnretained(event)
+        }
+        guard type == .rightMouseDown,
+              event.getIntegerValueField(.eventSourceUserData) != Self.rightClickReissueMarker,
+              event.location.y < 1.5, running, !suspended, !expanded, !peeking,
+              !UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover),
+              !compactActivities.isEmpty else { return Unmanaged.passUnretained(event) }
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        let point = CGPoint(x: event.location.x, y: primaryHeight - event.location.y)
+        guard windowHost?.containsHover(point) == true || windowHost?.contains(point) == true,
+              let lowered = event.copy() else { return Unmanaged.passUnretained(event) }
+        // macOS gives a press on the screen's top pixel row, and the drag and
+        // release that follow it, to the menu bar. The same press a couple of
+        // points lower reaches the island's own window, which then owns the
+        // held button: its native menu follows the drag and the release picks.
+        lowered.location = CGPoint(x: event.location.x, y: 2.5)
+        lowered.setIntegerValueField(.eventSourceUserData, value: Self.rightClickReissueMarker)
+        lowered.post(tap: .cgSessionEventTap)
+        return nil
+    }
+
+    /// Click-to-open: a right-click on the closed island lists the live
+    /// activities, and nothing else opens there. True when it was answered.
+    func handleClosedIslandRightClick(event: NSEvent?) -> Bool {
+        guard !expanded, !peeking, !UserDefaults.standard.bool(forKey: DefaultsKey.notchOpenOnHover) else { return false }
+        showActivityMenu(with: event)
+        return true
+    }
+
+    /// The closed island's right-click menu: every live activity once. A row
+    /// shows that activity alone; a row that can share the island with the
+    /// one shown opens a flyout to attach it beside it, or to detach the pair.
+    /// Nothing opens while no activity is live.
+    func showActivityMenu(with event: NSEvent? = nil) {
+        let live = compactActivities
+        guard !live.isEmpty else { return }
+        let language = L10n.shared.language
+        let shown = activitySelection.display(available: live, pairs: { self.compactCompanions(of: $0).contains($1) })
+        let displayed = [shown.primary, shown.companion].compactMap { $0 }
+        let main = activitySelection.anchor.flatMap { displayed.contains($0) ? $0 : nil } ?? shown.companion ?? shown.primary
+        let companion = displayed.count == 2 ? displayed.first { $0 != main } : nil
+        func pairsNow(_ a: NotchCompactActivity, _ b: NotchCompactActivity) -> Bool {
+            compactCompanions(of: a).contains(b) || compactCompanions(of: b).contains(a)
+        }
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        func item(_ title: String, _ run: @escaping () -> Void) -> NSMenuItem {
+            let action = NotchActivityMenuAction(run)
+            let item = NSMenuItem(title: title, action: #selector(NotchActivityMenuAction.runItem), keyEquivalent: "")
+            item.target = action
+            item.representedObject = action
+            return item
+        }
+        for activity in live {
+            let row = item(activity.title(language)) { [weak self] in
+                guard let self, activity != main || companion != nil else { return }
+                self.switchCompactSelection { self.activitySelection.select(activity, available: self.compactActivities) }
+            }
+            row.state = activity == main ? .on : activity == companion ? .mixed : .off
+            // The companion shares the island: a split mark, not the mixed dash.
+            row.mixedStateImage = NSImage(systemSymbolName: "rectangle.split.2x1", accessibilityDescription: nil)
+            if let main, let companion, activity == main || activity == companion {
+                let title = activity == main
+                    ? NotchActivityMenuStrings.detach(companion.title(language), language: language)
+                    : NotchActivityMenuStrings.detach(from: main.title(language), language: language)
+                let flyout = NSMenu()
+                // A row with a flyout opens it instead of acting, so showing
+                // the companion alone lives here.
+                if activity == companion {
+                    flyout.addItem(item(NotchActivityMenuStrings.showAlone(language)) { [weak self] in
+                        guard let self else { return }
+                        self.switchCompactSelection { self.activitySelection.select(activity, available: self.compactActivities) }
+                    })
+                }
+                flyout.addItem(item(title) { [weak self] in
+                    guard let self else { return }
+                    self.switchCompactSelection { self.activitySelection.unpair() }
+                })
+                row.submenu = flyout
+            } else if let main, companion == nil, activity != main,
+                      NotchSupport.canPair(main, activity), pairsNow(main, activity) {
+                let flyout = NSMenu()
+                flyout.addItem(item(NotchActivityMenuStrings.showAlone(language)) { [weak self] in
+                    guard let self else { return }
+                    self.switchCompactSelection { self.activitySelection.select(activity, available: self.compactActivities) }
+                })
+                flyout.addItem(item(NotchActivityMenuStrings.attach(to: main.title(language), language: language)) {
+                    [weak self] in
+                    guard let self else { return }
+                    self.switchCompactSelection { self.activitySelection.pair(activity, with: main) }
+                })
+                row.submenu = flyout
+            }
+            menu.addItem(row)
+        }
+        menu.addItem(.separator())
+        let hide = item(NotchActivityMenuStrings.hide(language)) { [weak self] in
+            guard let self else { return }
+            self.switchCompactSelection { self.activitySelection.hide(available: self.compactActivities) }
+        }
+        hide.isEnabled = main != nil
+        menu.addItem(hide)
+        // From the triggering click, the menu follows a held button: press,
+        // drag onto an item, release to choose it.
+        if let event, let view = panel?.contentView {
+            NSMenu.popUpContextMenu(menu, with: event, for: view)
+        } else {
+            menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+        }
+    }
+
     func selectCompactCombination(_ combination: NotchActivityCombination) {
         let companions = compactCompanions(of: combination.primary)
         guard companions.contains(combination.companion) else { return }
@@ -726,10 +885,11 @@ final class NotchService: ObservableObject {
         }
     }
 
-    /// A single activity never borrows another activity's wing implicitly.
+    /// A single activity never borrows another activity's wing implicitly:
+    /// only a chosen plus pairs.
     var compactCompanion: NotchCompactActivity? {
-        guard let activity = compactActivity, activity == activitySelection.preferred else { return nil }
-        return activitySelection.companion(available: compactCompanions(of: activity))
+        activitySelection.display(available: awaitsTrackNotice ? compactActivities.filter { $0 != .music } : compactActivities,
+                                  pairs: { compactCompanions(of: $0).contains($1) }).companion
     }
 
     private var compactActivityIsVisible: Bool {
@@ -887,6 +1047,17 @@ final class NotchService: ObservableObject {
                 + provisional.compactActivityEdgeInset(boxHeight: side + 4, radius: (side + 4) / 2)
         case .calendar:
             return provisional.compactActivityEdgeInset(boxHeight: 9, radius: 0) + calendarClockWidth
+        case .timer:
+            // Beside an event: the timer's state mark and its reading.
+            let side = min(13, NotchTimerSupport.stripIconSize(height: height))
+            let timer = NotchTimerService.shared
+            let text = NotchTimerSupport.compactText(for: timer.session, at: timer.now,
+                                                     locale: Locale(identifier: L10n.shared.language.rawValue))
+            let reading = (NotchAgentSupport.readingShape(text) as NSString).size(withAttributes: [
+                .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .medium)
+            ]).width.rounded(.up)
+            return side + NotchCompanionMark.timerSpacing + reading
+                + provisional.compactActivityEdgeInset(boxHeight: side, radius: side / 2)
         default:
             // Every mark the strip shows is about a square of its point size.
             let side = NotchTimerSupport.stripIconSize(height: height)
