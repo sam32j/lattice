@@ -29,7 +29,14 @@ enum DockPreviewPositionTests {
         }
         func orderFrontRegardless() { isVisible = true }
     }
+    /// The production reflow animates the real panel; the double just places it.
+    enum Reflow {
+        static func animate(_ panel: Panel, to frame: CGRect) {
+            panel.setFrame(frame, display: true, animate: true)
+        }
+    }
     final class Service {
+        typealias DockPreviewReflow = DockPreviewPositionTests.Reflow
         typealias DockHit = DockPreviewPositionTests.DockHit
         typealias Zone = DockPreviewPositionTests.Zone
         var panel: Panel? = Panel()
