@@ -4379,7 +4379,14 @@ final class NotchService: ObservableObject {
         panel?.handleScroll = { [weak self] event in self?.handleScroll(event) ?? false }
         panel?.handleIndirectTouches = { [weak self] event, view in
             guard let self, self.islandConfirmationDepth == 0 else { return false }
-            guard self.selected == .music || self.selected == .captures else { return false }
+            // The closed music strip swipes whatever page was last open: tied to
+            // `selected`, it fell back to the coarser scroll path, with no haptic
+            // stages, until the music page was opened again, and stayed that way
+            // after a relaunch, which starts on the hub.
+            guard self.selected == .music || self.selected == .captures
+                    || (!self.expanded && self.compactMusicSwipeIsVisible) else {
+                return false
+            }
             // A native capture drag takes priority over gesture navigation.
             guard !self.heldDrag else { return false }
             self.panel?.acceptsKeyFocus = true
@@ -4502,11 +4509,16 @@ final class NotchService: ObservableObject {
                                                           control: interaction.control, scroll: interaction.scroll)
         let horizontal = !interaction.control && !interaction.scroll && !inHeader && musicSurface
         let x = Double(event.scrollingDeltaX) * (event.hasPreciseScrollingDeltas ? 1 : 24)
-        if musicSwipe.handleMouseScroll(event, enabled: musicSwipeEnabled(event), expanded: expanded) { return true }
-        let musicConsumed = musicSwipe.scroll(Double(event.scrollingDeltaX), precise: event.hasPreciseScrollingDeltas,
-            momentum: !event.momentumPhase.isEmpty, cancelled: event.phase.contains(.cancelled),
-            enabled: musicSwipeEnabled(event), expanded: expanded,
-            began: event.phase.contains(.began), ended: event.phase.contains(.ended), timestamp: event.timestamp)
+        // One owner per stroke: a sideways stroke is the music's to the end;
+        // anything else stays the island's. At the screen's top edge only this
+        // global copy of the scroll arrives, and it drives the same stages.
+        if musicSwipe.scroll(dx: Double(event.scrollingDeltaX), dy: Double(event.scrollingDeltaY),
+                             phase: event.phase, momentum: !event.momentumPhase.isEmpty,
+                             precise: event.hasPreciseScrollingDeltas, timestamp: event.timestamp,
+                             enabled: musicSwipeEnabled(event), expanded: expanded,
+                             inverted: event.isDirectionInvertedFromDevice) {
+            return true
+        }
         let y = NotchGestureSupport.movement(Double(event.scrollingDeltaY), precise: event.hasPreciseScrollingDeltas,
                                              inverted: event.isDirectionInvertedFromDevice)
         let deepDismiss = expanded && !inHeader
@@ -4516,9 +4528,9 @@ final class NotchService: ObservableObject {
                                     momentum: !event.momentumPhase.isEmpty,
                                     precise: event.hasPreciseScrollingDeltas,
                                     hasPhase: !event.phase.isEmpty,
-                                    allowVertical: vertical && !musicConsumed, allowHorizontal: horizontal,
+                                    allowVertical: vertical, allowHorizontal: horizontal,
                                     expanded: expanded, deepDismiss: deepDismiss)
-        guard let action else { return musicConsumed }
+        guard let action else { return false }
         switch action {
         case .open:
             provideStrongHapticFeedback()
