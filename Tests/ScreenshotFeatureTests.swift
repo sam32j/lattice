@@ -2917,7 +2917,7 @@ enum ScreenshotFeatureTests {
                         "editor and menu command \(reserved.storageValue) stays reserved on read")
                 }
             }
-            for key in [kVK_Escape, kVK_Return, kVK_ANSI_KeypadEnter, kVK_Delete, kVK_ForwardDelete] {
+            for key in [kVK_Escape, kVK_Return, kVK_ANSI_KeypadEnter, kVK_Delete, kVK_ForwardDelete, kVK_ANSI_P] {
                 suite.expect(Tool.isReservedEditorKey(.init(keyCode: Int64(key), modifiers: []))
                     && Tool.isReservedEditorKey(.init(keyCode: Int64(key), modifiers: .shift)),
                     "bare and shifted editor action \(key) cannot be rebound")
