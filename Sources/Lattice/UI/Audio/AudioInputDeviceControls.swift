@@ -13,6 +13,8 @@ struct AudioInputDeviceControls: View {
     @ObservedObject private var inputManager = AudioInputDeviceManager.shared
     @ObservedObject private var audioPriority = AudioPriorityService.shared
     @ObservedObject private var micMute = MicMuteService.shared
+    @AppStorage("audioInputLastUnmutedVolume") private var lastUnmutedInputVolume: Double = 0.75
+    @State private var draggingInputVolume: Double? = nil
     @State private var normalSliderTint = Color(nsColor: .controlAccentColor)
     @State private var accentRevision = 0
     @State private var lastResolvedAccent: NSColor?
@@ -69,28 +71,50 @@ struct AudioInputDeviceControls: View {
             }
 
             let hasVolume = inputManager.inputVolume != nil
-            let volume = inputManager.inputVolume ?? 1.0
             HStack(spacing: 8) {
                 if showsIcons {
-                    Image(systemName: micMute.isMuted || (hasVolume && volume <= 0.001) ? "mic.slash.fill" : "mic.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 16)
+                    Button {
+                        toggleInputMute()
+                    } label: {
+                        Image(systemName: isInputMuted ? "mic.slash.fill" : "mic.fill")
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .foregroundStyle(isInputMuted ? Color.red : Color.secondary)
+                            .frame(width: 16)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(isInputMuted ? l10n.s.actionUnmute : l10n.s.actionMute)
                 }
 
                 Text(levelTitle ?? l10n.s.mixerInputLevelLabel)
                     .font(showsIcons ? .system(size: 11.5, weight: .medium) : .body)
                     .foregroundStyle(showsIcons ? .secondary : .primary)
+
                 Spacer(minLength: 12)
+
+                if !showsIcons {
+                    Button {
+                        toggleInputMute()
+                    } label: {
+                        Image(systemName: isInputMuted ? "mic.slash.fill" : "mic.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(isInputMuted ? Color.red : Color.secondary)
+                            .frame(width: 18, alignment: .center)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(isInputMuted ? l10n.s.actionUnmute : l10n.s.actionMute)
+                }
+
                 SettingsValueSlider(title: levelTitle ?? l10n.s.mixerInputLevelLabel,
                                     value: inputVolumeBinding, range: 0...1, step: 0.01,
-                                    readout: "\(Int((volume * 100).rounded()))%",
-                                    usesSystemAppearance: true)
+                                    readout: "\(Int((displayedInputVolume * 100).rounded()))%",
+                                    usesSystemAppearance: true,
+                                    onEditingChanged: { editing in
+                                        if !editing { draggingInputVolume = nil }
+                                    })
                     .frame(width: sliderWidth)
                     .disabled(!hasVolume)
             }
             .padding(.vertical, showsIcons ? 4 : 0)
-            .disabled(micMute.isMuted)
 
             if let lastError = inputManager.lastError {
                 inputMessage(String(format: l10n.s.mixerInputErrorFormat, lastError),
@@ -100,6 +124,35 @@ struct AudioInputDeviceControls: View {
         .onAppear { AudioInputDeviceManager.shared.syncWithPreferences() }
         .onReceive(NSApplication.shared.publisher(for: \.effectiveAppearance, options: [.new])) { _ in refreshSliderTint() }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NSSystemColorsDidChangeNotification"))) { _ in refreshSliderTint() }
+    }
+
+    private var isInputMuted: Bool {
+        micMute.isMuted || (inputManager.inputVolume != nil && (inputManager.inputVolume ?? 0) <= 0.001)
+    }
+
+    private var displayedInputVolume: Double {
+        if let draggingInputVolume { return draggingInputVolume }
+        if micMute.isMuted { return 0 }
+        return inputManager.inputVolume ?? 1.0
+    }
+
+    private func toggleInputMute() {
+        if isInputMuted {
+            let restoreVal = lastUnmutedInputVolume > 0.001 ? lastUnmutedInputVolume : (inputManager.inputVolume ?? 0.75)
+            let finalVal = restoreVal > 0.001 ? restoreVal : 0.75
+            var saved = UserDefaults.standard.dictionary(forKey: DefaultsKey.micMuteSavedVolumes) as? [String: Double] ?? [:]
+            if let uid = inputManager.effectiveInputDeviceUID {
+                saved[uid] = finalVal
+                UserDefaults.standard.set(saved, forKey: DefaultsKey.micMuteSavedVolumes)
+            }
+            micMute.setMuted(false)
+            inputManager.setInputVolume(finalVal)
+        } else {
+            if let cur = inputManager.inputVolume, cur > 0.001 {
+                lastUnmutedInputVolume = cur
+            }
+            micMute.setMuted(true)
+        }
     }
 
     private var inputSelectionBinding: Binding<String> {
@@ -126,8 +179,25 @@ struct AudioInputDeviceControls: View {
 
     private var inputVolumeBinding: Binding<Double> {
         Binding(
-            get: { inputManager.inputVolume ?? 1.0 },
-            set: { inputManager.setInputVolume($0) }
+            get: { draggingInputVolume ?? displayedInputVolume },
+            set: { newValue in
+                draggingInputVolume = newValue
+                if isInputMuted && newValue > 0.001 {
+                    lastUnmutedInputVolume = newValue
+                    var saved = UserDefaults.standard.dictionary(forKey: DefaultsKey.micMuteSavedVolumes) as? [String: Double] ?? [:]
+                    if let uid = inputManager.effectiveInputDeviceUID {
+                        saved[uid] = newValue
+                        UserDefaults.standard.set(saved, forKey: DefaultsKey.micMuteSavedVolumes)
+                    }
+                    micMute.setMuted(false)
+                    inputManager.setInputVolume(newValue)
+                } else {
+                    if newValue > 0.001 {
+                        lastUnmutedInputVolume = newValue
+                    }
+                    inputManager.setInputVolume(newValue)
+                }
+            }
         )
     }
 

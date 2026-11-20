@@ -45,7 +45,8 @@ struct AudioInputPriorityControls: View {
                                displayName: priority.displayName,
                                currentUID: input.currentInputDeviceUID,
                                emptyText: l10n.s.mixerInputNoDevices,
-                               onMove: { priority.setInputPriorityUIDs($0) })
+                               onMove: { priority.setInputPriorityUIDs($0) },
+                               canCycle: false)
         }
     }
 }

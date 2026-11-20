@@ -8,6 +8,7 @@ import SwiftUI
 struct DeviceControlsHubView: View {
     @ObservedObject private var navigation = DeviceControlsNavigationState.shared
     var onClose: () -> Void
+    var notchSize: CGSize? = nil
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -19,12 +20,17 @@ struct DeviceControlsHubView: View {
                 }
             }
             .padding(.horizontal, 2)
-            .padding(.vertical, 4)
+            .padding(.top, 4)
+            .padding(.bottom, 6)
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                guard navigation.currentSubpage == .main else { return }
-                navigation.updateMeasuredMainHeight(height)
+                if navigation.currentSubpage == .appVolumes {
+                    navigation.updateMeasuredAppVolumesHeight(height)
+                } else {
+                    navigation.updateMeasuredMainHeight(height)
+                }
             }
         }
+        .frame(height: notchSize?.height ?? navigation.contentHeight, alignment: .top)
         .onAppear {
             NotchService.shared.noteDeviceControlsSuppression(active: true)
         }

@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct PriorityDeviceList: View {
     @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var outputSwitcher = SoundOutputSwitcher.shared
     let priorityUIDs: [String]
     let isAvailable: (String) -> Bool
     let displayName: (String) -> String?
@@ -11,6 +12,7 @@ struct PriorityDeviceList: View {
     /// A list is only empty while the Mac has no such device.
     let emptyText: String
     let onMove: ([String]) -> Void
+    var canCycle: Bool = true
 
     @State private var draggingUID: String?
 
@@ -34,6 +36,7 @@ struct PriorityDeviceList: View {
                         priorityRow(uid: uid, index: index)
                     }
                 }
+                .padding(.horizontal, 1)
             }
         }
     }
@@ -42,6 +45,7 @@ struct PriorityDeviceList: View {
         let available = isAvailable(uid)
         let name = displayName(uid) ?? uid
         let isCurrent = uid == currentUID
+        let isSkipped = canCycle && outputSwitcher.isSkipped(uid)
 
         return HStack(spacing: 8) {
             Text("\(index + 1)")
@@ -50,28 +54,36 @@ struct PriorityDeviceList: View {
                 .frame(width: 16, alignment: .center)
 
             VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 4) {
-                    Text(name)
-                        .font(.system(size: 10.5))
+                Text(name)
+                    .font(.system(size: 10.5))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .foregroundStyle(available ? .primary : .secondary)
+                if canCycle && !available && isSkipped {
+                    Text("Disconnected • Skip when cycling")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .foregroundStyle(available ? .primary : .secondary)
-                    if isCurrent {
-                        Text(l10n.s.audioPriorityCurrent)
-                            .font(.system(size: 9))
-                            .foregroundStyle(Color.accentColor)
-                            .fixedSize()
-                    }
-                }
-                if !available {
+                } else if !available {
                     Text(l10n.s.audioPriorityUnavailable)
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else if canCycle && isSkipped {
+                    Text("Skip when cycling")
                         .font(.system(size: 9))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            if isCurrent {
+                Text(l10n.s.audioPriorityCurrent)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .fixedSize()
+            }
 
             Image(systemName: "line.3.horizontal")
                 .font(.system(size: 11, weight: .semibold))
@@ -88,9 +100,22 @@ struct PriorityDeviceList: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .stroke(isCurrent ? Color.accentColor.opacity(0.65) : Color.clear, lineWidth: 1)
+                .strokeBorder(isCurrent ? Color.accentColor.opacity(0.65) : Color.clear, lineWidth: 1)
         )
         .contentShape(Rectangle())
+        .contextMenu {
+            if canCycle {
+                Button("Set as audio output") {
+                    _ = AppVolumeMixer.shared.setUniversalOutputDeviceUID(uid)
+                }
+                .disabled(isCurrent || !available)
+
+                Toggle("Skip when cycling", isOn: Binding(
+                    get: { isSkipped },
+                    set: { _ in outputSwitcher.toggleSkip(for: uid) }
+                ))
+            }
+        }
         .opacity(draggingUID == uid ? 0.45 : 1)
         .onDrag {
             draggingUID = uid

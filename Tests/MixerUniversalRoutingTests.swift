@@ -25,7 +25,7 @@ enum MixerUniversalRoutingContract {
         static let shared = AirPlay()
         static let isSpeakerConnected = false
         let isConnected = false
-        func presentPicker() {}
+        func presentPicker(anchorRect: NSRect? = nil) {}
     }
 
     final class Preferences {
@@ -80,7 +80,7 @@ enum MixerUniversalRoutingContract {
             else { sessionRoutes[app.id] = uid }
         }
         func applyRouting(for app: MixerApp) { applied.append(app) }
-        func chooseAirPlaySpeaker(for app: MixerApp) {}
+        func chooseAirPlaySpeaker(for app: MixerApp, anchorRect: NSRect? = nil) {}
         func clearPermissionIfNoActiveAdjustments() {}
     }
 
@@ -201,10 +201,11 @@ enum MixerUniversalRoutingContract {
         let generation = mixer.refresh.begin()!
         let token = mixer.builds.begin(wine.id)!
         suite.expect(mixer.setDefaultOutputDeviceUID("airpods"), "the universal output change succeeds")
-        suite.expect(mixer.universalOutputDeviceUID == nil && Preferences.standard.values.isEmpty
-                     && mixer.savedRoutes.isEmpty && mixer.sessionRoutes.isEmpty
+        suite.expect(mixer.universalOutputDeviceUID == nil
+                     && mixer.savedRoutes == ["Wine Game": "speakers"]
+                     && mixer.sessionRoutes == ["process:88": "speakers"]
                      && mixer.volumes == ["Wine Game": 0.7],
-                     "a successful universal choice clears both route stores and preserves gains, changing only the default")
+                     "a successful universal choice preserves dedicated route stores and gains, changing only the default")
         suite.expect(mixer.currentOutputDeviceUID == "airpods" && mixer.apps == [wine, native]
                      && mixer.applied.isEmpty && mixer.refreshCount == 1,
                      "existing routes stay live until a fresh HAL snapshot can replace them")

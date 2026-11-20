@@ -75,12 +75,7 @@ struct LatticeHubView: View {
                     .transaction { $0.animation = nil }
                     .padding(.bottom, 12)
             }
-            if notchSize != nil, launcher.activeUtility == nil {
-                mainContent
-                    .frame(height: islandMainHeight, alignment: .top)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityIdentifier("hub-main-content")
-            } else { mainContent }
+            mainContent
             if launcher.activeUtility == nil {
                 if notchSize != nil {
                     editingContent.padding(.top, 6)
@@ -228,7 +223,6 @@ struct LatticeHubView: View {
             dragSession.cancel()
             dnd.refresh()
         }
-        .onChange(of: launcher.activeUtility) { _, _ in refreshIslandLayout() }
         .onChange(of: launcher.isEditing) { _, _ in dragSession.cancel() }
         .onChange(of: editing.isPresented) { _, _ in refreshIslandLayout() }
         .onChange(of: editing.optionsHeight) { _, _ in refreshIslandLayout() }
@@ -237,7 +231,6 @@ struct LatticeHubView: View {
         .onChange(of: launcher.visibleControls.count) { _, _ in refreshIslandLayout() }
         .onChange(of: launcher.hiddenControls.count) { _, _ in refreshIslandLayout() }
         .onChange(of: appUpdates.items.count) { _, _ in refreshIslandLayout() }
-        .onChange(of: DeviceControlsNavigationState.shared.contentHeight) { _, _ in refreshIslandLayout() }
         .onChange(of: SystemNavigationState.shared.selectedMetric) { _, _ in refreshIslandLayout() }
         .onDisappear { dragSession.cancel() }
     }
@@ -297,27 +290,31 @@ struct LatticeHubView: View {
                 hudFadeProgress = 1
             }
         } else {
-            VStack(alignment: .leading, spacing: 6) {
-                if launcher.activeUtility == nil {
-                    HubQuickControls(notchSize: notchSize, isEditing: launcher.isEditing,
-                                     dragSession: dragSession) { launcher.hide() }
-                        .frame(height: launcher.notchControlsHeight, alignment: .top)
-                        .transition(.opacity)
-                    HubIslandWidgetSection(isEditing: launcher.isEditing)
-                        .transition(.opacity)
-                }
-                if let utility = launcher.activeUtility, utility.isAvailable() {
-                    LatticeHubHostedUtility(item: utility, notchSize: notchSize) { launcher.closeUtility() }
-                        .transition(.opacity)
-                } else if launcher.visibleCount == 0 {
-                    emptyState
-                        .transition(.opacity)
-                } else {
-                    grid
-                        .transition(.opacity)
-                }
+            if let utility = launcher.activeUtility, utility.isAvailable() {
+                LatticeHubHostedUtility(item: utility, notchSize: notchSize) { launcher.closeUtility() }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                islandRootPage
             }
         }
+    }
+
+    @ViewBuilder
+    private var islandRootPage: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HubQuickControls(notchSize: notchSize, isEditing: launcher.isEditing,
+                             dragSession: dragSession) { launcher.hide() }
+                .frame(height: launcher.notchControlsHeight, alignment: .top)
+            HubIslandWidgetSection(isEditing: launcher.isEditing)
+            if launcher.visibleCount == 0 {
+                emptyState
+            } else {
+                grid
+            }
+        }
+        .frame(height: islandMainHeight, alignment: .top)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityIdentifier("hub-main-content")
     }
 
     @ViewBuilder
