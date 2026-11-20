@@ -408,7 +408,6 @@ enum DefaultsKey {
     static let windowLayoutWindowGap = "windowLayoutWindowGap" // px between adjacent snapped windows
     static let windowLayoutScreenGap = "windowLayoutScreenGap" // px between a snapped window and the visible frame edge
     static let windowReserveStageManagerSpace = "windowReserveStageManagerSpace"
-    static let windowLayoutMarginPercent = "windowLayoutMarginPercent" // per-edge percentage for margin maximize
     static let windowLayoutSideRepeatCyclesThirds = "windowLayoutSideRepeatCyclesThirds" // repeated Left/Right cycles half, 2/3, 1/3 on the same display
     static let windowLayoutHoldToCycleDisplayEnabled = "windowLayoutHoldToCycleDisplayEnabled" // holding shortcut cycles across displays
     static let windowLayoutHoldDelay = "windowLayoutHoldDelay" // "default" or "longer"
@@ -678,7 +677,6 @@ enum DefaultsKey {
     static let windowLayoutShortcutBottomLeft = "windowLayoutShortcutBottomLeft"
     static let windowLayoutShortcutBottomRight = "windowLayoutShortcutBottomRight"
     static let windowLayoutShortcutMaximize = "windowLayoutShortcutMaximize"
-    static let windowLayoutShortcutMarginMaximize = "windowLayoutShortcutMarginMaximize"
     static let windowLayoutShortcutCenter = "windowLayoutShortcutCenter"
     static let windowLayoutShortcutRestore = "windowLayoutShortcutRestore"
     static let windowLayoutShortcutLeftThird = "windowLayoutShortcutLeftThird"
@@ -1341,7 +1339,6 @@ enum Defaults {
         DefaultsKey.windowLayoutWindowGap: 0,
         DefaultsKey.windowLayoutScreenGap: 0,
         DefaultsKey.windowReserveStageManagerSpace: false,
-        DefaultsKey.windowLayoutMarginPercent: 5.0,
         DefaultsKey.windowLayoutSideRepeatCyclesThirds: false,
         DefaultsKey.menuBarMetricOrder: defaultMenuBarMetricOrder.joined(separator: ","),
         DefaultsKey.menuBarCombineTemperatures: true,
@@ -1632,7 +1629,6 @@ enum Defaults {
         DefaultsKey.windowLayoutShortcutBottomLeft: GlobalShortcut.windowLayoutBottomLeftDefault.storageValue,
         DefaultsKey.windowLayoutShortcutBottomRight: GlobalShortcut.windowLayoutBottomRightDefault.storageValue,
         DefaultsKey.windowLayoutShortcutMaximize: GlobalShortcut.windowLayoutMaximizeDefault.storageValue,
-        DefaultsKey.windowLayoutShortcutMarginMaximize: WindowLayoutAction.clearedShortcutStorageValue,
         DefaultsKey.windowLayoutShortcutCenter: GlobalShortcut.windowLayoutCenterDefault.storageValue,
         DefaultsKey.windowLayoutShortcutRestore: GlobalShortcut.windowLayoutRestoreDefault.storageValue,
         DefaultsKey.windowLayoutShortcutLeftThird: GlobalShortcut.windowLayoutLeftThirdDefault.storageValue,
