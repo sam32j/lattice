@@ -15,7 +15,7 @@ struct NotchFileDropActions {
 
 /// `depart` keeps the leaving content on screen while the shape closes
 /// around it, fading out before the next content takes its place.
-enum NotchContentTransition { case none, reveal, dismiss, depart, replace }
+enum NotchContentTransition { case none, reveal, dismiss, depart, replace, page }
 
 /// The window reserves the transition's bounds once. Core Animation moves
 /// the silhouette independently of SwiftUI layout and the application run loop.
@@ -359,14 +359,21 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             return
         }
         if canAnimate { canvas.transitionContent(revealing ? .reveal : transitionContent) }
-        else if animated && changesFrame && (revealing || transitionContent == .reveal) {
+        else if animated && changesFrame && (revealing || transitionContent == .reveal || transitionContent == .page) {
             // Reduce Motion, or a panel that was ordered out, puts the island
             // at its new size at once. Shown at once, the page reached the
             // screen in the resting shape, flushed ahead of the resize, or
             // ahead of the surface drawn beneath it. A fade is not motion.
             canvas.transitionContent(.reveal, shapeSnaps: true)
         } else { canvas.restoreContent() }
-        guard changesFrame else { configureQuickAccess(); return }
+        guard changesFrame else {
+            configureQuickAccess()
+            if transitionContent == .page {
+                canvas.layoutSubtreeIfNeeded()
+                CATransaction.flush()
+            }
+            return
+        }
         // An ordered-out panel still has its last expanded shape. Start the
         // reveal at the screen edge, even when reopening at that same size.
         let previousSize = revealing
@@ -1755,14 +1762,18 @@ private final class NotchCanvas: NSView {
             // Mask only the content pixels. A black overlay would obscure the
             // glass; alphaValue would remove the hosting view's AX/hit frame.
             let animation = CAKeyframeAnimation(keyPath: "opacity")
-            let start: Float = kind == .dismiss || currentOpacity == 1 ? 0 : currentOpacity
+            let start: Float = (kind == .dismiss || kind == .page || currentOpacity == 1) ? 0 : currentOpacity
             // Give the silhouette a head start before revealing full-width
             // content; content arriving small and out of focus can show
             // sooner than sharp content could. Reversals continue from the
             // opacity already on screen. A shape that snaps into place only
             // needs its first frames drawn.
-            let keyTimes: [NSNumber] = kind == .dismiss ? [0, 0.65, 1] : shapeSnaps ? [0, 0.25, 1] : [0, 0.35, 1]
-            let duration: CFTimeInterval = kind == .dismiss ? 0.40 : shapeSnaps ? 0.2 : 0.45
+            let keyTimes: [NSNumber] = kind == .dismiss ? [0, 0.65, 1]
+                : kind == .page ? [0, 0.08, 1]
+                : shapeSnaps ? [0, 0.25, 1] : [0, 0.35, 1]
+            let duration: CFTimeInterval = kind == .dismiss ? 0.40
+                : kind == .page ? 0.22
+                : shapeSnaps ? 0.2 : 0.45
             animation.values = [start, start, 1]
             animation.keyTimes = keyTimes
             animation.duration = duration
