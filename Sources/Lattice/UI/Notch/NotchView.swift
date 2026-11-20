@@ -712,7 +712,9 @@ struct NotchView: View {
             switch service.selected {
             case .timer: NotchTimerView(size: pageSize)
             case .camera:
+                // The page has no close control of its own; Stop sits in the top row.
                 NotchCameraView(size: pageSize)
+                    .notchBand(trailing: { NotchCameraStopButton() })
             case .notifications:
                 NotchNotificationsView(size: pageSize)
                     .notchBand(trailing: { NotchClearNotificationsButton() })
