@@ -1170,14 +1170,49 @@ final class AppVolumeMixer: ObservableObject {
     /// route keeps running at unity gain.
     private func isUnity(_ volume: Double) -> Bool { MixerRoutingSupport.isUnity(volume) }
 
-    func setVolume(_ volume: Double, for app: MixerApp) {
+    /// Fast-path volume setter used while a slider or scroll gesture is actively
+    /// tracking (`isEditing == true`). Updates live audio engine gain in O(1)
+    /// without tearing down the CoreAudio aggregate tap if the thumb passes
+    /// through 100%, and avoids mutating `@Published apps` on every sub-percent
+    /// tick. When `isEditing` ends (`false`), commits the full `setVolume` path.
+    func setInteractiveVolume(_ volume: Double, for app: MixerApp, isEditing: Bool) {
+        guard isEditing else {
+            setVolume(volume, for: app)
+            return
+        }
         guard !app.isBypassed else { return }
-        engineRecovery.clear(app.id)
         let clamped = Defaults.sanitizedAppVolume(volume)
         persistVolume(clamped, for: app)
         if clamped > 0.001 { lastAudibleVolume[app.id] = clamped }
+
+        if engines[app.id] != nil {
+            var liveApp = apps.first(where: { $0.id == app.id }) ?? app
+            liveApp.volume = clamped
+            applyRouting(for: liveApp, keepLiveEngineAtUnity: true)
+            return
+        }
+
+        // No live engine yet — only kick off engine creation once volume leaves 100%.
+        if abs(clamped - 1.0) > 0.001 {
+            setVolume(clamped, for: app)
+        }
+    }
+
+    func setVolume(_ volume: Double, for app: MixerApp) {
+        guard !app.isBypassed else { return }
+        let clamped = Defaults.sanitizedAppVolume(volume)
+        if let index = apps.firstIndex(where: { $0.id == app.id }),
+           abs(apps[index].volume - clamped) <= 0.000_01,
+           engines[app.id] != nil || !appNeedsEngine(apps[index]) {
+            return
+        }
+        engineRecovery.clear(app.id)
+        persistVolume(clamped, for: app)
+        if clamped > 0.001 { lastAudibleVolume[app.id] = clamped }
         if let index = apps.firstIndex(where: { $0.id == app.id }) {
-            apps[index].volume = clamped
+            if apps[index].volume != clamped {
+                apps[index].volume = clamped
+            }
             let updated = apps[index]
             applyRouting(for: updated)
         } else {
@@ -1369,14 +1404,14 @@ final class AppVolumeMixer: ObservableObject {
     /// aggregate, so an engine that goes away for even a moment hands the app
     /// straight back to the speakers at full volume. Replacements are built
     /// first and the old engine is stopped only once the new one is running.
-    private func applyRouting(for app: MixerApp) {
+    private func applyRouting(for app: MixerApp, keepLiveEngineAtUnity: Bool = false) {
         guard !stopped else { return }
         guard !app.isBypassed else {
             discardEngine(for: app.id)
             return
         }
         guard let targetOutputDeviceUID = app.effectiveOutputDeviceUID,
-              appNeedsEngine(app) else {
+              appNeedsEngine(app) || (keepLiveEngineAtUnity && engines[app.id] != nil) else {
             // No volume or routing adjustment remains.
             discardEngine(for: app.id)
             clearPermissionIfNoActiveAdjustments()
