@@ -123,8 +123,10 @@ struct HubToolCellView: View {
                 .fill(isSelected ? Color.accentColor.opacity(0.2) : (isHovered ? Color.primary.opacity(0.08) : Color.primary.opacity(0.04)))
         }
         .overlay {
+            // Drawn inside the tile: a centred stroke put half the ring outside
+            // it, where the grid's clip cut it off along the first and last rows.
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 1.5)
+                .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 1.5)
         }
 
         return Button(action: onTap) { tileContent }
@@ -134,7 +136,7 @@ struct HubToolCellView: View {
                 if isEditing {
                     Button(customizationText.hideFromHub) { onHide() }
                 } else {
-                    Button(customizationText.manageTools + "…") { onManage() }
+                    Button(NotchQuickActionsCopy.editToolsMenu(l10n.language)) { onManage() }
                 }
             }
             .help(isEditing ? customizationText.dragHint : itemTitle)
