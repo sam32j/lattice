@@ -1264,6 +1264,7 @@ def main():
           + "}\n}\n"
           + "extension MixerOutputAdjustmentContract.Panel {\n"
           + "typealias NotchService = MixerOutputAdjustmentContract.NotchService\n"
+          + "var editingOutputVolume: Bool { false }\n"
           + declaration("Sources/Lattice/UI/MenuPanel/MixerSection.swift", "    private func setSystemOutputVolume(")
             .replace("private func", "func", 1)
           + "}\n")
