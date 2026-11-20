@@ -219,6 +219,22 @@ final class NotchService: ObservableObject {
     @Published private(set) var power = PowerReading()
     @Published private var musicDetailVisible = false
     var customBackAction: (() -> Bool)?
+    /// The Device Controls subpage the island already paged to directly, so
+    /// the subpage publisher does not run the same page transition again.
+    private var pagedDeviceControlsSubpage: DeviceControlsNavigationState.Subpage?
+
+    /// Switches Device Controls between its overview and App Volumes and
+    /// pages the island in the same pass, so the new page never draws in the
+    /// old shape first.
+    func showDeviceControlsSubpage(_ subpage: DeviceControlsNavigationState.Subpage) {
+        let navigation = DeviceControlsNavigationState.shared
+        guard navigation.currentSubpage != subpage else { return }
+        navigation.currentSubpage = subpage
+        guard expanded, !showingSections, [.hub, .controls, .mixer].contains(selected),
+              LatticeHubService.shared.activeUtility == .deviceControls else { return }
+        pagedDeviceControlsSubpage = subpage
+        refreshPresentation(transitionContent: .page)
+    }
 
     private var windowHost: NotchWindowHost?
     private var panel: NotchPanel? { windowHost?.panel }
@@ -4612,13 +4628,38 @@ final class NotchService: ObservableObject {
             // hosted utility turns it into a page.
             let launcher = LatticeHubService.shared
             launcher.$isEditing.map { _ in () }
-                .merge(with: launcher.$activeUtility.map { _ in () }, launcher.$hiddenItemsRaw.map { _ in () })
-                .dropFirst(3).receive(on: DispatchQueue.main)
+                .merge(with: launcher.$hiddenItemsRaw.map { _ in () })
+                .dropFirst(2).receive(on: DispatchQueue.main)
                 .sink { [weak self] in
                     guard let self, self.expanded, [.hub, .controls, .mixer].contains(self.selected), !self.showingSections else { return }
                     self.refreshPresentation()
                 }.store(in: &subscriptions)
         }
+
+        DeviceControlsNavigationState.shared.$currentSubpage
+            .removeDuplicates()
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] subpage in
+                guard let self else { return }
+                // showDeviceControlsSubpage already paged the island; a second
+                // .page transition restarts the content fade from zero and
+                // blanks the new page for a moment.
+                if let paged = self.pagedDeviceControlsSubpage {
+                    self.pagedDeviceControlsSubpage = nil
+                    if paged == subpage { return }
+                }
+                guard self.expanded,
+                    !self.showingSections,
+                    [.hub, .controls, .mixer].contains(self.selected),
+                    LatticeHubService.shared.activeUtility == .deviceControls
+                else {
+                    return
+                }
+
+                self.refreshPresentation(transitionContent: .page)
+            }
+            .store(in: &subscriptions)
 
         DeviceControlsNavigationState.shared.$contentHeight
             .removeDuplicates()

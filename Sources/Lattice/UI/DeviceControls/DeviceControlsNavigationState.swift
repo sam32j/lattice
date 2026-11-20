@@ -60,19 +60,33 @@ final class DeviceControlsNavigationState: ObservableObject {
         case appVolumes
     }
 
+    private struct AppLayoutKey: Equatable {
+        let id: String
+        let persistenceID: String?
+        let isPlaying: Bool
+    }
+
     @Published var currentSubpage: Subpage = .main {
-        didSet { updateContentHeight() }
+        didSet {
+            guard currentSubpage != oldValue else { return }
+            updateContentHeight()
+        }
     }
 
     @Published private(set) var contentHeight: CGFloat = 450
 
     @Published var showInactiveApps = false {
-        didSet { updateContentHeight() }
+        didSet {
+            guard showInactiveApps != oldValue else { return }
+            measuredAppVolumesHeight = 0
+            updateContentHeight()
+        }
     }
 
     private(set) var measuredMainHeight: CGFloat = 450
     private(set) var measuredAppVolumesHeight: CGFloat = 0
     private var latestApps: [MixerApp] = []
+    private var latestLayoutKeys: [AppLayoutKey] = []
     private var subscriptions = Set<AnyCancellable>()
 
     private init() {
@@ -80,7 +94,11 @@ final class DeviceControlsNavigationState: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] apps in
                 guard let self else { return }
+                let keys = apps.map { AppLayoutKey(id: $0.id, persistenceID: $0.persistenceID, isPlaying: $0.isPlaying) }
+                guard keys != self.latestLayoutKeys else { return }
+                self.latestLayoutKeys = keys
                 self.latestApps = apps
+                self.measuredAppVolumesHeight = 0
                 self.updateContentHeight()
             }
             .store(in: &subscriptions)

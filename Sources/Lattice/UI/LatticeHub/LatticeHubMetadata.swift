@@ -39,7 +39,7 @@ extension LatticeHubView {
         case .shelf: return "tray.full"
         case .textSnippets: return "text.append"
         case .killProcess: return "waveform.path.ecg"
-        case .wallpaper: return "rectangle.inset.filled.and.cursorarrow"
+        case .wallpaper: return "photo.tv"
         case .deviceControls: return "slider.horizontal.3"
         case .aiUsage: return "apple.intelligence"
         case .watch: return "photo.badge.magnifyingglass"

@@ -117,6 +117,12 @@ struct HubIslandStripView<Content: View>: View {
                         }
                     }
                     .scrollIndicators(.never)
+                    // Mount already on the saved page. Scrolling there from
+                    // onAppear happens a run-loop turn later, so returning
+                    // from a utility could draw page one for a frame or two
+                    // (whenever that turn came after the first draw) before
+                    // snapping to the page the user left.
+                    .defaultScrollAnchor(initialScrollAnchor)
                     .scrollDisabled(session.active != nil)
                     .scrollTargetBehavior(
                         HubIslandPagingBehavior(
@@ -170,6 +176,15 @@ struct HubIslandStripView<Content: View>: View {
         if scrollState.currentPage != page { scrollState.currentPage = page }
         if visiblePage != page { visiblePage = page }
         if launcher.hubIslandPage != page { launcher.hubIslandPage = page }
+    }
+
+    /// The saved page as a fraction of the strip's scrollable width.
+    private var initialScrollAnchor: UnitPoint {
+        let target = min(max(0, launcher.hubIslandPage), max(0, layout.pages - 1))
+        let scrollable = layout.size.width - notchWidth
+        guard target > 0, scrollable > 0 else { return .leading }
+        let offset = layout.pageOffset(for: target, viewportWidth: notchWidth)
+        return UnitPoint(x: min(1, max(0, offset / scrollable)), y: 0)
     }
 
     private func pageIndex(at offset: CGFloat) -> Int {
