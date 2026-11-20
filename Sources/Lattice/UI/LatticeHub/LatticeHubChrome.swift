@@ -46,8 +46,7 @@ struct HubToolsMenuButton: View {
     let onOpenSettings: () -> Void
     var appearance: NSAppearance? = nil
 
-    @State private var anchor = NotchMenuAnchor()
-    @State private var isMenuOpen = false
+    @StateObject private var anchor = NotchMenuAnchor()
 
     var body: some View {
         Button {
@@ -65,19 +64,14 @@ struct HubToolsMenuButton: View {
                 )
             ], appearance: appearance)
         } label: {
-            Image(systemName: isMenuOpen ? "gearshape.fill" : "gearshape")
+            Image(systemName: anchor.isMenuOpen ? "gearshape.fill" : "gearshape")
                 .font(.system(size: 14, weight: .semibold))
                 .frame(width: 26, height: 26)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(HubHeaderButtonStyle(isSelected: isMenuOpen))
+        .buttonStyle(HubHeaderButtonStyle(isSelected: anchor.isMenuOpen))
         .background(NotchMenuAnchorView(anchor: anchor))
         .focusable(false)
-        .onAppear {
-            anchor.onMenuOpenChanged = { open in
-                isMenuOpen = open
-            }
-        }
         .help(customizationText.tools)
         .accessibilityLabel(customizationText.toolsMenu)
     }
