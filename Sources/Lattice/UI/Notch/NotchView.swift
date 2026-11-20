@@ -43,7 +43,7 @@ struct NotchView: View {
             // too faint to see takes hit tests and keeps the surface in this
             // window, as the opaque black of a black island does.
             .background(shape.offset(x: service.surfaceShift).fill(Color.black.opacity(0.01)))
-            .contentShape(shape.offset(x: service.surfaceShift))
+            .contentShape(Rectangle())
             // The backdrop is a separate, non-interactive hosting view. Claim
             // empty space here so SwiftUI keeps the taps that land on it. This
             // draws nothing, so it does not hold a click in this window at the
