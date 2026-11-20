@@ -434,20 +434,6 @@ struct KillProcessPortRow: View {
         .contentShape(Rectangle())
         .onHover { isHovering = $0 }
         .opacity(stopping ? 0.55 : 1)
-        .contextMenu {
-            if let url = KillProcessPortSupport.browserURL(for: port) {
-                Button(FeatureStrings.commandBar(L10n.shared.language).openInBrowser) {
-                    if !NSWorkspace.shared.open(url) { NSSound.beep() }
-                }
-            }
-        }
-        .accessibilityActions {
-            if let url = KillProcessPortSupport.browserURL(for: port) {
-                Button(FeatureStrings.commandBar(L10n.shared.language).openInBrowser) {
-                    if !NSWorkspace.shared.open(url) { NSSound.beep() }
-                }
-            }
-        }
     }
 }
 
