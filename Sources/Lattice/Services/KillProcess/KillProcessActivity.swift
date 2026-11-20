@@ -39,6 +39,9 @@ final class KillProcessActivity: ObservableObject {
 
     private let service = KillProcessService.shared
     private var toastDismissal: DispatchWorkItem?
+    /// When each greyed-out row's Reopen runs out, so a failed reopen can
+    /// bring the row back for the time it has left.
+    private var reopenExpiry: [pid_t: TimeInterval] = [:]
 
     private var strings: KillProcessListStrings { FeatureStrings.killProcessList(L10n.shared.language) }
 
@@ -85,13 +88,24 @@ final class KillProcessActivity: ObservableObject {
 
     func isRecentlyQuit(_ pid: pid_t) -> Bool { recentlyQuit[pid] != nil }
 
-    /// Reopens an app from its greyed-out row.
+    /// Reopens an app from its greyed-out row. If the launch fails (the
+    /// bundle moved, say), the row comes back with Reopen for the time it
+    /// has left and a toast says so.
     func reopen(_ item: KillProcessItem) {
         recentlyQuit[item.pid] = nil
         guard let path = item.bundlePath else { return }
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = false
-        NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: path), configuration: configuration) { _, _ in }
+        NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: path), configuration: configuration) { [weak self] app, error in
+            guard app == nil || error != nil else { return }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if let expiry = self.reopenExpiry[item.pid], ProcessInfo.processInfo.systemUptime < expiry {
+                    self.recentlyQuit[item.pid] = item
+                }
+                self.show(String(format: self.strings.toastNotRelaunchedFormat, item.name))
+            }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.service.refresh(force: true) }
     }
 
@@ -153,8 +167,12 @@ final class KillProcessActivity: ObservableObject {
         signal([target], force: true, name: item.name) { [weak self] removed in
             guard let self else { return }
             if removed.contains(item.pid) {
-                self.waitForExit([item]) { exited, _ in
-                    self.finish(exited: exited, remaining: [], announce: item.isReopenable)
+                self.waitForExit([item]) { exited, remaining in
+                    // A process still there at the deadline gets its row back.
+                    self.finish(exited: exited, remaining: remaining, announce: item.isReopenable)
+                    if !remaining.isEmpty {
+                        self.show(String(format: self.strings.toastCouldNotStopFormat, item.name))
+                    }
                 }
             } else {
                 self.inProgress[item.pid] = nil
@@ -182,9 +200,13 @@ final class KillProcessActivity: ObservableObject {
         stop(item, announces: false)
     }
 
-    /// Asks every listed app to quit together, then reports once.
-    func quitOthers(_ items: [KillProcessItem]) {
+    /// Asks every listed app to quit together, then reports once. An app
+    /// marked Keep Running after the confirmation appeared stays open; apps
+    /// the confirmation did not list are never added.
+    func quitOthers(_ confirmed: [KillProcessItem]) {
         dismissToast()
+        let items = confirmed.filter { !isKept($0.bundleIdentifier) }
+        guard !items.isEmpty else { return }
         let apps = items.filter { $0.kind == .dockApp }
         let background = items.filter { $0.kind != .dockApp }
         var pending = Set(items.map(\.pid))
@@ -253,11 +275,22 @@ final class KillProcessActivity: ObservableObject {
     private func quit(_ items: [KillProcessItem], toastWhenDone: Bool,
                       completion: (([KillProcessItem], [KillProcessItem]) -> Void)? = nil) {
         var asked: [KillProcessItem] = []
+        var rejected: [KillProcessItem] = []
         for item in items {
             guard let target = target(for: item), KillProcessService.identityMatches(target),
                   let app = NSRunningApplication(processIdentifier: item.pid), !app.isTerminated else { continue }
             inProgress[item.pid] = .quit
-            if app.terminate() { asked.append(item) } else { inProgress[item.pid] = nil }
+            if app.terminate() {
+                asked.append(item)
+            } else {
+                inProgress[item.pid] = nil
+                rejected.append(item)
+            }
+        }
+        // A batch reports through its completion; a single Quit says here
+        // that the app turned the request down.
+        if completion == nil, let first = rejected.first {
+            show(String(format: strings.toastCouldNotStopFormat, first.name))
         }
         let skipped = items.filter { item in !asked.contains { $0.pid == item.pid } }
         guard !asked.isEmpty else {
@@ -350,7 +383,11 @@ final class KillProcessActivity: ObservableObject {
     /// Keeps quit apps in the list, greyed out with Reopen, for a few seconds.
     private func holdForReopen(_ items: [KillProcessItem]) {
         guard !items.isEmpty else { return }
-        for item in items { recentlyQuit[item.pid] = item }
+        let expiry = ProcessInfo.processInfo.systemUptime + Self.reopenLifetime
+        for item in items {
+            recentlyQuit[item.pid] = item
+            reopenExpiry[item.pid] = expiry
+        }
         let message = items.count == 1
             ? String(format: strings.toastQuitFormat, items[0].name)
             : strings.count(items.count, one: strings.toastAppsQuitOne, other: strings.toastAppsQuitOther)
@@ -358,27 +395,36 @@ final class KillProcessActivity: ObservableObject {
         let pids = items.map(\.pid)
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.reopenLifetime) { [weak self] in
             guard let self else { return }
-            for pid in pids { self.recentlyQuit[pid] = nil }
+            for pid in pids {
+                self.recentlyQuit[pid] = nil
+                self.reopenExpiry[pid] = nil
+            }
         }
     }
 
-    /// A row and its helpers leave the list at once; the next snapshot confirms.
+    /// A row leaves the list at once; the next snapshot confirms. Its helpers
+    /// leave with it only once they are gone too: a helper that outlives its
+    /// app stays listed, and the next snapshot shows it on its own.
     private func markDeparted(_ items: [KillProcessItem]) {
         for item in items {
             departed.insert(item.pid)
-            for helper in item.helpers { departed.insert(helper.pid) }
+            for helper in item.helpers where !(target(for: helper).map(KillProcessService.identityMatches) ?? false) {
+                departed.insert(helper.pid)
+            }
         }
     }
 
     /// Still running after the timeout: hung apps read Not responding; an app
-    /// waiting on a save dialog comes forward with its row restored.
+    /// waiting on a save dialog comes forward with its row restored. Without
+    /// Accessibility, Lattice cannot tell the two apart, so it never calls an
+    /// app hung and brings it forward instead.
     private func handleUnfinishedQuits(_ items: [KillProcessItem]) {
         for item in items { inProgress[item.pid] = nil }
         let apps = items.filter { $0.kind == .dockApp || $0.kind == .backgroundApp }
         guard !apps.isEmpty else { return }
         let trusted = AXIsProcessTrusted()
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let hung = Set(apps.filter { !trusted || Self.isHung(pid: $0.pid) }.map(\.pid))
+            let hung = trusted ? Set(apps.filter { Self.isHung(pid: $0.pid) }.map(\.pid)) : []
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.notResponding.formUnion(hung)
