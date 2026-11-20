@@ -45,13 +45,29 @@ private struct SettingsExpansionAnimation<Value: Equatable>: ViewModifier {
     }
 }
 
+private struct SettingsCollapsibleClipShape: Shape {
+    var horizontalOutset: CGFloat
+    var verticalOutset: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        Path(rect.insetBy(dx: -horizontalOutset, dy: -verticalOutset))
+    }
+}
+
 /// Keeps the follow-up rows laid out and opens a clipped window onto them,
 /// so they unroll from under the row above instead of fading in on top of
-/// the rows that are still sliding down.
+/// the rows that are still sliding down. Preserves horizontal breathing room
+/// for control borders, shadows, Liquid Glass lenses, and floating tooltips.
 private struct SettingsCollapsible: ViewModifier {
     let isExpanded: Bool
     @State private var contentHeight: CGFloat?
+    @State private var settledOpen: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(isExpanded: Bool) {
+        self.isExpanded = isExpanded
+        self._settledOpen = State(initialValue: isExpanded)
+    }
 
     func body(content: Content) -> some View {
         content
@@ -66,13 +82,35 @@ private struct SettingsCollapsible: ViewModifier {
             // Until the first measurement, an open group takes its natural
             // height so it never flashes shut on first render.
             .frame(height: isExpanded ? contentHeight : 0, alignment: .top)
-            .clipped()
+            .clipShape(
+                SettingsCollapsibleClipShape(
+                    horizontalOutset: 28,
+                    verticalOutset: settledOpen ? 36 : 0
+                )
+            )
             .opacity(isExpanded ? 1 : 0)
             .allowsHitTesting(isExpanded)
             // Folded rows stay laid out; disabling them keeps Tab and Space
             // from reaching controls nobody can see.
             .disabled(!isExpanded)
             .accessibilityHidden(!isExpanded)
+            .onChange(of: isExpanded) { _, expanded in
+                if !expanded {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        settledOpen = false
+                    }
+                } else if reduceMotion {
+                    settledOpen = true
+                } else {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Animation.settingsExpansionDuration + 0.04) {
+                        if isExpanded {
+                            settledOpen = true
+                        }
+                    }
+                }
+            }
     }
 }
 
