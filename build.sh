@@ -366,8 +366,6 @@ if (( TEST )); then
         Sources/Lattice/Services/QuickTools/VisionTextRecognition.swift
         Sources/Lattice/Core/OCRRecoveryCopy.swift
         Sources/Lattice/Services/QuickTools/TextRecognitionRecovery.swift
-        Sources/Lattice/Services/Notch/NotchMusicMouseSwipeController.swift
-        Sources/Lattice/Services/Notch/NotchMusicMouseSwipe.swift
         Sources/Lattice/Core/DockClickMode.swift
         Sources/Lattice/Core/DockClickStrings.swift
         Sources/Lattice/Core/SettingsFollowupLabels.swift
@@ -396,7 +394,6 @@ if (( TEST )); then
         Sources/Lattice/Services/Notch/NotchMusicSwipeState.swift
         Sources/Lattice/Services/Notch/NotchMusicSwipeHaptics.swift
         Sources/Lattice/Services/Notch/NotchMusicSwipeController.swift
-        Sources/Lattice/Services/Notch/NotchMusicTrackSwipe.swift
         Sources/Lattice/Services/Notch/NotchGestureSupport.swift
         Sources/Lattice/Services/Notch/NotchCaptureTrackpadGesture.swift
         Sources/Lattice/Services/Notch/NotchSectionPaging.swift
