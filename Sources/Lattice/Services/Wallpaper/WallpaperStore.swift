@@ -43,8 +43,25 @@ enum WallpaperStore {
     static func setImageOnAllSpaces(_ imageURL: URL,
                                     shouldContinue: () -> Bool = { true }) -> Bool {
         let url = imageURL.standardizedFileURL
-        guard shouldContinue() else { return false }
         guard FileManager.default.fileExists(atPath: url.path) else { return false }
+        return patchIndex(shouldContinue: shouldContinue) {
+            WallpaperSupport.patchStoreRoot(&$0, imageURL: url)
+        }
+    }
+
+    /// Aerials have no still to set through AppKit; the store is their only
+    /// way in, and WallpaperAgent downloads the video once it restarts.
+    @discardableResult
+    static func setAerialOnAllSpaces(_ assetID: String,
+                                     shouldContinue: () -> Bool = { true }) -> Bool {
+        patchIndex(shouldContinue: shouldContinue) {
+            WallpaperSupport.patchStoreRoot(&$0, aerialAssetID: assetID)
+        }
+    }
+
+    private static func patchIndex(shouldContinue: () -> Bool,
+                                   patch: (inout [String: Any]) -> Bool) -> Bool {
+        guard shouldContinue() else { return false }
         let index = indexURL
         guard FileManager.default.fileExists(atPath: index.path) else { return false }
 
@@ -61,7 +78,7 @@ enum WallpaperStore {
         ) as? [String: Any]
         else { return false }
 
-        guard WallpaperSupport.patchStoreRoot(&root, imageURL: url) else { return false }
+        guard patch(&root) else { return false }
         guard shouldContinue() else { return false }
 
         guard ensureBackup(of: index) else { return false }
