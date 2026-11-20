@@ -185,10 +185,10 @@ extension FeatureStrings {
 
 extension NotchAgentStrings {
     static let enUS = NotchAgentStrings(
-        title: "AI Usage",
+        title: "Agents",
         hubDescription: "Follow plan limits, tokens, API value and the work in progress of Claude, Codex, OpenCode and GitHub Copilot in the Dynamic Island.",
         settingsDescription: "Reads the usage Claude Code, Codex, OpenCode and GitHub Copilot record on this Mac and the plan limits the Claude app saves. Prompts, replies and files are never kept, and your usage never leaves your Mac.",
-        restingTitle: "AI usage",
+        restingTitle: "Agents",
         limitsCard: "Limits",
         spendCard: "Spending",
         liveCard: "Now",
@@ -280,10 +280,10 @@ extension NotchAgentStrings {
         resetsHelp: "A reset renews the Codex session and weekly limits at once. Codex checks your resets with its own sign-in, which Lattice never reads.")
 
     static let uk = NotchAgentStrings(
-        title: "Використання ШІ",
+        title: "Агенти",
         hubDescription: "Стежте за лімітами плану, токенами, вартістю API та поточною роботою Claude, Codex, OpenCode і GitHub Copilot у Dynamic Island.",
         settingsDescription: "Читає дані про використання, які Claude Code, Codex, OpenCode і GitHub Copilot записують на цьому Mac, та ліміти плану, збережені програмою Claude. Запити, відповіді й файли не зберігаються, а дані про використання не залишають ваш Mac.",
-        restingTitle: "Використання ШІ",
+        restingTitle: "Агенти",
         limitsCard: "Ліміти",
         spendCard: "Витрати",
         liveCard: "Зараз",
@@ -375,10 +375,10 @@ extension NotchAgentStrings {
         resetsHelp: "Скидання одразу поновлює ліміти сеансу й тижня Codex. Codex перевіряє ваші скидання через власний вхід, який Lattice ніколи не читає.")
 
     static let ptBR = NotchAgentStrings(
-        title: "Uso de IA",
+        title: "Agentes",
         hubDescription: "Acompanhe no Dynamic Island os limites do plano, os tokens, o valor de API e o trabalho em andamento do Claude, do Codex, do OpenCode e do GitHub Copilot.",
         settingsDescription: "Lê o uso que o Claude Code, o Codex, o OpenCode e o GitHub Copilot registram neste Mac e os limites do plano que o app Claude salva. Prompts, respostas e arquivos nunca são guardados, e o seu uso nunca sai do seu Mac.",
-        restingTitle: "Uso de IA",
+        restingTitle: "Agentes",
         limitsCard: "Limites",
         spendCard: "Gastos",
         liveCard: "Agora",
@@ -470,10 +470,10 @@ extension NotchAgentStrings {
         resetsHelp: "Uma redefinição renova de uma vez os limites da sessão e da semana do Codex. O Codex verifica suas redefinições com o próprio login, que o Lattice nunca lê.")
 
     static let es = NotchAgentStrings(
-        title: "Uso de IA",
+        title: "Agentes",
         hubDescription: "Sigue en el Dynamic Island los límites del plan, los tokens, el valor de API y el trabajo en curso de Claude, Codex, OpenCode y GitHub Copilot.",
         settingsDescription: "Lee el uso que Claude Code, Codex, OpenCode y GitHub Copilot registran en este Mac y los límites del plan que guarda la app de Claude. Nunca se guardan instrucciones, respuestas ni archivos, y tu uso nunca sale de tu Mac.",
-        restingTitle: "Uso de IA",
+        restingTitle: "Agentes",
         limitsCard: "Límites",
         spendCard: "Gasto",
         liveCard: "Ahora",
@@ -565,10 +565,10 @@ extension NotchAgentStrings {
         resetsHelp: "Un reinicio renueva a la vez los límites de la sesión y de la semana de Codex. Codex comprueba tus reinicios con su propio inicio de sesión, que Lattice nunca lee.")
 
     static let sk = NotchAgentStrings(
-        title: "Využitie AI",
+        title: "Agenti",
         hubDescription: "Sledujte v Dynamic Island limity plánu, tokeny, hodnotu API a to, na čom práve pracujú Claude, Codex, OpenCode a GitHub Copilot.",
         settingsDescription: "Číta využitie, ktoré si Claude Code, Codex, OpenCode a GitHub Copilot zaznamenávajú na tomto Macu, a limity plánu, ktoré ukladá aplikácia Claude. Prompty, odpovede ani súbory sa neuchovávajú a vaše využitie nikdy neopustí váš Mac.",
-        restingTitle: "Využitie AI",
+        restingTitle: "Agenti",
         limitsCard: "Limity",
         spendCard: "Výdavky",
         liveCard: "Teraz",
@@ -660,10 +660,10 @@ extension NotchAgentStrings {
         resetsHelp: "Obnovenie naraz obnoví limity relácie aj týždňa v Codexe. Codex kontroluje vaše obnovenia vlastným prihlásením, ktoré Lattice nikdy nečíta.")
 
     static let de = NotchAgentStrings(
-        title: "KI-Nutzung",
+        title: "Agenten",
         hubDescription: "Verfolge im Dynamic Island die Planlimits, Tokens, den API-Wert und die laufende Arbeit von Claude, Codex, OpenCode und GitHub Copilot.",
         settingsDescription: "Liest die Nutzung, die Claude Code, Codex, OpenCode und GitHub Copilot auf diesem Mac protokollieren, und die Planlimits, die die Claude-App speichert. Prompts, Antworten und Dateien werden nie gespeichert, und deine Nutzung verlässt nie deinen Mac.",
-        restingTitle: "KI-Nutzung",
+        restingTitle: "Agenten",
         limitsCard: "Limits",
         spendCard: "Ausgaben",
         liveCard: "Jetzt",
@@ -755,10 +755,10 @@ extension NotchAgentStrings {
         resetsHelp: "Eine Zurücksetzung erneuert das Sitzungs- und das Wochenlimit von Codex auf einmal. Codex prüft deine Zurücksetzungen mit seiner eigenen Anmeldung, die Lattice nie liest.")
 
     static let fr = NotchAgentStrings(
-        title: "Utilisation de l’IA",
+        title: "Agents",
         hubDescription: "Suivez dans le Dynamic Island les limites du forfait, les jetons, la valeur API et le travail en cours de Claude, Codex, OpenCode et GitHub Copilot.",
         settingsDescription: "Lit l’usage que Claude Code, Codex, OpenCode et GitHub Copilot enregistrent sur ce Mac et les limites du forfait que l’app Claude enregistre. Les requêtes, réponses et fichiers ne sont jamais conservés, et votre usage ne quitte jamais votre Mac.",
-        restingTitle: "Utilisation de l’IA",
+        restingTitle: "Agents",
         limitsCard: "Limites",
         spendCard: "Dépenses",
         liveCard: "En cours",
@@ -850,10 +850,10 @@ extension NotchAgentStrings {
         resetsHelp: "Une réinitialisation renouvelle d’un coup les limites de la session et de la semaine de Codex. Codex vérifie vos réinitialisations avec sa propre connexion, que Lattice ne lit jamais.")
 
     static let it = NotchAgentStrings(
-        title: "Utilizzo IA",
+        title: "Agenti",
         hubDescription: "Segui nel Dynamic Island i limiti del piano, i token, il valore API e il lavoro in corso di Claude, Codex, OpenCode e GitHub Copilot.",
         settingsDescription: "Legge l’utilizzo che Claude Code, Codex, OpenCode e GitHub Copilot registrano su questo Mac e i limiti del piano che l’app Claude salva. Prompt, risposte e file non vengono mai conservati, e il tuo utilizzo non lascia mai il tuo Mac.",
-        restingTitle: "Utilizzo IA",
+        restingTitle: "Agenti",
         limitsCard: "Limiti",
         spendCard: "Spesa",
         liveCard: "Adesso",
@@ -945,10 +945,10 @@ extension NotchAgentStrings {
         resetsHelp: "Un ripristino rinnova insieme i limiti della sessione e della settimana di Codex. Codex controlla i tuoi ripristini con il proprio accesso, che Lattice non legge mai.")
 
     static let ru = NotchAgentStrings(
-        title: "Использование ИИ",
+        title: "Агенты",
         hubDescription: "Следите в Dynamic Island за лимитами тарифа, токенами, стоимостью по API и текущей работой Claude, Codex, OpenCode и GitHub Copilot.",
         settingsDescription: "Читает сведения об использовании, которые Claude Code, Codex, OpenCode и GitHub Copilot записывают на этом Mac, и лимиты тарифа, которые сохраняет приложение Claude. Запросы, ответы и файлы не сохраняются, а сведения об использовании никогда не покидают ваш Mac.",
-        restingTitle: "Использование ИИ",
+        restingTitle: "Агенты",
         limitsCard: "Лимиты",
         spendCard: "Расходы",
         liveCard: "Сейчас",
@@ -1040,10 +1040,10 @@ extension NotchAgentStrings {
         resetsHelp: "Сброс сразу обновляет лимиты сессии и недели Codex. Codex проверяет ваши сбросы через собственный вход, который Lattice никогда не читает.")
 
     static let tr = NotchAgentStrings(
-        title: "Yapay Zekâ Kullanımı",
+        title: "Ajanlar",
         hubDescription: "Claude, Codex, GitHub Copilot ve OpenCode için plan sınırlarını, token’ları, API değerini ve süren işleri Dynamic Island’dan izleyin.",
         settingsDescription: "Claude Code, Codex, GitHub Copilot ve OpenCode’un bu Mac’e kaydettiği kullanımı ve Claude uygulamasının kaydettiği plan sınırlarını okur. İstemler, yanıtlar ve dosyalar asla saklanmaz ve kullanımınız Mac’inizden asla çıkmaz.",
-        restingTitle: "Yapay Zekâ Kullanımı",
+        restingTitle: "Ajanlar",
         limitsCard: "Sınırlar",
         spendCard: "Harcama",
         liveCard: "Şimdi",
@@ -1135,10 +1135,10 @@ extension NotchAgentStrings {
         resetsHelp: "Bir sıfırlama, Codex’in oturum ve haftalık sınırlarını tek seferde yeniler. Codex sıfırlamalarınızı kendi oturum açma bilgisiyle denetler. Lattice bunu hiçbir zaman okumaz.")
 
     static let ja = NotchAgentStrings(
-        title: "AI使用状況",
+        title: "エージェント",
         hubDescription: "Claude、Codex、OpenCode、GitHub Copilotのプラン上限、トークン、API換算額、進行中の作業をDynamic Islandで確認できます。",
         settingsDescription: "Claude Code、Codex、OpenCode、GitHub CopilotがこのMacに記録する使用状況と、Claudeアプリが保存するプラン上限を読み取ります。プロンプト、応答、ファイルは保持せず、使用状況がMacの外に送信されることはありません。",
-        restingTitle: "AI使用状況",
+        restingTitle: "エージェント",
         limitsCard: "上限",
         spendCard: "使用額",
         liveCard: "実行中",
@@ -1230,10 +1230,10 @@ extension NotchAgentStrings {
         resetsHelp: "リセットを使うと、Codexのセッションと週の上限が同時に回復します。Codexは独自のサインイン情報でリセットを確認し、Latticeがそれを読み取ることはありません。")
 
     static let ko = NotchAgentStrings(
-        title: "AI 사용량",
+        title: "에이전트",
         hubDescription: "Claude, Codex, OpenCode, GitHub Copilot의 플랜 한도, 토큰, API 환산 금액, 진행 중인 작업을 Dynamic Island에서 확인하세요.",
         settingsDescription: "Claude Code, Codex, OpenCode, GitHub Copilot이 이 Mac에 기록하는 사용량과 Claude 앱이 저장하는 플랜 한도를 읽습니다. 프롬프트, 응답, 파일은 보관하지 않으며, 사용량은 Mac 밖으로 나가지 않습니다.",
-        restingTitle: "AI 사용량",
+        restingTitle: "에이전트",
         limitsCard: "한도",
         spendCard: "사용 금액",
         liveCard: "지금",
@@ -1325,10 +1325,10 @@ extension NotchAgentStrings {
         resetsHelp: "초기화를 사용하면 Codex의 세션 및 주간 한도가 한 번에 갱신됩니다. Codex는 자체 로그인으로 초기화를 확인하며, Lattice는 이를 읽지 않습니다.")
 
     static let zhHans = NotchAgentStrings(
-        title: "AI 用量",
+        title: "智能体",
         hubDescription: "在 Dynamic Island 中查看 Claude、Codex、OpenCode 和 GitHub Copilot 的套餐额度、令牌、API 价值与正在进行的工作。",
         settingsDescription: "读取 Claude Code、Codex、OpenCode 和 GitHub Copilot 在这台 Mac 上记录的用量，以及 Claude App 保存的套餐额度。不会保留提示、回复和文件，你的用量也不会离开你的 Mac。",
-        restingTitle: "AI 用量",
+        restingTitle: "智能体",
         limitsCard: "额度",
         spendCard: "花费",
         liveCard: "当前",
@@ -1420,10 +1420,10 @@ extension NotchAgentStrings {
         resetsHelp: "一次重置会同时恢复 Codex 的会话额度和每周额度。Codex 用自己的登录信息检查你的重置，Lattice 从不读取这些信息。")
 
     static let zhTW = NotchAgentStrings(
-        title: "AI 用量",
+        title: "代理程式",
         hubDescription: "在 Dynamic Island 中查看 Claude、Codex、OpenCode 與 GitHub Copilot 的方案額度、Token、API 價值與進行中的工作。",
         settingsDescription: "讀取 Claude Code、Codex、OpenCode 與 GitHub Copilot 在這台 Mac 上記錄的用量，以及 Claude App 儲存的方案額度。不會保留提示、回覆與檔案，你的用量也不會離開你的 Mac。",
-        restingTitle: "AI 用量",
+        restingTitle: "代理程式",
         limitsCard: "額度",
         spendCard: "花費",
         liveCard: "目前",
@@ -1515,10 +1515,10 @@ extension NotchAgentStrings {
         resetsHelp: "一次重設會同時恢復 Codex 的工作階段額度和每週額度。Codex 用自己的登入資訊檢查你的重設，Lattice 從不讀取這些資訊。")
 
     static let zhHK = NotchAgentStrings(
-        title: "AI 用量",
+        title: "代理程式",
         hubDescription: "在 Dynamic Island 中查看 Claude、Codex、OpenCode 與 GitHub Copilot 的計劃額度、Token、API 價值與進行中的工作。",
         settingsDescription: "讀取 Claude Code、Codex、OpenCode 與 GitHub Copilot 在這部 Mac 上記錄的用量，以及 Claude App 儲存的計劃額度。不會保留提示、回覆與檔案，你的用量也不會離開你的 Mac。",
-        restingTitle: "AI 用量",
+        restingTitle: "代理程式",
         limitsCard: "額度",
         spendCard: "花費",
         liveCard: "目前",
