@@ -1418,6 +1418,8 @@ def main():
           + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    func emptyTrash(fromNotch:")
               .replace("QuickToggleAction.emptyTrash.isAvailable", "available")
               .replace("NotchIslandAlert.confirmDestructive(", "QuickTogglesAlertTests.confirmDestructiveFixture(")
+          + declaration("Sources/Lattice/Services/QuickTools/QuickTogglesService.swift", "    private func presentTrashConfirmation(")
+              .replace("NotchIslandAlert.confirmDestructive(", "QuickTogglesAlertTests.confirmDestructiveFixture(")
           + "}\n}\n")
     write("OverlayPanelDeclaration.swift", "import AppKit\n"
           + declaration("Sources/Lattice/UI/OverlayPanel.swift", "class OverlayPanel:"))
