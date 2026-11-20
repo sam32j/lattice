@@ -59,6 +59,12 @@ struct LatticeHubHostedUtility: View {
                 .frame(height: viewportHeight)
         } else if item == .system {
             LatticeHubSystemUtility(notchSize: notchSize)
+        } else if item == .wallpaper, let notchSize {
+            // The island is sized to the page (WallpaperIslandLayout), which
+            // pages sideways itself; an outer scroll view would only steal
+            // the wheel from it.
+            WallpaperSection(collapsible: false, showHeader: false, onClose: onClose)
+                .frame(height: notchSize.height, alignment: .top)
         } else if item == .windowLayout {
             if let notchSize {
                 // Pin the page to its top so it never re-centres while the
@@ -196,9 +202,13 @@ private struct LatticeHubSystemUtility: View {
                 .transition(.opacity)
         } else {
             NotchSystemView { kind in
-                withAnimation(.easeInOut(duration: 0.22)) {
+                if notchSize != nil {
                     navigation.selectMetric(kind)
-                    if notchSize != nil { NotchService.shared.refreshPresentation() }
+                    NotchService.shared.refreshPresentation(transitionContent: .page)
+                } else {
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        navigation.selectMetric(kind)
+                    }
                 }
             }
             .transition(.opacity)

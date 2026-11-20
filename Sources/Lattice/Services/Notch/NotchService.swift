@@ -1287,6 +1287,8 @@ final class NotchService: ObservableObject {
             return SystemNavigationState.shared.effectiveHeight
         case .windowLayout:
             return WindowSnappingNavigationState.shared.contentHeight
+        case .wallpaper:
+            return WallpaperIslandLayout.height(for: WallpaperService.shared)
         default:
             return nil
         }
@@ -4906,6 +4908,33 @@ final class NotchService: ObservableObject {
                     !self.showingSections,
                     [.hub, .controls, .mixer].contains(self.selected),
                     LatticeHubService.shared.activeUtility == .deviceControls
+                else {
+                    return
+                }
+
+                self.refreshPresentation()
+            }
+            .store(in: &subscriptions)
+
+        // The wallpaper page is as tall as what it shows; only a changed
+        // height, worked out from its fixed measures, resizes the island.
+        let wallpaper = WallpaperService.shared
+        Publishers.MergeMany(
+            wallpaper.$entries.map { _ in () }.eraseToAnyPublisher(),
+            wallpaper.$filter.map { _ in () }.eraseToAnyPublisher(),
+            wallpaper.$ownSources.map { _ in () }.eraseToAnyPublisher(),
+            wallpaper.$isLoading.map { _ in () }.eraseToAnyPublisher(),
+            wallpaper.$isDownloading.map { _ in () }.eraseToAnyPublisher(),
+            wallpaper.$lastError.map { _ in () }.eraseToAnyPublisher())
+            .receive(on: DispatchQueue.main)
+            .map { WallpaperIslandLayout.height(for: wallpaper) }
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                guard let self,
+                    self.expanded,
+                    !self.showingSections,
+                    [.hub, .controls].contains(self.selected),
+                    LatticeHubService.shared.activeUtility == .wallpaper
                 else {
                     return
                 }
