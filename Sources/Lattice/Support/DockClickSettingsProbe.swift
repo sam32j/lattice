@@ -39,6 +39,18 @@ enum DockClickSettingsProbe {
         let copy = DockClickCopy.strings(.enUS)
         let labels = [copy.toggleWindows, copy.hideApps, copy.cycleWindows]
         settle()
+        if labels.contains(where: { findButton($0, in: host) != nil }) {
+            failures.append("Dock tiles should be hidden while the Dock Tile Action toggle is off.")
+        }
+        guard let toggle = findToggle(copy.title, in: host) else {
+            failures.append("Missing Dock Tile Action toggle.")
+            return
+        }
+        _ = toggle.accessibilityPerformPress?()
+        settle()
+        if keys.map({ defaults.bool(forKey: $0) }) != [true, false, false] {
+            failures.append("Enabling Dock Tile Action must default to Toggle Windows.")
+        }
         for (index, label) in labels.enumerated() {
             guard let button = findButton(label, in: host) else {
                 failures.append("Missing Dock tile: \(label)"); continue
@@ -49,16 +61,16 @@ enum DockClickSettingsProbe {
                 failures.append("Dock tile \(label) did not exclusively select its action.")
             }
         }
-        _ = findButton(copy.off, in: host)?.accessibilityPerformPress?()
+        _ = findToggle(copy.title, in: host)?.accessibilityPerformPress?()
         settle()
         if keys.contains(where: { defaults.bool(forKey: $0) }) {
-            failures.append("The Off tile must clear every Dock Click action.")
+            failures.append("Turning off Dock Tile Action must clear every Dock Click action.")
         }
         granted = false
         // A revoked grant can precede the persisted activation being cleared.
         defaults.set(true, forKey: DefaultsKey.dockClickMinimize)
         settle()
-        _ = findButton(copy.toggleWindows, in: host)?.accessibilityPerformPress?()
+        _ = findToggle(copy.title, in: host)?.accessibilityPerformPress?()
         settle()
         if requests != 1 || keys.contains(where: { defaults.bool(forKey: $0) }) {
             failures.append("Denied Dock permission must leave every tile off.")
@@ -72,6 +84,14 @@ enum DockClickSettingsProbe {
         if element.accessibilityRole?() == .button, element.accessibilityLabel?() == label { return element }
         for child in element.accessibilityChildren?() ?? [] {
             if let button = findButton(label, in: child as AnyObject) { return button }
+        }
+        return nil
+    }
+
+    private static func findToggle(_ label: String, in element: AnyObject) -> AnyObject? {
+        if element.accessibilityRole?() == .checkBox, element.accessibilityLabel?() == label { return element }
+        for child in element.accessibilityChildren?() ?? [] {
+            if let toggle = findToggle(label, in: child as AnyObject) { return toggle }
         }
         return nil
     }

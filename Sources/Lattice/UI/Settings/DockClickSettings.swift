@@ -14,34 +14,68 @@ struct DockClickSettings: View {
 
     typealias Action = DockClickMode
 
+    private var currentAction: Action {
+        _ = minimize; _ = hide; _ = cycle
+        return access.verify(.accessibility) ? .selected(in: .standard) : .off
+    }
+
+    private var isEnabled: Bool {
+        currentAction != .off
+    }
+
     var body: some View {
         let copy = DockClickCopy.strings(l10n.language)
         VStack(alignment: .leading, spacing: 13) {
-            Text(copy.body)
-                .font(.body)
-                .foregroundStyle(.secondary)
-            HStack(spacing: 8) {
-                ForEach(Action.allCases, id: \.self) { action in
-                    let selected = isSelected(action)
-                    Button { select(action) } label: {
-                        VStack(spacing: 8) {
-                            Image(systemName: action.symbol).font(.system(size: 20, weight: .medium))
-                            Text(title(action, copy: copy)).font(.system(size: 11, weight: .medium))
-                                .lineLimit(2).multilineTextAlignment(.center)
+            HStack(alignment: .center, spacing: 10) {
+                LatticeSymbol("app.shadow")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 26, height: 26)
+                    .background(Color.accentColor.opacity(0.12),
+                                in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                Text(copy.title)
+                    .font(.headline)
+                Spacer()
+                Toggle(copy.title, isOn: Binding(
+                    get: { isEnabled },
+                    set: { enabled in
+                        if enabled {
+                            select(.toggleWindows)
+                        } else {
+                            select(.off)
                         }
-                        .frame(maxWidth: .infinity, minHeight: 68).padding(8)
-                        .foregroundStyle(selected ? Color.accentColor : .primary)
-                        .background(selected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06),
-                                    in: RoundedRectangle(cornerRadius: 12))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(selected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1)
-                        }
-                        .contentShape(RoundedRectangle(cornerRadius: 12))
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(title(action, copy: copy))
-                    .accessibilityAddTraits(selected ? .isSelected : [])
+                ))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.regular)
+                .help(copy.title)
+                .accessibilityLabel(copy.title)
+            }
+            if isEnabled {
+                HStack(spacing: 8) {
+                    ForEach(Action.activeCases, id: \.self) { action in
+                        let selected = isSelected(action)
+                        Button { select(action) } label: {
+                            VStack(spacing: 8) {
+                                Image(systemName: action.symbol).font(.system(size: 20, weight: .medium))
+                                Text(title(action, copy: copy)).font(.system(size: 11, weight: .medium))
+                                    .lineLimit(2).multilineTextAlignment(.center)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 68).padding(8)
+                            .foregroundStyle(selected ? Color.accentColor : .primary)
+                            .background(selected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06),
+                                        in: RoundedRectangle(cornerRadius: 12))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .strokeBorder(selected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1)
+                            }
+                            .contentShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(title(action, copy: copy))
+                        .accessibilityAddTraits(selected ? .isSelected : [])
+                    }
                 }
             }
         }
