@@ -1103,7 +1103,7 @@ enum AudioListenerClients {
 /// Pure metrics and mapping calculations for the app volume slider with boost stub.
 /// Kept as pure functions for testability.
 enum AppVolumeSliderMetrics {
-    static let stubWidth: CGFloat = 28
+    static let stubWidth: CGFloat = 44
     static let gap: CGFloat = 4
     static let snapMargin: CGFloat = 6
     static let stickyLead: CGFloat = 3
