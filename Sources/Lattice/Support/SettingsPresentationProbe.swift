@@ -20,14 +20,27 @@ enum SettingsPresentationProbe {
         defaults.register(defaults: Defaults.registeredDefaults)
         for feature in AppFeature.allCases {
             defaults.set(true, forKey: feature.availabilityKey)
-            for key in feature.enabledKeys { defaults.set(false, forKey: key) }
+            // `--features-on` previews pages with every feature switched on.
+            let on = CommandLine.arguments.contains("--features-on")
+            for key in feature.enabledKeys { defaults.set(on, forKey: key) }
         }
         defaults.set(AppLanguage.enUS.rawValue, forKey: DefaultsKey.language)
-        SettingsRouter.shared.page = .features
+        // `--shortcuts` opens on the long Keyboard Shortcuts page (scroll-edge
+        // checks), `--dock` on Dock & Applications, `--audio` on Audio (with
+        // `--audio-output`, landing on its Output segment through a deep link).
+        let arguments = CommandLine.arguments
+        SettingsRouter.shared.page = arguments.contains("--shortcuts") ? .shortcuts
+            : arguments.contains("--dock") ? .dock
+            : arguments.contains("--audio") ? .audio : .features
+        if arguments.contains("--audio-output") {
+            SettingsRouter.shared.request(AppFeature.mixer.settingsDestination)
+        }
 
         let app = NSApplication.shared
         app.setActivationPolicy(.regular)
         app.delegate = delegate
+        // `--dark` previews the window in dark mode whatever the Mac is set to.
+        if CommandLine.arguments.contains("--dark") { app.appearance = NSAppearance(named: .darkAqua) }
         let host = SettingsHostingController(rootView: SettingsView())
         host.sizingOptions = []
         let window = SettingsWindow(contentViewController: host)
