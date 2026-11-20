@@ -39,9 +39,10 @@ struct DedicatedUtilitySettings: View {
     var body: some View {
         ScrollView {
             SettingsCard {
+                let rowTitle = feature == .cameraPreview ? title : SettingsOwnershipStrings.enable(title, l10n.language)
                 SettingsRow(symbol: feature.symbolName,
-                            title: SettingsOwnershipStrings.enable(title, l10n.language)) {
-                    PermissionGatedToggle(SettingsOwnershipStrings.enable(title, l10n.language),
+                            title: rowTitle) {
+                    PermissionGatedToggle(rowTitle,
                         isOn: $enabled, requiring: requirements)
                         .labelsHidden()
                         .toggleStyle(.switch)
