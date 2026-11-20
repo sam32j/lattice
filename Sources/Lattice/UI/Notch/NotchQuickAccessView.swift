@@ -282,8 +282,14 @@ struct NotchQuickAccessView: View {
         return Button {
             service.activateQuickAction(action)
         } label: {
-            Image(systemName: symbol)
-                .font(.system(size: 17, weight: .medium))
+            Group {
+                if action == .control(.microphone) {
+                    AnimatedMicMuteSymbol(muted: microphone.isMuted, fontSize: 17, weight: .medium)
+                } else {
+                    Image(systemName: symbol)
+                        .font(.system(size: 17, weight: .medium))
+                }
+            }
                 .frame(width: NotchQuickAccessLayout.diameter, height: NotchQuickAccessLayout.diameter)
                 // In glass the drop beneath carries the island's shade, which
                 // the window server does not count as the window's own pixels:
