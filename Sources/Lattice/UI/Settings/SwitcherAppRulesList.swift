@@ -3,9 +3,14 @@
 
 import SwiftUI
 
+/// "Hide in switcher": apps that never appear in the switcher, in the same
+/// app-list sheet as the other exclusion lists. Whether an app with no windows
+/// is listed is the global "Hide apps without windows" choice; this list only
+/// removes apps outright. It keeps the per-app rule storage, so apps saved as
+/// "Never show" by earlier builds carry over.
 struct SwitcherAppRulesList: View {
     @ObservedObject private var l10n = L10n.shared
-    @State private var rules: [String: SwitcherAppRule] = Self.savedRules
+    @State private var hiddenApps: [String] = Self.savedHiddenApps
 
     private var text: SwitcherAppRulesStrings {
         FeatureStrings.switcherAppRules(l10n.language)
@@ -16,47 +21,27 @@ struct SwitcherAppRulesList: View {
                       caption: text.caption,
                       addTitle: text.addButton,
                       removeLabel: text.removeButton,
-                      bundleIDs: Array(rules.keys),
+                      bundleIDs: hiddenApps,
                       reachesEveryApp: true,
-                      onAdd: { bundleID in
-                          var updated = rules
-                          updated[bundleID] = .showWithoutWindows
-                          save(updated)
-                      },
-                      onRemove: { bundleID in
-                          var updated = rules
-                          updated.removeValue(forKey: bundleID)
-                          save(updated)
-                      }) { bundleID in
-            Picker(text.behaviorLabel, selection: binding(for: bundleID)) {
-                Text(text.showWithoutWindows).tag(SwitcherAppRule.showWithoutWindows)
-                Text(text.windowsOnly).tag(SwitcherAppRule.windowsOnly)
-                Text(text.hidden).tag(SwitcherAppRule.hidden)
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-        }
+                      acceptsExecutables: false,
+                      usesSheet: true,
+                      sheetTitle: text.listTitle,
+                      onAdd: { save(hiddenApps + [$0]) },
+                      onRemove: { bundleID in save(hiddenApps.filter { $0 != bundleID }) })
     }
 
-    private static var savedRules: [String: SwitcherAppRule] {
-        SwitcherAppRule.rules(
-            storedValue: UserDefaults.standard.dictionary(forKey: DefaultsKey.switcherAppRules))
+    private static var savedHiddenApps: [String] {
+        SwitcherAppRule.rules(storedValue: UserDefaults.standard.dictionary(forKey: DefaultsKey.switcherAppRules))
+            .filter { $0.value == .hidden }
+            .keys
+            .sorted()
     }
 
-    private func binding(for bundleID: String) -> Binding<SwitcherAppRule> {
-        Binding(
-            get: { rules[bundleID] ?? .windowsOnly },
-            set: { newRule in
-                var updated = rules
-                updated[bundleID] = newRule
-                save(updated)
-            }
-        )
-    }
-
-    private func save(_ updated: [String: SwitcherAppRule]) {
-        let stored = SwitcherAppRule.storedValue(updated)
-        UserDefaults.standard.set(stored, forKey: DefaultsKey.switcherAppRules)
-        rules = SwitcherAppRule.rules(storedValue: stored as [String: Any])
+    private func save(_ bundleIDs: [String]) {
+        let unique = Array(Set(bundleIDs.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty })).sorted()
+        let rules = Dictionary(uniqueKeysWithValues: unique.map { ($0, SwitcherAppRule.hidden) })
+        UserDefaults.standard.set(SwitcherAppRule.storedValue(rules), forKey: DefaultsKey.switcherAppRules)
+        hiddenApps = unique
     }
 }

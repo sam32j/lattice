@@ -20,8 +20,7 @@ struct WindowPreviewExclusionsList: View {
 
     var body: some View {
         AppBundleList(title: text.listTitle,
-                      caption: key == DefaultsKey.windowPreviewExcludedApps
-                        ? SettingsAppListDescriptions.text(l10n.language).dockPreview : text.caption,
+                      caption: SettingsAppListDescriptions.text(l10n.language).dockPreview,
                       addTitle: text.addButton,
                       removeLabel: text.removeButton,
                       bundleIDs: apps,
