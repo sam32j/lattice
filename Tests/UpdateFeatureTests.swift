@@ -278,27 +278,20 @@ enum UpdateFeatureTests {
                     keywords: captureSearchKeywords),
                "Screen capture tools and their options find the one settings page")
 
-        let audioInputFeatures: [AppFeature] = [.micMute, .audioPriority]
-        let audioInputRows = SettingsSidebarSupport.items(
-            page: .audioInput, title: "Audio Input", icon: "mic",
-            preferredFeatures: audioInputFeatures, includePage: true,
-            isAvailable: { audioInputFeatures.contains($0) },
+        let audioFeatures: [AppFeature] = [.micMute, .audioPriority, .soundOutputSwitcher, .mixer]
+        let audioRows = SettingsSidebarSupport.items(
+            page: .audio, title: "Audio", icon: "speaker.wave.2",
+            preferredFeatures: audioFeatures, includePage: true,
+            isAvailable: { audioFeatures.contains($0) },
             featureTitle: { $0.rawValue })
-        suite.expect(audioInputRows.count == 1
-                && audioInputRows.first?.id == .page(.audioInput)
-                && audioInputRows.first?.destination == FeatureSettingsDestination(.audioInput),
-               "Audio Input produces a single page entrance on the sidebar")
-
-        let audioOutputFeatures: [AppFeature] = [.soundOutputSwitcher, .mixer]
-        let audioOutputRows = SettingsSidebarSupport.items(
-            page: .audioOutput, title: "Audio Output", icon: "speaker.wave.2",
-            preferredFeatures: audioOutputFeatures, includePage: true,
-            isAvailable: { audioOutputFeatures.contains($0) },
-            featureTitle: { $0.rawValue })
-        suite.expect(audioOutputRows.count == 1
-                && audioOutputRows.first?.id == .page(.audioOutput)
-                && audioOutputRows.first?.destination == FeatureSettingsDestination(.audioOutput),
-               "Audio Output produces a single page entrance on the sidebar")
+        suite.expect(audioRows.count == 1
+                && audioRows.first?.id == .page(.audio)
+                && audioRows.first?.destination == FeatureSettingsDestination(.audio),
+               "Audio produces a single page entrance on the sidebar for both segments")
+        suite.expect([AppFeature.micMute, .audioPriority, .soundOutputSwitcher, .mixer].allSatisfy {
+                    SettingsSidebarSupport.selection(for: $0.settingsDestination, in: audioRows) == .page(.audio)
+                },
+               "Input and Output deep links keep Audio selected in the sidebar")
 
         let scratchpadRows = SettingsSidebarSupport.items(
             page: .scratchpad, title: "Scratchpad", icon: "note.text",
@@ -391,7 +384,7 @@ enum UpdateFeatureTests {
             (.homebrew, FeatureSettingsDestination(.homebrew)),
             (.cameraPreview, FeatureSettingsDestination(.general, sectionAnchor: .cameraPreview)),
             (.screenRecorder, FeatureSettingsDestination(.screenRecorder, sectionAnchor: .screenRecorder)),
-            (.micMute, FeatureSettingsDestination(.audioInput, sectionAnchor: .micMute)),
+            (.micMute, FeatureSettingsDestination(.audio, sectionAnchor: .micMute)),
             (.diskImageInstaller, FeatureSettingsDestination(.diskImageInstaller)),
         ]
         for (feature, destination) in expectedFeatureSearchDestinations {
@@ -688,8 +681,8 @@ enum UpdateFeatureTests {
                "a blank query does not replace the normal Settings sidebar with groups")
 
         let availabilityPage = SettingsSearchItem(
-            id: .page(.audioOutput), destination: FeatureSettingsDestination(.audioOutput),
-            title: "Audio Output", icon: "speaker.wave.2",
+            id: .page(.audio), destination: FeatureSettingsDestination(.audio),
+            title: "Audio", icon: "speaker.wave.2",
             keywords: ["Port Manager", "Open port automatically", "Mixer Volume"],
             keywordFeatures: [.homebrew, .homebrew, .mixer])
         let availabilityHub = SettingsSearchItem(
@@ -710,7 +703,7 @@ enum UpdateFeatureTests {
             SettingsSearchSupport.route(for: $0.item, isAvailable: onlyMixerAvailable)
         }
         suite.expect(unavailableCameraGroups.count == 1
-                && unavailableCameraGroups[0].id == .audioOutput
+                && unavailableCameraGroups[0].id == .audio
                 && unavailableCameraGroups[0].suggestions.map(\.title) == ["Port Manager", "Open port automatically"]
                 && groupedUnavailableCameraRoute?.destination == FeatureSettingsDestination(.homebrew)
                 && groupedUnavailableCameraRoute?.targetFeature == nil,
@@ -733,11 +726,11 @@ enum UpdateFeatureTests {
         let availableMixerGroups = SettingsSearchSupport.groupedMatchingItems(
             query: "mixer", items: availabilityItems,
             isAvailable: onlyMixerAvailable)
-        suite.expect(availableMixerGroups.first?.id == .audioOutput
+        suite.expect(availableMixerGroups.first?.id == .audio
                 && availableMixerGroups[0].suggestions.map(\.title)
                     == ["mixer", "Mixer Volume"]
                 && availableMixerGroups[0].suggestions.first?.item.destination
-                    == FeatureSettingsDestination(.audioOutput, sectionAnchor: .mixer),
+                    == FeatureSettingsDestination(.audio, sectionAnchor: .mixer),
                "an installed utility remains searchable on a shared Settings page")
         let shelfPage = SettingsSearchItem(
             id: .page(.shelf), destination: FeatureSettingsDestination(.shelf),

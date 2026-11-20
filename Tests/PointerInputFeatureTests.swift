@@ -3456,8 +3456,8 @@ enum PointerInputFeatureTests {
 
         for language in AppLanguage.allCases {
             let strings = FeatureStrings.switcherAppRules(language)
-            suite.expect(Set([strings.showWithoutWindows, strings.windowsOnly, strings.hidden]).count == 3,
-                   "each per-app switcher choice is distinct for \(language.rawValue)")
+            suite.expect(!strings.listTitle.isEmpty && !strings.caption.isEmpty && strings.listTitle != strings.caption,
+                   "Hide in switcher has its own title and caption for \(language.rawValue)")
         }
 
 

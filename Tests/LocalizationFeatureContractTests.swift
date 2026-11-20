@@ -120,18 +120,23 @@ enum LocalizationFeatureContractTests {
             suite.expect([strings.switcherScreenPlacementLabel,
                     strings.switcherScreenPlacementPointer,
                     strings.switcherScreenPlacementMenuBar,
-                    strings.switcherScreenPlacementActiveWindow,
-                    strings.switcherScreenPlacementCaption]
+                    strings.switcherScreenPlacementActiveWindow]
                    .allSatisfy { !$0.isEmpty && !$0.contains("—") },
                    "\(prefix) App Switcher screen placement labels are present without em dash")
             suite.expect(!strings.switcherOtherDesktop.isEmpty
                    && !strings.switcherOtherDesktop.contains("—"),
                    "\(prefix) App Switcher other-desktop label is present without em dash")
-            suite.expect(!strings.switcherSearchPin.isEmpty
-                   && !strings.switcherSearchPinCaption.isEmpty
-                   && !strings.switcherSearchPin.contains("—")
-                   && !strings.switcherSearchPinCaption.contains("—"),
-                   "\(prefix) App Switcher pinned-search labels are present without em dash")
+            suite.expect(!strings.switcherMergeTabs.isEmpty && !strings.switcherMergeTabsCaption.isEmpty
+                   && !strings.switcherMergeTabs.contains("—") && !strings.switcherMergeTabsCaption.contains("—"),
+                   "\(prefix) App Switcher group-by-app label and caption are present without em dash")
+            suite.expect(!strings.switcherSearchPlaceholder.isEmpty
+                   && !strings.switcherSearchPlaceholder.contains("—"),
+                   "\(prefix) App Switcher search placeholder is present without em dash")
+            // The options follow "Show on", so none repeats that prefix.
+            suite.expect(Set([strings.switcherScreenPlacementPointer,
+                              strings.switcherScreenPlacementMenuBar,
+                              strings.switcherScreenPlacementActiveWindow]).count == 3,
+                   "\(prefix) App Switcher screen placement options are distinct")
             suite.expect(!strings.switcherShowShortcutHints.isEmpty
                    && !strings.switcherShowShortcutHintsCaption.isEmpty
                    && !strings.switcherShowShortcutHints.contains("—")
@@ -151,23 +156,25 @@ enum LocalizationFeatureContractTests {
             suite.expect(!strings.switcherWindowlessApps.isEmpty
                    && !strings.switcherWindowlessApps.contains("—"),
                    "\(prefix) App Switcher windowless apps title is present without em dash")
-            suite.expect(!strings.switcherWindowlessAppsCaption.isEmpty
-                   && !strings.switcherWindowlessAppsCaption.contains("—"),
-                   "\(prefix) App Switcher windowless apps caption is present without em dash")
             suite.expect(!strings.dockClickHide.isEmpty
                    && !strings.dockClickHideCaption.isEmpty
                    && !strings.dockClickHide.contains("—")
                    && !strings.dockClickHideCaption.contains("—"),
                    "\(prefix) Dock hide labels are present without em dash")
-            suite.expect(!strings.switcherWindowlessAppsOff.isEmpty
-                   && !strings.switcherWindowlessAppsFinder.isEmpty
-                   && !strings.switcherWindowlessAppsAll.isEmpty
-                   && !strings.switcherWindowlessAppsOff.contains("—")
+            suite.expect(!strings.switcherWindowlessAppsFinder.isEmpty
                    && !strings.switcherWindowlessAppsFinder.contains("—")
-                   && !strings.switcherWindowlessAppsAll.contains("—"),
-                   "\(prefix) App Switcher windowless apps choices are all present without em dash")
-            expectFormat(strings.switcherWindowlessAppsLockedFormat, ["@"],
-                         "\(prefix) App Switcher windowless apps locked reason names the shortcut takeover")
+                   && strings.switcherWindowlessAppsFinder != strings.switcherWindowlessApps,
+                   "\(prefix) App Switcher windowless apps toggle and its Finder option are present without em dash")
+            let switcherCopy = SwitcherSettingsCopy.text(language)
+            suite.expect([switcherCopy.switchAppsShortcut,
+                          switcherCopy.switchWindowsShortcut,
+                          switcherCopy.delayInstant,
+                          switcherCopy.layoutWindowsCaption,
+                          switcherCopy.layoutIconsCaption,
+                          switcherCopy.layoutSimpleCaption,
+                          FeatureStrings.switcherAppRules(language).caption]
+                   .allSatisfy { !$0.isEmpty && !$0.contains("—") },
+                   "\(prefix) modernized Switcher settings copy is present without em dash")
             suite.expect(!strings.diskAvailable.isEmpty
                    && !strings.diskPurgeable.isEmpty
                    && !strings.diskAvailable.contains("—")

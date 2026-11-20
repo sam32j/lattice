@@ -12,11 +12,11 @@ enum UtilitySettingsTests {
                == FeatureSettingsDestination(.keyboard, sectionAnchor: .cleaningMode),
                "selecting Cleaning Mode opens its Keyboard section")
         expect(AppFeature.micMute.settingsDestination
-               == FeatureSettingsDestination(.audioInput, sectionAnchor: .micMute),
-               "selecting Mic Mute opens its Audio Input section")
+               == FeatureSettingsDestination(.audio, sectionAnchor: .micMute),
+               "selecting Mic Mute opens the Input segment of Audio")
         expect(AppFeature.mixer.settingsDestination
-               == FeatureSettingsDestination(.audioOutput, sectionAnchor: .mixer),
-               "selecting Volume Mixer opens its Audio Output section")
+               == FeatureSettingsDestination(.audio, sectionAnchor: .mixer),
+               "selecting Volume Mixer opens the Output segment of Audio")
         expect(AppFeature.quickLauncher.settingsDestination
                == FeatureSettingsDestination(.general)
                && AppFeature.cameraPreview.settingsDestination

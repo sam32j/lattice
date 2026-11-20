@@ -1069,11 +1069,6 @@ def main():
           + declaration("Sources/Lattice/Services/Switcher/WindowEnumerator.swift",
                         "    static func dockPreviewMayActivate(")
           + "}\n")
-    write("PreviewCapturePause.swift", "import Foundation\n"
-          + "extension SwitcherModelFeatureTests.PreviewProvider {\n"
-          + declaration("Sources/Lattice/Services/Switcher/WindowPreviewProvider.swift",
-                        "    private static func captureIsPaused(").replace("private static", "static", 1)
-          + "}\n")
     write("DockAutohideInput.swift", "import CoreGraphics\nimport Foundation\nextension DockAutohideHoldTests.Service {\n"
           + "".join(declaration(dock, prefix, scope="final class DockPreviewService:")
                     .replace("private func", "func", 1)
@@ -2072,14 +2067,9 @@ def main():
           + "extension SwitcherScrollContract {\nstruct Strip: View {\n"
           + "@ObservedObject var switcher: Model\n"
           + "var instantSelection = false\n"
-          + "var iconRowContentWidth: CGFloat { switcher.iconRowLayout.contentWidth(simpleMode: true, windowRow: false) }\n"
           + "var body: some View {\nif selectedWindow != nil {\nlet appWindows = selectedAppWindows\n"
-          + "if switcher.simple {\nGroup {\n"
-          + declaration(switcher, "                ScrollViewReader { proxy in")
-          + "}\n.frame(width: iconRowContentWidth - 2 * SwitcherIconRowLayout.simpleTitlePanelPadding, "
-          + "height: 25 * SwitcherIconRowLayout.scale)\n} else {\n"
           + declaration(switcher, "                    ScrollViewReader { proxy in")
-          + "}\n}\n}\n"
+          + "}\n}\n"
           + declaration(switcher, "    private var selectedWindow:")
           + declaration(switcher, "    private var selectedAppWindows:")
           + declaration(switcher, "    private func revealSelection(")
@@ -2095,11 +2085,11 @@ def main():
           + "}\nextension SwitcherSearchLayoutTests.Model {\n"
           + "typealias SwitcherGrid = SwitcherSearchLayoutTests.SwitcherGrid\n"
           + "".join(declaration(switcher_service, prefix).replace("private ", "", 1)
-                    for prefix in ["    private var currentPanelSize:", "    var searchTopInset:",
-                                   "    private func pinSearch()"])
+                    for prefix in ["    private var currentPanelSize:", "    var searchTopInset:"])
           + "}\nextension SwitcherSearchLayoutTests.Host {\n"
           + "".join(f"typealias {name} = SwitcherSearchLayoutTests.{name}\n"
-                    for name in ["SwitcherGrid", "HUDBackdrop", "SwitcherIconStyle", "SwitcherIconRowSurface"])
+                    for name in ["SwitcherGrid", "HUDBackdrop", "SwitcherGlassBackdrop", "SwitcherIconStyle",
+                                 "SwitcherIconRowSurface", "SwitcherSearchCaret"])
           + declaration(switcher, "    var body: some View {", scope="struct SwitcherView: View {")
               .replace("    var body:", "    @ViewBuilder var body:", 1)
           + "".join(declaration(switcher, prefix).replace("private ", "", 1)
