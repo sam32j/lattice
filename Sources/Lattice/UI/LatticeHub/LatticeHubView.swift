@@ -191,6 +191,9 @@ struct LatticeHubView: View {
                             WindowSnappingModeMenu(compact: islandSize == NotchSize.compact.rawValue)
                                 .font(.system(size: 11, weight: .semibold))
                         }
+                        if launcher.activeUtility == .wallpaper {
+                            WallpaperSourceMenu(surface: .island)
+                        }
                         islandPinButton
                     }
                 } else {
