@@ -1463,8 +1463,13 @@ enum UtilitiesFeatureTests {
 
         // MARK: Quick toggles
 
-        suite.expect(QuickTogglesSupport.emptyTrashSource == "tell application \"Finder\" to empty trash",
-               "the Trash script asks the Finder and nothing else")
+        suite.expect(QuickTogglesSupport.emptyTrashSource
+                == "tell application \"Finder\" to if (count of items of trash) > 0 then empty trash",
+               "the Trash script asks the Finder and skips an already empty Trash")
+        suite.expect(QuickTogglesSupport.trashIsEmpty(countOutput: "0") == true
+                && QuickTogglesSupport.trashIsEmpty(countOutput: " 3\n") == false
+                && QuickTogglesSupport.trashIsEmpty(countOutput: "") == nil,
+               "the Trash count reads empty, full, or unknown")
         suite.expect(QuickTogglesSupport.isPermissionError(-1743)
                 && QuickTogglesSupport.isPermissionError(-1744),
                "both Apple Event consent errors read as a permission problem")
