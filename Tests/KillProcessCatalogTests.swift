@@ -233,6 +233,26 @@ enum KillProcessCatalogTests {
         suite.expect(Services.service(processName: "Raycast Backend", port: 7265, arguments: nil) == nil
                      && Services.service(processName: "node", port: 9000, arguments: nil) == nil,
                      "an app's own process, or a runtime whose command line can't be read, gets no label")
+        suite.expect(Services.service(processName: "node", port: 5900, arguments: ["node", "server.js"]) == .tool("server")
+                     && Services.service(processName: "Python", port: 22, arguments: nil) == nil,
+                     "a sharing port held by some other process is not named after the sharing service")
+        suite.expect(Services.service(processName: "python3", port: 8000,
+                                      arguments: ["python3", "-c", "import http.server; http.server.test()"]) == nil
+                     && Services.service(processName: "node", port: 8001, arguments: ["node", "-e", "require('http')"]) == nil,
+                     "inline source is never used as a port label")
+        func endpoint(_ address: String, _ number: Int = 3000, proto: String = "TCP") -> String? {
+            KillProcessPortSupport.browserURL(for: KillProcessPort(port: number, protocolName: proto, address: address,
+                                                                  pid: 1, processName: "node", startedAt: nil))?.absoluteString
+        }
+        suite.expect(endpoint("*:3000") == "http://localhost:3000"
+                     && endpoint("0.0.0.0:3000") == "http://127.0.0.1:3000"
+                     && endpoint("[::]:3000") == "http://[::1]:3000"
+                     && endpoint("127.0.0.1:8080", 8080) == "http://127.0.0.1:8080"
+                     && endpoint("*:53", 53, proto: "UDP") == nil,
+                     "Open in Browser turns wildcard binds into loopback in the same family")
+        let previous = [port(4100, pid: 131), port(4200, pid: 999)]
+        suite.expect(KillProcessPortSupport.carriedOver(previous, probes: probes).map(\.port) == [4100],
+                     "a timed-out port scan keeps the last listeners whose process is still listed")
         let labeled = KillProcessCatalog.items(from: probes, ownPID: own, currentUID: me, ports: [
             KillProcessPort(port: 5000, protocolName: "TCP", address: "*:5000", pid: 131, processName: "node",
                             startedAt: 1, service: .airPlayAudio)])
