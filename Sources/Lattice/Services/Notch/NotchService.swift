@@ -4417,15 +4417,20 @@ final class NotchService: ObservableObject {
               !trackingMenu, !heldDrag,
               !showingSections, !showingCommandBar, selectedMetric == nil,
               modules.contains(.music), compactMusicSwipeIsVisible || (expanded && selected == .music),
-              event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else { return false }
+              event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else {
+            return false
+        }
         let point = event.window != nil ? panel.convertPoint(toScreen: event.locationInWindow) : NSEvent.mouseLocation
         let windowPoint = event.window != nil ? event.locationInWindow : panel.convertPoint(fromScreen: point)
         let interaction = NotchGestureSupport.nativeInteraction(at: panel.contentView?.hitTest(windowPoint))
         let header = NotchSupport.gestureIsOverHeader(expanded: expanded, peeking: false,
             fromTop: panel.frame.maxY - point.y, safeTop: expanded ? expandedGeometry.headerTopInset : geometry.safeContentTop,
             height: expanded ? expandedGeometry.headerRowHeight : NotchLayout.headerHeight)
-        return (windowHost?.contains(point) == true || windowHost?.containsHover(point) == true)
-            && !header && !interaction.control && !interaction.scroll
+        let inside = windowHost?.contains(point) == true || windowHost?.containsHover(point) == true
+        // On the music page the header strip skips tracks sideways too; the
+        // stroke's first travel still leaves up and down to closing.
+        let blocksHeader = header && !(expanded && selected == .music)
+        return inside && !blocksHeader && !interaction.control && !interaction.scroll
     }
 
     /// A screenshot's native drag has exclusive ownership of the trackpad until
@@ -4507,7 +4512,9 @@ final class NotchService: ObservableObject {
             return !interaction.control && event.hasPreciseScrollingDeltas
         }
         let isHub = expanded && selected == .hub && !showingSections && !showingCommandBar
-        if isHub && LatticeHubService.shared.activeUtility != nil {
+        // A utility page keeps its body's scrolling; its header strip still
+        // closes the island with a swipe up, as every page's does.
+        if isHub && LatticeHubService.shared.activeUtility != nil && !inHeader {
             gesture = NotchGestureSupport()
             return false
         }
