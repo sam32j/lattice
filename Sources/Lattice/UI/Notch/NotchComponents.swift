@@ -949,7 +949,7 @@ struct NotchMenuButton<Label: View>: View {
     var cornerRadius: CGFloat = 6
     var lifts = false
     @ViewBuilder let label: () -> Label
-    @State private var anchor = NotchMenuAnchor()
+    @StateObject private var anchor = NotchMenuAnchor()
 
     var body: some View {
         Button { anchor.popUp(items) } label: { label() }
@@ -1017,22 +1017,23 @@ struct NotchBandMenuLabel: View {
 
 /// Owns the native menu's targets while it is up and remembers the view it
 /// pops up from. Menu tracking keeps the island open on its own.
-final class NotchMenuAnchor: NSObject, NSMenuDelegate {
+final class NotchMenuAnchor: NSObject, ObservableObject, NSMenuDelegate {
     weak var view: NSView?
     private var actions: [() -> Void] = []
-    var onMenuOpenChanged: ((Bool) -> Void)?
+    @Published private(set) var isMenuOpen = false
 
     func menuWillOpen(_ menu: NSMenu) {
-        onMenuOpenChanged?(true)
+        if !isMenuOpen { isMenuOpen = true }
     }
 
     func menuDidClose(_ menu: NSMenu) {
-        onMenuOpenChanged?(false)
+        if isMenuOpen { isMenuOpen = false }
     }
 
     func popUp(_ items: [NotchMenuItem], appearance: NSAppearance? = NSAppearance(named: .darkAqua)) {
         guard let view else { return }
         actions = items.map(\.action)
+        defer { actions.removeAll() }
         let menu = NSMenu()
         menu.delegate = self
         menu.autoenablesItems = false
