@@ -1654,6 +1654,7 @@ private final class NotchCanvas: NSView {
         if let from { setBackdropContour(inCanvas(from)) }
         // Only the material follows the display link; content layout and the
         // native window remain fixed for the duration of the animation.
+        backdropDisplayLink?.invalidate()
         let link = displayLink(target: backdropTick, selector: #selector(NotchBackdropTick.fire(_:)))
         backdropDisplayLink = link
         link.add(to: .main, forMode: .common)
