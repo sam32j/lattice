@@ -18,7 +18,7 @@ final class WindowSnappingNavigationState: ObservableObject {
     /// permission poller all answer that with a full preference sync: one
     /// height change meant an app-wide resync, and the island's re-sync
     /// landed mid-animation.
-    @Published private(set) var contentHeight: CGFloat = 580
+    @Published private(set) var contentHeight: CGFloat = 540
 
     /// Shared so the island can switch modes from its band, outside the
     /// control view itself.
@@ -220,8 +220,6 @@ struct GridCoord: Hashable {
 
 enum QuickAction: String, CaseIterable {
     case maximize
-    case maximizeMargin
-    case fullScreen
     case center
     case prevDisplay
     case nextDisplay
@@ -231,8 +229,6 @@ enum QuickAction: String, CaseIterable {
         let t = WindowSnappingPanelStrings.current
         switch self {
         case .maximize: return t.maximize
-        case .maximizeMargin: return t.maximizeMargin
-        case .fullScreen: return t.fullScreen
         case .center: return t.centerWindow
         case .prevDisplay: return t.prevDisplay
         case .nextDisplay: return t.nextDisplay
@@ -243,8 +239,6 @@ enum QuickAction: String, CaseIterable {
     var symbolName: String {
         switch self {
         case .maximize: return "viewfinder"
-        case .maximizeMargin: return "rectangle.inset.filled"
-        case .fullScreen: return "square"
         case .center: return "scope"
         case .prevDisplay: return "arrow.left.to.line"
         case .nextDisplay: return "arrow.right.to.line"
@@ -255,8 +249,6 @@ enum QuickAction: String, CaseIterable {
     var layoutAction: WindowLayoutAction {
         switch self {
         case .maximize: return .maximize
-        case .maximizeMargin: return .marginMaximize
-        case .fullScreen: return .fullScreen
         case .center: return .center
         case .prevDisplay: return .previousDisplay
         case .nextDisplay: return .nextDisplay
@@ -1337,23 +1329,6 @@ struct WindowSnappingControlView: View {
                 )
 
                 quickActionButton(
-                    title: QuickAction.maximizeMargin.title,
-                    symbol: "rectangle.inset.filled",
-                    action: .maximizeMargin,
-                    previewRect: NormalizedRect(x: 0.03, y: 0.04, width: 0.94, height: 0.92)
-                )
-            }
-
-            // Row 2
-            HStack(spacing: 8) {
-                quickActionButton(
-                    title: QuickAction.fullScreen.title,
-                    symbol: "square",
-                    action: .fullScreen,
-                    previewRect: nil
-                )
-
-                quickActionButton(
                     title: QuickAction.center.title,
                     symbol: "scope",
                     action: .center,
@@ -1361,7 +1336,7 @@ struct WindowSnappingControlView: View {
                 )
             }
 
-            // Row 3
+            // Row 2
             HStack(spacing: 8) {
                 // Prev Display
                 Button {

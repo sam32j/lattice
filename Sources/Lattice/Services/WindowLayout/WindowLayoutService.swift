@@ -646,8 +646,7 @@ final class WindowLayoutService: ObservableObject {
                                              current: appKitFrame(fromAX: current),
                                              visibleFrame: visibleFrame,
                                              windowGap: WindowLayoutGaps.windowGap,
-                                             screenGap: WindowLayoutGaps.screenGap,
-                                             marginPercent: WindowLayoutMargin.percent)
+                                             screenGap: WindowLayoutGaps.screenGap)
         let integral = rect.integral
         return WindowLayoutPlacement(frame: axFrame(fromAppKit: integral), rect: integral)
     }
@@ -872,7 +871,7 @@ final class WindowLayoutService: ObservableObject {
                 .leftQuarter, .leftMiddleQuarter, .rightMiddleQuarter, .rightQuarter,
                 .topLeftSixth, .topCenterSixth, .topRightSixth,
                 .bottomLeftSixth, .bottomCenterSixth, .bottomRightSixth,
-                .topLeft, .topRight, .bottomLeft, .bottomRight, .marginMaximize:
+                .topLeft, .topRight, .bottomLeft, .bottomRight:
             return true
         default:
             return false

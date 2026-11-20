@@ -1,30 +1,6 @@
 import SwiftUI
 
 extension WindowLayoutSettings {
-    var directionalTrigger: WindowDirectionalTrigger {
-        WindowDirectionalTrigger(storageValue: directionalShortcutRaw) ?? .key(.windowDirectionalDefault)
-    }
-
-    var directionalDisplayShortcut: GlobalShortcut? {
-        guard directionalEnabled, case .key(let shortcut) = directionalTrigger else { return nil }
-        return shortcut
-    }
-
-    func saveDirectionalShortcut(_ shortcut: GlobalShortcut) {
-        if let conflict = service.directionalShortcutConflictTitle(shortcut) {
-            conflictAlert = ShortcutConflictAlert(shortcut: shortcut, assignedBehavior: conflict)
-            return
-        }
-        saveDirectionalTrigger(.key(shortcut))
-    }
-
-    func saveDirectionalTrigger(_ trigger: WindowDirectionalTrigger) {
-        directionalError = nil
-        directionalShortcutRaw = trigger.storageValue
-        directionalEnabled = true
-        service.syncWithPreferences()
-    }
-
     /// The gaps take effect on the next placement — the engine reads them
     /// per apply — so the pickers need no service sync.
     func gapPicker(_ title: String, selection: Binding<Int>) -> some View {
@@ -53,10 +29,6 @@ extension WindowLayoutSettings {
         }
     }
 
-    var marginSlider: some View {
-        WindowLayoutMarginSlider(title: text.marginEdge, marginPercent: $marginPercent)
-    }
-
     func refreshSystemTilingState() {
         systemTilingEnabled = WindowEdgeSnapSupport.isSystemTilingEnabled
         WindowLayoutService.shared.syncWithPreferences()
@@ -74,12 +46,37 @@ extension WindowLayoutSettings {
         .topLeftSixth, .topCenterSixth, .topRightSixth,
         .bottomLeftSixth, .bottomCenterSixth, .bottomRightSixth,
     ]
+}
+
+extension WindowLayoutShortcutsSettings {
+    var directionalTrigger: WindowDirectionalTrigger {
+        WindowDirectionalTrigger(storageValue: directionalShortcutRaw) ?? .key(.windowDirectionalDefault)
+    }
+
+    var directionalDisplayShortcut: GlobalShortcut? {
+        guard directionalEnabled, case .key(let shortcut) = directionalTrigger else { return nil }
+        return shortcut
+    }
+
+    func saveDirectionalShortcut(_ shortcut: GlobalShortcut) {
+        if let conflict = service.directionalShortcutConflictTitle(shortcut) {
+            conflictAlert = ShortcutConflictAlert(shortcut: shortcut, assignedBehavior: conflict)
+            return
+        }
+        saveDirectionalTrigger(.key(shortcut))
+    }
+
+    func saveDirectionalTrigger(_ trigger: WindowDirectionalTrigger) {
+        directionalError = nil
+        directionalShortcutRaw = trigger.storageValue
+        directionalEnabled = true
+        service.syncWithPreferences()
+    }
 
     /// The placement families, grouped so the form body stays within the
     /// ten-view ViewBuilder limit.
     @ViewBuilder
     var placementSections: some View {
-        Divider()
         VStack(alignment: .leading, spacing: 13) {
             HStack {
                 Text(text.halves).font(.headline)
@@ -93,12 +90,12 @@ extension WindowLayoutSettings {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(text.repeatCycleTooltip)
             }
-            ForEach(Self.splitActions) { action in
+            ForEach(WindowLayoutSettings.splitActions) { action in
                 actionRow(action)
             }
         }
-        actionSection(text.quarters, Self.quarterActions)
-        actionSection(text.sixths, Self.gridActions)
+        actionSection(text.quarters, WindowLayoutSettings.quarterActions)
+        actionSection(text.sixths, WindowLayoutSettings.gridActions)
     }
 
     /// One section per placement family. Building the rows from an array keeps
@@ -133,25 +130,5 @@ extension WindowLayoutSettings {
 
     func symbol(for action: WindowLayoutAction) -> String {
         action.symbolName
-    }
-}
-
-private struct WindowLayoutMarginSlider: View {
-    let title: String
-    @Binding var marginPercent: Double
-
-    private var marginPixelValue: Int {
-        let screenWidth = NSScreen.main?.visibleFrame.width ?? 1440
-        return Int(round(screenWidth * (WindowLayoutMargin.sanitizedPercent(marginPercent) / 100.0)))
-    }
-
-    var body: some View {
-        HStack {
-            Text(title)
-            Spacer()
-            SettingsValueSlider(title: title, value: $marginPercent,
-                range: WindowLayoutMargin.percentRange, step: 1, readout: "\(marginPixelValue) px", usesSystemAppearance: true)
-                .frame(width: 140)
-        }
     }
 }
