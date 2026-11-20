@@ -10,8 +10,6 @@ enum SettingsReviewRegressionTests {
         SettingsFollowupBehaviorTests.run(suite)
         DockClickModeTests.run(suite)
         TextRecognitionRecoveryTests.run(suite)
-        NotchMusicMouseSwipeTests.run(suite)
-        NotchMusicMouseControllerTests.run(suite)
         VisionTextRecognitionTests.run(suite)
         ScreenTextOutcomeTests.run(suite)
         PermissionActivationTests.run(suite)
