@@ -14,7 +14,27 @@ enum QuickTogglesAlertTests {
         var states: [Action: RunState] = [:]
         var trashConfirmationPending = false
         var confirmations = 0
+        let workQueue = DispatchQueue(label: "quick-toggles-alert-tests")
         func emptyTrashConfirmed() { confirmations += 1 }
+    }
+    enum Permissions {
+        enum AutomationTarget { case finder }
+        enum AutomationStatus { case granted, denied }
+        static var status = AutomationStatus.granted
+        static func automationStatus(for target: AutomationTarget) -> AutomationStatus { status }
+    }
+    enum AppleScriptRunner {
+        /// What the Finder answers when asked how many items the Trash holds.
+        static var trashCount = "3"
+        static func runDetailed(_ source: String) -> (ok: Bool, errorNumber: Int?, message: String, output: String) {
+            (true, nil, "", trashCount)
+        }
+    }
+    enum QuickTogglesSupport {
+        static let trashItemCountSource = "count items of trash"
+        static func trashIsEmpty(countOutput: String) -> Bool? {
+            Int(countOutput.trimmingCharacters(in: .whitespacesAndNewlines)).map { $0 == 0 }
+        }
     }
     enum FeatureStrings {
         struct Strings {
@@ -165,8 +185,41 @@ enum QuickTogglesAlertTests {
                      && recentSource.contains("confirmDestructiveAboveFloatingHUD(")
                      && recentSource.contains("hub.removeMonitors()\n        DispatchQueue.main.async")
                      && recentSource.contains("NotchIslandAlert.confirmDestructive(")
-                     && trashSource.contains("trashConfirmationPending = true\n        DispatchQueue.main.async"),
+                     && trashSource.contains("trashConfirmationPending = true\n")
+                     && trashSource.contains("DispatchQueue.main.async {\n                self?.presentTrashConfirmation("),
                      "no manual red button bezel remains; both Island and floating-HUD confirmations share the presenter")
+        // An empty Trash is a no-op: no dialog, nothing emptied, protection undone.
+        for surfaceIsNotch in [true, false] {
+            AppleScriptRunner.trashCount = "0"
+            hub.removed = 0
+            hub.installed = 0
+            confirmCalls = []
+            let host = Host()
+            host.emptyTrash(fromNotch: surfaceIsNotch)
+            let deadline = Date().addingTimeInterval(0.3)
+            while host.trashConfirmationPending && Date() < deadline {
+                RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.01))
+            }
+            suite.expect(confirmCalls.isEmpty && host.confirmations == 0 && !host.trashConfirmationPending,
+                         "an empty Trash shows no confirmation and runs no Empty Trash")
+            suite.expect(notch.confirmationDepth == 0 && hub.removed == hub.installed,
+                         "an empty Trash still releases the Island and HUD protection")
+        }
+        // A count that cannot be read (consent denied) still asks first.
+        Permissions.status = .denied
+        response = .alertFirstButtonReturn
+        confirmCalls = []
+        let denied = Host()
+        denied.emptyTrash(fromNotch: true)
+        let deniedDeadline = Date().addingTimeInterval(0.3)
+        while confirmCalls.isEmpty && Date() < deniedDeadline {
+            RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.01))
+        }
+        suite.expect(confirmCalls.count == 1 && denied.confirmations == 0,
+                     "without Finder consent the Trash count is unknown and the confirmation still shows")
+        Permissions.status = .granted
+        AppleScriptRunner.trashCount = "3"
+
         let unavailable = Host()
         unavailable.available = false
         confirmCalls = []
