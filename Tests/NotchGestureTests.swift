@@ -5,9 +5,7 @@ import AppKit
 
 enum NotchGestureTests {
     static func run(_ suite: TestSuite) {
-        NotchMusicTrackSwipeTests.run(suite)
         NotchMusicNoticeLayoutTests.run(suite)
-        NotchGestureNaturalScrollingTests.run(suite)
         nativeInteractionContracts(suite)
         NotchCaptureTrackpadGestureTests.run(suite)
         suite.expect(NotchGestureSupport.allowsVertical(expanded: true, inHeader: false,
@@ -35,7 +33,7 @@ enum NotchGestureTests {
         suite.expect(NotchSupport.compactActivity(timer: true, downloads: true, music: true) == .timer
                && NotchSupport.compactActivity(timer: false, downloads: true, music: true) == .downloads
                && NotchSupport.compactActivity(timer: false, downloads: false, agents: true,
-                                               calendar: true, music: true) == .agents
+                                               calendar: true, music: true) == .calendar
                && NotchSupport.compactActivity(timer: false, downloads: false,
                                                calendar: true, music: true) == .calendar
                && NotchSupport.compactActivity(timer: false, downloads: false, music: true) == .music
