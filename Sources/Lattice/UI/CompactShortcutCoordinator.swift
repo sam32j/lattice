@@ -2,6 +2,8 @@
 // Copyright (C) 2026 Vorssaint
 
 import AppKit
+import ApplicationServices
+import Carbon.HIToolbox
 import SwiftUI
 
 @MainActor
@@ -18,6 +20,13 @@ final class CompactShortcutCoordinator: ObservableObject {
         endCaptureIfNeeded()
         activeRole = role
         ShortcutCapture.begin()
+        if role == .switcher || role == .switcherWindow, AXIsProcessTrusted() {
+            let ids = SwitcherSupport.recordingSuppressionIDs(
+                for: role,
+                secureInputEnabled: IsSecureEventInputEnabled(),
+                liveEntries: SymbolicHotKeys.entries(for: SwitcherNativeSymbolicHotKey.ids) ?? [])
+            SystemShortcutTakeover.setWanted(ids, for: SystemShortcutTakeover.switcherCaptureSource)
+        }
         observeExits()
     }
 
@@ -57,6 +66,7 @@ final class CompactShortcutCoordinator: ObservableObject {
         activeRole = nil
         activeTool = nil
         activeCustomID = nil
+        SystemShortcutTakeover.setWanted([], for: SystemShortcutTakeover.switcherCaptureSource)
         ShortcutCapture.end()
         removeExits()
     }
@@ -66,7 +76,10 @@ final class CompactShortcutCoordinator: ObservableObject {
     }
 
     private func endCaptureIfNeeded() {
-        if hasActiveRecorder { ShortcutCapture.end() }
+        if hasActiveRecorder {
+            SystemShortcutTakeover.setWanted([], for: SystemShortcutTakeover.switcherCaptureSource)
+            ShortcutCapture.end()
+        }
         activeRole = nil
         activeTool = nil
         activeCustomID = nil
