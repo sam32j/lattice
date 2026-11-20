@@ -632,6 +632,10 @@ enum WindowLayoutGeometry {
         case (true, false, false, true): return .bottomLeft
         case (false, true, false, true): return .bottomRight
         case (false, false, false, true): return .bottomCenterSixth
+        // A side cell clear of the top and bottom keeps its side, and its
+        // screen gap, when the window comes back wider than the cell.
+        case (true, false, false, false): return .leftThird
+        case (false, true, false, false): return .rightThird
         default: return .center
         }
     }
