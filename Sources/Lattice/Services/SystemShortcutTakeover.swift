@@ -15,6 +15,7 @@ enum SystemShortcutTakeover {
         old: UserDefaults.standard.array(forKey: DefaultsKey.switcherNativeHotkeysSuppressed) as? [Int],
         new: UserDefaults.standard.array(forKey: DefaultsKey.systemShortcutsSuppressed) as? [Int])
     static let switcherSource = "switcher"
+    static let switcherCaptureSource = "switcherCapture"
     private static var wanted: [String: Set<Int32>] = [:]
     private static var claims: [String: GlobalShortcut] = [:]
     private static var takeOverKeys: Set<String> = Set(
