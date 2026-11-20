@@ -444,7 +444,12 @@ enum NotchLayout {
                                   end: CGPoint,
                                   span: CGFloat) {
         if span <= 0.0001 {
-            path.addLine(to: end)
+            // Three curves collapsed onto the end, never a single line: Core
+            // Animation blends keyframe outlines segment by segment, and a
+            // shoulder shrinking to nothing (closing to the bare notch) left
+            // the last outline 4 segments short, so the final frame of the
+            // close blended into a wavy smear below the island.
+            for _ in 0..<3 { path.addCurve(to: end, control1: end, control2: end) }
             return
         }
         let uIn = CGPoint(x: (corner.x - start.x) / span, y: (corner.y - start.y) / span)
