@@ -87,7 +87,7 @@ extension FeatureStrings {
 
 extension BrightnessFeatureStrings {
     static let enUS = BrightnessFeatureStrings(
-        pageTitle: "Displays",
+        pageTitle: "Display & Energy",
         hubDescription: "Brightness and power controls for every display",
         enable: "Display Control",
         enableCaption: "Adjust display brightness and power here or from the menu bar.",
@@ -122,7 +122,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let ptBR = BrightnessFeatureStrings(
-        pageTitle: "Telas",
+        pageTitle: "Tela e energia",
         hubDescription: "Brilho e controles para ligar ou desligar cada tela",
         enable: "Controle de telas",
         enableCaption: "Controles de brilho e de ligar ou desligar para a tela do Mac e monitores externos, aqui e no painel da barra de menus.",
@@ -157,7 +157,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let tr = BrightnessFeatureStrings(
-        pageTitle: "Ekranlar",
+        pageTitle: "Ekran ve Enerji",
         hubDescription: "Tüm ekranlar için parlaklık ve güç denetimleri",
         enable: "Ekran Denetimi",
         enableCaption: "Yerleşik ekran ve harici monitörler için parlaklık ve açma kapatma denetimleri, burada ve menü çubuğu panelinde.",
@@ -192,7 +192,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let ru = BrightnessFeatureStrings(
-        pageTitle: "Экраны",
+        pageTitle: "Дисплей и энергия",
         hubDescription: "Яркость и включение всех экранов",
         enable: "Управление экранами",
         enableCaption: "Настройки яркости и включения встроенного экрана и внешних мониторов здесь и в панели строки меню.",
@@ -227,7 +227,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let es = BrightnessFeatureStrings(
-        pageTitle: "Pantallas",
+        pageTitle: "Pantalla y energía",
         hubDescription: "Brillo y encendido para todas las pantallas",
         enable: "Control de pantallas",
         enableCaption: "Controles de brillo y encendido para la pantalla integrada y los monitores externos, aquí y en el panel de la barra de menús.",
@@ -262,7 +262,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let sk = BrightnessFeatureStrings(
-        pageTitle: "Displeje",
+        pageTitle: "Displej a energia",
         hubDescription: "Jas a zapínanie pre všetky displeje",
         enable: "Ovládanie displejov",
         enableCaption: "Ovládanie jasu a zapínania pre vstavaný displej a externé monitory, tu aj v paneli v lište.",
@@ -297,7 +297,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let de = BrightnessFeatureStrings(
-        pageTitle: "Displays",
+        pageTitle: "Display & Energie",
         hubDescription: "Helligkeit und Ein oder Aus für alle Displays",
         enable: "Display-Steuerung",
         enableCaption: "Regler für Helligkeit und Ein oder Aus für das eingebaute Display und externe Monitore, hier und im Menüleistenpanel.",
@@ -332,7 +332,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let fr = BrightnessFeatureStrings(
-        pageTitle: "Écrans",
+        pageTitle: "Écran et énergie",
         hubDescription: "Luminosité et alimentation de tous les écrans",
         enable: "Contrôle des écrans",
         enableCaption: "Contrôles de luminosité et d’alimentation pour l’écran intégré et les moniteurs externes, ici et dans le panneau de la barre des menus.",
@@ -367,7 +367,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let it = BrightnessFeatureStrings(
-        pageTitle: "Schermi",
+        pageTitle: "Schermo ed energia",
         hubDescription: "Luminosità e accensione per tutti gli schermi",
         enable: "Controllo schermi",
         enableCaption: "Controlli di luminosità e accensione per lo schermo integrato e i monitor esterni, qui e nel pannello della barra dei menu.",
@@ -402,7 +402,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let ja = BrightnessFeatureStrings(
-        pageTitle: "ディスプレイ",
+        pageTitle: "ディスプレイとエネルギー",
         hubDescription: "すべてのディスプレイの明るさと電源を操作",
         enable: "ディスプレイの操作",
         enableCaption: "内蔵ディスプレイと外部モニタの明るさと電源を、こことメニューバーパネルで操作します。",
@@ -437,7 +437,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let ko = BrightnessFeatureStrings(
-        pageTitle: "디스플레이",
+        pageTitle: "디스플레이 및 에너지",
         hubDescription: "모든 디스플레이의 밝기와 전원 제어",
         enable: "디스플레이 제어",
         enableCaption: "내장 화면과 외부 모니터의 밝기와 전원을 여기와 메뉴 막대 패널에서 제어합니다.",
@@ -472,7 +472,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let zhHans = BrightnessFeatureStrings(
-        pageTitle: "显示器",
+        pageTitle: "显示与能源",
         hubDescription: "控制所有显示器的亮度和开关",
         enable: "显示器控制",
         enableCaption: "内建显示器和外接显示器的亮度与开关控制，显示在这里和菜单栏面板中。",
@@ -507,7 +507,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let zhTW = BrightnessFeatureStrings(
-        pageTitle: "顯示器",
+        pageTitle: "顯示器與能源",
         hubDescription: "控制所有顯示器的亮度和開關",
         enable: "顯示器控制",
         enableCaption: "內建螢幕和外接顯示器的亮度與開關控制，顯示在這裡和選單列面板中。",
@@ -542,7 +542,7 @@ extension BrightnessFeatureStrings {
     )
 
     static let zhHK = BrightnessFeatureStrings(
-        pageTitle: "顯示器",
+        pageTitle: "顯示器與能源",
         hubDescription: "控制所有顯示器的亮度和開關",
         enable: "顯示器控制",
         enableCaption: "內置螢幕和外接顯示器的亮度與開關控制，顯示在這裏和選單列面板中。",
@@ -576,7 +576,7 @@ extension BrightnessFeatureStrings {
         toggleSystemAppearanceShortcut: "使用快捷鍵切換系統外觀"
     )
     static let uk = BrightnessFeatureStrings(
-        pageTitle: "Дисплеї",
+        pageTitle: "Дисплей і енергія",
         hubDescription: "Керування яскравістю та живленням для кожного дисплея",
         enable: "Керування дисплеями",
         enableCaption: "Керування яскравістю та вмиканням/вимиканням вбудованого екрана та зовнішніх моніторів тут та в панелі на смузі меню.",
