@@ -32,6 +32,36 @@ enum KillProcessPortSupport {
         return host == "*" || host == "0.0.0.0" || host == "::"
     }
 
+    /// Where Open in Browser goes for a TCP port. Wildcard binds are not
+    /// destinations, so they open on loopback in the same address family;
+    /// a specific bind opens on its own address.
+    static func browserURL(for port: KillProcessPort) -> URL? {
+        guard port.protocolName == "TCP", (1...65535).contains(port.port),
+              let separator = port.address.lastIndex(of: ":") else { return nil }
+        let host = String(port.address[..<separator])
+        guard !host.isEmpty else { return nil }
+        var components = URLComponents()
+        components.scheme = "http"
+        switch host {
+        case "*": components.host = "localhost"
+        case "0.0.0.0": components.host = "127.0.0.1"
+        case "[::]", "::": components.host = "[::1]"
+        default: components.host = host
+        }
+        components.port = port.port
+        return components.url
+    }
+
+    /// The last known listeners still held by the process `ps` just listed,
+    /// for a scan whose `lsof` timed out.
+    static func carriedOver(_ ports: [KillProcessPort], probes: [KillProcessProbe]) -> [KillProcessPort] {
+        let identities = Dictionary(probes.map { ($0.pid, $0.startedAt) }, uniquingKeysWith: { first, _ in first })
+        return ports.filter { port in
+            guard let current = identities[port.pid] else { return false }
+            return port.startedAt == nil || port.startedAt == current
+        }
+    }
+
     static func parseLsof(_ text: String) -> [KillProcessPort] {
         var name = "", pid: Int32 = 0, address = "", port = 0, proto = "TCP"
         var rows: [KillProcessPort] = []

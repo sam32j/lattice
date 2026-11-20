@@ -130,8 +130,10 @@ enum KillProcessCatalog {
     /// Paths only macOS installs into. A user-owned process running from one
     /// of them, with no app to answer for it, is a macOS agent.
     static func isSystemPath(_ path: String) -> Bool {
+        // Not /Applications/Utilities/: other vendors install there too, and
+        // Apple's own utilities live under /System/Applications/Utilities/.
         let prefixes = ["/System/", "/usr/libexec/", "/usr/sbin/", "/usr/bin/", "/sbin/", "/bin/",
-                        "/Library/Apple/", "/Applications/Utilities/"]
+                        "/Library/Apple/"]
         // Homebrew and other local installs live under /usr/local, which is
         // not part of macOS.
         if path.hasPrefix("/usr/local/") { return false }

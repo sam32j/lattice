@@ -28,6 +28,8 @@ extension KillProcessService {
         }
         let target = KillTarget(pid: pid, startedAt: startedAt)
         cancelPendingRestart(relaunched: false)
+        let request = UUID()
+        pendingRestartRequest = request
         pendingRestartPID = pid
         pendingRestartURL = url
         pendingRestartCompletion = completion
@@ -35,7 +37,8 @@ extension KillProcessService {
             forName: NSWorkspace.didTerminateApplicationNotification,
             object: nil, queue: .main
         ) { [weak self] note in
-            guard !cancellation.isCancelled, let terminated = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+            guard !cancellation.isCancelled, self?.pendingRestartRequest == request,
+                  let terminated = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
                   terminated.processIdentifier == self?.pendingRestartPID else { return }
             self?.completeRestart(cancellation: cancellation)
         }
@@ -46,13 +49,16 @@ extension KillProcessService {
             let result = Self.attemptDirectKill(target: target, force: false)
             switch result {
             case .failed, .needsAdmin, .stale:
-                DispatchQueue.main.async { if !cancellation.isCancelled { self?.cancelPendingRestart(relaunched: false) } }
+                DispatchQueue.main.async {
+                    guard !cancellation.isCancelled, self?.pendingRestartRequest == request else { return }
+                    self?.cancelPendingRestart(relaunched: false)
+                }
             case .killed, .alreadyGone:
                 break
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
-            guard !cancellation.isCancelled, self?.pendingRestartPID == pid else { return }
+            guard !cancellation.isCancelled, self?.pendingRestartRequest == request else { return }
             self?.cancelPendingRestart(relaunched: false)
         }
     }
@@ -80,6 +86,7 @@ extension KillProcessService {
             NSWorkspace.shared.notificationCenter.removeObserver(restartObserver)
         }
         restartObserver = nil
+        pendingRestartRequest = nil
         pendingRestartPID = nil
         pendingRestartURL = nil
         let completion = pendingRestartCompletion
@@ -138,7 +145,8 @@ extension KillProcessService {
     /// Nil on a failed or clearly-wrong snapshot (a timed-out or non-zero
     /// `ps`, or zero rows parsed - never legitimately true on a running Mac),
     /// so a transient hiccup can be told apart from an actually-empty list.
-    static func snapshot(cancellation: FeatureWorkCancellation) -> (entries: [KillProcessEntry], items: [KillProcessItem])? {
+    static func snapshot(cancellation: FeatureWorkCancellation,
+                         previousPorts: [KillProcessPort] = []) -> (entries: [KillProcessEntry], items: [KillProcessItem], ports: [KillProcessPort])? {
         let result = FeatureReadProcess.run("/bin/ps", ["-eo", "pid,ppid,uid,pcpu,rss,comm"], cancellation: cancellation)
         guard !cancellation.isCancelled, result.status == 0 else { return nil }
         let parsed = parsePS(result.output)
@@ -146,23 +154,28 @@ extension KillProcessService {
         let rows = parsed.map(\.entry)
         // The Command Bar lists each app once, with its helpers folded in.
         let entries = groupedByApp(rows).sorted { $0.cpuPercent > $1.cpuPercent }
-        let items = KillProcessCatalog.items(from: parsed.map(\.probe),
+        let probes = parsed.map(\.probe)
+        // A timed-out lsof is not "nothing listens": keep the last known
+        // listeners whose process is still the one ps just listed.
+        let ports = listeningPorts(probes: probes, cancellation: cancellation)
+            ?? KillProcessPortSupport.carriedOver(previousPorts, probes: probes)
+        let items = KillProcessCatalog.items(from: probes,
                                              ownPID: ProcessInfo.processInfo.processIdentifier,
                                              currentUID: getuid(),
-                                             ports: listeningPorts(probes: parsed.map(\.probe),
-                                                                   cancellation: cancellation))
-        return (entries, items)
+                                             ports: ports)
+        return (entries, items, ports)
     }
 
-    /// Every listening TCP socket. A port may only be acted on when its
-    /// process is the same one `ps` just listed; a new or reused PID stays
-    /// visible without actions until the next refresh confirms it.
-    static func listeningPorts(probes: [KillProcessProbe], cancellation: FeatureWorkCancellation) -> [KillProcessPort] {
-        guard !cancellation.isCancelled else { return [] }
+    /// Every listening TCP socket, or nil when the scan failed. A port may
+    /// only be acted on when its process is the same one `ps` just listed; a
+    /// new or reused PID stays visible without actions until the next
+    /// refresh confirms it.
+    static func listeningPorts(probes: [KillProcessProbe], cancellation: FeatureWorkCancellation) -> [KillProcessPort]? {
+        guard !cancellation.isCancelled else { return nil }
         let result = FeatureReadProcess.run("/usr/sbin/lsof", ["-nP", "+c0", "-iTCP", "-sTCP:LISTEN", "-F", "pcnPT"],
                                             cancellation: cancellation)
         // lsof exits 1 when nothing listens; only a timeout (negative) fails.
-        guard !cancellation.isCancelled, result.status >= 0 else { return [] }
+        guard !cancellation.isCancelled, result.status >= 0 else { return nil }
         let identities = Dictionary(probes.map { ($0.pid, $0.startedAt) }, uniquingKeysWith: { first, _ in first })
         return KillProcessPortSupport.parseLsof(result.output).map { entry in
             let startedAt = identities[entry.pid] ?? nil

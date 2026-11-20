@@ -53,6 +53,17 @@ final class KillProcessService: ObservableObject {
     var pendingRestartPID: pid_t?
     var pendingRestartURL: URL?
     var pendingRestartCompletion: ((Bool) -> Void)?
+    /// The restart that owns the pending state. A callback from an earlier
+    /// restart, or from an earlier try for the same PID, checks it first.
+    var pendingRestartRequest: UUID?
+    /// Scans are numbered as they start; one that finishes after a newer
+    /// scan already published is stale and dropped.
+    var refreshGeneration = 0
+    var publishedRefreshGeneration = 0
+    var refreshesInFlight = 0
+    /// The listening ports of the last published snapshot, kept for a scan
+    /// whose `lsof` times out.
+    var lastPorts: [KillProcessPort] = []
 
     init() {
         sortBy = SortBy(rawValue: UserDefaults.standard.string(forKey: DefaultsKey.killProcessSortBy) ?? "cpu") ?? .cpu

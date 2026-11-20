@@ -83,22 +83,34 @@ extension KillProcessService {
         }
 
         isRefreshing = true
+        refreshGeneration += 1
+        refreshesInFlight += 1
+        let generation = refreshGeneration
+        let previousPorts = lastPorts
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let snapshot = Self.snapshot(cancellation: cancellation)
+            let snapshot = Self.snapshot(cancellation: cancellation, previousPorts: previousPorts)
             DispatchQueue.main.async {
-                guard let self, !cancellation.isCancelled else {
+                guard let self else {
+                    completion?()
+                    return
+                }
+                self.refreshesInFlight = max(0, self.refreshesInFlight - 1)
+                guard !cancellation.isCancelled else {
                     completion?()
                     return
                 }
                 // A failed or empty `ps` call (transient - a timeout under
                 // load, a hiccup) must never wipe a list that was already
                 // showing good data; only a genuine snapshot replaces it.
-                if let snapshot {
+                // Nor may a scan that started before one already shown.
+                if let snapshot, generation > self.publishedRefreshGeneration {
+                    self.publishedRefreshGeneration = generation
                     self.entries = snapshot.entries
                     self.items = snapshot.items
+                    self.lastPorts = snapshot.ports
                     self.hasLoadedOnce = true
                 }
-                self.isRefreshing = false
+                if self.refreshesInFlight == 0 { self.isRefreshing = false }
                 self.cacheLock.lock()
                 self.lastRefresh = ProcessInfo.processInfo.systemUptime
                 self.cacheLock.unlock()

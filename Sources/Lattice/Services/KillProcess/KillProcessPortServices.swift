@@ -21,6 +21,18 @@ enum KillProcessPortServices {
         "node", "bun", "deno", "python", "python3", "ruby", "java", "php", "perl", "dotnet",
     ]
 
+    /// Sharing services by port, with the processes that hold them. launchd
+    /// holds the socket for the on-demand ones until a client connects.
+    static let sharingServices: [Int: (KillProcessPortService, Set<String>)] = [
+        22: (.remoteLogin, ["launchd", "sshd", "sshd-session"]),
+        445: (.fileSharing, ["launchd", "smbd"]),
+        548: (.fileSharing, ["launchd", "applefileserver"]),
+        5900: (.screenSharing, ["launchd", "screensharingd"]),
+        3689: (.musicSharing, ["music", "itunes", "tv"]),
+        631: (.printerSharing, ["launchd", "cupsd"]),
+        3283: (.remoteManagement, ["launchd", "ardagent"]),
+    ]
+
     static func isRuntime(_ processName: String) -> Bool {
         let name = processName.lowercased()
         return runtimes.contains(name) || name.hasPrefix("python3.")
@@ -37,15 +49,11 @@ enum KillProcessPortServices {
         case ("sharingd", _): return .airDropAndHandoff
         default: break
         }
-        // Well-known ports macOS's own sharing services use.
-        switch port {
-        case 22: return .remoteLogin
-        case 445, 548: return .fileSharing
-        case 5900: return .screenSharing
-        case 3689: return .musicSharing
-        case 631: return .printerSharing
-        case 3283: return .remoteManagement
-        default: break
+        // Well-known ports macOS's own sharing services use, named only when
+        // the process holding the port is one of the processes that serve
+        // them: a dev server on 5900 is not Screen Sharing.
+        if let (service, listeners) = sharingServices[port], listeners.contains(name) {
+            return service
         }
         if isRuntime(name), let arguments, let tool = toolName(arguments: arguments) {
             return .tool(tool)
@@ -60,6 +68,9 @@ enum KillProcessPortServices {
         while index < arguments.count {
             let argument = arguments[index]
             if argument == "-m", index + 1 < arguments.count { return arguments[index + 1] }
+            // Inline source (python -c, node -e) is code, not a program name;
+            // the line falls back to the process name.
+            if ["-c", "-e", "--eval", "--print"].contains(argument) { return nil }
             if argument.hasPrefix("-") {
                 index += 1
                 continue
