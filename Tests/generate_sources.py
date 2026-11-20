@@ -2603,6 +2603,7 @@ def main():
     keep_awake_methods = [
         "    func prepareForFeatureDisable()",
         "    func refreshPasswordlessStatus(",
+        "    static func rememberPick(",
         "    func activate(minutes:",
         "    func activate(until date:",
         "    func startLastPick(",
