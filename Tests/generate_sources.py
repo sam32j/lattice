@@ -1611,6 +1611,7 @@ def main():
               "    var musicStripNamesSong:", "    private func fitNamedMusicStrip(", "    private func nameCapsuleSong(",
               "    private func endMusicStripSong(", "    private func musicStripHolds(",
               "    func musicStripStandIn("])
+          .replace("musicLeadsAcrossTrackChange || ", "")
           .replace("NotchSupport.routes(notice.event)", "routesNotices")
           .replace("NotchSupport.hiddenShowsActivity()", "hiddenShowsActivity")
           .replace("NotchSupport.closeDelay()", "NotchSupport.sanitizedCloseDelay(UserDefaults.standard.closeDelay)")
